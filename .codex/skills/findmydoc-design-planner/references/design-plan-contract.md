@@ -143,7 +143,6 @@ Write concrete checks for implementation and QA. Include mobile, tablet, desktop
 
 State which reviewers should run after implementation:
 
-- `plan_design_reviewer`: always, against this single folder before implementation starts or changes are accepted
 - `mobile_ui_reviewer`: required for responsive or touch behavior
 - `accessibility_reviewer`: required for interactive controls, forms, dialogs, tabs, menus, or icon-only actions
 - `security_reviewer`: required for auth, permissions, patient data, clinic data, API, hooks, or collection access changes

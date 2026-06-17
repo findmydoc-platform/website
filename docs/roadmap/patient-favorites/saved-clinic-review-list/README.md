@@ -195,11 +195,10 @@ Anything not documented in this table is out of implementation scope.
 - Data source: every displayed clinic fact maps to `favoriteclinics` or the joined `clinics` fields listed in the Data Model Plan; review count, wait time, contact state, and recommendations are omitted.
 - Accessibility: `Details`, `Remove`, favorite indicators, pending text, error text, and empty-state action have accessible names, visible focus, and live-region behavior where state changes; decorative icons are `aria-hidden` and non-focusable.
 - State coverage: saved and empty states are documented visually for mobile, tablet, and desktop; pending and error states are documented through the visible contract and must be covered by Storybook or Playwright screenshots during implementation.
-- Review: `plan_design_reviewer` must confirm the plan remains scoped to issue `#1070` and introduces no undocumented visible UI element.
+- Review: implementation review must confirm the plan remains scoped to issue `#1070` and introduces no undocumented visible UI element.
 
 ## Specialist Review Handoff
 
-- `plan_design_reviewer`: required against this single scenario folder before implementation.
 - `mobile_ui_reviewer`: required after implementation because saved card layout, touch targets, and empty/error states change across mobile and tablet.
 - `accessibility_reviewer`: required after implementation because favorite actions, pending/error live regions, icon affordances, and focus states are involved.
 - `security_reviewer`: not required if implementation only changes presentation and preserves existing Favorites API/access behavior; required if access, hooks, routes, or API behavior change.

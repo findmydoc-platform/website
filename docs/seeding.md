@@ -143,9 +143,9 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 - The optimizer progressively reduces quality and, if needed, width until it fits within the target byte budget.
 - If you need a larger editorial or hero asset, use the `hero` preset and/or override width and byte budget explicitly.
 
-#### Medical Specialties Permittierung (MVP)
+#### Medical Specialties Permitting
 - Entries are included only after professional review; the curated repo seed JSON is the technical source of truth.
-- Permittierung means an entry is approved only when it exists in `medicalSpecialties.json`.
+- Permitting means an entry is approved only when it exists in `medicalSpecialties.json`.
 - Only levels 1 and 2 are allowed in `medical-specialties`; each L2 must map to exactly one L1 parent.
 - Level-3 candidates are excluded from this collection and moved to follow-up treatment curation ([management#68](https://github.com/findmydoc-platform/management/issues/68)).
 - Entries marked as optional or deleted in source curation (for example `Hollywood Smile`, `Female Hair Transplant`, or deleted duplicates) are excluded from baseline seeds.

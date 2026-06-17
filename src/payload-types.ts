@@ -4792,6 +4792,16 @@ export interface LandingPage {
       image: number | PlatformContentMedia;
       id?: string | null;
     }[];
+    testimonialsIntro: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+    };
     categoriesIntro: {
       /**
        * Section headline.
@@ -4999,6 +5009,16 @@ export interface LandingPage {
       };
       id?: string | null;
     }[];
+    teamIntro: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+    };
     /**
      * Testimonials shown in the carousel.
      */
@@ -5012,6 +5032,16 @@ export interface LandingPage {
       image: number | PlatformContentMedia;
       id?: string | null;
     }[];
+    testimonialsIntro: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+    };
     pricing: {
       /**
        * Section headline.
@@ -5323,6 +5353,12 @@ export interface LandingPagesSelect<T extends boolean = true> {
               image?: T;
               id?: T;
             };
+        testimonialsIntro?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
         categoriesIntro?:
           | T
           | {
@@ -5471,6 +5507,12 @@ export interface LandingPagesSelect<T extends boolean = true> {
                   };
               id?: T;
             };
+        teamIntro?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
         testimonials?:
           | T
           | {
@@ -5479,6 +5521,12 @@ export interface LandingPagesSelect<T extends boolean = true> {
               role?: T;
               image?: T;
               id?: T;
+            };
+        testimonialsIntro?:
+          | T
+          | {
+              title?: T;
+              description?: T;
             };
         pricing?:
           | T

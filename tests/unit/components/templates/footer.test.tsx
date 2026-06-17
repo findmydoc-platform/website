@@ -5,6 +5,7 @@ import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { Footer } from '@/components/templates/Footer/Component'
+import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import type { FooterNavGroup } from '@/utilities/normalizeNavItems'
 
 vi.mock('next/link', () => ({
@@ -90,5 +91,11 @@ describe('Footer template', () => {
     expect(screen.queryByRole('button', { name: 'Services' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Information' })).not.toBeInTheDocument()
     expect(within(legalQuickLinks).getByRole('link', { name: 'Privacy Policy' })).toBeInTheDocument()
+  })
+
+  it('renders the platform disclaimer in the footer flow', () => {
+    render(<Footer footerGroups={footerGroups} />)
+
+    expect(screen.getAllByText(DISCLAIMER_COPY.platform).length).toBeGreaterThan(0)
   })
 })

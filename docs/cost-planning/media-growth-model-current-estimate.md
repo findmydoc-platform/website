@@ -1,8 +1,10 @@
-# Cost Plan MVP: Media Growth Model (Turkey, 600 Clinics)
+# Current Estimate: Media Growth Model (Turkey, 600 Clinics)
 
 ## Scope
 
-This document estimates image growth for the current MVP media scope and splits:
+Estimate timestamp: 2026-06-09.
+
+This document estimates image growth for the current media scope and splits:
 
 - Object storage bytes (original + generated derivatives)
 - PostgreSQL metadata bytes for media collections

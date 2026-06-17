@@ -88,7 +88,7 @@ export const Default: Story = {
     enableIntro: true,
     introContent: (
       <div className="prose">
-        <p>findmydoc connects patients with trusted clinics across specialties.</p>
+        <p>findmydoc helps patients compare clinic-provided information across specialties.</p>
       </div>
     ),
     confirmationMessage: (
@@ -123,7 +123,7 @@ export const SuccessfulSubmission: Story = {
     enableIntro: true,
     introContent: (
       <div className="prose">
-        <p>findmydoc connects patients with trusted clinics across specialties.</p>
+        <p>findmydoc helps patients compare clinic-provided information across specialties.</p>
       </div>
     ),
     confirmationMessage: (

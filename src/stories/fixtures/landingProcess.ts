@@ -8,7 +8,7 @@ export type LandingProcessStepImage = {
 export const landingProcessPlaceholderTitle = 'Our Process'
 
 export const landingProcessPlaceholderSubtitle =
-  'A transparent onboarding flow from profile setup to verified visibility and direct patient inquiries.'
+  'A transparent onboarding flow from profile setup to listed services and direct patient inquiries.'
 
 export const landingProcessHomepageStepImages: ReadonlyArray<LandingProcessStepImage> = [
   {
@@ -18,7 +18,7 @@ export const landingProcessHomepageStepImages: ReadonlyArray<LandingProcessStepI
   { src: getStoryImageSrc(storyClinicImages.landing.processProfile), alt: 'Clinic profile creation on findmydoc' },
   {
     src: getStoryImageSrc(storyClinicImages.landing.processVerification),
-    alt: 'Clinic verification and quality review process',
+    alt: 'Clinic profile setup and listed service information',
   },
   {
     src: getStoryImageSrc(storyClinicImages.landing.processConnection),
@@ -34,7 +34,7 @@ export const landingProcessPartnerStepImages: ReadonlyArray<LandingProcessStepIm
   { src: getStoryImageSrc(storyClinicImages.landing.processProfile), alt: 'Clinic profile creation on findmydoc' },
   {
     src: getStoryImageSrc(storyClinicImages.landing.processVerification),
-    alt: 'Clinic verification and quality review process',
+    alt: 'Clinic profile setup and listed service information',
   },
   {
     src: getStoryImageSrc(storyClinicImages.landing.processConnection),

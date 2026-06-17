@@ -184,6 +184,10 @@
             "imageStableId": "landing-testimonial-home-sophie-klein"
           }
         ],
+        "testimonialsIntro": {
+          "title": "Expert feedback",
+          "description": "Perspectives from healthcare and product experts who reviewed the patient decision flow."
+        },
         "categoriesIntro": {
           "title": "Categories",
           "description": "Explore verified clinics by specialty and compare the best options for your needs."
@@ -424,6 +428,10 @@
             "imageStableId": "landing-team-sebastian-schuetze"
           }
         ],
+        "teamIntro": {
+          "title": "Our Team",
+          "description": "We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
+        },
         "testimonials": [
           {
             "quote": "The clinic onboarding model is well structured and sets clear expectations for profile quality and international visibility.",
@@ -444,6 +452,10 @@
             "imageStableId": "landing-testimonial-partners-robert-hayes"
           }
         ],
+        "testimonialsIntro": {
+          "title": "Testimonials",
+          "description": "Feedback from healthcare and clinic growth experts who reviewed the partner onboarding and visibility model."
+        },
         "pricing": {
           "title": "Pricing",
           "description": "Choose the monthly tier that matches your growth stage. Performance-based commission and optional add-ons sit alongside the subscription model.",

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useId, useMemo, useState } from 'react'
 
 import { UiLink } from '@/components/molecules/Link'
 import { cn } from '@/utilities/ui'
@@ -77,7 +77,7 @@ export function LandingCategoriesShell({
   const resolvedFilter = categoryTabs.some((category) => category.value === activeFilter)
     ? activeFilter
     : ALL_CATEGORY_VALUE
-  const panelId = 'landing-categories-panel'
+  const panelId = `landing-categories-panel-${useId()}`
   const activeTabId = `landing-categories-tab-${resolvedFilter}`
   const categoryLabelMap = useMemo(() => {
     return new Map(categoryTabs.map((category) => [category.value, category.label]))

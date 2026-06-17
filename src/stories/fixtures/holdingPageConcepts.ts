@@ -34,7 +34,7 @@ export const holdingPageConcept: HoldingPageConceptProps = {
   contactTitle: 'Contact us',
   description:
     'findmydoc is launching a clearer way to compare clinics abroad. This immersive hero is built to showcase a premium background video with minimal distraction.',
-  eyebrow: 'Trusted treatment decisions start with transparent comparison',
+  eyebrow: 'Clinic comparison starts with structured information',
   footerLinks,
   heroVideo: {
     ctaHref: '#contact',
@@ -44,7 +44,7 @@ export const holdingPageConcept: HoldingPageConceptProps = {
     videoBlurPx: 2.2,
     videoSrc: '/stories/immersive-hero-loop.mp4',
     requiredLabel: 'Background video currently unavailable',
-    subheadlineText: 'Find verified clinics, compare quality signals, and decide with confidence.',
+    subheadlineText: 'Compare clinic-provided profiles, listed services, and contact options.',
     useReducedMotionFallback: true,
     withCrossfade: true,
   },
@@ -56,26 +56,26 @@ export const holdingPageConcept: HoldingPageConceptProps = {
     title: 'Fullscreen motion should feel premium, bright, and trustworthy.',
   },
   narrative:
-    'findmydoc is designed for people who want to compare clinics abroad with more confidence before making a medical travel decision. Instead of switching between fragmented websites, patients can review structured clinic profiles, treatment options, and transparent quality signals in one comparison flow.\n\nThe goal is to make clinic research easier to understand, easier to verify, and easier to act on. By combining verification status, patient reviews, listed accreditations, and specialty fit, this layout supports clearer expectations and more informed next steps.',
+    'findmydoc is designed for people who want to compare clinic information abroad before making contact. Instead of switching between fragmented websites, patients can review structured clinic profiles, treatment options, listed services, and contact options in one comparison flow.\n\nThe goal is to make clinic research easier to understand and easier to act on. By organizing clinic-provided information, specialty fit, and direct contact paths, this layout supports clearer next steps.',
   overlayClassName: 'from-white/94 via-sky-50/68 to-white/88',
   primaryCtaLabel: 'Send message',
   searchSnapshot: {
     internalLinks,
     metaDescription:
-      'findmydoc helps you compare clinics abroad with trusted information, clearer choices, and a confident next step before treatment.',
+      'findmydoc helps you compare clinic-provided information abroad with clearer choices and a direct next step.',
     metaTitle: 'findmydoc Launch | Compare Clinics Abroad',
     primaryKeyword: 'compare clinics abroad',
     searchIntent: 'Comparative with launch-intent trust',
   },
   signals: [
     {
-      title: 'Compare verified clinics',
+      title: 'Compare clinic profiles',
       body: 'Review treatment options, specialties, and transparent profile data side by side before making contact.',
       icon: UserRoundSearch,
     },
     {
-      title: 'Trust through quality signals',
-      body: 'Use ratings, patient reviews, verification status, and listed accreditations to evaluate clinics with more confidence.',
+      title: 'Review comparable information',
+      body: 'Use listed services, languages, locations, and contact paths to organize clinic research.',
       icon: ShieldCheck,
     },
     {

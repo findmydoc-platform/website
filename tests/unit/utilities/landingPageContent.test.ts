@@ -3,14 +3,12 @@ import { describe, expect, it } from 'vitest'
 
 import type { LandingPage, Page, PlatformContentMedia } from '@/payload-types'
 import {
-  DEFAULT_LANDING_PAGE_GLOBAL,
   normalizeAboutLandingContent,
   normalizeClinicPartnerLandingContent,
   normalizeHomeLandingContent,
 } from '@/utilities/landing/landingPageContent'
 
-const cloneDefaultLandingPages = (): LandingPage =>
-  structuredClone(DEFAULT_LANDING_PAGE_GLOBAL) as unknown as LandingPage
+import { cloneBaselineLandingPages } from '../helpers/landingPagesBaseline'
 
 const buildMedia = (
   src: string,
@@ -70,12 +68,12 @@ const attachRequiredMedia = (landingPages: LandingPage): LandingPage => {
 
 describe('landingPageContent normalizers', () => {
   it('maps CMS media, icon keys, and FAQ row IDs for the home landing page', () => {
-    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
     const firstFeature = landingPages.home.features.items[0]
-    if (!firstFeature) throw new Error('Expected default home feature fixture')
+    if (!firstFeature) throw new Error('Expected baseline home feature fixture')
     firstFeature.icon = 'target'
     const firstFaq = landingPages.home.faq.items[0]
-    if (!firstFaq) throw new Error('Expected default home FAQ fixture')
+    if (!firstFaq) throw new Error('Expected baseline home FAQ fixture')
     firstFaq.id = 'payload-row-q1'
 
     const content = normalizeHomeLandingContent(landingPages)
@@ -96,7 +94,7 @@ describe('landingPageContent normalizers', () => {
   })
 
   it('requires CMS media instead of falling back to public assets', () => {
-    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
     ;(landingPages.clinicPartners.hero as { image?: unknown }).image = undefined
 
     expect(() => normalizeClinicPartnerLandingContent(landingPages)).toThrow(
@@ -104,8 +102,24 @@ describe('landingPageContent normalizers', () => {
     )
   })
 
+  it('fails fast when a required landing section is missing', () => {
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    ;(landingPages as { home?: unknown }).home = undefined
+
+    expect(() => normalizeHomeLandingContent(landingPages)).toThrow('Landing pages global field home is missing')
+  })
+
+  it('fails fast when a required landing array is missing', () => {
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    ;(landingPages.home.features as { items?: unknown }).items = undefined
+
+    expect(() => normalizeHomeLandingContent(landingPages)).toThrow(
+      'Landing pages global field home.features.items is missing',
+    )
+  })
+
   it('maps about page hero, statements, team responsibilities, and transparency content', () => {
-    const content = normalizeAboutLandingContent(attachRequiredMedia(cloneDefaultLandingPages()))
+    const content = normalizeAboutLandingContent(attachRequiredMedia(cloneBaselineLandingPages()))
 
     expect(content.hero.image).toMatchObject({
       src: '/platform-media/about-hero-large.webp',
@@ -131,9 +145,9 @@ describe('landingPageContent normalizers', () => {
   })
 
   it('uses about team as the central team source for the clinic partner page', () => {
-    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
     const firstAboutMember = landingPages.about.team[0]
-    if (!firstAboutMember) throw new Error('Expected default about team fixture')
+    if (!firstAboutMember) throw new Error('Expected baseline about team fixture')
     firstAboutMember.name = 'About Source Member'
     firstAboutMember.role = 'Platform Lead'
     firstAboutMember.image = buildMedia('/platform-media/about-source-member.webp', 'About source member', {
@@ -155,7 +169,7 @@ describe('landingPageContent normalizers', () => {
   })
 
   it('falls back to the legacy clinic partner team when about team is empty', () => {
-    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
     landingPages.about.team = []
 
     const content = normalizeClinicPartnerLandingContent(landingPages)
@@ -167,7 +181,7 @@ describe('landingPageContent normalizers', () => {
   })
 
   it('requires CMS media for the about page', () => {
-    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
     ;(landingPages.about.hero as { image?: unknown }).image = undefined
 
     expect(() => normalizeAboutLandingContent(landingPages)).toThrow(
@@ -176,7 +190,7 @@ describe('landingPageContent normalizers', () => {
   })
 
   it('keeps pricing data while using CMS media for the clinic partner page', () => {
-    const content = normalizeClinicPartnerLandingContent(attachRequiredMedia(cloneDefaultLandingPages()))
+    const content = normalizeClinicPartnerLandingContent(attachRequiredMedia(cloneBaselineLandingPages()))
 
     expect(content.hero.image).toMatchObject({
       src: '/platform-media/clinic-partner-hero-large.webp',
@@ -195,9 +209,9 @@ describe('landingPageContent normalizers', () => {
   })
 
   it('uses original landing media before thumbnail-only generated sizes', () => {
-    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
     const firstProcessStep = landingPages.clinicPartners.process.steps[0]
-    if (!firstProcessStep) throw new Error('Expected default clinic partner process step')
+    if (!firstProcessStep) throw new Error('Expected baseline clinic partner process step')
     firstProcessStep.image = {
       alt: 'Clinic onboarding image',
       url: '/api/platformContentMedia/file/partner-process-step-1-reach-out-v2.webp',
@@ -222,10 +236,10 @@ describe('landingPageContent normalizers', () => {
   })
 
   it('drops unsafe CMS links before they reach public landing components', () => {
-    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
     landingPages.about.team = []
     const firstTeamMember = landingPages.clinicPartners.team[0]
-    if (!firstTeamMember) throw new Error('Expected default clinic partner team fixture')
+    if (!firstTeamMember) throw new Error('Expected baseline clinic partner team fixture')
     firstTeamMember.socials = {
       github: 'https://github.com/findmydoc-platform',
       instagram: 'https://example.com/phishing',
@@ -248,7 +262,7 @@ describe('landingPageContent normalizers', () => {
   })
 
   it('resolves CTA reference links through the shared CMS link shape', () => {
-    const landingPages = attachRequiredMedia(cloneDefaultLandingPages())
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
     landingPages.clinicPartners.cta.link = {
       type: 'reference',
       reference: {

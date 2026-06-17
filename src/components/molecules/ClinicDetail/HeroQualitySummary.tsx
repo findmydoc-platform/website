@@ -12,9 +12,9 @@ type HeroQualitySummaryProps = {
 }
 
 export function HeroQualitySummary({ trust }: HeroQualitySummaryProps) {
-  const ratingValue = typeof trust.ratingValue === 'number' ? trust.ratingValue : undefined
-  const reviewCount = typeof trust.reviewCount === 'number' ? trust.reviewCount : undefined
-  const hasRating = typeof ratingValue === 'number' && typeof reviewCount === 'number' && reviewCount > 0
+  const ratingValue = trust.ratingValue
+  const reviewCount = trust.reviewCount
+  const hasRating = ratingValue !== null && reviewCount > 0
   const accreditationPreview = trust.accreditations.slice(0, 2)
   const languagesPreview = trust.languages.slice(0, 4)
 

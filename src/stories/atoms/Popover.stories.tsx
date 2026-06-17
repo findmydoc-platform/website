@@ -21,7 +21,7 @@ const ClinicsPopover = () => (
       <div className="space-y-2 text-sm">
         <p className="font-semibold">Popular filters</p>
         <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
-          <li>Accredited facilities</li>
+          <li>Listed services</li>
           <li>Multilingual staff</li>
           <li>Rehab programs</li>
         </ul>
@@ -39,7 +39,7 @@ const ClinicsPopoverRight = () => (
       <div className="space-y-2 text-sm">
         <p className="font-semibold">Popular filters</p>
         <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
-          <li>Accredited facilities</li>
+          <li>Listed services</li>
           <li>Multilingual staff</li>
           <li>Rehab programs</li>
         </ul>

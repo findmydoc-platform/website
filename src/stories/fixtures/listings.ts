@@ -1,4 +1,4 @@
-import { Award, BadgeCheck, Eye, Shield, Target, TrendingUp, Users } from 'lucide-react'
+import { BadgeCheck, Eye, FileText, Hospital, MapPin, Target, TrendingUp } from 'lucide-react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
 import type { LandingPricingModelItem, LandingPricingPlan } from '@/components/organisms/Landing/LandingPricing'
@@ -78,15 +78,16 @@ export const clinicFilterOptions = {
 }
 
 export const clinicTrust = {
-  title: 'Trust proven quality',
-  subtitle: 'We only work with certified clinics and guarantee transparent, up-to-date pricing information',
+  title: 'A clearer way to compare clinics',
+  subtitle:
+    'We make clinic profiles easier to compare by showing key treatment, location, and price fields in one place.',
   stats: [
-    { value: 500, suffix: '+', label: 'Verified clinics', Icon: Users },
-    { value: 1200, suffix: '+', label: 'Treatment types', Icon: BadgeCheck },
-    { value: 98, suffix: '%', label: 'Satisfaction rate', Icon: Award },
-    { valueText: 'TÜV', label: 'Verified platform', Icon: Shield },
+    { value: 24, label: 'verified clinics', Icon: Hospital },
+    { value: 48, label: 'treatment types', Icon: BadgeCheck },
+    { value: 12, label: 'cities', Icon: MapPin },
+    { value: 86, label: 'price entries', Icon: FileText },
   ],
-  badges: ['TÜV Süd certified', 'GDPR compliant', 'Verified clinic data', 'Privacy guaranteed'],
+  badges: ['Verified clinic profiles', 'Treatment types', 'Locations', 'Price fields where available'],
 }
 
 export const clinicResults: ListingCardData[] = [
@@ -331,9 +332,9 @@ export const sampleClinicTags = sampleClinic.tags
 export const sampleClinicLocation = sampleClinic.location
 
 export const clinicHeroData = {
-  title: 'Gain International Patients Through a Trusted Global Clinic Platform',
+  title: 'Gain International Patients Through a Structured Global Clinic Platform',
   description:
-    'Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments gain visibility, trust, and high-intent inquiries - globally and sustainably.',
+    'Increase your clinic’s international reach and connect with qualified patients worldwide. Our comparison platform helps clinics, medical networks, and international patient departments present structured information and high-intent inquiries - globally and sustainably.',
   image: getStoryImageSrc(storyClinicImages.landing.hero),
 }
 
@@ -346,10 +347,10 @@ export const clinicFeaturesData = [
     icon: Target,
   },
   {
-    title: 'Reputation Boost',
-    subtitle: 'Huge Collection',
+    title: 'Structured Profiles',
+    subtitle: 'Clear Information',
     description:
-      'Strengthen your clinic’s credibility through verified qualifications and transparent profiles that build trust with international patients.',
+      'Maintain clinic-provided profile information, listed services, languages, and contact paths in one comparable format.',
     icon: TrendingUp,
   },
   {
@@ -376,9 +377,9 @@ export const clinicProcessData = [
   },
   {
     step: 3,
-    title: 'Verification & Quality Check',
+    title: 'Profile Review',
     description:
-      'Clinics are required to provide relevant qualifications and certifications according to their medical services. This verification process ensures credibility, transparency, and a high-quality environment for international patients.',
+      'Clinics provide relevant profile information, service details, and supporting documents so the listing can be prepared consistently for comparison.',
   },
   {
     step: 4,
@@ -398,7 +399,7 @@ export const homepageFaqSection = {
       id: 'q1',
       question: 'How does this platform help clinics gain international patients?',
       answer:
-        'By combining global visibility, patient guidance, and quality-focused clinic presentation in one trusted comparison environment.',
+        'By presenting clinic-provided information, contact options, and listed services in one structured comparison environment.',
     },
     {
       id: 'q2',
@@ -433,7 +434,7 @@ export const clinicPartnersFaqSection = {
       id: 'q1',
       question: 'How does this platform help clinics gain international patients?',
       answer:
-        'By combining global visibility, patient guidance, and quality-focused clinic presentation in one trusted comparison environment.',
+        'By presenting clinic-provided information, contact options, and listed services in one structured comparison environment.',
     },
     {
       id: 'q2',
@@ -718,9 +719,9 @@ export const clinicTestimonialsData = [
   },
   {
     quote:
-      'From an operations perspective, the process is practical: present verified strengths, compare clearly, and move into qualified conversations.',
+      'From an operations perspective, the process is practical: maintain profile information, compare clearly, and move into qualified conversations.',
     author: 'Robert Hayes',
-    role: 'Healthcare Operations Reviewer',
+    role: 'Healthcare Operations Lead',
     image: getStoryImageSrc(storyPortraits.testimonials.robertHayes),
   },
 ]
@@ -732,11 +733,7 @@ export const clinicPricingData = [
     plan: 'Premium',
     description:
       'For clinics that want stronger category visibility, a more competitive profile presence, and a reliable stream of qualified international inquiries.',
-    highlights: [
-      'Priority profile visibility',
-      'Enhanced trust and profile depth',
-      'Built for clinics scaling inbound demand',
-    ],
+    highlights: ['Priority profile visibility', 'Enhanced profile depth', 'Built for clinics scaling inbound demand'],
     buttonText: 'Choose Premium',
     badge: 'Most popular',
     layout: 'primary',

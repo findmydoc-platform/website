@@ -78,7 +78,13 @@ export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
           ) : null}
         </header>
 
-        <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4" aria-label="Key metrics">
+        <ul
+          className={cn(
+            'grid grid-cols-1 gap-6 sm:grid-cols-2',
+            stats.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4',
+          )}
+          aria-label="Key metrics"
+        >
           {stats.map((stat, index) => (
             <li key={`${stat.label}-${index}`} className="min-h-40 rounded-xl border border-border bg-card shadow-xs">
               <div className="flex h-full flex-col items-center justify-center px-6 py-6 text-center">
@@ -103,7 +109,7 @@ export const TrustQualitySection: React.FC<TrustQualitySectionProps> = ({
         </ul>
 
         {badges && badges.length > 0 ? (
-          <ul className="flex flex-wrap justify-center gap-4" aria-label="Certifications">
+          <ul className="flex flex-wrap justify-center gap-4" aria-label="Comparison details">
             {badges.map((badge) => (
               <li key={badge}>
                 <div className="inline-flex items-center gap-2 rounded-md bg-background px-4 py-2">

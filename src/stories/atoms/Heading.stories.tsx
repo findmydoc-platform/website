@@ -124,7 +124,7 @@ export const HeroExample: Story = {
       <Heading as="h1" align="center" variant="white">
         Welcome to findmydoc
       </Heading>
-      <p className="mt-4 text-center text-white/80">Find trusted clinicians and book with confidence.</p>
+      <p className="mt-4 text-center text-white/80">Compare clinician profiles and contact providers directly.</p>
     </div>
   ),
 }

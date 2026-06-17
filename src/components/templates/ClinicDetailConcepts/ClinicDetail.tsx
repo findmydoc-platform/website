@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Activity, HeartPulse, Stethoscope, Syringe } from 'lucide-react'
 
 import { Container } from '@/components/molecules/Container'
+import { DisclaimerNotice } from '@/components/molecules/DisclaimerNotice'
 import {
   BeforeAfterCaseGallerySection,
   ClinicAppointmentSection,
@@ -18,6 +19,7 @@ import { TreatmentsStrip, type TreatmentsStripItem } from '@/components/organism
 import { useCookieConsentToolAllowed } from '@/features/cookieConsent/useCookieConsentToolAllowed'
 import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
 import { postHogBrowserEvents, type ClinicCtaClickedProperties } from '@/posthog/client-api'
+import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { cn } from '@/utilities/ui'
 
 import { useClinicDetailInteractionState } from './hooks/useClinicDetailInteractionState'
@@ -252,7 +254,17 @@ export function ClinicDetail({
       </Container>
 
       <Container className="pb-10 lg:pb-14">
-        <ClinicReviewsSection reviews={data.reviews} />
+        <DisclaimerNotice
+          routeLabel="Clinic profiles"
+          copy={DISCLAIMER_COPY.clinicProfiles}
+          variant="inline-note"
+          size="compact"
+          showVariantLabel={false}
+        />
+      </Container>
+
+      <Container className="pb-10 lg:pb-14">
+        <ClinicReviewsSection ratingValue={data.trust.ratingValue} reviews={data.reviews} />
       </Container>
 
       {data.location.fullAddress || (isOpenStreetMapAllowed && openStreetMapHref) ? (

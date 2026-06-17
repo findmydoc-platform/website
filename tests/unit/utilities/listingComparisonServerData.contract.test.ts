@@ -186,6 +186,8 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(result.pagination.totalPages).toBe(1)
     expect(result.metrics.verifiedClinics).toBe(2)
     expect(result.metrics.treatmentTypes).toBe(3)
+    expect(result.metrics.cities).toBe(2)
+    expect(result.metrics.priceEntries).toBe(5)
     expect(result.queryState.specialties).toEqual(['2'])
     expect(result.results.map((clinic) => clinic.name)).toEqual(['Alpha Clinic', 'Bravo Clinic'])
     expect(result.results[0]?.rating.count).toBe(2)
@@ -223,6 +225,8 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(result.pagination.totalAvailableResults).toBe(3)
     expect(result.metrics.verifiedClinics).toBe(2)
     expect(result.metrics.treatmentTypes).toBe(3)
+    expect(result.metrics.cities).toBe(2)
+    expect(result.metrics.priceEntries).toBe(5)
 
     const cityLabels = result.filterOptions.cities.map((option) => option.label)
     expect(cityLabels).toContain('Berlin (0)')
@@ -238,6 +242,23 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(treatmentLabels).toContain('Nose job (1)')
     expect(treatmentPlainLabels).toContain('Breast augmentation')
     expect(treatmentPlainLabels).toContain('Nose job')
+  })
+
+  it('counts price entries from unique approved clinic-treatment prices only', async () => {
+    const payload = createMockPayload({
+      ...baseData,
+      clinictreatments: [
+        ...baseData.clinictreatments,
+        { id: 306, clinic: 201, treatment: 101, price: 5500 },
+        { id: 307, clinic: 202, treatment: 103, price: null },
+        { id: 308, clinic: 204, treatment: 103, price: 1800 },
+      ],
+    })
+
+    const result = await getListingComparisonServerData(payload)
+
+    expect(result.metrics.priceEntries).toBe(5)
+    expect(result.metrics.cities).toBe(2)
   })
 
   it('reuses the public listing catalog for repeated requests on the same payload instance', async () => {

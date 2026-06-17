@@ -31,7 +31,7 @@ type Story = StoryObj<typeof meta>
 const baseHero = {
   title: 'Compare clinic prices',
   subtitle: 'Transparent pricing for medical treatments near you',
-  features: ['500+ verified clinics', 'Reviewed prices', 'Free comparison'],
+  features: ['Structured clinic profiles', 'Listed price fields', 'Direct clinic contact'],
   bulletStyle: 'circle' as const,
 }
 
@@ -388,7 +388,7 @@ export const SortByPrice: Story = {
     expect(expectedFirst).toBeTruthy()
 
     // Check that results summary is displayed
-    expect(canvas.getByText(/showing/i)).toBeInTheDocument()
+    expect(canvas.getByRole('status')).toBeInTheDocument()
 
     // Find and click the sort control
     const sortTrigger = canvas.getByRole('combobox', { name: /sort/i })

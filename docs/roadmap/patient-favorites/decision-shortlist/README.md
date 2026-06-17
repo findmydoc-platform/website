@@ -170,11 +170,10 @@ Validation requirements:
 - Desktop: sidebar, tabs, cards, sort, and compare tray remain scannable without overlapping.
 - Data source: every metric, badge, chip, and status is backed by the named collection or omitted.
 - Accessibility: icon-only buttons have accessible names; tabs and menus are keyboard reachable; compare limit errors are announced.
-- Review: `plan_design_reviewer` finds no undocumented visible UI element in this folder.
+- Review: implementation review finds no undocumented visible UI element in this folder.
 
 ## Specialist Review Handoff
 
-- `plan_design_reviewer`: required against this single scenario folder before implementation.
 - `mobile_ui_reviewer`: required because the design changes responsive card layout and sticky/inline compare controls.
 - `accessibility_reviewer`: required because the plan uses tabs, icon buttons, menu buttons, and compare toggles.
 - `security_reviewer`: required when adding compare fields, validations, or patient-owned update APIs.

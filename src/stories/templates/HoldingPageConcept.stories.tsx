@@ -27,7 +27,7 @@ const meta = {
           '',
           'What the holding page must communicate:',
           '- Comparison-first positioning: visitors should immediately understand that findmydoc helps compare clinics abroad.',
-          '- Trust signals: emphasize verified quality information (ratings, reviews, verification, accreditations) without overclaiming.',
+          '- Neutral information cues: emphasize clinic-provided profiles, listed services, and contact options without quality claims.',
           '- A clear next step: capture contact intent with a simple message form.',
           '- Legal clarity: always keep Privacy Policy and Imprint visible.',
           '',

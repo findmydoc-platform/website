@@ -70,7 +70,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
     SET
     "about_seo_title" = 'About findmydoc | The team behind clearer clinic decisions',
     "about_seo_description" = 'Meet the team behind findmydoc and learn how we make clinic information clearer, more accountable, and easier to compare.',
-    "about_hero_title" = 'Clearer clinic decisions start with better information.',
+    "about_hero_title" = 'The team behind clearer clinic decisions.',
     "about_hero_description" = 'findmydoc helps patients compare clinic information with confidence and helps clinics present their services responsibly.',
     "about_hero_image_id" = (SELECT "id" FROM hero_media),
     "about_why_title" = 'Why we exist',

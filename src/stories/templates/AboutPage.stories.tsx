@@ -8,7 +8,7 @@ import { withViewportStory } from '../utils/viewportMatrix'
 
 const aboutPageArgs: AboutPageProps = {
   hero: {
-    title: 'Clearer clinic decisions start with better information.',
+    title: 'The team behind clearer clinic decisions.',
     description:
       'findmydoc helps patients compare clinic information with confidence and helps clinics present their services responsibly.',
     image: {

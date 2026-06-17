@@ -362,7 +362,7 @@
         "team": [
           {
             "name": "Volkan Kablan",
-            "role": "CFO",
+            "role": "CEO",
             "isPhoto": true,
             "photoDisplay": "original",
             "socials": {
@@ -567,6 +567,77 @@
         "contact": {
           "title": "Kontakt",
           "description": "Interested in gaining international patients and increasing your clinic’s global reach? Contact us to explore how your clinic can benefit from our international comparison platform."
+        }
+      },
+      "about": {
+        "seo": {
+          "title": "About findmydoc | The team behind clearer clinic decisions",
+          "description": "Meet the team behind findmydoc and learn how we make clinic information clearer, more accountable, and easier to compare."
+        },
+        "hero": {
+          "title": "The team behind clearer clinic decisions.",
+          "description": "findmydoc helps patients compare clinic information with confidence and helps clinics present their services responsibly.",
+          "imageStableId": "landing-about-hero-startup-team"
+        },
+        "why": {
+          "title": "Why we exist",
+          "items": [
+            {
+              "text": "We bring clarity to clinic information so comparisons are fair and decisions are easier."
+            },
+            {
+              "text": "We hold clinic information accountable through verification and responsible presentation."
+            },
+            {
+              "text": "We keep the next step simple by connecting patients and clinics directly."
+            }
+          ]
+        },
+        "team": [
+          {
+            "name": "Volkan Kablan",
+            "role": "CEO",
+            "whatWeDo": "Shape finance and partner operations so clinic growth stays sustainable, measurable, and transparent.",
+            "imageStableId": "landing-team-volkan-kablan"
+          },
+          {
+            "name": "Youssef Adlah",
+            "role": "CMO",
+            "whatWeDo": "Lead growth and partnerships to connect the right patients with the right clinics through clear communication and strong relationships.",
+            "imageStableId": "landing-team-youssef-adlah"
+          },
+          {
+            "name": "Anil Gökduman",
+            "role": "CPO",
+            "whatWeDo": "Own product strategy and user experience to make clinic comparisons simple, relevant, and trustworthy for patients.",
+            "imageStableId": "landing-team-anil-goekduman"
+          },
+          {
+            "name": "Özen Günes",
+            "role": "CLO",
+            "whatWeDo": "Ensure legal integrity, data protection, and responsible engagement across all our relationships with patients and clinics.",
+            "imageStableId": "landing-team-oezen-guenes"
+          },
+          {
+            "name": "Sebastian Schütze",
+            "role": "CTO",
+            "whatWeDo": "Build and maintain a secure, reliable platform so clinic information is structured, up to date, and easy to access.",
+            "imageStableId": "landing-team-sebastian-schuetze"
+          }
+        ],
+        "transparency": {
+          "title": "What we keep transparent",
+          "items": [
+            {
+              "text": "Clinics own their profile information."
+            },
+            {
+              "text": "Qualification signals are reviewed before visibility."
+            },
+            {
+              "text": "Patients contact clinics directly."
+            }
+          ]
         }
       }
     }

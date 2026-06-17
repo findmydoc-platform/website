@@ -92,7 +92,26 @@ describe('frontend sitemap routes', () => {
       expect.arrayContaining([
         expect.objectContaining({ loc: expect.stringMatching(/\/posts$/) }),
         expect.objectContaining({ loc: expect.stringMatching(/\/contact$/) }),
+        expect.objectContaining({ loc: expect.stringMatching(/\/about$/) }),
       ]),
     )
+  })
+
+  it('does not duplicate fixed public routes from CMS pages in the pages sitemap', async () => {
+    routeMocks.findPageSitemapDocs.mockResolvedValue([
+      { slug: 'about', updatedAt: '2026-01-01T00:00:00.000Z' },
+      { slug: 'search', updatedAt: '2026-01-01T00:00:00.000Z' },
+      { slug: 'custom-page', updatedAt: '2026-01-01T00:00:00.000Z' },
+    ])
+    const request = new Request('https://findmydoc.eu/pages-sitemap.xml')
+    const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
+
+    const response = await GET(request)
+    const body = await response.json()
+    const locs = body.entries.map((entry: { loc: string }) => entry.loc)
+
+    expect(locs.filter((loc: string) => loc.endsWith('/about'))).toHaveLength(1)
+    expect(locs.filter((loc: string) => loc.endsWith('/search'))).toHaveLength(1)
+    expect(locs.some((loc: string) => loc.endsWith('/custom-page'))).toBe(true)
   })
 })

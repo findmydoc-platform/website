@@ -53,7 +53,7 @@ const revalidateSeedGlobals = (req: PayloadRequest) => {
     }
   }
 
-  const paths = ['/', '/partners/clinics'] as const
+  const paths = ['/', '/about', '/partners/clinics'] as const
 
   for (const path of paths) {
     try {

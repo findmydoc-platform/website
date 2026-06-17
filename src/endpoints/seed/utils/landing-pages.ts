@@ -84,6 +84,8 @@ export async function prepareLandingPagesSeedData(
   const homeProcess = requireRecord(home.process, 'home.process')
   const clinicHero = requireRecord(clinicPartners.hero, 'clinicPartners.hero')
   const clinicProcess = requireRecord(clinicPartners.process, 'clinicPartners.process')
+  const about = requireRecord(draft.about, 'about')
+  const aboutHero = requireRecord(about.hero, 'about.hero')
   const { resolveIdByStableId } = createStableIdResolvers(payload)
 
   await resolveRequiredMediaStableId({
@@ -141,6 +143,20 @@ export async function prepareLandingPagesSeedData(
     stableIdField: 'imageStableId',
     mediaField: 'image',
     fieldPath: 'clinicPartners.testimonials',
+  })
+  await resolveRequiredMediaStableId({
+    resolveIdByStableId,
+    target: aboutHero,
+    stableIdField: 'imageStableId',
+    mediaField: 'image',
+    fieldPath: 'about.hero.image',
+  })
+  await resolveArrayMediaStableIds({
+    resolveIdByStableId,
+    items: requireArray(about.team, 'about.team'),
+    stableIdField: 'imageStableId',
+    mediaField: 'image',
+    fieldPath: 'about.team',
   })
 
   return draft

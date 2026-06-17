@@ -424,7 +424,9 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
       buttonText: cta.buttonText,
       buttonLink: normalizeLandingCtaButtonLink(cta),
     },
-    team: aboutTeam ? normalizeAboutTeamForLanding(aboutTeam) : normalizeTeam(clinicPartners.team, 'clinicPartners.team'),
+    team: aboutTeam
+      ? normalizeAboutTeamForLanding(aboutTeam)
+      : normalizeTeam(clinicPartners.team, 'clinicPartners.team'),
     teamIntro,
     testimonials: normalizeTestimonials(clinicPartners.testimonials, 'clinicPartners.testimonials'),
     testimonialsIntro,

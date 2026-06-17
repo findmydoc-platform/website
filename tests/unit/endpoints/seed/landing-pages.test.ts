@@ -32,6 +32,10 @@ const createLandingPagesSeedData = () => ({
     team: [{ imageStableId: 'team-member' }],
     testimonials: [{ imageStableId: 'clinic-testimonial' }],
   },
+  about: {
+    hero: { imageStableId: 'about-hero' },
+    team: [{ imageStableId: 'about-team-member' }],
+  },
 })
 
 describe('prepareLandingPagesSeedData', () => {
@@ -45,6 +49,8 @@ describe('prepareLandingPagesSeedData', () => {
       'clinic-process': 202,
       'team-member': 203,
       'clinic-testimonial': 204,
+      'about-hero': 301,
+      'about-team-member': 302,
     })
 
     const prepared = await prepareLandingPagesSeedData(payload, createLandingPagesSeedData())
@@ -62,6 +68,10 @@ describe('prepareLandingPagesSeedData', () => {
         team: [{ image: 203 }],
         testimonials: [{ image: 204 }],
       },
+      about: {
+        hero: { image: 301 },
+        team: [{ image: 302 }],
+      },
     })
     expect(JSON.stringify(prepared)).not.toContain('StableId')
   })
@@ -75,6 +85,8 @@ describe('prepareLandingPagesSeedData', () => {
       'clinic-process': 202,
       'team-member': 203,
       'clinic-testimonial': 204,
+      'about-hero': 301,
+      'about-team-member': 302,
     })
 
     await expect(prepareLandingPagesSeedData(payload, createLandingPagesSeedData())).rejects.toThrow(

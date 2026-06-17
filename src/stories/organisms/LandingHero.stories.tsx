@@ -34,6 +34,12 @@ const assertHeroContent: Story['play'] = async ({ canvasElement, args }) => {
       await expect(canvas.getByRole('link', { name: link.label })).toBeInTheDocument()
     }
   }
+
+  if (args.actions?.length) {
+    for (const action of args.actions) {
+      await expect(canvas.getByRole('link', { name: action.label })).toHaveAttribute('href', action.href)
+    }
+  }
 }
 
 export const Default: Story = {
@@ -83,9 +89,26 @@ export const NoImage: Story = {
   play: assertHeroContent,
 }
 
+export const ImageBackdrop: Story = {
+  args: {
+    title: 'Clearer clinic decisions start with better information.',
+    description:
+      'findmydoc helps patients compare clinic information with confidence and helps clinics present their services responsibly.',
+    image: storyClinicImages.landing.aboutHero,
+    variant: 'image-backdrop',
+    actions: [
+      { href: '/listing-comparison', label: 'Compare clinics', appearance: 'accent' },
+      { href: '/partners/clinics', label: 'For clinics', appearance: 'secondary' },
+    ],
+  },
+  play: assertHeroContent,
+}
+
 export const WithSearchBar320: Story = withViewportStory(WithSearchBar, 'public320', 'With search bar / 320')
 export const WithSearchBar375: Story = withViewportStory(WithSearchBar, 'public375', 'With search bar / 375')
 export const WithSearchBar640: Story = withViewportStory(WithSearchBar, 'public640', 'With search bar / 640')
 export const WithSearchBar768: Story = withViewportStory(WithSearchBar, 'public768', 'With search bar / 768')
 export const WithSearchBar1024: Story = withViewportStory(WithSearchBar, 'public1024', 'With search bar / 1024')
 export const WithSearchBar1280: Story = withViewportStory(WithSearchBar, 'public1280', 'With search bar / 1280')
+export const ImageBackdrop320: Story = withViewportStory(ImageBackdrop, 'public320', 'Image backdrop / 320')
+export const ImageBackdrop1280: Story = withViewportStory(ImageBackdrop, 'public1280', 'Image backdrop / 1280')

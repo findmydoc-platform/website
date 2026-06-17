@@ -249,6 +249,25 @@ const ctaFields: Field[] = [
   }),
 ]
 
+const compactTextItemsField = (description: string): Field => ({
+  name: 'items',
+  type: 'array',
+  required: true,
+  minRows: 1,
+  maxRows: 3,
+  admin: {
+    description,
+    initCollapsed: true,
+  },
+  fields: [
+    {
+      name: 'text',
+      type: 'textarea',
+      required: true,
+    },
+  ],
+})
+
 const teamField: Field = {
   name: 'team',
   type: 'array',
@@ -338,6 +357,47 @@ const teamField: Field = {
             validateLandingHref(value, { allowedHosts: landingSocialHosts.github, message: socialLandingLinkMessage }),
         },
       ],
+    },
+  ],
+}
+
+const aboutTeamField: Field = {
+  name: 'team',
+  type: 'array',
+  required: true,
+  minRows: 1,
+  maxRows: 8,
+  admin: {
+    description: 'Team members shown with responsibility details on the about page.',
+    initCollapsed: true,
+  },
+  fields: [
+    {
+      name: 'name',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'role',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'image',
+      type: 'relationship',
+      relationTo: 'platformContentMedia',
+      required: true,
+      admin: {
+        description: 'Portrait shown for this team member.',
+      },
+    },
+    {
+      name: 'whatWeDo',
+      type: 'textarea',
+      required: true,
+      admin: {
+        description: 'One concise responsibility line for this team member.',
+      },
     },
   ],
 }
@@ -538,6 +598,47 @@ export const LandingPages: GlobalConfig = {
               name: 'contact',
               type: 'group',
               fields: sectionIntroFields,
+            },
+          ],
+        },
+        {
+          name: 'about',
+          label: 'About page',
+          fields: [
+            {
+              name: 'seo',
+              type: 'group',
+              fields: pageSeoFields,
+            },
+            {
+              name: 'hero',
+              type: 'group',
+              fields: heroFields,
+            },
+            {
+              name: 'why',
+              type: 'group',
+              fields: [
+                {
+                  name: 'title',
+                  type: 'text',
+                  required: true,
+                },
+                compactTextItemsField('Short statements shown in the why-we-exist section.'),
+              ],
+            },
+            aboutTeamField,
+            {
+              name: 'transparency',
+              type: 'group',
+              fields: [
+                {
+                  name: 'title',
+                  type: 'text',
+                  required: true,
+                },
+                compactTextItemsField('Transparency points shown near the end of the about page.'),
+              ],
             },
           ],
         },

@@ -11,6 +11,8 @@ type MediaLike = {
   alt?: string | null
   width?: number | null
   height?: number | null
+  focalX?: number | null
+  focalY?: number | null
   sizes?: Record<string, MediaSize | undefined>
 } | null
 
@@ -21,6 +23,7 @@ export type ResolvedMediaImage = {
   height?: number
   sizes: string
   quality: number
+  objectPosition?: string
 }
 
 export type MediaImageUsage =
@@ -117,6 +120,21 @@ const normalizePayloadApiFileUrl = (src: string): string => {
   return query ? `${prefix}${normalizedPath}?${query}` : `${prefix}${normalizedPath}`
 }
 
+const normalizeFocalCoordinate = (value: number | null | undefined): number | undefined => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
+
+  return Math.min(100, Math.max(0, value))
+}
+
+const resolveObjectPosition = (media: MediaLike): string | undefined => {
+  const focalX = normalizeFocalCoordinate(media?.focalX)
+  const focalY = normalizeFocalCoordinate(media?.focalY)
+
+  if (focalX === undefined && focalY === undefined) return undefined
+
+  return `${focalX ?? 50}% ${focalY ?? 50}%`
+}
+
 export function resolveMediaImage(
   media: MediaLike,
   options: {
@@ -129,6 +147,7 @@ export function resolveMediaImage(
   const policy = MEDIA_IMAGE_POLICIES[options.usage]
   const alt = media.alt ?? options.fallbackAlt ?? ''
   const sizes = media.sizes ?? {}
+  const objectPosition = resolveObjectPosition(media)
 
   for (const key of policy.payloadSizeOrder) {
     if (key === 'original') {
@@ -141,6 +160,7 @@ export function resolveMediaImage(
         height: media.height ?? undefined,
         sizes: policy.sizes,
         quality: policy.quality,
+        ...(objectPosition ? { objectPosition } : {}),
       }
     }
 
@@ -153,6 +173,7 @@ export function resolveMediaImage(
         height: size.height ?? undefined,
         sizes: policy.sizes,
         quality: policy.quality,
+        ...(objectPosition ? { objectPosition } : {}),
       }
     }
   }

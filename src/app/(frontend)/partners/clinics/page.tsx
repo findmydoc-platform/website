@@ -96,7 +96,8 @@ export default async function ClinicLandingPage() {
           team={landingContent.team}
           title={landingContent.teamIntro.title}
           description={landingContent.teamIntro.description}
-          ctaHref={partnerContactHref}
+          ctaHref="/about"
+          ctaLabel="About us"
         />
       </ScrollReveal>
       <ScrollReveal>

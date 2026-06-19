@@ -221,13 +221,13 @@ Preview environments, database branching, and schema deployment control:
 
 - [Supabase: Branching](https://supabase.com/docs/guides/deployment/branching) - separate preview environments for testing migrations and config changes without touching production.
 - [Supabase: Branching feature overview](https://supabase.com/features/branching) - high-level branching model and preview deployment integration.
-- [Neon: One branch per preview](https://neon.com/flow/branch-per-preview) - dedicated database branch per Vercel/Netlify preview deployment.
+- [Neon: One branch per preview](https://neon.com/branching/ci-preview-workflows) - dedicated database branch per Vercel/Netlify preview deployment.
 - [PlanetScale: Deploy requests](https://planetscale.com/docs/concepts/deploy-requests) - reviewable schema diffs, safe migrations, gated deploys, and schema revert windows.
 - [PlanetScale Postgres: Branching](https://planetscale.com/docs/postgres/branching) - isolated database branches for development, testing, and backup restore workflows.
 - [Xata: Zero downtime schema changes with Vercel and Xata](https://xata.io/blog/zero-downtime-schema-changes-with-vercel-and-xata) - relevant because this project also combines Vercel previews with Postgres schema changes.
 - [Xata: Schema changes](https://xata.io/docs/core-concepts/schema-changes) - pgroll-backed approach with multi-version schemas and lock-safe migrations.
 - [Xata: How to perform Postgres schema changes in production with zero downtime](https://xata.io/blog/zero-downtime-schema-migrations-postgresql) - advisory material around reversible schema changes and pgroll.
-- [pgroll](https://lite.xata.io/pgroll) - open-source Postgres tool for reversible, zero-downtime schema changes.
+- [pgroll](https://github.com/xataio/pgroll) - open-source Postgres tool for reversible, zero-downtime schema changes.
 
 Framework examples:
 

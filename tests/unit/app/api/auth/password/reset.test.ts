@@ -77,7 +77,7 @@ describe('POST /api/auth/password/reset', () => {
     expect(mockSupabaseClient.auth.resetPasswordForEmail).not.toHaveBeenCalled()
   })
 
-  it('bubbles up supabase errors', async () => {
+  it('returns a generic success response when Supabase rejects the reset request', async () => {
     mockSupabaseClient.auth.resetPasswordForEmail.mockResolvedValue({ error: { message: 'Unknown account' } })
 
     const request = new NextRequest('http://localhost/api/auth/password/reset', {
@@ -89,8 +89,32 @@ describe('POST /api/auth/password/reset', () => {
     const response = await POST(request)
     const json = await response.json()
 
-    expect(response.status).toBe(400)
-    expect(json.error).toBe('Unknown account')
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ success: true })
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        emailHash: expect.any(String),
+        event: 'auth.supabase.password_reset.rejected',
+        scope: 'auth.supabase',
+      }),
+      'Password reset request was rejected by Supabase',
+    )
+  })
+
+  it('returns a generic success response when Supabase throws during the reset request', async () => {
+    mockSupabaseClient.auth.resetPasswordForEmail.mockRejectedValue(new Error('Unknown account'))
+
+    const request = new NextRequest('http://localhost/api/auth/password/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'throw@example.com' }),
+    })
+
+    const response = await POST(request)
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ success: true })
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         emailHash: expect.any(String),

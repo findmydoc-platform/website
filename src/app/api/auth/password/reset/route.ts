@@ -32,20 +32,27 @@ export async function POST(request: NextRequest) {
     const redirectTo = `${baseUrl}/auth/callback?next=/auth/password/reset/complete`
 
     const supabase = await createClient()
-    const { error } = await supabase.auth.resetPasswordForEmail(validation.data.email, {
-      redirectTo,
-    })
+    let resetError: unknown = null
 
-    if (error) {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(validation.data.email, {
+        redirectTo,
+      })
+      resetError = error
+    } catch (error) {
+      resetError = error
+    }
+
+    if (resetError) {
       logger.warn(
         {
           emailHash: hashLogValue(validation.data.email),
-          err: toLoggedError(error),
+          err: toLoggedError(resetError),
           event: 'auth.supabase.password_reset.rejected',
         },
         'Password reset request was rejected by Supabase',
       )
-      return NextResponse.json({ error: error.message }, { status: 400 })
+      return NextResponse.json({ success: true })
     }
 
     return NextResponse.json({ success: true })

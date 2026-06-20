@@ -30,7 +30,8 @@ type LandingTeamProps = {
   ctaLabel?: string
 }
 
-const teamCtaClassName = 'rounded-lg border-secondary/30 text-secondary hover:bg-secondary hover:text-white'
+const teamCtaClassName =
+  'h-auto min-h-12 max-w-full whitespace-normal break-words rounded-lg border-secondary/30 px-6 py-3 text-center leading-snug text-secondary hover:bg-secondary hover:text-white sm:px-8'
 
 export const LandingTeam: React.FC<LandingTeamProps> = ({
   team,

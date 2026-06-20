@@ -6,6 +6,9 @@ import { unstable_cache } from 'next/cache'
 
 type Global = keyof Config['globals']
 
+// Bump this namespace only when a global schema change can leave unsafe cached document shapes after deploy.
+const GLOBAL_CACHE_NAMESPACE_VERSION = '2026-06-20'
+
 /**
  * Fetches a global document from PayloadCMS by slug.
  *
@@ -37,6 +40,6 @@ export async function getGlobal(slug: Global, depth = 0) {
  * const settings = await getCachedSettings()
  */
 export const getCachedGlobal = (slug: Global, depth = 0) =>
-  unstable_cache(async () => getGlobal(slug, depth), [slug, String(depth)], {
+  unstable_cache(async () => getGlobal(slug, depth), [GLOBAL_CACHE_NAMESPACE_VERSION, slug, String(depth)], {
     tags: [`global_${slug}`],
   })

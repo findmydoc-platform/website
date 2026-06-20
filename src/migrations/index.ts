@@ -37,6 +37,7 @@ import * as migration_20260608_202044_add_clinic_gallery_entry_defaults from './
 import * as migration_20260611_073829_add_about_landing_page_content from './20260611_073829_add_about_landing_page_content'
 import * as migration_20260613_193533_landing_pages_intro_sections from './20260613_193533_landing_pages_intro_sections'
 import * as migration_20260615_071325_clinic_partner_registration_intro from './20260615_071325_clinic_partner_registration_intro'
+import * as migration_20260620_143121_clinic_partner_team_cta from './20260620_143121_clinic_partner_team_cta'
 
 export const migrations = [
   {
@@ -233,5 +234,10 @@ export const migrations = [
     up: migration_20260615_071325_clinic_partner_registration_intro.up,
     down: migration_20260615_071325_clinic_partner_registration_intro.down,
     name: '20260615_071325_clinic_partner_registration_intro',
+  },
+  {
+    up: migration_20260620_143121_clinic_partner_team_cta.up,
+    down: migration_20260620_143121_clinic_partner_team_cta.down,
+    name: '20260620_143121_clinic_partner_team_cta',
   },
 ]

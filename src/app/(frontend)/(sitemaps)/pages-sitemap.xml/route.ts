@@ -6,7 +6,29 @@ import { findPageSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { shouldBlockSitemapIndexingForRequest } from '@/features/searchIndexing/sitemapGuards'
 
-const fixedPublicPaths = new Set(['/search', '/posts', '/contact', '/about'])
+const fixedPublicPaths = ['/', '/posts', '/contact', '/about'] as const
+const excludedPublicPaths = new Set(['/search'])
+
+type SitemapEntry = {
+  lastmod: string
+  loc: string
+}
+
+const buildSitemapLocation = (siteUrl: string, path: string): string => {
+  const baseUrl = siteUrl.replace(/\/+$/, '')
+
+  return path === '/' ? `${baseUrl}/` : `${baseUrl}${path}`
+}
+
+const normalizePageSitemapPath = (slug: string | null | undefined): string | null => {
+  if (typeof slug !== 'string') return null
+
+  const normalizedSlug = slug.trim().replace(/^\/+|\/+$/g, '')
+  if (normalizedSlug.length === 0) return null
+  if (normalizedSlug === 'home') return '/'
+
+  return `/${normalizedSlug}`
+}
 
 const getPagesSitemap = unstable_cache(
   async () => {
@@ -18,39 +40,26 @@ const getPagesSitemap = unstable_cache(
 
     const dateFallback = new Date().toISOString()
 
-    const defaultSitemap = [
-      {
-        loc: `${SITE_URL}/search`,
-        lastmod: dateFallback,
-      },
-      {
-        loc: `${SITE_URL}/posts`,
-        lastmod: dateFallback,
-      },
-      {
-        loc: `${SITE_URL}/contact`,
-        lastmod: dateFallback,
-      },
-      {
-        loc: `${SITE_URL}/about`,
-        lastmod: dateFallback,
-      },
-    ]
+    const sitemapByPath = new Map<string, SitemapEntry>()
 
-    const sitemap = results
-      .filter((page) => Boolean(page?.slug))
-      .filter((page) => {
-        const path = page?.slug === 'home' ? '/' : `/${page?.slug}`
-        return !fixedPublicPaths.has(path)
+    for (const path of fixedPublicPaths) {
+      sitemapByPath.set(path, {
+        loc: buildSitemapLocation(SITE_URL, path),
+        lastmod: dateFallback,
       })
-      .map((page) => {
-        return {
-          loc: page?.slug === 'home' ? `${SITE_URL}/` : `${SITE_URL}/${page?.slug}`,
-          lastmod: page.updatedAt || dateFallback,
-        }
-      })
+    }
 
-    return [...defaultSitemap, ...sitemap]
+    for (const page of results) {
+      const path = normalizePageSitemapPath(page?.slug)
+      if (!path || excludedPublicPaths.has(path) || sitemapByPath.has(path)) continue
+
+      sitemapByPath.set(path, {
+        loc: buildSitemapLocation(SITE_URL, path),
+        lastmod: page.updatedAt || dateFallback,
+      })
+    }
+
+    return Array.from(sitemapByPath.values())
   },
   ['pages-sitemap'],
   {

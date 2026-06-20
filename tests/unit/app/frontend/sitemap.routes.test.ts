@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const routeMocks = vi.hoisted(() => ({
   findPageSitemapDocs: vi.fn(),
@@ -34,14 +34,27 @@ vi.mock('@/features/searchIndexing/sitemapGuards', () => ({
   shouldBlockSitemapIndexingForRequest: routeMocks.shouldBlockSitemapIndexingForRequest,
 }))
 
+const getEntryLocations = (entries: Array<{ loc: string }>) => entries.map((entry) => entry.loc)
+
 describe('frontend sitemap routes', () => {
+  const originalEnv = process.env
+
   beforeEach(() => {
+    process.env = {
+      ...originalEnv,
+      NEXT_PUBLIC_SERVER_URL: 'https://findmydoc.eu',
+    }
+
     vi.clearAllMocks()
     routeMocks.getPayload.mockResolvedValue({})
     routeMocks.getServerSideSitemap.mockImplementation((entries: unknown[], headers?: Record<string, string>) => {
       return Response.json({ entries, headers })
     })
     routeMocks.shouldBlockSitemapIndexingForRequest.mockResolvedValue(false)
+  })
+
+  afterEach(() => {
+    process.env = originalEnv
   })
 
   it('returns an empty noindex pages sitemap when temporary landing mode blocks indexing', async () => {
@@ -87,31 +100,61 @@ describe('frontend sitemap routes', () => {
 
     const response = await GET(request)
     const body = await response.json()
+    const locs = getEntryLocations(body.entries)
 
-    expect(body.entries).toEqual(
+    expect(locs).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ loc: expect.stringMatching(/\/posts$/) }),
-        expect.objectContaining({ loc: expect.stringMatching(/\/contact$/) }),
-        expect.objectContaining({ loc: expect.stringMatching(/\/about$/) }),
+        'https://findmydoc.eu/',
+        'https://findmydoc.eu/posts',
+        'https://findmydoc.eu/contact',
+        'https://findmydoc.eu/about',
       ]),
     )
+    expect(locs).not.toContain('https://findmydoc.eu/search')
   })
 
-  it('does not duplicate fixed public routes from CMS pages in the pages sitemap', async () => {
+  it('normalizes and deduplicates CMS pages in the pages sitemap', async () => {
     routeMocks.findPageSitemapDocs.mockResolvedValue([
+      { slug: 'home', updatedAt: '2026-01-01T00:00:00.000Z' },
       { slug: 'about', updatedAt: '2026-01-01T00:00:00.000Z' },
       { slug: 'search', updatedAt: '2026-01-01T00:00:00.000Z' },
+      { slug: 'privacy-policy', updatedAt: '2026-01-02T00:00:00.000Z' },
+      { slug: 'imprint', updatedAt: '2026-01-03T00:00:00.000Z' },
       { slug: 'custom-page', updatedAt: '2026-01-01T00:00:00.000Z' },
+      { slug: '/custom-page/', updatedAt: '2026-01-04T00:00:00.000Z' },
+      { slug: '', updatedAt: '2026-01-01T00:00:00.000Z' },
     ])
     const request = new Request('https://findmydoc.eu/pages-sitemap.xml')
     const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
 
     const response = await GET(request)
     const body = await response.json()
-    const locs = body.entries.map((entry: { loc: string }) => entry.loc)
+    const locs = getEntryLocations(body.entries)
 
+    expect(locs.filter((loc: string) => loc === 'https://findmydoc.eu/')).toHaveLength(1)
     expect(locs.filter((loc: string) => loc.endsWith('/about'))).toHaveLength(1)
-    expect(locs.filter((loc: string) => loc.endsWith('/search'))).toHaveLength(1)
-    expect(locs.some((loc: string) => loc.endsWith('/custom-page'))).toBe(true)
+    expect(locs.filter((loc: string) => loc.endsWith('/search'))).toHaveLength(0)
+    expect(locs.filter((loc: string) => loc.endsWith('/custom-page'))).toHaveLength(1)
+    expect(locs).toEqual(
+      expect.arrayContaining(['https://findmydoc.eu/privacy-policy', 'https://findmydoc.eu/imprint']),
+    )
+  })
+
+  it('includes only valid post detail routes in the posts sitemap', async () => {
+    routeMocks.findPostSitemapDocs.mockResolvedValue([
+      { slug: 'first-post', updatedAt: '2026-01-01T00:00:00.000Z' },
+      { slug: ' second-post ', updatedAt: '2026-01-02T00:00:00.000Z' },
+      { slug: '', updatedAt: '2026-01-03T00:00:00.000Z' },
+      { slug: null, updatedAt: '2026-01-04T00:00:00.000Z' },
+      { slug: 'nested/post', updatedAt: '2026-01-05T00:00:00.000Z' },
+    ])
+    const request = new Request('https://findmydoc.eu/posts-sitemap.xml')
+    const { GET } = await import('@/app/(frontend)/(sitemaps)/posts-sitemap.xml/route')
+
+    const response = await GET(request)
+    const body = await response.json()
+    const locs = getEntryLocations(body.entries)
+
+    expect(locs).toEqual(['https://findmydoc.eu/posts/first-post', 'https://findmydoc.eu/posts/second-post'])
   })
 })

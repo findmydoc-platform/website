@@ -155,4 +155,65 @@ describe('POST /api/auth/register/patient', () => {
     expect(createAdminClientMock).not.toHaveBeenCalled()
     expect(adminClient.auth.admin.updateUserById).not.toHaveBeenCalled()
   })
+
+  test('treats an existing patient user type as idempotent without metadata updates', async () => {
+    signupClient.auth.signUp.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'supabase-user-id',
+          app_metadata: {
+            provider: 'email',
+            profile_state: 'pending',
+            user_type: 'patient',
+          },
+          email: 'patient@example.com',
+          identities: [{ provider: 'email' }],
+        },
+      },
+      error: null,
+    })
+
+    const response = await POST(makeRequest(validBody))
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ success: true })
+    expect(createAdminClientMock).not.toHaveBeenCalled()
+    expect(adminClient.auth.admin.updateUserById).not.toHaveBeenCalled()
+  })
+
+  test.each(['clinic', 'platform'])('does not overwrite an existing %s user type', async (userType) => {
+    signupClient.auth.signUp.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'supabase-user-id',
+          app_metadata: {
+            provider: 'email',
+            user_type: userType,
+          },
+          email: 'patient@example.com',
+          identities: [{ provider: 'email' }],
+        },
+      },
+      error: null,
+    })
+
+    const response = await POST(makeRequest(validBody))
+
+    expect(response.status).toBe(500)
+    await expect(response.json()).resolves.toEqual({
+      error: 'We could not finish setting up your account. Please try again in a few minutes.',
+    })
+    expect(createAdminClientMock).not.toHaveBeenCalled()
+    expect(adminClient.auth.admin.updateUserById).not.toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        emailHash: expect.any(String),
+        event: 'auth.supabase.patient_registration.user_type_conflict',
+        supabaseUserIdHash: expect.any(String),
+      }),
+      'Patient Supabase signup returned a conflicting user type',
+    )
+    expect(logger.error.mock.calls[0]?.[0]).not.toHaveProperty('supabaseUserId')
+    expect(logger.error.mock.calls[0]?.[0]).not.toMatchObject({ supabaseUserIdHash: 'supabase-user-id' })
+  })
 })

@@ -92,11 +92,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: PROVISIONING_ERROR }, { status: 500 })
     }
 
+    const appMetadata = supabaseUser.app_metadata || {}
+    const hasUserType = Object.prototype.hasOwnProperty.call(appMetadata, 'user_type')
+
+    if (hasUserType) {
+      if (appMetadata.user_type === 'patient') {
+        return NextResponse.json({ success: true })
+      }
+
+      payloadClient.logger.error(
+        {
+          emailHash: hashLogValue(email),
+          event: 'auth.supabase.patient_registration.user_type_conflict',
+          supabaseUserIdHash: hashLogValue(supabaseUser.id),
+        },
+        'Patient Supabase signup returned a conflicting user type',
+      )
+      return NextResponse.json({ error: PROVISIONING_ERROR }, { status: 500 })
+    }
+
     try {
       const adminClient = await createAdminClient()
       const { error: updateError } = await adminClient.auth.admin.updateUserById(supabaseUser.id, {
         app_metadata: {
-          ...(supabaseUser.app_metadata || {}),
+          ...appMetadata,
           user_type: 'patient',
         },
       })

@@ -206,6 +206,19 @@ describe('landingPageContent normalizers', () => {
       'Built for clinics scaling inbound demand',
     ])
     expect(content.pricingModel).toHaveLength(3)
+    expect(content.registrationIntro).toEqual({
+      title: 'Ready for verified visibility?',
+      description: 'Share the key details. We review your request personally and follow up with the next steps.',
+    })
+  })
+
+  it('fails fast when the clinic partner registration intro is missing', () => {
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    ;(landingPages.clinicPartners as { registrationIntro?: unknown }).registrationIntro = undefined
+
+    expect(() => normalizeClinicPartnerLandingContent(landingPages)).toThrow(
+      'Landing pages global field clinicPartners.registrationIntro is missing',
+    )
   })
 
   it('uses original landing media before thumbnail-only generated sizes', () => {

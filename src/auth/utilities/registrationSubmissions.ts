@@ -1,5 +1,3 @@
-import { createClient } from '@/auth/utilities/supaBaseClient'
-
 type RegistrationFormData = Record<string, string>
 
 type JsonRequestResult<T> = {
@@ -30,8 +28,6 @@ const postJson = async <T>(url: string, payload: unknown): Promise<JsonRequestRe
 }
 
 export async function submitPatientRegistration(formData: RegistrationFormData): Promise<void> {
-  const supabase = createClient()
-
   const email = formData.email ?? ''
   const password = formData.password ?? ''
   const { firstName, lastName } = formData
@@ -40,45 +36,14 @@ export async function submitPatientRegistration(formData: RegistrationFormData):
     throw new Error('Email and password are required')
   }
 
-  const { data, error } = await supabase.auth.signUp({
+  const { body, response } = await postJson<SuccessResponse>('/api/auth/register/patient', {
     email,
     password,
-    options: {
-      data: {
-        first_name: firstName,
-        last_name: lastName,
-      },
-    },
+    firstName,
+    lastName,
   })
 
-  if (error) {
-    throw new Error('Registration failed')
-  }
-
-  if (!data.user) {
-    throw new Error('Supabase did not return a user id')
-  }
-
-  const supabaseUserId = data.user.id
-  const { body: metadataBody, response: metadataResponse } = await postJson<SuccessResponse>(
-    '/api/auth/register/patient/metadata',
-    {
-      email,
-      userId: supabaseUserId,
-    },
-  )
-
-  if (!metadataResponse.ok || metadataBody?.success !== true) {
-    // Roll back a partially created Supabase account so the user can retry cleanly.
-    try {
-      await postJson<SuccessResponse>('/api/auth/register/patient/cleanup', {
-        email,
-        userId: supabaseUserId,
-      })
-    } catch {}
-
-    throw new Error(
-      metadataBody?.error || 'We could not finish setting up your account. Please try again in a few minutes.',
-    )
+  if (!response.ok || body?.success !== true) {
+    throw new Error(body?.error || 'We could not finish setting up your account. Please try again in a few minutes.')
   }
 }

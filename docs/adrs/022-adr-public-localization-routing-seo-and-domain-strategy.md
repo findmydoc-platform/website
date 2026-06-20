@@ -91,17 +91,6 @@ Diese ADR entscheidet nicht:
 - Payload Content Readiness Mechanics
 - einen managed TMS rollout oder ein Payload Admin Translation Dashboard
 
-## Akzeptanzszenarien
-
-- Eine German-only ready Route hat eine unprefixed self-canonical URL, kein English Alternate und keinen English Sitemap Entry.
-- Eine Route, die in German und English ready ist, hat self-canonical URLs fuer beide Locales, bidirectional `hreflang`, `x-default` mit Verweis auf die German canonical URL und Sitemap Entries fuer beide Locales.
-- Eine not-ready English Route unter `/en/...` redirectet mit `302` zur German canonical URL und hat keine English canonical URL, kein English `hreflang` und keinen English Sitemap Entry.
-- Eine English Route mit sichtbarer German fallback dependency wird als not ready behandelt und ist nicht indexable.
-- Eine query-locale public URL erzeugt keine indexable alternate language version.
-- Ein localized slug change vor Launch oder Pilot Indexing braucht keinen Redirect.
-- Ein localized slug change nach Public Indexing erzeugt einen locale-specific `301` Redirect.
-- Der Language Switcher zeigt nur ready target routes und erhaelt die Route Intent des Users.
-
 ## Technische Schuld
 
 Der aktuelle Repository-Stand nutzt noch pilot-era locale behavior und nicht-locale-aware Sitemap oder Metadata Output. Die Umsetzung dieser ADR braucht spaetere Arbeit an Routes, Metadata, Sitemap, Preview, Redirect, Cache und Revalidation, damit diese locale-aware werden.

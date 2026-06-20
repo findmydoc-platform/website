@@ -94,15 +94,6 @@ Diese ADR entscheidet nicht:
 - einen managed TMS rollout
 - ein Payload Admin Translation Dashboard
 
-## Akzeptanzszenarien
-
-- Bestehende englische UI-, Seed- und Pilot-Inhalte bleiben als `en` alternative-locale content erhalten, waehrend `de` zum Source-/Default-Modell wird.
-- Fehlende oder stale englische Product UI Copy wird vom Source Workflow gemeldet und darf nicht still deutsche Copy in einer public indexable English Experience rendern.
-- Payload Content mit unverifiziertem oder defektem `localizeStatus` blockiert die Public-Readiness-Implementierung, bis diese ADR wieder geoeffnet wird.
-- Legal, trust-sensitive, medizinische und cookie-relevante Inhalte koennen nicht durch fallback-only content public-ready werden.
-- Preview und Admin Review koennen Fallback Content nur zeigen, wenn der Fallback State sichtbar ist.
-- Eine spaetere public English route kann nur indexierbar werden, wenn das Readiness-Modell in dieser ADR erfuellt ist.
-
 ## Technische Schuld
 
 Der aktuelle Repository-Stand spiegelt noch einen frueheren Localization Pilot mit `en` als Default Locale wider. Der Wechsel zum `de` Source Model braucht Follow-up-Planung fuer Seed Data, generated types, localized content migration und route-level public behavior.

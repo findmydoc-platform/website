@@ -135,6 +135,8 @@ export default async function ClinicLandingPage() {
       <ScrollReveal>
         <ClinicRegistrationLandingSection
           className="border-t border-site-divider/60"
+          title={landingContent.registrationIntro.title}
+          description={landingContent.registrationIntro.description}
           id="contact"
           treatmentCategories={clinicRegistrationTreatmentCategories}
         />

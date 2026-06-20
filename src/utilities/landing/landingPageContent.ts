@@ -129,6 +129,7 @@ export type ClinicPartnerLandingContent = {
   pricingModel: LandingPricingModelItem[]
   faq: LandingFaqContent
   blogTeaser: SectionIntro
+  registrationIntro: SectionIntro
   contact: SectionIntro
 }
 
@@ -396,6 +397,7 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
   const faq = requireLandingSection(clinicPartners.faq, 'clinicPartners.faq')
   const categoriesIntro = requireLandingSection(clinicPartners.categoriesIntro, 'clinicPartners.categoriesIntro')
   const blogTeaser = requireLandingSection(clinicPartners.blogTeaser, 'clinicPartners.blogTeaser')
+  const registrationIntro = requireLandingSection(clinicPartners.registrationIntro, 'clinicPartners.registrationIntro')
   const contact = requireLandingSection(clinicPartners.contact, 'clinicPartners.contact')
   const teamIntro = requireLandingSection(clinicPartners.teamIntro, 'clinicPartners.teamIntro')
   const testimonialsIntro = requireLandingSection(clinicPartners.testimonialsIntro, 'clinicPartners.testimonialsIntro')
@@ -441,6 +443,7 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
     })),
     faq: normalizeFaq(faq, 'clinicPartners.faq'),
     blogTeaser,
+    registrationIntro,
     contact,
   } satisfies ClinicPartnerLandingContent
 }

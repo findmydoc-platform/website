@@ -7,6 +7,19 @@ import { landingSocialHosts, validateLandingHref } from '@/utilities/landing/saf
 import { revalidateLandingPages } from './hooks/revalidateLandingPages'
 
 const socialLandingLinkMessage = 'Use # or an https:// URL for the matching social network.'
+const landingCtaButtonTextMaxLength = 48
+
+const validateLandingCtaButtonText = (value: string | string[] | null | undefined): true | string => {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return 'Button text is required.'
+  }
+
+  if (value.trim().length > landingCtaButtonTextMaxLength) {
+    return `Use ${landingCtaButtonTextMaxLength} characters or fewer.`
+  }
+
+  return true
+}
 
 const pageSeoFields: Field[] = [
   {
@@ -228,16 +241,13 @@ const processFields: Field[] = [
   },
 ]
 
-const ctaFields: Field[] = [
-  {
-    name: 'title',
-    type: 'text',
-    required: true,
-  },
+const ctaButtonFields = (): Field[] => [
   {
     name: 'buttonText',
     type: 'text',
     required: true,
+    maxLength: landingCtaButtonTextMaxLength,
+    validate: validateLandingCtaButtonText,
   },
   link({
     appearances: false,
@@ -247,6 +257,15 @@ const ctaFields: Field[] = [
       required: true,
     },
   }),
+]
+
+const ctaFields: Field[] = [
+  {
+    name: 'title',
+    type: 'text',
+    required: true,
+  },
+  ...ctaButtonFields(),
 ]
 
 const compactTextItemsField = (description: string): Field => ({
@@ -572,6 +591,12 @@ export const LandingPages: GlobalConfig = {
               type: 'group',
               fields: sectionIntroFields,
             },
+            {
+              name: 'teamCta',
+              label: 'Team CTA',
+              type: 'group',
+              fields: ctaButtonFields(),
+            },
             testimonialsField,
             {
               name: 'testimonialsIntro',
@@ -591,6 +616,11 @@ export const LandingPages: GlobalConfig = {
             },
             {
               name: 'blogTeaser',
+              type: 'group',
+              fields: sectionIntroFields,
+            },
+            {
+              name: 'registrationIntro',
               type: 'group',
               fields: sectionIntroFields,
             },

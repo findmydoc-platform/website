@@ -33,6 +33,11 @@ type SectionIntro = {
   description: string
 }
 
+type LandingButtonCta = {
+  buttonText: string
+  buttonLink: string
+}
+
 type LandingHeroContent = SectionIntro & {
   image: ResolvedMediaImage
 }
@@ -121,6 +126,7 @@ export type ClinicPartnerLandingContent = {
   }
   team: LandingTeamMember[]
   teamIntro: SectionIntro
+  teamCta: LandingButtonCta
   testimonials: LandingTestimonial[]
   testimonialsIntro: SectionIntro
   pricing: SectionIntro & {
@@ -129,6 +135,7 @@ export type ClinicPartnerLandingContent = {
   pricingModel: LandingPricingModelItem[]
   faq: LandingFaqContent
   blogTeaser: SectionIntro
+  registrationIntro: SectionIntro
   contact: SectionIntro
 }
 
@@ -312,14 +319,27 @@ const normalizeAboutTextSection = (
   }
 }
 
-const normalizeLandingCtaButtonLink = (cta: LandingPage['clinicPartners']['cta']): string => {
-  const safeHref = normalizeSafeLandingHref(resolveHrefFromCMSLink(cta.link), { allowInternalPath: true })
+const normalizeLandingCtaButtonLink = (
+  linkValue: LandingPage['clinicPartners']['cta']['link'],
+  fieldPath: string,
+): string => {
+  const safeHref = normalizeSafeLandingHref(resolveHrefFromCMSLink(linkValue), { allowInternalPath: true })
 
   if (!safeHref) {
-    throw new Error('Landing CTA link is missing or unsafe')
+    throw new Error(`Landing CTA link ${fieldPath} is missing or unsafe`)
   }
 
   return safeHref
+}
+
+const normalizeLandingCtaButtonText = (value: string | null | undefined, fieldPath: string): string => {
+  const text = optionalText(value)?.trim()
+
+  if (!text) {
+    throw new Error(`Landing CTA text ${fieldPath} is missing`)
+  }
+
+  return text
 }
 
 export const normalizeHomeLandingContent = (landingPages: LandingPage) => {
@@ -396,8 +416,10 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
   const faq = requireLandingSection(clinicPartners.faq, 'clinicPartners.faq')
   const categoriesIntro = requireLandingSection(clinicPartners.categoriesIntro, 'clinicPartners.categoriesIntro')
   const blogTeaser = requireLandingSection(clinicPartners.blogTeaser, 'clinicPartners.blogTeaser')
+  const registrationIntro = requireLandingSection(clinicPartners.registrationIntro, 'clinicPartners.registrationIntro')
   const contact = requireLandingSection(clinicPartners.contact, 'clinicPartners.contact')
   const teamIntro = requireLandingSection(clinicPartners.teamIntro, 'clinicPartners.teamIntro')
+  const teamCta = requireLandingSection(clinicPartners.teamCta, 'clinicPartners.teamCta')
   const testimonialsIntro = requireLandingSection(clinicPartners.testimonialsIntro, 'clinicPartners.testimonialsIntro')
   const pricingModel = requireLandingArray(clinicPartners.pricingModel, 'clinicPartners.pricingModel')
   const aboutTeam = landingPages.about?.team && landingPages.about.team.length > 0 ? landingPages.about.team : undefined
@@ -421,13 +443,17 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
     categoriesIntro,
     cta: {
       title: cta.title,
-      buttonText: cta.buttonText,
-      buttonLink: normalizeLandingCtaButtonLink(cta),
+      buttonText: normalizeLandingCtaButtonText(cta.buttonText, 'clinicPartners.cta.buttonText'),
+      buttonLink: normalizeLandingCtaButtonLink(cta.link, 'clinicPartners.cta.link'),
     },
     team: aboutTeam
       ? normalizeAboutTeamForLanding(aboutTeam)
       : normalizeTeam(clinicPartners.team, 'clinicPartners.team'),
     teamIntro,
+    teamCta: {
+      buttonText: normalizeLandingCtaButtonText(teamCta.buttonText, 'clinicPartners.teamCta.buttonText'),
+      buttonLink: normalizeLandingCtaButtonLink(teamCta.link, 'clinicPartners.teamCta.link'),
+    },
     testimonials: normalizeTestimonials(clinicPartners.testimonials, 'clinicPartners.testimonials'),
     testimonialsIntro,
     pricing: {
@@ -441,6 +467,7 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
     })),
     faq: normalizeFaq(faq, 'clinicPartners.faq'),
     blogTeaser,
+    registrationIntro,
     contact,
   } satisfies ClinicPartnerLandingContent
 }

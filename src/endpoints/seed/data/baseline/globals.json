@@ -432,6 +432,13 @@
           "title": "Our Team",
           "description": "We are a multidisciplinary team with backgrounds in healthcare, international patient management, medical marketing, and platform technology. Our focus is simple: helping clinics gain international patients in a sustainable, ethical, and measurable way."
         },
+        "teamCta": {
+          "buttonText": "About us",
+          "link": {
+            "type": "custom",
+            "url": "/about"
+          }
+        },
         "testimonials": [
           {
             "quote": "The clinic onboarding model is well structured and sets clear expectations for profile quality and international visibility.",
@@ -563,6 +570,10 @@
         "blogTeaser": {
           "title": "From our blog",
           "description": "Explore practical insights, expert perspectives, and the latest topics across health and medicine."
+        },
+        "registrationIntro": {
+          "title": "Ready for verified visibility?",
+          "description": "Share the key details. We review your request personally and follow up with the next steps."
         },
         "contact": {
           "title": "Kontakt",

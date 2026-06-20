@@ -14,7 +14,7 @@ Sources:
 - For the MVP disable gate, `verified` means verified by findmydoc through an explicit, documented process, not just clinic-provided or seeded data.
 - Yellow means publishable only with documented evidence: source, owner, proof type, proof date, and an accountable check.
 - Green means generally safe when phrased as comparison, organization, profile structure, or direct contact, without medical advice or quality certification.
-- Current gap: the repository documents review moderation, but does not clearly define a complete findmydoc verification/checking process for public reviews, verified badges, star ratings, or before/after galleries.
+- Current gap: the repository documents review moderation, but does not clearly define a complete findmydoc verification/checking process for public reviews, star ratings, or before/after galleries. Verification badges are handled separately because the trust core has been defined conceptually but not implemented yet.
 
 ## Item Status Overview
 
@@ -24,7 +24,7 @@ Sources:
 | R1   | Listing trust block claims                | Solved in `findmydoc-platform/website#1309` |
 | R2   | Before/after case gallery                 | Decision needed                             |
 | R3   | Public reviews and star ratings           | Decision needed                             |
-| R4   | Verification badges                       | Decision needed                             |
+| R4   | Verification badges                       | Trust core defined; implementation needed   |
 | R5   | Rating-based ranking and filters          | Decision needed                             |
 | R6   | Demo blog disclaimer and `[Demo]` titles  | Solved in `findmydoc-platform/website#1303` |
 | R7   | Storybook and fixture trust claims        | Solved in `findmydoc-platform/website#1305` |
@@ -33,12 +33,23 @@ Sources:
 | Y3   | Accreditations and seeded standards       | Decision needed                             |
 | Y4   | Temporary landing trust language          | Decision needed                             |
 | Y5   | Transparent pricing and reviewed prices   | Decision needed                             |
-| Y6   | Clinic registration verified visibility   | Decision needed                             |
+| Y6   | Clinic registration verified visibility   | Solved for CMS editability; rewrite needed  |
 | Y7   | Required disclaimers                      | Solved in `findmydoc-platform/website#1333` |
 | G1   | Clinic comparison and structured profiles | Safe pattern                                |
 | G2   | Clinic-provided profile information       | Safe pattern                                |
 | G3   | Direct contact and inquiry flow           | Safe pattern                                |
 | G4   | Transparent non-quality filters           | Safe pattern                                |
+
+## Atomic Task Documents
+
+The process-dependent items are split into separate task documents so each can be estimated, reviewed, and implemented independently:
+
+- Before/After Case Gallery: `trust-claim-gallery-evidence-requirements-task.md`
+- Public Reviews: `trust-claim-review-evidence-requirements-task.md`
+- Rating Eligibility: `trust-claim-rating-eligibility-requirements-task.md`
+- Accreditations: `trust-claim-accreditation-evidence-requirements-task.md`
+- Verification Badges: `trust-claim-verification-badge-requirements-task.md`
+- Pricing Claims: `pricing-evidence-requirements-task.md`
 
 ## Cross-Cutting Process Gap
 
@@ -122,8 +133,9 @@ Sources:
 
 - Severity: `8/10`
 - Notion category: MVP disable gate unless verified and checked
+- Status: Trust core defined; implementation needed
 - Problem: Clinic verification tiers are public UI badges and demo data seeds approved clinics as gold/silver/bronze.
-- Impact: This matches issue #237 risk around badge status without a real badge process. If findmydoc owns and documents that process, the item may become safe case by case; until then it should be disabled/hidden for MVP.
+- Impact: This matches issue #237 risk around badge status when the defined trust core is not implemented as data, admin workflow, and runtime gating yet.
 - Current references:
   - `src/collections/Clinics.ts:410`
   - `src/components/atoms/verification-badge.tsx:31`
@@ -136,7 +148,7 @@ Sources:
   - `src/endpoints/seed/data/demo/clinics.json:285`
   - `src/endpoints/seed/data/demo/clinics.json:343`
   - `src/endpoints/seed/data/demo/clinics.json:517`
-- Decision needed: demote all public badge display to neutral profile status, or create evidence-backed verification workflow before publish.
+- Implementation needed: implement the defined trust-core process as data model, admin workflow, and runtime eligibility before treating public badge tiers as process-backed evidence.
 
 ### R5. Rating-based ranking and filters
 
@@ -541,11 +553,14 @@ Sources:
 
 - Severity: `6/10`
 - Notion category: yellow
-- Problem: Partner registration CTA says `Ready for verified visibility?`.
-- Impact: `verified` requires a defined proof process or should be softened.
+- Status: CMS editability solved; rewrite needed
+- Problem: Partner registration intro copy says `Ready for verified visibility?`.
+- Impact: The intro is now editable in `landingPages`, but `verified` still needs softer wording unless a documented proof process exists.
 - Current references:
-  - `src/app/(frontend)/_components/ClinicRegistrationLandingSection.tsx:33`
-- Decision needed: decide whether partner onboarding actually grants verified visibility; otherwise rewrite.
+  - `src/endpoints/seed/data/baseline/globals.json:568`
+  - `src/app/(frontend)/partners/clinics/page.tsx:137`
+  - `src/app/(frontend)/_components/ClinicRegistrationLandingSection.tsx:31`
+- Decision: keep the current wording temporarily in `landingPages`, but rewrite it before treating the copy as final. The editable CMS slot is solved; the wording itself is still open.
 
 ### Y7. Missing required disclaimers
 

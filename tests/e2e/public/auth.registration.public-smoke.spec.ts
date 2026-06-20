@@ -7,12 +7,6 @@ import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/b
 const patientTestPassword = 'PatientPass123' // pragma: allowlist secret
 const mismatchedPatientTestPassword = 'MismatchPass123' // pragma: allowlist secret
 
-const supabaseCorsHeaders = {
-  'access-control-allow-origin': '*',
-  'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type',
-  'access-control-allow-methods': 'POST, OPTIONS',
-}
-
 async function fulfillJson(route: Route, status: number, body: unknown, headers?: Record<string, string>) {
   await route.fulfill({
     status,
@@ -64,20 +58,6 @@ function readClinicApplication(prefix: string, email: string): ClinicApplication
 function expectValidIsoDate(value: string | undefined) {
   expect(value).toEqual(expect.any(String))
   expect(Number.isNaN(Date.parse(value ?? ''))).toBe(false)
-}
-
-async function stubSupabaseSignup(page: Page, handler: (route: Route) => Promise<void>) {
-  await page.route('**/auth/v1/signup**', async (route) => {
-    if (route.request().method() === 'OPTIONS') {
-      await route.fulfill({
-        status: 204,
-        headers: supabaseCorsHeaders,
-      })
-      return
-    }
-
-    await handler(route)
-  })
 }
 
 const clinicRegistrationPrefixes = new Set<string>()
@@ -241,27 +221,12 @@ test('clinic registration surfaces inline validation errors before submit @smoke
 
 test('patient registration redirects to the login page after a successful submit @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page)
-  let signupRequestCount = 0
-  let metadataBody: Record<string, unknown> | null = null
+  let patientRegistrationRequestCount = 0
+  let patientRegistrationBody: Record<string, unknown> | null = null
 
-  await stubSupabaseSignup(page, async (route) => {
-    signupRequestCount += 1
-    await fulfillJson(
-      route,
-      200,
-      {
-        user: {
-          id: 'e2e-patient-user',
-          email: 'patient@example.com',
-        },
-        session: null,
-      },
-      supabaseCorsHeaders,
-    )
-  })
-
-  await page.route('**/api/auth/register/patient/metadata', async (route) => {
-    metadataBody = route.request().postDataJSON() as Record<string, unknown>
+  await page.route('**/api/auth/register/patient', async (route) => {
+    patientRegistrationRequestCount += 1
+    patientRegistrationBody = route.request().postDataJSON() as Record<string, unknown>
     await fulfillJson(route, 200, { success: true })
   })
 
@@ -275,26 +240,22 @@ test('patient registration redirects to the login page after a successful submit
       'Check your email for the verification link we sent so you can finish setting up your findmydoc account.',
     ),
   ).toBeVisible()
-  expect(signupRequestCount).toBe(1)
-  expect(metadataBody).toMatchObject({
+  expect(patientRegistrationRequestCount).toBe(1)
+  expect(patientRegistrationBody).toMatchObject({
     email: 'patient@example.com',
-    userId: 'e2e-patient-user',
+    firstName: 'John',
+    lastName: 'Doe',
+    password: expect.any(String),
   })
   await expectNoBrowserIssues(issues)
 })
 
 test('patient registration blocks mismatched passwords before any network request @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page)
-  let signupRequestCount = 0
-  let metadataRequestCount = 0
+  let patientRegistrationRequestCount = 0
 
-  await stubSupabaseSignup(page, async (route) => {
-    signupRequestCount += 1
-    await route.abort()
-  })
-
-  await page.route('**/api/auth/register/patient/metadata', async (route) => {
-    metadataRequestCount += 1
+  await page.route('**/api/auth/register/patient', async (route) => {
+    patientRegistrationRequestCount += 1
     await route.abort()
   })
 
@@ -306,46 +267,22 @@ test('patient registration blocks mismatched passwords before any network reques
   await page.getByRole('button', { name: 'Create Patient Account' }).click()
 
   await expect(page.getByText('Passwords do not match')).toBeVisible()
-  expect(signupRequestCount).toBe(0)
-  expect(metadataRequestCount).toBe(0)
+  expect(patientRegistrationRequestCount).toBe(0)
   await expect(page).toHaveURL(/\/register\/patient(?:\?.*)?$/)
   await expectNoBrowserIssues(issues)
 })
 
-test('patient registration rolls back the partial signup when metadata provisioning fails @smoke', async ({ page }) => {
+test('patient registration surfaces server provisioning failures without cleanup @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page, {
     ignoredConsoleErrors: [/Failed to load resource: the server responded with a status of 500/],
   })
-  let metadataRequestCount = 0
-  let cleanupBody: Record<string, unknown> | null = null
+  let patientRegistrationRequestCount = 0
 
-  await stubSupabaseSignup(page, async (route) => {
-    await fulfillJson(
-      route,
-      200,
-      {
-        user: {
-          id: 'e2e-patient-user-rollback',
-          email: 'patient@example.com',
-        },
-        session: null,
-      },
-      supabaseCorsHeaders,
-    )
-  })
-
-  await page.route('**/api/auth/register/patient/metadata', async (route) => {
-    metadataRequestCount += 1
-    await route.fulfill({
-      status: 500,
-      contentType: 'text/plain',
-      body: 'metadata failed',
+  await page.route('**/api/auth/register/patient', async (route) => {
+    patientRegistrationRequestCount += 1
+    await fulfillJson(route, 500, {
+      error: 'We could not finish setting up your account. Please try again in a few minutes.',
     })
-  })
-
-  await page.route('**/api/auth/register/patient/cleanup', async (route) => {
-    cleanupBody = route.request().postDataJSON() as Record<string, unknown>
-    await fulfillJson(route, 200, { success: true })
   })
 
   await page.goto('/register/patient', { waitUntil: 'domcontentloaded' })
@@ -355,11 +292,7 @@ test('patient registration rolls back the partial signup when metadata provision
   await expect(
     page.getByText('We could not finish setting up your account. Please try again in a few minutes.'),
   ).toBeVisible()
-  expect(metadataRequestCount).toBe(1)
-  expect(cleanupBody).toMatchObject({
-    email: 'patient@example.com',
-    userId: 'e2e-patient-user-rollback',
-  })
+  expect(patientRegistrationRequestCount).toBe(1)
   await expect(page).toHaveURL(/\/register\/patient(?:\?.*)?$/)
   await expectNoBrowserIssues(issues)
 })

@@ -5019,6 +5019,23 @@ export interface LandingPage {
        */
       description: string;
     };
+    teamCta: {
+      buttonText: string;
+      link: {
+        type?: ('reference' | 'custom') | null;
+        newTab?: boolean | null;
+        reference?:
+          | ({
+              relationTo: 'pages';
+              value: number | Page;
+            } | null)
+          | ({
+              relationTo: 'posts';
+              value: number | Post;
+            } | null);
+        url?: string | null;
+      };
+    };
     /**
      * Testimonials shown in the carousel.
      */
@@ -5100,6 +5117,16 @@ export interface LandingPage {
       }[];
     };
     blogTeaser: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+    };
+    registrationIntro: {
       /**
        * Section headline.
        */
@@ -5513,6 +5540,19 @@ export interface LandingPagesSelect<T extends boolean = true> {
               title?: T;
               description?: T;
             };
+        teamCta?:
+          | T
+          | {
+              buttonText?: T;
+              link?:
+                | T
+                | {
+                    type?: T;
+                    newTab?: T;
+                    reference?: T;
+                    url?: T;
+                  };
+            };
         testimonials?:
           | T
           | {
@@ -5573,6 +5613,12 @@ export interface LandingPagesSelect<T extends boolean = true> {
                   };
             };
         blogTeaser?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
+        registrationIntro?:
           | T
           | {
               title?: T;

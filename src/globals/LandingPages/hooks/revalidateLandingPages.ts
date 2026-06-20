@@ -8,7 +8,9 @@ export const revalidateLandingPages: GlobalAfterChangeHook = ({ doc, req: { payl
 
     try {
       revalidateTag('global_landingPages', { expire: 0 })
+      revalidateTag('pages-sitemap', { expire: 0 })
       revalidatePath('/')
+      revalidatePath('/about')
       revalidatePath('/partners/clinics')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

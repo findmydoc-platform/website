@@ -122,6 +122,49 @@ describe('resolveMediaImage', () => {
     })
   })
 
+  it('maps Payload focal point coordinates to CSS object position', () => {
+    const image = resolveMediaImage(
+      {
+        alt: 'Focused team photo',
+        url: '/api/platformContentMedia/file/team.webp',
+        width: 1200,
+        height: 800,
+        focalX: 31,
+        focalY: 68,
+      },
+      {
+        fallbackAlt: 'Fallback alt',
+        usage: 'landingVisual',
+      },
+    )
+
+    expect(image).toMatchObject({
+      src: '/api/platformContentMedia/file/team.webp',
+      objectPosition: '31% 68%',
+    })
+  })
+
+  it('clamps invalid focal point coordinates before creating CSS object position', () => {
+    const image = resolveMediaImage(
+      {
+        alt: 'Focused team photo',
+        url: '/api/platformContentMedia/file/team.webp',
+        width: 1200,
+        height: 800,
+        focalX: -20,
+        focalY: 140,
+      },
+      {
+        fallbackAlt: 'Fallback alt',
+        usage: 'landingVisual',
+      },
+    )
+
+    expect(image).toMatchObject({
+      objectPosition: '0% 100%',
+    })
+  })
+
   it('allows thumbnail as the primary size only for avatar contexts', () => {
     const media = {
       alt: 'Avatar',

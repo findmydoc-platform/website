@@ -6,6 +6,8 @@ import { findPageSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { shouldBlockSitemapIndexingForRequest } from '@/features/searchIndexing/sitemapGuards'
 
+const fixedPublicPaths = new Set(['/search', '/posts', '/contact', '/about'])
+
 const getPagesSitemap = unstable_cache(
   async () => {
     const payload = await getPayload({ config })
@@ -29,10 +31,18 @@ const getPagesSitemap = unstable_cache(
         loc: `${SITE_URL}/contact`,
         lastmod: dateFallback,
       },
+      {
+        loc: `${SITE_URL}/about`,
+        lastmod: dateFallback,
+      },
     ]
 
     const sitemap = results
       .filter((page) => Boolean(page?.slug))
+      .filter((page) => {
+        const path = page?.slug === 'home' ? '/' : `/${page?.slug}`
+        return !fixedPublicPaths.has(path)
+      })
       .map((page) => {
         return {
           loc: page?.slug === 'home' ? `${SITE_URL}/` : `${SITE_URL}/${page?.slug}`,

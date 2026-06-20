@@ -16,6 +16,7 @@ type LandingTeamMember = {
   name: string
   role: string
   image: string
+  imageObjectPosition?: string
   isPhoto?: boolean
   photoDisplay?: 'original' | 'grayscale'
   socials?: Partial<Record<SocialPlatform, string>>
@@ -60,6 +61,7 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({
                         'object-cover',
                         member.isPhoto === true && (member.photoDisplay ?? 'grayscale') === 'grayscale' && 'grayscale',
                       )}
+                      style={member.imageObjectPosition ? { objectPosition: member.imageObjectPosition } : undefined}
                     />
 
                     <div className="absolute inset-x-6 bottom-6 rounded-3xl bg-white/95 p-6 shadow-lg backdrop-blur">

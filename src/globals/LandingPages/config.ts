@@ -595,6 +595,11 @@ export const LandingPages: GlobalConfig = {
               fields: sectionIntroFields,
             },
             {
+              name: 'registrationIntro',
+              type: 'group',
+              fields: sectionIntroFields,
+            },
+            {
               name: 'contact',
               type: 'group',
               fields: sectionIntroFields,

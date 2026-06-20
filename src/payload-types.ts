@@ -5109,6 +5109,16 @@ export interface LandingPage {
        */
       description: string;
     };
+    registrationIntro: {
+      /**
+       * Section headline.
+       */
+      title: string;
+      /**
+       * Section supporting text.
+       */
+      description: string;
+    };
     contact: {
       /**
        * Section headline.
@@ -5573,6 +5583,12 @@ export interface LandingPagesSelect<T extends boolean = true> {
                   };
             };
         blogTeaser?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+            };
+        registrationIntro?:
           | T
           | {
               title?: T;

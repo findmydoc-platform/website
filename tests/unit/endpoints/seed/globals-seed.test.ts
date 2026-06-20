@@ -104,6 +104,11 @@ describe('seedGlobalsBaseline', () => {
                 url: '/contact',
               }),
             }),
+            registrationIntro: expect.objectContaining({
+              title: 'Ready for verified visibility?',
+              description:
+                'Share the key details. We review your request personally and follow up with the next steps.',
+            }),
           }),
         }),
       }),

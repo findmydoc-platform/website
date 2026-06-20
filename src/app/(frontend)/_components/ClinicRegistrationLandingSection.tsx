@@ -7,14 +7,18 @@ import { cn } from '@/utilities/ui'
 type ClinicRegistrationLandingSectionProps = {
   ariaLabel?: string
   className?: string
+  description: string
   id?: string
+  title: string
   treatmentCategories?: ClinicRegistrationTreatmentCategory[]
 }
 
 export function ClinicRegistrationLandingSection({
   ariaLabel = 'Start partner inquiry',
   className,
+  description,
   id = 'clinic-registration',
+  title,
   treatmentCategories,
 }: ClinicRegistrationLandingSectionProps) {
   return (
@@ -30,8 +34,8 @@ export function ClinicRegistrationLandingSection({
         <div className="mx-auto w-full max-w-[1184px]">
           <div className="mb-12 sm:mb-14 md:mb-16">
             <SectionHeading
-              title="Ready for verified visibility?"
-              description="Share the key details. We review your request personally and follow up with the next steps."
+              title={title}
+              description={description}
               size="section"
               align="center"
               titleClassName="font-semibold"

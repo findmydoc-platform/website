@@ -33,7 +33,7 @@ Sources:
 | Y3   | Accreditations and seeded standards       | Decision needed                             |
 | Y4   | Temporary landing trust language          | Decision needed                             |
 | Y5   | Transparent pricing and reviewed prices   | Decision needed                             |
-| Y6   | Clinic registration verified visibility   | Decision needed                             |
+| Y6   | Clinic registration verified visibility   | Solved for CMS editability; rewrite needed  |
 | Y7   | Required disclaimers                      | Solved in `findmydoc-platform/website#1333` |
 | G1   | Clinic comparison and structured profiles | Safe pattern                                |
 | G2   | Clinic-provided profile information       | Safe pattern                                |
@@ -541,11 +541,14 @@ Sources:
 
 - Severity: `6/10`
 - Notion category: yellow
-- Problem: Partner registration CTA says `Ready for verified visibility?`.
-- Impact: `verified` requires a defined proof process or should be softened.
+- Status: CMS editability solved; rewrite needed
+- Problem: Partner registration intro copy says `Ready for verified visibility?`.
+- Impact: The intro is now editable in `landingPages`, but `verified` still needs softer wording unless a documented proof process exists.
 - Current references:
-  - `src/app/(frontend)/_components/ClinicRegistrationLandingSection.tsx:33`
-- Decision needed: decide whether partner onboarding actually grants verified visibility; otherwise rewrite.
+  - `src/endpoints/seed/data/baseline/globals.json:568`
+  - `src/app/(frontend)/partners/clinics/page.tsx:137`
+  - `src/app/(frontend)/_components/ClinicRegistrationLandingSection.tsx:31`
+- Decision: keep the current wording temporarily in `landingPages`, but rewrite it before treating the copy as final. The editable CMS slot is solved; the wording itself is still open.
 
 ### Y7. Missing required disclaimers
 

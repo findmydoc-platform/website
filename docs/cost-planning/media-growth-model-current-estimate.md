@@ -172,7 +172,7 @@ Note: The adoption overlay is intentionally separate from the `600 clinics` max-
 | [FlyMedi clinic example 2](https://www.flymedi.com/cyberknife-center/58) | Same pattern across another clinic page: preview images + clinic details + review indicators + contact-focused CTA blocks. | Confirms reusable clinic-gallery baseline for `clinicMedia` and recurring staff/brand visuals. | High |
 | [WhatClinic clinic example](https://www.whatclinic.com/cosmetic-plastic-surgery/turkey/antalya-province/antalya/aesthetics-antalya) | Crawled snippets indicate image-backed clinic profiles with review-centric presentation and service metadata. | `clinicMedia` as primary fit; no reliable evidence for structured before/after volume in current crawl. | Medium-Low |
 | [WhatClinic clinic example 2](https://www.whatclinic.com/bariatric-surgery/turkey/istanbul-province/istanbul/atasehir/clinichub) | Crawled snippets show repeated `Image:` entities and badge/service-heavy profile presentation. | `clinicMedia` + optional `platformContentMedia` for standardized badges/icons. | Medium-Low |
-| [WhatClinic photo guidance](https://www.whatclinic.com/info/for-clinics/industry-news/how-to-take-clinic-photos) | Intended policy/guidance source for clinic photography quality. Direct content retrieval was limited in this crawl run. | Use as qualitative direction only; do not treat as hard quantitative input. | Low |
+| [WhatClinic photo guidance](https://www.whatclinic.com/about/toolkit/pdfs/clinic-guide-to-photography.pdf) | Intended policy/guidance source for clinic photography quality. Direct content retrieval was limited in this crawl run. | Use as qualitative direction only; do not treat as hard quantitative input. | Low |
 
 Notes:
 

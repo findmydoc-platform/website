@@ -110,8 +110,8 @@
 - Keep issue bodies lightweight and template-shaped; move deeper implementation detail into a linked doc instead of expanding the issue.
 - Prefer `.github/ISSUE_TEMPLATE/bug_report.yml` and `.github/ISSUE_TEMPLATE/feature.yml` as the source of truth for section order and wording.
 - Link the Issue in the PR `Development` section before requesting review or merge.
-- AI-assisted and human-authored PRs count as non-bot and must have at least one linked Issue.
-- Only GitHub bot-authored PRs, such as Dependabot, are exempt.
+- Strategic parent planning issues usually live in `findmydoc-platform/management`; implementation issues usually live in `findmydoc-platform/website`; for cross-repository parent/child links, use the global `gh-issue-relationships` skill to set and verify the real GitHub Issue Relationship instead of relying on a body-only link.
+- AI-assisted and human-authored PRs count as non-bot and must have at least one linked Issue; only GitHub bot-authored PRs, such as Dependabot, are exempt.
 
 ## Language Policy
 

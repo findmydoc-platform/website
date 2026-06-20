@@ -57,7 +57,7 @@ This item does not cover:
 - The localization ADR decides the web i18n runtime. `next-intl` is the preferred working default for the Next.js App Router consumer unless the ADR decides otherwise.
 - The phase-1 workflow is Git plus PR review, not Payload Admin UI and not an external TMS.
 - The dedicated Product UI Copy repository is the source of truth. Its concrete repository name is intentionally undecided at this planning level.
-- The website consumes Product UI Copy through a generated package or artifact, with generated web runtime integration under `src/i18n`.
+- The website consumes Product UI Copy through a generated package or artifact, with generated web runtime integration planned for the source i18n area.
 - Engineering owns schema, key structure, CI, and integration.
 - Founder/Product reviews source copy and translations.
 - The first implementation uses domain namespaces such as `auth`, `forms`, `clinicComparison`, `clinicDetail`, `favorites`, `navigation`, and `common`.
@@ -109,7 +109,7 @@ Example metadata file:
 }
 ```
 
-Runtime export should be deterministic and should not make the selected web library the canonical source model. If the ADR selects `next-intl`, the implementation can generate or expose compatible message files from the canonical source. The website-side consumer should place generated web runtime files or the package adapter under `src/i18n`.
+Runtime export should be deterministic and should not make the selected web library the canonical source model. If the ADR selects `next-intl`, the implementation can generate or expose compatible message files from the canonical source. The website-side consumer should place generated web runtime files or the package adapter in the source i18n area once that area exists.
 
 ## CI And Governance
 

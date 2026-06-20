@@ -172,6 +172,23 @@ The findmydoc portal uses the [on-demand revalidation](https://nextjs.org/docs/a
 
 > Note: if an image has been changed, for example it's been cropped, you will need to republish the page it's used on in order to be able to revalidate the Nextjs image cache.
 
+## Public Sitemaps
+The public sitemap surface is split between the generated `robots.txt` file and App Router sitemap route handlers.
+
+- `robots.txt` references `/pages-sitemap.xml` and `/posts-sitemap.xml` outside preview runtime.
+- `/pages-sitemap.xml` lists `/`, `/posts`, `/contact`, `/about`, and published CMS pages. It does not list `/search` because there is no dedicated public search route.
+- `/posts-sitemap.xml` lists published post detail URLs with valid single-segment slugs.
+- Preview runtime and Temporary Landing Mode keep deeper public content out of sitemap discovery through preview robots policy and empty guarded sitemap responses.
+
+Run the sitemap status check against local development or production when Temporary Landing Mode is disabled:
+
+```bash
+BASE_URL="${BASE_URL:-http://localhost:3000}"
+for path in /robots.txt /pages-sitemap.xml /posts-sitemap.xml / /posts /contact /about; do
+  curl --fail --location --silent --show-error --output /dev/null --write-out "%{http_code} ${path}\n" "${BASE_URL}${path}"
+done
+```
+
 ## SEO
 Manage SEO settings from the admin panel.
 [Payload SEO Plugin Docs](https://payloadcms.com/docs/plugins/seo)

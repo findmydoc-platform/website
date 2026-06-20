@@ -14,7 +14,7 @@ Sources:
 - For the MVP disable gate, `verified` means verified by findmydoc through an explicit, documented process, not just clinic-provided or seeded data.
 - Yellow means publishable only with documented evidence: source, owner, proof type, proof date, and an accountable check.
 - Green means generally safe when phrased as comparison, organization, profile structure, or direct contact, without medical advice or quality certification.
-- Current gap: the repository documents review moderation, but does not clearly define a complete findmydoc verification/checking process for public reviews, verified badges, star ratings, or before/after galleries.
+- Current gap: the repository documents review moderation, but does not clearly define a complete findmydoc verification/checking process for public reviews, star ratings, or before/after galleries. Verification badges are handled separately because the trust core has been defined conceptually but not implemented yet.
 
 ## Item Status Overview
 
@@ -24,7 +24,7 @@ Sources:
 | R1   | Listing trust block claims                | Solved in `findmydoc-platform/website#1309` |
 | R2   | Before/after case gallery                 | Decision needed                             |
 | R3   | Public reviews and star ratings           | Decision needed                             |
-| R4   | Verification badges                       | Decision needed                             |
+| R4   | Verification badges                       | Trust core defined; implementation needed   |
 | R5   | Rating-based ranking and filters          | Decision needed                             |
 | R6   | Demo blog disclaimer and `[Demo]` titles  | Solved in `findmydoc-platform/website#1303` |
 | R7   | Storybook and fixture trust claims        | Solved in `findmydoc-platform/website#1305` |
@@ -39,6 +39,17 @@ Sources:
 | G2   | Clinic-provided profile information       | Safe pattern                                |
 | G3   | Direct contact and inquiry flow           | Safe pattern                                |
 | G4   | Transparent non-quality filters           | Safe pattern                                |
+
+## Atomic Task Documents
+
+The process-dependent items are split into separate task documents so each can be estimated, reviewed, and implemented independently:
+
+- Before/After Case Gallery: `trust-claim-gallery-evidence-requirements-task.md`
+- Public Reviews: `trust-claim-review-evidence-requirements-task.md`
+- Rating Eligibility: `trust-claim-rating-eligibility-requirements-task.md`
+- Accreditations: `trust-claim-accreditation-evidence-requirements-task.md`
+- Verification Badges: `trust-claim-verification-badge-requirements-task.md`
+- Pricing Claims: `pricing-evidence-requirements-task.md`
 
 ## Cross-Cutting Process Gap
 
@@ -122,8 +133,9 @@ Sources:
 
 - Severity: `8/10`
 - Notion category: MVP disable gate unless verified and checked
+- Status: Trust core defined; implementation needed
 - Problem: Clinic verification tiers are public UI badges and demo data seeds approved clinics as gold/silver/bronze.
-- Impact: This matches issue #237 risk around badge status without a real badge process. If findmydoc owns and documents that process, the item may become safe case by case; until then it should be disabled/hidden for MVP.
+- Impact: This matches issue #237 risk around badge status when the defined trust core is not implemented as data, admin workflow, and runtime gating yet.
 - Current references:
   - `src/collections/Clinics.ts:410`
   - `src/components/atoms/verification-badge.tsx:31`
@@ -136,7 +148,7 @@ Sources:
   - `src/endpoints/seed/data/demo/clinics.json:285`
   - `src/endpoints/seed/data/demo/clinics.json:343`
   - `src/endpoints/seed/data/demo/clinics.json:517`
-- Decision needed: demote all public badge display to neutral profile status, or create evidence-backed verification workflow before publish.
+- Implementation needed: implement the defined trust-core process as data model, admin workflow, and runtime eligibility before treating public badge tiers as process-backed evidence.
 
 ### R5. Rating-based ranking and filters
 

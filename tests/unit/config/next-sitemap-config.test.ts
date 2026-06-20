@@ -39,4 +39,32 @@ describe('next-sitemap config', () => {
       'https://findmydoc.eu/posts-sitemap.xml',
     ])
   })
+
+  it('blocks robots and hides sitemap references in Vercel preview runtime', () => {
+    process.env = {
+      ...originalEnv,
+      DEPLOYMENT_ENV: undefined,
+      NEXT_PUBLIC_SERVER_URL: 'https://preview.findmydoc.eu',
+      VERCEL_ENV: 'preview',
+    }
+
+    const config = loadConfig()
+
+    expect(config.robotsTxtOptions.policies).toEqual([{ disallow: '/', userAgent: '*' }])
+    expect(config.robotsTxtOptions.additionalSitemaps).toEqual([])
+  })
+
+  it('blocks robots and hides sitemap references in explicit preview runtime', () => {
+    process.env = {
+      ...originalEnv,
+      DEPLOYMENT_ENV: 'preview',
+      NEXT_PUBLIC_SERVER_URL: 'https://preview.findmydoc.eu',
+      VERCEL_ENV: undefined,
+    }
+
+    const config = loadConfig()
+
+    expect(config.robotsTxtOptions.policies).toEqual([{ disallow: '/', userAgent: '*' }])
+    expect(config.robotsTxtOptions.additionalSitemaps).toEqual([])
+  })
 })

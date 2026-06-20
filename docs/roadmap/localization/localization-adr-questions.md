@@ -2,14 +2,16 @@
 
 ## Purpose
 
-This document keeps cross-cutting localization decisions that should be captured in a follow-up ADR rather than inside one implementation item. It complements ADR 018, which standardizes native Payload CMS localization but intentionally leaves URL, SEO, runtime, publishing, and translation workflow decision areas open.
+This document keeps cross-cutting localization decisions that should be captured in follow-up ADRs rather than inside one implementation item. It complements ADR 018, which standardizes native Payload CMS localization but intentionally leaves URL, SEO, runtime, publishing, and translation workflow decision areas open.
+
+ADR 021 captures source-language, ownership, fallback, and readiness governance. ADR 022 captures public routing, SEO, domain, redirect, sitemap, `hreflang`, and language-switcher behavior.
 
 ## ADR Scope And Locale Matrix
 
-- The next localization ADR is a follow-up to ADR 018. ADR 018 remains valid for native Payload CMS localization.
-- The follow-up ADR should supersede ADR 018 only where the older ADR fixed `en` as the default/source locale. It should not supersede the native Payload CMS localization decision itself.
-- The ADR should decide routing, SEO, locale runtime behavior, fallback governance, the migration from the current `en` default pilot to the new `de` default target, and the ownership boundary between Product UI Copy and Payload Content Localization.
-- The ADR should define the layer-specific locale matrix:
+- ADR 021 is the first follow-up to ADR 018. ADR 018 remains valid for native Payload CMS localization.
+- ADR 021 supersedes ADR 018 only where the older ADR fixed `en` as the default/source locale. It does not supersede the native Payload CMS localization decision itself.
+- ADR 022 decides routing, SEO, domain behavior, redirects, locale runtime behavior for public URL resolution, and language-switcher behavior.
+- ADR 021 defines the layer-specific locale matrix:
   - Product UI Copy uses `de` and `en`.
   - Payload Content Localization uses `de` and `en`.
   - Payload Admin remains English and is not part of the public localization rollout.

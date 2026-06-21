@@ -6,7 +6,7 @@ import { findPageSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { shouldBlockSitemapIndexingForRequest } from '@/features/searchIndexing/sitemapGuards'
 
-const fixedPublicPaths = ['/', '/posts', '/contact', '/about'] as const
+const fixedPublicPaths = ['/', '/posts', '/contact', '/about', '/listing-comparison'] as const
 const excludedPublicPaths = new Set(['/search'])
 
 type SitemapEntry = {

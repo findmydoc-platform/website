@@ -1,8 +1,10 @@
 import configPromise from '@payload-config'
-import { getPayload } from 'payload'
+import type { Metadata } from 'next'
 import { headers } from 'next/headers'
+import { getPayload } from 'payload'
 
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
+import { buildIndexingMetadata, resolveListingComparisonIndexing } from '@/features/searchIndexing'
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 
@@ -14,6 +16,14 @@ type ListingComparisonPageArgs = {
 }
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({
+  searchParams: searchParamsPromise,
+}: ListingComparisonPageArgs): Promise<Metadata> {
+  const searchParams = (await searchParamsPromise) ?? {}
+
+  return buildIndexingMetadata(resolveListingComparisonIndexing(searchParams))
+}
 
 export default async function ListingComparisonPage({ searchParams: searchParamsPromise }: ListingComparisonPageArgs) {
   const searchParams = (await searchParamsPromise) ?? {}

@@ -108,9 +108,11 @@ describe('frontend sitemap routes', () => {
         'https://findmydoc.eu/posts',
         'https://findmydoc.eu/contact',
         'https://findmydoc.eu/about',
+        'https://findmydoc.eu/listing-comparison',
       ]),
     )
     expect(locs).not.toContain('https://findmydoc.eu/search')
+    expect(locs.some((loc: string) => loc.includes('?'))).toBe(false)
   })
 
   it('normalizes and deduplicates CMS pages in the pages sitemap', async () => {

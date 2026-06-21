@@ -193,6 +193,12 @@ done
 Manage SEO settings from the admin panel.
 [Payload SEO Plugin Docs](https://payloadcms.com/docs/plugins/seo)
 
+### Search-facing rendering
+
+Public discovery routes expose their core facts in initial HTML so search engines and AI agents can inspect the main content before client hydration. Interactive enhancements such as filters, saved-clinic actions, maps, consent controls, sharing, and forms can remain client-side as long as the route still renders the primary content, semantic main structure, and public internal links without browser-only state.
+
+SEO rendering audits should check for coarse drift signals: empty app shells, core facts hidden until hydration, blocking consent gates, missing `main` or heading structure, and broken public links. They should not rely on full HTML snapshots or exact CMS content such as specific clinic names, prices, doctors, or copy snippets.
+
 ## Search
 Implement SSR search features with Payload Search Plugin.
 [Payload Search Plugin Docs](https://payloadcms.com/docs/plugins/search)

@@ -44,7 +44,7 @@ Important:
 - `web_vitals_reviewer`
   - Read-only reviewer for LCP, INP, CLS, hydration cost, asset loading, and route-level frontend performance risks.
 - `seo_reviewer`
-  - Read-only reviewer for crawlability, indexation, metadata, structured data, and search-facing rendering behavior.
+  - Read-only reviewer for crawlability, indexation, metadata, structured data, initial HTML, and search-facing rendering behavior.
 - `storybook_reviewer`
   - Read-only reviewer for Storybook preview setup, story isolation, MSW usage, play functions, and story governance.
 - `agent_instruction_reviewer`

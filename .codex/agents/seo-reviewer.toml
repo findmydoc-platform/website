@@ -14,6 +14,7 @@ Primary focus:
 - route metadata, titles, descriptions, Open Graph, and canonical URLs
 - robots, sitemap, redirects, and duplicate-content risks
 - heading structure, internal linking, and rendering choices that affect search bots
+- initial HTML and no-JavaScript visibility for public discovery facts
 - structured data and route-level search visibility signals
 
 Repository-specific focus areas:
@@ -25,6 +26,10 @@ Working style:
 - Ground every finding in a real route, utility, or metadata path.
 - Prefer technical SEO issues over broad content suggestions.
 - Separate confirmed issues from opportunities or follow-up checks.
+- For rendering concerns, prefer raw HTML, no-JavaScript browser evidence, or route-level code paths over component-label inference.
+- Do not treat `use client` as a finding by itself; report it only when core public facts are unavailable until hydration.
+- Flag concrete search-facing rendering drift, such as empty app shells, core facts moved behind browser-only state, blocking consent gates, or missing semantic main content.
+- Avoid brittle claims based on exact CMS snippets, prices, doctor names, DOM depth, Tailwind classes, or full HTML snapshots.
 - Score each finding on the repository's absolute `1-10` severity scale instead of using relative labels such as high, medium, or low.
 - Use `7-10` only for clear crawlability, indexation, canonical, or metadata failures with meaningful search impact; use `3-4` for softer opportunities.
 - If no credible SEO issue is present in scope, say so explicitly.

@@ -7,6 +7,7 @@ import { ListingComparison } from '@/components/templates/ListingComparison/Comp
 import { ListingComparisonFilters } from '@/app/(frontend)/listing-comparison/ListingComparisonFilters.client'
 import { sortListingComparison, SORT_OPTIONS, type SortOption } from '@/utilities/listingComparison/sort'
 import { SortControl } from '@/components/molecules/SortControl'
+import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { withViewportStory } from '../utils/viewportMatrix'
 import {
   applyListingComparisonLocalFilters,
@@ -195,6 +196,17 @@ const FilterHarness: React.FC<TemplateArgs> = ({ hero, trust, results = [], empt
 }
 
 const sampleResults: ListingCardData[] = clinicResults
+const comparisonTrust = {
+  ...clinicTrust,
+  disclaimer: {
+    copy: DISCLAIMER_COPY.comparisonPages,
+    routeLabel: 'Comparison pages',
+    variant: 'inline-note' as const,
+    surface: 'muted' as const,
+    size: 'compact' as const,
+    showVariantLabel: false,
+  },
+}
 
 export const Default: Story = {
   args: {
@@ -207,7 +219,7 @@ export const Default: Story = {
     },
     filters: undefined,
     results: sampleResults,
-    trust: clinicTrust,
+    trust: comparisonTrust,
   },
   render: (args) => <FilterHarness {...args} />,
   play: async ({ canvasElement }) => {
@@ -235,7 +247,7 @@ export const EmptyResults: Story = {
     hero: baseHero,
     filters: undefined,
     results: [],
-    trust: clinicTrust,
+    trust: comparisonTrust,
     emptyState: (
       <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
         No results yet. Adjust filters or connect the search API.
@@ -258,7 +270,7 @@ export const NoHeroMedia: Story = {
     },
     filters: undefined,
     results: sampleResults,
-    trust: clinicTrust,
+    trust: comparisonTrust,
   },
   render: (args) => <FilterHarness {...args} />,
 }
@@ -276,7 +288,7 @@ export const LongResultsList: Story = {
     },
     filters: undefined,
     results: makeClinicList(18),
-    trust: clinicTrust,
+    trust: comparisonTrust,
   },
   render: (args) => <FilterHarness {...args} />,
   play: async ({ canvasElement }) => {
@@ -294,7 +306,7 @@ export const NoFiltersPanel: Story = {
     },
     filters: null,
     results: sampleResults,
-    trust: clinicTrust,
+    trust: comparisonTrust,
   },
 }
 
@@ -309,7 +321,7 @@ export const FilterByHighRating: Story = {
     },
     filters: undefined,
     results: sampleResults,
-    trust: clinicTrust,
+    trust: comparisonTrust,
   },
   render: (args) => <FilterHarness {...args} />,
   play: async ({ canvasElement }) => {
@@ -328,7 +340,7 @@ export const FilterByShortWaitTime: Story = {
     hero: baseHero,
     filters: undefined,
     results: sampleResults,
-    trust: clinicTrust,
+    trust: comparisonTrust,
   },
   render: (args) => <FilterHarness {...args} />,
   play: async ({ canvasElement }) => {
@@ -349,7 +361,7 @@ export const FilterByTreatmentHipReplacement: Story = {
     hero: baseHero,
     filters: undefined,
     results: sampleResults,
-    trust: clinicTrust,
+    trust: comparisonTrust,
   },
   render: (args) => <FilterHarness {...args} />,
   play: async ({ canvasElement }) => {
@@ -377,7 +389,7 @@ export const SortByPrice: Story = {
     },
     filters: undefined,
     results: sampleResults,
-    trust: clinicTrust,
+    trust: comparisonTrust,
   },
   render: (args) => <FilterHarness {...args} />,
   play: async ({ canvasElement }) => {
@@ -418,7 +430,7 @@ export const SortByRating: Story = {
     },
     filters: undefined,
     results: sampleResults,
-    trust: clinicTrust,
+    trust: comparisonTrust,
   },
   render: (args) => <FilterHarness {...args} />,
   play: async ({ canvasElement }) => {

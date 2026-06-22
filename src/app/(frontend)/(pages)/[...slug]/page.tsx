@@ -85,6 +85,7 @@ export async function generateMetadata({
   return generateMeta({
     doc: page,
     path: appendContentLocaleToPath(`/${slug.join('/')}`, contentLocale.locale),
+    sourceCollection: 'pages',
   })
 }
 

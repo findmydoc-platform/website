@@ -29,15 +29,13 @@ const getPostsSitemap = unstable_cache(
 
     const results = await findPostSitemapDocs(payload)
 
-    const dateFallback = new Date().toISOString()
-
     const sitemap = results.flatMap((post) => {
       const slug = normalizePostSitemapSlug(post?.slug)
       if (!slug) return []
 
       return {
         loc: buildSitemapLocation(SITE_URL, `/posts/${slug}`),
-        lastmod: post.updatedAt || dateFallback,
+        ...(post.updatedAt ? { lastmod: post.updatedAt } : {}),
       }
     })
 

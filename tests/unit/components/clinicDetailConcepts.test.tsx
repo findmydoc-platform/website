@@ -121,6 +121,10 @@ const baseData = {
     totalCount: 0,
     items: [],
   },
+  freshness: {
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    sourceCollections: ['clinics'],
+  },
   treatments: [{ id: 't1', name: 'Treatment 1', priceFromUsd: 1200 }],
   doctors: [
     {

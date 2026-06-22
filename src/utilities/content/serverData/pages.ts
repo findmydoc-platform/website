@@ -4,7 +4,7 @@ import type { Page, PagesSelect } from '@/payload-types'
 
 import { buildLocalizedQueryOptions, mergePublishedWhere, type LocalizedDocQuery, type PagedResult } from './shared'
 
-export type PageDetailDoc = Pick<Page, 'id' | 'title' | 'slug' | 'layout' | 'publishedAt' | 'meta'>
+export type PageDetailDoc = Pick<Page, 'id' | 'title' | 'slug' | 'layout' | 'publishedAt' | 'updatedAt' | 'meta'>
 export type PageSlugDoc = Pick<Page, 'id' | 'slug'>
 export type PageSitemapDoc = Pick<Page, 'id' | 'slug' | 'updatedAt'>
 
@@ -24,6 +24,7 @@ const PAGE_DETAIL_SELECT = {
   slug: true,
   layout: true,
   publishedAt: true,
+  updatedAt: true,
   meta: {
     title: true,
     image: true,

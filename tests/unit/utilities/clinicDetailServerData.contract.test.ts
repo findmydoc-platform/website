@@ -66,6 +66,7 @@ const mockData: MockData = {
       status: 'approved',
       verification: 'gold',
       supportedLanguages: ['english', 'german', 'turkish'],
+      updatedAt: '2026-01-10T00:00:00.000Z',
     },
     {
       id: 2,
@@ -91,6 +92,7 @@ const mockData: MockData = {
       status: 'pending',
       verification: 'silver',
       supportedLanguages: ['english'],
+      updatedAt: '2026-01-03T00:00:00.000Z',
     },
   ],
   clinictreatments: [
@@ -106,6 +108,7 @@ const mockData: MockData = {
         },
       },
       price: 120,
+      updatedAt: '2026-01-11T00:00:00.000Z',
     },
     {
       id: 202,
@@ -119,6 +122,7 @@ const mockData: MockData = {
         },
       },
       price: 180,
+      updatedAt: '2026-01-09T00:00:00.000Z',
     },
   ],
   doctors: [
@@ -139,6 +143,7 @@ const mockData: MockData = {
       qualifications: ['MD', 'FAAP'],
       experienceYears: 9,
       languages: ['english', 'spanish'],
+      updatedAt: '2026-01-09T00:00:00.000Z',
     },
     {
       id: 602,
@@ -153,6 +158,7 @@ const mockData: MockData = {
       qualifications: ['MD'],
       experienceYears: 6,
       languages: ['english', 'german'],
+      updatedAt: '2026-01-08T00:00:00.000Z',
     },
   ],
   doctorspecialties: [
@@ -164,6 +170,7 @@ const mockData: MockData = {
         name: 'Pediatric Cardiology',
       },
       specializationLevel: 'expert',
+      updatedAt: '2026-01-07T00:00:00.000Z',
     },
   ],
   reviews: [
@@ -360,6 +367,14 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.reviews.items.map((review) => review.comment)).not.toContain('Rejected review should not appear.')
     expect(result?.trust.accreditations).toContain('ISO 9001')
     expect(result?.trust.languages).toEqual(expect.arrayContaining(['English', 'German']))
+    expect(result?.freshness).toMatchObject({
+      updatedAt: '2026-01-12T09:15:00.000Z',
+      latestPatientReviewAt: '2026-01-12T09:15:00.000Z',
+      verificationTier: 'gold',
+    })
+    expect(result?.freshness.sourceCollections).toEqual(
+      expect.arrayContaining(['clinics', 'clinictreatments', 'reviews']),
+    )
 
     expect(result?.location.fullAddress).toBe('Lichtenberger Strasse 24, 10179 Berlin, Germany')
     expect(result?.location.coordinates).toEqual({

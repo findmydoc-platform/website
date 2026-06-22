@@ -1,4 +1,5 @@
 import type { CookieConsentConfig, CookieConsentState } from '@/features/cookieConsent'
+import type { FreshnessSignals } from '@/utilities/freshness'
 
 export type ClinicVerificationTier = 'unverified' | 'bronze' | 'silver' | 'gold'
 
@@ -86,6 +87,7 @@ export type ClinicDetailData = {
   doctors: ClinicDetailDoctor[]
   beforeAfterEntries: ClinicBeforeAfterEntry[]
   location: ClinicDetailLocation
+  freshness: FreshnessSignals
   contact?: ClinicDetailContact
   contactHref: string
 }

@@ -231,6 +231,7 @@ export const Default: Story = {
     // Results render
     expect(canvas.getByLabelText(/clinic results/i)).toBeInTheDocument()
     expect(canvas.getByText('Ring Clinic')).toBeInTheDocument()
+    expect(canvas.getByText(DISCLAIMER_COPY.comparisonPages)).toBeInTheDocument()
 
     // Filters interaction narrows results (city filter)
     await userEvent.click(canvas.getByRole('checkbox', { name: 'Berlin' }))

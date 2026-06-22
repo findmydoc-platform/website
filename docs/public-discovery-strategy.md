@@ -6,6 +6,8 @@ This document defines the strategic rules for public discovery across SEO and GE
 
 findmydoc public content should be easy for search engines and AI agents to crawl, understand, and cite without exposing private, draft, unpublished, or admin-only data.
 
+Public discovery includes both automated search indexing and user-directed AI retrieval; model training access is a separate consent choice.
+
 Public discovery work supports three outcomes:
 
 - Search engines can discover stable, crawlable, canonical URLs.

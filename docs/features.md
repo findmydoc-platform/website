@@ -193,7 +193,7 @@ done
 Manage SEO settings from the admin panel.
 [Payload SEO Plugin Docs](https://payloadcms.com/docs/plugins/seo)
 
-Strategic rules for SEO, GEO / agent discovery, public entity URLs, sitemap freshness, and trust signals live in [Public Discovery Strategy](./public-discovery-strategy.md).
+Strategic rules for SEO, GEO / agent discovery, public entity URLs, sitemap freshness, and source-backed freshness signals live in [Public Discovery Strategy](./public-discovery-strategy.md).
 
 ### Search-facing rendering
 

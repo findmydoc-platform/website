@@ -65,18 +65,22 @@ function DisclaimerComparisonBoard() {
                   copy={legalPreviewCopy}
                   variant="inline-note"
                   surface="light"
+                  showVariantLabel={true}
                 />
                 <DisclaimerNotice
                   routeLabel="Comparison pages"
                   copy={legalPreviewCopy}
                   variant="slim-notice-bar"
                   surface="light"
+                  showVariantLabel={true}
                 />
                 <DisclaimerNotice
                   routeLabel="Comparison pages"
                   copy={legalPreviewCopy}
                   variant="collapsible-disclosure"
                   surface="light"
+                  title="Why this note appears"
+                  showVariantLabel={true}
                 />
               </div>
             </div>
@@ -102,18 +106,22 @@ function DisclaimerComparisonBoard() {
                   copy={legalPreviewCopy}
                   variant="inline-note"
                   surface="muted"
+                  showVariantLabel={true}
                 />
                 <DisclaimerNotice
                   routeLabel="Comparison pages"
                   copy={legalPreviewCopy}
                   variant="slim-notice-bar"
                   surface="muted"
+                  showVariantLabel={true}
                 />
                 <DisclaimerNotice
                   routeLabel="Comparison pages"
                   copy={legalPreviewCopy}
                   variant="collapsible-disclosure"
                   surface="muted"
+                  title="Why this note appears"
+                  showVariantLabel={true}
                 />
               </div>
             </div>
@@ -252,6 +260,7 @@ export const CollapsibleDisclosure: Story = {
     copy: routeDisclaimerExamples[2].copy,
     variant: 'collapsible-disclosure',
     surface: 'light',
+    title: 'Why this note appears',
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)

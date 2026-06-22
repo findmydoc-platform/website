@@ -132,6 +132,12 @@ export const clinicDetailFixture: ClinicDetailData = {
       },
     ],
   },
+  freshness: {
+    updatedAt: '2026-01-12T09:15:00.000Z',
+    latestPatientReviewAt: '2026-01-12T09:15:00.000Z',
+    verificationTier: 'gold',
+    sourceCollections: ['clinics', 'reviews'],
+  },
   treatments: [
     { id: 'treatment-1', name: 'Routine Checkup', category: 'Preventive Care', priceFromUsd: 120 },
     { id: 'treatment-2', name: 'Developmental Screening', category: 'Diagnostics', priceFromUsd: 180 },

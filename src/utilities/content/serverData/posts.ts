@@ -20,6 +20,7 @@ export type PostSummaryDoc = Pick<
   | 'authors'
   | 'populatedAuthors'
   | 'publishedAt'
+  | 'updatedAt'
   | 'heroImage'
   | 'meta'
 >
@@ -38,6 +39,7 @@ export type PostDetailDoc = Omit<
     | 'authors'
     | 'populatedAuthors'
     | 'publishedAt'
+    | 'updatedAt'
     | 'heroImage'
     | 'relatedPosts'
     | 'meta'
@@ -69,6 +71,7 @@ const POST_LIST_SELECT = {
   authors: true,
   populatedAuthors: true,
   publishedAt: true,
+  updatedAt: true,
   heroImage: true,
   meta: {
     image: true,
@@ -89,6 +92,7 @@ const POST_RELATED_SELECT = {
   authors: true,
   populatedAuthors: true,
   publishedAt: true,
+  updatedAt: true,
   heroImage: true,
   meta: {
     image: true,
@@ -105,6 +109,7 @@ const POST_DETAIL_SELECT = {
   authors: true,
   populatedAuthors: true,
   publishedAt: true,
+  updatedAt: true,
   heroImage: true,
   relatedPosts: true,
   meta: {

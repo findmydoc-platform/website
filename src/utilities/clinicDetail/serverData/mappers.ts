@@ -24,6 +24,8 @@ import type {
 } from '@/components/templates/ClinicDetailConcepts/types'
 import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
 import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
+import { buildFreshnessSignals } from '@/utilities/freshness'
+import { findLatestIsoTimestampString } from '@/utilities/timestamps'
 
 import type { ClinicDetailMappingArgs } from './types'
 
@@ -452,6 +454,41 @@ function mapCitiesToNameMap(cities: City[]): Map<number, string> {
   )
 }
 
+function mapClinicFreshness({
+  clinic,
+  clinicTreatments,
+  doctors,
+  doctorSpecialties,
+  approvedClinicReviews,
+  galleryEntries,
+  accreditations,
+  cities,
+}: ClinicDetailMappingArgs) {
+  return buildFreshnessSignals({
+    updatedAt: findLatestIsoTimestampString([
+      clinic.updatedAt,
+      ...clinicTreatments.map((item) => item.updatedAt),
+      ...doctors.map((item) => item.updatedAt),
+      ...doctorSpecialties.map((item) => item.updatedAt),
+      ...galleryEntries.map((item) => item.updatedAt),
+      ...accreditations.map((item) => item.updatedAt),
+      ...cities.map((item) => item.updatedAt),
+    ]),
+    latestPatientReviewAt: findLatestIsoTimestampString(approvedClinicReviews.map((review) => review.reviewDate)),
+    verificationTier: toVerificationTier(clinic.verification),
+    sourceCollections: [
+      'accreditation',
+      'cities',
+      'clinics',
+      'clinicGalleryEntries',
+      'clinictreatments',
+      'doctors',
+      'doctorspecialties',
+      'reviews',
+    ],
+  })
+}
+
 export function mapClinicToClinicDetailData({
   clinic,
   clinicTreatments,
@@ -491,6 +528,18 @@ export function mapClinicToClinicDetailData({
     }),
     beforeAfterEntries: mapBeforeAfterEntries(clinic, galleryEntries),
     location: buildLocation(clinic, cityNameById),
+    freshness: mapClinicFreshness({
+      clinic,
+      clinicTreatments,
+      doctors,
+      doctorSpecialties,
+      clinicReviewCount,
+      approvedClinicReviews,
+      doctorReviewCounts,
+      galleryEntries,
+      accreditations,
+      cities,
+    }),
     contactHref,
   }
 }

@@ -1,6 +1,8 @@
 import type { Payload } from 'payload'
 
 import type { Clinic } from '@/payload-types'
+import { buildFreshnessSignals } from '@/utilities/freshness'
+import { findLatestIsoTimestampString } from '@/utilities/timestamps'
 import { slugify } from '@/utilities/slugify'
 import {
   buildListingComparisonHref,
@@ -23,6 +25,7 @@ import { extractRelationId } from './relations'
 import {
   countApprovedReviewsByClinic,
   findClinicTreatmentsForClinics,
+  findLatestApprovedReviewDateForClinics,
   findListingComparisonCatalog,
 } from './repositories'
 import {
@@ -122,8 +125,19 @@ export async function getListingComparisonServerData(
   const treatmentTypes = treatmentDocs.length
   const cities = countApprovedClinicCities(approvedClinics)
   const approvedClinicIds = approvedClinics.map((clinic) => clinic.id)
-  const catalogClinicTreatments = await findClinicTreatmentsForClinics(payload, approvedClinicIds)
+  const [catalogClinicTreatments, latestApprovedReviewAt] = await Promise.all([
+    findClinicTreatmentsForClinics(payload, approvedClinicIds),
+    findLatestApprovedReviewDateForClinics(payload, approvedClinicIds),
+  ])
   const priceEntries = countPriceEntries(catalogClinicTreatments)
+  const freshness = buildFreshnessSignals({
+    updatedAt: findLatestIsoTimestampString([
+      ...approvedClinics.map((clinic) => clinic.updatedAt),
+      ...catalogClinicTreatments.map((entry) => entry.updatedAt),
+    ]),
+    latestPatientReviewAt: latestApprovedReviewAt,
+    sourceCollections: ['clinics', 'clinictreatments', 'reviews'],
+  })
 
   const cityMeta = toCityMetaFromDocs(cityDocs)
   const cityOptions = toBaseFilterOptions(cityMeta)
@@ -359,5 +373,6 @@ export async function getListingComparisonServerData(
       cities,
       priceEntries,
     },
+    freshness,
   }
 }

@@ -1,4 +1,5 @@
 import type { ListingCardData } from '@/components/organisms/Listing'
+import type { FreshnessSignals } from '@/utilities/freshness'
 import type { Clinic } from '@/payload-types'
 import type { ListingComparisonQueryState } from '@/utilities/listingComparison/queryState'
 
@@ -56,6 +57,7 @@ export type ListingComparisonServerData = {
     cities: number
     priceEntries: number
   }
+  freshness: FreshnessSignals
 }
 
 export type CityMeta = {

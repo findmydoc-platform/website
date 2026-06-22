@@ -4,6 +4,7 @@ import path from 'node:path'
 import type { Payload } from 'payload'
 
 import type { City, Clinic, Clinictreatment, MedicalSpecialty, Review, Treatment } from '@/payload-types'
+import { normalizeToIsoTimestampString } from '@/utilities/timestamps'
 import { chunkArray, extractRelationId } from './relations'
 
 const CLINIC_CHUNK_SIZE = 200
@@ -144,6 +145,7 @@ export async function findAllApprovedClinics(payload: Payload): Promise<Clinic[]
         },
         thumbnail: true,
         tags: true,
+        updatedAt: true,
       },
     })
 
@@ -232,6 +234,7 @@ export async function findClinicTreatmentsForClinics(
           clinic: true,
           treatment: true,
           price: true,
+          updatedAt: true,
         },
       })
 
@@ -245,6 +248,54 @@ export async function findClinicTreatmentsForClinics(
   }
 
   return allDocs
+}
+
+export async function findLatestApprovedReviewDateForClinics(
+  payload: Payload,
+  clinicIds: number[],
+): Promise<string | undefined> {
+  if (clinicIds.length === 0) return undefined
+
+  let latestReviewDate: string | undefined
+  const clinicIdChunks = chunkArray(clinicIds, CLINIC_CHUNK_SIZE)
+
+  for (const clinicIdChunk of clinicIdChunks) {
+    const result = await payload.find({
+      collection: 'reviews',
+      depth: 0,
+      limit: 1,
+      page: 1,
+      pagination: false,
+      overrideAccess: false,
+      sort: '-reviewDate',
+      where: {
+        and: [
+          {
+            status: {
+              equals: 'approved',
+            },
+          },
+          {
+            clinic: {
+              in: clinicIdChunk,
+            },
+          },
+        ],
+      },
+      select: {
+        reviewDate: true,
+      },
+    })
+
+    const review = result.docs[0] as Review | undefined
+    const normalizedReviewDate = normalizeToIsoTimestampString(review?.reviewDate)
+    if (!normalizedReviewDate) continue
+    if (!latestReviewDate || new Date(normalizedReviewDate).getTime() > new Date(latestReviewDate).getTime()) {
+      latestReviewDate = normalizedReviewDate
+    }
+  }
+
+  return latestReviewDate
 }
 
 export async function countApprovedReviewsByClinic(

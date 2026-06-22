@@ -87,5 +87,6 @@ export async function generateMetadata({ params: paramsPromise }: ClinicDetailPa
     title: clinicDetailData.clinicName,
     description: clinicDetailData.description,
     path: `/clinics/${slug}`,
+    freshness: clinicDetailData.freshness,
   })
 }

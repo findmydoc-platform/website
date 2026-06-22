@@ -5,6 +5,7 @@ import { getPayload } from 'payload'
 
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
 import { buildIndexingMetadata, resolveListingComparisonIndexing } from '@/features/searchIndexing'
+import { buildFreshnessMetadata } from '@/utilities/freshness'
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 
@@ -21,8 +22,13 @@ export async function generateMetadata({
   searchParams: searchParamsPromise,
 }: ListingComparisonPageArgs): Promise<Metadata> {
   const searchParams = (await searchParamsPromise) ?? {}
+  const payload = await getPayload({ config: configPromise })
+  const listingData = await getListingComparisonServerData(payload, searchParams)
 
-  return buildIndexingMetadata(resolveListingComparisonIndexing(searchParams))
+  return {
+    ...buildIndexingMetadata(resolveListingComparisonIndexing(searchParams)),
+    ...buildFreshnessMetadata(listingData.freshness),
+  }
 }
 
 export default async function ListingComparisonPage({ searchParams: searchParamsPromise }: ListingComparisonPageArgs) {

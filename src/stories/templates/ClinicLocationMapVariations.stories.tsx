@@ -144,6 +144,7 @@ export const HiddenUntilConsent: Story = {
 
     await expect(canvas.getByRole('heading', { name: 'Clinic Location' })).toBeInTheDocument()
     await expect(canvas.getByText('OpenStreetMap is hidden until optional cookies are accepted.')).toBeInTheDocument()
+    await expect(canvas.getByTestId('clinic-location-placeholder-map')).toBeInTheDocument()
     await expect(canvas.queryByRole('link', { name: 'Directions' })).not.toBeInTheDocument()
     await expect(canvas.queryByRole('button', { name: 'Expand map' })).not.toBeInTheDocument()
   },

@@ -1,6 +1,7 @@
 import type { Payload } from 'payload'
 
 import type { Clinic } from '@/payload-types'
+import { CLINICS_BREADCRUMB, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { buildFreshnessSignals } from '@/utilities/freshness'
 import { findLatestIsoTimestampString } from '@/utilities/timestamps'
 import { slugify } from '@/utilities/slugify'
@@ -329,24 +330,21 @@ export async function getListingComparisonServerData(
   const selectedSpecialtyPath = buildSpecialtyPath(selectedSpecialtyIds[0] ?? null, specialtyById)
   const specialtyContext = {
     selected: selectedSpecialties,
-    breadcrumbs:
-      selectedSpecialtyPath.length > 0
-        ? [
-            { label: 'Home', href: '/' },
-            { label: 'Clinics', href: '/listing-comparison' },
-            ...selectedSpecialtyPath.map((specialty) => ({
-              label: specialty.name,
-              href: buildListingComparisonHref(
-                {
-                  ...queryState,
-                  page: 1,
-                  specialties: [String(specialty.id)],
-                },
-                { priceMax: priceBounds.max },
-              ),
-            })),
-          ]
-        : [],
+    breadcrumbs: [
+      HOME_BREADCRUMB,
+      CLINICS_BREADCRUMB,
+      ...selectedSpecialtyPath.map((specialty) => ({
+        label: specialty.name,
+        href: buildListingComparisonHref(
+          {
+            ...queryState,
+            page: 1,
+            specialties: [String(specialty.id)],
+          },
+          { priceMax: priceBounds.max },
+        ),
+      })),
+    ],
   }
 
   return {

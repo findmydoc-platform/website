@@ -7,6 +7,7 @@ import { Button } from '@/components/atoms/button'
 import { Card, CardContent } from '@/components/atoms/card'
 import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
+import { UiLink } from '@/components/molecules/Link'
 import { cn } from '@/utilities/ui'
 
 export type TreatmentsStripItem = {
@@ -16,6 +17,10 @@ export type TreatmentsStripItem = {
   cta?: {
     label: string
     onClick: () => void
+  }
+  comparisonLink?: {
+    href: string
+    label: string
   }
 }
 
@@ -113,7 +118,7 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
                         title={item.title}
                         description={item.description}
                         icon={item.icon}
-                        hasCta={Boolean(item.cta)}
+                        hasActions={Boolean(item.cta || item.comparisonLink)}
                         isInteractive={isInteractive}
                         onSelect={onActiveIndexChange}
                         index={index}
@@ -143,7 +148,7 @@ export const TreatmentsStrip: React.FC<TreatmentsStripProps> = ({
                     title={item.title}
                     description={item.description}
                     icon={item.icon}
-                    hasCta={Boolean(item.cta)}
+                    hasActions={Boolean(item.cta || item.comparisonLink)}
                     isInteractive={isInteractive}
                     onSelect={onActiveIndexChange}
                     index={index}
@@ -165,7 +170,7 @@ function Tile({
   title,
   description,
   icon,
-  hasCta = false,
+  hasActions = false,
   isInteractive,
   onSelect,
   index,
@@ -176,7 +181,7 @@ function Tile({
   title: string
   description: string
   icon?: React.ReactNode
-  hasCta?: boolean
+  hasActions?: boolean
   isInteractive: boolean
   onSelect?: (idx: number) => void
   index: number
@@ -208,8 +213,8 @@ function Tile({
             {title}
           </Heading>
           <p className="text-normal mt-3 line-clamp-3 text-primary-foreground/85">{description}</p>
-          {hasCta ? (
-            <div className="mt-5 inline-flex h-10 w-[172px] rounded-full border border-primary-foreground/20" />
+          {hasActions ? (
+            <div className="mt-5 inline-flex h-[72px] w-[220px] rounded-full border border-primary-foreground/20" />
           ) : null}
         </div>
       ) : (
@@ -257,10 +262,21 @@ function ActiveCard({ item, lifted = false }: { item: TreatmentsStripItem; lifte
         <p className="text-normal mt-3 line-clamp-3 self-start text-secondary/90" title={item.description}>
           {item.description}
         </p>
-        {item.cta ? (
-          <Button type="button" className="mt-5 rounded-full px-6" onClick={item.cta.onClick}>
-            {item.cta.label}
-          </Button>
+        {item.cta || item.comparisonLink ? (
+          <div className="mt-5 flex flex-col items-center gap-2">
+            {item.cta ? (
+              <Button type="button" className="rounded-full px-6" onClick={item.cta.onClick}>
+                {item.cta.label}
+              </Button>
+            ) : null}
+            {item.comparisonLink ? (
+              <UiLink
+                href={item.comparisonLink.href}
+                label={item.comparisonLink.label}
+                className="inline-flex min-h-9 items-center text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              />
+            ) : null}
+          </div>
         ) : null}
       </CardContent>
     </Card>

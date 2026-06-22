@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 
+import { BreadcrumbJsonLd } from '@/components/molecules/Breadcrumb/BreadcrumbJsonLd'
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
@@ -54,16 +55,19 @@ export default async function ClinicDetailPage({ params: paramsPromise }: Clinic
   const clinicPath = `/clinics/${encodeURIComponent(slug)}`
 
   return (
-    <ClinicDetail
-      data={clinicDetailData}
-      favorite={{
-        isPatient: favoriteAuthContext.isPatient,
-        favoriteId: favoriteStateByClinicId[String(clinicDetailData.clinicId)] ?? null,
-        loginHref: buildPatientLoginHref(clinicPath),
-      }}
-      cookieConsentConfig={cookieConsentContext.config}
-      cookieConsentInitialConsent={cookieConsentContext.initialConsent}
-    />
+    <>
+      <BreadcrumbJsonLd items={clinicDetailData.breadcrumbs} />
+      <ClinicDetail
+        data={clinicDetailData}
+        favorite={{
+          isPatient: favoriteAuthContext.isPatient,
+          favoriteId: favoriteStateByClinicId[String(clinicDetailData.clinicId)] ?? null,
+          loginHref: buildPatientLoginHref(clinicPath),
+        }}
+        cookieConsentConfig={cookieConsentContext.config}
+        cookieConsentInitialConsent={cookieConsentContext.initialConsent}
+      />
+    </>
   )
 }
 

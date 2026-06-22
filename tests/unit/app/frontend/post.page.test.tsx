@@ -2,6 +2,7 @@ import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  breadcrumbJsonLdComponent: vi.fn(() => null),
   calculateReadTimeMock: vi.fn(() => '5 min read'),
   draftModeMock: vi.fn(),
   findPostBySlugMock: vi.fn(),
@@ -35,6 +36,10 @@ vi.mock('payload', async (importOriginal) => {
 
 vi.mock('@/app/(frontend)/_components/PayloadRedirects', () => ({
   PayloadRedirects: mocks.payloadRedirectsComponent,
+}))
+
+vi.mock('@/components/molecules/Breadcrumb/BreadcrumbJsonLd', () => ({
+  BreadcrumbJsonLd: mocks.breadcrumbJsonLdComponent,
 }))
 
 vi.mock('@/components/organisms/Heroes/PostHero', () => ({
@@ -181,6 +186,7 @@ describe('frontend post detail route', () => {
     expect(heroElement?.props.breadcrumbs).toEqual([
       { label: 'Home', href: '/' },
       { label: 'Blog', href: '/posts?locale=de' },
+      { label: 'Hallo Welt', href: '/posts/hello-world?locale=de' },
     ])
     expect(heroElement?.props.image).toEqual({
       src: '/api/platformContentMedia/file/post-hero.webp',
@@ -188,6 +194,11 @@ describe('frontend post detail route', () => {
       sizes: '100vw',
       quality: 75,
     })
+
+    const breadcrumbJsonLdElement = findElementByType(result, mocks.breadcrumbJsonLdComponent) as React.ReactElement<{
+      items: Array<{ href: string; label: string }>
+    }> | null
+    expect(breadcrumbJsonLdElement?.props.items).toEqual(heroElement?.props.breadcrumbs)
 
     const shareElement = findElementByType(result, mocks.postShareActionBarComponent) as React.ReactElement<{
       backLink: { href: string; label: string }

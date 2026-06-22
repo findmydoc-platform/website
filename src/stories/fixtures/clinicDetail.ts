@@ -5,6 +5,13 @@ import { getStoryImageSrc, storyClinicImages, storyPortraits } from './assets'
 const clinicSlug = 'berlin-health-clinic'
 const clinicContactHref = `/contact?clinic=${clinicSlug}&source=clinic-detail`
 
+function buildTreatmentComparisonLink(id: string, treatmentName: string) {
+  return {
+    href: `/listing-comparison?treatment=${encodeURIComponent(id)}`,
+    label: `Compare clinics for ${treatmentName}`,
+  }
+}
+
 const doctorBlueprints = [
   { name: 'Dr. Amelia Carter', specialty: 'Pediatric Cardiology' },
   { name: 'Dr. Jonas Meyer', specialty: 'General Pediatrics' },
@@ -78,6 +85,11 @@ export const clinicDetailFixture: ClinicDetailData = {
   clinicId: 1001,
   clinicSlug,
   clinicName: 'Berlin Health Clinic',
+  breadcrumbs: [
+    { label: 'Home', href: '/' },
+    { label: 'Clinics', href: '/listing-comparison' },
+    { label: 'Berlin Health Clinic', href: `/clinics/${clinicSlug}` },
+  ],
   heroImage: {
     src: getStoryImageSrc(storyClinicImages.clinicDetail.exterior),
     alt: 'Berlin Health Clinic exterior',
@@ -139,14 +151,61 @@ export const clinicDetailFixture: ClinicDetailData = {
     sourceCollections: ['clinics', 'reviews'],
   },
   treatments: [
-    { id: 'treatment-1', name: 'Routine Checkup', category: 'Preventive Care', priceFromUsd: 120 },
-    { id: 'treatment-2', name: 'Developmental Screening', category: 'Diagnostics', priceFromUsd: 180 },
-    { id: 'treatment-3', name: 'Vaccination Package', category: 'Preventive Care', priceFromUsd: 230 },
-    { id: 'treatment-4', name: 'Asthma Management Plan', category: 'Chronic Care', priceFromUsd: 310 },
-    { id: 'treatment-5', name: 'Neurology Consultation', category: 'Specialist Care', priceFromUsd: 380 },
-    { id: 'treatment-6', name: 'Pediatric Cardiology Review', category: 'Specialist Care', priceFromUsd: 460 },
-    { id: 'treatment-7', name: 'Genetic Counseling', category: 'Specialist Care' },
-    { id: 'treatment-8', name: 'Family Nutrition Coaching', category: 'Supportive Care', priceFromUsd: 150 },
+    {
+      id: 'treatment-1',
+      name: 'Routine Checkup',
+      category: 'Preventive Care',
+      priceFromUsd: 120,
+      comparisonLink: buildTreatmentComparisonLink('treatment-1', 'Routine Checkup'),
+    },
+    {
+      id: 'treatment-2',
+      name: 'Developmental Screening',
+      category: 'Diagnostics',
+      priceFromUsd: 180,
+      comparisonLink: buildTreatmentComparisonLink('treatment-2', 'Developmental Screening'),
+    },
+    {
+      id: 'treatment-3',
+      name: 'Vaccination Package',
+      category: 'Preventive Care',
+      priceFromUsd: 230,
+      comparisonLink: buildTreatmentComparisonLink('treatment-3', 'Vaccination Package'),
+    },
+    {
+      id: 'treatment-4',
+      name: 'Asthma Management Plan',
+      category: 'Chronic Care',
+      priceFromUsd: 310,
+      comparisonLink: buildTreatmentComparisonLink('treatment-4', 'Asthma Management Plan'),
+    },
+    {
+      id: 'treatment-5',
+      name: 'Neurology Consultation',
+      category: 'Specialist Care',
+      priceFromUsd: 380,
+      comparisonLink: buildTreatmentComparisonLink('treatment-5', 'Neurology Consultation'),
+    },
+    {
+      id: 'treatment-6',
+      name: 'Pediatric Cardiology Review',
+      category: 'Specialist Care',
+      priceFromUsd: 460,
+      comparisonLink: buildTreatmentComparisonLink('treatment-6', 'Pediatric Cardiology Review'),
+    },
+    {
+      id: 'treatment-7',
+      name: 'Genetic Counseling',
+      category: 'Specialist Care',
+      comparisonLink: buildTreatmentComparisonLink('treatment-7', 'Genetic Counseling'),
+    },
+    {
+      id: 'treatment-8',
+      name: 'Family Nutrition Coaching',
+      category: 'Supportive Care',
+      priceFromUsd: 150,
+      comparisonLink: buildTreatmentComparisonLink('treatment-8', 'Family Nutrition Coaching'),
+    },
   ],
   doctors,
   beforeAfterEntries: [

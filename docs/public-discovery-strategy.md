@@ -1,26 +1,24 @@
 # Public Discovery Strategy
 
-This document defines the strategic rules for public discovery across SEO and GEO (Generative Engine Optimization / agent discovery). It is intentionally not an implementation guide. Feature details live in code, tests, issues, and PRs. Architecture decisions live in ADRs and are linked here instead of repeated.
+This document defines the strategic rules for public discovery across SEO and GEO (Generative Engine Optimization / agent discovery). It is intentionally not an implementation guide. Its job is to keep public content crawlable, canonical, and agent-readable without duplicating trust/review policy or localization routing decisions that belong elsewhere.
 
-## Strategic Goal
+## Scope And Boundaries
 
-findmydoc public content should be easy for search engines and AI agents to crawl, understand, cite, and evaluate for freshness without exposing private, draft, unpublished, or admin-only data.
+findmydoc public content should be easy for search engines and AI agents to crawl, understand, and cite without exposing private, draft, unpublished, or admin-only data.
 
-Public discovery work must support three outcomes:
+Public discovery work supports three outcomes:
 
 - Search engines can discover stable, crawlable, canonical URLs.
-- AI agents can identify public entities, freshness, trust boundaries, and source-backed facts.
-- Patients see and agents cite only claims that are backed by source data or an approved operating process.
+- AI agents can identify public entities and source-backed public facts.
+- Patients and agents see only public information that already exists in the source data.
 
-## SEO And GEO Scope
+This doc does not define:
 
-SEO covers crawlability, canonical URLs, metadata, sitemap inclusion, structured data, internal linking, and indexability.
+- Trust claim policy, review governance, moderation rules, or content approval workflows.
+- Locale routing, `hreflang`, language-switcher behavior, or translation workflow decisions.
+- Product UI copy, legal copy, or medical-copy ownership rules.
 
-GEO covers the same public surfaces from an agent perspective: agent-readable context, stable public identifiers, freshness signals, source-backed trust metadata, and content that renders before client-only enhancements.
-
-Both scopes use the same safety rule: public discovery surfaces must never expose private records, admin-only fields, drafts, unpublished records, pending/rejected reviews, or unverifiable medical claims.
-
-## Public Entity Strategy
+## Public Surfaces
 
 An entity becomes independently indexable only when it has a stable public route, enough useful public content, canonical metadata, sitemap inclusion, and clear visibility rules.
 
@@ -32,34 +30,38 @@ The current public entity surfaces are:
 
 Doctors, treatments, locations, specialties, tags, and query-filter combinations can support discovery and internal linking, but they are not independently indexable unless a future decision gives them dedicated public routes and sitemap rules.
 
-## Canonical And Sitemap Rules
-
 Public canonical URLs should prefer readable slug routes over query URLs. Query variants remain useful for users, filters, saved links, sorting, and pagination, but they should be canonicalized or marked `noindex` unless they become dedicated landing pages.
 
 Sitemap entries should use real content timestamps when available. Request-time timestamps must not be used as freshness signals because they imply content freshness that did not happen.
 
 Preview, temporary landing, draft, unpublished, private, and admin-only states stay out of public sitemap discovery.
 
-## Freshness, Trust, And Review Signals
+`/listing-comparison` is the only v1 indexable Listing Comparison URL. It acts as the stable public discovery entry point and is included in `/pages-sitemap.xml`.
 
-Freshness signals are source-backed only. Allowed sources include Payload timestamps such as `updatedAt`, publication timestamps such as `publishedAt`, approved patient review dates such as `reviewDate`, and explicit verification fields that already exist in the public model.
+Listing Comparison query variants stay functional for users, saved links, filters, sorting, and pagination, but they are not treated as indexable landing pages. Any query parameter on `/listing-comparison` is canonicalized to `/listing-comparison` and emits `noindex, follow`, including current and legacy parameters such as `city`, `specialty`, `treatment`, `ratingMin`, `priceMin`, `priceMax`, `sort`, `page`, `service`, `location`, and `budget`.
 
-Review and trust metadata must describe the source process accurately:
+Future indexable facets should use dedicated readable slug routes instead of query URLs. Each new route needs a clear search intent, enough stable content and result depth, canonical metadata, and explicit sitemap inclusion before it becomes indexable.
 
-- Approved patient reviews can expose review dates and moderation-backed visibility.
-- Clinic verification tiers can be exposed when they come from the public clinic model.
-- Clinical or medical review claims must not be emitted unless a real review process and source field exist.
+`src/features/searchIndexing/` is the small route-policy foundation for this behavior. It currently provides reusable policy result types, metadata helpers, and the Listing Comparison policy; it is not a full SEO framework or registry.
 
-When no source exists, the public surface should omit the signal instead of inventing manual freshness or review values.
+## Allowed Signals
 
-## ADR Boundary
+Freshness signals are source-backed only. Allowed sources include Payload timestamps such as `updatedAt`, publication timestamps such as `publishedAt`, and explicit verification fields that already exist in the public model.
 
-This strategy records operating rules and scope boundaries. ADRs record architecture decisions.
+When a public signal does not have a source field, omit it instead of inventing manual freshness, review, or ranking values.
 
-Use an ADR when a decision changes the architecture of public discovery, such as localized public URL structure, `hreflang` and locale sitemap behavior, a dedicated public discovery API, new canonical entity route families, or a new structured-data framework.
+If a signal requires review, moderation, or policy interpretation, define it in the owning trust/review document instead of here.
 
-Relevant ADRs:
+## Non-Goals And Links
 
-- [ADR 018 - Native Payload CMS localization strategy](./adrs/018-adr-native-payload-localization-strategy.md): establishes the current Payload localization foundation and leaves URL, SEO, publishing nuance, and translation workflow decisions to follow-up architecture decisions.
+Use an ADR when a decision changes the architecture of public discovery, such as localized public URL structure, a dedicated public discovery API, new canonical entity route families, or a new structured-data framework.
 
-Keep this document as the strategy layer. Do not duplicate ADR rationale here.
+Relevant docs:
+
+- [ADR 018 - Native Payload CMS localization strategy](./adrs/018-adr-native-payload-localization-strategy.md)
+- [Localization ADR decision backlog](./roadmap/localization/localization-adr-questions.md)
+- [Payload content localization roadmap](./roadmap/localization/payload-content-localization.md)
+- [Trust claim process requirements](../trust-claim-process-requirements-task.md)
+- [Trust claim review evidence requirements](../trust-claim-review-evidence-requirements-task.md)
+
+Keep this document as the strategy layer. Do not duplicate ADR rationale, trust-review policy, or localization routing here.

@@ -175,10 +175,21 @@ The findmydoc portal uses the [on-demand revalidation](https://nextjs.org/docs/a
 ## Public Sitemaps
 The public sitemap surface is split between the generated `robots.txt` file and App Router sitemap route handlers.
 
-- `robots.txt` references `/pages-sitemap.xml` and `/posts-sitemap.xml` outside preview runtime.
+- `robots.txt` references `/sitemap.xml`, `/pages-sitemap.xml`, and `/posts-sitemap.xml` outside preview runtime.
 - `/pages-sitemap.xml` lists `/`, `/posts`, `/contact`, `/about`, `/listing-comparison`, and published CMS pages. It does not list `/search` because there is no dedicated public search route.
 - `/posts-sitemap.xml` lists published post detail URLs with valid single-segment slugs.
 - Preview runtime and Temporary Landing Mode keep deeper public content out of sitemap discovery through preview robots policy and empty guarded sitemap responses.
+
+Production `robots.txt` treats automated search discovery, user-directed AI retrieval, and model training as separate access classes:
+
+| Bot class | User agents | Policy |
+| --- | --- | --- |
+| Search and answer indexing | `Googlebot`, `bingbot`, `OAI-SearchBot`, `PerplexityBot`, `Claude-SearchBot` | Allowed for public pages; `/admin` and `/admin/*` stay disallowed. |
+| User-directed AI retrieval | `ChatGPT-User`, `Perplexity-User`, `Claude-User` | Allowed for public pages so user requests in ChatGPT, Perplexity, and Claude can retrieve and cite findmydoc content; `/admin` and `/admin/*` stay disallowed. |
+| Model training and generative-AI control | `GPTBot`, `ClaudeBot`, `Google-Extended` | Disallowed across the site unless a separate business decision changes the training-access stance. |
+| General crawlers | `*` | Public pages stay crawlable; `/admin` and `/admin/*` stay disallowed. |
+
+WAF and IP allowlisting for AI crawlers belongs to infrastructure operations, not this repository's sitemap configuration.
 
 Run the sitemap status check against local development or production when Temporary Landing Mode is disabled:
 
@@ -193,7 +204,7 @@ done
 Manage SEO settings from the admin panel.
 [Payload SEO Plugin Docs](https://payloadcms.com/docs/plugins/seo)
 
-Strategic rules for SEO, GEO / agent discovery, public entity URLs, sitemap freshness, and trust signals live in [Public Discovery Strategy](./public-discovery-strategy.md).
+Strategic rules for SEO, GEO / agent discovery, public entity URLs, sitemap freshness, and source-backed freshness signals live in [Public Discovery Strategy](./public-discovery-strategy.md).
 
 ### Search-facing rendering
 

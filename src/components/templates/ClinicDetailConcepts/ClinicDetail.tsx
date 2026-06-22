@@ -262,6 +262,7 @@ export function ClinicDetail({
           variant="inline-note"
           size="compact"
           showVariantLabel={false}
+          standalone={true}
         />
       </Container>
 

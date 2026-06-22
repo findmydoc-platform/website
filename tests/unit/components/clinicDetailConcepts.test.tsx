@@ -178,6 +178,7 @@ describe('ClinicDetail concept', () => {
         variant: 'inline-note',
         size: 'compact',
         showVariantLabel: false,
+        standalone: true,
       }),
     )
 

@@ -90,9 +90,14 @@ export const WithBreadcrumbs: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument()
+    const breadcrumb = canvas.getByRole('navigation', { name: 'Breadcrumb' })
+    const heading = canvas.getByRole('heading', { name: 'Our Blog' })
+    const hero = heading.closest('section')
+
+    await expect(breadcrumb).toBeInTheDocument()
     await expect(canvas.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/')
     await expect(canvas.getByText('Blog', { selector: '[aria-current="page"]' })).toBeInTheDocument()
+    expect(hero?.contains(breadcrumb)).toBe(false)
   },
 }
 

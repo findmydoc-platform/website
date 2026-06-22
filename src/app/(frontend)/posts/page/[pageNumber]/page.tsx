@@ -5,10 +5,13 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
+import { Breadcrumb, type BreadcrumbItem } from '@/components/molecules/Breadcrumb'
+import { BreadcrumbJsonLd } from '@/components/molecules/Breadcrumb/BreadcrumbJsonLd'
 import { Heading } from '@/components/atoms/Heading'
 import { notFound, redirect } from 'next/navigation'
 import { Container } from '@/components/molecules/Container'
 import { normalizePost } from '@/utilities/blog/normalizePost'
+import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { buildPostsIndexPath, buildPostsPagePath } from '@/utilities/content/postPaths'
 import { countPublishedPosts, findPublishedPostsPage } from '@/utilities/content/serverData'
 import { resolveContentLocaleContext } from '@/utilities/contentLocalization'
@@ -51,12 +54,20 @@ export default async function Page({ params: paramsPromise, searchParams: search
 
   const normalizedPosts = posts.docs.map((post) => normalizePost(post, { contentLocale }))
   const remainingArticlesCount = Math.max((posts.totalDocs || 0) - 1, 0)
+  const pagePath = buildPostsPagePath(sanitizedPageNumber, contentLocale)
+  const breadcrumbs: BreadcrumbItem[] = [
+    HOME_BREADCRUMB,
+    createBlogBreadcrumb(buildPostsIndexPath(contentLocale)),
+    { label: `Page ${sanitizedPageNumber}`, href: pagePath },
+  ]
 
   return (
     <div className="pt-16 pb-20 sm:pt-24 sm:pb-24">
       <PageClient />
+      <BreadcrumbJsonLd items={breadcrumbs} />
       <Container className="mb-12 sm:mb-16">
         <div className="prose max-w-none">
+          <Breadcrumb items={breadcrumbs} className="mb-6 [&_ol]:justify-center" />
           <Heading as="h1" align="center">
             Posts
           </Heading>

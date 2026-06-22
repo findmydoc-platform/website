@@ -4,6 +4,7 @@ import { Stethoscope } from 'lucide-react'
 import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import { Card, CardContent } from '@/components/atoms/card'
+import { UiLink } from '@/components/molecules/Link'
 import { formatUsd } from '@/components/templates/ClinicDetailConcepts/shared'
 
 import type { ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
@@ -50,9 +51,23 @@ export function FurtherTreatmentsSection({
                 </p>
               </div>
 
-              <Button type="button" variant="secondary" onClick={() => onChooseTreatment(treatment.id)}>
-                Choose Treatment
-              </Button>
+              <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full sm:w-auto"
+                  onClick={() => onChooseTreatment(treatment.id)}
+                >
+                  Choose Treatment
+                </Button>
+                {treatment.comparisonLink ? (
+                  <UiLink
+                    href={treatment.comparisonLink.href}
+                    label={treatment.comparisonLink.label}
+                    className="inline-flex min-h-9 items-center justify-center text-center text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                  />
+                ) : null}
+              </div>
             </article>
           ))}
         </div>

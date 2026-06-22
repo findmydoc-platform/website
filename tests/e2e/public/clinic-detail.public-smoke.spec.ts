@@ -83,6 +83,10 @@ test.describe('clinic detail map dialog', () => {
 
     await page.goto(`/clinics/${clinicSlug}`, { waitUntil: 'domcontentloaded' })
     await page.waitForLoadState('networkidle')
+    const breadcrumb = page.getByRole('navigation', { name: 'Breadcrumb' })
+    await expect(breadcrumb.getByRole('link', { name: 'Home' })).toBeVisible()
+    await expect(breadcrumb.getByRole('link', { name: 'Clinics' })).toBeVisible()
+    await expect(breadcrumb.locator('[aria-current="page"]')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Clinic Location' })).toBeVisible()
 
     const previewMap = page.getByTitle(/Map preview of/)

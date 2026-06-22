@@ -5,6 +5,7 @@ import { cn } from '@/utilities/ui'
 export type BreadcrumbItem = {
   label: string
   href: string
+  current?: boolean
 }
 
 export type BreadcrumbProps = {
@@ -41,11 +42,11 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, separator = '›'
 
   return (
     <nav className={cn('text-sm', variantClasses[variant], className)} aria-label="Breadcrumb">
-      <ol className="flex flex-wrap items-center gap-4">
+      <ol className="flex flex-wrap items-center gap-x-4 gap-y-1">
         {items.map((item, index) => {
-          const isCurrent = index === items.length - 1
+          const isCurrent = item.current ?? index === items.length - 1
 
-          const linkClasses =
+          const itemClasses =
             variant === 'light'
               ? isCurrent
                 ? '!text-white hover:!text-white'
@@ -53,19 +54,21 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, separator = '›'
               : 'text-inherit hover:text-foreground'
 
           return (
-            <li key={index} className="flex items-center gap-4">
-              {index > 0 && (
+            <li key={`${item.href}-${index}`} className="inline-flex max-w-full min-w-0 items-center gap-4">
+              {isCurrent ? (
+                <span aria-current="page" className={cn('max-w-full break-words', itemClasses)} title={item.label}>
+                  {item.label}
+                </span>
+              ) : (
+                <Link href={item.href} className={cn('max-w-full break-words transition-colors', itemClasses)}>
+                  {item.label}
+                </Link>
+              )}
+              {index < items.length - 1 && (
                 <span aria-hidden="true" className={cn(variant === 'light' ? '!text-white/45' : 'text-inherit')}>
                   {separator}
                 </span>
               )}
-              <Link
-                href={item.href}
-                className={cn('transition-colors', linkClasses)}
-                {...(isCurrent && { 'aria-current': 'page' })}
-              >
-                {item.label}
-              </Link>
             </li>
           )
         })}

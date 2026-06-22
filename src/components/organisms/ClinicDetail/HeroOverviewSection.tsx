@@ -3,6 +3,7 @@ import { Stethoscope } from 'lucide-react'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Card, CardContent } from '@/components/atoms/card'
+import { Breadcrumb, type BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import { DoctorPreviewListItem, HeroQualitySummary } from '@/components/molecules/ClinicDetail'
 import { Media } from '@/components/molecules/Media'
 import { formatRatingSummary } from '@/components/templates/ClinicDetailConcepts/shared'
@@ -15,6 +16,7 @@ type HeroOverviewSectionProps = {
   description: string
   heroImage: { src: string; alt: string }
   trust: ClinicDetailTrust
+  breadcrumbs?: BreadcrumbItem[]
   doctors: ClinicDetailDoctor[]
   activeDoctorId: string
   onDoctorSelect: (doctorId: string) => void
@@ -26,6 +28,7 @@ export function HeroOverviewSection({
   description,
   heroImage,
   trust,
+  breadcrumbs,
   doctors,
   activeDoctorId,
   onDoctorSelect,
@@ -39,6 +42,9 @@ export function HeroOverviewSection({
     <section className="grid gap-8 lg:grid-cols-12 lg:items-start">
       <div className="min-w-0 space-y-6 lg:col-span-5 lg:space-y-8 lg:pt-14">
         <div className="space-y-2">
+          {breadcrumbs?.length ? (
+            <Breadcrumb items={breadcrumbs} className="text-xs sm:text-sm [&_li]:gap-2 [&_ol]:gap-2" />
+          ) : null}
           <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">CLINIC OVERVIEW</p>
           <Heading
             as="h1"

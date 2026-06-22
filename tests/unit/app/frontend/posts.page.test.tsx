@@ -2,6 +2,8 @@ import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  blogHeroComponent: vi.fn(() => null),
+  breadcrumbJsonLdComponent: vi.fn(() => null),
   createSiteMetadataMock: vi.fn((args: unknown) => args),
   findPublishedPostsPageMock: vi.fn(),
   getPayloadMock: vi.fn(),
@@ -31,6 +33,14 @@ vi.mock('@/utilities/blog/normalizePost', () => ({
 
 vi.mock('@/utilities/generateMeta', () => ({
   createSiteMetadata: mocks.createSiteMetadataMock,
+}))
+
+vi.mock('@/components/molecules/Breadcrumb/BreadcrumbJsonLd', () => ({
+  BreadcrumbJsonLd: mocks.breadcrumbJsonLdComponent,
+}))
+
+vi.mock('@/components/organisms/Blog/BlogHero', () => ({
+  BlogHero: mocks.blogHeroComponent,
 }))
 
 vi.mock('@/app/(frontend)/posts/_components/PostsPagination', () => ({
@@ -114,6 +124,20 @@ describe('frontend posts index route', () => {
     expect(paginationElement).not.toBeNull()
     expect(paginationElement?.props.getPathForPage(1)).toBe('/posts?locale=de')
     expect(paginationElement?.props.getPathForPage(2)).toBe('/posts/page/2?locale=de')
+
+    const expectedBreadcrumbs = [
+      { label: 'Home', href: '/' },
+      { label: 'Blog', href: '/posts?locale=de' },
+    ]
+    const heroElement = findElementByType(result, mocks.blogHeroComponent) as React.ReactElement<{
+      breadcrumbs: Array<{ href: string; label: string }>
+    }> | null
+    expect(heroElement?.props.breadcrumbs).toEqual(expectedBreadcrumbs)
+
+    const breadcrumbJsonLdElement = findElementByType(result, mocks.breadcrumbJsonLdComponent) as React.ReactElement<{
+      items: Array<{ href: string; label: string }>
+    }> | null
+    expect(breadcrumbJsonLdElement?.props.items).toEqual(expectedBreadcrumbs)
   })
 
   it('uses the requested content locale in metadata paths', async () => {

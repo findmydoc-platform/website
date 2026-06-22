@@ -275,6 +275,7 @@ describe('getListingComparisonServerData (contract)', () => {
 
     expect(result.metrics.priceEntries).toBe(5)
     expect(result.metrics.cities).toBe(2)
+    expect(result.specialtyContext.breadcrumbs.map((item) => item.label)).toEqual(['Home', 'Clinics'])
   })
 
   it('reuses the public listing catalog for repeated requests on the same payload instance', async () => {

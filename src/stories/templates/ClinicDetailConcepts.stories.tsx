@@ -81,8 +81,9 @@ export const Main_InitialReviewSummary: Story = {
     await expect(canvas.getByText('Latest review')).toBeInTheDocument()
     await expect(canvas.getByText('5 verified reviews')).toBeInTheDocument()
     await expect(canvas.getByRole('button', { name: 'What verified reviews mean' })).toBeInTheDocument()
+    const reviewsRegion = canvas.getByRole('region', { name: 'Patient Reviews' })
     await expect(
-      within(canvas.getByRole('list')).queryByRole('article', {
+      within(reviewsRegion).queryByRole('article', {
         name: 'Maya K. verified review from Jan 12, 2026',
       }),
     ).not.toBeInTheDocument()

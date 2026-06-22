@@ -26,11 +26,17 @@ test('listing filters preserve the selected specialty when rating changes @smoke
 
   await page.goto('/listing-comparison', { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { name: 'Compare clinic prices' })).toBeVisible()
+  const breadcrumb = page.getByRole('navigation', { name: 'Breadcrumb' })
+  await expect(breadcrumb.getByRole('link', { name: 'Home' })).toBeVisible()
+  await expect(breadcrumb.getByText('Clinics')).toHaveAttribute('aria-current', 'page')
+
   const medicalSpecialtyToggle = page.getByRole('button', { name: /^Medical Specialty/ })
   await medicalSpecialtyToggle.click()
   await expect(medicalSpecialtyToggle).toHaveAttribute('aria-expanded', 'true')
   await page.getByRole('radiogroup', { name: 'Medical Specialty' }).getByText('Dental', { exact: true }).click()
   await waitForSearchParam(page, 'specialty', '1')
+  await expect(breadcrumb.getByRole('link', { name: 'Clinics' })).toBeVisible()
+  await expect(breadcrumb.getByText('Dental')).toHaveAttribute('aria-current', 'page')
 
   const fourStarButton = page.getByRole('button', { name: '4+ ★' })
   await fourStarButton.click()

@@ -1,3 +1,4 @@
+import type { BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import type { CookieConsentConfig, CookieConsentState } from '@/features/cookieConsent'
 import type { FreshnessSignals } from '@/utilities/freshness'
 
@@ -29,6 +30,10 @@ export type ClinicDetailTreatment = {
   name: string
   priceFromUsd?: number
   category?: string
+  comparisonLink?: {
+    href: string
+    label: string
+  }
 }
 
 export type ClinicBeforeAfterEntry = {
@@ -79,6 +84,7 @@ export type ClinicDetailData = {
   clinicId: number
   clinicSlug: string
   clinicName: string
+  breadcrumbs: BreadcrumbItem[]
   heroImage: { src: string; alt: string }
   description: string
   trust: ClinicDetailTrust

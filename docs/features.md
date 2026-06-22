@@ -193,6 +193,8 @@ done
 Manage SEO settings from the admin panel.
 [Payload SEO Plugin Docs](https://payloadcms.com/docs/plugins/seo)
 
+Strategic rules for SEO, GEO / agent discovery, public entity URLs, sitemap freshness, and trust signals live in [Public Discovery Strategy](./public-discovery-strategy.md).
+
 ### Search-facing rendering
 
 Public discovery routes expose their core facts in initial HTML so search engines and AI agents can inspect the main content before client hydration. Interactive enhancements such as filters, saved-clinic actions, maps, consent controls, sharing, and forms can remain client-side as long as the route still renders the primary content, semantic main structure, and public internal links without browser-only state.

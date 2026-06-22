@@ -42,6 +42,12 @@ describe('listing comparison page route metadata', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    routeMocks.getPayload.mockResolvedValue({})
+    routeMocks.getListingComparisonServerData.mockResolvedValue({
+      freshness: {
+        sourceCollections: [],
+      },
+    })
   })
 
   it('keeps the canonical base route indexable', async () => {

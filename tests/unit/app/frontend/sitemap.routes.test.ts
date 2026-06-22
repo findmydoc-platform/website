@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const routeMocks = vi.hoisted(() => ({
   findPageSitemapDocs: vi.fn(),
   findPostSitemapDocs: vi.fn(),
+  getListingComparisonServerData: vi.fn(),
   getPayload: vi.fn(),
   getServerSideSitemap: vi.fn(),
   shouldBlockSitemapIndexingForRequest: vi.fn(),
@@ -30,6 +31,10 @@ vi.mock('@/utilities/content/serverData', () => ({
   findPostSitemapDocs: routeMocks.findPostSitemapDocs,
 }))
 
+vi.mock('@/utilities/listingComparison/serverData', () => ({
+  getListingComparisonServerData: routeMocks.getListingComparisonServerData,
+}))
+
 vi.mock('@/features/searchIndexing/sitemapGuards', () => ({
   shouldBlockSitemapIndexingForRequest: routeMocks.shouldBlockSitemapIndexingForRequest,
 }))
@@ -47,6 +52,12 @@ describe('frontend sitemap routes', () => {
 
     vi.clearAllMocks()
     routeMocks.getPayload.mockResolvedValue({})
+    routeMocks.getListingComparisonServerData.mockResolvedValue({
+      freshness: {
+        updatedAt: '2026-01-06T00:00:00.000Z',
+        sourceCollections: ['clinics'],
+      },
+    })
     routeMocks.getServerSideSitemap.mockImplementation((entries: unknown[], headers?: Record<string, string>) => {
       return Response.json({ entries, headers })
     })
@@ -113,6 +124,10 @@ describe('frontend sitemap routes', () => {
     )
     expect(locs).not.toContain('https://findmydoc.eu/search')
     expect(locs.some((loc: string) => loc.includes('?'))).toBe(false)
+    expect(body.entries.find((entry: { loc: string }) => entry.loc.endsWith('/contact'))).not.toHaveProperty('lastmod')
+    expect(body.entries.find((entry: { loc: string }) => entry.loc.endsWith('/listing-comparison'))).toMatchObject({
+      lastmod: '2026-01-06T00:00:00.000Z',
+    })
   })
 
   it('normalizes and deduplicates CMS pages in the pages sitemap', async () => {
@@ -140,6 +155,12 @@ describe('frontend sitemap routes', () => {
     expect(locs).toEqual(
       expect.arrayContaining(['https://findmydoc.eu/privacy-policy', 'https://findmydoc.eu/imprint']),
     )
+    expect(body.entries.find((entry: { loc: string }) => entry.loc === 'https://findmydoc.eu/')).toMatchObject({
+      lastmod: '2026-01-01T00:00:00.000Z',
+    })
+    expect(body.entries.find((entry: { loc: string }) => entry.loc.endsWith('/about'))).toMatchObject({
+      lastmod: '2026-01-01T00:00:00.000Z',
+    })
   })
 
   it('includes only valid post detail routes in the posts sitemap', async () => {
@@ -158,5 +179,6 @@ describe('frontend sitemap routes', () => {
     const locs = getEntryLocations(body.entries)
 
     expect(locs).toEqual(['https://findmydoc.eu/posts/first-post', 'https://findmydoc.eu/posts/second-post'])
+    expect(body.entries[0]).toMatchObject({ lastmod: '2026-01-01T00:00:00.000Z' })
   })
 })

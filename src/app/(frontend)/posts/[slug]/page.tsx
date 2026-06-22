@@ -149,7 +149,7 @@ export async function generateMetadata({
   const contentLocale = resolveContentLocaleContext(searchParams.locale)
   const post = await queryPostBySlug({ contentLocale, slug })
 
-  return generateMeta({ doc: post, path: buildPostPath(slug, contentLocale) })
+  return generateMeta({ doc: post, path: buildPostPath(slug, contentLocale), sourceCollection: 'posts' })
 }
 
 const queryPostBySlug = cache(

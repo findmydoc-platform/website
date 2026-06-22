@@ -4,6 +4,11 @@ import { expect, within } from 'storybook/test'
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { withViewportStory } from '../utils/viewportMatrix'
 
+const blogBreadcrumbs = [
+  { label: 'Home', href: '/' },
+  { label: 'Blog', href: '/posts' },
+]
+
 /**
  * BlogHero Component
  *
@@ -79,6 +84,18 @@ export const CustomContent: Story = {
   },
 }
 
+export const WithBreadcrumbs: Story = {
+  args: {
+    breadcrumbs: blogBreadcrumbs,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/')
+    await expect(canvas.getByText('Blog', { selector: '[aria-current="page"]' })).toBeInTheDocument()
+  },
+}
+
 const denseCopyBase: Story = {
   args: {
     title: 'Insights for medical travel',
@@ -146,5 +163,11 @@ export const DenseCopy640: Story = withViewportStory(denseCopyBase, 'public640',
 export const DenseCopy768: Story = withViewportStory(denseCopyBase, 'public768', 'Dense copy / 768')
 export const DenseCopy1024: Story = withViewportStory(denseCopyBase, 'public1024', 'Dense copy / 1024')
 export const DenseCopy1280: Story = withViewportStory(denseCopyBase, 'public1280', 'Dense copy / 1280')
+export const WithBreadcrumbs320: Story = withViewportStory(WithBreadcrumbs, 'public320', 'With breadcrumbs / 320')
+export const WithBreadcrumbs375: Story = withViewportStory(WithBreadcrumbs, 'public375', 'With breadcrumbs / 375')
+export const WithBreadcrumbs640: Story = withViewportStory(WithBreadcrumbs, 'public640', 'With breadcrumbs / 640')
+export const WithBreadcrumbs768: Story = withViewportStory(WithBreadcrumbs, 'public768', 'With breadcrumbs / 768')
+export const WithBreadcrumbs1024: Story = withViewportStory(WithBreadcrumbs, 'public1024', 'With breadcrumbs / 1024')
+export const WithBreadcrumbs1280: Story = withViewportStory(WithBreadcrumbs, 'public1280', 'With breadcrumbs / 1280')
 export const TabletCentered768: Story = withViewportStory(tabletCenteredBase, 'public768', 'Tablet centered / 768')
 export const DesktopLeft1024: Story = withViewportStory(desktopLeftBase, 'public1024', 'Desktop left / 1024')

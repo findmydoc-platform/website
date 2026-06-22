@@ -1,11 +1,13 @@
 import React from 'react'
 import { Heading } from '@/components/atoms/Heading'
+import { Breadcrumb, type BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import { Container } from '@/components/molecules/Container'
 import { cn } from '@/utilities/ui'
 
 export type BlogHeroProps = {
   title?: string
   subtitle?: string
+  breadcrumbs?: BreadcrumbItem[]
   className?: string
 }
 
@@ -23,6 +25,7 @@ export type BlogHeroProps = {
 export const BlogHero: React.FC<BlogHeroProps> = ({
   title = 'Our Blog',
   subtitle = 'Expert insights, practical guidance, and the latest updates in health and medicine.',
+  breadcrumbs,
   className,
 }) => {
   return (
@@ -37,6 +40,9 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
       {/* Content */}
       <Container className="relative z-10 flex flex-col items-center justify-center py-12 text-center sm:py-14 md:min-h-[20rem] md:py-12 lg:min-h-[22rem] lg:items-start lg:py-14 lg:text-left xl:min-h-[24rem]">
         <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-xl lg:text-left">
+          {breadcrumbs?.length ? (
+            <Breadcrumb items={breadcrumbs} className="mb-4 [&_ol]:justify-center lg:[&_ol]:justify-start" />
+          ) : null}
           <Heading as="h1" size="h1" align="center" className="mb-4 text-4xl sm:text-5xl lg:text-left lg:text-6xl">
             {title}
           </Heading>

@@ -60,4 +60,27 @@ describe('TreatmentsStrip', () => {
     expect(matches.length).toBeGreaterThan(0)
     expect(matches[0]).toHaveClass('line-clamp-3')
   })
+
+  it('renders optional comparison links on active treatment cards', () => {
+    render(
+      <TreatmentsStrip
+        heading="Treatments"
+        items={[
+          {
+            ...items[0]!,
+            comparisonLink: {
+              href: '/listing-comparison?treatment=101',
+              label: 'Compare clinics for Cardiology Consultation',
+            },
+          },
+        ]}
+        activeIndex={0}
+      />,
+    )
+
+    expect(screen.getAllByRole('link', { name: 'Compare clinics for Cardiology Consultation' })[0]).toHaveAttribute(
+      'href',
+      '/listing-comparison?treatment=101',
+    )
+  })
 })

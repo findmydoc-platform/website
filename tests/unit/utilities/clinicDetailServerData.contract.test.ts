@@ -352,6 +352,11 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result).not.toBeNull()
     expect(result?.clinicName).toBe('Berlin Health Clinic')
     expect(result?.contactHref).toBe('/contact?clinic=berlin-health-clinic&source=clinic-detail')
+    expect(result?.breadcrumbs).toEqual([
+      { label: 'Home', href: '/' },
+      { label: 'Clinics', href: '/listing-comparison' },
+      { label: 'Berlin Health Clinic', href: '/clinics/berlin-health-clinic' },
+    ])
 
     expect(result?.trust.reviewCount).toBe(3)
     expect(result?.trust.ratingValue).toBe(4.8)
@@ -386,6 +391,10 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.doctors[1]?.specialty).toBe('General Practice')
     expect(result?.doctors[0]?.reviewCount).toBe(2)
     expect(result?.doctors[1]?.image.src).toBe('/images/avatar-doctor-male-placeholder.svg')
+    expect(result?.treatments[0]?.comparisonLink).toEqual({
+      href: '/listing-comparison?treatment=301',
+      label: 'Compare clinics for Routine Checkup',
+    })
 
     expect(result?.beforeAfterEntries).toHaveLength(1)
     expect(result?.beforeAfterEntries[0]?.title).toBe('Orthopedic recovery case')

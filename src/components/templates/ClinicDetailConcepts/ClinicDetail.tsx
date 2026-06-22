@@ -176,6 +176,7 @@ export function ClinicDetail({
             priceFromUsd: treatment.priceFromUsd,
           }),
           icon: <Icon className="size-7" aria-hidden={true} />,
+          comparisonLink: treatment.comparisonLink,
           cta: {
             label: 'Choose Treatment',
             onClick: () => handleCuratedTreatmentClick(treatment.id),
@@ -235,6 +236,7 @@ export function ClinicDetail({
           description={data.description}
           heroImage={data.heroImage}
           trust={data.trust}
+          breadcrumbs={data.breadcrumbs}
           doctors={heroDoctors}
           activeDoctorId={interaction.activeHeroDoctorId}
           onDoctorSelect={interaction.toggleDoctorSelection}

@@ -26,4 +26,21 @@ describe('BreadcrumbJsonLd', () => {
       ],
     })
   })
+
+  it('escapes less-than characters before rendering JSON-LD script text', () => {
+    const { container } = render(
+      <BreadcrumbJsonLd
+        items={[
+          { label: 'Home', href: '/' },
+          { label: '</script><img src=x onerror=alert(1)>', href: '/clinics' },
+        ]}
+      />,
+    )
+
+    const script = container.querySelector('script[type="application/ld+json"]')
+    expect(script?.textContent).toContain('\\u003c/script>')
+    expect(JSON.parse(script?.textContent ?? '').itemListElement[1]).toMatchObject({
+      name: '</script><img src=x onerror=alert(1)>',
+    })
+  })
 })

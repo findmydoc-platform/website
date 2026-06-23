@@ -90,7 +90,7 @@ describe('landing medical specialty mapper', () => {
     ])
 
     expect(mapped.items).toHaveLength(1)
-    expect(mapped.items[0]?.image.src).toBe('/images/placeholder-576-968.svg')
+    expect(mapped.items[0]?.image.src).toBe('/images/placeholders/clinic-placeholder.webp')
   })
 
   it('round-robins featured cards across top-level categories for the all view', () => {

@@ -5,10 +5,10 @@ import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
 describe('resolveAvatarPlaceholder', () => {
   it('resolves doctor placeholders by explicit gender', () => {
     expect(resolveAvatarPlaceholder({ persona: 'doctor', gender: 'female' })).toBe(
-      '/images/avatar-doctor-female-placeholder.svg',
+      '/images/placeholders/doctor-female-placeholder.webp',
     )
     expect(resolveAvatarPlaceholder({ persona: 'doctor', gender: 'male' })).toBe(
-      '/images/avatar-doctor-male-placeholder.svg',
+      '/images/placeholders/doctor-male-placeholder.webp',
     )
   })
 
@@ -22,7 +22,7 @@ describe('resolveAvatarPlaceholder', () => {
   })
 
   it('uses neutral fallback when gender is not provided', () => {
-    expect(resolveAvatarPlaceholder({ persona: 'doctor' })).toBe('/images/avatar-placeholder.svg')
+    expect(resolveAvatarPlaceholder({ persona: 'doctor' })).toBe('/images/placeholders/doctor-neutral-placeholder.webp')
     expect(resolveAvatarPlaceholder({ persona: 'patient' })).toBe('/images/avatar-placeholder.svg')
   })
 })

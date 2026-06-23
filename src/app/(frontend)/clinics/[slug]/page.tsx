@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 
-import { BreadcrumbJsonLd } from '@/components/molecules/Breadcrumb/BreadcrumbJsonLd'
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
@@ -12,6 +11,7 @@ import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from 
 import { getClinicDetailServerData } from '@/utilities/clinicDetail/serverData'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getGlobal } from '@/utilities/getGlobals'
+import { JsonLdScript, buildClinicDetailPageJsonLd } from '@/utilities/structuredData'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
 
 type ClinicDetailPageArgs = {
@@ -56,7 +56,7 @@ export default async function ClinicDetailPage({ params: paramsPromise }: Clinic
 
   return (
     <>
-      <BreadcrumbJsonLd items={clinicDetailData.breadcrumbs} />
+      <JsonLdScript data={draft ? null : buildClinicDetailPageJsonLd(clinicDetailData)} />
       <ClinicDetail
         data={clinicDetailData}
         favorite={{

@@ -8,7 +8,6 @@ import { draftMode } from 'next/headers'
 import React, { cache } from 'react'
 import RichText from '@/blocks/_shared/RichText'
 
-import { BreadcrumbJsonLd } from '@/components/molecules/Breadcrumb/BreadcrumbJsonLd'
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
@@ -23,6 +22,7 @@ import { PostShareActionBar } from './PostShareActionBar'
 import { resolveContentLocaleContext, type ContentLocaleContext } from '@/utilities/contentLocalization'
 import { buildPostPath, buildPostsIndexPath } from '@/utilities/content/postPaths'
 import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
+import { JsonLdScript, buildArticlePageJsonLd } from '@/utilities/structuredData'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -84,7 +84,22 @@ export default async function Post({ params: paramsPromise, searchParams: search
   return (
     <article className="pb-16 sm:pb-20">
       <PageClient />
-      <BreadcrumbJsonLd items={breadcrumbs} />
+      <JsonLdScript
+        data={
+          draft
+            ? null
+            : buildArticlePageJsonLd({
+                authorName: authorData?.name,
+                breadcrumbs,
+                description: post.excerpt,
+                imageUrl: heroImage?.src,
+                path: localizedPostPath,
+                publishedAt: post.publishedAt,
+                title: post.title,
+                updatedAt: post.updatedAt,
+              })
+        }
+      />
 
       {/* Allows redirects for valid pages too */}
       <PayloadRedirects disableNotFound url={canonicalPostPath} />

@@ -3,12 +3,12 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 
-import { BreadcrumbJsonLd } from '@/components/molecules/Breadcrumb/BreadcrumbJsonLd'
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
 import { buildIndexingMetadata, resolveListingComparisonIndexing } from '@/features/searchIndexing'
 import { buildFreshnessMetadata } from '@/utilities/freshness'
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
+import { JsonLdScript, buildListingComparisonJsonLd } from '@/utilities/structuredData'
 
 import type { ListingComparisonTrust } from './ListingComparisonPage.client'
 import { ListingComparisonPageClient } from './ListingComparisonPage.client'
@@ -25,9 +25,10 @@ export async function generateMetadata({
   const searchParams = (await searchParamsPromise) ?? {}
   const payload = await getPayload({ config: configPromise })
   const listingData = await getListingComparisonServerData(payload, searchParams)
+  const indexingPolicy = resolveListingComparisonIndexing(searchParams)
 
   return {
-    ...buildIndexingMetadata(resolveListingComparisonIndexing(searchParams)),
+    ...buildIndexingMetadata(indexingPolicy),
     ...buildFreshnessMetadata(listingData.freshness),
   }
 }
@@ -37,6 +38,7 @@ export default async function ListingComparisonPage({ searchParams: searchParams
   const requestHeaders = await headers()
   const payload = await getPayload({ config: configPromise })
   const listingData = await getListingComparisonServerData(payload, searchParams)
+  const indexingPolicy = resolveListingComparisonIndexing(searchParams)
   const favoriteAuthContext = await resolveFavoriteClinicAuthContext({
     payload,
     headers: requestHeaders,
@@ -69,7 +71,13 @@ export default async function ListingComparisonPage({ searchParams: searchParams
 
   return (
     <>
-      <BreadcrumbJsonLd items={listingData.specialtyContext.breadcrumbs} />
+      <JsonLdScript
+        data={buildListingComparisonJsonLd({
+          breadcrumbs: listingData.specialtyContext.breadcrumbs,
+          clinics: listingData.results,
+          isCanonicalRoute: indexingPolicy.reason === 'canonical-route',
+        })}
+      />
       <ListingComparisonPageClient
         hero={{
           title: 'Compare clinic prices',

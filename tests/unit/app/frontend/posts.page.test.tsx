@@ -3,10 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   blogHeroComponent: vi.fn(() => null),
-  breadcrumbJsonLdComponent: vi.fn(() => null),
+  buildPostsIndexJsonLdMock: vi.fn(() => [{ '@type': 'ItemList' }]),
   createSiteMetadataMock: vi.fn((args: unknown) => args),
   findPublishedPostsPageMock: vi.fn(),
   getPayloadMock: vi.fn(),
+  jsonLdScriptComponent: vi.fn(() => null),
   normalizePostMock: vi.fn(),
   postsPaginationComponent: vi.fn(() => null),
 }))
@@ -35,16 +36,17 @@ vi.mock('@/utilities/generateMeta', () => ({
   createSiteMetadata: mocks.createSiteMetadataMock,
 }))
 
-vi.mock('@/components/molecules/Breadcrumb/BreadcrumbJsonLd', () => ({
-  BreadcrumbJsonLd: mocks.breadcrumbJsonLdComponent,
-}))
-
 vi.mock('@/components/organisms/Blog/BlogHero', () => ({
   BlogHero: mocks.blogHeroComponent,
 }))
 
 vi.mock('@/app/(frontend)/posts/_components/PostsPagination', () => ({
   PostsPagination: mocks.postsPaginationComponent,
+}))
+
+vi.mock('@/utilities/structuredData', () => ({
+  buildPostsIndexJsonLd: mocks.buildPostsIndexJsonLdMock,
+  JsonLdScript: mocks.jsonLdScriptComponent,
 }))
 
 type ReactNodeLike = React.ReactNode
@@ -134,10 +136,14 @@ describe('frontend posts index route', () => {
     }> | null
     expect(heroElement?.props.breadcrumbs).toEqual(expectedBreadcrumbs)
 
-    const breadcrumbJsonLdElement = findElementByType(result, mocks.breadcrumbJsonLdComponent) as React.ReactElement<{
-      items: Array<{ href: string; label: string }>
+    expect(mocks.buildPostsIndexJsonLdMock).toHaveBeenCalledWith({
+      breadcrumbs: expectedBreadcrumbs,
+      posts: [{ title: 'Hallo Welt', href: '/posts/hello-world?locale=de' }],
+    })
+    const jsonLdElement = findElementByType(result, mocks.jsonLdScriptComponent) as React.ReactElement<{
+      data: unknown
     }> | null
-    expect(breadcrumbJsonLdElement?.props.items).toEqual(expectedBreadcrumbs)
+    expect(jsonLdElement?.props.data).toEqual([{ '@type': 'ItemList' }])
   })
 
   it('uses the requested content locale in metadata paths', async () => {

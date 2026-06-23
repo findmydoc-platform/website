@@ -28,6 +28,7 @@ import {
   shouldBlockSearchIndexing,
   shouldBlockSearchIndexingForRequest,
 } from '@/features/searchIndexing'
+import { JsonLdScript, buildSiteBaseJsonLd } from '@/utilities/structuredData'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
 
@@ -101,6 +102,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ) : null}
       </head>
       <body className="min-h-screen bg-site-canvas text-foreground antialiased">
+        {!blockSearchIndexing ? <JsonLdScript data={buildSiteBaseJsonLd()} /> : null}
         <div className="flex min-h-screen min-h-svh flex-col">
           <AdminBar adminBarProps={{ preview: isEnabled }} />
 

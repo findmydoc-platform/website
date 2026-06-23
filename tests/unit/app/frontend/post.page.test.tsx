@@ -2,7 +2,7 @@ import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  breadcrumbJsonLdComponent: vi.fn(() => null),
+  buildArticlePageJsonLdMock: vi.fn(() => [{ '@type': 'Article' }]),
   calculateReadTimeMock: vi.fn(() => '5 min read'),
   draftModeMock: vi.fn(),
   findPostBySlugMock: vi.fn(),
@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   relatedPostsComponent: vi.fn(() => null),
   richTextComponent: vi.fn(() => null),
   disclaimerNoticeComponent: vi.fn(() => null),
+  jsonLdScriptComponent: vi.fn(() => null),
   resolveMediaImageMock: vi.fn<() => unknown>(() => undefined),
 }))
 
@@ -36,10 +37,6 @@ vi.mock('payload', async (importOriginal) => {
 
 vi.mock('@/app/(frontend)/_components/PayloadRedirects', () => ({
   PayloadRedirects: mocks.payloadRedirectsComponent,
-}))
-
-vi.mock('@/components/molecules/Breadcrumb/BreadcrumbJsonLd', () => ({
-  BreadcrumbJsonLd: mocks.breadcrumbJsonLdComponent,
 }))
 
 vi.mock('@/components/organisms/Heroes/PostHero', () => ({
@@ -77,6 +74,11 @@ vi.mock('@/utilities/generateMeta', () => ({
 vi.mock('@/utilities/content/serverData', () => ({
   findPostBySlug: mocks.findPostBySlugMock,
   findPostSlugs: mocks.findPostSlugsMock,
+}))
+
+vi.mock('@/utilities/structuredData', () => ({
+  buildArticlePageJsonLd: mocks.buildArticlePageJsonLdMock,
+  JsonLdScript: mocks.jsonLdScriptComponent,
 }))
 
 type ReactNodeLike = React.ReactNode
@@ -195,10 +197,21 @@ describe('frontend post detail route', () => {
       quality: 75,
     })
 
-    const breadcrumbJsonLdElement = findElementByType(result, mocks.breadcrumbJsonLdComponent) as React.ReactElement<{
-      items: Array<{ href: string; label: string }>
+    expect(mocks.buildArticlePageJsonLdMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        authorName: 'Ada',
+        breadcrumbs: heroElement?.props.breadcrumbs,
+        description: 'Deutscher Auszug.',
+        imageUrl: '/api/platformContentMedia/file/post-hero.webp',
+        path: '/posts/hello-world?locale=de',
+        publishedAt: '2026-01-01T00:00:00.000Z',
+        title: 'Hallo Welt',
+      }),
+    )
+    const jsonLdElement = findElementByType(result, mocks.jsonLdScriptComponent) as React.ReactElement<{
+      data: unknown
     }> | null
-    expect(breadcrumbJsonLdElement?.props.items).toEqual(heroElement?.props.breadcrumbs)
+    expect(jsonLdElement?.props.data).toEqual([{ '@type': 'Article' }])
 
     const shareElement = findElementByType(result, mocks.postShareActionBarComponent) as React.ReactElement<{
       backLink: { href: string; label: string }

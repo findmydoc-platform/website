@@ -54,6 +54,12 @@ When a public signal does not have a source field, omit it instead of inventing 
 
 If a signal requires review, moderation, or policy interpretation, define it in the owning trust/review document instead of here.
 
+Structured data is a public facts layer for search engines and AI agents. It should help machines identify the visible page, entity, list, and article facts that patients can already inspect.
+
+Structured data must mirror source-backed public content. It must not introduce hidden ratings, review counts, accreditations, verification claims, medical-quality claims, or recommendation language that is not already visible, moderated, and owned by the relevant trust or medical-content process.
+
+Structured data should stay aligned with the same public-discovery boundaries as canonical URLs, sitemap inclusion, freshness signals, and preview protections. When a page is not a public canonical discovery surface, structured data should not create a parallel discovery signal for it.
+
 ## Non-Goals And Links
 
 Use an ADR when a decision changes the architecture of public discovery, such as localized public URL structure, a dedicated public discovery API, new canonical entity route families, or a new structured-data framework.

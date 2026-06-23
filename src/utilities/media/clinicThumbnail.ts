@@ -8,7 +8,7 @@ import {
   type MediaDescriptor,
 } from './relationMedia'
 
-const CLINIC_THUMBNAIL_PLACEHOLDER = '/images/placeholder-576-968.svg'
+const CLINIC_THUMBNAIL_PLACEHOLDER = '/images/placeholders/clinic-placeholder.webp'
 
 export async function buildClinicThumbnailDescriptorsByClinicId({
   payload,

@@ -5,15 +5,10 @@ import type { Doctor } from '@/payload-types'
 import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
 
 import {
-  extractMediaRelationId,
-  findMediaDescriptorsByIds,
-  resolveMediaDescriptorFromLoadedRelation,
+  buildMediaDescriptorsByOwnerId,
+  resolveMediaImageDescriptorForOwner,
   type MediaDescriptor,
 } from './relationMedia'
-
-function resolveLoadedProfileImageDescriptor(doctor: Doctor): MediaDescriptor | undefined {
-  return resolveMediaDescriptorFromLoadedRelation(doctor.profileImage, 'doctorMedia')
-}
 
 function resolveDoctorDisplayName(doctor: Doctor): string {
   if (typeof doctor.fullName === 'string' && doctor.fullName.trim().length > 0) {
@@ -32,38 +27,13 @@ export async function buildDoctorProfileDescriptorsByDoctorId({
   payload: Payload
   doctors: Doctor[]
 }): Promise<Map<number, MediaDescriptor>> {
-  const profileImageIds = Array.from(
-    new Set(
-      doctors
-        .map((doctor) => extractMediaRelationId(doctor.profileImage))
-        .filter((id): id is number => typeof id === 'number'),
-    ),
-  )
-
-  if (profileImageIds.length === 0) {
-    return new Map()
-  }
-
-  const descriptorsByProfileImageId = await findMediaDescriptorsByIds({
+  return buildMediaDescriptorsByOwnerId({
     payload,
+    items: doctors,
     collection: 'doctorMedia',
-    ids: profileImageIds,
+    getOwnerId: (doctor) => doctor.id,
+    getRelation: (doctor) => doctor.profileImage,
   })
-
-  const descriptorsByDoctorId = new Map<number, MediaDescriptor>()
-
-  for (const doctor of doctors) {
-    const profileImageId = extractMediaRelationId(doctor.profileImage)
-    if (!profileImageId) continue
-
-    const loadedDescriptor = resolveLoadedProfileImageDescriptor(doctor)
-    const descriptor = loadedDescriptor?.url ? loadedDescriptor : descriptorsByProfileImageId.get(profileImageId)
-    if (descriptor?.url) {
-      descriptorsByDoctorId.set(doctor.id, descriptor)
-    }
-  }
-
-  return descriptorsByDoctorId
 }
 
 export function resolveDoctorProfileImage({
@@ -73,8 +43,12 @@ export function resolveDoctorProfileImage({
   doctor: Doctor
   descriptorsByDoctorId?: ReadonlyMap<number, MediaDescriptor>
 }): { src: string; alt: string } {
-  const loadedDescriptor = resolveLoadedProfileImageDescriptor(doctor)
-  const profileImageDescriptor = loadedDescriptor?.url ? loadedDescriptor : descriptorsByDoctorId?.get(doctor.id)
+  const profileImageDescriptor = resolveMediaImageDescriptorForOwner({
+    ownerId: doctor.id,
+    relation: doctor.profileImage,
+    collection: 'doctorMedia',
+    descriptorsByOwnerId: descriptorsByDoctorId,
+  })
 
   return {
     src:

@@ -3,17 +3,12 @@ import type { Payload } from 'payload'
 import type { Clinic } from '@/payload-types'
 
 import {
-  extractMediaRelationId,
-  findMediaDescriptorsByIds,
-  resolveMediaDescriptorFromLoadedRelation,
+  buildMediaDescriptorsByOwnerId,
+  resolveMediaImageDescriptorForOwner,
   type MediaDescriptor,
 } from './relationMedia'
 
 const CLINIC_THUMBNAIL_PLACEHOLDER = '/images/placeholder-576-968.svg'
-
-function resolveLoadedThumbnailDescriptor(clinic: Clinic): MediaDescriptor | undefined {
-  return resolveMediaDescriptorFromLoadedRelation(clinic.thumbnail, 'clinicMedia')
-}
 
 export async function buildClinicThumbnailDescriptorsByClinicId({
   payload,
@@ -22,38 +17,13 @@ export async function buildClinicThumbnailDescriptorsByClinicId({
   payload: Payload
   clinics: Clinic[]
 }): Promise<Map<number, MediaDescriptor>> {
-  const thumbnailIds = Array.from(
-    new Set(
-      clinics
-        .map((clinic) => extractMediaRelationId(clinic.thumbnail))
-        .filter((id): id is number => typeof id === 'number'),
-    ),
-  )
-
-  if (thumbnailIds.length === 0) {
-    return new Map()
-  }
-
-  const descriptorsByThumbnailId = await findMediaDescriptorsByIds({
+  return buildMediaDescriptorsByOwnerId({
     payload,
+    items: clinics,
     collection: 'clinicMedia',
-    ids: thumbnailIds,
+    getOwnerId: (clinic) => clinic.id,
+    getRelation: (clinic) => clinic.thumbnail,
   })
-
-  const descriptorsByClinicId = new Map<number, MediaDescriptor>()
-
-  for (const clinic of clinics) {
-    const thumbnailId = extractMediaRelationId(clinic.thumbnail)
-    if (!thumbnailId) continue
-
-    const loadedDescriptor = resolveLoadedThumbnailDescriptor(clinic)
-    const descriptor = loadedDescriptor?.url ? loadedDescriptor : descriptorsByThumbnailId.get(thumbnailId)
-    if (descriptor?.url) {
-      descriptorsByClinicId.set(clinic.id, descriptor)
-    }
-  }
-
-  return descriptorsByClinicId
 }
 
 export function resolveClinicThumbnailImage({
@@ -63,8 +33,12 @@ export function resolveClinicThumbnailImage({
   clinic: Clinic
   descriptorsByClinicId?: ReadonlyMap<number, MediaDescriptor>
 }): { src: string; alt: string } {
-  const loadedDescriptor = resolveLoadedThumbnailDescriptor(clinic)
-  const thumbnailDescriptor = loadedDescriptor?.url ? loadedDescriptor : descriptorsByClinicId?.get(clinic.id)
+  const thumbnailDescriptor = resolveMediaImageDescriptorForOwner({
+    ownerId: clinic.id,
+    relation: clinic.thumbnail,
+    collection: 'clinicMedia',
+    descriptorsByOwnerId: descriptorsByClinicId,
+  })
 
   return {
     src: thumbnailDescriptor?.url ?? CLINIC_THUMBNAIL_PLACEHOLDER,

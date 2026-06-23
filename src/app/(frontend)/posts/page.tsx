@@ -4,7 +4,6 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
-import { BreadcrumbJsonLd } from '@/components/molecules/Breadcrumb/BreadcrumbJsonLd'
 import { Container } from '@/components/molecules/Container'
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
@@ -14,6 +13,7 @@ import { buildPostsIndexPath, buildPostsPagePath } from '@/utilities/content/pos
 import { findPublishedPostsPage } from '@/utilities/content/serverData'
 import { resolveContentLocaleContext } from '@/utilities/contentLocalization'
 import { createSiteMetadata } from '@/utilities/generateMeta'
+import { JsonLdScript, buildPostsIndexJsonLd } from '@/utilities/structuredData'
 import { Heading } from '@/components/atoms/Heading'
 import { PostsPagination } from './_components/PostsPagination'
 
@@ -44,7 +44,7 @@ export default async function Page({ searchParams: searchParamsPromise }: Args =
   return (
     <div className="pb-20 sm:pb-24">
       <PageClient />
-      <BreadcrumbJsonLd items={breadcrumbs} />
+      <JsonLdScript data={buildPostsIndexJsonLd({ breadcrumbs, posts: normalizedPosts })} />
 
       {/* Hero Section */}
       <BlogHero breadcrumbs={breadcrumbs} />

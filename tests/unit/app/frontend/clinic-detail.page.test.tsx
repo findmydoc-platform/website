@@ -2,7 +2,7 @@ import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const routeMocks = vi.hoisted(() => ({
-  breadcrumbJsonLdComponent: vi.fn(() => null),
+  buildClinicDetailPageJsonLd: vi.fn(() => [{ '@type': 'MedicalClinic' }]),
   clinicDetailComponent: vi.fn(() => null),
   cookies: vi.fn(),
   draftMode: vi.fn(),
@@ -11,6 +11,7 @@ const routeMocks = vi.hoisted(() => ({
   getGlobal: vi.fn(),
   getPayload: vi.fn(),
   headers: vi.fn(),
+  jsonLdScriptComponent: vi.fn(() => null),
   notFound: vi.fn(),
   resolveCookieConsentContext: vi.fn(),
   resolveFavoriteClinicAuthContext: vi.fn(),
@@ -42,10 +43,6 @@ vi.mock('@/components/templates/ClinicDetailConcepts', () => ({
   ClinicDetail: routeMocks.clinicDetailComponent,
 }))
 
-vi.mock('@/components/molecules/Breadcrumb/BreadcrumbJsonLd', () => ({
-  BreadcrumbJsonLd: routeMocks.breadcrumbJsonLdComponent,
-}))
-
 vi.mock('@/features/cookieConsent', () => ({
   COOKIE_CONSENT_COOKIE_NAME: 'cookie-consent',
   resolveCookieConsentContext: routeMocks.resolveCookieConsentContext,
@@ -62,6 +59,11 @@ vi.mock('@/utilities/clinicDetail/serverData', () => ({
 
 vi.mock('@/utilities/getGlobals', () => ({
   getGlobal: routeMocks.getGlobal,
+}))
+
+vi.mock('@/utilities/structuredData', () => ({
+  buildClinicDetailPageJsonLd: routeMocks.buildClinicDetailPageJsonLd,
+  JsonLdScript: routeMocks.jsonLdScriptComponent,
 }))
 
 type ReactNodeLike = React.ReactNode
@@ -144,19 +146,17 @@ describe('frontend clinic detail route', () => {
     })
   })
 
-  it('renders BreadcrumbList JSON-LD from clinic detail server data', async () => {
+  it('renders clinic detail JSON-LD from clinic detail server data', async () => {
     const pageModule = await import('@/app/(frontend)/clinics/[slug]/page')
     const result = await pageModule.default({
       params: Promise.resolve({ slug: 'berlin-health' }),
     })
 
-    const breadcrumbJsonLdElement = findElementByType(
-      result,
-      routeMocks.breadcrumbJsonLdComponent,
-    ) as React.ReactElement<{
-      items: Array<{ href: string; label: string }>
+    expect(routeMocks.buildClinicDetailPageJsonLd).toHaveBeenCalledWith(clinicDetailData)
+    const jsonLdElement = findElementByType(result, routeMocks.jsonLdScriptComponent) as React.ReactElement<{
+      data: unknown
     }> | null
-    expect(breadcrumbJsonLdElement?.props.items).toEqual(clinicDetailData.breadcrumbs)
+    expect(jsonLdElement?.props.data).toEqual([{ '@type': 'MedicalClinic' }])
 
     const clinicDetailElement = findElementByType(result, routeMocks.clinicDetailComponent) as React.ReactElement<{
       data: unknown

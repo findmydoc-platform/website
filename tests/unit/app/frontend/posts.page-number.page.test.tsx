@@ -3,11 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   breadcrumbComponent: vi.fn(() => null),
-  breadcrumbJsonLdComponent: vi.fn(() => null),
+  buildPostsIndexJsonLdMock: vi.fn(() => [{ '@type': 'ItemList' }]),
   countPublishedPostsMock: vi.fn(),
   createSiteMetadataMock: vi.fn((args: unknown) => args),
   findPublishedPostsPageMock: vi.fn(),
   getPayloadMock: vi.fn(),
+  jsonLdScriptComponent: vi.fn(() => null),
   normalizePostMock: vi.fn(),
   notFoundMock: vi.fn(),
   postsPaginationComponent: vi.fn(() => null),
@@ -48,12 +49,13 @@ vi.mock('@/components/molecules/Breadcrumb', () => ({
   Breadcrumb: mocks.breadcrumbComponent,
 }))
 
-vi.mock('@/components/molecules/Breadcrumb/BreadcrumbJsonLd', () => ({
-  BreadcrumbJsonLd: mocks.breadcrumbJsonLdComponent,
-}))
-
 vi.mock('@/app/(frontend)/posts/_components/PostsPagination', () => ({
   PostsPagination: mocks.postsPaginationComponent,
+}))
+
+vi.mock('@/utilities/structuredData', () => ({
+  buildPostsIndexJsonLd: mocks.buildPostsIndexJsonLdMock,
+  JsonLdScript: mocks.jsonLdScriptComponent,
 }))
 
 type ReactNodeLike = React.ReactNode
@@ -164,10 +166,14 @@ describe('frontend paginated posts route', () => {
     }> | null
     expect(breadcrumbElement?.props.items).toEqual(expectedBreadcrumbs)
 
-    const breadcrumbJsonLdElement = findElementByType(result, mocks.breadcrumbJsonLdComponent) as React.ReactElement<{
-      items: Array<{ href: string; label: string }>
+    expect(mocks.buildPostsIndexJsonLdMock).toHaveBeenCalledWith({
+      breadcrumbs: expectedBreadcrumbs,
+      posts: [{ title: 'Seite zwei', href: '/posts/page-2-post?locale=de' }],
+    })
+    const jsonLdElement = findElementByType(result, mocks.jsonLdScriptComponent) as React.ReactElement<{
+      data: unknown
     }> | null
-    expect(breadcrumbJsonLdElement?.props.items).toEqual(expectedBreadcrumbs)
+    expect(jsonLdElement?.props.data).toEqual([{ '@type': 'ItemList' }])
   })
 
   it('uses the requested content locale in metadata paths', async () => {

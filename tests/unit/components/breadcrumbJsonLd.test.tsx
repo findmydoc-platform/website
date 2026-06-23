@@ -38,8 +38,12 @@ describe('BreadcrumbJsonLd', () => {
     )
 
     const script = container.querySelector('script[type="application/ld+json"]')
-    expect(script?.textContent).toContain('\\u003c/script>')
-    expect(JSON.parse(script?.textContent ?? '').itemListElement[1]).toMatchObject({
+    expect(script).not.toBeNull()
+
+    const scriptText = script?.textContent ?? ''
+    expect(scriptText).toContain('\\u003c/script>')
+    expect(scriptText).not.toContain('</script>')
+    expect(JSON.parse(scriptText).itemListElement[1]).toMatchObject({
       name: '</script><img src=x onerror=alert(1)>',
     })
   })

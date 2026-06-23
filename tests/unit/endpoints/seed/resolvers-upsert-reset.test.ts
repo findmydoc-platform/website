@@ -104,15 +104,22 @@ describe('upsertByStableId', () => {
 })
 
 describe('resetCollections', () => {
-  const find = vi.fn()
-  const del = vi.fn()
+  const deleteMany = vi.fn()
+  const deleteVersions = vi.fn()
+  const tableNameMap = {
+    get: vi.fn((key: string) => (key === '_posts_v' ? '_posts_v' : undefined)),
+  }
 
   const payload = {
     logger: {
       info: vi.fn(),
     },
-    find,
-    delete: del,
+    db: {
+      deleteMany,
+      deleteVersions,
+      tableNameMap,
+      versionsSuffix: '_v',
+    },
   } as unknown as Payload
 
   afterEach(() => {
@@ -125,12 +132,9 @@ describe('resetCollections', () => {
     vi.stubEnv('DEPLOYMENT_ENV', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
-    find.mockResolvedValue({ docs: [] })
-    del.mockResolvedValue(undefined)
-
     await expect(resetCollections(payload, 'baseline')).rejects.toThrow(/seed reset is disabled in this runtime/i)
-    expect(payload.find).not.toHaveBeenCalled()
-    expect(payload.delete).not.toHaveBeenCalled()
+    expect(deleteMany).not.toHaveBeenCalled()
+    expect(deleteVersions).not.toHaveBeenCalled()
   })
 
   it('throws for demo reset in production', async () => {
@@ -139,16 +143,9 @@ describe('resetCollections', () => {
     vi.stubEnv('NODE_ENV', 'production')
 
     await expect(resetCollections(payload, 'demo')).rejects.toThrow(/demo reset is disabled in production/i)
-    expect(payload.find).not.toHaveBeenCalled()
-    expect(payload.delete).not.toHaveBeenCalled()
+    expect(deleteMany).not.toHaveBeenCalled()
+    expect(deleteVersions).not.toHaveBeenCalled()
   })
-
-  function mockFindOneDocThenEmptyForCollections(collections: string[]) {
-    for (let i = 0; i < collections.length; i += 1) {
-      find.mockResolvedValueOnce({ docs: [{ id: 'c1' }] })
-      find.mockResolvedValueOnce({ docs: [] })
-    }
-  }
 
   it('deletes demo collections in order for demo reset', async () => {
     vi.stubEnv('VERCEL_ENV', '')
@@ -158,32 +155,40 @@ describe('resetCollections', () => {
     const expectedOrder = [
       'search',
       'reviews',
+      'patientClinicInquiries',
       'favoriteclinics',
       'patients',
       'doctortreatments',
       'doctorspecialties',
       'clinictreatments',
       'clinicMedia',
+      'doctorMedia',
       'doctors',
       'clinics',
       'posts',
-      'platformContentMedia',
       'platformStaff',
+      'clinicStaff',
       'userProfileMedia',
       'basicUsers',
     ]
 
-    mockFindOneDocThenEmptyForCollections(expectedOrder)
-    del.mockResolvedValue(undefined)
+    deleteMany.mockResolvedValue(undefined)
+    deleteVersions.mockResolvedValue(undefined)
 
     await resetCollections(payload, 'demo')
 
-    const actualOrder = del.mock.calls.map((call: unknown[]) => {
-      const args = call[0] as unknown
-      return (args as { collection: string }).collection
+    const actualOrder = deleteMany.mock.calls.map((call: unknown[]) => {
+      const args = call[0] as { collection: string }
+      return args.collection
+    })
+
+    const versionOrder = deleteVersions.mock.calls.map((call: unknown[]) => {
+      const args = call[0] as { collection: string }
+      return args.collection
     })
 
     expect(actualOrder).toEqual(expectedOrder)
+    expect(versionOrder).toEqual(['posts'])
   })
 
   it('deletes demo then baseline collections for baseline reset', async () => {
@@ -194,17 +199,19 @@ describe('resetCollections', () => {
     const expectedOrder = [
       'search',
       'reviews',
+      'patientClinicInquiries',
       'favoriteclinics',
       'patients',
       'doctortreatments',
       'doctorspecialties',
       'clinictreatments',
       'clinicMedia',
+      'doctorMedia',
       'doctors',
       'clinics',
       'posts',
-      'platformContentMedia',
       'platformStaff',
+      'clinicStaff',
       'userProfileMedia',
       'basicUsers',
       'treatments',
@@ -216,16 +223,18 @@ describe('resetCollections', () => {
       'countries',
     ]
 
-    mockFindOneDocThenEmptyForCollections(expectedOrder)
-    del.mockResolvedValue(undefined)
+    deleteMany.mockResolvedValue(undefined)
+    deleteVersions.mockResolvedValue(undefined)
 
     await resetCollections(payload, 'baseline')
 
-    const actualOrder = del.mock.calls.map((call: unknown[]) => {
-      const args = call[0] as unknown
-      return (args as { collection: string }).collection
+    const actualOrder = deleteMany.mock.calls.map((call: unknown[]) => {
+      const args = call[0] as { collection: string }
+      return args.collection
     })
 
     expect(actualOrder).toEqual(expectedOrder)
+    expect(deleteVersions).toHaveBeenCalledTimes(1)
+    expect(deleteVersions.mock.calls[0]?.[0]).toMatchObject({ collection: 'posts' })
   })
 })

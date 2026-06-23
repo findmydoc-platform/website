@@ -23,8 +23,8 @@ import type {
   ClinicVerificationTier,
 } from '@/components/templates/ClinicDetailConcepts/types'
 import { CLINICS_BREADCRUMB, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
-import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
-import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
+import { resolveDoctorProfileImage } from '@/utilities/media/doctorProfileImage'
+import type { MediaDescriptor } from '@/utilities/media/relationMedia'
 import { buildFreshnessSignals } from '@/utilities/freshness'
 import { findLatestIsoTimestampString } from '@/utilities/timestamps'
 import {
@@ -34,9 +34,6 @@ import {
 } from '@/utilities/listingComparison/queryState'
 
 import type { ClinicDetailMappingArgs } from './types'
-
-const CLINIC_HERO_PLACEHOLDER = '/images/placeholders/clinic-placeholder.webp'
-
 const LANGUAGE_LABELS: Record<string, string> = {
   german: 'German',
   english: 'English',
@@ -118,29 +115,6 @@ function toVerificationTier(value: unknown): ClinicVerificationTier {
   }
 
   return 'unverified'
-}
-
-function toClinicImage(clinic: Clinic): { src: string; alt: string } {
-  const descriptor = resolveMediaDescriptorFromLoadedRelation(clinic.thumbnail, 'clinicMedia')
-
-  return {
-    src: descriptor?.url ?? CLINIC_HERO_PLACEHOLDER,
-    alt: descriptor?.alt ?? `${clinic.name} image`,
-  }
-}
-
-function toDoctorImage(doctor: Doctor): { src: string; alt: string } {
-  const descriptor = resolveMediaDescriptorFromLoadedRelation(doctor.profileImage, 'doctorMedia')
-
-  return {
-    src:
-      descriptor?.url ??
-      resolveAvatarPlaceholder({
-        persona: 'doctor',
-        gender: doctor.gender,
-      }),
-    alt: descriptor?.alt ?? `${doctor.fullName} portrait`,
-  }
 }
 
 function toGalleryMediaDescriptor(value: unknown): { url: string | null; alt: string | null } | undefined {
@@ -292,11 +266,13 @@ function mapDoctors({
   doctorSpecialties,
   doctorReviewCounts,
   contactHref,
+  doctorMediaByDoctorId,
 }: {
   doctors: Doctor[]
   doctorSpecialties: Doctorspecialty[]
   doctorReviewCounts: Map<number, number>
   contactHref: string
+  doctorMediaByDoctorId?: ReadonlyMap<number, MediaDescriptor>
 }): ClinicDetailDoctor[] {
   const specialtyByDoctorId = buildDoctorSpecialtyMap(doctorSpecialties)
 
@@ -318,7 +294,10 @@ function mapDoctors({
       yearsExperience: typeof doctor.experienceYears === 'number' ? doctor.experienceYears : undefined,
       languages,
       description: extractLexicalPlainText(doctor.biography) || undefined,
-      image: toDoctorImage(doctor),
+      image: resolveDoctorProfileImage({
+        doctor,
+        descriptorsByDoctorId: doctorMediaByDoctorId,
+      }),
       contactHref,
     }
   })
@@ -493,7 +472,17 @@ function mapClinicFreshness({
   galleryEntries,
   accreditations,
   cities,
-}: ClinicDetailMappingArgs) {
+}: Pick<
+  ClinicDetailMappingArgs,
+  | 'clinic'
+  | 'clinicTreatments'
+  | 'doctors'
+  | 'doctorSpecialties'
+  | 'approvedClinicReviews'
+  | 'galleryEntries'
+  | 'accreditations'
+  | 'cities'
+>) {
   return buildFreshnessSignals({
     updatedAt: findLatestIsoTimestampString([
       clinic.updatedAt,
@@ -521,9 +510,11 @@ function mapClinicFreshness({
 
 export function mapClinicToClinicDetailData({
   clinic,
+  heroImage,
   clinicTreatments,
   doctors,
   doctorSpecialties,
+  doctorMediaByDoctorId,
   clinicReviewCount,
   approvedClinicReviews,
   doctorReviewCounts,
@@ -543,7 +534,7 @@ export function mapClinicToClinicDetailData({
       CLINICS_BREADCRUMB,
       { label: clinic.name, href: `/clinics/${encodeURIComponent(clinic.slug)}` },
     ],
-    heroImage: toClinicImage(clinic),
+    heroImage,
     description: extractLexicalPlainText(clinic.description) || 'Clinic profile information currently being updated.',
     trust: mapTrust({
       clinic,
@@ -559,6 +550,7 @@ export function mapClinicToClinicDetailData({
       doctors,
       doctorSpecialties,
       doctorReviewCounts,
+      doctorMediaByDoctorId,
       contactHref,
     }),
     beforeAfterEntries: mapBeforeAfterEntries(clinic, galleryEntries),
@@ -568,9 +560,7 @@ export function mapClinicToClinicDetailData({
       clinicTreatments,
       doctors,
       doctorSpecialties,
-      clinicReviewCount,
       approvedClinicReviews,
-      doctorReviewCounts,
       galleryEntries,
       accreditations,
       cities,

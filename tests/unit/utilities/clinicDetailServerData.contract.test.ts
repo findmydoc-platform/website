@@ -5,6 +5,8 @@ import { getClinicDetailServerData } from '@/utilities/clinicDetail/serverData'
 
 type MockData = {
   clinics: Array<Record<string, unknown>>
+  clinicMedia: Array<Record<string, unknown>>
+  doctorMedia: Array<Record<string, unknown>>
   clinictreatments: Array<Record<string, unknown>>
   doctors: Array<Record<string, unknown>>
   doctorspecialties: Array<Record<string, unknown>>
@@ -44,11 +46,7 @@ const mockData: MockData = {
       slug: 'berlin-health-clinic',
       averageRating: 4.8,
       description: lexicalText('Transparent pediatric care for international families.'),
-      thumbnail: {
-        id: 100,
-        filename: 'clinic-hero.jpg',
-        alt: 'Clinic facade',
-      },
+      thumbnail: 100,
       galleryEntries: [901, 902],
       coordinates: [52.5168332, 13.4264519],
       address: {
@@ -95,6 +93,20 @@ const mockData: MockData = {
       updatedAt: '2026-01-03T00:00:00.000Z',
     },
   ],
+  clinicMedia: [
+    {
+      id: 100,
+      filename: 'clinic-hero.jpg',
+      alt: 'Clinic facade',
+    },
+  ],
+  doctorMedia: [
+    {
+      id: 701,
+      filename: 'doctor-amelia.jpg',
+      alt: 'Professional portrait of Dr. Amelia Carter',
+    },
+  ],
   clinictreatments: [
     {
       id: 201,
@@ -134,11 +146,7 @@ const mockData: MockData = {
       gender: 'female',
       averageRating: 4.6,
       biography: lexicalText('Focused on pediatric cardiology and clear communication.'),
-      profileImage: {
-        id: 701,
-        filename: 'doctor-amelia.jpg',
-        alt: 'Dr. Amelia',
-      },
+      profileImage: 701,
       clinic: 1,
       qualifications: ['MD', 'FAAP'],
       experienceYears: 9,
@@ -357,6 +365,10 @@ describe('getClinicDetailServerData (contract)', () => {
       { label: 'Clinics', href: '/listing-comparison' },
       { label: 'Berlin Health Clinic', href: '/clinics/berlin-health-clinic' },
     ])
+    expect(result?.heroImage).toEqual({
+      src: '/api/clinicMedia/file/clinic-hero.jpg',
+      alt: 'Clinic facade',
+    })
 
     expect(result?.trust.reviewCount).toBe(3)
     expect(result?.trust.ratingValue).toBe(4.8)
@@ -390,6 +402,10 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.doctors[0]?.specialty).toBe('Pediatric Cardiology')
     expect(result?.doctors[1]?.specialty).toBe('General Practice')
     expect(result?.doctors[0]?.reviewCount).toBe(2)
+    expect(result?.doctors[0]?.image).toEqual({
+      src: '/api/doctorMedia/file/doctor-amelia.jpg',
+      alt: 'Professional portrait of Dr. Amelia Carter',
+    })
     expect(result?.doctors[1]?.image.src).toBe('/images/placeholders/doctor-male-placeholder.webp')
     expect(result?.treatments[0]?.comparisonLink).toEqual({
       href: '/listing-comparison?treatment=301',

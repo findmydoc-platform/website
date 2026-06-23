@@ -2,20 +2,29 @@ import type { CollectionSlug, Payload } from 'payload'
 import { resolveSeedRuntimeEnv } from './runtime'
 import { resolveSeedRuntimePolicy } from '@/features/runtimePolicy'
 
+function toSnakeCaseKey(value: string) {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/-/g, '_')
+    .toLowerCase()
+}
+
 const demoResetOrder: CollectionSlug[] = [
   'search',
   'reviews',
+  'patientClinicInquiries',
   'favoriteclinics',
   'patients',
   'doctortreatments',
   'doctorspecialties',
   'clinictreatments',
   'clinicMedia',
+  'doctorMedia',
   'doctors',
   'clinics',
   'posts',
-  'platformContentMedia',
   'platformStaff',
+  'clinicStaff',
   'userProfileMedia',
   'basicUsers',
 ]
@@ -31,65 +40,32 @@ const baselineResetOrder: CollectionSlug[] = [
 ]
 
 async function deleteCollection(payload: Payload, collection: CollectionSlug) {
-  const batchSize = 5
-  let hasDocs = true
-  let lastBatchKey: string | null = null
+  const req = { payload }
 
-  while (hasDocs) {
-    const result = await payload.find({
-      collection,
-      limit: 1000,
-      trash: true,
-      overrideAccess: true,
-    })
-
-    if (result.docs.length === 0) {
-      hasDocs = false
-      continue
-    }
-
-    const batchKey = result.docs.map((doc) => String(doc.id)).join(',')
-    if (batchKey === lastBatchKey) {
-      throw new Error(`Reset stalled for ${collection}: repeated batch detected`)
-    }
-    lastBatchKey = batchKey
-
-    for (let i = 0; i < result.docs.length; i += batchSize) {
-      const batch = result.docs.slice(i, i + batchSize)
-      for (const doc of batch) {
-        await payload.delete({
-          collection,
-          id: doc.id,
-          overrideAccess: true,
-          context: { disableRevalidate: true, disableSearchSync: true },
-        })
-      }
-    }
-  }
-}
-
-async function clearPostRelatedPostLinks(payload: Payload) {
-  if (typeof payload.update !== 'function') return
-
-  const result = await payload.find({
-    collection: 'posts',
-    limit: 1000,
-    trash: true,
-    overrideAccess: true,
+  await payload.db.deleteMany({
+    collection,
+    req,
+    where: {
+      id: {
+        exists: true,
+      },
+    },
   })
 
-  if (result.docs.length === 0) return
-
-  for (const doc of result.docs) {
-    await payload.update({
-      collection: 'posts',
-      id: doc.id,
-      data: { relatedPosts: [] },
-      trash: true,
-      overrideAccess: true,
-      context: { disableRevalidate: true, disableSearchSync: true },
-    })
+  const versionTableName = payload.db.tableNameMap.get(`_${toSnakeCaseKey(collection)}${payload.db.versionsSuffix}`)
+  if (!versionTableName) {
+    return
   }
+
+  await payload.db.deleteVersions({
+    collection,
+    req,
+    where: {
+      id: {
+        exists: true,
+      },
+    },
+  })
 }
 
 export async function resetCollections(payload: Payload, kind: 'baseline' | 'demo') {
@@ -114,9 +90,6 @@ export async function resetCollections(payload: Payload, kind: 'baseline' | 'dem
   const order = kind === 'demo' ? demoResetOrder : [...demoResetOrder, ...baselineResetOrder]
   for (const collection of order) {
     payload.logger.info(`Resetting ${collection} (${kind})`)
-    if (collection === 'posts') {
-      await clearPostRelatedPostLinks(payload)
-    }
     await deleteCollection(payload, collection)
   }
 }

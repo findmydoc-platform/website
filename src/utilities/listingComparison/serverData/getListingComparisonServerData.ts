@@ -29,6 +29,7 @@ import {
   findLatestApprovedReviewDateForClinics,
   findListingComparisonCatalog,
 } from './repositories'
+import { buildClinicThumbnailDescriptorsByClinicId } from '@/utilities/media/clinicThumbnail'
 import {
   buildSpecialtyFilterOptions,
   buildSpecialtyPath,
@@ -279,8 +280,15 @@ export async function getListingComparisonServerData(
     payload,
     pageRows.map((row) => row.clinic.id),
   )
+  const mediaByClinicId = await buildClinicThumbnailDescriptorsByClinicId({
+    payload,
+    clinics: pageRows.map((row) => row.clinic),
+  })
 
-  const results = mapListingCardResults(pageRows, reviewCounts, { availableClinicMediaFiles })
+  const results = mapListingCardResults(pageRows, reviewCounts, {
+    availableClinicMediaFiles,
+    mediaByClinicId,
+  })
 
   const cityFacetRows = applyPriceWindow(
     buildRowsForSelectedCities(new Set<number>()),

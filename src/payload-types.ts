@@ -1282,6 +1282,7 @@ export interface Doctor {
  */
 export interface DoctorMedia {
   id: number;
+  stableId?: string | null;
   /**
    * Alt text for screen readers
    */
@@ -3539,6 +3540,7 @@ export interface ClinicGalleryEntriesSelect<T extends boolean = true> {
  * via the `definition` "doctorMedia_select".
  */
 export interface DoctorMediaSelect<T extends boolean = true> {
+  stableId?: T;
   alt?: T;
   caption?: T;
   doctor?: T;

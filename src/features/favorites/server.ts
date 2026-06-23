@@ -4,7 +4,8 @@ import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import type { VerificationBadgeVariant } from '@/components/atoms/verification-badge'
 import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 import type { Clinic, Favoriteclinic, Patient } from '@/payload-types'
-import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
+import { resolveMediaDescriptorFromLoadedRelation, type MediaDescriptor } from '@/utilities/media/relationMedia'
+import { buildClinicThumbnailDescriptorsByClinicId } from '@/utilities/media/clinicThumbnail'
 import { slugify } from '@/utilities/slugify'
 
 const FAVORITES_PAGE_LIMIT = 100
@@ -74,11 +75,15 @@ function resolveClinicLocation(clinic: Clinic): string {
   return [cityName, country].filter((item) => item.length > 0).join(', ') || 'Location not listed'
 }
 
-function mapFavoriteToListItem(favorite: Favoriteclinic): FavoriteClinicListItem | null {
+function mapFavoriteToListItem(
+  favorite: Favoriteclinic,
+  mediaByClinicId?: ReadonlyMap<number, MediaDescriptor>,
+): FavoriteClinicListItem | null {
   if (!isLoadedClinic(favorite.clinic)) return null
 
   const clinic = favorite.clinic
-  const resolvedMedia = resolveMediaDescriptorFromLoadedRelation(clinic.thumbnail, 'clinicMedia')
+  const loadedDescriptor = resolveMediaDescriptorFromLoadedRelation(clinic.thumbnail, 'clinicMedia')
+  const resolvedMedia = loadedDescriptor?.url ? loadedDescriptor : mediaByClinicId?.get(clinic.id)
   const slug = clinic.slug || slugify(clinic.name)
 
   return {
@@ -204,8 +209,15 @@ export async function findPatientFavoriteClinicListItems({
     },
   })
 
+  const loadedClinics = result.docs.map((favorite) => (favorite as Favoriteclinic).clinic).filter(isLoadedClinic)
+
+  const mediaByClinicId = await buildClinicThumbnailDescriptorsByClinicId({
+    payload,
+    clinics: loadedClinics,
+  })
+
   return result.docs.flatMap((favorite) => {
-    const item = mapFavoriteToListItem(favorite as Favoriteclinic)
+    const item = mapFavoriteToListItem(favorite as Favoriteclinic, mediaByClinicId)
     return item ? [item] : []
   })
 }

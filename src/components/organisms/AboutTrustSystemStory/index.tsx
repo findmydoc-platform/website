@@ -259,6 +259,10 @@ type HomepageRingRenderer = {
   dispose: () => void
 }
 
+type AboutTrustSystemStoryProps = {
+  fixedProgress?: number
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
 }
@@ -649,7 +653,7 @@ function getBuildAngle(particle: Particle, index: number, particleCount: number)
   return normalizeRadians(baseAngle + (particle.clusterJitter - 0.5) * 0.25)
 }
 
-export const AboutTrustSystemStory: React.FC = () => {
+export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fixedProgress }) => {
   const storyRef = React.useRef<HTMLElement | null>(null)
   const shellRef = React.useRef<HTMLDivElement | null>(null)
   const copyStackRef = React.useRef<HTMLDivElement | null>(null)
@@ -695,6 +699,8 @@ export const AboutTrustSystemStory: React.FC = () => {
     const particlesHiddenClass = styles.particlesHidden!
     const showClass = styles.show!
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const staticProgress = typeof fixedProgress === 'number' ? clamp01(fixedProgress) : null
+    const progressIsStatic = staticProgress !== null
     const particles: Particle[] = []
     const particleCount = window.innerWidth <= 767 ? 52 : window.innerWidth <= 1179 ? 78 : 118
     let activeCardIndex = Math.max(
@@ -721,8 +727,13 @@ export const AboutTrustSystemStory: React.FC = () => {
 
       pendingCardIndex = nextIndex
 
-      if (reducedMotion) {
-        cards.forEach((card, index) => card.classList.toggle(isActiveClass, index === nextIndex))
+      if (reducedMotion || progressIsStatic) {
+        cards.forEach((card, index) => {
+          const isActive = index === nextIndex
+
+          card.classList.toggle(isActiveClass, isActive)
+          card.dataset.active = String(isActive)
+        })
         activeCardIndex = nextIndex
         copyStack.classList.remove(isFadingClass)
 
@@ -734,7 +745,12 @@ export const AboutTrustSystemStory: React.FC = () => {
       if (cardSwapTimer) window.clearTimeout(cardSwapTimer)
 
       cardSwapTimer = window.setTimeout(() => {
-        cards.forEach((card, index) => card.classList.toggle(isActiveClass, index === pendingCardIndex))
+        cards.forEach((card, index) => {
+          const isActive = index === pendingCardIndex
+
+          card.classList.toggle(isActiveClass, isActive)
+          card.dataset.active = String(isActive)
+        })
         activeCardIndex = pendingCardIndex
         requestAnimationFrame(() => copyStack.classList.remove(isFadingClass))
       }, 80)
@@ -797,8 +813,8 @@ export const AboutTrustSystemStory: React.FC = () => {
     }
 
     const updateScroll = () => {
-      if (reducedMotion) {
-        progress = 1
+      if (progressIsStatic) {
+        progress = staticProgress
 
         return
       }
@@ -875,7 +891,12 @@ export const AboutTrustSystemStory: React.FC = () => {
       const active = p < 0.28 ? 0 : p < 0.64 ? 1 : 2
 
       setActiveCard(active)
-      steps.forEach((step, index) => step.classList.toggle(isActiveClass, index === active))
+      steps.forEach((step, index) => {
+        const isActive = index === active
+
+        step.classList.toggle(isActiveClass, isActive)
+        step.dataset.active = String(isActive)
+      })
 
       if (progressBar) progressBar.style.width = `${(p * 100).toFixed(2)}%`
 
@@ -911,17 +932,24 @@ export const AboutTrustSystemStory: React.FC = () => {
       labels[1]?.classList.toggle(showClass, p > 0.33 && p < 0.62)
       labels[2]?.classList.toggle(showClass, p > 0.36 && p < 0.63)
       labels[3]?.classList.toggle(showClass, p > 0.39 && p < 0.64)
-      outcomeLabels[0]?.classList.toggle(showClass, p > 0.7)
-      outcomeLabels[1]?.classList.toggle(showClass, p > 0.73)
-      outcomeLabels[2]?.classList.toggle(showClass, p > 0.76)
+      const labelOneVisible = p > 0.7
+      const labelTwoVisible = p > 0.73
+      const labelThreeVisible = p > 0.76
+
+      outcomeLabels[0]?.classList.toggle(showClass, labelOneVisible)
+      outcomeLabels[0]?.toggleAttribute('data-visible', labelOneVisible)
+      outcomeLabels[1]?.classList.toggle(showClass, labelTwoVisible)
+      outcomeLabels[1]?.toggleAttribute('data-visible', labelTwoVisible)
+      outcomeLabels[2]?.classList.toggle(showClass, labelThreeVisible)
+      outcomeLabels[2]?.toggleAttribute('data-visible', labelThreeVisible)
       galaxyArea.classList.toggle(particlesHiddenClass, p > 0.935)
     }
 
     const updateVisual = (force = false, deltaSeconds = 1 / 60) => {
       const damping = 1 - Math.exp(-12 * Math.max(0, deltaSeconds))
-      visualProgress = force || reducedMotion ? progress : lerp(visualProgress, progress, damping)
+      visualProgress = force || reducedMotion || progressIsStatic ? progress : lerp(visualProgress, progress, damping)
 
-      if (!reducedMotion && !force) {
+      if (!reducedMotion && !progressIsStatic && !force) {
         const orbitRotationStrength = smoothstep(0.78, 0.9, visualProgress)
         particleOrbitRotation += deltaSeconds * 0.09 * orbitRotationStrength
       }
@@ -974,10 +1002,10 @@ export const AboutTrustSystemStory: React.FC = () => {
       lastFrameAt = time
       updateVisual(false, deltaSeconds)
 
-      if (progress > 0.78 || reducedMotion) {
+      if (progress > 0.78 || reducedMotion || progressIsStatic) {
         if (!ringStartedAt) ringStartedAt = time
 
-        ringTimeSeconds = reducedMotion ? 0 : (time - ringStartedAt) / 1000
+        ringTimeSeconds = reducedMotion || progressIsStatic ? 0 : (time - ringStartedAt) / 1000
         homepageRingRenderer.draw(ringTimeSeconds)
       }
 
@@ -997,10 +1025,16 @@ export const AboutTrustSystemStory: React.FC = () => {
     resize()
     updateScroll()
     updateVisual(true)
+    cards.forEach((card, index) => {
+      card.dataset.active = String(index === activeCardIndex)
+    })
+    steps.forEach((step, index) => {
+      step.dataset.active = String(index === activeCardIndex)
+    })
     galaxyArea.classList.add(isActiveClass)
 
     const sectionObserver =
-      typeof IntersectionObserver !== 'undefined'
+      !progressIsStatic && typeof IntersectionObserver !== 'undefined'
         ? new IntersectionObserver(
             ([entry]) => {
               sectionMotionActive = Boolean(entry?.isIntersecting)
@@ -1026,9 +1060,12 @@ export const AboutTrustSystemStory: React.FC = () => {
     }
 
     window.addEventListener('resize', resize, { passive: true })
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    startLoop()
+
+    if (!progressIsStatic) {
+      window.addEventListener('scroll', handleScroll, { passive: true })
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      startLoop()
+    }
 
     return () => {
       stopLoop()
@@ -1037,13 +1074,15 @@ export const AboutTrustSystemStory: React.FC = () => {
 
       sectionObserver?.disconnect()
       window.removeEventListener('resize', resize)
-      window.removeEventListener('scroll', handleScroll)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (!progressIsStatic) {
+        window.removeEventListener('scroll', handleScroll)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+      }
       homepageRingRenderer.dispose()
       particles.forEach((particle) => particle.el.remove())
       galaxyArea.classList.remove(isActiveClass, particlesHiddenClass)
     }
-  }, [])
+  }, [fixedProgress])
 
   return (
     <div className={styles.root}>
@@ -1053,9 +1092,40 @@ export const AboutTrustSystemStory: React.FC = () => {
         aria-label="findmydoc trust system scroll story"
         data-testid="about-trust-system-story"
       >
+        <div className={styles.accessibleSummary}>
+          <Heading as="h2" align="left" size="h3">
+            findmydoc trust system
+          </Heading>
+          <ol>
+            {storyCards.map((card) => (
+              <li key={card.step}>
+                <p>
+                  <span>{card.step}</span> {card.label}
+                </p>
+                <Heading as="h3" align="left" size="h4">
+                  {card.title}
+                </Heading>
+                <p>{card.body}</p>
+                {'mission' in card ? (
+                  <p>
+                    <strong>{card.mission.title}</strong> {card.mission.body}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+          <p>
+            <strong>Patient Confidence</strong> Trust at the core.
+          </p>
+          <ul>
+            {ringLabels.map((ringLabel) => (
+              <li key={ringLabel.label}>{ringLabel.label}</li>
+            ))}
+          </ul>
+        </div>
         <div className={styles.stickyStage}>
           <div ref={shellRef} className={styles.stageShell}>
-            <div ref={copyStackRef} className={styles.copyStack} aria-live="polite">
+            <div ref={copyStackRef} className={styles.copyStack} aria-hidden="true">
               {storyCards.map((card, index) => (
                 <article
                   key={card.step}
@@ -1064,6 +1134,7 @@ export const AboutTrustSystemStory: React.FC = () => {
                   }}
                   className={`${styles.copyCard}${index === 0 ? ` ${styles.isActive}` : ''}`}
                   data-card={index}
+                  data-active={index === 0 ? 'true' : 'false'}
                 >
                   <div className={styles.kicker}>
                     <span>{card.step}</span>
@@ -1115,6 +1186,7 @@ export const AboutTrustSystemStory: React.FC = () => {
                       }}
                       className={`${styles.ringLabel} ${ringLabel.className}`}
                       data-ring-label={index}
+                      data-visible="false"
                     >
                       {ringLabel.label}
                     </div>
@@ -1145,6 +1217,7 @@ export const AboutTrustSystemStory: React.FC = () => {
                       }}
                       className={`${styles.railLabel}${index === 0 ? ` ${styles.isActive}` : ''}`}
                       data-step={index}
+                      data-active={index === 0 ? 'true' : 'false'}
                     >
                       <span className={styles.railDot} />
                       {card.label}
@@ -1152,7 +1225,7 @@ export const AboutTrustSystemStory: React.FC = () => {
                   ))}
                 </div>
                 <div className={styles.track}>
-                  <div ref={progressBarRef} className={styles.progress} />
+                  <div ref={progressBarRef} className={styles.progress} data-progress-bar />
                 </div>
               </div>
             </div>

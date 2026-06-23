@@ -263,6 +263,8 @@ type AboutTrustSystemStoryProps = {
   fixedProgress?: number
 }
 
+const RUNTIME_ACTIVATION_MARGIN_PX = 420
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
 }
@@ -661,6 +663,7 @@ function getBuildAngle(particle: Particle, index: number, particleCount: number)
 }
 
 export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fixedProgress }) => {
+  const [runtimeEnabled, setRuntimeEnabled] = React.useState(() => typeof fixedProgress === 'number')
   const storyRef = React.useRef<HTMLElement | null>(null)
   const shellRef = React.useRef<HTMLDivElement | null>(null)
   const copyStackRef = React.useRef<HTMLDivElement | null>(null)
@@ -680,6 +683,53 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
   const ringLabelRefs = React.useRef<Array<HTMLDivElement | null>>([])
 
   React.useEffect(() => {
+    if (typeof fixedProgress === 'number') {
+      setRuntimeEnabled(true)
+
+      return
+    }
+
+    if (runtimeEnabled) return
+
+    const story = storyRef.current
+
+    if (!story) return
+
+    let disposed = false
+    const activateRuntime = () => {
+      if (!disposed) setRuntimeEnabled(true)
+    }
+    const rect = story.getBoundingClientRect()
+    const isNearViewport =
+      rect.top <= window.innerHeight + RUNTIME_ACTIVATION_MARGIN_PX && rect.bottom >= -RUNTIME_ACTIVATION_MARGIN_PX
+
+    if (isNearViewport || typeof IntersectionObserver === 'undefined') {
+      activateRuntime()
+
+      return
+    }
+
+    const activationObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return
+
+        activateRuntime()
+        activationObserver.disconnect()
+      },
+      { rootMargin: `${RUNTIME_ACTIVATION_MARGIN_PX}px 0px`, threshold: 0 },
+    )
+
+    activationObserver.observe(story)
+
+    return () => {
+      disposed = true
+      activationObserver.disconnect()
+    }
+  }, [fixedProgress, runtimeEnabled])
+
+  React.useEffect(() => {
+    if (!runtimeEnabled) return
+
     const story = storyRef.current
     const shell = shellRef.current
     const copyStack = copyStackRef.current
@@ -708,6 +758,8 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const staticProgress = typeof fixedProgress === 'number' ? clamp01(fixedProgress) : null
     const progressIsStatic = staticProgress !== null
+    const shouldRunContinuousLoop = !reducedMotion && !progressIsStatic
+    const shouldRenderWebGl = !reducedMotion || progressIsStatic
     const particles: Particle[] = []
     const particleCount = window.innerWidth <= 767 ? 52 : window.innerWidth <= 1179 ? 78 : 118
     let activeCardIndex = Math.max(
@@ -931,6 +983,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       const shaderReveal = smoothstep(0.82, 0.985, p)
 
       homepageRingLayer?.style.setProperty('--homepage-ring-opacity', shaderReveal.toFixed(3))
+      if (!shouldRenderWebGl) homepageRingFallback?.classList.toggle(showClass, shaderReveal > 0)
 
       if (ambientGlow) {
         ambientGlow.style.opacity = (1 - shaderReveal).toFixed(3)
@@ -1001,7 +1054,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
     }
 
     const startLoop = () => {
-      if (!raf && sectionMotionActive && document.visibilityState !== 'hidden') {
+      if (shouldRunContinuousLoop && !raf && sectionMotionActive && document.visibilityState !== 'hidden') {
         raf = requestAnimationFrame(loop)
       }
     }
@@ -1018,10 +1071,10 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       lastFrameAt = time
       updateVisual(false, deltaSeconds)
 
-      if (progress > 0.78 || reducedMotion || progressIsStatic) {
+      if (progress > 0.78 || progressIsStatic) {
         if (!ringStartedAt) ringStartedAt = time
 
-        ringTimeSeconds = reducedMotion || progressIsStatic ? 0 : (time - ringStartedAt) / 1000
+        ringTimeSeconds = progressIsStatic ? 0 : (time - ringStartedAt) / 1000
         homepageRingRenderer.draw(ringTimeSeconds)
       }
 
@@ -1029,7 +1082,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
     }
 
     const homepageRingRenderer =
-      homepageRingCanvas && homepageRingFallback
+      shouldRenderWebGl && homepageRingCanvas && homepageRingFallback
         ? initHomepageRingRenderer(homepageRingCanvas, homepageRingFallback, showClass)
         : {
             draw: () => undefined,
@@ -1050,7 +1103,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
     galaxyArea.classList.add(isActiveClass)
 
     const sectionObserver =
-      !progressIsStatic && typeof IntersectionObserver !== 'undefined'
+      shouldRunContinuousLoop && typeof IntersectionObserver !== 'undefined'
         ? new IntersectionObserver(
             ([entry]) => {
               sectionMotionActive = Boolean(entry?.isIntersecting)
@@ -1072,15 +1125,25 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
 
     const handleScroll = () => {
       updateScroll()
-      startLoop()
+
+      if (shouldRunContinuousLoop) {
+        startLoop()
+
+        return
+      }
+
+      updateVisual(true)
     }
 
     window.addEventListener('resize', resize, { passive: true })
 
     if (!progressIsStatic) {
       window.addEventListener('scroll', handleScroll, { passive: true })
-      document.addEventListener('visibilitychange', handleVisibilityChange)
-      startLoop()
+
+      if (shouldRunContinuousLoop) {
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+        startLoop()
+      }
     }
 
     return () => {
@@ -1092,13 +1155,16 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       window.removeEventListener('resize', resize)
       if (!progressIsStatic) {
         window.removeEventListener('scroll', handleScroll)
-        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        if (shouldRunContinuousLoop) {
+          document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
       }
       homepageRingRenderer.dispose()
       particles.forEach((particle) => particle.el.remove())
+      homepageRingFallback?.classList.remove(showClass)
       galaxyArea.classList.remove(isActiveClass, particlesHiddenClass)
     }
-  }, [fixedProgress])
+  }, [fixedProgress, runtimeEnabled])
 
   return (
     <div className={styles.root}>

@@ -390,7 +390,7 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.doctors[0]?.specialty).toBe('Pediatric Cardiology')
     expect(result?.doctors[1]?.specialty).toBe('General Practice')
     expect(result?.doctors[0]?.reviewCount).toBe(2)
-    expect(result?.doctors[1]?.image.src).toBe('/images/avatar-doctor-male-placeholder.svg')
+    expect(result?.doctors[1]?.image.src).toBe('/images/placeholders/doctor-male-placeholder.webp')
     expect(result?.treatments[0]?.comparisonLink).toEqual({
       href: '/listing-comparison?treatment=301',
       label: 'Compare clinics for Routine Checkup',

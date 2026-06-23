@@ -1,8 +1,12 @@
 import type { BreadcrumbItem } from '@/components/molecules/Breadcrumb'
-import { buildBreadcrumbListJsonLd } from '@/utilities/structuredData/breadcrumbs'
+import { buildBreadcrumbListJsonLd, type BreadcrumbListJsonLd } from '@/utilities/structuredData/breadcrumbs'
 
 export type BreadcrumbJsonLdProps = {
   items: BreadcrumbItem[]
+}
+
+function serializeBreadcrumbJsonLd(jsonLd: BreadcrumbListJsonLd): string {
+  return JSON.stringify(jsonLd).replace(/</g, '\\u003c')
 }
 
 export function BreadcrumbJsonLd({ items }: BreadcrumbJsonLdProps) {
@@ -10,12 +14,5 @@ export function BreadcrumbJsonLd({ items }: BreadcrumbJsonLdProps) {
 
   if (!jsonLd) return null
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify(jsonLd),
-      }}
-    />
-  )
+  return <script type="application/ld+json">{serializeBreadcrumbJsonLd(jsonLd)}</script>
 }

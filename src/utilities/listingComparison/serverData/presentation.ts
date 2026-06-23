@@ -11,7 +11,7 @@ import type { CityMeta, ClinicPresentationMeta, ClinicRow } from './types'
 
 const DEFAULT_LOCATION_LABEL = 'Unknown location'
 const PLACEHOLDER_MEDIA = {
-  src: '/images/placeholder-576-968.svg',
+  src: '/images/placeholders/clinic-placeholder.webp',
   alt: 'Clinic placeholder image',
 }
 const CLINIC_MEDIA_API_PREFIX = '/api/clinicMedia/file/'

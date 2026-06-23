@@ -272,7 +272,7 @@ const findActiveStepIndex = (
 
 export const LandingProcess: React.FC<LandingProcessProps> = ({
   steps,
-  image = '/images/placeholder-576-968.svg',
+  image = '/images/placeholders/clinic-placeholder.webp',
   imageAlt = 'Step-by-step process visualization',
   title,
   subtitle,

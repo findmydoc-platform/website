@@ -9,7 +9,7 @@ import { slugify } from '@/utilities/slugify'
 
 const FAVORITES_PAGE_LIMIT = 100
 const PLACEHOLDER_MEDIA = {
-  src: '/images/placeholder-576-968.svg',
+  src: '/images/placeholders/clinic-placeholder.webp',
   alt: 'Clinic placeholder image',
 }
 

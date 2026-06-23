@@ -5,9 +5,11 @@ import { fileURLToPath } from 'url'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { isClinicBasicUser } from '@/access/isClinicBasicUser'
 import { getUserAssignedClinicId, normalizeClinicId } from '@/access/utils/getClinicAssignment'
+import { doctorMediaReadAccess } from '@/access/doctorMediaRead'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { getDoctorClinicId } from '@/access/utils/getDoctorClinic'
 import { extractRelationId } from '@/collections/common/mediaPathHelpers'
+import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeDoctorMedia } from './hooks/beforeChangeDoctorMedia'
 import type { DoctorMedia as DoctorMediaType } from '@/payload-types'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
@@ -31,7 +33,7 @@ export const DoctorMedia: CollectionConfig = {
     defaultColumns: ['doctor', 'clinic', 'alt', 'createdBy'],
   },
   access: {
-    read: platformOrOwnClinicResource,
+    read: doctorMediaReadAccess,
     // Custom create logic: we must ensure the doctor provided actually belongs to the clinic of the
     // uploading clinic staff user (or platform). This cross-entity validation (doctor -> clinic)
     // goes beyond the simple clinic scoping handled by platformOrOwnClinicResource, so we keep a
@@ -62,7 +64,7 @@ export const DoctorMedia: CollectionConfig = {
   trash: true,
   hooks: {
     afterError: [afterErrorLogMediaUploadError],
-    beforeChange: [beforeChangeDoctorMedia],
+    beforeChange: [stableIdBeforeChangeHook, beforeChangeDoctorMedia],
     beforeOperation: [
       beforeOperationCaptureMediaUpload({
         ownerField: 'doctor',
@@ -71,6 +73,7 @@ export const DoctorMedia: CollectionConfig = {
     ],
   },
   fields: [
+    stableIdField(),
     buildMediaAltField(),
     buildMediaCaptionField(),
     {

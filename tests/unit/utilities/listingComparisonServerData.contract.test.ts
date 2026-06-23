@@ -8,6 +8,7 @@ type MockCollectionData = {
   treatments: Array<Record<string, unknown>>
   'medical-specialties': Array<Record<string, unknown>>
   clinics: Array<Record<string, unknown>>
+  clinicMedia: Array<Record<string, unknown>>
   clinictreatments: Array<Record<string, unknown>>
   reviews: Array<Record<string, unknown>>
 }
@@ -40,7 +41,7 @@ const baseData: MockCollectionData = {
         city: { id: 10, name: 'Berlin' },
         country: 'Germany',
       },
-      thumbnail: null,
+      thumbnail: 501,
       tags: [{ name: 'Premium' }],
       updatedAt: '2026-01-10T00:00:00.000Z',
     },
@@ -91,6 +92,13 @@ const baseData: MockCollectionData = {
       thumbnail: null,
       tags: [{ name: 'Draft' }],
       updatedAt: '2026-01-06T00:00:00.000Z',
+    },
+  ],
+  clinicMedia: [
+    {
+      id: 501,
+      filename: 'alpha-clinic.webp',
+      alt: 'Alpha clinic exterior',
     },
   ],
   clinictreatments: [
@@ -207,6 +215,10 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(result.queryState.specialties).toEqual(['2'])
     expect(result.results.map((clinic) => clinic.name)).toEqual(['Alpha Clinic', 'Bravo Clinic'])
     expect(result.results[0]?.rating.count).toBe(2)
+    expect(result.results[0]?.media).toEqual({
+      src: '/api/clinicMedia/file/alpha-clinic.webp',
+      alt: 'Alpha clinic exterior',
+    })
 
     const cityLabels = result.filterOptions.cities.map((option) => option.label)
     expect(cityLabels).toContain('Berlin (1)')

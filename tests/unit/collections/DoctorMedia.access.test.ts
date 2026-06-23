@@ -59,6 +59,56 @@ describe('DoctorMedia Collection Access Control', () => {
       )
       expect(res).toBe(false)
     })
+
+    test.each([
+      { label: 'Patient', user: mockUsers.patient() },
+      { label: 'Anonymous', user: mockUsers.anonymous() },
+    ])('$label static file read is limited to approved clinics', async ({ user }) => {
+      const req = createMockReq(user, mockPayload)
+      const res = await DoctorMedia.access!.read!(
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, {
+          payload: mockPayload,
+          extra: { isReadingStaticFile: true },
+        }),
+      )
+
+      expect(res).toEqual({
+        'clinic.status': {
+          equals: 'approved',
+        },
+      })
+    })
+
+    test('Clinic staff static file read keeps clinic scoping', async () => {
+      const req = createMockReq(mockUsers.clinic(10, clinicId), mockPayload)
+      vi.mocked(mockPayload.find).mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
+      const res = await DoctorMedia.access!.read!(
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, {
+          payload: mockPayload,
+          extra: { isReadingStaticFile: true },
+        }),
+      )
+
+      expect(res).toEqual({ clinic: { equals: clinicId } })
+    })
+
+    test('Non-patient static file read stays denied when scoped access is missing', async () => {
+      const user = {
+        id: 101,
+        collection: 'basicUsers',
+        userType: 'support',
+        email: 'support@example.com',
+      }
+      const req = createMockReq(user, mockPayload)
+      const res = await DoctorMedia.access!.read!(
+        createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, {
+          payload: mockPayload,
+          extra: { isReadingStaticFile: true },
+        }),
+      )
+
+      expect(res).toBe(false)
+    })
   })
 
   describe('Create Access', () => {

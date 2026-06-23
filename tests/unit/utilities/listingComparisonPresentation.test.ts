@@ -153,7 +153,7 @@ describe('mapListingCardResults media resolution', () => {
       availableClinicMediaFiles: new Set(['other.jpg']),
     })
 
-    expect(result[0]?.media.src).toBe('/images/placeholder-576-968.svg')
+    expect(result[0]?.media.src).toBe('/images/placeholders/clinic-placeholder.webp')
     expect(result[0]?.media.alt).toBe('Bravo missing image')
   })
 
@@ -170,7 +170,7 @@ describe('mapListingCardResults media resolution', () => {
 
     const result = mapListingCardResults([buildRow(clinic)], new Map())
 
-    expect(result[0]?.media.src).toBe('/images/placeholder-576-968.svg')
+    expect(result[0]?.media.src).toBe('/images/placeholders/clinic-placeholder.webp')
   })
 
   it('preserves full query content on clinic media URLs', () => {

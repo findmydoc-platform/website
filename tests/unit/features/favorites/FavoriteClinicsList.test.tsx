@@ -43,7 +43,7 @@ const savedClinicItems: FavoriteClinicListItem[] = [
     href: '/clinics/berlin-university-hospital',
     location: 'Berlin, Germany',
     media: {
-      src: '/images/placeholder-576-968.svg',
+      src: '/images/placeholders/clinic-placeholder.webp',
       alt: 'Berlin University Hospital image',
     },
     verification: {
@@ -58,7 +58,7 @@ const savedClinicItems: FavoriteClinicListItem[] = [
     href: '/clinics/munich-medical-center',
     location: 'Munich, Germany',
     media: {
-      src: '/images/placeholder-576-968.svg',
+      src: '/images/placeholders/clinic-placeholder.webp',
       alt: 'Munich Medical Center image',
     },
     verification: {

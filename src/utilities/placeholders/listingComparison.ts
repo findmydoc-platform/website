@@ -17,7 +17,7 @@ export const listingComparisonFilterOptions = {
 }
 
 const placeholderMedia = {
-  src: '/images/placeholder-576-968.svg',
+  src: '/images/placeholders/clinic-placeholder.webp',
   alt: 'Clinic placeholder image',
 }
 

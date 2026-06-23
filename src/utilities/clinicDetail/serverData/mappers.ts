@@ -35,7 +35,7 @@ import {
 
 import type { ClinicDetailMappingArgs } from './types'
 
-const CLINIC_HERO_PLACEHOLDER = '/images/placeholder-576-968.svg'
+const CLINIC_HERO_PLACEHOLDER = '/images/placeholders/clinic-placeholder.webp'
 
 const LANGUAGE_LABELS: Record<string, string> = {
   german: 'German',

@@ -30,7 +30,7 @@ const items: LandingCategoryItem[] = [
     subtitle: 'Hidden specialty',
     categories: ['nose'],
     href: '/listing-comparison?specialty=nose-item',
-    image: { src: '/images/placeholder-576-968.svg', alt: 'Nose item image' },
+    image: { src: '/images/placeholders/clinic-placeholder.webp', alt: 'Nose item image' },
   },
   {
     id: 'dental-item',
@@ -38,7 +38,7 @@ const items: LandingCategoryItem[] = [
     subtitle: 'Dental category',
     categories: ['dental'],
     href: '/listing-comparison?specialty=dental-item',
-    image: { src: '/images/placeholder-576-968.svg', alt: 'Dental item image' },
+    image: { src: '/images/placeholders/clinic-placeholder.webp', alt: 'Dental item image' },
   },
   {
     id: 'eyes-item',
@@ -46,7 +46,7 @@ const items: LandingCategoryItem[] = [
     subtitle: 'Eyes category',
     categories: ['eyes'],
     href: '/listing-comparison?specialty=eyes-item',
-    image: { src: '/images/placeholder-576-968.svg', alt: 'Eyes item image' },
+    image: { src: '/images/placeholders/clinic-placeholder.webp', alt: 'Eyes item image' },
   },
   {
     id: 'hair-item',
@@ -54,7 +54,7 @@ const items: LandingCategoryItem[] = [
     subtitle: 'Hair category',
     categories: ['hair'],
     href: '/listing-comparison?specialty=hair-item',
-    image: { src: '/images/placeholder-576-968.svg', alt: 'Hair item image' },
+    image: { src: '/images/placeholders/clinic-placeholder.webp', alt: 'Hair item image' },
   },
   {
     id: 'skin-item',
@@ -62,7 +62,7 @@ const items: LandingCategoryItem[] = [
     subtitle: 'Skin category',
     categories: ['skin'],
     href: '/listing-comparison?specialty=skin-item',
-    image: { src: '/images/placeholder-576-968.svg', alt: 'Skin item image' },
+    image: { src: '/images/placeholders/clinic-placeholder.webp', alt: 'Skin item image' },
   },
 ]
 
@@ -144,31 +144,31 @@ describe('LandingCategories', () => {
         id: 'dental-item-a',
         title: 'Dental Item A',
         categories: ['dental'],
-        image: { src: '/images/placeholder-576-968.svg', alt: 'Dental item A image' },
+        image: { src: '/images/placeholders/clinic-placeholder.webp', alt: 'Dental item A image' },
       },
       {
         id: 'dental-item-b',
         title: 'Dental Item B',
         categories: ['dental'],
-        image: { src: '/images/placeholder-576-968.svg', alt: 'Dental item B image' },
+        image: { src: '/images/placeholders/clinic-placeholder.webp', alt: 'Dental item B image' },
       },
       {
         id: 'dental-item-c',
         title: 'Dental Item C',
         categories: ['dental'],
-        image: { src: '/images/placeholder-576-968.svg', alt: 'Dental item C image' },
+        image: { src: '/images/placeholders/clinic-placeholder.webp', alt: 'Dental item C image' },
       },
       {
         id: 'dental-item-d',
         title: 'Dental Item D',
         categories: ['dental'],
-        image: { src: '/images/placeholder-576-968.svg', alt: 'Dental item D image' },
+        image: { src: '/images/placeholders/clinic-placeholder.webp', alt: 'Dental item D image' },
       },
       {
         id: 'nose-item-a',
         title: 'Nose Item A',
         categories: ['nose'],
-        image: { src: '/images/placeholder-576-968.svg', alt: 'Nose item A image' },
+        image: { src: '/images/placeholders/clinic-placeholder.webp', alt: 'Nose item A image' },
       },
     ]
 

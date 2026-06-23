@@ -32,6 +32,35 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
+const CLINIC_PLACEHOLDER_SRC = '/images/placeholders/clinic-placeholder.webp'
+
+const DOCTOR_PLACEHOLDER_IMAGES = [
+  {
+    src: '/images/placeholders/doctor-female-placeholder.webp',
+    alt: 'Female doctor fallback image preview',
+  },
+  {
+    src: '/images/placeholders/doctor-male-placeholder.webp',
+    alt: 'Male doctor fallback image preview',
+  },
+  {
+    src: '/images/placeholders/doctor-neutral-placeholder.webp',
+    alt: 'Neutral doctor fallback image preview',
+  },
+]
+
+const clinicDetailFallbackHeroPreviewFixture = {
+  ...clinicDetailFixture,
+  heroImage: {
+    src: CLINIC_PLACEHOLDER_SRC,
+    alt: 'Clinic fallback image preview',
+  },
+  doctors: clinicDetailFixture.doctors.map((doctor, index) => {
+    const image = DOCTOR_PLACEHOLDER_IMAGES[index]
+    return image ? { ...doctor, image } : doctor
+  }),
+}
+
 export const Main_Default: Story = {
   render: (args) => <ClinicDetail {...args} />,
   play: async ({ canvasElement }) => {
@@ -151,6 +180,13 @@ export const Main_WithGuestFavoriteAction: Story = {
       '/login/patient?next=%2Fclinics%2Fberlin-health-clinic',
     )
   },
+}
+
+export const Visual_FallbackHeroPreview: Story = {
+  args: {
+    data: clinicDetailFallbackHeroPreviewFixture,
+  },
+  render: (args) => <ClinicDetail {...args} />,
 }
 
 export const MainDefault320: Story = withViewportStory(Main_Default, 'public320', 'Main default / 320')

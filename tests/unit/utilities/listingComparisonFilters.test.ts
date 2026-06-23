@@ -10,7 +10,7 @@ const baseClinic: ListingCardData = {
   id: 'test-clinic-base',
   name: 'Example Clinic',
   location: 'Berlin, Mitte',
-  media: { src: '/images/placeholder-576-968.svg', alt: 'Placeholder' },
+  media: { src: '/images/placeholders/clinic-placeholder.webp', alt: 'Placeholder' },
   verification: { variant: 'gold' },
   rating: { value: 4.5, count: 10 },
   waitTime: { label: '2-3 weeks', minWeeks: 2, maxWeeks: 3 },

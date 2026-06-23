@@ -22,8 +22,16 @@ import type {
   ClinicDetailTrust,
   ClinicVerificationTier,
 } from '@/components/templates/ClinicDetailConcepts/types'
+import { CLINICS_BREADCRUMB, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
 import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
+import { buildFreshnessSignals } from '@/utilities/freshness'
+import { findLatestIsoTimestampString } from '@/utilities/timestamps'
+import {
+  LISTING_COMPARISON_PRICE_MAX_DEFAULT,
+  LISTING_COMPARISON_PRICE_MIN_DEFAULT,
+  buildListingComparisonHref,
+} from '@/utilities/listingComparison/queryState'
 
 import type { ClinicDetailMappingArgs } from './types'
 
@@ -167,6 +175,25 @@ function resolveTreatmentCategory(value: unknown): string | undefined {
   return resolveMedicalSpecialtyName(treatment.medicalSpecialty) ?? undefined
 }
 
+function buildTreatmentComparisonLink(
+  treatmentId: number,
+  treatmentName: string,
+): NonNullable<ClinicDetailTreatment['comparisonLink']> {
+  return {
+    href: buildListingComparisonHref({
+      page: 1,
+      sort: 'rank',
+      cities: [],
+      treatments: [String(treatmentId)],
+      specialties: [],
+      ratingMin: null,
+      priceMin: LISTING_COMPARISON_PRICE_MIN_DEFAULT,
+      priceMax: LISTING_COMPARISON_PRICE_MAX_DEFAULT,
+    }),
+    label: `Compare clinics for ${treatmentName}`,
+  }
+}
+
 function resolveDoctorName(doctor: Doctor): string {
   if (typeof doctor.fullName === 'string' && doctor.fullName.trim().length > 0) {
     return doctor.fullName
@@ -218,7 +245,8 @@ function buildLocation(clinic: Clinic, cityNameById: Map<number, string>): Clini
 function mapTreatments(treatments: Clinictreatment[]): ClinicDetailTreatment[] {
   return treatments.map((entry) => {
     const treatment = entry.treatment as number | Treatment
-    const treatmentId = extractRelationId(treatment) ?? entry.id
+    const treatmentRelationId = extractRelationId(treatment)
+    const treatmentId = treatmentRelationId ?? entry.id
 
     const treatmentName =
       treatment && typeof treatment === 'object' && 'name' in treatment && typeof treatment.name === 'string'
@@ -230,6 +258,10 @@ function mapTreatments(treatments: Clinictreatment[]): ClinicDetailTreatment[] {
       name: treatmentName,
       priceFromUsd: Number.isFinite(entry.price) ? entry.price : undefined,
       category: resolveTreatmentCategory(treatment),
+      comparisonLink:
+        typeof treatmentRelationId === 'number'
+          ? buildTreatmentComparisonLink(treatmentRelationId, treatmentName)
+          : undefined,
     }
   })
 }
@@ -452,6 +484,41 @@ function mapCitiesToNameMap(cities: City[]): Map<number, string> {
   )
 }
 
+function mapClinicFreshness({
+  clinic,
+  clinicTreatments,
+  doctors,
+  doctorSpecialties,
+  approvedClinicReviews,
+  galleryEntries,
+  accreditations,
+  cities,
+}: ClinicDetailMappingArgs) {
+  return buildFreshnessSignals({
+    updatedAt: findLatestIsoTimestampString([
+      clinic.updatedAt,
+      ...clinicTreatments.map((item) => item.updatedAt),
+      ...doctors.map((item) => item.updatedAt),
+      ...doctorSpecialties.map((item) => item.updatedAt),
+      ...galleryEntries.map((item) => item.updatedAt),
+      ...accreditations.map((item) => item.updatedAt),
+      ...cities.map((item) => item.updatedAt),
+    ]),
+    latestPatientReviewAt: findLatestIsoTimestampString(approvedClinicReviews.map((review) => review.reviewDate)),
+    verificationTier: toVerificationTier(clinic.verification),
+    sourceCollections: [
+      'accreditation',
+      'cities',
+      'clinics',
+      'clinicGalleryEntries',
+      'clinictreatments',
+      'doctors',
+      'doctorspecialties',
+      'reviews',
+    ],
+  })
+}
+
 export function mapClinicToClinicDetailData({
   clinic,
   clinicTreatments,
@@ -471,6 +538,11 @@ export function mapClinicToClinicDetailData({
     clinicId: clinic.id,
     clinicSlug: clinic.slug,
     clinicName: clinic.name,
+    breadcrumbs: [
+      HOME_BREADCRUMB,
+      CLINICS_BREADCRUMB,
+      { label: clinic.name, href: `/clinics/${encodeURIComponent(clinic.slug)}` },
+    ],
     heroImage: toClinicImage(clinic),
     description: extractLexicalPlainText(clinic.description) || 'Clinic profile information currently being updated.',
     trust: mapTrust({
@@ -491,6 +563,18 @@ export function mapClinicToClinicDetailData({
     }),
     beforeAfterEntries: mapBeforeAfterEntries(clinic, galleryEntries),
     location: buildLocation(clinic, cityNameById),
+    freshness: mapClinicFreshness({
+      clinic,
+      clinicTreatments,
+      doctors,
+      doctorSpecialties,
+      clinicReviewCount,
+      approvedClinicReviews,
+      doctorReviewCounts,
+      galleryEntries,
+      accreditations,
+      cities,
+    }),
     contactHref,
   }
 }

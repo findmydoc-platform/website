@@ -12,6 +12,7 @@ import {
   type SocialPreviewImage,
 } from './socialPreview'
 import { resolveMediaImage } from './media/resolveMediaImage'
+import { buildFreshnessMetadata, buildFreshnessSignals, type FreshnessSignals } from './freshness'
 
 /**
  * Generates an image URL for OpenGraph metadata.
@@ -40,11 +41,13 @@ export const createSiteMetadata = (
     description?: string | null
     path?: string
     image?: SocialPreviewImage | null
+    freshness?: FreshnessSignals | null
   } = {},
 ): Metadata => {
   const title = formatSiteTitle(args.title)
   const description = normalizeSiteDescription(args.description)
   const images = getOpenGraphImages(args.image)
+  const freshnessMetadata = buildFreshnessMetadata(args.freshness)
 
   return {
     title,
@@ -61,6 +64,7 @@ export const createSiteMetadata = (
       description,
       images: getTwitterImages(args.image),
     },
+    ...freshnessMetadata,
   }
 }
 
@@ -79,6 +83,7 @@ export const createSiteMetadata = (
 export const generateMeta = async (args: {
   doc: Partial<Page> | Partial<Post> | null
   path?: string
+  sourceCollection?: 'pages' | 'posts'
 }): Promise<Metadata> => {
   const { doc } = args
 
@@ -97,5 +102,12 @@ export const generateMeta = async (args: {
     description: doc?.meta?.description,
     path: args.path ?? slugPath,
     image: ogImage ? { url: ogImage } : null,
+    freshness: doc
+      ? buildFreshnessSignals({
+          updatedAt: doc.updatedAt,
+          publishedAt: doc.publishedAt,
+          sourceCollections: args.sourceCollection ? [args.sourceCollection] : [],
+        })
+      : null,
   })
 }

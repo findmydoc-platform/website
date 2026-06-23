@@ -8,6 +8,7 @@ import { draftMode } from 'next/headers'
 import React, { cache } from 'react'
 import RichText from '@/blocks/_shared/RichText'
 
+import { BreadcrumbJsonLd } from '@/components/molecules/Breadcrumb/BreadcrumbJsonLd'
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
@@ -21,6 +22,7 @@ import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 import { PostShareActionBar } from './PostShareActionBar'
 import { resolveContentLocaleContext, type ContentLocaleContext } from '@/utilities/contentLocalization'
 import { buildPostPath, buildPostsIndexPath } from '@/utilities/content/postPaths'
+import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -72,8 +74,9 @@ export default async function Post({ params: paramsPromise, searchParams: search
       : undefined
 
   const breadcrumbs = [
-    { label: 'Home', href: '/' },
-    { label: 'Blog', href: buildPostsIndexPath(contentLocale) },
+    HOME_BREADCRUMB,
+    createBlogBreadcrumb(buildPostsIndexPath(contentLocale)),
+    { label: post.title, href: localizedPostPath },
   ]
   const readTime = calculateReadTime(post.content)
   const hasPostContent = Boolean(post.content?.root?.children?.length)
@@ -81,6 +84,7 @@ export default async function Post({ params: paramsPromise, searchParams: search
   return (
     <article className="pb-16 sm:pb-20">
       <PageClient />
+      <BreadcrumbJsonLd items={breadcrumbs} />
 
       {/* Allows redirects for valid pages too */}
       <PayloadRedirects disableNotFound url={canonicalPostPath} />
@@ -149,7 +153,7 @@ export async function generateMetadata({
   const contentLocale = resolveContentLocaleContext(searchParams.locale)
   const post = await queryPostBySlug({ contentLocale, slug })
 
-  return generateMeta({ doc: post, path: buildPostPath(slug, contentLocale) })
+  return generateMeta({ doc: post, path: buildPostPath(slug, contentLocale), sourceCollection: 'posts' })
 }
 
 const queryPostBySlug = cache(

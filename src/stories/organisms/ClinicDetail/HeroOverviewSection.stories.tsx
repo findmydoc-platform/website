@@ -14,6 +14,7 @@ const meta = {
   component: HeroOverviewSection,
   args: {
     clinicName: clinicDetailFixture.clinicName,
+    breadcrumbs: clinicDetailFixture.breadcrumbs,
     description: clinicDetailFixture.description,
     heroImage: clinicDetailFixture.heroImage,
     trust: clinicDetailFixture.trust,
@@ -48,6 +49,7 @@ function HeroOverviewSectionStoryHarness() {
         </p>
         <HeroOverviewSection
           clinicName={clinicDetailFixture.clinicName}
+          breadcrumbs={clinicDetailFixture.breadcrumbs}
           description={clinicDetailFixture.description}
           heroImage={clinicDetailFixture.heroImage}
           trust={clinicDetailFixture.trust}
@@ -66,6 +68,7 @@ export const InteractiveDoctorSelection: Story = {
     const canvas = within(canvasElement)
 
     await expect(canvas.getByRole('heading', { name: 'Berlin Health Clinic' })).toBeInTheDocument()
+    await expect(canvas.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument()
     const doctorButton = canvas.getByRole('button', { name: `Select ${heroDoctors[1]?.name}` })
 
     await userEvent.click(doctorButton)

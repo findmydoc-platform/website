@@ -104,6 +104,7 @@ export async function findClinicTreatmentsByClinicId(payload: Payload, clinicId:
         price: true,
         clinic: true,
         treatment: true,
+        updatedAt: true,
       },
     })
 
@@ -141,6 +142,7 @@ export async function findDoctorsByClinicId(payload: Payload, clinicId: number):
         qualifications: true,
         experienceYears: true,
         languages: true,
+        updatedAt: true,
       },
     })
 
@@ -179,6 +181,7 @@ export async function findDoctorSpecialtiesByDoctorIds(
           doctor: true,
           medicalSpecialty: true,
           specializationLevel: true,
+          updatedAt: true,
         },
       })
 
@@ -251,6 +254,7 @@ export async function findApprovedClinicReviewsByClinicId(
     select: {
       id: true,
       reviewDate: true,
+      updatedAt: true,
       starRating: true,
       comment: true,
       publicAuthorName: true,
@@ -345,6 +349,7 @@ export async function findClinicGalleryEntriesByIds(
           description: true,
           status: true,
           publishedAt: true,
+          updatedAt: true,
         },
       })
 
@@ -383,6 +388,7 @@ export async function findAccreditationsByIds(payload: Payload, accreditationIds
         select: {
           id: true,
           name: true,
+          updatedAt: true,
         },
       })
 
@@ -421,6 +427,7 @@ export async function findCitiesByIds(payload: Payload, cityIds: number[]): Prom
         select: {
           id: true,
           name: true,
+          updatedAt: true,
         },
       })
 

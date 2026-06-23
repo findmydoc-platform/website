@@ -201,11 +201,23 @@ describe('generateMeta', () => {
         title: 'Localized Post',
       },
       slug: 'localized-post',
+      publishedAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
     }
 
-    const result = await generateMeta({ doc: postDoc, path: '/posts/localized-post?locale=de' })
+    const result = await generateMeta({
+      doc: postDoc,
+      path: '/posts/localized-post?locale=de',
+      sourceCollection: 'posts',
+    })
 
     expect(result.openGraph).toMatchObject({ url: 'https://example.com/posts/localized-post?locale=de' })
+    expect(result.other).toMatchObject({
+      'last-modified': '2026-01-02T00:00:00.000Z',
+      'findmydoc:updated_at': '2026-01-02T00:00:00.000Z',
+      'findmydoc:published_at': '2026-01-01T00:00:00.000Z',
+      'findmydoc:freshness_sources': 'posts',
+    })
   })
 
   it('should handle very long titles', async () => {

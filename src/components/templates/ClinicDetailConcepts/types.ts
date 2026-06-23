@@ -1,4 +1,6 @@
+import type { BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import type { CookieConsentConfig, CookieConsentState } from '@/features/cookieConsent'
+import type { FreshnessSignals } from '@/utilities/freshness'
 
 export type ClinicVerificationTier = 'unverified' | 'bronze' | 'silver' | 'gold'
 
@@ -28,6 +30,10 @@ export type ClinicDetailTreatment = {
   name: string
   priceFromUsd?: number
   category?: string
+  comparisonLink?: {
+    href: string
+    label: string
+  }
 }
 
 export type ClinicBeforeAfterEntry = {
@@ -78,6 +84,7 @@ export type ClinicDetailData = {
   clinicId: number
   clinicSlug: string
   clinicName: string
+  breadcrumbs: BreadcrumbItem[]
   heroImage: { src: string; alt: string }
   description: string
   trust: ClinicDetailTrust
@@ -86,6 +93,7 @@ export type ClinicDetailData = {
   doctors: ClinicDetailDoctor[]
   beforeAfterEntries: ClinicBeforeAfterEntry[]
   location: ClinicDetailLocation
+  freshness: FreshnessSignals
   contact?: ClinicDetailContact
   contactHref: string
 }

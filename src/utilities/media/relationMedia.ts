@@ -1,6 +1,6 @@
 import type { Payload, PayloadRequest } from 'payload'
 
-type MediaCollectionSlug = 'clinicMedia' | 'doctorMedia' | 'platformContentMedia' | 'userProfileMedia'
+export type MediaCollectionSlug = 'clinicMedia' | 'doctorMedia' | 'platformContentMedia' | 'userProfileMedia'
 
 type MediaDocument = {
   id: number
@@ -176,4 +176,83 @@ export async function findMediaDescriptorsByIds({
   }
 
   return descriptorsById
+}
+
+export async function buildMediaDescriptorsByOwnerId<TItem>({
+  payload,
+  items,
+  collection,
+  getOwnerId,
+  getRelation,
+  req,
+  overrideAccess = true,
+  chunkSize,
+  pageSize,
+}: {
+  payload: Payload
+  items: TItem[]
+  collection: MediaCollectionSlug
+  getOwnerId: (item: TItem) => number | null | undefined
+  getRelation: (item: TItem) => unknown
+  req?: PayloadRequest
+  overrideAccess?: boolean
+  chunkSize?: number
+  pageSize?: number
+}): Promise<Map<number, MediaDescriptor>> {
+  const relationIds = Array.from(
+    new Set(
+      items
+        .map((item) => extractMediaRelationId(getRelation(item)))
+        .filter((id): id is number => typeof id === 'number'),
+    ),
+  )
+
+  if (relationIds.length === 0) {
+    return new Map()
+  }
+
+  const descriptorsByRelationId = await findMediaDescriptorsByIds({
+    payload,
+    collection,
+    ids: relationIds,
+    req,
+    overrideAccess,
+    chunkSize,
+    pageSize,
+  })
+
+  const descriptorsByOwnerId = new Map<number, MediaDescriptor>()
+
+  for (const item of items) {
+    const ownerId = getOwnerId(item)
+    if (typeof ownerId !== 'number' || !Number.isFinite(ownerId)) continue
+
+    const relation = getRelation(item)
+    const relationId = extractMediaRelationId(relation)
+    if (!relationId) continue
+
+    const loadedDescriptor = resolveMediaDescriptorFromLoadedRelation(relation, collection)
+    const descriptor = loadedDescriptor?.url ? loadedDescriptor : descriptorsByRelationId.get(relationId)
+
+    if (descriptor?.url) {
+      descriptorsByOwnerId.set(ownerId, descriptor)
+    }
+  }
+
+  return descriptorsByOwnerId
+}
+
+export function resolveMediaImageDescriptorForOwner({
+  ownerId,
+  relation,
+  collection,
+  descriptorsByOwnerId,
+}: {
+  ownerId: number
+  relation: unknown
+  collection: MediaCollectionSlug
+  descriptorsByOwnerId?: ReadonlyMap<number, MediaDescriptor>
+}): MediaDescriptor | undefined {
+  const loadedDescriptor = resolveMediaDescriptorFromLoadedRelation(relation, collection)
+  return loadedDescriptor?.url ? loadedDescriptor : descriptorsByOwnerId?.get(ownerId)
 }

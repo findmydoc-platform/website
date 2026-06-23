@@ -6,6 +6,7 @@
     "firstName": "Aylin",
     "lastName": "Demir",
     "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "profileImageStableId": "seed-doctor-media-1",
     "qualifications": ["DDS", "PhD"],
     "languages": ["english", "turkish"]
   },
@@ -16,6 +17,7 @@
     "firstName": "Cem",
     "lastName": "Soylu",
     "clinicStableId": "seed-clinic-istanbul-bosphorus",
+    "profileImageStableId": "seed-doctor-media-2",
     "qualifications": ["MD", "Board Certified Plastic Surgeon"],
     "languages": ["english", "turkish", "arabic"]
   },
@@ -26,6 +28,7 @@
     "firstName": "Selin",
     "lastName": "Ozkan",
     "clinicStableId": "seed-clinic-ankara-harmony",
+    "profileImageStableId": "seed-doctor-media-3",
     "qualifications": ["DDS", "Orthodontics Residency"],
     "languages": ["english", "turkish"]
   },
@@ -36,6 +39,7 @@
     "firstName": "Kaan",
     "lastName": "Sahin",
     "clinicStableId": "seed-clinic-ankara-capital",
+    "profileImageStableId": "seed-doctor-media-4",
     "qualifications": ["MD", "Dermatology Fellowship"],
     "languages": ["english", "turkish", "russian"]
   },
@@ -46,6 +50,7 @@
     "firstName": "Elif",
     "lastName": "Arslan",
     "clinicStableId": "seed-clinic-izmir-coast",
+    "profileImageStableId": "seed-doctor-media-5",
     "qualifications": ["DDS", "MSc Implant Dentistry"],
     "languages": ["english", "turkish", "german"]
   },
@@ -56,6 +61,7 @@
     "firstName": "Mert",
     "lastName": "Kilic",
     "clinicStableId": "seed-clinic-izmir-ege",
+    "profileImageStableId": "seed-doctor-media-6",
     "qualifications": ["MD", "European Board of Plastic Surgery"],
     "languages": ["english", "turkish"]
   },
@@ -66,6 +72,7 @@
     "firstName": "Zeynep",
     "lastName": "Gunes",
     "clinicStableId": "seed-clinic-antalya-medvista",
+    "profileImageStableId": "seed-doctor-media-7",
     "qualifications": ["MD", "Laser Dermatology Certification"],
     "languages": ["english", "turkish", "russian"]
   },
@@ -76,6 +83,7 @@
     "firstName": "Yigit",
     "lastName": "Kara",
     "clinicStableId": "seed-clinic-antalya-riviera",
+    "profileImageStableId": "seed-doctor-media-8",
     "qualifications": ["MD", "Body Contouring Fellowship"],
     "languages": ["english", "turkish"]
   },
@@ -86,6 +94,7 @@
     "firstName": "Derya",
     "lastName": "Erdem",
     "clinicStableId": "seed-clinic-bursa-nova",
+    "profileImageStableId": "seed-doctor-media-9",
     "qualifications": ["DDS", "Implant Prosthodontics"],
     "languages": ["english", "turkish", "german"]
   },
@@ -96,6 +105,7 @@
     "firstName": "Baris",
     "lastName": "Cetin",
     "clinicStableId": "seed-clinic-bursa-green",
+    "profileImageStableId": "seed-doctor-media-10",
     "qualifications": ["MD", "Aesthetic Reconstruction"],
     "languages": ["english", "turkish", "arabic"]
   }

@@ -280,6 +280,13 @@ function smoothstep(edge0: number, edge1: number, x: number) {
   return t * t * (3 - 2 * t)
 }
 
+function lerpAngle(a: number, b: number, t: number) {
+  const fullTurn = Math.PI * 2
+  const delta = ((((b - a + Math.PI) % fullTurn) + fullTurn) % fullTurn) - Math.PI
+
+  return a + delta * t
+}
+
 function seededRandom(seed: number) {
   const value = Math.sin(seed * 981.133) * 10000
 
@@ -845,18 +852,23 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       return {
         chaos,
         cluster,
+        clusterAngle: buildAngle,
+        clusterRadius: buildRadius,
         commonAngle: particle.commonOrbitAngle ?? normalizeRadians(buildAngle),
       }
     }
 
     const updateParticles = (p: number) => {
       const toCluster = smoothstep(0.04, 0.64, p)
-      const toCommonOrbit = smoothstep(0.58, 0.9, p)
+      const clearCore = smoothstep(0.62, 0.76, p)
+      const toCommonOrbit = smoothstep(0.72, 0.92, p)
+      const radialExpansion = smoothstep(0.62, 0.92, p)
       const chaosEnergy = 1 - smoothstep(0.1, 0.7, p)
       const settle = smoothstep(0.62, 0.92, p)
       const particleFade = 1 - smoothstep(0.84, 0.94, p)
       const shaderSize = homepageRingLayer?.clientWidth || Math.min(width, height) * 0.82
       const commonRadius = shaderSize * 0.43
+      const coreClearance = Math.max(centerOrb.offsetWidth * 0.58, Math.min(width, height) * 0.2)
       const centerX = width / 2
       const centerY = height / 2
 
@@ -865,19 +877,23 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
         let x = lerp(targets.chaos.x, targets.cluster.x, toCluster)
         let y = lerp(targets.chaos.y, targets.cluster.y, toCluster)
         const commonAngle = targets.commonAngle + particleOrbitRotation
-        const commonX = centerX + Math.cos(commonAngle) * commonRadius
-        const commonY = centerY + Math.sin(commonAngle) * commonRadius
+        const expandedRadius = Math.max(targets.clusterRadius, coreClearance)
+        const clearedRadius = lerp(targets.clusterRadius, expandedRadius, clearCore)
+        const radialRadius = lerp(clearedRadius, commonRadius, toCommonOrbit)
+        const radialAngle = lerpAngle(targets.clusterAngle, commonAngle, toCommonOrbit)
+        const radialX = centerX + Math.cos(radialAngle) * radialRadius
+        const radialY = centerY + Math.sin(radialAngle) * radialRadius
 
-        x = lerp(x, commonX, toCommonOrbit)
-        y = lerp(y, commonY, toCommonOrbit)
+        x = lerp(x, radialX, radialExpansion)
+        y = lerp(y, radialY, radialExpansion)
 
-        const driftFade = 1 - smoothstep(0.58, 0.78, p)
+        const driftFade = 1 - smoothstep(0.58, 0.74, p)
         const drift = reducedMotion ? 0 : (7 * chaosEnergy + 0.8 * (1 - settle)) * driftFade
 
         x += Math.cos(time * 0.001 * particle.drift + particle.phase) * drift
         y += Math.sin(time * 0.0009 * particle.drift + particle.phase) * drift
 
-        const scale = lerp(1.18, 0.84, smoothstep(0.58, 0.94, p))
+        const scale = lerp(1.18, 0.84, smoothstep(0.68, 0.94, p))
         const opacity = lerp(0.68, 0.96, settle) * particleFade
 
         particle.el.style.setProperty('--x', `${x.toFixed(1)}px`)
@@ -920,7 +936,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
         ambientGlow.style.opacity = (1 - shaderReveal).toFixed(3)
       }
 
-      const centerReveal = smoothstep(0.59, 0.68, p)
+      const centerReveal = smoothstep(0.72, 0.82, p)
       const centerScale = lerp(0.9, 1, centerReveal)
 
       centerOrb.style.setProperty('--center-opacity', centerReveal.toFixed(3))

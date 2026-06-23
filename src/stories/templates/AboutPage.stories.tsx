@@ -90,8 +90,16 @@ export const Default: Story = {
     const canvas = within(canvasElement)
 
     await expect(canvas.getByRole('heading', { name: /clearer clinic decisions/i })).toBeInTheDocument()
-    await expect(canvas.getByText('People behind the platform')).toBeInTheDocument()
+    const whyHeading = canvas.getByRole('heading', { name: 'Why we exist' })
+    const trustStory = canvas.getByRole('region', { name: /findmydoc trust system scroll story/i })
+    const teamHeading = canvas.getByRole('heading', { name: 'People behind the platform' })
+
+    await expect(teamHeading).toBeInTheDocument()
+    await expect(trustStory).toBeInTheDocument()
+    expect(whyHeading.compareDocumentPosition(trustStory) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(trustStory.compareDocumentPosition(teamHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     await expect(canvas.getByText(/We bring clarity to clinic information/i)).toBeInTheDocument()
+    await expect(canvas.getByText('Patient Confidence')).toBeInTheDocument()
     await expect(canvas.getByText(/Shape finance and partner operations/i)).toBeInTheDocument()
     await expect(canvas.getByText(/Clinics own their profile information/i)).toBeInTheDocument()
     expect(canvas.getAllByRole('link', { name: /compare clinics/i })).toHaveLength(1)

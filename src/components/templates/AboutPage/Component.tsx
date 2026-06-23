@@ -5,6 +5,7 @@ import { Heading } from '@/components/atoms/Heading'
 import { Container } from '@/components/molecules/Container'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
 import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
+import { AboutTrustSystemStory } from '@/components/organisms/AboutTrustSystemStory'
 import { cn } from '@/utilities/ui'
 
 type AboutImage = {
@@ -141,6 +142,8 @@ export const AboutPage: React.FC<AboutPageProps> = ({ hero, why, team, transpare
       <ScrollReveal preset="surface" staggerSelector="[data-about-split-reveal-item]">
         <SplitSection section={why} />
       </ScrollReveal>
+
+      <AboutTrustSystemStory />
 
       <ScrollReveal preset="surface" staggerSelector="[data-about-team-reveal-item]">
         <section className="py-14 sm:py-18 lg:py-20">

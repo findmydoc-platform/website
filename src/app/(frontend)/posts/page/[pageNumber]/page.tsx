@@ -6,7 +6,6 @@ import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
 import { Breadcrumb, type BreadcrumbItem } from '@/components/molecules/Breadcrumb'
-import { BreadcrumbJsonLd } from '@/components/molecules/Breadcrumb/BreadcrumbJsonLd'
 import { Heading } from '@/components/atoms/Heading'
 import { notFound, redirect } from 'next/navigation'
 import { Container } from '@/components/molecules/Container'
@@ -16,6 +15,7 @@ import { buildPostsIndexPath, buildPostsPagePath } from '@/utilities/content/pos
 import { countPublishedPosts, findPublishedPostsPage } from '@/utilities/content/serverData'
 import { resolveContentLocaleContext } from '@/utilities/contentLocalization'
 import { createSiteMetadata } from '@/utilities/generateMeta'
+import { JsonLdScript, buildPostsIndexJsonLd } from '@/utilities/structuredData'
 import { PostsPagination } from '../../_components/PostsPagination'
 
 export const revalidate = 600
@@ -64,7 +64,7 @@ export default async function Page({ params: paramsPromise, searchParams: search
   return (
     <div className="pt-16 pb-20 sm:pt-24 sm:pb-24">
       <PageClient />
-      <BreadcrumbJsonLd items={breadcrumbs} />
+      <JsonLdScript data={buildPostsIndexJsonLd({ breadcrumbs, posts: normalizedPosts })} />
       <Container className="mb-12 sm:mb-16">
         <div className="prose max-w-none">
           <Breadcrumb items={breadcrumbs} className="mb-6 [&_ol]:justify-center" />

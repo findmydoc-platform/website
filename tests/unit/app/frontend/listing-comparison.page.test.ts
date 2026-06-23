@@ -2,11 +2,12 @@ import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const routeMocks = vi.hoisted(() => ({
-  breadcrumbJsonLdComponent: vi.fn(() => null),
+  buildListingComparisonJsonLd: vi.fn(() => [{ '@type': 'ItemList' }]),
   findFavoriteClinicStateRecord: vi.fn(),
   getListingComparisonServerData: vi.fn(),
   getPayload: vi.fn(),
   headers: vi.fn(),
+  jsonLdScriptComponent: vi.fn(() => null),
   listingComparisonPageClient: vi.fn(() => null),
   resolveFavoriteClinicAuthContext: vi.fn(),
 }))
@@ -36,12 +37,13 @@ vi.mock('@/utilities/listingComparison/serverData', () => ({
   getListingComparisonServerData: routeMocks.getListingComparisonServerData,
 }))
 
-vi.mock('@/components/molecules/Breadcrumb/BreadcrumbJsonLd', () => ({
-  BreadcrumbJsonLd: routeMocks.breadcrumbJsonLdComponent,
-}))
-
 vi.mock('@/app/(frontend)/listing-comparison/ListingComparisonPage.client', () => ({
   ListingComparisonPageClient: routeMocks.listingComparisonPageClient,
+}))
+
+vi.mock('@/utilities/structuredData', () => ({
+  buildListingComparisonJsonLd: routeMocks.buildListingComparisonJsonLd,
+  JsonLdScript: routeMocks.jsonLdScriptComponent,
 }))
 
 type ReactNodeLike = React.ReactNode
@@ -164,21 +166,37 @@ describe('listing comparison page route metadata', () => {
     })
   })
 
-  it('renders BreadcrumbList JSON-LD from listing server breadcrumbs', async () => {
+  it('renders canonical listing comparison JSON-LD from listing server data', async () => {
     const pageModule = await import('@/app/(frontend)/listing-comparison/page')
     const result = await pageModule.default({
       searchParams: Promise.resolve({}),
     })
 
-    const breadcrumbJsonLdElement = findElementByType(
-      result,
-      routeMocks.breadcrumbJsonLdComponent,
-    ) as React.ReactElement<{
-      items: Array<{ href: string; label: string }>
+    expect(routeMocks.buildListingComparisonJsonLd).toHaveBeenCalledWith({
+      breadcrumbs: [
+        { label: 'Home', href: '/' },
+        { label: 'Clinics', href: '/listing-comparison' },
+      ],
+      clinics: [],
+      isCanonicalRoute: true,
+    })
+    const jsonLdElement = findElementByType(result, routeMocks.jsonLdScriptComponent) as React.ReactElement<{
+      data: unknown
     }> | null
-    expect(breadcrumbJsonLdElement?.props.items).toEqual([
-      { label: 'Home', href: '/' },
-      { label: 'Clinics', href: '/listing-comparison' },
-    ])
+    expect(jsonLdElement?.props.data).toEqual([{ '@type': 'ItemList' }])
+  })
+
+  it('keeps query variant JSON-LD from emitting a discovery ItemList', async () => {
+    const pageModule = await import('@/app/(frontend)/listing-comparison/page')
+
+    await pageModule.default({
+      searchParams: Promise.resolve({ city: 'berlin' }),
+    })
+
+    expect(routeMocks.buildListingComparisonJsonLd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isCanonicalRoute: false,
+      }),
+    )
   })
 })

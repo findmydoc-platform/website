@@ -4,10 +4,7 @@
   --about-trust-radius: 40px;
   width: 100%;
   overflow-x: clip;
-  background:
-    radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 32rem),
-    radial-gradient(circle at 86% 12%, rgb(66 226 183 / 0.18), transparent 34rem),
-    linear-gradient(180deg, #ffffff 0%, #f8fbff 46%, #ffffff 100%);
+  background: transparent;
   color: var(--foreground);
   font-family:
     var(--font-sans),
@@ -61,15 +58,10 @@
   height: min(880px, calc(100vh - 48px));
   min-height: 650px;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--about-trust-radius);
-  background:
-    linear-gradient(135deg, rgb(255 255 255 / 0.98), rgb(248 249 250 / 0.86)),
-    radial-gradient(circle at 72% 45%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 34%),
-    radial-gradient(circle at 82% 28%, rgb(66 226 183 / 0.18), transparent 36%);
-  box-shadow:
-    0 32px 100px rgb(7 0 76 / 0.1),
-    var(--shadow-brand-soft);
+  background: transparent;
+  box-shadow: none;
 }
 
 .copyStack {

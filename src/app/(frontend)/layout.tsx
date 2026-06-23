@@ -7,6 +7,7 @@ import { AdminBar } from '@/components/organisms/AdminBar'
 import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
 import { Footer } from '@/components/templates/Footer/Component'
 import { Header } from '@/components/templates/Header/Component'
+import { PreviewDataNotice } from '@/components/templates/PreviewDataNotice/Component'
 import {
   PublicAccountMenu,
   type PublicAccountMenuLinks,
@@ -111,6 +112,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 rightActions={<PublicAccountMenu links={LIVE_PATIENT_ACCOUNT_MENU_LINKS} state={accountMenuState} />}
                 showPreviewBadge={showPreviewBadge}
               />
+            </div>
+          ) : null}
+
+          {showSiteChrome && showPreviewBadge ? (
+            <div className="full-width">
+              <PreviewDataNotice />
             </div>
           ) : null}
 

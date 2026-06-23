@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { Header } from '@/components/templates/Header/Component'
+import { PreviewDataNotice, PREVIEW_DATA_NOTICE_COPY } from '@/components/templates/PreviewDataNotice/Component'
 import { headerData, headerDataWithSubmenus } from './fixtures'
 import { withMockRouter } from '../utils/routerDecorator'
 import { normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
@@ -56,6 +57,28 @@ const runMobileDenseNavigationFlow: NonNullable<Story['play']> = async ({ canvas
   await waitFor(() => {
     expect(canvas.queryByLabelText('Mobile navigation')).not.toBeInTheDocument()
   })
+}
+
+const previewDataNoticeChromeBase: Story = {
+  args: {
+    navItems: denseNavItems,
+    showPreviewBadge: true,
+  },
+  render: (args) => (
+    <>
+      <Header {...args} />
+      <PreviewDataNotice />
+      <main className="min-h-80 bg-site-canvas px-6 py-8 text-sm text-muted-foreground">
+        Preview route content begins below the notice.
+      </main>
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('PREVIEW')).toBeInTheDocument()
+    await expect(canvas.getByRole('note', { name: 'Preview data notice' })).toHaveTextContent(PREVIEW_DATA_NOTICE_COPY)
+  },
 }
 
 /** Header with flat navigation items (no submenus). */
@@ -120,3 +143,39 @@ DenseNavigation640.play = runMobileDenseNavigationFlow
 DenseNavigation768.play = runMobileDenseNavigationFlow
 DenseNavigation320Short.play = runMobileDenseNavigationFlow
 DenseNavigation375Short.play = runMobileDenseNavigationFlow
+
+export const PreviewDataNoticeChrome320: Story = withViewportStory(
+  previewDataNoticeChromeBase,
+  'public320',
+  'Preview data notice chrome / 320',
+)
+export const PreviewDataNoticeChrome375: Story = withViewportStory(
+  previewDataNoticeChromeBase,
+  'public375',
+  'Preview data notice chrome / 375',
+)
+export const PreviewDataNoticeChrome640: Story = withViewportStory(
+  previewDataNoticeChromeBase,
+  'public640',
+  'Preview data notice chrome / 640',
+)
+export const PreviewDataNoticeChrome768: Story = withViewportStory(
+  previewDataNoticeChromeBase,
+  'public768',
+  'Preview data notice chrome / 768',
+)
+export const PreviewDataNoticeChrome1024: Story = withViewportStory(
+  previewDataNoticeChromeBase,
+  'public1024',
+  'Preview data notice chrome / 1024',
+)
+export const PreviewDataNoticeChrome320Short: Story = withViewportStory(
+  previewDataNoticeChromeBase,
+  'public320Short',
+  'Preview data notice chrome / 320 short',
+)
+export const PreviewDataNoticeChrome375Short: Story = withViewportStory(
+  previewDataNoticeChromeBase,
+  'public375Short',
+  'Preview data notice chrome / 375 short',
+)

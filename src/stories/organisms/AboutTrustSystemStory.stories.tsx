@@ -43,6 +43,13 @@ export const Default: Story = {
     expect(canvas.getAllByText(/Patient\s*Confidence/).length).toBeGreaterThan(0)
     expect(canvas.getAllByText(/Trust at the core/i).length).toBeGreaterThan(0)
     await expect(canvas.queryByText(/Reusable argumentation/i)).not.toBeInTheDocument()
+    expect(canvas.getAllByRole('heading', { name: 'Patients start with uncertainty.' })).toHaveLength(1)
+    expect(canvas.getAllByRole('listitem')).toHaveLength(6)
+    expect(firstCard).not.toBeNull()
+    if (!firstCard) return
+
+    await expect(within(firstCard).getByText('Patients start with uncertainty.')).toBeInTheDocument()
+    await expect(within(firstCard).getByText(/Choosing care abroad often means/i)).toBeInTheDocument()
     await expect(firstCard).toHaveAttribute('data-active', 'true')
   },
 }
@@ -87,6 +94,7 @@ export const ScrollBehavior: Story = {
 
     if (!win || !firstCard || !secondCard || !finalCard || !finalLabel || !progressBar) return
 
+    const originalScrollY = win.scrollY
     const storyTop = win.scrollY + story.getBoundingClientRect().top
     const maxScroll = Math.max(1, story.offsetHeight - win.innerHeight)
     const nextFrames = () =>
@@ -94,22 +102,27 @@ export const ScrollBehavior: Story = {
         win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve()))
       })
 
-    win.scrollTo(0, storyTop)
-    win.dispatchEvent(new win.Event('scroll'))
-    await nextFrames()
-    await expect(firstCard).toHaveAttribute('data-active', 'true')
+    try {
+      win.scrollTo(0, storyTop)
+      win.dispatchEvent(new win.Event('scroll'))
+      await nextFrames()
+      await expect(firstCard).toHaveAttribute('data-active', 'true')
 
-    win.scrollTo(0, storyTop + maxScroll * 0.46)
-    win.dispatchEvent(new win.Event('scroll'))
+      win.scrollTo(0, storyTop + maxScroll * 0.46)
+      win.dispatchEvent(new win.Event('scroll'))
 
-    await waitFor(() => expect(secondCard).toHaveAttribute('data-active', 'true'))
+      await waitFor(() => expect(secondCard).toHaveAttribute('data-active', 'true'))
 
-    win.scrollTo(0, storyTop + maxScroll * 0.96)
-    win.dispatchEvent(new win.Event('scroll'))
+      win.scrollTo(0, storyTop + maxScroll * 0.96)
+      win.dispatchEvent(new win.Event('scroll'))
 
-    await waitFor(() => expect(finalCard).toHaveAttribute('data-active', 'true'))
-    await waitFor(() => expect(finalLabel).toHaveAttribute('data-visible'))
-    expect(Number.parseFloat(progressBar.style.width)).toBeGreaterThan(90)
+      await waitFor(() => expect(finalCard).toHaveAttribute('data-active', 'true'))
+      await waitFor(() => expect(finalLabel).toHaveAttribute('data-visible'))
+      expect(Number.parseFloat(progressBar.style.width)).toBeGreaterThan(90)
+    } finally {
+      win.scrollTo(0, originalScrollY)
+      win.dispatchEvent(new win.Event('scroll'))
+    }
   },
 }
 

@@ -33,6 +33,9 @@ export type MediaImageUsage =
   | 'blogCard'
   | 'content'
   | 'landingVisual'
+  | 'landingCategory'
+  | 'teamPortrait'
+  | 'testimonialAvatar'
   | 'hero'
   | 'og'
 
@@ -76,12 +79,27 @@ const MEDIA_IMAGE_POLICIES = {
   landingVisual: {
     payloadSizeOrder: ['xlarge', 'large', 'original', 'medium', 'small', 'thumbnail'],
     sizes: '(max-width: 1024px) 100vw, 50vw',
-    quality: 75,
+    quality: 85,
+  },
+  landingCategory: {
+    payloadSizeOrder: ['xlarge', 'large', 'original', 'medium', 'small', 'thumbnail'],
+    sizes: '(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw',
+    quality: 85,
+  },
+  teamPortrait: {
+    payloadSizeOrder: ['xlarge', 'large', 'original', 'medium', 'small', 'thumbnail'],
+    sizes: '(min-width: 768px) 33vw, (min-width: 640px) 50vw, 85vw',
+    quality: 85,
+  },
+  testimonialAvatar: {
+    payloadSizeOrder: ['small', 'square', 'thumbnail', 'medium', 'large', 'original'],
+    sizes: '(min-width: 640px) 80px, 64px',
+    quality: 85,
   },
   hero: {
     payloadSizeOrder: ['xlarge', 'large', 'original', 'medium'],
     sizes: '100vw',
-    quality: 75,
+    quality: 85,
   },
   og: {
     payloadSizeOrder: ['og', 'large', 'original'],

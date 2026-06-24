@@ -56,7 +56,7 @@ type LandingProcessContent = {
 type LandingTeamMember = {
   name: string
   role: string
-  image: string
+  image: ResolvedMediaImage
   imageObjectPosition?: string
   isPhoto?: boolean
   photoDisplay?: 'original' | 'grayscale'
@@ -212,13 +212,18 @@ const normalizeTestimonials = (
   fieldPath: string,
 ): LandingTestimonial[] => {
   return requireLandingArray(testimonials, fieldPath).map((testimonial, index) => {
-    const image = resolveRequiredLandingImage(testimonial.image, `${fieldPath}.${index}.image`, testimonial.author)
+    const image = resolveRequiredLandingImage(
+      testimonial.image,
+      `${fieldPath}.${index}.image`,
+      testimonial.author,
+      'testimonialAvatar',
+    )
 
     return {
       quote: testimonial.quote,
       author: testimonial.author,
       role: testimonial.role,
-      image: image.src,
+      image,
     }
   })
 }
@@ -266,12 +271,12 @@ const normalizeTeam = (
   fieldPath: string,
 ): LandingTeamMember[] =>
   requireLandingArray(team, fieldPath).map((member, index) => {
-    const image = resolveRequiredLandingImage(member.image, `${fieldPath}.${index}.image`, member.name)
+    const image = resolveRequiredLandingImage(member.image, `${fieldPath}.${index}.image`, member.name, 'teamPortrait')
 
     return {
       name: member.name,
       role: member.role,
-      image: image.src,
+      image,
       ...(image.objectPosition ? { imageObjectPosition: image.objectPosition } : {}),
       isPhoto: member.isPhoto ?? true,
       photoDisplay: member.photoDisplay ?? 'grayscale',
@@ -290,17 +295,17 @@ const normalizeAboutTeam = (team: AboutGlobal['team'] | null | undefined): About
     name: member.name,
     role: member.role,
     whatWeDo: member.whatWeDo,
-    image: resolveRequiredLandingImage(member.image, `about.team.${index}.image`, member.name),
+    image: resolveRequiredLandingImage(member.image, `about.team.${index}.image`, member.name, 'teamPortrait'),
   }))
 
 const normalizeAboutTeamForLanding = (team: AboutGlobal['team'], fieldPath = 'about.team'): LandingTeamMember[] =>
   requireLandingArray(team, fieldPath).map((member, index) => {
-    const image = resolveRequiredLandingImage(member.image, `${fieldPath}.${index}.image`, member.name)
+    const image = resolveRequiredLandingImage(member.image, `${fieldPath}.${index}.image`, member.name, 'teamPortrait')
 
     return {
       name: member.name,
       role: member.role,
-      image: image.src,
+      image,
       ...(image.objectPosition ? { imageObjectPosition: image.objectPosition } : {}),
       isPhoto: true,
       photoDisplay: 'original',

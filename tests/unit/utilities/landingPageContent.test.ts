@@ -210,6 +210,10 @@ describe('landingPageContent normalizers', () => {
       title: 'Ready for verified visibility?',
       description: 'Share the key details. We review your request personally and follow up with the next steps.',
     })
+    expect(content.teamCta).toEqual({
+      buttonText: 'About us',
+      buttonLink: '/about',
+    })
   })
 
   it('fails fast when the clinic partner registration intro is missing', () => {
@@ -218,6 +222,35 @@ describe('landingPageContent normalizers', () => {
 
     expect(() => normalizeClinicPartnerLandingContent(landingPages)).toThrow(
       'Landing pages global field clinicPartners.registrationIntro is missing',
+    )
+  })
+
+  it('fails fast when the clinic partner team CTA is missing', () => {
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    ;(landingPages.clinicPartners as { teamCta?: unknown }).teamCta = undefined
+
+    expect(() => normalizeClinicPartnerLandingContent(landingPages)).toThrow(
+      'Landing pages global field clinicPartners.teamCta is missing',
+    )
+  })
+
+  it('normalizes clinic partner CTA labels before rendering', () => {
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    landingPages.clinicPartners.cta.buttonText = '  Contact us  '
+    landingPages.clinicPartners.teamCta.buttonText = '  About us  '
+
+    const content = normalizeClinicPartnerLandingContent(landingPages)
+
+    expect(content.cta.buttonText).toBe('Contact us')
+    expect(content.teamCta.buttonText).toBe('About us')
+  })
+
+  it('fails fast when the clinic partner team CTA label is blank', () => {
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    landingPages.clinicPartners.teamCta.buttonText = '   '
+
+    expect(() => normalizeClinicPartnerLandingContent(landingPages)).toThrow(
+      'Landing CTA text clinicPartners.teamCta.buttonText is missing',
     )
   })
 
@@ -271,7 +304,21 @@ describe('landingPageContent normalizers', () => {
       url: 'javascript:alert(1)',
     }
 
-    expect(() => normalizeClinicPartnerLandingContent(landingPages)).toThrow('Landing CTA link is missing or unsafe')
+    expect(() => normalizeClinicPartnerLandingContent(landingPages)).toThrow(
+      'Landing CTA link clinicPartners.cta.link is missing or unsafe',
+    )
+  })
+
+  it('drops unsafe clinic partner team CTA links before they reach public landing components', () => {
+    const landingPages = attachRequiredMedia(cloneBaselineLandingPages())
+    landingPages.clinicPartners.teamCta.link = {
+      type: 'custom',
+      url: 'javascript:alert(1)',
+    }
+
+    expect(() => normalizeClinicPartnerLandingContent(landingPages)).toThrow(
+      'Landing CTA link clinicPartners.teamCta.link is missing or unsafe',
+    )
   })
 
   it('resolves CTA reference links through the shared CMS link shape', () => {

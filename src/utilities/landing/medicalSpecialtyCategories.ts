@@ -2,7 +2,7 @@ import type { Payload } from 'payload'
 
 import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
 
-const LANDING_SPECIALTY_PLACEHOLDER_SRC = '/images/placeholder-576-968.svg'
+const LANDING_SPECIALTY_PLACEHOLDER_SRC = '/images/placeholders/clinic-placeholder.webp'
 const LANDING_SPECIALTY_PLACEHOLDER_ALT = 'Medical specialty placeholder image'
 
 const EXCLUDED_LEVEL3_NAMES = new Set([

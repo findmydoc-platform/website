@@ -108,6 +108,11 @@ const baseData = {
   clinicId: 1,
   clinicSlug: 'template-test',
   clinicName: 'Template Test Clinic',
+  breadcrumbs: [
+    { label: 'Home', href: '/' },
+    { label: 'Clinics', href: '/listing-comparison' },
+    { label: 'Template Test Clinic', href: '/clinics/template-test' },
+  ],
   heroImage: { src: '/hero.jpg', alt: 'Hero' },
   description: 'Clinic description',
   trust: {
@@ -121,7 +126,21 @@ const baseData = {
     totalCount: 0,
     items: [],
   },
-  treatments: [{ id: 't1', name: 'Treatment 1', priceFromUsd: 1200 }],
+  freshness: {
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    sourceCollections: ['clinics'],
+  },
+  treatments: [
+    {
+      id: 't1',
+      name: 'Treatment 1',
+      priceFromUsd: 1200,
+      comparisonLink: {
+        href: '/listing-comparison?treatment=t1',
+        label: 'Compare clinics for Treatment 1',
+      },
+    },
+  ],
   doctors: [
     {
       id: 'd1',
@@ -159,7 +178,16 @@ describe('ClinicDetail concept', () => {
         variant: 'inline-note',
         size: 'compact',
         showVariantLabel: false,
+        standalone: true,
       }),
     )
+
+    const heroCall = mocks.heroOverviewSection.mock.calls.at(0) as unknown as Array<unknown> | undefined
+    const heroProps = heroCall?.[0] as { breadcrumbs?: unknown } | undefined
+    expect(heroProps?.breadcrumbs).toEqual(baseData.breadcrumbs)
+
+    const stripCall = mocks.treatmentsStrip.mock.calls.at(0) as unknown as Array<unknown> | undefined
+    const stripProps = stripCall?.[0] as { items?: Array<{ comparisonLink?: unknown }> } | undefined
+    expect(stripProps?.items?.[0]?.comparisonLink).toEqual(baseData.treatments[0]?.comparisonLink)
   })
 })

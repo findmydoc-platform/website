@@ -172,9 +172,63 @@ The findmydoc portal uses the [on-demand revalidation](https://nextjs.org/docs/a
 
 > Note: if an image has been changed, for example it's been cropped, you will need to republish the page it's used on in order to be able to revalidate the Nextjs image cache.
 
+## Public Sitemaps
+The public sitemap surface is split between the generated `robots.txt` file and App Router sitemap route handlers.
+
+- `robots.txt` references `/sitemap.xml`, `/pages-sitemap.xml`, and `/posts-sitemap.xml` outside preview runtime.
+- `/pages-sitemap.xml` lists `/`, `/posts`, `/contact`, `/about`, `/listing-comparison`, and published CMS pages. It does not list `/search` because there is no dedicated public search route.
+- `/posts-sitemap.xml` lists published post detail URLs with valid single-segment slugs.
+- Preview runtime and Temporary Landing Mode keep deeper public content out of sitemap discovery through preview robots policy and empty guarded sitemap responses.
+
+Production `robots.txt` treats automated search discovery, user-directed AI retrieval, and model training as separate access classes:
+
+| Bot class | User agents | Policy |
+| --- | --- | --- |
+| Search and answer indexing | `Googlebot`, `bingbot`, `OAI-SearchBot`, `PerplexityBot`, `Claude-SearchBot` | Allowed for public pages; `/admin` and `/admin/*` stay disallowed. |
+| User-directed AI retrieval | `ChatGPT-User`, `Perplexity-User`, `Claude-User` | Allowed for public pages so user requests in ChatGPT, Perplexity, and Claude can retrieve and cite findmydoc content; `/admin` and `/admin/*` stay disallowed. |
+| Model training and generative-AI control | `GPTBot`, `ClaudeBot`, `Google-Extended` | Disallowed across the site unless a separate business decision changes the training-access stance. |
+| General crawlers | `*` | Public pages stay crawlable; `/admin` and `/admin/*` stay disallowed. |
+
+WAF and IP allowlisting for AI crawlers belongs to infrastructure operations, not this repository's sitemap configuration.
+
+Run the sitemap status check against local development or production when Temporary Landing Mode is disabled:
+
+```bash
+BASE_URL="${BASE_URL:-http://localhost:3000}"
+for path in /robots.txt /pages-sitemap.xml /posts-sitemap.xml / /posts /contact /about /listing-comparison; do
+  curl --fail --location --silent --show-error --output /dev/null --write-out "%{http_code} ${path}\n" "${BASE_URL}${path}"
+done
+```
+
 ## SEO
 Manage SEO settings from the admin panel.
 [Payload SEO Plugin Docs](https://payloadcms.com/docs/plugins/seo)
+
+Strategic rules for SEO, GEO / agent discovery, public entity URLs, sitemap freshness, and source-backed freshness signals live in [Public Discovery Strategy](./public-discovery-strategy.md).
+
+### Search-facing rendering
+
+Public discovery routes expose their core facts in initial HTML so search engines and AI agents can inspect the main content before client hydration. Interactive enhancements such as filters, saved-clinic actions, maps, consent controls, sharing, and forms can remain client-side as long as the route still renders the primary content, semantic main structure, and public internal links without browser-only state.
+
+SEO rendering audits should check for coarse drift signals: empty app shells, core facts hidden until hydration, blocking consent gates, missing `main` or heading structure, and broken public links. They should not rely on full HTML snapshots or exact CMS content such as specific clinic names, prices, doctors, or copy snippets.
+
+### Public entity URL rules
+
+Public entity URLs use readable slug routes when an entity has an approved public detail page. The current public entity detail route is `/clinics/[slug]`, where the clinic slug is the public URL identifier and internal database IDs stay out of the path.
+
+Entities without dedicated public detail routes are not independently indexable. Doctors, treatments, locations, and taxonomy terms can support listing filters or internal relations, but they need a dedicated readable slug route, stable content, and explicit sitemap inclusion before they become canonical public landing pages.
+
+Draft, unpublished, private, and admin-only records are not public canonical entities and must stay out of sitemap discovery.
+
+### Public discovery indexing
+
+`/listing-comparison` is the only v1 indexable Listing Comparison URL. It acts as the stable public discovery entry point and is included in `/pages-sitemap.xml`.
+
+Listing Comparison query variants stay functional for users, saved links, filters, sorting, and pagination, but they are not treated as indexable landing pages. Any query parameter on `/listing-comparison` is canonicalized to `/listing-comparison` and emits `noindex, follow`, including current and legacy parameters such as `city`, `specialty`, `treatment`, `ratingMin`, `priceMin`, `priceMax`, `sort`, `page`, `service`, `location`, and `budget`.
+
+Future indexable facets should use dedicated readable slug routes instead of query URLs. Each new route needs a clear search intent, enough stable content and result depth, locale readiness, canonical metadata, and explicit sitemap inclusion before it becomes indexable.
+
+`src/features/searchIndexing/` is the small route-policy foundation for this behavior. It currently provides reusable policy result types, metadata helpers, and the Listing Comparison policy; it is not a full SEO framework or registry.
 
 ## Search
 Implement SSR search features with Payload Search Plugin.

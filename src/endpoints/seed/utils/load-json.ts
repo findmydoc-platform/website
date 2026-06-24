@@ -21,6 +21,7 @@ const baselineTreatments: unknown = loadSeedJson('../data/baseline/treatments.js
 const demoClinicMedia: unknown = loadSeedJson('../data/demo/clinicMedia.json')
 const demoClinicTreatments: unknown = loadSeedJson('../data/demo/clinicTreatments.json')
 const demoClinics: unknown = loadSeedJson('../data/demo/clinics.json')
+const demoDoctorMedia: unknown = loadSeedJson('../data/demo/doctorMedia.json')
 const demoDoctorSpecialties: unknown = loadSeedJson('../data/demo/doctorSpecialties.json')
 const demoDoctorTreatments: unknown = loadSeedJson('../data/demo/doctorTreatments.json')
 const demoDoctors: unknown = loadSeedJson('../data/demo/doctors.json')
@@ -51,6 +52,7 @@ const seedFileMap: SeedFileMap = {
     clinicMedia: demoClinicMedia,
     clinicTreatments: demoClinicTreatments,
     clinics: demoClinics,
+    doctorMedia: demoDoctorMedia,
     doctorSpecialties: demoDoctorSpecialties,
     doctorTreatments: demoDoctorTreatments,
     doctors: demoDoctors,

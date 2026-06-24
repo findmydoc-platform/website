@@ -6,6 +6,21 @@ import { findPostSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { shouldBlockSitemapIndexingForRequest } from '@/features/searchIndexing/sitemapGuards'
 
+const buildSitemapLocation = (siteUrl: string, path: string): string => {
+  const baseUrl = siteUrl.replace(/\/+$/, '')
+
+  return `${baseUrl}${path}`
+}
+
+const normalizePostSitemapSlug = (slug: string | null | undefined): string | null => {
+  if (typeof slug !== 'string') return null
+
+  const normalizedSlug = slug.trim().replace(/^\/+|\/+$/g, '')
+  if (normalizedSlug.length === 0 || normalizedSlug.includes('/')) return null
+
+  return normalizedSlug
+}
+
 const getPostsSitemap = unstable_cache(
   async () => {
     const payload = await getPayload({ config })
@@ -14,14 +29,15 @@ const getPostsSitemap = unstable_cache(
 
     const results = await findPostSitemapDocs(payload)
 
-    const dateFallback = new Date().toISOString()
+    const sitemap = results.flatMap((post) => {
+      const slug = normalizePostSitemapSlug(post?.slug)
+      if (!slug) return []
 
-    const sitemap = results
-      .filter((post) => Boolean(post?.slug))
-      .map((post) => ({
-        loc: `${SITE_URL}/posts/${post?.slug}`,
-        lastmod: post.updatedAt || dateFallback,
-      }))
+      return {
+        loc: buildSitemapLocation(SITE_URL, `/posts/${slug}`),
+        ...(post.updatedAt ? { lastmod: post.updatedAt } : {}),
+      }
+    })
 
     return sitemap
   },

@@ -5,6 +5,8 @@ import { getClinicDetailServerData } from '@/utilities/clinicDetail/serverData'
 
 type MockData = {
   clinics: Array<Record<string, unknown>>
+  clinicMedia: Array<Record<string, unknown>>
+  doctorMedia: Array<Record<string, unknown>>
   clinictreatments: Array<Record<string, unknown>>
   doctors: Array<Record<string, unknown>>
   doctorspecialties: Array<Record<string, unknown>>
@@ -44,11 +46,7 @@ const mockData: MockData = {
       slug: 'berlin-health-clinic',
       averageRating: 4.8,
       description: lexicalText('Transparent pediatric care for international families.'),
-      thumbnail: {
-        id: 100,
-        filename: 'clinic-hero.jpg',
-        alt: 'Clinic facade',
-      },
+      thumbnail: 100,
       galleryEntries: [901, 902],
       coordinates: [52.5168332, 13.4264519],
       address: {
@@ -66,6 +64,7 @@ const mockData: MockData = {
       status: 'approved',
       verification: 'gold',
       supportedLanguages: ['english', 'german', 'turkish'],
+      updatedAt: '2026-01-10T00:00:00.000Z',
     },
     {
       id: 2,
@@ -91,6 +90,21 @@ const mockData: MockData = {
       status: 'pending',
       verification: 'silver',
       supportedLanguages: ['english'],
+      updatedAt: '2026-01-03T00:00:00.000Z',
+    },
+  ],
+  clinicMedia: [
+    {
+      id: 100,
+      filename: 'clinic-hero.jpg',
+      alt: 'Clinic facade',
+    },
+  ],
+  doctorMedia: [
+    {
+      id: 701,
+      filename: 'doctor-amelia.jpg',
+      alt: 'Professional portrait of Dr. Amelia Carter',
     },
   ],
   clinictreatments: [
@@ -106,6 +120,7 @@ const mockData: MockData = {
         },
       },
       price: 120,
+      updatedAt: '2026-01-11T00:00:00.000Z',
     },
     {
       id: 202,
@@ -119,6 +134,7 @@ const mockData: MockData = {
         },
       },
       price: 180,
+      updatedAt: '2026-01-09T00:00:00.000Z',
     },
   ],
   doctors: [
@@ -130,15 +146,12 @@ const mockData: MockData = {
       gender: 'female',
       averageRating: 4.6,
       biography: lexicalText('Focused on pediatric cardiology and clear communication.'),
-      profileImage: {
-        id: 701,
-        filename: 'doctor-amelia.jpg',
-        alt: 'Dr. Amelia',
-      },
+      profileImage: 701,
       clinic: 1,
       qualifications: ['MD', 'FAAP'],
       experienceYears: 9,
       languages: ['english', 'spanish'],
+      updatedAt: '2026-01-09T00:00:00.000Z',
     },
     {
       id: 602,
@@ -153,6 +166,7 @@ const mockData: MockData = {
       qualifications: ['MD'],
       experienceYears: 6,
       languages: ['english', 'german'],
+      updatedAt: '2026-01-08T00:00:00.000Z',
     },
   ],
   doctorspecialties: [
@@ -164,6 +178,7 @@ const mockData: MockData = {
         name: 'Pediatric Cardiology',
       },
       specializationLevel: 'expert',
+      updatedAt: '2026-01-07T00:00:00.000Z',
     },
   ],
   reviews: [
@@ -345,6 +360,15 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result).not.toBeNull()
     expect(result?.clinicName).toBe('Berlin Health Clinic')
     expect(result?.contactHref).toBe('/contact?clinic=berlin-health-clinic&source=clinic-detail')
+    expect(result?.breadcrumbs).toEqual([
+      { label: 'Home', href: '/' },
+      { label: 'Clinics', href: '/listing-comparison' },
+      { label: 'Berlin Health Clinic', href: '/clinics/berlin-health-clinic' },
+    ])
+    expect(result?.heroImage).toEqual({
+      src: '/api/clinicMedia/file/clinic-hero.jpg',
+      alt: 'Clinic facade',
+    })
 
     expect(result?.trust.reviewCount).toBe(3)
     expect(result?.trust.ratingValue).toBe(4.8)
@@ -360,6 +384,14 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.reviews.items.map((review) => review.comment)).not.toContain('Rejected review should not appear.')
     expect(result?.trust.accreditations).toContain('ISO 9001')
     expect(result?.trust.languages).toEqual(expect.arrayContaining(['English', 'German']))
+    expect(result?.freshness).toMatchObject({
+      updatedAt: '2026-01-12T09:15:00.000Z',
+      latestPatientReviewAt: '2026-01-12T09:15:00.000Z',
+      verificationTier: 'gold',
+    })
+    expect(result?.freshness.sourceCollections).toEqual(
+      expect.arrayContaining(['clinics', 'clinictreatments', 'reviews']),
+    )
 
     expect(result?.location.fullAddress).toBe('Lichtenberger Strasse 24, 10179 Berlin, Germany')
     expect(result?.location.coordinates).toEqual({
@@ -370,7 +402,15 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.doctors[0]?.specialty).toBe('Pediatric Cardiology')
     expect(result?.doctors[1]?.specialty).toBe('General Practice')
     expect(result?.doctors[0]?.reviewCount).toBe(2)
-    expect(result?.doctors[1]?.image.src).toBe('/images/avatar-doctor-male-placeholder.svg')
+    expect(result?.doctors[0]?.image).toEqual({
+      src: '/api/doctorMedia/file/doctor-amelia.jpg',
+      alt: 'Professional portrait of Dr. Amelia Carter',
+    })
+    expect(result?.doctors[1]?.image.src).toBe('/images/placeholders/doctor-male-placeholder.webp')
+    expect(result?.treatments[0]?.comparisonLink).toEqual({
+      href: '/listing-comparison?treatment=301',
+      label: 'Compare clinics for Routine Checkup',
+    })
 
     expect(result?.beforeAfterEntries).toHaveLength(1)
     expect(result?.beforeAfterEntries[0]?.title).toBe('Orthopedic recovery case')

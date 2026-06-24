@@ -2,6 +2,11 @@ import type { Payload } from 'payload'
 
 import type { Accreditation, City, ClinicGalleryEntry } from '@/payload-types'
 
+import {
+  buildClinicThumbnailDescriptorsByClinicId,
+  resolveClinicThumbnailImage,
+} from '@/utilities/media/clinicThumbnail'
+import { buildDoctorProfileDescriptorsByDoctorId } from '@/utilities/media/doctorProfileImage'
 import { mapClinicToClinicDetailData } from './mappers'
 import {
   countApprovedClinicReviews,
@@ -102,9 +107,13 @@ export async function getClinicDetailServerData(
 
   const doctorIds = doctors.map((doctor) => doctor.id)
 
-  const [doctorSpecialties, doctorReviewCounts] = await Promise.all([
+  const [doctorSpecialties, doctorReviewCounts, doctorMediaByDoctorId] = await Promise.all([
     findDoctorSpecialtiesByDoctorIds(payload, doctorIds),
     countApprovedDoctorReviews(payload, doctorIds),
+    buildDoctorProfileDescriptorsByDoctorId({
+      payload,
+      doctors,
+    }),
   ])
 
   const accreditationLookupIds = collectAccreditationLookupIds(clinic.accreditations)
@@ -118,12 +127,21 @@ export async function getClinicDetailServerData(
   ])
 
   const galleryEntries = mergeGalleryEntries(clinic.galleryEntries, fetchedGalleryEntries)
+  const clinicThumbnailDescriptorsByClinicId = await buildClinicThumbnailDescriptorsByClinicId({
+    payload,
+    clinics: [clinic],
+  })
 
   return mapClinicToClinicDetailData({
     clinic,
+    heroImage: resolveClinicThumbnailImage({
+      clinic,
+      descriptorsByClinicId: clinicThumbnailDescriptorsByClinicId,
+    }),
     clinicTreatments,
     doctors,
     doctorSpecialties,
+    doctorMediaByDoctorId,
     clinicReviewCount,
     approvedClinicReviews,
     doctorReviewCounts,

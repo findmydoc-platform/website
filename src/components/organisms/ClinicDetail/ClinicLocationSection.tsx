@@ -1,4 +1,5 @@
 import * as React from 'react'
+import Image from 'next/image'
 import { Expand, MapPin, X } from 'lucide-react'
 
 import { Heading } from '@/components/atoms/Heading'
@@ -11,6 +12,8 @@ import {
   buildOpenStreetMapViewHref,
 } from '@/utilities/openStreetMap'
 import { cn } from '@/utilities/ui'
+
+const clinicLocationPlaceholderMapSrc = '/images/clinic-detail/clinic-location-placeholder-map.webp'
 
 type ClinicLocation = {
   fullAddress?: string
@@ -45,6 +48,27 @@ function PreviewMapInteractionGuard() {
   )
 }
 
+function ClinicLocationPlaceholder({ message }: { message: string }) {
+  return (
+    <div className="relative flex h-full items-center justify-center overflow-hidden bg-background">
+      <Image
+        alt=""
+        aria-hidden="true"
+        data-testid="clinic-location-placeholder-map"
+        fill
+        loading="eager"
+        sizes="100vw"
+        src={clinicLocationPlaceholderMapSrc}
+        className="object-cover object-center"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-background/10" aria-hidden="true" />
+      <div className="relative mx-4 max-w-md rounded-full border border-primary/15 bg-background/92 px-4 py-3 text-center text-sm text-secondary shadow-brand-soft backdrop-blur-sm">
+        {message}
+      </div>
+    </div>
+  )
+}
+
 export function ClinicLocationSection({
   clinicName,
   location,
@@ -74,13 +98,7 @@ export function ClinicLocationSection({
   const renderMapFrame = React.useCallback(
     (interactive: boolean, embedHref?: string) => {
       if (!isOpenStreetMapAllowed) {
-        return (
-          <div className="flex h-full items-center justify-center bg-linear-to-br from-primary/12 via-background to-primary/20">
-            <div className="mx-auto max-w-md rounded-2xl border border-primary/15 bg-background/90 px-4 py-3 text-center text-sm text-secondary">
-              OpenStreetMap is hidden until optional cookies are accepted.
-            </div>
-          </div>
-        )
+        return <ClinicLocationPlaceholder message="OpenStreetMap is hidden until optional cookies are accepted." />
       }
 
       if (embedHref) {

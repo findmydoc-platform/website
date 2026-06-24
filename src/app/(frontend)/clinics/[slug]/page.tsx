@@ -11,6 +11,7 @@ import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from 
 import { getClinicDetailServerData } from '@/utilities/clinicDetail/serverData'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getGlobal } from '@/utilities/getGlobals'
+import { JsonLdScript, buildClinicDetailPageJsonLd } from '@/utilities/structuredData'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
 
 type ClinicDetailPageArgs = {
@@ -54,16 +55,19 @@ export default async function ClinicDetailPage({ params: paramsPromise }: Clinic
   const clinicPath = `/clinics/${encodeURIComponent(slug)}`
 
   return (
-    <ClinicDetail
-      data={clinicDetailData}
-      favorite={{
-        isPatient: favoriteAuthContext.isPatient,
-        favoriteId: favoriteStateByClinicId[String(clinicDetailData.clinicId)] ?? null,
-        loginHref: buildPatientLoginHref(clinicPath),
-      }}
-      cookieConsentConfig={cookieConsentContext.config}
-      cookieConsentInitialConsent={cookieConsentContext.initialConsent}
-    />
+    <>
+      <JsonLdScript data={draft ? null : buildClinicDetailPageJsonLd(clinicDetailData)} />
+      <ClinicDetail
+        data={clinicDetailData}
+        favorite={{
+          isPatient: favoriteAuthContext.isPatient,
+          favoriteId: favoriteStateByClinicId[String(clinicDetailData.clinicId)] ?? null,
+          loginHref: buildPatientLoginHref(clinicPath),
+        }}
+        cookieConsentConfig={cookieConsentContext.config}
+        cookieConsentInitialConsent={cookieConsentContext.initialConsent}
+      />
+    </>
   )
 }
 
@@ -87,5 +91,6 @@ export async function generateMetadata({ params: paramsPromise }: ClinicDetailPa
     title: clinicDetailData.clinicName,
     description: clinicDetailData.description,
     path: `/clinics/${slug}`,
+    freshness: clinicDetailData.freshness,
   })
 }

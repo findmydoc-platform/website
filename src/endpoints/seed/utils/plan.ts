@@ -268,6 +268,40 @@ export const demoPlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
+    name: 'doctor-media',
+    collection: 'doctorMedia',
+    fileName: 'doctorMedia',
+    mapping: [
+      {
+        sourceField: 'doctorStableId',
+        targetField: 'doctor',
+        collection: 'doctors',
+        required: true,
+      },
+      {
+        sourceField: 'clinicStableId',
+        targetField: 'clinic',
+        collection: 'clinics',
+        required: true,
+      },
+    ],
+    reqUserStableId: 'seed-platform-admin',
+  },
+  {
+    kind: 'collection',
+    name: 'doctor-profile-images',
+    collection: 'doctors',
+    fileName: 'doctors',
+    mapping: [
+      {
+        sourceField: 'profileImageStableId',
+        targetField: 'profileImage',
+        collection: 'doctorMedia',
+      },
+    ],
+  },
+  {
+    kind: 'collection',
     name: 'clinic-treatments',
     collection: 'clinictreatments',
     fileName: 'clinicTreatments',

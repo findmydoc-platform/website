@@ -8,6 +8,7 @@ type MockCollectionData = {
   treatments: Array<Record<string, unknown>>
   'medical-specialties': Array<Record<string, unknown>>
   clinics: Array<Record<string, unknown>>
+  clinicMedia: Array<Record<string, unknown>>
   clinictreatments: Array<Record<string, unknown>>
   reviews: Array<Record<string, unknown>>
 }
@@ -40,8 +41,9 @@ const baseData: MockCollectionData = {
         city: { id: 10, name: 'Berlin' },
         country: 'Germany',
       },
-      thumbnail: null,
+      thumbnail: 501,
       tags: [{ name: 'Premium' }],
+      updatedAt: '2026-01-10T00:00:00.000Z',
     },
     {
       id: 202,
@@ -57,6 +59,7 @@ const baseData: MockCollectionData = {
       },
       thumbnail: null,
       tags: [{ name: 'Modern' }],
+      updatedAt: '2026-01-09T00:00:00.000Z',
     },
     {
       id: 203,
@@ -72,6 +75,7 @@ const baseData: MockCollectionData = {
       },
       thumbnail: null,
       tags: [{ name: 'Dental' }],
+      updatedAt: '2026-01-07T00:00:00.000Z',
     },
     {
       id: 204,
@@ -87,21 +91,29 @@ const baseData: MockCollectionData = {
       },
       thumbnail: null,
       tags: [{ name: 'Draft' }],
+      updatedAt: '2026-01-06T00:00:00.000Z',
+    },
+  ],
+  clinicMedia: [
+    {
+      id: 501,
+      filename: 'alpha-clinic.webp',
+      alt: 'Alpha clinic exterior',
     },
   ],
   clinictreatments: [
-    { id: 301, clinic: 201, treatment: 101, price: 5000 },
-    { id: 302, clinic: 201, treatment: 102, price: 7000 },
-    { id: 303, clinic: 202, treatment: 101, price: 5200 },
-    { id: 304, clinic: 202, treatment: 102, price: 6000 },
-    { id: 305, clinic: 203, treatment: 103, price: 2000 },
+    { id: 301, clinic: 201, treatment: 101, price: 5000, updatedAt: '2026-01-11T00:00:00.000Z' },
+    { id: 302, clinic: 201, treatment: 102, price: 7000, updatedAt: '2026-01-08T00:00:00.000Z' },
+    { id: 303, clinic: 202, treatment: 101, price: 5200, updatedAt: '2026-01-07T00:00:00.000Z' },
+    { id: 304, clinic: 202, treatment: 102, price: 6000, updatedAt: '2026-01-06T00:00:00.000Z' },
+    { id: 305, clinic: 203, treatment: 103, price: 2000, updatedAt: '2026-01-05T00:00:00.000Z' },
   ],
   reviews: [
-    { id: 401, status: 'approved', clinic: 201 },
-    { id: 402, status: 'approved', clinic: 201 },
-    { id: 403, status: 'pending', clinic: 201 },
-    { id: 404, status: 'approved', clinic: 202 },
-    { id: 405, status: 'approved', clinic: 203 },
+    { id: 401, status: 'approved', clinic: 201, reviewDate: '2026-01-12T00:00:00.000Z' },
+    { id: 402, status: 'approved', clinic: 201, reviewDate: '2026-01-04T00:00:00.000Z' },
+    { id: 403, status: 'pending', clinic: 201, reviewDate: '2026-01-20T00:00:00.000Z' },
+    { id: 404, status: 'approved', clinic: 202, reviewDate: '2026-01-03T00:00:00.000Z' },
+    { id: 405, status: 'approved', clinic: 203, reviewDate: '2026-01-02T00:00:00.000Z' },
   ],
 }
 
@@ -139,17 +151,24 @@ function createMockPayload(data: MockCollectionData): MockPayload {
       collection: keyof MockCollectionData
       page?: number
       limit?: number
+      sort?: string
       where?: Record<string, unknown>
     }) => {
       const source = data[args.collection] ?? []
       const filtered = args.where ? source.filter((doc) => matchesClause(doc, args.where ?? {})) : source
+      const sorted =
+        args.sort === '-reviewDate'
+          ? [...filtered].sort((left, right) =>
+              String(right.reviewDate ?? '').localeCompare(String(left.reviewDate ?? '')),
+            )
+          : filtered
 
       const page = args.page ?? 1
-      const limit = args.limit ?? (filtered.length || 1)
-      const totalDocs = filtered.length
+      const limit = args.limit ?? (sorted.length || 1)
+      const totalDocs = sorted.length
       const totalPages = Math.max(1, Math.ceil(totalDocs / limit))
       const start = (page - 1) * limit
-      const docs = filtered.slice(start, start + limit)
+      const docs = sorted.slice(start, start + limit)
 
       return {
         docs,
@@ -188,9 +207,18 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(result.metrics.treatmentTypes).toBe(3)
     expect(result.metrics.cities).toBe(2)
     expect(result.metrics.priceEntries).toBe(5)
+    expect(result.freshness).toMatchObject({
+      updatedAt: '2026-01-12T00:00:00.000Z',
+      latestPatientReviewAt: '2026-01-12T00:00:00.000Z',
+      sourceCollections: ['clinics', 'clinictreatments', 'reviews'],
+    })
     expect(result.queryState.specialties).toEqual(['2'])
     expect(result.results.map((clinic) => clinic.name)).toEqual(['Alpha Clinic', 'Bravo Clinic'])
     expect(result.results[0]?.rating.count).toBe(2)
+    expect(result.results[0]?.media).toEqual({
+      src: '/api/clinicMedia/file/alpha-clinic.webp',
+      alt: 'Alpha clinic exterior',
+    })
 
     const cityLabels = result.filterOptions.cities.map((option) => option.label)
     expect(cityLabels).toContain('Berlin (1)')
@@ -259,6 +287,7 @@ describe('getListingComparisonServerData (contract)', () => {
 
     expect(result.metrics.priceEntries).toBe(5)
     expect(result.metrics.cities).toBe(2)
+    expect(result.specialtyContext.breadcrumbs.map((item) => item.label)).toEqual(['Home', 'Clinics'])
   })
 
   it('reuses the public listing catalog for repeated requests on the same payload instance', async () => {

@@ -1,0 +1,72 @@
+[
+  {
+    "stableId": "seed-doctor-media-1",
+    "alt": "Realistic portrait of Dr. Aylin Demir, dental implant specialist",
+    "doctorStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "filePath": "src/endpoints/seed/assets/demo/generated/doctors/seed-doctor-portrait-dental-female-1.webp"
+  },
+  {
+    "stableId": "seed-doctor-media-2",
+    "alt": "Realistic portrait of Specialist Dr. Cem Soylu, plastic surgeon",
+    "doctorStableId": "seed-doctor-cem-soylu",
+    "clinicStableId": "seed-clinic-istanbul-bosphorus",
+    "filePath": "src/endpoints/seed/assets/demo/generated/doctors/seed-doctor-portrait-plastic-surgery-male-1.webp"
+  },
+  {
+    "stableId": "seed-doctor-media-3",
+    "alt": "Realistic portrait of Dr. Selin Ozkan, orthodontist",
+    "doctorStableId": "seed-doctor-selin-ozkan",
+    "clinicStableId": "seed-clinic-ankara-harmony",
+    "filePath": "src/endpoints/seed/assets/demo/generated/doctors/seed-doctor-portrait-orthodontics-female-1.webp"
+  },
+  {
+    "stableId": "seed-doctor-media-4",
+    "alt": "Realistic portrait of Specialist Dr. Kaan Sahin, dermatologist",
+    "doctorStableId": "seed-doctor-kaan-sahin",
+    "clinicStableId": "seed-clinic-ankara-capital",
+    "filePath": "src/endpoints/seed/assets/demo/generated/doctors/seed-doctor-portrait-dermatology-male-1.webp"
+  },
+  {
+    "stableId": "seed-doctor-media-5",
+    "alt": "Realistic portrait of Dr. Elif Arslan, implant dentist",
+    "doctorStableId": "seed-doctor-elif-arslan",
+    "clinicStableId": "seed-clinic-izmir-coast",
+    "filePath": "src/endpoints/seed/assets/demo/generated/doctors/seed-doctor-portrait-general-female-1.webp"
+  },
+  {
+    "stableId": "seed-doctor-media-6",
+    "alt": "Realistic portrait of Surgeon Dr. Mert Kilic, plastic surgeon",
+    "doctorStableId": "seed-doctor-mert-kilic",
+    "clinicStableId": "seed-clinic-izmir-ege",
+    "filePath": "src/endpoints/seed/assets/demo/generated/doctors/seed-doctor-portrait-general-male-1.webp"
+  },
+  {
+    "stableId": "seed-doctor-media-7",
+    "alt": "Realistic portrait of Specialist Dr. Zeynep Gunes, dermatologist",
+    "doctorStableId": "seed-doctor-zeynep-gunes",
+    "clinicStableId": "seed-clinic-antalya-medvista",
+    "filePath": "src/endpoints/seed/assets/demo/generated/doctors/seed-doctor-portrait-dermatology-female-1.webp"
+  },
+  {
+    "stableId": "seed-doctor-media-8",
+    "alt": "Realistic portrait of Surgeon Dr. Yigit Kara, body contouring surgeon",
+    "doctorStableId": "seed-doctor-yigit-kara",
+    "clinicStableId": "seed-clinic-antalya-riviera",
+    "filePath": "src/endpoints/seed/assets/demo/generated/doctors/seed-doctor-portrait-orthodontics-male-1.webp"
+  },
+  {
+    "stableId": "seed-doctor-media-9",
+    "alt": "Realistic portrait of Dr. Derya Erdem, implant prosthodontist",
+    "doctorStableId": "seed-doctor-derya-erdem",
+    "clinicStableId": "seed-clinic-bursa-nova",
+    "filePath": "src/endpoints/seed/assets/demo/generated/doctors/seed-doctor-portrait-body-contouring-female-1.webp"
+  },
+  {
+    "stableId": "seed-doctor-media-10",
+    "alt": "Realistic portrait of Specialist Dr. Baris Cetin, aesthetic reconstruction surgeon",
+    "doctorStableId": "seed-doctor-baris-cetin",
+    "clinicStableId": "seed-clinic-bursa-green",
+    "filePath": "src/endpoints/seed/assets/demo/generated/doctors/seed-doctor-portrait-dental-male-1.webp"
+  }
+]

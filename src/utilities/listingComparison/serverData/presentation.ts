@@ -2,7 +2,7 @@ import type { VerificationBadgeVariant } from '@/components/atoms/verification-b
 import type { ListingCardData } from '@/components/organisms/Listing'
 import type { Clinic } from '@/payload-types'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
-import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
+import { resolveMediaDescriptorFromLoadedRelation, type MediaDescriptor } from '@/utilities/media/relationMedia'
 import { slugify } from '@/utilities/slugify'
 import { splitUrlQuery } from '@/utilities/urlParts'
 import { resolveScopedPriceFrom } from './pricing'
@@ -11,13 +11,14 @@ import type { CityMeta, ClinicPresentationMeta, ClinicRow } from './types'
 
 const DEFAULT_LOCATION_LABEL = 'Unknown location'
 const PLACEHOLDER_MEDIA = {
-  src: '/images/placeholder-576-968.svg',
+  src: '/images/placeholders/clinic-placeholder.webp',
   alt: 'Clinic placeholder image',
 }
 const CLINIC_MEDIA_API_PREFIX = '/api/clinicMedia/file/'
 
 type ListingCardPresentationOptions = {
   availableClinicMediaFiles?: ReadonlySet<string>
+  mediaByClinicId?: ReadonlyMap<number, MediaDescriptor>
 }
 
 function normalizeVerification(value: unknown): VerificationBadgeVariant {
@@ -139,6 +140,7 @@ export function mapListingCardResults(
     const ratingValue = typeof clinic.averageRating === 'number' ? clinic.averageRating : 0
     const ratingCount = reviewCounts.get(clinic.id) ?? 0
     const fallbackMediaAlt = `${clinic.name} image`
+    const descriptorFromLookup = options.mediaByClinicId?.get(clinic.id)
     const resolvedImage =
       typeof clinic.thumbnail === 'object' && clinic.thumbnail !== null
         ? resolveMediaImage(clinic.thumbnail, {
@@ -146,7 +148,8 @@ export function mapListingCardResults(
             usage: 'listingCard',
           })
         : undefined
-    const resolvedMedia = resolveMediaDescriptorFromLoadedRelation(clinic.thumbnail, 'clinicMedia')
+    const loadedDescriptor = resolveMediaDescriptorFromLoadedRelation(clinic.thumbnail, 'clinicMedia')
+    const resolvedMedia = loadedDescriptor?.url ? loadedDescriptor : descriptorFromLookup
     const mediaSrc = resolveAvailableMediaSrc(
       [resolvedImage?.src, resolvedMedia?.url],
       options.availableClinicMediaFiles,

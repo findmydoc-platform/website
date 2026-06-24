@@ -1,0 +1,887 @@
+/* eslint-disable css/no-important, css/use-baseline, tailwindcss/no-important, tailwindcss/no-invalid-properties, tailwindcss/prefer-theme-tokens, tailwindcss/use-baseline -- Pixel-matched imported animation CSS intentionally keeps local values and visual-only browser effects. */
+
+.root {
+  --about-trust-radius: 40px;
+  width: 100%;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 32rem),
+    radial-gradient(circle at 86% 12%, rgb(66 226 183 / 0.18), transparent 34rem),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 46%, #ffffff 100%);
+  color: var(--foreground);
+  font-family:
+    var(--font-sans),
+    'DM Sans',
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+}
+
+.root,
+.root * {
+  box-sizing: border-box;
+}
+
+.story {
+  position: relative;
+  height: 460vh;
+  min-height: 3200px;
+  isolation: isolate;
+}
+
+.accessibleSummary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.stickyStage {
+  position: sticky;
+  top: 0;
+  display: grid;
+  height: 100vh;
+  overflow: hidden;
+  place-items: center;
+  padding: 24px;
+}
+
+.stageShell {
+  position: relative;
+  width: min(var(--layout-content-max), 100%);
+  height: min(880px, calc(100vh - 48px));
+  min-height: 650px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--about-trust-radius);
+  background:
+    linear-gradient(135deg, rgb(255 255 255 / 0.98), rgb(248 249 250 / 0.86)),
+    radial-gradient(circle at 72% 45%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 34%),
+    radial-gradient(circle at 82% 28%, rgb(66 226 183 / 0.18), transparent 36%);
+  box-shadow:
+    0 32px 100px rgb(7 0 76 / 0.1),
+    var(--shadow-brand-soft);
+}
+
+.copyStack {
+  --copy-pad: clamp(20px, 2.2vw, 30px);
+  position: absolute;
+  z-index: 8;
+  top: 48%;
+  left: clamp(20px, 4vw, 74px);
+  width: min(420px, calc(100% - 40px));
+  min-height: 522px;
+  overflow: hidden;
+  padding: var(--copy-pad);
+  border: 1px solid rgb(226 232 240 / 0.78);
+  border-radius: 26px;
+  background: rgb(255 255 255 / 0.78);
+  box-shadow:
+    0 16px 48px rgb(7 0 76 / 0.065),
+    var(--shadow-brand-soft);
+  backdrop-filter: blur(10px);
+  transform: translateY(-50%);
+  transition: none;
+}
+
+.copyCard {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  padding: var(--copy-pad);
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: none;
+  transition: none;
+  backdrop-filter: none;
+}
+
+.copyCard.isActive {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  transition: opacity 100ms ease;
+}
+
+.copyStack.isFading .copyCard.isActive {
+  opacity: 0;
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+.kicker span {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  letter-spacing: 0;
+  place-items: center;
+}
+
+.copyTitle {
+  margin-top: 18px;
+  color: var(--secondary);
+  font-size: clamp(29px, 3.6vw, 48px);
+  line-height: 1.04;
+  letter-spacing: -0.05em;
+}
+
+.copyBody {
+  max-width: 32ch;
+  margin: 15px 0 0;
+  color: rgb(51 51 51 / 0.72);
+  font-size: 16px;
+  line-height: 1.56;
+}
+
+.accentWord {
+  padding-inline: 0.12em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--secondary);
+  font-weight: 800;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.missionLine {
+  display: grid;
+  gap: 6px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgb(226 232 240 / 0.74);
+}
+
+.missionLine strong {
+  color: var(--secondary);
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.missionLine span {
+  display: block;
+  max-width: 30ch;
+  color: rgb(7 0 76 / 0.72);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.visualStage {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+
+.galaxyArea {
+  position: absolute;
+  top: 50%;
+  left: var(--galaxy-center-x, 66%);
+  width: min(760px, 52vw);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+
+.ambientGlow {
+  position: absolute;
+  z-index: 0;
+  inset: 8%;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 43%),
+    radial-gradient(circle at 62% 36%, rgb(66 226 183 / 0.18), transparent 42%);
+  filter: blur(10px);
+  opacity: 0.9;
+  transform: scale(1.05);
+  will-change: opacity;
+}
+
+.homepageRingLayer {
+  --homepage-ring-opacity: 0;
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: min(560px, 74%);
+  aspect-ratio: 1;
+  opacity: var(--homepage-ring-opacity);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  will-change: opacity;
+}
+
+.homepageRingCanvas,
+.homepageRingFallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.homepageRingCanvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.homepageRingFallback {
+  display: none;
+  border-radius: 999px;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 55%,
+      rgb(0 109 229 / 0.2) 64%,
+      rgb(0 109 229 / 0.64) 72%,
+      rgb(66 226 183 / 0.56) 82%,
+      transparent 92%
+    ),
+    radial-gradient(circle at 67% 32%, rgb(66 226 183 / 0.25), transparent 34%),
+    radial-gradient(circle at 32% 72%, rgb(0 109 229 / 0.24), transparent 38%);
+  filter: blur(2px);
+}
+
+.homepageRingFallback.show {
+  display: block;
+}
+
+.ringSvg {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: visible;
+  opacity: var(--rings-opacity, 0);
+  transform: scale(var(--rings-scale, 0.92));
+  transition:
+    opacity 200ms ease,
+    transform 260ms ease;
+}
+
+.ringSvg circle {
+  fill: none;
+  stroke-width: 1.3;
+  vector-effect: non-scaling-stroke;
+}
+
+.ringWhy {
+  stroke: color-mix(in srgb, var(--primary) 34%, transparent);
+}
+
+.ringHow {
+  stroke: rgb(66 226 183 / 0.44);
+  stroke-dasharray: 10 12;
+}
+
+.ringWhat {
+  stroke: rgb(7 0 76 / 0.26);
+  stroke-dasharray: 3 10;
+}
+
+.centerOrb,
+.centerContent {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: clamp(144px, 18vw, 206px);
+  height: clamp(144px, 18vw, 206px);
+  margin-top: calc(clamp(144px, 18vw, 206px) / -2);
+  margin-left: calc(clamp(144px, 18vw, 206px) / -2);
+  border-radius: 999px;
+  opacity: var(--center-opacity, 0);
+  pointer-events: none;
+  text-align: center;
+  transform: scale(var(--center-scale, 0.82));
+  transition:
+    opacity 220ms ease,
+    transform 300ms ease;
+  place-items: center;
+}
+
+.centerOrb {
+  z-index: 4;
+  border: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
+  background: #ffffff;
+  box-shadow:
+    0 14px 42px rgb(7 0 76 / 0.06),
+    0 0 0 1px color-mix(in srgb, var(--primary) 2.5%, transparent);
+}
+
+.centerContent {
+  z-index: 8;
+}
+
+.patientCore {
+  display: grid;
+  row-gap: 0;
+  padding-top: 0;
+  place-items: center;
+}
+
+.centerContent strong {
+  display: block;
+  color: var(--secondary);
+  font-size: clamp(21px, 2.2vw, 29px);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+.centerContent > .patientCore > span:last-child {
+  display: block;
+  margin-top: 7px;
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.particle {
+  position: absolute;
+  z-index: 7;
+  top: 0;
+  left: 0;
+  width: var(--size, 7px);
+  height: var(--size, 7px);
+  border-radius: 999px;
+  background: var(--particle-color, var(--primary));
+  box-shadow:
+    0 0 0 5px var(--particle-glow, color-mix(in srgb, var(--primary) 10%, transparent)),
+    0 0 28px var(--particle-glow, color-mix(in srgb, var(--primary) 18%, transparent));
+  opacity: var(--particle-opacity, 0.86);
+  transform: translate3d(var(--x, 0), var(--y, 0), 0) scale(var(--particle-scale, 1));
+  will-change: auto;
+}
+
+.galaxyArea.isActive .particle {
+  will-change: transform, opacity;
+}
+
+.galaxyArea.particlesHidden .particle {
+  display: none;
+}
+
+.particle.isLarge {
+  width: var(--size, 9px);
+  height: var(--size, 9px);
+}
+
+.signalLabel {
+  position: absolute;
+  z-index: 7;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--label-color, var(--primary)) 16%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--label-color, var(--primary)) 6%, rgb(255 255 255 / 0.72));
+  box-shadow: 0 10px 28px rgb(7 0 76 / 0.05);
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.7);
+  text-transform: uppercase;
+  transform: translate3d(-50%, calc(-50% + 8px), 0);
+  transition:
+    opacity 220ms ease,
+    transform 300ms ease,
+    background-color 220ms ease;
+  backdrop-filter: blur(10px);
+}
+
+.signalLabel::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--label-color, var(--primary));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--label-color, var(--primary)) 12%, transparent);
+}
+
+.signalLabel.show {
+  opacity: 1;
+  transform: translate3d(-50%, -50%, 0);
+}
+
+.labelVerification {
+  --label-color: var(--primary);
+  top: 24%;
+  left: 33%;
+}
+
+.labelTransparency {
+  --label-color: var(--accent);
+  top: 33%;
+  left: 68%;
+}
+
+.labelPrivacy {
+  --label-color: var(--secondary);
+  top: 70%;
+  left: 30%;
+}
+
+.labelAccess {
+  --label-color: var(--primary);
+  top: 66%;
+  left: 71%;
+}
+
+.ringLabelLayer {
+  position: absolute;
+  z-index: 9;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ringLabel {
+  position: absolute;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  max-width: none;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  text-align: center;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.75);
+  text-transform: uppercase;
+  transform: translate3d(-50%, calc(-50% + 8px), 0);
+  transition:
+    opacity 220ms ease,
+    transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  white-space: nowrap;
+}
+
+.ringLabel::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--ring-label-color, var(--primary));
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--ring-label-color, var(--primary)) 12%, transparent);
+}
+
+.ringLabel.show {
+  opacity: 1;
+  transform: translate3d(-50%, -50%, 0);
+}
+
+.ringLabelCore {
+  --ring-label-color: var(--primary);
+  top: 12%;
+  left: 31%;
+}
+
+.ringLabelMiddle {
+  --ring-label-color: var(--accent);
+  top: 12%;
+  left: 69%;
+}
+
+.ringLabelOuter {
+  --ring-label-color: var(--secondary);
+  top: 87%;
+  left: 50%;
+}
+
+.rail {
+  position: absolute;
+  z-index: 10;
+  right: clamp(20px, 4vw, 74px);
+  bottom: clamp(22px, 4vw, 52px);
+  left: clamp(20px, 4vw, 74px);
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: end;
+  gap: 0;
+  opacity: 0.62;
+  transition: opacity 220ms ease;
+}
+
+.railLabels {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.railLabel {
+  display: grid;
+  gap: 6px;
+  color: rgb(7 0 76 / 0.3);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  transition: color 180ms ease;
+}
+
+.railLabel.isActive {
+  color: rgb(7 0 76 / 0.72);
+}
+
+.railDot {
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 5px rgb(255 255 255 / 0.74);
+}
+
+.track {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(226 232 240 / 0.54);
+  box-shadow: inset 0 1px 1px rgb(7 0 76 / 0.055);
+}
+
+.progress {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 58%, transparent),
+    rgb(66 226 183 / 0.62),
+    rgb(7 0 76 / 0.54)
+  );
+  box-shadow: none;
+  transition: width 80ms linear;
+}
+
+.noScript {
+  padding: 24px;
+  font-family: system-ui, sans-serif;
+  text-align: center;
+}
+
+@media (max-width: 1179px) and (min-width: 768px) {
+  .story {
+    height: 430vh;
+    min-height: 3000px;
+  }
+
+  .stickyStage {
+    padding: 16px;
+  }
+
+  .stageShell {
+    height: calc(100svh - 32px);
+    min-height: 700px;
+    border-radius: 30px;
+  }
+
+  .copyStack {
+    --copy-pad: 22px;
+    top: 24px;
+    right: auto;
+    left: 24px;
+    width: min(360px, 36vw);
+    min-height: 500px;
+    transform: none;
+  }
+
+  .copyCard {
+    border-radius: 24px;
+  }
+
+  .copyTitle {
+    margin-top: 15px;
+    font-size: clamp(28px, 4.1vw, 40px);
+  }
+
+  .copyBody {
+    font-size: 15px;
+    line-height: 1.54;
+  }
+
+  .galaxyArea {
+    top: 52%;
+    width: min(520px, 52vw);
+  }
+
+  .signalLabel {
+    padding: 7px 9px;
+    border-radius: 14px;
+    font-size: 10px;
+  }
+
+  .labelVerification {
+    top: 25%;
+    left: 32%;
+  }
+
+  .labelTransparency {
+    top: 34%;
+    left: 67%;
+  }
+
+  .labelPrivacy {
+    top: 69%;
+    left: 30%;
+  }
+
+  .labelAccess {
+    top: 66%;
+    left: 70%;
+  }
+
+  .ringLabel {
+    font-size: 11px;
+  }
+
+  .ringLabelCore {
+    top: 12%;
+    left: 31%;
+  }
+
+  .ringLabelMiddle {
+    top: 12%;
+    left: 69%;
+  }
+
+  .ringLabelOuter {
+    top: 87%;
+    left: 50%;
+  }
+
+  .rail {
+    right: 24px;
+    bottom: 20px;
+    left: 24px;
+  }
+
+  .railLabel {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+}
+
+@media (max-width: 899px) and (min-width: 768px) {
+  .galaxyArea {
+    top: 45.5%;
+  }
+
+  .rail {
+    bottom: 76px;
+  }
+}
+
+@media (max-width: 1179px) and (min-width: 900px) {
+  .galaxyArea {
+    top: 31.7%;
+  }
+
+  .rail {
+    bottom: 56px;
+  }
+}
+
+@media (max-width: 767px) {
+  .story {
+    height: 430vh;
+    min-height: 2800px;
+  }
+
+  .stickyStage {
+    padding: 6px;
+  }
+
+  .stageShell {
+    height: calc(100svh - 12px);
+    min-height: 600px;
+    border-radius: 24px;
+  }
+
+  .copyStack {
+    --copy-pad: 17px;
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    min-height: 392px;
+    transform: none;
+    backdrop-filter: blur(8px);
+  }
+
+  .copyCard {
+    border-radius: 22px;
+  }
+
+  .copyTitle {
+    margin-top: 13px;
+    font-size: clamp(27px, 8.2vw, 34px);
+    line-height: 1.02;
+  }
+
+  .copyBody {
+    max-width: 100%;
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.48;
+  }
+
+  .missionLine {
+    margin-top: 14px;
+    padding-top: 13px;
+  }
+
+  .missionLine strong {
+    font-size: 14px;
+  }
+
+  .missionLine span {
+    max-width: 100%;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .galaxyArea {
+    top: auto;
+    bottom: clamp(116px, calc(154px - 6vw), 136px);
+    left: 50%;
+    width: min(280px, 72vw);
+    transform: translateX(-50%);
+  }
+
+  .homepageRingLayer {
+    width: min(242px, 88%);
+  }
+
+  .centerOrb,
+  .centerContent {
+    width: 124px;
+    height: 124px;
+    margin-top: -62px;
+    margin-left: -62px;
+  }
+
+  .centerContent strong {
+    font-size: 19px;
+  }
+
+  .centerContent > .patientCore > span:last-child {
+    margin-top: 5px;
+    font-size: 8px;
+    letter-spacing: 0.075em;
+  }
+
+  .signalLabel {
+    display: none;
+  }
+
+  .ringLabelLayer {
+    inset: 0;
+    display: block;
+  }
+
+  .ringLabel {
+    gap: 6px;
+    max-width: min(154px, 42vw);
+    font-size: clamp(9px, 1.5vw, 9.75px);
+    line-height: 1.08;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .ringLabel::before {
+    width: 6px;
+    height: 6px;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--ring-label-color, var(--primary)) 12%, transparent);
+  }
+
+  .ringLabelCore {
+    top: 2%;
+    left: 24%;
+  }
+
+  .ringLabelMiddle {
+    top: 2%;
+    left: 76%;
+  }
+
+  .ringLabelOuter {
+    top: 99%;
+    left: 50%;
+    max-width: min(240px, 74vw);
+    white-space: nowrap;
+  }
+
+  .rail {
+    right: 14px;
+    bottom: 10px;
+    left: 14px;
+  }
+
+  .railLabels {
+    margin-bottom: 12px;
+  }
+
+  .railLabel {
+    font-size: 9px;
+    letter-spacing: 0.07em;
+  }
+}
+
+@media (max-height: 760px) and (max-width: 767px) {
+  .copyStack {
+    --copy-pad: 16px;
+    min-height: 366px;
+  }
+
+  .galaxyArea {
+    bottom: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root *,
+  .root *::before,
+  .root *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

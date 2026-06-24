@@ -5,8 +5,31 @@ import { unstable_cache } from 'next/cache'
 import { findPageSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { shouldBlockSitemapIndexingForRequest } from '@/features/searchIndexing/sitemapGuards'
+import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
 
-const fixedPublicPaths = new Set(['/search', '/posts', '/contact', '/about'])
+const fixedPublicPaths = ['/', '/posts', '/contact', '/about', '/listing-comparison'] as const
+const excludedPublicPaths = new Set(['/search'])
+
+type SitemapEntry = {
+  lastmod?: string
+  loc: string
+}
+
+const buildSitemapLocation = (siteUrl: string, path: string): string => {
+  const baseUrl = siteUrl.replace(/\/+$/, '')
+
+  return path === '/' ? `${baseUrl}/` : `${baseUrl}${path}`
+}
+
+const normalizePageSitemapPath = (slug: string | null | undefined): string | null => {
+  if (typeof slug !== 'string') return null
+
+  const normalizedSlug = slug.trim().replace(/^\/+|\/+$/g, '')
+  if (normalizedSlug.length === 0) return null
+  if (normalizedSlug === 'home') return '/'
+
+  return `/${normalizedSlug}`
+}
 
 const getPagesSitemap = unstable_cache(
   async () => {
@@ -14,43 +37,42 @@ const getPagesSitemap = unstable_cache(
     const SITE_URL =
       process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://example.com'
 
-    const results = await findPageSitemapDocs(payload)
+    const [results, listingComparisonData] = await Promise.all([
+      findPageSitemapDocs(payload),
+      getListingComparisonServerData(payload),
+    ])
 
-    const dateFallback = new Date().toISOString()
+    const sitemapByPath = new Map<string, SitemapEntry>()
 
-    const defaultSitemap = [
-      {
-        loc: `${SITE_URL}/search`,
-        lastmod: dateFallback,
-      },
-      {
-        loc: `${SITE_URL}/posts`,
-        lastmod: dateFallback,
-      },
-      {
-        loc: `${SITE_URL}/contact`,
-        lastmod: dateFallback,
-      },
-      {
-        loc: `${SITE_URL}/about`,
-        lastmod: dateFallback,
-      },
-    ]
-
-    const sitemap = results
-      .filter((page) => Boolean(page?.slug))
-      .filter((page) => {
-        const path = page?.slug === 'home' ? '/' : `/${page?.slug}`
-        return !fixedPublicPaths.has(path)
+    for (const path of fixedPublicPaths) {
+      sitemapByPath.set(path, {
+        loc: buildSitemapLocation(SITE_URL, path),
+        ...(path === '/listing-comparison' && listingComparisonData.freshness.updatedAt
+          ? { lastmod: listingComparisonData.freshness.updatedAt }
+          : {}),
       })
-      .map((page) => {
-        return {
-          loc: page?.slug === 'home' ? `${SITE_URL}/` : `${SITE_URL}/${page?.slug}`,
-          lastmod: page.updatedAt || dateFallback,
-        }
-      })
+    }
 
-    return [...defaultSitemap, ...sitemap]
+    for (const page of results) {
+      const path = normalizePageSitemapPath(page?.slug)
+      if (!path || excludedPublicPaths.has(path)) continue
+
+      const existingEntry = sitemapByPath.get(path)
+      if (existingEntry) {
+        sitemapByPath.set(path, {
+          ...existingEntry,
+          ...(page.updatedAt ? { lastmod: page.updatedAt } : {}),
+        })
+        continue
+      }
+
+      sitemapByPath.set(path, {
+        loc: buildSitemapLocation(SITE_URL, path),
+        ...(page.updatedAt ? { lastmod: page.updatedAt } : {}),
+      })
+    }
+
+    return Array.from(sitemapByPath.values())
   },
   ['pages-sitemap'],
   {

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Breadcrumb } from '@/components/molecules/Breadcrumb'
 import { userEvent, within, expect } from 'storybook/test'
 import { ChevronRight } from 'lucide-react'
+import { withViewportStory } from '../utils/viewportMatrix'
 
 const meta = {
   title: 'Shared/Molecules/Breadcrumb',
@@ -104,7 +105,24 @@ export const LongLabels: Story = {
       { label: 'Orthopädische Rehabilitation nach Sportverletzungen', href: '/posts/ortho' },
     ],
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    expect(canvas.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/')
+    expect(
+      canvas.getByText('Orthopädische Rehabilitation nach Sportverletzungen', {
+        selector: '[aria-current="page"]',
+      }),
+    ).toBeInTheDocument()
+  },
 }
+
+export const LongLabels320: Story = withViewportStory(LongLabels, 'public320', 'Long labels / 320')
+export const LongLabels375: Story = withViewportStory(LongLabels, 'public375', 'Long labels / 375')
+export const LongLabels640: Story = withViewportStory(LongLabels, 'public640', 'Long labels / 640')
+export const LongLabels768: Story = withViewportStory(LongLabels, 'public768', 'Long labels / 768')
+export const LongLabels1024: Story = withViewportStory(LongLabels, 'public1024', 'Long labels / 1024')
+export const LongLabels1280: Story = withViewportStory(LongLabels, 'public1280', 'Long labels / 1280')
 
 export const Interactive: Story = {
   name: 'Interactive (Hover Test)',

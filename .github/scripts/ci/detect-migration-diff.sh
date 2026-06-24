@@ -32,11 +32,13 @@ else
   range="HEAD"
   fallback_range="HEAD"
 fi
+effective_range="${range}"
 
 if ! changed_files="$(git diff --name-only --diff-filter=ACMR "${range}" 2>/tmp/migration-diff-error.log)"; then
   echo "Unable to diff ${range}; falling back to ${fallback_range}." >&2
   cat /tmp/migration-diff-error.log >&2 || true
   changed_files="$(git diff --name-only --diff-filter=ACMR "${fallback_range}" || true)"
+  effective_range="${fallback_range}"
 fi
 
 echo "Diff range: ${range}"
@@ -50,12 +52,49 @@ echo "${changed_files:-<none>}"
 schema_pattern='^(src/collections/|src/globals/|src/fields/|src/plugins/|src/payload\.config\.ts|src/blocks/[^[:space:]]+/config\.tsx?$)'
 migration_pattern='^src/migrations/'
 db_tooling_pattern='^(\.github/workflows/db-quality\.yml|\.github/workflows/deploy\.yml|\.github/scripts/ci/(detect-migration-diff|enforce-schema-migration|wait-for-postgres)\.sh|scripts/(migration-risk-scan|test-database-harness)\.mjs|vitest\.config\.ts)$'
+import_export_allowlist_line_regex="^[+-][[:space:]]*\\{[[:space:]]*slug:[[:space:]]*'[^']+'(,[[:space:]]*(import|export):[[:space:]]*false)?[[:space:]]*\\},?[[:space:]]*$"
 
 schema_changed=false
 migrations_changed=false
 db_tooling_changed=false
+schema_changed_files=''
 
-if grep -Eq "${schema_pattern}" <<<"${changed_files}"; then
+is_import_export_plugin_allowlist_only_change() {
+  local diff
+  local diff_line
+
+  if ! diff="$(git diff --unified=0 --diff-filter=ACMR "${effective_range}" -- src/plugins/index.ts)"; then
+    return 1
+  fi
+
+  if [[ -z "${diff}" ]]; then
+    return 1
+  fi
+
+  while IFS= read -r diff_line; do
+    case "${diff_line}" in
+      'diff --git'* | 'index '* | '--- '* | '+++ '* | '@@'*)
+        continue
+        ;;
+    esac
+
+    if [[ "${diff_line}" == +* || "${diff_line}" == -* ]]; then
+      if [[ ! "${diff_line}" =~ ${import_export_allowlist_line_regex} ]]; then
+        return 1
+      fi
+    fi
+  done <<<"${diff}"
+
+  return 0
+}
+
+schema_changed_files="$(grep -E "${schema_pattern}" <<<"${changed_files}" || true)"
+
+if grep -qx 'src/plugins/index.ts' <<<"${schema_changed_files}" && is_import_export_plugin_allowlist_only_change; then
+  schema_changed_files="$(grep -vx 'src/plugins/index.ts' <<<"${schema_changed_files}" || true)"
+fi
+
+if [[ -n "${schema_changed_files}" ]]; then
   schema_changed=true
 fi
 

@@ -1,10 +1,14 @@
 import configPromise from '@payload-config'
-import { getPayload } from 'payload'
+import type { Metadata } from 'next'
 import { headers } from 'next/headers'
+import { getPayload } from 'payload'
 
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
+import { buildIndexingMetadata, resolveListingComparisonIndexing } from '@/features/searchIndexing'
+import { buildFreshnessMetadata } from '@/utilities/freshness'
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
+import { JsonLdScript, buildListingComparisonJsonLd } from '@/utilities/structuredData'
 
 import type { ListingComparisonTrust } from './ListingComparisonPage.client'
 import { ListingComparisonPageClient } from './ListingComparisonPage.client'
@@ -15,11 +19,26 @@ type ListingComparisonPageArgs = {
 
 export const dynamic = 'force-dynamic'
 
+export async function generateMetadata({
+  searchParams: searchParamsPromise,
+}: ListingComparisonPageArgs): Promise<Metadata> {
+  const searchParams = (await searchParamsPromise) ?? {}
+  const payload = await getPayload({ config: configPromise })
+  const listingData = await getListingComparisonServerData(payload, searchParams)
+  const indexingPolicy = resolveListingComparisonIndexing(searchParams)
+
+  return {
+    ...buildIndexingMetadata(indexingPolicy),
+    ...buildFreshnessMetadata(listingData.freshness),
+  }
+}
+
 export default async function ListingComparisonPage({ searchParams: searchParamsPromise }: ListingComparisonPageArgs) {
   const searchParams = (await searchParamsPromise) ?? {}
   const requestHeaders = await headers()
   const payload = await getPayload({ config: configPromise })
   const listingData = await getListingComparisonServerData(payload, searchParams)
+  const indexingPolicy = resolveListingComparisonIndexing(searchParams)
   const favoriteAuthContext = await resolveFavoriteClinicAuthContext({
     payload,
     headers: requestHeaders,
@@ -51,42 +70,51 @@ export default async function ListingComparisonPage({ searchParams: searchParams
   ).filter((stat) => stat.value > 0)
 
   return (
-    <ListingComparisonPageClient
-      hero={{
-        title: 'Compare clinic prices',
-        subtitle: `Transparent pricing for medical treatments near you${specialtySuffix ? `\n${specialtySuffix}` : ''}`,
-        features: [
-          `${listingData.metrics.verifiedClinics} ${verifiedClinicLabel}`,
-          'Reviewed prices',
-          'Free comparison',
-        ],
-        bulletStyle: 'circle',
-      }}
-      filterOptions={listingData.filterOptions}
-      priceBounds={listingData.priceBounds}
-      queryState={listingData.queryState}
-      pagination={listingData.pagination}
-      specialtyContext={listingData.specialtyContext}
-      results={listingData.results}
-      favorites={{
-        isPatient: favoriteAuthContext.isPatient,
-        favoriteStateByClinicId,
-      }}
-      trust={{
-        title: 'A clearer way to compare clinics',
-        subtitle:
-          'We make clinic profiles easier to compare by showing key treatment, location, and price fields in one place.',
-        stats: trustStats,
-        badges: ['Verified clinic profiles', 'Treatment types', 'Locations', 'Price fields where available'],
-        disclaimer: {
-          copy: DISCLAIMER_COPY.comparisonPages,
-          routeLabel: 'Comparison pages',
-          variant: 'inline-note',
-          surface: 'muted',
-          size: 'compact',
-          showVariantLabel: false,
-        },
-      }}
-    />
+    <>
+      <JsonLdScript
+        data={buildListingComparisonJsonLd({
+          breadcrumbs: listingData.specialtyContext.breadcrumbs,
+          clinics: listingData.results,
+          isCanonicalRoute: indexingPolicy.reason === 'canonical-route',
+        })}
+      />
+      <ListingComparisonPageClient
+        hero={{
+          title: 'Compare clinic prices',
+          subtitle: `Transparent pricing for medical treatments near you${specialtySuffix ? `\n${specialtySuffix}` : ''}`,
+          features: [
+            `${listingData.metrics.verifiedClinics} ${verifiedClinicLabel}`,
+            'Reviewed prices',
+            'Free comparison',
+          ],
+          bulletStyle: 'circle',
+        }}
+        filterOptions={listingData.filterOptions}
+        priceBounds={listingData.priceBounds}
+        queryState={listingData.queryState}
+        pagination={listingData.pagination}
+        specialtyContext={listingData.specialtyContext}
+        results={listingData.results}
+        favorites={{
+          isPatient: favoriteAuthContext.isPatient,
+          favoriteStateByClinicId,
+        }}
+        trust={{
+          title: 'A clearer way to compare clinics',
+          subtitle:
+            'We make clinic profiles easier to compare by showing key treatment, location, and price fields in one place.',
+          stats: trustStats,
+          badges: ['Verified clinic profiles', 'Treatment types', 'Locations', 'Price fields where available'],
+          disclaimer: {
+            copy: DISCLAIMER_COPY.comparisonPages,
+            routeLabel: 'Comparison pages',
+            variant: 'inline-note',
+            surface: 'muted',
+            size: 'compact',
+            showVariantLabel: false,
+          },
+        }}
+      />
+    </>
   )
 }

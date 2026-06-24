@@ -10,7 +10,7 @@ const baseCard: ListingCardData = {
   name: 'Accessible Clinic',
   location: 'Berlin, Mitte',
   media: {
-    src: '/images/placeholder-576-968.svg',
+    src: '/images/placeholders/clinic-placeholder.webp',
     alt: 'Accessible Clinic image',
   },
   verification: {

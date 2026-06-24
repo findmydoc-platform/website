@@ -7,6 +7,7 @@ import { AdminBar } from '@/components/organisms/AdminBar'
 import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
 import { Footer } from '@/components/templates/Footer/Component'
 import { Header } from '@/components/templates/Header/Component'
+import { PreviewDataNotice } from '@/components/templates/PreviewDataNotice/Component'
 import {
   PublicAccountMenu,
   type PublicAccountMenuLinks,
@@ -27,6 +28,7 @@ import {
   shouldBlockSearchIndexing,
   shouldBlockSearchIndexingForRequest,
 } from '@/features/searchIndexing'
+import { JsonLdScript, buildSiteBaseJsonLd } from '@/utilities/structuredData'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
 
@@ -100,6 +102,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ) : null}
       </head>
       <body className="min-h-screen bg-site-canvas text-foreground antialiased">
+        {!blockSearchIndexing ? <JsonLdScript data={buildSiteBaseJsonLd()} /> : null}
         <div className="flex min-h-screen min-h-svh flex-col">
           <AdminBar adminBarProps={{ preview: isEnabled }} />
 
@@ -111,6 +114,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 rightActions={<PublicAccountMenu links={LIVE_PATIENT_ACCOUNT_MENU_LINKS} state={accountMenuState} />}
                 showPreviewBadge={showPreviewBadge}
               />
+            </div>
+          ) : null}
+
+          {showSiteChrome && showPreviewBadge ? (
+            <div className="full-width">
+              <PreviewDataNotice />
             </div>
           ) : null}
 

@@ -4,7 +4,6 @@ import * as React from 'react'
 import { ChevronDown, Info } from 'lucide-react'
 
 import { Button } from '@/components/atoms/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
 import { cn } from '@/utilities/ui'
 
 export type DisclaimerNoticeVariant = 'inline-note' | 'slim-notice-bar' | 'collapsible-disclosure'
@@ -35,11 +34,38 @@ function variantLabel(variant: DisclaimerNoticeVariant): string {
 }
 
 function surfaceClasses(surface: DisclaimerNoticeSurface): string {
-  return surface === 'muted' ? 'bg-muted/50' : 'bg-background'
+  return surface === 'muted' ? 'bg-muted/45' : 'bg-card'
 }
 
-function routeCardClasses(size: DisclaimerNoticeSize): string {
-  return size === 'compact' ? 'p-4' : 'p-6'
+function noticePaddingClasses(size: DisclaimerNoticeSize, standalone: boolean): string {
+  if (standalone) {
+    return size === 'compact' ? 'py-2.5' : 'py-3'
+  }
+
+  return size === 'compact' ? 'px-3.5 py-3' : 'px-4 py-3.5'
+}
+
+function noticeVariantClasses(variant: DisclaimerNoticeVariant, standalone: boolean): string {
+  if (standalone && variant !== 'collapsible-disclosure') {
+    return 'rounded-none border-0 bg-transparent shadow-none'
+  }
+
+  switch (variant) {
+    case 'inline-note':
+      return 'border-l-2 border-l-primary/30'
+    case 'slim-notice-bar':
+      return 'border-border/60'
+    case 'collapsible-disclosure':
+      return 'border-border/60'
+  }
+}
+
+function iconClasses(size: DisclaimerNoticeSize, standalone: boolean): string {
+  if (standalone) {
+    return size === 'compact' ? 'size-5' : 'size-6'
+  }
+
+  return size === 'compact' ? 'size-6' : 'size-7'
 }
 
 export function DisclaimerNotice({
@@ -49,7 +75,7 @@ export function DisclaimerNotice({
   size = 'default',
   routeLabel,
   title,
-  showVariantLabel = true,
+  showVariantLabel = false,
   standalone = false,
   className,
 }: DisclaimerNoticeProps) {
@@ -58,29 +84,17 @@ export function DisclaimerNotice({
   const showBadge = typeof routeLabel === 'string' && routeLabel.trim().length > 0
   const showTitle = typeof title === 'string' && title.trim().length > 0
 
-  if (standalone) {
+  if (variant === 'collapsible-disclosure') {
     return (
-      <aside
-        aria-label={routeLabel ? `${routeLabel} disclaimer` : 'Disclaimer'}
+      <div
         className={cn(
-          'flex items-start gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3',
-          variant === 'inline-note' ? 'border-l-2 border-l-primary/20' : null,
+          'rounded-xl border shadow-xs',
+          surfaceClasses(surface),
+          noticeVariantClasses(variant, standalone),
+          noticePaddingClasses(size, standalone),
           className,
         )}
       >
-        <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary">
-          <Info className="size-4" aria-hidden={true} />
-        </span>
-        <div className="min-w-0 space-y-1">
-          <p className="text-sm leading-6 text-foreground">{copy}</p>
-        </div>
-      </aside>
-    )
-  }
-
-  if (variant === 'collapsible-disclosure') {
-    return (
-      <div className={cn('rounded-2xl border border-border/60 bg-card px-4 py-3', className)}>
         <Button
           type="button"
           variant="ghost"
@@ -92,11 +106,11 @@ export function DisclaimerNotice({
         >
           <span className="flex items-center gap-2">
             <Info className="size-4 text-primary/80" aria-hidden={true} />
-            <span>{title ?? 'Why this note appears'}</span>
+            <span>{title ?? routeLabel ?? 'Information note'}</span>
           </span>
           <ChevronDown className={cn('size-4 shrink-0 transition-transform', open ? 'rotate-180' : 'rotate-0')} />
         </Button>
-        {showBadge || showVariantLabel || showTitle ? (
+        {!standalone && (showBadge || showVariantLabel) ? (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {showBadge ? (
               <span className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
@@ -110,9 +124,6 @@ export function DisclaimerNotice({
             ) : null}
           </div>
         ) : null}
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Short legal text stays available without taking over the page.
-        </p>
         {open ? (
           <div id={disclosureId} className="mt-3 border-t border-border/60 pt-3 text-sm leading-6 text-foreground">
             {copy}
@@ -123,10 +134,27 @@ export function DisclaimerNotice({
   }
 
   return (
-    <Card className={cn('border-border/70 shadow-xs', surfaceClasses(surface), className)}>
-      <CardHeader className={routeCardClasses(size)}>
-        {showBadge || showVariantLabel ? (
-          <div className="flex items-center gap-2">
+    <aside
+      aria-label={routeLabel ? `${routeLabel} disclaimer` : 'Disclaimer'}
+      className={cn(
+        'flex items-start gap-3 rounded-xl border border-border/60 shadow-xs',
+        surfaceClasses(surface),
+        noticePaddingClasses(size, standalone),
+        noticeVariantClasses(variant, standalone),
+        className,
+      )}
+    >
+      <span
+        className={cn(
+          'mt-0.5 inline-flex shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary',
+          iconClasses(size, standalone),
+        )}
+      >
+        <Info className={cn(size === 'compact' || standalone ? 'size-3.5' : 'size-4')} aria-hidden={true} />
+      </span>
+      <div className="min-w-0 space-y-1">
+        {!standalone && (showBadge || showVariantLabel || showTitle) ? (
+          <div className="flex flex-wrap items-center gap-2">
             {showBadge ? (
               <span className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
                 {routeLabel}
@@ -137,31 +165,11 @@ export function DisclaimerNotice({
                 {variantLabel(variant)}
               </span>
             ) : null}
+            {showTitle ? <span className="text-xs font-semibold text-foreground">{title}</span> : null}
           </div>
         ) : null}
-        {showTitle ? <CardTitle className={cn(size === 'compact' ? 'text-base' : 'text-lg')}>{title}</CardTitle> : null}
-        <CardDescription>
-          {variant === 'slim-notice-bar'
-            ? 'Still visible, but visually closer to a page utility than a prominent alert.'
-            : 'Visible in flow, low-noise in tone, and short enough to keep the page feeling like content rather than a warning.'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className={cn(routeCardClasses(size), 'pt-0')}>
-        <aside
-          aria-label={routeLabel ? `${routeLabel} disclaimer` : 'Disclaimer'}
-          className={cn(
-            'flex items-start gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3',
-            variant === 'inline-note' ? 'border-l-2 border-l-primary/20' : null,
-          )}
-        >
-          <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary">
-            <Info className="size-4" aria-hidden={true} />
-          </span>
-          <div className="min-w-0 space-y-1">
-            <p className="text-sm leading-6 text-foreground">{copy}</p>
-          </div>
-        </aside>
-      </CardContent>
-    </Card>
+        <p className={cn('text-sm leading-6', standalone ? 'text-muted-foreground' : 'text-foreground')}>{copy}</p>
+      </div>
+    </aside>
   )
 }

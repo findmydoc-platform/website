@@ -8,10 +8,12 @@ import { Container } from '@/components/molecules/Container'
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { normalizePost } from '@/utilities/blog/normalizePost'
+import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { buildPostsIndexPath, buildPostsPagePath } from '@/utilities/content/postPaths'
 import { findPublishedPostsPage } from '@/utilities/content/serverData'
 import { resolveContentLocaleContext } from '@/utilities/contentLocalization'
 import { createSiteMetadata } from '@/utilities/generateMeta'
+import { JsonLdScript, buildPostsIndexJsonLd } from '@/utilities/structuredData'
 import { Heading } from '@/components/atoms/Heading'
 import { PostsPagination } from './_components/PostsPagination'
 
@@ -37,13 +39,15 @@ export default async function Page({ searchParams: searchParamsPromise }: Args =
   const normalizedPosts = posts.docs.map((post) => normalizePost(post, { contentLocale }))
   const [featuredPost, ...gridPosts] = normalizedPosts
   const moreArticlesCount = Math.max((posts.totalDocs || 0) - (featuredPost ? 1 : 0), 0)
+  const breadcrumbs = [HOME_BREADCRUMB, createBlogBreadcrumb(buildPostsIndexPath(contentLocale))]
 
   return (
     <div className="pb-20 sm:pb-24">
       <PageClient />
+      <JsonLdScript data={buildPostsIndexJsonLd({ breadcrumbs, posts: normalizedPosts })} />
 
       {/* Hero Section */}
-      <BlogHero />
+      <BlogHero breadcrumbs={breadcrumbs} />
 
       {/* Featured Post (Overlay Variant) */}
       {featuredPost && (

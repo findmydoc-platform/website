@@ -2,9 +2,12 @@ import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  blogHeroComponent: vi.fn(() => null),
+  buildPostsIndexJsonLdMock: vi.fn(() => [{ '@type': 'ItemList' }]),
   createSiteMetadataMock: vi.fn((args: unknown) => args),
   findPublishedPostsPageMock: vi.fn(),
   getPayloadMock: vi.fn(),
+  jsonLdScriptComponent: vi.fn(() => null),
   normalizePostMock: vi.fn(),
   postsPaginationComponent: vi.fn(() => null),
 }))
@@ -33,8 +36,17 @@ vi.mock('@/utilities/generateMeta', () => ({
   createSiteMetadata: mocks.createSiteMetadataMock,
 }))
 
+vi.mock('@/components/organisms/Blog/BlogHero', () => ({
+  BlogHero: mocks.blogHeroComponent,
+}))
+
 vi.mock('@/app/(frontend)/posts/_components/PostsPagination', () => ({
   PostsPagination: mocks.postsPaginationComponent,
+}))
+
+vi.mock('@/utilities/structuredData', () => ({
+  buildPostsIndexJsonLd: mocks.buildPostsIndexJsonLdMock,
+  JsonLdScript: mocks.jsonLdScriptComponent,
 }))
 
 type ReactNodeLike = React.ReactNode
@@ -114,6 +126,24 @@ describe('frontend posts index route', () => {
     expect(paginationElement).not.toBeNull()
     expect(paginationElement?.props.getPathForPage(1)).toBe('/posts?locale=de')
     expect(paginationElement?.props.getPathForPage(2)).toBe('/posts/page/2?locale=de')
+
+    const expectedBreadcrumbs = [
+      { label: 'Home', href: '/' },
+      { label: 'Blog', href: '/posts?locale=de' },
+    ]
+    const heroElement = findElementByType(result, mocks.blogHeroComponent) as React.ReactElement<{
+      breadcrumbs: Array<{ href: string; label: string }>
+    }> | null
+    expect(heroElement?.props.breadcrumbs).toEqual(expectedBreadcrumbs)
+
+    expect(mocks.buildPostsIndexJsonLdMock).toHaveBeenCalledWith({
+      breadcrumbs: expectedBreadcrumbs,
+      posts: [{ title: 'Hallo Welt', href: '/posts/hello-world?locale=de' }],
+    })
+    const jsonLdElement = findElementByType(result, mocks.jsonLdScriptComponent) as React.ReactElement<{
+      data: unknown
+    }> | null
+    expect(jsonLdElement?.props.data).toEqual([{ '@type': 'ItemList' }])
   })
 
   it('uses the requested content locale in metadata paths', async () => {

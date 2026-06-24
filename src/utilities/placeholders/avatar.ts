@@ -8,8 +8,8 @@ type ResolveAvatarPlaceholderArgs = {
 
 const AVATAR_PLACEHOLDER_MAP: Record<AvatarPersona, Record<AvatarGender, string>> = {
   doctor: {
-    female: '/images/avatar-doctor-female-placeholder.svg',
-    male: '/images/avatar-doctor-male-placeholder.svg',
+    female: '/images/placeholders/doctor-female-placeholder.webp',
+    male: '/images/placeholders/doctor-male-placeholder.webp',
   },
   patient: {
     female: '/images/avatar-patient-female-placeholder.svg',
@@ -17,12 +17,15 @@ const AVATAR_PLACEHOLDER_MAP: Record<AvatarPersona, Record<AvatarGender, string>
   },
 }
 
-const DEFAULT_AVATAR_PLACEHOLDER = '/images/avatar-placeholder.svg'
+const DEFAULT_AVATAR_PLACEHOLDER_MAP: Record<AvatarPersona, string> = {
+  doctor: '/images/placeholders/doctor-neutral-placeholder.webp',
+  patient: '/images/avatar-placeholder.svg',
+}
 
 export function resolveAvatarPlaceholder({ persona, gender }: ResolveAvatarPlaceholderArgs): string {
   if (gender === 'female' || gender === 'male') {
     return AVATAR_PLACEHOLDER_MAP[persona][gender]
   }
 
-  return DEFAULT_AVATAR_PLACEHOLDER
+  return DEFAULT_AVATAR_PLACEHOLDER_MAP[persona]
 }

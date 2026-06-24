@@ -54,6 +54,24 @@ const getRepeatCount = (length: number) => {
   return Math.max(1, Math.ceil(MIN_RENDERED_SLIDES / length))
 }
 
+const getTestimonialImageProps = (testimonial: LandingTestimonial) => {
+  if (typeof testimonial.image === 'string') {
+    return {
+      src: testimonial.image,
+      alt: testimonial.author,
+      sizes: '(min-width: 640px) 80px, 64px',
+    }
+  }
+
+  return {
+    src: testimonial.image.src,
+    alt: testimonial.image.alt ?? testimonial.author,
+    sizes: testimonial.image.sizes ?? '(min-width: 640px) 80px, 64px',
+    quality: testimonial.image.quality,
+    objectPosition: testimonial.image.objectPosition,
+  }
+}
+
 type CarouselContextValue = {
   testimonials: LandingTestimonial[]
   activeIndex: number
@@ -338,6 +356,7 @@ const Track: React.FC<TrackProps> = ({ className }) => {
         >
           {slides.map(({ snapIndex, index, testimonial }) => {
             const isSelected = !isTransitioning && snapIndex === activeSnapIndex
+            const image = getTestimonialImageProps(testimonial)
 
             return (
               <div
@@ -373,11 +392,13 @@ const Track: React.FC<TrackProps> = ({ className }) => {
                   <div className="flex flex-col items-center gap-3 md:flex-row md:gap-4">
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full sm:h-20 sm:w-20">
                       <Image
-                        src={testimonial.image}
-                        alt={testimonial.author}
+                        src={image.src}
+                        alt={image.alt}
                         fill
-                        sizes="(min-width: 640px) 80px, 64px"
+                        sizes={image.sizes}
+                        quality={image.quality}
                         className="object-cover"
+                        style={image.objectPosition ? { objectPosition: image.objectPosition } : undefined}
                       />
                     </div>
                     <div>

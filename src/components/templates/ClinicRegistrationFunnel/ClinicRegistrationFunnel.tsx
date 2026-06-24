@@ -119,7 +119,7 @@ export function ClinicRegistrationFunnel({
     messages: validationMessages,
   })
   const stepHeadingRef = React.useRef<HTMLHeadingElement>(null)
-  const didMountRef = React.useRef(false)
+  const previousStepRef = React.useRef(step)
 
   const selectedCategoryLabels = treatmentCategories
     .filter((category) => selectedTreatmentCategories.includes(category.id))
@@ -226,11 +226,11 @@ export function ClinicRegistrationFunnel({
   }, [])
 
   React.useEffect(() => {
-    if (!didMountRef.current) {
-      didMountRef.current = true
+    if (previousStepRef.current === step) {
       return
     }
 
+    previousStepRef.current = step
     stepHeadingRef.current?.focus()
   }, [step])
 

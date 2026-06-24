@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js'
-import { resolveRuntimeClass, resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
+import { isPreviewRuntime, resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
 export const PREVIEW_GUARD_LOCK_REQUEST_HEADER = 'x-preview-guard-lock'
@@ -24,8 +24,7 @@ export const resolveDeploymentEnvironment = (env: DeploymentEnvInput = process.e
   return resolveServerRuntimeEnvironment(env)
 }
 
-export const isPreviewDeployment = (env: DeploymentEnvInput = process.env): boolean =>
-  resolveRuntimeClass(env) === 'preview'
+export const isPreviewDeployment = (env: DeploymentEnvInput = process.env): boolean => isPreviewRuntime(env)
 
 export const isNonProductionDeployment = (env: DeploymentEnvInput = process.env): boolean =>
   resolveDeploymentEnvironment(env) !== 'production'

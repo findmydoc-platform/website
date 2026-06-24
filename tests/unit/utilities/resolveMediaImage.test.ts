@@ -52,7 +52,7 @@ describe('resolveMediaImage', () => {
       width: 1200,
       height: 800,
       sizes: '100vw',
-      quality: 75,
+      quality: 85,
     })
   })
 
@@ -83,7 +83,7 @@ describe('resolveMediaImage', () => {
       width: 576,
       height: 968,
       sizes: '(max-width: 1024px) 100vw, 50vw',
-      quality: 75,
+      quality: 85,
     })
   })
 
@@ -118,7 +118,7 @@ describe('resolveMediaImage', () => {
       width: 1400,
       height: 875,
       sizes: '(max-width: 1024px) 100vw, 50vw',
-      quality: 75,
+      quality: 85,
     })
   })
 
@@ -190,6 +190,53 @@ describe('resolveMediaImage', () => {
     })
   })
 
+  it('uses high-quality delivery policies for public landing imagery', () => {
+    const media = {
+      alt: 'Clinic image',
+      url: '/api/platformContentMedia/file/original.webp',
+      width: 2400,
+      height: 1600,
+      sizes: {
+        thumbnail: {
+          url: '/api/platformContentMedia/file/thumbnail.webp',
+          width: 300,
+          height: 200,
+        },
+        large: {
+          url: '/api/platformContentMedia/file/large.webp',
+          width: 1400,
+          height: 933,
+        },
+        xlarge: {
+          url: '/api/platformContentMedia/file/xlarge.webp',
+          width: 1920,
+          height: 1280,
+        },
+      },
+    }
+
+    expect(resolveMediaImage(media, { usage: 'landingVisual' })).toMatchObject({
+      src: '/api/platformContentMedia/file/xlarge.webp',
+      sizes: '(max-width: 1024px) 100vw, 50vw',
+      quality: 85,
+    })
+    expect(resolveMediaImage(media, { usage: 'teamPortrait' })).toMatchObject({
+      src: '/api/platformContentMedia/file/xlarge.webp',
+      sizes: '(min-width: 768px) 33vw, (min-width: 640px) 50vw, 85vw',
+      quality: 85,
+    })
+    expect(resolveMediaImage(media, { usage: 'landingCategory' })).toMatchObject({
+      src: '/api/platformContentMedia/file/xlarge.webp',
+      sizes: '(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw',
+      quality: 85,
+    })
+    expect(resolveMediaImage(media, { usage: 'testimonialAvatar' })).toMatchObject({
+      src: '/api/platformContentMedia/file/thumbnail.webp',
+      sizes: '(min-width: 640px) 80px, 64px',
+      quality: 85,
+    })
+  })
+
   it('keeps internal media policies private while every public usage resolves', () => {
     expect('MEDIA_IMAGE_POLICIES' in mediaImageModule).toBe(false)
 
@@ -200,6 +247,9 @@ describe('resolveMediaImage', () => {
       'blogCard',
       'content',
       'landingVisual',
+      'landingCategory',
+      'teamPortrait',
+      'testimonialAvatar',
       'hero',
       'og',
     ]

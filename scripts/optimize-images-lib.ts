@@ -4,12 +4,14 @@ import path from 'path'
 import sharp from 'sharp'
 
 export type OptimizeFormat = 'webp' | 'jpeg' | 'png'
-export type OptimizePresetName = 'category' | 'hero'
+export type OptimizePresetName = 'category' | 'hero' | 'landingProcess' | 'teamPortrait' | 'testimonialAvatar'
 
 export type OptimizePreset = {
   format: OptimizeFormat
   maxBytes: number
+  minBitsPerPixel: number
   minQuality: number
+  minLongEdge: number
   quality: number
   width: number
 }
@@ -18,25 +20,59 @@ export const OPTIMIZE_PRESETS: Record<OptimizePresetName, OptimizePreset> = {
   category: {
     width: 1600,
     format: 'webp',
-    quality: 80,
-    minQuality: 60,
+    quality: 88,
+    minQuality: 82,
+    minLongEdge: 1200,
+    minBitsPerPixel: 0.45,
     maxBytes: 700_000,
   },
   hero: {
     width: 2400,
     format: 'webp',
-    quality: 82,
-    minQuality: 62,
+    quality: 88,
+    minQuality: 82,
+    minLongEdge: 1800,
+    minBitsPerPixel: 0.45,
     maxBytes: 1_200_000,
+  },
+  landingProcess: {
+    width: 2200,
+    format: 'webp',
+    quality: 88,
+    minQuality: 82,
+    minLongEdge: 1400,
+    minBitsPerPixel: 0.45,
+    maxBytes: 900_000,
+  },
+  teamPortrait: {
+    width: 1536,
+    format: 'webp',
+    quality: 90,
+    minQuality: 84,
+    minLongEdge: 1200,
+    minBitsPerPixel: 0.45,
+    maxBytes: 900_000,
+  },
+  testimonialAvatar: {
+    width: 1254,
+    format: 'webp',
+    quality: 88,
+    minQuality: 82,
+    minLongEdge: 1000,
+    minBitsPerPixel: 0.4,
+    maxBytes: 500_000,
   },
 }
 
 export type CliOptions = {
+  allowDegrade: boolean
   dryRun: boolean
   format: OptimizeFormat
   inputPath: string
   maxBytes: number
+  minBitsPerPixel: number
   minQuality: number
+  minLongEdge: number
   outputPath: string
   preset: OptimizePresetName
   quality: number
@@ -45,13 +81,17 @@ export type CliOptions = {
 }
 
 export type OptimizeRunResult = {
+  inputHeight: number | null
   inputPath: string
+  inputSize: number
+  inputWidth: number | null
+  outputHeight: number | null
   outputPath: string
   outputSize: number
   outputWidth: number | null
-  outputHeight: number | null
   quality: number
   skipped: boolean
+  warnings: string[]
 }
 
 const SUPPORTED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.tiff'])
@@ -85,7 +125,7 @@ export function resolveCliOptions(argv: string[]): CliOptions {
       continue
     }
 
-    if (arg === '--dry-run' || arg === '--recursive') {
+    if (arg === '--allow-degrade' || arg === '--dry-run' || arg === '--recursive') {
       flags.add(arg)
       continue
     }
@@ -118,6 +158,8 @@ export function resolveCliOptions(argv: string[]): CliOptions {
   const width = clamp(Number.parseInt(cliValues.get('--width') ?? `${preset.width}`, 10), 320, 6000)
   const quality = clamp(Number.parseInt(cliValues.get('--quality') ?? `${preset.quality}`, 10), 1, 100)
   const minQuality = clamp(Number.parseInt(cliValues.get('--min-quality') ?? `${preset.minQuality}`, 10), 1, quality)
+  const minLongEdge = Math.max(Number.parseInt(cliValues.get('--min-long-edge') ?? `${preset.minLongEdge}`, 10), 1)
+  const minBitsPerPixel = Math.max(Number.parseFloat(cliValues.get('--min-bpp') ?? `${preset.minBitsPerPixel}`), 0)
   const maxBytes = Math.max(Number.parseInt(cliValues.get('--max-bytes') ?? `${preset.maxBytes}`, 10), 1)
   const format = (cliValues.get('--format') ?? preset.format) as OptimizeFormat
 
@@ -132,8 +174,11 @@ export function resolveCliOptions(argv: string[]): CliOptions {
     width,
     quality,
     minQuality,
+    minLongEdge,
+    minBitsPerPixel,
     maxBytes,
     format,
+    allowDegrade: flags.has('--allow-degrade'),
     dryRun: flags.has('--dry-run'),
     recursive: flags.has('--recursive'),
   }
@@ -172,7 +217,9 @@ export async function collectInputFiles(inputPath: string, recursive: boolean): 
   return files.flat().sort((left, right) => left.localeCompare(right))
 }
 
-function buildWidthCandidates(width: number): number[] {
+function buildWidthCandidates(width: number, allowDegrade: boolean): number[] {
+  if (!allowDegrade) return [width]
+
   const candidates = new Set<number>([width])
   let current = width
 
@@ -185,7 +232,9 @@ function buildWidthCandidates(width: number): number[] {
   return [...candidates].sort((left, right) => right - left)
 }
 
-function buildQualityCandidates(quality: number, minQuality: number): number[] {
+function buildQualityCandidates(quality: number, minQuality: number, allowDegrade: boolean): number[] {
+  if (!allowDegrade) return [quality]
+
   const candidates = new Set<number>([quality])
   let current = quality
 
@@ -240,8 +289,25 @@ export async function optimizeSingleImage(
   outputPath: string,
   options: CliOptions,
 ): Promise<OptimizeRunResult> {
-  const widthCandidates = buildWidthCandidates(options.width)
-  const qualityCandidates = buildQualityCandidates(options.quality, options.minQuality)
+  const inputStats = await fs.stat(inputPath)
+  const inputMetadata = await sharp(inputPath).metadata()
+  const inputWidth = inputMetadata.width ?? null
+  const inputHeight = inputMetadata.height ?? null
+  const inputPixels = (inputWidth ?? 0) * (inputHeight ?? 0)
+  const inputBitsPerPixel = inputPixels > 0 ? (inputStats.size * 8) / inputPixels : null
+  const inputLongEdge = Math.max(inputWidth ?? 0, inputHeight ?? 0)
+  const warnings: string[] = []
+
+  if (inputLongEdge > 0 && inputLongEdge < options.minLongEdge) {
+    warnings.push(`input-long-edge-below-${options.minLongEdge}px`)
+  }
+
+  if (inputBitsPerPixel !== null && inputBitsPerPixel < options.minBitsPerPixel) {
+    warnings.push(`low-source-bpp-${inputBitsPerPixel.toFixed(3)}`)
+  }
+
+  const widthCandidates = buildWidthCandidates(options.width, options.allowDegrade)
+  const qualityCandidates = buildQualityCandidates(options.quality, options.minQuality, options.allowDegrade)
 
   let bestAttempt:
     | {
@@ -276,19 +342,37 @@ export async function optimizeSingleImage(
     throw new Error(`Unable to optimize image ${inputPath}`)
   }
 
+  if (bestAttempt.size > options.maxBytes) {
+    throw new Error(
+      `Optimized image ${inputPath} is ${formatBytes(bestAttempt.size)}, above ${formatBytes(
+        options.maxBytes,
+      )} at width=${bestAttempt.width ?? '?'} q=${bestAttempt.quality}. Use a better source, raise --max-bytes, or pass --allow-degrade explicitly.`,
+    )
+  }
+
+  const outputPixels = (bestAttempt.width ?? 0) * (bestAttempt.height ?? 0)
+  const outputBitsPerPixel = outputPixels > 0 ? (bestAttempt.size * 8) / outputPixels : null
+  if (outputBitsPerPixel !== null && outputBitsPerPixel < options.minBitsPerPixel) {
+    warnings.push(`low-output-bpp-${outputBitsPerPixel.toFixed(3)}`)
+  }
+
   if (!options.dryRun) {
     await fs.mkdir(path.dirname(outputPath), { recursive: true })
     await fs.writeFile(outputPath, bestAttempt.buffer)
   }
 
   return {
+    inputHeight,
     inputPath,
+    inputSize: inputStats.size,
+    inputWidth,
+    outputHeight: bestAttempt.height,
     outputPath,
     outputSize: bestAttempt.size,
     outputWidth: bestAttempt.width,
-    outputHeight: bestAttempt.height,
     quality: bestAttempt.quality,
     skipped: false,
+    warnings,
   }
 }
 
@@ -298,20 +382,24 @@ export function createUsageText(): string {
     '  pnpm images:optimize -- --input <path> --output <path> [options]',
     '',
     'Options:',
-    '  --preset <category|hero>   Default optimization profile (default: category)',
+    '  --preset <category|hero|landingProcess|teamPortrait|testimonialAvatar>',
+    '                              Default source-preparation profile (default: category)',
     '  --input <path>             Source image file or directory',
     '  --output <path>            Target file or directory',
     '  --width <number>           Max width in px (default from preset)',
     '  --quality <number>         Starting quality 1-100 (default from preset)',
-    '  --min-quality <number>     Lowest allowed quality during size reduction',
-    '  --max-bytes <number>       Byte budget per output file (default from preset)',
+    '  --min-quality <number>     Lowest quality allowed when --allow-degrade is set',
+    '  --min-long-edge <number>   Warn when source long edge is below this px value',
+    '  --min-bpp <number>         Warn when source/output bits-per-pixel is below this value',
+    '  --max-bytes <number>       Hard byte budget per output file (default from preset)',
     '  --format <webp|jpeg|png>   Output format (default from preset)',
+    '  --allow-degrade            Explicitly allow width/quality reduction to meet max-bytes',
     '  --recursive                Traverse subdirectories when input is a directory',
     '  --dry-run                  Print planned output without writing files',
     '',
     'Examples:',
     '  pnpm images:optimize -- --input src/endpoints/seed/assets/baseline/medical-specialties --output tmp/medical-specialties --preset category',
-    '  pnpm images:optimize -- --input hero.jpg --output tmp/hero.webp --preset hero --max-bytes 1200000',
+    '  pnpm images:optimize -- --input team-source.png --output tmp/team.webp --preset teamPortrait',
   ].join('\n')
 }
 
@@ -344,7 +432,10 @@ export async function runOptimizeImagesCli(rawArgv: string[]): Promise<void> {
       `width=${options.width}`,
       `quality=${options.quality}`,
       `minQuality=${options.minQuality}`,
+      `minLongEdge=${options.minLongEdge}`,
+      `minBpp=${options.minBitsPerPixel}`,
       `maxBytes=${options.maxBytes}`,
+      `allowDegrade=${options.allowDegrade}`,
       `dryRun=${options.dryRun}`,
       `recursive=${options.recursive}`,
     ].join(' '),
@@ -355,16 +446,18 @@ export async function runOptimizeImagesCli(rawArgv: string[]): Promise<void> {
       ? getOutputPathForFile(inputFile, inputRoot, outputRoot, options.format)
       : options.outputPath
 
-    const originalSize = (await fs.stat(inputFile)).size
     const result = await optimizeSingleImage(inputFile, targetPath, options)
 
     const relativeInput = toPosix(path.relative(process.cwd(), inputFile))
     const relativeOutput = toPosix(path.relative(process.cwd(), targetPath))
-    const reduction = ((1 - result.outputSize / originalSize) * 100).toFixed(1)
+    const reduction = ((1 - result.outputSize / result.inputSize) * 100).toFixed(1)
+    const warningSuffix = result.warnings.length > 0 ? ` | warnings=${result.warnings.join(',')}` : ''
 
     console.log(
-      `${relativeInput} -> ${relativeOutput} | ${formatBytes(originalSize)} -> ${formatBytes(result.outputSize)} | ` +
-        `${result.outputWidth ?? '?'}x${result.outputHeight ?? '?'} | q=${result.quality} | reduction=${reduction}%`,
+      `${relativeInput} -> ${relativeOutput} | ${result.inputWidth ?? '?'}x${result.inputHeight ?? '?'} ${formatBytes(
+        result.inputSize,
+      )} -> ${result.outputWidth ?? '?'}x${result.outputHeight ?? '?'} ${formatBytes(result.outputSize)} | ` +
+        `q=${result.quality} | reduction=${reduction}%${warningSuffix}`,
     )
   }
 }

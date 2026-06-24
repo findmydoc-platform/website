@@ -1,16 +1,10 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- next-sitemap loads this config as CommonJS. */
+const { isPreviewRuntime } = require('./src/features/runtimePolicy/core.cjs')
+
 const SITE_URL =
   process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://example.com'
 
-const normalizeEnvValue = (value) => {
-  if (!value) return null
-
-  const normalized = value.trim().toLowerCase()
-  return normalized.length > 0 ? normalized : null
-}
-
-const isPreviewRuntime =
-  (normalizeEnvValue(process.env.VERCEL_ENV) ?? normalizeEnvValue(process.env.DEPLOYMENT_ENV)) === 'preview'
-const blockSearchIndexing = isPreviewRuntime
+const blockSearchIndexing = isPreviewRuntime(process.env)
 
 const PUBLIC_DISCOVERY_USER_AGENTS = [
   'Googlebot',

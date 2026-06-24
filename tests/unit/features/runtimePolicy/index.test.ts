@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  isClientPreviewRuntime,
+  isPreviewRuntime,
   resolveClientRuntimeClass,
   resolveClientRuntimeEnvironment,
   resolveRuntimeClass,
@@ -27,6 +29,36 @@ describe('runtimePolicy', () => {
         NODE_ENV: 'production',
       }),
     ).toBe('preview')
+  })
+
+  it('exposes a boolean server preview signal from Vercel env', () => {
+    expect(
+      isPreviewRuntime({
+        VERCEL_ENV: 'preview',
+        DEPLOYMENT_ENV: undefined,
+        NODE_ENV: 'production',
+      }),
+    ).toBe(true)
+  })
+
+  it('exposes a boolean server preview signal from explicit deployment env', () => {
+    expect(
+      isPreviewRuntime({
+        VERCEL_ENV: undefined,
+        DEPLOYMENT_ENV: 'preview',
+        NODE_ENV: 'production',
+      }),
+    ).toBe(true)
+  })
+
+  it('lets Vercel production override explicit preview deployment env', () => {
+    expect(
+      isPreviewRuntime({
+        VERCEL_ENV: 'production',
+        DEPLOYMENT_ENV: 'preview',
+        NODE_ENV: 'production',
+      }),
+    ).toBe(false)
   })
 
   it('resolves nonPreview runtime class for non-preview envs', () => {
@@ -59,6 +91,13 @@ describe('runtimePolicy', () => {
 
     expect(runtimeEnvironment).toBe('preview')
     expect(runtimeClass).toBe('preview')
+    expect(
+      isClientPreviewRuntime({
+        NEXT_PUBLIC_VERCEL_ENV: undefined,
+        NEXT_PUBLIC_DEPLOYMENT_ENV: 'preview',
+        NODE_ENV: 'development',
+      }),
+    ).toBe(true)
   })
 
   it('uses NODE_ENV only for client development and test fallback', () => {

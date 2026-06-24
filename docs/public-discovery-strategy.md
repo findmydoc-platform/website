@@ -8,6 +8,8 @@ findmydoc public content should be easy for search engines and AI agents to craw
 
 Public discovery includes both automated search indexing and user-directed AI retrieval; model training access is a separate consent choice.
 
+`/llms.txt` is a curated agent-context file for public findmydoc orientation. It points agents to canonical public URLs and citation boundaries; it is not a content export, crawler policy, private capability registry, or substitute for public page citations.
+
 Public discovery work supports three outcomes:
 
 - Search engines can discover stable, crawlable, canonical URLs.

@@ -1,5 +1,5 @@
 import { PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
-import { resolveRuntimeClass } from '@/features/runtimePolicy'
+import { isPreviewRuntime } from '@/features/runtimePolicy'
 
 export type SearchIndexingEnvInput = {
   DEPLOYMENT_ENV?: string
@@ -11,7 +11,7 @@ export const SEARCH_ROBOTS_HEADER = 'X-Robots-Tag'
 export const SEARCH_ROBOTS_HEADER_VALUE = 'noindex, nofollow, noarchive'
 
 export const shouldBlockSearchIndexing = (env: SearchIndexingEnvInput = process.env): boolean => {
-  return resolveRuntimeClass(env) === 'preview'
+  return isPreviewRuntime(env)
 }
 
 export const shouldBlockSearchIndexingForRequest = ({

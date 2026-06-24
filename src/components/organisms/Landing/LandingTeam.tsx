@@ -15,7 +15,17 @@ import { cn } from '@/utilities/ui'
 type LandingTeamMember = {
   name: string
   role: string
-  image: string
+  image:
+    | string
+    | {
+        src: string
+        alt?: string
+        width?: number
+        height?: number
+        sizes?: string
+        quality?: number
+        objectPosition?: string
+      }
   imageObjectPosition?: string
   isPhoto?: boolean
   photoDisplay?: 'original' | 'grayscale'
@@ -33,6 +43,25 @@ type LandingTeamProps = {
 const teamCtaClassName =
   'h-auto min-h-12 max-w-full whitespace-normal break-words rounded-lg border-secondary/30 px-6 py-3 text-center leading-snug text-secondary hover:bg-secondary hover:text-white sm:px-8'
 
+const getTeamMemberImageProps = (member: LandingTeamMember) => {
+  if (typeof member.image === 'string') {
+    return {
+      src: member.image,
+      alt: member.name,
+      sizes: '(min-width: 768px) 33vw, (min-width: 640px) 50vw, 85vw',
+      objectPosition: member.imageObjectPosition,
+    }
+  }
+
+  return {
+    src: member.image.src,
+    alt: member.image.alt ?? member.name,
+    sizes: member.image.sizes ?? '(min-width: 768px) 33vw, (min-width: 640px) 50vw, 85vw',
+    quality: member.image.quality,
+    objectPosition: member.image.objectPosition ?? member.imageObjectPosition,
+  }
+}
+
 export const LandingTeam: React.FC<LandingTeamProps> = ({
   team,
   title,
@@ -48,62 +77,69 @@ export const LandingTeam: React.FC<LandingTeamProps> = ({
         <Carousel opts={{ align: 'start', loop: true }} className="mx-auto w-full">
           <CarouselContent className="-ml-6">
             {/* Using basis-[85%] so each slide nearly fills the viewport while still revealing a sliver of the next card; standard basis fractions (e.g. 4/5 or 5/6) are either too narrow or too wide for this carousel design. */}
-            {team.map((member, index) => (
-              <CarouselItem key={index} className="basis-[85%] pl-6 sm:basis-1/2 md:basis-1/3">
-                <div className="flex flex-col items-center">
-                  {/* Using an arbitrary aspect ratio here to force a more vertical photo crop as required by the design. */}
-                  <div className="relative aspect-[3/4] min-h-112 w-full overflow-hidden rounded-3xl md:min-h-136">
-                    <Image
-                      src={member.image}
-                      alt={member.name}
-                      fill
-                      sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 85vw"
-                      className={cn(
-                        'object-cover',
-                        member.isPhoto === true && (member.photoDisplay ?? 'grayscale') === 'grayscale' && 'grayscale',
-                      )}
-                      style={member.imageObjectPosition ? { objectPosition: member.imageObjectPosition } : undefined}
-                    />
+            {team.map((member, index) => {
+              const image = getTeamMemberImageProps(member)
 
-                    <div className="absolute inset-x-6 bottom-6 rounded-3xl bg-white/95 p-6 shadow-lg backdrop-blur">
-                      <Heading as="h3" size="h5" align="center" className="mb-2 text-2xl text-foreground">
-                        {member.name}
-                      </Heading>
-                      <p className="mb-4 text-center text-muted-foreground">{member.role}</p>
+              return (
+                <CarouselItem key={index} className="basis-[85%] pl-6 sm:basis-1/2 md:basis-1/3">
+                  <div className="flex flex-col items-center">
+                    {/* Using an arbitrary aspect ratio here to force a more vertical photo crop as required by the design. */}
+                    <div className="relative aspect-[3/4] min-h-112 w-full overflow-hidden rounded-3xl md:min-h-136">
+                      <Image
+                        src={image.src}
+                        alt={image.alt}
+                        fill
+                        sizes={image.sizes}
+                        quality={image.quality}
+                        className={cn(
+                          'object-cover',
+                          member.isPhoto === true &&
+                            (member.photoDisplay ?? 'grayscale') === 'grayscale' &&
+                            'grayscale',
+                        )}
+                        style={image.objectPosition ? { objectPosition: image.objectPosition } : undefined}
+                      />
 
-                      {(() => {
-                        const socialItems = [
-                          { href: member.socials?.meta, Icon: SiMeta, label: 'Meta' },
-                          { href: member.socials?.x, Icon: SiX, label: 'X' },
-                          { href: member.socials?.instagram, Icon: SiInstagram, label: 'Instagram' },
-                          { href: member.socials?.linkedin, Icon: FaLinkedin, label: 'LinkedIn' },
-                          { href: member.socials?.github, Icon: FaGithub, label: 'GitHub' },
-                        ].filter((item) => Boolean(item.href))
+                      <div className="absolute inset-x-6 bottom-6 rounded-3xl bg-white/95 p-6 shadow-lg backdrop-blur">
+                        <Heading as="h3" size="h5" align="center" className="mb-2 text-2xl text-foreground">
+                          {member.name}
+                        </Heading>
+                        <p className="mb-4 text-center text-muted-foreground">{member.role}</p>
 
-                        if (socialItems.length === 0) return null
+                        {(() => {
+                          const socialItems = [
+                            { href: member.socials?.meta, Icon: SiMeta, label: 'Meta' },
+                            { href: member.socials?.x, Icon: SiX, label: 'X' },
+                            { href: member.socials?.instagram, Icon: SiInstagram, label: 'Instagram' },
+                            { href: member.socials?.linkedin, Icon: FaLinkedin, label: 'LinkedIn' },
+                            { href: member.socials?.github, Icon: FaGithub, label: 'GitHub' },
+                          ].filter((item) => Boolean(item.href))
 
-                        return (
-                          <div className="flex justify-center gap-4">
-                            {socialItems.map(({ href, Icon, label }) => (
-                              <a
-                                key={label}
-                                href={href}
-                                target="_blank"
-                                rel="noreferrer noopener"
-                                aria-label={label}
-                                className="text-foreground transition-colors hover:text-primary"
-                              >
-                                <Icon className="h-5 w-5" />
-                              </a>
-                            ))}
-                          </div>
-                        )
-                      })()}
+                          if (socialItems.length === 0) return null
+
+                          return (
+                            <div className="flex justify-center gap-4">
+                              {socialItems.map(({ href, Icon, label }) => (
+                                <a
+                                  key={label}
+                                  href={href}
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                  aria-label={label}
+                                  className="text-foreground transition-colors hover:text-primary"
+                                >
+                                  <Icon className="h-5 w-5" />
+                                </a>
+                              ))}
+                            </div>
+                          )
+                        })()}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CarouselItem>
-            ))}
+                </CarouselItem>
+              )
+            })}
           </CarouselContent>
           <div className="mt-8 flex justify-center gap-4">
             <CarouselPrevious className="static translate-y-0" />

@@ -17,6 +17,11 @@ export type LandingCategoryItem = {
   image: {
     src: ImageProps['src']
     alt: string
+    width?: number
+    height?: number
+    sizes?: string
+    quality?: number
+    objectPosition?: string
   }
 }
 

@@ -2,7 +2,7 @@ import type { Payload } from 'payload'
 import type { User } from '@supabase/supabase-js'
 import { getLoggedSupabaseAdminClient, getSupabaseLogger } from './supabaseLogger'
 import { hashLogValue, toLoggedError } from '@/utilities/logging/shared'
-import { resolveRuntimeClass } from '@/features/runtimePolicy'
+import { isPreviewRuntime } from '@/features/runtimePolicy'
 
 type PayloadForAdminCheck = Pick<Payload, 'find'>
 type PayloadAdminCandidate = {
@@ -51,8 +51,6 @@ const toRelationshipId = (value: unknown): number | string | null => {
   const id = (value as { id?: unknown }).id
   return typeof id === 'number' || typeof id === 'string' ? id : null
 }
-
-const isPreviewRuntime = (env: NodeJS.ProcessEnv = process.env): boolean => resolveRuntimeClass(env) === 'preview'
 
 const isMissingSupabaseUserError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false

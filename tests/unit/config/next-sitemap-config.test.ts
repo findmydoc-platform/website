@@ -86,7 +86,7 @@ describe('next-sitemap config', () => {
     process.env = {
       ...originalEnv,
       DEPLOYMENT_ENV: undefined,
-      NEXT_PUBLIC_SERVER_URL: 'https://preview.findmydoc.eu',
+      NEXT_PUBLIC_SERVER_URL: 'https://findmydoc.eu',
       VERCEL_ENV: 'preview',
     }
 
@@ -100,7 +100,7 @@ describe('next-sitemap config', () => {
     process.env = {
       ...originalEnv,
       DEPLOYMENT_ENV: 'preview',
-      NEXT_PUBLIC_SERVER_URL: 'https://preview.findmydoc.eu',
+      NEXT_PUBLIC_SERVER_URL: 'https://findmydoc.eu',
       VERCEL_ENV: undefined,
     }
 
@@ -108,5 +108,26 @@ describe('next-sitemap config', () => {
 
     expect(config.robotsTxtOptions.policies).toEqual([{ disallow: '/', userAgent: '*' }])
     expect(config.robotsTxtOptions.additionalSitemaps).toEqual([])
+  })
+
+  it('does not block robots only because the configured site URL uses the preview host', () => {
+    process.env = {
+      ...originalEnv,
+      DEPLOYMENT_ENV: undefined,
+      NEXT_PUBLIC_SERVER_URL: 'https://preview.findmydoc.eu',
+      VERCEL_ENV: 'production',
+    }
+
+    const config = loadConfig()
+
+    expect(config.robotsTxtOptions.policies).toContainEqual({
+      allow: '/',
+      disallow: ['/admin', '/admin/*'],
+      userAgent: '*',
+    })
+    expect(config.robotsTxtOptions.additionalSitemaps).toEqual([
+      'https://preview.findmydoc.eu/pages-sitemap.xml',
+      'https://preview.findmydoc.eu/posts-sitemap.xml',
+    ])
   })
 })

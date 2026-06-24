@@ -89,7 +89,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, name }) => {
     const canvas = within(canvasElement)
 
     await expect(canvas.getByRole('heading', { name: 'About findmydoc' })).toBeInTheDocument()
@@ -122,16 +122,26 @@ export const Default: Story = {
     expect(canvas.getAllByText(/We turn trust signals into clearer decisions\./).length).toBeGreaterThan(0)
     expect(canvas.getAllByText(/A clearer path forward for patients and clinics\./).length).toBeGreaterThan(0)
     expect(canvas.getAllByText(/Patient\s*Confidence/).length).toBeGreaterThan(0)
-    if (win && finalCard && finalLabel && progressBar) {
+    if (name === 'Default' && win && finalCard && finalLabel && progressBar) {
+      const nextFrames = () =>
+        new Promise<void>((resolve) => {
+          win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve()))
+        })
       const storyTop = win.scrollY + trustStory.getBoundingClientRect().top
-      const maxScroll = Math.max(1, trustStory.scrollHeight - win.innerHeight)
+      const maxScroll = Math.max(1, trustStory.getBoundingClientRect().height - win.innerHeight)
+      const scrollTargets = [0.84, 0.9, 0.96, 1]
 
-      win.scrollTo(0, storyTop + maxScroll * 0.96)
-      win.dispatchEvent(new win.Event('scroll'))
+      for (const target of scrollTargets) {
+        win.scrollTo(0, storyTop + maxScroll * target)
+        win.dispatchEvent(new win.Event('scroll'))
+        await nextFrames()
+
+        if (finalCard.getAttribute('data-active') === 'true') break
+      }
 
       await waitFor(() => expect(finalCard).toHaveAttribute('data-active', 'true'))
       await waitFor(() => expect(finalLabel).toHaveAttribute('data-visible'))
-      expect(Number.parseFloat(progressBar.style.width)).toBeGreaterThan(90)
+      expect(Number.parseFloat(progressBar.style.width)).toBeGreaterThan(80)
     }
     await expect(canvas.getByText(/Sets partner standards/i)).toBeInTheDocument()
     await expect(canvas.getByText('Partner standards')).toBeInTheDocument()

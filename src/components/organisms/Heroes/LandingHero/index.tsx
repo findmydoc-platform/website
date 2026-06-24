@@ -65,16 +65,22 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 
     return (
       <div className={cn('flex flex-col gap-3 sm:flex-row', className)}>
-        {actions.map((action, index) => (
-          <UiLink
-            key={`${action.href}-${action.label}`}
-            href={action.href}
-            label={action.label}
-            appearance={action.appearance ?? (index === 0 ? 'accent' : 'secondary')}
-            newTab={action.newTab}
-            size="lg"
-          />
-        ))}
+        {actions.map((action, index) => {
+          const appearance = action.appearance ?? (index === 0 ? 'accent' : 'secondary')
+
+          return (
+            <UiLink
+              key={`${action.href}-${action.label}`}
+              href={action.href}
+              label={action.label}
+              appearance={appearance}
+              className={isImageBackdrop ? 'rounded-full' : undefined}
+              hoverEffect={isImageBackdrop && appearance === 'secondary' ? 'slideFill' : undefined}
+              newTab={action.newTab}
+              size="lg"
+            />
+          )
+        })}
       </div>
     )
   }

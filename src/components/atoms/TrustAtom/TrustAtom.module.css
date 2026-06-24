@@ -1,0 +1,46 @@
+.root {
+  --trust-atom-color: var(--primary);
+  --trust-atom-ring: color-mix(in srgb, var(--trust-atom-color) 16%, transparent);
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border: 9px solid var(--trust-atom-ring);
+  border-radius: 999px;
+  background-color: var(--trust-atom-color);
+  background-clip: content-box;
+}
+
+.animated {
+  animation: trust-atom-float var(--trust-atom-float-duration, 4.8s) ease-in-out infinite;
+  animation-delay: var(--trust-atom-float-delay, 0s);
+}
+
+.primary {
+  --trust-atom-color: var(--primary);
+}
+
+.accent {
+  --trust-atom-color: var(--accent);
+}
+
+.secondary {
+  --trust-atom-color: var(--secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated {
+    animation: none;
+  }
+}
+
+@keyframes trust-atom-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(var(--trust-atom-float-drift, 0), var(--trust-atom-float-lift, -5px), 0);
+  }
+}

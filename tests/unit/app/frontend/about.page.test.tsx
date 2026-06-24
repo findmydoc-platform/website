@@ -30,7 +30,7 @@ const mocks = vi.hoisted(() => {
       },
     ],
     transparency: {
-      title: 'What we keep transparent',
+      title: 'What stays transparent',
       items: [{ text: 'Clinics own their profile information.' }],
     },
   }

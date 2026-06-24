@@ -131,16 +131,17 @@ describe('landingPageContent normalizers', () => {
     expect(content.team[0]).toMatchObject({
       name: 'Volkan Kablan',
       role: 'CEO',
-      whatWeDo: 'Shape finance and partner operations so clinic growth stays sustainable, measurable, and transparent.',
+      whatWeDo:
+        'Sets partner standards so commercial decisions stay transparent and aligned with responsible clinic relationships.',
       image: {
         src: '/platform-media/about-Volkan Kablan.webp',
         objectPosition: '50% 38%',
       },
     })
     expect(content.transparency.items.map((item) => item.text)).toEqual([
-      'Clinics own their profile information.',
-      'Qualification signals are reviewed before visibility.',
-      'Patients contact clinics directly.',
+      'Clinics remain accountable for the information shown on their profiles.',
+      'Qualification and evidence signals are reviewed before they are presented as trust context.',
+      'Comparison context stays separate from medical advice, and patients contact clinics directly.',
     ])
   })
 

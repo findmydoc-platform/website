@@ -93,8 +93,9 @@ In the active Supabase storage setup used for this project, the development buck
 
 Practical consequence:
 - large original photos can fail with `413 EntityTooLarge` even when the Payload request itself is accepted
-- seed assets should be optimized before upload
+- seed assets should be source-prepared before upload without making the final browser-delivery compression decision
 - the repo includes a small CLI around `sharp` for this: `pnpm images:optimize -- --input <path> --output <path>`
+- image delivery policy is documented in `docs/frontend/image-pipeline.md`
 
 ### Environment variables (what they mean)
 

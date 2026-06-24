@@ -4,8 +4,9 @@
  *   pnpm images:optimize -- --input <path> --output <path> [options]
  *
  * Purpose:
- *   Normalize source images for web delivery before they are copied into
- *   storage-backed collections or seed asset folders.
+ *   Prepare source images for Payload-backed storage and seed assets without
+ *   making the final browser-delivery quality decision. Next/Image owns the
+ *   final responsive delivery optimization.
  *
  * Typical category-image example:
  *   pnpm images:optimize -- --input src/endpoints/seed/assets/baseline/medical-specialties \
@@ -18,8 +19,9 @@
  * Notes:
  *   - Input can be a single file or a directory.
  *   - Output can be a single file or a directory.
- *   - Default preset `category` writes web-optimized output for taxonomy/category imagery.
+ *   - Default preset `category` writes high-quality source-prepared taxonomy imagery.
  *   - Use `--dry-run` to inspect the planned result without writing files.
+ *   - Width/quality degradation requires explicit `--allow-degrade`.
  */
 import { createUsageText, runOptimizeImagesCli } from './optimize-images-lib'
 

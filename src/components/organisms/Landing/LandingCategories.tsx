@@ -83,8 +83,10 @@ const LandingCategoryCard: React.FC<LandingCategoryCardProps> = ({ href, image, 
         src={image.src}
         alt={image.alt}
         fill
-        sizes="(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw"
+        sizes={image.sizes ?? '(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw'}
+        quality={image.quality}
         className="object-cover transition-transform duration-700 group-hover:scale-105"
+        style={image.objectPosition ? { objectPosition: image.objectPosition } : undefined}
       />
       <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent opacity-70 transition-opacity duration-300 group-hover:opacity-60" />
       <div className="absolute bottom-0 left-0 w-full p-6 text-left text-white md:p-8">

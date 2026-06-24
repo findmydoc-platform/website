@@ -149,7 +149,7 @@ Priority behavior:
 
 Preview deployments use runtime policy for auth recovery and search-index protection, and PostHog for the optional preview access guard.
 
-- Runtime resolves to `preview` from `VERCEL_ENV` first, then `DEPLOYMENT_ENV`
+- Runtime resolves to the boolean preview signal from `VERCEL_ENV` first, then `DEPLOYMENT_ENV`; request hostnames are not preview or production signals
 - `NODE_ENV` is not used as a preview or production deployment signal
 - Non-Vercel preview/production runtimes must set `DEPLOYMENT_ENV` explicitly
 - Preview Guard login redirects are controlled by the server-side PostHog feature flag `preview-guard-enabled`
@@ -179,6 +179,8 @@ The public sitemap surface is split between the generated `robots.txt` file and 
 - `/pages-sitemap.xml` lists `/`, `/posts`, `/contact`, `/about`, `/listing-comparison`, and published CMS pages. It does not list `/search` because there is no dedicated public search route.
 - `/posts-sitemap.xml` lists published post detail URLs with valid single-segment slugs.
 - Preview runtime and Temporary Landing Mode keep deeper public content out of sitemap discovery through preview robots policy and empty guarded sitemap responses.
+- `/llms.txt` provides a curated public agent-context file for findmydoc. `/.well-known/llms.txt` serves the same content as an optional discovery alias. The file uses canonical production URLs only and does not publish a full content dump, private routes, admin routes, authenticated endpoints, draft content, or unpublished data.
+- Preview runtime and Temporary Landing Mode do not expose `llms.txt` as a public discovery surface; guarded responses include `X-Robots-Tag: noindex, nofollow, noarchive`.
 
 Production `robots.txt` treats automated search discovery, user-directed AI retrieval, and model training as separate access classes:
 
@@ -196,6 +198,15 @@ Run the sitemap status check against local development or production when Tempor
 ```bash
 BASE_URL="${BASE_URL:-http://localhost:3000}"
 for path in /robots.txt /pages-sitemap.xml /posts-sitemap.xml / /posts /contact /about /listing-comparison; do
+  curl --fail --location --silent --show-error --output /dev/null --write-out "%{http_code} ${path}\n" "${BASE_URL}${path}"
+done
+```
+
+Run the agent-context status check against production or local development when Temporary Landing Mode is disabled:
+
+```bash
+BASE_URL="${BASE_URL:-http://localhost:3000}"
+for path in /llms.txt /.well-known/llms.txt; do
   curl --fail --location --silent --show-error --output /dev/null --write-out "%{http_code} ${path}\n" "${BASE_URL}${path}"
 done
 ```

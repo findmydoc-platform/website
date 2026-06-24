@@ -12,7 +12,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Isolated trust-system scroll story prepared for the About page. The route integration is intentionally handled in a later step.',
+          'Isolated trust-system scroll story used inside the About page template. Stories cover fixed progress states and scroll behavior separately from the route shell.',
       },
     },
   },
@@ -40,6 +40,13 @@ export const Default: Story = {
     await expect(
       canvas.getByRole('heading', { name: 'A clearer path forward for patients and clinics.' }),
     ).toBeInTheDocument()
+    expect(canvas.getAllByText(/Choosing care abroad often means piecing together clinics/i).length).toBeGreaterThan(0)
+    expect(
+      canvas.getAllByText(/findmydoc organizes provider information into comparable signals/i).length,
+    ).toBeGreaterThan(0)
+    expect(canvas.getAllByText(/Patients can understand their options with more confidence/i).length).toBeGreaterThan(0)
+    expect(canvas.getAllByText(/This is why we build findmydoc/i).length).toBeGreaterThan(0)
+    expect(canvas.getAllByText(/To make trust easier to understand before care begins/i).length).toBeGreaterThan(0)
     expect(canvas.getAllByText(/Patient\s*Confidence/).length).toBeGreaterThan(0)
     expect(canvas.getAllByText(/Trust at the core/i).length).toBeGreaterThan(0)
     await expect(canvas.queryByText(/Reusable argumentation/i)).not.toBeInTheDocument()

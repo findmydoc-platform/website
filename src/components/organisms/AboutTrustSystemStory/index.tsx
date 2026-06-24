@@ -3,12 +3,13 @@
 import * as React from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
+import { TrustAtom, type TrustAtomTone } from '@/components/atoms/TrustAtom'
 
 import styles from './AboutTrustSystemStory.module.css'
 
 const storyCards = [
   {
-    step: '01',
+    tone: 'primary',
     label: 'Why',
     title: 'Patients start with uncertainty.',
     body: (
@@ -19,7 +20,7 @@ const storyCards = [
     ),
   },
   {
-    step: '02',
+    tone: 'accent',
     label: 'How',
     title: 'We turn trust signals into clearer decisions.',
     body: (
@@ -36,7 +37,7 @@ const storyCards = [
     ),
   },
   {
-    step: '03',
+    tone: 'secondary',
     label: 'What',
     title: 'A clearer path forward for patients and clinics.',
     body: (
@@ -50,7 +51,16 @@ const storyCards = [
       body: 'To make trust easier to understand before care begins.',
     },
   },
-] as const
+] satisfies ReadonlyArray<{
+  tone: TrustAtomTone
+  label: string
+  title: string
+  body: React.ReactNode
+  mission?: {
+    title: string
+    body: string
+  }
+}>
 
 const signalLabels = [
   { className: styles.labelVerification, label: 'Verification' },
@@ -754,14 +764,17 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
     const isFadingClass = styles.isFading!
     const isLargeClass = styles.isLarge!
     const particlesHiddenClass = styles.particlesHidden!
+    const reducedMotionClass = styles.reducedMotion!
     const showClass = styles.show!
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const staticProgress = typeof fixedProgress === 'number' ? clamp01(fixedProgress) : null
+    const hasFixedProgress = typeof fixedProgress === 'number'
+    const staticProgress = hasFixedProgress ? clamp01(fixedProgress) : reducedMotion ? 0 : null
     const progressIsStatic = staticProgress !== null
+    const shouldShowReducedMotionStack = reducedMotion && !hasFixedProgress
     const shouldRunContinuousLoop = !reducedMotion && !progressIsStatic
     const shouldRenderWebGl = !reducedMotion || progressIsStatic
     const particles: Particle[] = []
-    const particleCount = window.innerWidth <= 767 ? 52 : window.innerWidth <= 1179 ? 78 : 118
+    const particleCount = window.innerWidth <= 767 ? 36 : window.innerWidth <= 1179 ? 64 : 118
     let activeCardIndex = Math.max(
       0,
       cards.findIndex((card) => card.classList.contains(isActiveClass)),
@@ -1100,6 +1113,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
     steps.forEach((step, index) => {
       step.dataset.active = String(index === activeCardIndex)
     })
+    story.classList.toggle(reducedMotionClass, shouldShowReducedMotionStack)
     galaxyArea.classList.add(isActiveClass)
 
     const sectionObserver =
@@ -1162,6 +1176,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       homepageRingRenderer.dispose()
       particles.forEach((particle) => particle.el.remove())
       homepageRingFallback?.classList.remove(showClass)
+      story.classList.remove(reducedMotionClass)
       galaxyArea.classList.remove(isActiveClass, particlesHiddenClass)
     }
   }, [fixedProgress, runtimeEnabled])
@@ -1171,24 +1186,22 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       <section
         ref={storyRef}
         className={styles.story}
-        aria-label="findmydoc trust system scroll story"
+        aria-labelledby="about-trust-system-story-heading"
         data-testid="about-trust-system-story"
       >
+        <Heading id="about-trust-system-story-heading" as="h2" align="left" size="h3" className={styles.storyHeading}>
+          findmydoc trust system scroll story
+        </Heading>
         <div className={styles.accessibleSummary}>
-          <Heading as="h2" align="left" size="h3">
-            findmydoc trust system
-          </Heading>
           <ol>
             {storyCards.map((card) => (
-              <li key={card.step}>
-                <p>
-                  <span>{card.step}</span> {card.label}
-                </p>
+              <li key={card.label}>
+                <p>{card.label}</p>
                 <Heading as="h3" align="left" size="h4">
                   {card.title}
                 </Heading>
                 <p>{card.body}</p>
-                {'mission' in card ? (
+                {card.mission ? (
                   <p>
                     <strong>{card.mission.title}</strong> {card.mission.body}
                   </p>
@@ -1210,7 +1223,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
             <div ref={copyStackRef} className={styles.copyStack} aria-hidden="true">
               {storyCards.map((card, index) => (
                 <article
-                  key={card.step}
+                  key={card.label}
                   ref={(element) => {
                     cardRefs.current[index] = element
                   }}
@@ -1219,14 +1232,14 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
                   data-active={index === 0 ? 'true' : 'false'}
                 >
                   <div className={styles.kicker}>
-                    <span>{card.step}</span>
+                    <TrustAtom tone={card.tone} className={styles.kickerAtom} />
                     {card.label}
                   </div>
                   <Heading as="h3" align="left" size="h3" className={styles.copyTitle}>
                     {card.title}
                   </Heading>
                   <p className={styles.copyBody}>{card.body}</p>
-                  {'mission' in card ? (
+                  {card.mission ? (
                     <div className={styles.missionLine}>
                       <strong>{card.mission.title}</strong>
                       <span>{card.mission.body}</span>
@@ -1293,7 +1306,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
                 <div className={styles.railLabels}>
                   {storyCards.map((card, index) => (
                     <div
-                      key={card.step}
+                      key={card.label}
                       ref={(element) => {
                         stepRefs.current[index] = element
                       }}
@@ -1301,7 +1314,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
                       data-step={index}
                       data-active={index === 0 ? 'true' : 'false'}
                     >
-                      <span className={styles.railDot} />
+                      <TrustAtom tone={card.tone} className={styles.railAtom} />
                       {card.label}
                     </div>
                   ))}

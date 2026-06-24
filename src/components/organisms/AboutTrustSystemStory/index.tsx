@@ -3,12 +3,13 @@
 import * as React from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
+import { TrustAtom, type TrustAtomTone } from '@/components/atoms/TrustAtom'
 
 import styles from './AboutTrustSystemStory.module.css'
 
 const storyCards = [
   {
-    step: '01',
+    tone: 'primary',
     label: 'Why',
     title: 'Patients start with uncertainty.',
     body: (
@@ -19,7 +20,7 @@ const storyCards = [
     ),
   },
   {
-    step: '02',
+    tone: 'accent',
     label: 'How',
     title: 'We turn trust signals into clearer decisions.',
     body: (
@@ -36,7 +37,7 @@ const storyCards = [
     ),
   },
   {
-    step: '03',
+    tone: 'secondary',
     label: 'What',
     title: 'A clearer path forward for patients and clinics.',
     body: (
@@ -50,7 +51,16 @@ const storyCards = [
       body: 'To make trust easier to understand before care begins.',
     },
   },
-] as const
+] satisfies ReadonlyArray<{
+  tone: TrustAtomTone
+  label: string
+  title: string
+  body: React.ReactNode
+  mission?: {
+    title: string
+    body: string
+  }
+}>
 
 const signalLabels = [
   { className: styles.labelVerification, label: 'Verification' },
@@ -263,6 +273,8 @@ type AboutTrustSystemStoryProps = {
   fixedProgress?: number
 }
 
+const RUNTIME_ACTIVATION_MARGIN_PX = 420
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
 }
@@ -278,6 +290,13 @@ function lerp(a: number, b: number, t: number) {
 function smoothstep(edge0: number, edge1: number, x: number) {
   const t = clamp((x - edge0) / (edge1 - edge0), 0, 1)
   return t * t * (3 - 2 * t)
+}
+
+function lerpAngle(a: number, b: number, t: number) {
+  const fullTurn = Math.PI * 2
+  const delta = ((((b - a + Math.PI) % fullTurn) + fullTurn) % fullTurn) - Math.PI
+
+  return a + delta * t
 }
 
 function seededRandom(seed: number) {
@@ -654,6 +673,7 @@ function getBuildAngle(particle: Particle, index: number, particleCount: number)
 }
 
 export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fixedProgress }) => {
+  const [runtimeEnabled, setRuntimeEnabled] = React.useState(() => typeof fixedProgress === 'number')
   const storyRef = React.useRef<HTMLElement | null>(null)
   const shellRef = React.useRef<HTMLDivElement | null>(null)
   const copyStackRef = React.useRef<HTMLDivElement | null>(null)
@@ -673,6 +693,53 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
   const ringLabelRefs = React.useRef<Array<HTMLDivElement | null>>([])
 
   React.useEffect(() => {
+    if (typeof fixedProgress === 'number') {
+      setRuntimeEnabled(true)
+
+      return
+    }
+
+    if (runtimeEnabled) return
+
+    const story = storyRef.current
+
+    if (!story) return
+
+    let disposed = false
+    const activateRuntime = () => {
+      if (!disposed) setRuntimeEnabled(true)
+    }
+    const rect = story.getBoundingClientRect()
+    const isNearViewport =
+      rect.top <= window.innerHeight + RUNTIME_ACTIVATION_MARGIN_PX && rect.bottom >= -RUNTIME_ACTIVATION_MARGIN_PX
+
+    if (isNearViewport || typeof IntersectionObserver === 'undefined') {
+      activateRuntime()
+
+      return
+    }
+
+    const activationObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return
+
+        activateRuntime()
+        activationObserver.disconnect()
+      },
+      { rootMargin: `${RUNTIME_ACTIVATION_MARGIN_PX}px 0px`, threshold: 0 },
+    )
+
+    activationObserver.observe(story)
+
+    return () => {
+      disposed = true
+      activationObserver.disconnect()
+    }
+  }, [fixedProgress, runtimeEnabled])
+
+  React.useEffect(() => {
+    if (!runtimeEnabled) return
+
     const story = storyRef.current
     const shell = shellRef.current
     const copyStack = copyStackRef.current
@@ -697,12 +764,17 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
     const isFadingClass = styles.isFading!
     const isLargeClass = styles.isLarge!
     const particlesHiddenClass = styles.particlesHidden!
+    const reducedMotionClass = styles.reducedMotion!
     const showClass = styles.show!
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const staticProgress = typeof fixedProgress === 'number' ? clamp01(fixedProgress) : null
+    const hasFixedProgress = typeof fixedProgress === 'number'
+    const staticProgress = hasFixedProgress ? clamp01(fixedProgress) : reducedMotion ? 0 : null
     const progressIsStatic = staticProgress !== null
+    const shouldShowReducedMotionStack = reducedMotion && !hasFixedProgress
+    const shouldRunContinuousLoop = !reducedMotion && !progressIsStatic
+    const shouldRenderWebGl = !reducedMotion || progressIsStatic
     const particles: Particle[] = []
-    const particleCount = window.innerWidth <= 767 ? 52 : window.innerWidth <= 1179 ? 78 : 118
+    const particleCount = window.innerWidth <= 767 ? 36 : window.innerWidth <= 1179 ? 64 : 118
     let activeCardIndex = Math.max(
       0,
       cards.findIndex((card) => card.classList.contains(isActiveClass)),
@@ -845,18 +917,23 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       return {
         chaos,
         cluster,
+        clusterAngle: buildAngle,
+        clusterRadius: buildRadius,
         commonAngle: particle.commonOrbitAngle ?? normalizeRadians(buildAngle),
       }
     }
 
     const updateParticles = (p: number) => {
       const toCluster = smoothstep(0.04, 0.64, p)
-      const toCommonOrbit = smoothstep(0.58, 0.9, p)
+      const clearCore = smoothstep(0.62, 0.76, p)
+      const toCommonOrbit = smoothstep(0.72, 0.92, p)
+      const radialExpansion = smoothstep(0.62, 0.92, p)
       const chaosEnergy = 1 - smoothstep(0.1, 0.7, p)
       const settle = smoothstep(0.62, 0.92, p)
       const particleFade = 1 - smoothstep(0.84, 0.94, p)
       const shaderSize = homepageRingLayer?.clientWidth || Math.min(width, height) * 0.82
       const commonRadius = shaderSize * 0.43
+      const coreClearance = Math.max(centerOrb.offsetWidth * 0.58, Math.min(width, height) * 0.2)
       const centerX = width / 2
       const centerY = height / 2
 
@@ -865,19 +942,23 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
         let x = lerp(targets.chaos.x, targets.cluster.x, toCluster)
         let y = lerp(targets.chaos.y, targets.cluster.y, toCluster)
         const commonAngle = targets.commonAngle + particleOrbitRotation
-        const commonX = centerX + Math.cos(commonAngle) * commonRadius
-        const commonY = centerY + Math.sin(commonAngle) * commonRadius
+        const expandedRadius = Math.max(targets.clusterRadius, coreClearance)
+        const clearedRadius = lerp(targets.clusterRadius, expandedRadius, clearCore)
+        const radialRadius = lerp(clearedRadius, commonRadius, toCommonOrbit)
+        const radialAngle = lerpAngle(targets.clusterAngle, commonAngle, toCommonOrbit)
+        const radialX = centerX + Math.cos(radialAngle) * radialRadius
+        const radialY = centerY + Math.sin(radialAngle) * radialRadius
 
-        x = lerp(x, commonX, toCommonOrbit)
-        y = lerp(y, commonY, toCommonOrbit)
+        x = lerp(x, radialX, radialExpansion)
+        y = lerp(y, radialY, radialExpansion)
 
-        const driftFade = 1 - smoothstep(0.58, 0.78, p)
+        const driftFade = 1 - smoothstep(0.58, 0.74, p)
         const drift = reducedMotion ? 0 : (7 * chaosEnergy + 0.8 * (1 - settle)) * driftFade
 
         x += Math.cos(time * 0.001 * particle.drift + particle.phase) * drift
         y += Math.sin(time * 0.0009 * particle.drift + particle.phase) * drift
 
-        const scale = lerp(1.18, 0.84, smoothstep(0.58, 0.94, p))
+        const scale = lerp(1.18, 0.84, smoothstep(0.68, 0.94, p))
         const opacity = lerp(0.68, 0.96, settle) * particleFade
 
         particle.el.style.setProperty('--x', `${x.toFixed(1)}px`)
@@ -915,12 +996,13 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       const shaderReveal = smoothstep(0.82, 0.985, p)
 
       homepageRingLayer?.style.setProperty('--homepage-ring-opacity', shaderReveal.toFixed(3))
+      if (!shouldRenderWebGl) homepageRingFallback?.classList.toggle(showClass, shaderReveal > 0)
 
       if (ambientGlow) {
         ambientGlow.style.opacity = (1 - shaderReveal).toFixed(3)
       }
 
-      const centerReveal = smoothstep(0.59, 0.68, p)
+      const centerReveal = smoothstep(0.72, 0.82, p)
       const centerScale = lerp(0.9, 1, centerReveal)
 
       centerOrb.style.setProperty('--center-opacity', centerReveal.toFixed(3))
@@ -985,7 +1067,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
     }
 
     const startLoop = () => {
-      if (!raf && sectionMotionActive && document.visibilityState !== 'hidden') {
+      if (shouldRunContinuousLoop && !raf && sectionMotionActive && document.visibilityState !== 'hidden') {
         raf = requestAnimationFrame(loop)
       }
     }
@@ -1002,10 +1084,10 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       lastFrameAt = time
       updateVisual(false, deltaSeconds)
 
-      if (progress > 0.78 || reducedMotion || progressIsStatic) {
+      if (progress > 0.78 || progressIsStatic) {
         if (!ringStartedAt) ringStartedAt = time
 
-        ringTimeSeconds = reducedMotion || progressIsStatic ? 0 : (time - ringStartedAt) / 1000
+        ringTimeSeconds = progressIsStatic ? 0 : (time - ringStartedAt) / 1000
         homepageRingRenderer.draw(ringTimeSeconds)
       }
 
@@ -1013,7 +1095,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
     }
 
     const homepageRingRenderer =
-      homepageRingCanvas && homepageRingFallback
+      shouldRenderWebGl && homepageRingCanvas && homepageRingFallback
         ? initHomepageRingRenderer(homepageRingCanvas, homepageRingFallback, showClass)
         : {
             draw: () => undefined,
@@ -1031,10 +1113,11 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
     steps.forEach((step, index) => {
       step.dataset.active = String(index === activeCardIndex)
     })
+    story.classList.toggle(reducedMotionClass, shouldShowReducedMotionStack)
     galaxyArea.classList.add(isActiveClass)
 
     const sectionObserver =
-      !progressIsStatic && typeof IntersectionObserver !== 'undefined'
+      shouldRunContinuousLoop && typeof IntersectionObserver !== 'undefined'
         ? new IntersectionObserver(
             ([entry]) => {
               sectionMotionActive = Boolean(entry?.isIntersecting)
@@ -1056,15 +1139,25 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
 
     const handleScroll = () => {
       updateScroll()
-      startLoop()
+
+      if (shouldRunContinuousLoop) {
+        startLoop()
+
+        return
+      }
+
+      updateVisual(true)
     }
 
     window.addEventListener('resize', resize, { passive: true })
 
     if (!progressIsStatic) {
       window.addEventListener('scroll', handleScroll, { passive: true })
-      document.addEventListener('visibilitychange', handleVisibilityChange)
-      startLoop()
+
+      if (shouldRunContinuousLoop) {
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+        startLoop()
+      }
     }
 
     return () => {
@@ -1076,37 +1169,39 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       window.removeEventListener('resize', resize)
       if (!progressIsStatic) {
         window.removeEventListener('scroll', handleScroll)
-        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        if (shouldRunContinuousLoop) {
+          document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
       }
       homepageRingRenderer.dispose()
       particles.forEach((particle) => particle.el.remove())
+      homepageRingFallback?.classList.remove(showClass)
+      story.classList.remove(reducedMotionClass)
       galaxyArea.classList.remove(isActiveClass, particlesHiddenClass)
     }
-  }, [fixedProgress])
+  }, [fixedProgress, runtimeEnabled])
 
   return (
     <div className={styles.root}>
       <section
         ref={storyRef}
         className={styles.story}
-        aria-label="findmydoc trust system scroll story"
+        aria-labelledby="about-trust-system-story-heading"
         data-testid="about-trust-system-story"
       >
+        <Heading id="about-trust-system-story-heading" as="h2" align="left" size="h3" className={styles.storyHeading}>
+          findmydoc trust system scroll story
+        </Heading>
         <div className={styles.accessibleSummary}>
-          <Heading as="h2" align="left" size="h3">
-            findmydoc trust system
-          </Heading>
           <ol>
             {storyCards.map((card) => (
-              <li key={card.step}>
-                <p>
-                  <span>{card.step}</span> {card.label}
-                </p>
+              <li key={card.label}>
+                <p>{card.label}</p>
                 <Heading as="h3" align="left" size="h4">
                   {card.title}
                 </Heading>
                 <p>{card.body}</p>
-                {'mission' in card ? (
+                {card.mission ? (
                   <p>
                     <strong>{card.mission.title}</strong> {card.mission.body}
                   </p>
@@ -1128,7 +1223,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
             <div ref={copyStackRef} className={styles.copyStack} aria-hidden="true">
               {storyCards.map((card, index) => (
                 <article
-                  key={card.step}
+                  key={card.label}
                   ref={(element) => {
                     cardRefs.current[index] = element
                   }}
@@ -1137,14 +1232,14 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
                   data-active={index === 0 ? 'true' : 'false'}
                 >
                   <div className={styles.kicker}>
-                    <span>{card.step}</span>
+                    <TrustAtom tone={card.tone} className={styles.kickerAtom} />
                     {card.label}
                   </div>
                   <Heading as="h3" align="left" size="h3" className={styles.copyTitle}>
                     {card.title}
                   </Heading>
                   <p className={styles.copyBody}>{card.body}</p>
-                  {'mission' in card ? (
+                  {card.mission ? (
                     <div className={styles.missionLine}>
                       <strong>{card.mission.title}</strong>
                       <span>{card.mission.body}</span>
@@ -1211,7 +1306,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
                 <div className={styles.railLabels}>
                   {storyCards.map((card, index) => (
                     <div
-                      key={card.step}
+                      key={card.label}
                       ref={(element) => {
                         stepRefs.current[index] = element
                       }}
@@ -1219,7 +1314,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
                       data-step={index}
                       data-active={index === 0 ? 'true' : 'false'}
                     >
-                      <span className={styles.railDot} />
+                      <TrustAtom tone={card.tone} className={styles.railAtom} />
                       {card.label}
                     </div>
                   ))}

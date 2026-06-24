@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 
 import { AboutPage, type AboutPageProps } from '@/components/templates/AboutPage/Component'
 import { getStoryImageSrc, storyClinicImages, storyPortraits } from '@/stories/fixtures/assets'
@@ -8,64 +8,67 @@ import { withViewportStory } from '../utils/viewportMatrix'
 
 const aboutPageArgs: AboutPageProps = {
   hero: {
-    title: 'The team behind clearer clinic decisions.',
+    title: 'About findmydoc',
     description:
-      'findmydoc helps patients compare clinic information with confidence and helps clinics present their services responsibly.',
+      'We build findmydoc so patients can compare clinic information with more context, and clinics can present their services responsibly.',
     image: {
       src: getStoryImageSrc(storyClinicImages.landing.aboutHero),
       alt: 'findmydoc startup team in a calm office',
     },
   },
   why: {
-    title: 'Why we exist',
+    title: 'Why findmydoc exists',
     items: [
-      { text: 'We bring clarity to clinic information so comparisons are fair and decisions are easier.' },
-      { text: 'We hold clinic information accountable through verification and responsible presentation.' },
-      { text: 'We keep the next step simple by connecting patients and clinics directly.' },
+      {
+        text: 'Profile claims, qualifications, reviews, prices, and contact options often arrive as separate signals.',
+      },
+      {
+        text: 'findmydoc gives those signals a shared comparison surface before a patient starts a clinic conversation.',
+      },
+      {
+        text: 'The comparison stays outside medical advice and keeps the decision boundary visible.',
+      },
     ],
   },
   team: [
     {
       name: 'Volkan Kablan',
       role: 'CEO',
-      whatWeDo: 'Shape finance and partner operations so clinic growth stays sustainable, measurable, and transparent.',
+      whatWeDo:
+        'Sets partner standards so commercial decisions stay transparent and aligned with responsible clinic relationships.',
       image: { src: getStoryImageSrc(storyPortraits.team.volkan), alt: 'Volkan Kablan portrait' },
     },
     {
       name: 'Youssef Adlah',
       role: 'CMO',
-      whatWeDo:
-        'Lead growth and partnerships to connect the right patients with the right clinics through clear communication and strong relationships.',
+      whatWeDo: 'Keeps clinic communication grounded in clear service claims instead of overstated promises.',
       image: { src: getStoryImageSrc(storyPortraits.team.youssef), alt: 'Youssef Adlah portrait' },
     },
     {
       name: 'Anil Gökduman',
       role: 'CPO',
-      whatWeDo:
-        'Own product strategy and user experience to make clinic comparisons simple, relevant, and trustworthy for patients.',
+      whatWeDo: 'Shapes comparison flows around patient questions, so profile signals become easier to evaluate.',
       image: { src: getStoryImageSrc(storyPortraits.team.anil), alt: 'Anil Gökduman portrait' },
     },
     {
       name: 'Özen Günes',
       role: 'CLO',
-      whatWeDo:
-        'Ensure legal integrity, data protection, and responsible engagement across all our relationships with patients and clinics.',
+      whatWeDo: 'Keeps privacy, legal, and consent expectations visible in patient and clinic interactions.',
       image: { src: getStoryImageSrc(storyPortraits.team.oezen), alt: 'Özen Günes portrait' },
     },
     {
       name: 'Sebastian Schütze',
       role: 'CTO',
-      whatWeDo:
-        'Build and maintain a secure, reliable platform so clinic information is structured, up to date, and easy to access.',
+      whatWeDo: 'Maintains the platform architecture that keeps profile signals structured, reliable, and accessible.',
       image: { src: getStoryImageSrc(storyPortraits.team.sebastian), alt: 'Sebastian Schütze portrait' },
     },
   ],
   transparency: {
-    title: 'What we keep transparent',
+    title: 'What stays transparent',
     items: [
-      { text: 'Clinics own their profile information.' },
-      { text: 'Qualification signals are reviewed before visibility.' },
-      { text: 'Patients contact clinics directly.' },
+      { text: 'Clinics remain accountable for the information shown on their profiles.' },
+      { text: 'Qualification and evidence signals are reviewed before they are presented as trust context.' },
+      { text: 'Comparison context stays separate from medical advice, and patients contact clinics directly.' },
     ],
   },
 }
@@ -86,16 +89,68 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, name }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByRole('heading', { name: /clearer clinic decisions/i })).toBeInTheDocument()
-    await expect(canvas.getByText('People behind the platform')).toBeInTheDocument()
-    await expect(canvas.getByText(/We bring clarity to clinic information/i)).toBeInTheDocument()
-    await expect(canvas.getByText(/Shape finance and partner operations/i)).toBeInTheDocument()
-    await expect(canvas.getByText(/Clinics own their profile information/i)).toBeInTheDocument()
-    expect(canvas.getAllByRole('link', { name: /compare clinics/i })).toHaveLength(1)
+    await expect(canvas.getByRole('heading', { name: 'About findmydoc' })).toBeInTheDocument()
+    const whyHeading = canvas.getByRole('heading', { name: 'Why findmydoc exists' })
+    const trustStory = canvas.getByRole('region', { name: /findmydoc trust system scroll story/i })
+    const teamHeading = canvas.getByRole('heading', { name: 'The people accountable for the system' })
+    const transparencyHeading = canvas.getByRole('heading', { name: 'What stays transparent' })
+    const closingHeading = canvas.getByRole('heading', { name: 'Continue with clearer clinic context.' })
+    const finalCard = trustStory.querySelector<HTMLElement>('[data-card="2"]')
+    const finalLabel = trustStory.querySelector<HTMLElement>('[data-ring-label="2"]')
+    const progressBar = trustStory.querySelector<HTMLElement>('[data-progress-bar]')
+    const win = canvasElement.ownerDocument.defaultView
+
+    await expect(teamHeading).toBeInTheDocument()
+    await expect(transparencyHeading).toBeInTheDocument()
+    await expect(closingHeading).toBeInTheDocument()
+    await expect(trustStory).toBeInTheDocument()
+    expect(finalCard).not.toBeNull()
+    expect(finalLabel).not.toBeNull()
+    expect(progressBar).not.toBeNull()
+    expect(whyHeading.compareDocumentPosition(trustStory) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(trustStory.compareDocumentPosition(teamHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(teamHeading.compareDocumentPosition(transparencyHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(transparencyHeading.compareDocumentPosition(closingHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await expect(canvas.getByText(/Profile claims, qualifications, reviews, prices/i)).toBeInTheDocument()
+    await expect(canvas.getByText('Scattered information')).toBeInTheDocument()
+    await expect(canvas.getByText('Comparison context')).toBeInTheDocument()
+    await expect(canvas.getByText('Decision boundary')).toBeInTheDocument()
+    expect(canvas.getAllByText(/Patients start with uncertainty\./).length).toBeGreaterThan(0)
+    expect(canvas.getAllByText(/We turn trust signals into clearer decisions\./).length).toBeGreaterThan(0)
+    expect(canvas.getAllByText(/A clearer path forward for patients and clinics\./).length).toBeGreaterThan(0)
+    expect(canvas.getAllByText(/Patient\s*Confidence/).length).toBeGreaterThan(0)
+    if (name === 'Default' && win && finalCard && finalLabel && progressBar) {
+      const nextFrames = () =>
+        new Promise<void>((resolve) => {
+          win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve()))
+        })
+      const storyTop = win.scrollY + trustStory.getBoundingClientRect().top
+      const maxScroll = Math.max(1, trustStory.getBoundingClientRect().height - win.innerHeight)
+      const scrollTargets = [0.84, 0.9, 0.96, 1]
+
+      for (const target of scrollTargets) {
+        win.scrollTo(0, storyTop + maxScroll * target)
+        win.dispatchEvent(new win.Event('scroll'))
+        await nextFrames()
+
+        if (finalCard.getAttribute('data-active') === 'true') break
+      }
+
+      await waitFor(() => expect(finalCard).toHaveAttribute('data-active', 'true'))
+      await waitFor(() => expect(finalLabel).toHaveAttribute('data-visible'))
+      expect(Number.parseFloat(progressBar.style.width)).toBeGreaterThan(80)
+    }
+    await expect(canvas.getByText(/Sets partner standards/i)).toBeInTheDocument()
+    await expect(canvas.getByText('Partner standards')).toBeInTheDocument()
+    await expect(canvas.getByText('Platform reliability')).toBeInTheDocument()
+    await expect(canvas.getByText(/Clinics remain accountable/i)).toBeInTheDocument()
+    await expect(canvas.getByText('Medical-advice separation')).toBeInTheDocument()
+    expect(canvas.getAllByRole('link', { name: /compare clinics/i })).toHaveLength(2)
     await expect(canvas.getByRole('link', { name: /for clinics/i })).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: /register your clinic/i })).toBeInTheDocument()
     await expect(canvas.queryByRole('heading', { name: /ready to continue/i })).not.toBeInTheDocument()
     await expect(canvas.queryByRole('link', { name: /meet the team/i })).not.toBeInTheDocument()
   },
@@ -116,6 +171,8 @@ export const Default640: Story = withViewportStory(Default, 'public640', 'Defaul
 export const Default768: Story = withViewportStory(Default, 'public768', 'Default / 768')
 export const Default1024: Story = withViewportStory(Default, 'public1024', 'Default / 1024')
 export const Default1280: Story = withViewportStory(Default, 'public1280', 'Default / 1280')
+export const Default320Short: Story = withViewportStory(Default, 'public320Short', 'Default / 320 short')
+export const Default375Short: Story = withViewportStory(Default, 'public375Short', 'Default / 375 short')
 
 export const LongerTeamResponsibilities320: Story = withViewportStory(
   LongerTeamResponsibilities,

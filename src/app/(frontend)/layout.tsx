@@ -4,6 +4,7 @@ import React from 'react'
 import '@fontsource/dm-sans'
 
 import { AdminBar } from '@/components/organisms/AdminBar'
+import { SupabaseAuthHashUrlScrubber } from '@/app/(frontend)/_components/SupabaseAuthHashUrlScrubber.client'
 import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
 import { Footer } from '@/components/templates/Footer/Component'
 import { Header } from '@/components/templates/Header/Component'
@@ -102,6 +103,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ) : null}
       </head>
       <body className="min-h-screen bg-site-canvas text-foreground antialiased">
+        <SupabaseAuthHashUrlScrubber />
         {!blockSearchIndexing ? <JsonLdScript data={buildSiteBaseJsonLd()} /> : null}
         <div className="flex min-h-screen min-h-svh flex-col">
           <AdminBar adminBarProps={{ preview: isEnabled }} />

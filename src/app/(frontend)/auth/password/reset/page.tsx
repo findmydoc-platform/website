@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ResetPasswordRequestForm } from './ResetPasswordRequestForm'
+import { ResetPasswordRequestForm, type ResetPasswordReason } from './ResetPasswordRequestForm'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 
 export const metadata: Metadata = createSiteMetadata({
@@ -11,7 +11,22 @@ export const metadata: Metadata = createSiteMetadata({
 const signInOptionLinkClassName =
   'inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
-export default function ResetPasswordPage() {
+type ResetPasswordPageProps = {
+  searchParams?: Promise<{
+    reason?: string | string[]
+  }>
+}
+
+function resolvePasswordResetReason(reason: string | string[] | undefined): ResetPasswordReason | null {
+  const value = Array.isArray(reason) ? reason[0] : reason
+
+  return value === 'expired' ? 'expired' : null
+}
+
+export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps = {}) {
+  const params = await searchParams
+  const reason = resolvePasswordResetReason(params?.reason)
+
   return (
     <main className="min-h-svh bg-site-canvas py-6 sm:py-12">
       <div className="mx-auto max-w-4xl px-4">
@@ -25,7 +40,7 @@ export default function ResetPasswordPage() {
             </Link>
           </nav>
         </div>
-        <ResetPasswordRequestForm />
+        <ResetPasswordRequestForm reason={reason} />
       </div>
     </main>
   )

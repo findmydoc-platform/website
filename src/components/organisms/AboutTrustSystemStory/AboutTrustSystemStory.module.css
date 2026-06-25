@@ -1,13 +1,9 @@
 /* eslint-disable css/no-important, css/use-baseline, tailwindcss/no-important, tailwindcss/no-invalid-properties, tailwindcss/prefer-theme-tokens, tailwindcss/use-baseline -- Pixel-matched imported animation CSS intentionally keeps local values and visual-only browser effects. */
 
 .root {
-  --about-trust-radius: 40px;
   width: 100%;
   overflow-x: clip;
-  background:
-    radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 32rem),
-    radial-gradient(circle at 86% 12%, rgb(66 226 183 / 0.18), transparent 34rem),
-    linear-gradient(180deg, #ffffff 0%, #f8fbff 46%, #ffffff 100%);
+  background: transparent;
   color: var(--foreground);
   font-family:
     var(--font-sans),
@@ -31,6 +27,19 @@
   height: 460vh;
   min-height: 3200px;
   isolation: isolate;
+}
+
+.storyHeading {
+  position: absolute;
+  z-index: 1;
+  top: 72px;
+  left: max(24px, calc((100% - var(--layout-content-max)) / 2));
+  max-width: min(360px, calc(100% - 48px));
+  color: var(--secondary);
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.05;
+  opacity: 0.01;
+  pointer-events: none;
 }
 
 .accessibleSummary {
@@ -61,15 +70,10 @@
   height: min(880px, calc(100vh - 48px));
   min-height: 650px;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--about-trust-radius);
-  background:
-    linear-gradient(135deg, rgb(255 255 255 / 0.98), rgb(248 249 250 / 0.86)),
-    radial-gradient(circle at 72% 45%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 34%),
-    radial-gradient(circle at 82% 28%, rgb(66 226 183 / 0.18), transparent 36%);
-  box-shadow:
-    0 32px 100px rgb(7 0 76 / 0.1),
-    var(--shadow-brand-soft);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .copyStack {
@@ -131,14 +135,10 @@
   text-transform: uppercase;
 }
 
-.kicker span {
-  display: inline-grid;
+.kickerAtom {
   width: 34px;
   height: 34px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
-  letter-spacing: 0;
-  place-items: center;
+  border-width: 8px;
 }
 
 .copyTitle {
@@ -559,13 +559,16 @@
   color: rgb(7 0 76 / 0.72);
 }
 
-.railDot {
-  width: 8px;
-  height: 8px;
-  border: 1.5px solid currentColor;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 0 0 5px rgb(255 255 255 / 0.74);
+.railAtom {
+  width: 10px;
+  height: 10px;
+  border-width: 3px;
+  opacity: 0.34;
+  transition: opacity 180ms ease;
+}
+
+.railLabel.isActive .railAtom {
+  opacity: 0.58;
 }
 
 .track {
@@ -582,9 +585,9 @@
   border-radius: inherit;
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--primary) 58%, transparent),
-    rgb(66 226 183 / 0.62),
-    rgb(7 0 76 / 0.54)
+    color-mix(in srgb, var(--primary) 58%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 62%, transparent) 52%,
+    color-mix(in srgb, var(--secondary) 54%, transparent) 100%
   );
   box-shadow: none;
   transition: width 80ms linear;
@@ -609,7 +612,7 @@
   .stageShell {
     height: calc(100svh - 32px);
     min-height: 700px;
-    border-radius: 30px;
+    border-radius: 0;
   }
 
   .copyStack {
@@ -724,14 +727,21 @@
     min-height: 2800px;
   }
 
+  .storyHeading {
+    top: 28px;
+    left: 18px;
+    max-width: calc(100% - 36px);
+    font-size: 22px;
+  }
+
   .stickyStage {
     padding: 6px;
   }
 
   .stageShell {
     height: calc(100svh - 12px);
-    min-height: 600px;
-    border-radius: 24px;
+    min-height: min(600px, calc(100svh - 12px));
+    border-radius: 0;
   }
 
   .copyStack {
@@ -819,7 +829,7 @@
   .ringLabel {
     gap: 6px;
     max-width: min(154px, 42vw);
-    font-size: clamp(9px, 1.5vw, 9.75px);
+    font-size: clamp(10px, 2vw, 10.5px);
     line-height: 1.08;
     letter-spacing: 0.04em;
     white-space: nowrap;
@@ -850,7 +860,7 @@
 
   .rail {
     right: 14px;
-    bottom: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     left: 14px;
   }
 
@@ -859,7 +869,7 @@
   }
 
   .railLabel {
-    font-size: 9px;
+    font-size: 10px;
     letter-spacing: 0.07em;
   }
 }
@@ -867,12 +877,131 @@
 @media (max-height: 760px) and (max-width: 767px) {
   .copyStack {
     --copy-pad: 16px;
-    min-height: 366px;
+    min-height: min(366px, calc(100svh - 196px));
   }
 
   .galaxyArea {
-    bottom: 28px;
+    bottom: calc(36px + env(safe-area-inset-bottom, 0px));
   }
+}
+
+@media (max-height: 620px) and (max-width: 767px) {
+  .copyStack {
+    --copy-pad: 13px;
+    min-height: min(266px, calc(100svh - 252px));
+  }
+
+  .kicker {
+    gap: 7px;
+    font-size: 10px;
+    letter-spacing: 0.13em;
+  }
+
+  .kickerAtom {
+    width: 24px;
+    height: 24px;
+    border-width: 6px;
+  }
+
+  .copyTitle {
+    margin-top: 10px;
+    font-size: clamp(20px, 6.25vw, 25px);
+    line-height: 1.01;
+  }
+
+  .copyBody {
+    margin-top: 9px;
+    font-size: 13px;
+    line-height: 1.38;
+  }
+
+  .missionLine {
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 9px;
+  }
+
+  .missionLine strong {
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+  .missionLine span {
+    font-size: 12px;
+    line-height: 1.32;
+  }
+
+  .galaxyArea {
+    bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+    width: min(214px, 64vw);
+  }
+
+  .homepageRingLayer {
+    width: min(192px, 84%);
+  }
+
+  .centerOrb,
+  .centerContent {
+    width: 112px;
+    height: 112px;
+    margin-top: -56px;
+    margin-left: -56px;
+  }
+
+  .centerContent strong {
+    font-size: 17px;
+  }
+
+  .centerContent > .patientCore > span:last-child {
+    font-size: 7px;
+  }
+}
+
+.story.reducedMotion {
+  height: auto;
+  min-height: 0;
+}
+
+.story.reducedMotion .stickyStage {
+  position: relative;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  padding-block: 24px;
+}
+
+.story.reducedMotion .stageShell {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.story.reducedMotion .copyStack {
+  position: relative;
+  inset: auto;
+  width: min(720px, calc(100% - 32px));
+  min-height: 0;
+  margin-inline: auto;
+  overflow: visible;
+  transform: none;
+}
+
+.story.reducedMotion .copyCard {
+  position: relative;
+  inset: auto;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.story.reducedMotion .copyCard + .copyCard {
+  margin-top: 16px;
+  padding-top: var(--copy-pad);
+  border-top: 1px solid rgb(226 232 240 / 0.74);
+}
+
+.story.reducedMotion .visualStage,
+.story.reducedMotion .rail {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

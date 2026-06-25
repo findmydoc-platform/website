@@ -19,10 +19,12 @@ The canonical source for these exports is `src/imageConfig.js`.
 
 ## Guidelines — when to change what
 
-- Add a quality value to `IMAGE_QUALITIES` only when a component or story
-  intentionally requires a non-default `quality` (for example `100`).
+- Add a quality value to `IMAGE_QUALITIES` only when a component, story, or
+  media policy intentionally requires it.
 - Prefer using `DEFAULT_IMAGE_QUALITY` for new image usages unless there's a
   clear visual/functional reason to override it.
+- For CMS media, prefer `resolveMediaImage` usage policies over local hard-coded
+  quality values. See `docs/frontend/image-pipeline.md`.
 - If you add runtime app assets, use `public/images/**` or the relevant media
   collection path so `IMAGE_LOCAL_PATTERNS` stays production-safe.
 - If you add story assets outside `src/stories/assets/**`, extend the
@@ -56,6 +58,7 @@ then follow the guidelines above to add the required pattern or quality to
 
 ## Notes
 
-- Keep `IMAGE_QUALITIES` intentionally small — add only values that are used.
+- Keep `IMAGE_QUALITIES` intentionally small — add only values that are used by
+  delivery policies or explicit component needs.
 - Document any intentional deviations (for example, editorial images that must
   remain at `quality={100}`) in the component or story where they are used.

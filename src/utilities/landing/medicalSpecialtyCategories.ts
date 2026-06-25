@@ -1,6 +1,6 @@
 import type { Payload } from 'payload'
 
-import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
+import { resolveMediaImage, type ResolvedMediaImage } from '@/utilities/media/resolveMediaImage'
 
 const LANDING_SPECIALTY_PLACEHOLDER_SRC = '/images/placeholders/clinic-placeholder.webp'
 const LANDING_SPECIALTY_PLACEHOLDER_ALT = 'Medical specialty placeholder image'
@@ -25,6 +25,8 @@ type MedicalSpecialtyRecord = {
   parentSpecialty?: unknown
 }
 
+type LandingCategoryMedia = Parameters<typeof resolveMediaImage>[0]
+
 export type LandingMedicalSpecialtyCategory = {
   label: string
   value: string
@@ -36,10 +38,7 @@ export type LandingMedicalSpecialtyItem = {
   subtitle?: string | null
   categories: string[]
   href: string
-  image: {
-    src: string
-    alt: string
-  }
+  image: ResolvedMediaImage
 }
 
 export type LandingMedicalSpecialtyCategoriesData = {
@@ -139,11 +138,20 @@ export function mapMedicalSpecialtiesToLandingCategories(
       if (!parent) return []
       if (extractRelationId(parent.parentSpecialty) !== null) return []
 
-      const mediaDescriptor = resolveMediaDescriptorFromLoadedRelation(specialty.featureImage, 'platformContentMedia')
-      const mediaAlt =
-        typeof mediaDescriptor?.alt === 'string' && mediaDescriptor.alt.trim().length > 0
-          ? mediaDescriptor.alt
-          : `${specialty.name} category image`
+      const mediaAlt = `${specialty.name} category image`
+      const media =
+        specialty.featureImage && typeof specialty.featureImage === 'object'
+          ? (specialty.featureImage as LandingCategoryMedia)
+          : null
+      const image = resolveMediaImage(media, {
+        fallbackAlt: mediaAlt,
+        usage: 'landingCategory',
+      }) ?? {
+        src: LANDING_SPECIALTY_PLACEHOLDER_SRC,
+        alt: LANDING_SPECIALTY_PLACEHOLDER_ALT,
+        sizes: '(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw',
+        quality: 85,
+      }
 
       return [
         {
@@ -152,10 +160,7 @@ export function mapMedicalSpecialtiesToLandingCategories(
           subtitle: specialty.description ?? null,
           categories: [String(parent.id)],
           href: `/listing-comparison?specialty=${encodeURIComponent(String(specialty.id))}`,
-          image: {
-            src: mediaDescriptor?.url ?? LANDING_SPECIALTY_PLACEHOLDER_SRC,
-            alt: mediaAlt || LANDING_SPECIALTY_PLACEHOLDER_ALT,
-          },
+          image,
         },
       ]
     })

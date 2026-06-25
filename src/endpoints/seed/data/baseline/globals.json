@@ -582,25 +582,25 @@
       },
       "about": {
         "seo": {
-          "title": "About findmydoc | The team behind clearer clinic decisions",
-          "description": "Meet the team behind findmydoc and learn how we make clinic information clearer, more accountable, and easier to compare."
+          "title": "About findmydoc | Trust system and team accountability",
+          "description": "Learn how findmydoc frames clinic signals around trust, transparency, and the team accountability behind the platform."
         },
         "hero": {
-          "title": "The team behind clearer clinic decisions.",
-          "description": "findmydoc helps patients compare clinic information with confidence and helps clinics present their services responsibly.",
+          "title": "About findmydoc",
+          "description": "We build findmydoc so patients can compare clinic information with more context, and clinics can present their services responsibly.",
           "imageStableId": "landing-about-hero-startup-team"
         },
         "why": {
-          "title": "Why we exist",
+          "title": "Why findmydoc exists",
           "items": [
             {
-              "text": "We bring clarity to clinic information so comparisons are fair and decisions are easier."
+              "text": "Profile claims, qualifications, reviews, prices, and contact options often arrive as separate signals."
             },
             {
-              "text": "We hold clinic information accountable through verification and responsible presentation."
+              "text": "findmydoc gives those signals a shared comparison surface before a patient starts a clinic conversation."
             },
             {
-              "text": "We keep the next step simple by connecting patients and clinics directly."
+              "text": "The comparison stays outside medical advice and keeps the decision boundary visible."
             }
           ]
         },
@@ -608,45 +608,45 @@
           {
             "name": "Volkan Kablan",
             "role": "CEO",
-            "whatWeDo": "Shape finance and partner operations so clinic growth stays sustainable, measurable, and transparent.",
+            "whatWeDo": "Sets partner standards so commercial decisions stay transparent and aligned with responsible clinic relationships.",
             "imageStableId": "landing-team-volkan-kablan"
           },
           {
             "name": "Youssef Adlah",
             "role": "CMO",
-            "whatWeDo": "Lead growth and partnerships to connect the right patients with the right clinics through clear communication and strong relationships.",
+            "whatWeDo": "Keeps clinic communication grounded in clear service claims instead of overstated promises.",
             "imageStableId": "landing-team-youssef-adlah"
           },
           {
             "name": "Anil Gökduman",
             "role": "CPO",
-            "whatWeDo": "Own product strategy and user experience to make clinic comparisons simple, relevant, and trustworthy for patients.",
+            "whatWeDo": "Shapes comparison flows around patient questions, so profile signals become easier to evaluate.",
             "imageStableId": "landing-team-anil-goekduman"
           },
           {
             "name": "Özen Günes",
             "role": "CLO",
-            "whatWeDo": "Ensure legal integrity, data protection, and responsible engagement across all our relationships with patients and clinics.",
+            "whatWeDo": "Keeps privacy, legal, and consent expectations visible in patient and clinic interactions.",
             "imageStableId": "landing-team-oezen-guenes"
           },
           {
             "name": "Sebastian Schütze",
             "role": "CTO",
-            "whatWeDo": "Build and maintain a secure, reliable platform so clinic information is structured, up to date, and easy to access.",
+            "whatWeDo": "Maintains the platform architecture that keeps profile signals structured, reliable, and accessible.",
             "imageStableId": "landing-team-sebastian-schuetze"
           }
         ],
         "transparency": {
-          "title": "What we keep transparent",
+          "title": "What stays transparent",
           "items": [
             {
-              "text": "Clinics own their profile information."
+              "text": "Clinics remain accountable for the information shown on their profiles."
             },
             {
-              "text": "Qualification signals are reviewed before visibility."
+              "text": "Qualification and evidence signals are reviewed before they are presented as trust context."
             },
             {
-              "text": "Patients contact clinics directly."
+              "text": "Comparison context stays separate from medical advice, and patients contact clinics directly."
             }
           ]
         }

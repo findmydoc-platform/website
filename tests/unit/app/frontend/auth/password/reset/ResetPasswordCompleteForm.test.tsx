@@ -115,13 +115,26 @@ describe('ResetPasswordCompleteForm', () => {
     setItemSpy.mockRestore()
   })
 
-  it('shows a session error when the recovery link did not create a session', async () => {
+  it('redirects to the reset request page when the recovery link did not create a session', async () => {
     supabaseAuthMock.getSession.mockResolvedValue({ data: { session: null } })
 
     render(<ResetPasswordCompleteForm />)
 
-    expect(await screen.findByText('No active session. Please request a new password reset link.')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(routerMock.replace).toHaveBeenCalledWith('/auth/password/reset?reason=expired')
+    })
     expect(screen.getByRole('button', { name: 'Update password' })).toBeDisabled()
+  })
+
+  it('redirects callback errors to the reset request page without exposing the raw error', async () => {
+    render(<ResetPasswordCompleteForm error="otp_expired" />)
+
+    await waitFor(() => {
+      expect(routerMock.replace).toHaveBeenCalledWith('/auth/password/reset?reason=expired')
+    })
+
+    expect(supabaseAuthMock.getSession).not.toHaveBeenCalled()
+    expect(screen.queryByText('otp_expired')).not.toBeInTheDocument()
   })
 
   it('does not show a success flash when only local sign-out succeeds after global sign-out fails', async () => {

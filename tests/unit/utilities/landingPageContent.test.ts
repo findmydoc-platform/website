@@ -81,7 +81,7 @@ describe('landingPageContent normalizers', () => {
     expect(content.hero.image).toMatchObject({
       src: '/platform-media/home-hero-large.webp',
       sizes: '(max-width: 1024px) 100vw, 50vw',
-      quality: 75,
+      quality: 85,
     })
     expect(content.features.items[0]?.icon).toBe(Target)
     expect('defaultOpenItemId' in content.faq).toBe(false)
@@ -124,23 +124,24 @@ describe('landingPageContent normalizers', () => {
     expect(content.hero.image).toMatchObject({
       src: '/platform-media/about-hero-large.webp',
       sizes: '100vw',
-      quality: 75,
+      quality: 85,
       objectPosition: '44% 42%',
     })
     expect(content.why.items).toHaveLength(3)
     expect(content.team[0]).toMatchObject({
       name: 'Volkan Kablan',
       role: 'CEO',
-      whatWeDo: 'Shape finance and partner operations so clinic growth stays sustainable, measurable, and transparent.',
+      whatWeDo:
+        'Sets partner standards so commercial decisions stay transparent and aligned with responsible clinic relationships.',
       image: {
         src: '/platform-media/about-Volkan Kablan.webp',
         objectPosition: '50% 38%',
       },
     })
     expect(content.transparency.items.map((item) => item.text)).toEqual([
-      'Clinics own their profile information.',
-      'Qualification signals are reviewed before visibility.',
-      'Patients contact clinics directly.',
+      'Clinics remain accountable for the information shown on their profiles.',
+      'Qualification and evidence signals are reviewed before they are presented as trust context.',
+      'Comparison context stays separate from medical advice, and patients contact clinics directly.',
     ])
   })
 
@@ -160,7 +161,11 @@ describe('landingPageContent normalizers', () => {
     expect(content.team[0]).toMatchObject({
       name: 'About Source Member',
       role: 'Platform Lead',
-      image: '/platform-media/about-source-member.webp',
+      image: {
+        src: '/platform-media/about-source-member.webp',
+        quality: 85,
+        sizes: '(min-width: 768px) 33vw, (min-width: 640px) 50vw, 85vw',
+      },
       imageObjectPosition: '34% 61%',
       isPhoto: true,
       photoDisplay: 'original',
@@ -176,7 +181,10 @@ describe('landingPageContent normalizers', () => {
 
     expect(content.team[0]).toMatchObject({
       name: 'Volkan Kablan',
-      image: '/platform-media/Volkan Kablan.webp',
+      image: {
+        src: '/platform-media/Volkan Kablan.webp',
+        quality: 85,
+      },
     })
   })
 
@@ -195,10 +203,18 @@ describe('landingPageContent normalizers', () => {
     expect(content.hero.image).toMatchObject({
       src: '/platform-media/clinic-partner-hero-large.webp',
       sizes: '(max-width: 1024px) 100vw, 50vw',
-      quality: 75,
+      quality: 85,
     })
-    expect(content.testimonials[0]?.image).toBe('/platform-media/Alex Morgan.webp')
-    expect(content.team[0]?.image).toBe('/platform-media/about-Volkan Kablan.webp')
+    expect(content.testimonials[0]?.image).toMatchObject({
+      src: '/platform-media/Alex Morgan.webp',
+      quality: 85,
+      sizes: '(min-width: 640px) 80px, 64px',
+    })
+    expect(content.team[0]?.image).toMatchObject({
+      src: '/platform-media/about-Volkan Kablan.webp',
+      quality: 85,
+      sizes: '(min-width: 768px) 33vw, (min-width: 640px) 50vw, 85vw',
+    })
     expect(content.team[0]?.socials).toBeUndefined()
     expect(content.pricing.plans[0]?.highlights).toEqual([
       'Priority profile visibility',
@@ -278,7 +294,7 @@ describe('landingPageContent normalizers', () => {
       '/api/platformContentMedia/file/partner-process-step-1-reach-out-v2.webp',
     )
     expect(content.process.stepImages[0]?.sizes).toBe('(max-width: 1024px) 100vw, 50vw')
-    expect(content.process.stepImages[0]?.quality).toBe(75)
+    expect(content.process.stepImages[0]?.quality).toBe(85)
   })
 
   it('drops unsafe CMS links before they reach public landing components', () => {

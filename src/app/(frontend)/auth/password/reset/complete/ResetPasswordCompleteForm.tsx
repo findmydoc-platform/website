@@ -29,6 +29,8 @@ const passwordSchema = z
 
 type PasswordState = z.infer<typeof passwordSchema>
 
+const expiredRecoveryHref = '/auth/password/reset?reason=expired'
+
 export function ResetPasswordCompleteForm({ error }: { error?: string }) {
   const supabase = useMemo(() => createClient(), [])
   const router = useRouter()
@@ -50,23 +52,25 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
     error: string | null
   }>({
     status: 'idle',
-    error: error ? decodeURIComponent(error) : null,
+    error: null,
   })
 
   useEffect(() => {
     let active = true
 
     const checkSession = async () => {
+      if (error) {
+        router.replace(expiredRecoveryHref)
+        return
+      }
+
       const {
         data: { session },
       } = await supabase.auth.getSession()
       if (!active) return
 
       if (!session) {
-        setFormState((prev) => ({
-          ...prev,
-          error: 'No active session. Please request a new password reset link.',
-        }))
+        router.replace(expiredRecoveryHref)
         return
       }
 
@@ -79,7 +83,7 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
     return () => {
       active = false
     }
-  }, [supabase])
+  }, [error, router, supabase])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()

@@ -29,6 +29,13 @@ describe('landing medical specialty mapper', () => {
           id: 400,
           url: '/api/platformContentMedia/file/implants.jpg',
           alt: 'Implants feature image',
+          sizes: {
+            xlarge: {
+              url: '/api/platformContentMedia/file/implants-1920.webp',
+              width: 1920,
+              height: 1280,
+            },
+          },
         },
       },
       {
@@ -74,6 +81,12 @@ describe('landing medical specialty mapper', () => {
     expect(mapped.items.every((item) => item.href === `/listing-comparison?specialty=${item.id}`)).toBe(true)
     expect(mapped.items.map((item) => item.categories[0])).toEqual(['1', '1', '2'])
     expect(mapped.featuredIds).toEqual(['11', '21', '12'])
+    expect(mapped.items[0]?.image).toMatchObject({
+      src: '/api/platformContentMedia/file/implants-1920.webp',
+      alt: 'Implants feature image',
+      sizes: '(min-width: 1024px) 45vw, (min-width: 768px) 50vw, 100vw',
+      quality: 85,
+    })
   })
 
   it('uses a deterministic placeholder when feature image media is missing', () => {
@@ -90,7 +103,10 @@ describe('landing medical specialty mapper', () => {
     ])
 
     expect(mapped.items).toHaveLength(1)
-    expect(mapped.items[0]?.image.src).toBe('/images/placeholders/clinic-placeholder.webp')
+    expect(mapped.items[0]?.image).toMatchObject({
+      src: '/images/placeholders/clinic-placeholder.webp',
+      quality: 85,
+    })
   })
 
   it('round-robins featured cards across top-level categories for the all view', () => {

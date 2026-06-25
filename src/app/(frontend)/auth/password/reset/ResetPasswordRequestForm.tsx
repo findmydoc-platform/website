@@ -22,6 +22,8 @@ type FormState =
 
 type ParsedData = z.infer<typeof formSchema>
 
+export type ResetPasswordReason = 'expired'
+
 async function submitRequest(data: ParsedData) {
   const response = await fetch('/api/auth/password/reset', {
     method: 'POST',
@@ -37,7 +39,7 @@ async function submitRequest(data: ParsedData) {
   }
 }
 
-export function ResetPasswordRequestForm() {
+export function ResetPasswordRequestForm({ reason }: { reason?: ResetPasswordReason | null }) {
   const [formState, setFormState] = useState<FormState>({ status: 'idle', error: null })
   const formValidation = usePublicFormValidation({
     messages: {
@@ -101,6 +103,11 @@ export function ResetPasswordRequestForm() {
             className="space-y-4"
             noValidate
           >
+            {reason === 'expired' ? (
+              <Alert variant="warning" role="status">
+                That link is no longer valid. Request a new password reset link.
+              </Alert>
+            ) : null}
             {formState.error && <Alert variant="error">{formState.error}</Alert>}
             {isSuccess && (
               <Alert variant="success" role="status">

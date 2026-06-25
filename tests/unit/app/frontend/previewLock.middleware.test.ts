@@ -248,14 +248,17 @@ describe('preview lock proxy', () => {
   it('applies temporary landing mode to canonical crawl entrypoints', async () => {
     mockGuardFlags({ 'temporary-landing-mode': true })
 
-    const robotsResponse = await proxy(new NextRequest('https://findmydoc.eu/robots.txt'))
-    const sitemapResponse = await proxy(new NextRequest('https://findmydoc.eu/sitemap.xml'))
+    const responses = await Promise.all(
+      ['/robots.txt', '/sitemap.xml', '/llms.txt', '/.well-known/llms.txt'].map((path) =>
+        proxy(new NextRequest(`https://findmydoc.eu${path}`)),
+      ),
+    )
 
-    expect(robotsResponse.status).toBe(404)
-    expect(sitemapResponse.status).toBe(404)
-    expect(robotsResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
-    expect(sitemapResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
-    expect(mocks.evaluatePostHogFlags).toHaveBeenCalledTimes(2)
+    expect(responses.every((response) => response.status === 404)).toBe(true)
+    expect(
+      responses.every((response) => response.headers.get(SEARCH_ROBOTS_HEADER) === SEARCH_ROBOTS_HEADER_VALUE),
+    ).toBe(true)
+    expect(mocks.evaluatePostHogFlags).toHaveBeenCalledTimes(4)
   })
 
   it('keeps admin and auth routes reachable in temporary landing mode', async () => {

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { z } from 'zod'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
 import { Field, FieldError } from '@/components/atoms/field'
@@ -12,6 +13,8 @@ import { Alert } from '@/components/atoms/alert'
 import { createClient } from '@/auth/utilities/supaBaseClient'
 import { hydrateSessionFromHash } from '@/auth/utilities/hydrateSessionFromHash'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
+
+const expiredRecoveryHref = '/auth/password/reset?reason=expired'
 
 const passwordSchema = z
   .object({
@@ -27,6 +30,7 @@ type PasswordState = z.infer<typeof passwordSchema>
 
 export function InviteCompleteForm({ error }: { error?: string }) {
   const supabase = useMemo(() => createClient(), [])
+  const router = useRouter()
   const [isSessionReady, setSessionReady] = useState(false)
   const formValidation = usePublicFormValidation({
     messages: {
@@ -37,12 +41,10 @@ export function InviteCompleteForm({ error }: { error?: string }) {
       },
     },
   })
-  const INVITE_SESSION_ERROR_MESSAGE =
-    "We couldn't confirm your invitation. Open the invitation email in this browser and follow the link again."
 
   const [formState, setFormState] = useState<{ status: 'idle' | 'saving'; error: string | null; success: boolean }>({
     status: 'idle',
-    error: error ? INVITE_SESSION_ERROR_MESSAGE : null,
+    error: null,
     success: false,
   })
 
@@ -50,15 +52,16 @@ export function InviteCompleteForm({ error }: { error?: string }) {
     let active = true
 
     const checkSession = async () => {
+      if (error) {
+        router.replace(expiredRecoveryHref)
+        return
+      }
+
       try {
         await hydrateSessionFromHash(supabase)
       } catch (_setSessionError) {
         if (active) {
-          setFormState((prev) => ({
-            ...prev,
-            // Show a single user-friendly message for hash/session hydration problems
-            error: INVITE_SESSION_ERROR_MESSAGE,
-          }))
+          router.replace(expiredRecoveryHref)
         }
         return
       }
@@ -69,11 +72,7 @@ export function InviteCompleteForm({ error }: { error?: string }) {
       if (!active) return
 
       if (!session) {
-        setFormState((prev) => ({
-          ...prev,
-          // Use a single friendly message for both not having a session and hydration failures
-          error: INVITE_SESSION_ERROR_MESSAGE,
-        }))
+        router.replace(expiredRecoveryHref)
         return
       }
 
@@ -85,7 +84,7 @@ export function InviteCompleteForm({ error }: { error?: string }) {
     return () => {
       active = false
     }
-  }, [supabase])
+  }, [error, router, supabase])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()

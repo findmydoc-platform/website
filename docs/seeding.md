@@ -130,18 +130,19 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 - **L2 families**: Dental Implants; Orthodontics; Cosmetic Dentistry; Restorative Dentistry; Lens Surgery; Laser Vision Correction; Cataract Surgery; Cornea; Scalp Hair Transplant; Facial Hair Transplant; Hair Loss Therapy; Injectables; Skin Conditions; Laser Dermatology; Facial Surgery; Breast Surgery; Body Contouring
 - **Implementation**: Two-pass upsert (L1 first, then L2 with `parentSpecialty` references)
 - **Feature images**: Specialty images are seeded through baseline `platformContentMedia` and attached in a second specialty pass when a platform user is available for media attribution.
-- **Asset preparation**: Use `pnpm images:optimize` before uploading new specialty images into storage-backed environments. Current project setup uses a Supabase storage bucket with a `1 MB` object limit in the active free-plan environment, so raw photo exports can fail even when Payload accepts the request. In local development, storage-backed uploads still require explicit opt-in via `USE_S3_IN_DEV=true`.
+- **Asset preparation**: Keep seed images as high-quality source-prepared assets, then let Payload generate deterministic variants and Next/Image handle final browser delivery. Use `pnpm images:optimize` only when raw source exports exceed storage limits or need deterministic seed derivatives. Current project setup uses a Supabase storage bucket with a `1 MB` object limit in the active free-plan environment, so raw photo exports can fail even when Payload accepts the request. In local development, storage-backed uploads still require explicit opt-in via `USE_S3_IN_DEV=true`.
 
 #### Specialty Image Optimization Workflow
 - Default preset for category or taxonomy imagery: `pnpm images:optimize -- --input src/endpoints/seed/assets/baseline/medical-specialties --output tmp/medical-specialties --preset category`
 - Recommended defaults for category imagery:
   - format: `webp`
   - max width: `1600`
-  - start quality: `80`
-  - minimum quality floor: `60`
+  - start quality: `88`
+  - minimum quality floor for explicit degradation: `82`
   - target byte budget: `700000`
-- The optimizer progressively reduces quality and, if needed, width until it fits within the target byte budget.
-- If you need a larger editorial or hero asset, use the `hero` preset and/or override width and byte budget explicitly.
+- The optimizer fails rather than silently reducing quality or width. Pass `--allow-degrade` only when the visual tradeoff is explicit.
+- If you need a larger editorial, landing-process, team, testimonial, or hero asset, use the matching preset and/or override width and byte budget explicitly.
+- See `docs/frontend/image-pipeline.md` for the Payload, optimizer, and Next/Image ownership model.
 
 #### Medical Specialties Permitting
 - Entries are included only after professional review; the curated repo seed JSON is the technical source of truth.

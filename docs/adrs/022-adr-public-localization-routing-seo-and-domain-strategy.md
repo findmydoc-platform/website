@@ -66,11 +66,11 @@ Query Locale ist fuer Preview, Legacy Behavior und temporaere Modi reserviert. S
 
 Nur Locale Versions, die ADR-021-Readiness erfuellen, duerfen in Sitemap Output, `hreflang`, Alternate Links und indexable locale metadata erscheinen. Jede ready Locale Version ist self-canonical. `hreflang` enthaelt nur ready bidirectional alternates, und `x-default` zeigt auf die German canonical URL.
 
-English `/en/...` Routes werden nur dann public exposed, linked, indexed und in SEO Signals aufgenommen, wenn die English Route ADR-021-Readiness erfuellt. Ein normaler public `GET` fuer eine English `/en/...` Route ohne ready English Content redirectet temporaer mit `302` zur German canonical URL.
+Public Locale URLs fuer alternative Locales werden nur dann public linked, indexed und in SEO Signals aufgenommen, wenn die angefragte Locale Version ADR-021-Readiness erfuellt. Wenn eine unterstuetzte Locale URL fuer eine Route angefragt wird, die in der German source/default locale existiert, deren angefragte Locale Version aber nicht ready ist, rendert die Route keinen Fallback Content und redirectet nicht zur German canonical URL. Sie rendert stattdessen einen expliziten Translation-unavailable State mit HTTP `200`, `noindex`, ohne Sitemap Entry, ohne `hreflang`, ohne Alternate Link und ohne indexable locale metadata. Dieser State kann auf die verfuegbare German canonical/source page verweisen. Eine Route, die auch in der German source/default locale nicht existiert, bleibt ein normaler Not-found-Fall.
 
 Localized Slugs sind das Ziel fuer public models, die localized public URLs expose. Public Slugs sind pro Collection und Locale eindeutig, und Slug Collisions blockieren Changes. Vor Launch oder Pilot Indexing brauchen uebersetzte Slug Changes keine automatische Redirect Maintenance. Nach Public Indexing erzeugen Slug Changes locale-specific `301` Redirects.
 
-Der Language Switcher erhaelt die Route Intent und expose English nur, wenn eine ready equivalent target route existiert.
+Der Language Switcher erhaelt die Route Intent und expose alternative Locales nur, wenn eine ready equivalent target route existiert. Direkt aufgerufene not-ready Locale URLs koennen trotzdem den Translation-unavailable State rendern.
 
 Preview und Draft URLs muessen Locale, Collection, Slug oder Path und Fallback State explizit transportieren, damit Preview Behavior nicht mit public indexable behavior verwechselt wird.
 
@@ -99,8 +99,8 @@ Die spaetere `.eu` Migration zu `.de` und `.com` braucht einen separaten Executi
 
 ## Risiken (Optional)
 
-- English Pages koennen exposed werden, bevor Content ready ist.
-  - Massnahme: ADR-021-Readiness verlangen, bevor English Routes in Navigation, Sitemap, `hreflang` oder indexable metadata gelangen.
+- Not-ready Locale Pages koennen als fertige Uebersetzung missverstanden werden.
+  - Massnahme: ADR-021-Readiness verlangen, bevor Locale Routes in Navigation, Sitemap, `hreflang` oder indexable metadata gelangen; direkt aufgerufene not-ready Locale URLs rendern nur einen `noindex` Translation-unavailable State.
 - `.eu` kann versehentlich zu einer separaten Locale oder Market Surface werden.
   - Massnahme: `.eu` nur als kurzfristige German canonical halten und die spaetere Migration bewusst planen.
 - Query- oder Cookie-Locale-Behavior kann in public SEO paths leaken.

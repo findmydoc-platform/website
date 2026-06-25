@@ -133,6 +133,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
                       fallbackSrc={avatarFallback}
                       alt={displayAuthor.name}
                       fill
+                      loading="eager"
                       sizes="48px"
                       className="object-cover"
                     />

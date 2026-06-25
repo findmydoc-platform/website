@@ -97,7 +97,7 @@ const baseData: MockCollectionData = {
   clinicMedia: [
     {
       id: 501,
-      filename: 'alpha-clinic.webp',
+      filename: 'test-clinics-creation-test-thumbnail.png',
       alt: 'Alpha clinic exterior',
     },
   ],
@@ -216,7 +216,7 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(result.results.map((clinic) => clinic.name)).toEqual(['Alpha Clinic', 'Bravo Clinic'])
     expect(result.results[0]?.rating.count).toBe(2)
     expect(result.results[0]?.media).toEqual({
-      src: '/api/clinicMedia/file/alpha-clinic.webp',
+      src: '/api/clinicMedia/file/test-clinics-creation-test-thumbnail.png',
       alt: 'Alpha clinic exterior',
     })
 

@@ -69,5 +69,5 @@ When adding a new ADR:
 - [018 — Native Payload CMS localization strategy](./018-adr-native-payload-localization-strategy.md)
 - [019 — PostHog event taxonomy and usage governance](./019-adr-posthog-event-taxonomy-and-usage-governance.md)
 - [020 — Database migration quality gate](./020-adr-database-migration-quality-gate.md)
-- [021 — Lokalisierungsquelle, Ownership und Readiness-Governance](./021-adr-localization-source-ownership-and-readiness-governance.md)
-- [022 — Oeffentliches Lokalisierungsrouting, SEO und Domain-Strategie](./022-adr-public-localization-routing-seo-and-domain-strategy.md)
+- [021 — Localization source, ownership, and readiness governance](./021-adr-localization-source-ownership-and-readiness-governance.md)
+- [022 — Public localization routing, SEO, and domain strategy](./022-adr-public-localization-routing-seo-and-domain-strategy.md)

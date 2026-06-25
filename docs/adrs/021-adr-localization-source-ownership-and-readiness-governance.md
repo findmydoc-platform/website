@@ -1,116 +1,116 @@
-# ADR: Lokalisierungsquelle, Ownership und Readiness-Governance
+# ADR: Localization Source, Ownership, and Readiness Governance
 
-## Status (Tabelle)
+## Status (Table)
 
-| Name    | Inhalt             |
+| Name    | Content            |
 | ------- | ------------------ |
 | Author  | Sebastian Schuetze |
 | Version | 1.0                |
 | Date    | 20.06.2026         |
 | Status  | draft              |
 
-## Hintergrund
+## Background
 
-[ADR 018](./018-adr-native-payload-localization-strategy.md) standardisiert native Payload CMS Localization fuer lokalisierte Inhalte. Diese Entscheidung bleibt gueltig, wurde aber um `en` als redaktionelle Default-Basis geschrieben und hat public routing, SEO, Publishing-Nuancen, Fallback-Verhalten und Translation Operations fuer spaetere Entscheidungen offen gelassen.
+[ADR 018](./018-adr-native-payload-localization-strategy.md) standardizes native Payload CMS localization for localized content. That decision remains valid, but it was written around `en` as the editorial default baseline and left public routing, SEO, publishing nuance, fallback behavior, and translation operations to later decisions.
 
-findmydoc braucht jetzt ein oeffentliches Lokalisierungsmodell, das zum DACH-first Product Rollout passt. Deutsch ist die public default und source language fuer die erste Lokalisierungsphase. Bestehende englische Arbeit bleibt wertvoll und wird zur `en` alternative locale, statt verworfen oder als entbehrlicher Pilot-Inhalt behandelt zu werden.
+findmydoc now needs a public localization model that matches the DACH-first product rollout. German is the public default and source language for the first localization phase. Existing English work remains valuable and becomes the `en` alternative locale instead of being discarded or treated as disposable pilot content.
 
-Diese Entscheidung definiert das Source-Language-Modell, die Ownership-Grenzen und die public readiness rules, von denen spaetere Routing- und SEO-Entscheidungen abhaengen. Sie entscheidet nicht die public URL shape, canonical strategy, sitemap output oder das `hreflang`-Verhalten.
+This decision defines the source-language model, ownership boundaries, and public readiness rules that later routing and SEO decisions depend on. It does not decide the public URL shape, canonical strategy, sitemap output, or `hreflang` behavior.
 
-## Problembeschreibung
+## Problem Description
 
-Ohne ein klares Localization-Governance-Modell koennen Product UI Copy und Payload Content in getrennte Source Languages, Review-Regeln und Fallback-Verhalten auseinanderlaufen. Das erzeugt drei Risiken:
+Without a clear localization governance model, Product UI Copy and Payload Content can drift into separate source languages, review rules, and fallback behavior. That creates three risks:
 
-- Englisch kann die implizite Source Language bleiben, obwohl der erste oeffentliche Marktfokus DACH ist.
-- Englische public experiences koennen vollstaendig wirken, waehrend sie deutsche Fallback-Inhalte rendern.
-- Implementierungsarbeit kann Product Copy, CMS Content und Payload Admin Labels ohne klare Ownership vermischen.
+- English can remain the implicit source language even though the first public market focus is DACH.
+- English public experiences can appear complete while rendering German fallback content.
+- Implementation work can mix Product Copy, CMS Content, and Payload Admin Labels without clear ownership.
 
-Das Projekt braucht ein Phase-1-Modell, das bestehende englische Arbeit erhaelt, Deutsch die korrekte public source role gibt und definiert, wann eine Locale-Version fuer spaetere public routing und indexing decisions ready genug ist.
+The project needs a phase-1 model that preserves existing English work, gives German the correct public source role, and defines when a locale version is ready enough for later public routing and indexing decisions.
 
-## Entscheidungskriterien
+## Decision Criteria
 
-Das gewaehlte Modell muss:
+The chosen model must:
 
-- die DACH-first public product direction abbilden
-- bestehende englische UI-, Seed- und Pilot-Inhalte als nutzbare `en` locale work erhalten
-- irrefuehrende public locale experiences verhindern, die still fallback-only content zeigen
-- Phase-1 Operations klein genug fuer Git und PR Review halten
-- Source Formats fuer spaetere mobile exports und managed translation tooling bereit halten
-- Product UI Copy, Payload Content und Payload Admin Labels getrennt halten
+- reflect the DACH-first public product direction
+- preserve existing English UI, seed, and pilot content as usable `en` locale work
+- prevent misleading public locale experiences that silently show fallback-only content
+- keep phase-1 operations small enough for Git and PR review
+- keep source formats ready for later mobile exports and managed translation tooling
+- keep Product UI Copy, Payload Content, and Payload Admin Labels separate
 
-## Abwaegungen
+## Considerations
 
-1. `en` als Source und Default Locale behalten
-   - Vorteile: passt zur aktuellen Pilot-Konfiguration und reduziert direkte Migrationsarbeit.
-   - Nachteile: haelt das falsche Source-Language-Modell fuer einen DACH-first Rollout fest und laesst Deutsch wie eine Uebersetzungsschicht statt wie die public source wirken.
+1. Keep `en` as the source and default locale
+   - Pros: matches the current pilot configuration and reduces immediate migration work.
+   - Cons: preserves the wrong source-language model for a DACH-first rollout and leaves German feeling like a translation layer instead of the public source.
 
-2. Source-/Default-Modell auf `de` umstellen und bestehendes Englisch als `en` erhalten (gewaehlt)
-   - Vorteile: passt zum public market focus, erhaelt bestehende englische Arbeit und gibt spaeteren Routing- und SEO-Entscheidungen eine klare Readiness-Basis.
-   - Nachteile: braucht sorgfaeltige Seed- und Content-Migrationsplanung, damit bestehende englische Werte uebernommen und nicht ueberschrieben werden.
+2. Switch the source/default model to `de` and preserve existing English as `en` (chosen)
+   - Pros: matches the public market focus, preserves existing English work, and gives later routing and SEO decisions a clear readiness basis.
+   - Cons: requires careful seed and content migration planning so existing English values are preserved instead of overwritten.
 
-3. Readiness ad hoc pro Route oder Feature entscheiden
-   - Vorteile: einzelne Teams koennen schnell arbeiten.
-   - Nachteile: erzeugt inkonsistentes public behavior, schwaecht SEO Governance und macht Fallback-Regeln schwer auditierbar.
+3. Decide readiness ad hoc per route or feature
+   - Pros: individual teams can move quickly.
+   - Cons: creates inconsistent public behavior, weakens SEO governance, and makes fallback rules hard to audit.
 
-4. Sofort ein managed translation system oder translation dashboard einfuehren
-   - Vorteile: koennte Workflow und Review State zentralisieren.
-   - Nachteile: fuegt Platform- und Operations-Overhead hinzu, bevor das Projekt genug aktive Locales, externe Uebersetzer oder Translation Throughput hat, um das zu rechtfertigen.
+4. Introduce a managed translation system or translation dashboard immediately
+   - Pros: could centralize workflow and review state.
+   - Cons: adds platform and operational overhead before the project has enough active locales, external translators, or translation throughput to justify it.
 
-## Entscheidung mit Begruendung
+## Decision with Rationale
 
-Deutsch (`de`) ist in Phase 1 die public default und source locale fuer Product UI Copy und Payload Content. Englisch (`en`) ist die erste public alternative locale. Tuerkisch (`tr`) ist nicht Teil von Phase 1 und bleibt Future Backlog.
+German (`de`) is the phase-1 public default and source locale for Product UI Copy and Payload Content. English (`en`) is the first public alternative locale. Turkish (`tr`) is not part of phase 1 and remains future backlog.
 
-Bestehende englische UI Strings, Seed-Inhalte und lokalisierte Pilot-Inhalte muessen als `en` alternative-locale content erhalten bleiben, wenn sie in das neue Source-Modell ueberfuehrt werden. Deutsche Source-Werte duerfen aus dieser englischen Baseline uebersetzt oder adaptiert werden, werden nach der Migration aber reviewt und als deutscher Source Content behandelt, nicht als aus dem Englischen abgeleitete Platzhalter.
+Existing English UI strings, seed content, and localized pilot content must be preserved as `en` alternative-locale content when moved into the new source model. German source values may be translated or adapted from that English baseline, but after migration they are reviewed and treated as German source content, not placeholders derived from English.
 
-Product UI Copy und Payload Content haben getrennte Ownership:
+Product UI Copy and Payload Content have separate ownership:
 
-- Product UI Copy umfasst wiederverwendbare Interface Strings wie Labels, Buttons, Validation Messages, Form Copy, Navigation Microcopy, Empty States und generischen UI Text.
-- Payload Content umfasst redaktionelle, SEO-relevante, trust-relevante, conversion-relevante, rechtliche, medizinische und Domain-Inhalte, die vom CMS verantwortet werden.
-- Payload Admin Labels und Helper Text bleiben Englisch und liegen ausserhalb des public localization rollout.
+- Product UI Copy covers reusable interface strings such as labels, buttons, validation messages, form copy, navigation microcopy, empty states, and generic UI text.
+- Payload Content covers editorial, SEO-relevant, trust-relevant, conversion-relevant, legal, medical, and domain content owned by the CMS.
+- Payload Admin Labels and helper text remain English and are outside the public localization rollout.
 
-Product UI Copy nutzt ein Git-backed, vendor-neutrales Source Format auf Basis ICU-kompatibler Messages plus Translation Metadata. Das Source Format muss spaetere Mobile Exports und spaeteres managed translation tooling unterstuetzen, aber Phase 1 bleibt ein Git- und PR-Review-Workflow.
+Product UI Copy uses a Git-backed, vendor-neutral source format based on ICU-compatible messages plus translation metadata. The source format must support later mobile exports and later managed translation tooling, but phase 1 remains a Git and PR review workflow.
 
-Payload Content nutzt native Payload Localization wie in ADR 018 entschieden. Payload per-locale draft/publish state ueber `localizeStatus` ist das vorgesehene Readiness-Signal fuer localized public content, aber erst nachdem das installierte Payload-Verhalten mit automatisierten Tests verifiziert wurde. Wenn `localizeStatus` nicht belastbar genug fuer public readiness ist, muss diese ADR wieder geoeffnet werden, statt sie still durch heuristic-only readiness zu ersetzen.
+Payload Content uses native Payload Localization as decided in ADR 018. Payload per-locale draft/publish state through `localizeStatus` is the intended readiness signal for localized public content, but only after the installed Payload behavior has been verified with automated tests. If `localizeStatus` is not reliable enough for public readiness, this ADR must be reopened instead of silently replacing it with heuristic-only readiness.
 
-Eine Locale-Version ist nur public-ready, wenn die benoetigte Product UI Copy der Route und alle sichtbaren localized required Payload Content Dependencies in derselben Locale ready sind. Public indexable locale experiences duerfen keinen sichtbaren fallback-only content rendern.
+A locale version is public-ready only when the route's required Product UI Copy and all visible localized required Payload Content dependencies are ready in the same locale. Public indexable locale experiences must not render visible fallback-only content.
 
-Fallback Content darf in Preview- und Admin-Review-Workflows erscheinen, aber diese Workflows muessen Locale, Route oder Slug/Path und Fallback State explizit anzeigen. Legal, Cookie Consent, medizinische und trust-sensitive Inhalte brauchen vollstaendigen reviewten Locale Content vor public locale exposure.
+Fallback content may appear in Preview and Admin Review workflows, but those workflows must explicitly show locale, route or slug/path, and fallback state. Legal, cookie consent, medical, and trust-sensitive content requires complete reviewed locale content before public locale exposure.
 
-## Beziehung zu ADR 018
+## Relationship to ADR 018
 
-Diese ADR superseded ADR 018 nur teilweise dort, wo ADR 018 `en` als default editorial baseline und source locale ausgewaehlt hat. ADR 018 bleibt fuer die native Payload CMS Localization Strategy accepted, inklusive der Entscheidung, keine Shadow Fields, parallelen lokalisierten Collections oder Custom Translation Tables zu bauen.
+This ADR supersedes ADR 018 only where ADR 018 selected `en` as the default editorial baseline and source locale. ADR 018 remains accepted for the native Payload CMS Localization Strategy, including the decision not to build shadow fields, parallel localized collections, or custom translation tables.
 
-Diese ADR aendert ADR 018 nicht direkt. Eine spaetere ADR kann das public routing und SEO behavior entscheiden, das das hier definierte Readiness-Modell konsumiert.
+This ADR does not directly modify ADR 018. A later ADR can decide the public routing and SEO behavior that consumes the readiness model defined here.
 
-## Nicht-Ziele
+## Non-goals
 
-Diese ADR entscheidet nicht:
+This ADR does not decide:
 
 - localized public URL structure
-- Domain Strategy fuer `.eu`, `.de` oder `.com`
-- canonical, `hreflang`, sitemap, redirect oder language-switcher behavior
-- Next.js oder Web-Runtime-Adapter-Implementierung
-- konkrete Payload Schema Fields oder Migration Steps
-- einen managed TMS rollout
-- ein Payload Admin Translation Dashboard
+- Domain Strategy for `.eu`, `.de`, or `.com`
+- canonical, `hreflang`, sitemap, redirect, or language-switcher behavior
+- Next.js or web runtime adapter implementation
+- concrete Payload schema fields or migration steps
+- a managed TMS rollout
+- a Payload Admin Translation Dashboard
 
-## Technische Schuld
+## Technical Debt
 
-Der aktuelle Repository-Stand spiegelt noch einen frueheren Localization Pilot mit `en` als Default Locale wider. Der Wechsel zum `de` Source Model braucht Follow-up-Planung fuer Seed Data, generated types, localized content migration und route-level public behavior.
+The current repository state still reflects an earlier localization pilot with `en` as the default locale. Moving to the `de` source model requires follow-up planning for seed data, generated types, localized content migration, and route-level public behavior.
 
-Die spaetere Routing- und SEO-ADR muss das Readiness-Modell aus dieser ADR konsumieren, statt Readiness unabhaengig neu zu definieren.
+The later routing and SEO ADR must consume the readiness model from this ADR instead of defining readiness independently.
 
-## Risiken (Optional)
+## Risks (Optional)
 
-- Englischer Pilot Content kann waehrend des Source-Language-Reset verloren gehen oder ueberschrieben werden.
-  - Massnahme: English Migration als Preservation Work behandeln und reviewbare Seed-/Content-Bewegung verlangen.
-- Fallback Behavior kann fehlende Uebersetzungen waehrend der Implementierung verdecken.
-  - Massnahme: public indexable fallback-only experiences blockieren und Fallback in Preview/Admin Review sichtbar halten.
-- `localizeStatus` Behavior kann das vorgesehene Readiness-Modell in der installierten Payload-Version moeglicherweise nicht tragen.
-  - Massnahme: Verhalten mit Tests verifizieren, bevor es als Grundlage genutzt wird; diese ADR wieder oeffnen, wenn die Verifikation scheitert.
-- Ein Git- und PR-Workflow kann bei wachsender Locale-Zahl oder wachsender Uebersetzerzahl zu manuell werden.
-  - Massnahme: managed translation tooling neu bewerten, wenn Translation Volume, aktive Locales oder externe Uebersetzerbeteiligung steigen.
+- English pilot content can be lost or overwritten during the source-language reset.
+  - Mitigation: treat English migration as preservation work and require reviewable seed/content movement.
+- Fallback behavior can hide missing translations during implementation.
+  - Mitigation: block public indexable fallback-only experiences and keep fallback visible in Preview/Admin Review.
+- `localizeStatus` behavior may not support the intended readiness model in the installed Payload version.
+  - Mitigation: verify behavior with tests before using it as the foundation; reopen this ADR if verification fails.
+- A Git and PR workflow can become too manual as locale count or translator count grows.
+  - Mitigation: reassess managed translation tooling when translation volume, active locales, or external translator participation increases.
 
-## Abgeloest durch (Optional)
+## Superseded by (Optional)
 
-Nicht superseded.
+Not superseded.

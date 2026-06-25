@@ -1,113 +1,113 @@
-# ADR: Oeffentliches Lokalisierungsrouting, SEO und Domain-Strategie
+# ADR: Public Localization Routing, SEO, and Domain Strategy
 
-## Status (Tabelle)
+## Status (Table)
 
-| Name    | Inhalt             |
+| Name    | Content            |
 | ------- | ------------------ |
 | Author  | Sebastian Schuetze |
 | Version | 1.0                |
 | Date    | 20.06.2026         |
 | Status  | draft              |
 
-## Hintergrund
+## Background
 
-[ADR 018](./018-adr-native-payload-localization-strategy.md) standardisiert native Payload CMS Localization fuer lokalisierte Inhalte. [ADR 021](./021-adr-localization-source-ownership-and-readiness-governance.md) definiert Deutsch (`de`) als Phase-1 public default und source locale, Englisch (`en`) als erste public alternative und `locale-ready` als Readiness-Grenze fuer public localized experiences.
+[ADR 018](./018-adr-native-payload-localization-strategy.md) standardizes native Payload CMS localization for localized content. [ADR 021](./021-adr-localization-source-ownership-and-readiness-governance.md) defines German (`de`) as the phase-1 public default and source locale, English (`en`) as the first public alternative, and `locale-ready` as the readiness boundary for public localized experiences.
 
-Der aktuelle Repository-Stand spiegelt noch einen frueheren Localization Pilot wider. Englisch ist der technische Default, localized content access kann Query Parameters nutzen, und Sitemap plus Metadata Behavior ist noch nicht locale-aware.
+The current repository state still reflects an earlier localization pilot. English is the technical default, localized content access can use query parameters, and sitemap plus metadata behavior is not yet locale-aware.
 
-Diese ADR entscheidet die public URL, SEO, Domain, Redirect und Language-Switcher Strategy, die ADR-021-Readiness konsumiert. Sie definiert Source-Language Ownership, Translation Workflow oder Payload Content Readiness nicht neu.
+This ADR decides the public URL, SEO, domain, redirect, and language-switcher strategy that consumes ADR-021 readiness. It does not redefine source-language ownership, translation workflow, or Payload Content readiness.
 
-## Problembeschreibung
+## Problem Description
 
-Public Localization braucht stabile, crawlbare und teilbare URLs fuer jede indexierbare Sprachversion. Query-only, Cookie-only oder Browser-Language-only Localization reicht nicht fuer Canonical URLs, `hreflang`, Sitemap Entries, Redirects, Sharing oder verlaessliche Indexierung.
+Public localization needs stable, crawlable, and shareable URLs for each indexable language version. Query-only, cookie-only, or browser-language-only localization is not sufficient for canonical URLs, `hreflang`, sitemap entries, redirects, sharing, or reliable indexing.
 
-Ohne klare Routing- und SEO-Entscheidung kann `.eu` in eine dritte Pseudo-Locale driften, englische Paths koennen indexierbar wirken, bevor die English Experience ready ist, und dieselbe public URL kann je nach Request State unterschiedliche Sprachen rendern. Das wuerde Search Signals schwaechen und public locale behavior schwer auditierbar machen.
+Without a clear routing and SEO decision, `.eu` can drift into a third pseudo-locale, English paths can appear indexable before the English experience is ready, and the same public URL can render different languages depending on request state. That would weaken search signals and make public locale behavior hard to audit.
 
-## Entscheidungskriterien
+## Decision Criteria
 
-Die gewaehlte Strategie muss:
+The chosen strategy must:
 
-- DACH-first URL continuity fuer die German default experience erhalten
-- English explizite public URLs geben, wenn English ready ist
-- verhindern, dass fallback-only locale versions indexierbar werden
-- korrektes canonical, `hreflang`, sitemap und alternate-link behavior erzeugen
-- direkte Domain-Migrationsarbeit in Phase 1 vermeiden
-- einen sauberen Pfad zu spaeterer `.de`- und `.com`-Domain-Trennung halten
+- preserve DACH-first URL continuity for the German default experience
+- give English explicit public URLs when English is ready
+- prevent fallback-only locale versions from becoming indexable
+- produce correct canonical, `hreflang`, sitemap, and alternate-link behavior
+- avoid immediate domain migration work in phase 1
+- keep a clean path toward later `.de` and `.com` domain separation
 
-## Abwaegungen
+## Considerations
 
-1. Jeden public locale path prefixen, inklusive Deutsch
-   - Vorteile: erzeugt symmetrische Path-Regeln wie `/de/...` und `/en/...`.
-   - Nachteile: erzwingt unnoetige deutsche URL-Migration fuer die primaere DACH-facing experience und erhoeht Redirect-Arbeit, bevor die Domain Strategy ready ist.
+1. Prefix every public locale path, including German
+   - Pros: creates symmetrical path rules such as `/de/...` and `/en/...`.
+   - Cons: forces unnecessary German URL migration for the primary DACH-facing experience and increases redirect work before the Domain Strategy is ready.
 
-2. Browser Language, Cookies oder Query Parameters fuer Public Localization nutzen
-   - Vorteile: vermeidet Route Changes und kann leichtgewichtige UX Preferences unterstuetzen.
-   - Nachteile: erzeugt keine stabilen indexierbaren URLs und kann dazu fuehren, dass eine public URL unterschiedliche Sprachen rendert.
+2. Use browser language, cookies, or query parameters for Public Localization
+   - Pros: avoids route changes and can support lightweight UX preferences.
+   - Cons: does not create stable indexable URLs and can cause a public URL to render different languages.
 
-3. Sofort auf domain-based localization wechseln
-   - Vorteile: passt zum langfristigen Language- und Market-Targeting-Modell.
-   - Nachteile: fuegt Domain-, Redirect-, Canonical- und operative Migrationsarbeit hinzu, bevor Phase-1 Content Readiness abgeschlossen ist.
+3. Move immediately to domain-based localization
+   - Pros: matches the long-term language and market targeting model.
+   - Cons: adds domain, redirect, canonical, and operational migration work before phase-1 content readiness is complete.
 
-4. Deutsch unprefixed halten, English unter `/en/...` ausliefern und Domains spaeter migrieren (gewaehlt)
-   - Vorteile: erhaelt German URL continuity, gibt English crawlbare URLs sobald ready, haelt Phase-1 operational cost niedriger und laesst einen klaren Pfad zu `.de` und `.com`.
-   - Nachteile: das kurzfristige Path Model und das langfristige Domain Model muessen ueber eine spaeter geplante Migration verbunden werden.
+4. Keep German unprefixed, serve English under `/en/...`, and migrate domains later (chosen)
+   - Pros: preserves German URL continuity, gives English crawlable URLs once ready, keeps phase-1 operational cost lower, and leaves a clear path to `.de` and `.com`.
+   - Cons: the short-term path model and the long-term domain model must be connected through a later planned migration.
 
-## Entscheidung mit Begruendung
+## Decision with Rationale
 
-German public default URLs bleiben im kurzfristigen path-based rollout unprefixed und liefern deutschen Content. English public URLs nutzen `/en/...`, wenn die English Locale Version ready ist. Es gibt kurzfristig keine `/de/...` public route.
+German public default URLs remain unprefixed in the short-term path-based rollout and serve German content. English public URLs use `/en/...` when the English locale version is ready. There is no short-term `/de/...` public route.
 
-Die `.eu` Domain bleibt kurzfristig die German canonical domain. Sie darf keine dritte Locale, keine separate Content Source und keine eigenstaendige Market Experience werden. Das langfristige Ziel ist domain-based localization: `.de` liefert German/DACH ohne `/de`, und `.com` liefert English/international ohne `/en`.
+The `.eu` domain remains the short-term German canonical domain. It must not become a third locale, a separate content source, or an independent market experience. The long-term target is domain-based localization: `.de` serves German/DACH without `/de`, and `.com` serves English/international without `/en`.
 
-Die spaetere `.eu` Migration braucht geplantes `301` und Canonical Handling. Diese ADR entscheidet Zielrichtung und SEO Principles, nicht Execution Timeline oder Redirect Table fuer diese Migration.
+The later `.eu` migration requires planned `301` and canonical handling. This ADR decides the target direction and SEO principles, not the execution timeline or redirect table for that migration.
 
-Public indexable locale resolution wird durch Host und Path gesteuert. Dieselbe indexierbare URL darf nicht auf Basis von Cookies, Browser Language oder anderen Request Preferences unterschiedliche Sprachen rendern. Cookies und Browser Language koennen non-indexable UX wie Suggestions oder remembered switcher state unterstuetzen, sind aber nicht die Source of Truth fuer indexable locale routing.
+Public indexable locale resolution is controlled by host and path. The same indexable URL must not render different languages based on cookies, browser language, or other request preferences. Cookies and browser language can support non-indexable UX such as suggestions or remembered switcher state, but they are not the source of truth for indexable locale routing.
 
-Query Locale ist fuer Preview, Legacy Behavior und temporaere Modi reserviert. Sie darf keine indexierbaren public alternate language URLs erzeugen.
+Query locale is reserved for Preview, legacy behavior, and temporary modes. It must not create indexable public alternate language URLs.
 
-Nur Locale Versions, die ADR-021-Readiness erfuellen, duerfen in Sitemap Output, `hreflang`, Alternate Links und indexable locale metadata erscheinen. Jede ready Locale Version ist self-canonical. `hreflang` enthaelt nur ready bidirectional alternates, und `x-default` zeigt auf die German canonical URL.
+Only locale versions that satisfy ADR-021 readiness may appear in sitemap output, `hreflang`, alternate links, and indexable locale metadata. Each ready locale version is self-canonical. `hreflang` contains only ready bidirectional alternates, and `x-default` points to the German canonical URL.
 
-Public Locale URLs fuer alternative Locales werden nur dann public linked, indexed und in SEO Signals aufgenommen, wenn die angefragte Locale Version ADR-021-Readiness erfuellt. Wenn eine unterstuetzte Locale URL fuer eine Route angefragt wird, die in der German source/default locale existiert, deren angefragte Locale Version aber nicht ready ist, rendert die Route keinen Fallback Content und redirectet nicht zur German canonical URL. Sie rendert stattdessen einen expliziten Translation-unavailable State mit HTTP `200`, `noindex`, ohne Sitemap Entry, ohne `hreflang`, ohne Alternate Link und ohne indexable locale metadata. Dieser State kann auf die verfuegbare German canonical/source page verweisen. Eine Route, die auch in der German source/default locale nicht existiert, bleibt ein normaler Not-found-Fall.
+Public locale URLs for alternative locales are publicly linked, indexed, and included in SEO signals only when the requested locale version satisfies ADR-021 readiness. If a supported locale URL is requested for a route that exists in the German source/default locale, but the requested locale version is not ready, the route does not render fallback content and does not redirect to the German canonical URL. Instead, it renders an explicit translation-unavailable state with HTTP `200`, `noindex`, no sitemap entry, no `hreflang`, no alternate link, and no indexable locale metadata. This state can link to the available German canonical/source page. A route that also does not exist in the German source/default locale remains a normal not-found case.
 
-Localized Slugs sind das Ziel fuer public models, die localized public URLs expose. Public Slugs sind pro Collection und Locale eindeutig, und Slug Collisions blockieren Changes. Vor Launch oder Pilot Indexing brauchen uebersetzte Slug Changes keine automatische Redirect Maintenance. Nach Public Indexing erzeugen Slug Changes locale-specific `301` Redirects.
+Localized slugs are the target for public models that expose localized public URLs. Public slugs are unique per collection and locale, and slug collisions block changes. Before launch or pilot indexing, translated slug changes do not require automatic redirect maintenance. After public indexing, slug changes create locale-specific `301` redirects.
 
-Der Language Switcher erhaelt die Route Intent und expose alternative Locales nur, wenn eine ready equivalent target route existiert. Direkt aufgerufene not-ready Locale URLs koennen trotzdem den Translation-unavailable State rendern.
+The language switcher preserves route intent and exposes alternative locales only when a ready equivalent target route exists. Directly requested not-ready locale URLs can still render the translation-unavailable state.
 
-Preview und Draft URLs muessen Locale, Collection, Slug oder Path und Fallback State explizit transportieren, damit Preview Behavior nicht mit public indexable behavior verwechselt wird.
+Preview and Draft URLs must explicitly carry locale, collection, slug or path, and fallback state so preview behavior is not confused with public indexable behavior.
 
-## Beziehung zu ADR 018 und ADR 021
+## Relationship to ADR 018 and ADR 021
 
-ADR 018 bleibt fuer die native Payload CMS Localization Strategy accepted. ADR 021 definiert Source-Language Ownership, Fallback Governance und Public Readiness. Diese ADR konsumiert ADR-021-Readiness und wendet sie auf public routing, SEO, Domain, Redirect, Sitemap und Language-Switcher Behavior an.
+ADR 018 remains accepted for the native Payload CMS Localization Strategy. ADR 021 defines source-language ownership, fallback governance, and public readiness. This ADR consumes ADR-021 readiness and applies it to public routing, SEO, domain, redirect, sitemap, and language-switcher behavior.
 
-Diese ADR definiert Product UI Copy Ownership, Payload Content Ownership, Translation Operations oder `localizeStatus` Readiness nicht neu.
+This ADR does not redefine Product UI Copy ownership, Payload Content ownership, translation operations, or `localizeStatus` readiness.
 
-## Nicht-Ziele
+## Non-goals
 
-Diese ADR entscheidet nicht:
+This ADR does not decide:
 
-- konkrete Next.js Route Group, Middleware oder Adapter Implementation
-- Payload Schema Fields oder Migration Steps
-- Redirect Table Contents fuer die spaetere `.eu` Migration
-- Product UI Copy Source Format oder Translation Workflow
-- Payload Content Readiness Mechanics
-- einen managed TMS rollout oder ein Payload Admin Translation Dashboard
+- concrete Next.js route group, middleware, or adapter implementation
+- Payload schema fields or migration steps
+- redirect table contents for the later `.eu` migration
+- Product UI Copy source format or translation workflow
+- Payload Content readiness mechanics
+- a managed TMS rollout or Payload Admin Translation Dashboard
 
-## Technische Schuld
+## Technical Debt
 
-Der aktuelle Repository-Stand nutzt noch pilot-era locale behavior und nicht-locale-aware Sitemap oder Metadata Output. Die Umsetzung dieser ADR braucht spaetere Arbeit an Routes, Metadata, Sitemap, Preview, Redirect, Cache und Revalidation, damit diese locale-aware werden.
+The current repository state still uses pilot-era locale behavior and non-locale-aware sitemap or metadata output. Implementing this ADR requires later work on routes, metadata, sitemap, preview, redirect, cache, and revalidation so they become locale-aware.
 
-Die spaetere `.eu` Migration zu `.de` und `.com` braucht einen separaten Execution Plan mit konkreten Redirect-, Canonical-, Analytics- und Search-Index-Monitoring-Schritten.
+The later `.eu` migration to `.de` and `.com` requires a separate execution plan with concrete redirect, canonical, analytics, and search-index monitoring steps.
 
-## Risiken (Optional)
+## Risks (Optional)
 
-- Not-ready Locale Pages koennen als fertige Uebersetzung missverstanden werden.
-  - Massnahme: ADR-021-Readiness verlangen, bevor Locale Routes in Navigation, Sitemap, `hreflang` oder indexable metadata gelangen; direkt aufgerufene not-ready Locale URLs rendern nur einen `noindex` Translation-unavailable State.
-- `.eu` kann versehentlich zu einer separaten Locale oder Market Surface werden.
-  - Massnahme: `.eu` nur als kurzfristige German canonical halten und die spaetere Migration bewusst planen.
-- Query- oder Cookie-Locale-Behavior kann in public SEO paths leaken.
-  - Massnahme: Host und Path als einzige indexable locale-resolution inputs behalten.
-- Domain Migration kann SEO-Verlust erzeugen, wenn sie als Implementierungsdetail behandelt wird.
-  - Massnahme: `.eu` Migration als geplante SEO Migration mit `301`, Canonical und Monitoring Controls behandeln.
+- Not-ready locale pages can be misunderstood as complete translations.
+  - Mitigation: require ADR-021 readiness before locale routes enter navigation, sitemap, `hreflang`, or indexable metadata; directly requested not-ready locale URLs render only a `noindex` translation-unavailable state.
+- `.eu` can accidentally become a separate locale or market surface.
+  - Mitigation: keep `.eu` only as the short-term German canonical and plan the later migration deliberately.
+- Query or cookie locale behavior can leak into public SEO paths.
+  - Mitigation: keep host and path as the only indexable locale-resolution inputs.
+- Domain migration can create SEO loss if treated as an implementation detail.
+  - Mitigation: treat the `.eu` migration as a planned SEO migration with `301`, canonical, and monitoring controls.
 
-## Abgeloest durch (Optional)
+## Superseded by (Optional)
 
-Nicht superseded.
+Not superseded.

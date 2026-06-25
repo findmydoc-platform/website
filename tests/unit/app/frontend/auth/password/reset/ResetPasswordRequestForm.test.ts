@@ -12,4 +12,12 @@ describe('ResetPasswordRequestForm', () => {
     expect(html).toContain('action="/api/auth/password/reset"')
     expect(html).toContain('method="post"')
   })
+
+  it('renders a generic expired-link banner without prefilling email', () => {
+    const html = renderToStaticMarkup(React.createElement(ResetPasswordRequestForm, { reason: 'expired' }))
+
+    expect(html).toContain('That link is no longer valid. Request a new password reset link.')
+    expect(html).toContain('name="email"')
+    expect(html).not.toContain('value=')
+  })
 })

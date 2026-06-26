@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import React, { useId, useState } from 'react'
+import React, { useEffect, useId, useRef, useState } from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
 import { TrustAtom, type TrustAtomTone } from '@/components/atoms/TrustAtom'
@@ -124,7 +124,7 @@ const TeamProfileLinks: React.FC<{ className?: string; member: AboutTeamMember }
               <SocialLink
                 key={link.platform}
                 aria-label={`${member.name} on ${link.label}`}
-                className="h-7 w-7 rounded-full text-secondary/58 hover:bg-primary/8 hover:text-primary focus-visible:ring-primary/35 focus-visible:ring-offset-site-canvas"
+                className="h-11 w-11 rounded-full text-secondary/58 hover:bg-primary/8 hover:text-primary focus-visible:ring-primary/35 focus-visible:ring-offset-site-canvas sm:h-9 sm:w-9"
                 href={link.href}
                 platform={link.platform}
                 rel={opensCurrentPage ? undefined : 'noopener noreferrer'}
@@ -151,15 +151,29 @@ const TeamProfileLinks: React.FC<{ className?: string; member: AboutTeamMember }
   )
 }
 
-const TeamSpotlight: React.FC<{ member: AboutTeamMember; index: number; id: string }> = ({ member, index, id }) => {
+const TeamSpotlight: React.FC<{
+  member: AboutTeamMember
+  index: number
+  id: string
+  labelledBy: string
+  spotlightRef: React.Ref<HTMLElement>
+}> = ({ member, index, id, labelledBy, spotlightRef }) => {
   const [imageReady, setImageReady] = useState(false)
   const accountabilityLabel = accountabilityLabels[index] ?? 'Trust accountability'
   const details = getTeamAccountabilityDetails(member, index, accountabilityLabel)
 
+  useEffect(() => {
+    setImageReady(false)
+  }, [member.image.src])
+
   return (
     <article
       id={id}
+      ref={spotlightRef}
+      role="tabpanel"
+      aria-labelledby={labelledBy}
       aria-live="polite"
+      tabIndex={-1}
       className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-200 motion-safe:ease-out motion-reduce:transform-none motion-reduce:animate-none"
       data-about-team-spotlight=""
       data-about-team-reveal-item=""
@@ -216,40 +230,25 @@ const TeamSpotlight: React.FC<{ member: AboutTeamMember; index: number; id: stri
   )
 }
 
-const TeamSpotlightImagePreloads: React.FC<{ team: AboutTeamMember[] }> = ({ team }) => (
-  <div aria-hidden="true" className="pointer-events-none fixed top-0 left-0 h-px w-px overflow-hidden opacity-0">
-    {team.map((member) => (
-      <Image
-        key={`${member.name}-${member.image.src}`}
-        src={member.image.src}
-        alt=""
-        width={144}
-        height={200}
-        className="object-cover grayscale"
-        loading="eager"
-        quality={member.image.quality ?? 75}
-        sizes={spotlightImageSizes}
-        style={resolveImageObjectPositionStyle(member.image)}
-      />
-    ))}
-  </div>
-)
-
 const TeamMemberTab: React.FC<{
   member: AboutTeamMember
   index: number
   isActive: boolean
   onSelect: () => void
+  onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void
   panelId: string
-}> = ({ member, index, isActive, onSelect, panelId }) => {
+  tabId: string
+}> = ({ member, index, isActive, onKeyDown, onSelect, panelId, tabId }) => {
   const accountabilityLabel = accountabilityLabels[index] ?? 'Trust accountability'
 
   return (
     <button
+      id={tabId}
       type="button"
+      role="tab"
       aria-controls={panelId}
-      aria-current={isActive ? 'true' : undefined}
-      aria-pressed={isActive}
+      aria-selected={isActive}
+      tabIndex={isActive ? 0 : -1}
       className={cn(
         'group relative grid w-full grid-cols-[5rem_minmax(0,1fr)] gap-5 border-l-2 border-l-transparent py-5 pl-4 text-left transition-[border-color,background-color] duration-200 ease-out focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-4 focus-visible:ring-offset-site-canvas focus-visible:outline-none sm:grid-cols-[5.25rem_minmax(0,1fr)] sm:gap-6 lg:py-6',
         index > 0 && 'border-t border-site-divider/70',
@@ -261,6 +260,7 @@ const TeamMemberTab: React.FC<{
       data-about-team-member=""
       data-about-team-reveal-item=""
       onClick={onSelect}
+      onKeyDown={onKeyDown}
     >
       <span
         className={cn(
@@ -329,15 +329,58 @@ const TeamMemberTab: React.FC<{
 export const AccountabilitySection: React.FC<{ team: AboutTeamMember[] }> = ({ team }) => {
   const [activeIndex, setActiveIndex] = useState(0)
   const componentId = useId()
+  const spotlightRef = useRef<HTMLElement | null>(null)
   const activeMember = team[activeIndex] ?? team[0]
 
   if (!activeMember) return null
 
   const activePanelId = `${componentId}-team-spotlight`
+  const activeTabId = `${componentId}-team-tab-${activeIndex}`
+
+  const scrollSpotlightIntoView = () => {
+    spotlightRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' })
+  }
+
+  const shouldScrollToSpotlight = () =>
+    typeof window !== 'undefined' && !window.matchMedia('(min-width: 1024px)').matches
+
+  const selectTeamMember = (index: number, options?: { focusSpotlight?: boolean; scrollSpotlight?: boolean }) => {
+    setActiveIndex(index)
+
+    window.requestAnimationFrame(() => {
+      if (options?.scrollSpotlight) scrollSpotlightIntoView()
+      if (options?.focusSpotlight) spotlightRef.current?.focus({ preventScroll: !options.scrollSpotlight })
+    })
+  }
+
+  const handleTeamTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const lastIndex = team.length - 1
+    const nextIndex = index + 1 > lastIndex ? 0 : index + 1
+    const previousIndex = index - 1 < 0 ? lastIndex : index - 1
+    const keyMap: Partial<Record<string, number>> = {
+      ArrowDown: nextIndex,
+      ArrowRight: nextIndex,
+      ArrowLeft: previousIndex,
+      ArrowUp: previousIndex,
+      End: lastIndex,
+      Home: 0,
+    }
+    const targetIndex = keyMap[event.key]
+
+    if (typeof targetIndex === 'number') {
+      event.preventDefault()
+      selectTeamMember(targetIndex, { focusSpotlight: true, scrollSpotlight: shouldScrollToSpotlight() })
+      return
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      selectTeamMember(index, { focusSpotlight: true, scrollSpotlight: shouldScrollToSpotlight() })
+    }
+  }
 
   return (
     <section className="pb-14 sm:pb-18 lg:pb-20" aria-labelledby="about-accountability-heading">
-      <TeamSpotlightImagePreloads team={team} />
       <Container>
         <div className="grid gap-10 border-t border-site-divider/70 pt-14 sm:pt-18 lg:grid-cols-[minmax(0,1.04fr)_minmax(24rem,0.96fr)] lg:gap-14 lg:pt-20">
           <div className="lg:sticky lg:top-24 lg:self-start">
@@ -349,22 +392,25 @@ export const AccountabilitySection: React.FC<{ team: AboutTeamMember[] }> = ({ t
             </div>
             <div className="mt-10 sm:mt-12">
               <TeamSpotlight
-                key={`${activeMember.name}-${activeMember.role}`}
                 member={activeMember}
                 index={activeIndex}
                 id={activePanelId}
+                labelledBy={activeTabId}
+                spotlightRef={spotlightRef}
               />
             </div>
           </div>
-          <div aria-label="Team accountability roles">
+          <div role="tablist" aria-label="Team accountability roles">
             {team.map((member, index) => (
               <TeamMemberTab
                 key={`${member.name}-${member.role}`}
                 member={member}
                 index={index}
                 isActive={index === activeIndex}
-                onSelect={() => setActiveIndex(index)}
+                onSelect={() => selectTeamMember(index, { scrollSpotlight: shouldScrollToSpotlight() })}
+                onKeyDown={(event) => handleTeamTabKeyDown(event, index)}
                 panelId={activePanelId}
+                tabId={`${componentId}-team-tab-${index}`}
               />
             ))}
           </div>

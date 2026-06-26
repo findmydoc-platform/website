@@ -154,17 +154,30 @@ export const Default: Story = {
     await expect(within(teamSpotlight!).getByText(/Sets the standards for partner relationships/i)).toBeInTheDocument()
     await expect(within(teamSpotlight!).getByRole('link', { name: 'Volkan Kablan on LinkedIn' })).toBeInTheDocument()
     await expect(within(teamSpotlight!).getByRole('link', { name: 'Contact' })).toBeInTheDocument()
-    await expect(canvas.getByRole('button', { name: /Volkan Kablan/i })).toHaveAttribute('aria-current', 'true')
+    const volkanTab = canvas.getByRole('tab', { name: /Volkan Kablan/i })
+    const sebastianTab = canvas.getByRole('tab', { name: /Sebastian Schütze/i })
+
+    await expect(canvas.getByRole('tablist', { name: /Team accountability roles/i })).toBeInTheDocument()
+    await expect(volkanTab).toHaveAttribute('aria-selected', 'true')
     expect(canvas.getAllByText('Partner standards').length).toBeGreaterThan(0)
     await expect(canvas.getByText('Platform reliability')).toBeInTheDocument()
-    await userEvent.click(canvas.getByRole('button', { name: /Sebastian Schütze/i }))
+    await userEvent.click(sebastianTab)
     await waitFor(() => {
       const activeSpotlight = canvasElement.querySelector<HTMLElement>('[data-about-team-spotlight]')
 
       expect(activeSpotlight).not.toBeNull()
       expect(within(activeSpotlight!).getByRole('heading', { name: 'Sebastian Schütze' })).toBeInTheDocument()
       expect(within(activeSpotlight!).getByRole('link', { name: 'Sebastian Schütze on GitHub' })).toBeInTheDocument()
-      expect(canvas.getByRole('button', { name: /Sebastian Schütze/i })).toHaveAttribute('aria-current', 'true')
+      expect(sebastianTab).toHaveAttribute('aria-selected', 'true')
+      expect(volkanTab).toHaveAttribute('aria-selected', 'false')
+    })
+    await userEvent.keyboard('{Home}')
+    await waitFor(() => {
+      const activeSpotlight = canvasElement.querySelector<HTMLElement>('[data-about-team-spotlight]')
+
+      expect(activeSpotlight).not.toBeNull()
+      expect(within(activeSpotlight!).getByRole('heading', { name: 'Volkan Kablan' })).toBeInTheDocument()
+      expect(volkanTab).toHaveAttribute('aria-selected', 'true')
     })
     await expect(canvas.getByText(/Clinics remain accountable/i)).toBeInTheDocument()
     await expect(canvas.getByText('Medical-advice separation')).toBeInTheDocument()

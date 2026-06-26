@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 
 import { AboutPage, type AboutPageProps } from '@/components/templates/AboutPage/Component'
 import { getStoryImageSrc, storyClinicImages, storyPortraits } from '@/stories/fixtures/assets'
@@ -37,6 +37,8 @@ const aboutPageArgs: AboutPageProps = {
       whatWeDo:
         'Sets partner standards so commercial decisions stay transparent and aligned with responsible clinic relationships.',
       image: { src: getStoryImageSrc(storyPortraits.team.volkan), alt: 'Volkan Kablan portrait' },
+      profileLinks: [{ href: '/contact', label: 'Contact' }],
+      socials: { github: '#volkan-github', linkedin: '#volkan-linkedin' },
     },
     {
       name: 'Youssef Adlah',
@@ -61,6 +63,8 @@ const aboutPageArgs: AboutPageProps = {
       role: 'CTO',
       whatWeDo: 'Maintains the platform architecture that keeps profile signals structured, reliable, and accessible.',
       image: { src: getStoryImageSrc(storyPortraits.team.sebastian), alt: 'Sebastian Schütze portrait' },
+      profileLinks: [{ href: '/contact', label: 'Contact' }],
+      socials: { github: '#sebastian-github', linkedin: '#sebastian-linkedin' },
     },
   ],
   transparency: {
@@ -117,7 +121,7 @@ export const Default: Story = {
     await expect(canvas.getByText(/Profile claims, qualifications, reviews, prices/i)).toBeInTheDocument()
     await expect(canvas.getByText('Scattered information')).toBeInTheDocument()
     await expect(canvas.getByText('Comparison context')).toBeInTheDocument()
-    await expect(canvas.getByText('Decision boundary')).toBeInTheDocument()
+    await expect(canvas.getByRole('heading', { name: 'Decision boundary' })).toBeInTheDocument()
     expect(canvas.getAllByText(/Patients start with uncertainty\./).length).toBeGreaterThan(0)
     expect(canvas.getAllByText(/We turn trust signals into clearer decisions\./).length).toBeGreaterThan(0)
     expect(canvas.getAllByText(/A clearer path forward for patients and clinics\./).length).toBeGreaterThan(0)
@@ -143,9 +147,25 @@ export const Default: Story = {
       await waitFor(() => expect(finalLabel).toHaveAttribute('data-visible'))
       expect(Number.parseFloat(progressBar.style.width)).toBeGreaterThan(80)
     }
-    await expect(canvas.getByText(/Sets partner standards/i)).toBeInTheDocument()
-    await expect(canvas.getByText('Partner standards')).toBeInTheDocument()
+    const teamSpotlight = canvasElement.querySelector<HTMLElement>('[data-about-team-spotlight]')
+
+    expect(teamSpotlight).not.toBeNull()
+    await expect(within(teamSpotlight!).getByRole('heading', { name: 'Volkan Kablan' })).toBeInTheDocument()
+    await expect(within(teamSpotlight!).getByText(/Sets the standards for partner relationships/i)).toBeInTheDocument()
+    await expect(within(teamSpotlight!).getByRole('link', { name: 'Volkan Kablan on LinkedIn' })).toBeInTheDocument()
+    await expect(within(teamSpotlight!).getByRole('link', { name: 'Contact' })).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: /Volkan Kablan/i })).toHaveAttribute('aria-current', 'true')
+    expect(canvas.getAllByText('Partner standards').length).toBeGreaterThan(0)
     await expect(canvas.getByText('Platform reliability')).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole('button', { name: /Sebastian Schütze/i }))
+    await waitFor(() => {
+      const activeSpotlight = canvasElement.querySelector<HTMLElement>('[data-about-team-spotlight]')
+
+      expect(activeSpotlight).not.toBeNull()
+      expect(within(activeSpotlight!).getByRole('heading', { name: 'Sebastian Schütze' })).toBeInTheDocument()
+      expect(within(activeSpotlight!).getByRole('link', { name: 'Sebastian Schütze on GitHub' })).toBeInTheDocument()
+      expect(canvas.getByRole('button', { name: /Sebastian Schütze/i })).toHaveAttribute('aria-current', 'true')
+    })
     await expect(canvas.getByText(/Clinics remain accountable/i)).toBeInTheDocument()
     await expect(canvas.getByText('Medical-advice separation')).toBeInTheDocument()
     expect(canvas.getAllByRole('link', { name: /compare clinics/i })).toHaveLength(2)

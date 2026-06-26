@@ -85,6 +85,18 @@ type AboutTeamMember = {
   role: string
   whatWeDo: string
   image: ResolvedMediaImage
+  profileLinks?: Array<{
+    href: string
+    label: string
+    newTab?: boolean
+  }>
+  socials?: {
+    github?: string
+    instagram?: string
+    linkedin?: string
+    meta?: string
+    x?: string
+  }
 }
 
 export type HomeLandingContent = {
@@ -290,13 +302,46 @@ const normalizeTeam = (
     }
   })
 
-const normalizeAboutTeam = (team: AboutGlobal['team'] | null | undefined): AboutTeamMember[] =>
-  requireLandingArray(team, 'about.team').map((member, index) => ({
+type LandingTeamSourceMember = NonNullable<LandingPage['clinicPartners']['team']>[number]
+
+const normalizeAboutSocialHref = (
+  value: string | null | undefined,
+  allowedHosts: readonly string[],
+): string | undefined => normalizeSafeLandingHref(value, { allowedHosts })
+
+const normalizeAboutTeamSocials = (
+  socials: LandingTeamSourceMember['socials'] | null | undefined,
+): AboutTeamMember['socials'] | undefined => {
+  const normalized = {
+    github: normalizeAboutSocialHref(socials?.github, landingSocialHosts.github),
+    instagram: normalizeAboutSocialHref(socials?.instagram, landingSocialHosts.instagram),
+    linkedin: normalizeAboutSocialHref(socials?.linkedin, landingSocialHosts.linkedin),
+    meta: normalizeAboutSocialHref(socials?.meta, landingSocialHosts.meta),
+    x: normalizeAboutSocialHref(socials?.x, landingSocialHosts.x),
+  }
+
+  return Object.values(normalized).some(Boolean) ? normalized : undefined
+}
+
+const normalizeAboutTeam = (
+  team: AboutGlobal['team'] | null | undefined,
+  socialSource: LandingPage['clinicPartners']['team'] | null | undefined,
+): AboutTeamMember[] => {
+  const socialSourceByName = new Map(
+    requireLandingArray(socialSource ?? [], 'clinicPartners.team')
+      .map((member) => [member.name.trim().toLowerCase(), normalizeAboutTeamSocials(member.socials)] as const)
+      .filter((entry): entry is readonly [string, NonNullable<AboutTeamMember['socials']>] => Boolean(entry[1])),
+  )
+
+  return requireLandingArray(team, 'about.team').map((member, index) => ({
     name: member.name,
     role: member.role,
     whatWeDo: member.whatWeDo,
     image: resolveRequiredLandingImage(member.image, `about.team.${index}.image`, member.name, 'teamPortrait'),
+    profileLinks: [{ href: '/contact', label: 'Contact' }],
+    socials: socialSourceByName.get(member.name.trim().toLowerCase()),
   }))
+}
 
 const normalizeAboutTeamForLanding = (team: AboutGlobal['team'], fieldPath = 'about.team'): LandingTeamMember[] =>
   requireLandingArray(team, fieldPath).map((member, index) => {
@@ -405,7 +450,7 @@ export const normalizeAboutLandingContent = (landingPages: LandingPage) => {
       image: resolveRequiredLandingImage(hero.image, 'about.hero.image', hero.title, 'hero'),
     },
     why: normalizeAboutTextSection(about.why, 'about.why'),
-    team: normalizeAboutTeam(about.team),
+    team: normalizeAboutTeam(about.team, landingPages.clinicPartners?.team),
     transparency: normalizeAboutTextSection(about.transparency, 'about.transparency'),
   } satisfies AboutLandingContent
 }

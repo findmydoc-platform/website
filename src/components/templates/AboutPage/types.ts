@@ -1,3 +1,5 @@
+import type { SocialPlatform } from '@/components/molecules/SocialLink'
+
 export type AboutImage = {
   src: string
   alt: string
@@ -22,6 +24,12 @@ export type AboutTeamMember = {
   role: string
   whatWeDo: string
   image: AboutImage
+  profileLinks?: Array<{
+    href: string
+    label: string
+    newTab?: boolean
+  }>
+  socials?: Partial<Record<SocialPlatform, string>>
 }
 
 export type AboutPageProps = {

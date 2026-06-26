@@ -19,7 +19,7 @@ Alle anderen bisher geprüften hardcoded Trust-nahen Texte werden nicht automati
 
 - Listing-Comparison Hero-/Trust-Texte sind Product UI Copy Kandidaten, weil die Seite stark datengetrieben ist und die Texte kurz und produktnah sind.
 - Clinic-Detail Labels, Filter, Sortierungen, Buttons, Empty States und ARIA Labels sind Product UI Copy Kandidaten.
-- Temporary-Landing-Copy braucht zuerst eine Produktentscheidung. Wenn der Modus als echte öffentliche Landingpage bleibt, sollten Hero, SEO, Narrative und Signal-Copy ins CMS. Wenn er temporär oder preview-only bleibt, ist keine CMS-Arbeit nötig.
+- Temporary-Landing-Copy ist aktuell tmp-/preview-only, und die Texte wurden bereits geprüft und kuratiert. Deshalb ist in diesem Paket keine CMS-Arbeit nötig. Wenn der Modus später als echte öffentliche Landingpage genutzt wird, müssen CMS-Verantwortung, Wording und Trust-Claim-Evidenz neu geprüft werden.
 
 ## Zielzustand
 
@@ -32,14 +32,15 @@ Jede Trust-nahe Fläche soll in genau einen Zustand fallen:
 
 ## Atomare Aufgaben
 
-| Aufgabe                   | Dokument                                                  | Zweck                                                                                      |
-| ------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Before/After Case Gallery | `trust-claim-gallery-evidence-requirements-task.md`       | Prozess, Consent, Evidence und Runtime-Gating für öffentliche Before-/After-Fälle.         |
-| Public Reviews            | `trust-claim-review-evidence-requirements-task.md`        | Prozess und Datenmodell dafür, wann Reviews als geprüft oder verifiziert gelten dürfen.    |
-| Rating Eligibility        | `trust-claim-rating-eligibility-requirements-task.md`     | Aggregation, Filter und Sortierung auf Basis berechtigter Review-/Rating-Daten.            |
-| Accreditations            | `trust-claim-accreditation-evidence-requirements-task.md` | Nachweise, Scope und Gültigkeit für öffentlich ausgespielte Akkreditierungen.              |
-| Verification Badges       | `trust-claim-verification-badge-requirements-task.md`     | Implementierungsstory für den vorhandenen, aber noch nicht umgesetzten Trust-Core Prozess. |
-| Pricing Claims            | `pricing-evidence-requirements-task.md`                   | Separater Pricing-Prozess für Quelle, Review-Status, Aktualität und Claim-Berechtigung.    |
+| Aufgabe                   | Dokument                                                  | Zweck                                                                                       |
+| ------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Before/After Case Gallery | `trust-claim-gallery-evidence-requirements-task.md`       | Prozess, Consent, Evidence und Runtime-Gating für öffentliche Before-/After-Fälle.          |
+| Public Reviews            | `trust-claim-review-evidence-requirements-task.md`        | Prozess und Datenmodell dafür, wann Reviews als geprüft oder verifiziert gelten dürfen.     |
+| Rating Eligibility        | `trust-claim-rating-eligibility-requirements-task.md`     | Aggregation, Filter und Sortierung auf Basis berechtigter Review-/Rating-Daten.             |
+| Accreditations            | `trust-claim-accreditation-evidence-requirements-task.md` | Nachweise, Scope und Gültigkeit für öffentlich ausgespielte Akkreditierungen.               |
+| Trust-Kern Aufarbeitung   | `trust-core-verification-concept-refinement-task.md`      | Voraufgabe, um den vorhandenen Trust-Kern in implementierbare Status und Regeln zu bringen. |
+| Verification Badges       | `trust-claim-verification-badge-requirements-task.md`     | Implementierungsstory nach Trust-Kern-Aufarbeitung.                                         |
+| Pricing Claims            | `pricing-evidence-requirements-task.md`                   | Separater Pricing-Prozess für Quelle, Review-Status, Aktualität und Claim-Berechtigung.     |
 
 ## Gemeinsame Regeln für alle atomaren Aufgaben
 

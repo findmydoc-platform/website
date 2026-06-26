@@ -4,7 +4,9 @@
 
 Verification Badges sind die genannte Ausnahme unter den Trust-Claim Themen: Der Trust-Core Prozess ist als Konzept bereits definiert, aber noch nicht als Story implementiert.
 
-Das Problem ist deshalb nicht primär, einen neuen Prozess zu erfinden. Die offene Aufgabe ist, den vorhandenen Trust-Core in Datenmodell, Admin-Workflow und Runtime-Gating zu übersetzen, damit Badges nicht aus Demo-Daten, manuellen Tiers oder UI-Copy entstehen.
+Das Problem ist deshalb nicht primär, einen neuen Prozess zu erfinden. Vor der technischen Implementierung muss der vorhandene Trust-Kern aber noch einmal in eine eindeutige technische Entscheidungsgrundlage übersetzt werden: Status, Tiers, Evidenzregeln, Verantwortlichkeit, Ablauf und Public Eligibility.
+
+Diese Voraufgabe ist separat beschrieben in `trust-core-verification-concept-refinement-task.md`. Erst danach sollte der vorhandene Trust-Core in Datenmodell, Admin-Workflow und Runtime-Gating übersetzt werden, damit Badges nicht aus Demo-Daten, manuellen Tiers oder UI-Copy entstehen.
 
 ## Ziel
 
@@ -13,6 +15,7 @@ findmydoc braucht ein implementierbares Anforderungsset dafür, wie der bestehen
 Das Team soll unterscheiden können zwischen:
 
 - Trust-Core Konzept, das fachlich bereits existiert
+- Trust-Kern Aufarbeitung, die vor der Implementierung nötig ist
 - fehlender technischer Implementierungsstory
 - öffentlicher Badge-Anzeige, die erst nach implementiertem Trust-Core Gating erlaubt ist
 
@@ -139,12 +142,13 @@ Vorgeschlagene Workflow-Unterstützung:
 
 Vorgeschlagener Ablauf:
 
-1. Trust-Core Konzept als technische Story referenzieren.
-2. Status, Tiers und Checks aus dem Konzept in Schema und Funktionen übersetzen.
-3. Bestehende Klinikdaten neutral lassen.
-4. Nur Kliniken mit echter Trust-Core Evidenz backfillen.
-5. Runtime-Gating für Badge-Anzeige hinzufügen.
-6. Erst danach öffentliche Verification Badges aktivieren.
+1. Trust-Kern Aufarbeitung aus `trust-core-verification-concept-refinement-task.md` abschließen.
+2. Trust-Core Konzept als technische Story referenzieren.
+3. Status, Tiers und Checks aus dem Konzept in Schema und Funktionen übersetzen.
+4. Bestehende Klinikdaten neutral lassen.
+5. Nur Kliniken mit echter Trust-Core Evidenz backfillen.
+6. Runtime-Gating für Badge-Anzeige hinzufügen.
+7. Erst danach öffentliche Verification Badges aktivieren.
 
 Wichtige Regel:
 
@@ -153,6 +157,7 @@ Wichtige Regel:
 ## Akzeptanzkriterien
 
 - Das Dokument erfindet keinen neuen Trust-Core Prozess.
+- Die notwendige Trust-Kern Aufarbeitung ist als Vorbedingung dokumentiert.
 - Die Aufgabe ist als Implementierungslücke des bestehenden Trust-Core Konzepts beschrieben.
 - Fail-safe Verhalten für fehlende oder nicht implementierte Trust-Core Daten ist definiert.
 - Jede vorgeschlagene Feldrolle erklärt Zweck, Nutzen und mögliche Gründe gegen das Feld.

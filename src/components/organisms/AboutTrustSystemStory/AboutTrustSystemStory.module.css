@@ -117,7 +117,7 @@
   opacity: 1;
   pointer-events: auto;
   transform: none;
-  transition: opacity 100ms ease;
+  transition: opacity 260ms ease;
 }
 
 .copyStack.isFading .copyCard.isActive {

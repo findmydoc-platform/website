@@ -6,6 +6,7 @@ export const PUBLIC_DISCOVERY_SITEMAP_PATHS = ['/pages-sitemap.xml', '/posts-sit
 
 export const PUBLIC_DISCOVERY_SURFACE_PATHS = [
   '/robots.txt',
+  '/sitemap.xml',
   ...PUBLIC_DISCOVERY_SITEMAP_PATHS,
   ...PUBLIC_DISCOVERY_AGENT_CONTEXT_PATHS,
 ] as const

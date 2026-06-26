@@ -391,18 +391,18 @@
 
 .signalLabel {
   position: absolute;
-  z-index: 7;
+  z-index: 10;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid color-mix(in srgb, var(--label-color, var(--primary)) 16%, transparent);
   border-radius: 16px;
-  background: color-mix(in srgb, var(--label-color, var(--primary)) 6%, rgb(255 255 255 / 0.72));
+  background: color-mix(in srgb, var(--label-color, var(--primary)) 6%, #ffffff);
   box-shadow: 0 10px 28px rgb(7 0 76 / 0.05);
   color: var(--secondary);
-  font-size: 11px;
-  font-weight: 850;
+  font-size: 14px;
+  font-weight: 900;
   letter-spacing: 0.08em;
   opacity: 0;
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.7);
@@ -431,26 +431,26 @@
 
 .labelVerification {
   --label-color: var(--primary);
-  top: 24%;
-  left: 33%;
+  top: 22%;
+  left: 30%;
 }
 
 .labelTransparency {
   --label-color: var(--accent);
-  top: 33%;
-  left: 68%;
+  top: 31%;
+  left: 72%;
 }
 
 .labelPrivacy {
   --label-color: var(--secondary);
-  top: 70%;
-  left: 30%;
+  top: 72%;
+  left: 27%;
 }
 
 .labelAccess {
   --label-color: var(--primary);
-  top: 66%;
-  left: 71%;
+  top: 68%;
+  left: 74%;
 }
 
 .ringLabelLayer {
@@ -466,16 +466,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 8px;
   max-width: none;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--ring-label-color, var(--primary)) 16%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--ring-label-color, var(--primary)) 6%, #ffffff);
+  box-shadow: 0 10px 28px rgb(7 0 76 / 0.05);
   color: var(--secondary);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
   line-height: 1.08;
   letter-spacing: 0.08em;
@@ -486,7 +486,9 @@
   transform: translate3d(-50%, calc(-50% + 8px), 0);
   transition:
     opacity 220ms ease,
-    transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 220ms ease;
+  backdrop-filter: blur(10px);
   white-space: nowrap;
 }
 
@@ -508,13 +510,13 @@
 .ringLabelCore {
   --ring-label-color: var(--primary);
   top: 12%;
-  left: 31%;
+  left: 27%;
 }
 
 .ringLabelMiddle {
   --ring-label-color: var(--accent);
   top: 12%;
-  left: 69%;
+  left: 73%;
 }
 
 .ringLabelOuter {
@@ -647,41 +649,44 @@
   .signalLabel {
     padding: 7px 9px;
     border-radius: 14px;
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .labelVerification {
-    top: 25%;
-    left: 32%;
+    top: 23%;
+    left: 29%;
   }
 
   .labelTransparency {
-    top: 34%;
-    left: 67%;
+    top: 32%;
+    left: 71%;
   }
 
   .labelPrivacy {
-    top: 69%;
-    left: 30%;
+    top: 71%;
+    left: 27%;
   }
 
   .labelAccess {
-    top: 66%;
-    left: 70%;
+    top: 68%;
+    left: 73%;
   }
 
   .ringLabel {
-    font-size: 11px;
+    min-height: 32px;
+    padding: 7px 9px;
+    border-radius: 14px;
+    font-size: 12px;
   }
 
   .ringLabelCore {
     top: 12%;
-    left: 31%;
+    left: 26%;
   }
 
   .ringLabelMiddle {
     top: 12%;
-    left: 69%;
+    left: 74%;
   }
 
   .ringLabelOuter {
@@ -829,7 +834,10 @@
   .ringLabel {
     gap: 6px;
     max-width: min(154px, 42vw);
-    font-size: clamp(10px, 2vw, 10.5px);
+    min-height: 30px;
+    padding: 7px 8px;
+    border-radius: 14px;
+    font-size: clamp(10.5px, 2.2vw, 11.5px);
     line-height: 1.08;
     letter-spacing: 0.04em;
     white-space: nowrap;
@@ -843,12 +851,12 @@
 
   .ringLabelCore {
     top: 2%;
-    left: 24%;
+    left: 22%;
   }
 
   .ringLabelMiddle {
     top: 2%;
-    left: 76%;
+    left: 78%;
   }
 
   .ringLabelOuter {

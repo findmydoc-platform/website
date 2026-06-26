@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   }),
   evaluatePostHogFlags: vi.fn(),
   getUser: vi.fn(),
+  logCrawlerRequest: vi.fn(),
   resolvePostHogSiteFlagActor: vi.fn(),
 }))
 
@@ -29,6 +30,10 @@ vi.mock('@/posthog/api', () => ({
   createPostHogFlagEvaluationContext: mocks.createPostHogFlagEvaluationContext,
   evaluatePostHogFlags: mocks.evaluatePostHogFlags,
   resolvePostHogSiteFlagActor: mocks.resolvePostHogSiteFlagActor,
+}))
+
+vi.mock('@/features/publicDiscovery/crawlerMonitoring', () => ({
+  logCrawlerRequest: mocks.logCrawlerRequest,
 }))
 
 import { config, proxy } from '@/proxy'
@@ -118,6 +123,21 @@ describe('preview lock proxy', () => {
         },
       },
     )
+  })
+
+  it('logs public discovery crawler requests before guard decisions', async () => {
+    process.env.DEPLOYMENT_ENV = 'preview'
+    mockGuardFlags({ 'preview-guard-enabled': true })
+    const request = new NextRequest('https://preview.findmydoc.eu/llms.txt', {
+      headers: {
+        'user-agent': 'Googlebot/2.1',
+      },
+    })
+
+    await proxy(request)
+
+    expect(mocks.logCrawlerRequest).toHaveBeenCalledWith(request)
+    expect(mocks.evaluatePostHogFlags).toHaveBeenCalled()
   })
 
   it('does not set preview lock headers on exempt routes while guard flags are disabled', async () => {
@@ -403,6 +423,7 @@ describe('preview lock proxy', () => {
     expect(response.status).toBe(200)
     expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
     expect(mocks.createServerClient).not.toHaveBeenCalled()
+    expect(mocks.logCrawlerRequest).not.toHaveBeenCalled()
   })
 
   it('bypasses known public assets before evaluating PostHog flags', async () => {

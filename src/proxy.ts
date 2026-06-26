@@ -20,6 +20,7 @@ import {
   resolvePostHogSiteFlagActor,
   type PostHogFlagKey,
 } from '@/posthog/api'
+import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
 
 const GUARD_FLAG_KEYS = ['temporary-landing-mode', 'preview-guard-enabled'] as const satisfies readonly PostHogFlagKey[]
 const FIRST_ADMIN_BOOTSTRAP_PATHS = new Set(['/admin/create-first-user', '/admin/first-admin'])
@@ -126,6 +127,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   if (shouldBypassProxy(pathname)) {
     return NextResponse.next()
   }
+
+  logCrawlerRequest(request)
 
   if (isFirstAdminBootstrapPath(pathname)) {
     return withSearchRobotsHeader(new NextResponse(null, { status: 404 }))

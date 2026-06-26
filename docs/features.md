@@ -193,6 +193,8 @@ Production `robots.txt` treats automated search discovery, user-directed AI retr
 
 WAF and IP allowlisting for AI crawlers belongs to infrastructure operations, not this repository's sitemap configuration.
 
+Public discovery monitoring is operational logging, not PostHog product analytics. The server logs recognized crawler classes, public request paths, environment, and coarse request context under `event:public_discovery.crawler.requested`. It does not log cookies, authentication data, contact details, medical free text, private content, draft content, admin-only content, IP-based user profiles, or individual user identities. In Vercel logs, filter for `public_discovery.crawler.requested` to inspect crawler activity.
+
 Run the sitemap status check against local development or production when Temporary Landing Mode is disabled:
 
 ```bash
@@ -202,6 +204,14 @@ for path in /robots.txt /pages-sitemap.xml /posts-sitemap.xml / /posts /contact 
 done
 ```
 
+Run the public discovery health check to verify discovery entry points, the sitemap index, and every same-origin URL advertised by the public sitemaps:
+
+```bash
+pnpm discovery:health -- --base-url "${BASE_URL:-http://localhost:3000}"
+```
+
+The check fails when a discovery endpoint or sitemap URL returns an unsuccessful status, including sitemap `404` responses. Cross-origin sitemap URLs are reported as failures and are not fetched.
+
 Run the agent-context status check against production or local development when Temporary Landing Mode is disabled:
 
 ```bash
@@ -210,6 +220,8 @@ for path in /llms.txt /.well-known/llms.txt; do
   curl --fail --location --silent --show-error --output /dev/null --write-out "%{http_code} ${path}\n" "${BASE_URL}${path}"
 done
 ```
+
+Google Search Console should be checked through the Sitemaps report for submitted sitemap status and parsing errors, and through Crawl Stats for Googlebot requests, response codes, and availability issues. Bing Webmaster Tools should be checked for sitemap status, URL Submission activity, and IndexNow status. IndexNow is evaluated for findmydoc but is not automatically activated in this implementation; activation needs key hosting, secret handling, and publish/delete hooks before URL submissions can be sent safely.
 
 ## SEO
 Manage SEO settings from the admin panel.

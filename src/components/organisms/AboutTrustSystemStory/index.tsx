@@ -825,7 +825,7 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
         })
         activeCardIndex = pendingCardIndex
         requestAnimationFrame(() => copyStack.classList.remove(isFadingClass))
-      }, 80)
+      }, 140)
     }
 
     const makeParticle = (index: number): Particle => {
@@ -968,8 +968,8 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
       })
     }
 
-    const updateDom = (p: number) => {
-      const active = p < 0.28 ? 0 : p < 0.64 ? 1 : 2
+    const updateDom = (p: number, narrativeP = p) => {
+      const active = narrativeP < 0.28 ? 0 : narrativeP < 0.64 ? 1 : 2
 
       setActiveCard(active)
       steps.forEach((step, index) => {
@@ -1036,8 +1036,11 @@ export const AboutTrustSystemStory: React.FC<AboutTrustSystemStoryProps> = ({ fi
         particleOrbitRotation += deltaSeconds * 0.09 * orbitRotationStrength
       }
 
+      const narrativeProgress =
+        force || reducedMotion || progressIsStatic ? progress : lerp(progress, visualProgress, 0.45)
+
       updateParticles(visualProgress)
-      updateDom(progress)
+      updateDom(progress, narrativeProgress)
     }
 
     const resize = () => {

@@ -87,7 +87,7 @@ const MEDIA_IMAGE_POLICIES = {
     quality: 85,
   },
   teamPortrait: {
-    payloadSizeOrder: ['xlarge', 'large', 'original', 'medium', 'small', 'thumbnail'],
+    payloadSizeOrder: ['xlarge', 'large', 'medium', 'small', 'thumbnail', 'original'],
     sizes: '(min-width: 768px) 33vw, (min-width: 640px) 50vw, 85vw',
     quality: 85,
   },

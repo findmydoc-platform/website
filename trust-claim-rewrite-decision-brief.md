@@ -22,7 +22,7 @@ Für jede Stelle sollte eine Entscheidung in genau eine Richtung fallen:
 | Y1  | Landing- und Partner-Landing-Copy       | `src/endpoints/seed/data/baseline/globals.json` unter `landingPages`, besonders Home und `clinicPartners`                  | Begriffe wie `trusted`, `verified clinics`, `trust signals`, `verified profiles`, `verified qualifications`            | Satzweise entscheiden, ob es eine belegte Quelle gibt oder die Copy neutraler werden muss.                            | Ohne belastbare Evidenz neutral umschreiben; keine Trust-, Verified- oder Quality-Begriffe als Standard lassen.    |
 | Y2  | Verification- und Quality-Check-Copy    | `landingPages.home.process.steps.2`, `landingPages.clinicPartners.process.steps.2`                                         | `Verification & Quality Check`, `certifications`, `credibility`, `high-quality environment` wirken prozessual geprüft. | Entscheiden, ob ein echter findmydoc Prüfprozess beschrieben werden kann.                                             | Wenn kein dokumentierter Prozess existiert: als Profil-/Onboarding-Prüfung formulieren, nicht als Quality Check.   |
 | Y3  | Akkreditierungs-Copy                    | `src/endpoints/seed/data/baseline/accreditations.json`, besonders `International Health Standard` und Safety-/Quality-Text | Akkreditierung, Safety und Quality wirken wie externe oder geprüfte Zertifizierung.                                    | Nicht als reiner Rewrite behandeln: entweder echte Evidenz und Proof-Metadaten definieren oder öffentlich ausblenden. | Bis Evidenzmodell implementiert ist, nicht als öffentlicher Trust Claim verwenden.                                 |
-| Y4  | Temporary Landing Mode                  | `src/features/temporaryLandingMode/content.ts`                                                                             | Enthält Patient Reviews, Quality Indicators, Verified Comparison, Trusted Comparison und Quality Signals.              | Entscheiden, ob der Modus produktiv öffentlich sein kann oder nur preview-/launch-intern bleibt.                      | Wenn öffentlich: komplett grün-sicher umschreiben. Wenn preview-only: technisch und redaktionell klar markieren.   |
+| Y4  | Temporary Landing Mode                  | `src/features/temporaryLandingMode/content.ts`                                                                             | Enthält Patient Reviews, Quality Indicators, Verified Comparison, Trusted Comparison und Quality Signals.              | Entscheidung liegt vor: Der Modus bleibt vorerst tmp-/preview-only; die Texte wurden bereits geprüft und kuratiert.   | Jetzt kein Rewrite. Neu bewerten, falls der Modus später produktiv öffentlich wird.                                |
 | Y5  | Listing-Comparison Pricing Copy         | `src/app/(frontend)/listing-comparison/page.tsx`                                                                           | `Transparent pricing for medical treatments near you` und `Reviewed prices` brauchen Quelle, Datum und Review-Prozess. | Entscheiden, ob kurzfristig neutral umgeschrieben wird oder zuerst der Pricing-Evidence-Prozess implementiert wird.   | Kurzfristig neutral umschreiben; stärkere Claims erst nach Pricing-Evidence-Prozess.                               |
 | Y6  | Clinic Registration Verified Visibility | `landingPages.clinicPartners.registrationIntro.title`                                                                      | `Ready for verified visibility?` kann als findmydoc Verifikation verstanden werden.                                    | Copy finalisieren, obwohl die CMS-Editierbarkeit technisch bereits gelöst ist.                                        | Neutraler Richtungsvorschlag: strukturierte Sichtbarkeit, Profilpräsenz oder Partner-Sichtbarkeit ohne `verified`. |
 
@@ -85,21 +85,24 @@ Wenn nein:
 
 Aktueller Stand:
 
-- Die Copy kann öffentlich werden, wenn der Temporary-Landing-Modus aktiv ist.
-- Die Sprache ist stärker als eine reine Launch- oder Coming-Soon-Seite.
+- Der Modus bleibt fürs Erste tmp-/preview-only.
+- Die Texte wurden bereits vor diesem Guardrail-Lauf geprüft und kuratiert.
+- Die Sprache enthält weiterhin Trust-nahe Begriffe, ist aber aktuell nicht als produktive öffentliche Landing-Copy freigegeben.
 
 Prüffrage:
 
-- Ist diese Seite produktiv öffentlich oder strikt preview-/launch-intern?
+- Wird diese Seite später produktiv öffentlich?
 
-Wenn produktiv öffentlich:
+Aktuelle Entscheidung:
 
-- Patient Reviews, Quality Indicators, Verified Comparison, Trusted Comparison und Quality Signals neutralisieren.
+- Kein aktueller Rewrite-Task.
+- Keine aktuelle CMS-Anbindung nur für Y4.
+- Bei späterer produktiver Veröffentlichung neu prüfen, ob Wording, CMS-Verantwortung und Trust-Claim-Evidenz ausreichen.
+
+Fallback bei späterer produktiver Veröffentlichung:
+
+- Patient Reviews, Quality Indicators, Verified Comparison, Trusted Comparison und Quality Signals neutralisieren oder mit belastbarer Evidenz hinterlegen.
 - Richtung: strukturierte Klinikprofile, Vergleichslogik, Kontaktmöglichkeit und Launch-Hinweis.
-
-Wenn preview-only:
-
-- Technisch und redaktionell klarstellen, dass sie nicht als produktiver Trust Claim verwendet wird.
 
 ### Y5. Pricing Copy
 
@@ -156,6 +159,6 @@ Empfohlener Review-Ausgang:
 - Y1: Satzweise neutralisieren, außer ein Claim ist eindeutig belegbar.
 - Y2: Neutralisieren, solange kein Verification-/Quality-Prozess implementiert ist.
 - Y3: Nicht als Copy-only lösen; Evidenz oder Ausblendung entscheiden.
-- Y4: Öffentlich nur grün-sicher; sonst preview-only absichern.
+- Y4: Aktuell kein Rewrite; tmp-/preview-only, bereits geprüft und kuratiert. Bei produktiver Veröffentlichung neu prüfen.
 - Y5: Kurzfristig neutralisieren; stärkere Preisclaims später prozessgebunden.
 - Y6: `verified` entfernen, solange keine verifizierte Sichtbarkeit definiert ist.

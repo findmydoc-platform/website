@@ -2,14 +2,16 @@
 
 ## Purpose
 
-This document keeps cross-cutting localization decisions that should be captured in a follow-up ADR rather than inside one implementation item. It complements ADR 018, which standardizes native Payload CMS localization but intentionally leaves URL, SEO, runtime, publishing, and translation workflow decision areas open.
+This document keeps cross-cutting localization decisions that should be captured in follow-up ADRs rather than inside one implementation item. It complements ADR 018, which standardizes native Payload CMS localization but intentionally leaves URL, SEO, runtime, publishing, and translation workflow decision areas open.
+
+ADR 021 captures source-language, ownership, fallback, and readiness governance. ADR 022 captures public routing, SEO, domain, redirect, sitemap, `hreflang`, and language-switcher behavior.
 
 ## ADR Scope And Locale Matrix
 
-- The next localization ADR is a follow-up to ADR 018. ADR 018 remains valid for native Payload CMS localization.
-- The follow-up ADR should supersede ADR 018 only where the older ADR fixed `en` as the default/source locale. It should not supersede the native Payload CMS localization decision itself.
-- The ADR should decide routing, SEO, locale runtime behavior, fallback governance, the migration from the current `en` default pilot to the new `de` default target, and the ownership boundary between Product UI Copy and Payload Content Localization.
-- The ADR should define the layer-specific locale matrix:
+- ADR 021 is the first follow-up to ADR 018. ADR 018 remains valid for native Payload CMS localization.
+- ADR 021 supersedes ADR 018 only where the older ADR fixed `en` as the default/source locale. It does not supersede the native Payload CMS localization decision itself.
+- ADR 022 decides routing, SEO, domain behavior, redirects, locale runtime behavior for public URL resolution, and language-switcher behavior.
+- ADR 021 defines the layer-specific locale matrix:
   - Product UI Copy uses `de` and `en`.
   - Payload Content Localization uses `de` and `en`.
   - Payload Admin remains English and is not part of the public localization rollout.
@@ -32,11 +34,12 @@ This document keeps cross-cutting localization decisions that should be captured
 - Only ready locale versions appear in sitemap output, `hreflang`, alternate links, and indexable locale metadata.
 - Each ready locale is self-canonical.
 - `hreflang` contains only ready bidirectional alternates plus `x-default` pointing to the German canonical URL.
-- English `/en/...` routes are publicly exposed, linked, indexed, and included in SEO signals only when real reviewed English content exists.
-- For normal public page GETs, an English `/en/...` route without ready English content temporarily redirects to the German canonical URL with `302`.
-- Indexable English routes must not render visible German fallback values.
+- Alternative-locale routes are publicly linked, indexed, and included in SEO signals only when real reviewed locale content exists.
+- For normal public page GETs, a supported locale URL whose source/default route exists but whose requested locale content is not ready returns HTTP `200` with an explicit translation-unavailable state, `noindex`, no sitemap entry, no `hreflang`, no alternate link, and no visible fallback content.
+- Routes that do not exist in the German source/default locale remain normal not-found cases.
+- Indexable alternative-locale routes must not render visible German fallback values.
 - Fallback-only localized routes may support preview and admin review, but they must not be advertised as complete translations and must not create misleading canonical or `hreflang` signals.
-- The language switcher preserves route intent and exposes English only when a ready equivalent target route exists.
+- The language switcher preserves route intent and exposes alternative locales only when a ready equivalent target route exists.
 - Preview and draft URLs encode locale, collection, slug/path, and fallback state explicitly through query parameters.
 
 ## Routing Research Notes
@@ -84,9 +87,10 @@ This document keeps cross-cutting localization decisions that should be captured
 
 ## ADR Test Cases
 
-- `/en/...` is not ready: the route temporarily redirects to the German canonical URL, and there is no English canonical URL, `hreflang`, or sitemap entry.
+- `/en/...` is not ready but the German source/default route exists: the route returns HTTP `200` with an explicit translation-unavailable state, `noindex`, no visible German fallback content, and no English sitemap, `hreflang`, or alternate entry.
 - German and English are ready: both URLs are self-canonical, both have bidirectional `hreflang`, `x-default` points to the German canonical URL, and both appear in the sitemap.
 - English content is ready except for a visible German fallback dependency: the English route is treated as not ready and is not indexable.
+- `/en/...` points to a route that does not exist in German source/default content: the route remains a normal not-found case.
 - A localized slug changes before launch or pilot indexing: no redirect is required.
 - A localized slug changes after public indexing: a locale-specific 301 redirect is created.
 - Payload `localizeStatus` is verified: locale-published content controls readiness.

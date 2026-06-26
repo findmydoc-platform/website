@@ -237,6 +237,33 @@ describe('resolveMediaImage', () => {
     })
   })
 
+  it('uses generated team portrait sizes before falling back to original uploads', () => {
+    const media = {
+      alt: 'Team portrait',
+      url: '/api/platformContentMedia/file/hash-team-member.webp',
+      width: 768,
+      height: 1344,
+      sizes: {
+        small: {
+          url: '/api/platformContentMedia/file/team-member-600x1050.webp',
+          width: 600,
+          height: 1050,
+        },
+        medium: {
+          url: '/api/platformContentMedia/file/team-member-900x1575.webp',
+          width: 900,
+          height: 1575,
+        },
+      },
+    }
+
+    expect(resolveMediaImage(media, { usage: 'teamPortrait' })).toMatchObject({
+      src: '/api/platformContentMedia/file/team-member-900x1575.webp',
+      sizes: '(min-width: 768px) 33vw, (min-width: 640px) 50vw, 85vw',
+      quality: 85,
+    })
+  })
+
   it('keeps internal media policies private while every public usage resolves', () => {
     expect('MEDIA_IMAGE_POLICIES' in mediaImageModule).toBe(false)
 

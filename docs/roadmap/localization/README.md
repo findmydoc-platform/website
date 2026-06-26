@@ -13,4 +13,4 @@ This folder keeps local planning material for the refreshed findmydoc localizati
 
 ## Working Boundary
 
-The refreshed localization work is planned under a broader localization epic that is tracked separately. These notes do not create the epic and do not replace ADR 018's native Payload CMS localization decision. They prepare a follow-up ADR for the changed locale default, routing, SEO, fallback, and rollout decisions that need to be captured before implementation starts.
+The refreshed localization work is planned under a broader localization epic that is tracked separately. These notes do not create the epic and do not replace ADR 018's native Payload CMS localization decision. They prepare follow-up ADRs for the changed locale default, ownership, readiness, routing, SEO, fallback, and rollout decisions that need to be captured before implementation starts. ADR 021 covers source, ownership, and readiness governance. ADR 022 covers public routing, SEO, and domain behavior.

@@ -65,8 +65,8 @@ const storyCards = [
 const signalLabels = [
   { className: styles.labelVerification, label: 'Verification' },
   { className: styles.labelTransparency, label: 'Transparency' },
-  { className: styles.labelPrivacy, label: 'Privacy' },
   { className: styles.labelAccess, label: 'Access' },
+  { className: styles.labelPrivacy, label: 'Privacy' },
 ] as const
 
 const ringLabels = [

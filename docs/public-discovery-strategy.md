@@ -40,6 +40,8 @@ Sitemap entries should use real content timestamps when available. Request-time 
 
 Preview, temporary landing, draft, unpublished, private, and admin-only states stay out of public sitemap discovery.
 
+findmydoc observes public discovery traffic only as operational visibility. Platform logs may record recognized crawler classes, the requested public path, platform timestamp, runtime environment, and coarse response context so the team can detect crawl problems, sitemap errors, and agent-discovery drift. This is not product analytics or user behavior tracking. Logs must not capture private content, draft content, admin-only surfaces, cookies, authentication data, contact details, medical free text, IP-based user profiles, or individual user identities.
+
 `/listing-comparison` is the only v1 indexable Listing Comparison URL. It acts as the stable public discovery entry point and is included in `/pages-sitemap.xml`.
 
 Listing Comparison query variants stay functional for users, saved links, filters, sorting, and pagination, but they are not treated as indexable landing pages. Any query parameter on `/listing-comparison` is canonicalized to `/listing-comparison` and emits `noindex, follow`, including current and legacy parameters such as `city`, `specialty`, `treatment`, `ratingMin`, `priceMin`, `priceMax`, `sort`, `page`, `service`, `location`, and `budget`.

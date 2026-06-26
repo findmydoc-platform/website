@@ -32,6 +32,7 @@ describe('public discovery contract', () => {
   it('tracks the public discovery surfaces that need contract coverage', () => {
     expectIncludesAll(PUBLIC_DISCOVERY_SURFACE_PATHS, [
       '/robots.txt',
+      '/sitemap.xml',
       '/pages-sitemap.xml',
       '/posts-sitemap.xml',
       '/llms.txt',

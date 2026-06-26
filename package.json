@@ -50,6 +50,7 @@
     "images:optimize": "pnpm dlx tsx scripts/optimize-images.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
+    "discovery:health": "node scripts/public-discovery-health.mjs",
     "docs:check": "node scripts/docs-consistency-check.mjs",
     "stories:governance:check": "node scripts/storybook/validate-story-governance.mjs",
     "check:payload-types": "bash .github/scripts/ci/check-payload-types.sh",

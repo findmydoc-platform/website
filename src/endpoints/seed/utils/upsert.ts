@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'crypto'
 import fs from 'fs'
 import path from 'path'
 import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
+import { prepareUploadFilenameFromFilePathSync } from '@/hooks/media/prepareUploadFilename'
 
 export type UpsertResult = { created: boolean; updated: boolean }
 
@@ -254,7 +255,7 @@ function derivePlatformSeedStoragePath(filePath: string): string | null {
     return null
   }
 
-  const baseFilename = path.basename(filePath).replace(/[\\/]/g, '_')
+  const baseFilename = prepareUploadFilenameFromFilePathSync(filePath) ?? path.basename(filePath).replace(/[\\/]/g, '_')
   if (!baseFilename) return null
 
   const hashInput = `platform:${baseFilename}${size ? `:${size}` : ''}`
@@ -281,7 +282,11 @@ function shouldClearPlatformSeedUploadTargetsBeforeUpdate(options: {
   if (expectedStoragePath === currentStoragePath) return true
 
   const baseFilename = deriveSeedBaseFilename(filePath)
-  return Boolean(baseFilename && currentStoragePath.endsWith(`-${baseFilename}`))
+  const preparedBaseFilename = prepareUploadFilenameFromFilePathSync(filePath)
+  return Boolean(
+    (baseFilename && currentStoragePath.endsWith(`-${baseFilename}`)) ||
+    (preparedBaseFilename && currentStoragePath.endsWith(`-${preparedBaseFilename}`)),
+  )
 }
 
 async function clearUploadDeletionTargetsBeforeUpdate(options: {

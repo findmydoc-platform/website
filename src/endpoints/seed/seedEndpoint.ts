@@ -1,5 +1,9 @@
 import type { PayloadRequest } from 'payload'
 import { revalidatePath, revalidateTag } from 'next/cache.js'
+import {
+  PLATFORM_CONTENT_MEDIA_LANDING_PATHS,
+  PLATFORM_CONTENT_MEDIA_LANDING_TAGS,
+} from '@/hooks/media/revalidateMediaConsumers'
 import { assertSeedRunPolicy, isSeedEndpointPostEnabled, resolveSeedRuntimeEnv, type SeedType } from './utils/runtime'
 import { buildSeedQueueJobs, getSeedQueueName } from './utils/planner'
 import { formatSeedRetryTitle, formatSeedRunTitle, formatSeedJobTitle } from './utils/labels'
@@ -41,7 +45,12 @@ const isPlatformSeedUser = (req: PayloadRequest): boolean => {
 }
 
 const revalidateSeedGlobals = (req: PayloadRequest) => {
-  const tags = ['global_header', 'global_footer', 'global_cookieConsent', 'global_landingPages'] as const
+  const tags = [
+    'global_header',
+    'global_footer',
+    'global_cookieConsent',
+    ...PLATFORM_CONTENT_MEDIA_LANDING_TAGS,
+  ] as const
 
   for (const tag of tags) {
     try {
@@ -53,9 +62,7 @@ const revalidateSeedGlobals = (req: PayloadRequest) => {
     }
   }
 
-  const paths = ['/', '/about', '/partners/clinics'] as const
-
-  for (const path of paths) {
+  for (const path of PLATFORM_CONTENT_MEDIA_LANDING_PATHS) {
     try {
       revalidatePath(path)
       req.payload.logger.info(`Revalidated seed path: ${path}`)

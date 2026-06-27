@@ -1,5 +1,5 @@
 import { getCache } from '@vercel/functions'
-import { createHash } from 'node:crypto'
+import { createHash } from 'crypto'
 import type { FlagDefinitionCacheData, FlagDefinitionCacheProvider } from 'posthog-node/experimental'
 import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
 import { createScopedLogger, toLoggedError } from '@/utilities/logging/shared'

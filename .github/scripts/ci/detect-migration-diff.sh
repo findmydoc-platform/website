@@ -53,6 +53,8 @@ schema_pattern='^(src/collections/|src/globals/|src/fields/|src/plugins/|src/pay
 migration_pattern='^src/migrations/'
 db_tooling_pattern='^(\.github/workflows/db-quality\.yml|\.github/workflows/deploy\.yml|\.github/scripts/ci/(detect-migration-diff|enforce-schema-migration|wait-for-postgres)\.sh|scripts/(migration-risk-scan|test-database-harness)\.mjs|vitest\.config\.ts)$'
 import_export_allowlist_line_regex="^[+-][[:space:]]*\\{[[:space:]]*slug:[[:space:]]*'[^']+'(,[[:space:]]*(import|export):[[:space:]]*false)?[[:space:]]*\\},?[[:space:]]*$"
+hook_only_collection_line_regex="^[+-][[:space:]]*(import[[:space:]]*\\{|import[[:space:]].*from[[:space:]]'@/hooks/[^']+'|\\}[[:space:]]*from[[:space:]]'@/hooks/[^']+'|[[:space:]]*((afterChange|afterDelete):[[:space:]]*\\[)?(beforeOperationPrepareUploadFilename|revalidateDeletedPlatformContentMediaConsumers|revalidatePlatformContentMediaConsumers)\\]?,?|\\{|\\})[[:space:]]*$"
+collection_crypto_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*randomUUID[[:space:]]*\\}[[:space:]]*from[[:space:]]*'(node:)?crypto'[[:space:]]*$"
 
 schema_changed=false
 migrations_changed=false
@@ -88,10 +90,63 @@ is_import_export_plugin_allowlist_only_change() {
   return 0
 }
 
+is_hook_only_collection_change() {
+  local file_path="$1"
+  local diff
+  local diff_line
+
+  if ! diff="$(git diff --unified=0 --diff-filter=ACMR "${effective_range}" -- "${file_path}")"; then
+    return 1
+  fi
+
+  if [[ -z "${diff}" ]]; then
+    return 1
+  fi
+
+  while IFS= read -r diff_line; do
+    case "${diff_line}" in
+      'diff --git'* | 'index '* | '--- '* | '+++ '* | '@@'*)
+        continue
+        ;;
+    esac
+
+    if [[ "${diff_line}" == +* || "${diff_line}" == -* ]]; then
+      if [[ ! "${diff_line}" =~ ${hook_only_collection_line_regex} && ! "${diff_line}" =~ ${collection_crypto_import_line_regex} ]]; then
+        return 1
+      fi
+    fi
+  done <<<"${diff}"
+
+  return 0
+}
+
 schema_changed_files="$(grep -E "${schema_pattern}" <<<"${changed_files}" || true)"
 
 if grep -qx 'src/plugins/index.ts' <<<"${schema_changed_files}" && is_import_export_plugin_allowlist_only_change; then
   schema_changed_files="$(grep -vx 'src/plugins/index.ts' <<<"${schema_changed_files}" || true)"
+fi
+
+if [[ -n "${schema_changed_files}" ]]; then
+  hook_only_schema_changed_files=''
+  while IFS= read -r schema_file; do
+    if [[ -z "${schema_file}" ]]; then
+      continue
+    fi
+
+    if [[ "${schema_file}" =~ ^src/collections/ ]] && is_hook_only_collection_change "${schema_file}"; then
+      continue
+    fi
+
+    hook_only_schema_changed_files+="${schema_file}"$'\n'
+  done <<<"${schema_changed_files}"
+  schema_changed_files="${hook_only_schema_changed_files}"
+fi
+
+if [[ -n "${schema_changed_files}" ]]; then
+  echo "Schema-relevant files after allowlists:"
+  echo "${schema_changed_files}"
+else
+  echo "No schema-relevant files after allowlists."
 fi
 
 if [[ -n "${schema_changed_files}" ]]; then

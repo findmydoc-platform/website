@@ -42,6 +42,24 @@ describe('resolveMediaDescriptorFromLoadedRelation', () => {
     })
   })
 
+  it('adds updatedAt as a version query to loaded Payload media relations', () => {
+    const descriptor = resolveMediaDescriptorFromLoadedRelation(
+      {
+        id: 12,
+        url: '/api/clinicMedia/file/versioned.jpg?prefix=clinics',
+        filename: 'ignored.jpg',
+        alt: 'Versioned image',
+        updatedAt: '2026-06-27T10:15:00.000Z',
+      },
+      'clinicMedia',
+    )
+
+    expect(descriptor).toEqual({
+      url: '/api/clinicMedia/file/versioned.jpg?prefix=clinics&v=2026-06-27T10%3A15%3A00.000Z',
+      alt: 'Versioned image',
+    })
+  })
+
   it('builds owner media descriptors from unique relation IDs and loaded relations', async () => {
     const findMock = vi.fn(async (_args: { where: { id: { in: number[] } } }) => ({
       docs: [

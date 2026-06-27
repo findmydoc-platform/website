@@ -1,4 +1,4 @@
-import { splitUrlQuery } from '@/utilities/urlParts'
+import { versionPayloadMediaFileUrl } from './fileUrls'
 
 type MediaSize = {
   url?: string | null
@@ -13,6 +13,7 @@ type MediaLike = {
   height?: number | null
   focalX?: number | null
   focalY?: number | null
+  updatedAt?: string | null
   sizes?: Record<string, MediaSize | undefined>
 } | null
 
@@ -117,27 +118,6 @@ for (const [usage, policy] of Object.entries(MEDIA_IMAGE_POLICIES)) {
   }
 }
 
-const normalizePayloadApiFileUrl = (src: string): string => {
-  if (!src.includes('/api/') || !src.includes('/file/')) return src
-
-  const { path: pathPart, query } = splitUrlQuery(src)
-  const marker = '/file/'
-  const markerIndex = pathPart.indexOf(marker)
-
-  if (markerIndex === -1) return src
-
-  const prefix = pathPart.slice(0, markerIndex + marker.length)
-  const rawFilePart = pathPart.slice(markerIndex + marker.length)
-  const decodedFilePart = decodeURIComponent(rawFilePart)
-  const normalizedPath = decodedFilePart
-    .replace(/^\/+/, '')
-    .split('/')
-    .map((segment) => encodeURIComponent(segment))
-    .join('/')
-
-  return query ? `${prefix}${normalizedPath}?${query}` : `${prefix}${normalizedPath}`
-}
-
 const normalizeFocalCoordinate = (value: number | null | undefined): number | undefined => {
   if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
 
@@ -172,7 +152,7 @@ export function resolveMediaImage(
       if (!media.url) continue
 
       return {
-        src: normalizePayloadApiFileUrl(media.url),
+        src: versionPayloadMediaFileUrl(media.url, media.updatedAt),
         alt,
         width: media.width ?? undefined,
         height: media.height ?? undefined,
@@ -185,7 +165,7 @@ export function resolveMediaImage(
     const size = sizes[key]
     if (size?.url) {
       return {
-        src: normalizePayloadApiFileUrl(size.url),
+        src: versionPayloadMediaFileUrl(size.url, media.updatedAt),
         alt,
         width: size.width ?? undefined,
         height: size.height ?? undefined,

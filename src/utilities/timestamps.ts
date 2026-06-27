@@ -2,6 +2,13 @@ export function getCurrentIsoTimestampString(): string {
   return new Date().toISOString()
 }
 
+/**
+ * Parses timestamp strings with the JavaScript runtime parser.
+ *
+ * Use this for existing Payload/ISO timestamp values and duplicate-window checks.
+ * It intentionally does not accept Date objects or numbers, so callers do not
+ * silently broaden timestamp inputs while sharing the parsing semantics.
+ */
 export function parseTimestampStringToMs(value: unknown): number | undefined {
   if (typeof value !== 'string') return undefined
 

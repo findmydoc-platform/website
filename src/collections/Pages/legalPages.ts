@@ -14,6 +14,7 @@ import {
   getManagedLegalPageSpec,
   isManagedLegalPageSlug,
 } from '@/utilities/legalPages'
+import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
 
 type ManagedPageDoc = Pick<Page, 'id' | 'slug' | '_status' | 'deletedAt'>
 type RedirectDoc = Pick<Redirect, 'id' | 'from' | 'to'>
@@ -80,7 +81,7 @@ function buildManagedLegalPageLayout(title: string, body: string): NonNullable<P
 function buildManagedLegalPageData(
   spec: (typeof MANAGED_LEGAL_PAGE_SPECS)[number],
 ): RequiredDataFromCollectionSlug<'pages'> {
-  const timestamp = new Date().toISOString()
+  const timestamp = getCurrentIsoTimestampString()
 
   return {
     title: spec.title,
@@ -143,7 +144,7 @@ async function ensureManagedPage(payload: Payload, spec: (typeof MANAGED_LEGAL_P
 
   if (existing._status !== 'published') {
     update._status = 'published'
-    update.publishedAt = new Date().toISOString()
+    update.publishedAt = getCurrentIsoTimestampString()
   }
 
   if (existing.deletedAt) {

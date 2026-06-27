@@ -3,6 +3,7 @@ import type { Payload } from 'payload'
 import type { SeedType } from './runtime'
 import type { SeedQueueJobInput } from './job-types'
 import { formatSeedRunTitle } from './labels'
+import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
 
 export type SeedRunStatus = 'queued' | 'running' | 'completed' | 'partial' | 'failed' | 'cancelled'
 export type SeedJobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'skipped'
@@ -87,7 +88,7 @@ const LATEST_RUN_KEY = 'seed:latest'
 
 const TERMINAL_STATUSES = new Set<SeedRunStatus>(['completed', 'partial', 'failed', 'cancelled'])
 
-const nowIso = () => new Date().toISOString()
+const nowIso = getCurrentIsoTimestampString
 
 const clone = <T>(value: T): T => structuredClone(value)
 

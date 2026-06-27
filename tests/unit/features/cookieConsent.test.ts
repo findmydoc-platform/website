@@ -35,6 +35,7 @@ function CookieConsentToolProbe() {
 
 describe('cookie consent helpers', () => {
   afterEach(() => {
+    vi.useRealTimers()
     clearConsentCookie()
   })
 
@@ -54,6 +55,23 @@ describe('cookie consent helpers', () => {
     const parsed = parseCookieConsentState(serialized, 3)
 
     expect(parsed).toEqual(state)
+  })
+
+  it('defaults decidedAt to the current ISO timestamp', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-31T10:05:00.000Z'))
+
+    expect(
+      createCookieConsentState({
+        choice: 'accepted',
+        categories: {
+          analytics: true,
+          functional: true,
+          marketing: true,
+        },
+        version: 3,
+      }).decidedAt,
+    ).toBe('2026-03-31T10:05:00.000Z')
   })
 
   it('rejects stale consent versions', () => {

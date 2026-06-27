@@ -8,6 +8,7 @@ import {
   updateAverageRatingsAfterDelete,
 } from '@/hooks/calculations/updateAverageRatings'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
+import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
 
 type ReviewDraft = Record<string, unknown>
 type RelationId = string | number
@@ -144,7 +145,7 @@ export const Reviews: CollectionConfig = {
       name: 'reviewDate',
       type: 'date',
       required: true,
-      defaultValue: () => new Date().toISOString(),
+      defaultValue: getCurrentIsoTimestampString,
       admin: {
         description: 'Date the review was written',
         readOnly: true,
@@ -350,7 +351,7 @@ export const Reviews: CollectionConfig = {
             }
 
             // Add edit timestamp for audit trail
-            data.lastEditedAt = new Date().toISOString()
+            data.lastEditedAt = getCurrentIsoTimestampString()
             data.editedBy = req.user.id
 
             // Populate the name from the current user session without using `any`

@@ -1,27 +1,33 @@
-export function normalizeToIsoTimestampString(value: unknown): string | undefined {
+export function getCurrentIsoTimestampString(): string {
+  return new Date().toISOString()
+}
+
+export function parseTimestampStringToMs(value: unknown): number | undefined {
   if (typeof value !== 'string') return undefined
 
   const trimmed = value.trim()
   if (trimmed.length === 0) return undefined
 
-  const date = new Date(trimmed)
-  if (Number.isNaN(date.getTime())) return undefined
+  const timestampMs = Date.parse(trimmed)
+  return Number.isFinite(timestampMs) ? timestampMs : undefined
+}
 
-  return date.toISOString()
+export function normalizeToIsoTimestampString(value: unknown): string | undefined {
+  const timestampMs = parseTimestampStringToMs(value)
+  return timestampMs === undefined ? undefined : new Date(timestampMs).toISOString()
 }
 
 export function findLatestIsoTimestampString(values: Iterable<unknown>): string | undefined {
-  let latestDate: Date | undefined
+  let latestTimestampMs: number | undefined
 
   for (const value of values) {
-    const normalized = normalizeToIsoTimestampString(value)
-    if (!normalized) continue
+    const candidateTimestampMs = parseTimestampStringToMs(value)
+    if (candidateTimestampMs === undefined) continue
 
-    const candidateDate = new Date(normalized)
-    if (!latestDate || candidateDate.getTime() > latestDate.getTime()) {
-      latestDate = candidateDate
+    if (latestTimestampMs === undefined || candidateTimestampMs > latestTimestampMs) {
+      latestTimestampMs = candidateTimestampMs
     }
   }
 
-  return latestDate?.toISOString()
+  return latestTimestampMs === undefined ? undefined : new Date(latestTimestampMs).toISOString()
 }

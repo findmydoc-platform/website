@@ -1,3 +1,5 @@
+import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
+
 type HeaderRecord = Record<string, string | string[] | undefined>
 
 export type RequestLike = {
@@ -80,6 +82,6 @@ export const sendRequestErrorToPostHog = async (err: unknown, request: unknown):
     url: meta.url,
     method: meta.method,
     userAgent: readHeader(request, 'user-agent') ?? undefined,
-    timestamp: new Date().toISOString(),
+    timestamp: getCurrentIsoTimestampString(),
   })
 }

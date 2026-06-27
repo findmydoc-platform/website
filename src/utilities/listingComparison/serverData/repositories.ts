@@ -4,7 +4,7 @@ import path from 'node:path'
 import type { Payload } from 'payload'
 
 import type { City, Clinic, Clinictreatment, MedicalSpecialty, Review, Treatment } from '@/payload-types'
-import { normalizeToIsoTimestampString } from '@/utilities/timestamps'
+import { findLatestIsoTimestampString, normalizeToIsoTimestampString } from '@/utilities/timestamps'
 import { chunkArray, extractRelationId } from './relations'
 
 const CLINIC_CHUNK_SIZE = 200
@@ -256,7 +256,7 @@ export async function findLatestApprovedReviewDateForClinics(
 ): Promise<string | undefined> {
   if (clinicIds.length === 0) return undefined
 
-  let latestReviewDate: string | undefined
+  const latestReviewDates: string[] = []
   const clinicIdChunks = chunkArray(clinicIds, CLINIC_CHUNK_SIZE)
 
   for (const clinicIdChunk of clinicIdChunks) {
@@ -290,12 +290,10 @@ export async function findLatestApprovedReviewDateForClinics(
     const review = result.docs[0] as Review | undefined
     const normalizedReviewDate = normalizeToIsoTimestampString(review?.reviewDate)
     if (!normalizedReviewDate) continue
-    if (!latestReviewDate || new Date(normalizedReviewDate).getTime() > new Date(latestReviewDate).getTime()) {
-      latestReviewDate = normalizedReviewDate
-    }
+    latestReviewDates.push(normalizedReviewDate)
   }
 
-  return latestReviewDate
+  return findLatestIsoTimestampString(latestReviewDates)
 }
 
 export async function countApprovedReviewsByClinic(

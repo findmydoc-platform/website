@@ -2,6 +2,7 @@ import { isIP } from 'node:net'
 import { NextRequest, NextResponse } from 'next/server'
 import configPromise from '@/payload.config'
 import { postHogServerConsent, postHogServerEvents, resolveAnonymousPostHogActor } from '@/posthog/api'
+import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
 import { getPayload } from 'payload'
 
 type ClinicRegistrationSubmissionStatus = 'created' | 'deduped'
@@ -243,7 +244,7 @@ export async function POST(req: NextRequest) {
         status: 'submitted',
         sourceMeta: { ip, userAgent },
         privacyNotice: {
-          acknowledgedAt: new Date().toISOString(),
+          acknowledgedAt: getCurrentIsoTimestampString(),
           url: PRIVACY_NOTICE_URL,
         },
       },

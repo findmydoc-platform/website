@@ -15,11 +15,11 @@ const viewportMatrix = [
 ] as const
 
 const expectedSectionOrder = [
-  /About findmydoc/,
-  /Why findmydoc exists/,
+  /The team behind clearer clinic decisions\.|About findmydoc/,
+  /Why we exist|Why findmydoc exists/,
   /findmydoc trust system scroll story/i,
   /The people accountable for the system/,
-  /What stays transparent/,
+  /What we keep transparent|What stays transparent/,
   /Continue with clearer clinic context\./,
 ] as const
 
@@ -73,14 +73,23 @@ async function scrollTrustStoryToProgress(page: Page, progress: number) {
 }
 
 test('about page composes the trust narrative across public viewports @smoke', async ({ page }) => {
+  test.setTimeout(120_000)
+
   const issues = createBrowserIssueCollector(page)
 
   for (const viewport of viewportMatrix) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await page.goto('/about', { waitUntil: 'domcontentloaded' })
 
-    await expect(page.getByRole('heading', { name: 'About findmydoc' })).toBeVisible()
-    await expect(page.getByText(/Profile claims, qualifications, reviews, prices/i)).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: /The team behind clearer clinic decisions\.|About findmydoc/i }),
+    ).toBeVisible()
+    await expect(
+      page.getByText(
+        /findmydoc helps patients compare clinic information with confidence|We build findmydoc so patients can compare clinic information with more context/i,
+      ),
+    ).toBeVisible()
+    await expect(page.getByText(/We bring clarity to clinic information|Profile claims, qualifications/i)).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Scattered information' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Comparison context' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Decision boundary' })).toBeVisible()
@@ -101,13 +110,37 @@ test('about page composes the trust narrative across public viewports @smoke', a
     const teamHeading = page.getByRole('heading', { name: 'The people accountable for the system' })
     await teamHeading.scrollIntoViewIfNeeded()
     await expect(teamHeading).toBeVisible()
-    await expect(page.getByText(/Sets partner standards/i)).toBeVisible()
-    await expect(page.getByText('Platform reliability')).toBeVisible()
+    const teamSpotlight = page.locator('[data-about-team-spotlight]')
+    await expect(teamSpotlight.getByRole('heading', { name: 'Volkan Kablan' })).toBeVisible()
+    await expect(teamSpotlight.getByText(/Sets the standards for partner relationships/i)).toBeVisible()
+    await expect(teamSpotlight.getByRole('link', { name: 'Volkan Kablan on LinkedIn' })).toBeVisible()
+    await expect(teamSpotlight.getByRole('link', { name: 'Contact' })).toHaveAttribute('href', '/contact')
+    const volkanTab = page.getByRole('tab', { name: /Volkan Kablan/i })
+    const sebastianTab = page.getByRole('tab', { name: /Sebastian Schütze/i })
 
-    const transparencyHeading = page.getByRole('heading', { name: 'What stays transparent' })
+    await expect(page.getByRole('tablist', { name: /Team accountability roles/i })).toBeVisible()
+    await expect(volkanTab).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByText('Platform reliability')).toBeVisible()
+    await sebastianTab.click()
+    if (viewport.width < 1024) {
+      await expect(teamSpotlight).toBeInViewport({ ratio: 0.2 })
+    }
+    await expect(teamSpotlight.getByRole('heading', { name: 'Sebastian Schütze' })).toBeVisible()
+    await expect(teamSpotlight.getByText(/structured, available, and reliable/i)).toBeVisible()
+    await expect(teamSpotlight.getByRole('link', { name: 'Sebastian Schütze on GitHub' })).toBeVisible()
+    await expect(sebastianTab).toHaveAttribute('aria-selected', 'true')
+    await expect(volkanTab).toHaveAttribute('aria-selected', 'false')
+    await sebastianTab.press('Home')
+    await expect(volkanTab).toHaveAttribute('aria-selected', 'true')
+    await volkanTab.press('End')
+    await expect(sebastianTab).toHaveAttribute('aria-selected', 'true')
+    await expect(teamSpotlight.getByRole('heading', { name: 'Sebastian Schütze' })).toBeVisible()
+    await expectNoHorizontalOverflow(page, `${viewport.name} team spotlight`)
+
+    const transparencyHeading = page.getByRole('heading', { name: /What we keep transparent|What stays transparent/i })
     await transparencyHeading.scrollIntoViewIfNeeded()
     await expect(transparencyHeading).toBeVisible()
-    await expect(page.getByText(/Comparison context stays separate from medical advice/i)).toBeVisible()
+    await expect(page.getByText(/Patients contact clinics directly/i)).toBeVisible()
     await expect(page.getByText('Medical-advice separation')).toBeVisible()
 
     const closingHeading = page.getByRole('heading', { name: 'Continue with clearer clinic context.' })

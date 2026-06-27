@@ -56,6 +56,29 @@ describe('resolveMediaImage', () => {
     })
   })
 
+  it('adds media updatedAt as a version query for Payload file URLs', () => {
+    const image = resolveMediaImage(
+      {
+        alt: 'Versioned image',
+        updatedAt: '2026-06-27T10:15:00.000Z',
+        sizes: {
+          medium: {
+            url: '/api/clinicMedia/file/versioned.jpg?prefix=clinics',
+            width: 900,
+            height: 600,
+          },
+        },
+      },
+      {
+        usage: 'listingCard',
+      },
+    )
+
+    expect(image).toMatchObject({
+      src: '/api/clinicMedia/file/versioned.jpg?prefix=clinics&v=2026-06-27T10%3A15%3A00.000Z',
+    })
+  })
+
   it('prefers the original image before falling back to a thumbnail', () => {
     const image = resolveMediaImage(
       {

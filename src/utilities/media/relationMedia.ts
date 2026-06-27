@@ -1,12 +1,20 @@
 import type { Payload, PayloadRequest } from 'payload'
 
-export type MediaCollectionSlug = 'clinicMedia' | 'doctorMedia' | 'platformContentMedia' | 'userProfileMedia'
+import { versionPayloadMediaFileUrl } from './fileUrls'
+
+export type MediaCollectionSlug =
+  | 'clinicGalleryMedia'
+  | 'clinicMedia'
+  | 'doctorMedia'
+  | 'platformContentMedia'
+  | 'userProfileMedia'
 
 type MediaDocument = {
   id: number
   url?: string | null
   alt?: string | null
   filename?: string | null
+  updatedAt?: string | null
 }
 
 export type MediaDescriptor = {
@@ -14,9 +22,13 @@ export type MediaDescriptor = {
   alt: string | null
 }
 
-function buildMediaFileUrl(collection: MediaCollectionSlug, filename: string | null | undefined): string | null {
+function buildMediaFileUrl(
+  collection: MediaCollectionSlug,
+  filename: string | null | undefined,
+  updatedAt?: string | null,
+): string | null {
   if (!filename || filename.trim().length === 0) return null
-  return `/api/${collection}/file/${filename}`
+  return versionPayloadMediaFileUrl(`/api/${collection}/file/${filename}`, updatedAt)
 }
 
 export function resolveMediaDescriptorFromLoadedRelation(
@@ -27,9 +39,10 @@ export function resolveMediaDescriptorFromLoadedRelation(
   if (relationDescriptor?.url) return relationDescriptor
   if (!relation || typeof relation !== 'object') return relationDescriptor
 
-  const relationDoc = relation as { filename?: unknown; alt?: unknown }
+  const relationDoc = relation as { filename?: unknown; alt?: unknown; updatedAt?: unknown }
   const filename = typeof relationDoc.filename === 'string' ? relationDoc.filename : null
-  const url = relationDescriptor?.url ?? buildMediaFileUrl(collection, filename)
+  const updatedAt = typeof relationDoc.updatedAt === 'string' ? relationDoc.updatedAt : null
+  const url = relationDescriptor?.url ?? buildMediaFileUrl(collection, filename, updatedAt)
   const alt =
     typeof relationDoc.alt === 'string'
       ? relationDoc.alt
@@ -73,8 +86,9 @@ export function getMediaDescriptorFromRelation(value: unknown): MediaDescriptor 
   if (!value || typeof value !== 'object') return undefined
   if (!('url' in value)) return undefined
 
-  const relation = value as { url?: unknown; alt?: unknown }
-  const url = typeof relation.url === 'string' ? relation.url : null
+  const relation = value as { url?: unknown; alt?: unknown; updatedAt?: unknown }
+  const updatedAt = typeof relation.updatedAt === 'string' ? relation.updatedAt : null
+  const url = typeof relation.url === 'string' ? versionPayloadMediaFileUrl(relation.url, updatedAt) : null
   const alt = typeof relation.alt === 'string' ? relation.alt : null
 
   if (!url && !alt) return undefined
@@ -114,7 +128,10 @@ export async function resolveMediaDescriptorFromRelation({
     })) as MediaDocument
 
     return {
-      url: typeof media.url === 'string' ? media.url : buildMediaFileUrl(collection, media.filename),
+      url:
+        typeof media.url === 'string'
+          ? versionPayloadMediaFileUrl(media.url, media.updatedAt)
+          : buildMediaFileUrl(collection, media.filename, media.updatedAt),
       alt: typeof media.alt === 'string' ? media.alt : null,
     }
   } catch {
@@ -165,7 +182,10 @@ export async function findMediaDescriptorsByIds({
       const docs = result.docs as MediaDocument[]
       docs.forEach((doc) => {
         descriptorsById.set(doc.id, {
-          url: typeof doc.url === 'string' ? doc.url : buildMediaFileUrl(collection, doc.filename),
+          url:
+            typeof doc.url === 'string'
+              ? versionPayloadMediaFileUrl(doc.url, doc.updatedAt)
+              : buildMediaFileUrl(collection, doc.filename, doc.updatedAt),
           alt: typeof doc.alt === 'string' ? doc.alt : null,
         })
       })

@@ -1,4 +1,5 @@
 import type { PlatformContentMedia, ClinicMedia, DoctorMedia, UserProfileMedia } from '@/payload-types'
+import { versionPayloadMediaFileUrl } from './media/fileUrls'
 
 /**
  * Extracts the URL from a Media object or returns null if not available.
@@ -21,7 +22,7 @@ export const getMediaUrl = (
     if (typeof url === 'string') {
       const normalizedUrl = url.trim()
       if (normalizedUrl.length > 0) {
-        return normalizedUrl
+        return versionPayloadMediaFileUrl(normalizedUrl, file.updatedAt)
       }
     }
   }

@@ -13,6 +13,7 @@ import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/st
 import { beforeChangeDoctorMedia } from './hooks/beforeChangeDoctorMedia'
 import type { DoctorMedia as DoctorMediaType } from '@/payload-types'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
+import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
 import {
   buildMediaAltField,
   buildMediaCaptionField,
@@ -66,6 +67,7 @@ export const DoctorMedia: CollectionConfig = {
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [stableIdBeforeChangeHook, beforeChangeDoctorMedia],
     beforeOperation: [
+      beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         ownerField: 'doctor',
         storagePrefix: 'doctors',

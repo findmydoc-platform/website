@@ -12,6 +12,7 @@ import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
+import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
 import {
   buildMediaAltField,
   buildMediaCaptionField,
@@ -71,6 +72,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
       }),
     ],
     beforeOperation: [
+      beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         ownerField: 'clinic',
         storagePrefix: 'clinics-gallery',

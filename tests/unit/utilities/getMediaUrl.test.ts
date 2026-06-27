@@ -23,6 +23,19 @@ describe('getMediaUrl', () => {
     expect(getMediaUrl(mediaObject as PlatformContentMedia)).toBe('/uploads/image.jpg')
   })
 
+  it('should append updatedAt to Payload API file URLs', () => {
+    const mediaObject: Partial<PlatformContentMedia> = {
+      id: 124,
+      url: '/api/platformContentMedia/file/image.jpg?prefix=platform',
+      filename: 'image.jpg',
+      updatedAt: '2026-06-27T10:15:00.000Z',
+    }
+
+    expect(getMediaUrl(mediaObject as PlatformContentMedia)).toBe(
+      '/api/platformContentMedia/file/image.jpg?prefix=platform&v=2026-06-27T10%3A15%3A00.000Z',
+    )
+  })
+
   it('should return null for Media object without url property', () => {
     const mediaObject = {
       id: 123,

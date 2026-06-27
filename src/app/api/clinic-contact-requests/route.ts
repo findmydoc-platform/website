@@ -8,6 +8,7 @@ import {
   patientClinicInquiryContactWindowValues,
   patientClinicInquiryTreatmentTimelineValues,
 } from '@/collections/PatientClinicInquiries'
+import { getCurrentIsoTimestampString, parseTimestampStringToMs } from '@/utilities/timestamps'
 
 const CONSENT_TEXT =
   'By submitting this request, you agree that findmydoc may process your contact details to coordinate follow-up about this clinic inquiry.'
@@ -166,10 +167,8 @@ async function withDuplicateLock<T>(payload: PayloadClient, fingerprint: string,
 }
 
 function isWithinDuplicateWindow(createdAt: unknown, now = Date.now()): boolean {
-  if (typeof createdAt !== 'string') return false
-
-  const createdAtMs = Date.parse(createdAt)
-  if (!Number.isFinite(createdAtMs)) return false
+  const createdAtMs = parseTimestampStringToMs(createdAt)
+  if (createdAtMs === undefined) return false
 
   return now - createdAtMs <= DUPLICATE_INQUIRY_WINDOW_MS
 }
@@ -402,7 +401,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      const now = new Date().toISOString()
+      const now = getCurrentIsoTimestampString()
       const inquiry = await payload.create({
         collection: 'patientClinicInquiries',
         data: {

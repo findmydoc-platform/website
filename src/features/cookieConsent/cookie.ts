@@ -5,6 +5,7 @@ import {
 } from './constants'
 import { COOKIE_CONSENT_CATEGORY_ORDER } from './categories'
 import type { CookieConsentCategoryMap, CookieConsentChoice, CookieConsentState } from './types'
+import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
 
 type CookieConsentPayload = {
   choice: CookieConsentChoice
@@ -71,7 +72,7 @@ export function createCookieConsentState(input: {
     choice: input.choice,
     categories: normalizeCategoryMap(input.categories),
     version: input.version,
-    decidedAt: input.decidedAt ?? new Date().toISOString(),
+    decidedAt: input.decidedAt ?? getCurrentIsoTimestampString(),
   }
 }
 

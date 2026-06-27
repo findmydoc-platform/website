@@ -93,6 +93,28 @@ function makeExistingInquiry(overrides: Record<string, unknown> = {}) {
   }
 }
 
+function mockSuccessfulLookupsWithInquiries(inquiries: Array<Record<string, unknown>>) {
+  findMock.mockImplementation(async (args: { collection: string }) => {
+    if (args.collection === 'clinics') {
+      return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
+    }
+
+    if (args.collection === 'doctors') {
+      return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
+    }
+
+    if (args.collection === 'clinictreatments') {
+      return { docs: [{ id: 201, clinic: 1, treatment: { id: 301, name: 'Routine Checkup' } }] }
+    }
+
+    if (args.collection === 'patientClinicInquiries') {
+      return { docs: inquiries }
+    }
+
+    return { docs: [] }
+  })
+}
+
 describe('POST /api/clinic-contact-requests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -236,6 +258,32 @@ describe('POST /api/clinic-contact-requests', () => {
     expect(response.status).toBe(200)
     expect(json).toEqual({ success: true, id: 99, status: 'submitted', deduped: true })
     expect(createMock).not.toHaveBeenCalled()
+  })
+
+  it('creates a new inquiry when an identical candidate is outside the duplicate window', async () => {
+    mockSuccessfulLookupsWithInquiries([
+      makeExistingInquiry({
+        createdAt: new Date(Date.now() - 16 * 60 * 1000).toISOString(),
+      }),
+    ])
+
+    const response = await POST(makeRequest(validBody))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ success: true, id: 42, status: 'submitted' })
+    expect(createMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('creates a new inquiry when an identical candidate has an invalid timestamp', async () => {
+    mockSuccessfulLookupsWithInquiries([makeExistingInquiry({ createdAt: 'not-a-date' })])
+
+    const response = await POST(makeRequest(validBody))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ success: true, id: 42, status: 'submitted' })
+    expect(createMock).toHaveBeenCalledTimes(1)
   })
 
   it('creates a new inquiry when the recent candidate has a different message', async () => {

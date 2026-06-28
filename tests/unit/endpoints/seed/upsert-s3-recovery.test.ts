@@ -5,9 +5,10 @@ import os from 'os'
 import path from 'path'
 import type { Payload } from 'payload'
 import { upsertByStableId } from '@/endpoints/seed/utils/upsert'
+import { prepareUploadFilenameFromFilePathSync } from '@/hooks/media/prepareUploadFilename'
 
 function platformSeedStoragePathFor(filePath: string): string {
-  const baseFilename = path.basename(filePath).replace(/[\\/]/g, '_')
+  const baseFilename = prepareUploadFilenameFromFilePathSync(filePath) ?? path.basename(filePath).replace(/[\\/]/g, '_')
   const size = fs.statSync(filePath).size
   const hashInput = `platform:${baseFilename}${size ? `:${size}` : ''}`
   const hash = createHash('sha1').update(hashInput).digest('hex').slice(0, 10)

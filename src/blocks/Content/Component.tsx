@@ -5,6 +5,7 @@ import type { ContentColumn, ContentImage } from '@/components/organisms/Content
 import RichText from '@/blocks/_shared/RichText'
 import { isRecord, resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { ContentLocaleContext } from '@/utilities/contentLocalization'
+import { versionPayloadMediaFileUrl } from '@/utilities/media/fileUrls'
 
 function pickImageSrc(m?: PlatformContentMedia | number | string | null, preferredSize?: string): ContentImage {
   if (!m || typeof m === 'number' || typeof m === 'string') {
@@ -17,7 +18,8 @@ function pickImageSrc(m?: PlatformContentMedia | number | string | null, preferr
   >
   const sizeKey = preferredSize && sizesRecord?.[preferredSize] ? preferredSize : undefined
   const chosen = sizeKey ? sizesRecord[sizeKey] : undefined
-  const src = (chosen?.url ?? m.url) || undefined
+  const rawSrc = (chosen?.url ?? m.url) || undefined
+  const src = rawSrc ? versionPayloadMediaFileUrl(rawSrc, m.updatedAt) : undefined
   const width = chosen?.width ?? m.width ?? undefined
   const height = chosen?.height ?? m.height ?? undefined
   return { src, width, height, alt: m.alt ?? '' }

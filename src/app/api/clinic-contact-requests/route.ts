@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import configPromise from '@payload-config'
+import { createHash } from 'crypto'
 import { getPayload } from 'payload'
 import { z } from 'zod'
-import { createHash } from 'node:crypto'
 
 import {
   patientClinicInquiryContactWindowValues,

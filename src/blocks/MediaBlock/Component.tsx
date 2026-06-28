@@ -4,6 +4,7 @@ import type { MediaBlock as MediaBlockPayload, PlatformContentMedia } from '@/pa
 import { MediaBlock as MediaBlockOrganism } from '@/components/organisms/MediaBlock'
 import RichText from '@/blocks/_shared/RichText'
 import type { ContentLocaleContext } from '@/utilities/contentLocalization'
+import { versionPayloadMediaFileUrl } from '@/utilities/media/fileUrls'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 
 type Props = MediaBlockPayload & {
@@ -41,7 +42,7 @@ export const MediaBlockComponent: React.FC<Props> = (props) => {
   if (media && typeof media === 'object') {
     const m = media as PlatformContentMedia
     if (m.mimeType?.includes('video')) {
-      src = m.url || undefined
+      src = m.url ? versionPayloadMediaFileUrl(m.url, m.updatedAt) : undefined
       width = m.width || undefined
       height = m.height || undefined
       alt = m.alt || undefined

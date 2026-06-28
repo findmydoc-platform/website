@@ -1,4 +1,4 @@
-import crypto from 'crypto'
+import { createHash } from 'crypto'
 import {
   buildNestedFilename,
   buildStoragePath,
@@ -16,7 +16,7 @@ import type { CollectionBeforeChangeHook, PayloadRequest } from 'payload'
  * Returns a short deterministic hash used when storage keys must be derived.
  */
 function shortHash(input: string): string {
-  return crypto.createHash('sha1').update(input).digest('hex').slice(0, 10)
+  return createHash('sha1').update(input).digest('hex').slice(0, 10)
 }
 
 /**

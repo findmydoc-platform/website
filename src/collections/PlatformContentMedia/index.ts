@@ -15,6 +15,11 @@ import {
   buildMediaUploadConfig,
 } from '@/collections/common/mediaCollection'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
+import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
+import {
+  revalidateDeletedPlatformContentMediaConsumers,
+  revalidatePlatformContentMediaConsumers,
+} from '@/hooks/media/revalidateMediaConsumers'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -34,9 +39,12 @@ export const PlatformContentMedia: CollectionConfig = {
   },
   trash: true,
   hooks: {
+    afterChange: [revalidatePlatformContentMediaConsumers],
+    afterDelete: [revalidateDeletedPlatformContentMediaConsumers],
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [stableIdBeforeChangeHook, beforeChangePlatformContentMedia],
     beforeOperation: [
+      beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         storagePrefix: 'platform',
       }),

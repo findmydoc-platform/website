@@ -24,6 +24,7 @@ import type {
 } from '@/components/templates/ClinicDetailConcepts/types'
 import { CLINICS_BREADCRUMB, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { resolveDoctorProfileImage } from '@/utilities/media/doctorProfileImage'
+import { versionPayloadMediaFileUrl } from '@/utilities/media/fileUrls'
 import type { MediaDescriptor } from '@/utilities/media/relationMedia'
 import { buildFreshnessSignals } from '@/utilities/freshness'
 import { findLatestIsoTimestampString } from '@/utilities/timestamps'
@@ -124,7 +125,8 @@ function toGalleryMediaDescriptor(value: unknown): { url: string | null; alt: st
 
   const urlFromField = typeof media.url === 'string' && media.url.trim().length > 0 ? media.url : null
   const filename = typeof media.filename === 'string' && media.filename.trim().length > 0 ? media.filename : null
-  const url = urlFromField ?? (filename ? `/api/clinicGalleryMedia/file/${filename}` : null)
+  const rawUrl = urlFromField ?? (filename ? `/api/clinicGalleryMedia/file/${filename}` : null)
+  const url = rawUrl ? versionPayloadMediaFileUrl(rawUrl, media.updatedAt) : null
   const alt = typeof media.alt === 'string' && media.alt.trim().length > 0 ? media.alt : null
 
   if (!url && !alt) return undefined

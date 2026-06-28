@@ -8,6 +8,7 @@ import { assertSeedRunPolicy, isSeedEndpointPostEnabled, resolveSeedRuntimeEnv, 
 import { buildSeedQueueJobs, getSeedQueueName } from './utils/planner'
 import { formatSeedRetryTitle, formatSeedRunTitle, formatSeedJobTitle } from './utils/labels'
 import type { SeedQueueJobInput } from './utils/job-types'
+import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
 import {
   buildSeedRunSnapshot,
   clearActiveSeedRunIfTerminal,
@@ -151,7 +152,7 @@ const queueSeedRunFromPlannedJobs = async (args: {
         fileName: job.input.fileName,
         chunkIndex: job.input.chunkIndex,
         chunkTotal: job.input.chunkTotal,
-        createdAt: new Date().toISOString(),
+        createdAt: getCurrentIsoTimestampString(),
         created: 0,
         updated: 0,
         warnings: [],
@@ -165,13 +166,13 @@ const queueSeedRunFromPlannedJobs = async (args: {
     await saveSeedRunRecord(payload, {
       ...currentRecord,
       status: 'failed',
-      completedAt: new Date().toISOString(),
+      completedAt: getCurrentIsoTimestampString(),
       failures: [...currentRecord.failures, message],
       logs: [
         ...currentRecord.logs,
         {
           id: `${args.runId}-queue-error`,
-          at: new Date().toISOString(),
+          at: getCurrentIsoTimestampString(),
           severity: 'ERROR',
           text: `Unable to queue seed run: ${message}`,
           runId: args.runId,

@@ -1,3 +1,5 @@
+import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
+
 /**
  * Normalizes `publishedAt` as the first-publication timestamp for a status field.
  *
@@ -34,7 +36,7 @@ export function beforeChangePublishedAt(options?: {
       } else if (hasPreviousPublishedAt) {
         draft[publishedAtKey] = previousPublishedAt
       } else {
-        draft[publishedAtKey] = new Date().toISOString()
+        draft[publishedAtKey] = getCurrentIsoTimestampString()
       }
     } else if (nextStatus !== publishedValue && previousStatus === publishedValue) {
       if (!hasIncomingPublishedAt && hasPreviousPublishedAt) {

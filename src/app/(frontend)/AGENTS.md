@@ -22,6 +22,15 @@
 - Prefer vertical flow, clear content priority, and compact CTA grouping over early multi-column density.
 - Do not rely on hover-only disclosure, pointer-precision affordances, or side-by-side layouts that collapse into ambiguous mobile order.
 
+## Trust and Disclosure UI
+
+- For public trust, medical, clinic, review, verification, accreditation, price, or language information, keep the primary trust signal visible in the page flow.
+- Use progressive disclosure only for supporting detail, explanations, full lists, or source context; do not hide the fact that the information exists behind a generic `Details` trigger.
+- Avoid badge-heavy, pill-heavy, or marketing-style trust clusters unless the existing route already uses that pattern intentionally.
+- Prefer quiet inline facts, concise summary rows, or grouped evidence sections that match the current page hierarchy.
+- When structured data or metadata references a public fact, make the user-visible page contain an equivalent human-readable fact.
+- For detailed heuristics and source rationale, use `docs/frontend/trust-disclosure-playbook.md`.
+
 ## Boundary Reminder
 
 - UI components stay Payload-free.

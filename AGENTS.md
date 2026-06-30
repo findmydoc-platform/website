@@ -27,7 +27,7 @@
 - Documentation defaults: `docs/AGENTS.md`
 - Application-wide engineering defaults and analytics: `src/AGENTS.md`, `src/posthog/AGENTS.md`
 - UI/frontend and CMS boundary mapping: `src/components/AGENTS.md`, `src/app/(frontend)/AGENTS.md`, `src/blocks/AGENTS.md`, `src/app/AGENTS.md`, `src/stories/AGENTS.md`
-- Mobile-first frontend heuristics and prompt scaffolding: `docs/frontend/mobile-ai-playbook.md`
+- Mobile-first frontend heuristics, trust disclosure, and prompt scaffolding: `docs/frontend/mobile-ai-playbook.md`, `docs/frontend/trust-disclosure-playbook.md`
 - AI instruction quality: `docs/engineering/ai-anti-slop-playbook.md`, `docs/engineering/agent-instruction-review-playbook.md`
 - Payload/API/hooks/seeds: `src/collections/AGENTS.md`, `src/hooks/AGENTS.md`, `src/endpoints/seed/AGENTS.md`, `src/app/api/AGENTS.md`
 - Payload admin UI design: `src/app/(payload)/AGENTS.md`, `src/components/organisms/AdminBranding/AGENTS.md`, `src/components/organisms/DeveloperDashboard/AGENTS.md`, `src/dashboard/adminDashboard/AGENTS.md`

@@ -25,6 +25,15 @@
 - Avoid component layouts that depend on horizontal scrolling unless the component is explicitly a scrollable pattern and provides clear touch affordances.
 - Keep touch targets, spacing, and text wrapping resilient at narrow widths before layering larger-screen enhancements.
 
+## Disclosure Components
+
+- Disclosure triggers must state the summary value they expand, for example `Languages: English, German + 3 more`, not a vague standalone `Details`.
+- Essential trust, conversion, or safety information must remain available without hover-only interactions.
+- Dialogs, popovers, drawers, and bottom sheets must be keyboard-accessible and include deterministic open/use/close states in stories when reused.
+- Use compact text, row separators, and typography before adding badges, pills, borders, or shadows.
+- Use badges only for compact status, category, verification, count, or filter states where the visual treatment improves scanning.
+- Do not use pills or badges as the default presentation for factual content, trust evidence, explanations, languages, accreditations, prices, or review metadata.
+
 ## Boundary Rules
 
 - `src/components/**` must stay Payload-free.

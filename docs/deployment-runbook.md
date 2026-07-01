@@ -160,10 +160,9 @@ Only revert the webpack fallback when all conditions are met:
 2. `website` preview and production pass at least 3 consecutive deployments without instrumentation-hook runtime errors.
 3. No regression in Payload admin routes (`/admin/login`, `/admin`, API auth routes) under real preview traffic.
 
-### ADR Decision
+### Architecture Decision Record
 
-- **No ADR yet**: current change is a tactical stability workaround and fully reversible.
-- Create an ADR if webpack fallback becomes long-lived (for example, spans multiple release cycles) or we intentionally standardize away from Turbopack.
+- ADR 023 documents the long-lived production build decision: [Production build webpack fallback](./adrs/023-adr-production-build-webpack-fallback.md).
 
 ### References
 

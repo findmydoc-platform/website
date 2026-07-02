@@ -33,8 +33,6 @@ concurrency:
 env:
   NODE_VERSION: 24.14.0
   PNPM_VERSION: 10.28.2
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
   PREVIEW_ALIAS_DOMAIN: preview.findmydoc.eu
   NEXT_TELEMETRY_DISABLED: 1
 
@@ -77,6 +75,8 @@ jobs:
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
         env:
+          DATABASE_URI: ${{ secrets.DATABASE_URI }}
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: bash ./.github/scripts/deploy/vercel-deploy.sh preview
 

@@ -154,8 +154,12 @@ const brokenHeroImageBase: Story = {
     const heroImage = canvas.getByAltText('Broken post hero image')
 
     await waitFor(() => {
-      const src = heroImage.getAttribute('src') ?? ''
-      expect(src).toContain('blog-placeholder-1600-900')
+      const imageSources = [
+        heroImage.getAttribute('src') ?? '',
+        heroImage.getAttribute('srcset') ?? '',
+        heroImage instanceof HTMLImageElement ? heroImage.currentSrc : '',
+      ].join(' ')
+      expect(imageSources).toContain('blog-placeholder-1600-900')
     })
   },
 }

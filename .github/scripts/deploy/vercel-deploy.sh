@@ -40,6 +40,10 @@ case "${target}" in
     ;;
 esac
 
+if [[ -n "${PAYLOAD_SECRET:-}" ]]; then
+  deploy_command+=(--build-env "PAYLOAD_SECRET=${PAYLOAD_SECRET}" --env "PAYLOAD_SECRET=${PAYLOAD_SECRET}")
+fi
+
 deploy_output_file="$(mktemp)"
 deploy_error_file="$(mktemp)"
 trap 'rm -f "${deploy_output_file}" "${deploy_error_file}"' EXIT

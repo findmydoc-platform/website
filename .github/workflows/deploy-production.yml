@@ -57,6 +57,7 @@ jobs:
       - name: Deploy to Vercel (Production)
         id: vercel_production
         env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: bash ./.github/scripts/deploy/vercel-deploy.sh production
 

@@ -13,6 +13,7 @@ concurrency:
 env:
   NODE_VERSION: 24.14.0
   PNPM_VERSION: 10.28.2
+  EXPECTED_VERCEL_PROJECT_ID: prj_J8dOCr0Ft97TlCAUnbpdHG29Vtgx
   PRODUCTION_ALIAS_DOMAIN: findmydoc.eu
   NEXT_TELEMETRY_DISABLED: 1
 
@@ -51,13 +52,30 @@ jobs:
 
       - name: Pull Vercel Environment Variables for Production
         env:
+          EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: pnpm dlx vercel@canary pull --yes --environment=production --token="$VERCEL_TOKEN"
+        run: |
+          if [[ -z "${VERCEL_ORG_ID}" || -z "${VERCEL_PROJECT_ID}" ]]; then
+            echo "VERCEL_ORG_ID and VERCEL_PROJECT_ID are required for deterministic Vercel project binding." >&2
+            exit 1
+          fi
+
+          if [[ "${VERCEL_PROJECT_ID}" != "${EXPECTED_VERCEL_PROJECT_ID}" ]]; then
+            echo "VERCEL_PROJECT_ID does not match the expected findmydoc-portal project." >&2
+            exit 1
+          fi
+
+          pnpm dlx vercel@canary pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Deploy to Vercel (Production)
         id: vercel_production
         env:
+          EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: bash ./.github/scripts/deploy/vercel-deploy.sh production
 

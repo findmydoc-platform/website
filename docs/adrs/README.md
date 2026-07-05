@@ -71,3 +71,4 @@ When adding a new ADR:
 - [020 — Database migration quality gate](./020-adr-database-migration-quality-gate.md)
 - [021 — Localization source, ownership, and readiness governance](./021-adr-localization-source-ownership-and-readiness-governance.md)
 - [022 — Public localization routing, SEO, and domain strategy](./022-adr-public-localization-routing-seo-and-domain-strategy.md)
+- [023 — Public website cache and revalidation strategy](./023-adr-public-website-cache-and-revalidation-strategy.md)

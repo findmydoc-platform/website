@@ -13,6 +13,7 @@ concurrency:
 env:
   NODE_VERSION: 24.14.0
   PNPM_VERSION: 10.28.2
+  EXPECTED_VERCEL_PROJECT_ID: prj_J8dOCr0Ft97TlCAUnbpdHG29Vtgx
   PRODUCTION_ALIAS_DOMAIN: findmydoc.eu
   NEXT_TELEMETRY_DISABLED: 1
 
@@ -51,20 +52,35 @@ jobs:
 
       - name: Pull Vercel Environment Variables for Production
         env:
+          EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: pnpm dlx vercel@canary pull --yes --environment=production --token="$VERCEL_TOKEN"
+        run: |
+          bash ./.github/scripts/deploy/assert-vercel-project-binding.sh
+          pnpm dlx vercel@canary pull --yes --environment=production
 
       - name: Deploy to Vercel (Production)
         id: vercel_production
         env:
+          EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: bash ./.github/scripts/deploy/vercel-deploy.sh production
 
       - name: Set Production Alias
         env:
+          DEPLOYMENT_URL: ${{ steps.vercel_production.outputs.deploymentUrl }}
+          EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
+          PRODUCTION_ALIAS_DOMAIN: ${{ env.PRODUCTION_ALIAS_DOMAIN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: pnpm dlx vercel@canary alias set "${{ steps.vercel_production.outputs.deploymentUrl }}" "${{ env.PRODUCTION_ALIAS_DOMAIN }}" --token="$VERCEL_TOKEN"
+        run: |
+          bash ./.github/scripts/deploy/assert-vercel-project-binding.sh
+          pnpm dlx vercel@canary alias set "$DEPLOYMENT_URL" "$PRODUCTION_ALIAS_DOMAIN"
 
       - name: Generate deployment summary
         if: always()

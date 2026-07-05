@@ -75,17 +75,8 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          if [[ -z "${VERCEL_ORG_ID}" || -z "${VERCEL_PROJECT_ID}" ]]; then
-            echo "VERCEL_ORG_ID and VERCEL_PROJECT_ID are required for deterministic Vercel project binding." >&2
-            exit 1
-          fi
-
-          if [[ "${VERCEL_PROJECT_ID}" != "${EXPECTED_VERCEL_PROJECT_ID}" ]]; then
-            echo "VERCEL_PROJECT_ID does not match the expected findmydoc-portal project." >&2
-            exit 1
-          fi
-
-          pnpm dlx vercel@canary pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          bash ./.github/scripts/deploy/assert-vercel-project-binding.sh
+          pnpm dlx vercel@canary pull --yes --environment=preview
 
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
@@ -102,9 +93,14 @@ jobs:
         if: github.event_name == 'push' && github.ref_name == 'main'
         env:
           DEPLOYMENT_URL: ${{ steps.vercel_preview.outputs.deploymentUrl }}
+          EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
           PREVIEW_ALIAS_DOMAIN: ${{ env.PREVIEW_ALIAS_DOMAIN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: pnpm dlx vercel@canary alias set "$DEPLOYMENT_URL" "$PREVIEW_ALIAS_DOMAIN" --token="$VERCEL_TOKEN"
+        run: |
+          bash ./.github/scripts/deploy/assert-vercel-project-binding.sh
+          pnpm dlx vercel@canary alias set "$DEPLOYMENT_URL" "$PREVIEW_ALIAS_DOMAIN"
 
       - name: Generate deployment summary
         if: always()

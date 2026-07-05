@@ -57,17 +57,8 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          if [[ -z "${VERCEL_ORG_ID}" || -z "${VERCEL_PROJECT_ID}" ]]; then
-            echo "VERCEL_ORG_ID and VERCEL_PROJECT_ID are required for deterministic Vercel project binding." >&2
-            exit 1
-          fi
-
-          if [[ "${VERCEL_PROJECT_ID}" != "${EXPECTED_VERCEL_PROJECT_ID}" ]]; then
-            echo "VERCEL_PROJECT_ID does not match the expected findmydoc-portal project." >&2
-            exit 1
-          fi
-
-          pnpm dlx vercel@canary pull --yes --environment=production --token="$VERCEL_TOKEN"
+          bash ./.github/scripts/deploy/assert-vercel-project-binding.sh
+          pnpm dlx vercel@canary pull --yes --environment=production
 
       - name: Deploy to Vercel (Production)
         id: vercel_production
@@ -81,8 +72,15 @@ jobs:
 
       - name: Set Production Alias
         env:
+          DEPLOYMENT_URL: ${{ steps.vercel_production.outputs.deploymentUrl }}
+          EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
+          PRODUCTION_ALIAS_DOMAIN: ${{ env.PRODUCTION_ALIAS_DOMAIN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: pnpm dlx vercel@canary alias set "${{ steps.vercel_production.outputs.deploymentUrl }}" "${{ env.PRODUCTION_ALIAS_DOMAIN }}" --token="$VERCEL_TOKEN"
+        run: |
+          bash ./.github/scripts/deploy/assert-vercel-project-binding.sh
+          pnpm dlx vercel@canary alias set "$DEPLOYMENT_URL" "$PRODUCTION_ALIAS_DOMAIN"
 
       - name: Generate deployment summary
         if: always()

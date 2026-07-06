@@ -33,6 +33,7 @@ concurrency:
 env:
   NODE_VERSION: 24.14.0
   PNPM_VERSION: 10.28.2
+  EXPECTED_VERCEL_PROJECT_ID: prj_J8dOCr0Ft97TlCAUnbpdHG29Vtgx
   PREVIEW_ALIAS_DOMAIN: preview.findmydoc.eu
   NEXT_TELEMETRY_DISABLED: 1
 
@@ -69,14 +70,22 @@ jobs:
 
       - name: Pull Vercel Environment Variables for Preview
         env:
+          EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: pnpm dlx vercel@canary pull --yes --environment=preview --token="$VERCEL_TOKEN"
+        run: |
+          bash ./.github/scripts/deploy/assert-vercel-project-binding.sh
+          pnpm dlx vercel@canary pull --yes --environment=preview
 
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
         env:
           DATABASE_URI: ${{ secrets.DATABASE_URI }}
+          EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: bash ./.github/scripts/deploy/vercel-deploy.sh preview
 
@@ -84,9 +93,14 @@ jobs:
         if: github.event_name == 'push' && github.ref_name == 'main'
         env:
           DEPLOYMENT_URL: ${{ steps.vercel_preview.outputs.deploymentUrl }}
+          EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
           PREVIEW_ALIAS_DOMAIN: ${{ env.PREVIEW_ALIAS_DOMAIN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: pnpm dlx vercel@canary alias set "$DEPLOYMENT_URL" "$PREVIEW_ALIAS_DOMAIN" --token="$VERCEL_TOKEN"
+        run: |
+          bash ./.github/scripts/deploy/assert-vercel-project-binding.sh
+          pnpm dlx vercel@canary alias set "$DEPLOYMENT_URL" "$PREVIEW_ALIAS_DOMAIN"
 
       - name: Generate deployment summary
         if: always()

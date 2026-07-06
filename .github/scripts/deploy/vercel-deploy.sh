@@ -10,6 +10,9 @@ if [[ -z "${VERCEL_TOKEN:-}" ]]; then
   exit 1
 fi
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+bash "${script_dir}/assert-vercel-project-binding.sh"
+
 if [[ -z "${GITHUB_OUTPUT:-}" ]]; then
   echo "GITHUB_OUTPUT is required." >&2
   exit 1
@@ -27,11 +30,11 @@ fi
 
 case "${target}" in
   preview)
-    deploy_command=(pnpm dlx vercel@canary deploy --target preview --token="${VERCEL_TOKEN}")
+    deploy_command=(pnpm dlx vercel@canary deploy --target preview)
     label="Preview"
     ;;
   production)
-    deploy_command=(pnpm dlx vercel@canary deploy --prod --token="${VERCEL_TOKEN}")
+    deploy_command=(pnpm dlx vercel@canary deploy --prod)
     label="Production"
     ;;
   *)

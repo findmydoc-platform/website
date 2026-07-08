@@ -1,4 +1,12 @@
-import type { CacheClass, CacheOperation } from '@/utilities/cachePolicy'
+import type {
+  CacheClass,
+  CacheDiscoveryId,
+  CacheOperation,
+  CachePolicyGlobal,
+  CacheSitemapId,
+  CacheTaggableCollection,
+  CacheTaggableSurfaceId,
+} from '@/utilities/cachePolicy'
 
 export type PublicDocumentStatus = 'draft' | 'published'
 
@@ -79,6 +87,35 @@ export interface PrivateLiveRevalidationSubject {
   readonly surfaceId?: string
 }
 
+export interface SitemapRevalidationSubject {
+  readonly kind: 'sitemap'
+  readonly sitemapId: CacheSitemapId
+}
+
+export interface PostsListRevalidationSubject {
+  readonly kind: 'posts-list'
+}
+
+export interface PublicDiscoveryRevalidationSubject {
+  readonly kind: 'public-discovery'
+  readonly discoveryId: CacheDiscoveryId
+}
+
+export interface SeedFinalFlushRevalidationSubject {
+  readonly kind: 'seed-final-flush'
+  readonly runId: string
+  readonly seedType: 'baseline' | 'demo'
+  readonly reset: boolean
+  readonly terminalStatus: 'completed' | 'partial' | 'failed' | 'cancelled'
+  readonly affectedCollections: readonly CacheTaggableCollection[]
+  readonly affectedGlobals: readonly CachePolicyGlobal[]
+  readonly affectedSurfaces: readonly CacheTaggableSurfaceId[]
+  readonly affectedSitemaps: readonly CacheSitemapId[]
+  readonly affectedDiscovery: readonly CacheDiscoveryId[]
+  readonly completedJobCount: number
+  readonly publicJobCount: number
+}
+
 export interface DeferredRevalidationSubject {
   readonly kind: 'deferred'
   readonly area: DeferredRevalidationArea
@@ -91,6 +128,10 @@ export type RevalidationSubject =
   | RedirectRevalidationSubject
   | ClinicSurfaceRevalidationSubject
   | PrivateLiveRevalidationSubject
+  | SitemapRevalidationSubject
+  | PostsListRevalidationSubject
+  | PublicDiscoveryRevalidationSubject
+  | SeedFinalFlushRevalidationSubject
   | DeferredRevalidationSubject
 
 export interface CollectionRevalidationEvent {
@@ -133,6 +174,33 @@ export interface PrivateLiveRevalidationEvent {
   readonly subject: Omit<PrivateLiveRevalidationSubject, 'kind'>
 }
 
+export interface SitemapRevalidationEvent {
+  readonly kind: 'sitemap'
+  readonly operation: Extract<CacheOperation, 'update'>
+  readonly source: RevalidationSource
+  readonly subject: Omit<SitemapRevalidationSubject, 'kind'>
+}
+
+export interface PostsListRevalidationEvent {
+  readonly kind: 'posts-list'
+  readonly operation: Extract<CacheOperation, 'update'>
+  readonly source: RevalidationSource
+}
+
+export interface PublicDiscoveryRevalidationEvent {
+  readonly kind: 'public-discovery'
+  readonly operation: Extract<CacheOperation, 'update'>
+  readonly source: RevalidationSource
+  readonly subject: Omit<PublicDiscoveryRevalidationSubject, 'kind'>
+}
+
+export interface SeedFinalFlushRevalidationEvent {
+  readonly kind: 'seed-final-flush'
+  readonly operation: Extract<CacheOperation, 'seed-final-flush'>
+  readonly source: RevalidationSource
+  readonly subject: Omit<SeedFinalFlushRevalidationSubject, 'kind'>
+}
+
 export type DeferredRevalidationArea =
   | 'clinic-listing'
   | 'public-discovery'
@@ -154,6 +222,10 @@ export type RevalidationEvent =
   | RedirectRevalidationEvent
   | ClinicSurfaceRevalidationEvent
   | PrivateLiveRevalidationEvent
+  | SitemapRevalidationEvent
+  | PostsListRevalidationEvent
+  | PublicDiscoveryRevalidationEvent
+  | SeedFinalFlushRevalidationEvent
   | DeferredRevalidationEvent
 
 export interface RevalidationLogContext {
@@ -180,7 +252,7 @@ export interface RevalidationPlan {
   readonly tags: readonly string[]
   readonly paths: readonly string[]
   readonly logContext: RevalidationLogContext
-  readonly emptyReason?: 'private-live-noop'
+  readonly emptyReason?: 'private-live-noop' | 'static-public-discovery-noop' | 'seed-final-flush-noop'
 }
 
 export interface RevalidationFailure {

@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   blogHeroComponent: vi.fn(() => null),
   buildPostsIndexJsonLdMock: vi.fn(() => [{ '@type': 'ItemList' }]),
   createSiteMetadataMock: vi.fn((args: unknown) => args),
-  findPublishedPostsPageMock: vi.fn(),
+  getCachedPublishedPostsPageMock: vi.fn(),
   getPayloadMock: vi.fn(),
   jsonLdScriptComponent: vi.fn(() => null),
   normalizePostMock: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock('payload', async (importOriginal) => {
 })
 
 vi.mock('@/utilities/content/serverData', () => ({
-  findPublishedPostsPage: mocks.findPublishedPostsPageMock,
+  getCachedPublishedPostsPage: mocks.getCachedPublishedPostsPageMock,
 }))
 
 vi.mock('@/utilities/blog/normalizePost', () => ({
@@ -82,7 +82,7 @@ describe('frontend posts index route', () => {
     vi.clearAllMocks()
 
     mocks.getPayloadMock.mockResolvedValue({})
-    mocks.findPublishedPostsPageMock.mockResolvedValue({
+    mocks.getCachedPublishedPostsPageMock.mockResolvedValue({
       docs: [{ id: 1, slug: 'hello-world', title: 'Hallo Welt' }],
       totalDocs: 13,
       totalPages: 2,
@@ -100,8 +100,7 @@ describe('frontend posts index route', () => {
       searchParams: Promise.resolve({ locale: 'de' }),
     })
 
-    expect(mocks.findPublishedPostsPageMock).toHaveBeenCalledWith(
-      {},
+    expect(mocks.getCachedPublishedPostsPageMock).toHaveBeenCalledWith(
       expect.objectContaining({
         contentLocale: {
           locale: 'de',

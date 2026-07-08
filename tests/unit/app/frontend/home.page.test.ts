@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   getPayloadMock: vi.fn(),
   payloadFindMock: vi.fn(),
   payloadFindGlobalMock: vi.fn(),
-  findLatestPostsMock: vi.fn(),
+  getCachedLatestPostsMock: vi.fn(),
   getLandingMedicalSpecialtyCategoriesMock: vi.fn(),
   normalizePostMock: vi.fn((post: unknown) => post),
   temporaryLandingPageComponent: vi.fn(() => null),
@@ -40,7 +40,7 @@ vi.mock('@/utilities/blog/normalizePost', () => ({
 }))
 
 vi.mock('@/utilities/content/serverData', () => ({
-  findLatestPosts: mocks.findLatestPostsMock,
+  getCachedLatestPosts: mocks.getCachedLatestPostsMock,
 }))
 
 vi.mock('@/utilities/media/resolveMediaImage', () => ({
@@ -64,7 +64,7 @@ describe('frontend home page route', () => {
     mocks.headersMock.mockResolvedValue(new Headers())
     mocks.payloadFindMock.mockResolvedValue({ docs: [] })
     mocks.payloadFindGlobalMock.mockResolvedValue(cloneBaselineLandingPages())
-    mocks.findLatestPostsMock.mockResolvedValue([])
+    mocks.getCachedLatestPostsMock.mockResolvedValue([])
     mocks.getLandingMedicalSpecialtyCategoriesMock.mockResolvedValue({
       categories: [],
       items: [],
@@ -163,13 +163,8 @@ describe('frontend home page route', () => {
     await pageModule.default({})
 
     expect(mocks.getPayloadMock).toHaveBeenCalledTimes(2)
-    expect(mocks.findLatestPostsMock).toHaveBeenCalledTimes(1)
-    expect(mocks.findLatestPostsMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        find: mocks.payloadFindMock,
-      }),
-      3,
-    )
+    expect(mocks.getCachedLatestPostsMock).toHaveBeenCalledTimes(1)
+    expect(mocks.getCachedLatestPostsMock).toHaveBeenCalledWith(3)
     expect(mocks.payloadFindMock).toHaveBeenCalledTimes(1)
     expect(mocks.payloadFindMock).toHaveBeenCalledWith({
       collection: 'cities',

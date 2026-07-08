@@ -102,6 +102,102 @@ describe('cache revalidation planner', () => {
     expect(plan.surfaceIds).toEqual(['post-detail', 'posts-list', 'home', 'partners-clinics', 'surface:sitemap:posts'])
   })
 
+  it('maps PR7 posts-list and sitemap planner events to canonical tags without pagination paths', () => {
+    expect(
+      planRevalidation({
+        kind: 'posts-list',
+        operation: 'update',
+        source: { kind: 'public-discovery' },
+      }),
+    ).toMatchObject({
+      cacheClasses: ['aggregated-public'],
+      subject: { kind: 'posts-list' },
+      tags: [
+        'collection:posts',
+        'surface:posts-list',
+        'surface:home',
+        'surface:partners-clinics',
+        'surface:sitemap:posts',
+      ],
+      paths: ['/posts'],
+    })
+
+    expect(
+      planRevalidation({
+        kind: 'sitemap',
+        operation: 'update',
+        source: { kind: 'public-discovery' },
+        subject: { sitemapId: 'posts' },
+      }),
+    ).toMatchObject({
+      cacheClasses: ['aggregated-public'],
+      subject: { kind: 'sitemap', sitemapId: 'posts' },
+      surfaceIds: ['surface:sitemap:posts'],
+      tags: ['surface:sitemap:posts'],
+      paths: [],
+    })
+  })
+
+  it('keeps static public discovery surfaces explicit no-op plans', () => {
+    const plan = planRevalidation({
+      kind: 'public-discovery',
+      operation: 'update',
+      source: { kind: 'public-discovery' },
+      subject: { discoveryId: 'llms' },
+    })
+
+    expect(plan).toMatchObject({
+      cacheClasses: ['aggregated-public'],
+      surfaceIds: ['surface:discovery:llms'],
+      tags: [],
+      paths: [],
+      emptyReason: 'static-public-discovery-noop',
+      subject: { kind: 'public-discovery', discoveryId: 'llms' },
+    })
+  })
+
+  it('maps seed final flush events from job-level public aggregates only', () => {
+    const plan = planRevalidation({
+      kind: 'seed-final-flush',
+      operation: 'seed-final-flush',
+      source: { kind: 'seed-runner' },
+      subject: {
+        runId: 'seed-run-1',
+        seedType: 'demo',
+        reset: false,
+        terminalStatus: 'partial',
+        affectedCollections: ['posts', 'cities'],
+        affectedGlobals: ['landingPages'],
+        affectedSurfaces: ['posts-list', 'home', 'listing-comparison'],
+        affectedSitemaps: ['posts', 'pages'],
+        affectedDiscovery: [],
+        completedJobCount: 4,
+        publicJobCount: 3,
+      },
+    })
+
+    expect(plan.tags).toEqual([
+      'collection:posts',
+      'collection:cities',
+      'global:landingPages',
+      'surface:posts-list',
+      'surface:home',
+      'surface:listing-comparison',
+      'surface:sitemap:posts',
+      'surface:sitemap:pages',
+    ])
+    expect(plan.paths).toEqual(['/posts', '/', '/listing-comparison', '/posts-sitemap.xml', '/pages-sitemap.xml'])
+    expect(plan.logContext).toMatchObject({
+      operation: 'seed-final-flush',
+      sourceKind: 'seed-runner',
+      sourceId: 'seed-run-1',
+      subjectKind: 'seed-final-flush',
+      subjectId: 'seed-run-1',
+      tagCount: 8,
+      pathCount: 5,
+    })
+  })
+
   it('maps globals and redirects through PR3 core surfaces only', () => {
     expect(
       planRevalidation({

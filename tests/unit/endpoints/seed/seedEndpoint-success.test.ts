@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { PayloadRequest } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
 import { mockUsers } from '../../helpers/mockUsers'
 
@@ -8,7 +8,9 @@ vi.mock('next/cache', () => ({
   revalidateTag: vi.fn(),
 }))
 
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { seedAdvanceHandler, seedGetHandler, seedPostHandler } from '@/endpoints/seed/seedEndpoint'
+import { createSeedRunRecord, saveSeedRunRecord, type SeedRunRecord } from '@/endpoints/seed/utils/state'
 
 type MockResponse = {
   _status?: number
@@ -131,5 +133,141 @@ describe('seed endpoints success paths', () => {
     expect(advanceRes._status).toBe(200)
     expect(advanceBody.runId).toBe(postBody.runId)
     expect(advanceBody.progress.total).toBe(postBody.progress.total)
+  })
+
+  it.each(['completed', 'partial', 'failed', 'cancelled'] as const)(
+    'runs one terminal seed final flush for %s runs with public work',
+    async (status) => {
+      const { payload } = makePayloadReq({})
+      const runId = `seed-run-${status}`
+      const queue = `seed:${runId}`
+      const record = createSeedRunRecord({
+        runId,
+        type: 'demo',
+        reset: false,
+        queue,
+        totalJobs: 1,
+      }) as SeedRunRecord
+      record.status = status
+      record.completedAt = '2026-07-08T10:00:00.000Z'
+      record.completedJobs = 1
+      record.succeededJobs = status === 'failed' ? 0 : 1
+      record.failedJobs = status === 'failed' ? 1 : 0
+      record.jobs = [
+        {
+          id: 'job-posts',
+          order: 1,
+          status: status === 'failed' ? 'failed' : 'succeeded',
+          input: {
+            runId,
+            type: 'demo',
+            reset: false,
+            queue,
+            stepName: 'posts',
+            kind: 'collection',
+            collection: 'posts',
+            fileName: 'posts',
+          },
+          queue,
+          title: 'Posts',
+          stepName: 'posts',
+          kind: 'collection',
+          collection: 'posts',
+          fileName: 'posts',
+          createdAt: '2026-07-08T09:00:00.000Z',
+          completedAt: '2026-07-08T10:00:00.000Z',
+          created: status === 'failed' ? 0 : 1,
+          updated: status === 'failed' ? 1 : 0,
+          warnings: [],
+          failures: status === 'failed' ? ['partial write failed'] : [],
+        },
+      ]
+      await saveSeedRunRecord(payload as unknown as Payload, record)
+
+      const res = makeRes()
+      await seedAdvanceHandler(
+        createMockReq(mockUsers.platform(), payload, {
+          query: { runId },
+        }) as PayloadRequest,
+        res,
+      )
+
+      expect(res._status).toBe(200)
+      expect(revalidateTag).toHaveBeenCalledWith('collection:posts', { expire: 0 })
+      expect(revalidateTag).toHaveBeenCalledWith('surface:posts-list', { expire: 0 })
+      expect(revalidateTag).toHaveBeenCalledWith('surface:sitemap:posts', { expire: 0 })
+      expect(revalidatePath).toHaveBeenCalledWith('/posts')
+      expect(revalidatePath).toHaveBeenCalledWith('/posts-sitemap.xml')
+
+      const tagCallCount = vi.mocked(revalidateTag).mock.calls.length
+      const secondRes = makeRes()
+      await seedAdvanceHandler(
+        createMockReq(mockUsers.platform(), payload, {
+          query: { runId },
+        }) as PayloadRequest,
+        secondRes,
+      )
+
+      expect(vi.mocked(revalidateTag).mock.calls).toHaveLength(tagCallCount)
+    },
+  )
+
+  it('does not flush rejected or cancelled seed runs with no public-affecting work', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-cancelled-private'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    }) as SeedRunRecord
+    record.status = 'cancelled'
+    record.completedAt = '2026-07-08T10:00:00.000Z'
+    record.completedJobs = 1
+    record.cancelledJobs = 1
+    record.jobs = [
+      {
+        id: 'job-basic-users',
+        order: 1,
+        status: 'cancelled',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'basic-users',
+          kind: 'collection',
+          collection: 'basicUsers',
+          fileName: 'basicUsers',
+        },
+        queue,
+        title: 'Basic users',
+        stepName: 'basic-users',
+        kind: 'collection',
+        collection: 'basicUsers',
+        fileName: 'basicUsers',
+        createdAt: '2026-07-08T09:00:00.000Z',
+        completedAt: '2026-07-08T10:00:00.000Z',
+        created: 0,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      },
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    const res = makeRes()
+    await seedAdvanceHandler(
+      createMockReq(mockUsers.platform(), payload, {
+        query: { runId },
+      }) as PayloadRequest,
+      res,
+    )
+
+    expect(res._status).toBe(200)
+    expect(revalidateTag).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
   })
 })

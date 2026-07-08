@@ -1,12 +1,13 @@
 import type { GlobalAfterChangeHook } from 'payload'
 
-import { revalidateTag } from 'next/cache.js'
+import { executeGlobalChangeRevalidation } from '@/hooks/cacheRevalidationAdapters'
 
 export const revalidateHeader: GlobalAfterChangeHook = ({ doc, req: { payload, context } }) => {
   if (!context.disableRevalidate) {
-    payload.logger.info(`Revalidating header`)
-
-    revalidateTag('global_header', { expire: 0 })
+    executeGlobalChangeRevalidation({
+      global: 'header',
+      logger: payload.logger,
+    })
   }
 
   return doc

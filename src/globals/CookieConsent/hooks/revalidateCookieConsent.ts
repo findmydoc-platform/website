@@ -1,11 +1,13 @@
-import { revalidateTag } from 'next/cache.js'
 import type { GlobalAfterChangeHook } from 'payload'
+
+import { executeGlobalChangeRevalidation } from '@/hooks/cacheRevalidationAdapters'
 
 export const revalidateCookieConsent: GlobalAfterChangeHook = async ({ doc, req: { context, payload } }) => {
   if (!context.disableRevalidate) {
-    payload.logger.info(`Revalidating cookie consent`)
-
-    revalidateTag('global_cookieConsent', { expire: 0 })
+    executeGlobalChangeRevalidation({
+      global: 'cookieConsent',
+      logger: payload.logger,
+    })
   }
 
   return doc

@@ -194,7 +194,13 @@ describe('seed endpoints success paths', () => {
         res,
       )
 
+      const body = res._body as { finalFlush?: { status: string; tagCount: number; pathCount: number } }
       expect(res._status).toBe(200)
+      expect(body.finalFlush).toMatchObject({
+        status: 'executed',
+        tagCount: 5,
+        pathCount: 4,
+      })
       expect(revalidateTag).toHaveBeenCalledWith('collection:posts', { expire: 0 })
       expect(revalidateTag).toHaveBeenCalledWith('surface:posts-list', { expire: 0 })
       expect(revalidateTag).toHaveBeenCalledWith('surface:sitemap:posts', { expire: 0 })
@@ -269,6 +275,7 @@ describe('seed endpoints success paths', () => {
     )
 
     expect(res._status).toBe(200)
+    expect((res._body as { finalFlush?: { status: string } }).finalFlush?.status).toBe('skipped')
     expect(revalidateTag).not.toHaveBeenCalled()
     expect(revalidatePath).not.toHaveBeenCalled()
   })
@@ -328,6 +335,7 @@ describe('seed endpoints success paths', () => {
     )
 
     expect(res._status).toBe(200)
+    expect((res._body as { finalFlush?: { status: string } }).finalFlush?.status).toBe('skipped')
     expect(revalidateTag).not.toHaveBeenCalled()
     expect(revalidatePath).not.toHaveBeenCalled()
   })
@@ -387,8 +395,159 @@ describe('seed endpoints success paths', () => {
     )
 
     expect(res._status).toBe(200)
+    expect((res._body as { finalFlush?: { status: string } }).finalFlush?.status).toBe('skipped')
     expect(revalidateTag).not.toHaveBeenCalled()
     expect(revalidatePath).not.toHaveBeenCalled()
+  })
+
+  it('does not flush while another runtime holds the database final-flush lock', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-cross-runtime-final-flush-lock'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    }) as SeedRunRecord
+    record.status = 'completed'
+    record.completedAt = '2026-07-08T10:00:00.000Z'
+    record.completedJobs = 1
+    record.succeededJobs = 1
+    record.jobs = [
+      {
+        id: 'job-posts',
+        order: 1,
+        status: 'succeeded',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'posts',
+          kind: 'collection',
+          collection: 'posts',
+          fileName: 'posts',
+        },
+        queue,
+        title: 'Posts',
+        stepName: 'posts',
+        kind: 'collection',
+        collection: 'posts',
+        fileName: 'posts',
+        createdAt: '2026-07-08T09:00:00.000Z',
+        completedAt: '2026-07-08T10:00:00.000Z',
+        created: 1,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      },
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    const release = vi.fn()
+    const query = vi.fn(async (text: string) => ({
+      rows: text.includes('pg_try_advisory_lock') ? [{ acquired: false }] : [],
+    }))
+    ;(payload as typeof payload & { db: { pool: { connect: ReturnType<typeof vi.fn> } } }).db = {
+      pool: {
+        connect: vi.fn(async () => ({ query, release })),
+      },
+    }
+
+    const res = makeRes()
+    await seedAdvanceHandler(
+      createMockReq(mockUsers.platform(), payload, {
+        query: { runId },
+      }) as PayloadRequest,
+      res,
+    )
+
+    expect(res._status).toBe(200)
+    expect((res._body as { finalFlush?: unknown }).finalFlush).toBeUndefined()
+    expect(revalidateTag).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
+    expect(query).toHaveBeenCalledWith('select pg_try_advisory_lock(hashtext($1), hashtext($2)) as acquired', [
+      'seed-final-flush',
+      runId,
+    ])
+    expect(release).toHaveBeenCalledTimes(1)
+  })
+
+  it('holds and releases the database final-flush lock around execution when available', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-database-final-flush-lock'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    }) as SeedRunRecord
+    record.status = 'completed'
+    record.completedAt = '2026-07-08T10:00:00.000Z'
+    record.completedJobs = 1
+    record.succeededJobs = 1
+    record.jobs = [
+      {
+        id: 'job-posts',
+        order: 1,
+        status: 'succeeded',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'posts',
+          kind: 'collection',
+          collection: 'posts',
+          fileName: 'posts',
+        },
+        queue,
+        title: 'Posts',
+        stepName: 'posts',
+        kind: 'collection',
+        collection: 'posts',
+        fileName: 'posts',
+        createdAt: '2026-07-08T09:00:00.000Z',
+        completedAt: '2026-07-08T10:00:00.000Z',
+        created: 1,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      },
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    const release = vi.fn()
+    const query = vi.fn(async (text: string) => ({
+      rows: text.includes('pg_try_advisory_lock') ? [{ acquired: true }] : [],
+    }))
+    ;(payload as typeof payload & { db: { pool: { connect: ReturnType<typeof vi.fn> } } }).db = {
+      pool: {
+        connect: vi.fn(async () => ({ query, release })),
+      },
+    }
+
+    await finalizeSeedRunPublicCaches(payload as unknown as Payload, {
+      ...record,
+      progress: { completed: 1, total: 1, percent: 100 },
+      jobIds: ['job-posts'],
+      hasActiveJob: false,
+    })
+
+    expect(revalidateTag).toHaveBeenCalled()
+    expect(query).toHaveBeenCalledWith('select pg_try_advisory_lock(hashtext($1), hashtext($2)) as acquired', [
+      'seed-final-flush',
+      runId,
+    ])
+    expect(query).toHaveBeenCalledWith('select pg_advisory_unlock(hashtext($1), hashtext($2))', [
+      'seed-final-flush',
+      runId,
+    ])
+    expect(release).toHaveBeenCalledTimes(1)
   })
 
   it('claims final flush before execution so concurrent terminal pollers do not both flush', async () => {

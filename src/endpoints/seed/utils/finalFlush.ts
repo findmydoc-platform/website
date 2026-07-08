@@ -39,6 +39,23 @@ type ScopeEntry = {
   readonly sitemaps?: readonly CacheSitemapId[]
 }
 
+type PostgresLockClient = {
+  query: (text: string, params?: readonly unknown[]) => Promise<{ rows?: Array<{ acquired?: unknown }> }>
+  release: () => void
+}
+
+type PayloadWithOptionalPostgresPool = Payload & {
+  db?: {
+    pool?: {
+      connect?: () => Promise<PostgresLockClient>
+    }
+  }
+}
+
+type FinalFlushClaim = {
+  release: () => Promise<void>
+}
+
 const PUBLIC_GLOBALS = [
   'header',
   'footer',
@@ -215,12 +232,66 @@ const markFinalFlush = async (
   })
 }
 
-const claimFinalFlush = async (payload: Payload, runId: string): Promise<boolean> => {
+const acquireDatabaseFinalFlushLock = async (
+  payload: Payload,
+  runId: string,
+): Promise<(() => Promise<void>) | null | undefined> => {
+  const connect = (payload as PayloadWithOptionalPostgresPool).db?.pool?.connect
+  if (typeof connect !== 'function') return undefined
+
+  const client = await connect()
+
+  try {
+    const result = await client.query('select pg_try_advisory_lock(hashtext($1), hashtext($2)) as acquired', [
+      'seed-final-flush',
+      runId,
+    ])
+    const acquired = result.rows?.[0]?.acquired === true
+
+    if (!acquired) {
+      client.release()
+      return null
+    }
+
+    return async () => {
+      try {
+        await client.query('select pg_advisory_unlock(hashtext($1), hashtext($2))', ['seed-final-flush', runId])
+      } finally {
+        client.release()
+      }
+    }
+  } catch (error) {
+    client.release()
+    throw error
+  }
+}
+
+const claimFinalFlush = async (payload: Payload, runId: string): Promise<FinalFlushClaim | null> => {
   if (activeFinalFlushRunIds.has(runId)) {
-    return false
+    return null
   }
 
   activeFinalFlushRunIds.add(runId)
+  let releaseDatabaseLock: (() => Promise<void>) | undefined
+
+  try {
+    const databaseLock = await acquireDatabaseFinalFlushLock(payload, runId)
+    if (databaseLock === null) {
+      activeFinalFlushRunIds.delete(runId)
+      return null
+    }
+    releaseDatabaseLock = databaseLock
+  } catch (error) {
+    activeFinalFlushRunIds.delete(runId)
+    payload.logger.warn({
+      event: 'cache.revalidation.failed',
+      operation: 'seed-final-flush',
+      source: { kind: 'seed-runner', id: runId },
+      message: error instanceof Error ? error.message : String(error),
+    })
+    return null
+  }
+
   const claimed = await claimSeedRunFinalFlush(payload, runId, {
     status: 'pending',
     completedAt: getCurrentIsoTimestampString(),
@@ -230,10 +301,24 @@ const claimFinalFlush = async (payload: Payload, runId: string): Promise<boolean
   })
 
   if (!claimed) {
+    if (releaseDatabaseLock) {
+      await releaseDatabaseLock()
+    }
     activeFinalFlushRunIds.delete(runId)
+    return null
   }
 
-  return claimed
+  return {
+    release: async () => {
+      try {
+        if (releaseDatabaseLock) {
+          await releaseDatabaseLock()
+        }
+      } finally {
+        activeFinalFlushRunIds.delete(runId)
+      }
+    },
+  }
 }
 
 const completeFinalFlush = async (
@@ -245,7 +330,6 @@ const completeFinalFlush = async (
     ...finalFlush,
     completedAt: getCurrentIsoTimestampString(),
   }))
-  activeFinalFlushRunIds.delete(runId)
 }
 
 export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: SeedRunSnapshot): Promise<void> => {
@@ -270,8 +354,8 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
     return
   }
 
-  const claimed = await claimFinalFlush(payload, snapshot.runId)
-  if (!claimed) return
+  const claim = await claimFinalFlush(payload, snapshot.runId)
+  if (!claim) return
 
   try {
     const plan = planRevalidation({
@@ -329,5 +413,7 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
       reason: 'planner-error',
     })
     await appendFinalFlushLog(payload, snapshot.runId, 'Seed final cache flush failed', 'WARN')
+  } finally {
+    await claim.release()
   }
 }

@@ -10,6 +10,7 @@ vi.mock('next/cache', () => ({
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { seedAdvanceHandler, seedGetHandler, seedPostHandler } from '@/endpoints/seed/seedEndpoint'
+import { finalizeSeedRunPublicCaches } from '@/endpoints/seed/utils/finalFlush'
 import { createSeedRunRecord, saveSeedRunRecord, type SeedRunRecord } from '@/endpoints/seed/utils/state'
 
 type MockResponse = {
@@ -153,11 +154,12 @@ describe('seed endpoints success paths', () => {
       record.completedJobs = 1
       record.succeededJobs = status === 'failed' ? 0 : 1
       record.failedJobs = status === 'failed' ? 1 : 0
+      const jobStatus = status === 'cancelled' ? 'cancelled' : status === 'failed' ? 'failed' : 'succeeded'
       record.jobs = [
         {
           id: 'job-posts',
           order: 1,
-          status: status === 'failed' ? 'failed' : 'succeeded',
+          status: jobStatus,
           input: {
             runId,
             type: 'demo',
@@ -176,8 +178,8 @@ describe('seed endpoints success paths', () => {
           fileName: 'posts',
           createdAt: '2026-07-08T09:00:00.000Z',
           completedAt: '2026-07-08T10:00:00.000Z',
-          created: status === 'failed' ? 0 : 1,
-          updated: status === 'failed' ? 1 : 0,
+          created: status === 'failed' || status === 'cancelled' ? 0 : 1,
+          updated: status === 'failed' || status === 'cancelled' ? 1 : 0,
           warnings: [],
           failures: status === 'failed' ? ['partial write failed'] : [],
         },
@@ -211,6 +213,124 @@ describe('seed endpoints success paths', () => {
       expect(vi.mocked(revalidateTag).mock.calls).toHaveLength(tagCallCount)
     },
   )
+
+  it('does not flush a cancelled public seed job that never wrote public work', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-cancelled-public-empty'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    }) as SeedRunRecord
+    record.status = 'cancelled'
+    record.completedAt = '2026-07-08T10:00:00.000Z'
+    record.completedJobs = 1
+    record.cancelledJobs = 1
+    record.jobs = [
+      {
+        id: 'job-posts',
+        order: 1,
+        status: 'cancelled',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'posts',
+          kind: 'collection',
+          collection: 'posts',
+          fileName: 'posts',
+        },
+        queue,
+        title: 'Posts',
+        stepName: 'posts',
+        kind: 'collection',
+        collection: 'posts',
+        fileName: 'posts',
+        createdAt: '2026-07-08T09:00:00.000Z',
+        completedAt: '2026-07-08T10:00:00.000Z',
+        created: 0,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      },
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    const res = makeRes()
+    await seedAdvanceHandler(
+      createMockReq(mockUsers.platform(), payload, {
+        query: { runId },
+      }) as PayloadRequest,
+      res,
+    )
+
+    expect(res._status).toBe(200)
+    expect(revalidateTag).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
+  })
+
+  it('does not flush a skipped public seed job that never wrote public work', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-skipped-public-empty'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    }) as SeedRunRecord
+    record.status = 'completed'
+    record.completedAt = '2026-07-08T10:00:00.000Z'
+    record.completedJobs = 1
+    record.succeededJobs = 0
+    record.jobs = [
+      {
+        id: 'job-posts',
+        order: 1,
+        status: 'skipped',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'posts',
+          kind: 'collection',
+          collection: 'posts',
+          fileName: 'posts',
+        },
+        queue,
+        title: 'Posts',
+        stepName: 'posts',
+        kind: 'collection',
+        collection: 'posts',
+        fileName: 'posts',
+        createdAt: '2026-07-08T09:00:00.000Z',
+        completedAt: '2026-07-08T10:00:00.000Z',
+        created: 0,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      },
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    const res = makeRes()
+    await seedAdvanceHandler(
+      createMockReq(mockUsers.platform(), payload, {
+        query: { runId },
+      }) as PayloadRequest,
+      res,
+    )
+
+    expect(res._status).toBe(200)
+    expect(revalidateTag).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
+  })
 
   it('does not flush rejected or cancelled seed runs with no public-affecting work', async () => {
     const { payload } = makePayloadReq({})
@@ -269,5 +389,73 @@ describe('seed endpoints success paths', () => {
     expect(res._status).toBe(200)
     expect(revalidateTag).not.toHaveBeenCalled()
     expect(revalidatePath).not.toHaveBeenCalled()
+  })
+
+  it('claims final flush before execution so concurrent terminal pollers do not both flush', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-concurrent-final-flush'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    }) as SeedRunRecord
+    record.status = 'completed'
+    record.completedAt = '2026-07-08T10:00:00.000Z'
+    record.completedJobs = 1
+    record.succeededJobs = 1
+    record.jobs = [
+      {
+        id: 'job-posts',
+        order: 1,
+        status: 'succeeded',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'posts',
+          kind: 'collection',
+          collection: 'posts',
+          fileName: 'posts',
+        },
+        queue,
+        title: 'Posts',
+        stepName: 'posts',
+        kind: 'collection',
+        collection: 'posts',
+        fileName: 'posts',
+        createdAt: '2026-07-08T09:00:00.000Z',
+        completedAt: '2026-07-08T10:00:00.000Z',
+        created: 1,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      },
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    vi.mocked(revalidateTag).mockImplementationOnce(() => {
+      throw new Error('hold first flush in pending marker')
+    })
+
+    await Promise.all([
+      finalizeSeedRunPublicCaches(payload as unknown as Payload, {
+        ...record,
+        progress: { completed: 1, total: 1, percent: 100 },
+        jobIds: ['job-posts'],
+        hasActiveJob: false,
+      }),
+      finalizeSeedRunPublicCaches(payload as unknown as Payload, {
+        ...record,
+        progress: { completed: 1, total: 1, percent: 100 },
+        jobIds: ['job-posts'],
+        hasActiveJob: false,
+      }),
+    ])
+
+    expect(revalidateTag).toHaveBeenCalledTimes(5)
   })
 })

@@ -14,8 +14,10 @@ import { baselinePlan, demoPlan } from './plan'
 import type { SeedType } from './runtime'
 import {
   appendSeedRunLog,
+  claimSeedRunFinalFlush,
   loadSeedRunRecord,
   markSeedRunFinalFlush,
+  updateSeedRunFinalFlush,
   type SeedLogEntry,
   type SeedRunFinalFlushRecord,
   type SeedRunJobRecord,
@@ -37,14 +39,14 @@ type ScopeEntry = {
   readonly sitemaps?: readonly CacheSitemapId[]
 }
 
-const COMPLETED_JOB_STATUSES = new Set<SeedRunJobRecord['status']>(['succeeded', 'failed', 'cancelled', 'skipped'])
-
 const PUBLIC_GLOBALS = [
   'header',
   'footer',
   'landingPages',
   'cookieConsent',
 ] as const satisfies readonly CachePolicyGlobal[]
+
+const activeFinalFlushRunIds = new Set<string>()
 
 const GLOBAL_FLUSH_SCOPE: Record<CachePolicyGlobal, ScopeEntry> = {
   header: { surfaces: ['public-chrome'] },
@@ -162,7 +164,8 @@ const isPublicAffectingJob = (job: SeedRunJobRecord): boolean => {
 }
 
 const hasCompletedOrWritten = (job: SeedRunJobRecord): boolean => {
-  return COMPLETED_JOB_STATUSES.has(job.status) || job.created > 0 || job.updated > 0
+  if (job.created > 0 || job.updated > 0) return true
+  return job.status === 'succeeded'
 }
 
 const buildScopeFromCompletedPublicJobs = (
@@ -212,6 +215,39 @@ const markFinalFlush = async (
   })
 }
 
+const claimFinalFlush = async (payload: Payload, runId: string): Promise<boolean> => {
+  if (activeFinalFlushRunIds.has(runId)) {
+    return false
+  }
+
+  activeFinalFlushRunIds.add(runId)
+  const claimed = await claimSeedRunFinalFlush(payload, runId, {
+    status: 'pending',
+    completedAt: getCurrentIsoTimestampString(),
+    tagCount: 0,
+    pathCount: 0,
+    failureCount: 0,
+  })
+
+  if (!claimed) {
+    activeFinalFlushRunIds.delete(runId)
+  }
+
+  return claimed
+}
+
+const completeFinalFlush = async (
+  payload: Payload,
+  runId: string,
+  finalFlush: Omit<SeedRunFinalFlushRecord, 'completedAt'>,
+): Promise<void> => {
+  await updateSeedRunFinalFlush(payload, runId, () => ({
+    ...finalFlush,
+    completedAt: getCurrentIsoTimestampString(),
+  }))
+  activeFinalFlushRunIds.delete(runId)
+}
+
 export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: SeedRunSnapshot): Promise<void> => {
   if (!['completed', 'partial', 'failed', 'cancelled'].includes(snapshot.status)) {
     return
@@ -233,6 +269,9 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
     })
     return
   }
+
+  const claimed = await claimFinalFlush(payload, snapshot.runId)
+  if (!claimed) return
 
   try {
     const plan = planRevalidation({
@@ -258,7 +297,7 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
     })
     const result = executeRevalidationPlan(plan, { logger: payload.logger })
 
-    await markFinalFlush(payload, snapshot.runId, {
+    await completeFinalFlush(payload, snapshot.runId, {
       status: result.failures.length > 0 ? 'failed' : 'executed',
       tagCount: result.attempted.tagCount,
       pathCount: result.attempted.pathCount,
@@ -282,7 +321,7 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
       publicJobCount: publicJobs.length,
       message,
     })
-    await markFinalFlush(payload, snapshot.runId, {
+    await completeFinalFlush(payload, snapshot.runId, {
       status: 'failed',
       tagCount: 0,
       pathCount: 0,

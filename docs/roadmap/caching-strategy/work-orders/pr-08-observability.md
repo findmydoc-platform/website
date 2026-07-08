@@ -151,8 +151,8 @@ The tests must prove:
 Expected test files include:
 
 - `tests/unit/utilities/cacheRevalidation/**`
-- `tests/unit/endpoints/cacheRevalidationVisibility.test.ts`
-- `tests/unit/components/cacheRevalidationVisibility.test.tsx`
+- future `cacheRevalidationVisibility.test.ts` under `tests/unit/endpoints/`
+- future `cacheRevalidationVisibility.test.tsx` under `tests/unit/components/`
 - `tests/unit/dashboard/adminDashboard/config.test.ts`
 
 Do not write tests that only duplicate constants. Prefer behavior-focused assertions that fail when visibility reads bypass access control, raw data reaches history/UI, manual cache actions appear, PostHog capture is added, or the seeding dashboard widget regresses.

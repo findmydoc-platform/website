@@ -130,7 +130,7 @@ Expected test files include:
 - `tests/unit/hooks/revalidatePage.test.ts`
 - `tests/unit/hooks/revalidatePost.test.ts`
 - `tests/unit/hooks/revalidateRedirects.test.ts`
-- `tests/unit/hooks/revalidateGlobals.test.ts`
+- future `revalidateGlobals.test.ts` under `tests/unit/hooks/`
 - `tests/unit/utilities/payloadDataFetchers.test.ts`
 - `tests/unit/app/frontend/sitemap.routes.test.ts`
 

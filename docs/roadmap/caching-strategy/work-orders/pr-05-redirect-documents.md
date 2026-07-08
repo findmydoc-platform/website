@@ -77,7 +77,7 @@ Expected runtime changes:
 
 - Delete `src/utilities/getDocument.ts` when no non-PR5 caller remains.
 - Remove `getCachedDocument` imports and tests.
-- Add a small route-local resolver, for example `src/app/(frontend)/_components/PayloadRedirects/resolveRedirectTargetPath.ts`.
+- Add a small route-local resolver under `src/app/(frontend)/_components/PayloadRedirects/`, for example named `resolveRedirectTargetPath.ts`.
 - Use the resolver from `src/app/(frontend)/_components/PayloadRedirects/index.tsx` only after a matching redirect rule is found and only for reference redirects.
 - Keep direct custom URL redirects as the fast path.
 - Update `src/utilities/getRedirects.ts` so redirect rules default to `depth: 0` and the cached read uses the PR 4 canonical redirect cache tag or tags.
@@ -134,7 +134,7 @@ The tests must prove:
 
 Expected test files include:
 
-- `tests/unit/app/frontend/payloadRedirects.test.tsx`
+- future `payloadRedirects.test.tsx` under `tests/unit/app/frontend/`
 - `tests/unit/utilities/payloadDataFetchers.test.ts`
 - `tests/unit/hooks/revalidateRedirects.test.ts`
 

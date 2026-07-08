@@ -162,8 +162,8 @@ The tests must prove:
 Expected test files include:
 
 - `tests/unit/utilities/cacheRevalidation/**`
-- `tests/unit/hooks/revalidateClinicSurfaces.test.ts`
-- `tests/unit/hooks/revalidateClinicRelatedCollections.test.ts`
+- future `revalidateClinicSurfaces.test.ts` under `tests/unit/hooks/`
+- future `revalidateClinicRelatedCollections.test.ts` under `tests/unit/hooks/`
 - `tests/unit/hooks/updateAveragePrices.hooks.test.ts`
 - `tests/unit/hooks/updateAverageRatings.test.ts`
 - `tests/unit/utilities/clinicDetailServerData.contract.test.ts`

@@ -125,7 +125,7 @@ The tests must prove:
 - the catalog includes the central PR 1 public routes, globals, collections, discovery surfaces, seed/bulk flows, and observability boundary
 - the policy module does not export or generate legacy tag names such as `global_header`, `pages-sitemap`, `posts-sitemap`, `redirects`, or `${collection}_${slug}`
 
-Tests should live near existing utility tests, for example `tests/unit/utilities/cachePolicy.test.ts`.
+Tests should live near existing utility tests, for example a future `cachePolicy.test.ts` file under `tests/unit/utilities/`.
 
 Do not write tests that only duplicate constants without proving a public behavior contract. Prefer table-driven assertions where they make the policy surface easier to scan.
 

@@ -93,6 +93,8 @@ Resolver behavior:
 - Return `/<slug>` for other published Pages.
 - Return `/posts/<slug>` for published Posts.
 - Normalize and validate any returned internal path with the existing routing sanitizer/path utility, such as `src/utilities/routing/sanitizeInternalRedirectPath.ts` or its direct successor, before `PayloadRedirects` can pass it to `redirect()`.
+- Do not let a sanitizer fallback convert an invalid candidate into `/`; `/` is allowed only when the target was first resolved as a published Page with slug `home`.
+- If the existing sanitizer only exposes fallback-returning behavior, PR 5 must use or extend a shared utility so the resolver can distinguish a valid sanitized path from a fallback before redirecting.
 - Stop instead of adding an ad hoc redirect-path sanitizer if the existing utility cannot safely represent the required Page/Post path behavior.
 - Return `null` for missing, inaccessible, unpublished, deleted, invalid, unsupported, or slug-less targets.
 - Never infer a target path from the original source URL, redirect id, collection name alone, or a stale embedded reference slug.
@@ -121,6 +123,7 @@ The tests must prove:
 - a Page target with slug `home` redirects to `/`.
 - post reference redirects resolve by id and redirect to `/posts/<slug>`.
 - resolved reference paths pass through the existing redirect/path sanitizer and unsafe path candidates fail closed instead of reaching `redirect()`.
+- unsafe reference path candidates are not converted to `/` by sanitizer fallback behavior; `/` is asserted only for a verified published `home` Page target.
 - embedded reference object slugs are not used as authoritative targets; the id is re-resolved.
 - missing targets fail closed.
 - draft, unpublished, deleted, inaccessible, unsupported, invalid, or slug-less targets fail closed.

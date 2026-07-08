@@ -25,6 +25,8 @@ import {
   CACHE_POLICY_GLOBALS,
   CACHE_SITEMAP_IDS,
   CACHE_SURFACE_IDS,
+  CACHE_TAGGABLE_COLLECTIONS,
+  CACHE_TAGGABLE_SURFACE_IDS,
   CACHE_TAG_FAMILIES,
   CACHE_TAG_FAMILY_TEMPLATES,
   getCachePolicyEntry,
@@ -94,6 +96,34 @@ describe('cache policy contract', () => {
     expect(generatedTags).not.toContain('redirects')
     expect(generatedTags).not.toContain('pages_home')
     expect(generatedTags.every((tag) => tag.includes(':'))).toBe(true)
+  })
+
+  it('fails closed before generating cache tags for private-live collections and surfaces', () => {
+    const privateCollections = [
+      'favoriteclinics',
+      'patients',
+      'basicUsers',
+      'clinicStaff',
+      'platformStaff',
+      'clinicApplications',
+      'patientClinicInquiries',
+      'userProfileMedia',
+    ]
+
+    const privateSurfaces = ['patient-favorites', 'auth', 'admin', 'preview', 'cache-visibility']
+
+    for (const collection of privateCollections) {
+      expect(CACHE_POLICY_COLLECTIONS).toContain(collection)
+      expect(CACHE_TAGGABLE_COLLECTIONS).not.toContain(collection)
+      expect(() => buildEntityTag(collection, 1)).toThrow(/not public-cache taggable/)
+      expect(() => buildCollectionTag(collection)).toThrow(/not public-cache taggable/)
+    }
+
+    for (const surface of privateSurfaces) {
+      expect(CACHE_SURFACE_IDS).toContain(surface)
+      expect(CACHE_TAGGABLE_SURFACE_IDS).not.toContain(surface)
+      expect(() => buildSurfaceTag(surface)).toThrow(/not public-cache taggable/)
+    }
   })
 
   it('builds known public route, sitemap, and discovery paths', () => {
@@ -195,7 +225,26 @@ describe('cache policy contract', () => {
       sitemapSurfaces: ['pages'],
     })
 
+    expect(getCachePolicyEntry('route:home')).toMatchObject({
+      tagFamilies: ['global', 'collection', 'surface', 'surface:sitemap'],
+      surfaces: ['home'],
+      sitemapSurfaces: ['pages'],
+    })
+
+    expect(getCachePolicyEntry('route:about')).toMatchObject({
+      tagFamilies: ['global', 'surface', 'surface:sitemap'],
+      surfaces: ['about'],
+      sitemapSurfaces: ['pages'],
+    })
+
+    expect(getCachePolicyEntry('route:partners-clinics')).toMatchObject({
+      tagFamilies: ['global', 'collection', 'surface', 'surface:sitemap'],
+      surfaces: ['partners-clinics'],
+      sitemapSurfaces: ['pages'],
+    })
+
     expect(getCachePolicyEntry('route:patient-favorites-and-auth')).toMatchObject({
+      kind: 'private-route',
       cacheClass: 'private-live',
       boundary: 'private',
       tagFamilies: [],
@@ -208,6 +257,18 @@ describe('cache policy contract', () => {
       owner: 'seed-runner',
       pathRelationship: 'operational-terminal-flush',
     })
+  })
+
+  it('keeps public-route catalog iteration public-only', () => {
+    const publicRouteEntries = (CACHE_POLICY_CATALOG as readonly CachePolicyCatalogEntry[]).filter(
+      (entry) => entry.kind === 'public-route',
+    )
+
+    expect(publicRouteEntries.length).toBeGreaterThan(0)
+    expect(publicRouteEntries.every((entry) => entry.boundary === 'public')).toBe(true)
+    expect(publicRouteEntries.every((entry) => entry.cacheClass !== 'private-live')).toBe(true)
+    expect(publicRouteEntries.map((entry) => entry.id)).not.toContain('route:patient-favorites-and-auth')
+    expect(publicRouteEntries.map((entry) => entry.id)).not.toContain('route:admin-and-preview')
   })
 
   it('keeps every catalog reference inside the exported policy vocabulary', () => {

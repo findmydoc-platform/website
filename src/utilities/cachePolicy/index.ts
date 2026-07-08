@@ -71,6 +71,7 @@ export const CACHE_POLICY_COLLECTIONS = [
   'favoriteclinics',
   'patients',
   'basicUsers',
+  'clinicStaff',
   'platformStaff',
   'clinicApplications',
   'patientClinicInquiries',
@@ -78,6 +79,32 @@ export const CACHE_POLICY_COLLECTIONS = [
 ] as const
 
 export type CachePolicyCollection = (typeof CACHE_POLICY_COLLECTIONS)[number]
+
+export const CACHE_TAGGABLE_COLLECTIONS = [
+  'pages',
+  'posts',
+  'redirects',
+  'clinics',
+  'clinictreatments',
+  'doctors',
+  'doctorspecialties',
+  'doctortreatments',
+  'reviews',
+  'accreditation',
+  'clinicMedia',
+  'clinicGalleryEntries',
+  'clinicGalleryMedia',
+  'doctorMedia',
+  'platformContentMedia',
+  'treatments',
+  'medical-specialties',
+  'cities',
+  'countries',
+  'categories',
+  'tags',
+] as const satisfies readonly CachePolicyCollection[]
+
+export type CacheTaggableCollection = (typeof CACHE_TAGGABLE_COLLECTIONS)[number]
 
 export const CACHE_POLICY_GLOBALS = ['header', 'footer', 'landingPages', 'cookieConsent'] as const
 
@@ -105,6 +132,24 @@ export const CACHE_SURFACE_IDS = [
 ] as const
 
 export type CacheSurfaceId = (typeof CACHE_SURFACE_IDS)[number]
+
+export const CACHE_TAGGABLE_SURFACE_IDS = [
+  'page-detail',
+  'post-detail',
+  'posts-list',
+  'clinic-detail',
+  'home',
+  'about',
+  'partners-clinics',
+  'listing-comparison',
+  'contact',
+  'clinic-registration',
+  'patient-registration',
+  'redirects',
+  'public-chrome',
+] as const satisfies readonly CacheSurfaceId[]
+
+export type CacheTaggableSurfaceId = (typeof CACHE_TAGGABLE_SURFACE_IDS)[number]
 
 export const PARAMETERIZED_SURFACE_IDS = ['clinic-detail'] as const
 
@@ -141,7 +186,14 @@ export type FixedPublicPathSurfaceId = keyof typeof FIXED_PUBLIC_PATHS
 
 export type CachePolicyBoundary = 'public' | 'private' | 'operational'
 
-export type CachePolicyEntryKind = 'public-route' | 'global' | 'collection' | 'discovery' | 'seed-flow' | 'operational'
+export type CachePolicyEntryKind =
+  | 'public-route'
+  | 'private-route'
+  | 'global'
+  | 'collection'
+  | 'discovery'
+  | 'seed-flow'
+  | 'operational'
 
 export type CachePolicyOwner =
   | 'collection-hook'
@@ -265,12 +317,13 @@ export const CACHE_POLICY_CATALOG = [
     cacheClass: 'aggregated-public',
     boundary: 'public',
     owner: 'global-hook',
-    tagFamilies: ['global', 'collection', 'surface'],
+    tagFamilies: ['global', 'collection', 'surface', 'surface:sitemap'],
     pathRelationship: 'known-paths',
     pathFamilies: ['fixed-public-path'],
     collections: ['posts', 'medical-specialties', 'cities'],
     globals: ['landingPages'],
     surfaces: ['home'],
+    sitemapSurfaces: ['pages'],
   },
   {
     id: 'route:about',
@@ -278,11 +331,12 @@ export const CACHE_POLICY_CATALOG = [
     cacheClass: 'aggregated-public',
     boundary: 'public',
     owner: 'global-hook',
-    tagFamilies: ['global', 'surface'],
+    tagFamilies: ['global', 'surface', 'surface:sitemap'],
     pathRelationship: 'known-paths',
     pathFamilies: ['fixed-public-path'],
     globals: ['landingPages'],
     surfaces: ['about'],
+    sitemapSurfaces: ['pages'],
   },
   {
     id: 'route:partners-clinics',
@@ -290,12 +344,13 @@ export const CACHE_POLICY_CATALOG = [
     cacheClass: 'aggregated-public',
     boundary: 'public',
     owner: 'global-hook',
-    tagFamilies: ['global', 'collection', 'surface'],
+    tagFamilies: ['global', 'collection', 'surface', 'surface:sitemap'],
     pathRelationship: 'known-paths',
     pathFamilies: ['fixed-public-path'],
     collections: ['posts', 'medical-specialties', 'treatments'],
     globals: ['landingPages'],
     surfaces: ['partners-clinics'],
+    sitemapSurfaces: ['pages'],
   },
   {
     id: 'route:listing-comparison',
@@ -323,7 +378,7 @@ export const CACHE_POLICY_CATALOG = [
   },
   {
     id: 'route:patient-favorites-and-auth',
-    kind: 'public-route',
+    kind: 'private-route',
     cacheClass: 'private-live',
     boundary: 'private',
     owner: 'auth-owner',
@@ -335,7 +390,7 @@ export const CACHE_POLICY_CATALOG = [
   },
   {
     id: 'route:admin-and-preview',
-    kind: 'public-route',
+    kind: 'private-route',
     cacheClass: 'private-live',
     boundary: 'private',
     owner: 'auth-owner',
@@ -436,7 +491,7 @@ export const CACHE_POLICY_CATALOG = [
     tagFamilies: [],
     pathRelationship: 'private-live',
     pathFamilies: ['none'],
-    collections: ['platformStaff', 'clinicApplications', 'patientClinicInquiries'],
+    collections: ['platformStaff', 'clinicStaff', 'clinicApplications', 'patientClinicInquiries'],
   },
   {
     id: 'discovery:sitemap:pages',
@@ -611,11 +666,31 @@ const assertPositivePageNumber = (page: number): number => {
 export const assertKnownCollection = (collection: string): CachePolicyCollection =>
   assertKnownValue(collection, CACHE_POLICY_COLLECTIONS, 'collection')
 
+export const assertTaggableCollection = (collection: string): CacheTaggableCollection => {
+  const normalizedCollection = assertKnownCollection(collection)
+
+  if (!CACHE_TAGGABLE_COLLECTIONS.includes(normalizedCollection as CacheTaggableCollection)) {
+    throw new Error(`Collection is not public-cache taggable: ${normalizedCollection}`)
+  }
+
+  return normalizedCollection as CacheTaggableCollection
+}
+
 export const assertKnownGlobal = (global: string): CachePolicyGlobal =>
   assertKnownValue(global, CACHE_POLICY_GLOBALS, 'global')
 
 export const assertKnownSurfaceId = (surfaceId: string): CacheSurfaceId =>
   assertKnownValue(surfaceId, CACHE_SURFACE_IDS, 'surface')
+
+export const assertTaggableSurfaceId = (surfaceId: string): CacheTaggableSurfaceId => {
+  const normalizedSurface = assertKnownSurfaceId(surfaceId)
+
+  if (!CACHE_TAGGABLE_SURFACE_IDS.includes(normalizedSurface as CacheTaggableSurfaceId)) {
+    throw new Error(`Surface is not public-cache taggable: ${normalizedSurface}`)
+  }
+
+  return normalizedSurface as CacheTaggableSurfaceId
+}
 
 export const assertKnownSitemapId = (sitemapId: string): CacheSitemapId =>
   assertKnownValue(sitemapId, CACHE_SITEMAP_IDS, 'sitemap')
@@ -635,16 +710,16 @@ export const getCachePolicyEntry = (id: string): CachePolicyCatalogEntry => {
 }
 
 export const buildEntityTag = (collection: string, id: string | number): string =>
-  `entity:${assertKnownCollection(collection)}:${assertCacheToken(id, 'id')}`
+  `entity:${assertTaggableCollection(collection)}:${assertCacheToken(id, 'id')}`
 
 export const buildSlugTag = (collection: string, slug: string): string =>
-  `slug:${assertKnownCollection(collection)}:${assertPayloadSlug(slug, 'slug', { allowNested: true })}`
+  `slug:${assertTaggableCollection(collection)}:${assertPayloadSlug(slug, 'slug', { allowNested: true })}`
 
-export const buildCollectionTag = (collection: string): string => `collection:${assertKnownCollection(collection)}`
+export const buildCollectionTag = (collection: string): string => `collection:${assertTaggableCollection(collection)}`
 
 export const buildGlobalTag = (global: string): string => `global:${assertKnownGlobal(global)}`
 
-export const buildSurfaceTag = (surfaceId: string): string => `surface:${assertKnownSurfaceId(surfaceId)}`
+export const buildSurfaceTag = (surfaceId: string): string => `surface:${assertTaggableSurfaceId(surfaceId)}`
 
 export const buildSurfaceInstanceTag = (surfaceId: ParameterizedSurfaceId, id: string | number): string => {
   const normalizedSurface = assertKnownValue(surfaceId, PARAMETERIZED_SURFACE_IDS, 'parameterized surface')

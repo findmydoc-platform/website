@@ -162,7 +162,7 @@ Only revert the webpack fallback when all conditions are met:
 
 ### Architecture Decision Record
 
-- ADR 023 documents the long-lived production build decision: [Production build webpack fallback](./adrs/023-adr-production-build-webpack-fallback.md).
+- ADR 023 documents the long-lived production build decision: [Production build webpack fallback](./adrs/024-adr-production-build-webpack-fallback.md).
 
 ### References
 

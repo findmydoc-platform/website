@@ -7,6 +7,7 @@ const routeMocks = vi.hoisted(() => ({
   cookies: vi.fn(),
   draftMode: vi.fn(),
   findFavoriteClinicStateRecord: vi.fn(),
+  getCachedPublicClinicDetailServerData: vi.fn(),
   getClinicDetailServerData: vi.fn(),
   getGlobal: vi.fn(),
   getPayload: vi.fn(),
@@ -54,6 +55,7 @@ vi.mock('@/features/favorites/server', () => ({
 }))
 
 vi.mock('@/utilities/clinicDetail/serverData', () => ({
+  getCachedPublicClinicDetailServerData: routeMocks.getCachedPublicClinicDetailServerData,
   getClinicDetailServerData: routeMocks.getClinicDetailServerData,
 }))
 
@@ -132,6 +134,7 @@ describe('frontend clinic detail route', () => {
 
     routeMocks.cookies.mockResolvedValue({ get: vi.fn(() => null) })
     routeMocks.draftMode.mockResolvedValue({ isEnabled: false })
+    routeMocks.getCachedPublicClinicDetailServerData.mockResolvedValue(clinicDetailData)
     routeMocks.getClinicDetailServerData.mockResolvedValue(clinicDetailData)
     routeMocks.getGlobal.mockResolvedValue(null)
     routeMocks.getPayload.mockResolvedValue({})
@@ -153,6 +156,8 @@ describe('frontend clinic detail route', () => {
     })
 
     expect(routeMocks.buildClinicDetailPageJsonLd).toHaveBeenCalledWith(clinicDetailData)
+    expect(routeMocks.getCachedPublicClinicDetailServerData).toHaveBeenCalledWith('berlin-health')
+    expect(routeMocks.getClinicDetailServerData).not.toHaveBeenCalled()
     const jsonLdElement = findElementByType(result, routeMocks.jsonLdScriptComponent) as React.ReactElement<{
       data: unknown
     }> | null
@@ -162,5 +167,17 @@ describe('frontend clinic detail route', () => {
       data: unknown
     }> | null
     expect(clinicDetailElement?.props.data).toBe(clinicDetailData)
+  })
+
+  it('keeps draft clinic detail reads live', async () => {
+    routeMocks.draftMode.mockResolvedValue({ isEnabled: true })
+    const pageModule = await import('@/app/(frontend)/clinics/[slug]/page')
+
+    await pageModule.default({
+      params: Promise.resolve({ slug: 'berlin-health' }),
+    })
+
+    expect(routeMocks.getClinicDetailServerData).toHaveBeenCalledWith({}, 'berlin-health', { draft: true })
+    expect(routeMocks.getCachedPublicClinicDetailServerData).not.toHaveBeenCalled()
   })
 })

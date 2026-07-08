@@ -1,7 +1,11 @@
 import type { Payload } from 'payload'
 
-import type { Clinic } from '@/payload-types'
+import configPromise from '@payload-config'
+import { getPayload } from 'payload'
+import { unstable_cache } from 'next/cache'
+import type { City, Clinic, MedicalSpecialty, Treatment } from '@/payload-types'
 import { CLINICS_BREADCRUMB, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
+import { buildCollectionTag, buildSitemapTag, buildSurfaceTag } from '@/utilities/cachePolicy'
 import { buildFreshnessSignals } from '@/utilities/freshness'
 import { findLatestIsoTimestampString } from '@/utilities/timestamps'
 import { slugify } from '@/utilities/slugify'
@@ -25,6 +29,9 @@ import { buildClinicPresentationMeta, buildScopedClinicRows, mapListingCardResul
 import { extractRelationId } from './relations'
 import {
   countApprovedReviewsByClinic,
+  findAllCities,
+  findAllSpecialties,
+  findAllTreatments,
   findClinicTreatmentsForClinics,
   findLatestApprovedReviewDateForClinics,
   findListingComparisonCatalog,
@@ -37,6 +44,134 @@ import {
   collectDescendantSpecialties,
 } from './specialtyScope'
 import type { ListingComparisonServerData, SpecialtyMeta, TreatmentMeta } from './types'
+
+const LISTING_COMPARISON_CACHE_KEY_VERSION = '2026-07-08'
+
+type ListingComparisonCacheFacets = {
+  readonly cityDocs: readonly City[]
+  readonly treatmentDocs: readonly Treatment[]
+  readonly specialtyDocs: readonly MedicalSpecialty[]
+}
+
+const getCachedListingComparisonCacheFacets = () =>
+  unstable_cache(
+    async (): Promise<ListingComparisonCacheFacets> => {
+      const payload = await getPayload({ config: configPromise })
+      const [cityDocs, treatmentDocs, specialtyDocs] = await Promise.all([
+        findAllCities(payload),
+        findAllTreatments(payload),
+        findAllSpecialties(payload),
+      ])
+
+      return {
+        cityDocs,
+        treatmentDocs,
+        specialtyDocs,
+      }
+    },
+    ['listing-comparison-cache-facets'],
+    {
+      tags: [buildCollectionTag('cities'), buildCollectionTag('treatments'), buildCollectionTag('medical-specialties')],
+    },
+  )
+
+export const buildListingComparisonDataCacheTags = (): string[] => [
+  buildSurfaceTag('listing-comparison'),
+  buildCollectionTag('clinics'),
+  buildCollectionTag('clinictreatments'),
+  buildCollectionTag('reviews'),
+  buildCollectionTag('treatments'),
+  buildCollectionTag('medical-specialties'),
+  buildCollectionTag('cities'),
+  buildSitemapTag('pages'),
+]
+
+export function buildListingComparisonDataCacheKey(state: ListingComparisonQueryState): string {
+  return JSON.stringify({
+    version: LISTING_COMPARISON_CACHE_KEY_VERSION,
+    page: state.page,
+    sort: state.sort,
+    cities: [...state.cities].sort(),
+    treatments: [...state.treatments].sort(),
+    specialties: [...state.specialties].sort(),
+    ratingMin: state.ratingMin,
+    priceMin: state.priceMin,
+    priceMax: state.priceMax,
+  })
+}
+
+export function buildListingComparisonResolvedDataCacheKey(
+  searchParams: ListingComparisonRawSearchParams = {},
+  { cityDocs, specialtyDocs, treatmentDocs }: ListingComparisonCacheFacets,
+): string {
+  const parsed = parseListingComparisonQueryState(searchParams)
+  const cityMeta = toCityMetaFromDocs([...cityDocs])
+  const cityOptions = toBaseFilterOptions(cityMeta)
+
+  const specialtiesMeta: SpecialtyMeta[] = specialtyDocs.map((specialty) => ({
+    id: specialty.id,
+    name: specialty.name,
+    slug: slugify(specialty.name),
+    parentId: extractRelationId(specialty.parentSpecialty),
+  }))
+  const specialtyOptions = buildSpecialtyFilterOptions(specialtiesMeta)
+
+  const treatmentsMeta: TreatmentMeta[] = treatmentDocs.map((treatment) => ({
+    id: treatment.id,
+    name: treatment.name,
+    slug: slugify(treatment.name),
+    medicalSpecialtyId: extractRelationId(treatment.medicalSpecialty),
+  }))
+  const treatmentOptions = toBaseFilterOptions(treatmentsMeta)
+
+  const selectedSpecialtyValuesResolved = resolveSelectedOptionValues({
+    requestedValues: parsed.state.specialties,
+    legacyFallbackValue: parsed.legacy.service ?? undefined,
+    options: specialtyOptions,
+  })
+  const selectedSpecialtyValue = resolveSingleSelectedOptionValue(selectedSpecialtyValuesResolved)
+
+  return buildListingComparisonDataCacheKey({
+    ...parsed.state,
+    cities: resolveSelectedOptionValues({
+      requestedValues: parsed.state.cities,
+      legacyFallbackValue: parsed.legacy.location ?? undefined,
+      options: cityOptions,
+    }),
+    treatments: resolveSelectedOptionValues({
+      requestedValues: parsed.state.treatments,
+      legacyFallbackValue: parsed.legacy.service ?? undefined,
+      options: treatmentOptions,
+    }),
+    specialties: selectedSpecialtyValue ? [selectedSpecialtyValue] : [],
+  })
+}
+
+const resolveListingComparisonDataCacheKey = async (
+  searchParams: ListingComparisonRawSearchParams = {},
+): Promise<string> => {
+  const facets = await getCachedListingComparisonCacheFacets()()
+
+  return buildListingComparisonResolvedDataCacheKey(searchParams, facets)
+}
+
+export const getCachedListingComparisonServerData = async (
+  searchParams: ListingComparisonRawSearchParams = {},
+): Promise<ListingComparisonServerData> => {
+  const cacheKey = await resolveListingComparisonDataCacheKey(searchParams)
+
+  return unstable_cache(
+    async () => {
+      const payload = await getPayload({ config: configPromise })
+
+      return getListingComparisonServerData(payload, searchParams)
+    },
+    ['listing-comparison-server-data', cacheKey],
+    {
+      tags: buildListingComparisonDataCacheTags(),
+    },
+  )()
+}
 
 type FilterOptionValue = {
   value: string
@@ -136,9 +271,12 @@ export async function getListingComparisonServerData(
     updatedAt: findLatestIsoTimestampString([
       ...approvedClinics.map((clinic) => clinic.updatedAt),
       ...catalogClinicTreatments.map((entry) => entry.updatedAt),
+      ...cityDocs.map((city) => city.updatedAt),
+      ...treatmentDocs.map((treatment) => treatment.updatedAt),
+      ...specialtyDocs.map((specialty) => specialty.updatedAt),
     ]),
     latestPatientReviewAt: latestApprovedReviewAt,
-    sourceCollections: ['clinics', 'clinictreatments', 'reviews'],
+    sourceCollections: ['clinics', 'clinictreatments', 'reviews', 'cities', 'treatments', 'medical-specialties'],
   })
 
   const cityMeta = toCityMetaFromDocs(cityDocs)

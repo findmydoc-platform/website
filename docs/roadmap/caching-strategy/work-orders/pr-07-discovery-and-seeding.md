@@ -127,6 +127,7 @@ The tests must prove:
 - planner output uses canonical PR 2 tags and paths only
 - touched sitemap routes use canonical `surface:sitemap:pages` and `surface:sitemap:posts` behavior and do not emit legacy `pages-sitemap` or `posts-sitemap` tags
 - sitemap `lastmod` values remain source-backed and route content policy remains unchanged
+- `robots.txt` remains route/config-policy driven, keeps the expected sitemap references and preview blocking behavior, and does not become normal Payload document invalidation scope
 - `llms.txt` remains static, contract-tested, and not CMS-backed or cache-tag backed in PR 7
 - public discovery contract, temporary landing blocking, sitemap guard behavior, and crawler monitoring redaction remain intact
 - public post list, paginated post list, and latest-post reads use stable public cache keys and canonical tags
@@ -145,6 +146,7 @@ Expected test files include:
 - `tests/unit/utilities/cacheRevalidation/**`
 - `tests/unit/app/frontend/sitemap.routes.test.ts`
 - `tests/unit/app/frontend/llmsTxt.route.test.ts`
+- `tests/unit/config/next-sitemap-config.test.ts`
 - `tests/unit/features/publicDiscovery/discoveryContract.test.ts`
 - `tests/unit/features/searchIndexing/sitemapGuards.test.ts`
 - `tests/unit/app/frontend/posts.page.test.tsx`

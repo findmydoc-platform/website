@@ -114,6 +114,7 @@ Admin dashboard card:
 - add a minimal read-only dashboard card under the existing Payload Admin dashboard/widget conventions
 - show recent event name/status, operation/source, surfaces, tag/path counts, failure counts, and a manual refresh button that only refetches the protected read endpoint
 - show empty, loading, error, and access-denied states without leaking event data to unauthorized users
+- keep the card purely operational; do not add public-discovery data, sitemap/robots links, canonical/indexation controls, or links to crawlable public surfaces in PR 8
 - keep controls typed and normalized at component boundaries
 - use Payload admin theme variables and existing Developer Dashboard visual conventions
 - keep the existing seeding widget behavior intact
@@ -185,7 +186,7 @@ Recommended reviewers for the future PR 8 implementation:
 - `accessibility-reviewer` for the rendered Admin card states, keyboard/focus behavior, loading/error announcements, and read-only controls
 - `mobile-ui-reviewer` for responsive Admin dashboard behavior and dense event-table/card readability
 
-Skip `seo-reviewer` unless PR 8 changes discovery output, sitemap output, redirects, canonical/noindex behavior, structured data, or other public discovery behavior.
+Skip `seo-reviewer` unless PR 8 changes discovery output, sitemap output, robots behavior, redirects, canonical/noindex behavior, structured data, public-discovery data, links to crawlable public surfaces, or other public discovery behavior.
 
 Skip `web-vitals-reviewer` unless PR 8 changes public route rendering, public route runtime cache behavior, bundle-sensitive public code, or public performance semantics.
 

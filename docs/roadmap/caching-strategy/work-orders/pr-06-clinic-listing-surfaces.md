@@ -120,9 +120,11 @@ Hook adapter behavior:
 Data Cache behavior:
 
 - wrap only the public, non-draft Clinic Detail server-data read with canonical tags for clinic entity, clinic slug, collection, clinic-detail surface, and known related collection/surface dependencies
+- expose the cached Clinic Detail server-data boundary through a narrow public input contract such as slug, normalized locale when available, and explicit draft/public mode; the cached function must not import or capture `headers()`, `cookies()`, auth/session helpers, favorite lookups, or request objects
 - keep Clinic Detail draft reads live and uncached
 - keep cookie consent resolution, patient favorite lookup, headers, cookies, and auth-dependent data outside the cached Clinic Detail server-data read
 - wrap Listing Comparison server data with canonical tags for `surface:listing-comparison`, relevant collection tags, and normalized listing query inputs
+- expose the cached Listing Comparison server-data boundary through stable public query state only; patient favorites, cookies, headers, auth state, and request-scoped values must be joined outside the cached function
 - avoid per-query path invalidation for Listing Comparison query variants
 - align the in-process Listing Comparison catalog cache with the public Data Cache behavior without turning it into a separate freshness authority
 - include `surface:sitemap:pages` in planner output for Listing Comparison freshness sources while leaving sitemap content and route policy unchanged
@@ -152,7 +154,8 @@ The tests must prove:
 - existing average price and average rating hooks keep their behavior
 - Clinic Detail public server data uses canonical Data Cache tags and draft reads bypass persistent public cache
 - Listing Comparison server data uses canonical Data Cache tags and stable normalized query keys
-- patient favorites, cookie consent state, headers, cookies, auth state, and request-bound data are not cached
+- patient favorites, cookie consent state, headers, cookies, auth state, and request-bound data are not cached, not captured by cached function closures, and not imported into cache-wrapper modules
+- route-level tests or contract tests prove favorites/cookie/header/auth reads still happen outside the public cached data boundary
 - direct media upload reverse-dependency behavior remains deferred
 - touched PR 6 code does not emit legacy tags or use legacy dual-tagging
 

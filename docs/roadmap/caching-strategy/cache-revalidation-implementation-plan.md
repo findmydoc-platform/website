@@ -4,6 +4,8 @@ This document is the stable implementation planning reference for aligning publi
 
 It is not the ADR, and the ADR does not depend on this document. This plan consumes the accepted ADR and turns it into concrete area assignments and a stacked PR sequence.
 
+The implemented runtime architecture is documented in [Cache Revalidation Runtime Architecture](../../engineering/cache-revalidation-runtime.md). This plan remains the stack planning, cache assignment, and execution-provenance source for the implementation sequence.
+
 ## Source Inputs
 
 - [ADR 023 - Public Website Cache and Revalidation Strategy](../../adrs/023-adr-public-website-cache-and-revalidation-strategy.md)

@@ -18,6 +18,7 @@ A production-ready Next.js front-end with:
   - [Search](#search)
   - [Redirects](#redirects)
   - [PostHog Analytics](#posthog-analytics)
+  - [Monitoring and Error Logic](#monitoring-and-error-logic)
   - [Preview Access Policy](#preview-access-policy)
   - [Draft Preview](#draft-preview)
   - [Live Preview](#live-preview)
@@ -264,3 +265,6 @@ Create URL redirects to manage content migrations.
 ## PostHog Analytics
 Session replay, error tracking, and web analytics with automatic user identification.
 [PostHog Integration Docs](./integrations/posthog.md)
+
+## Monitoring and Error Logic
+Production monitoring combines Vercel runtime logs, structured server events, PostHog error tracking, and GitHub/Vercel deployment signals. The operating map lives in [Monitoring and Error Logic](./monitoring-and-error-logic.md).

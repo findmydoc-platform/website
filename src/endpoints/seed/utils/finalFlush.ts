@@ -14,10 +14,8 @@ import { baselinePlan, demoPlan } from './plan'
 import type { SeedType } from './runtime'
 import {
   appendSeedRunLog,
-  claimSeedRunFinalFlush,
   loadSeedRunRecord,
   markSeedRunFinalFlush,
-  updateSeedRunFinalFlush,
   type SeedLogEntry,
   type SeedRunFinalFlushRecord,
   type SeedRunJobRecord,
@@ -84,7 +82,7 @@ const COLLECTION_FLUSH_SCOPE: Partial<Record<CacheTaggableCollection, ScopeEntry
   reviews: { surfaces: ['clinic-detail', 'listing-comparison'], sitemaps: ['pages'] },
   accreditation: { surfaces: ['clinic-detail'] },
   clinicGalleryEntries: { surfaces: ['clinic-detail'] },
-  treatments: { surfaces: ['listing-comparison', 'partners-clinics'] },
+  treatments: { surfaces: ['listing-comparison', 'partners-clinics'], sitemaps: ['pages'] },
   'medical-specialties': { surfaces: ['listing-comparison', 'home', 'partners-clinics'], sitemaps: ['pages'] },
   cities: { surfaces: ['listing-comparison', 'home'], sitemaps: ['pages'] },
   countries: { surfaces: ['listing-comparison'] },
@@ -292,15 +290,8 @@ const claimFinalFlush = async (payload: Payload, runId: string): Promise<FinalFl
     return null
   }
 
-  const claimed = await claimSeedRunFinalFlush(payload, runId, {
-    status: 'pending',
-    completedAt: getCurrentIsoTimestampString(),
-    tagCount: 0,
-    pathCount: 0,
-    failureCount: 0,
-  })
-
-  if (!claimed) {
+  const record = await loadSeedRunRecord(payload, runId)
+  if (!record || record.finalFlush) {
     if (releaseDatabaseLock) {
       await releaseDatabaseLock()
     }
@@ -326,10 +317,10 @@ const completeFinalFlush = async (
   runId: string,
   finalFlush: Omit<SeedRunFinalFlushRecord, 'completedAt'>,
 ): Promise<void> => {
-  await updateSeedRunFinalFlush(payload, runId, () => ({
+  await markSeedRunFinalFlush(payload, runId, {
     ...finalFlush,
     completedAt: getCurrentIsoTimestampString(),
-  }))
+  })
 }
 
 export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: SeedRunSnapshot): Promise<void> => {

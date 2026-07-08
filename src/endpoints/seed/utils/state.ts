@@ -48,7 +48,7 @@ export type SeedRunJobRecord = {
   output?: Record<string, unknown>
 }
 
-export type SeedRunFinalFlushStatus = 'pending' | 'executed' | 'failed' | 'skipped'
+export type SeedRunFinalFlushStatus = 'executed' | 'failed' | 'skipped'
 
 export type SeedRunFinalFlushRecord = {
   status: SeedRunFinalFlushStatus
@@ -417,34 +417,6 @@ export const markSeedRunFinalFlush = async (
   if (record.finalFlush) return record
 
   record.finalFlush = clone(finalFlush)
-  finalizeRunIfNeeded(record)
-  await saveSeedRunRecord(payload, record)
-  return record
-}
-
-export const claimSeedRunFinalFlush = async (
-  payload: Payload,
-  runId: string,
-  finalFlush: SeedRunFinalFlushRecord,
-): Promise<boolean> => {
-  const record = await loadSeedRunRecord(payload, runId)
-  if (!record || record.finalFlush) return false
-
-  record.finalFlush = clone(finalFlush)
-  finalizeRunIfNeeded(record)
-  await saveSeedRunRecord(payload, record)
-  return true
-}
-
-export const updateSeedRunFinalFlush = async (
-  payload: Payload,
-  runId: string,
-  updater: (finalFlush: SeedRunFinalFlushRecord) => SeedRunFinalFlushRecord,
-): Promise<SeedRunRecord | null> => {
-  const record = await loadSeedRunRecord(payload, runId)
-  if (!record?.finalFlush) return record
-
-  record.finalFlush = clone(updater(record.finalFlush))
   finalizeRunIfNeeded(record)
   await saveSeedRunRecord(payload, record)
   return record

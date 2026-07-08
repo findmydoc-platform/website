@@ -280,6 +280,68 @@ describe('seed endpoints success paths', () => {
     expect(revalidatePath).not.toHaveBeenCalled()
   })
 
+  it('flushes the pages sitemap when treatment seed data affects listing-comparison lastmod', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-treatment-sitemap'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    }) as SeedRunRecord
+    record.status = 'completed'
+    record.completedAt = '2026-07-08T10:00:00.000Z'
+    record.completedJobs = 1
+    record.succeededJobs = 1
+    record.jobs = [
+      {
+        id: 'job-treatments',
+        order: 1,
+        status: 'succeeded',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'treatments',
+          kind: 'collection',
+          collection: 'treatments',
+          fileName: 'treatments',
+        },
+        queue,
+        title: 'Treatments',
+        stepName: 'treatments',
+        kind: 'collection',
+        collection: 'treatments',
+        fileName: 'treatments',
+        createdAt: '2026-07-08T09:00:00.000Z',
+        completedAt: '2026-07-08T10:00:00.000Z',
+        created: 1,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      },
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    const res = makeRes()
+    await seedAdvanceHandler(
+      createMockReq(mockUsers.platform(), payload, {
+        query: { runId },
+      }) as PayloadRequest,
+      res,
+    )
+
+    expect(res._status).toBe(200)
+    expect(revalidateTag).toHaveBeenCalledWith('collection:treatments', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('surface:listing-comparison', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('surface:sitemap:pages', { expire: 0 })
+    expect(revalidatePath).toHaveBeenCalledWith('/listing-comparison')
+    expect(revalidatePath).toHaveBeenCalledWith('/pages-sitemap.xml')
+  })
+
   it('does not flush a skipped public seed job that never wrote public work', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-skipped-public-empty'
@@ -550,7 +612,7 @@ describe('seed endpoints success paths', () => {
     expect(release).toHaveBeenCalledTimes(1)
   })
 
-  it('claims final flush before execution so concurrent terminal pollers do not both flush', async () => {
+  it('guards final flush execution so concurrent terminal pollers do not both flush', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-concurrent-final-flush'
     const queue = `seed:${runId}`
@@ -597,7 +659,7 @@ describe('seed endpoints success paths', () => {
     await saveSeedRunRecord(payload as unknown as Payload, record)
 
     vi.mocked(revalidateTag).mockImplementationOnce(() => {
-      throw new Error('hold first flush in pending marker')
+      throw new Error('hold first flush while active')
     })
 
     await Promise.all([

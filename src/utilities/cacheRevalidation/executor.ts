@@ -3,6 +3,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { normalizeRevalidationPlanIdentifiers } from './identifiers'
 import { buildRevalidationLogPayload, REVALIDATION_LOG_EVENTS } from './logPayload'
 import type { RevalidationExecutionResult, RevalidationFailure, RevalidationLogger, RevalidationPlan } from './types'
+import { recordCacheRevalidationVisibilityFromLogPayload } from './visibility'
 
 const errorMessage = (error: unknown): string => {
   if (error instanceof Error) {
@@ -23,13 +24,12 @@ export const executeRevalidationPlan = (
   let succeededTagCount = 0
   let succeededPathCount = 0
 
-  logger?.info?.(
-    buildRevalidationLogPayload({
-      eventName: REVALIDATION_LOG_EVENTS.planned,
-      plan: normalizedPlan,
-    }),
-    'Cache revalidation planned',
-  )
+  const plannedLogPayload = buildRevalidationLogPayload({
+    eventName: REVALIDATION_LOG_EVENTS.planned,
+    plan: normalizedPlan,
+  })
+  recordCacheRevalidationVisibilityFromLogPayload(plannedLogPayload)
+  logger?.info?.(plannedLogPayload, 'Cache revalidation planned')
 
   for (const tag of tags) {
     try {
@@ -68,24 +68,22 @@ export const executeRevalidationPlan = (
     failures,
   } satisfies RevalidationExecutionResult
 
-  logger?.info?.(
-    buildRevalidationLogPayload({
-      eventName: REVALIDATION_LOG_EVENTS.executed,
-      plan: normalizedPlan,
-      result,
-    }),
-    'Cache revalidation executed',
-  )
+  const executedLogPayload = buildRevalidationLogPayload({
+    eventName: REVALIDATION_LOG_EVENTS.executed,
+    plan: normalizedPlan,
+    result,
+  })
+  recordCacheRevalidationVisibilityFromLogPayload(executedLogPayload)
+  logger?.info?.(executedLogPayload, 'Cache revalidation executed')
 
   if (failures.length > 0) {
-    logger?.warn?.(
-      buildRevalidationLogPayload({
-        eventName: REVALIDATION_LOG_EVENTS.failed,
-        plan: normalizedPlan,
-        result,
-      }),
-      'Cache revalidation failures occurred',
-    )
+    const failedLogPayload = buildRevalidationLogPayload({
+      eventName: REVALIDATION_LOG_EVENTS.failed,
+      plan: normalizedPlan,
+      result,
+    })
+    recordCacheRevalidationVisibilityFromLogPayload(failedLogPayload)
+    logger?.warn?.(failedLogPayload, 'Cache revalidation failures occurred')
   }
 
   return result

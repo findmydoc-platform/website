@@ -161,7 +161,7 @@ Preview deployments use runtime policy for auth recovery and search-index protec
 Implementation and usage:
 - [Setup: Run Local Dev in Preview Runtime](./setup.md#run-local-dev-in-preview-runtime)
 - [Preview Guard Technical Notes](../src/features/previewGuard/README.md)
-- [Preview Admin Recovery Decision Flow](../src/auth/README.md#preview-runtime-admin-recovery-flow)
+- [Preview Admin Recovery Decision Flow](../src/auth/README.md#runtime-admin-recovery)
 
 ## Live Preview
 View content updates in real time with SSR.

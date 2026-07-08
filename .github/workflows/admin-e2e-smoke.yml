@@ -2,6 +2,7 @@ name: Admin E2E Smoke
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,8 +25,74 @@ defaults:
     shell: bash
 
 jobs:
+  e2e-scope:
+    name: E2E Scope
+    runs-on: ubuntu-latest
+    outputs:
+      e2e_required: ${{ steps.scope.outputs.e2e_required }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect E2E-relevant changes
+        id: filter
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          predicate-quantifier: 'every'
+          filters: |
+            runtime:
+              - 'src/**'
+              - '!**/*.md'
+            public_assets:
+              - 'public/**'
+              - '!**/*.md'
+            e2e_tests:
+              - 'tests/e2e/**'
+              - '!**/*.md'
+            testinfra:
+              - 'scripts/{e2e-server.mjs,playwright-*.ts,public-e2e-*.ts,test-env.mjs}'
+            config:
+              - '{playwright.config.ts,next.config.js,postcss.config.js,tsconfig.json}'
+            dependencies:
+              - '{package.json,pnpm-lock.yaml}'
+
+      - name: Set E2E scope
+        id: scope
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "e2e_required=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "${{ steps.filter.outputs.runtime }}" = "true" ] ||
+            [ "${{ steps.filter.outputs.public_assets }}" = "true" ] ||
+            [ "${{ steps.filter.outputs.e2e_tests }}" = "true" ] ||
+            [ "${{ steps.filter.outputs.testinfra }}" = "true" ] ||
+            [ "${{ steps.filter.outputs.config }}" = "true" ] ||
+            [ "${{ steps.filter.outputs.dependencies }}" = "true" ]; then
+            echo "e2e_required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "e2e_required=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Summarize E2E scope
+        run: |
+          {
+            echo "## E2E Smoke Scope"
+            echo "- **E2E required**: ${{ steps.scope.outputs.e2e_required }}"
+            echo "- **Runtime**: ${{ steps.filter.outputs.runtime }}"
+            echo "- **Public assets**: ${{ steps.filter.outputs.public_assets }}"
+            echo "- **E2E tests**: ${{ steps.filter.outputs.e2e_tests }}"
+            echo "- **Test infrastructure**: ${{ steps.filter.outputs.testinfra }}"
+            echo "- **Relevant config**: ${{ steps.filter.outputs.config }}"
+            echo "- **Dependencies**: ${{ steps.filter.outputs.dependencies }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   admin-smoke:
     name: Admin E2E Smoke
+    needs: e2e-scope
+    if: needs.e2e-scope.outputs.e2e_required == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: admin-e2e-smoke
@@ -79,10 +146,14 @@ jobs:
             output/playwright/artifacts/**
             output/playwright/report/**
           if-no-files-found: ignore
+          retention-days: 7
 
   public-smoke:
     name: Public E2E Smoke
-    needs: admin-smoke
+    needs:
+      - e2e-scope
+      - admin-smoke
+    if: needs.e2e-scope.outputs.e2e_required == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -131,3 +202,37 @@ jobs:
             output/playwright/artifacts/**
             output/playwright/report/**
           if-no-files-found: ignore
+          retention-days: 7
+
+  e2e-smoke-gate:
+    name: E2E Smoke Gate
+    needs:
+      - e2e-scope
+      - admin-smoke
+      - public-smoke
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce E2E smoke policy
+        run: |
+          if [ "${{ needs.e2e-scope.result }}" != "success" ]; then
+            echo "E2E scope detection did not complete successfully."
+            exit 1
+          fi
+
+          if [ "${{ needs.e2e-scope.outputs.e2e_required }}" != "true" ]; then
+            echo "E2E smoke tests skipped because no E2E-relevant changes were detected."
+            exit 0
+          fi
+
+          if [ "${{ needs.admin-smoke.result }}" != "success" ]; then
+            echo "Admin E2E smoke tests were required but did not pass."
+            exit 1
+          fi
+
+          if [ "${{ needs.public-smoke.result }}" != "success" ]; then
+            echo "Public E2E smoke tests were required but did not pass."
+            exit 1
+          fi
+
+          echo "E2E smoke policy satisfied."

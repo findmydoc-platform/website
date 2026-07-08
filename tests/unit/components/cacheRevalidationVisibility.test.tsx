@@ -122,6 +122,10 @@ describe('CacheRevalidationVisibilityCardView', () => {
       />,
     )
     expect(screen.getByText('No cache revalidation events recorded yet.')).toBeInTheDocument()
+    expect(screen.getByText('No cache revalidation events recorded yet.').parentElement).toHaveAttribute(
+      'aria-live',
+      'polite',
+    )
     expect(screen.queryByRole('button', { name: /revalidate/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /flush/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /purge/i })).not.toBeInTheDocument()
@@ -148,8 +152,44 @@ describe('CacheRevalidationVisibilityCardView', () => {
     expect(screen.getByText(/Failure preview:/)).toHaveTextContent('tag:collection:posts')
     expect(screen.queryByText(/raw backend stack/i)).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh cache revalidation visibility' }))
+    const refreshButton = screen.getByRole('button', { name: 'Refresh cache revalidation visibility' })
+    expect(refreshButton).toHaveClass('cache-visibility-touch-action')
+
+    fireEvent.click(refreshButton)
     expect(onRefresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps event history outside the live region and wraps long source subjects', () => {
+    render(
+      <CacheRevalidationVisibilityCardView
+        accessDenied={false}
+        error={null}
+        loading={false}
+        snapshot={createSnapshot({
+          events: [
+            {
+              ...createSnapshot().events[0]!,
+              source: {
+                kind: 'payload-hook',
+                id: 'source-with-a-very-long-unbroken-identifier-that-must-wrap-on-mobile-viewports',
+              },
+              subject: {
+                kind: 'collection',
+                collection: 'posts',
+                id: 'subject-with-a-very-long-unbroken-identifier-that-must-wrap-on-mobile-viewports',
+              },
+            },
+          ],
+        })}
+        onRefresh={vi.fn()}
+      />,
+    )
+
+    const eventName = screen.getByText('cache.revalidation.failed')
+    const operationLine = screen.getByText(/Operation:/)
+
+    expect(eventName.closest('[aria-live]')).toBeNull()
+    expect(operationLine).toHaveStyle({ overflowWrap: 'anywhere' })
   })
 })
 

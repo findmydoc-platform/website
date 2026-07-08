@@ -115,7 +115,7 @@ const EventRow: React.FC<{ event: CacheRevalidationVisibilityEvent }> = ({ event
         <span>{formatEventTime(event.timestamp)}</span>
       </div>
       <div style={eventMetaStyle}>
-        <div>
+        <div style={inlineListStyle}>
           Operation: <strong>{event.operation}</strong> · Source: <strong>{formatSource(event)}</strong> · Subject:{' '}
           <strong>{formatSubject(event)}</strong>
         </div>
@@ -144,9 +144,28 @@ const EventRow: React.FC<{ event: CacheRevalidationVisibilityEvent }> = ({ event
 
 export const CacheRevalidationVisibilityCardView: React.FC<CacheRevalidationVisibilityCardViewProps> = (props) => {
   const events = props.snapshot?.events ?? []
+  const statusMessage = props.accessDenied
+    ? 'Access denied.'
+    : props.error
+      ? `Error: ${props.error}`
+      : props.loading
+        ? props.snapshot
+          ? 'Refreshing recent cache events.'
+          : 'Loading recent cache events.'
+        : props.snapshot && events.length === 0
+          ? 'No cache revalidation events recorded yet.'
+          : null
 
   return (
     <section style={cardStyle} aria-label="Cache revalidation visibility">
+      <style>{`
+        .cache-visibility-touch-action {
+          min-height: 44px !important;
+          min-width: 44px !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+      `}</style>
       <div style={headerStyle}>
         <div>
           <Heading as="h4" align="left" className="m-0">
@@ -161,6 +180,7 @@ export const CacheRevalidationVisibilityCardView: React.FC<CacheRevalidationVisi
         <PayloadButton
           aria-label="Refresh cache revalidation visibility"
           buttonStyle="secondary"
+          className="cache-visibility-touch-action"
           disabled={props.loading}
           icon={<RefreshCw size={14} />}
           margin={false}
@@ -172,23 +192,16 @@ export const CacheRevalidationVisibilityCardView: React.FC<CacheRevalidationVisi
         </PayloadButton>
       </div>
 
-      <div aria-live="polite">
-        {props.accessDenied ? <div style={stateStyle}>Access denied.</div> : null}
-        {!props.accessDenied && props.error ? <div style={stateStyle}>Error: {props.error}</div> : null}
-        {!props.accessDenied && !props.error && props.loading && !props.snapshot ? (
-          <div style={stateStyle}>Loading recent cache events.</div>
-        ) : null}
-        {!props.accessDenied && !props.error && !props.loading && props.snapshot && events.length === 0 ? (
-          <div style={stateStyle}>No cache revalidation events recorded yet.</div>
-        ) : null}
-        {!props.accessDenied && !props.error && events.length > 0 ? (
-          <div style={eventListStyle}>
-            {events.map((event) => (
-              <EventRow key={event.id} event={event} />
-            ))}
-          </div>
-        ) : null}
+      <div aria-live="polite" aria-atomic="true">
+        {statusMessage ? <div style={stateStyle}>{statusMessage}</div> : null}
       </div>
+      {!props.accessDenied && !props.error && events.length > 0 ? (
+        <div style={eventListStyle}>
+          {events.map((event) => (
+            <EventRow key={event.id} event={event} />
+          ))}
+        </div>
+      ) : null}
     </section>
   )
 }

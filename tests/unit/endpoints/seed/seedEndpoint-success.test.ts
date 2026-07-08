@@ -220,6 +220,91 @@ describe('seed endpoints success paths', () => {
     },
   )
 
+  it('retries a failed terminal seed final flush on a later poll', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-retry-failed-final-flush'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    }) as SeedRunRecord
+    record.status = 'completed'
+    record.completedAt = '2026-07-08T10:00:00.000Z'
+    record.completedJobs = 1
+    record.succeededJobs = 1
+    record.jobs = [
+      {
+        id: 'job-posts',
+        order: 1,
+        status: 'succeeded',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'posts',
+          kind: 'collection',
+          collection: 'posts',
+          fileName: 'posts',
+        },
+        queue,
+        title: 'Posts',
+        stepName: 'posts',
+        kind: 'collection',
+        collection: 'posts',
+        fileName: 'posts',
+        createdAt: '2026-07-08T09:00:00.000Z',
+        completedAt: '2026-07-08T10:00:00.000Z',
+        created: 1,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      },
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    vi.mocked(revalidateTag).mockImplementationOnce(() => {
+      throw new Error('temporary cache backend failure')
+    })
+
+    const firstRes = makeRes()
+    await seedAdvanceHandler(
+      createMockReq(mockUsers.platform(), payload, {
+        query: { runId },
+      }) as PayloadRequest,
+      firstRes,
+    )
+
+    expect(firstRes._status).toBe(200)
+    expect(firstRes._body.finalFlush).toMatchObject({
+      status: 'failed',
+      failureCount: 1,
+      reason: 'executor-error',
+    })
+
+    vi.mocked(revalidateTag).mockClear()
+    vi.mocked(revalidatePath).mockClear()
+
+    const secondRes = makeRes()
+    await seedAdvanceHandler(
+      createMockReq(mockUsers.platform(), payload, {
+        query: { runId },
+      }) as PayloadRequest,
+      secondRes,
+    )
+
+    expect(secondRes._status).toBe(200)
+    expect(secondRes._body.finalFlush).toMatchObject({
+      status: 'executed',
+      failureCount: 0,
+    })
+    expect(revalidateTag).toHaveBeenCalledWith('collection:posts', { expire: 0 })
+    expect(revalidatePath).toHaveBeenCalledWith('/posts')
+  })
+
   it('does not flush a cancelled public seed job that never wrote public work', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-cancelled-public-empty'

@@ -414,7 +414,7 @@ export const markSeedRunFinalFlush = async (
 ): Promise<SeedRunRecord | null> => {
   const record = await loadSeedRunRecord(payload, runId)
   if (!record) return null
-  if (record.finalFlush) return record
+  if (record.finalFlush && record.finalFlush.status !== 'failed') return record
 
   record.finalFlush = clone(finalFlush)
   finalizeRunIfNeeded(record)

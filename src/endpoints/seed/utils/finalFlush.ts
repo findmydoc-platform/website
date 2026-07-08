@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import type { Payload } from 'payload'
 
 import {
@@ -62,6 +63,10 @@ const PUBLIC_GLOBALS = [
 ] as const satisfies readonly CachePolicyGlobal[]
 
 const activeFinalFlushRunIds = new Set<string>()
+
+const isFinalFlushComplete = (finalFlush: SeedRunFinalFlushRecord | undefined): boolean => {
+  return Boolean(finalFlush && finalFlush.status !== 'failed')
+}
 
 const GLOBAL_FLUSH_SCOPE: Record<CachePolicyGlobal, ScopeEntry> = {
   header: { surfaces: ['public-chrome'] },
@@ -208,7 +213,7 @@ const appendFinalFlushLog = async (
   severity: SeedLogEntry['severity'],
 ): Promise<void> => {
   await appendSeedRunLog(payload, runId, {
-    id: `${runId}-seed-final-flush-${severity.toLowerCase()}`,
+    id: `${runId}-seed-final-flush-${severity.toLowerCase()}-${randomUUID()}`,
     at: getCurrentIsoTimestampString(),
     severity,
     text,
@@ -291,7 +296,7 @@ const claimFinalFlush = async (payload: Payload, runId: string): Promise<FinalFl
   }
 
   const record = await loadSeedRunRecord(payload, runId)
-  if (!record || record.finalFlush) {
+  if (!record || isFinalFlushComplete(record.finalFlush)) {
     if (releaseDatabaseLock) {
       await releaseDatabaseLock()
     }
@@ -329,7 +334,7 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
   }
 
   const record = await loadSeedRunRecord(payload, snapshot.runId)
-  if (!record || record.finalFlush) return
+  if (!record || isFinalFlushComplete(record.finalFlush)) return
 
   const terminalStatus = snapshot.status as FlushableSeedRunStatus
   const { completedJobCount, publicJobs, scope } = buildScopeFromCompletedPublicJobs(record)

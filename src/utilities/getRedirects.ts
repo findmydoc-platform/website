@@ -6,10 +6,10 @@ import { buildCollectionTag, buildSurfaceTag } from '@/utilities/cachePolicy'
 /**
  * Fetches all redirects from PayloadCMS.
  *
- * @param depth - Relationship population depth (default: 1)
+ * @param depth - Relationship population depth (default: 0)
  * @returns Array of redirect documents
  */
-export async function getRedirects(depth = 1) {
+export async function getRedirects(depth = 0) {
   const payload = await getPayload({ config: configPromise })
 
   const { docs: redirects } = await payload.find({

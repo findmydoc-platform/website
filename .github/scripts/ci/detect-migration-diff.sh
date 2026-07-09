@@ -122,6 +122,12 @@ is_hook_only_collection_change() {
 
 schema_changed_files="$(grep -E "${schema_pattern}" <<<"${changed_files}" || true)"
 
+is_dedicated_payload_hook_file() {
+  local file_path="$1"
+
+  [[ "${file_path}" =~ ^src/(collections|globals)/[^/]+/hooks/[^/]+\.tsx?$ ]]
+}
+
 if grep -qx 'src/plugins/index.ts' <<<"${schema_changed_files}" && is_import_export_plugin_allowlist_only_change; then
   schema_changed_files="$(grep -vx 'src/plugins/index.ts' <<<"${schema_changed_files}" || true)"
 fi
@@ -130,6 +136,10 @@ if [[ -n "${schema_changed_files}" ]]; then
   hook_only_schema_changed_files=''
   while IFS= read -r schema_file; do
     if [[ -z "${schema_file}" ]]; then
+      continue
+    fi
+
+    if is_dedicated_payload_hook_file "${schema_file}"; then
       continue
     fi
 

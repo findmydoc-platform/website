@@ -53,7 +53,8 @@ schema_pattern='^(src/collections/|src/globals/|src/fields/|src/plugins/|src/pay
 migration_pattern='^src/migrations/'
 db_tooling_pattern='^(\.github/workflows/db-quality\.yml|\.github/workflows/deploy\.yml|\.github/scripts/ci/(detect-migration-diff|enforce-schema-migration|wait-for-postgres)\.sh|scripts/(migration-risk-scan|test-database-harness)\.mjs|vitest\.config\.ts)$'
 import_export_allowlist_line_regex="^[+-][[:space:]]*\\{[[:space:]]*slug:[[:space:]]*'[^']+'(,[[:space:]]*(import|export):[[:space:]]*false)?[[:space:]]*\\},?[[:space:]]*$"
-hook_only_collection_line_regex="^[+-][[:space:]]*(import[[:space:]]*\\{|import[[:space:]].*from[[:space:]]'@/hooks/[^']+'|\\}[[:space:]]*from[[:space:]]'@/hooks/[^']+'|[[:space:]]*((afterChange|afterDelete):[[:space:]]*\\[)?(beforeOperationPrepareUploadFilename|revalidateDeletedPlatformContentMediaConsumers|revalidatePlatformContentMediaConsumers)\\]?,?|\\{|\\})[[:space:]]*$"
+hook_only_collection_hook_identifier_regex="(beforeOperationPrepareUploadFilename|revalidateDeletedPlatformContentMediaConsumers|revalidatePlatformContentMediaConsumers|revalidate[[:alnum:]_]+|updateAverage(Price|Ratings)After(Change|Delete))"
+hook_only_collection_line_regex="^[+-][[:space:]]*(import[[:space:]]*\\{|import[[:space:]].*from[[:space:]]'@/hooks/[^']+'|\\}[[:space:]]*from[[:space:]]'@/hooks/[^']+'|[[:space:]]*((afterChange|afterDelete):[[:space:]]*\\[)?${hook_only_collection_hook_identifier_regex}(,[[:space:]]*${hook_only_collection_hook_identifier_regex})*\\]?,?|\\{|\\})[[:space:]]*$"
 collection_crypto_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*randomUUID[[:space:]]*\\}[[:space:]]*from[[:space:]]*'(node:)?crypto'[[:space:]]*$"
 
 schema_changed=false
@@ -122,6 +123,12 @@ is_hook_only_collection_change() {
 
 schema_changed_files="$(grep -E "${schema_pattern}" <<<"${changed_files}" || true)"
 
+is_dedicated_payload_hook_file() {
+  local file_path="$1"
+
+  [[ "${file_path}" =~ ^src/(collections|globals)/[^/]+/hooks/[^/]+\.tsx?$ ]]
+}
+
 if grep -qx 'src/plugins/index.ts' <<<"${schema_changed_files}" && is_import_export_plugin_allowlist_only_change; then
   schema_changed_files="$(grep -vx 'src/plugins/index.ts' <<<"${schema_changed_files}" || true)"
 fi
@@ -130,6 +137,10 @@ if [[ -n "${schema_changed_files}" ]]; then
   hook_only_schema_changed_files=''
   while IFS= read -r schema_file; do
     if [[ -z "${schema_file}" ]]; then
+      continue
+    fi
+
+    if is_dedicated_payload_hook_file "${schema_file}"; then
       continue
     fi
 

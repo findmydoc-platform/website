@@ -6,6 +6,7 @@ import { anyone } from '@/access/anyone'
 import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
+import { revalidateDoctorChange, revalidateDoctorDelete } from '@/hooks/revalidateClinicSurfaces'
 
 export const doctorTitles = [
   { label: 'Dr.', value: 'dr' },
@@ -47,6 +48,8 @@ export const Doctors: CollectionConfig<'doctors'> = {
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook, beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })],
+    afterChange: [revalidateDoctorChange],
+    afterDelete: [revalidateDoctorDelete],
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [

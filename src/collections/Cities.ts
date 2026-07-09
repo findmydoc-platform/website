@@ -2,6 +2,7 @@ import { CollectionConfig } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { anyone } from '@/access/anyone'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
+import { revalidateCityChange, revalidateCityDelete } from '@/hooks/revalidateClinicSurfaces'
 
 export const Cities: CollectionConfig = {
   slug: 'cities',
@@ -19,6 +20,8 @@ export const Cities: CollectionConfig = {
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook],
+    afterChange: [revalidateCityChange],
+    afterDelete: [revalidateCityDelete],
   },
   fields: [
     stableIdField(),

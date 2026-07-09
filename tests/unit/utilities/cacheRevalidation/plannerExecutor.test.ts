@@ -253,6 +253,131 @@ describe('cache revalidation planner', () => {
     })
   })
 
+  it('maps clinic document changes into clinic detail and listing freshness', () => {
+    const plan = planRevalidation({
+      kind: 'clinic-surface',
+      collection: 'clinics',
+      operation: 'slug-change',
+      source: { kind: 'payload-hook', id: 'clinics:12' },
+      subject: {
+        id: 12,
+        slug: 'new-clinic',
+        previousSlug: 'old-clinic',
+        status: 'approved',
+        previousStatus: 'approved',
+      },
+    })
+
+    expect(plan.tags).toEqual([
+      'entity:clinics:12',
+      'collection:clinics',
+      'surface:clinic-detail',
+      'surface:clinic-detail:12',
+      'surface:listing-comparison',
+      'surface:sitemap:pages',
+      'slug:clinics:new-clinic',
+      'slug:clinics:old-clinic',
+    ])
+    expect(plan.paths).toEqual(['/clinics/new-clinic', '/clinics/old-clinic'])
+    expect(plan.surfaceIds).toEqual(['clinic-detail', 'listing-comparison', 'surface:sitemap:pages'])
+  })
+
+  it('maps related clinic collection changes without listing query path matrices', () => {
+    const plan = planRevalidation({
+      kind: 'clinic-surface',
+      collection: 'reviews',
+      operation: 'related-update',
+      source: { kind: 'payload-hook', id: 'reviews:99' },
+      subject: {
+        id: 99,
+        status: 'approved',
+        previousStatus: 'pending',
+        clinicIds: [12],
+        clinicSlugs: ['berlin-health'],
+      },
+    })
+
+    expect(plan.tags).toEqual([
+      'entity:reviews:99',
+      'collection:reviews',
+      'surface:clinic-detail',
+      'surface:clinic-detail:12',
+      'slug:clinics:berlin-health',
+      'surface:listing-comparison',
+      'surface:sitemap:pages',
+    ])
+    expect(plan.paths).toEqual(['/clinics/berlin-health'])
+    expect(plan.paths).not.toContain('/listing-comparison')
+    expect(plan.paths.some((path) => path.startsWith('/listing-comparison?'))).toBe(false)
+  })
+
+  it('maps broad taxonomy changes to listing, landing, and sitemap tags without clinic path blasts', () => {
+    const plan = planRevalidation({
+      kind: 'clinic-surface',
+      collection: 'medical-specialties',
+      operation: 'related-update',
+      source: { kind: 'payload-hook', id: 'medical-specialties:7' },
+      subject: {
+        id: 7,
+      },
+    })
+
+    expect(plan.tags).toEqual([
+      'entity:medical-specialties:7',
+      'collection:medical-specialties',
+      'surface:listing-comparison',
+      'surface:sitemap:pages',
+      'surface:home',
+      'surface:partners-clinics',
+    ])
+    expect(plan.paths).toEqual(['/', '/partners/clinics'])
+    expect(plan.paths.some((path) => path.startsWith('/clinics/'))).toBe(false)
+  })
+
+  it('keeps non-public review and gallery changes as private-live no-op plans', () => {
+    expect(
+      planRevalidation({
+        kind: 'clinic-surface',
+        collection: 'reviews',
+        operation: 'related-update',
+        source: { kind: 'payload-hook' },
+        subject: {
+          id: 'review-1',
+          status: 'pending',
+          previousStatus: 'pending',
+          clinicIds: [12],
+          clinicSlugs: ['hidden-review'],
+        },
+      }),
+    ).toMatchObject({
+      cacheClasses: ['private-live'],
+      tags: [],
+      paths: [],
+      emptyReason: 'private-live-noop',
+    })
+
+    expect(
+      planRevalidation({
+        kind: 'clinic-surface',
+        collection: 'clinicGalleryEntries',
+        operation: 'related-update',
+        source: { kind: 'payload-hook' },
+        subject: {
+          id: 'gallery-1',
+          status: 'draft',
+          previousStatus: 'draft',
+          clinicIds: [12],
+          clinicSlugs: ['hidden-gallery'],
+        },
+      }),
+    ).toMatchObject({
+      cacheClasses: ['private-live'],
+      tags: [],
+      paths: [],
+      emptyReason: 'private-live-noop',
+    })
+  })
+
   it('keeps the planner boundary pure from runtime integrations', () => {
     const plannerSource = readFileSync(join(process.cwd(), 'src/utilities/cacheRevalidation/planner.ts'), 'utf8')
 

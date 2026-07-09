@@ -6,6 +6,7 @@ import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
 import { platformClinicTrustAccess, platformClinicTrustFieldAccess } from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
+import { revalidateClinicChange, revalidateClinicDelete } from '@/hooks/revalidateClinicSurfaces'
 
 const INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE = 'Internal primary contact is required.'
 
@@ -96,6 +97,8 @@ export const Clinics: CollectionConfig<'clinics'> = {
   hooks: {
     beforeValidate: [validateInternalPrimaryContactBeforeValidate],
     beforeChange: [stableIdBeforeChangeHook],
+    afterChange: [revalidateClinicChange],
+    afterDelete: [revalidateClinicDelete],
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [

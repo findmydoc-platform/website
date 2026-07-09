@@ -2,6 +2,7 @@ import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
+import { revalidateAccreditationChange, revalidateAccreditationDelete } from '@/hooks/revalidateClinicSurfaces'
 
 export const Accreditation: CollectionConfig = {
   slug: 'accreditation',
@@ -19,6 +20,8 @@ export const Accreditation: CollectionConfig = {
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook],
+    afterChange: [revalidateAccreditationChange],
+    afterDelete: [revalidateAccreditationDelete],
   },
   fields: [
     stableIdField(),

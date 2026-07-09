@@ -1,7 +1,12 @@
 import type { Payload } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
 
-import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
+import {
+  buildListingComparisonDataCacheKey,
+  buildListingComparisonResolvedDataCacheKey,
+  buildListingComparisonDataCacheTags,
+  getListingComparisonServerData,
+} from '@/utilities/listingComparison/serverData'
 
 type MockCollectionData = {
   cities: Array<Record<string, unknown>>
@@ -15,7 +20,7 @@ type MockCollectionData = {
 
 const baseData: MockCollectionData = {
   cities: [
-    { id: 10, stableId: 'berlin', name: 'Berlin' },
+    { id: 10, stableId: 'berlin', name: 'Berlin', updatedAt: '2026-01-13T00:00:00.000Z' },
     { id: 11, stableId: 'munich', name: 'Munich' },
   ],
   treatments: [
@@ -191,6 +196,79 @@ function createMockPayload(data: MockCollectionData): MockPayload {
 }
 
 describe('getListingComparisonServerData (contract)', () => {
+  it('defines stable public Data Cache keys and canonical listing tags', () => {
+    const cacheFacets = {
+      cityDocs: baseData.cities,
+      treatmentDocs: baseData.treatments,
+      specialtyDocs: baseData['medical-specialties'],
+    } as unknown as Parameters<typeof buildListingComparisonResolvedDataCacheKey>[1]
+
+    expect(
+      buildListingComparisonResolvedDataCacheKey(
+        {
+          city: ['11', '10', 'unknown-city'],
+          treatment: '102,101,unknown-treatment',
+          specialty: '2,unknown-specialty',
+          sort: 'price-asc',
+        },
+        cacheFacets,
+      ),
+    ).toBe(
+      buildListingComparisonResolvedDataCacheKey(
+        {
+          city: '10,11',
+          treatment: ['101', '102'],
+          specialty: '2',
+          sort: 'price-asc',
+        },
+        cacheFacets,
+      ),
+    )
+    expect(buildListingComparisonResolvedDataCacheKey({ location: 'Berlin' }, cacheFacets)).toBe(
+      buildListingComparisonResolvedDataCacheKey({ city: '10' }, cacheFacets),
+    )
+    expect(buildListingComparisonResolvedDataCacheKey({ service: 'Facial Surgery' }, cacheFacets)).toBe(
+      buildListingComparisonResolvedDataCacheKey({ specialty: '2' }, cacheFacets),
+    )
+    expect(buildListingComparisonResolvedDataCacheKey({ service: 'Nose job' }, cacheFacets)).toBe(
+      buildListingComparisonResolvedDataCacheKey({ treatment: '101' }, cacheFacets),
+    )
+    expect(buildListingComparisonResolvedDataCacheKey({ city: 'unknown-city' }, cacheFacets)).toBe(
+      buildListingComparisonResolvedDataCacheKey({}, cacheFacets),
+    )
+    expect(
+      buildListingComparisonDataCacheKey({
+        page: 1,
+        sort: 'rank',
+        cities: ['10'],
+        treatments: ['101'],
+        specialties: ['2'],
+        ratingMin: null,
+        priceMin: 0,
+        priceMax: 20000,
+      }),
+    ).toBe(
+      buildListingComparisonResolvedDataCacheKey(
+        {
+          city: '10',
+          treatment: '101',
+          specialty: '2',
+        },
+        cacheFacets,
+      ),
+    )
+    expect(buildListingComparisonDataCacheTags()).toEqual([
+      'surface:listing-comparison',
+      'collection:clinics',
+      'collection:clinictreatments',
+      'collection:reviews',
+      'collection:treatments',
+      'collection:medical-specialties',
+      'collection:cities',
+      'surface:sitemap:pages',
+    ])
+  })
+
   it('computes specialty-scoped prices, global pagination totals, and clinic review counts', async () => {
     const payload = createMockPayload(baseData)
 
@@ -208,9 +286,9 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(result.metrics.cities).toBe(2)
     expect(result.metrics.priceEntries).toBe(5)
     expect(result.freshness).toMatchObject({
-      updatedAt: '2026-01-12T00:00:00.000Z',
+      updatedAt: '2026-01-13T00:00:00.000Z',
       latestPatientReviewAt: '2026-01-12T00:00:00.000Z',
-      sourceCollections: ['clinics', 'clinictreatments', 'reviews'],
+      sourceCollections: ['cities', 'clinics', 'clinictreatments', 'medical-specialties', 'reviews', 'treatments'],
     })
     expect(result.queryState.specialties).toEqual(['2'])
     expect(result.results.map((clinic) => clinic.name)).toEqual(['Alpha Clinic', 'Bravo Clinic'])
@@ -290,7 +368,7 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(result.specialtyContext.breadcrumbs.map((item) => item.label)).toEqual(['Home', 'Clinics'])
   })
 
-  it('reuses the public listing catalog for repeated requests on the same payload instance', async () => {
+  it('keeps direct uncached server data calls free of a separate in-process freshness authority', async () => {
     const payload = createMockPayload(baseData)
 
     await getListingComparisonServerData(payload, { specialty: '2' })
@@ -304,7 +382,9 @@ describe('getListingComparisonServerData (contract)', () => {
       ['clinictreatments', 'reviews'].includes(String(args.collection)),
     )
 
-    expect(catalogCalls.map(([args]) => args.collection).sort()).toEqual(catalogCollections.sort())
+    expect(catalogCalls.map(([args]) => args.collection).sort()).toEqual(
+      [...catalogCollections, ...catalogCollections].sort(),
+    )
     expect(dynamicCalls.length).toBeGreaterThan(2)
   })
 })

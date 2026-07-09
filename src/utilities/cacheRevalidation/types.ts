@@ -6,6 +6,26 @@ export type CoreCollectionRevalidationCollection = 'pages' | 'posts'
 
 export type CoreGlobalRevalidationSlug = 'header' | 'footer' | 'landingPages' | 'cookieConsent'
 
+export type ClinicSurfaceRevalidationCollection =
+  | 'clinics'
+  | 'clinictreatments'
+  | 'doctors'
+  | 'doctorspecialties'
+  | 'reviews'
+  | 'treatments'
+  | 'medical-specialties'
+  | 'cities'
+  | 'clinicGalleryEntries'
+  | 'accreditation'
+
+export type ClinicPublicStatus = 'draft' | 'pending' | 'approved' | 'rejected'
+
+export type ReviewPublicStatus = 'pending' | 'approved' | 'rejected'
+
+export type GalleryEntryPublicStatus = 'draft' | 'published'
+
+export type ClinicSurfacePublicStatus = ClinicPublicStatus | ReviewPublicStatus | GalleryEntryPublicStatus | 'public'
+
 export type RevalidationSourceKind =
   | 'payload-hook'
   | 'global-hook'
@@ -40,6 +60,20 @@ export interface RedirectRevalidationSubject {
   readonly id?: string | number
 }
 
+export interface ClinicSurfaceRevalidationSubject {
+  readonly kind: 'clinic-surface'
+  readonly collection: ClinicSurfaceRevalidationCollection
+  readonly id: string | number
+  readonly slug?: string
+  readonly previousSlug?: string
+  readonly status?: ClinicSurfacePublicStatus
+  readonly previousStatus?: ClinicSurfacePublicStatus
+  readonly clinicIds?: readonly (string | number)[]
+  readonly clinicSlugs?: readonly string[]
+  readonly previousClinicIds?: readonly (string | number)[]
+  readonly previousClinicSlugs?: readonly string[]
+}
+
 export interface PrivateLiveRevalidationSubject {
   readonly kind: 'private-live'
   readonly surfaceId?: string
@@ -55,6 +89,7 @@ export type RevalidationSubject =
   | CollectionRevalidationSubject
   | GlobalRevalidationSubject
   | RedirectRevalidationSubject
+  | ClinicSurfaceRevalidationSubject
   | PrivateLiveRevalidationSubject
   | DeferredRevalidationSubject
 
@@ -78,6 +113,17 @@ export interface RedirectRevalidationEvent {
   readonly operation: Extract<CacheOperation, 'publish' | 'update' | 'unpublish' | 'delete'>
   readonly source: RevalidationSource
   readonly subject: Omit<RedirectRevalidationSubject, 'kind'>
+}
+
+export interface ClinicSurfaceRevalidationEvent {
+  readonly kind: 'clinic-surface'
+  readonly collection: ClinicSurfaceRevalidationCollection
+  readonly operation: Extract<
+    CacheOperation,
+    'publish' | 'update' | 'unpublish' | 'delete' | 'slug-change' | 'related-update'
+  >
+  readonly source: RevalidationSource
+  readonly subject: Omit<ClinicSurfaceRevalidationSubject, 'kind' | 'collection'>
 }
 
 export interface PrivateLiveRevalidationEvent {
@@ -106,6 +152,7 @@ export type RevalidationEvent =
   | CollectionRevalidationEvent
   | GlobalRevalidationEvent
   | RedirectRevalidationEvent
+  | ClinicSurfaceRevalidationEvent
   | PrivateLiveRevalidationEvent
   | DeferredRevalidationEvent
 
@@ -116,7 +163,7 @@ export interface RevalidationLogContext {
   readonly correlationId?: string
   readonly subjectKind: RevalidationSubject['kind']
   readonly subjectId?: string
-  readonly collection?: CoreCollectionRevalidationCollection
+  readonly collection?: CoreCollectionRevalidationCollection | ClinicSurfaceRevalidationCollection
   readonly global?: CoreGlobalRevalidationSlug
   readonly cacheClasses: readonly CacheClass[]
   readonly surfaceIds: readonly string[]

@@ -4,6 +4,7 @@ import { anyone } from '@/access/anyone'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { enforceTwoLevelHierarchy } from './MedicalSpecialties/hooks/enforceTwoLevelHierarchy'
 import { fallbackMedicalSpecialtyIconKey, medicalSpecialtyIconOptions } from '@/utilities/medicalSpecialties/iconKeys'
+import { revalidateMedicalSpecialtyChange, revalidateMedicalSpecialtyDelete } from '@/hooks/revalidateClinicSurfaces'
 
 export const MedicalSpecialties: CollectionConfig = {
   slug: 'medical-specialties',
@@ -21,6 +22,8 @@ export const MedicalSpecialties: CollectionConfig = {
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook, enforceTwoLevelHierarchy],
+    afterChange: [revalidateMedicalSpecialtyChange],
+    afterDelete: [revalidateMedicalSpecialtyDelete],
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [

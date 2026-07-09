@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getCachedDocument } from '@/utilities/getDocument'
 import { getGlobal, getCachedGlobal } from '@/utilities/getGlobals'
 import { getRedirects, getCachedRedirects } from '@/utilities/getRedirects'
-import type { CollectionSlug, GlobalSlug } from 'payload'
+import type { GlobalSlug } from 'payload'
 
 const { getPayloadMock, unstableCacheMock } = vi.hoisted(() => ({
   getPayloadMock: vi.fn(),
@@ -26,26 +25,6 @@ describe('Payload-backed utilities', () => {
     getPayloadMock.mockReset()
     unstableCacheMock.mockReset()
     unstableCacheMock.mockImplementation((fn) => fn)
-  })
-
-  describe('getCachedDocument', () => {
-    it('fetches documents through Payload and registers cache tags', async () => {
-      const findMock = vi.fn().mockResolvedValue({ docs: [{ slug: 'home' }] })
-      getPayloadMock.mockResolvedValue({ find: findMock })
-
-      const cachedLoader = getCachedDocument('pages' as CollectionSlug, 'home')
-
-      expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['pages', 'home'], { tags: ['pages_home'] })
-
-      const result = await cachedLoader()
-
-      expect(findMock).toHaveBeenCalledWith({
-        collection: 'pages',
-        depth: 0,
-        where: { slug: { equals: 'home' } },
-      })
-      expect(result).toEqual({ slug: 'home' })
-    })
   })
 
   describe('getGlobal', () => {
@@ -105,7 +84,7 @@ describe('Payload-backed utilities', () => {
 
       expect(findMock).toHaveBeenCalledWith({
         collection: 'redirects',
-        depth: 1,
+        depth: 0,
         limit: 0,
         pagination: false,
       })

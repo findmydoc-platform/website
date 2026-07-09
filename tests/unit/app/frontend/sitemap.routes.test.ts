@@ -45,6 +45,7 @@ describe('frontend sitemap routes', () => {
   const originalEnv = process.env
 
   beforeEach(() => {
+    vi.resetModules()
     process.env = {
       ...originalEnv,
       NEXT_PUBLIC_SERVER_URL: 'https://findmydoc.eu',
@@ -128,6 +129,9 @@ describe('frontend sitemap routes', () => {
     expect(body.entries.find((entry: { loc: string }) => entry.loc.endsWith('/listing-comparison'))).toMatchObject({
       lastmod: '2026-01-06T00:00:00.000Z',
     })
+    expect(routeMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['pages-sitemap'], {
+      tags: ['surface:sitemap:pages'],
+    })
   })
 
   it('normalizes and deduplicates CMS pages in the pages sitemap', async () => {
@@ -180,5 +184,8 @@ describe('frontend sitemap routes', () => {
 
     expect(locs).toEqual(['https://findmydoc.eu/posts/first-post', 'https://findmydoc.eu/posts/second-post'])
     expect(body.entries[0]).toMatchObject({ lastmod: '2026-01-01T00:00:00.000Z' })
+    expect(routeMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['posts-sitemap'], {
+      tags: ['surface:sitemap:posts'],
+    })
   })
 })

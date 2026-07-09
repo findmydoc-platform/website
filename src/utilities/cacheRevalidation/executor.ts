@@ -1,4 +1,4 @@
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache.js'
 
 import { normalizeRevalidationPlanIdentifiers } from './identifiers'
 import { buildRevalidationLogPayload, REVALIDATION_LOG_EVENTS } from './logPayload'

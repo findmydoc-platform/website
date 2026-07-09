@@ -4,10 +4,10 @@ This repository contains the Architecture Decision Records (ADRs) for the projec
 
 ## Repository Structure
 
-- **/adr/**: The main folder where all ADRs are stored.
-- **/adr/000x-decision-title.md**: Each ADR is numbered sequentially and includes a descriptive title.
-- **/archive/**: Deprecated or rejected ADRs are moved here to keep the main folder clean.
-- **/templates/**: This folder contains the template to create new ADRs.
+- **/adrs/**: The main folder where all ADRs are stored.
+- **/adrs/000x-decision-title.md**: Each ADR is numbered sequentially and includes a descriptive title.
+- **/adrs/archive/**: Deprecated or rejected ADRs are moved here to keep the main folder clean.
+- **/adrs/templates/**: This folder contains the template to create new ADRs.
 
 ## How to Create a New ADR
 
@@ -72,3 +72,4 @@ When adding a new ADR:
 - [021 — Localization source, ownership, and readiness governance](./021-adr-localization-source-ownership-and-readiness-governance.md)
 - [022 — Public localization routing, SEO, and domain strategy](./022-adr-public-localization-routing-seo-and-domain-strategy.md)
 - [023 — Public website cache and revalidation strategy](./023-adr-public-website-cache-and-revalidation-strategy.md)
+- [024 — Production build webpack fallback](./024-adr-production-build-webpack-fallback.md)

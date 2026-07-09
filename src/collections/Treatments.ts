@@ -2,6 +2,7 @@ import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
+import { revalidateTreatmentChange, revalidateTreatmentDelete } from '@/hooks/revalidateClinicSurfaces'
 
 export const Treatments: CollectionConfig<'treatments'> = {
   slug: 'treatments',
@@ -27,6 +28,8 @@ export const Treatments: CollectionConfig<'treatments'> = {
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook],
+    afterChange: [revalidateTreatmentChange],
+    afterDelete: [revalidateTreatmentDelete],
   },
   timestamps: true,
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed

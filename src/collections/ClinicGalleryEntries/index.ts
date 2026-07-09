@@ -8,6 +8,10 @@ import { beforeChangeClinicGalleryEntry } from './hooks/beforeChangeClinicGaller
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
+import {
+  revalidateClinicGalleryEntryChange,
+  revalidateClinicGalleryEntryDelete,
+} from '@/hooks/revalidateClinicSurfaces'
 
 export const ClinicGalleryEntries: CollectionConfig = {
   slug: 'clinicGalleryEntries',
@@ -41,6 +45,8 @@ export const ClinicGalleryEntries: CollectionConfig = {
         publishedValue: 'published',
       }),
     ],
+    afterChange: [revalidateClinicGalleryEntryChange],
+    afterDelete: [revalidateClinicGalleryEntryDelete],
   },
   fields: [
     stableIdField(),

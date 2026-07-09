@@ -1,5 +1,6 @@
 import {
   buildCollectionTag,
+  buildClinicPath,
   buildEntityTag,
   buildFixedPublicPath,
   buildGlobalTag,
@@ -8,10 +9,14 @@ import {
   buildPostsIndexPath,
   buildSitemapTag,
   buildSlugTag,
+  buildSurfaceInstanceTag,
   buildSurfaceTag,
   getCachePolicyEntry,
 } from '@/utilities/cachePolicy'
 import type {
+  ClinicSurfacePublicStatus,
+  ClinicSurfaceRevalidationCollection,
+  ClinicSurfaceRevalidationEvent,
   CollectionRevalidationEvent,
   CoreCollectionRevalidationCollection,
   CoreGlobalRevalidationSlug,
@@ -41,6 +46,9 @@ export class UnsupportedRevalidationEventError extends Error {
 }
 
 const PUBLIC_STATUS = 'published'
+const APPROVED_CLINIC_STATUS = 'approved'
+const APPROVED_REVIEW_STATUS = 'approved'
+const PUBLISHED_GALLERY_STATUS = 'published'
 
 const unique = <Value extends string>(values: readonly Value[]): Value[] => [...new Set(values)]
 
@@ -58,6 +66,12 @@ const normalizeOptionalText = (value: string | number | undefined): string | und
   if (typeof value === 'undefined') return undefined
   const normalized = String(value).trim()
   return normalized || undefined
+}
+
+const normalizeOptionalTextArray = (values: readonly (string | number)[] | undefined): string[] => {
+  if (!values) return []
+
+  return values.map((value) => normalizeRequiredText(value, 'array item')).filter(Boolean)
 }
 
 const normalizeSource = (source: RevalidationSource): RevalidationSource => ({
@@ -245,6 +259,229 @@ const buildCollectionPlan = (event: CollectionRevalidationEvent): RevalidationPl
   })
 }
 
+const isClinicDocumentPublicNow = (event: ClinicSurfaceRevalidationEvent): boolean => {
+  return (
+    event.collection === 'clinics' &&
+    event.subject.status === APPROVED_CLINIC_STATUS &&
+    event.operation !== 'unpublish' &&
+    event.operation !== 'delete'
+  )
+}
+
+const wasClinicDocumentPublicBefore = (event: ClinicSurfaceRevalidationEvent): boolean => {
+  if (event.collection !== 'clinics') return false
+
+  if (event.subject.previousStatus) {
+    return event.subject.previousStatus === APPROVED_CLINIC_STATUS
+  }
+
+  if (event.operation === 'delete' || event.operation === 'unpublish') {
+    throw new UnsupportedRevalidationEventError(
+      `Missing required previous status for ${event.operation} clinic surface event`,
+    )
+  }
+
+  return false
+}
+
+const isPublicRelatedEvent = (event: ClinicSurfaceRevalidationEvent): boolean => {
+  if (event.collection === 'clinics') {
+    return isClinicDocumentPublicNow(event) || wasClinicDocumentPublicBefore(event)
+  }
+
+  const status = event.subject.status
+  const previousStatus = event.subject.previousStatus
+
+  switch (event.collection) {
+    case 'reviews':
+      return status === APPROVED_REVIEW_STATUS || previousStatus === APPROVED_REVIEW_STATUS
+    case 'clinicGalleryEntries':
+      return status === PUBLISHED_GALLERY_STATUS || previousStatus === PUBLISHED_GALLERY_STATUS
+    default:
+      return true
+  }
+}
+
+const buildClinicDocumentPlan = (event: ClinicSurfaceRevalidationEvent): RevalidationPlan => {
+  const id = normalizeRequiredText(event.subject.id, 'clinic id')
+  const slug = normalizeRequiredText(event.subject.slug, 'clinic slug')
+  const previousSlug = normalizeOptionalText(event.subject.previousSlug)
+
+  if (!event.subject.status) {
+    throw new UnsupportedRevalidationEventError('Missing required clinic status')
+  }
+
+  const publicNow = isClinicDocumentPublicNow(event)
+  const publicBefore = wasClinicDocumentPublicBefore(event)
+
+  if (!publicNow && !publicBefore) {
+    return createPlan({
+      operation: event.operation,
+      source: event.source,
+      subject: { kind: 'private-live' },
+      cacheClasses: ['private-live'],
+      surfaceIds: [],
+      tags: [],
+      paths: [],
+      emptyReason: 'private-live-noop',
+    })
+  }
+
+  const tags = [
+    buildEntityTag('clinics', id),
+    buildCollectionTag('clinics'),
+    buildSurfaceTag('clinic-detail'),
+    buildSurfaceInstanceTag('clinic-detail', id),
+    buildSurfaceTag('listing-comparison'),
+    buildSitemapTag('pages'),
+  ]
+  const paths: string[] = []
+
+  if (publicNow) {
+    tags.push(buildSlugTag('clinics', slug))
+    paths.push(buildClinicPath(slug))
+  }
+
+  if (publicBefore) {
+    const staleSlug = previousSlug ?? slug
+    tags.push(buildSlugTag('clinics', staleSlug))
+    paths.push(buildClinicPath(staleSlug))
+  }
+
+  return createPlan({
+    operation: event.operation,
+    source: event.source,
+    subject: {
+      kind: 'clinic-surface',
+      collection: 'clinics',
+      id,
+      slug,
+      ...(previousSlug ? { previousSlug } : {}),
+      status: event.subject.status,
+      ...(event.subject.previousStatus ? { previousStatus: event.subject.previousStatus } : {}),
+    },
+    cacheClasses: ['critical-public', 'aggregated-public'],
+    surfaceIds: ['clinic-detail', 'listing-comparison', 'surface:sitemap:pages'],
+    tags,
+    paths,
+  })
+}
+
+const CLINIC_DETAIL_RELATED_COLLECTIONS = [
+  'clinictreatments',
+  'doctors',
+  'doctorspecialties',
+  'reviews',
+  'accreditation',
+  'clinicGalleryEntries',
+] as const satisfies readonly ClinicSurfaceRevalidationCollection[]
+
+const LISTING_COMPARISON_COLLECTIONS = [
+  'clinics',
+  'clinictreatments',
+  'reviews',
+  'treatments',
+  'medical-specialties',
+  'cities',
+] as const satisfies readonly ClinicSurfaceRevalidationCollection[]
+
+const HOME_DEPENDENCY_COLLECTIONS = ['cities', 'medical-specialties'] as const
+const PARTNER_DEPENDENCY_COLLECTIONS = ['treatments', 'medical-specialties'] as const
+
+const includesCollection = <Collection extends string>(
+  collections: readonly Collection[],
+  collection: string,
+): collection is Collection => collections.includes(collection as Collection)
+
+const buildClinicSurfacePlan = (event: ClinicSurfaceRevalidationEvent): RevalidationPlan => {
+  if (event.collection === 'clinics') {
+    return buildClinicDocumentPlan(event)
+  }
+
+  if (!isPublicRelatedEvent(event)) {
+    return createPlan({
+      operation: event.operation,
+      source: event.source,
+      subject: { kind: 'private-live' },
+      cacheClasses: ['private-live'],
+      surfaceIds: [],
+      tags: [],
+      paths: [],
+      emptyReason: 'private-live-noop',
+    })
+  }
+
+  const collection = event.collection
+  const id = normalizeRequiredText(event.subject.id, `${collection} id`)
+  const clinicIds = normalizeOptionalTextArray(event.subject.clinicIds)
+  const clinicSlugs = normalizeOptionalTextArray(event.subject.clinicSlugs)
+  const previousClinicIds = normalizeOptionalTextArray(event.subject.previousClinicIds)
+  const previousClinicSlugs = normalizeOptionalTextArray(event.subject.previousClinicSlugs)
+  const allClinicIds = unique([...clinicIds, ...previousClinicIds])
+  const allClinicSlugs = unique([...clinicSlugs, ...previousClinicSlugs])
+
+  const tags = [buildEntityTag(collection, id), buildCollectionTag(collection)]
+  const surfaceIds: string[] = []
+  const paths: string[] = []
+
+  if (includesCollection(CLINIC_DETAIL_RELATED_COLLECTIONS, collection)) {
+    tags.push(buildSurfaceTag('clinic-detail'))
+    surfaceIds.push('clinic-detail')
+
+    for (const clinicId of allClinicIds) {
+      tags.push(buildSurfaceInstanceTag('clinic-detail', clinicId))
+    }
+
+    for (const clinicSlug of allClinicSlugs) {
+      tags.push(buildSlugTag('clinics', clinicSlug))
+      paths.push(buildClinicPath(clinicSlug))
+    }
+  }
+
+  if (includesCollection(LISTING_COMPARISON_COLLECTIONS, collection)) {
+    tags.push(buildSurfaceTag('listing-comparison'), buildSitemapTag('pages'))
+    surfaceIds.push('listing-comparison', 'surface:sitemap:pages')
+  }
+
+  if (includesCollection(HOME_DEPENDENCY_COLLECTIONS, collection)) {
+    tags.push(buildSurfaceTag('home'))
+    surfaceIds.push('home')
+    paths.push(buildFixedPublicPath('home'))
+  }
+
+  if (includesCollection(PARTNER_DEPENDENCY_COLLECTIONS, collection)) {
+    tags.push(buildSurfaceTag('partners-clinics'))
+    surfaceIds.push('partners-clinics')
+    paths.push(buildFixedPublicPath('partners-clinics'))
+  }
+
+  return createPlan({
+    operation: event.operation,
+    source: event.source,
+    subject: {
+      kind: 'clinic-surface',
+      collection,
+      id,
+      ...(event.subject.slug ? { slug: normalizeRequiredText(event.subject.slug, `${collection} slug`) } : {}),
+      ...(event.subject.previousSlug
+        ? { previousSlug: normalizeRequiredText(event.subject.previousSlug, `${collection} previous slug`) }
+        : {}),
+      ...(event.subject.status ? { status: event.subject.status as ClinicSurfacePublicStatus } : {}),
+      ...(event.subject.previousStatus
+        ? { previousStatus: event.subject.previousStatus as ClinicSurfacePublicStatus }
+        : {}),
+      ...(clinicIds.length > 0 ? { clinicIds } : {}),
+      ...(clinicSlugs.length > 0 ? { clinicSlugs } : {}),
+      ...(previousClinicIds.length > 0 ? { previousClinicIds } : {}),
+      ...(previousClinicSlugs.length > 0 ? { previousClinicSlugs } : {}),
+    },
+    cacheClasses: ['critical-public', 'aggregated-public'],
+    surfaceIds,
+    tags,
+    paths,
+  })
+}
+
 const buildGlobalPlan = (global: CoreGlobalRevalidationSlug, event: GlobalRevalidationEvent): RevalidationPlan => {
   const base = {
     operation: event.operation,
@@ -341,6 +578,8 @@ export const planRevalidation = (event: RevalidationEvent): RevalidationPlan => 
       return buildGlobalPlan(event.global, event)
     case 'redirects':
       return buildRedirectPlan(event)
+    case 'clinic-surface':
+      return buildClinicSurfacePlan(event)
     case 'private-live':
       return buildPrivateLivePlan(event)
     case 'deferred':

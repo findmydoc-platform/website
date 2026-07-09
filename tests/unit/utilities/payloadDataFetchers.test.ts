@@ -53,9 +53,9 @@ describe('Payload-backed utilities', () => {
       const findGlobalMock = vi.fn().mockResolvedValue({ hero: 'content' })
       getPayloadMock.mockResolvedValue({ findGlobal: findGlobalMock })
 
-      const globalDoc = await getGlobal('settings' as GlobalSlug, 1)
+      const globalDoc = await getGlobal('header' as GlobalSlug, 1)
 
-      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'settings', depth: 1 })
+      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'header', depth: 1 })
       expect(globalDoc).toEqual({ hero: 'content' })
     })
 
@@ -63,14 +63,14 @@ describe('Payload-backed utilities', () => {
       const findGlobalMock = vi.fn().mockResolvedValue({ footer: 'data' })
       getPayloadMock.mockResolvedValue({ findGlobal: findGlobalMock })
 
-      const cachedGlobal = getCachedGlobal('settings' as GlobalSlug, 3)
+      const cachedGlobal = getCachedGlobal('footer' as GlobalSlug, 3)
 
-      expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['2026-06-20', 'settings', '3'], {
-        tags: ['global_settings'],
+      expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['2026-06-20', 'footer', '3'], {
+        tags: ['global:footer'],
       })
 
       const result = await cachedGlobal()
-      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'settings', depth: 3 })
+      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'footer', depth: 3 })
       expect(result).toEqual({ footer: 'data' })
     })
   })
@@ -98,7 +98,7 @@ describe('Payload-backed utilities', () => {
       const cachedRedirects = getCachedRedirects()
 
       expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['redirects'], {
-        tags: ['redirects'],
+        tags: ['collection:redirects', 'surface:redirects'],
       })
 
       const result = await cachedRedirects()

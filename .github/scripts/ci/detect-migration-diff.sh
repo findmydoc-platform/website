@@ -56,6 +56,8 @@ import_export_allowlist_line_regex="^[+-][[:space:]]*\\{[[:space:]]*slug:[[:spac
 hook_only_collection_hook_identifier_regex="(beforeOperationPrepareUploadFilename|createSupabaseUserHook|enforcePlatformStaffEmailDomainHook|revalidateDeletedPlatformContentMediaConsumers|revalidatePlatformContentMediaConsumers|revalidate[[:alnum:]_]+|stableIdBeforeChangeHook|updateAverage(Price|Ratings)After(Change|Delete))"
 hook_only_collection_line_regex="^[+-][[:space:]]*(import[[:space:]]*\\{|import[[:space:]].*from[[:space:]]'(@/hooks|\\./hooks)/[^']+'|\\}[[:space:]]*from[[:space:]]'(@/hooks|\\./hooks)/[^']+'|[[:space:]]*((beforeChange|afterChange|afterDelete):[[:space:]]*\\[)?${hook_only_collection_hook_identifier_regex}(,[[:space:]]*${hook_only_collection_hook_identifier_regex})*\\]?,?|\\{|\\})[[:space:]]*$"
 collection_crypto_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*randomUUID[[:space:]]*\\}[[:space:]]*from[[:space:]]*'(node:)?crypto'[[:space:]]*$"
+payload_config_endpoint_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\}[[:space:]]*from[[:space:]]*'./endpoints/[A-Za-z0-9_./-]+'[[:space:]]*$"
+payload_config_endpoint_line_regex="^[+-][[:space:]]*(\\{|\\},?|path:[[:space:]]*'/?[A-Za-z0-9_./-]+'[,]?|method:[[:space:]]*'(get|post|put|patch|delete)'[,]?|handler:[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]+as[[:space:]]+PayloadHandler[,]?)[[:space:]]*$"
 
 schema_changed=false
 migrations_changed=false
@@ -121,6 +123,36 @@ is_hook_only_collection_change() {
   return 0
 }
 
+# Endpoint registrations change Payload runtime routing, not the persisted database schema.
+is_endpoint_only_payload_config_change() {
+  local diff
+  local diff_line
+
+  if ! diff="$(git diff --unified=0 --diff-filter=ACMR "${effective_range}" -- src/payload.config.ts)"; then
+    return 1
+  fi
+
+  if [[ -z "${diff}" ]]; then
+    return 1
+  fi
+
+  while IFS= read -r diff_line; do
+    case "${diff_line}" in
+      'diff --git'* | 'index '* | '--- '* | '+++ '* | '@@'*)
+        continue
+        ;;
+    esac
+
+    if [[ "${diff_line}" == +* || "${diff_line}" == -* ]]; then
+      if [[ ! "${diff_line}" =~ ${payload_config_endpoint_import_line_regex} && ! "${diff_line}" =~ ${payload_config_endpoint_line_regex} ]]; then
+        return 1
+      fi
+    fi
+  done <<<"${diff}"
+
+  return 0
+}
+
 schema_changed_files="$(grep -E "${schema_pattern}" <<<"${changed_files}" || true)"
 
 is_dedicated_payload_hook_file() {
@@ -131,6 +163,10 @@ is_dedicated_payload_hook_file() {
 
 if grep -qx 'src/plugins/index.ts' <<<"${schema_changed_files}" && is_import_export_plugin_allowlist_only_change; then
   schema_changed_files="$(grep -vx 'src/plugins/index.ts' <<<"${schema_changed_files}" || true)"
+fi
+
+if grep -qx 'src/payload.config.ts' <<<"${schema_changed_files}" && is_endpoint_only_payload_config_change; then
+  schema_changed_files="$(grep -vx 'src/payload.config.ts' <<<"${schema_changed_files}" || true)"
 fi
 
 if [[ -n "${schema_changed_files}" ]]; then

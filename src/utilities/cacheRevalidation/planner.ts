@@ -1,12 +1,14 @@
 import {
   buildCollectionTag,
   buildClinicPath,
+  buildDiscoveryTag,
   buildEntityTag,
   buildFixedPublicPath,
   buildGlobalTag,
   buildPagePath,
   buildPostPath,
   buildPostsIndexPath,
+  buildSitemapPath,
   buildSitemapTag,
   buildSlugTag,
   buildSurfaceInstanceTag,
@@ -23,12 +25,16 @@ import type {
   DeferredRevalidationEvent,
   GlobalRevalidationEvent,
   PrivateLiveRevalidationEvent,
+  PostsListRevalidationEvent,
+  PublicDiscoveryRevalidationEvent,
   RedirectRevalidationEvent,
   RevalidationEvent,
   RevalidationLogContext,
   RevalidationPlan,
   RevalidationSource,
   RevalidationSubject,
+  SeedFinalFlushRevalidationEvent,
+  SitemapRevalidationEvent,
 } from './types'
 
 export class DeferredRevalidationError extends Error {
@@ -98,6 +104,7 @@ const buildLogContext = ({
   ...(source.correlationId ? { correlationId: source.correlationId } : {}),
   subjectKind: subject.kind,
   ...('id' in subject && typeof subject.id !== 'undefined' ? { subjectId: String(subject.id) } : {}),
+  ...(subject.kind === 'seed-final-flush' ? { subjectId: subject.runId } : {}),
   ...(subject.kind === 'collection' ? { collection: subject.collection } : {}),
   ...(subject.kind === 'global' ? { global: subject.global } : {}),
   cacheClasses,
@@ -566,6 +573,126 @@ const buildPrivateLivePlan = (event: PrivateLiveRevalidationEvent): Revalidation
   })
 }
 
+const buildSitemapPlan = (event: SitemapRevalidationEvent): RevalidationPlan => {
+  const sitemapId = normalizeRequiredText(event.subject.sitemapId, 'sitemap id')
+  const sitemapSurfaceId = buildSitemapTag(sitemapId)
+
+  return createPlan({
+    operation: event.operation,
+    source: event.source,
+    subject: {
+      kind: 'sitemap',
+      sitemapId: sitemapId as SitemapRevalidationEvent['subject']['sitemapId'],
+    },
+    cacheClasses: ['aggregated-public'],
+    surfaceIds: [sitemapSurfaceId],
+    tags: [sitemapSurfaceId],
+    paths: [],
+  })
+}
+
+const buildPostsListPlan = (event: PostsListRevalidationEvent): RevalidationPlan => {
+  return createPlan({
+    operation: event.operation,
+    source: event.source,
+    subject: { kind: 'posts-list' },
+    cacheClasses: ['aggregated-public'],
+    surfaceIds: ['posts-list', 'home', 'partners-clinics', 'surface:sitemap:posts'],
+    tags: [
+      buildCollectionTag('posts'),
+      buildSurfaceTag('posts-list'),
+      buildSurfaceTag('home'),
+      buildSurfaceTag('partners-clinics'),
+      buildSitemapTag('posts'),
+    ],
+    paths: [buildPostsIndexPath()],
+  })
+}
+
+const buildPublicDiscoveryPlan = (event: PublicDiscoveryRevalidationEvent): RevalidationPlan => {
+  const discoveryId = normalizeRequiredText(event.subject.discoveryId, 'discovery id')
+  const discoverySurfaceId = buildDiscoveryTag(discoveryId)
+
+  return createPlan({
+    operation: event.operation,
+    source: event.source,
+    subject: {
+      kind: 'public-discovery',
+      discoveryId: discoveryId as PublicDiscoveryRevalidationEvent['subject']['discoveryId'],
+    },
+    cacheClasses: ['aggregated-public'],
+    surfaceIds: [discoverySurfaceId],
+    tags: [],
+    paths: [],
+    emptyReason: 'static-public-discovery-noop',
+  })
+}
+
+const buildSeedFinalFlushPlan = (event: SeedFinalFlushRevalidationEvent): RevalidationPlan => {
+  const runId = normalizeRequiredText(event.subject.runId, 'seed run id')
+  const collections = unique(
+    event.subject.affectedCollections.map((collection) => normalizeRequiredText(collection, 'collection')),
+  )
+  const globals = unique(event.subject.affectedGlobals.map((global) => normalizeRequiredText(global, 'global')))
+  const surfaces = unique(event.subject.affectedSurfaces.map((surface) => normalizeRequiredText(surface, 'surface')))
+  const sitemaps = unique(event.subject.affectedSitemaps.map((sitemap) => normalizeRequiredText(sitemap, 'sitemap')))
+  const discovery = unique(
+    event.subject.affectedDiscovery.map((discoveryId) => normalizeRequiredText(discoveryId, 'discovery')),
+  )
+  const tags = [
+    ...collections.map((collection) => buildCollectionTag(collection)),
+    ...globals.map((global) => buildGlobalTag(global)),
+    ...surfaces.map((surface) => buildSurfaceTag(surface)),
+    ...sitemaps.map((sitemap) => buildSitemapTag(sitemap)),
+    ...discovery.map((discoveryId) => buildDiscoveryTag(discoveryId)),
+  ]
+  const paths = [
+    ...surfaces.flatMap((surface) => {
+      if (surface === 'posts-list') {
+        return [buildPostsIndexPath()]
+      }
+
+      try {
+        return [buildFixedPublicPath(surface)]
+      } catch {
+        return []
+      }
+    }),
+    ...sitemaps.map((sitemap) => buildSitemapPath(sitemap)),
+  ]
+
+  return createPlan({
+    operation: event.operation,
+    source: {
+      ...event.source,
+      id: event.source.id ?? runId,
+    },
+    subject: {
+      kind: 'seed-final-flush',
+      runId,
+      seedType: event.subject.seedType,
+      reset: event.subject.reset,
+      terminalStatus: event.subject.terminalStatus,
+      affectedCollections: event.subject.affectedCollections,
+      affectedGlobals: event.subject.affectedGlobals,
+      affectedSurfaces: event.subject.affectedSurfaces,
+      affectedSitemaps: event.subject.affectedSitemaps,
+      affectedDiscovery: event.subject.affectedDiscovery,
+      completedJobCount: event.subject.completedJobCount,
+      publicJobCount: event.subject.publicJobCount,
+    },
+    cacheClasses: ['operational-scaling', 'aggregated-public'],
+    surfaceIds: [
+      ...surfaces,
+      ...sitemaps.map((sitemap) => buildSitemapTag(sitemap)),
+      ...discovery.map((discoveryId) => buildDiscoveryTag(discoveryId)),
+    ],
+    tags,
+    paths,
+    ...(tags.length === 0 && paths.length === 0 ? { emptyReason: 'seed-final-flush-noop' as const } : {}),
+  })
+}
+
 const throwDeferred = (event: DeferredRevalidationEvent): never => {
   throw new DeferredRevalidationError(event.area)
 }
@@ -582,6 +709,14 @@ export const planRevalidation = (event: RevalidationEvent): RevalidationPlan => 
       return buildClinicSurfacePlan(event)
     case 'private-live':
       return buildPrivateLivePlan(event)
+    case 'sitemap':
+      return buildSitemapPlan(event)
+    case 'posts-list':
+      return buildPostsListPlan(event)
+    case 'public-discovery':
+      return buildPublicDiscoveryPlan(event)
+    case 'seed-final-flush':
+      return buildSeedFinalFlushPlan(event)
     case 'deferred':
       return throwDeferred(event)
     default:

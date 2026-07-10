@@ -17,7 +17,7 @@ import { FAQSection } from '@/components/organisms/FAQ'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
 import { ClinicRegistrationLandingSection } from '../../_components/ClinicRegistrationLandingSection'
 import { normalizePost } from '@/utilities/blog/normalizePost'
-import { findLatestPosts } from '@/utilities/content/serverData'
+import { getCachedLatestPosts } from '@/utilities/content/serverData'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getClinicRegistrationTreatmentCategories } from '@/utilities/clinicRegistration/treatmentCategories'
 import { getClinicPartnerLandingContent } from '@/utilities/landing/landingPageContent'
@@ -31,7 +31,7 @@ export default async function ClinicLandingPage() {
   const payload = await getPayload({ config: configPromise })
   const [landingContent, posts, landingSpecialtyCategories, clinicRegistrationTreatmentCategories] = await Promise.all([
     getClinicPartnerLandingContent(),
-    findLatestPosts(payload, 3),
+    getCachedLatestPosts(3),
     getLandingMedicalSpecialtyCategories(payload),
     getClinicRegistrationTreatmentCategories(payload),
   ])

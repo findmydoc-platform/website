@@ -1,14 +1,10 @@
 import type { PayloadRequest } from 'payload'
-import { revalidatePath, revalidateTag } from 'next/cache.js'
-import {
-  PLATFORM_CONTENT_MEDIA_LANDING_PATHS,
-  PLATFORM_CONTENT_MEDIA_LANDING_TAGS,
-} from '@/hooks/media/revalidateMediaConsumers'
 import { assertSeedRunPolicy, isSeedEndpointPostEnabled, resolveSeedRuntimeEnv, type SeedType } from './utils/runtime'
 import { buildSeedQueueJobs, getSeedQueueName } from './utils/planner'
 import { formatSeedRetryTitle, formatSeedRunTitle, formatSeedJobTitle } from './utils/labels'
 import type { SeedQueueJobInput } from './utils/job-types'
 import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
+import { finalizeSeedRunPublicCaches } from './utils/finalFlush'
 import {
   buildSeedRunSnapshot,
   clearActiveSeedRunIfTerminal,
@@ -45,35 +41,6 @@ const isPlatformSeedUser = (req: PayloadRequest): boolean => {
   return (req.user as { userType?: string } | null | undefined)?.userType === 'platform'
 }
 
-const revalidateSeedGlobals = (req: PayloadRequest) => {
-  const tags = [
-    'global_header',
-    'global_footer',
-    'global_cookieConsent',
-    ...PLATFORM_CONTENT_MEDIA_LANDING_TAGS,
-  ] as const
-
-  for (const tag of tags) {
-    try {
-      revalidateTag(tag, { expire: 0 })
-      req.payload.logger.info(`Revalidated seed cache tag: ${tag}`)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      req.payload.logger.warn(`Unable to revalidate seed cache tag ${tag}: ${message}`)
-    }
-  }
-
-  for (const path of PLATFORM_CONTENT_MEDIA_LANDING_PATHS) {
-    try {
-      revalidatePath(path)
-      req.payload.logger.info(`Revalidated seed path: ${path}`)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      req.payload.logger.warn(`Unable to revalidate seed path ${path}: ${message}`)
-    }
-  }
-}
-
 const getSeedType = (req: PayloadRequest): SeedType | null => {
   const type = req.query.type
   if (type === 'baseline' || type === 'demo') {
@@ -84,11 +51,20 @@ const getSeedType = (req: PayloadRequest): SeedType | null => {
 
 const getResetFlag = (req: PayloadRequest): boolean => req.query.reset === '1'
 
-const finalizeRunSnapshot = async (req: PayloadRequest, snapshot: SeedRunSnapshot): Promise<void> => {
-  if (snapshot.status === 'completed' || snapshot.status === 'partial' || snapshot.status === 'failed') {
+const finalizeRunSnapshot = async (req: PayloadRequest, snapshot: SeedRunSnapshot): Promise<SeedRunSnapshot> => {
+  if (
+    snapshot.status === 'completed' ||
+    snapshot.status === 'partial' ||
+    snapshot.status === 'failed' ||
+    snapshot.status === 'cancelled'
+  ) {
     await clearActiveSeedRunIfTerminal(req.payload, snapshot.runId)
-    revalidateSeedGlobals(req)
+    await finalizeSeedRunPublicCaches(req.payload, snapshot)
+    const refreshedRecord = await loadSeedRunRecord(req.payload, snapshot.runId)
+    return refreshedRecord ? buildSeedRunSnapshot(refreshedRecord) : snapshot
   }
+
+  return snapshot
 }
 
 type SeedQueuePlanJob = {
@@ -463,9 +439,8 @@ export const seedAdvanceHandler = async (req: PayloadRequest, res?: unknown) => 
     currentSnapshot.status === 'failed' ||
     currentSnapshot.status === 'cancelled'
   ) {
-    await clearActiveSeedRunIfTerminal(payload, currentSnapshot.runId)
-    revalidateSeedGlobals(req)
-    return respond(res, 200, currentSnapshot)
+    const finalizedSnapshot = await finalizeRunSnapshot(req, currentSnapshot)
+    return respond(res, 200, finalizedSnapshot)
   }
 
   try {
@@ -475,10 +450,10 @@ export const seedAdvanceHandler = async (req: PayloadRequest, res?: unknown) => 
     const message = error instanceof Error ? error.message : 'Seed request is not allowed'
     payload.logger.warn(`Rejected seed advancement by policy: ${message}`)
     const cancelledRun = await markSeedRunCancelled(payload, fallbackRun.runId)
-    await clearActiveSeedRunIfTerminal(payload, fallbackRun.runId)
+    const cancelledSnapshot = await finalizeRunSnapshot(req, buildSeedRunSnapshot(cancelledRun ?? fallbackRun))
     return respond(res, 400, {
       error: message,
-      run: buildSeedRunSnapshot(cancelledRun ?? fallbackRun),
+      run: cancelledSnapshot,
     })
   }
 
@@ -518,6 +493,6 @@ export const seedAdvanceHandler = async (req: PayloadRequest, res?: unknown) => 
   }
 
   const snapshot = buildSeedRunSnapshot(updatedRun)
-  await finalizeRunSnapshot(req, snapshot)
-  return respond(res, 200, snapshot)
+  const finalizedSnapshot = await finalizeRunSnapshot(req, snapshot)
+  return respond(res, 200, finalizedSnapshot)
 }

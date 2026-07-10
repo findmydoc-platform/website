@@ -4,6 +4,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 import sharp from 'sharp'
 import path from 'path'
 import { buildConfig, PayloadHandler, type EmailAdapter } from 'payload'
+import { cacheRevalidationVisibilityGetHandler } from './endpoints/cacheRevalidationVisibility'
 import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
 import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
@@ -91,6 +92,11 @@ export default buildConfig({
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
     { path: '/seed/retry', method: 'post', handler: seedRetryHandler as PayloadHandler },
     { path: '/seed/advance', method: 'get', handler: seedAdvanceHandler as PayloadHandler },
+    {
+      path: '/cache-revalidation/visibility',
+      method: 'get',
+      handler: cacheRevalidationVisibilityGetHandler as PayloadHandler,
+    },
   ],
   admin: {
     dashboard: {

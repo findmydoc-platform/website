@@ -151,6 +151,30 @@ Sitemaps and public discovery outputs participate in the same cache model as oth
 
 `/llms.txt` and `/.well-known/llms.txt` remain static public-discovery contract routes unless a future ADR or work order assigns CMS-backed dependencies. Search indexing and canonical/noindex policy remain route/config policy, not ad hoc document invalidation.
 
+## Extending The Cache Stack
+
+Every new or materially changed collection, global, public page, route, server-data loader, hook, sitemap, discovery flow, or seed flow receives one explicit cache-impact decision:
+
+| Decision | Required treatment |
+| --- | --- |
+| `no-public-impact` | No public cache or revalidation wiring. Collections and globals still receive an explicit policy-catalog classification. |
+| `public-live` | Public data remains deliberately uncached. Draft, preview, private, authenticated, cookie-bound, and request-bound data remains live. |
+| `public-cached` | Reuse an accepted cache class, policy-catalog entry, canonical read tags, planner event and owner, and focused read/write-symmetry tests. |
+
+Static public pages do not need a catalog entry. New surface IDs and catalog entries are local implementation decisions only when the existing cache classes, tag families, owner types, and public/private boundary already fit.
+
+Cached reads and writes stay symmetric: every read-side `unstable_cache` tag comes from `cachePolicy`, and the matching write-side event reaches the planner before the executor invalidates tags and then paths. Hook adapters preserve stable old and new identities or relations and honor `context.disableRevalidate`.
+
+Direct `revalidateTag` and `revalidatePath` calls belong to the executor. `src/hooks/media/revalidateMediaConsumers.ts` is the one temporary legacy exception while [issue #1468](https://github.com/findmydoc-platform/website/issues/1468) owns the bounded media dependency resolver.
+
+Stop for an ADR decision when a change needs a new cache class, tag family, owner type, freshness expectation, route family, Redis or another remote store, custom cache handler, or changed invalidation semantics.
+
+## Framework Compatibility
+
+The runtime uses `unstable_cache`, canonical cache tags, `revalidateTag`, and `revalidatePath`. Next.js Cache Components are not enabled in this stack: `cacheComponents`, `'use cache'`, `cacheTag`, and `cacheLife` are not implementation choices for ordinary feature work.
+
+Adopting Cache Components changes cache ownership, keying, lifetime, and invalidation semantics. It requires a dedicated ADR and migration plan that preserves the policy-first architecture before any runtime primitive is introduced.
+
 ## Deferred Boundaries
 
 Direct media dependency resolution remains a bounded follow-up. Media inherits the cache class of the surface where it appears, and referencing documents or relations own invalidation in the first stack.

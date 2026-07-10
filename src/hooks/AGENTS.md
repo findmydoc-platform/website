@@ -12,6 +12,8 @@
 - Reuse `src/access/**` helpers; avoid duplicated role logic.
 - Maintain soft-delete behavior unless destructive semantics are explicitly required.
 - Keep hook logic deterministic, testable, and scoped to the owning collection/global.
+- Cache-affecting hooks use normalized planner events, preserve old and new identities or relations when they affect public output, and return early for `context.disableRevalidate`.
+- Hooks do not import `next/cache` or build tags and paths directly. The legacy media exception is limited to `src/hooks/media/revalidateMediaConsumers.ts` until issue `#1468`; do not extend it.
 
 ## Alignment Requirements
 

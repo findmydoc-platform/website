@@ -39,7 +39,7 @@ describe('BasicUser lifecycle integration', () => {
     const basic = (await payload.create({
       collection: 'basicUsers',
       data: {
-        email: 'platform.staff@example.com',
+        email: 'platform.staff@findmydoc.eu',
         userType: 'platform',
         firstName: 'Platform',
         lastName: 'Staff',
@@ -76,6 +76,50 @@ describe('BasicUser lifecycle integration', () => {
       depth: 0,
     })
     expect(profilesAfter.docs.length).toBe(0)
+  }, 20000)
+
+  it('rejects creating platform users outside the findmydoc.eu email domain', async () => {
+    await expect(async () => {
+      await payload.create({
+        collection: 'basicUsers',
+        data: {
+          email: 'platform.external@example.com',
+          userType: 'platform',
+          firstName: 'External',
+          lastName: 'Platform',
+          supabaseUserId: 'sb-basicuser-platform-external',
+        },
+        overrideAccess: true,
+        depth: 0,
+      } as PayloadCreateArgs)
+    }).rejects.toThrow(/findmydoc\.eu|email/i)
+  }, 20000)
+
+  it('rejects updating an external clinic user into a platform user', async () => {
+    const clinicUser = (await payload.create({
+      collection: 'basicUsers',
+      data: {
+        email: 'basicuser.external-clinic@example.com',
+        userType: 'clinic',
+        firstName: 'External',
+        lastName: 'Clinic',
+        supabaseUserId: 'sb-basicuser-external-clinic',
+      },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as BasicUser
+
+    await expect(async () => {
+      await payload.update({
+        collection: 'basicUsers',
+        id: clinicUser.id,
+        data: {
+          userType: 'platform',
+        },
+        overrideAccess: true,
+        depth: 0,
+      } as PayloadUpdateArgs)
+    }).rejects.toThrow(/findmydoc\.eu|email/i)
   }, 20000)
 
   it('creates a clinic BasicUser and creates a ClinicStaff profile', async () => {
@@ -129,7 +173,7 @@ describe('BasicUser lifecycle integration', () => {
       await payload.create({
         collection: 'basicUsers',
         data: {
-          email: 'basicuser.blocked@example.com',
+          email: 'basicuser.blocked@findmydoc.eu',
           userType: 'platform',
           firstName: 'Blocked',
           lastName: 'User',
@@ -146,7 +190,7 @@ describe('BasicUser lifecycle integration', () => {
     await payload.create({
       collection: 'basicUsers',
       data: {
-        email: 'basicuser.duplicate@example.com',
+        email: 'basicuser.duplicate@findmydoc.eu',
         userType: 'platform',
         firstName: 'Duplicate',
         lastName: 'User',
@@ -160,7 +204,7 @@ describe('BasicUser lifecycle integration', () => {
       await payload.create({
         collection: 'basicUsers',
         data: {
-          email: 'basicuser.duplicate@example.com',
+          email: 'basicuser.duplicate@findmydoc.eu',
           userType: 'clinic',
           firstName: 'Duplicate',
           lastName: 'User',
@@ -176,7 +220,7 @@ describe('BasicUser lifecycle integration', () => {
     const basicUser = (await payload.create({
       collection: 'basicUsers',
       data: {
-        email: 'basicuser.update@example.com',
+        email: 'basicuser.update@findmydoc.eu',
         userType: 'platform',
         firstName: 'Update',
         lastName: 'Target',

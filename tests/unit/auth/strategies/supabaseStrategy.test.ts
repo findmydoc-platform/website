@@ -182,6 +182,7 @@ describe('supabaseStrategy', () => {
 
       const platformAuthData = {
         ...mockAuthData,
+        userEmail: 'admin@findmydoc.eu',
         userType: 'platform' as const,
       }
 
@@ -212,6 +213,7 @@ describe('supabaseStrategy', () => {
 
       const platformAuthData = {
         ...mockAuthData,
+        userEmail: 'admin@findmydoc.eu',
         userType: 'platform' as const,
       }
 
@@ -243,6 +245,33 @@ describe('supabaseStrategy', () => {
       expect(result.user).toBeNull()
     })
 
+    it('blocks platform users with non-findmydoc email domains before payload lookup', async () => {
+      const platformAuthData = {
+        ...mockAuthData,
+        userEmail: 'admin@example.com',
+        userType: 'platform' as const,
+      }
+
+      vi.mocked(extractSupabaseUserData).mockResolvedValue(platformAuthData)
+
+      const result = await supabaseStrategy.authenticate(buildArgs())
+
+      expect(findUserBySupabaseId).not.toHaveBeenCalled()
+      expect(createUser).not.toHaveBeenCalled()
+      expect(validateUserAccess).not.toHaveBeenCalled()
+      expect(identifyPostHogActor).not.toHaveBeenCalled()
+      expect(mockPayload.logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'auth.supabase.platform_user.invalid_email_domain',
+          supabaseUserIdHash: expect.any(String),
+          userEmailHash: expect.any(String),
+        }),
+        'Platform Supabase user email is outside the allowed domain',
+      )
+      expect(JSON.stringify(mockPayload.logger.warn.mock.calls)).not.toContain(platformAuthData.userEmail)
+      expect(result.user).toBeNull()
+    })
+
     it('does not create or link missing platform users in preview runtime', async () => {
       process.env = {
         ...process.env,
@@ -251,6 +280,7 @@ describe('supabaseStrategy', () => {
 
       const platformAuthData = {
         ...mockAuthData,
+        userEmail: 'admin@findmydoc.eu',
         userType: 'platform' as const,
       }
 
@@ -454,6 +484,7 @@ describe('supabaseStrategy', () => {
     it('should handle platform user type', async () => {
       const platformAuthData = {
         ...mockAuthData,
+        userEmail: 'admin@findmydoc.eu',
         userType: 'platform' as const,
       }
 

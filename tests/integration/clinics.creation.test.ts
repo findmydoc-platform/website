@@ -38,7 +38,7 @@ describe('Clinic Creation Integration Tests', () => {
     const basicUser = await payload.create({
       collection: 'basicUsers',
       data: {
-        email: `${emailPrefix}@example.com`,
+        email: `${emailPrefix}@findmydoc.eu`,
         userType: 'platform',
         firstName: 'Platform',
         lastName: 'Tester',

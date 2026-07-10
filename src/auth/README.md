@@ -20,6 +20,8 @@ Public first-admin bootstrap is disabled. Platform staff, including the first ad
 
 The website runtime must not expose a public endpoint that creates platform admins. Public first-admin bootstrap routes return `404`.
 
+Platform staff accounts must use `@findmydoc.eu` email addresses. Payload rejects `basicUsers` writes that would create or update a platform staff account outside that domain, and Supabase platform-user login attempts outside that domain are denied before Payload lookup. The password reset route stays available through the public platform reset flow and keeps neutral responses; staff eligibility is enforced by the platform staff account boundary.
+
 The current staff login sequence is documented in `docs/security/auth-flow-diagram.md`.
 
 ## Runtime Admin Recovery

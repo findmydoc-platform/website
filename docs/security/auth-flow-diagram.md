@@ -32,11 +32,16 @@ sequenceDiagram
         end
         Login-->>User: Render login form without bootstrap guidance
     else Active Supabase session
-        Login->>Payload: Find staff user by Supabase ID
-        alt Staff user exists and is allowed for login target
-            Login-->>User: Redirect to /admin or requested preview path
-        else Staff user missing or not allowed
+        alt Platform session outside @findmydoc.eu
+            Login->>Logs: warn auth.admin_login.platform_user.invalid_email_domain with hashed IDs
             Login-->>User: Render login form with generic account status
+        else Staff session is eligible
+            Login->>Payload: Find staff user by Supabase ID
+            alt Staff user exists and is allowed for login target
+                Login-->>User: Redirect to /admin or requested preview path
+            else Staff user missing or not allowed
+                Login-->>User: Render login form with generic account status
+            end
         end
     end
 
@@ -51,7 +56,12 @@ sequenceDiagram
         Login->>Strategy: Payload admin authenticate()
         Strategy->>Strategy: Extract user_type, Supabase user ID, email
 
-        alt user_type is platform
+        alt user_type is platform and email is outside @findmydoc.eu
+            Strategy->>Logs: warn auth.supabase.platform_user.invalid_email_domain with hashed IDs
+            Strategy-->>Login: Deny Payload authentication
+            Login-->>User: Account not available / contact support
+
+        else user_type is platform
             Strategy->>Payload: Find basicUsers by supabaseUserId
             alt Payload platform user exists
                 Payload-->>Strategy: Return basicUsers record
@@ -101,6 +111,7 @@ The system supports three distinct user roles with different data storage patter
 
 **Platform Staff**:
 - Supabase Auth user, Payload `basicUsers`, and Payload `platformStaff` profile are provisioned outside the public website runtime.
+- Platform staff accounts must use `@findmydoc.eu`; Payload writes and Supabase platform-user login reject outside-domain email addresses before Payload lookup.
 - Public login never creates missing platform records.
 - Public runtime never links platform users by email; drift repair belongs in the private `ops` repository workflow.
 
@@ -123,6 +134,7 @@ The system supports three distinct user roles with different data storage patter
 
 **Platform Staff**:
 - Public runtime login requires an existing Payload platform user.
+- Public runtime login also requires the Supabase platform user's email address to be inside `@findmydoc.eu`.
 - Platform staff login-state checks distinguish whether a platform admin role exists, without exposing public bootstrap guidance.
 
 **Patients**:
@@ -149,6 +161,7 @@ The system supports three distinct user roles with different data storage patter
 
 ### Stage 3: User Management
 - Search for existing user by Supabase identifier
+- Reject Supabase platform users whose email address is outside `@findmydoc.eu` before Payload lookup
 - For platform users, do not create missing Payload records during public runtime login
 - For clinic users, create a missing user/profile record when allowed by the auth flow
 - For patients, ensure a patient record for API use

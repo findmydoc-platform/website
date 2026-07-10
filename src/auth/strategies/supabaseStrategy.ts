@@ -11,6 +11,7 @@ import {
   toErrorMessage,
 } from '@/auth/errors/authFlowError'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { isFindmydocPlatformEmail } from '@/auth/utilities/platformStaffEmailPolicy'
 import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { createUser } from '@/auth/utilities/userCreation'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
@@ -145,6 +146,10 @@ const toAuthUser = (result: UserResult): AuthStrategyResult['user'] => {
   return base as AuthStrategyResult['user']
 }
 
+const isDisallowedPlatformEmail = (authData: AuthData): boolean => {
+  return authData.userType === 'platform' && !isFindmydocPlatformEmail(authData.userEmail)
+}
+
 const authenticate: AuthStrategy['authenticate'] = async (args) => {
   const { payload } = args
   const req = (args as typeof args & { req?: PayloadRequest }).req
@@ -181,6 +186,18 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
       },
       'Auth data extracted',
     )
+
+    if (isDisallowedPlatformEmail(authData)) {
+      logger.warn(
+        {
+          event: 'auth.supabase.platform_user.invalid_email_domain',
+          supabaseUserIdHash: hashLogValue(authData.supabaseUserId),
+          userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
+        },
+        'Platform Supabase user email is outside the allowed domain',
+      )
+      return { user: null }
+    }
 
     // Create or find user in appropriate collection
     const result = await createOrFindUser(payload, authData, req, logger)

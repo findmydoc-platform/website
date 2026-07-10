@@ -48,6 +48,17 @@ export type SeedRunJobRecord = {
   output?: Record<string, unknown>
 }
 
+export type SeedRunFinalFlushStatus = 'executed' | 'failed' | 'skipped'
+
+export type SeedRunFinalFlushRecord = {
+  status: SeedRunFinalFlushStatus
+  completedAt: string
+  tagCount: number
+  pathCount: number
+  failureCount: number
+  reason?: 'no-public-work' | 'planner-error' | 'executor-error'
+}
+
 export type SeedRunRecord = {
   runId: string
   type: SeedType
@@ -70,6 +81,7 @@ export type SeedRunRecord = {
   warnings: string[]
   failures: string[]
   totals: { created: number; updated: number }
+  finalFlush?: SeedRunFinalFlushRecord
 }
 
 export type SeedRunSnapshot = SeedRunRecord & {
@@ -390,6 +402,21 @@ export const markSeedRunCancelled = async (payload: Payload, runId: string): Pro
   record.activeStepName = undefined
   record.status = 'cancelled'
   record.completedAt ??= nowIso()
+  finalizeRunIfNeeded(record)
+  await saveSeedRunRecord(payload, record)
+  return record
+}
+
+export const markSeedRunFinalFlush = async (
+  payload: Payload,
+  runId: string,
+  finalFlush: SeedRunFinalFlushRecord,
+): Promise<SeedRunRecord | null> => {
+  const record = await loadSeedRunRecord(payload, runId)
+  if (!record) return null
+  if (record.finalFlush && record.finalFlush.status !== 'failed') return record
+
+  record.finalFlush = clone(finalFlush)
   finalizeRunIfNeeded(record)
   await saveSeedRunRecord(payload, record)
   return record

@@ -47,6 +47,7 @@ import { default as default_a49897c860926b80d84ead771e47d9e1 } from '@/component
 import { ImportExportProvider as ImportExportProvider_cdf7e044479f899a31f804427d568b36 } from '@payloadcms/plugin-import-export/rsc'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 import { default as default_ab46816a001b0b96177fe198da5e9467 } from '@/components/organisms/DeveloperDashboard'
+import { default as default_16db527229d8cecba7c6cbf008b381be } from '@/components/organisms/CacheRevalidationVisibility'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
@@ -100,5 +101,6 @@ export const importMap = {
   "@payloadcms/plugin-import-export/rsc#ImportExportProvider": ImportExportProvider_cdf7e044479f899a31f804427d568b36,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
   "@/components/organisms/DeveloperDashboard#default": default_ab46816a001b0b96177fe198da5e9467,
+  "@/components/organisms/CacheRevalidationVisibility#default": default_16db527229d8cecba7c6cbf008b381be,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

@@ -192,6 +192,7 @@ export interface Config {
   locale: 'en' | 'de';
   widgets: {
     'developer-seeding': DeveloperSeedingWidget;
+    'cache-revalidation-visibility': CacheRevalidationVisibilityWidget;
     collections: CollectionsWidget;
   };
   user: BasicUser | Patient | PayloadMcpApiKey;
@@ -5703,6 +5704,16 @@ export interface DeveloperSeedingWidget {
      * Wrap long log lines inside the console instead of horizontal scrolling.
      */
     wrapLines?: boolean | null;
+  };
+  width: 'medium' | 'large' | 'x-large' | 'full';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cache-revalidation-visibility_widget".
+ */
+export interface CacheRevalidationVisibilityWidget {
+  data?: {
+    [k: string]: unknown;
   };
   width: 'medium' | 'large' | 'x-large' | 'full';
 }

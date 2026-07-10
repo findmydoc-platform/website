@@ -79,7 +79,7 @@ Logger-level redaction is configured centrally in [src/utilities/logging/payload
 - `auth.supabase.*`
 - `storage.media.upload_failed`
 - `telemetry.posthog.*`
-- `api.forms.submit.failed`
+- `api.formBridge.submit.failed`
 
 ## Reading Logs on Vercel
 
@@ -90,8 +90,11 @@ Recommended filters:
 - `event:auth.supabase.authenticate.failed`
 - `event:auth.supabase.admin.client_init_failed`
 - `event:storage.media.upload_failed`
+- `event:api.formBridge.submit.failed`
 
 If an upload is rejected by Vercel before the app receives the request, Payload cannot log that failure. Those cases must be diagnosed from Vercel request/runtime logs instead of application logs.
+
+For the flow-level operating map, escalation rules, and privacy boundaries, see [Monitoring and Error Logic](./monitoring-and-error-logic.md).
 
 ## Local Development
 

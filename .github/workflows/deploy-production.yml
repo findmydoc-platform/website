@@ -30,10 +30,14 @@ jobs:
       name: Production
       url: ${{ steps.vercel_production.outputs.deploymentUrl }}
     steps:
-      - name: Require main branch
+      - name: Validate deploy ref
         run: |
           if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
-            echo "::error::Deploy Production can only run from refs/heads/main."
+            if [[ "${GITHUB_REF}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              exit 0
+            fi
+
+            echo "::error::Deploy Production can only run from refs/heads/main or a semantic release tag matching refs/tags/vX.Y.Z."
             exit 1
           fi
 

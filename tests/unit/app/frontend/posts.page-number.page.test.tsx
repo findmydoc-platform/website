@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   buildPostsIndexJsonLdMock: vi.fn(() => [{ '@type': 'ItemList' }]),
   countPublishedPostsMock: vi.fn(),
   createSiteMetadataMock: vi.fn((args: unknown) => args),
-  findPublishedPostsPageMock: vi.fn(),
+  getCachedPublishedPostsPageMock: vi.fn(),
   getPayloadMock: vi.fn(),
   jsonLdScriptComponent: vi.fn(() => null),
   normalizePostMock: vi.fn(),
@@ -34,7 +34,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/utilities/content/serverData', () => ({
   countPublishedPosts: mocks.countPublishedPostsMock,
-  findPublishedPostsPage: mocks.findPublishedPostsPageMock,
+  getCachedPublishedPostsPage: mocks.getCachedPublishedPostsPageMock,
 }))
 
 vi.mock('@/utilities/blog/normalizePost', () => ({
@@ -91,7 +91,7 @@ describe('frontend paginated posts route', () => {
     vi.clearAllMocks()
 
     mocks.getPayloadMock.mockResolvedValue({})
-    mocks.findPublishedPostsPageMock.mockResolvedValue({
+    mocks.getCachedPublishedPostsPageMock.mockResolvedValue({
       docs: [{ id: 2, slug: 'page-2-post', title: 'Seite zwei' }],
       totalDocs: 24,
       totalPages: 2,
@@ -128,8 +128,7 @@ describe('frontend paginated posts route', () => {
       searchParams: Promise.resolve({ locale: 'de' }),
     })
 
-    expect(mocks.findPublishedPostsPageMock).toHaveBeenCalledWith(
-      {},
+    expect(mocks.getCachedPublishedPostsPageMock).toHaveBeenCalledWith(
       expect.objectContaining({
         contentLocale: {
           locale: 'de',

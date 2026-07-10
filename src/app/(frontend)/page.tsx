@@ -22,7 +22,7 @@ import {
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { headers } from 'next/headers'
-import { findLatestPosts } from '@/utilities/content/serverData'
+import { getCachedLatestPosts } from '@/utilities/content/serverData'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 
 type HomePageSearchParams = Record<string, string | string[] | undefined>
@@ -44,7 +44,7 @@ export default async function Home({
   const payload = await getPayload({ config: configPromise })
   const [landingContent, posts, landingSpecialtyCategories, cityResult] = await Promise.all([
     getHomeLandingContent(),
-    findLatestPosts(payload, 3),
+    getCachedLatestPosts(3),
     getLandingMedicalSpecialtyCategories(payload),
     payload.find({
       collection: 'cities',

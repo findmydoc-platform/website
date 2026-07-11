@@ -53,11 +53,14 @@ schema_pattern='^(src/collections/|src/globals/|src/fields/|src/plugins/|src/pay
 migration_pattern='^src/migrations/'
 db_tooling_pattern='^(\.github/workflows/db-quality\.yml|\.github/workflows/deploy\.yml|\.github/scripts/ci/(detect-migration-diff|enforce-schema-migration|wait-for-postgres)\.sh|scripts/(migration-risk-scan|test-database-harness)\.mjs|vitest\.config\.ts)$'
 import_export_allowlist_line_regex="^[+-][[:space:]]*\\{[[:space:]]*slug:[[:space:]]*'[^']+'(,[[:space:]]*(import|export):[[:space:]]*false)?[[:space:]]*\\},?[[:space:]]*$"
-hook_only_collection_hook_identifier_regex="(beforeOperationPrepareUploadFilename|createSupabaseUserHook|enforcePlatformStaffEmailDomainHook|revalidateDeletedPlatformContentMediaConsumers|revalidatePlatformContentMediaConsumers|revalidate[[:alnum:]_]+|stableIdBeforeChangeHook|updateAverage(Price|Ratings)After(Change|Delete))"
-hook_only_collection_line_regex="^[+-][[:space:]]*(import[[:space:]]*\\{|import[[:space:]].*from[[:space:]]'(@/hooks|\\./hooks)/[^']+'|\\}[[:space:]]*from[[:space:]]'(@/hooks|\\./hooks)/[^']+'|[[:space:]]*((beforeChange|afterChange|afterDelete):[[:space:]]*\\[)?${hook_only_collection_hook_identifier_regex}(,[[:space:]]*${hook_only_collection_hook_identifier_regex})*\\]?,?|\\{|\\})[[:space:]]*$"
+hook_only_collection_hook_identifier_regex="(beforeOperationPrepareUploadFilename|beforeOperationValidateMediaUpload|createSupabaseUserHook|enforcePlatformStaffEmailDomainHook|revalidateDeletedPlatformContentMediaConsumers|revalidatePlatformContentMediaConsumers|revalidate[[:alnum:]_]+|stableIdBeforeChangeHook|updateAverage(Price|Ratings)After(Change|Delete))"
+hook_only_collection_line_regex="^[+-][[:space:]]*(import[[:space:]]*\\{|import[[:space:]].*from[[:space:]]'(@/hooks|\\./hooks)/[^']+'|\\}[[:space:]]*from[[:space:]]'(@/hooks|\\./hooks)/[^']+'|[[:space:]]*((beforeOperation|beforeChange|afterChange|afterDelete):[[:space:]]*\\[)?${hook_only_collection_hook_identifier_regex}(,[[:space:]]*${hook_only_collection_hook_identifier_regex})*\\]?,?|\\{|\\})[[:space:]]*$"
+collection_upload_component_line_regex="^[+-][[:space:]]*(components:[[:space:]]*\\{|edit:[[:space:]]*\\{|Upload:[[:space:]]*'@/app/\\(payload\\)/components/PolicyAwareUpload',?|\\{|\\},?)[[:space:]]*$"
 collection_crypto_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*randomUUID[[:space:]]*\\}[[:space:]]*from[[:space:]]*'(node:)?crypto'[[:space:]]*$"
 payload_config_endpoint_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\}[[:space:]]*from[[:space:]]*'./endpoints/[A-Za-z0-9_./-]+'[[:space:]]*$"
 payload_config_endpoint_line_regex="^[+-][[:space:]]*(\\{|\\},?|path:[[:space:]]*'/?[A-Za-z0-9_./-]+'[,]?|method:[[:space:]]*'(get|post|put|patch|delete)'[,]?|handler:[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]+as[[:space:]]+PayloadHandler[,]?)[[:space:]]*$"
+payload_config_upload_policy_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*MEDIA_UPLOAD_MAX_BYTES,[[:space:]]*MEDIA_UPLOAD_TOO_LARGE_MESSAGE[[:space:]]*\\}[[:space:]]*from[[:space:]]*'@/config/mediaUploadPolicy'[[:space:]]*$"
+payload_config_upload_policy_line_regex="^[+-][[:space:]]*(//.*|upload:[[:space:]]*\\{|limits:[[:space:]]*\\{|fileSize:[[:space:]]*(MEDIA_UPLOAD_MAX_BYTES|5[[:space:]]*\\*[[:space:]]*1024[[:space:]]*\\*[[:space:]]*1024),?([[:space:]]*//.*)?|abortOnLimit:[[:space:]]*true,?|responseOnLimit:[[:space:]]*(MEDIA_UPLOAD_TOO_LARGE_MESSAGE|'File size limit exceeded \\(5MB\\)'),?|safeFileNames:[[:space:]]*true,?|\\},?)[[:space:]]*$"
 
 schema_changed=false
 migrations_changed=false
@@ -93,7 +96,7 @@ is_import_export_plugin_allowlist_only_change() {
   return 0
 }
 
-is_hook_only_collection_change() {
+is_runtime_only_collection_change() {
   local file_path="$1"
   local diff
   local diff_line
@@ -114,7 +117,37 @@ is_hook_only_collection_change() {
     esac
 
     if [[ "${diff_line}" == +* || "${diff_line}" == -* ]]; then
-      if [[ ! "${diff_line}" =~ ${hook_only_collection_line_regex} && ! "${diff_line}" =~ ${collection_crypto_import_line_regex} ]]; then
+      if [[ ! "${diff_line}" =~ ${hook_only_collection_line_regex} && ! "${diff_line}" =~ ${collection_upload_component_line_regex} && ! "${diff_line}" =~ ${collection_crypto_import_line_regex} ]]; then
+        return 1
+      fi
+    fi
+  done <<<"${diff}"
+
+  return 0
+}
+
+# Payload's top-level upload parser limit controls request handling, not persisted fields.
+is_upload_policy_only_payload_config_change() {
+  local diff
+  local diff_line
+
+  if ! diff="$(git diff --unified=0 --diff-filter=ACMR "${effective_range}" -- src/payload.config.ts)"; then
+    return 1
+  fi
+
+  if [[ -z "${diff}" ]]; then
+    return 1
+  fi
+
+  while IFS= read -r diff_line; do
+    case "${diff_line}" in
+      'diff --git'* | 'index '* | '--- '* | '+++ '* | '@@'*)
+        continue
+        ;;
+    esac
+
+    if [[ "${diff_line}" == +* || "${diff_line}" == -* ]]; then
+      if [[ ! "${diff_line}" =~ ${payload_config_upload_policy_import_line_regex} && ! "${diff_line}" =~ ${payload_config_upload_policy_line_regex} ]]; then
         return 1
       fi
     fi
@@ -166,7 +199,7 @@ if grep -qx 'src/plugins/index.ts' <<<"${schema_changed_files}" && is_import_exp
   schema_changed_files="$(grep -vx 'src/plugins/index.ts' <<<"${schema_changed_files}" || true)"
 fi
 
-if grep -qx 'src/payload.config.ts' <<<"${schema_changed_files}" && is_endpoint_only_payload_config_change; then
+if grep -qx 'src/payload.config.ts' <<<"${schema_changed_files}" && { is_endpoint_only_payload_config_change || is_upload_policy_only_payload_config_change; }; then
   schema_changed_files="$(grep -vx 'src/payload.config.ts' <<<"${schema_changed_files}" || true)"
 fi
 
@@ -181,7 +214,7 @@ if [[ -n "${schema_changed_files}" ]]; then
       continue
     fi
 
-    if [[ "${schema_file}" =~ ^src/collections/ ]] && is_hook_only_collection_change "${schema_file}"; then
+    if [[ "${schema_file}" =~ ^src/collections/ ]] && is_runtime_only_collection_change "${schema_file}"; then
       continue
     fi
 

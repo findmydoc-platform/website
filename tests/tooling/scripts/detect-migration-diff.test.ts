@@ -114,6 +114,36 @@ export default {
     expect(output).toContain('schema_changed=true')
   })
 
+  it('does not require a migration for a Payload upload parser policy change', () => {
+    const rootDir = createTempRepo()
+
+    commitPayloadConfig(
+      rootDir,
+      `import { MEDIA_UPLOAD_MAX_BYTES, MEDIA_UPLOAD_TOO_LARGE_MESSAGE } from '@/config/mediaUploadPolicy'
+import { seedGetHandler } from './endpoints/seed/seedEndpoint'
+
+export default {
+  upload: {
+    limits: {
+      fileSize: MEDIA_UPLOAD_MAX_BYTES,
+    },
+    abortOnLimit: true,
+    responseOnLimit: MEDIA_UPLOAD_TOO_LARGE_MESSAGE,
+    safeFileNames: true,
+  },
+  endpoints: [
+    { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
+  ],
+}
+`,
+    )
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=false')
+    expect(output).toContain('schema_changed=false')
+  })
+
   it('does not require a migration for scoped agent instructions', () => {
     const rootDir = createTempRepo()
 
@@ -134,5 +164,54 @@ export default {
 
     expect(output).toContain('db_changed=true')
     expect(output).toContain('schema_changed=true')
+  })
+
+  it('does not require a migration for a collection upload UI and validation hook change', () => {
+    const rootDir = createTempRepo()
+
+    commitFile(
+      rootDir,
+      'src/collections/Doctors/index.ts',
+      `import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
+
+export const Doctors = {
+  slug: 'doctors',
+  admin: {
+    group: 'Media',
+  },
+  hooks: {
+    beforeOperation: [beforeOperationPrepareUploadFilename],
+  },
+}
+`,
+    )
+
+    commitFile(
+      rootDir,
+      'src/collections/Doctors/index.ts',
+      `import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
+import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
+
+export const Doctors = {
+  slug: 'doctors',
+  admin: {
+    group: 'Media',
+    components: {
+      edit: {
+        Upload: '@/app/(payload)/components/PolicyAwareUpload',
+      },
+    },
+  },
+  hooks: {
+    beforeOperation: [beforeOperationValidateMediaUpload, beforeOperationPrepareUploadFilename],
+  },
+}
+`,
+    )
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=false')
+    expect(output).toContain('schema_changed=false')
   })
 })

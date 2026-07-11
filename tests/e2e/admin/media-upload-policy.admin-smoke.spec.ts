@@ -5,8 +5,9 @@ import {
   expectNoBrowserIssues,
   openAdminCreatePage,
   openAdminJoinCreateDrawer,
-  selectFirstComboboxOption,
+  selectComboboxOption,
 } from '../helpers/adminUI'
+import { ensureClinicFixture } from '../helpers/adminFixtures'
 
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024
 const STANDARD_HINT = 'Accepted formats: JPG, PNG, WebP, AVIF, GIF, SVG. Maximum file size: 4 MB.'
@@ -34,8 +35,9 @@ test('shows the configured upload policy on all five media forms @smoke', async 
 })
 
 test('shows the gallery upload policy inside the relationship drawer @smoke', async ({ page }) => {
+  const clinic = await ensureClinicFixture(page.request)
   await openAdminCreatePage(page, 'clinicGalleryEntries')
-  await selectFirstComboboxOption(page, 'Clinic')
+  await selectComboboxOption(page, 'Clinic', clinic.clinicName)
 
   const drawer = await openAdminJoinCreateDrawer(page, 'beforeMedia')
 
@@ -58,6 +60,7 @@ test('rejects invalid gallery files and saves a valid PNG @smoke', async ({ page
     ignoredConsoleErrors: [/TypeError: Failed to fetch/, /TypeError: network error/],
   })
   const fileName = `upload-policy-${Date.now()}.png`
+  const clinic = await ensureClinicFixture(page.request)
 
   await openAdminCreatePage(page, 'clinicGalleryMedia')
   const fileInput = page.locator('input[type="file"]').first()
@@ -85,7 +88,7 @@ test('rejects invalid gallery files and saves a valid PNG @smoke', async ({ page
   await fileInput.setInputFiles({ name: fileName, mimeType: 'image/png', buffer: TINY_PNG })
   await expect(page.getByText(fileName, { exact: true })).toBeVisible()
   await page.getByLabel(/^Alt Text/).fill('Upload policy smoke test')
-  await selectFirstComboboxOption(page, 'Clinic')
+  await selectComboboxOption(page, 'Clinic', clinic.clinicName)
   await page.getByRole('button', { name: /^Save$/ }).click()
   await page.waitForURL(/\/admin\/collections\/clinicGalleryMedia\/[^/]+$/)
 

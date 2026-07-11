@@ -186,6 +186,7 @@ describe('cache policy contract', () => {
       'route:posts:list',
       'route:clinics:detail',
       'route:clinic-detail:related-data',
+      'collection:doctor-treatments-deferred',
       'route:home',
       'route:about',
       'route:partners-clinics',
@@ -229,6 +230,17 @@ describe('cache policy contract', () => {
       tagFamilies: ['global', 'collection', 'surface', 'surface:sitemap'],
       surfaces: ['home'],
       sitemapSurfaces: ['pages'],
+    })
+
+    expect(getCachePolicyEntry('collection:doctor-treatments-deferred')).toMatchObject({
+      kind: 'collection',
+      cacheClass: 'critical-public',
+      boundary: 'public',
+      owner: 'collection-hook',
+      tagFamilies: [],
+      pathRelationship: 'deferred',
+      pathFamilies: ['none'],
+      collections: ['doctortreatments'],
     })
 
     expect(getCachePolicyEntry('route:about')).toMatchObject({

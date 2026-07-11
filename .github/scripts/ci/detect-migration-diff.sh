@@ -153,7 +153,8 @@ is_endpoint_only_payload_config_change() {
   return 0
 }
 
-schema_changed_files="$(grep -E "${schema_pattern}" <<<"${changed_files}" || true)"
+# Scoped agent instructions guide tooling but never change the Payload schema.
+schema_changed_files="$(grep -E "${schema_pattern}" <<<"${changed_files}" | grep -Ev '(^|/)AGENTS(\.override)?\.md$' || true)"
 
 is_dedicated_payload_hook_file() {
   local file_path="$1"

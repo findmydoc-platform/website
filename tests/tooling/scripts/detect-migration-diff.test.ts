@@ -52,6 +52,15 @@ const commitPayloadConfig = (rootDir: string, source: string) => {
   runGit(rootDir, ['commit', '--message', 'update payload config'])
 }
 
+const commitFile = (rootDir: string, relativePath: string, source: string) => {
+  const filePath = path.join(rootDir, relativePath)
+
+  fs.mkdirSync(path.dirname(filePath), { recursive: true })
+  fs.writeFileSync(filePath, source, 'utf8')
+  runGit(rootDir, ['add', relativePath])
+  runGit(rootDir, ['commit', '--message', `update ${relativePath}`])
+}
+
 const runDetector = (rootDir: string) => {
   const outputPath = path.join(rootDir, 'github-output')
   execFileSync('bash', [path.join(repositoryRoot, '.github/scripts/ci/detect-migration-diff.sh'), 'push', ''], {
@@ -98,6 +107,28 @@ export default {
       rootDir,
       `${initialPayloadConfig}\nexport const generatedTypes = { outputFile: 'src/payload-types.ts' }\n`,
     )
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=true')
+    expect(output).toContain('schema_changed=true')
+  })
+
+  it('does not require a migration for scoped agent instructions', () => {
+    const rootDir = createTempRepo()
+
+    commitFile(rootDir, 'src/collections/AGENTS.md', '# Collection instructions\n')
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=false')
+    expect(output).toContain('schema_changed=false')
+  })
+
+  it('keeps collection config changes schema-relevant', () => {
+    const rootDir = createTempRepo()
+
+    commitFile(rootDir, 'src/collections/Doctors/index.ts', "export const Doctors = { slug: 'doctors' }\n")
 
     const output = runDetector(rootDir)
 

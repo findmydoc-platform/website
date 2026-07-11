@@ -312,6 +312,17 @@ export const CACHE_POLICY_CATALOG = [
     surfaces: ['clinic-detail'],
   },
   {
+    id: 'collection:doctor-treatments-deferred',
+    kind: 'collection',
+    cacheClass: 'critical-public',
+    boundary: 'public',
+    owner: 'collection-hook',
+    tagFamilies: [],
+    pathRelationship: 'deferred',
+    pathFamilies: ['none'],
+    collections: ['doctortreatments'],
+  },
+  {
     id: 'route:home',
     kind: 'public-route',
     cacheClass: 'aggregated-public',

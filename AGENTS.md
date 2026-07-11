@@ -18,7 +18,7 @@
 - Read-only specialist agents live under `.codex/agents/`; after local validation and before final handoff, identify every matching reviewer and recommend that set briefly to the user instead of running it automatically: instruction quality for `AGENTS.md`, `.codex/agents`, `.codex/rules`, `.codex/skills`, and AI governance docs; mobile UI for frontend UI/responsive/touch changes; accessibility for semantics/keyboard/focus/forms/dialogs/ARIA; security for access/auth/secrets/hooks/API/server trust boundaries; SEO for metadata/headings/canonicals/robots/sitemap/redirects/structured data/indexation; web vitals for image-heavy/animation-heavy/landing-page/bundle/hydration/LCP/INP/CLS-sensitive frontend changes; and Storybook for `.storybook/**`, story files, Storybook MSW handlers, Storybook Vitest config, or story-governance changes.
 - Run those reviewers only after explicit user confirmation, and after a reviewer run, present all findings before making fixes so the user can confirm the fixing step.
 - Treat findings with severity `6/10` or higher as fix-before-handoff; treat `5/10` as a documented user decision gate; document skipped or declined reviewers with concrete reasons.
-- When instruction surfaces change, include `agent_instruction_reviewer` in the recommended reviewer set after `pnpm ai:slop-check` and before PR/final handoff; skip it for ordinary app-code changes with no instruction surface.
+- When instruction surfaces change, include `agent_instruction_reviewer` after `pnpm ai:slop-check` and before PR/final handoff; for cache/revalidation, collection/global, public route or loader, hook, sitemap/discovery, or seed-flow diffs, also recommend `cache_architecture_reviewer`; skip each for unrelated changes.
 
 ## Layered Instruction Map
 

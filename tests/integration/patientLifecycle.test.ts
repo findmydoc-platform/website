@@ -23,7 +23,7 @@ describe('Patient lifecycle integration', () => {
     const basicUser = (await payload.create({
       collection: 'basicUsers',
       data: {
-        email: `${slugPrefix}-platform-${suffix}@example.com`,
+        email: `${slugPrefix}-platform-${suffix}@findmydoc.eu`,
         userType: 'platform',
         firstName: 'Platform',
         lastName: `User-${suffix}`,

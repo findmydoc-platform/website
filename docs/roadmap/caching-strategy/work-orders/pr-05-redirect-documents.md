@@ -28,7 +28,7 @@ PR 5 removes `getCachedDocument` instead of replacing it with another generic do
 - [ADR 019 - PostHog Event Taxonomy and Usage Governance](../../../adrs/019-adr-posthog-event-taxonomy-and-usage-governance.md)
 - [ADR 022 - Public Localization, Routing, SEO, and Domain Strategy](../../../adrs/022-adr-public-localization-routing-seo-and-domain-strategy.md)
 - [Public Discovery Strategy](../../../public-discovery-strategy.md)
-- Current redirect files: `src/app/(frontend)/_components/PayloadRedirects/index.tsx`, `src/utilities/getDocument.ts`, and `src/utilities/getRedirects.ts`
+- Current redirect files: `src/app/(frontend)/_components/PayloadRedirects/index.tsx`, `src/app/(frontend)/_components/PayloadRedirects/resolveRedirectTargetPath.ts`, and `src/utilities/getRedirects.ts`
 - Current tests and route usage: `tests/unit/utilities/payloadDataFetchers.test.ts`, `src/app/(frontend)/(pages)/[...slug]/page.tsx`, and `src/app/(frontend)/posts/[slug]/page.tsx`
 
 ## Objective
@@ -75,7 +75,7 @@ The future implementation should keep redirect target resolution local to the re
 
 Expected runtime changes:
 
-- Delete `src/utilities/getDocument.ts` when no non-PR5 caller remains.
+- Remove the legacy `getCachedDocument` helper when no non-PR5 caller remains.
 - Remove `getCachedDocument` imports and tests.
 - Add a small route-local resolver under `src/app/(frontend)/_components/PayloadRedirects/`, for example named `resolveRedirectTargetPath.ts`.
 - Use the resolver from `src/app/(frontend)/_components/PayloadRedirects/index.tsx` only after a matching redirect rule is found and only for reference redirects.

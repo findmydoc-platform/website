@@ -14,7 +14,7 @@ describe('userCreation edge cases', () => {
     it('should handle platform user type correctly', () => {
       const authData = {
         supabaseUserId: 'supabase-456',
-        userEmail: 'platform@example.com',
+        userEmail: 'platform@findmydoc.eu',
         userType: 'platform' as const,
         firstName: 'Admin',
         lastName: 'User',
@@ -31,7 +31,7 @@ describe('userCreation edge cases', () => {
 
       expect(result).toEqual({
         supabaseUserId: 'supabase-456',
-        email: 'platform@example.com',
+        email: 'platform@findmydoc.eu',
         userType: 'platform',
         firstName: 'Admin',
         lastName: 'User',
@@ -186,7 +186,7 @@ describe('userCreation edge cases', () => {
 
       const authData = {
         supabaseUserId: 'supabase-platform',
-        userEmail: 'admin@platform.com',
+        userEmail: 'admin@findmydoc.eu',
         userType: 'platform' as const,
         firstName: 'Admin',
         lastName: 'User',
@@ -205,7 +205,7 @@ describe('userCreation edge cases', () => {
         collection: 'basicUsers',
         data: {
           supabaseUserId: 'supabase-platform',
-          email: 'admin@platform.com',
+          email: 'admin@findmydoc.eu',
           userType: 'platform',
           firstName: 'Admin',
           lastName: 'User',

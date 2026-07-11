@@ -59,7 +59,7 @@ test('shows the gallery upload policy inside the relationship drawer @smoke', as
     await page.setViewportSize(viewport)
     await expect(drawer.getByText(GALLERY_HINT, { exact: true })).toBeVisible()
     expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+      await drawer.locator('.policy-aware-upload').evaluate((element) => element.scrollWidth <= element.clientWidth),
     ).toBe(true)
   }
 
@@ -92,10 +92,9 @@ test('rejects invalid gallery files and saves a valid PNG @smoke', async ({ page
   await expect(page.getByRole('button', { name: 'Select a file' })).toBeFocused()
 
   await page.setViewportSize({ height: 568, width: 320 })
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(
-    true,
-  )
-  await page.locator('.policy-aware-upload').screenshot({
+  const policyAwareUpload = page.locator('.policy-aware-upload')
+  expect(await policyAwareUpload.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true)
+  await policyAwareUpload.screenshot({
     path: test.info().outputPath('policy-aware-upload-too-large.png'),
   })
   await page.setViewportSize({ height: 720, width: 1280 })

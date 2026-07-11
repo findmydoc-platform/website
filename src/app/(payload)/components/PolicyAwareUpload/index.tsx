@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast, Upload, useConfig, useDocumentInfo, useField } from '@payloadcms/ui'
 
 import { getMediaUploadHint, getMediaUploadValidationError } from '@/config/mediaUploadPolicy'
@@ -15,11 +15,20 @@ export default function PolicyAwareUpload() {
   const { setValue } = useField<File | undefined>({ path: 'file' })
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [uploadKey, setUploadKey] = useState(0)
+  const uploadContainerRef = useRef<HTMLDivElement>(null)
+  const shouldRestoreFocusRef = useRef(false)
 
   const collectionConfig = collectionSlug ? getEntityConfig({ collectionSlug }) : null
   const uploadConfig = collectionConfig?.upload
   const acceptedMimeTypes = useMemo(() => uploadConfig?.mimeTypes ?? [], [uploadConfig?.mimeTypes])
   const hint = useMemo(() => getMediaUploadHint(acceptedMimeTypes), [acceptedMimeTypes])
+
+  useEffect(() => {
+    if (!shouldRestoreFocusRef.current) return
+
+    shouldRestoreFocusRef.current = false
+    uploadContainerRef.current?.querySelector<HTMLButtonElement>('button')?.focus()
+  }, [uploadKey])
 
   const handleChange = useCallback(
     (file?: File) => {
@@ -42,6 +51,7 @@ export default function PolicyAwareUpload() {
       setValue(undefined)
       setUploadStatus?.('idle')
       setErrorMessage(validationError)
+      shouldRestoreFocusRef.current = true
       setUploadKey((currentKey) => currentKey + 1)
       toast.error(validationError)
     },
@@ -52,7 +62,7 @@ export default function PolicyAwareUpload() {
 
   return (
     <div className={baseClass}>
-      <div key={uploadKey}>
+      <div key={uploadKey} ref={uploadContainerRef}>
         <Upload
           collectionSlug={collectionSlug}
           initialState={initialState}

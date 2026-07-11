@@ -47,8 +47,23 @@ test('shows the gallery upload policy inside the relationship drawer @smoke', as
     path: test.info().outputPath('gallery-upload-drawer-desktop.png'),
   })
 
+  const narrowViewports = [
+    { height: 568, width: 320 },
+    { height: 667, width: 375 },
+    { height: 844, width: 390 },
+    { height: 800, width: 640 },
+    { height: 1024, width: 768 },
+  ]
+
+  for (const viewport of narrowViewports) {
+    await page.setViewportSize(viewport)
+    await expect(drawer.getByText(GALLERY_HINT, { exact: true })).toBeVisible()
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+    ).toBe(true)
+  }
+
   await page.setViewportSize({ height: 844, width: 390 })
-  await expect(drawer.getByText(GALLERY_HINT, { exact: true })).toBeVisible()
   await page.screenshot({
     fullPage: true,
     path: test.info().outputPath('gallery-upload-drawer-narrow.png'),
@@ -74,6 +89,16 @@ test('rejects invalid gallery files and saves a valid PNG @smoke', async ({ page
     'Image is too large. Maximum file size is 4 MB.',
   )
   await expect(fileInput).toHaveValue('')
+  await expect(page.getByRole('button', { name: 'Select a file' })).toBeFocused()
+
+  await page.setViewportSize({ height: 568, width: 320 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(
+    true,
+  )
+  await page.locator('.policy-aware-upload').screenshot({
+    path: test.info().outputPath('policy-aware-upload-too-large.png'),
+  })
+  await page.setViewportSize({ height: 720, width: 1280 })
 
   await fileInput.setInputFiles({
     name: 'unsupported.svg',
@@ -84,6 +109,7 @@ test('rejects invalid gallery files and saves a valid PNG @smoke', async ({ page
     'Unsupported image format. Accepted formats: JPG, PNG, WebP, AVIF, GIF.',
   )
   await expect(fileInput).toHaveValue('')
+  await expect(page.getByRole('button', { name: 'Select a file' })).toBeFocused()
 
   await fileInput.setInputFiles({ name: fileName, mimeType: 'image/png', buffer: TINY_PNG })
   await page.getByLabel(/^Alt Text/).fill('Upload policy smoke test')

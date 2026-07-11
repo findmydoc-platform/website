@@ -15,7 +15,6 @@ import {
   buildMediaPrefixField,
   buildMediaStoragePathField,
   buildMediaUploadConfig,
-  standardMediaImageMimeTypes,
 } from '@/collections/common/mediaCollection'
 
 const filename = fileURLToPath(import.meta.url)
@@ -196,7 +195,7 @@ export const UserProfileMedia: CollectionConfig = {
       }),
     ],
     beforeOperation: [
-      beforeOperationValidateMediaUpload({ acceptedMimeTypes: standardMediaImageMimeTypes }),
+      beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         ownerField: 'user',

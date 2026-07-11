@@ -12,10 +12,9 @@ const runValidation = (
   file: { data?: Buffer; mimetype: string; size: number },
   acceptedMimeTypes = galleryMediaImageMimeTypes,
 ) => {
-  const hook = beforeOperationValidateMediaUpload({ acceptedMimeTypes })
-
-  return hook({
+  return beforeOperationValidateMediaUpload({
     args: { file },
+    collection: { upload: { mimeTypes: acceptedMimeTypes } },
     operation: 'create',
     req: {},
   } as never)

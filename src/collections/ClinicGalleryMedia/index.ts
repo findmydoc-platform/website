@@ -78,7 +78,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
       }),
     ],
     beforeOperation: [
-      beforeOperationValidateMediaUpload({ acceptedMimeTypes: galleryMediaImageMimeTypes }),
+      beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         ownerField: 'clinic',

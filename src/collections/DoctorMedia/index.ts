@@ -22,7 +22,6 @@ import {
   buildMediaPrefixField,
   buildMediaStoragePathField,
   buildMediaUploadConfig,
-  standardMediaImageMimeTypes,
 } from '@/collections/common/mediaCollection'
 
 const filename = fileURLToPath(import.meta.url)
@@ -74,7 +73,7 @@ export const DoctorMedia: CollectionConfig = {
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [stableIdBeforeChangeHook, beforeChangeDoctorMedia],
     beforeOperation: [
-      beforeOperationValidateMediaUpload({ acceptedMimeTypes: standardMediaImageMimeTypes }),
+      beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         ownerField: 'doctor',

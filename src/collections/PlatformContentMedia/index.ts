@@ -13,7 +13,6 @@ import {
   buildMediaPrefixField,
   buildMediaStoragePathField,
   buildMediaUploadConfig,
-  standardMediaImageMimeTypes,
 } from '@/collections/common/mediaCollection'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
@@ -51,7 +50,7 @@ export const PlatformContentMedia: CollectionConfig = {
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [stableIdBeforeChangeHook, beforeChangePlatformContentMedia],
     beforeOperation: [
-      beforeOperationValidateMediaUpload({ acceptedMimeTypes: standardMediaImageMimeTypes }),
+      beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         storagePrefix: 'platform',

@@ -37,39 +37,43 @@ const detectIncomingFileMimeType = async (file: RequestFile): Promise<string | n
   return undefined
 }
 
-export const beforeOperationValidateMediaUpload =
-  ({ acceptedMimeTypes }: { acceptedMimeTypes: readonly string[] }): CollectionBeforeOperationHook =>
-  async ({ args, operation, req }) => {
-    if (operation !== 'create' && operation !== 'update') return
+export const beforeOperationValidateMediaUpload: CollectionBeforeOperationHook = async ({
+  args,
+  collection,
+  operation,
+  req,
+}) => {
+  if (operation !== 'create' && operation !== 'update') return
 
-    const mimeType = extractFileMimeTypeFromRequest(args) ?? extractFileMimeTypeFromRequest(req)
-    const size = extractFileSizeFromRequest(args) ?? extractFileSizeFromRequest(req)
-    const file = extractFileFromRequest(args) ?? extractFileFromRequest(req)
+  const acceptedMimeTypes = collection.upload.mimeTypes ?? []
+  const mimeType = extractFileMimeTypeFromRequest(args) ?? extractFileMimeTypeFromRequest(req)
+  const size = extractFileSizeFromRequest(args) ?? extractFileSizeFromRequest(req)
+  const file = extractFileFromRequest(args) ?? extractFileFromRequest(req)
 
-    if (!mimeType && typeof size !== 'number') return
+  if (!mimeType && typeof size !== 'number') return
 
-    const initialMessage = getMediaUploadValidationError({ acceptedMimeTypes, mimeType, size })
-    if (initialMessage) {
-      throw new APIError(initialMessage, initialMessage === MEDIA_UPLOAD_TOO_LARGE_MESSAGE ? 413 : 400)
-    }
-
-    let effectiveMimeType = mimeType
-
-    if (file) {
-      try {
-        const detectedMimeType = await detectIncomingFileMimeType(file)
-        if (detectedMimeType) {
-          effectiveMimeType = detectedMimeType
-        } else if (detectedMimeType === null && mimeType !== 'image/svg+xml') {
-          effectiveMimeType = undefined
-        }
-      } catch {
-        throw new APIError(getUnsupportedMediaFormatMessage(acceptedMimeTypes), 400)
-      }
-    }
-
-    const message = getMediaUploadValidationError({ acceptedMimeTypes, mimeType: effectiveMimeType, size })
-    if (!message) return
-
-    throw new APIError(message, message === MEDIA_UPLOAD_TOO_LARGE_MESSAGE ? 413 : 400)
+  const initialMessage = getMediaUploadValidationError({ acceptedMimeTypes, mimeType, size })
+  if (initialMessage) {
+    throw new APIError(initialMessage, initialMessage === MEDIA_UPLOAD_TOO_LARGE_MESSAGE ? 413 : 400)
   }
+
+  let effectiveMimeType = mimeType
+
+  if (file) {
+    try {
+      const detectedMimeType = await detectIncomingFileMimeType(file)
+      if (detectedMimeType) {
+        effectiveMimeType = detectedMimeType
+      } else if (detectedMimeType === null && mimeType !== 'image/svg+xml') {
+        effectiveMimeType = undefined
+      }
+    } catch {
+      throw new APIError(getUnsupportedMediaFormatMessage(acceptedMimeTypes), 400)
+    }
+  }
+
+  const message = getMediaUploadValidationError({ acceptedMimeTypes, mimeType: effectiveMimeType, size })
+  if (!message) return
+
+  throw new APIError(message, message === MEDIA_UPLOAD_TOO_LARGE_MESSAGE ? 413 : 400)
+}

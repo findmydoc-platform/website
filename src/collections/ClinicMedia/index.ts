@@ -19,7 +19,6 @@ import {
   buildMediaPrefixField,
   buildMediaStoragePathField,
   buildMediaUploadConfig,
-  standardMediaImageMimeTypes,
 } from '@/collections/common/mediaCollection'
 
 const filename = fileURLToPath(import.meta.url)
@@ -61,7 +60,7 @@ export const ClinicMedia: CollectionConfig = {
       }),
     ],
     beforeOperation: [
-      beforeOperationValidateMediaUpload({ acceptedMimeTypes: standardMediaImageMimeTypes }),
+      beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         ownerField: 'clinic',

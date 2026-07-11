@@ -1,3 +1,4 @@
+// Temporary direct invalidation exception. Remove this legacy path-level behavior with #1468.
 import { revalidatePath, revalidateTag } from 'next/cache.js'
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadRequest } from 'payload'
 

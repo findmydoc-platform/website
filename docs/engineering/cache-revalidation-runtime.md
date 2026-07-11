@@ -2,7 +2,7 @@
 
 This guide is the operational entry point for the implemented public website cache and revalidation stack.
 
-Architecture decisions remain governed by [ADR 023](../adrs/023-adr-public-website-cache-and-revalidation-strategy.md). The original [implementation plan](../roadmap/caching-strategy/cache-revalidation-implementation-plan.md) and PR work orders remain implementation provenance, but day-to-day runtime understanding should start here.
+Architecture decisions remain governed by [ADR 023](../adrs/023-adr-public-website-cache-and-revalidation-strategy.md). This guide is the current documentation reference for runtime behavior.
 
 ## Strategy
 

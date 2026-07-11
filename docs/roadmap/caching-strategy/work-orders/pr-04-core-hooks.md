@@ -101,7 +101,7 @@ Deferred legacy areas remain untouched even if they still contain legacy tags af
 
 - `src/hooks/media/revalidateMediaConsumers.ts`
 - `src/endpoints/seed/**`
-- `src/utilities/getDocument.ts`
+- legacy `getCachedDocument` redirect-read cleanup
 - clinic/listing hooks and server data
 - public discovery expansion and `llms.txt`
 - PR 8 observability surfaces

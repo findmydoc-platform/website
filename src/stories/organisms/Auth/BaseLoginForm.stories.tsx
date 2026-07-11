@@ -14,7 +14,7 @@ const mockSuccessHandler = async (_data: LoginRequest): Promise<LoginResponse> =
     redirectUrl: '/dashboard',
     user: {
       id: 'user-1',
-      email: 'platform-user@findmydoc.com',
+      email: 'platform-user@findmydoc.eu',
       userType: 'platform',
     },
   }
@@ -80,7 +80,7 @@ export const PlatformLogin: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await userEvent.type(canvas.getByLabelText(/email/i), 'platform-user@findmydoc.com')
+    await userEvent.type(canvas.getByLabelText(/email/i), 'platform-user@findmydoc.eu')
     await userEvent.type(canvas.getByLabelText(/password/i), 'super-secure-password')
     await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
 

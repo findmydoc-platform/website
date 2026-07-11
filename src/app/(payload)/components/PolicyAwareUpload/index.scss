@@ -1,0 +1,15 @@
+.policy-aware-upload {
+  &__hint,
+  &__error {
+    margin-block: calc(var(--base) * 0.5) 0;
+    font-size: var(--base-body-size);
+  }
+
+  &__hint {
+    color: var(--theme-elevation-500);
+  }
+
+  &__error {
+    color: var(--theme-error-500);
+  }
+}

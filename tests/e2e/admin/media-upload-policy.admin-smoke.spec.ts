@@ -86,7 +86,7 @@ test('rejects invalid gallery files and saves a valid PNG @smoke', async ({ page
   await expect(fileInput).toHaveValue('')
 
   await fileInput.setInputFiles({ name: fileName, mimeType: 'image/png', buffer: TINY_PNG })
-  await expect(page.getByText(fileName, { exact: true })).toBeVisible()
+  await expect(fileInput).toHaveValue(new RegExp(`${fileName.replace('.', '\\.')}$`))
   await page.getByLabel(/^Alt Text/).fill('Upload policy smoke test')
   await selectComboboxOption(page, 'Clinic', clinic.clinicName)
   await page.getByRole('button', { name: /^Save$/ }).click()

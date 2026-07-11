@@ -7,6 +7,7 @@ import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/st
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
+import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import type { UserProfileMedia as UserProfileMediaType } from '@/payload-types'
 import {
@@ -14,6 +15,7 @@ import {
   buildMediaPrefixField,
   buildMediaStoragePathField,
   buildMediaUploadConfig,
+  standardMediaImageMimeTypes,
 } from '@/collections/common/mediaCollection'
 
 const filename = fileURLToPath(import.meta.url)
@@ -99,6 +101,11 @@ export const UserProfileMedia: CollectionConfig = {
     group: 'User Management',
     description: 'Profile images and personal media',
     defaultColumns: ['user', 'createdBy'],
+    components: {
+      edit: {
+        Upload: '@/app/(payload)/components/PolicyAwareUpload',
+      },
+    },
   },
   access: {
     read: ({ req }) => {
@@ -189,6 +196,7 @@ export const UserProfileMedia: CollectionConfig = {
       }),
     ],
     beforeOperation: [
+      beforeOperationValidateMediaUpload({ acceptedMimeTypes: standardMediaImageMimeTypes }),
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         ownerField: 'user',

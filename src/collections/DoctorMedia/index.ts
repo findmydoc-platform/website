@@ -14,6 +14,7 @@ import { beforeChangeDoctorMedia } from './hooks/beforeChangeDoctorMedia'
 import type { DoctorMedia as DoctorMediaType } from '@/payload-types'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
+import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
 import {
   buildMediaAltField,
   buildMediaCaptionField,
@@ -21,6 +22,7 @@ import {
   buildMediaPrefixField,
   buildMediaStoragePathField,
   buildMediaUploadConfig,
+  standardMediaImageMimeTypes,
 } from '@/collections/common/mediaCollection'
 
 const filename = fileURLToPath(import.meta.url)
@@ -32,6 +34,11 @@ export const DoctorMedia: CollectionConfig = {
     group: 'Medical Network',
     description: 'Doctor images tied to their clinic',
     defaultColumns: ['doctor', 'clinic', 'alt', 'createdBy'],
+    components: {
+      edit: {
+        Upload: '@/app/(payload)/components/PolicyAwareUpload',
+      },
+    },
   },
   access: {
     read: doctorMediaReadAccess,
@@ -67,6 +74,7 @@ export const DoctorMedia: CollectionConfig = {
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [stableIdBeforeChangeHook, beforeChangeDoctorMedia],
     beforeOperation: [
+      beforeOperationValidateMediaUpload({ acceptedMimeTypes: standardMediaImageMimeTypes }),
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         ownerField: 'doctor',

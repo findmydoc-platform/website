@@ -10,6 +10,7 @@ import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
+import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import {
   buildMediaAltField,
@@ -18,6 +19,7 @@ import {
   buildMediaPrefixField,
   buildMediaStoragePathField,
   buildMediaUploadConfig,
+  standardMediaImageMimeTypes,
 } from '@/collections/common/mediaCollection'
 
 const filename = fileURLToPath(import.meta.url)
@@ -29,6 +31,11 @@ export const ClinicMedia: CollectionConfig = {
     group: 'Clinics',
     description: 'Clinic images and files',
     defaultColumns: ['clinic', 'alt', 'createdBy'],
+    components: {
+      edit: {
+        Upload: '@/app/(payload)/components/PolicyAwareUpload',
+      },
+    },
   },
   access: {
     read: clinicMediaReadAccess,
@@ -54,6 +61,7 @@ export const ClinicMedia: CollectionConfig = {
       }),
     ],
     beforeOperation: [
+      beforeOperationValidateMediaUpload({ acceptedMimeTypes: standardMediaImageMimeTypes }),
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         ownerField: 'clinic',

@@ -55,6 +55,7 @@ import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 import { CONTENT_LOCALES, DEFAULT_CONTENT_LOCALE } from '@/utilities/contentLocalization'
+import { MEDIA_UPLOAD_MAX_BYTES, MEDIA_UPLOAD_TOO_LARGE_MESSAGE } from '@/config/mediaUploadPolicy'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -77,14 +78,13 @@ const silentEmailAdapter: EmailAdapter<void> = () => ({
 })
 
 export default buildConfig({
-  // Global upload constraints (Busboy limits). 5MB per file to keep tenant assets lightweight.
-  // Can be raised later via env-driven config if needed.
+  // Keep the complete multipart request below Vercel's 4.5 MB request limit.
   upload: {
     limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB
+      fileSize: MEDIA_UPLOAD_MAX_BYTES,
     },
     abortOnLimit: true,
-    responseOnLimit: 'File size limit exceeded (5MB)',
+    responseOnLimit: MEDIA_UPLOAD_TOO_LARGE_MESSAGE,
     safeFileNames: true,
   },
   endpoints: [

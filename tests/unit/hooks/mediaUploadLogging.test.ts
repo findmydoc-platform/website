@@ -29,6 +29,19 @@ const collection = {
   slug: 'clinicMedia',
 } as SanitizedCollectionConfig
 
+const setUploadContext = (req: PayloadRequest) => {
+  req.context.mediaUploadLog = {
+    collection: 'clinicMedia',
+    event: 'storage.media.upload_attempt',
+    fileName: 'avatar.png',
+    fileSize: 2048,
+    operation: 'create',
+    ownerField: 'clinic',
+    ownerId: 'clinic-1',
+    storagePrefix: 'clinic-media',
+  }
+}
+
 describe('media upload logging hooks', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
@@ -70,16 +83,7 @@ describe('media upload logging hooks', () => {
 
   it('logs structured upload failures with request context', async () => {
     const req = createRequest()
-    req.context.mediaUploadLog = {
-      collection: 'clinicMedia',
-      event: 'storage.media.upload_attempt',
-      fileName: 'avatar.png',
-      fileSize: 2048,
-      operation: 'create',
-      ownerField: 'clinic',
-      ownerId: 'clinic-1',
-      storagePrefix: 'clinic-media',
-    }
+    setUploadContext(req)
     const error = new Error('bucket rejected object')
 
     await afterErrorLogMediaUploadError({
@@ -106,6 +110,46 @@ describe('media upload logging hooks', () => {
       }),
       'Media upload failed',
     )
+  })
+
+  it.each([
+    ['directly', { name: 'EntityTooLarge', message: 'Object exceeds limit' }],
+    ['through cause', { cause: { Code: 'EntityTooLarge', message: 'Object exceeds limit' } }],
+    ['through err', { err: { name: 'EntityTooLarge', message: 'Object exceeds limit' } }],
+  ])('returns a safe HTTP 413 for EntityTooLarge errors %s', async (_label, error) => {
+    const req = createRequest()
+    setUploadContext(req)
+
+    const result = await afterErrorLogMediaUploadError({ collection, error, req } as never)
+
+    expect(result).toEqual({
+      response: {
+        errors: [
+          {
+            message:
+              'Image processing exceeded the storage limit. Please reduce the image dimensions or file size and try again.',
+          },
+        ],
+      },
+      status: 413,
+    })
+    expect(req.payload.logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ err: error, event: 'storage.media.upload_failed' }),
+      'Media upload failed',
+    )
+  })
+
+  it('does not expose unknown storage errors', async () => {
+    const req = createRequest()
+    setUploadContext(req)
+
+    const result = await afterErrorLogMediaUploadError({
+      collection,
+      error: new Error('database password leaked'),
+      req,
+    } as never)
+
+    expect(result).toBeUndefined()
   })
 
   it('downgrades expected NoSuchKey upload failures to warnings without stack traces', async () => {

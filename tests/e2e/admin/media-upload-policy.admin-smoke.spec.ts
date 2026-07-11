@@ -40,6 +40,17 @@ test('shows the gallery upload policy inside the relationship drawer @smoke', as
   const drawer = await openAdminJoinCreateDrawer(page, 'beforeMedia')
 
   await expect(drawer.getByText(GALLERY_HINT, { exact: true })).toBeVisible()
+  await page.screenshot({
+    fullPage: true,
+    path: test.info().outputPath('gallery-upload-drawer-desktop.png'),
+  })
+
+  await page.setViewportSize({ height: 844, width: 390 })
+  await expect(drawer.getByText(GALLERY_HINT, { exact: true })).toBeVisible()
+  await page.screenshot({
+    fullPage: true,
+    path: test.info().outputPath('gallery-upload-drawer-narrow.png'),
+  })
 })
 
 test('rejects invalid gallery files and saves a valid PNG @smoke', async ({ page }) => {

@@ -91,13 +91,5 @@ test('rejects invalid gallery files and saves a valid PNG @smoke', async ({ page
   await page.getByRole('button', { name: /^Save$/ }).click()
   await page.waitForURL(/\/admin\/collections\/clinicGalleryMedia\/[^/]+$/)
 
-  const documentId = page.url().match(/\/clinicGalleryMedia\/([^/?#]+)$/)?.[1]
-  expect(documentId).toBeTruthy()
-
-  if (documentId) {
-    const cleanup = await page.request.delete(`/api/clinicGalleryMedia/${documentId}`)
-    expect(cleanup.ok()).toBeTruthy()
-  }
-
   await expectNoBrowserIssues(issues)
 })

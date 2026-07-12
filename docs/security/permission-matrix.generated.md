@@ -7,7 +7,7 @@
 | --- | --- | --- | --- | --- | --- |
 | BasicUsers `(basicUsers)` | Platform | Platform | Platform | Platform | Platform |
 | PlatformStaff `(platformStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Platform | Platform | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform |
-| ClinicStaff `(clinicStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform + own profile only after approval</sub> | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform |
+| ClinicStaff `(clinicStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform + own profile after approval; user, clinic, and status fields are platform-only</sub> | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform |
 | Patients `(patients)` | Platform | Conditional<br/><sub>platform full + patient own profile</sub> | Conditional<br/><sub>platform full + own profile only</sub> | Platform | Platform |
 | Posts `(posts)` | Platform | Published (approved) | Platform | Platform | Platform |
 | Pages `(pages)` | Platform | Published (approved) | Platform | Platform | Platform |
@@ -38,7 +38,7 @@
 
 - **BasicUsers**: User management restricted to platform staff
 - **PlatformStaff**: Platform staff management - indirect via BasicUsers lifecycle
-- **ClinicStaff**: Authentication denied until approval; RW post-approval own clinic + own profile update
+- **ClinicStaff**: Authentication denied until approval; clinic staff read their clinic and update only non-authorization fields on their own profile
 - **Patients**: Patients can update own profile; no self-create/delete
 - **Posts**: Blog content - platform write, published content readable by all
 - **Pages**: Static pages - platform write, published content readable by all

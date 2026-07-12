@@ -58,6 +58,7 @@ hook_only_collection_hook_expression_regex="(${hook_only_collection_hook_identif
 hook_only_collection_line_regex="^[+-][[:space:]]*(import[[:space:]]*\\{|import[[:space:]].*from[[:space:]]'(@/hooks|\\./hooks)/[^']+'|\\}[[:space:]]*from[[:space:]]'(@/hooks|\\./hooks)/[^']+'|(beforeOperation|beforeChange|afterChange|afterDelete):[[:space:]]*\\[|\\],?|[[:space:]]*((beforeOperation|beforeChange|afterChange|afterDelete):[[:space:]]*\\[)?${hook_only_collection_hook_expression_regex}(,[[:space:]]*${hook_only_collection_hook_expression_regex})*\\]?,?|\\{|\\})[[:space:]]*$"
 collection_upload_component_line_regex="^[+-][[:space:]]*(components:[[:space:]]*\\{|edit:[[:space:]]*\\{|Upload:[[:space:]]*'@/app/\\(payload\\)/components/PolicyAwareUpload',?|\\{|\\},?)[[:space:]]*$"
 collection_crypto_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*randomUUID[[:space:]]*\\}[[:space:]]*from[[:space:]]*'(node:)?crypto'[[:space:]]*$"
+collection_field_access_line_regex="^[+-][[:space:]]*(//.*|access:[[:space:]]*\\{|(create|read|update):[[:space:]]*[A-Za-z_][A-Za-z0-9_]*FieldAccess,?)[[:space:]]*$"
 payload_config_endpoint_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\}[[:space:]]*from[[:space:]]*'./endpoints/[A-Za-z0-9_./-]+'[[:space:]]*$"
 payload_config_endpoint_line_regex="^[+-][[:space:]]*(\\{|\\},?|path:[[:space:]]*'/?[A-Za-z0-9_./-]+'[,]?|method:[[:space:]]*'(get|post|put|patch|delete)'[,]?|handler:[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]+as[[:space:]]+PayloadHandler[,]?)[[:space:]]*$"
 payload_config_upload_policy_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*MEDIA_UPLOAD_MAX_BYTES,[[:space:]]*MEDIA_UPLOAD_TOO_LARGE_MESSAGE[[:space:]]*\\}[[:space:]]*from[[:space:]]*'@/config/mediaUploadPolicy'[[:space:]]*$"
@@ -118,7 +119,7 @@ is_runtime_only_collection_change() {
     esac
 
     if [[ "${diff_line}" == +* || "${diff_line}" == -* ]]; then
-      if [[ ! "${diff_line}" =~ ${hook_only_collection_line_regex} && ! "${diff_line}" =~ ${collection_upload_component_line_regex} && ! "${diff_line}" =~ ${collection_crypto_import_line_regex} ]]; then
+      if [[ ! "${diff_line}" =~ ${hook_only_collection_line_regex} && ! "${diff_line}" =~ ${collection_upload_component_line_regex} && ! "${diff_line}" =~ ${collection_crypto_import_line_regex} && ! "${diff_line}" =~ ${collection_field_access_line_regex} ]]; then
         return 1
       fi
     fi

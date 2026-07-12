@@ -7,6 +7,7 @@ import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateDoctorChange, revalidateDoctorDelete } from '@/hooks/revalidateClinicSurfaces'
+import { beforeChangeValidateDoctorProfileImage } from '@/hooks/doctorProfileImageOwnership'
 
 export const doctorTitles = [
   { label: 'Dr.', value: 'dr' },
@@ -47,7 +48,11 @@ export const Doctors: CollectionConfig<'doctors'> = {
     delete: isPlatformBasicUser, // Only Platform can delete
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook, beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })],
+    beforeChange: [
+      stableIdBeforeChangeHook,
+      beforeChangeAssignClinicFromUser({ clinicField: 'clinic' }),
+      beforeChangeValidateDoctorProfileImage,
+    ],
     afterChange: [revalidateDoctorChange],
     afterDelete: [revalidateDoctorDelete],
   },

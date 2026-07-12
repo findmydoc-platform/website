@@ -133,19 +133,6 @@ export function schedulePostHogFeatureFlagServerIdleShutdown(): void {
   posthogFeatureFlagShutdownTimer.unref?.()
 }
 
-/**
- * Safely shut down PostHog server clients.
- * Call this after server-side operations to ensure events are sent.
- */
-export async function shutdownPostHogServer(): Promise<void> {
-  if (posthogServerClient) {
-    await posthogServerClient.shutdown()
-    posthogServerClient = null
-  }
-
-  await shutdownPostHogFeatureFlagServer()
-}
-
 export function resetPostHogServerForTests(): void {
   clearPostHogFeatureFlagShutdownTimer()
   posthogServerClient = null

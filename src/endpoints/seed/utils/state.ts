@@ -479,18 +479,3 @@ export const clearActiveSeedRunIfTerminal = async (payload: Payload, runId: stri
     await setActiveSeedRunId(payload, null)
   }
 }
-
-export const saveLatestSeedRun = async (payload: Payload, record: SeedRunRecord): Promise<void> => {
-  await setLatestSeedRunId(payload, record.runId)
-  if (record.status === 'queued' || record.status === 'running') {
-    await setActiveSeedRunId(payload, record.runId)
-  } else {
-    await clearActiveSeedRunIfTerminal(payload, record.runId)
-  }
-}
-
-export const normalizeSeedRun = (record: SeedRunRecord): SeedRunRecord => {
-  const next = clone(record)
-  finalizeRunIfNeeded(next)
-  return next
-}

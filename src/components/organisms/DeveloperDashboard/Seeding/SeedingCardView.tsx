@@ -130,6 +130,23 @@ const formatRunStatus = (status: SeedRunSnapshot['status']): string => {
   return 'queued'
 }
 
+const formatFinalFlushStatus = (finalFlush: SeedRunSnapshot['finalFlush']): string | null => {
+  if (!finalFlush) return null
+
+  const parts = [
+    finalFlush.status,
+    `tags ${finalFlush.tagCount}`,
+    `paths ${finalFlush.pathCount}`,
+    `failures ${finalFlush.failureCount}`,
+  ]
+
+  if (finalFlush.reason) {
+    parts.push(finalFlush.reason)
+  }
+
+  return parts.join(' · ')
+}
+
 const formatJobStatus = (status: SeedRunSnapshot['jobs'][number]['status']): string => {
   if (status === 'succeeded') return 'succeeded'
   if (status === 'failed') return 'failed'
@@ -186,6 +203,7 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
   const runId = props.run?.runId ?? null
   const runTitle = props.run ? (props.run.title ?? formatSeedRunTitle(props.run.type, props.run.reset)) : null
   const isRunningRun = props.run?.status === 'running'
+  const finalFlushStatus = formatFinalFlushStatus(props.run?.finalFlush)
   const jobSummaries = React.useMemo(() => buildSeedJobSummaries(props.run?.jobs ?? []), [props.run?.jobs])
 
   React.useEffect(() => {
@@ -538,7 +556,7 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
           <span style={statusMetaValueStyle}>
             <span>{runTitle ?? 'No seed run recorded yet.'}</span>
             {props.run ? (
-              <>
+              <React.Fragment key="run-status">
                 <span>{' · '}</span>
                 {isRunningRun ? (
                   <span style={statusRunningBadgeStyle}>
@@ -548,10 +566,16 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
                 ) : (
                   <span>{formatRunStatus(props.run.status)}</span>
                 )}
-              </>
+              </React.Fragment>
             ) : null}
           </span>
         </div>
+        {finalFlushStatus ? (
+          <div style={statusMetaRowStyle}>
+            <span style={statusMetaLabelStyle}>Final flush:</span>
+            <span style={statusMetaValueStyle}>{finalFlushStatus}</span>
+          </div>
+        ) : null}
       </div>
       {props.error && (
         <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--theme-error-500)' }}>
@@ -647,6 +671,7 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
                       )}
                       {jobSummary.retryableJobs.map((job) => (
                         <PayloadButton
+                          key={job.id}
                           aria-label={`Retry ${job.title ?? formatSeedJobTitle(job.stepName, job.chunkIndex, job.chunkTotal)}`}
                           buttonStyle="subtle"
                           margin={false}

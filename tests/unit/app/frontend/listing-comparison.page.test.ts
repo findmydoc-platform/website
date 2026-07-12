@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const routeMocks = vi.hoisted(() => ({
   buildListingComparisonJsonLd: vi.fn(() => [{ '@type': 'ItemList' }]),
   findFavoriteClinicStateRecord: vi.fn(),
-  getListingComparisonServerData: vi.fn(),
+  getCachedListingComparisonServerData: vi.fn(),
   getPayload: vi.fn(),
   headers: vi.fn(),
   jsonLdScriptComponent: vi.fn(() => null),
@@ -34,7 +34,7 @@ vi.mock('@/features/favorites/server', () => ({
 }))
 
 vi.mock('@/utilities/listingComparison/serverData', () => ({
-  getListingComparisonServerData: routeMocks.getListingComparisonServerData,
+  getCachedListingComparisonServerData: routeMocks.getCachedListingComparisonServerData,
 }))
 
 vi.mock('@/app/(frontend)/listing-comparison/ListingComparisonPage.client', () => ({
@@ -124,7 +124,7 @@ describe('listing comparison page route metadata', () => {
     vi.resetModules()
     vi.clearAllMocks()
     routeMocks.getPayload.mockResolvedValue({})
-    routeMocks.getListingComparisonServerData.mockResolvedValue(buildListingData())
+    routeMocks.getCachedListingComparisonServerData.mockResolvedValue(buildListingData())
     routeMocks.headers.mockResolvedValue(new Headers())
     routeMocks.resolveFavoriteClinicAuthContext.mockResolvedValue({
       isPatient: false,

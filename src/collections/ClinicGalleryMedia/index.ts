@@ -13,6 +13,7 @@ import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
+import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
 import {
   buildMediaAltField,
   buildMediaCaptionField,
@@ -39,6 +40,11 @@ export const ClinicGalleryMedia: CollectionConfig = {
     group: 'Clinics',
     description: 'Clinic gallery media',
     defaultColumns: ['clinic', 'status', 'alt', 'createdBy'],
+    components: {
+      edit: {
+        Upload: '@/app/(payload)/components/PolicyAwareUpload',
+      },
+    },
   },
   access: {
     read: clinicGalleryReadAccess,
@@ -72,6 +78,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
       }),
     ],
     beforeOperation: [
+      beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         ownerField: 'clinic',

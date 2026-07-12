@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { revalidateTag } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import type { PayloadRequest } from 'payload'
 
 import { revalidateRedirects } from '@/hooks/revalidateRedirects'
@@ -17,6 +17,7 @@ const buildReq = (disableRevalidate = false): PayloadRequest =>
   })
 
 const getTagCalls = () => vi.mocked(revalidateTag).mock.calls.map(([tag]) => tag)
+const getPathCalls = () => vi.mocked(revalidatePath).mock.calls.map(([path]) => path)
 
 type HookArgs = Parameters<typeof revalidateRedirects>[0]
 
@@ -42,7 +43,8 @@ describe('revalidateRedirects', () => {
     const result = revalidateRedirects(buildArgs({ doc, req })) as RedirectDoc
 
     expect(result).toBe(doc)
-    expect(getTagCalls()).toEqual(['redirects'])
+    expect(getTagCalls()).toEqual(['collection:redirects', 'surface:redirects'])
+    expect(getPathCalls()).toEqual([])
   })
 
   it('skips revalidation when disabled via context', () => {
@@ -53,5 +55,14 @@ describe('revalidateRedirects', () => {
 
     expect(result).toBe(doc)
     expect(getTagCalls()).toEqual([])
+  })
+
+  it('throws strict adapter errors before revalidating invalid redirect events', () => {
+    const req = buildReq(false)
+    const doc = {} as RedirectDoc
+
+    expect(() => revalidateRedirects(buildArgs({ doc, req }))).toThrow(/redirect id/)
+    expect(getTagCalls()).toEqual([])
+    expect(getPathCalls()).toEqual([])
   })
 })

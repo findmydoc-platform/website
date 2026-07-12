@@ -1,23 +1,21 @@
 const hasControlCharacters = (value: string): boolean => /[\u0000-\u001F\u007F]/.test(value)
 
-export function sanitizeInternalRedirectPath({
+export function sanitizeInternalRedirectPathOrNull({
   nextPath,
-  fallbackPath = '/',
   blockedPaths = [],
 }: {
   nextPath: string | null | undefined
-  fallbackPath?: string
   blockedPaths?: string[]
-}): string {
-  if (!nextPath) return fallbackPath
+}): string | null {
+  if (!nextPath) return null
 
   const trimmed = nextPath.trim()
-  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return fallbackPath
-  if (hasControlCharacters(trimmed)) return fallbackPath
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return null
+  if (hasControlCharacters(trimmed)) return null
 
   try {
     const parsed = new URL(trimmed, 'http://localhost')
-    if (parsed.origin !== 'http://localhost') return fallbackPath
+    if (parsed.origin !== 'http://localhost') return null
 
     const safePath = `${parsed.pathname}${parsed.search}${parsed.hash}`
     const safePathnameForBlockedComparison =
@@ -37,11 +35,23 @@ export function sanitizeInternalRedirectPath({
         )
       })
     ) {
-      return fallbackPath
+      return null
     }
 
     return safePath
   } catch {
-    return fallbackPath
+    return null
   }
+}
+
+export function sanitizeInternalRedirectPath({
+  nextPath,
+  fallbackPath = '/',
+  blockedPaths = [],
+}: {
+  nextPath: string | null | undefined
+  fallbackPath?: string
+  blockedPaths?: string[]
+}): string {
+  return sanitizeInternalRedirectPathOrNull({ nextPath, blockedPaths }) ?? fallbackPath
 }

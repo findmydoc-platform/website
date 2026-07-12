@@ -1,20 +1,6 @@
-import type { SeedRunSummary as SeedExecutionSummary, SeedUnitSummary } from '../baseline/run-baseline'
-import type { SeedType } from './runtime'
+import type { SeedUnitSummary } from '../baseline/run-baseline'
 
 export type SeedStatus = 'ok' | 'partial' | 'failed'
-
-export type SeedRunSummaryView = {
-  type: SeedType
-  reset: boolean
-  status: SeedStatus
-  startedAt: string
-  finishedAt: string
-  durationMs: number
-  totals: { created: number; updated: number }
-  units: SeedUnitSummary[]
-  warnings: string[]
-  failures: string[]
-}
 
 export function sumSeedUnits(units: Pick<SeedUnitSummary, 'created' | 'updated'>[]): {
   created: number
@@ -46,28 +32,4 @@ export function determineSeedStatus(
     return Array.isArray(units) && units.length > 0 ? 'partial' : 'failed'
   }
   return 'ok'
-}
-
-export function buildSeedSummary(args: {
-  type: SeedType
-  reset: boolean
-  startedAtMs: number
-  result: SeedExecutionSummary
-}): SeedRunSummaryView {
-  const finishedAtMs = Date.now()
-  const totals = sumSeedUnits(args.result.units)
-  const status = determineSeedStatus(args.result.units, args.result.failures)
-
-  return {
-    type: args.type,
-    reset: args.reset,
-    status,
-    startedAt: new Date(args.startedAtMs).toISOString(),
-    finishedAt: new Date(finishedAtMs).toISOString(),
-    durationMs: finishedAtMs - args.startedAtMs,
-    totals,
-    units: args.result.units,
-    warnings: args.result.warnings,
-    failures: args.result.failures,
-  }
 }

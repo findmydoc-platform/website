@@ -6,6 +6,7 @@ import { updateAveragePriceAfterChange } from './hooks/updateAveragePriceAfterCh
 import { updateAveragePriceAfterDelete } from './hooks/updateAveragePriceAfterDelete'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
+import { revalidateClinicTreatmentChange, revalidateClinicTreatmentDelete } from '@/hooks/revalidateClinicSurfaces'
 
 export const ClinicTreatments: CollectionConfig = {
   slug: 'clinictreatments',
@@ -28,8 +29,8 @@ export const ClinicTreatments: CollectionConfig = {
   timestamps: true,
   hooks: {
     beforeChange: [stableIdBeforeChangeHook, beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })],
-    afterChange: [updateAveragePriceAfterChange],
-    afterDelete: [updateAveragePriceAfterDelete],
+    afterChange: [updateAveragePriceAfterChange, revalidateClinicTreatmentChange],
+    afterDelete: [updateAveragePriceAfterDelete, revalidateClinicTreatmentDelete],
   },
   fields: [
     stableIdField(),

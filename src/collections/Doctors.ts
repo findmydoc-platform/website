@@ -6,6 +6,8 @@ import { anyone } from '@/access/anyone'
 import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
+import { revalidateDoctorChange, revalidateDoctorDelete } from '@/hooks/revalidateClinicSurfaces'
+import { beforeChangeValidateDoctorProfileImage } from '@/hooks/doctorProfileImageOwnership'
 
 export const doctorTitles = [
   { label: 'Dr.', value: 'dr' },
@@ -46,7 +48,13 @@ export const Doctors: CollectionConfig<'doctors'> = {
     delete: isPlatformBasicUser, // Only Platform can delete
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook, beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })],
+    beforeChange: [
+      stableIdBeforeChangeHook,
+      beforeChangeAssignClinicFromUser({ clinicField: 'clinic' }),
+      beforeChangeValidateDoctorProfileImage,
+    ],
+    afterChange: [revalidateDoctorChange],
+    afterDelete: [revalidateDoctorDelete],
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [

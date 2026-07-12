@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
+import {
+  sanitizeInternalRedirectPath,
+  sanitizeInternalRedirectPathOrNull,
+} from '@/utilities/routing/sanitizeInternalRedirectPath'
 
 describe('sanitizeInternalRedirectPath', () => {
   it('allows internal paths with search and hash', () => {
@@ -49,5 +52,16 @@ describe('sanitizeInternalRedirectPath', () => {
         blockedPaths: ['/'],
       }),
     ).toBe('/fallback')
+  })
+
+  it('returns null instead of a fallback when requested', () => {
+    expect(sanitizeInternalRedirectPathOrNull({ nextPath: '/safe-path' })).toBe('/safe-path')
+    expect(sanitizeInternalRedirectPathOrNull({ nextPath: '//evil.example.com' })).toBeNull()
+    expect(
+      sanitizeInternalRedirectPathOrNull({
+        nextPath: '/login/patient?next=/patient/favorites',
+        blockedPaths: ['/login/patient'],
+      }),
+    ).toBeNull()
   })
 })

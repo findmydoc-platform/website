@@ -134,6 +134,7 @@ const createRun = (overrides: Partial<SeedRunSummary> = {}): SeedRunSummary => {
     warnings: overrides.warnings ?? [],
     failures: overrides.failures ?? [],
     totals: overrides.totals ?? { created: 1, updated: 0 },
+    finalFlush: overrides.finalFlush,
     progress: overrides.progress ?? {
       completed: 1,
       total: jobs.length,
@@ -475,6 +476,32 @@ describe('SeedingCardView', () => {
     expect(screen.getByText('Completed at:')).toBeInTheDocument()
     expect(screen.getByText('Baseline seed')).toBeInTheDocument()
     expect(screen.getByText('completed')).toBeInTheDocument()
+  })
+
+  it('shows terminal final cache flush status', () => {
+    const run = createRun({
+      status: 'completed',
+      completedAt: new Date().toISOString(),
+      activeJobId: undefined,
+      activeStepName: undefined,
+      progress: { completed: 2, total: 2, percent: 100 },
+      jobs: undefined,
+      jobIds: ['job-1', 'job-2'],
+      hasActiveJob: false,
+      finalFlush: {
+        status: 'failed',
+        completedAt: new Date().toISOString(),
+        tagCount: 5,
+        pathCount: 4,
+        failureCount: 1,
+        reason: 'executor-error',
+      },
+    })
+
+    render(<SeedingCardView {...baseProps} run={run} />)
+
+    expect(screen.getByText('Final flush:')).toBeInTheDocument()
+    expect(screen.getByText('failed · tags 5 · paths 4 · failures 1 · executor-error')).toBeInTheDocument()
   })
 })
 

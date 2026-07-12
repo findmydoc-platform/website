@@ -2,6 +2,7 @@ import { createClient, type User } from '@supabase/supabase-js'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { isFindmydocPlatformEmail } from '@/auth/utilities/platformStaffEmailPolicy'
 import type { BasicUser, PlatformStaff } from '@/payload-types'
 import type { AdminSessionCredentials } from './adminSession'
 
@@ -54,6 +55,10 @@ export const ensurePlatformAdminPayloadUser = async (credentials: AdminSessionCr
 
   if (!normalizedEmail) {
     throw new Error('The fixed E2E admin Supabase account has no valid email.')
+  }
+
+  if (!isFindmydocPlatformEmail(normalizedEmail)) {
+    throw new Error('The fixed E2E admin Supabase account must use a @findmydoc.eu email.')
   }
 
   const payload = await getPayload({ config: configPromise })

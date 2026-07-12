@@ -62,6 +62,25 @@ describe('POST /api/auth/password/reset', () => {
     })
   })
 
+  it('keeps password reset available for findmydoc.eu platform staff emails', async () => {
+    mockSupabaseClient.auth.resetPasswordForEmail.mockResolvedValue({ error: null })
+
+    const request = new NextRequest('http://localhost/api/auth/password/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'operator@findmydoc.eu' }),
+    })
+
+    const response = await POST(request)
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ success: true })
+    expect(mockSupabaseClient.auth.resetPasswordForEmail).toHaveBeenCalledWith('operator@findmydoc.eu', {
+      redirectTo: 'http://localhost:3000/auth/callback?next=/auth/password/reset/complete',
+    })
+  })
+
   it('returns validation errors for invalid payloads', async () => {
     const request = new NextRequest('http://localhost/api/auth/password/reset', {
       method: 'POST',

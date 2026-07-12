@@ -5,6 +5,7 @@ import type { PayloadRequest } from 'payload'
 import { createMockReq } from '../helpers/testHelpers'
 
 type PostDoc = {
+  id: string | number
   _status?: 'draft' | 'published'
   slug: string
 }
@@ -47,8 +48,8 @@ describe('Posts revalidation hooks', () => {
 
   it('revalidates published post path and posts sitemap', () => {
     const req = buildReq(false)
-    const doc: PostDoc = { _status: 'published', slug: 'example-post' }
-    const previousDoc: PostDoc = { _status: 'draft', slug: 'example-post' }
+    const doc: PostDoc = { id: 'post-1', _status: 'published', slug: 'example-post' }
+    const previousDoc: PostDoc = { id: 'post-1', _status: 'draft', slug: 'example-post' }
 
     const result = revalidatePost(
       buildAfterChangeArgs({
@@ -59,14 +60,23 @@ describe('Posts revalidation hooks', () => {
     ) as PostDoc
 
     expect(result).toBe(doc)
-    expect(getPathCalls()).toEqual(['/posts/example-post'])
-    expect(getTagCalls()).toEqual(['posts-sitemap'])
+    expect(getPathCalls()).toEqual(['/posts/example-post', '/posts'])
+    expect(getPathCalls()).not.toContain('/posts/page/2')
+    expect(getTagCalls()).toEqual([
+      'entity:posts:post-1',
+      'collection:posts',
+      'slug:posts:example-post',
+      'surface:sitemap:posts',
+      'surface:posts-list',
+      'surface:home',
+      'surface:partners-clinics',
+    ])
   })
 
   it('revalidates old path when post transitions from published to draft', () => {
     const req = buildReq(false)
-    const previousDoc: PostDoc = { _status: 'published', slug: 'old-post' }
-    const doc: PostDoc = { _status: 'draft', slug: 'old-post' }
+    const previousDoc: PostDoc = { id: 'post-1', _status: 'published', slug: 'old-post' }
+    const doc: PostDoc = { id: 'post-1', _status: 'draft', slug: 'old-post' }
 
     revalidatePost(
       buildAfterChangeArgs({
@@ -76,13 +86,47 @@ describe('Posts revalidation hooks', () => {
       }),
     )
 
-    expect(getPathCalls()).toEqual(['/posts/old-post'])
-    expect(getTagCalls()).toEqual(['posts-sitemap'])
+    expect(getPathCalls()).toEqual(['/posts/old-post', '/posts'])
+    expect(getTagCalls()).toEqual([
+      'entity:posts:post-1',
+      'collection:posts',
+      'slug:posts:old-post',
+      'surface:sitemap:posts',
+      'surface:posts-list',
+      'surface:home',
+      'surface:partners-clinics',
+    ])
+  })
+
+  it('revalidates old and new paths when a published post slug changes', () => {
+    const req = buildReq(false)
+    const previousDoc: PostDoc = { id: 'post-1', _status: 'published', slug: 'old-post' }
+    const doc: PostDoc = { id: 'post-1', _status: 'published', slug: 'new-post' }
+
+    revalidatePost(
+      buildAfterChangeArgs({
+        doc,
+        previousDoc,
+        req,
+      }),
+    )
+
+    expect(getPathCalls()).toEqual(['/posts/new-post', '/posts/old-post', '/posts'])
+    expect(getTagCalls()).toEqual([
+      'entity:posts:post-1',
+      'collection:posts',
+      'slug:posts:new-post',
+      'slug:posts:old-post',
+      'surface:sitemap:posts',
+      'surface:posts-list',
+      'surface:home',
+      'surface:partners-clinics',
+    ])
   })
 
   it('revalidates published post path when previousDoc is absent', () => {
     const req = buildReq(false)
-    const doc: PostDoc = { _status: 'published', slug: 'first-save-post' }
+    const doc: PostDoc = { id: 'post-1', _status: 'published', slug: 'first-save-post' }
     let result: unknown
 
     expect(() => {
@@ -96,13 +140,21 @@ describe('Posts revalidation hooks', () => {
     }).not.toThrow()
 
     expect(result).toBe(doc)
-    expect(getPathCalls()).toEqual(['/posts/first-save-post'])
-    expect(getTagCalls()).toEqual(['posts-sitemap'])
+    expect(getPathCalls()).toEqual(['/posts/first-save-post', '/posts'])
+    expect(getTagCalls()).toEqual([
+      'entity:posts:post-1',
+      'collection:posts',
+      'slug:posts:first-save-post',
+      'surface:sitemap:posts',
+      'surface:posts-list',
+      'surface:home',
+      'surface:partners-clinics',
+    ])
   })
 
   it('skips revalidation when disabled via context', () => {
     const req = buildReq(true)
-    const doc: PostDoc = { _status: 'published', slug: 'skip-post' }
+    const doc: PostDoc = { id: 'post-1', _status: 'published', slug: 'skip-post' }
 
     revalidatePost(
       buildAfterChangeArgs({
@@ -120,12 +172,29 @@ describe('Posts revalidation hooks', () => {
 
   it('revalidates deleted post path and posts sitemap', () => {
     const req = buildReq(false)
-    const doc: PostDoc = { _status: 'published', slug: 'deleted-post' }
+    const doc: PostDoc = { id: 'post-1', _status: 'published', slug: 'deleted-post' }
 
     const result = revalidateDelete(buildAfterDeleteArgs({ doc, req })) as PostDoc
 
     expect(result).toBe(doc)
-    expect(getPathCalls()).toEqual(['/posts/deleted-post'])
-    expect(getTagCalls()).toEqual(['posts-sitemap'])
+    expect(getPathCalls()).toEqual(['/posts/deleted-post', '/posts'])
+    expect(getTagCalls()).toEqual([
+      'entity:posts:post-1',
+      'collection:posts',
+      'slug:posts:deleted-post',
+      'surface:sitemap:posts',
+      'surface:posts-list',
+      'surface:home',
+      'surface:partners-clinics',
+    ])
+  })
+
+  it('throws strict adapter errors before revalidating invalid post events', () => {
+    const req = buildReq(false)
+    const doc = { id: 'post-1', slug: 'missing-status' } as PostDoc
+
+    expect(() => revalidatePost(buildAfterChangeArgs({ doc, req }))).toThrow(/document status/)
+    expect(getPathCalls()).toEqual([])
+    expect(getTagCalls()).toEqual([])
   })
 })

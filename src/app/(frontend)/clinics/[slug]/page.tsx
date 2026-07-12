@@ -8,7 +8,7 @@ import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
-import { getClinicDetailServerData } from '@/utilities/clinicDetail/serverData'
+import { getCachedPublicClinicDetailServerData, getClinicDetailServerData } from '@/utilities/clinicDetail/serverData'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getGlobal } from '@/utilities/getGlobals'
 import { JsonLdScript, buildClinicDetailPageJsonLd } from '@/utilities/structuredData'
@@ -29,9 +29,9 @@ export default async function ClinicDetailPage({ params: paramsPromise }: Clinic
   const requestHeaders = await headers()
   const requestCookies = await cookies()
 
-  const clinicDetailData = await getClinicDetailServerData(payload, slug, {
-    draft,
-  })
+  const clinicDetailData = draft
+    ? await getClinicDetailServerData(payload, slug, { draft })
+    : await getCachedPublicClinicDetailServerData(slug)
   const cookieConsentContext = resolveCookieConsentContext(
     (await getGlobal('cookieConsent', 1)) as CookieConsentType,
     requestCookies.get(COOKIE_CONSENT_COOKIE_NAME)?.value ?? null,
@@ -74,11 +74,9 @@ export default async function ClinicDetailPage({ params: paramsPromise }: Clinic
 export async function generateMetadata({ params: paramsPromise }: ClinicDetailPageArgs): Promise<Metadata> {
   const { slug } = await paramsPromise
   const { isEnabled: draft } = await draftMode()
-  const payload = await getPayload({ config: configPromise })
-
-  const clinicDetailData = await getClinicDetailServerData(payload, slug, {
-    draft,
-  })
+  const clinicDetailData = draft
+    ? await getClinicDetailServerData(await getPayload({ config: configPromise }), slug, { draft })
+    : await getCachedPublicClinicDetailServerData(slug)
 
   if (!clinicDetailData) {
     return createSiteMetadata({

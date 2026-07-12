@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, fireEvent, waitFor, within } from 'storybook/test'
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
 import { getStoryImageSrc, storyClinicImages, storyPortraits } from '../fixtures/assets'
 import { samplePost } from './fixtures'
@@ -153,6 +153,10 @@ const brokenHeroImageBase: Story = {
     const canvas = within(canvasElement)
     const heroImage = canvas.getByAltText('Broken post hero image')
 
+    if (!heroImage.getAttribute('src')?.includes('blog-placeholder-1600-900')) {
+      fireEvent.error(heroImage)
+    }
+
     await waitFor(() => {
       const imageSources = [
         heroImage.getAttribute('src') ?? '',
@@ -177,6 +181,10 @@ const brokenAuthorAvatarBase: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const avatarImage = canvas.getByAltText('Dr. Sarah Weber')
+
+    if (!avatarImage.getAttribute('src')?.includes('avatar-placeholder')) {
+      fireEvent.error(avatarImage)
+    }
 
     await waitFor(() => {
       const src = avatarImage.getAttribute('src') ?? ''

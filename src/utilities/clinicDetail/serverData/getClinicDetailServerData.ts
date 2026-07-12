@@ -1,7 +1,17 @@
 import type { Payload } from 'payload'
 
+import configPromise from '@payload-config'
+import { getPayload } from 'payload'
+import { unstable_cache } from 'next/cache'
 import type { Accreditation, City, ClinicGalleryEntry } from '@/payload-types'
 
+import {
+  buildCollectionTag,
+  buildEntityTag,
+  buildSlugTag,
+  buildSurfaceInstanceTag,
+  buildSurfaceTag,
+} from '@/utilities/cachePolicy'
 import {
   buildClinicThumbnailDescriptorsByClinicId,
   resolveClinicThumbnailImage,
@@ -21,6 +31,109 @@ import {
   findDoctorSpecialtiesByDoctorIds,
 } from './repositories'
 import type { ClinicDetailServerDataOptions, ClinicDetailServerDataResult } from './types'
+
+type PublicClinicIdentity = {
+  id: string | number
+  slug: string
+}
+
+const CLINIC_DETAIL_RELATED_COLLECTION_TAGS = [
+  buildCollectionTag('clinictreatments'),
+  buildCollectionTag('doctors'),
+  buildCollectionTag('doctorspecialties'),
+  buildCollectionTag('reviews'),
+  buildCollectionTag('accreditation'),
+  buildCollectionTag('clinicGalleryEntries'),
+  buildCollectionTag('cities'),
+] as const
+
+export const buildClinicDetailIdentityCacheTags = (slug: string): string[] => [
+  buildSlugTag('clinics', slug),
+  buildSurfaceTag('clinic-detail'),
+]
+
+export const buildClinicDetailDataCacheTags = ({ id, slug }: PublicClinicIdentity): string[] => [
+  buildEntityTag('clinics', id),
+  buildSlugTag('clinics', slug),
+  buildSurfaceTag('clinic-detail'),
+  buildSurfaceInstanceTag('clinic-detail', id),
+  ...CLINIC_DETAIL_RELATED_COLLECTION_TAGS,
+]
+
+async function findPublicClinicIdentityBySlug(payload: Payload, slug: string): Promise<PublicClinicIdentity | null> {
+  const result = await payload.find({
+    collection: 'clinics',
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    overrideAccess: false,
+    where: {
+      and: [
+        {
+          slug: {
+            equals: slug,
+          },
+        },
+        {
+          status: {
+            equals: 'approved',
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      slug: true,
+      status: true,
+    },
+  })
+
+  const clinic = result.docs[0] as { id?: unknown; slug?: unknown; status?: unknown } | undefined
+  if (!clinic || clinic.status !== 'approved') return null
+
+  const id = typeof clinic.id === 'number' || typeof clinic.id === 'string' ? clinic.id : null
+  const normalizedSlug = typeof clinic.slug === 'string' ? clinic.slug.trim() : ''
+
+  if (id === null || !normalizedSlug) return null
+
+  return {
+    id,
+    slug: normalizedSlug,
+  }
+}
+
+const getCachedPublicClinicIdentity = (slug: string) =>
+  unstable_cache(
+    async () => {
+      const payload = await getPayload({ config: configPromise })
+
+      return findPublicClinicIdentityBySlug(payload, slug)
+    },
+    ['clinic-detail-identity', slug],
+    {
+      tags: buildClinicDetailIdentityCacheTags(slug),
+    },
+  )
+
+const getCachedPublicClinicDetailServerDataByIdentity = ({ id, slug }: PublicClinicIdentity) =>
+  unstable_cache(
+    async () => {
+      const payload = await getPayload({ config: configPromise })
+
+      return getClinicDetailServerData(payload, slug, { draft: false })
+    },
+    ['clinic-detail-server-data', String(id), slug],
+    {
+      tags: buildClinicDetailDataCacheTags({ id, slug }),
+    },
+  )
+
+export async function getCachedPublicClinicDetailServerData(slug: string): Promise<ClinicDetailServerDataResult> {
+  const identity = await getCachedPublicClinicIdentity(slug)()
+  if (!identity) return null
+
+  return getCachedPublicClinicDetailServerDataByIdentity(identity)()
+}
 
 function extractRelationId(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value

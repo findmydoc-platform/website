@@ -3,6 +3,7 @@ import {
   getIncomingUploadFilename,
   resolveFilenameSource,
 } from '@/collections/common/mediaPathHelpers'
+import { MEDIA_STORAGE_LIMIT_MESSAGE } from '@/config/mediaUploadPolicy'
 import { extractFileSizeFromRequest } from '@/utilities/requestFileUtils'
 import { createScopedLogger, getRequestLogContext, type ServerLogger } from '@/utilities/logging/shared'
 import type { CollectionAfterErrorHook, CollectionBeforeOperationHook, PayloadRequest } from 'payload'
@@ -72,11 +73,30 @@ const hasIncomingUpload = (args: Record<string, unknown> | undefined, req: Paylo
 
 type MissingKeyErrorLike = {
   name?: unknown
+  code?: unknown
   Code?: unknown
   message?: unknown
   Resource?: unknown
   cause?: unknown
   err?: unknown
+}
+
+const getNestedErrorCandidates = (error: unknown): MissingKeyErrorLike[] => {
+  const candidates: MissingKeyErrorLike[] = []
+  const queue: unknown[] = [error]
+  const visited = new Set<object>()
+
+  while (queue.length > 0 && candidates.length < 12) {
+    const candidate = queue.shift()
+    if (!candidate || typeof candidate !== 'object' || visited.has(candidate)) continue
+
+    visited.add(candidate)
+    const errorLike = candidate as MissingKeyErrorLike
+    candidates.push(errorLike)
+    queue.push(errorLike.cause, errorLike.err)
+  }
+
+  return candidates
 }
 
 function parseMissingResourceFromMessage(message: string): string | null {
@@ -88,24 +108,10 @@ function resolveMissingS3Key(error: unknown): string | null {
   const bucket = process.env.S3_BUCKET || ''
   if (!bucket) return null
 
-  const candidates: MissingKeyErrorLike[] = []
-  if (error && typeof error === 'object') {
-    candidates.push(error as MissingKeyErrorLike)
-
-    const cause = (error as { cause?: unknown }).cause
-    if (cause && typeof cause === 'object') {
-      candidates.push(cause as MissingKeyErrorLike)
-    }
-
-    const nestedErr = (error as { err?: unknown }).err
-    if (nestedErr && typeof nestedErr === 'object') {
-      candidates.push(nestedErr as MissingKeyErrorLike)
-    }
-  }
-
-  for (const candidate of candidates) {
+  for (const candidate of getNestedErrorCandidates(error)) {
     const name = typeof candidate.name === 'string' ? candidate.name : ''
-    const code = typeof candidate.Code === 'string' ? candidate.Code : ''
+    const code =
+      typeof candidate.Code === 'string' ? candidate.Code : typeof candidate.code === 'string' ? candidate.code : ''
     const message = typeof candidate.message === 'string' ? candidate.message : ''
     const resourceRaw =
       typeof candidate.Resource === 'string'
@@ -125,6 +131,21 @@ function resolveMissingS3Key(error: unknown): string | null {
   }
 
   return null
+}
+
+function isEntityTooLargeError(error: unknown): boolean {
+  return getNestedErrorCandidates(error).some((candidate) => {
+    const name = typeof candidate.name === 'string' ? candidate.name : ''
+    const code =
+      typeof candidate.Code === 'string' ? candidate.Code : typeof candidate.code === 'string' ? candidate.code : ''
+    const message = typeof candidate.message === 'string' ? candidate.message : ''
+
+    return (
+      name === 'EntityTooLarge' ||
+      code === 'EntityTooLarge' ||
+      /EntityTooLarge|maximum allowed object size/i.test(message)
+    )
+  })
 }
 
 function shouldDowngradeMissingKeyError(req: PayloadRequest, error: unknown): boolean {
@@ -204,4 +225,13 @@ export const afterErrorLogMediaUploadError: CollectionAfterErrorHook = ({ collec
   )
 
   delete req.context?.[MEDIA_UPLOAD_CONTEXT_KEY]
+
+  if (isEntityTooLargeError(error)) {
+    return {
+      response: {
+        errors: [{ message: MEDIA_STORAGE_LIMIT_MESSAGE }],
+      },
+      status: 413,
+    }
+  }
 }

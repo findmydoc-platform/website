@@ -43,6 +43,19 @@ describe('beforeChangeValidateDoctorProfileImage', () => {
     expect(req.payload.findByID).not.toHaveBeenCalled()
   })
 
+  it('revalidates existing media when the doctor clinic changes', async () => {
+    const req = createReq()
+    vi.mocked(req.payload.findByID).mockResolvedValue({ id: 20, doctor: 10, clinic: 4 } as never)
+
+    await expect(
+      runHook({
+        data: { clinic: 5 },
+        originalDoc: { id: 10, clinic: 4, profileImage: 20 },
+        req,
+      }),
+    ).rejects.toThrow("Selected profile image does not belong to this doctor's clinic")
+  })
+
   it('allows media owned by the same doctor and clinic', async () => {
     const req = createReq()
     vi.mocked(req.payload.findByID).mockResolvedValue({ id: 20, doctor: 10, clinic: 4 } as never)

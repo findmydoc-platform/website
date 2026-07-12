@@ -73,9 +73,7 @@ const ownerFilter = (req: PayloadRequest): Where | null => {
 const ownerMatches = (
   req: PayloadRequest,
   ownerValue:
-    | string
-    | number
-    | { relationTo?: string; collection?: string; value?: string | number; id?: string | number },
+    string | number | { relationTo?: string; collection?: string; value?: string | number; id?: string | number },
 ) => {
   const user = req?.user
   if (!user) return false

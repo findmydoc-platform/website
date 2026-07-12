@@ -7,11 +7,7 @@ export type PostHogClinicVerificationTier = 'unverified' | 'bronze' | 'silver' |
 export type ClinicCtaId = 'choose_treatment' | 'contact' | 'contact_doctor'
 
 export type ClinicCtaLocation =
-  | 'doctor_card'
-  | 'further_treatments'
-  | 'location_card'
-  | 'map_overlay'
-  | 'treatment_strip'
+  'doctor_card' | 'further_treatments' | 'location_card' | 'map_overlay' | 'treatment_strip'
 
 export type RegisterClinicSubmissionStatus = 'created' | 'deduped'
 

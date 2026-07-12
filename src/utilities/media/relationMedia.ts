@@ -3,11 +3,7 @@ import type { Payload, PayloadRequest } from 'payload'
 import { versionPayloadMediaFileUrl } from './fileUrls'
 
 export type MediaCollectionSlug =
-  | 'clinicGalleryMedia'
-  | 'clinicMedia'
-  | 'doctorMedia'
-  | 'platformContentMedia'
-  | 'userProfileMedia'
+  'clinicGalleryMedia' | 'clinicMedia' | 'doctorMedia' | 'platformContentMedia' | 'userProfileMedia'
 
 type MediaDocument = {
   id: number

@@ -6,14 +6,12 @@ import type { StableIdResolvers } from '@/endpoints/seed/utils/resolvers'
 const resetCollections = vi.hoisted(() => vi.fn())
 const importCollection = vi.hoisted(() => vi.fn<(...args: []) => Promise<CollectionImportResult>>())
 const createStableIdResolvers = vi.hoisted(() =>
-  vi.fn(
-    (): StableIdResolvers => ({
-      resolveIdByStableId: vi.fn(async () => null),
-      resolveManyIdsByStableIds: vi.fn(async () => ({ ids: [], missing: [] })),
-      resolveStableIdById: vi.fn(async () => null),
-      resolveManyStableIdsByIds: vi.fn(async () => ({ stableIds: [], missing: [] })),
-    }),
-  ),
+  vi.fn((): StableIdResolvers => ({
+    resolveIdByStableId: vi.fn(async () => null),
+    resolveManyIdsByStableIds: vi.fn(async () => ({ ids: [], missing: [] })),
+    resolveStableIdById: vi.fn(async () => null),
+    resolveManyStableIdsByIds: vi.fn(async () => ({ stableIds: [], missing: [] })),
+  })),
 )
 
 vi.mock('@/endpoints/seed/utils/reset', () => ({ resetCollections }))

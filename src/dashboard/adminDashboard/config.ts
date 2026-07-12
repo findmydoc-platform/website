@@ -16,7 +16,7 @@ type SeedingWidgetField = {
   }
 }
 
-type DashboardWidgetConfig = {
+type DeveloperSeedingWidgetConfig = {
   slug: 'developer-seeding'
   label: string
   Component: '@/components/organisms/DeveloperDashboard'
@@ -24,6 +24,17 @@ type DashboardWidgetConfig = {
   maxWidth: 'full'
   fields: SeedingWidgetField[]
 }
+
+type CacheRevalidationVisibilityWidgetConfig = {
+  slug: 'cache-revalidation-visibility'
+  label: string
+  Component: '@/components/organisms/CacheRevalidationVisibility'
+  minWidth: 'medium'
+  maxWidth: 'full'
+  fields: []
+}
+
+type DashboardWidgetConfig = DeveloperSeedingWidgetConfig | CacheRevalidationVisibilityWidgetConfig
 
 type PayloadDashboardConfig = {
   widgets: DashboardWidgetConfig[]
@@ -75,11 +86,24 @@ const DEVELOPER_SEEDING_WIDGET: DashboardWidgetConfig = {
   ],
 }
 
+const CACHE_REVALIDATION_VISIBILITY_WIDGET: DashboardWidgetConfig = {
+  slug: 'cache-revalidation-visibility',
+  label: 'Cache revalidation visibility',
+  Component: '@/components/organisms/CacheRevalidationVisibility',
+  minWidth: 'medium',
+  maxWidth: 'full',
+  fields: [],
+}
+
 export const createAdminDashboardConfig = (_env: NodeJS.ProcessEnv = process.env): PayloadDashboardConfig => {
   // Keep widget definitions stable across environments so generated payload-types
-  // always include the developer seeding widget contract.
+  // always include the developer seeding and cache visibility widget contracts.
   return {
-    widgets: [DEVELOPER_SEEDING_WIDGET],
-    defaultLayout: [DEFAULT_COLLECTIONS_LAYOUT, { widgetSlug: 'developer-seeding', width: 'full' }],
+    widgets: [DEVELOPER_SEEDING_WIDGET, CACHE_REVALIDATION_VISIBILITY_WIDGET],
+    defaultLayout: [
+      DEFAULT_COLLECTIONS_LAYOUT,
+      { widgetSlug: 'developer-seeding', width: 'full' },
+      { widgetSlug: 'cache-revalidation-visibility', width: 'full' },
+    ],
   }
 }

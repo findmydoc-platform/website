@@ -77,6 +77,22 @@ describe('beforeChangeDoctorMedia', () => {
     expect(result.createdBy).toBe(5)
   })
 
+  test('overwrites client-supplied clinic with the doctor clinic on create', async () => {
+    const req = baseReq({ id: 5, collection: 'basicUsers' })
+    vi.mocked(req.payload.findByID).mockResolvedValue({ clinic: 8 } as unknown as Doctor)
+
+    const result = (await beforeChangeDoctorMedia({
+      data: { doctor: 3, clinic: 99, filename: 'portraits/doc.png' } as Partial<DoctorMedia>,
+      operation: 'create',
+      req,
+      originalDoc: undefined,
+      collection: mockCollection,
+      context: emptyContext,
+    })) as Record<string, unknown>
+
+    expect(result.clinic).toBe(8)
+  })
+
   test('prevents doctor change on update', async () => {
     const req = baseReq({ id: 2, collection: 'basicUsers' })
 
@@ -115,6 +131,7 @@ describe('beforeChangeDoctorMedia', () => {
 
   test('preserves createdBy when updating other fields', async () => {
     const req = baseReq({ id: 2, collection: 'basicUsers' })
+    vi.mocked(req.payload.findByID).mockResolvedValue({ clinic: 12 } as unknown as Doctor)
 
     const result = (await beforeChangeDoctorMedia({
       data: { alt: 'Updated' } as Partial<DoctorMedia>,
@@ -132,5 +149,27 @@ describe('beforeChangeDoctorMedia', () => {
     })) as Record<string, unknown>
 
     expect(result.createdBy).toBe(2)
+  })
+
+  test('restores doctor clinic ownership when an update submits another clinic', async () => {
+    const req = baseReq({ id: 2, collection: 'basicUsers' })
+    vi.mocked(req.payload.findByID).mockResolvedValue({ clinic: 12 } as unknown as Doctor)
+
+    const result = (await beforeChangeDoctorMedia({
+      data: { clinic: 99 } as Partial<DoctorMedia>,
+      operation: 'update',
+      req,
+      originalDoc: {
+        doctor: 9,
+        clinic: 12,
+        createdBy: 2,
+        filename: '9-aaaaaaaaaa-doc.png',
+        storagePath: 'doctors/9-aaaaaaaaaa-doc.png',
+      } as DoctorMedia,
+      collection: mockCollection,
+      context: emptyContext,
+    })) as Record<string, unknown>
+
+    expect(result.clinic).toBe(12)
   })
 })

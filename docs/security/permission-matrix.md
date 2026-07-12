@@ -62,7 +62,7 @@ Human-readable and machine-readable views are generated from the config on deman
 If you need to change permissions, update `src/security/permission-matrix.config.ts` and regenerate as needed.
 
 ### Notes on Specific Rows
-* ClinicStaff: Authentication is denied entirely until the staff profile is approved. After approval, Clinic Staff can read all staff in their own clinic and update only their own profile. Create/Delete operations occur exclusively via the BasicUsers lifecycle (no direct create/delete even for Platform Staff) †‡.
+* ClinicStaff: Authentication is denied entirely until the staff profile is approved. After approval, Clinic Staff can read all staff in their own clinic and target only their own profile for updates; `user`, `clinic`, and `status` remain Platform-only at field level. Create/Delete operations occur exclusively via the BasicUsers lifecycle (no direct create/delete even for Platform Staff) †‡.
 * Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
 * Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
 * PlatformContentMedia: Publicly readable marketing / page assets. Write restricted to Platform.

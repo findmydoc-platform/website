@@ -81,7 +81,7 @@ describe('Posts integration - lifecycle and access', () => {
     const basicUser = await payload.create({
       collection: 'basicUsers',
       data: {
-        email: `${identifier}@example.com`,
+        email: `${identifier}@findmydoc.eu`,
         supabaseUserId: `sb-${identifier}`,
         userType: 'platform',
         firstName: 'Post',

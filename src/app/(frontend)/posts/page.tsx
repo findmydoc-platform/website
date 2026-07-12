@@ -1,7 +1,5 @@
 import type { Metadata } from 'next/types'
 
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
 import { Container } from '@/components/molecules/Container'
@@ -10,7 +8,7 @@ import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { buildPostsIndexPath, buildPostsPagePath } from '@/utilities/content/postPaths'
-import { findPublishedPostsPage } from '@/utilities/content/serverData'
+import { getCachedPublishedPostsPage } from '@/utilities/content/serverData'
 import { resolveContentLocaleContext } from '@/utilities/contentLocalization'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { JsonLdScript, buildPostsIndexJsonLd } from '@/utilities/structuredData'
@@ -27,11 +25,10 @@ type Args = {
 }
 
 export default async function Page({ searchParams: searchParamsPromise }: Args = {}) {
-  const payload = await getPayload({ config: configPromise })
   const searchParams = await searchParamsPromise
   const contentLocale = resolveContentLocaleContext(searchParams?.locale)
 
-  const posts = await findPublishedPostsPage(payload, {
+  const posts = await getCachedPublishedPostsPage({
     contentLocale,
     limit: 12,
   })

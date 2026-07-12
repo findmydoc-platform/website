@@ -7,6 +7,7 @@ import {
   updateAverageRatingsAfterChange,
   updateAverageRatingsAfterDelete,
 } from '@/hooks/calculations/updateAverageRatings'
+import { revalidateReviewChange, revalidateReviewDelete } from '@/hooks/revalidateClinicSurfaces'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 
 type ReviewDraft = Record<string, unknown>
@@ -424,8 +425,8 @@ export const Reviews: CollectionConfig = {
         return data
       },
     ],
-    afterChange: [updateAverageRatingsAfterChange],
-    afterDelete: [updateAverageRatingsAfterDelete],
+    afterChange: [updateAverageRatingsAfterChange, revalidateReviewChange],
+    afterDelete: [updateAverageRatingsAfterDelete, revalidateReviewDelete],
   },
   timestamps: true,
   indexes: [

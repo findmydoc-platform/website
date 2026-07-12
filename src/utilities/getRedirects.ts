@@ -1,14 +1,15 @@
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { unstable_cache } from 'next/cache'
+import { buildCollectionTag, buildSurfaceTag } from '@/utilities/cachePolicy'
 
 /**
  * Fetches all redirects from PayloadCMS.
  *
- * @param depth - Relationship population depth (default: 1)
+ * @param depth - Relationship population depth (default: 0)
  * @returns Array of redirect documents
  */
-export async function getRedirects(depth = 1) {
+export async function getRedirects(depth = 0) {
   const payload = await getPayload({ config: configPromise })
 
   const { docs: redirects } = await payload.find({
@@ -33,5 +34,5 @@ export async function getRedirects(depth = 1) {
  */
 export const getCachedRedirects = () =>
   unstable_cache(async () => getRedirects(), ['redirects'], {
-    tags: ['redirects'],
+    tags: [buildCollectionTag('redirects'), buildSurfaceTag('redirects')],
   })

@@ -12,11 +12,13 @@ Unify external identity (Supabase Auth) with internal authorization (PayloadCMS 
 | Clinic Staff | Manage clinic content after approval       | `basicUsers` + `clinicStaff` profile   |
 | Patient | Consume public / patient features               | `patients` (single record)            |
 
+Platform Staff identities are limited to `@findmydoc.eu` email addresses. The public password reset flow remains shared and returns neutral responses, while Payload writes and Supabase platform-user authentication enforce the platform staff email boundary.
+
 ## Lifecycle Summary
 1. User authenticates against Supabase → receives JWT.
 2. Request arrives with `Authorization: Bearer <token>`.
 3. Strategy validates token & extracts metadata (email, user type, ids).
-4. Internal lookup first by Supabase user id, then (if needed) by normalized email to reconcile historical records and synchronize missing/old Supabase ids.
+4. Internal lookup first applies platform staff email eligibility, then searches by Supabase user id and, where allowed, normalized email to reconcile historical records and synchronize missing/old Supabase ids.
 5. If no internal entity is found, strategy-level provisioning creates the internal record (user first, profile follows via hook for staff users).
 6. Approval gate (clinic staff only) determines admin UI access; patients & platform staff are immediate.
 7. Downstream access control functions rely on resolved user type & related profile linkage.
@@ -53,6 +55,7 @@ Admin login page behavior:
 ## Security & Compliance Highlights
 * Token mandatory: no implicit fallback or anonymous escalation.
 * Strict separation of identity (Supabase) & authorization (Payload collections) simplifies auditing.
+* Platform staff access is limited to Supabase platform users with `@findmydoc.eu` email addresses.
 * Approval status gives a reversible control point without altering Supabase accounts.
 * Registration endpoints return generic error messages to avoid leaking whether an email already exists; Supabase email-confirmation requirements are enforced upstream by Supabase itself.
 

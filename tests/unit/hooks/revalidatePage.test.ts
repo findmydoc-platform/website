@@ -5,6 +5,7 @@ import type { PayloadRequest } from 'payload'
 import { createMockReq } from '../helpers/testHelpers'
 
 type PageDoc = {
+  id: string | number
   _status?: 'draft' | 'published'
   slug: string
 }
@@ -47,7 +48,7 @@ describe('Pages revalidation hooks', () => {
 
   it('revalidates published page path and pages sitemap', () => {
     const req = buildReq(false)
-    const doc: PageDoc = { _status: 'published', slug: 'about' }
+    const doc: PageDoc = { id: 1, _status: 'published', slug: 'about' }
 
     const result = revalidatePage(
       buildAfterChangeArgs({
@@ -59,13 +60,13 @@ describe('Pages revalidation hooks', () => {
 
     expect(result).toBe(doc)
     expect(getPathCalls()).toEqual(['/about'])
-    expect(getTagCalls()).toEqual(['pages-sitemap'])
+    expect(getTagCalls()).toEqual(['entity:pages:1', 'collection:pages', 'slug:pages:about', 'surface:sitemap:pages'])
   })
 
   it('revalidates old path when page transitions from published to draft', () => {
     const req = buildReq(false)
-    const previousDoc: PageDoc = { _status: 'published', slug: 'home' }
-    const doc: PageDoc = { _status: 'draft', slug: 'home' }
+    const previousDoc: PageDoc = { id: 1, _status: 'published', slug: 'home' }
+    const doc: PageDoc = { id: 1, _status: 'draft', slug: 'home' }
 
     revalidatePage(
       buildAfterChangeArgs({
@@ -76,12 +77,35 @@ describe('Pages revalidation hooks', () => {
     )
 
     expect(getPathCalls()).toEqual(['/'])
-    expect(getTagCalls()).toEqual(['pages-sitemap'])
+    expect(getTagCalls()).toEqual(['entity:pages:1', 'collection:pages', 'slug:pages:home', 'surface:sitemap:pages'])
+  })
+
+  it('revalidates old and new paths when a published page slug changes', () => {
+    const req = buildReq(false)
+    const previousDoc: PageDoc = { id: 1, _status: 'published', slug: 'old-about' }
+    const doc: PageDoc = { id: 1, _status: 'published', slug: 'about' }
+
+    revalidatePage(
+      buildAfterChangeArgs({
+        doc,
+        previousDoc,
+        req,
+      }),
+    )
+
+    expect(getPathCalls()).toEqual(['/about', '/old-about'])
+    expect(getTagCalls()).toEqual([
+      'entity:pages:1',
+      'collection:pages',
+      'slug:pages:about',
+      'slug:pages:old-about',
+      'surface:sitemap:pages',
+    ])
   })
 
   it('skips revalidation when disabled via context', () => {
     const req = buildReq(true)
-    const doc: PageDoc = { _status: 'published', slug: 'pricing' }
+    const doc: PageDoc = { id: 1, _status: 'published', slug: 'pricing' }
 
     revalidatePage(
       buildAfterChangeArgs({
@@ -99,12 +123,34 @@ describe('Pages revalidation hooks', () => {
 
   it('revalidates deleted page path and pages sitemap', () => {
     const req = buildReq(false)
-    const doc: PageDoc = { _status: 'published', slug: 'home' }
+    const doc: PageDoc = { id: 1, _status: 'published', slug: 'home' }
 
     const result = revalidateDelete(buildAfterDeleteArgs({ doc, req })) as PageDoc
 
     expect(result).toBe(doc)
     expect(getPathCalls()).toEqual(['/'])
-    expect(getTagCalls()).toEqual(['pages-sitemap'])
+    expect(getTagCalls()).toEqual(['entity:pages:1', 'collection:pages', 'slug:pages:home', 'surface:sitemap:pages'])
+  })
+
+  it('throws strict adapter errors before revalidating invalid page events', () => {
+    const req = buildReq(false)
+    const doc = { id: 1, _status: 'published' } as PageDoc
+
+    expect(() => revalidatePage(buildAfterChangeArgs({ doc, req }))).toThrow(/document slug/)
+    expect(getPathCalls()).toEqual([])
+    expect(getTagCalls()).toEqual([])
+  })
+
+  it('keeps executor failures best-effort for CMS writes', () => {
+    const req = buildReq(false)
+    const doc: PageDoc = { id: 1, _status: 'published', slug: 'about' }
+    vi.mocked(revalidateTag).mockImplementationOnce(() => {
+      throw new Error('cache unavailable')
+    })
+
+    const result = revalidatePage(buildAfterChangeArgs({ doc, req })) as PageDoc
+
+    expect(result).toBe(doc)
+    expect(getPathCalls()).toEqual(['/about'])
   })
 })

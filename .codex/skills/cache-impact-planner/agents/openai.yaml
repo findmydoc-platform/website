@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Cache Impact Planner'
+  short_description: 'Classify cache impact before implementation'
+  default_prompt: 'Use $cache-impact-planner to classify cache impact before planning or implementing a collection, global, public route, loader, hook, sitemap, discovery, or seed-flow change.'

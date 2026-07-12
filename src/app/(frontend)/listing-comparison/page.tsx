@@ -6,7 +6,7 @@ import { getPayload } from 'payload'
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
 import { buildIndexingMetadata, resolveListingComparisonIndexing } from '@/features/searchIndexing'
 import { buildFreshnessMetadata } from '@/utilities/freshness'
-import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
+import { getCachedListingComparisonServerData } from '@/utilities/listingComparison/serverData'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { JsonLdScript, buildListingComparisonJsonLd } from '@/utilities/structuredData'
 
@@ -23,8 +23,7 @@ export async function generateMetadata({
   searchParams: searchParamsPromise,
 }: ListingComparisonPageArgs): Promise<Metadata> {
   const searchParams = (await searchParamsPromise) ?? {}
-  const payload = await getPayload({ config: configPromise })
-  const listingData = await getListingComparisonServerData(payload, searchParams)
+  const listingData = await getCachedListingComparisonServerData(searchParams)
   const indexingPolicy = resolveListingComparisonIndexing(searchParams)
 
   return {
@@ -37,7 +36,7 @@ export default async function ListingComparisonPage({ searchParams: searchParams
   const searchParams = (await searchParamsPromise) ?? {}
   const requestHeaders = await headers()
   const payload = await getPayload({ config: configPromise })
-  const listingData = await getListingComparisonServerData(payload, searchParams)
+  const listingData = await getCachedListingComparisonServerData(searchParams)
   const indexingPolicy = resolveListingComparisonIndexing(searchParams)
   const favoriteAuthContext = await resolveFavoriteClinicAuthContext({
     payload,

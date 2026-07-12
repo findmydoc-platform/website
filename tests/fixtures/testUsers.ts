@@ -59,10 +59,11 @@ export const asClinicScopedPayloadUser = (user: BasicUser, clinicId: number): Pa
   }) as unknown as PayloadRequestUser
 
 export async function createBasicTestUser(payload: Payload, options: CreateBasicUserOptions): Promise<BasicUser> {
+  const emailDomain = options.userType === 'platform' ? 'findmydoc.eu' : 'example.com'
   const basicUser = (await payload.create({
     collection: 'basicUsers',
     data: {
-      email: `${options.emailPrefix}@example.com`,
+      email: `${options.emailPrefix}@${emailDomain}`,
       userType: options.userType,
       firstName: options.firstName ?? 'User',
       lastName: options.lastName ?? 'Tester',

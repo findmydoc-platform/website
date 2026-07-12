@@ -89,6 +89,7 @@ function hasToolingSignal(source) {
     /(?:from\s+|import\s*\(|require\s*\()\s*['"][^'"]*\.codex\/skills\/[^'"]*\/scripts\//u,
     /(?:from\s+|import\s*\(|require\s*\()\s*['"][^'"]*tests\/e2e\/helpers\//u,
     /(?:from\s+|import\s*\(|require\s*\()\s*['"][.]{2}\/[.]{2}\/e2e\/helpers\//u,
+    /(?:execFileSync|execSync|spawnSync|spawn)\([\s\S]{0,240}?(?:\/scripts\/|scripts\/|\.github\/scripts\/|\.codex\/skills\/[\s\S]{0,240}?\/scripts\/|tests\/e2e\/helpers\/)/u,
   ].some((pattern) => pattern.test(source))
 }
 

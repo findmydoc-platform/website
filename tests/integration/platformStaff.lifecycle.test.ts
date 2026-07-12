@@ -43,7 +43,7 @@ describe('PlatformStaff integration - access and constraints', () => {
     return (await payload.create({
       collection: 'basicUsers',
       data: {
-        email: `${slugPrefix}-${suffix}@example.com`,
+        email: `${slugPrefix}-${suffix}@findmydoc.eu`,
         supabaseUserId: `sb-${slugPrefix}-${suffix}`,
         userType: 'platform',
         firstName: 'Platform',

@@ -23,10 +23,6 @@ export const resolveSeedRuntimeEnv = (
   return 'development'
 }
 
-export const isProductionRuntime = (env: NodeJS.ProcessEnv = process.env): boolean => {
-  return resolveSeedRuntimeEnv(undefined, env) === 'production'
-}
-
 export const assertSeedRunPolicy = (options: { runtimeEnv: SeedRuntimeEnv; type: SeedType; reset: boolean }) => {
   const policy = resolveSeedRuntimePolicy(options.runtimeEnv)
 

@@ -8,7 +8,9 @@ import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
-import { createScopedLogger, getRequestLogContext } from '@/utilities/logging/shared'
+import { normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { isFindmydocPlatformEmail } from '@/auth/utilities/platformStaffEmailPolicy'
+import { createScopedLogger, getRequestLogContext, hashLogValue } from '@/utilities/logging/shared'
 import {
   isNonProductionDeployment,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
@@ -64,33 +66,46 @@ export default async function LoginPage({
   if (authData) {
     // Only attempt redirect for staff types
     if (authData.userType === 'clinic' || authData.userType === 'platform') {
-      const user = await findUserBySupabaseId(payload, authData)
-
-      if (user) {
-        if (authData.userType === 'clinic') {
-          if (isGuardEnabled) {
-            statusMessage = previewPlatformOnlyStatus.text
-            statusVariant = previewPlatformOnlyStatus.variant
-          } else {
-            const isApproved = await isClinicUserApproved(payload, String(user.id))
-            if (isApproved) {
-              redirect('/admin')
-            } else {
-              statusMessage = 'Your account is pending approval. Please contact support.'
-              statusVariant = 'warning'
-            }
-          }
-        } else {
-          // Platform users are always allowed if they exist
-          redirect('/admin')
-        }
-      } else if (!isGuardEnabled || authData.userType === 'platform') {
-        statusMessage =
-          'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.'
+      if (authData.userType === 'platform' && !isFindmydocPlatformEmail(authData.userEmail)) {
+        logger.warn(
+          {
+            event: 'auth.admin_login.platform_user.invalid_email_domain',
+            supabaseUserIdHash: hashLogValue(authData.supabaseUserId),
+            userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
+          },
+          'Platform Supabase user email is outside the allowed domain',
+        )
+        statusMessage = 'Your account is not available for admin access. Please contact support.'
         statusVariant = 'warning'
       } else {
-        statusMessage = previewPlatformOnlyStatus.text
-        statusVariant = previewPlatformOnlyStatus.variant
+        const user = await findUserBySupabaseId(payload, authData)
+
+        if (user) {
+          if (authData.userType === 'clinic') {
+            if (isGuardEnabled) {
+              statusMessage = previewPlatformOnlyStatus.text
+              statusVariant = previewPlatformOnlyStatus.variant
+            } else {
+              const isApproved = await isClinicUserApproved(payload, String(user.id))
+              if (isApproved) {
+                redirect('/admin')
+              } else {
+                statusMessage = 'Your account is pending approval. Please contact support.'
+                statusVariant = 'warning'
+              }
+            }
+          } else {
+            // Platform users are allowed if they exist and use the required domain.
+            redirect('/admin')
+          }
+        } else if (!isGuardEnabled || authData.userType === 'platform') {
+          statusMessage =
+            'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.'
+          statusVariant = 'warning'
+        } else {
+          statusMessage = previewPlatformOnlyStatus.text
+          statusVariant = previewPlatformOnlyStatus.variant
+        }
       }
     }
   } else {

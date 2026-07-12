@@ -32,7 +32,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
     const basicUser = (await payload.create({
       collection: 'basicUsers',
       data: {
-        email: `${slugPrefix}-platform-${suffix}@example.com`,
+        email: `${slugPrefix}-platform-${suffix}@findmydoc.eu`,
         userType: 'platform',
         firstName: 'Platform',
         lastName: `User-${suffix}`,
@@ -94,6 +94,50 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
 
     expect(created.storageKey).toMatch(/^cgmedia-[a-f0-9]{32}$/)
     expect(created.storagePath).toMatch(new RegExp(`^clinics-gallery/${clinic.id}-cgmedia-[a-f0-9]{32}-.+\\.png$`))
+  })
+
+  it('returns the gallery format contract for unsupported or invalid direct uploads', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-invalid-upload` })
+    const platformUser = await createPlatformUser('invalid-upload')
+    const acceptedFormatsMessage = 'Unsupported image format. Accepted formats: JPG, PNG, WebP, AVIF, GIF.'
+
+    await expect(
+      payload.create({
+        collection: 'clinicGalleryMedia',
+        data: {
+          alt: 'Unsupported gallery image',
+          clinic: clinic.id,
+        } as Partial<ClinicGalleryMedia>,
+        file: {
+          data: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>'),
+          mimetype: 'image/svg+xml',
+          name: `${slugPrefix}-unsupported.svg`,
+          size: 46,
+        },
+        user: asBasicUserPayload(platformUser),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadCreateArgs),
+    ).rejects.toThrow(acceptedFormatsMessage)
+
+    await expect(
+      payload.create({
+        collection: 'clinicGalleryMedia',
+        data: {
+          alt: 'Invalid gallery image',
+          clinic: clinic.id,
+        } as Partial<ClinicGalleryMedia>,
+        file: {
+          data: Buffer.from('not an image'),
+          mimetype: 'image/png',
+          name: `${slugPrefix}-invalid.png`,
+          size: 12,
+        },
+        user: asBasicUserPayload(platformUser),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadCreateArgs),
+    ).rejects.toThrow(acceptedFormatsMessage)
   })
 
   it('auto-assigns clinic on create when clinic users omit the clinic field', async () => {

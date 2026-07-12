@@ -1,7 +1,11 @@
 import type { Payload } from 'payload'
 import { describe, expect, it } from 'vitest'
 
-import { getClinicDetailServerData } from '@/utilities/clinicDetail/serverData'
+import {
+  buildClinicDetailDataCacheTags,
+  buildClinicDetailIdentityCacheTags,
+  getClinicDetailServerData,
+} from '@/utilities/clinicDetail/serverData'
 
 type MockData = {
   clinics: Array<Record<string, unknown>>
@@ -350,6 +354,26 @@ function createMockPayload(data: MockData): Payload {
 }
 
 describe('getClinicDetailServerData (contract)', () => {
+  it('defines canonical public Data Cache tags for clinic detail reads', () => {
+    expect(buildClinicDetailIdentityCacheTags('berlin-health-clinic')).toEqual([
+      'slug:clinics:berlin-health-clinic',
+      'surface:clinic-detail',
+    ])
+    expect(buildClinicDetailDataCacheTags({ id: 1, slug: 'berlin-health-clinic' })).toEqual([
+      'entity:clinics:1',
+      'slug:clinics:berlin-health-clinic',
+      'surface:clinic-detail',
+      'surface:clinic-detail:1',
+      'collection:clinictreatments',
+      'collection:doctors',
+      'collection:doctorspecialties',
+      'collection:reviews',
+      'collection:accreditation',
+      'collection:clinicGalleryEntries',
+      'collection:cities',
+    ])
+  })
+
   it('maps approved clinic data with trust, doctors, gallery and fallback fields', async () => {
     const payload = createMockPayload(mockData)
 

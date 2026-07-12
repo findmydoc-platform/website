@@ -46,7 +46,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
   })
 
   const createPlatformUser = async (suffix: string) => {
-    const email = `${slugPrefix}-platform-${suffix}@example.com`
+    const email = `${slugPrefix}-platform-${suffix}@findmydoc.eu`
     const basicUser = (await payload.create({
       collection: 'basicUsers',
       data: {

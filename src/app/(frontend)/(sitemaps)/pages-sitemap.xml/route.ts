@@ -6,6 +6,7 @@ import { findPageSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { shouldBlockSitemapIndexingForRequest } from '@/features/searchIndexing/sitemapGuards'
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
+import { buildSitemapTag } from '@/utilities/cachePolicy'
 
 const fixedPublicPaths = ['/', '/posts', '/contact', '/about', '/listing-comparison'] as const
 const excludedPublicPaths = new Set(['/search'])
@@ -76,7 +77,7 @@ const getPagesSitemap = unstable_cache(
   },
   ['pages-sitemap'],
   {
-    tags: ['pages-sitemap'],
+    tags: [buildSitemapTag('pages')],
   },
 )
 

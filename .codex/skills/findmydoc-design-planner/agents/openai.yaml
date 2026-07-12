@@ -1,4 +1,0 @@
-interface:
-  display_name: 'findmydoc Design Planner'
-  short_description: 'Plan brand-grounded findmydoc designs'
-  default_prompt: 'Use $findmydoc-design-planner to create a brand-grounded findmydoc design plan with populated and meaningful state mockups across form factors.'

@@ -16,6 +16,7 @@ import {
 } from '@/collections/common/mediaCollection'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
+import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
 import {
   revalidateDeletedPlatformContentMediaConsumers,
   revalidatePlatformContentMediaConsumers,
@@ -30,6 +31,11 @@ export const PlatformContentMedia: CollectionConfig = {
     group: 'Content & Media',
     description: 'Media used on public pages and blocks',
     defaultColumns: ['alt', 'createdBy'],
+    components: {
+      edit: {
+        Upload: '@/app/(payload)/components/PolicyAwareUpload',
+      },
+    },
   },
   access: {
     read: anyone,
@@ -44,6 +50,7 @@ export const PlatformContentMedia: CollectionConfig = {
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [stableIdBeforeChangeHook, beforeChangePlatformContentMedia],
     beforeOperation: [
+      beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         storagePrefix: 'platform',

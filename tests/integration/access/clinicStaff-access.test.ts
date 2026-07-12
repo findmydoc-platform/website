@@ -73,7 +73,7 @@ describe('ClinicStaff access', () => {
     expect(results.docs[0]?.clinic).toBe(clinicA.id)
   })
 
-  it('allows clinic staff to update their own profile but not others', async () => {
+  it('keeps authorization fields immutable for clinic staff', async () => {
     const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-update-a` })
     const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-update-b` })
 
@@ -83,7 +83,7 @@ describe('ClinicStaff access', () => {
       createdBasicUserIds,
       createdClinicStaffIds,
     })
-    const { clinicStaff: staffB } = await createClinicUserWithStaff(payload, {
+    const { basicUser: clinicUserB, clinicStaff: staffB } = await createClinicUserWithStaff(payload, {
       slugPrefix,
       suffix: 'update-b',
       createdBasicUserIds,
@@ -96,13 +96,25 @@ describe('ClinicStaff access', () => {
     const updated = await payload.update({
       collection: 'clinicStaff',
       id: staffA.id,
-      data: { clinic: clinicA.id },
+      data: { clinic: clinicB.id, user: clinicUserB.id },
       user: asBasicUserPayload(clinicUserA),
       overrideAccess: false,
       depth: 0,
     })
 
     expect(updated.id).toBe(staffA.id)
+    expect(updated.clinic).toBe(clinicA.id)
+    expect(updated.user).toBe(clinicUserA.id)
+
+    const persisted = await payload.findByID({
+      collection: 'clinicStaff',
+      id: staffA.id,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(persisted.clinic).toBe(clinicA.id)
+    expect(persisted.user).toBe(clinicUserA.id)
 
     await expect(
       payload.update({
@@ -120,7 +132,7 @@ describe('ClinicStaff access', () => {
       createdBasicUserIds,
     })
 
-    await payload.update({
+    const platformUpdated = await payload.update({
       collection: 'clinicStaff',
       id: staffB.id,
       data: { clinic: clinicA.id },
@@ -128,6 +140,8 @@ describe('ClinicStaff access', () => {
       overrideAccess: false,
       depth: 0,
     })
+
+    expect(platformUpdated.clinic).toBe(clinicA.id)
 
     await expect(
       payload.delete({

@@ -186,17 +186,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Cache Playwright Browsers
-        id: playwright-cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-
-      - name: Install Playwright Browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: mkdir -p ~/.cache/ms-playwright && pnpm exec playwright install chromium
-
       - name: Run unit tests
         id: unit
         run: pnpm vitest --project unit --run --coverage
@@ -221,6 +210,7 @@ jobs:
             coverage/unit/coverage-summary.json
             coverage/unit/coverage-final.json
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Generate job summary
         if: always()
@@ -289,6 +279,7 @@ jobs:
             coverage/storybook/coverage-summary.json
             coverage/storybook/coverage-final.json
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Generate job summary
         if: always()
@@ -430,6 +421,7 @@ jobs:
             coverage/integration/coverage-summary.json
             coverage/integration/coverage-final.json
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Generate job summary
         if: always()
@@ -476,6 +468,7 @@ jobs:
           name: coverage-combined
           path: coverage/combined/**
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Publish combined coverage summary
         if: always()

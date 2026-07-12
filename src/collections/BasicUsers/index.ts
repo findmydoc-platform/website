@@ -4,6 +4,7 @@ import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { createUserProfileHook } from './hooks/createUserProfile'
 import { createSupabaseUserHook } from './hooks/createSupabaseUser'
 import { deleteSupabaseUserHook } from './hooks/deleteSupabaseUser'
+import { enforcePlatformStaffEmailDomainHook } from './hooks/enforcePlatformStaffEmailDomain'
 import { stableIdBeforeChangeHook, stableIdField } from '../common/stableIdField'
 
 // Authentication collection for Clinic and Platform Staff (Admin UI access)
@@ -28,7 +29,7 @@ export const BasicUsers: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook, createSupabaseUserHook],
+    beforeChange: [stableIdBeforeChangeHook, enforcePlatformStaffEmailDomainHook, createSupabaseUserHook],
     afterChange: [createUserProfileHook],
     beforeDelete: [deleteSupabaseUserHook],
   },

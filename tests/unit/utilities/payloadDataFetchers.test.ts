@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getCachedDocument } from '@/utilities/getDocument'
 import { getGlobal, getCachedGlobal } from '@/utilities/getGlobals'
 import { getRedirects, getCachedRedirects } from '@/utilities/getRedirects'
-import type { CollectionSlug, GlobalSlug } from 'payload'
+import type { GlobalSlug } from 'payload'
 
 const { getPayloadMock, unstableCacheMock } = vi.hoisted(() => ({
   getPayloadMock: vi.fn(),
@@ -28,34 +27,14 @@ describe('Payload-backed utilities', () => {
     unstableCacheMock.mockImplementation((fn) => fn)
   })
 
-  describe('getCachedDocument', () => {
-    it('fetches documents through Payload and registers cache tags', async () => {
-      const findMock = vi.fn().mockResolvedValue({ docs: [{ slug: 'home' }] })
-      getPayloadMock.mockResolvedValue({ find: findMock })
-
-      const cachedLoader = getCachedDocument('pages' as CollectionSlug, 'home')
-
-      expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['pages', 'home'], { tags: ['pages_home'] })
-
-      const result = await cachedLoader()
-
-      expect(findMock).toHaveBeenCalledWith({
-        collection: 'pages',
-        depth: 0,
-        where: { slug: { equals: 'home' } },
-      })
-      expect(result).toEqual({ slug: 'home' })
-    })
-  })
-
   describe('getGlobal', () => {
     it('fetches globals with the requested depth', async () => {
       const findGlobalMock = vi.fn().mockResolvedValue({ hero: 'content' })
       getPayloadMock.mockResolvedValue({ findGlobal: findGlobalMock })
 
-      const globalDoc = await getGlobal('settings' as GlobalSlug, 1)
+      const globalDoc = await getGlobal('header' as GlobalSlug, 1)
 
-      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'settings', depth: 1 })
+      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'header', depth: 1 })
       expect(globalDoc).toEqual({ hero: 'content' })
     })
 
@@ -63,14 +42,14 @@ describe('Payload-backed utilities', () => {
       const findGlobalMock = vi.fn().mockResolvedValue({ footer: 'data' })
       getPayloadMock.mockResolvedValue({ findGlobal: findGlobalMock })
 
-      const cachedGlobal = getCachedGlobal('settings' as GlobalSlug, 3)
+      const cachedGlobal = getCachedGlobal('footer' as GlobalSlug, 3)
 
-      expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['2026-06-20', 'settings', '3'], {
-        tags: ['global_settings'],
+      expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['2026-06-20', 'footer', '3'], {
+        tags: ['global:footer'],
       })
 
       const result = await cachedGlobal()
-      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'settings', depth: 3 })
+      expect(findGlobalMock).toHaveBeenCalledWith({ slug: 'footer', depth: 3 })
       expect(result).toEqual({ footer: 'data' })
     })
   })
@@ -98,14 +77,14 @@ describe('Payload-backed utilities', () => {
       const cachedRedirects = getCachedRedirects()
 
       expect(unstableCacheMock).toHaveBeenCalledWith(expect.any(Function), ['redirects'], {
-        tags: ['redirects'],
+        tags: ['collection:redirects', 'surface:redirects'],
       })
 
       const result = await cachedRedirects()
 
       expect(findMock).toHaveBeenCalledWith({
         collection: 'redirects',
-        depth: 1,
+        depth: 0,
         limit: 0,
         pagination: false,
       })

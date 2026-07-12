@@ -45,6 +45,11 @@ export const ClinicStaff: CollectionConfig = {
       required: true,
       unique: true,
       hasMany: false,
+      access: {
+        // Identity linkage controls authorization and may only be reassigned by Platform Staff.
+        create: platformOnlyFieldAccess,
+        update: platformOnlyFieldAccess,
+      },
       admin: {
         position: 'sidebar',
         description: 'Login account for this staff member',
@@ -61,6 +66,11 @@ export const ClinicStaff: CollectionConfig = {
       relationTo: 'clinics',
       required: false, // Allow staff registration without immediate clinic assignment (assigned by Platform staff)
       hasMany: false,
+      access: {
+        // Clinic assignment defines tenant access and may only be changed by Platform Staff.
+        create: platformOnlyFieldAccess,
+        update: platformOnlyFieldAccess,
+      },
       admin: {
         position: 'sidebar',
         description: 'Clinic this staff member belongs to',

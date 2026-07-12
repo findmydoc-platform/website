@@ -16,6 +16,9 @@
 - For field labels and descriptions, keep copy short, plain, and self-contained for first-time clinic users.
 - Explain what a field is for and what to enter, but do not add history, implementation notes, or status-quo wording.
 - Prefer leaving already clear copy unchanged over rewriting for style.
+- Run `$cache-impact-planner` before finalizing a new or materially changed collection or global. Add its catalog classification even when the result is `no-public-impact` or `public-live`.
+- When a collection owns public cached output, its hook adapter builds a normalized planner event from stable old and new identities or relations and respects `context.disableRevalidate`.
+- Do not import `next/cache` or construct cache tags in collection code.
 
 ## Alignment Requirements
 

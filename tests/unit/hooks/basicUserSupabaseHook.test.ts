@@ -30,7 +30,7 @@ describe('createSupabaseUserHook (beforeChange)', () => {
 
   it('skips when operation is not create', async () => {
     const req = makeReq()
-    const data: Partial<BasicUser> = { email: 'x@example.com', userType: 'platform' }
+    const data: Partial<BasicUser> = { email: 'x@findmydoc.eu', userType: 'platform' }
 
     const result = await createSupabaseUserHook({
       data,
@@ -45,7 +45,7 @@ describe('createSupabaseUserHook (beforeChange)', () => {
 
   it('skips when supabaseUserId already exists', async () => {
     const req = makeReq()
-    const data: Partial<BasicUser> = { email: 'x@example.com', userType: 'platform', supabaseUserId: 'existing' }
+    const data: Partial<BasicUser> = { email: 'x@findmydoc.eu', userType: 'platform', supabaseUserId: 'existing' }
 
     const result = await createSupabaseUserHook({
       data,
@@ -60,7 +60,7 @@ describe('createSupabaseUserHook (beforeChange)', () => {
 
   it('skips when seed context disables Supabase provisioning', async () => {
     const req = makeReq({ skipSupabaseUserCreation: true })
-    const data: Partial<BasicUser> = { email: 'seed@example.com', userType: 'platform' }
+    const data: Partial<BasicUser> = { email: 'seed@findmydoc.eu', userType: 'platform' }
 
     const result = await createSupabaseUserHook({
       data,
@@ -166,7 +166,7 @@ describe('createSupabaseUserHook (beforeChange)', () => {
     vi.mocked(inviteSupabaseAccount).mockRejectedValueOnce(new Error('boom'))
 
     const req = makeReq()
-    const data: Partial<BasicUser> = { email: 'err@example.com', userType: 'platform' }
+    const data: Partial<BasicUser> = { email: 'err@findmydoc.eu', userType: 'platform' }
 
     await expect(
       createSupabaseUserHook({

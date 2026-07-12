@@ -48,6 +48,17 @@ export type SeedRunJobRecord = {
   output?: Record<string, unknown>
 }
 
+export type SeedRunFinalFlushStatus = 'executed' | 'failed' | 'skipped'
+
+export type SeedRunFinalFlushRecord = {
+  status: SeedRunFinalFlushStatus
+  completedAt: string
+  tagCount: number
+  pathCount: number
+  failureCount: number
+  reason?: 'no-public-work' | 'planner-error' | 'executor-error'
+}
+
 export type SeedRunRecord = {
   runId: string
   type: SeedType
@@ -70,6 +81,7 @@ export type SeedRunRecord = {
   warnings: string[]
   failures: string[]
   totals: { created: number; updated: number }
+  finalFlush?: SeedRunFinalFlushRecord
 }
 
 export type SeedRunSnapshot = SeedRunRecord & {
@@ -395,6 +407,21 @@ export const markSeedRunCancelled = async (payload: Payload, runId: string): Pro
   return record
 }
 
+export const markSeedRunFinalFlush = async (
+  payload: Payload,
+  runId: string,
+  finalFlush: SeedRunFinalFlushRecord,
+): Promise<SeedRunRecord | null> => {
+  const record = await loadSeedRunRecord(payload, runId)
+  if (!record) return null
+  if (record.finalFlush && record.finalFlush.status !== 'failed') return record
+
+  record.finalFlush = clone(finalFlush)
+  finalizeRunIfNeeded(record)
+  await saveSeedRunRecord(payload, record)
+  return record
+}
+
 export const attachSeedRunWarning = async (
   payload: Payload,
   runId: string,
@@ -451,19 +478,4 @@ export const clearActiveSeedRunIfTerminal = async (payload: Payload, runId: stri
   if (activeRunId === runId) {
     await setActiveSeedRunId(payload, null)
   }
-}
-
-export const saveLatestSeedRun = async (payload: Payload, record: SeedRunRecord): Promise<void> => {
-  await setLatestSeedRunId(payload, record.runId)
-  if (record.status === 'queued' || record.status === 'running') {
-    await setActiveSeedRunId(payload, record.runId)
-  } else {
-    await clearActiveSeedRunIfTerminal(payload, record.runId)
-  }
-}
-
-export const normalizeSeedRun = (record: SeedRunRecord): SeedRunRecord => {
-  const next = clone(record)
-  finalizeRunIfNeeded(next)
-  return next
 }

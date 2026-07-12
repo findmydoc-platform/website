@@ -37,6 +37,13 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 7. Do not hard-code secrets; only read from environment variables.
 8. Keep `.secrets.baseline` synchronized with branch changes; when `detect-secrets` updates the baseline, commit it with the related change.
 
+### Cache And Revalidation Boundary
+
+- Before finalizing a change to a collection, global, public route, server-data loader, hook, sitemap, discovery flow, or seed flow, use `$cache-impact-planner`.
+- Record exactly one decision: `no-public-impact`, `public-live`, or `public-cached`. New collections and globals require a cache-policy catalog classification; static public pages do not.
+- `public-cached` work uses existing cache classes, policy builders, canonical read tags, a planner event and owner, and focused read/write-symmetry tests. Draft, preview, private, and request-bound data stays live.
+- Do not invent cache classes, tag families, owner types, or direct invalidation. Stop for unclear freshness, a new route family, remote storage, or Cache Components primitives that need an ADR decision.
+
 ### Validation Policy
 
 - Follow the repository-level validation policy in `AGENTS.md`; this section is only a `src/**` routing summary.

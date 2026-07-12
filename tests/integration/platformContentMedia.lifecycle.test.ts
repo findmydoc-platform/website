@@ -27,7 +27,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
     const basicUser = (await payload.create({
       collection: 'basicUsers',
       data: {
-        email: `${slugPrefix}-${suffix}@example.com`,
+        email: `${slugPrefix}-${suffix}@findmydoc.eu`,
         supabaseUserId: uniqueSupabaseUserId(suffix),
         userType: 'platform',
         firstName: 'Platform',

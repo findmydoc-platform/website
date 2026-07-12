@@ -50,7 +50,7 @@ export type ConditionalScenarioKind =
   | 'clinic-approved'
   // Clinic scope: response must scope by clinic identifier for non-platform users.
   | 'clinic-scope'
-  // Clinic staff update: clinic staff can update only their own profile user relation.
+  // Clinic staff update: clinic staff can target only their own profile; field access protects authorization data.
   | 'clinic-staff-update'
   // Patient scope: restricts non-platform reads/writes to documents owned by the patient user.
   | 'patient-scope'
@@ -153,7 +153,10 @@ export const permissionMatrix: PermissionMatrix = {
       operations: {
         create: { type: 'conditional', details: 'disabled API create; managed via provisioning' },
         read: { type: 'conditional', details: 'platform full + clinic own clinic' },
-        update: { type: 'conditional', details: 'platform + own profile only after approval' },
+        update: {
+          type: 'conditional',
+          details: 'platform + own profile after approval; user, clinic, and status fields are platform-only',
+        },
         delete: { type: 'conditional', details: 'disabled API delete; managed via provisioning' },
         admin: { type: 'platform' },
       },
@@ -165,7 +168,8 @@ export const permissionMatrix: PermissionMatrix = {
           delete: { kind: 'always-false' },
         },
       },
-      notes: 'Authentication denied until approval; RW post-approval own clinic + own profile update',
+      notes:
+        'Authentication denied until approval; clinic staff read their clinic and update only non-authorization fields on their own profile',
     },
     patients: {
       slug: 'patients',
@@ -488,7 +492,7 @@ export const permissionMatrix: PermissionMatrix = {
         read: { type: 'conditional', details: 'served when referenced' },
         update: { type: 'conditional', details: 'platform full + clinic own clinic' },
         delete: { type: 'conditional', details: 'platform full + clinic own clinic' },
-        admin: { type: 'platform' },
+        admin: { type: 'conditional', details: 'platform full + clinic own clinic' },
       },
       meta: {
         conditional: {
@@ -496,9 +500,10 @@ export const permissionMatrix: PermissionMatrix = {
           read: { kind: 'clinic-scope', path: 'clinic' },
           update: { kind: 'clinic-scope', path: 'clinic' },
           delete: { kind: 'clinic-scope', path: 'clinic' },
+          admin: { kind: 'clinic-scope', path: 'clinic' },
         },
       },
-      notes: 'Doctor-owned images - similar scoping to ClinicMedia',
+      notes: 'Platform full + clinic-managed doctor images scoped to the assigned clinic',
     },
     userProfileMedia: {
       slug: 'userProfileMedia',

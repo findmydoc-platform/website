@@ -18,6 +18,7 @@ A production-ready Next.js front-end with:
   - [Search](#search)
   - [Redirects](#redirects)
   - [PostHog Analytics](#posthog-analytics)
+  - [Monitoring and Error Logic](#monitoring-and-error-logic)
   - [Preview Access Policy](#preview-access-policy)
   - [Draft Preview](#draft-preview)
   - [Live Preview](#live-preview)
@@ -161,16 +162,17 @@ Preview deployments use runtime policy for auth recovery and search-index protec
 Implementation and usage:
 - [Setup: Run Local Dev in Preview Runtime](./setup.md#run-local-dev-in-preview-runtime)
 - [Preview Guard Technical Notes](../src/features/previewGuard/README.md)
-- [Preview Admin Recovery Decision Flow](../src/auth/README.md#preview-runtime-admin-recovery-flow)
+- [Preview Admin Recovery Decision Flow](../src/auth/README.md#runtime-admin-recovery)
 
 ## Live Preview
 View content updates in real time with SSR.
 [Payload Live Preview Docs](https://payloadcms.com/docs/live-preview/overview)
 
 ## On-demand Revalidation
-The findmydoc portal uses the [on-demand revalidation](https://nextjs.org/docs/app/getting-started/revalidating) feature of Next.js to automatically revalidate pages when you publish or update a document in Payload. That way, content changes appear on the site without a full rebuild or redeploy.
 
-> Note: if an image has been changed, for example it's been cropped, you will need to republish the page it's used on in order to be able to revalidate the Nextjs image cache.
+The findmydoc portal uses a classified public cache and revalidation runtime for Payload-backed public website content. Public reads use canonical cache tags only when a matching invalidation owner exists, and Payload hooks, seed final flushes, and discovery surfaces route cache decisions through the central planner/executor boundary.
+
+Architecture and runtime ownership are documented in [Cache Revalidation Runtime Architecture](./engineering/cache-revalidation-runtime.md). The accepted strategy is governed by [ADR 023](./adrs/023-adr-public-website-cache-and-revalidation-strategy.md).
 
 ## Public Sitemaps
 The public sitemap surface is split between the generated `robots.txt` file and App Router sitemap route handlers.
@@ -264,3 +266,6 @@ Create URL redirects to manage content migrations.
 ## PostHog Analytics
 Session replay, error tracking, and web analytics with automatic user identification.
 [PostHog Integration Docs](./integrations/posthog.md)
+
+## Monitoring and Error Logic
+Production monitoring combines Vercel runtime logs, structured server events, PostHog error tracking, and GitHub/Vercel deployment signals. The operating map lives in [Monitoring and Error Logic](./monitoring-and-error-logic.md).

@@ -112,4 +112,22 @@ describe('runTestSenseCheck', () => {
     expect(result.ok).toBe(true)
     expect(result.warnings).toEqual(expect.arrayContaining([expect.stringContaining('styling/class assertions')]))
   })
+
+  it('recognizes tooling tests that execute repository scripts directly', () => {
+    const rootDir = createTempRepo({
+      'tests/tooling/scripts/detect-migration-diff.test.ts': [
+        "import { execFileSync } from 'node:child_process'",
+        "import path from 'node:path'",
+        "import { describe, it } from 'vitest'",
+        '',
+        "describe('migration detector', () => {",
+        "  it('runs the script', () => {",
+        "    execFileSync('bash', [path.join(process.cwd(), '.github/scripts/ci/detect-migration-diff.sh')])",
+        '  })',
+        '})',
+      ].join('\n'),
+    })
+
+    expect(runTestSenseCheck({ rootDir }).ok).toBe(true)
+  })
 })

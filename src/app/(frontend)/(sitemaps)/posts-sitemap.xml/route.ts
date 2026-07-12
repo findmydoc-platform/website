@@ -5,6 +5,7 @@ import { unstable_cache } from 'next/cache'
 import { findPostSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { shouldBlockSitemapIndexingForRequest } from '@/features/searchIndexing/sitemapGuards'
+import { buildSitemapTag } from '@/utilities/cachePolicy'
 
 const buildSitemapLocation = (siteUrl: string, path: string): string => {
   const baseUrl = siteUrl.replace(/\/+$/, '')
@@ -43,7 +44,7 @@ const getPostsSitemap = unstable_cache(
   },
   ['posts-sitemap'],
   {
-    tags: ['posts-sitemap'],
+    tags: [buildSitemapTag('posts')],
   },
 )
 

@@ -1,6 +1,10 @@
 import type { Payload, Where } from 'payload'
 
+import configPromise from '@payload-config'
+import { unstable_cache } from 'next/cache'
+import { getPayload } from 'payload'
 import type { Post, PostsSelect } from '@/payload-types'
+import { buildCollectionTag, buildSitemapTag, buildSurfaceTag } from '@/utilities/cachePolicy'
 
 import {
   buildLocalizedQueryOptions,
@@ -61,6 +65,12 @@ export type FindPublishedPostsArgs = {
   pagination?: boolean
   sort?: string
   where?: Where
+}
+
+export type CachedPublishedPostsPageArgs = {
+  contentLocale?: LocalizedDocQuery
+  limit?: number
+  page?: number
 }
 
 const POST_LIST_SELECT = {
@@ -127,6 +137,29 @@ const POST_SITEMAP_SELECT = {
   slug: true,
   updatedAt: true,
 } satisfies PostsSelect<true>
+
+const POSTS_LIST_DATA_CACHE_KEY_VERSION = '2026-07-08'
+
+export const buildPostListDataCacheTags = (): string[] => [
+  buildCollectionTag('posts'),
+  buildSurfaceTag('posts-list'),
+  buildSurfaceTag('home'),
+  buildSurfaceTag('partners-clinics'),
+  buildSitemapTag('posts'),
+]
+
+export const buildPostListDataCacheKey = ({
+  contentLocale,
+  limit = 12,
+  page = 1,
+}: CachedPublishedPostsPageArgs = {}): string =>
+  JSON.stringify({
+    version: POSTS_LIST_DATA_CACHE_KEY_VERSION,
+    locale: contentLocale?.locale ?? null,
+    fallbackLocale: contentLocale?.fallbackLocale ?? null,
+    limit,
+    page,
+  })
 
 type RelatedPostValue = number | { id?: number | null } | null | undefined
 
@@ -243,6 +276,23 @@ export async function findLatestPosts(payload: Payload, limit = 3): Promise<Post
   return result.docs
 }
 
+const getCachedLatestPostsByLimit = (limit: number) =>
+  unstable_cache(
+    async () => {
+      const payload = await getPayload({ config: configPromise })
+
+      return findLatestPosts(payload, limit)
+    },
+    ['posts-latest', String(limit)],
+    {
+      tags: buildPostListDataCacheTags(),
+    },
+  )
+
+export async function getCachedLatestPosts(limit = 3): Promise<PostLatestDoc[]> {
+  return getCachedLatestPostsByLimit(limit)()
+}
+
 export async function findPublishedPostsPage(
   payload: Payload,
   {
@@ -268,6 +318,29 @@ export async function findPublishedPostsPage(
   })
 
   return result as unknown as PaginatedResult<PostSummaryDoc>
+}
+
+const getCachedPublishedPostsPageByArgs = (args: CachedPublishedPostsPageArgs = {}) =>
+  unstable_cache(
+    async () => {
+      const payload = await getPayload({ config: configPromise })
+
+      return findPublishedPostsPage(payload, {
+        contentLocale: args.contentLocale,
+        limit: args.limit ?? 12,
+        page: args.page ?? 1,
+      })
+    },
+    ['posts-list-page', buildPostListDataCacheKey(args)],
+    {
+      tags: buildPostListDataCacheTags(),
+    },
+  )
+
+export async function getCachedPublishedPostsPage(
+  args: CachedPublishedPostsPageArgs = {},
+): Promise<PaginatedResult<PostSummaryDoc>> {
+  return getCachedPublishedPostsPageByArgs(args)()
 }
 
 export async function findPostBySlug(

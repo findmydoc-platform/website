@@ -1,15 +1,16 @@
 import type { CollectionAfterChangeHook } from 'payload'
 
-import { revalidateTag } from 'next/cache.js'
+import { executeRedirectChangeRevalidation } from '@/hooks/cacheRevalidationAdapters'
 
 export const revalidateRedirects: CollectionAfterChangeHook = ({ doc, req: { context, payload } }) => {
   if (context.disableRevalidate) {
     return doc
   }
 
-  payload.logger.info(`Revalidating redirects`)
-
-  revalidateTag('redirects', { expire: 0 })
+  executeRedirectChangeRevalidation({
+    doc,
+    logger: payload.logger,
+  })
 
   return doc
 }

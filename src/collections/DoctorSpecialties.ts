@@ -7,6 +7,7 @@ import { platformOrAssignedClinicMutation, platformOrOwnClinicDoctorResource } f
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeEnforceDoctorInAssignedClinic } from '@/hooks/clinicOwnership'
+import { revalidateDoctorSpecialtyChange, revalidateDoctorSpecialtyDelete } from '@/hooks/revalidateClinicSurfaces'
 
 export const DoctorSpecialties: CollectionConfig = {
   slug: 'doctorspecialties',
@@ -28,6 +29,8 @@ export const DoctorSpecialties: CollectionConfig = {
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook, beforeChangeEnforceDoctorInAssignedClinic({ doctorField: 'doctor' })],
+    afterChange: [revalidateDoctorSpecialtyChange],
+    afterDelete: [revalidateDoctorSpecialtyDelete],
   },
   timestamps: true,
   fields: [

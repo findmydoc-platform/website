@@ -313,12 +313,12 @@ describe('Admin LoginPage', () => {
       makeStaffUser({
         id: 2,
         userType: 'platform',
-        email: 'platform@example.com',
+        email: 'platform@findmydoc.eu',
       }),
     )
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'user-2',
-      userEmail: 'platform@example.com',
+      userEmail: 'platform@findmydoc.eu',
       userType: 'platform',
       firstName: 'Platform',
       lastName: 'User',
@@ -333,6 +333,43 @@ describe('Admin LoginPage', () => {
     expect(redirect).toHaveBeenCalledWith('/admin')
   })
 
+  it('does not redirect platform sessions outside the findmydoc.eu email domain', async () => {
+    process.env.DEPLOYMENT_ENV = 'development'
+
+    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
+    const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
+    const { redirect } = await import('next/navigation')
+    const LoginPage = await getPageModule()
+
+    vi.mocked(extractSupabaseUserData).mockResolvedValue({
+      supabaseUserId: 'user-external',
+      userEmail: 'platform@example.com',
+      userType: 'platform',
+      firstName: 'Platform',
+      lastName: 'External',
+    })
+
+    const result = await LoginPage({})
+    const pageElement = result as LoginPageElement
+    const rootElement = getLoginRootElement(pageElement)
+    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
+      message?: string
+    }>[]
+    const statusElement = rootChildren[1]
+
+    expect(findUserBySupabaseId).not.toHaveBeenCalled()
+    expect(redirect).not.toHaveBeenCalled()
+    expect(statusElement?.props.message).toBe('Your account is not available for admin access. Please contact support.')
+    expect(payloadLoggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'auth.admin_login.platform_user.invalid_email_domain',
+        supabaseUserIdHash: expect.any(String),
+        userEmailHash: expect.any(String),
+      }),
+      'Platform Supabase user email is outside the allowed domain',
+    )
+  })
+
   it('redirects preview platform sessions only when the Supabase ID maps to a Payload user', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
@@ -344,13 +381,13 @@ describe('Admin LoginPage', () => {
       makeStaffUser({
         id: 22,
         userType: 'platform',
-        email: 'platform@example.com',
+        email: 'platform@findmydoc.eu',
         supabaseUserId: 'user-22',
       }),
     )
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'user-22',
-      userEmail: 'platform@example.com',
+      userEmail: 'platform@findmydoc.eu',
       userType: 'platform',
       firstName: 'Platform',
       lastName: 'Recovered',
@@ -393,7 +430,7 @@ describe('Admin LoginPage', () => {
     vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'user-2',
-      userEmail: 'platform@example.com',
+      userEmail: 'platform@findmydoc.eu',
       userType: 'platform',
       firstName: 'Platform',
       lastName: 'User',
@@ -423,7 +460,7 @@ describe('Admin LoginPage', () => {
     vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'user-2',
-      userEmail: 'platform@example.com',
+      userEmail: 'platform@findmydoc.eu',
       userType: 'platform',
       firstName: 'Platform',
       lastName: 'User',

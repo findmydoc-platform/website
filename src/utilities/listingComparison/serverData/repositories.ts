@@ -9,7 +9,6 @@ import { chunkArray, extractRelationId } from './relations'
 
 const CLINIC_CHUNK_SIZE = 200
 const QUERY_PAGE_SIZE = 500
-const LISTING_COMPARISON_CATALOG_CACHE_TTL_MS = 60_000
 const CLINIC_MEDIA_STATIC_DIR = path.resolve(process.cwd(), 'src/public/clinic-media')
 
 type ListingComparisonCatalogSnapshot = {
@@ -24,13 +23,6 @@ type PagedDocs<T> = {
   docs: T[]
   hasNextPage: boolean
 }
-
-type CatalogCacheEntry = {
-  expiresAt: number
-  promise: Promise<ListingComparisonCatalogSnapshot>
-}
-
-const catalogCacheByPayload = new WeakMap<Payload, CatalogCacheEntry>()
 
 async function collectAllPages<T>(fetchPage: (page: number) => Promise<PagedDocs<T>>): Promise<T[]> {
   const allDocs: T[] = []
@@ -170,39 +162,20 @@ async function findAvailableClinicMediaFiles(): Promise<ReadonlySet<string> | un
 }
 
 export async function findListingComparisonCatalog(payload: Payload): Promise<ListingComparisonCatalogSnapshot> {
-  const now = Date.now()
-  const cached = catalogCacheByPayload.get(payload)
-  if (cached && cached.expiresAt > now) {
-    return cached.promise
-  }
-
-  const promise = Promise.all([
+  const [cityDocs, treatmentDocs, specialtyDocs, approvedClinics, availableClinicMediaFiles] = await Promise.all([
     findAllCities(payload),
     findAllTreatments(payload),
     findAllSpecialties(payload),
     findAllApprovedClinics(payload),
     findAvailableClinicMediaFiles(),
-  ]).then(([cityDocs, treatmentDocs, specialtyDocs, approvedClinics, availableClinicMediaFiles]) => ({
+  ])
+
+  return {
     cityDocs,
     treatmentDocs,
     specialtyDocs,
     approvedClinics,
     availableClinicMediaFiles,
-  }))
-
-  catalogCacheByPayload.set(payload, {
-    expiresAt: now + LISTING_COMPARISON_CATALOG_CACHE_TTL_MS,
-    promise,
-  })
-
-  try {
-    return await promise
-  } catch (error) {
-    const current = catalogCacheByPayload.get(payload)
-    if (current?.promise === promise) {
-      catalogCacheByPayload.delete(payload)
-    }
-    throw error
   }
 }
 

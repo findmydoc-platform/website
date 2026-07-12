@@ -463,16 +463,26 @@ export const WithCompletedRun: Story = {
       })),
       progress: { completed: 2, total: 2, percent: 100 },
       hasActiveJob: false,
+      finalFlush: {
+        status: 'executed',
+        completedAt: STORY_COMPLETED_TIMESTAMP,
+        tagCount: 5,
+        pathCount: 4,
+        failureCount: 0,
+      },
     },
     logLines: [
       { id: 'summary', severity: 'INFO', text: 'Run completed successfully.' },
       { id: 'unit-1', severity: 'INFO', text: 'job 1 finished successfully.' },
+      { id: 'final-flush', severity: 'INFO', text: 'Seed final cache flush executed.' },
     ],
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     expect(canvas.getByText(/Status completed/)).toBeInTheDocument()
     expect(canvas.getByText('Completed at:')).toBeInTheDocument()
+    expect(canvas.getByText('Final flush:')).toBeInTheDocument()
+    expect(canvas.getByText('executed · tags 5 · paths 4 · failures 0')).toBeInTheDocument()
   },
 }
 

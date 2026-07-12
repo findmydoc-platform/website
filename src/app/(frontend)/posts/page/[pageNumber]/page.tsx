@@ -12,7 +12,7 @@ import { Container } from '@/components/molecules/Container'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { buildPostsIndexPath, buildPostsPagePath } from '@/utilities/content/postPaths'
-import { countPublishedPosts, findPublishedPostsPage } from '@/utilities/content/serverData'
+import { countPublishedPosts, getCachedPublishedPostsPage } from '@/utilities/content/serverData'
 import { resolveContentLocaleContext } from '@/utilities/contentLocalization'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { JsonLdScript, buildPostsIndexJsonLd } from '@/utilities/structuredData'
@@ -42,9 +42,7 @@ export default async function Page({ params: paramsPromise, searchParams: search
   if (!Number.isSafeInteger(sanitizedPageNumber) || sanitizedPageNumber < 1) notFound()
   if (sanitizedPageNumber === 1) redirect(buildPostsIndexPath(contentLocale))
 
-  const payload = await getPayload({ config: configPromise })
-
-  const posts = await findPublishedPostsPage(payload, {
+  const posts = await getCachedPublishedPostsPage({
     contentLocale,
     limit: POSTS_PER_PAGE,
     page: sanitizedPageNumber,

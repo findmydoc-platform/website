@@ -256,7 +256,7 @@ describe('accessValidation edge cases', () => {
     it('should pass for platform users without clinic checks', async () => {
       const authData = {
         supabaseUserId: 'supabase-platform',
-        userEmail: 'platform@example.com',
+        userEmail: 'platform@findmydoc.eu',
         userType: 'platform' as const,
       }
 

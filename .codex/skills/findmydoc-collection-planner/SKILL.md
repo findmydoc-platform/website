@@ -1,6 +1,6 @@
 ---
 name: findmydoc-collection-planner
-description: Plan and safely implement Payload CMS collections for the findmydoc website. Use when Codex is asked to create, change, evaluate, or implement a new Payload collection, join collection, media collection, collection access model, permission-matrix row, collection tests, Payload migration, or CMS/admin data model in this repository. Default to discovery, questions, recommendation, and a proposed plan before editing unless the user explicitly provides an approved plan and asks for implementation.
+description: Plan and safely implement Payload CMS collections and globals for the findmydoc website. Use when Codex is asked to create, change, evaluate, or implement a new Payload collection, global, join collection, media collection, collection access model, permission-matrix row, collection tests, Payload migration, or CMS/admin data model in this repository. Default to discovery, questions, recommendation, and a proposed plan before editing unless the user explicitly provides an approved plan and asks for implementation.
 ---
 
 # findmydoc Collection Planner
@@ -16,6 +16,7 @@ This skill does not require or activate the technical Plan Mode. It works as a n
 - Do not edit files when the user asks for a new or unclear collection design and no approved plan exists.
 - Treat technical Plan Mode as optional. If it is not active, keep using this planning-first workflow in the current session.
 - First run repo discovery, then summarize facts, ask targeted questions, recommend an approach, and produce one `<proposed_plan>`.
+- Before finalizing a plan for a new or changed collection or global, run `$cache-impact-planner` and incorporate its decision. Stop rather than choosing a new cache architecture locally.
 - After the proposed plan, ask in normal prose whether the user wants it implemented.
 - If the user explicitly provides an approved plan or says to implement a previously proposed plan, proceed to implementation using the checklist in `references/collection-planning-playbook.md`.
 - If the requested change is obviously tiny and fully specified, still run discovery and state why no questions are needed before proposing or implementing.
@@ -35,21 +36,22 @@ This skill does not require or activate the technical Plan Mode. It works as a n
    - existing hooks and lifecycle utilities
    - permission matrix entries and unit access matrix tests
    - integration contract registry, lifecycle tests, and seeds
-5. Summarize discovery in concrete facts:
+5. Run `$cache-impact-planner` for every new or materially changed collection or global. Keep its three-way decision, dependency map, read/write symmetry, tests, and stop conditions in the proposed plan.
+6. Summarize discovery in concrete facts:
    - existing patterns that fit
    - likely affected domains
    - whether the feature looks like a new collection, field, join collection, global, media collection, or extension of an existing collection
-6. Ask questions only when answers would change schema, access, lifecycle, migration, tests, or docs:
+7. Ask questions only when answers would change schema, access, lifecycle, migration, tests, docs, or the cache-impact decision:
    - ask at most 3 questions per round
    - include a recommended default for each question
    - do not ask questions answerable from repo inspection
-7. Recommend the smallest coherent solution:
+8. Recommend the smallest coherent solution:
    - name the preferred model
    - briefly name rejected alternatives
    - call out hooks or helpers that would reduce custom logic
    - mark unresolved assumptions explicitly
-8. Produce a `<proposed_plan>` with implementation changes, validation, and assumptions.
-9. After the plan, ask whether to implement it.
+9. Produce a `<proposed_plan>` with implementation changes, cache impact, validation, and assumptions.
+10. After the plan, ask whether to implement it.
 
 ## Anti-Overengineering Check
 

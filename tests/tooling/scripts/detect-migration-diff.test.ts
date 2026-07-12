@@ -214,4 +214,46 @@ export const Doctors = {
     expect(output).toContain('db_changed=false')
     expect(output).toContain('schema_changed=false')
   })
+
+  it('does not require a migration when a doctor validation hook expands the hook array', () => {
+    const rootDir = createTempRepo()
+
+    commitFile(
+      rootDir,
+      'src/collections/Doctors.ts',
+      `import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
+import { stableIdBeforeChangeHook } from '@/hooks/stableId'
+
+export const Doctors = {
+  hooks: {
+    beforeChange: [stableIdBeforeChangeHook, beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })],
+  },
+}
+`,
+    )
+
+    commitFile(
+      rootDir,
+      'src/collections/Doctors.ts',
+      `import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
+import { beforeChangeValidateDoctorProfileImage } from '@/hooks/doctorProfileImageOwnership'
+import { stableIdBeforeChangeHook } from '@/hooks/stableId'
+
+export const Doctors = {
+  hooks: {
+    beforeChange: [
+      stableIdBeforeChangeHook,
+      beforeChangeAssignClinicFromUser({ clinicField: 'clinic' }),
+      beforeChangeValidateDoctorProfileImage,
+    ],
+  },
+}
+`,
+    )
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=false')
+    expect(output).toContain('schema_changed=false')
+  })
 })

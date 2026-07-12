@@ -488,7 +488,7 @@ export const permissionMatrix: PermissionMatrix = {
         read: { type: 'conditional', details: 'served when referenced' },
         update: { type: 'conditional', details: 'platform full + clinic own clinic' },
         delete: { type: 'conditional', details: 'platform full + clinic own clinic' },
-        admin: { type: 'platform' },
+        admin: { type: 'conditional', details: 'platform full + clinic own clinic' },
       },
       meta: {
         conditional: {
@@ -496,9 +496,10 @@ export const permissionMatrix: PermissionMatrix = {
           read: { kind: 'clinic-scope', path: 'clinic' },
           update: { kind: 'clinic-scope', path: 'clinic' },
           delete: { kind: 'clinic-scope', path: 'clinic' },
+          admin: { kind: 'clinic-scope', path: 'clinic' },
         },
       },
-      notes: 'Doctor-owned images - similar scoping to ClinicMedia',
+      notes: 'Platform full + clinic-managed doctor images scoped to the assigned clinic',
     },
     userProfileMedia: {
       slug: 'userProfileMedia',

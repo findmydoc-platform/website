@@ -166,6 +166,94 @@ export default {
     expect(output).toContain('schema_changed=true')
   })
 
+  it('does not require a migration for collection field access-only changes', () => {
+    const rootDir = createTempRepo()
+
+    commitFile(
+      rootDir,
+      'src/collections/ClinicStaff.ts',
+      `export const ClinicStaff = {
+  fields: [
+    {
+      name: 'clinic',
+      type: 'relationship',
+      relationTo: 'clinics',
+    },
+  ],
+}
+`,
+    )
+
+    commitFile(
+      rootDir,
+      'src/collections/ClinicStaff.ts',
+      `export const ClinicStaff = {
+  fields: [
+    {
+      name: 'clinic',
+      type: 'relationship',
+      relationTo: 'clinics',
+      access: {
+        // Clinic assignment defines tenant access and may only be changed by Platform Staff.
+        create: platformOnlyFieldAccess,
+        update: platformOnlyFieldAccess,
+      },
+    },
+  ],
+}
+`,
+    )
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=false')
+    expect(output).toContain('schema_changed=false')
+  })
+
+  it('keeps mixed field access and schema changes schema-relevant', () => {
+    const rootDir = createTempRepo()
+
+    commitFile(
+      rootDir,
+      'src/collections/ClinicStaff.ts',
+      `export const ClinicStaff = {
+  fields: [
+    {
+      name: 'clinic',
+      type: 'relationship',
+      relationTo: 'clinics',
+    },
+  ],
+}
+`,
+    )
+
+    commitFile(
+      rootDir,
+      'src/collections/ClinicStaff.ts',
+      `export const ClinicStaff = {
+  fields: [
+    {
+      name: 'clinic',
+      type: 'relationship',
+      relationTo: 'clinics',
+      required: true,
+      access: {
+        create: platformOnlyFieldAccess,
+        update: platformOnlyFieldAccess,
+      },
+    },
+  ],
+}
+`,
+    )
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=true')
+    expect(output).toContain('schema_changed=true')
+  })
+
   it('does not require a migration for a collection upload UI and validation hook change', () => {
     const rootDir = createTempRepo()
 

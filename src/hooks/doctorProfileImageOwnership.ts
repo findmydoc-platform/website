@@ -12,9 +12,11 @@ export const beforeChangeValidateDoctorProfileImage: CollectionBeforeChangeHook<
   req,
 }) => {
   const draft = { ...(data || {}) } as Partial<Doctor>
-  if (!hasOwn(draft, 'profileImage')) return draft
+  const profileImageSubmitted = hasOwn(draft, 'profileImage')
+  const clinicSubmitted = hasOwn(draft, 'clinic')
+  if (!profileImageSubmitted && !(operation === 'update' && clinicSubmitted)) return draft
 
-  const profileImageId = extractRelationId(draft.profileImage)
+  const profileImageId = extractRelationId(profileImageSubmitted ? draft.profileImage : originalDoc?.profileImage)
   if (!profileImageId) return draft
 
   const doctorId = resolveDocumentId({

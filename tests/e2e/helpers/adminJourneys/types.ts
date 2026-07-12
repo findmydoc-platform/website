@@ -7,11 +7,7 @@ export type AdminJourneyPersona = (typeof ADMIN_JOURNEY_PERSONAS)[number]
 export type AdminJourneyMode = (typeof ADMIN_JOURNEY_MODES)[number]
 export type AdminJourneyConsumer = AdminJourneyMode
 export type AdminJourneyEntryPoint =
-  | 'collection-create'
-  | 'collection-list'
-  | 'dashboard'
-  | 'document-page'
-  | 'join-drawer'
+  'collection-create' | 'collection-list' | 'dashboard' | 'document-page' | 'join-drawer'
 export type AdminJourneyStepKind = 'api-fixture' | 'assertion' | 'capture' | 'form-fill' | 'navigation' | 'save'
 
 export type AdminJourneyCheckpoint = {

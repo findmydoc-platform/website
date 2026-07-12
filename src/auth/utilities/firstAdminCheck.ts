@@ -14,9 +14,7 @@ type PlatformStaffCandidate = {
   user?: number | string | { id?: number | string | null } | null
 }
 type LocalPlatformStaffUserCheckFailureReason =
-  | 'payload_check_failed'
-  | 'supabase_admin_client_failed'
-  | 'supabase_user_validation_failed'
+  'payload_check_failed' | 'supabase_admin_client_failed' | 'supabase_user_validation_failed'
 
 export type LocalPlatformStaffUserState =
   | { hasPlatformAdmin: boolean; status: 'has_platform_staff' }

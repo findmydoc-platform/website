@@ -74,8 +74,7 @@ describe('locale-aware block links', () => {
       newTab: false,
     })
     const contentRichTextNode = contentProps?.columns?.[0]?.richText as
-      | { props?: { contentLocale?: unknown } }
-      | undefined
+      { props?: { contentLocale?: unknown } } | undefined
     expect(contentRichTextNode?.props?.contentLocale).toEqual({
       locale: 'de',
       fallbackLocale: 'en',

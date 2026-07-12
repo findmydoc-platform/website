@@ -3,9 +3,7 @@ import { createScopedLogger, getDeploymentEnv, type ServerLogger } from '@/utili
 import { PUBLIC_DISCOVERY_SURFACE_PATHS } from './site'
 
 export type PublicDiscoveryCrawlerClass =
-  | 'model-training-control'
-  | 'search-and-answer-indexing'
-  | 'user-directed-ai-retrieval'
+  'model-training-control' | 'search-and-answer-indexing' | 'user-directed-ai-retrieval'
 
 export type PublicDiscoveryCrawlerMatch = {
   crawlerClass: PublicDiscoveryCrawlerClass

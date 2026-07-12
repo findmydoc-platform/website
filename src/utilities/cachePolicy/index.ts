@@ -187,13 +187,7 @@ export type FixedPublicPathSurfaceId = keyof typeof FIXED_PUBLIC_PATHS
 export type CachePolicyBoundary = 'public' | 'private' | 'operational'
 
 export type CachePolicyEntryKind =
-  | 'public-route'
-  | 'private-route'
-  | 'global'
-  | 'collection'
-  | 'discovery'
-  | 'seed-flow'
-  | 'operational'
+  'public-route' | 'private-route' | 'global' | 'collection' | 'discovery' | 'seed-flow' | 'operational'
 
 export type CachePolicyOwner =
   | 'collection-hook'

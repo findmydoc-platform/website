@@ -35,12 +35,7 @@ export type GalleryEntryPublicStatus = 'draft' | 'published'
 export type ClinicSurfacePublicStatus = ClinicPublicStatus | ReviewPublicStatus | GalleryEntryPublicStatus | 'public'
 
 export type RevalidationSourceKind =
-  | 'payload-hook'
-  | 'global-hook'
-  | 'redirect-hook'
-  | 'public-discovery'
-  | 'seed-runner'
-  | 'test'
+  'payload-hook' | 'global-hook' | 'redirect-hook' | 'public-discovery' | 'seed-runner' | 'test'
 
 export interface RevalidationSource {
   readonly kind: RevalidationSourceKind
@@ -202,11 +197,7 @@ export interface SeedFinalFlushRevalidationEvent {
 }
 
 export type DeferredRevalidationArea =
-  | 'clinic-listing'
-  | 'public-discovery'
-  | 'seed-bulk'
-  | 'media-dependency'
-  | 'observability'
+  'clinic-listing' | 'public-discovery' | 'seed-bulk' | 'media-dependency' | 'observability'
 
 export interface DeferredRevalidationEvent {
   readonly kind: 'deferred'

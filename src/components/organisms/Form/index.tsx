@@ -95,8 +95,7 @@ export const Form: React.FC<FormProps> = (props) => {
                   const blockType = (field as { blockType?: string }).blockType
                   const Field = blockType
                     ? (fieldsComponents?.[blockType] as unknown as
-                        | React.ComponentType<FormFieldRenderProps>
-                        | undefined)
+                        React.ComponentType<FormFieldRenderProps> | undefined)
                     : undefined
                   if (Field) {
                     return (

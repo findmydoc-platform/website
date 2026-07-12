@@ -25,12 +25,15 @@ if [[ "${event_name}" == "pull_request" && -n "${base_ref}" ]]; then
   git fetch --no-tags --depth=1 origin "${base_ref}"
   range="origin/${base_ref}...HEAD"
   fallback_range="origin/${base_ref}..HEAD"
+  base_revision="$(git merge-base "origin/${base_ref}" HEAD)"
 elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
   range="HEAD~1...HEAD"
   fallback_range="HEAD~1..HEAD"
+  base_revision="HEAD~1"
 else
   range="HEAD"
   fallback_range="HEAD"
+  base_revision="HEAD"
 fi
 effective_range="${range}"
 
@@ -128,6 +131,21 @@ is_runtime_only_collection_change() {
   return 0
 }
 
+# Prettier-only changes do not affect the persisted Payload schema. The
+# whitespace check handles simple changes without starting Prettier; the second
+# comparison recognizes formatter upgrades that also reflow lines.
+is_format_only_change() {
+  local file_path="$1"
+
+  if git diff --ignore-all-space --exit-code "${effective_range}" -- "${file_path}" >/dev/null; then
+    return 0
+  fi
+
+  git show "${base_revision}:${file_path}" 2>/dev/null |
+    pnpm exec prettier --stdin-filepath "${file_path}" |
+    cmp -s - "${file_path}"
+}
+
 # Payload's top-level upload parser limit controls request handling, not persisted fields.
 is_upload_policy_only_payload_config_change() {
   local diff
@@ -213,6 +231,10 @@ if [[ -n "${schema_changed_files}" ]]; then
     fi
 
     if is_dedicated_payload_hook_file "${schema_file}"; then
+      continue
+    fi
+
+    if is_format_only_change "${schema_file}"; then
       continue
     fi
 

@@ -65,6 +65,63 @@ export const importExportPluginConfig = {
 export const importExport = importExportPlugin(importExportPluginConfig)
 `
 
+const pluginIndexWithoutManagedAccess = `import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
+import { redirectsPlugin } from '@payloadcms/plugin-redirects'
+import { searchPlugin } from '@payloadcms/plugin-search'
+
+export const plugins = [
+  redirectsPlugin({
+    overrides: {
+      admin: { group: 'Settings' },
+    },
+  }),
+  formBuilderPlugin({
+    formOverrides: {
+      admin: { group: 'Settings' },
+    },
+    formSubmissionOverrides: {
+      admin: { group: 'Platform Management' },
+    },
+  }),
+  searchPlugin({
+    searchOverrides: {
+      admin: { group: 'Settings' },
+    },
+  }),
+]
+`
+
+const pluginIndexWithManagedAccess = `import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
+import { redirectsPlugin } from '@payloadcms/plugin-redirects'
+import { searchPlugin } from '@payloadcms/plugin-search'
+import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'
+
+export const plugins = [
+  redirectsPlugin({
+    overrides: {
+      access: generatedCollectionAccess.redirects,
+      admin: { group: 'Settings' },
+    },
+  }),
+  formBuilderPlugin({
+    formOverrides: {
+      access: generatedCollectionAccess.forms,
+      admin: { group: 'Settings' },
+    },
+    formSubmissionOverrides: {
+      access: generatedCollectionAccess['form-submissions'],
+      admin: { group: 'Platform Management' },
+    },
+  }),
+  searchPlugin({
+    searchOverrides: {
+      access: searchPluginCollectionAccessOverrides,
+      admin: { group: 'Settings' },
+    },
+  }),
+]
+`
+
 const createTempRepo = () => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'detect-migration-diff-'))
   tempDirectories.add(rootDir)
@@ -428,6 +485,34 @@ export const Doctors = {
       'src/plugins/index.ts': extractedImportExportPluginIndex,
       'src/plugins/importExport.ts': schemaChangingModule,
     })
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=true')
+    expect(output).toContain('schema_changed=true')
+  })
+
+  it('does not require a migration for managed plugin collection access-only changes', () => {
+    const rootDir = createTempRepo()
+
+    commitFile(rootDir, 'src/plugins/index.ts', pluginIndexWithoutManagedAccess)
+    commitFile(rootDir, 'src/plugins/index.ts', pluginIndexWithManagedAccess)
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=false')
+    expect(output).toContain('schema_changed=false')
+  })
+
+  it('keeps mixed plugin access and schema changes schema-relevant', () => {
+    const rootDir = createTempRepo()
+    const schemaChangingPluginIndex = pluginIndexWithManagedAccess.replace(
+      "admin: { group: 'Settings' },",
+      "admin: { group: 'Settings' },\n      fields: [{ name: 'schemaField', type: 'text' }],",
+    )
+
+    commitFile(rootDir, 'src/plugins/index.ts', pluginIndexWithoutManagedAccess)
+    commitFile(rootDir, 'src/plugins/index.ts', schemaChangingPluginIndex)
 
     const output = runDetector(rootDir)
 

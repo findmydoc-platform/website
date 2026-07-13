@@ -1,11 +1,8 @@
 import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
-import type { PluginConfig as FormBuilderPluginConfig } from '@payloadcms/plugin-form-builder/types'
 import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { redirectsPlugin } from '@payloadcms/plugin-redirects'
-import type { RedirectsPluginConfig } from '@payloadcms/plugin-redirects/types'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import { searchPlugin } from '@payloadcms/plugin-search'
-import type { SearchPluginConfig } from '@payloadcms/plugin-search/types'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { Plugin, slugField, type Field } from 'payload'
 import { revalidateRedirects } from '@/hooks/revalidateRedirects'
@@ -108,105 +105,33 @@ const s3StoragePlugin = s3Storage({
   },
 })
 
-export const redirectsPluginConfig = {
-  collections: ['pages', 'posts'],
-  overrides: {
-    access: generatedCollectionAccess.redirects,
-    admin: {
-      group: 'Settings',
-    },
-    fields: ({ defaultFields }) => {
-      return defaultFields.map((field) => {
-        if ('name' in field && field.name === 'from' && field.type === 'text') {
-          return {
-            ...field,
-            admin: {
-              ...field.admin,
-              description: 'You will need to rebuild the website when changing this field.',
-            },
-          }
-        }
-        return field
-      })
-    },
-    hooks: {
-      afterChange: [revalidateRedirects],
-    },
-  },
-} satisfies RedirectsPluginConfig
-
-export const formBuilderPluginConfig = {
-  fields: {
-    payment: false,
-  },
-  formOverrides: {
-    access: generatedCollectionAccess.forms,
-    admin: {
-      group: 'Settings',
-    },
-    fields: ({ defaultFields }) => {
-      const mappedFields = defaultFields.map((field) => {
-        if ('name' in field && field.name === 'confirmationMessage') {
-          return {
-            ...field,
-            editor: lexicalEditor({
-              features: ({ rootFeatures }) => {
-                return [
-                  ...rootFeatures,
-                  FixedToolbarFeature(),
-                  HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
-                ]
-              },
-            }),
-          }
-        }
-        return field
-      })
-      const nonLocalizedFields = mappedFields.map(disableLocalizationForPluginField)
-      const generatedSlugField = slugField({
-        name: 'slug',
-        fieldToUse: 'title',
-        required: false,
-      })
-
-      return [
-        ...nonLocalizedFields,
-        {
-          ...generatedSlugField,
-          unique: true,
-          index: true,
-        },
-      ]
-    },
-  },
-  formSubmissionOverrides: {
-    access: generatedCollectionAccess['form-submissions'],
-    admin: {
-      group: 'Platform Management',
-    },
-  },
-} satisfies FormBuilderPluginConfig
-
-export const searchPluginConfig = {
-  collections: ['posts', 'clinics', 'treatments', 'doctors'],
-  localize: false,
-  beforeSync: beforeSyncWithSearch,
-  // Seed operations write a lot of documents in bulk; disable search sync there
-  // and rely on regular writes / manual reindex afterwards.
-  skipSync: ({ req }) => Boolean(req.context?.disableSearchSync),
-  searchOverrides: {
-    access: searchPluginCollectionAccessOverrides,
-    admin: {
-      group: 'Settings',
-    },
-    fields: ({ defaultFields }) => {
-      return [...defaultFields, ...searchFields]
-    },
-  },
-} satisfies SearchPluginConfig
-
 export const plugins: Plugin[] = [
-  redirectsPlugin(redirectsPluginConfig),
+  redirectsPlugin({
+    collections: ['pages', 'posts'],
+    overrides: {
+      access: generatedCollectionAccess.redirects,
+      admin: {
+        group: 'Settings',
+      },
+      // @ts-expect-error - This is a valid override, mapped fields don't resolve to the same type
+      fields: ({ defaultFields }) => {
+        return defaultFields.map((field) => {
+          if ('name' in field && field.name === 'from') {
+            return {
+              ...field,
+              admin: {
+                description: 'You will need to rebuild the website when changing this field.',
+              },
+            }
+          }
+          return field
+        })
+      },
+      hooks: {
+        afterChange: [revalidateRedirects],
+      },
+    },
+  }),
   nestedDocsPlugin({
     collections: ['categories', 'pages'],
     generateURL: (docs) => docs.reduce((url, doc) => `${url}/${doc.slug}`, ''),
@@ -221,8 +146,74 @@ export const plugins: Plugin[] = [
     generateTitle,
     generateURL,
   }),
-  formBuilderPlugin(formBuilderPluginConfig),
-  searchPlugin(searchPluginConfig),
+  formBuilderPlugin({
+    fields: {
+      payment: false,
+    },
+    formOverrides: {
+      access: generatedCollectionAccess.forms,
+      admin: {
+        group: 'Settings',
+      },
+      fields: ({ defaultFields }) => {
+        const mappedFields = defaultFields.map((field) => {
+          if ('name' in field && field.name === 'confirmationMessage') {
+            return {
+              ...field,
+              editor: lexicalEditor({
+                features: ({ rootFeatures }) => {
+                  return [
+                    ...rootFeatures,
+                    FixedToolbarFeature(),
+                    HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
+                  ]
+                },
+              }),
+            }
+          }
+          return field
+        })
+        const nonLocalizedFields = mappedFields.map(disableLocalizationForPluginField)
+        const generatedSlugField = slugField({
+          name: 'slug',
+          fieldToUse: 'title',
+          required: false,
+        })
+
+        return [
+          ...nonLocalizedFields,
+          {
+            ...generatedSlugField,
+            unique: true,
+            index: true,
+          },
+        ]
+      },
+    },
+    formSubmissionOverrides: {
+      access: generatedCollectionAccess['form-submissions'],
+      admin: {
+        group: 'Platform Management',
+      },
+    },
+  }),
+  searchPlugin({
+    collections: ['posts', 'clinics', 'treatments', 'doctors'],
+    localize: false,
+    beforeSync: beforeSyncWithSearch,
+    // Seed operations write a lot of documents in bulk; disable search sync there
+    // and rely on regular writes / manual reindex afterwards.
+    skipSync: ({ req }) => Boolean(req.context?.disableSearchSync),
+    searchOverrides: {
+      access: searchPluginCollectionAccessOverrides,
+      admin: {
+        group: 'Settings',
+      },
+      fields: ({ defaultFields }) => {
+        return [...defaultFields, ...searchFields]
+      },
+    },
+  }),
   createMcpPlugin(),
   importExport,
   s3StoragePlugin,

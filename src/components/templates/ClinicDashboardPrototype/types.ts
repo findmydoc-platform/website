@@ -147,7 +147,6 @@ export type MessagesWorkspaceData = {
   activeConversationId: string
   composer: {
     internalNoteLabel: string
-    onlineLabel: string
     placeholder: string
     templateLabel: string
   }
@@ -158,10 +157,8 @@ export type MessagesWorkspaceData = {
   newCountLabel: string
   patientAvatar: ClinicDashboardMedia
   patientName: string
-  patientStatus: 'online' | 'offline'
   requestStatusLabel: string
   searchPlaceholder: string
-  typingLabel: string
 }
 
 export type PatientProfileData = {

@@ -126,7 +126,6 @@ export const messagesWorkspaceFixture: MessagesWorkspaceData = {
   activeConversationId: 'lukas-weber',
   composer: {
     internalNoteLabel: 'Interne Notiz (nur Klinik)',
-    onlineLabel: 'Der Patient ist gerade online',
     placeholder: 'Nachricht schreiben...',
     templateLabel: 'Vorlagen verwenden',
   },
@@ -191,10 +190,8 @@ export const messagesWorkspaceFixture: MessagesWorkspaceData = {
   newCountLabel: '3 Neu',
   patientAvatar: patientPortraits.lukas,
   patientName: 'Lukas Weber',
-  patientStatus: 'online',
   requestStatusLabel: 'Anfrage',
   searchPlaceholder: 'Patienten suchen...',
-  typingLabel: 'Klinik-Admin schreibt...',
 }
 
 export const patientProfileFixture: PatientProfileData = {

@@ -167,19 +167,11 @@ function MessageThread({
     <section aria-labelledby="active-conversation-title" className="flex min-w-0 flex-1 flex-col bg-card">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b p-4 sm:p-5">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="relative shrink-0">
+          <div className="shrink-0">
             <Avatar className="size-12">
               <AvatarImage alt={data.patientAvatar.alt} src={data.patientAvatar.src} />
               <AvatarFallback>{patientInitials}</AvatarFallback>
             </Avatar>
-            <span
-              aria-hidden="true"
-              className={cn(
-                'absolute right-0 bottom-0 size-3 rounded-full border-2 border-card',
-                data.patientStatus === 'online' ? 'bg-accent' : 'bg-foreground/45',
-              )}
-            />
-            <span className="sr-only">{data.patientStatus === 'online' ? 'Online' : 'Offline'}</span>
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -224,7 +216,6 @@ function MessageThread({
         {data.messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
-        <p className="text-center text-xs text-foreground/70">{data.typingLabel}</p>
       </div>
 
       <div className="border-t bg-card p-4 sm:p-5">
@@ -260,7 +251,7 @@ function MessageThread({
             <Send aria-hidden="true" className="size-5" />
           </Button>
         </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="mt-3 flex flex-wrap gap-3 text-xs">
           <div className="flex flex-wrap gap-3">
             <Button
               className="h-auto gap-1 p-0 text-xs"
@@ -279,9 +270,6 @@ function MessageThread({
               {data.composer.internalNoteLabel}
             </Button>
           </div>
-          <span className="text-foreground/70">
-            {data.patientStatus === 'online' ? data.composer.onlineLabel : 'Der Patient ist gerade offline'}
-          </span>
         </div>
       </div>
     </section>

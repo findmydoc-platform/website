@@ -168,6 +168,30 @@ or embed a PostHog dashboard. PostHog's public iframe sharing is unsuitable for 
 link can view the shared data; the later dashboard instead uses the server-side Query API pattern documented by
 [PostHog](https://posthog.com/docs/product-analytics/sharing).
 
+### Prototype Variants and Temporary Visibility Gates
+
+The complete prototype UI remains the visual and responsive reference. An unfinished capability must never cause its
+component, Storybook story, fixture, screenshot, or responsive coverage to be deleted. Instead, clinic-dashboard#1
+uses a lightweight, explicit visibility-gate configuration to select which already-defined UI is shown in each variant.
+These gates are presentation controls only: they do not grant permission, create data, or substitute for a later
+server capability.
+
+| Variant | Intended audience | Visibility rule | Required UI evidence |
+| --- | --- | --- | --- |
+| `visual-reference` | Product planning, design review, and implementation planning | All defined prototype components remain visible with fixtures, including future and currently non-functional controls. | Every screen and responsive state remains covered by Storybook and its visual QA evidence. |
+| `presentation` | Internal or external walkthrough before the MVP is complete | Show only the owner-selected, coherent product slice. Gate unsupported controls or whole screen areas; retain the underlying component and its `visual-reference` coverage. | Test the selected desktop and mobile presentation paths for no dead controls, layout gaps, overflow, or inaccessible hidden content. |
+| `mvp` | Authenticated clinic user | Replace the corresponding temporary gate with the final server capability after its owning issue is complete. Render only capabilities returned by the authorized bootstrap. | Test the real happy, empty, forbidden, and failure states at desktop and mobile widths. |
+
+Each gate must name its UI group, default visibility, owning issue, and removal trigger. Initial groups include dashboard
+reporting controls (#1531), message workspace and conversation controls (#1526/#1530), review-management actions
+(#1529), profile-write actions (#1528), treatment creation (#1528), public-team creation (#1527), and certificate
+controls (unowned later scope). When an owning slice becomes functional, remove its temporary visibility-gate branch and
+replace it with the final authorized capability; do not accumulate permanent prototype flags.
+
+The gate is configuration selected by the Storybook story, demo environment, or authorized runtime capability, not a
+user-facing toggle. The implementation must test both `visual-reference` and `presentation` variants as part of the
+same mobile-first UI matrix.
+
 Anything not listed in this section is outside the implementation contract.
 
 ### Shared Shell

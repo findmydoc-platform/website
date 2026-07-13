@@ -68,7 +68,7 @@ Authoritative implementation destinations:
 ### Out of Scope
 
 - Runtime code, migrations, seeds, dashboard repository changes, deployments, and issue rewrites.
-- Appointment booking, realtime presence, push notifications, support tooling, and exports unless a later issue owns them.
+- Appointment booking, push notifications, support tooling, and exports unless a later issue owns them.
 
 ## Status Semantics
 
@@ -181,7 +181,6 @@ Stitch screen `b4e343c4f5cc4ea8b3bbe5144e6e97ec`.
 | Add internal note | No separate internal-note model or patient-hidden field contract exists. | `Schema gap` | #1530 | `private-live` |
 | Use message template | Templates are not part of #1530 or another current backend issue. | `later scope` | Unowned; keep fixture-only | `n/a` |
 | Show persisted read-receipt state | Read state is explicitly part of #1530. | `Schema gap` | #1530 | `private-live` |
-| Show online or typing presence | Realtime presence/typing is explicitly outside #1530. | `later scope` | No owning backend issue | `private-live` if later approved |
 | Open inquiry contact summary | A direct `patients` read by clinic staff is forbidden. The allowed panel is a purpose-limited projection of inquiry/conversation data. | `Access/API gap` | #1526 for inquiry contact; #1530 for conversation context | `private-live` |
 | Open clinic profile editor or public profile | Same contracts as Dashboard Overview. | `existing` | clinic-dashboard#1 with Screen 5 dependencies | Field-dependent / public read |
 | Emoji button | Prototype bug: it emits `add-internal-note`. No emoji-message contract is in scope. | `later scope` | clinic-dashboard#1 must correct or remove it | `n/a` |

@@ -3,7 +3,7 @@ import { readdir } from 'fs/promises'
 import { join, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
-import { managedPluginCollectionSlugs } from '../../src/plugins/generatedCollectionAccess'
+import { managedPluginCollectionSlugs } from '../../src/security/generatedCollectionAccess'
 
 interface MatrixRow {
   slug: string

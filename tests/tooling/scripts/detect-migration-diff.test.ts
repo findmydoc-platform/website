@@ -26,6 +26,45 @@ export default {
 }
 `
 
+const initialImportExportPluginIndex = `import { importExportPlugin } from '@payloadcms/plugin-import-export'
+
+export const plugins = [
+  importExportPlugin({
+    collections: [
+      { slug: 'pages' },
+      { slug: 'patients' },
+    ],
+  }),
+]
+`
+
+const extractedImportExportPluginIndex = `import { importExport } from './importExport'
+
+export const plugins = [
+  importExport,
+]
+`
+
+const runtimeOnlyImportExportModule = `import { importExportPlugin } from '@payloadcms/plugin-import-export'
+import type { ImportExportPluginConfig } from '@payloadcms/plugin-import-export/types'
+import type { CollectionSlug } from 'payload'
+
+import { securePlatformManagedPluginCollection } from '@/security/generatedCollectionAccess'
+
+export const importExportTargetSlugs = [
+  'pages',
+  'countries',
+] as const satisfies readonly CollectionSlug[]
+
+export const importExportPluginConfig = {
+  collections: importExportTargetSlugs.map((slug) => ({ slug })),
+  overrideExportCollection: securePlatformManagedPluginCollection,
+  overrideImportCollection: securePlatformManagedPluginCollection,
+} satisfies ImportExportPluginConfig
+
+export const importExport = importExportPlugin(importExportPluginConfig)
+`
+
 const createTempRepo = () => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'detect-migration-diff-'))
   tempDirectories.add(rootDir)
@@ -59,6 +98,19 @@ const commitFile = (rootDir: string, relativePath: string, source: string) => {
   fs.writeFileSync(filePath, source, 'utf8')
   runGit(rootDir, ['add', relativePath])
   runGit(rootDir, ['commit', '--message', `update ${relativePath}`])
+}
+
+const commitFiles = (rootDir: string, files: Record<string, string>) => {
+  for (const [relativePath, source] of Object.entries(files)) {
+    const filePath = path.join(rootDir, relativePath)
+
+    fs.mkdirSync(path.dirname(filePath), { recursive: true })
+    fs.writeFileSync(filePath, source, 'utf8')
+  }
+
+  const relativePaths = Object.keys(files)
+  runGit(rootDir, ['add', ...relativePaths])
+  runGit(rootDir, ['commit', '--message', 'update multiple files'])
 }
 
 const runDetector = (rootDir: string) => {
@@ -343,5 +395,43 @@ export const Doctors = {
 
     expect(output).toContain('db_changed=false')
     expect(output).toContain('schema_changed=false')
+  })
+
+  it('does not require a migration when import/export policy moves into its runtime-only module', () => {
+    const rootDir = createTempRepo()
+
+    commitFile(rootDir, 'src/plugins/index.ts', initialImportExportPluginIndex)
+    commitFiles(rootDir, {
+      'src/plugins/index.ts': extractedImportExportPluginIndex,
+      'src/plugins/importExport.ts': runtimeOnlyImportExportModule,
+      'src/security/generatedCollectionAccess.ts': 'export const generatedCollectionAccess = {}\n',
+    })
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=false')
+    expect(output).toContain('schema_changed=false')
+  })
+
+  it('keeps unrecognized import/export plugin module changes schema-relevant', () => {
+    const rootDir = createTempRepo()
+    const schemaChangingModule = runtimeOnlyImportExportModule.replace(
+      'overrideExportCollection: securePlatformManagedPluginCollection,',
+      `overrideExportCollection: ({ collection }) => ({
+    ...collection,
+    fields: [...collection.fields, { name: 'schemaField', type: 'text' }],
+  }),`,
+    )
+
+    commitFile(rootDir, 'src/plugins/index.ts', initialImportExportPluginIndex)
+    commitFiles(rootDir, {
+      'src/plugins/index.ts': extractedImportExportPluginIndex,
+      'src/plugins/importExport.ts': schemaChangingModule,
+    })
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=true')
+    expect(output).toContain('schema_changed=true')
   })
 })

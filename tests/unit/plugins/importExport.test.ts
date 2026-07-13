@@ -5,7 +5,7 @@ import {
   generatedCollectionAccess,
   managedPluginCollectionSlugs,
   securePlatformManagedPluginCollection,
-} from '@/plugins/generatedCollectionAccess'
+} from '@/security/generatedCollectionAccess'
 import { importExportPluginConfig, importExportTargetSlugs } from '@/plugins/importExport'
 import { createMockReq } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'

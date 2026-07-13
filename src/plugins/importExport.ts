@@ -2,7 +2,7 @@ import { importExportPlugin } from '@payloadcms/plugin-import-export'
 import type { ImportExportPluginConfig } from '@payloadcms/plugin-import-export/types'
 import type { CollectionSlug } from 'payload'
 
-import { securePlatformManagedPluginCollection } from './generatedCollectionAccess'
+import { securePlatformManagedPluginCollection } from '@/security/generatedCollectionAccess'
 
 export const importExportTargetSlugs = [
   'pages',

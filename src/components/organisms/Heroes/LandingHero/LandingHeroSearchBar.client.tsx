@@ -34,7 +34,7 @@ export function LandingHeroSearchBarClient({
       onSearch={(nextValues) => {
         const params = new URLSearchParams()
         if (nextValues.service.trim().length > 0) {
-          params.set('service', nextValues.service.trim())
+          params.set('specialty', nextValues.service.trim())
         }
         if (nextValues.location.trim().length > 0) {
           params.set('location', nextValues.location.trim())

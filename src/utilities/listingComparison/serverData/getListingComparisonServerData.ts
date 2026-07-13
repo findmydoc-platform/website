@@ -124,12 +124,13 @@ export function buildListingComparisonResolvedDataCacheKey(
   }))
   const treatmentOptions = toBaseFilterOptions(treatmentsMeta)
 
-  const selectedSpecialtyValuesResolved = resolveSelectedOptionValues({
-    requestedValues: parsed.state.specialties,
-    legacyFallbackValue: parsed.legacy.service ?? undefined,
-    options: specialtyOptions,
+  const serviceFilters = resolveServiceFilterValues({
+    requestedSpecialtyValues: parsed.state.specialties,
+    requestedTreatmentValues: parsed.state.treatments,
+    legacyServiceValue: parsed.legacy.service ?? undefined,
+    specialtyOptions,
+    treatmentOptions,
   })
-  const selectedSpecialtyValue = resolveSingleSelectedOptionValue(selectedSpecialtyValuesResolved)
 
   return buildListingComparisonDataCacheKey({
     ...parsed.state,
@@ -138,12 +139,8 @@ export function buildListingComparisonResolvedDataCacheKey(
       legacyFallbackValue: parsed.legacy.location ?? undefined,
       options: cityOptions,
     }),
-    treatments: resolveSelectedOptionValues({
-      requestedValues: parsed.state.treatments,
-      legacyFallbackValue: parsed.legacy.service ?? undefined,
-      options: treatmentOptions,
-    }),
-    specialties: selectedSpecialtyValue ? [selectedSpecialtyValue] : [],
+    treatments: serviceFilters.treatments,
+    specialties: serviceFilters.specialties,
   })
 }
 
@@ -176,6 +173,46 @@ export const getCachedListingComparisonServerData = async (
 type FilterOptionValue = {
   value: string
   label: string
+}
+
+function resolveServiceFilterValues({
+  requestedSpecialtyValues,
+  requestedTreatmentValues,
+  legacyServiceValue,
+  specialtyOptions,
+  treatmentOptions,
+}: {
+  requestedSpecialtyValues: string[]
+  requestedTreatmentValues: string[]
+  legacyServiceValue?: string
+  specialtyOptions: FilterOptionValue[]
+  treatmentOptions: FilterOptionValue[]
+}): { specialties: string[]; treatments: string[] } {
+  const requestedSpecialties = canonicalizeFilterValues(requestedSpecialtyValues, specialtyOptions)
+  const requestedSpecialty = resolveSingleSelectedOptionValue(requestedSpecialties)
+  const requestedTreatments = canonicalizeFilterValues(requestedTreatmentValues, treatmentOptions)
+
+  if (requestedSpecialty || requestedTreatments.length > 0 || !legacyServiceValue) {
+    return {
+      specialties: requestedSpecialty ? [requestedSpecialty] : [],
+      treatments: requestedTreatments,
+    }
+  }
+
+  const legacySpecialties = canonicalizeFilterValues([legacyServiceValue], specialtyOptions)
+  const legacySpecialty = resolveSingleSelectedOptionValue(legacySpecialties)
+
+  if (legacySpecialty) {
+    return {
+      specialties: [legacySpecialty],
+      treatments: [],
+    }
+  }
+
+  return {
+    specialties: [],
+    treatments: canonicalizeFilterValues([legacyServiceValue], treatmentOptions),
+  }
 }
 
 function resolveSelectedOptionValues({
@@ -300,20 +337,10 @@ export async function getListingComparisonServerData(
   }))
   const specialtyOptions = buildSpecialtyFilterOptions(specialtiesMeta)
 
-  const selectedSpecialtyValuesResolved = resolveSelectedOptionValues({
-    requestedValues: initialQueryState.specialties,
-    legacyFallbackValue: parsed.legacy.service ?? undefined,
-    options: specialtyOptions,
-  })
-  const selectedSpecialtyValue = resolveSingleSelectedOptionValue(selectedSpecialtyValuesResolved)
-  const selectedSpecialtyValues = selectedSpecialtyValue ? [selectedSpecialtyValue] : []
-
   const specialtyById = new Map(specialtiesMeta.map((specialty) => [specialty.id, specialty]))
   const specialtyIdByValue = new Map(specialtiesMeta.map((specialty) => [String(specialty.id), specialty.id]))
   const specialtyOptionByValue = new Map(specialtyOptions.map((specialty) => [specialty.value, specialty]))
-  const selectedSpecialtyIds = resolveSelectedIdsFromOptions(selectedSpecialtyValues, specialtyIdByValue)
   const specialtyTree = buildSpecialtyTree(specialtiesMeta)
-  const specialtyScope = collectDescendantSpecialties(selectedSpecialtyIds, specialtyTree)
 
   const treatmentsMeta: TreatmentMeta[] = treatmentDocs.map((treatment) => ({
     id: treatment.id,
@@ -323,11 +350,17 @@ export async function getListingComparisonServerData(
   }))
   const allTreatmentOptions = toBaseFilterOptions(treatmentsMeta)
 
-  const selectedTreatmentValues = resolveSelectedOptionValues({
-    requestedValues: initialQueryState.treatments,
-    legacyFallbackValue: parsed.legacy.service ?? undefined,
-    options: allTreatmentOptions,
+  const serviceFilters = resolveServiceFilterValues({
+    requestedSpecialtyValues: initialQueryState.specialties,
+    requestedTreatmentValues: initialQueryState.treatments,
+    legacyServiceValue: parsed.legacy.service ?? undefined,
+    specialtyOptions,
+    treatmentOptions: allTreatmentOptions,
   })
+  const selectedSpecialtyValues = serviceFilters.specialties
+  const selectedTreatmentValues = serviceFilters.treatments
+  const selectedSpecialtyIds = resolveSelectedIdsFromOptions(selectedSpecialtyValues, specialtyIdByValue)
+  const specialtyScope = collectDescendantSpecialties(selectedSpecialtyIds, specialtyTree)
 
   const treatmentIdByValue = new Map(treatmentsMeta.map((treatment) => [String(treatment.id), treatment.id]))
   const selectedTreatmentIds = resolveSelectedIdsFromOptions(selectedTreatmentValues, treatmentIdByValue)

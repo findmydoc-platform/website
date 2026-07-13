@@ -622,7 +622,7 @@ describe('seed endpoints success paths', () => {
     expect(release).toHaveBeenCalledTimes(1)
   })
 
-  it('holds and releases the database final-flush lock around execution when available', async () => {
+  it('binds the pool while holding and releasing the database final-flush lock', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-database-final-flush-lock'
     const queue = `seed:${runId}`
@@ -672,10 +672,17 @@ describe('seed endpoints success paths', () => {
     const query = vi.fn(async (text: string) => ({
       rows: text.includes('pg_try_advisory_lock') ? [{ acquired: true }] : [],
     }))
+    const poolMarker = Symbol('seed-final-flush-pool')
+    const connect = vi.fn(async function (this: { marker?: symbol }) {
+      if (this.marker !== poolMarker) {
+        throw new Error('Database pool context was not preserved')
+      }
+
+      return { query, release }
+    })
+    const pool = { marker: poolMarker, connect }
     ;(payload as typeof payload & { db: { pool: { connect: ReturnType<typeof vi.fn> } } }).db = {
-      pool: {
-        connect: vi.fn(async () => ({ query, release })),
-      },
+      pool,
     }
 
     await finalizeSeedRunPublicCaches(payload as unknown as Payload, {
@@ -686,6 +693,7 @@ describe('seed endpoints success paths', () => {
     })
 
     expect(revalidateTag).toHaveBeenCalled()
+    expect(connect).toHaveBeenCalledTimes(1)
     expect(query).toHaveBeenCalledWith('select pg_try_advisory_lock(hashtext($1), hashtext($2)) as acquired', [
       'seed-final-flush',
       runId,

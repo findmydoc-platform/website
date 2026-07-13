@@ -77,6 +77,8 @@ describe('updateAverageRatings hooks', () => {
         id: 'clinic-new',
         data: { averageRating: 3 },
         context: { skipHooks: true },
+        overrideAccess: true,
+        req,
       }),
     )
     expect(payload.update).toHaveBeenNthCalledWith(
@@ -85,6 +87,7 @@ describe('updateAverageRatings hooks', () => {
         collection: 'doctors',
         id: 'doctor-new',
         data: { averageRating: 5 },
+        overrideAccess: true,
       }),
     )
     expect(payload.update).toHaveBeenNthCalledWith(
@@ -93,6 +96,7 @@ describe('updateAverageRatings hooks', () => {
         collection: 'treatments',
         id: 301,
         data: { averageRating: 3 },
+        overrideAccess: true,
       }),
     )
     expect(payload.update).toHaveBeenNthCalledWith(
@@ -101,6 +105,7 @@ describe('updateAverageRatings hooks', () => {
         collection: 'clinics',
         id: 'clinic-old',
         data: { averageRating: 3 },
+        overrideAccess: true,
       }),
     )
     expect(payload.update).toHaveBeenNthCalledWith(
@@ -109,8 +114,15 @@ describe('updateAverageRatings hooks', () => {
         collection: 'treatments',
         id: 999,
         data: { averageRating: null },
+        overrideAccess: true,
       }),
     )
+
+    for (const [updateArgs] of payload.update.mock.calls) {
+      expect(Object.keys(updateArgs.data)).toEqual(['averageRating'])
+      expect(updateArgs.context).toEqual({ skipHooks: true })
+      expect(updateArgs.req).toBe(req)
+    }
   })
 
   it('skips all work when the hook context already disabled nested hooks', async () => {

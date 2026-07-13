@@ -1,6 +1,7 @@
 import { CollectionConfig, slugField } from 'payload'
 import { languageOptions } from './common/selectionOptions'
 import { generateFullName } from '@/utilities/nameUtils'
+import { computedOnlyFieldAccess } from '@/access/fieldAccess'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { anyone } from '@/access/anyone'
 import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@/access/scopeFilters'
@@ -72,6 +73,10 @@ export const Doctors: CollectionConfig<'doctors'> = {
       type: 'number',
       min: 0,
       max: 5,
+      access: {
+        create: computedOnlyFieldAccess,
+        update: computedOnlyFieldAccess,
+      },
       admin: {
         description: 'Average patient rating',
         readOnly: true,

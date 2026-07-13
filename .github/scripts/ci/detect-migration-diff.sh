@@ -56,11 +56,16 @@ schema_pattern='^(src/collections/|src/globals/|src/fields/|src/plugins/|src/pay
 migration_pattern='^src/migrations/'
 db_tooling_pattern='^(\.github/workflows/db-quality\.yml|\.github/workflows/deploy\.yml|\.github/scripts/ci/(detect-migration-diff|enforce-schema-migration|wait-for-postgres)\.sh|scripts/(migration-risk-scan|test-database-harness)\.mjs|vitest\.config\.ts)$'
 import_export_allowlist_line_regex="^[+-][[:space:]]*\\{[[:space:]]*slug:[[:space:]]*'[^']+'(,[[:space:]]*(import|export):[[:space:]]*false)?[[:space:]]*\\},?[[:space:]]*$"
+import_export_target_slug_line_regex="^[+-][[:space:]]*'[A-Za-z0-9-]+',[[:space:]]*$"
+import_export_index_runtime_line_regex="^[+-][[:space:]]*(import[[:space:]]+\\{[[:space:]]*importExportPlugin[[:space:]]*\\}[[:space:]]+from[[:space:]]+'@payloadcms/plugin-import-export'|import[[:space:]]+\\{[[:space:]]*importExport[[:space:]]*\\}[[:space:]]+from[[:space:]]+'\\./importExport'|importExportPlugin\\(\\{|collections:[[:space:]]*\\[|\\],|\\}\\),|importExport,)[[:space:]]*$"
+import_export_module_import_line_regex="^[+-][[:space:]]*(import[[:space:]]+\\{[[:space:]]*importExportPlugin[[:space:]]*\\}[[:space:]]+from[[:space:]]+'@payloadcms/plugin-import-export'|import[[:space:]]+type[[:space:]]+\\{[[:space:]]*ImportExportPluginConfig[[:space:]]*\\}[[:space:]]+from[[:space:]]+'@payloadcms/plugin-import-export/types'|import[[:space:]]+type[[:space:]]+\\{[[:space:]]*CollectionSlug[[:space:]]*\\}[[:space:]]+from[[:space:]]+'payload'|import[[:space:]]+\\{[[:space:]]*securePlatformManagedPluginCollection[[:space:]]*\\}[[:space:]]+from[[:space:]]+'@/security/generatedCollectionAccess')[[:space:]]*$"
+import_export_module_config_line_regex="^[+-][[:space:]]*(export[[:space:]]+const[[:space:]]+importExportTargetSlugs[[:space:]]*=[[:space:]]*\\[|\\][[:space:]]+as[[:space:]]+const[[:space:]]+satisfies[[:space:]]+readonly[[:space:]]+CollectionSlug\\[\\]|export[[:space:]]+const[[:space:]]+importExportPluginConfig[[:space:]]*=[[:space:]]*\\{|collections:[[:space:]]*importExportTargetSlugs\\.map\\(\\(slug\\)[[:space:]]*=>[[:space:]]*\\(\\{[[:space:]]*slug[[:space:]]*\\}\\)\\),|overrideExportCollection:[[:space:]]*securePlatformManagedPluginCollection,|overrideImportCollection:[[:space:]]*securePlatformManagedPluginCollection,|\\}[[:space:]]+satisfies[[:space:]]+ImportExportPluginConfig|export[[:space:]]+const[[:space:]]+importExport[[:space:]]*=[[:space:]]*importExportPlugin\\(importExportPluginConfig\\))[[:space:]]*$"
 hook_only_collection_hook_identifier_regex="(beforeChangeValidateDoctorProfileImage|beforeOperationPrepareUploadFilename|beforeOperationValidateMediaUpload|createSupabaseUserHook|enforcePlatformStaffEmailDomainHook|revalidateDeletedPlatformContentMediaConsumers|revalidatePlatformContentMediaConsumers|revalidate[[:alnum:]_]+|stableIdBeforeChangeHook|updateAverage(Price|Ratings)After(Change|Delete))"
 hook_only_collection_hook_expression_regex="(${hook_only_collection_hook_identifier_regex}|beforeChangeAssignClinicFromUser\\(\\{[[:space:]]*clinicField:[[:space:]]*'clinic'[[:space:]]*\\}\\))"
 hook_only_collection_line_regex="^[+-][[:space:]]*(import[[:space:]]*\\{|import[[:space:]].*from[[:space:]]'(@/hooks|\\./hooks)/[^']+'|\\}[[:space:]]*from[[:space:]]'(@/hooks|\\./hooks)/[^']+'|(beforeOperation|beforeChange|afterChange|afterDelete):[[:space:]]*\\[|\\],?|[[:space:]]*((beforeOperation|beforeChange|afterChange|afterDelete):[[:space:]]*\\[)?${hook_only_collection_hook_expression_regex}(,[[:space:]]*${hook_only_collection_hook_expression_regex})*\\]?,?|\\{|\\})[[:space:]]*$"
 collection_upload_component_line_regex="^[+-][[:space:]]*(components:[[:space:]]*\\{|edit:[[:space:]]*\\{|Upload:[[:space:]]*'@/app/\\(payload\\)/components/PolicyAwareUpload',?|\\{|\\},?)[[:space:]]*$"
 collection_crypto_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*randomUUID[[:space:]]*\\}[[:space:]]*from[[:space:]]*'(node:)?crypto'[[:space:]]*$"
+collection_field_access_import_line_regex="^[+-][[:space:]]*(import[[:space:]]+\\{[[:space:]]*([A-Za-z_][A-Za-z0-9_]*Access[[:space:]]*,?[[:space:]]*)+\\}[[:space:]]+from[[:space:]]+'@/access/fieldAccess'|import[[:space:]]+\\{|\\}[[:space:]]+from[[:space:]]+'@/access/fieldAccess'|[A-Za-z_][A-Za-z0-9_]*Access,?)[[:space:]]*$"
 collection_field_access_line_regex="^[+-][[:space:]]*(//.*|access:[[:space:]]*\\{|(create|read|update):[[:space:]]*[A-Za-z_][A-Za-z0-9_]*FieldAccess,?)[[:space:]]*$"
 payload_config_endpoint_import_line_regex="^[+-][[:space:]]*import[[:space:]]*\\{[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\\}[[:space:]]*from[[:space:]]*'./endpoints/[A-Za-z0-9_./-]+'[[:space:]]*$"
 payload_config_endpoint_line_regex="^[+-][[:space:]]*(\\{|\\},?|path:[[:space:]]*'/?[A-Za-z0-9_./-]+'[,]?|method:[[:space:]]*'(get|post|put|patch|delete)'[,]?|handler:[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]+as[[:space:]]+PayloadHandler[,]?)[[:space:]]*$"
@@ -72,7 +77,7 @@ migrations_changed=false
 db_tooling_changed=false
 schema_changed_files=''
 
-is_import_export_plugin_allowlist_only_change() {
+is_import_export_plugin_index_runtime_only_change() {
   local diff
   local diff_line
 
@@ -92,7 +97,86 @@ is_import_export_plugin_allowlist_only_change() {
     esac
 
     if [[ "${diff_line}" == +* || "${diff_line}" == -* ]]; then
-      if [[ ! "${diff_line}" =~ ${import_export_allowlist_line_regex} ]]; then
+      if [[ ! "${diff_line}" =~ ${import_export_allowlist_line_regex} && ! "${diff_line}" =~ ${import_export_index_runtime_line_regex} ]]; then
+        return 1
+      fi
+    fi
+  done <<<"${diff}"
+
+  return 0
+}
+
+# Generated plugin collection access changes runtime authorization only. Keep
+# this allowlist deliberately narrow so field or plugin-option changes still
+# reach Payload's migration alignment check.
+is_plugin_collection_access_only_change() {
+  local diff
+  local diff_line
+
+  if ! diff="$(git diff --unified=0 --diff-filter=ACMR "${effective_range}" -- src/plugins/index.ts)"; then
+    return 1
+  fi
+
+  if [[ -z "${diff}" ]]; then
+    return 1
+  fi
+
+  while IFS= read -r diff_line; do
+    case "${diff_line}" in
+      'diff --git'* | 'index '* | '--- '* | '+++ '* | '@@'*)
+        continue
+        ;;
+    esac
+
+    case "${diff_line}" in
+      "+import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'" | \
+        "-import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'" | \
+        '+      access: generatedCollectionAccess.redirects,' | \
+        '-      access: generatedCollectionAccess.redirects,' | \
+        '+      access: generatedCollectionAccess.forms,' | \
+        '-      access: generatedCollectionAccess.forms,' | \
+        "+      access: generatedCollectionAccess['form-submissions']," | \
+        "-      access: generatedCollectionAccess['form-submissions']," | \
+        '+      access: searchPluginCollectionAccessOverrides,' | \
+        '-      access: searchPluginCollectionAccessOverrides,')
+        ;;
+      +* | -*)
+        return 1
+        ;;
+    esac
+  done <<<"${diff}"
+
+  return 0
+}
+
+# This dedicated module may change only the target allowlist and runtime access
+# wiring. Any other plugin option remains schema-relevant and reaches Payload's
+# migration alignment check.
+is_import_export_plugin_module_runtime_only_change() {
+  local diff
+  local diff_line
+
+  if ! diff="$(git diff --unified=0 --diff-filter=ACMR "${effective_range}" -- src/plugins/importExport.ts)"; then
+    return 1
+  fi
+
+  if [[ -z "${diff}" ]]; then
+    return 1
+  fi
+
+  while IFS= read -r diff_line; do
+    case "${diff_line}" in
+      'diff --git'* | 'index '* | '--- '* | '+++ '* | '@@'*)
+        continue
+        ;;
+    esac
+
+    if [[ "${diff_line}" == +* || "${diff_line}" == -* ]]; then
+      if [[ "${diff_line}" =~ ^[+-][[:space:]]*$ ]]; then
+        continue
+      fi
+
+      if [[ ! "${diff_line}" =~ ${import_export_target_slug_line_regex} && ! "${diff_line}" =~ ${import_export_module_import_line_regex} && ! "${diff_line}" =~ ${import_export_module_config_line_regex} ]]; then
         return 1
       fi
     fi
@@ -122,7 +206,11 @@ is_runtime_only_collection_change() {
     esac
 
     if [[ "${diff_line}" == +* || "${diff_line}" == -* ]]; then
-      if [[ ! "${diff_line}" =~ ${hook_only_collection_line_regex} && ! "${diff_line}" =~ ${collection_upload_component_line_regex} && ! "${diff_line}" =~ ${collection_crypto_import_line_regex} && ! "${diff_line}" =~ ${collection_field_access_line_regex} ]]; then
+      if [[ "${diff_line}" =~ ^[+-][[:space:]]*$ ]]; then
+        continue
+      fi
+
+      if [[ ! "${diff_line}" =~ ${hook_only_collection_line_regex} && ! "${diff_line}" =~ ${collection_upload_component_line_regex} && ! "${diff_line}" =~ ${collection_crypto_import_line_regex} && ! "${diff_line}" =~ ${collection_field_access_import_line_regex} && ! "${diff_line}" =~ ${collection_field_access_line_regex} ]]; then
         return 1
       fi
     fi
@@ -215,8 +303,12 @@ is_dedicated_payload_hook_file() {
   [[ "${file_path}" =~ ^src/(collections|globals)/[^/]+/hooks/[^/]+\.tsx?$ ]]
 }
 
-if grep -qx 'src/plugins/index.ts' <<<"${schema_changed_files}" && is_import_export_plugin_allowlist_only_change; then
+if grep -qx 'src/plugins/index.ts' <<<"${schema_changed_files}" && { is_import_export_plugin_index_runtime_only_change || is_plugin_collection_access_only_change; }; then
   schema_changed_files="$(grep -vx 'src/plugins/index.ts' <<<"${schema_changed_files}" || true)"
+fi
+
+if grep -qx 'src/plugins/importExport.ts' <<<"${schema_changed_files}" && is_import_export_plugin_module_runtime_only_change; then
+  schema_changed_files="$(grep -vx 'src/plugins/importExport.ts' <<<"${schema_changed_files}" || true)"
 fi
 
 if grep -qx 'src/payload.config.ts' <<<"${schema_changed_files}" && { is_endpoint_only_payload_config_change || is_upload_policy_only_payload_config_change; }; then

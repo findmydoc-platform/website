@@ -5,6 +5,12 @@
 
 | Collection | Create | Read | Update | Delete | Admin |
 | --- | --- | --- | --- | --- | --- |
+| Imports `(imports)` | Platform | Platform | Conditional<br/><sub>disabled for direct writes; plugin lifecycle only</sub> | Platform | Platform |
+| Exports `(exports)` | Platform | Platform | Conditional<br/><sub>disabled for direct writes; plugin lifecycle only</sub> | Platform | Platform |
+| Forms `(forms)` | Platform | Anyone | Platform | Platform | Platform |
+| Form Submissions `(form-submissions)` | Anyone | Platform | Conditional<br/><sub>disabled for direct writes</sub> | Platform | Platform |
+| Redirects `(redirects)` | Platform | Anyone | Platform | Platform | Platform |
+| Search `(search)` | Conditional<br/><sub>disabled for direct writes; internal search sync only</sub> | Anyone | Platform | Platform | Platform |
 | BasicUsers `(basicUsers)` | Platform | Platform | Platform | Platform | Platform |
 | PlatformStaff `(platformStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Platform | Platform | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform |
 | ClinicStaff `(clinicStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform + own profile after approval; user, clinic, and status fields are platform-only</sub> | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform |
@@ -36,20 +42,26 @@
 
 ## Notes
 
+- **Imports**: Import jobs and custom endpoints are restricted to platform staff
+- **Exports**: Export jobs, previews, and downloads are restricted to platform staff
+- **Forms**: Public form definitions with platform-only management
+- **Form Submissions**: Public create path with platform-only read and delete access; direct updates are disabled
+- **Redirects**: Public redirect rules with platform-only management
+- **Search**: Public search index with platform management and internal-only document creation
 - **BasicUsers**: User management restricted to platform staff
 - **PlatformStaff**: Platform staff management - indirect via BasicUsers lifecycle
 - **ClinicStaff**: Authentication denied until approval; clinic staff read their clinic and update only non-authorization fields on their own profile
 - **Patients**: Patients can update own profile; no self-create/delete
 - **Posts**: Blog content - platform write, published content readable by all
 - **Pages**: Static pages - platform write, published content readable by all
-- **Doctors**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
-- **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved
+- **Doctors**: Platform RWDA, clinic RWA own clinic, patients/anonymous R; averageRating is computed-only
+- **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved; averageRating is computed-only
 - **DoctorSpecialties**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **DoctorTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **ClinicTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **FavoriteClinics**: Platform RWDA, patients RWDA own list only
 - **Reviews**: Platform RWDA moderation, patients W create own pending reviews only, all R approved
-- **Treatments**: Master data - platform write, everyone read
+- **Treatments**: Master data - platform write, everyone read; averageRating is computed-only
 - **MedicalSpecialties**: Master data - platform write, everyone read
 - **Countries**: Geographic data - platform write, everyone read
 - **Cities**: Geographic data - platform write, everyone read

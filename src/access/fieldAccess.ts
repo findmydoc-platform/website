@@ -55,6 +55,12 @@ export const platformOnlyFieldAccess: FieldAccess = ({ req }) => {
 }
 
 /**
+ * Computed fields reject all access-controlled writes.
+ * Trusted internal writers must opt into Payload's access override explicitly.
+ */
+export const computedOnlyFieldAccess: FieldAccess = () => false
+
+/**
  * Only Platform Staff with clinic trust management roles can create clinic records.
  */
 export const platformClinicTrustAccess: Access = async ({ req }) => {

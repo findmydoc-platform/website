@@ -117,6 +117,98 @@ export const permissionMatrix: PermissionMatrix = {
   version: '1.0.0',
   source: 'src/security/permission-matrix.config.ts',
   collections: {
+    imports: {
+      slug: 'imports',
+      displayName: 'Imports',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'platform' },
+        update: { type: 'conditional', details: 'disabled for direct writes; plugin lifecycle only' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          update: { kind: 'always-false' },
+        },
+      },
+      notes: 'Import jobs and custom endpoints are restricted to platform staff',
+    },
+    exports: {
+      slug: 'exports',
+      displayName: 'Exports',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'platform' },
+        update: { type: 'conditional', details: 'disabled for direct writes; plugin lifecycle only' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          update: { kind: 'always-false' },
+        },
+      },
+      notes: 'Export jobs, previews, and downloads are restricted to platform staff',
+    },
+    forms: {
+      slug: 'forms',
+      displayName: 'Forms',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'anyone' },
+        update: { type: 'platform' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      notes: 'Public form definitions with platform-only management',
+    },
+    'form-submissions': {
+      slug: 'form-submissions',
+      displayName: 'Form Submissions',
+      operations: {
+        create: { type: 'anyone' },
+        read: { type: 'platform' },
+        update: { type: 'conditional', details: 'disabled for direct writes' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          update: { kind: 'always-false' },
+        },
+      },
+      notes: 'Public create path with platform-only read and delete access; direct updates are disabled',
+    },
+    redirects: {
+      slug: 'redirects',
+      displayName: 'Redirects',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'anyone' },
+        update: { type: 'platform' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      notes: 'Public redirect rules with platform-only management',
+    },
+    search: {
+      slug: 'search',
+      displayName: 'Search',
+      operations: {
+        create: { type: 'conditional', details: 'disabled for direct writes; internal search sync only' },
+        read: { type: 'anyone' },
+        update: { type: 'platform' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+        },
+      },
+      notes: 'Public search index with platform management and internal-only document creation',
+    },
     basicUsers: {
       slug: 'basicUsers',
       displayName: 'BasicUsers',
@@ -230,7 +322,7 @@ export const permissionMatrix: PermissionMatrix = {
           admin: { kind: 'clinic-scope', path: 'clinic' },
         },
       },
-      notes: 'Platform RWDA, clinic RWA own clinic, patients/anonymous R',
+      notes: 'Platform RWDA, clinic RWA own clinic, patients/anonymous R; averageRating is computed-only',
     },
     clinics: {
       slug: 'clinics',
@@ -250,7 +342,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved',
+        'Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved; averageRating is computed-only',
     },
     doctorspecialties: {
       slug: 'doctorspecialties',
@@ -367,7 +459,7 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'platform' },
         admin: { type: 'platform' },
       },
-      notes: 'Master data - platform write, everyone read',
+      notes: 'Master data - platform write, everyone read; averageRating is computed-only',
     },
     'medical-specialties': {
       slug: 'medical-specialties',

@@ -117,6 +117,40 @@ export const permissionMatrix: PermissionMatrix = {
   version: '1.0.0',
   source: 'src/security/permission-matrix.config.ts',
   collections: {
+    imports: {
+      slug: 'imports',
+      displayName: 'Imports',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'platform' },
+        update: { type: 'conditional', details: 'disabled for direct writes; plugin lifecycle only' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          update: { kind: 'always-false' },
+        },
+      },
+      notes: 'Import jobs and custom endpoints are restricted to platform staff',
+    },
+    exports: {
+      slug: 'exports',
+      displayName: 'Exports',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'platform' },
+        update: { type: 'conditional', details: 'disabled for direct writes; plugin lifecycle only' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          update: { kind: 'always-false' },
+        },
+      },
+      notes: 'Export jobs, previews, and downloads are restricted to platform staff',
+    },
     basicUsers: {
       slug: 'basicUsers',
       displayName: 'BasicUsers',

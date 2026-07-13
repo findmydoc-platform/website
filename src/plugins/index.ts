@@ -15,6 +15,7 @@ import { createMcpPlugin } from './mcp'
 import { shouldUseCloudStorage } from './storageConfig'
 
 import { Page, Post } from '@/payload-types'
+import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { getServerSideURL } from '@/utilities/getURL'
 
 type PluginConfigField = Field & {
@@ -190,6 +191,12 @@ export const plugins: Plugin[] = [
     formSubmissionOverrides: {
       admin: {
         group: 'Platform Management',
+      },
+      access: {
+        create: () => true,
+        read: isPlatformBasicUser,
+        update: isPlatformBasicUser,
+        delete: isPlatformBasicUser,
       },
     },
   }),

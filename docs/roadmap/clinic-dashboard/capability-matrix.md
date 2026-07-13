@@ -20,7 +20,9 @@ No work in #1524–#1531 should be merged against the outgoing `basicUsers` iden
 
 The standalone app shell in
 [clinic-dashboard#1](https://github.com/findmydoc-platform/clinic-dashboard/issues/1) can proceed in parallel using only
-the rescued stories and fixtures. Its backend wiring remains blocked by the canonical auth refactor, #1522, and #1524.
+the rescued stories and fixtures. This includes all dashboard-overview metrics: no runtime PostHog query, analytics key,
+or reporting endpoint belongs in the prototype. Its backend wiring remains blocked by the canonical auth refactor, #1522,
+and #1524.
 
 ## Decision Evidence
 
@@ -31,6 +33,7 @@ the rescued stories and fixtures. Its backend wiring remains blocked by the cano
 | Backend implementation | Website `origin/main` at [`99b7534f49a8def0bdea0ba10689b100e126ce4a`](https://github.com/findmydoc-platform/website/commit/99b7534f49a8def0bdea0ba10689b100e126ce4a) (`fix(seeding): preserve seed reset operator (#1517)`) |
 | Auth architecture | [ADR 006](../../adrs/006-adr-supabase-payloadcms-multi-user-auth-strategy.md), accepted for the current runtime but explicitly due to be superseded by #1532 |
 | Cache architecture | [ADR 023](../../adrs/023-adr-public-website-cache-and-revalidation-strategy.md), the [runtime guide](../../engineering/cache-revalidation-runtime.md), policy catalog, planner, and executor |
+| Analytics capability | [PostHog Query API](https://posthog.com/docs/api/queries) documents aggregated data for embedded analytics; its [embedded analytics tutorial](https://posthog.com/tutorials/embedded-analytics) demonstrates the server-query plus application-rendering pattern. |
 | Issue contract | website#1522–#1533, the overlapping open website#1484, and clinic-dashboard#1, read on 2026-07-13; no issues were created or rewritten by this record |
 
 Decision status: the capability classification and dependency order are ready for execution planning. Product choices
@@ -123,6 +126,7 @@ Cache labels used below:
 | Session and token mechanics | [`supaBaseServer.ts`](../../../src/auth/utilities/supaBaseServer.ts) already wires Supabase SSR sessions through Next.js cookies; [`jwtValidation.ts`](../../../src/auth/utilities/jwtValidation.ts) extracts and validates bearer tokens for API requests. | Reuse the mechanics; do not create dashboard-owned session storage. The transport choice and staff principal remain #1522/#1524 plus the canonical #1484/#1532 auth decision. |
 | External browser API | [`payload.config.ts`](../../../src/payload.config.ts) configures CORS only for `getServerSideURL()`. There is no clinic self/capability endpoint. | #1524 owns the environment allowlist, preflight behavior, and private-live bootstrap after #1532. |
 | Payload API | Current collections expose Payload REST according to collection access rules; Payload remains the intended business API and authorization boundary. | The dashboard must not query Postgres directly or bypass collection/endpoint access. |
+| Analytics reporting | Typed PostHog events already carry `clinic_id` for profile views, CTA clicks, and inquiries, but no tenant-safe reporting endpoint exists. PostHog documents its Query API for embedded, aggregated analytics. | #1531 owns a server-only reporting facade that derives the clinic from the authenticated principal, composes approved PostHog and Payload aggregates, and returns dashboard-shaped data. |
 | Public freshness | Clinic detail and listing reads use canonical cache tags; clinic-related hooks normalize events into the central planner/executor. | New or changed public data in #1527–#1529 must prove read/write symmetry under ADR 023. |
 | Deployment | Website and Payload share the current website deployment boundary; the external dashboard origin is not configured. | Exact preview/production origins and responsibility belong to #1522/#1524, not this matrix. |
 
@@ -159,6 +163,11 @@ Prototype source abbreviations:
 The committed screen captures below are local Storybook renderings of the rescued prototype. They make the referenced
 states reviewable from this roadmap without replacing the linked Stitch project as the original visual source.
 
+Dashboard overview values remain fixtures until #1531. The prototype must not call PostHog, expose a PostHog query key,
+or embed a PostHog dashboard. PostHog's public iframe sharing is unsuitable for tenant isolation because anyone with the
+link can view the shared data; the later dashboard instead uses the server-side Query API pattern documented by
+[PostHog](https://posthog.com/docs/product-analytics/sharing).
+
 Anything not listed in this section is outside the implementation contract.
 
 ### Shared Shell
@@ -178,8 +187,8 @@ Stitch screen `402f5f9f449145448cb341ace9c8a7cc`; prototype evidence in `P-Stori
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
-| Select 7, 30, or 90 days | UI controls exist, but the fixture remains fixed at 30 days. The reporting contract must accept only the three defined periods. | `Access/API gap` | #1531 after #1532/#1524 | `private-live` |
-| Render profile views, inquiries, conversion, reviews, profile completeness, chart, funnel, and comparisons | `clinic_profile_viewed` and `patient_inquiry_created` events exist; no tenant-safe server aggregation exists. There is no impression or booking source. | `Access/API gap` | #1531; inquiry access/completeness depend on #1526/#1528. Existing reviews already support the review overview; #1529 is needed only for future response metrics. | `private-live` |
+| Select 7, 30, or 90 days | UI controls and fixture values exist, but the fixture remains fixed at 30 days. #1531 must define the three accepted reporting periods and return the same dashboard shape for each. | `Access/API gap` | #1531 after #1532/#1524 | `private-live` |
+| Render profile views, inquiries, conversion, reviews, profile completeness, chart, funnel, and comparisons | Keep all values fixture-backed in the prototype. #1531 later queries PostHog for consent-eligible interaction aggregates (profile views, CTA engagement, trends) and reads Payload for authoritative inquiry, review, and completeness facts. There is no impression or booking source. | `Access/API gap` | #1531; inquiry access/completeness depend on #1526/#1528. Existing reviews already support the review overview; #1529 is needed only for future response metrics. | `private-live` |
 | Activate doctor profile | Doctors are clinic-scoped, but no `active` field or activation lifecycle exists despite `active` appearing in admin columns. | `later scope` | No owning backend issue; #1531 may only surface a source-backed remediation code | `public-cached` if later activated publicly |
 | Upload certificate | `accreditation` is public master data and platform-writable; no clinic-owned credential document/upload lifecycle exists. | `later scope` | No owning backend issue; do not map to platform accreditation implicitly | `public-cached` only if a later public credential model is approved |
 | Check certificate | There is no clinic-visible verification state or review contract for submitted credentials. | `later scope` | No owning backend issue | `private-live` until an explicit public visibility decision |
@@ -293,7 +302,7 @@ Stitch screen `df09d7542d1e4be8b3ae1b9165a2a584`. [Screen capture](./screens/add
 | `reviews` | Patient review, moderation status, aggregate updates, edit audit | Review relates to clinic, doctor, treatment | Approved public read; patient/platform create; update/delete platform-only | Approved reviews affect cached clinic detail/listing | `Schema gap` for responses/appeals and own-clinic management — #1529 |
 | Public non-doctor clinic team | Name, role, biography, photo, order, visibility | Must belong to one clinic, separate from auth staff | No collection or permission exists | Must be public-cached when approved/active | `Schema gap` — #1527 |
 | Conversations/messages/private attachments | Thread, sender, message, read state, internal note, upload | Must derive clinic and participants from inquiry/auth context | No collections or permission rules exist | Must remain private-live/no-public-impact | `Schema gap` — #1530 |
-| PostHog + Payload reporting projection | Profile views, inquiries, conversion, reviews, completeness | Must be aggregated for authenticated clinic only | Events exist, but no server reporting contract exists | Private live; no client provider key | `Access/API gap` — #1531 |
+| PostHog analytics + Payload reporting facade | PostHog: consent-eligible profile views, CTA engagement, and trend aggregates. Payload: authoritative inquiry, review, and completeness facts. | The server derives one clinic from the authenticated principal; callers never supply a clinic ID or arbitrary query. | Events exist, but no server reporting contract exists. PostHog Query Read credentials are server-only; the browser receives only the shaped aggregate. | Private live; an optional private TTL cache is non-authoritative | `Access/API gap` — #1531 |
 
 ## Cache Impact Contract
 
@@ -310,7 +319,7 @@ For the planned implementation slices, the decision is domain-specific:
 | Approved clinic materialization from onboarding | `public-cached` | The application remains private, but creation or approval of a public clinic must pass through the clinic hook/planner boundary or an explicit terminal flush. |
 | Inquiries | `no-public-impact` | Tenant-bound operational data; never public cached. |
 | Conversations, messages, attachments, internal notes | `no-public-impact` | Patient- and clinic-bound private data. |
-| Dashboard analytics | `no-public-impact` | Tenant-scoped server aggregation; private-live unless a later ADR decides otherwise. |
+| Dashboard analytics | `no-public-impact` | Tenant-scoped server aggregation; optional private TTL caching is non-authoritative and must not become a second reporting store. |
 | Approved clinic fields and opening hours | `public-cached` | Rendered on public clinic detail and potentially listing surfaces. |
 | Active clinic treatments | `public-cached` | Rendered on public clinic detail and listing comparison. |
 | Approved/active public team members | `public-cached` | New public clinic-detail dependency. |
@@ -400,6 +409,8 @@ Stop implementation and obtain an ADR or explicit work order when any slice requ
 | `active` appears in Doctors admin columns, but no field/lifecycle exists. | “Activate doctor profile” cannot be implemented from current data. | Later scope; no backend issue was created by this matrix. |
 | Review fixtures claim 1,248 reviews and pagination while only three records exist. | Fixture totals cannot seed reporting or acceptance expectations. | #1529/#1531 must return source-backed empty/real states. |
 | Prototype funnel language conflates inquiries with bookings/reservations. | The repository has inquiry events but no booking domain. | #1531 must define conversion only from available sources; appointments remain later scope. |
+| The inquiry capture prefers a per-submission fallback `distinct_id` over the existing PostHog browser cookie. | A true person-level PostHog funnel from profile view to inquiry cannot currently be trusted; only a period-based event ratio is safe. | #1531 must either preserve the consented browser identity through the inquiry event or label the metric as an aggregate ratio rather than a person funnel. |
+| PostHog event capture is consent-gated. | PostHog interaction counts can undercount real business activity and cannot be presented as the authoritative inquiry total. | #1531 reads actual inquiry, review, and completeness facts from Payload; PostHog remains the behavioural analytics source. |
 | Clinic application approval does not materialize clinic/auth/staff records and partial profile creation errors can be swallowed. | No reproducible first clinic account exists for dashboard use. | #1525 after the selected #1484/#1532 auth refactor. |
 | #1484 and #1532 are both open with effectively the same staff-auth target. | Two runtime work orders could produce duplicate PRs, conflicting relationships, or ambiguous closure. | Owner must select one canonical execution issue before auth implementation; this document changes neither issue. |
 | Current CORS and self/bootstrap behavior is website-only. | An external browser app cannot safely discover tenant/capabilities. | #1524 after the selected #1484/#1532 auth refactor. |
@@ -419,7 +430,7 @@ Stop implementation and obtain an ADR or explicit work order when any slice requ
 | [#1528](https://github.com/findmydoc-platform/website/issues/1528) | Clinic fields, treatments, completeness | Yes, migrations | Uses final principal | Own-clinic writes | Yes, clinic/listing symmetry | #1532; current Treatment master remains authoritative |
 | [#1529](https://github.com/findmydoc-platform/website/issues/1529) | Review responses, appeals, audit | Yes | Uses final principal | Yes, own-clinic vs platform moderation | Yes for approved responses only | #1532; public response visibility contract |
 | [#1530](https://github.com/findmydoc-platform/website/issues/1530) | Conversations, messages, private attachments | Yes, new private domain | Uses final principal and patient identity | Yes, participant/tenant/field isolation | Explicit private-live policy only | #1526 inquiry ownership; #1532 |
-| [#1531](https://github.com/findmydoc-platform/website/issues/1531) | Tenant-safe reporting contract | Undecided; no persistence may be assumed | Uses final principal | Yes, server aggregation | No public impact/private-live | Existing reviews plus source definitions from #1526/#1528; #1529/#1530 only if their data is explicitly reported |
+| [#1531](https://github.com/findmydoc-platform/website/issues/1531) | Tenant-safe PostHog + Payload reporting facade; prototype fixtures remain until this slice | No dashboard persistence assumed | Uses final principal | Yes, fixed server-side aggregate queries and shaped response | No public impact/private-live; optional private TTL cache only | Existing reviews plus source definitions from #1526/#1528; PostHog identity continuity for a true funnel; #1529/#1530 only if their data is explicitly reported |
 | [#1532](https://github.com/findmydoc-platform/website/issues/1532) | Replace staff auth collections and ADR 006; overlaps #1484 | Yes, broad migration | Primary change | Rewrites actor/tenant helpers | Private auth; public author relations must be checked | Resolve canonical ownership with #1484; then runtime gate for #1524–#1531 |
 | [#1533](https://github.com/findmydoc-platform/website/issues/1533) | Remove website clinic auth paths | No expected domain schema | Removes old routes/targets | Redirect/cutover checks | No public data impact | Verified dashboard login/invite/reset/logout cutover |
 | [clinic-dashboard#1](https://github.com/findmydoc-platform/clinic-dashboard/issues/1) | Deployable fixture-backed app shell | No backend schema | Explicitly out of scope | Explicitly out of scope | None | Can run after #1523; API wiring waits for #1532/#1522/#1524 |
@@ -433,7 +444,7 @@ Stop implementation and obtain an ADR or explicit work order when any slice requ
 | 2 | **Finalize #1522**, then implement **#1524** | #1522 consumes the auth decision; #1524 implements the approved origin/token/bootstrap boundary. clinic-dashboard#1 can continue fixture-only throughout. |
 | 3 | **#1525, #1526, #1527, #1528, #1529** | Backend slices can run in parallel once #1532 and shared API rules are stable. #1527–#1529 share cache/revalidation surfaces and need coordination to avoid conflicting planner/catalog edits. End-to-end dashboard calls also require #1524. |
 | 4 | **#1530 conversations/messages** | Requires the inquiry tenant/ownership contract from #1526. UI shell work may prepare empty/loading/error states earlier. |
-| 5 | **#1531 reporting** | Metric definitions can be drafted earlier; implementation waits until each reported source is real and source-backed. It must not label inquiries as bookings. |
+| 5 | **#1531 reporting** | Keep the prototype fixture-backed until this slice. Implement the PostHog Query API plus Payload reporting facade only after each metric source is real and source-backed; it must not label inquiries as bookings. |
 | 6 | **Dashboard integration and cutover evidence** | Wire typed UI commands to the available capability contract; verify tenant, auth expiry, forbidden origin, and empty states. |
 | 7 | **#1533 website auth-path removal** | Last. Requires proven dashboard login, refresh, logout, invite, reset, and redirect behavior. |
 

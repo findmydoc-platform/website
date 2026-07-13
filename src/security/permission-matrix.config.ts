@@ -322,7 +322,7 @@ export const permissionMatrix: PermissionMatrix = {
           admin: { kind: 'clinic-scope', path: 'clinic' },
         },
       },
-      notes: 'Platform RWDA, clinic RWA own clinic, patients/anonymous R',
+      notes: 'Platform RWDA, clinic RWA own clinic, patients/anonymous R; averageRating is computed-only',
     },
     clinics: {
       slug: 'clinics',
@@ -342,7 +342,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved',
+        'Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved; averageRating is computed-only',
     },
     doctorspecialties: {
       slug: 'doctorspecialties',
@@ -459,7 +459,7 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'platform' },
         admin: { type: 'platform' },
       },
-      notes: 'Master data - platform write, everyone read',
+      notes: 'Master data - platform write, everyone read; averageRating is computed-only',
     },
     'medical-specialties': {
       slug: 'medical-specialties',

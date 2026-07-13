@@ -296,7 +296,9 @@ export default {
     commitFile(
       rootDir,
       'src/collections/ClinicStaff.ts',
-      `export const ClinicStaff = {
+      `import { platformOnlyFieldAccess } from '@/access/fieldAccess'
+
+export const ClinicStaff = {
   fields: [
     {
       name: 'clinic',
@@ -306,6 +308,55 @@ export default {
         // Clinic assignment defines tenant access and may only be changed by Platform Staff.
         create: platformOnlyFieldAccess,
         update: platformOnlyFieldAccess,
+      },
+    },
+  ],
+}
+`,
+    )
+
+    const output = runDetector(rootDir)
+
+    expect(output).toContain('db_changed=false')
+    expect(output).toContain('schema_changed=false')
+  })
+
+  it('does not require a migration when a field access import expands across lines', () => {
+    const rootDir = createTempRepo()
+
+    commitFile(
+      rootDir,
+      'src/collections/Clinics.ts',
+      `import { platformClinicTrustAccess, platformClinicTrustFieldAccess } from '@/access/fieldAccess'
+
+export const Clinics = {
+  fields: [
+    {
+      name: 'averageRating',
+      type: 'number',
+    },
+  ],
+}
+`,
+    )
+
+    commitFile(
+      rootDir,
+      'src/collections/Clinics.ts',
+      `import {
+  computedOnlyFieldAccess,
+  platformClinicTrustAccess,
+  platformClinicTrustFieldAccess,
+} from '@/access/fieldAccess'
+
+export const Clinics = {
+  fields: [
+    {
+      name: 'averageRating',
+      type: 'number',
+      access: {
+        create: computedOnlyFieldAccess,
+        update: computedOnlyFieldAccess,
       },
     },
   ],

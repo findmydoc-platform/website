@@ -54,14 +54,14 @@
 - **Patients**: Patients can update own profile; no self-create/delete
 - **Posts**: Blog content - platform write, published content readable by all
 - **Pages**: Static pages - platform write, published content readable by all
-- **Doctors**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
-- **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved
+- **Doctors**: Platform RWDA, clinic RWA own clinic, patients/anonymous R; averageRating is computed-only
+- **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved; averageRating is computed-only
 - **DoctorSpecialties**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **DoctorTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **ClinicTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **FavoriteClinics**: Platform RWDA, patients RWDA own list only
 - **Reviews**: Platform RWDA moderation, patients W create own pending reviews only, all R approved
-- **Treatments**: Master data - platform write, everyone read
+- **Treatments**: Master data - platform write, everyone read; averageRating is computed-only
 - **MedicalSpecialties**: Master data - platform write, everyone read
 - **Countries**: Geographic data - platform write, everyone read
 - **Cities**: Geographic data - platform write, everyone read

@@ -203,8 +203,8 @@ function buildLocation(clinic: Clinic, cityNameById: Map<number, string>): Clini
   const coordinates =
     Array.isArray(clinic.coordinates) && clinic.coordinates.length === 2
       ? {
-          lat: Number(clinic.coordinates[0]),
-          lng: Number(clinic.coordinates[1]),
+          lat: Number(clinic.coordinates[1]),
+          lng: Number(clinic.coordinates[0]),
         }
       : undefined
 

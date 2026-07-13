@@ -8,6 +8,17 @@ import {
   getListingComparisonServerData,
 } from '@/utilities/listingComparison/serverData'
 
+vi.mock('node:fs/promises', () => ({
+  default: {
+    readdir: vi.fn(async () => [
+      {
+        isFile: () => true,
+        name: 'test-clinics-creation-test-thumbnail.png',
+      },
+    ]),
+  },
+}))
+
 type MockCollectionData = {
   cities: Array<Record<string, unknown>>
   treatments: Array<Record<string, unknown>>
@@ -41,7 +52,7 @@ const baseData: MockCollectionData = {
       slug: 'alpha-clinic',
       averageRating: 4.7,
       verification: 'gold',
-      coordinates: [52.52, 13.405],
+      coordinates: [13.405, 52.52],
       address: {
         city: { id: 10, name: 'Berlin' },
         country: 'Germany',
@@ -57,7 +68,7 @@ const baseData: MockCollectionData = {
       slug: 'bravo-clinic',
       averageRating: 4.4,
       verification: 'silver',
-      coordinates: [48.137, 11.575],
+      coordinates: [11.575, 48.137],
       address: {
         city: { id: 11, name: 'Munich' },
         country: 'Germany',
@@ -293,6 +304,7 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(result.queryState.specialties).toEqual(['2'])
     expect(result.results.map((clinic) => clinic.name)).toEqual(['Alpha Clinic', 'Bravo Clinic'])
     expect(result.results[0]?.rating.count).toBe(2)
+    expect(result.results[0]?.locationHref).toBe('https://www.google.com/maps?q=52.52%2C13.405')
     expect(result.results[0]?.media).toEqual({
       src: '/api/clinicMedia/file/test-clinics-creation-test-thumbnail.png',
       alt: 'Alpha clinic exterior',

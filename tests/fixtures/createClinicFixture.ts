@@ -163,6 +163,7 @@ export async function createClinicFixture(
   const doctor = await payload.create({
     collection: 'doctors',
     data: {
+      active: true,
       title: normalizeEnum(doctorData.title, doctorTitles, 'dr'),
       gender: normalizeEnum(doctorData.gender, doctorGenders, 'male'),
       firstName: doctorData.firstName ?? 'Test',

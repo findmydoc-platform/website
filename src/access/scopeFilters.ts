@@ -39,6 +39,41 @@ export const platformOrOwnClinicResource: Access = async ({ req }) => {
 }
 
 /**
+ * Platform Staff: All doctor profiles
+ * Clinic Staff: Public doctor profiles plus inactive profiles from their clinic
+ * Patients and anonymous users: Active doctor profiles only
+ */
+export const platformOrOwnClinicDoctorsOrActive: Access = async ({ req }) => {
+  if (isPlatformBasicUser({ req })) {
+    return true
+  }
+
+  const activeDoctors = {
+    active: {
+      equals: true,
+    },
+  }
+
+  if (isClinicBasicUser({ req })) {
+    const clinicId = await getUserAssignedClinicId(req.user, req.payload)
+    if (clinicId) {
+      return {
+        or: [
+          activeDoctors,
+          {
+            clinic: {
+              equals: clinicId,
+            },
+          },
+        ],
+      }
+    }
+  }
+
+  return activeDoctors
+}
+
+/**
  * Mutation access for create operations where field-level ownership
  * is enforced in beforeChange hooks.
  */

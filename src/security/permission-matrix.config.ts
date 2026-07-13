@@ -70,6 +70,8 @@ export type ConditionalScenarioKind =
   | 'user-profile-media-create'
   // Clinic gallery read: non-platform users must receive a filter enforcing the clinic scope for gallery access.
   | 'clinic-gallery-read'
+  // Doctor public state: clinic staff also see their own inactive doctors; everyone else sees active doctors only.
+  | 'clinic-or-active'
 
 export interface ConditionalScenarioMeta {
   kind: ConditionalScenarioKind
@@ -218,7 +220,7 @@ export const permissionMatrix: PermissionMatrix = {
       displayName: 'Doctors',
       operations: {
         create: { type: 'conditional', details: 'platform full + clinic allowed (hook assigns clinic ownership)' },
-        read: { type: 'anyone' },
+        read: { type: 'conditional', details: 'platform all + clinic own inactive + everyone active' },
         update: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
         delete: { type: 'platform' },
         admin: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
@@ -226,11 +228,12 @@ export const permissionMatrix: PermissionMatrix = {
       meta: {
         conditional: {
           create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
+          read: { kind: 'clinic-or-active', path: 'clinic', statusPath: 'active' },
           update: { kind: 'clinic-scope', path: 'clinic' },
           admin: { kind: 'clinic-scope', path: 'clinic' },
         },
       },
-      notes: 'Platform RWDA, clinic RWA own clinic, patients/anonymous R',
+      notes: 'Platform RWDA, clinic RWA own clinic including inactive doctors, patients/anonymous R active doctors',
     },
     clinics: {
       slug: 'clinics',

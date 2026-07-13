@@ -68,7 +68,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
       data: {
         name: `${slugPrefix}-test-city`,
         airportcode: 'TST',
-        coordinates: [41.0082, 28.9784],
+        coordinates: [28.9784, 41.0082],
         country: countryId,
       },
       overrideAccess: true,
@@ -78,7 +78,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
     expect(city.id).toBeDefined()
     expect(city.name).toBe(`${slugPrefix}-test-city`)
     expect(city.airportcode).toBe('TST')
-    expect(city.coordinates).toEqual([41.0082, 28.9784])
+    expect(city.coordinates).toEqual([28.9784, 41.0082])
     expect(city.country).toBe(countryId)
   })
 
@@ -87,7 +87,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
       collection: 'cities',
       data: {
         name: `${slugPrefix}-no-airport`,
-        coordinates: [39.9334, 32.8597],
+        coordinates: [32.8597, 39.9334],
         country: countryId,
       },
       overrideAccess: true,
@@ -97,7 +97,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
     expect(city.id).toBeDefined()
     expect(city.name).toBe(`${slugPrefix}-no-airport`)
     expect(city.airportcode ?? null).toBeNull()
-    expect(city.coordinates).toEqual([39.9334, 32.8597])
+    expect(city.coordinates).toEqual([32.8597, 39.9334])
   })
 
   it('validates required fields when creating a city', async () => {
@@ -135,7 +135,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         collection: 'cities',
         data: {
           name: `${slugPrefix}-invalid-country`,
-          coordinates: [40.1, 29.1],
+          coordinates: [29.1, 40.1],
           country: 99999999,
         },
         overrideAccess: true,
@@ -149,7 +149,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
       collection: 'cities',
       data: {
         name: `${slugPrefix}-update-city`,
-        coordinates: [40.0, 30.0],
+        coordinates: [30.0, 40.0],
         country: countryId,
       },
       overrideAccess: true,
@@ -162,7 +162,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
       data: {
         name: `${slugPrefix}-updated-city`,
         airportcode: 'UPD',
-        coordinates: [40.5, 30.5],
+        coordinates: [30.5, 40.5],
       },
       overrideAccess: true,
       depth: 0,
@@ -178,7 +178,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
     expect(updatedCity.id).toBe(city.id)
     expect(updatedCity.name).toBe(`${slugPrefix}-updated-city`)
     expect(updatedCity.airportcode).toBe('UPD')
-    expect(refreshedCity.coordinates).toEqual([40.5, 30.5])
+    expect(refreshedCity.coordinates).toEqual([30.5, 40.5])
   })
 
   it('allows anyone to read cities (public access)', async () => {
@@ -186,7 +186,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
       collection: 'cities',
       data: {
         name: `${slugPrefix}-public-city`,
-        coordinates: [41.0, 29.0],
+        coordinates: [29.0, 41.0],
         country: countryId,
       },
       overrideAccess: true,
@@ -213,7 +213,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
       collection: 'cities',
       data: {
         name: `${slugPrefix}-access-city`,
-        coordinates: [41.1, 29.1],
+        coordinates: [29.1, 41.1],
         country: countryId,
       },
       user: asPayloadBasicUser(platformUser),
@@ -227,7 +227,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         user: asPayloadBasicUser(clinicUser),
         createData: {
           name: `${slugPrefix}-clinic-denied-create`,
-          coordinates: [41.25, 29.25] as [number, number],
+          coordinates: [29.25, 41.25] as [number, number],
           country: countryId,
         },
       },
@@ -236,7 +236,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         user: asPayloadPatientUser(patientUser),
         createData: {
           name: `${slugPrefix}-access-denied-create`,
-          coordinates: [41.2, 29.2] as [number, number],
+          coordinates: [29.2, 41.2] as [number, number],
           country: countryId,
         },
       },
@@ -298,7 +298,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
       data: {
         name: `${slugPrefix}-city-1`,
         airportcode: 'CT1',
-        coordinates: [41.0, 28.0],
+        coordinates: [28.0, 41.0],
         country: countryId,
       },
       overrideAccess: true,
@@ -310,7 +310,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
       data: {
         name: `${slugPrefix}-city-2`,
         airportcode: 'CT2',
-        coordinates: [42.0, 29.0],
+        coordinates: [29.0, 42.0],
         country: countryId,
       },
       overrideAccess: true,

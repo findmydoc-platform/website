@@ -1186,6 +1186,10 @@ export interface Doctor {
    */
   title?: ('dr' | 'specialist' | 'surgeon' | 'assoc_prof' | 'prof_dr') | null;
   /**
+   * Show this doctor on public clinic pages
+   */
+  active: boolean;
+  /**
    * Average patient rating
    */
   averageRating?: number | null;
@@ -3929,6 +3933,7 @@ export interface ClinicsSelect<T extends boolean = true> {
 export interface DoctorsSelect<T extends boolean = true> {
   stableId?: T;
   title?: T;
+  active?: T;
   averageRating?: T;
   firstName?: T;
   lastName?: T;

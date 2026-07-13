@@ -46,7 +46,7 @@ export const ensureCityFixture = async (request: APIRequestContext) => {
     data: {
       name: 'Istanbul',
       airportcode: 'IST',
-      coordinates: [41.0082, 28.9784],
+      coordinates: [28.9784, 41.0082],
       country: countryId,
     },
   })

@@ -9,6 +9,8 @@ const { Client } = pg
 
 const DOCKER_COMPOSE = 'docker compose -p findmydoc-test -f docker-compose.test.yml'
 const DEFAULT_CONN = 'postgresql://postgres:password@localhost:5433/findmydoc-test' // pragma: allowlist secret
+const LOCAL_DATABASE_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+const SAFE_TEST_DATABASE_NAME_PATTERN = /^findmydoc-test(?:[-_][a-z0-9][a-z0-9_-]*)?$/
 const TEMPLATE_METADATA_TABLE = 'codex_test_template_metadata'
 const DEFAULT_TEMPLATE_KIND = 'empty'
 const TEMPLATE_SUFFIXES = {
@@ -25,6 +27,8 @@ const TEMPLATE_FINGERPRINT_INPUTS = {
 }
 
 export const TEMPLATE_KINDS = ['empty', 'baseline']
+
+let managesLocalTestDatabaseContainer = false
 
 const quoteIdentifier = (value) => `"${value.replaceAll('"', '""')}"`
 
@@ -93,12 +97,38 @@ export function deriveTemplateDatabaseName(targetDatabaseName, templateKind) {
   return `${prefix}_${suffix}_${hash}`.slice(0, 63)
 }
 
-export function deriveDatabaseConfig(connectionString = DEFAULT_CONN) {
-  const targetUrl = new URL(connectionString)
+export function deriveDatabaseConfig(connectionString = DEFAULT_CONN, { allowRemote = false } = {}) {
+  let targetUrl
+
+  try {
+    targetUrl = new URL(connectionString)
+  } catch {
+    throw new Error('DATABASE_URI must be a valid PostgreSQL connection URL')
+  }
+
+  if (targetUrl.protocol !== 'postgres:' && targetUrl.protocol !== 'postgresql:') {
+    throw new Error('DATABASE_URI must use the postgres or postgresql protocol')
+  }
+
   const targetDatabaseName = decodeURIComponent(targetUrl.pathname.replace(/^\//, ''))
 
   if (!targetDatabaseName) {
-    throw new Error(`DATABASE_URI must include a database name: ${connectionString}`)
+    throw new Error('DATABASE_URI must include a database name')
+  }
+
+  if (!SAFE_TEST_DATABASE_NAME_PATTERN.test(targetDatabaseName)) {
+    throw new Error(
+      `Refusing destructive test database operations for unsafe database name "${targetDatabaseName}". ` +
+        'Use "findmydoc-test" or an isolated name prefixed with "findmydoc-test-" or "findmydoc-test_".',
+    )
+  }
+
+  const isLocalTarget = LOCAL_DATABASE_HOSTS.has(targetUrl.hostname)
+  if (!isLocalTarget && !allowRemote) {
+    throw new Error(
+      'Refusing destructive test database operations for a remote target. ' +
+        'Set TEST_DB_ALLOW_REMOTE=1 only for an isolated remote database with a safe test name.',
+    )
   }
 
   const adminUrl = new URL(connectionString)
@@ -107,6 +137,7 @@ export function deriveDatabaseConfig(connectionString = DEFAULT_CONN) {
   return {
     adminConnectionString: adminUrl.toString(),
     connectionString: targetUrl.toString(),
+    isLocalTarget,
     targetDatabaseName,
     templateDatabaseNames: {
       baseline: deriveTemplateDatabaseName(targetDatabaseName, 'baseline'),
@@ -484,23 +515,33 @@ export async function setupTestDatabase(options = {}) {
   const templateKind = resolveTemplateKind(options.templateKind)
   const requiredTemplateKinds = resolveRequiredTemplateKinds(templateKind)
   const forceTemplateRebuild = process.env.TEST_DB_REBUILD_TEMPLATES === '1'
+  const databaseConfig = deriveDatabaseConfig(process.env.DATABASE_URI || DEFAULT_CONN, {
+    allowRemote: process.env.TEST_DB_ALLOW_REMOTE === '1',
+  })
   const fingerprints = Object.fromEntries(
     requiredTemplateKinds.map((requiredTemplateKind) => [
       requiredTemplateKind,
       computeTestDatabaseFingerprint({ templateKind: requiredTemplateKind }),
     ]),
   )
-  const { adminConnectionString, connectionString, targetDatabaseName, templateDatabaseNames } = deriveDatabaseConfig(
-    process.env.DATABASE_URI || DEFAULT_CONN,
-  )
+  const { adminConnectionString, connectionString, isLocalTarget, targetDatabaseName, templateDatabaseNames } =
+    databaseConfig
 
-  if (forceTemplateRebuild) {
+  managesLocalTestDatabaseContainer = false
+
+  if (forceTemplateRebuild && isLocalTarget) {
     console.log('♻️ TEST_DB_REBUILD_TEMPLATES=1 requested a clean template rebuild for this run.')
     runDockerCompose('reset')
   }
 
-  console.log('🚀 Starting test database container...')
-  runDockerCompose('up')
+  if (isLocalTarget) {
+    console.log('🚀 Starting test database container...')
+    runDockerCompose('up')
+    managesLocalTestDatabaseContainer = true
+  } else {
+    console.log('🔐 Using explicitly allowed remote test database target; local Docker lifecycle is disabled.')
+  }
+
   console.log('⏳ Waiting for test database to be ready...')
   await waitForDatabase(adminConnectionString)
   await sleep(500)
@@ -555,7 +596,13 @@ export async function setupTestDatabase(options = {}) {
 }
 
 export async function teardownTestDatabase() {
+  if (!managesLocalTestDatabaseContainer) {
+    console.log('✅ No local test database container was managed for this run')
+    return
+  }
+
   console.log('🧹 Stopping test database container (templates preserved)...')
   runDockerCompose('stop')
+  managesLocalTestDatabaseContainer = false
   console.log('✅ Test database container stopped and template volume preserved')
 }

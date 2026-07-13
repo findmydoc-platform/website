@@ -68,6 +68,7 @@ describe('deriveDatabaseConfig', () => {
     const config = deriveDatabaseConfig('postgresql://postgres@localhost:5433/findmydoc-test')
 
     expect(config.adminConnectionString).toBe('postgresql://postgres@localhost:5433/postgres')
+    expect(config.isLocalTarget).toBe(true)
     expect(config.targetDatabaseName).toBe('findmydoc-test')
     expect(config.templateDatabaseNames).toEqual({
       baseline: 'findmydoc-test_template_baseline',
@@ -78,6 +79,50 @@ describe('deriveDatabaseConfig', () => {
   it('fails when DATABASE_URI does not contain a database name', () => {
     expect(() => deriveDatabaseConfig('postgresql://postgres@localhost:5433')).toThrow(
       'DATABASE_URI must include a database name',
+    )
+  })
+
+  it('accepts isolated local database names in the test namespace', () => {
+    expect(deriveDatabaseConfig('postgresql://postgres@127.0.0.1:5433/findmydoc-test-pr-123').targetDatabaseName).toBe(
+      'findmydoc-test-pr-123',
+    )
+    expect(deriveDatabaseConfig('postgresql://postgres@[::1]:5433/findmydoc-test_worker_2').targetDatabaseName).toBe(
+      'findmydoc-test_worker_2',
+    )
+  })
+
+  it('rejects local production and administrative database names', () => {
+    expect(() => deriveDatabaseConfig('postgresql://postgres@localhost:5433/findmydoc-portal')).toThrow(
+      'Refusing destructive test database operations for unsafe database name "findmydoc-portal"',
+    )
+    expect(() => deriveDatabaseConfig('postgresql://postgres@localhost:5433/postgres')).toThrow(
+      'Refusing destructive test database operations for unsafe database name "postgres"',
+    )
+  })
+
+  it('rejects remote database targets unless explicitly allowed', () => {
+    const remoteTestDatabaseUrl = 'postgresql://postgres@db.example.test:5432/findmydoc-test-ci'
+
+    expect(() => deriveDatabaseConfig(remoteTestDatabaseUrl)).toThrow(
+      'Refusing destructive test database operations for a remote target',
+    )
+
+    const config = deriveDatabaseConfig(remoteTestDatabaseUrl, { allowRemote: true })
+    expect(config.isLocalTarget).toBe(false)
+    expect(config.targetDatabaseName).toBe('findmydoc-test-ci')
+  })
+
+  it('keeps unsafe database names blocked even with the remote opt-in', () => {
+    expect(() =>
+      deriveDatabaseConfig('postgresql://postgres@db.example.test:5432/findmydoc-production', {
+        allowRemote: true,
+      }),
+    ).toThrow('Refusing destructive test database operations for unsafe database name "findmydoc-production"')
+  })
+
+  it('rejects non-PostgreSQL connection URLs', () => {
+    expect(() => deriveDatabaseConfig('https://localhost/findmydoc-test')).toThrow(
+      'DATABASE_URI must use the postgres or postgresql protocol',
     )
   })
 })

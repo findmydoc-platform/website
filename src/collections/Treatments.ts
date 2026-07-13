@@ -1,4 +1,5 @@
 import { CollectionConfig } from 'payload'
+import { computedOnlyFieldAccess } from '@/access/fieldAccess'
 import { anyone } from '@/access/anyone'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
@@ -89,6 +90,10 @@ export const Treatments: CollectionConfig<'treatments'> = {
               type: 'number',
               min: 0,
               max: 5,
+              access: {
+                create: computedOnlyFieldAccess,
+                update: computedOnlyFieldAccess,
+              },
               admin: {
                 description: 'Average patient rating',
                 readOnly: true,

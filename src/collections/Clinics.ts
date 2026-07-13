@@ -4,7 +4,11 @@ import { slugField } from 'payload'
 import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
-import { platformClinicTrustAccess, platformClinicTrustFieldAccess } from '@/access/fieldAccess'
+import {
+  computedOnlyFieldAccess,
+  platformClinicTrustAccess,
+  platformClinicTrustFieldAccess,
+} from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateClinicChange, revalidateClinicDelete } from '@/hooks/revalidateClinicSurfaces'
 
@@ -116,6 +120,10 @@ export const Clinics: CollectionConfig<'clinics'> = {
       type: 'number',
       min: 0,
       max: 5,
+      access: {
+        create: computedOnlyFieldAccess,
+        update: computedOnlyFieldAccess,
+      },
       admin: {
         description: 'Average patient rating',
         readOnly: true,

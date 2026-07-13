@@ -156,6 +156,9 @@ Prototype source abbreviations:
 - `P-Actions`: [prototype action types](https://github.com/findmydoc-platform/website/blob/be9efd19c98cf1461cb87dc5294c09a35d881f9d/src/components/templates/ClinicDashboardPrototype/types.ts)
 - `P-QA`: [design QA manifest](https://github.com/findmydoc-platform/website/blob/be9efd19c98cf1461cb87dc5294c09a35d881f9d/output/playwright/stitch-clinic-dashboard/design-qa.md)
 
+The committed screen captures below are local Storybook renderings of the rescued prototype. They make the referenced
+states reviewable from this roadmap without replacing the linked Stitch project as the original visual source.
+
 Anything not listed in this section is outside the implementation contract.
 
 ### Shared Shell
@@ -171,7 +174,7 @@ Anything not listed in this section is outside the implementation contract.
 
 ### Screen 1 — Dashboard Overview
 
-Stitch screen `402f5f9f449145448cb341ace9c8a7cc`; prototype evidence in `P-Stories` and `P-Fixtures`.
+Stitch screen `402f5f9f449145448cb341ace9c8a7cc`; prototype evidence in `P-Stories` and `P-Fixtures`. [Screen capture](./screens/dashboard-overview.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -188,7 +191,7 @@ Stitch screen `402f5f9f449145448cb341ace9c8a7cc`; prototype evidence in `P-Stori
 
 ### Screen 2 — Messages
 
-Stitch screen `b4e343c4f5cc4ea8b3bbe5144e6e97ec`.
+Stitch screen `b4e343c4f5cc4ea8b3bbe5144e6e97ec`. [Screen capture](./screens/messages-default.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -206,7 +209,7 @@ Stitch screen `b4e343c4f5cc4ea8b3bbe5144e6e97ec`.
 
 ### Screen 3 — Patient Profile Dialog
 
-Stitch screen `b704e3e6c44b493f87d977fa0cb33f76`.
+Stitch screen `b704e3e6c44b493f87d977fa0cb33f76`. [Screen capture](./screens/patient-profile-dialog.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -217,7 +220,7 @@ Stitch screen `b704e3e6c44b493f87d977fa0cb33f76`.
 
 ### Screen 4 — Reviews Management
 
-Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`.
+Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`. [Screen capture](./screens/reviews-management.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -232,7 +235,7 @@ Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`.
 
 ### Screen 5 — Clinic Profile Editor
 
-Stitch screen `42ffc21e25c74fe3be7b7f6317d12436`.
+Stitch screen `42ffc21e25c74fe3be7b7f6317d12436`. [Screen capture](./screens/clinic-profile-editor.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -253,7 +256,7 @@ Stitch screen `42ffc21e25c74fe3be7b7f6317d12436`.
 
 ### Screen 6 — New Treatment Dialog
 
-Stitch screen `4403f6cc252e441783ae584fd7e38eaf`.
+Stitch screen `4403f6cc252e441783ae584fd7e38eaf`. [Screen capture](./screens/new-treatment-dialog.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -264,7 +267,7 @@ Stitch screen `4403f6cc252e441783ae584fd7e38eaf`.
 
 ### Screen 7 — Add Team Member Dialog
 
-Stitch screen `df09d7542d1e4be8b3ae1b9165a2a584`.
+Stitch screen `df09d7542d1e4be8b3ae1b9165a2a584`. [Screen capture](./screens/add-team-member-dialog.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |

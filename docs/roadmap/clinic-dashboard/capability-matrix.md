@@ -70,6 +70,25 @@ Authoritative implementation destinations:
 - Runtime code, migrations, seeds, dashboard repository changes, deployments, and issue rewrites.
 - Appointment booking, push notifications, support tooling, and exports unless a later issue owns them.
 
+## Statefulness and Data Ownership
+
+The clinic dashboard is planned as a stateless application shell. It owns no durable business database and must not
+become a second source of truth for clinic, patient, message, review, or authentication data. Business data remains in
+the main platform and its approved providers: Supabase owns identity and session state, while Payload exposes the
+authorized business collections and endpoints. Other providers, such as analytics sources, are read through explicit
+server-side contracts rather than persisted by the dashboard.
+
+The dashboard may hold only request- or session-scoped material in the browser or runtime: Supabase session/token
+material, ephemeral UI state, and an optional Next.js cache. Any Next.js cache is temporary, non-authoritative, and an
+optimization only; it must not be used as durable dashboard storage or as a substitute for Payload authorization.
+
+The existing website already provides reusable authentication mechanics: Supabase SSR cookie sessions via
+`src/auth/utilities/supaBaseServer.ts` and bearer-token extraction/validation via
+`src/auth/utilities/jwtValidation.ts`. The implementation should reuse those patterns instead of introducing a second
+session or token system. The exact transport (cookie, bearer token, or a deliberate combination) remains a #1522/#1524
+architecture decision, and the current `basicUsers` staff resolution remains blocked on the canonical #1484/#1532
+auth refactor.
+
 ## Status Semantics
 
 The status describes the **website backend contract**, not whether the standalone dashboard has already wired the UI.
@@ -101,7 +120,7 @@ Cache labels used below:
 | --- | --- | --- |
 | Staff identity | [`basicUsers`](../../../src/collections/BasicUsers/index.ts) is auth-enabled; [`clinicStaff`](../../../src/collections/ClinicStaff.ts) and `platformStaff` are profile collections. `payload.config.ts` points Payload Admin at `basicUsers`. | #1532 must replace the actor and tenant model before later runtime work is merged. |
 | Clinic authorization | [`getClinicAssignment`](../../../src/access/utils/getClinicAssignment.ts), [`scopeFilters`](../../../src/access/scopeFilters.ts), and role helpers expect authenticated `basicUsers` records and approved `clinicStaff` relationships. | Reusing these helpers unchanged would preserve the wrong identity boundary. |
-| Bearer auth | The Supabase strategy already extracts and validates bearer tokens, but resolves staff through the current unified user model. | Token transport is reusable evidence, not a ready target contract. |
+| Session and token mechanics | [`supaBaseServer.ts`](../../../src/auth/utilities/supaBaseServer.ts) already wires Supabase SSR sessions through Next.js cookies; [`jwtValidation.ts`](../../../src/auth/utilities/jwtValidation.ts) extracts and validates bearer tokens for API requests. | Reuse the mechanics; do not create dashboard-owned session storage. The transport choice and staff principal remain #1522/#1524 plus the canonical #1484/#1532 auth decision. |
 | External browser API | [`payload.config.ts`](../../../src/payload.config.ts) configures CORS only for `getServerSideURL()`. There is no clinic self/capability endpoint. | #1524 owns the environment allowlist, preflight behavior, and private-live bootstrap after #1532. |
 | Payload API | Current collections expose Payload REST according to collection access rules; Payload remains the intended business API and authorization boundary. | The dashboard must not query Postgres directly or bypass collection/endpoint access. |
 | Public freshness | Clinic detail and listing reads use canonical cache tags; clinic-related hooks normalize events into the central planner/executor. | New or changed public data in #1527–#1529 must prove read/write symmetry under ADR 023. |

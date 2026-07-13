@@ -13,6 +13,7 @@ import { beforeSyncWithSearch } from '@/search/beforeSync'
 import { createMcpPlugin } from './mcp'
 import { shouldUseCloudStorage } from './storageConfig'
 import { importExport } from './importExport'
+import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -108,6 +109,7 @@ export const plugins: Plugin[] = [
   redirectsPlugin({
     collections: ['pages', 'posts'],
     overrides: {
+      access: generatedCollectionAccess.redirects,
       admin: {
         group: 'Settings',
       },
@@ -149,6 +151,7 @@ export const plugins: Plugin[] = [
       payment: false,
     },
     formOverrides: {
+      access: generatedCollectionAccess.forms,
       admin: {
         group: 'Settings',
       },
@@ -188,6 +191,7 @@ export const plugins: Plugin[] = [
       },
     },
     formSubmissionOverrides: {
+      access: generatedCollectionAccess['form-submissions'],
       admin: {
         group: 'Platform Management',
       },
@@ -201,6 +205,7 @@ export const plugins: Plugin[] = [
     // and rely on regular writes / manual reindex afterwards.
     skipSync: ({ req }) => Boolean(req.context?.disableSearchSync),
     searchOverrides: {
+      access: searchPluginCollectionAccessOverrides,
       admin: {
         group: 'Settings',
       },

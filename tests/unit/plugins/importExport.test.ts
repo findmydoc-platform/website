@@ -81,8 +81,15 @@ describe('import and export plugin configuration', () => {
     }
   })
 
-  it('registers both generated collections for permission-matrix verification', () => {
-    expect(managedPluginCollectionSlugs).toEqual(['imports', 'exports'])
+  it('registers every managed plugin collection for permission-matrix verification', () => {
+    expect(managedPluginCollectionSlugs).toEqual([
+      'imports',
+      'exports',
+      'forms',
+      'form-submissions',
+      'redirects',
+      'search',
+    ])
     expect(Object.keys(generatedCollectionAccess)).toEqual(managedPluginCollectionSlugs)
   })
 

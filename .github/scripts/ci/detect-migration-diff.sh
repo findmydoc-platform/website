@@ -105,6 +105,49 @@ is_import_export_plugin_index_runtime_only_change() {
   return 0
 }
 
+# Generated plugin collection access changes runtime authorization only. Keep
+# this allowlist deliberately narrow so field or plugin-option changes still
+# reach Payload's migration alignment check.
+is_plugin_collection_access_only_change() {
+  local diff
+  local diff_line
+
+  if ! diff="$(git diff --unified=0 --diff-filter=ACMR "${effective_range}" -- src/plugins/index.ts)"; then
+    return 1
+  fi
+
+  if [[ -z "${diff}" ]]; then
+    return 1
+  fi
+
+  while IFS= read -r diff_line; do
+    case "${diff_line}" in
+      'diff --git'* | 'index '* | '--- '* | '+++ '* | '@@'*)
+        continue
+        ;;
+    esac
+
+    case "${diff_line}" in
+      "+import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'" | \
+        "-import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'" | \
+        '+      access: generatedCollectionAccess.redirects,' | \
+        '-      access: generatedCollectionAccess.redirects,' | \
+        '+      access: generatedCollectionAccess.forms,' | \
+        '-      access: generatedCollectionAccess.forms,' | \
+        "+      access: generatedCollectionAccess['form-submissions']," | \
+        "-      access: generatedCollectionAccess['form-submissions']," | \
+        '+      access: searchPluginCollectionAccessOverrides,' | \
+        '-      access: searchPluginCollectionAccessOverrides,')
+        ;;
+      +* | -*)
+        return 1
+        ;;
+    esac
+  done <<<"${diff}"
+
+  return 0
+}
+
 # This dedicated module may change only the target allowlist and runtime access
 # wiring. Any other plugin option remains schema-relevant and reaches Payload's
 # migration alignment check.
@@ -255,7 +298,7 @@ is_dedicated_payload_hook_file() {
   [[ "${file_path}" =~ ^src/(collections|globals)/[^/]+/hooks/[^/]+\.tsx?$ ]]
 }
 
-if grep -qx 'src/plugins/index.ts' <<<"${schema_changed_files}" && is_import_export_plugin_index_runtime_only_change; then
+if grep -qx 'src/plugins/index.ts' <<<"${schema_changed_files}" && { is_import_export_plugin_index_runtime_only_change || is_plugin_collection_access_only_change; }; then
   schema_changed_files="$(grep -vx 'src/plugins/index.ts' <<<"${schema_changed_files}" || true)"
 fi
 

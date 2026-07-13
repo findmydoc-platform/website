@@ -239,10 +239,10 @@ const acquireDatabaseFinalFlushLock = async (
   payload: Payload,
   runId: string,
 ): Promise<(() => Promise<void>) | null | undefined> => {
-  const connect = (payload as PayloadWithOptionalPostgresPool).db?.pool?.connect
-  if (typeof connect !== 'function') return undefined
+  const pool = (payload as PayloadWithOptionalPostgresPool).db?.pool
+  if (typeof pool?.connect !== 'function') return undefined
 
-  const client = await connect()
+  const client = await pool.connect()
 
   try {
     const result = await client.query('select pg_try_advisory_lock(hashtext($1), hashtext($2)) as acquired', [

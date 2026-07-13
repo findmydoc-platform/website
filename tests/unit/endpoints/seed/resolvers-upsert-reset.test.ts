@@ -191,6 +191,32 @@ describe('resetCollections', () => {
     expect(versionOrder).toEqual(['posts'])
   })
 
+  it('preserves the active platform user and linked staff profile during reset', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('NODE_ENV', 'test')
+
+    deleteMany.mockResolvedValue(undefined)
+    deleteVersions.mockResolvedValue(undefined)
+
+    await resetCollections(payload, 'demo', { preservePlatformUserId: 42 })
+
+    const deleteArgsByCollection = new Map(
+      deleteMany.mock.calls.map((call: unknown[]) => {
+        const args = call[0] as { collection: string; where: unknown }
+        return [args.collection, args] as const
+      }),
+    )
+
+    expect(deleteArgsByCollection.get('platformStaff')?.where).toEqual({
+      and: [{ id: { exists: true } }, { user: { not_equals: 42 } }],
+    })
+    expect(deleteArgsByCollection.get('basicUsers')?.where).toEqual({
+      and: [{ id: { exists: true } }, { id: { not_equals: 42 } }],
+    })
+    expect(deleteArgsByCollection.get('clinics')?.where).toEqual({ id: { exists: true } })
+  })
+
   it('deletes demo then baseline collections for baseline reset', async () => {
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')

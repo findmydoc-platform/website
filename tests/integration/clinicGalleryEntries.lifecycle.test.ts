@@ -7,7 +7,7 @@ import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import { runBaselineContract } from './contracts/baselineContract'
-import type { BasicUser, ClinicGalleryEntry, ClinicGalleryMedia, ClinicStaff } from '@/payload-types'
+import type { BasicUser, Clinic, ClinicGalleryEntry, ClinicGalleryMedia, ClinicStaff } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -368,6 +368,43 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
         depth: 0,
       } as PayloadCreateArgs),
     ).rejects.toThrow(/same clinic/i)
+  })
+
+  it('rejects gallery entries from a different clinic on clinic profiles', async () => {
+    const { clinic: clinicA } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-profile-gallery-a`,
+    })
+    const { clinic: clinicB } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-profile-gallery-b`,
+    })
+
+    const { basicUser: clinicUserA, clinicStaff: staffA } = await createClinicUser('profile-gallery-a')
+    await approveClinicStaff(staffA.id, clinicA.id as number)
+
+    const { basicUser: clinicUserB, clinicStaff: staffB } = await createClinicUser('profile-gallery-b')
+    await approveClinicStaff(staffB.id, clinicB.id as number)
+
+    const beforeB = await createGalleryMedia(clinicB.id as number, clinicUserB, 'profile-gallery-before-b', 'published')
+    const afterB = await createGalleryMedia(clinicB.id as number, clinicUserB, 'profile-gallery-after-b', 'published')
+    const entryB = await createEntry({
+      clinicId: clinicB.id as number,
+      user: clinicUserB,
+      beforeMediaId: beforeB.id,
+      afterMediaId: afterB.id,
+      status: 'published',
+      titleSuffix: 'profile-gallery-entry-b',
+    })
+
+    await expect(
+      payload.update({
+        collection: 'clinics',
+        id: clinicA.id,
+        data: { galleryEntries: [entryB.id] } as Partial<Clinic>,
+        user: asClinicUser(clinicUserA),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadUpdateArgs),
+    ).rejects.toThrow(/belong to this clinic/i)
   })
 
   it('scopes reads to published for public, clinic for staff, and all for platform', async () => {

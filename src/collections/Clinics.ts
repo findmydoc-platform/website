@@ -4,11 +4,31 @@ import { slugField } from 'payload'
 import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
-import { platformClinicTrustAccess, platformClinicTrustFieldAccess } from '@/access/fieldAccess'
+import {
+  platformClinicTrustAccess,
+  platformClinicTrustFieldAccess,
+  platformOnlyFieldAccess,
+} from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateClinicChange, revalidateClinicDelete } from '@/hooks/revalidateClinicSurfaces'
 
 const INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE = 'Internal primary contact is required.'
+const GALLERY_ENTRIES_SAME_CLINIC_MESSAGE = 'Gallery entries must belong to this clinic.'
+
+const getRelationshipId = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isSafeInteger(value)) return value
+
+  if (typeof value === 'string') {
+    const numericId = Number(value)
+    return Number.isSafeInteger(numericId) ? numericId : null
+  }
+
+  if (value && typeof value === 'object' && 'id' in value) {
+    return getRelationshipId((value as { id?: unknown }).id)
+  }
+
+  return null
+}
 
 const hasCompleteInternalPrimaryContact = (value: unknown): boolean => {
   if (!value || typeof value !== 'object') return false
@@ -67,6 +87,55 @@ const validateInternalPrimaryContactBeforeValidate: CollectionBeforeValidateHook
   return data
 }
 
+const validateGalleryEntriesBeforeValidate: CollectionBeforeValidateHook<Clinic> = async ({
+  data,
+  originalDoc,
+  req,
+}) => {
+  if (!data || !Object.prototype.hasOwnProperty.call(data, 'galleryEntries')) return data
+
+  const incomingEntries = data.galleryEntries
+  if (incomingEntries === null || incomingEntries === undefined || incomingEntries.length === 0) return data
+
+  const clinicId = getRelationshipId(originalDoc?.id)
+  const entryIds = Array.from(new Set(incomingEntries.map(getRelationshipId)))
+
+  if (!clinicId || entryIds.some((id) => id === null)) {
+    throw new Error(GALLERY_ENTRIES_SAME_CLINIC_MESSAGE)
+  }
+
+  const normalizedEntryIds = entryIds as number[]
+  const entries = await req.payload.find({
+    collection: 'clinicGalleryEntries',
+    depth: 0,
+    limit: normalizedEntryIds.length,
+    pagination: false,
+    overrideAccess: true,
+    req,
+    select: {
+      id: true,
+      clinic: true,
+    },
+    where: {
+      id: {
+        in: normalizedEntryIds,
+      },
+    },
+  })
+
+  const validEntryIds = new Set(
+    entries.docs
+      .filter((entry) => getRelationshipId(entry.clinic) === clinicId)
+      .map((entry) => getRelationshipId(entry.id)),
+  )
+
+  if (normalizedEntryIds.some((id) => !validEntryIds.has(id))) {
+    throw new Error(GALLERY_ENTRIES_SAME_CLINIC_MESSAGE)
+  }
+
+  return data
+}
+
 export const Clinics: CollectionConfig<'clinics'> = {
   slug: 'clinics',
   // This config controls what's populated by default when a clinic is referenced
@@ -95,7 +164,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
     delete: isPlatformBasicUser, // Only Platform can delete clinics
   },
   hooks: {
-    beforeValidate: [validateInternalPrimaryContactBeforeValidate],
+    beforeValidate: [validateInternalPrimaryContactBeforeValidate, validateGalleryEntriesBeforeValidate],
     beforeChange: [stableIdBeforeChangeHook],
     afterChange: [revalidateClinicChange],
     afterDelete: [revalidateClinicDelete],
@@ -116,6 +185,10 @@ export const Clinics: CollectionConfig<'clinics'> = {
       type: 'number',
       min: 0,
       max: 5,
+      access: {
+        create: platformOnlyFieldAccess,
+        update: platformOnlyFieldAccess,
+      },
       admin: {
         description: 'Average patient rating',
         readOnly: true,

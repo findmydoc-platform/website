@@ -247,4 +247,46 @@ describe('Clinics access', () => {
       }),
     ).rejects.toThrow()
   })
+
+  it('keeps derived clinic ratings platform-controlled', async () => {
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: buildClinicData(`${slugPrefix}-rating`, cityId, 'approved'),
+      draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    const { basicUser: clinicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+      slugPrefix,
+      suffix: 'rating-staff',
+      createdBasicUserIds,
+      createdClinicStaffIds,
+    })
+    await approveClinicStaff(payload, clinicStaff.id, clinic.id as number)
+
+    const clinicUpdated = await payload.update({
+      collection: 'clinics',
+      id: clinic.id,
+      data: { averageRating: 5 },
+      user: asPayloadBasicUser(clinicUser),
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(clinicUpdated.averageRating).not.toBe(5)
+
+    const platformUser = await createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-rating-platform`,
+      createdBasicUserIds,
+    })
+    const platformUpdated = await payload.update({
+      collection: 'clinics',
+      id: clinic.id,
+      data: { averageRating: 4.6 },
+      user: asPayloadBasicUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(platformUpdated.averageRating).toBe(4.6)
+  })
 })

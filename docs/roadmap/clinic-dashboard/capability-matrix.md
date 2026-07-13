@@ -5,6 +5,12 @@
 > provenance, but it is not an authoritative engineering source. Current ADRs, issue acceptance criteria, the
 > permission matrix, and runtime code take precedence.
 
+> **Paired UI record.** The canonical visual reference, screen captures, fixtures, and temporary visibility gates live
+> in [the Clinic Dashboard UI plan](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/clinic-dashboard-prototype-and-capability-visibility.md).
+> Read both records together. A UI/control/gate change updates the matching row here; a backend capability, API,
+> permission, cache, or owning-issue change updates the matching UI-plan note. Neither record may infer the other
+> repository's contract.
+
 ## Executive Outcome
 
 `website#1523` is the correct first task. The prototype contains enough product detail to expose backend assumptions,
@@ -42,7 +48,7 @@ called out as data gaps remain intentionally unresolved.
 Authoritative implementation destinations:
 
 - Website backend, schema, access, cache, and public surfaces: `findmydoc-platform/website`
-- Standalone shell and dashboard UI: `findmydoc-platform/clinic-dashboard`
+- Standalone shell and dashboard UI: [`findmydoc-platform/clinic-dashboard`](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/clinic-dashboard-prototype-and-capability-visibility.md)
 - Architecture decisions: accepted ADRs in the repository that owns the affected boundary
 
 ## Scope
@@ -160,39 +166,13 @@ Prototype source abbreviations:
 - `P-Actions`: [prototype action types](https://github.com/findmydoc-platform/website/blob/be9efd19c98cf1461cb87dc5294c09a35d881f9d/src/components/templates/ClinicDashboardPrototype/types.ts)
 - `P-QA`: [design QA manifest](https://github.com/findmydoc-platform/website/blob/be9efd19c98cf1461cb87dc5294c09a35d881f9d/output/playwright/stitch-clinic-dashboard/design-qa.md)
 
-The committed screen captures below are local Storybook renderings of the rescued prototype. They make the referenced
-states reviewable from this roadmap without replacing the linked Stitch project as the original visual source.
+The canonical screen captures and temporary-visibility-gate register live in the paired Clinic Dashboard UI plan. This
+matrix keeps only the website-owned capability classification for their visible controls.
 
 Dashboard overview values remain fixtures until #1531. The prototype must not call PostHog, expose a PostHog query key,
 or embed a PostHog dashboard. PostHog's public iframe sharing is unsuitable for tenant isolation because anyone with the
 link can view the shared data; the later dashboard instead uses the server-side Query API pattern documented by
 [PostHog](https://posthog.com/docs/product-analytics/sharing).
-
-### Prototype Variants and Temporary Visibility Gates
-
-The complete prototype UI remains the visual and responsive reference. An unfinished capability must never cause its
-component, Storybook story, fixture, screenshot, or responsive coverage to be deleted. Instead, clinic-dashboard#1
-uses a lightweight, explicit visibility-gate configuration to select which already-defined UI is shown in each variant.
-These gates are presentation controls only: they do not grant permission, create data, or substitute for a later
-server capability.
-
-| Variant | Intended audience | Visibility rule | Required UI evidence |
-| --- | --- | --- | --- |
-| `visual-reference` | Product planning, design review, and implementation planning | All defined prototype components remain visible with fixtures, including future and currently non-functional controls. | Every screen and responsive state remains covered by Storybook and its visual QA evidence. |
-| `presentation` | Internal or external walkthrough before the MVP is complete | Show only the owner-selected, coherent product slice. Gate unsupported controls or whole screen areas; retain the underlying component and its `visual-reference` coverage. | Test the selected desktop and mobile presentation paths for no dead controls, layout gaps, overflow, or inaccessible hidden content. |
-| `mvp` | Authenticated clinic user | Replace the corresponding temporary gate with the final server capability after its owning issue is complete. Render only capabilities returned by the authorized bootstrap. | Test the real happy, empty, forbidden, and failure states at desktop and mobile widths. |
-
-Each gate must name its UI group, default visibility, owning issue, and removal trigger. Initial groups include dashboard
-reporting controls (#1531), message workspace and conversation controls (#1526/#1530), review-management actions
-(#1529), profile-write actions (#1528), treatment creation (#1528), public-team creation (#1527), and certificate
-controls (unowned later scope). When an owning slice becomes functional, remove its temporary visibility-gate branch and
-replace it with the final authorized capability; do not accumulate permanent prototype flags.
-
-The gate is configuration selected by the Storybook story, demo environment, or authorized runtime capability, not a
-user-facing toggle. The implementation must test both `visual-reference` and `presentation` variants as part of the
-same mobile-first UI matrix.
-
-Anything not listed in this section is outside the implementation contract.
 
 ### Shared Shell
 
@@ -207,7 +187,7 @@ Anything not listed in this section is outside the implementation contract.
 
 ### Screen 1 — Dashboard Overview
 
-Stitch screen `402f5f9f449145448cb341ace9c8a7cc`; prototype evidence in `P-Stories` and `P-Fixtures`. [Screen capture](./screens/dashboard-overview.png)
+Stitch screen `402f5f9f449145448cb341ace9c8a7cc`; prototype evidence in `P-Stories` and `P-Fixtures`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/dashboard-overview.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -224,7 +204,7 @@ Stitch screen `402f5f9f449145448cb341ace9c8a7cc`; prototype evidence in `P-Stori
 
 ### Screen 2 — Messages
 
-Stitch screen `b4e343c4f5cc4ea8b3bbe5144e6e97ec`. [Screen capture](./screens/messages-default.png)
+Stitch screen `b4e343c4f5cc4ea8b3bbe5144e6e97ec`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/messages-default.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -242,7 +222,7 @@ Stitch screen `b4e343c4f5cc4ea8b3bbe5144e6e97ec`. [Screen capture](./screens/mes
 
 ### Screen 3 — Patient Profile Dialog
 
-Stitch screen `b704e3e6c44b493f87d977fa0cb33f76`. [Screen capture](./screens/patient-profile-dialog.png)
+Stitch screen `b704e3e6c44b493f87d977fa0cb33f76`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/patient-profile-dialog.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -253,7 +233,7 @@ Stitch screen `b704e3e6c44b493f87d977fa0cb33f76`. [Screen capture](./screens/pat
 
 ### Screen 4 — Reviews Management
 
-Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`. [Screen capture](./screens/reviews-management.png)
+Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/reviews-management.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -268,7 +248,7 @@ Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`. [Screen capture](./screens/rev
 
 ### Screen 5 — Clinic Profile Editor
 
-Stitch screen `42ffc21e25c74fe3be7b7f6317d12436`. [Screen capture](./screens/clinic-profile-editor.png)
+Stitch screen `42ffc21e25c74fe3be7b7f6317d12436`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/clinic-profile-editor.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -289,7 +269,7 @@ Stitch screen `42ffc21e25c74fe3be7b7f6317d12436`. [Screen capture](./screens/cli
 
 ### Screen 6 — New Treatment Dialog
 
-Stitch screen `4403f6cc252e441783ae584fd7e38eaf`. [Screen capture](./screens/new-treatment-dialog.png)
+Stitch screen `4403f6cc252e441783ae584fd7e38eaf`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/new-treatment-dialog.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -300,7 +280,7 @@ Stitch screen `4403f6cc252e441783ae584fd7e38eaf`. [Screen capture](./screens/new
 
 ### Screen 7 — Add Team Member Dialog
 
-Stitch screen `df09d7542d1e4be8b3ae1b9165a2a584`. [Screen capture](./screens/add-team-member-dialog.png)
+Stitch screen `df09d7542d1e4be8b3ae1b9165a2a584`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/add-team-member-dialog.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -446,7 +426,7 @@ Stop implementation and obtain an ADR or explicit work order when any slice requ
 | --- | --- | --- | --- | --- | --- | --- |
 | [#1484](https://github.com/findmydoc-platform/website/issues/1484) | Staff-auth refactor overlapping #1532 | Yes, broad migration | Primary change | Rewrites actor/tenant helpers | Private auth plus public actor-relation assessment | Ownership stop-gate: select one canonical execution issue with #1532 |
 | [#1522](https://github.com/findmydoc-platform/website/issues/1522) | Application/API architecture ADR | No | Defines transport boundary | Defines ownership/trust boundary | References, does not implement | #1523 input; final text needs the selected auth ADR |
-| [#1523](https://github.com/findmydoc-platform/website/issues/1523) | Historical capability contract | No | No | No | Classification only | First task |
+| [#1523](https://github.com/findmydoc-platform/website/issues/1523) | Historical website capability contract; paired UI plan is in clinic-dashboard | No | No | No | Classification only | First task; keep the paired records synchronized |
 | [#1524](https://github.com/findmydoc-platform/website/issues/1524) | CORS, preflight, bearer bootstrap | No | Yes, at external API edge | Yes | No public impact | #1532 principal; #1522 boundary |
 | [#1525](https://github.com/findmydoc-platform/website/issues/1525) | Provisioning, invites, lifecycle | Yes, auth/lifecycle fields and migration | Yes | Platform-only privileged transitions | No public impact until an approved clinic is materialized | #1532; dashboard destinations from #1522 |
 | [#1526](https://github.com/findmydoc-platform/website/issues/1526) | Own-clinic inquiry access/status | Existing schema with protected field rules | Uses final principal | Yes, tenant and field-level | No public impact/private-live | #1532; #1524 for browser integration |
@@ -457,7 +437,7 @@ Stop implementation and obtain an ADR or explicit work order when any slice requ
 | [#1531](https://github.com/findmydoc-platform/website/issues/1531) | Tenant-safe PostHog + Payload reporting facade; prototype fixtures remain until this slice | No dashboard persistence assumed | Uses final principal | Yes, fixed server-side aggregate queries and shaped response | No public impact/private-live; optional private TTL cache only | Existing reviews plus source definitions from #1526/#1528; PostHog identity continuity for a true funnel; #1529/#1530 only if their data is explicitly reported |
 | [#1532](https://github.com/findmydoc-platform/website/issues/1532) | Replace staff auth collections and ADR 006; overlaps #1484 | Yes, broad migration | Primary change | Rewrites actor/tenant helpers | Private auth; public author relations must be checked | Resolve canonical ownership with #1484; then runtime gate for #1524–#1531 |
 | [#1533](https://github.com/findmydoc-platform/website/issues/1533) | Remove website clinic auth paths | No expected domain schema | Removes old routes/targets | Redirect/cutover checks | No public data impact | Verified dashboard login/invite/reset/logout cutover |
-| [clinic-dashboard#1](https://github.com/findmydoc-platform/clinic-dashboard/issues/1) | Deployable fixture-backed app shell | No backend schema | Explicitly out of scope | Explicitly out of scope | None | Can run after #1523; API wiring waits for #1532/#1522/#1524 |
+| [clinic-dashboard#1](https://github.com/findmydoc-platform/clinic-dashboard/issues/1) | Deployable fixture-backed app shell and paired UI plan | No backend schema | Explicitly out of scope | Explicitly out of scope | None | Can run after #1523; API wiring waits for #1532/#1522/#1524 |
 
 ## Recommended Work Order and Parallelism
 
@@ -486,7 +466,7 @@ Hard dependencies are narrower than the recommended sequence:
 
 | Feature | Reuse, change, or new | Candidate owner/module | Notes |
 | --- | --- | --- | --- |
-| Prototype screens and responsive states | Reuse visual structure | clinic-dashboard#1 | Preserve seven stable states; remove website runtime dependency. |
+| Prototype screens, fixture states, and responsive behavior | Reuse visual structure | [clinic-dashboard#1 UI plan](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/clinic-dashboard-prototype-and-capability-visibility.md) | Preserve seven stable states and temporary gates; remove website runtime dependency. |
 | Typed commands and routing | Change | clinic-dashboard app shell | Replace string-only callbacks with IDs and validated payload types. |
 | Staff principal and tenant resolution | Change | #1532 in website auth/access modules | Supersede ADR 006; no Payload Admin access for clinic staff. |
 | Self/capability bootstrap | New endpoint/contract | #1524 under website API boundary | Private-live, fail-closed, derived server-side. |

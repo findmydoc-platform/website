@@ -1,4 +1,4 @@
-import type { CollectionSlug, Payload } from 'payload'
+import type { CollectionSlug, Payload, Where } from 'payload'
 import { resolveSeedRuntimeEnv } from './runtime'
 import { resolveSeedRuntimePolicy } from '@/features/runtimePolicy'
 
@@ -39,17 +39,48 @@ const baselineResetOrder: CollectionSlug[] = [
   'countries',
 ]
 
-async function deleteCollection(payload: Payload, collection: CollectionSlug) {
+type ResetCollectionsOptions = {
+  preservePlatformUserId?: string | number
+}
+
+const buildResetWhere = (collection: CollectionSlug, preservePlatformUserId?: string | number): Where => {
+  const allDocuments: Where = {
+    id: {
+      exists: true,
+    },
+  }
+
+  if (typeof preservePlatformUserId === 'undefined') {
+    return allDocuments
+  }
+
+  if (collection === 'platformStaff') {
+    return {
+      and: [allDocuments, { user: { not_equals: preservePlatformUserId } }],
+    }
+  }
+
+  if (collection === 'basicUsers') {
+    return {
+      and: [allDocuments, { id: { not_equals: preservePlatformUserId } }],
+    }
+  }
+
+  return allDocuments
+}
+
+async function deleteCollection(
+  payload: Payload,
+  collection: CollectionSlug,
+  preservePlatformUserId?: string | number,
+) {
   const req = { payload }
+  const where = buildResetWhere(collection, preservePlatformUserId)
 
   await payload.db.deleteMany({
     collection,
     req,
-    where: {
-      id: {
-        exists: true,
-      },
-    },
+    where,
   })
 
   const versionTableName = payload.db.tableNameMap.get(`_${toSnakeCaseKey(collection)}${payload.db.versionsSuffix}`)
@@ -68,7 +99,11 @@ async function deleteCollection(payload: Payload, collection: CollectionSlug) {
   })
 }
 
-export async function resetCollections(payload: Payload, kind: 'baseline' | 'demo') {
+export async function resetCollections(
+  payload: Payload,
+  kind: 'baseline' | 'demo',
+  options: ResetCollectionsOptions = {},
+) {
   const runtimeEnv = resolveSeedRuntimeEnv(undefined, process.env)
   const policy = resolveSeedRuntimePolicy(runtimeEnv)
 
@@ -90,6 +125,6 @@ export async function resetCollections(payload: Payload, kind: 'baseline' | 'dem
   const order = kind === 'demo' ? demoResetOrder : [...demoResetOrder, ...baselineResetOrder]
   for (const collection of order) {
     payload.logger.info(`Resetting ${collection} (${kind})`)
-    await deleteCollection(payload, collection)
+    await deleteCollection(payload, collection, options.preservePlatformUserId)
   }
 }

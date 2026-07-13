@@ -151,6 +151,64 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Export jobs, previews, and downloads are restricted to platform staff',
     },
+    forms: {
+      slug: 'forms',
+      displayName: 'Forms',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'anyone' },
+        update: { type: 'platform' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      notes: 'Public form definitions with platform-only management',
+    },
+    'form-submissions': {
+      slug: 'form-submissions',
+      displayName: 'Form Submissions',
+      operations: {
+        create: { type: 'anyone' },
+        read: { type: 'platform' },
+        update: { type: 'conditional', details: 'disabled for direct writes' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          update: { kind: 'always-false' },
+        },
+      },
+      notes: 'Public create path with platform-only read and delete access; direct updates are disabled',
+    },
+    redirects: {
+      slug: 'redirects',
+      displayName: 'Redirects',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'anyone' },
+        update: { type: 'platform' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      notes: 'Public redirect rules with platform-only management',
+    },
+    search: {
+      slug: 'search',
+      displayName: 'Search',
+      operations: {
+        create: { type: 'conditional', details: 'disabled for direct writes; internal search sync only' },
+        read: { type: 'anyone' },
+        update: { type: 'platform' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+        },
+      },
+      notes: 'Public search index with platform management and internal-only document creation',
+    },
     basicUsers: {
       slug: 'basicUsers',
       displayName: 'BasicUsers',

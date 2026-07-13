@@ -7,6 +7,10 @@
 | --- | --- | --- | --- | --- | --- |
 | Imports `(imports)` | Platform | Platform | Conditional<br/><sub>disabled for direct writes; plugin lifecycle only</sub> | Platform | Platform |
 | Exports `(exports)` | Platform | Platform | Conditional<br/><sub>disabled for direct writes; plugin lifecycle only</sub> | Platform | Platform |
+| Forms `(forms)` | Platform | Anyone | Platform | Platform | Platform |
+| Form Submissions `(form-submissions)` | Anyone | Platform | Conditional<br/><sub>disabled for direct writes</sub> | Platform | Platform |
+| Redirects `(redirects)` | Platform | Anyone | Platform | Platform | Platform |
+| Search `(search)` | Conditional<br/><sub>disabled for direct writes; internal search sync only</sub> | Anyone | Platform | Platform | Platform |
 | BasicUsers `(basicUsers)` | Platform | Platform | Platform | Platform | Platform |
 | PlatformStaff `(platformStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Platform | Platform | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform |
 | ClinicStaff `(clinicStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform + own profile after approval; user, clinic, and status fields are platform-only</sub> | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform |
@@ -40,6 +44,10 @@
 
 - **Imports**: Import jobs and custom endpoints are restricted to platform staff
 - **Exports**: Export jobs, previews, and downloads are restricted to platform staff
+- **Forms**: Public form definitions with platform-only management
+- **Form Submissions**: Public create path with platform-only read and delete access; direct updates are disabled
+- **Redirects**: Public redirect rules with platform-only management
+- **Search**: Public search index with platform management and internal-only document creation
 - **BasicUsers**: User management restricted to platform staff
 - **PlatformStaff**: Platform staff management - indirect via BasicUsers lifecycle
 - **ClinicStaff**: Authentication denied until approval; clinic staff read their clinic and update only non-authorization fields on their own profile

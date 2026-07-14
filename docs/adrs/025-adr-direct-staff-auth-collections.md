@@ -5,95 +5,66 @@
 | Name | Content |
 | --- | --- |
 | Author | Sebastian Schütze |
-| Version | 1.0 |
+| Version | 1.1 |
 | Date | 14.07.2026 |
-| Status | accepted |
+| Status | Approved |
 
 ## Background
 
-The platform serves three distinct authenticated user groups:
-
-- **Platform staff** operate the Payload Admin interface and manage platform content and operational data.
-- **Clinic staff** work in a standalone Clinic Dashboard and use the Payload API for clinic-scoped business actions.
-- **Patients** use patient-facing portal surfaces and the Payload API for their own data.
-
-Supabase owns user identity and browser session state. Payload validates Supabase identities, resolves them to business
-records, and enforces authorization for Admin and API requests.
+The platform authenticates platform staff for Payload Admin, clinic staff for a standalone Clinic Dashboard, and
+patients for portal-facing services. Supabase owns identity and browser sessions. Payload validates the Supabase
+identity, resolves it to a business record, and enforces current authorization for Admin and API requests.
 
 The previous staff architecture used one auth-enabled `basicUsers` collection for platform and clinic staff, with
-separate `platformStaff` and `clinicStaff` profile collections. That structure existed because both staff groups were
-expected to use Payload Admin, while Payload allows only one configured Admin user collection.
+separate `platformStaff` and `clinicStaff` profile collections. That structure reflected an earlier requirement that
+both staff groups use Payload Admin. Clinic staff no longer use Payload Admin; their authenticated product surface is
+the standalone Clinic Dashboard.
 
-Clinic staff no longer use Payload Admin. Their only authenticated product surface is the standalone Clinic Dashboard.
-The portal may expose one ordinary navigation link to that dashboard, but it does not render clinic login, invitation,
-password-completion, password-reset, or account-management interfaces. Platform staff continue to sign in through the
-Payload Admin entry point, and patient authentication and public clinic registration remain portal responsibilities.
-
-The Payload backend still accepts authenticated API requests from the Clinic Dashboard. Separating the login interface
-from the API boundary does not remove clinic authentication from Payload; it removes clinic access to Payload Admin and
-the portal's clinic authentication UI.
+The portal does not provide clinic authentication or account management, although it may link to the Dashboard.
+Platform staff continue to sign in through Payload Admin; patient authentication and public clinic registration remain
+portal responsibilities. Payload continues to authenticate and authorize Clinic Dashboard API requests.
 
 ## Problem Description
 
-Keeping `basicUsers` after the clinic Admin requirement has disappeared creates an unnecessary indirection at every
-security boundary:
+The shared staff collection no longer matches the product boundary. It adds a second lookup between an authenticated
+identity and the record that owns its permissions, keeps clinic identities structurally close to the Admin login path,
+and makes actor relationships less precise than the domain requires.
 
-- Supabase identities first resolve to `basicUsers` and then require a second profile lookup.
-- Staff classification depends on a mutable `userType` field instead of the authenticated collection.
-- Clinic authorization depends on a linked profile for approval and clinic assignment.
-- Platform roles and platform email policy live apart from the authenticated record.
-- Actor relationships point to the shared staff collection even when only one staff type is valid.
-- Clinic identities remain structurally eligible for the shared Admin login path.
+The architecture must determine how staff identities are represented after clinic access moves out of Payload Admin.
+It must preserve a strict Admin boundary, resolve identities unambiguously, derive current permissions from Payload,
+retain the established patient behavior, and avoid replacing `basicUsers` with another identity-only collection.
 
-The target architecture needs physically separate staff principals, one unambiguous Admin user collection, direct
-clinic authorization, and explicit actor relationships without introducing another identity registry.
+## Decision Drivers
+
+- Only platform staff may enter Payload Admin.
+- A validated Supabase identity must resolve to one collection-qualified Payload principal or fail closed.
+- Current Payload data, rather than identity claims, must determine roles, clinic assignment, and approval.
+- Staff authentication must not require a second profile lookup.
+- Existing business relationships must retain their actor meaning during the transition.
+- Patient authentication behavior should remain unchanged.
+- The model should not introduce an identity registry without independent business value.
 
 ## Considerations
 
-### Keep `basicUsers` and the profile collections
-
-This would minimize immediate schema change, but it would retain the indirection and the Admin-oriented assumption that
-caused it. Authorization would continue to rely on `userType` plus profile lookups, and actor relationships would remain
-less precise than the domain requires.
-
-### Use one universal auth collection with roles
-
-This would simplify token lookup but weaken physical separation between platform staff, clinic staff, and patients. It
-would also make collection membership insufficient for authorization and expand the impact of a role-classification
-mistake.
-
-### Add an identity registry in front of direct auth collections
-
-A central registry could enforce cross-collection identity uniqueness, but it would replace `basicUsers` with another
-indirection and introduce a second lifecycle that has no independent business value. Supabase already supplies the
-stable external identity.
-
-### Use direct auth collections with one Supabase dispatcher
-
-This keeps each principal in the collection that owns its authorization data. A single custom strategy validates the
-Supabase identity and returns a collection-qualified Payload user. Collection membership selects the authorization
-model, while current Payload fields determine permissions. This option is chosen.
+| Option | Tradeoff |
+| --- | --- |
+| Keep `basicUsers` and linked profiles | Minimizes schema change but preserves obsolete indirection and imprecise actors. |
+| Use one universal auth collection | Simplifies lookup but weakens separation and expands classification risk. |
+| Add an identity registry | Adds one uniqueness constraint but creates another identity-only lifecycle and lookup. |
+| Use direct auth collections with one dispatcher | Creates the required boundary but needs application-enforced uniqueness and relationship migration. Chosen. |
 
 ## Decision with Rationale
 
 ### Login and application boundary
 
-The Clinic Dashboard is the only clinic authentication interface. Clinic sign-in, sign-out, invitation completion,
-password completion, password reset, and account lifecycle interfaces belong there.
+The Clinic Dashboard is the only clinic authentication and account-management interface. The portal provides no clinic
+login, role selection, invitation completion, password reset, or account management. A Dashboard link performs no
+authentication and transfers no session. Payload Admin remains available to platform staff; patient login and public
+clinic registration retain their portal surfaces; Payload still accepts authenticated Dashboard API requests.
 
-The portal does not expose a clinic login form or clinic role selector. It may expose one plain link to the Clinic
-Dashboard. That link performs no authentication, does not transfer a clinic session, and does not make the portal a
-second clinic entry point.
+### Direct authenticated principals
 
-The Payload Admin login remains available to platform staff. Patient login and public clinic registration remain
-available through their existing portal surfaces.
-
-The exact dashboard origin, browser token transport, and cross-origin request configuration are separate application
-integration decisions. They do not change the identity and authorization model defined here.
-
-### Direct auth collections
-
-Payload uses these auth-enabled collections:
+Payload uses three direct auth collections:
 
 | Collection | Purpose | Payload Admin |
 | --- | --- | --- |
@@ -101,189 +72,87 @@ Payload uses these auth-enabled collections:
 | `clinicStaff` | Clinic Dashboard and clinic-scoped API access | Denied |
 | `patients` | Patient-facing API access | Denied |
 
-`platformStaff` is the only configured Payload Admin user collection. Its Admin access function accepts a valid
-platform principal. `clinicStaff` and `patients` deny Admin access even when Supabase authentication succeeds.
+`platformStaff` is the only configured Payload Admin user collection. All three collections use Supabase for identity
+and browser sessions; Payload local passwords and sessions remain disabled.
 
-All three collections disable Payload's local password strategy and Payload-managed sessions. Supabase remains the
-identity and session provider.
+One Supabase strategy validates the external identity and dispatches it to exactly one collection. The trusted
+classification selects only that collection; current Payload data still grants roles, clinic assignment, approval, and
+record permissions. Missing, invalid, duplicate, or conflicting identities fail closed without fallback.
 
-Payload executes the shared Supabase custom strategy as one dispatcher. After validating the Supabase identity, the
-dispatcher uses a server-controlled classification to select exactly one Payload collection, resolves the corresponding
-record, and returns a collection-qualified authenticated principal.
+One Supabase identity may belong to only one direct auth collection. Provisioning and staff-category changes are
+serialized across application instances and verify that invariant before and after mutation. Category changes are
+explicit lifecycle operations, not role edits. No central identity registry is introduced.
 
-The classification claim selects a collection only. It never grants a platform role, clinic assignment, approval
-state, or record-level permission. Those values are read from the current Payload record for every authorized request.
-Missing, invalid, or conflicting classifications fail closed. Authentication does not fall back to another collection.
+### Authorization and lifecycle
 
-One Supabase identity may exist in only one direct auth collection. Every record-creation path, including patient
-ensure-on-auth, prevents cross-collection identity conflicts. Staff-category changes are explicit provisioning
-operations, not mutable role changes on a shared identity record.
+Platform access starts with the least-privileged role. Only an authorized platform administrator or trusted system
+provisioning path may bind a staff identity or change a platform role. Self-promotion is always denied.
 
-### Authorization data ownership
+Clinic business access requires current approval and clinic assignment. Every other state is denied. The server derives
+the clinic from the principal and never trusts a caller-provided clinic identifier for authorization.
 
-Each direct auth collection owns the external identity binding and private profile data required for its user type. The
-platform-staff record owns the current platform role. The clinic-staff record owns the current approval state and clinic
-assignment. The patient collection retains its existing direct-authentication responsibilities.
+Staff records must exist before authentication. Staff are created through controlled platform or clinic-onboarding
+provisioning, not during login. Patients retain their established ensure-on-auth behavior. This narrows the automatic
+record-creation behavior described in
+[ADR 004](./004-adr-custom-authentication-strategy-supabase-payloadcms.md) for staff identities only.
 
-Platform access defaults to the least-privileged staff role, and administrative roles are assigned explicitly. Clinic
-business access requires both current approval and a current clinic assignment. Every other clinic state is denied by
-default. Authorization derives the clinic from the authenticated principal and never trusts a caller-provided clinic
-identifier.
+### Relationships, public authors, and media privacy
 
-Clinic staff may access their own private identity only within explicit profile permissions. Identity classification,
-clinic assignment, approval, and other authorization data remain platform- or system-controlled. A clinic-staff
-identity is not a public clinic-team profile.
+Relationships target the narrowest valid direct principal collection. Shared actor relationships store the principal
+collection with its document identity. Server-side creator logic derives both from the authenticated principal and
+ignores caller-provided actor identities.
 
-### Provisioning and lifecycle
+Legacy staff-profile links to `basicUsers` are removed. No generic Actor or identity-registry collection replaces them.
 
-Staff records must exist before authentication. The authentication strategy does not create missing platform or clinic
-staff records.
+Profile media is private by default, including metadata and file bytes. Public access is limited to the safe
+platform-author representation required by posts. Clinic and patient media remain private even when an object URL is
+known.
 
-Platform staff are created through controlled platform provisioning. Clinic staff are created through the approved
-clinic onboarding lifecycle. Each direct collection owns the relevant Supabase invitation, provisioning, and deletion
-behavior instead of routing lifecycle work through `basicUsers`.
+Post authors reference `platformStaff` directly. Their public projection remains `id`, `name`, and `avatar`, preserving
+the shape and meaning defined by
+[ADR 017](./017-adr-payload-virtual-fields-post-populated-authors.md).
 
-Patients retain their established ensure-on-auth behavior. This narrows the automatic record-creation statement in
-[ADR 004](./004-adr-custom-authentication-strategy-supabase-payloadcms.md): automatic creation may remain for patients,
-but not for staff.
+### Cache boundary
 
-### Actor relationships
+Authentication, sessions, staff records, roles, clinic assignments, and approval states remain private live data and
+never enter a shared public cache.
 
-Relationships use the narrowest valid target:
+The public post-author projection continues to use the existing post cache and revalidation architecture. Changes to a
+public author or referenced profile media invalidate affected post surfaces. No new cache class, tag family,
+invalidation owner, or storage layer is introduced; the model remains within
+[ADR 023](./023-adr-public-website-cache-and-revalidation-strategy.md).
 
-| Relationship | Target collection or collections |
-| --- | --- |
-| Post authors | `platformStaff` |
-| Patient-inquiry assignment | `platformStaff` |
-| Platform-content media creator | `platformStaff` |
-| Review editor | `platformStaff` |
-| Clinic media creator | `platformStaff`, `clinicStaff` |
-| Clinic-gallery media creator | `platformStaff`, `clinicStaff` |
-| Clinic-gallery entry creator | `platformStaff`, `clinicStaff` |
-| Doctor media creator | `platformStaff`, `clinicStaff` |
-| Personal profile-media owner and creator | `platformStaff`, `clinicStaff`, `patients` |
+### Pre-production transition
 
-A polymorphic relationship stores both the principal's collection identity and document identity. Creator hooks derive
-both values from the authenticated principal and overwrite caller-provided creator data.
+The platform contains schema, fixtures, and business content, but it has not launched with active clinic users or
+sessions that require compatibility. Non-production clinic identities and sessions may be rebuilt.
 
-Legacy profile-to-`basicUsers` links are removed. Clinic applications no longer relate to `basicUsers`; they may retain
-a direct clinic-staff relationship where a provisioned clinic identity is needed.
+This is not a from-scratch replacement. Existing platform identities and business relationships are inventoried before
+destructive removal, then preserved, remapped to direct principals, or verified as disposable. Seeds do not substitute
+for migrating required platform identities and relationships.
 
-No generic Actor or identity-registry collection is introduced.
+Removing `basicUsers`, legacy profile links, and obsolete fields is an isolated review step after the target model is
+active, relationship migration is verified, and no required legacy references remain. No dual-read, dual-write, or
+clinic-session bridge is required.
 
-### Public profile media and post authors
+### Integration gate
 
-Personal profile media is private by default. Public reads are allowed only for platform-staff media needed by the safe
-public post-author projection. Clinic and patient profile media remain private.
-
-Post authors reference `platformStaff` directly. The public projected author shape remains:
-
-- `id`
-- `name`
-- `avatar`
-
-This preserves the contract defined by [ADR 017](./017-adr-payload-virtual-fields-post-populated-authors.md) while
-changing its persisted author source.
-
-### Cache and revalidation
-
-Authentication, sessions, staff records, clinic assignment, and approval are `private-live`: they are read from the
-current authorized source and are never stored in a shared persistent public cache.
-
-The post-author dependency is `public-cached` because platform-staff name and profile-image changes can alter published
-post output. Changes to those fields identify affected published posts and reuse the existing post revalidation owner,
-tags, and paths. Seed completion performs the same bounded post-surface flush.
-
-This follows [ADR 023](./023-adr-public-website-cache-and-revalidation-strategy.md). It introduces no new cache class,
-tag family, invalidation owner, or cache storage layer.
-
-### Greenfield transition
-
-There are no productive clinic accounts or clinic sessions that require compatibility. Existing non-production staff
-records, identifiers, and test data are disposable.
-
-The transition therefore uses a controlled non-production rebuild rather than a business-data backfill. Legacy fields
-and storage are removed in a separately reviewed destructive contract stage after the target model is in place.
-
-There is no dual-read, dual-write, legacy-session bridge, or actor-ID preservation requirement. Target-state seeds
-recreate the required platform, clinic, author, and media actors directly in the new model.
-
-## Authentication Flow
-
-```mermaid
-flowchart LR
-  clinicUser[Clinic staff] --> clinicDashboard[Clinic Dashboard]
-  platformUser[Platform staff] --> adminLogin[Portal Admin login]
-  patientUser[Patient] --> patientLogin[Patient portal]
-
-  clinicDashboard --> supabase[Supabase identity and session]
-  adminLogin --> supabase
-  patientLogin --> supabase
-
-  supabase --> strategy[Single Payload Supabase dispatcher]
-  strategy --> clinicPrincipal[clinicStaff principal]
-  strategy --> platformPrincipal[platformStaff principal]
-  strategy --> patientPrincipal[patients principal]
-
-  clinicPrincipal --> clinicApi[Clinic-scoped Payload API]
-  platformPrincipal --> payloadAdmin[Payload Admin]
-  platformPrincipal --> platformApi[Platform-authorized Payload API]
-  patientPrincipal --> patientApi[Patient-scoped Payload API]
-```
-
-## Collection Model
-
-```mermaid
-flowchart TD
-  supabase[Supabase identity] --> platformStaff[platformStaff auth collection]
-  supabase --> clinicStaff[clinicStaff auth collection]
-  supabase --> patients[patients auth collection]
-
-  platformStaff --> admin[Payload Admin]
-  platformStaff --> publicAuthors[Public post-author projection]
-  clinicStaff --> clinic[Assigned clinic]
-
-  platformStaff --> sharedActors[Polymorphic actor relationships]
-  clinicStaff --> sharedActors
-  patients --> sharedActors
-```
+Dashboard origin, token transport, refresh, CORS, CSRF protection, and callbacks require a separate application-boundary
+decision. Production Dashboard API integration, CORS expansion, and clinic invitation callbacks remain blocked until
+that decision is approved.
 
 ## Consequences
 
-### Positive
-
-- Collection membership now expresses the staff category directly.
-- Clinic authorization no longer requires a `basicUsers`-to-profile lookup.
-- Clinic identities cannot enter Payload Admin through a shared staff collection.
-- Actor relationships state which user groups are valid.
-- Platform role, email policy, and identity live on one authenticated record.
-- The Clinic Dashboard can use the Payload API without creating a second durable business-data store.
-
-### Negative
-
-- Shared authentication utilities must support three direct auth collection types.
-- Actor hooks and relationship schemas must handle polymorphic values where both staff groups can act.
-- Cross-collection Supabase identity uniqueness remains a provisioning invariant rather than one table constraint.
-- Platform-author changes become an explicit public cache dependency.
-
-## Technical Debt
-
-- The dashboard origin, browser token transport, and cross-origin request policy require a separate application-boundary
-  decision before live dashboard integration.
-- Staff lifecycle operations need consistent reconciliation and observability across Supabase and Payload.
-- A future Payload authentication upgrade must revalidate the single-dispatcher registration behavior.
-
-## Risks and Mitigations
-
-- **Stale classification claims:** the claim selects only the collection; current Payload role, clinic, and status fields
-  authorize every request.
-- **Accidental clinic Admin access:** only `platformStaff` is configured as the Admin user collection, and clinic Admin
-  access is denied explicitly.
-- **Tenant spoofing:** clinic identifiers from requests are ignored for authorization; the authenticated clinic
-  assignment is authoritative.
-- **Duplicate identities:** controlled provisioning checks all direct auth collections and rejects conflicts.
-- **Private profile-media exposure:** public access is limited to platform-author media.
-- **Seed drift:** target-state seeds and contract tests assert direct principals and collection-qualified actor values.
+- **Positive:** Collection membership expresses staff type, isolates clinic identities from Payload Admin, and keeps
+  current authorization in Payload without a second durable Dashboard data store.
+- **Positive:** Actor relationships identify valid principal types and public author behavior remains stable.
+- **Negative:** Authentication utilities must support three collection-qualified principals, while identity uniqueness
+  requires serialized application logic rather than one table constraint.
+- **Negative:** Polymorphic actors, platform relationship migration, and public-author cache symmetry add implementation
+  obligations.
+- **Neutral:** The Dashboard owns clinic account interfaces; the portal retains patients and public registration.
+- **Neutral:** Staff-category changes require reprovisioning, and live Dashboard integration awaits a separate browser
+  session and cross-origin decision.
 
 ## Relationship to Existing Decisions
 

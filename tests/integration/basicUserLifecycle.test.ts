@@ -62,8 +62,8 @@ describe('BasicUser lifecycle integration', () => {
       depth: 0,
     })
     expect(profiles.docs.length).toBe(1)
-    expect(profiles.docs[0]).not.toHaveProperty('firstName')
-    expect(profiles.docs[0]).not.toHaveProperty('lastName')
+    expect(profiles.docs[0]?.firstName).toBeNull()
+    expect(profiles.docs[0]?.lastName).toBeNull()
 
     // Now delete the BasicUser and verify cascading cleanup
     await payload.delete({ collection: 'basicUsers', id: basic.id, overrideAccess: true })

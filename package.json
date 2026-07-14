@@ -35,6 +35,8 @@
     "tests:e2e:debug": "cross-env NODE_OPTIONS=--no-deprecation PWDEBUG=1 playwright test --config=playwright.config.ts",
     "matrix:verify": "pnpm dlx tsx scripts/permission-matrix/verify.ts",
     "matrix:derive": "pnpm dlx tsx scripts/permission-matrix/derive-json.ts",
+    "staff-auth:inventory": "node scripts/staff-auth-preflight.mjs",
+    "staff-auth:preflight": "node scripts/staff-auth-preflight.mjs --require-expanded-schema",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "ci": "cross-env NODE_OPTIONS=--no-deprecation bash -c 'pnpm run migrate && pnpm build'",
     "reinstall": "cross-env NODE_OPTIONS=--no-deprecation rm -rf node_modules && rm pnpm-lock.yaml && pnpm --ignore-workspace install",
@@ -193,7 +195,8 @@
       "esbuild@<0.28.1": "0.28.1",
       "esbuild@<=0.24.2": ">=0.25.0",
       "hono@<4.12.21": ">=4.12.21",
-      "postcss@<8.5.10": ">=8.5.10"
+      "postcss@<8.5.10": ">=8.5.10",
+      "payload@3.85.1>tsx": "4.21.0"
     }
   },
   "packageManager": "pnpm@10.28.2"

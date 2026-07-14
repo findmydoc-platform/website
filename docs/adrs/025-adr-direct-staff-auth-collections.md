@@ -107,58 +107,32 @@ platform principal. `clinicStaff` and `patients` deny Admin access even when Sup
 All three collections disable Payload's local password strategy and Payload-managed sessions. Supabase remains the
 identity and session provider.
 
-Payload executes the shared Supabase custom strategy as one dispatcher. The dispatcher:
-
-1. validates the Supabase access token or session material;
-2. reads the server-controlled `app_metadata.user_type` classification;
-3. maps `platform`, `clinic`, or `patient` to exactly one Payload collection;
-4. looks up the Payload record by `supabaseUserId` in that collection; and
-5. returns the record with its collection slug as the authenticated principal.
+Payload executes the shared Supabase custom strategy as one dispatcher. After validating the Supabase identity, the
+dispatcher uses a server-controlled classification to select exactly one Payload collection, resolves the corresponding
+record, and returns a collection-qualified authenticated principal.
 
 The classification claim selects a collection only. It never grants a platform role, clinic assignment, approval
 state, or record-level permission. Those values are read from the current Payload record for every authorized request.
 Missing, invalid, or conflicting classifications fail closed. Authentication does not fall back to another collection.
 
 One Supabase identity may exist in only one direct auth collection. Every record-creation path, including patient
-ensure-on-auth, checks all three collections before creating or reclassifying an identity. Category changes are
-explicit provisioning operations, not edits to a staff `userType` field.
+ensure-on-auth, prevents cross-collection identity conflicts. Staff-category changes are explicit provisioning
+operations, not mutable role changes on a shared identity record.
 
-### Collection fields
+### Authorization data ownership
 
-`platformStaff` directly owns:
+Each direct auth collection owns the external identity binding and private profile data required for its user type. The
+platform-staff record owns the current platform role. The clinic-staff record owns the current approval state and clinic
+assignment. The patient collection retains its existing direct-authentication responsibilities.
 
-- `stableId`
-- `supabaseUserId`
-- `email`
-- `firstName`
-- `lastName`
-- `profileImage`
-- `role`
+Platform access defaults to the least-privileged staff role, and administrative roles are assigned explicitly. Clinic
+business access requires both current approval and a current clinic assignment. Every other clinic state is denied by
+default. Authorization derives the clinic from the authenticated principal and never trusts a caller-provided clinic
+identifier.
 
-Platform staff email addresses must use the `@findmydoc.eu` domain. This policy is enforced on the direct record and
-before authentication lookup. New platform records use `support` as the default role. Administrative roles, including
-the first platform administrator, are assigned explicitly.
-
-`clinicStaff` directly owns:
-
-- `stableId`
-- `supabaseUserId`
-- `email`
-- `firstName`
-- `lastName`
-- `profileImage`
-- `clinic`
-- `status`
-
-A clinic principal receives business API access only when `status` is `approved` and `clinic` is present. Every other
-current or future status is denied by default. Authorization derives the clinic from the authenticated principal and
-never trusts a caller-provided clinic identifier.
-
-Clinic staff may read their own private identity and update only explicitly permitted non-authorization profile fields.
-The clinic assignment, approval status, Supabase identity, and account classification remain platform- or
-system-controlled. `clinicStaff` is not a public clinic-team model.
-
-The `patients` collection keeps its existing direct-authentication model and patient-specific fields.
+Clinic staff may access their own private identity only within explicit profile permissions. Identity classification,
+clinic assignment, approval, and other authorization data remain platform- or system-controlled. A clinic-staff
+identity is not a public clinic-team profile.
 
 ### Provisioning and lifecycle
 
@@ -189,12 +163,11 @@ Relationships use the narrowest valid target:
 | Doctor media creator | `platformStaff`, `clinicStaff` |
 | Personal profile-media owner and creator | `platformStaff`, `clinicStaff`, `patients` |
 
-A polymorphic relationship stores both the collection slug and document identifier as `{ relationTo, value }`. Creator
-hooks derive both values from the authenticated principal and overwrite caller-provided creator data.
+A polymorphic relationship stores both the principal's collection identity and document identity. Creator hooks derive
+both values from the authenticated principal and overwrite caller-provided creator data.
 
-The `clinicStaff.user` and `platformStaff.user` profile links are removed. Clinic-application linkage no longer stores a
-`basicUsers` relationship; it may retain a direct `clinicStaff` relationship where a provisioned clinic identity is
-needed.
+Legacy profile-to-`basicUsers` links are removed. Clinic applications no longer relate to `basicUsers`; they may retain
+a direct clinic-staff relationship where a provisioned clinic identity is needed.
 
 No generic Actor or identity-registry collection is introduced.
 
@@ -229,15 +202,11 @@ tag family, invalidation owner, or cache storage layer.
 There are no productive clinic accounts or clinic sessions that require compatibility. Existing non-production staff
 records, identifiers, and test data are disposable.
 
-The transition therefore uses a controlled non-production rebuild rather than a business-data backfill:
+The transition therefore uses a controlled non-production rebuild rather than a business-data backfill. Legacy fields
+and storage are removed in a separately reviewed destructive contract stage after the target model is in place.
 
-1. introduce the direct auth collections and switch authentication, authorization, relationships, and seeds;
-2. verify that the target environment is explicitly non-production;
-3. rebuild that environment from the migration chain and target-state seeds; and
-4. remove legacy fields and the `basicUsers` table in a separately reviewed destructive contract stage.
-
-There is no dual-read, dual-write, legacy-session bridge, or actor-ID preservation requirement. Seeds recreate the
-platform administrator, clinic identities, post authors, and media actors directly in the target model.
+There is no dual-read, dual-write, legacy-session bridge, or actor-ID preservation requirement. Target-state seeds
+recreate the required platform, clinic, author, and media actors directly in the new model.
 
 ## Authentication Flow
 

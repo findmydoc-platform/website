@@ -13,11 +13,16 @@ export async function cleanupTrackedDocs(payload: Payload, tasks: CleanupTask[])
       const id = task.ids.pop()
       if (id === undefined) continue
 
-      await payload.delete({
-        collection: task.collection,
-        id,
-        overrideAccess: true,
-      })
+      try {
+        await payload.delete({
+          collection: task.collection,
+          id,
+          overrideAccess: true,
+        })
+      } catch (error) {
+        if (typeof error === 'object' && error !== null && 'status' in error && error.status === 404) continue
+        throw error
+      }
     }
   }
 }

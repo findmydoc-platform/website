@@ -10,6 +10,7 @@ import { testSlug } from '../fixtures/testSlug'
 import {
   asPayloadBasicUser,
   asPayloadPatientUser,
+  cleanupTrackedUsers,
   createClinicTestUser,
   createPatientTestUser,
   createPlatformTestUser,
@@ -93,13 +94,7 @@ describe('Reviews integration - lifecycle and access', () => {
       } catch {}
     }
 
-    while (createdBasicUserIds.length) {
-      const basicUserId = createdBasicUserIds.pop()
-      if (!basicUserId) continue
-      try {
-        await payload.delete({ collection: 'basicUsers', id: basicUserId, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)

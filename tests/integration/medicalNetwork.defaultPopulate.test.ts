@@ -67,7 +67,7 @@ describe('Medical network defaultPopulate', () => {
       { collection: 'doctorMedia', ids: createdDoctorMediaIds },
       { collection: 'clinicMedia', ids: createdClinicMediaIds },
       { collection: 'clinicStaff', ids: createdClinicStaffIds },
-      { collection: 'basicUsers', ids: createdBasicUserIds },
+      { collection: 'platformStaff', ids: createdBasicUserIds },
     ])
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)

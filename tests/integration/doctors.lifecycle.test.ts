@@ -11,13 +11,14 @@ import {
   asPayloadBasicUser,
   createClinicTestUser,
   createPlatformTestUser,
+  cleanupTrackedUsers,
 } from '../fixtures/testUsers'
 import { slugify } from '@/utilities/slugify'
 import { doctorTitles } from '@/collections/Doctors'
 import { generateFullName } from '@/utilities/nameUtils'
 import type { Doctor } from '@/payload-types'
 
-const createdBasicUserIds: Array<number> = []
+const createdBasicUserIds: Array<number | string> = []
 
 describe('Doctors lifecycle integration', () => {
   let payload: Payload
@@ -39,7 +40,7 @@ describe('Doctors lifecycle integration', () => {
       createdBasicUserIds,
     })
 
-    return asClinicScopedPayloadUser(basicUser, clinicId)
+    return asClinicScopedPayloadUser(payload, basicUser, clinicId)
   }
 
   beforeAll(async () => {
@@ -53,13 +54,7 @@ describe('Doctors lifecycle integration', () => {
   }, 60000)
 
   afterEach(async () => {
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)

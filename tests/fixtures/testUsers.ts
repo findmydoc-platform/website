@@ -54,8 +54,21 @@ export const asPayloadBasicUser = withCollection
 export const asPayloadPatientUser = (user: Patient): PayloadRequestUser =>
   ({ ...user, collection: 'patients' }) as unknown as PayloadRequestUser
 
-export const asClinicScopedPayloadUser = (user: LegacyStaffUser, _clinicId: number): PayloadRequestUser =>
-  withCollection(user)
+export async function asClinicScopedPayloadUser(
+  payload: Payload,
+  user: LegacyStaffUser,
+  clinicId: number,
+): Promise<PayloadRequestUser> {
+  const approved = (await payload.update({
+    collection: 'clinicStaff',
+    id: user.id,
+    data: { clinic: clinicId, status: 'approved' },
+    overrideAccess: true,
+    depth: 0,
+  })) as ClinicStaff
+
+  return withCollection(approved)
+}
 
 export async function createBasicTestUser(payload: Payload, options: CreateBasicUserOptions): Promise<BasicUser> {
   const emailDomain = options.userType === 'platform' ? 'findmydoc.eu' : 'example.com'

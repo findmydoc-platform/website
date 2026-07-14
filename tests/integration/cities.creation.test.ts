@@ -33,7 +33,12 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
   afterEach(async () => {
     await cleanupTestEntities(payload, 'cities', slugPrefix)
     await payload.delete({
-      collection: 'basicUsers',
+      collection: 'clinicStaff',
+      where: { email: { like: `${slugPrefix}%` } },
+      overrideAccess: true,
+    })
+    await payload.delete({
+      collection: 'platformStaff',
       where: { email: { like: `${slugPrefix}%` } },
       overrideAccess: true,
     })

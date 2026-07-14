@@ -6,11 +6,11 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import { asClinicScopedPayloadUser, createClinicTestUser } from '../fixtures/testUsers'
+import { asClinicScopedPayloadUser, cleanupTrackedUsers, createClinicTestUser } from '../fixtures/testUsers'
 import type { Clinictreatment, Treatment } from '@/payload-types'
 
 const createdClinicTreatmentIds: Array<string | number> = []
-const createdBasicUserIds: Array<number> = []
+const createdBasicUserIds: Array<number | string> = []
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
 describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
@@ -26,7 +26,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
       createdBasicUserIds,
     })
 
-    return asClinicScopedPayloadUser(basicUser, clinicId)
+    return asClinicScopedPayloadUser(payload, basicUser, clinicId)
   }
 
   beforeAll(async () => {
@@ -61,13 +61,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds })
   })
 
   it('creates a clinic treatment with required fields', async () => {

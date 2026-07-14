@@ -51,31 +51,30 @@ export const enforceSupabaseIdentityInvariant: CollectionBeforeChangeHook = asyn
 
   await acquireIdentityLock(req, supabaseUserId)
 
-  const conflicts = await Promise.all(
-    principalCollections.map(async (candidateCollection) => {
-      const where: Where =
-        operation === 'update' && candidateCollection === collection.slug && originalDoc?.id != null
-          ? {
-              and: [{ supabaseUserId: { equals: supabaseUserId } }, { id: { not_equals: originalDoc.id } }],
-            }
-          : { supabaseUserId: { equals: supabaseUserId } }
+  // Payload binds every query carrying `req` to the same transaction client.
+  // Run the checks sequentially because node-postgres does not support parallel
+  // queries on one client and concurrent calls can fail before the write.
+  for (const candidateCollection of principalCollections) {
+    const where: Where =
+      operation === 'update' && candidateCollection === collection.slug && originalDoc?.id != null
+        ? {
+            and: [{ supabaseUserId: { equals: supabaseUserId } }, { id: { not_equals: originalDoc.id } }],
+          }
+        : { supabaseUserId: { equals: supabaseUserId } }
 
-      const result = await req.payload.find({
-        collection: candidateCollection,
-        depth: 0,
-        limit: 1,
-        pagination: false,
-        req,
-        overrideAccess: true,
-        where,
-      })
+    const result = await req.payload.find({
+      collection: candidateCollection,
+      depth: 0,
+      limit: 1,
+      pagination: false,
+      req,
+      overrideAccess: true,
+      where,
+    })
 
-      return result.docs.length > 0
-    }),
-  )
-
-  if (conflicts.some(Boolean)) {
-    throw new Error('Supabase identity is already assigned to another authentication principal')
+    if (result.docs.length > 0) {
+      throw new Error('Supabase identity is already assigned to another authentication principal')
+    }
   }
 
   return data

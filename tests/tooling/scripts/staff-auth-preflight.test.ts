@@ -6,6 +6,7 @@ import {
   analyzeIdentityUniqueness,
   analyzeRelationshipRows,
   analyzeStaffProfiles,
+  BASIC_USER_REFERENCE_QUERY,
   BASIC_USER_RELATIONSHIP_CONTRACTS,
   buildReferenceInventoryQuery,
   buildPreflightSummary,
@@ -321,6 +322,11 @@ describe('BasicUser relationship contracts', () => {
 
     expect(query).toContain('source.id::text AS "sourceId"')
     expect(query).toContain('ORDER BY source.id')
+  })
+
+  it('limits both sides of the foreign-key inventory to the active schema', () => {
+    expect(BASIC_USER_REFERENCE_QUERY).toContain('tc.table_schema = current_schema()')
+    expect(BASIC_USER_REFERENCE_QUERY).toContain('ccu.table_schema = current_schema()')
   })
 })
 

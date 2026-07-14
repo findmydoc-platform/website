@@ -8,6 +8,25 @@ import pg from 'pg'
 const { Client } = pg
 
 export const READ_ONLY_TRANSACTION_SQL = 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY'
+export const BASIC_USER_REFERENCE_QUERY = `
+  SELECT
+    tc.table_schema AS "tableSchema",
+    tc.table_name AS "tableName",
+    kcu.column_name AS "columnName",
+    tc.constraint_name AS "constraintName"
+  FROM information_schema.table_constraints tc
+  JOIN information_schema.key_column_usage kcu
+    ON kcu.constraint_schema = tc.constraint_schema
+    AND kcu.constraint_name = tc.constraint_name
+  JOIN information_schema.constraint_column_usage ccu
+    ON ccu.constraint_schema = tc.constraint_schema
+    AND ccu.constraint_name = tc.constraint_name
+  WHERE tc.constraint_type = 'FOREIGN KEY'
+    AND tc.table_schema = current_schema()
+    AND ccu.table_schema = current_schema()
+    AND ccu.table_name = 'basic_users'
+  ORDER BY tc.table_name, kcu.column_name, tc.constraint_name
+`
 const MINIMUM_DIGEST_KEY_LENGTH = 32
 const NO_ALLOWED_UNBOUND_STAFF_STABLE_IDS = /** @type {string[]} */ ([])
 
@@ -703,24 +722,7 @@ async function readIdentityRows(client, columnsByTable) {
 }
 
 async function readBasicUserReferences(client, digest) {
-  const referencesResult = await client.query(`
-    SELECT
-      tc.table_schema AS "tableSchema",
-      tc.table_name AS "tableName",
-      kcu.column_name AS "columnName",
-      tc.constraint_name AS "constraintName"
-    FROM information_schema.table_constraints tc
-    JOIN information_schema.key_column_usage kcu
-      ON kcu.constraint_schema = tc.constraint_schema
-      AND kcu.constraint_name = tc.constraint_name
-    JOIN information_schema.constraint_column_usage ccu
-      ON ccu.constraint_schema = tc.constraint_schema
-      AND ccu.constraint_name = tc.constraint_name
-    WHERE tc.constraint_type = 'FOREIGN KEY'
-      AND ccu.table_schema = current_schema()
-      AND ccu.table_name = 'basic_users'
-    ORDER BY tc.table_name, kcu.column_name, tc.constraint_name
-  `)
+  const referencesResult = await client.query(BASIC_USER_REFERENCE_QUERY)
   const classification = classifyBasicUserReferences(referencesResult.rows, digest)
 
   for (const reference of classification.classified) {

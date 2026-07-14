@@ -210,7 +210,9 @@ path. Its storage and access contract is concrete:
 - ordinary metadata reads remain private to the owner and authorized platform staff;
 - file reads are private by default and are evaluated by the same collection access rule rather than bypassing
   Payload through a public object or filesystem URL;
-- protected file responses use private, non-shared cache semantics and `no-store`; and
+- protected file responses use private, non-shared cache semantics and `no-store`;
+- the anonymous current-author avatar exception is an explicitly public media projection, but its file response also
+  uses `Cache-Control: no-store` until immutable versioned URLs and a secure revocation contract exist; and
 - a known or previously observed file URL does not grant access.
 
 The only anonymous file-byte exception is the current, non-deleted profile image of a platform author who is referenced
@@ -235,8 +237,10 @@ meaning.
 ### Decision
 
 The cache-impact decision is `public-cached` for the derived public post-author projection. Direct authentication,
-session, staff, role, clinic-assignment, approval, and profile-media reads remain `private-live` and never receive
-shared public cache tags.
+session, staff, role, clinic-assignment, approval, profile-media metadata, and private file reads remain `private-live`
+and never receive shared public cache tags. The anonymous current-author avatar exception is a narrow public media
+projection, but its file bytes remain uncached with `Cache-Control: no-store`; it does not introduce a shared media
+cache.
 
 ### Dependency map
 
@@ -272,20 +276,24 @@ must retain previous and next profile-image identities and preserve the previous
 media deletion. Planner output remains bounded to the affected current or previous post slugs plus existing list and
 landing surfaces.
 
-Post-detail invalidation also refreshes any existing related-post projection that reads the changed author's public
-projection. It uses the current post entity, slug, surface tags, and canonical post-detail paths; it does not introduce
-staff tags, media tags, a related-post tag family, or a separate projection cache.
+Related-post author projections remain request-time data and are not claimed as a reverse dependency of this
+invalidation contract. If post details or embedded related-post projections become cached, implementation stops until
+a reverse-dependency contract maps author and media changes to every affected parent post route and focused tests prove
+that behavior. This contract does not introduce staff tags, media tags, a related-post tag family, or a separate
+projection cache.
 
-The policy catalog may gain an explicit dependency entry connecting the private author sources to the public post
-projection. It must not add `platformStaff:*` or `userProfileMedia:*` public tag families, change cache classes, or add
-a new invalidation owner.
+The runtime switch records the dependency from the private author and media sources to the public post projection in
+the existing policy catalog. It must not add `platformStaff:*` or `userProfileMedia:*` public tag families, change
+cache classes, or add a new invalidation owner.
 
 ### Seed final flush
 
 Seeds suppress per-record revalidation and therefore perform one terminal flush. Author- and profile-media seed work
-must carry the affected published post slugs into that flush or resolve them once at completion. The final plan must
-invalidate existing post list and landing tags as well as every affected post-detail path. A collection-only flush that
-omits post details does not satisfy the contract.
+retrieves all current published post slugs through paginated, deduplicated queries without a fixed result ceiling or
+silent truncation. The existing seed-final-flush subject is extended to carry those affected slugs and may process them
+in bounded batches. The final plan invalidates existing post list and landing tags as well as every affected post-detail
+path. A collection-only flush that omits post details does not satisfy the contract. This extension reuses the existing
+tags, paths, owner, and flush lifecycle.
 
 ### Cache verification
 
@@ -318,9 +326,11 @@ output contains aggregate counts, uniqueness results, and non-reversible invento
 names, email addresses, raw Supabase IDs, access tokens, or other clear-text identity data.
 
 The preflight uses one repeatable-read, read-only PostgreSQL snapshot. Inventory digests are HMAC-SHA256 values keyed
-with an execution-time secret that is never written to the report. The same key must be reused when comparing two
-reports. A missing staff Supabase binding fails by default. Each controlled non-authenticating seed actor must be
-allowed explicitly by its exact stable ID for that run; prefixes and implicit fixture detection are not accepted.
+with a cryptographically random execution-time secret containing at least 256 bits of entropy. A human-authored phrase
+does not satisfy this requirement, even if it is 32 characters long. The key is never written to the report or persisted
+with it. The same key must be reused when comparing two reports. A missing staff Supabase binding fails by default.
+Each controlled non-authenticating seed actor must be allowed explicitly by its exact stable ID for that run; prefixes
+and implicit fixture detection are not accepted.
 
 `pnpm staff-auth:inventory` is the explicit pre-migration inventory command and may report that the additive schema is
 not present. After the expand migration, `pnpm staff-auth:preflight` is the rollout gate and fails unless every additive
@@ -466,10 +476,12 @@ Implementation verification covers:
   untouched and unused by application, Ops, seed, and background-job paths;
 - private profile-media metadata and private-by-default file bytes, including unauthenticated known-URL access;
 - anonymous file access limited to the current avatar of a platform author with a published post, with previous,
-  unused, clinic, and patient files denied and protected responses marked `no-store`;
+  unused, clinic, and patient files denied and both protected and anonymously readable avatar responses marked
+  `no-store`;
 - unchanged public post-author projection;
 - cache policy classification and all focused cache tests listed above, without staff or media tag families;
-- target-state seed output and author/media-only terminal cache flush;
+- target-state seed output and author/media-only terminal cache flush with paginated, deduplicated post slugs and no
+  silent result cap;
 - local Ops integration against the exact website switch revision, the website-`main` guard for privileged dry-run,
   and the shared apply gate and environment concurrency group;
 - explicit non-production guards for fixture rebuild operations;

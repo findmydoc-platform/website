@@ -84,6 +84,12 @@ sequenceDiagram
 - **Service Dependency:** Relying on Supabase means our authentication is subject to its availability and performance.
 - **Data Consistency:** Ensuring that user data remains consistent between the two systems requires diligent monitoring and periodic reviews.
 
+## Relationship to ADR 025
+
+[ADR 025 – Direct Staff Authentication Collections](./025-adr-direct-staff-auth-collections.md) narrows the automatic
+record-creation statement for staff identities. Staff records must be provisioned before authentication; patient
+ensure-on-auth behavior remains compatible with this ADR.
+
 ## Deprecated
 
 N/A

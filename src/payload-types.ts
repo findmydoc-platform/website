@@ -2143,6 +2143,12 @@ export interface Form {
  */
 export interface ClinicStaff {
   id: number;
+  stableId?: string | null;
+  supabaseUserId?: string | null;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImage?: (number | null) | UserProfileMedia;
   /**
    * Login account for this staff member
    */
@@ -2167,6 +2173,11 @@ export interface ClinicStaff {
 export interface PlatformStaff {
   id: number;
   stableId?: string | null;
+  supabaseUserId?: string | null;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImage?: (number | null) | UserProfileMedia;
   /**
    * Select the account for this staff member
    */
@@ -3794,6 +3805,12 @@ export interface PatientsSelect<T extends boolean = true> {
  * via the `definition` "clinicStaff_select".
  */
 export interface ClinicStaffSelect<T extends boolean = true> {
+  stableId?: T;
+  supabaseUserId?: T;
+  email?: T;
+  firstName?: T;
+  lastName?: T;
+  profileImage?: T;
   user?: T;
   clinic?: T;
   status?: T;
@@ -3806,6 +3823,11 @@ export interface ClinicStaffSelect<T extends boolean = true> {
  */
 export interface PlatformStaffSelect<T extends boolean = true> {
   stableId?: T;
+  supabaseUserId?: T;
+  email?: T;
+  firstName?: T;
+  lastName?: T;
+  profileImage?: T;
   user?: T;
   role?: T;
   updatedAt?: T;

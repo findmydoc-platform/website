@@ -24,6 +24,78 @@ export const PlatformStaff: CollectionConfig = {
   fields: [
     stableIdField(),
     {
+      name: 'supabaseUserId',
+      label: 'Supabase User ID',
+      type: 'text',
+      unique: true,
+      index: true,
+      access: {
+        create: () => false,
+        read: () => false,
+        update: () => false,
+      },
+      admin: {
+        hidden: true,
+        readOnly: true,
+      },
+    },
+    {
+      name: 'email',
+      type: 'email',
+      label: 'Email',
+      access: {
+        create: () => false,
+        read: () => false,
+        update: () => false,
+      },
+      admin: {
+        hidden: true,
+        readOnly: true,
+      },
+    },
+    {
+      name: 'firstName',
+      type: 'text',
+      label: 'First Name',
+      access: {
+        create: () => false,
+        read: () => false,
+        update: () => false,
+      },
+      admin: {
+        hidden: true,
+        readOnly: true,
+      },
+    },
+    {
+      name: 'lastName',
+      type: 'text',
+      label: 'Last Name',
+      access: {
+        create: () => false,
+        read: () => false,
+        update: () => false,
+      },
+      admin: {
+        hidden: true,
+        readOnly: true,
+      },
+    },
+    {
+      name: 'profileImage',
+      type: 'upload',
+      relationTo: 'userProfileMedia',
+      access: {
+        create: () => false,
+        read: () => false,
+        update: () => false,
+      },
+      admin: {
+        hidden: true,
+        readOnly: true,
+      },
+    },
+    {
       name: 'user',
       type: 'relationship',
       label: 'User',

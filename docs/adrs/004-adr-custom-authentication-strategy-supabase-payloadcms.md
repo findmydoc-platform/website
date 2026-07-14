@@ -90,4 +90,5 @@ N/A
 
 ## Superseded by
 
-N/A
+Partially superseded by [ADR 025 – Direct Staff Authentication Collections](./025-adr-direct-staff-auth-collections.md)
+for automatic staff record creation. Patient ensure-on-auth remains unchanged.

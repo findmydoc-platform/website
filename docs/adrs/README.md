@@ -73,3 +73,4 @@ When adding a new ADR:
 - [022 — Public localization routing, SEO, and domain strategy](./022-adr-public-localization-routing-seo-and-domain-strategy.md)
 - [023 — Public website cache and revalidation strategy](./023-adr-public-website-cache-and-revalidation-strategy.md)
 - [024 — Production build webpack fallback](./024-adr-production-build-webpack-fallback.md)
+- [025 — Direct staff authentication collections](./025-adr-direct-staff-auth-collections.md)

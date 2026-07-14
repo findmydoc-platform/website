@@ -7,18 +7,7 @@ import { withMockRouter } from '../../utils/routerDecorator'
 import Link from 'next/link'
 import { withViewportStory } from '../../utils/viewportMatrix'
 
-const mockSuccessHandler = async (_data: LoginRequest): Promise<LoginResponse> => {
-  await new Promise((resolve) => setTimeout(resolve, 50))
-  return {
-    success: true,
-    redirectUrl: '/dashboard',
-    user: {
-      id: 'user-1',
-      email: 'platform-user@findmydoc.eu',
-      userType: 'platform',
-    },
-  }
-}
+const mockPendingLoginHandler = (_data: LoginRequest): Promise<LoginResponse> => new Promise(() => undefined)
 
 const mockInvalidCredentials = async (_data: LoginRequest): Promise<LoginError> => {
   await new Promise((resolve) => setTimeout(resolve, 50))
@@ -52,7 +41,7 @@ type Story = StoryObj<typeof meta>
 
 export const PlatformLogin: Story = {
   args: {
-    loginHandler: mockSuccessHandler,
+    loginHandler: mockPendingLoginHandler,
     children: null, // Satisfy required prop
   },
   render: (args) => (
@@ -126,7 +115,7 @@ export const InvalidCredentials: Story = {
 
 export const ValidationAndSubmit: Story = {
   args: {
-    loginHandler: mockSuccessHandler,
+    loginHandler: mockPendingLoginHandler,
     userTypes: ['patient'],
     children: null,
   },

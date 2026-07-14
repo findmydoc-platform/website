@@ -7,7 +7,7 @@ import { Logo } from '@/components/molecules/Logo/Logo'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
-import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
+import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { isFindmydocPlatformEmail } from '@/auth/utilities/platformStaffEmailPolicy'
 import { createScopedLogger, getRequestLogContext, hashLogValue } from '@/utilities/logging/shared'
@@ -63,49 +63,30 @@ export default async function LoginPage({
   let statusVariant: 'success' | 'info' | 'warning' | undefined =
     statusFromQuery?.variant ?? fallbackPreviewStatus?.variant
 
-  if (authData) {
-    // Only attempt redirect for staff types
-    if (authData.userType === 'clinic' || authData.userType === 'platform') {
-      if (authData.userType === 'platform' && !isFindmydocPlatformEmail(authData.userEmail)) {
-        logger.warn(
-          {
-            event: 'auth.admin_login.platform_user.invalid_email_domain',
-            supabaseUserIdHash: hashLogValue(authData.supabaseUserId),
-            userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
-          },
-          'Platform Supabase user email is outside the allowed domain',
-        )
-        statusMessage = 'Your account is not available for admin access. Please contact support.'
+  if (authData?.userType === 'platform') {
+    if (!isFindmydocPlatformEmail(authData.userEmail)) {
+      logger.warn(
+        {
+          event: 'auth.admin_login.platform_user.invalid_email_domain',
+          supabaseUserIdHash: hashLogValue(authData.supabaseUserId),
+          userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
+        },
+        'Platform Supabase user email is outside the allowed domain',
+      )
+      statusMessage = 'Your account is not available for admin access. Please contact support.'
+      statusVariant = 'warning'
+    } else {
+      const user = await findUserBySupabaseId(payload, authData)
+
+      if (user) {
+        redirect('/admin')
+      } else if (!isGuardEnabled) {
+        statusMessage =
+          'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.'
         statusVariant = 'warning'
       } else {
-        const user = await findUserBySupabaseId(payload, authData)
-
-        if (user) {
-          if (authData.userType === 'clinic') {
-            if (isGuardEnabled) {
-              statusMessage = previewPlatformOnlyStatus.text
-              statusVariant = previewPlatformOnlyStatus.variant
-            } else {
-              const isApproved = await isClinicUserApproved(payload, String(user.id))
-              if (isApproved) {
-                redirect('/admin')
-              } else {
-                statusMessage = 'Your account is pending approval. Please contact support.'
-                statusVariant = 'warning'
-              }
-            }
-          } else {
-            // Platform users are allowed if they exist and use the required domain.
-            redirect('/admin')
-          }
-        } else if (!isGuardEnabled || authData.userType === 'platform') {
-          statusMessage =
-            'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.'
-          statusVariant = 'warning'
-        } else {
-          statusMessage = previewPlatformOnlyStatus.text
-          statusVariant = previewPlatformOnlyStatus.variant
-        }
+        statusMessage = previewPlatformOnlyStatus.text
+        statusVariant = previewPlatformOnlyStatus.variant
       }
     }
   } else {
@@ -154,12 +135,8 @@ export default async function LoginPage({
       {showPreviewLogo ? (
         <Logo loading="eager" priority="high" className="h-16" showPreviewBadge={showPreviewBadge} />
       ) : null}
-      <LoginForm.Root
-        userTypes={['clinic', 'platform']}
-        redirectPath={postLoginRedirectPath}
-        className="w-full max-w-md"
-      >
-        <LoginForm.Header title="Staff Login" description="Sign in to your account to continue" />
+      <LoginForm.Root userTypes="platform" redirectPath={postLoginRedirectPath} className="w-full max-w-md">
+        <LoginForm.Header title="Platform Login" description="Sign in to the platform administration area" />
         <LoginForm.Status message={statusMessage} variant={statusVariant} />
         <AuthFlashStatus />
         <LoginForm.Form>

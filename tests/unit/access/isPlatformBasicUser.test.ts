@@ -48,22 +48,14 @@ describe('isPlatformBasicUser', () => {
     expectAccess.full(result)
   })
 
-  it('scopes self-or-admin access to the authenticated user id for clinic users', () => {
+  it('denies clinic staff access to platform principals', () => {
     const result = isPlatformStaffOrSelf(createAccessArgs(mockUsers.clinic(42), { extra: { id: 99 } }))
-    expectAccess.scoped(result, {
-      user: {
-        equals: 42,
-      },
-    })
+    expectAccess.none(result)
   })
 
-  it('returns a self-only filter even when the request is anonymous', () => {
+  it('denies anonymous access', () => {
     const result = isPlatformStaffOrSelf(createAccessArgs(mockUsers.anonymous(), { extra: { id: 99 } }))
-    expectAccess.scoped(result, {
-      user: {
-        equals: undefined,
-      },
-    })
+    expectAccess.none(result)
   })
 })
 

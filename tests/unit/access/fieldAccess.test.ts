@@ -87,7 +87,7 @@ describe('Field Access Control', () => {
         expect.objectContaining({
           collection: 'platformStaff',
           where: expect.objectContaining({
-            and: expect.arrayContaining([{ user: { equals: 1 } }, { role: { in: ['admin', 'support'] } }]),
+            and: expect.arrayContaining([{ id: { equals: 1 } }, { role: { in: ['admin', 'support'] } }]),
           }),
         }),
       )

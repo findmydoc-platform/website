@@ -9,8 +9,8 @@ import type { Payload } from 'payload'
 import { createScopedLogger, getRequestLogContext, type ServerLogger } from '@/utilities/logging/shared'
 
 /**
- * Validates if a clinic user has admin access.
- * Clinic users need to be approved in the clinicStaff collection.
+ * Validates if a clinic user has authorized API access.
+ * Clinic principals must be approved and assigned to a clinic.
  * @param payload - The PayloadCMS instance
  * @param authData - The authentication data
  * @param userResult - The user lookup result
@@ -36,10 +36,7 @@ export async function validateClinicAccess(
   try {
     const clinicStaffResult = await payload.find({
       collection: 'clinicStaff',
-      where: {
-        user: { equals: userId },
-        status: { equals: 'approved' },
-      },
+      where: { and: [{ id: { equals: userId } }, { status: { equals: 'approved' } }, { clinic: { exists: true } }] },
       limit: 1,
       overrideAccess: true,
     })
@@ -53,7 +50,7 @@ export async function validateClinicAccess(
           reason: 'clinic_not_approved',
           userId: userResult.user.id,
         },
-        'Clinic user is not approved for admin access',
+        'Clinic principal is not approved for authorized access',
       )
     }
 

@@ -4,6 +4,6 @@
     "firstName": "Seed",
     "lastName": "Admin",
     "email": "seed.admin@findmydoc.eu",
-    "userType": "platform"
+    "role": "admin"
   }
 ]

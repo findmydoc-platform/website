@@ -1,247 +1,95 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
-import type { BasicUser, ClinicStaff, Patient } from '@/payload-types'
 
-describe('BasicUser lifecycle integration', () => {
+describe('Direct staff principal lifecycle integration', () => {
   let payload: Payload
-
-  type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
-  type PayloadCreateArgs = Parameters<Payload['create']>[0]
-  type PayloadUpdateArgs = Parameters<Payload['update']>[0]
-
-  const asPlatformUser = (user: BasicUser): PayloadUser => ({ ...user, collection: 'basicUsers' }) as PayloadUser
-  const asPatientUser = (user: Patient): PayloadUser => ({ ...user, collection: 'patients' }) as PayloadUser
 
   beforeAll(async () => {
     payload = await getPayload({ config })
   })
 
   beforeEach(async () => {
-    // Clean up in case of previous runs
-    try {
-      await payload.delete({ collection: 'platformStaff', where: {}, overrideAccess: true })
-    } catch {}
-    try {
-      await payload.delete({ collection: 'clinicStaff', where: {}, overrideAccess: true })
-    } catch {}
-    try {
-      await payload.delete({ collection: 'basicUsers', where: {}, overrideAccess: true })
-    } catch {}
-    try {
-      await payload.delete({ collection: 'patients', where: {}, overrideAccess: true })
-    } catch {}
+    await payload.delete({ collection: 'platformStaff', where: {}, overrideAccess: true })
+    await payload.delete({ collection: 'clinicStaff', where: {}, overrideAccess: true })
+    await payload.delete({ collection: 'patients', where: {}, overrideAccess: true })
   })
 
-  it('creates BasicUser -> creates Supabase user -> creates PlatformStaff profile; then deletes all', async () => {
-    // Create BasicUser (platform)
-    const basic = (await payload.create({
-      collection: 'basicUsers',
+  it('creates a direct platform principal only through the trusted operations context', async () => {
+    await expect(
+      payload.create({
+        collection: 'platformStaff',
+        data: {
+          email: 'platform.staff@findmydoc.eu',
+          firstName: 'Platform',
+          lastName: 'Staff',
+          role: 'admin',
+          supabaseUserId: 'sb-platform-staff',
+        },
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/trusted operations/i)
+
+    const platformStaff = await payload.create({
+      collection: 'platformStaff',
       data: {
         email: 'platform.staff@findmydoc.eu',
-        userType: 'platform',
         firstName: 'Platform',
         lastName: 'Staff',
+        role: 'admin',
+        supabaseUserId: 'sb-platform-staff',
       },
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
-
-    expect(basic.id).toBeDefined()
-    expect(basic.supabaseUserId).toBe('sb-unit-1')
-    expect(basic.firstName).toBe('Platform')
-    expect(basic.lastName).toBe('Staff')
-
-    // PlatformStaff profile should exist
-    const profiles = await payload.find({
-      collection: 'platformStaff',
-      where: { user: { equals: basic.id } },
-      limit: 1,
-      overrideAccess: true,
-      depth: 0,
-    })
-    expect(profiles.docs.length).toBe(1)
-    expect(profiles.docs[0]?.firstName).toBeNull()
-    expect(profiles.docs[0]?.lastName).toBeNull()
-
-    // Now delete the BasicUser and verify cascading cleanup
-    await payload.delete({ collection: 'basicUsers', id: basic.id, overrideAccess: true })
-
-    const profilesAfter = await payload.find({
-      collection: 'platformStaff',
-      where: { user: { equals: basic.id } },
-      limit: 1,
-      overrideAccess: true,
-      depth: 0,
-    })
-    expect(profilesAfter.docs.length).toBe(0)
-  }, 20000)
-
-  it('rejects creating platform users outside the findmydoc.eu email domain', async () => {
-    await expect(async () => {
-      await payload.create({
-        collection: 'basicUsers',
-        data: {
-          email: 'platform.external@example.com',
-          userType: 'platform',
-          firstName: 'External',
-          lastName: 'Platform',
-          supabaseUserId: 'sb-basicuser-platform-external',
-        },
-        overrideAccess: true,
-        depth: 0,
-      } as PayloadCreateArgs)
-    }).rejects.toThrow(/findmydoc\.eu|email/i)
-  }, 20000)
-
-  it('rejects updating an external clinic user into a platform user', async () => {
-    const clinicUser = (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: 'basicuser.external-clinic@example.com',
-        userType: 'clinic',
-        firstName: 'External',
-        lastName: 'Clinic',
-        supabaseUserId: 'sb-basicuser-external-clinic',
-      },
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
-
-    await expect(async () => {
-      await payload.update({
-        collection: 'basicUsers',
-        id: clinicUser.id,
-        data: {
-          userType: 'platform',
-        },
-        overrideAccess: true,
-        depth: 0,
-      } as PayloadUpdateArgs)
-    }).rejects.toThrow(/findmydoc\.eu|email/i)
-  }, 20000)
-
-  it('creates a clinic BasicUser and creates a ClinicStaff profile', async () => {
-    const clinicUser = (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: 'clinic.staff@example.com',
-        userType: 'clinic',
-        firstName: 'Clinic',
-        lastName: 'Staff',
-      },
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
-
-    expect(clinicUser.id).toBeDefined()
-    expect(clinicUser.supabaseUserId).toBe('sb-unit-1')
-
-    const profiles = await payload.find({
-      collection: 'clinicStaff',
-      where: { user: { equals: clinicUser.id } },
-      limit: 1,
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
     })
 
-    expect(profiles.docs).toHaveLength(1)
-    const clinicProfile = profiles.docs[0] as ClinicStaff
-    const clinicProfileUser =
-      typeof clinicProfile.user === 'object' && clinicProfile.user !== null
-        ? ((clinicProfile.user as { id?: number; value?: number }).id ??
-          (clinicProfile.user as { id?: number; value?: number }).value)
-        : clinicProfile.user
-    expect(clinicProfileUser).toBe(clinicUser.id)
-    expect(clinicProfile.status).toBe('pending')
-  }, 20000)
+    expect(platformStaff.collection).toBe('platformStaff')
+    expect(platformStaff.role).toBe('admin')
+    expect(platformStaff.supabaseUserId).toBe('sb-platform-staff')
+  })
 
-  it('blocks non-platform users from creating BasicUsers', async () => {
-    const patient = (await payload.create({
-      collection: 'patients',
-      data: {
-        email: 'basicuser.blocked.patient@example.com',
-        firstName: 'Patient',
-        lastName: 'Creator',
-        supabaseUserId: 'sb-basicuser-patient-1',
-      },
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as Patient
-
-    await expect(async () => {
-      await payload.create({
-        collection: 'basicUsers',
-        data: {
-          email: 'basicuser.blocked@findmydoc.eu',
-          userType: 'platform',
-          firstName: 'Blocked',
-          lastName: 'User',
-          supabaseUserId: 'sb-basicuser-blocked',
-        },
-        user: asPatientUser(patient),
-        overrideAccess: false,
-        depth: 0,
-      } as PayloadCreateArgs)
-    }).rejects.toThrow()
-  }, 20000)
-
-  it('rejects duplicate email addresses', async () => {
+  it('rejects a Supabase identity in a second auth collection', async () => {
     await payload.create({
-      collection: 'basicUsers',
+      collection: 'platformStaff',
       data: {
-        email: 'basicuser.duplicate@findmydoc.eu',
-        userType: 'platform',
-        firstName: 'Duplicate',
-        lastName: 'User',
-        supabaseUserId: 'sb-basicuser-duplicate-1',
+        email: 'platform.identity@findmydoc.eu',
+        firstName: 'Platform',
+        lastName: 'Identity',
+        role: 'support',
+        supabaseUserId: 'sb-shared-principal',
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)
+    })
 
-    await expect(async () => {
-      await payload.create({
-        collection: 'basicUsers',
+    await expect(
+      payload.create({
+        collection: 'clinicStaff',
         data: {
-          email: 'basicuser.duplicate@findmydoc.eu',
-          userType: 'clinic',
-          firstName: 'Duplicate',
-          lastName: 'User',
-          supabaseUserId: 'sb-basicuser-duplicate-2',
+          email: 'clinic.identity@example.com',
+          firstName: 'Clinic',
+          lastName: 'Identity',
+          status: 'pending',
+          supabaseUserId: 'sb-shared-principal',
         },
         overrideAccess: true,
-        depth: 0,
-      } as PayloadCreateArgs)
-    }).rejects.toThrowError(/email|unique|duplicate|constraint/i)
-  }, 20000)
+      }),
+    ).rejects.toThrow(/already assigned/i)
+  })
 
-  it('allows platform users to update BasicUser profile fields', async () => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: 'basicuser.update@findmydoc.eu',
-        userType: 'platform',
-        firstName: 'Update',
-        lastName: 'Target',
-      },
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
-
-    const updated = (await payload.update({
-      collection: 'basicUsers',
-      id: basicUser.id,
-      data: {
-        firstName: 'Updated',
-        lastName: 'Name',
-      },
-      user: asPlatformUser(basicUser),
-      overrideAccess: false,
-      depth: 0,
-    } as PayloadUpdateArgs)) as BasicUser
-
-    expect(updated.firstName).toBe('Updated')
-    expect(updated.lastName).toBe('Name')
-  }, 20000)
+  it('keeps BasicUsers unavailable to runtime writes', async () => {
+    await expect(
+      payload.create({
+        collection: 'basicUsers',
+        data: {
+          email: 'legacy@findmydoc.eu',
+          firstName: 'Legacy',
+          lastName: 'Principal',
+          userType: 'platform',
+        },
+        overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+  })
 })

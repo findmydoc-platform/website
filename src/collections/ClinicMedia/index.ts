@@ -52,7 +52,7 @@ export const ClinicMedia: CollectionConfig = {
         relationField: 'clinic',
         message: 'Clinic ownership cannot be changed once set',
       }),
-      beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' }),
+      beforeChangeCreatedBy({ createdByField: 'createdBy' }),
       beforeChangeComputeStorage({
         ownerField: 'clinic',
         key: { type: 'docId' },
@@ -80,12 +80,11 @@ export const ClinicMedia: CollectionConfig = {
       index: true,
       admin: {
         description: 'Clinic that owns this media',
-        condition: (_data, _siblingData, { user }) =>
-          !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
+        condition: (_data, _siblingData, { user }) => !(user && user.collection === 'clinicStaff'),
       },
     },
     buildMediaCreatedByField({
-      relationTo: 'basicUsers',
+      relationTo: ['platformStaff', 'clinicStaff'],
     }),
     buildMediaStoragePathField(),
     buildMediaPrefixField(),

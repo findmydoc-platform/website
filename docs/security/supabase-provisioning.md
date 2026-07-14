@@ -1,60 +1,21 @@
-# Supabase Provisioning (High‑Level)
+# Supabase Provisioning
 
-This document summarizes what the platform’s provisioning layer accomplishes for identities; it deliberately omits code specifics already covered by the sequence diagram (`auth-flow-diagram.md`).
+Supabase creates and manages external identities. Payload stores the direct application principals and remains the authorization source.
 
-## Purpose
-Guarantee that every persisted platform user (staff or patient) has a corresponding Supabase identity and that related role/profile data stays consistent over time without manual intervention.
+## Staff Provisioning
 
-## Design Tenets
-* Single Flow: All creation & deletion side‑effects run through collection lifecycle hooks – no parallel “manual” pathway.
-* Centralized Runtime Provisioning: Strategy and hooks own provisioning/reconciliation; login pages do not perform user-creation writes.
-* Two-Phase Creation (Staff): User auth record is created first; profile creation follows via lifecycle hook (non-transactional).
-* Email Hygiene: Emails are normalized and validated before lookup/provisioning to reduce identity drift and invalid-write failures.
-* Idempotent Lookup: Re‑creating existing external identities is avoided; existing Supabase user ids short‑circuit provisioning.
-* Conflict Recovery: Concurrent create conflicts are recovered by re-lookup instead of immediate hard failure.
-* Fail Fast on Create, Lenient on Delete: Inbound creation stops on external failure; deletion proceeds even if external cleanup fails (logged for follow‑up).
-* Stateless Auth Consumption: The platform never stores Supabase credentials; it stores only the linking identifier.
+The trusted operations workflow creates, repairs, and deletes platform staff. It first verifies that the Supabase id is not assigned to a patient or clinic staff principal, ensures Supabase metadata identifies the account as `platform`, then creates or updates the matching `platformStaff` document. New platform staff default to `support`; an elevated role is always explicit.
 
-## Scope by User Category
-| Category | Internal Records | External Link | Extra Workflow |
-|----------|------------------|---------------|----------------|
-| Platform Staff | basic user + platform profile | Supabase user id | Immediate access |
-| Clinic Staff | basic user + clinic profile | Supabase user id | Requires approval checkpoint |
-| Patient | single patient record | Supabase user id | None |
+Clinic staff are provisioned as direct `clinicStaff` principals by the clinic workflow. Login never creates them. An incomplete or unapproved clinic principal is not authorized.
 
-## Provisioning Lifecycle
-1. Initiate create (admin UI or API) with minimal required fields (email, user type, and a transient password supplied upstream).
-2. The password field is VIRTUAL & EPHEMERAL: it is only used to call Supabase and is never stored or hashed in Payload (credential storage lives solely in Supabase).
-3. Hook (`createSupabaseUserHook` in `src/collections/BasicUsers/hooks/createSupabaseUser.ts`) ensures an external Supabase identity exists (creates if absent) and stores its id.
-4. Staff: role profile is instantiated (or repaired if historically missing) after identity confirmation by subsequent lifecycle hooks.
-5. Deletion runs in reverse order (profile → auth record → external identity) to avoid foreign key & orphan issues.
+All staff writes use the shared identity invariant: a transaction advisory lock serializes the Supabase id and Payload checks all auth collections before committing. This prevents cross-collection identity reuse while preserving collection-local unique constraints.
 
-## Integrity Safeguards
-* Profile drift possible until recovery mechanism is implemented; current safeguard halts on Supabase identity failure only.
-* No orphan identities on partial create: Failure to establish external identity halts persistence (user not stored).
-* Duplicate external identity calls are prevented for strategy-originated writes through hook context flags (`skipSupabaseUserCreation`).
-* Email-based reconciliation updates stale/missing Supabase ids when an existing internal record is confidently matched.
-* External deletion best‑effort: Internal data correctness prioritized; operational logs surface external cleanup failures.
+## Patient Provisioning
 
-## Operational Signals (Monitor)
-* Provisioning failure count (create aborts)
-* External deletion failure count
-* Auto‑recovered profile events
-* Clinic approval latency (identity created → approval granted)
+Patients retain ensure-on-auth. After Supabase confirms the browser identity, the strategy may create or update the matching `patients` principal idempotently. Patient creation does not create staff records or alter a staff classification.
 
-## Extension Guidelines
-When introducing another user category:
-1. Decide between single vs. dual record (auth + profile) based on role complexity.
-2. Reuse existing hook pattern; do not introduce ad‑hoc provisioning endpoints.
-3. Emit structured logs for create/delete to feed monitoring dashboards.
-4. Add approval or gating only if materially distinct from existing clinic workflow.
+## Failure Behavior
 
-## Folder Reference
-* `src/collections/BasicUsers/hooks/` – Staff provisioning lifecycle hooks.
-  * `createSupabaseUser.ts` – Creates Supabase account (uses transient password then discards).
-* `src/collections/Patients/hooks/` – Patient provisioning lifecycle hooks.
-  * `patientSupabaseCreate.ts` / `patientSupabaseDelete.ts` – Patient identity lifecycle handling.
-* `src/auth/utilities/` – Shared utilities for external identity orchestration.
-* `src/collections/` – User & profile schema definitions (authorization boundaries).
+Authorization fails closed whenever Supabase and Payload do not resolve to the same eligible principal. Deleting a staff principal removes Payload authorization before external identity cleanup; a failed Supabase deletion is retried by the trusted operations workflow. No runtime path promises immediate invalidation of an already-issued Supabase access token.
 
-Consult the auth flow diagram for step‑by‑step interaction ordering; this page focuses on intent and guarantees.
+The operations workflow owns production writes. The website only validates authentication and authorization at request time.

@@ -5,7 +5,7 @@ import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { runBaselineContract } from './contracts/baselineContract'
-import type { BasicUser, ClinicApplication } from '@/payload-types'
+import type { ClinicApplication, ClinicStaff, PlatformStaff } from '@/payload-types'
 
 type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
@@ -17,9 +17,13 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
   let medicalSpecialtyIds: number[] = []
   const slugPrefix = testSlug('clinicApplications.approval.test.ts')
   const createdApplicationIds: Array<number> = []
-  const createdBasicUserIds: Array<number> = []
+  const createdClinicStaffIds: Array<number> = []
+  const createdPlatformStaffIds: Array<number> = []
 
-  const asPayloadUser = (user: BasicUser): PayloadUser => ({ ...user, collection: 'basicUsers' }) as PayloadUser
+  const asClinicUser = (user: ClinicStaff): PayloadUser =>
+    ({ ...user, collection: 'clinicStaff' }) as unknown as PayloadUser
+  const asPlatformUser = (user: PlatformStaff): PayloadUser =>
+    ({ ...user, collection: 'platformStaff' }) as unknown as PayloadUser
 
   const extractRelationId = (value: unknown): number | null => {
     if (typeof value === 'number' && Number.isFinite(value)) return value
@@ -47,40 +51,41 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
 
   const createPlatformUser = async (suffix: string) => {
     const email = `${slugPrefix}-platform-${suffix}@findmydoc.eu`
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const platformStaff = (await payload.create({
+      collection: 'platformStaff',
       data: {
         email,
-        userType: 'platform',
         firstName: 'Platform',
         lastName: `User-${suffix}`,
+        role: 'support',
         supabaseUserId: `sb-${slugPrefix}-platform-${suffix}`,
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
       depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
+    } as PayloadCreateArgs)) as PlatformStaff
 
-    createdBasicUserIds.push(basicUser.id)
-    return basicUser
+    createdPlatformStaffIds.push(platformStaff.id)
+    return platformStaff
   }
 
   const createClinicUser = async (suffix: string) => {
     const email = `${slugPrefix}-clinic-${suffix}@example.com`
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const clinicStaff = (await payload.create({
+      collection: 'clinicStaff',
       data: {
         email,
-        userType: 'clinic',
         firstName: 'Clinic',
         lastName: `User-${suffix}`,
+        status: 'pending',
         supabaseUserId: `sb-${slugPrefix}-clinic-${suffix}`,
       },
       overrideAccess: true,
       depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
+    } as PayloadCreateArgs)) as ClinicStaff
 
-    createdBasicUserIds.push(basicUser.id)
-    return basicUser
+    createdClinicStaffIds.push(clinicStaff.id)
+    return clinicStaff
   }
 
   beforeAll(async () => {
@@ -119,25 +124,19 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
       } catch {}
     }
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
+    while (createdClinicStaffIds.length) {
+      const id = createdClinicStaffIds.pop()
       if (!id) continue
       try {
-        await payload.delete({
-          collection: 'clinicStaff',
-          where: { user: { equals: id } },
-          overrideAccess: true,
-        })
+        await payload.delete({ collection: 'clinicStaff', id, overrideAccess: true })
       } catch {}
+    }
+
+    while (createdPlatformStaffIds.length) {
+      const id = createdPlatformStaffIds.pop()
+      if (!id) continue
       try {
-        await payload.delete({
-          collection: 'platformStaff',
-          where: { user: { equals: id } },
-          overrideAccess: true,
-        })
-      } catch {}
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
+        await payload.delete({ collection: 'platformStaff', id, overrideAccess: true })
       } catch {}
     }
   }, 30000)
@@ -177,7 +176,6 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
     })) as ClinicApplication
 
     const links = appAfter.linkedRecords
-    expect(links?.basicUser ?? null).toBeFalsy()
     expect(links?.clinic ?? null).toBeFalsy()
     expect(links?.clinicStaff ?? null).toBeFalsy()
   }, 45000)
@@ -211,7 +209,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
       collection: 'clinicApplications',
       id: app.id,
       data: { reviewNotes: 'Reviewed by platform.' },
-      user: asPayloadUser(platformUser),
+      user: asPlatformUser(platformUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadUpdateArgs)) as ClinicApplication
@@ -235,7 +233,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
     await expect(
       payload.find({
         collection: 'clinicApplications',
-        user: asPayloadUser(clinicUser),
+        user: asClinicUser(clinicUser),
         overrideAccess: false,
         depth: 0,
       } as PayloadFindArgs),
@@ -246,7 +244,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
         collection: 'clinicApplications',
         id: app.id,
         data: { status: 'approved', reviewNotes: 'Should not persist.' },
-        user: asPayloadUser(clinicUser),
+        user: asClinicUser(clinicUser),
         overrideAccess: false,
         depth: 0,
       } as PayloadUpdateArgs),
@@ -286,7 +284,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
         status: 'approved',
         linkedRecords: { processedAt },
       },
-      user: asPayloadUser(platformUser),
+      user: asPlatformUser(platformUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadUpdateArgs)) as ClinicApplication
@@ -338,7 +336,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
             collection: 'clinicApplications',
             id,
             data: { status: 'rejected' },
-            user: asPayloadUser(clinicUser),
+            user: asClinicUser(clinicUser),
             overrideAccess: false,
             depth: 0,
           } as PayloadUpdateArgs),
@@ -350,7 +348,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
         const deleted = await payload.delete({
           collection: 'clinicApplications',
           id,
-          user: asPayloadUser(platformUser),
+          user: asPlatformUser(platformUser),
           overrideAccess: false,
           depth: 0,
         })
@@ -378,7 +376,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
       payload.delete({
         collection: 'clinicApplications',
         id: app.id,
-        user: asPayloadUser(clinicUser),
+        user: asClinicUser(clinicUser),
         overrideAccess: false,
         depth: 0,
       }),
@@ -389,7 +387,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
     await payload.delete({
       collection: 'clinicApplications',
       id: app.id,
-      user: asPayloadUser(platformUser),
+      user: asPlatformUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })

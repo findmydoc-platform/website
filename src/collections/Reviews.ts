@@ -44,9 +44,7 @@ function isPlatformStaffRequest(req: { user?: unknown }): boolean {
     req.user &&
     typeof req.user === 'object' &&
     'collection' in req.user &&
-    'userType' in req.user &&
-    (req.user as { collection?: unknown; userType?: unknown }).collection === 'basicUsers' &&
-    (req.user as { collection?: unknown; userType?: unknown }).userType === 'platform',
+    (req.user as { collection?: unknown }).collection === 'platformStaff',
   )
 }
 
@@ -305,7 +303,7 @@ export const Reviews: CollectionConfig = {
         {
           name: 'editedBy',
           type: 'relationship',
-          relationTo: 'basicUsers',
+          relationTo: 'platformStaff',
           label: 'Edited by',
           access: {
             create: platformOnlyFieldAccess,

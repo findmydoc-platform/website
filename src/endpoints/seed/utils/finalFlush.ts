@@ -154,6 +154,10 @@ const addPlanScope = (scope: SeedFinalFlushScope, seedType: SeedType): void => {
     if (isTaggableCollection(step.collection)) {
       addCollectionScope(scope, step.collection)
     }
+
+    if (step.collection === 'platformStaff' || step.collection === 'userProfileMedia') {
+      addCollectionScope(scope, 'posts')
+    }
   }
 }
 
@@ -172,6 +176,10 @@ const addJobScope = (scope: SeedFinalFlushScope, job: SeedRunJobRecord, seedType
 
   if (isTaggableCollection(job.collection)) {
     addCollectionScope(scope, job.collection)
+  }
+
+  if (job.collection === 'platformStaff' || job.collection === 'userProfileMedia') {
+    addCollectionScope(scope, 'posts')
   }
 }
 

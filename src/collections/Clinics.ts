@@ -330,8 +330,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
               },
               admin: {
                 description: 'First clinic contact for findmydoc follow-up',
-                condition: (_data, _siblingData, { user }) =>
-                  Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform'),
+                condition: (_data, _siblingData, { user }) => Boolean(user && user.collection === 'platformStaff'),
               },
               fields: [
                 {
@@ -413,7 +412,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 description: 'Clinic approval status',
                 condition: (data, siblingData, { user }) => {
                   // Hide status field from non-platform users in admin UI
-                  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+                  return Boolean(user && user.collection === 'platformStaff')
                 },
               },
             },
@@ -435,7 +434,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 description: 'Verification level',
                 condition: (data, siblingData, { user }) => {
                   // Hide verification field from non-platform users in admin UI
-                  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+                  return Boolean(user && user.collection === 'platformStaff')
                 },
               },
             },

@@ -8,7 +8,7 @@ const loadSeedJson = createRequire(import.meta.url)
 type SeedRecord = Record<string, unknown> & { stableId: string }
 
 const baselineAccreditations: unknown = loadSeedJson('../data/baseline/accreditations.json')
-const baselineBasicUsers: unknown = loadSeedJson('../data/baseline/basicUsers.json')
+const baselinePlatformStaff: unknown = loadSeedJson('../data/baseline/platformStaff.json')
 const baselineCategories: unknown = loadSeedJson('../data/baseline/categories.json')
 const baselineCities: unknown = loadSeedJson('../data/baseline/cities.json')
 const baselineCountries: unknown = loadSeedJson('../data/baseline/countries.json')
@@ -26,7 +26,7 @@ const demoDoctorSpecialties: unknown = loadSeedJson('../data/demo/doctorSpecialt
 const demoDoctorTreatments: unknown = loadSeedJson('../data/demo/doctorTreatments.json')
 const demoDoctors: unknown = loadSeedJson('../data/demo/doctors.json')
 const demoFavoriteClinics: unknown = loadSeedJson('../data/demo/favoriteClinics.json')
-const demoBasicUsers: unknown = loadSeedJson('../data/demo/basicUsers.json')
+const demoPlatformStaff: unknown = loadSeedJson('../data/demo/platformStaff.json')
 const demoPatients: unknown = loadSeedJson('../data/demo/patients.json')
 const demoPlatformContentMedia: unknown = loadSeedJson('../data/demo/platformContentMedia.json')
 const demoPosts: unknown = loadSeedJson('../data/demo/posts.json')
@@ -38,7 +38,7 @@ type SeedFileMap = Record<SeedKind, Record<string, unknown>>
 const seedFileMap: SeedFileMap = {
   baseline: {
     accreditations: baselineAccreditations,
-    basicUsers: baselineBasicUsers,
+    platformStaff: baselinePlatformStaff,
     categories: baselineCategories,
     cities: baselineCities,
     countries: baselineCountries,
@@ -57,7 +57,7 @@ const seedFileMap: SeedFileMap = {
     doctorTreatments: demoDoctorTreatments,
     doctors: demoDoctors,
     favoriteClinics: demoFavoriteClinics,
-    basicUsers: demoBasicUsers,
+    platformStaff: demoPlatformStaff,
     patients: demoPatients,
     platformContentMedia: demoPlatformContentMedia,
     posts: demoPosts,

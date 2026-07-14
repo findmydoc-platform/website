@@ -34,7 +34,8 @@ const createReq = (user?: unknown, payloadOverrides?: Partial<MockPayload>) => {
 describe('clinic ownership hooks', () => {
   describe('beforeChangeAssignClinicFromUser', () => {
     it('assigns clinic on create for clinic users when clinic is omitted', async () => {
-      const { req } = createReq({ id: 10, collection: 'basicUsers', userType: 'clinic', clinicId: 44 })
+      const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
+      payload.find.mockResolvedValueOnce({ docs: [{ clinic: 44, status: 'approved' }] })
       const hook = beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })
 
       const result = await hook({
@@ -50,7 +51,8 @@ describe('clinic ownership hooks', () => {
     })
 
     it('throws when clinic users submit a foreign clinic', async () => {
-      const { req } = createReq({ id: 10, collection: 'basicUsers', userType: 'clinic', clinicId: 44 })
+      const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
+      payload.find.mockResolvedValueOnce({ docs: [{ clinic: 44, status: 'approved' }] })
       const hook = beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })
 
       await expect(
@@ -66,7 +68,7 @@ describe('clinic ownership hooks', () => {
     })
 
     it('throws when clinic users do not have an assigned clinic', async () => {
-      const { req, payload } = createReq({ id: 10, collection: 'basicUsers', userType: 'clinic' })
+      const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
       payload.find.mockResolvedValueOnce({ docs: [] })
 
       const hook = beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })
@@ -84,7 +86,7 @@ describe('clinic ownership hooks', () => {
     })
 
     it('leaves platform payload unchanged', async () => {
-      const { req } = createReq({ id: 1, collection: 'basicUsers', userType: 'platform' })
+      const { req } = createReq({ id: 1, collection: 'platformStaff' })
       const hook = beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })
 
       const result = await hook({
@@ -102,7 +104,8 @@ describe('clinic ownership hooks', () => {
 
   describe('beforeChangeEnforceDoctorInAssignedClinic', () => {
     it('allows clinic users when doctor belongs to assigned clinic', async () => {
-      const { req, payload } = createReq({ id: 10, collection: 'basicUsers', userType: 'clinic', clinicId: 44 })
+      const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
+      payload.find.mockResolvedValueOnce({ docs: [{ clinic: 44, status: 'approved' }] })
       payload.findByID.mockResolvedValueOnce({ clinic: 44 })
 
       const hook = beforeChangeEnforceDoctorInAssignedClinic({ doctorField: 'doctor' })
@@ -120,7 +123,8 @@ describe('clinic ownership hooks', () => {
     })
 
     it('blocks clinic users when doctor belongs to a foreign clinic', async () => {
-      const { req, payload } = createReq({ id: 10, collection: 'basicUsers', userType: 'clinic', clinicId: 44 })
+      const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
+      payload.find.mockResolvedValueOnce({ docs: [{ clinic: 44, status: 'approved' }] })
       payload.findByID.mockResolvedValueOnce({ clinic: 99 })
 
       const hook = beforeChangeEnforceDoctorInAssignedClinic({ doctorField: 'doctor' })
@@ -138,7 +142,8 @@ describe('clinic ownership hooks', () => {
     })
 
     it('blocks clinic users when doctor is missing', async () => {
-      const { req } = createReq({ id: 10, collection: 'basicUsers', userType: 'clinic', clinicId: 44 })
+      const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
+      payload.find.mockResolvedValueOnce({ docs: [{ clinic: 44, status: 'approved' }] })
       const hook = beforeChangeEnforceDoctorInAssignedClinic({ doctorField: 'doctor' })
 
       await expect(
@@ -154,7 +159,7 @@ describe('clinic ownership hooks', () => {
     })
 
     it('blocks clinic users without clinic assignment', async () => {
-      const { req, payload } = createReq({ id: 10, collection: 'basicUsers', userType: 'clinic' })
+      const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
       payload.find.mockResolvedValueOnce({ docs: [] })
 
       const hook = beforeChangeEnforceDoctorInAssignedClinic({ doctorField: 'doctor' })

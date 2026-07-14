@@ -4,7 +4,7 @@
     "firstName": "Seed",
     "lastName": "Admin",
     "email": "seed.admin@findmydoc.eu",
-    "userType": "platform",
+    "role": "admin",
     "profileImageStableId": "seed-user-profile-admin"
   },
   {
@@ -12,20 +12,20 @@
     "firstName": "Mina",
     "lastName": "Yilmaz",
     "email": "seed.editor@findmydoc.eu",
-    "userType": "platform"
+    "role": "content-manager"
   },
   {
     "stableId": "seed-platform-ops",
     "firstName": "Emre",
     "lastName": "Kaya",
     "email": "seed.ops@findmydoc.eu",
-    "userType": "platform"
+    "role": "support"
   },
   {
     "stableId": "seed-platform-support",
     "firstName": "Leyla",
     "lastName": "Acar",
     "email": "seed.support@findmydoc.eu",
-    "userType": "platform"
+    "role": "support"
   }
 ]

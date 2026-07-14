@@ -1,5 +1,5 @@
 import type { Payload } from 'payload'
-import type { BasicUser, Patient } from '@/payload-types'
+import type { BasicUser, ClinicStaff, Patient, PlatformStaff } from '@/payload-types'
 
 export type PayloadRequestUser = NonNullable<Parameters<Payload['create']>[0]['user']>
 type TrackedIds = Array<number | string>
@@ -39,59 +39,61 @@ const trackId = (trackedIds: TrackedIds | undefined, id: number | string) => {
   trackedIds.push(id)
 }
 
-export const asPayloadBasicUser = (user: BasicUser): PayloadRequestUser =>
-  ({
-    ...user,
-    collection: 'basicUsers',
-  }) as unknown as PayloadRequestUser
+type LegacyStaffUser = BasicUser | PlatformStaff | ClinicStaff
+
+const withCollection = (user: LegacyStaffUser): PayloadRequestUser => {
+  const collection =
+    'role' in user || ('userType' in user && user.userType === 'platform') ? 'platformStaff' : 'clinicStaff'
+  return { ...user, collection } as unknown as PayloadRequestUser
+}
+
+// Kept as a compatibility export for existing integration suites. It now always
+// returns a direct Staff principal and never creates a BasicUsers document.
+export const asPayloadBasicUser = withCollection
 
 export const asPayloadPatientUser = (user: Patient): PayloadRequestUser =>
-  ({
-    ...user,
-    collection: 'patients',
-  }) as unknown as PayloadRequestUser
+  ({ ...user, collection: 'patients' }) as unknown as PayloadRequestUser
 
-export const asClinicScopedPayloadUser = (user: BasicUser, clinicId: number): PayloadRequestUser =>
-  ({
-    ...user,
-    collection: 'basicUsers',
-    clinicId,
-  }) as unknown as PayloadRequestUser
+export const asClinicScopedPayloadUser = (user: LegacyStaffUser, _clinicId: number): PayloadRequestUser =>
+  withCollection(user)
 
 export async function createBasicTestUser(payload: Payload, options: CreateBasicUserOptions): Promise<BasicUser> {
   const emailDomain = options.userType === 'platform' ? 'findmydoc.eu' : 'example.com'
-  const basicUser = (await payload.create({
-    collection: 'basicUsers',
-    data: {
-      email: `${options.emailPrefix}@${emailDomain}`,
-      userType: options.userType,
-      firstName: options.firstName ?? 'User',
-      lastName: options.lastName ?? 'Tester',
-      supabaseUserId: options.supabaseUserId ?? `sb-${options.emailPrefix}`,
-    },
+  const data = {
+    email: `${options.emailPrefix}@${emailDomain}`,
+    firstName: options.firstName ?? 'User',
+    lastName: options.lastName ?? 'Tester',
+    supabaseUserId: options.supabaseUserId ?? `sb-${options.emailPrefix}`,
+  }
+
+  if (options.userType === 'platform') {
+    const user = (await payload.create({
+      collection: 'platformStaff',
+      data: { ...data, role: 'support' },
+      context: { trustedPlatformStaffOps: true },
+      overrideAccess: true,
+      depth: 0,
+    })) as PlatformStaff
+    trackId(options.createdBasicUserIds, `platform:${user.id}`)
+    return user as unknown as BasicUser
+  }
+
+  const user = (await payload.create({
+    collection: 'clinicStaff',
+    data: { ...data, status: 'pending' },
     overrideAccess: true,
     depth: 0,
-  })) as BasicUser
-
-  trackId(options.createdBasicUserIds, basicUser.id)
-
-  return basicUser
+  })) as ClinicStaff
+  trackId(options.createdBasicUserIds, `clinic:${user.id}`)
+  return user as unknown as BasicUser
 }
 
-export function createPlatformTestUser(payload: Payload, options: CreateRoleUserOptions): Promise<BasicUser> {
-  return createBasicTestUser(payload, {
-    ...options,
-    userType: 'platform',
-    firstName: options.firstName ?? 'Platform',
-  })
+export async function createPlatformTestUser(payload: Payload, options: CreateRoleUserOptions): Promise<BasicUser> {
+  return createBasicTestUser(payload, { ...options, userType: 'platform', firstName: options.firstName ?? 'Platform' })
 }
 
-export function createClinicTestUser(payload: Payload, options: CreateRoleUserOptions): Promise<BasicUser> {
-  return createBasicTestUser(payload, {
-    ...options,
-    userType: 'clinic',
-    firstName: options.firstName ?? 'Clinic',
-  })
+export async function createClinicTestUser(payload: Payload, options: CreateRoleUserOptions): Promise<BasicUser> {
+  return createBasicTestUser(payload, { ...options, userType: 'clinic', firstName: options.firstName ?? 'Clinic' })
 }
 
 export async function createPatientTestUser(payload: Payload, options: CreatePatientUserOptions): Promise<Patient> {
@@ -108,7 +110,6 @@ export async function createPatientTestUser(payload: Payload, options: CreatePat
   })) as Patient
 
   trackId(options.createdPatientIds, patient.id)
-
   return patient
 }
 
@@ -122,10 +123,16 @@ export async function cleanupTrackedUsers(payload: Payload, options: CleanupTrac
   }
 
   while (options.basicUserIds?.length) {
-    const id = options.basicUserIds.pop()
-    if (!id) continue
+    const tracked = options.basicUserIds.pop()
+    if (!tracked) continue
+    const [collection, id] = String(tracked).split(':')
+    if ((collection !== 'platform' && collection !== 'clinic') || !id) continue
     try {
-      await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
+      await payload.delete({
+        collection: collection === 'platform' ? 'platformStaff' : 'clinicStaff',
+        id,
+        overrideAccess: true,
+      })
     } catch {}
   }
 }

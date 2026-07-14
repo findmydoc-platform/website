@@ -35,9 +35,6 @@ export const IMAGE_LOCAL_PATTERNS = [
   {
     pathname: '/platform-media/**',
   },
-  {
-    pathname: '/user-profile-media/**',
-  },
 ]
 
 /**

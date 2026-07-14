@@ -1,18 +1,22 @@
 import type { CollectionConfig } from 'payload'
 import { isClinicBasicUser, isOwnClinicStaffProfile } from '@/access/isClinicBasicUser'
+import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 
-// Profile collection for Clinic Staff members
+// Direct authentication principal for clinic dashboard and API access, never Payload Admin.
 export const ClinicStaff: CollectionConfig = {
   slug: 'clinicStaff',
-  auth: false,
+  auth: {
+    useSessions: false,
+    disableLocalStrategy: true,
+  },
   admin: {
     group: 'User Management',
-    useAsTitle: 'user',
-    defaultColumns: ['user', 'email', 'clinic', 'status'],
-    description: 'Clinic staff profiles',
+    useAsTitle: 'email',
+    defaultColumns: ['email', 'clinic', 'status'],
+    description: 'Clinic staff authentication principals',
   },
   access: {
     read: async ({ req }) => {
@@ -36,6 +40,9 @@ export const ClinicStaff: CollectionConfig = {
       return isOwnClinicStaffProfile({ req })
     },
     delete: () => false,
+  },
+  hooks: {
+    beforeChange: [enforceSupabaseIdentityInvariant],
   },
   fields: [
     {
@@ -126,28 +133,6 @@ export const ClinicStaff: CollectionConfig = {
       },
     },
     {
-      name: 'user',
-      type: 'relationship',
-      relationTo: 'basicUsers',
-      required: true,
-      unique: true,
-      hasMany: false,
-      access: {
-        // Identity linkage controls authorization and may only be reassigned by Platform Staff.
-        create: platformOnlyFieldAccess,
-        update: platformOnlyFieldAccess,
-      },
-      admin: {
-        position: 'sidebar',
-        description: 'Login account for this staff member',
-      },
-      filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
-        return {
-          userType: { equals: 'clinic' },
-        }
-      },
-    },
-    {
       name: 'clinic',
       type: 'relationship',
       relationTo: 'clinics',
@@ -183,7 +168,7 @@ export const ClinicStaff: CollectionConfig = {
         description: 'Staff approval status',
         condition: (data, siblingData, { user }) => {
           // Hide status field from non-platform users in admin UI
-          return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+          return Boolean(user && user.collection === 'platformStaff')
         },
       },
     },

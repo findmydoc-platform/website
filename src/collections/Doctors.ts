@@ -170,8 +170,7 @@ export const Doctors: CollectionConfig<'doctors'> = {
               hasMany: false,
               admin: {
                 description: 'Clinic where the doctor works',
-                condition: (_data, _siblingData, { user }) =>
-                  !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
+                condition: (_data, _siblingData, { user }) => !(user && user.collection === 'clinicStaff'),
               },
             },
             {

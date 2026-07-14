@@ -5,7 +5,7 @@ import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { Clinic, ClinicMedia, Accreditation, BasicUser, PlatformStaff } from '@/payload-types'
+import type { Clinic, ClinicMedia, Accreditation, PlatformStaff } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -20,7 +20,8 @@ describe('Clinic Creation Integration Tests', () => {
   let treatmentId: number
   const createdClinicMediaIds: Array<number> = []
   const createdAccreditationIds: Array<number> = []
-  const createdBasicUserIds: Array<number> = []
+  const createdPlatformStaffIds: Array<number> = []
+  const createdClinicStaffIds: Array<number> = []
 
   const buildImageFile = (name: string): File => {
     const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
@@ -35,80 +36,39 @@ describe('Clinic Creation Integration Tests', () => {
   }
 
   const createPlatformUser = async (emailPrefix: string, role: NonNullable<PlatformStaff['role']> = 'admin') => {
-    const basicUser = await payload.create({
-      collection: 'basicUsers',
+    const platformStaff = await payload.create({
+      collection: 'platformStaff',
       data: {
         email: `${emailPrefix}@findmydoc.eu`,
-        userType: 'platform',
         firstName: 'Platform',
         lastName: 'Tester',
         supabaseUserId: `sb-${emailPrefix}`,
+        role,
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
     })
 
-    createdBasicUserIds.push(basicUser.id as number)
-
-    const platformStaffResult = await payload.find({
-      collection: 'platformStaff',
-      where: {
-        user: {
-          equals: basicUser.id,
-        },
-      },
-      limit: 1,
-      overrideAccess: true,
-      depth: 0,
-    })
-    const platformStaff = platformStaffResult.docs[0]
-
-    if (platformStaff) {
-      await payload.update({
-        collection: 'platformStaff',
-        id: platformStaff.id,
-        data: {
-          role,
-        },
-        overrideAccess: true,
-        depth: 0,
-      })
-    } else {
-      await payload.create({
-        collection: 'platformStaff',
-        data: {
-          user: basicUser.id,
-          role,
-        },
-        overrideAccess: true,
-        depth: 0,
-      })
-    }
-
-    return { ...basicUser, collection: 'basicUsers' as const }
+    createdPlatformStaffIds.push(platformStaff.id)
+    return { ...platformStaff, collection: 'platformStaff' as const }
   }
 
   const createClinicUser = async (emailPrefix: string, clinicId: number) => {
-    const basicUser = await payload.create({
-      collection: 'basicUsers',
+    const clinicStaff = await payload.create({
+      collection: 'clinicStaff',
       data: {
         email: `${emailPrefix}@example.com`,
-        userType: 'clinic',
         firstName: 'Clinic',
         lastName: 'Tester',
         supabaseUserId: `sb-${emailPrefix}`,
+        clinic: clinicId,
+        status: 'approved',
       },
       overrideAccess: true,
     })
 
-    createdBasicUserIds.push(basicUser.id as number)
-
-    const clinicUser = {
-      ...(basicUser as BasicUser),
-      collection: 'basicUsers' as const,
-      clinicId,
-    }
-
-    return clinicUser
+    createdClinicStaffIds.push(clinicStaff.id)
+    return { ...clinicStaff, collection: 'clinicStaff' as const }
   }
 
   const buildInternalPrimaryContact = (suffix: string): NonNullable<Clinic['internalPrimaryContact']> => ({
@@ -157,11 +117,19 @@ describe('Clinic Creation Integration Tests', () => {
       } catch {}
     }
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
+    while (createdPlatformStaffIds.length) {
+      const id = createdPlatformStaffIds.pop()
       if (!id) continue
       try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
+        await payload.delete({ collection: 'platformStaff', id, overrideAccess: true })
+      } catch {}
+    }
+
+    while (createdClinicStaffIds.length) {
+      const id = createdClinicStaffIds.pop()
+      if (!id) continue
+      try {
+        await payload.delete({ collection: 'clinicStaff', id, overrideAccess: true })
       } catch {}
     }
 

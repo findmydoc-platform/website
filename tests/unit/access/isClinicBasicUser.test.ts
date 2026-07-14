@@ -28,7 +28,7 @@ describe('isClinicBasicUser', () => {
       },
       {
         userType: 'Wrong userType',
-        user: () => ({ id: 123, collection: 'basicUsers', userType: 'platform' }),
+        user: () => ({ id: 123, collection: 'platformStaff' }),
         expected: false,
       },
     ])('$userType returns $expected', ({ user, expected }) => {
@@ -46,7 +46,7 @@ describe('isClinicBasicUser', () => {
       {
         userType: 'Clinic Staff',
         user: () => mockUsers.clinic(456),
-        expected: { user: { equals: 456 } },
+        expected: { id: { equals: 456 } },
       },
       { userType: 'Platform Staff', user: () => mockUsers.platform(), expected: false },
       { userType: 'Patient', user: () => mockUsers.patient(), expected: false },

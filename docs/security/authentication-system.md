@@ -1,80 +1,37 @@
-# Authentication System (High‑Level Overview)
+# Authentication System
 
-This document explains what the authentication & user lifecycle does – not how individual functions are written. For the end‑to‑end interaction details, see the sequence diagram in `auth-flow-diagram.md`.
+Supabase owns browser identity and sessions. Payload owns the current application principal and authorization data. The website runtime stores neither Supabase credentials nor a server-side browser session.
 
-## Core Purpose
-Unify external identity (Supabase Auth) with internal authorization (PayloadCMS collections) through a stateless flow. Every authenticated request presents a Supabase JWT; the platform ensures a matching internal user entity and (for staff) an associated profile.
+## Principals
 
-## Actors & Domains
-| Actor | Responsibility | Internal Representation |
-|-------|----------------|-------------------------|
-| Platform Staff | Operate administrative UI & manage data | `basicUsers` + `platformStaff` profile |
-| Clinic Staff | Manage clinic content after approval       | `basicUsers` + `clinicStaff` profile   |
-| Patient | Consume public / patient features               | `patients` (single record)            |
+| Principal | Payload collection | Payload Admin | Runtime behavior |
+| --- | --- | --- | --- |
+| Platform staff | `platformStaff` | Allowed | Existing principal required; role is read from Payload on every request. |
+| Clinic staff | `clinicStaff` | Denied | Existing approved principal with a clinic assignment required. Dashboard access is a separate application concern. |
+| Patient | `patients` | Denied | The strategy may idempotently ensure the patient principal after authentication. |
 
-Platform Staff identities are limited to `@findmydoc.eu` email addresses. The public password reset flow remains shared and returns neutral responses, while Payload writes and Supabase platform-user authentication enforce the platform staff email boundary.
+All three are direct Payload auth collections. Payload local passwords and Payload sessions are disabled. The shared Supabase strategy is registered once on `platformStaff`; Payload makes that strategy available across the auth collections.
 
-## Lifecycle Summary
-1. User authenticates against Supabase → receives JWT.
-2. Request arrives with `Authorization: Bearer <token>`.
-3. Strategy validates token & extracts metadata (email, user type, ids).
-4. Internal lookup first applies platform staff email eligibility, then searches by Supabase user id and, where allowed, normalized email to reconcile historical records and synchronize missing/old Supabase ids.
-5. If no internal entity is found, strategy-level provisioning creates the internal record (user first, profile follows via hook for staff users).
-6. Approval gate (clinic staff only) determines admin UI access; patients & platform staff are immediate.
-7. Downstream access control functions rely on resolved user type & related profile linkage.
+## Login Boundary
 
-## Data Model Intent
-Staff users deliberately separated into an auth record (`basicUsers`) and a role/profile record (`platformStaff` / `clinicStaff`) so operational attributes (status, role escalation, approval) evolve independently of identity. Patients remain single‑record for simplicity and performance.
+The website `/admin/login` only accepts platform staff. It contains no clinic role choice or clinic redirect. Clinic staff later sign in through the separate Clinic Dashboard. Patient login, public clinic registration, invitation completion, password reset, and the generic auth callback retain their existing routes until that dashboard cutover.
 
-## Provisioning Model
-Staff and invite-only flows (`basicUsers` + profiles) continue to provision via collection lifecycle hooks. Hooks guarantee:
-* Consistent creation (aborts on Supabase failure)
-* Profile auto-creation (staff)
-* Cascading cleanup (profile then Supabase account) on deletion
+## Authorization and Integrity
 
-Patients now use a confirm-before-login flow:
-1. The frontend calls Supabase signup directly. With email confirmation enabled, Supabase returns a user but no session; the UI simply instructs the patient to confirm their email.
-2. After the patient clicks the confirmation link and logs in for the first time, the Supabase JWT strategy detects the authenticated patient and idempotently creates the Payload `patients` record (and any related data) using Supabase metadata.
+`app_metadata.user_type` selects only `platform`, `clinic`, or `patient`. It never grants role, clinic, or approval. Payload reads those facts from the resolved principal for every request and rejects missing, duplicate, conflicting, or ineligible staff principals.
 
-Admin login page behavior:
-* The `/admin/login` route performs read-only status checks and redirects.
-* It does not create users directly, which prevents page-level write side-effects and redirect loops when provisioning fails.
+Platform roles are `admin`, `support`, and `content-manager`; new platform principals default to `support`. Only the trusted operations path or an existing administrator can assign a platform role. Clinic access additionally requires `status: approved` and a clinic relation. Request clients cannot supply the acting principal, platform role, or clinic scope.
 
-## Access Control Principles
-* Authorization is collection‑driven (Payload access functions) – never on the client.
-* Clinic staff must be both authentic and approved for admin UI; unapproved users remain valid identities but are limited in scope.
-* Patients use stateless auth (no server session) to reduce server state.
+An identity invariant serializes writes for a non-empty Supabase user id with a PostgreSQL transaction advisory lock and checks all three auth collections. Collection-local unique constraints remain the database backstop. Staff principals are never created by login. A Supabase identity without its matching Payload principal is unauthorized.
 
-## Error & Integrity Guarantees
-* Partial failures in provisioning fail fast for Supabase identity creation; profile creation occurs shortly after user creation via hook (not transactional).
-* Deletion is best‑effort for external identity: internal data removal proceeds even if external cleanup fails (logged for ops).
-* Provisioning/classification errors use typed auth error codes (for example invalid email, create conflict, lookup failure) to support deterministic handling and monitoring.
-* Concurrent create conflicts are recovered by immediate re-lookup before denying access.
-* (Planned) Profile recovery: automatic profile recreation for historical staff users without a profile may be added later.
+Supabase refresh-token revocation does not invalidate already-issued access tokens immediately. A token remains usable only while it resolves to a currently eligible Payload principal; changed metadata appears only after the browser refreshes its session.
 
-## Security & Compliance Highlights
-* Token mandatory: no implicit fallback or anonymous escalation.
-* Strict separation of identity (Supabase) & authorization (Payload collections) simplifies auditing.
-* Platform staff access is limited to Supabase platform users with `@findmydoc.eu` email addresses.
-* Approval status gives a reversible control point without altering Supabase accounts.
-* Registration endpoints return generic error messages to avoid leaking whether an email already exists; Supabase email-confirmation requirements are enforced upstream by Supabase itself.
+## Provisioning and Recovery
 
-## Operational Insights
-Current monitoring uses structured log events (info/warn/error) for provisioning, reconciliation, approval checks, and auth error classification. Advanced metrics (approval latency, profile recovery counts) are deferred.
+Platform staff are provisioned only through the trusted `ops` workflow and must use `@findmydoc.eu` addresses. The website never offers public first-admin bootstrap. Staff category changes require explicit reprovisioning; automatic conversion between patient, clinic, and platform principals is not permitted.
 
-## Extensibility Guidelines
-When adding a new user category:
-1. Decide: single record vs. record + profile.
-2. Add collection(s) with minimal required fields & access rules.
-3. Reuse existing hook patterns for provisioning & cleanup.
-4. Extend approval logic only if workflow truly differs from existing types.
+Patient provisioning remains the established ensure-on-auth flow. Staff deletion first removes the Payload principal, so a later Supabase deletion failure cannot leave an authorized principal. The trusted operations path can safely retry cleanup.
 
-Avoid embedding business logic in frontend components; always prefer server hooks for validation & side‑effects.
+## Related References
 
-## Reference Map (Folders)
-* `src/auth/strategies/` – Strategy & diagram (conceptual contract).
-* `src/collections/BasicUsers/hooks/` – Staff provisioning hooks (for example Supabase identity creation).
-* `src/collections/Patients/hooks/` – Patient provisioning/cleanup hooks.
-* `src/collections/` – User & profile collections (authorization boundary definitions).
-
-For interaction timing or detailed branching, consult the maintained sequence diagram rather than source code.
+The detailed request sequence is documented in `auth-flow-diagram.md`. The direct-collection decision is recorded in ADR 025.

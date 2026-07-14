@@ -138,7 +138,7 @@ export const ClinicApplications: CollectionConfig = {
       access: {
         update: ({ req }: { req: PayloadRequest }) => {
           const u = req.user
-          return Boolean(u && u.collection === 'basicUsers' && u.userType === 'platform')
+          return Boolean(u && u.collection === 'platformStaff')
         },
       },
     },
@@ -152,7 +152,6 @@ export const ClinicApplications: CollectionConfig = {
       },
       fields: [
         { name: 'clinic', type: 'relationship', relationTo: 'clinics' },
-        { name: 'basicUser', type: 'relationship', relationTo: 'basicUsers' },
         { name: 'clinicStaff', type: 'relationship', relationTo: 'clinicStaff' },
         { name: 'processedAt', type: 'date' },
       ],

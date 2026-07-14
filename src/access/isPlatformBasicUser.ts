@@ -1,18 +1,14 @@
 import type { Access } from 'payload'
 
-// Platform: Check if the user is authenticated and is platform staff
+// Platform staff is a direct Payload principal. Legacy BasicUsers never authorize requests.
 export const isPlatformBasicUser: Access = ({ req: { user } }) => {
-  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+  return Boolean(user && user.collection === 'platformStaff')
 }
 
 // Platform: Check if the user is platform staff (admin access)
 export const isPlatformStaffOrSelf: Access = ({ req: { user }, id: _id }) => {
-  if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
+  if (user && user.collection === 'platformStaff') {
     return true
   }
-  return {
-    user: {
-      equals: user?.id,
-    },
-  }
+  return false
 }

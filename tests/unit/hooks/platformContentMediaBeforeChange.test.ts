@@ -25,7 +25,7 @@ const emptyContext = {} as unknown as RequestContext
 
 describe('beforeChangePlatformContentMedia', () => {
   test('computes filename and storage path on create', async () => {
-    const req = baseReq({ id: 9, collection: 'basicUsers' })
+    const req = baseReq({ id: 9, collection: 'platformStaff' })
     const data: Partial<PlatformContentMedia> = { id: 501, filename: 'banners/hero.png' }
 
     const result = (await beforeChangePlatformContentMedia({
@@ -44,7 +44,7 @@ describe('beforeChangePlatformContentMedia', () => {
   })
 
   test('keeps existing storage path on update without new upload', async () => {
-    const req = baseReq({ id: 1, collection: 'basicUsers' })
+    const req = baseReq({ id: 1, collection: 'platformStaff' })
     const originalDoc = {
       id: 777,
       filename: '8686b7a110-hero.png',
@@ -67,7 +67,7 @@ describe('beforeChangePlatformContentMedia', () => {
   })
 
   test('ignores incoming storagePath on metadata-only update', async () => {
-    const req = baseReq({ id: 1, collection: 'basicUsers' })
+    const req = baseReq({ id: 1, collection: 'platformStaff' })
     const originalDoc = {
       id: 777,
       filename: '8686b7a110-hero.png',
@@ -88,7 +88,7 @@ describe('beforeChangePlatformContentMedia', () => {
   })
 
   test('preserves createdBy on update when editing metadata', async () => {
-    const req = baseReq({ id: 44, collection: 'basicUsers' })
+    const req = baseReq({ id: 44, collection: 'platformStaff' })
     const originalDoc = {
       id: 121,
       createdBy: 9,

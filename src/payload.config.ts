@@ -132,7 +132,7 @@ export default buildConfig({
       Component: '@/components/organisms/AdminBranding/AdminAccountAvatar',
     },
     theme: 'light',
-    user: BasicUsers.slug,
+    user: PlatformStaff.slug,
     livePreview: {
       breakpoints: [
         {

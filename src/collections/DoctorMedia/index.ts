@@ -102,7 +102,7 @@ export const DoctorMedia: CollectionConfig = {
       admin: { description: 'Clinic where the doctor works', readOnly: true },
     },
     buildMediaCreatedByField({
-      relationTo: 'basicUsers',
+      relationTo: ['platformStaff', 'clinicStaff'],
     }),
     buildMediaStoragePathField(),
     buildMediaPrefixField(),

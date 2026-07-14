@@ -213,13 +213,21 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'basicUsers',
       displayName: 'BasicUsers',
       operations: {
-        create: { type: 'platform' },
-        read: { type: 'platform' },
-        update: { type: 'platform' },
-        delete: { type: 'platform' },
-        admin: { type: 'platform' },
+        create: { type: 'conditional', details: 'disabled legacy collection' },
+        read: { type: 'conditional', details: 'disabled legacy collection' },
+        update: { type: 'conditional', details: 'disabled legacy collection' },
+        delete: { type: 'conditional', details: 'disabled legacy collection' },
+        admin: { type: 'conditional', details: 'hidden legacy collection' },
       },
-      notes: 'User management restricted to platform staff',
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+        },
+      },
+      notes: 'Locked legacy staff data retained only until the separate contract migration',
     },
     platformStaff: {
       slug: 'platformStaff',
@@ -237,7 +245,7 @@ export const permissionMatrix: PermissionMatrix = {
           delete: { kind: 'always-false' },
         },
       },
-      notes: 'Platform staff management - indirect via BasicUsers lifecycle',
+      notes: 'Platform staff management through the trusted provisioning path',
     },
     clinicStaff: {
       slug: 'clinicStaff',
@@ -256,7 +264,7 @@ export const permissionMatrix: PermissionMatrix = {
         conditional: {
           create: { kind: 'always-false' },
           read: { kind: 'clinic-scope', path: 'clinic' },
-          update: { kind: 'clinic-staff-update', path: 'user' },
+          update: { kind: 'clinic-staff-update', path: 'id' },
           delete: { kind: 'always-false' },
         },
       },

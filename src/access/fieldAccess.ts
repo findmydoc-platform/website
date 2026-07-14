@@ -10,7 +10,7 @@ import type { Access, FieldAccess, PayloadRequest } from 'payload'
 const clinicTrustManagerRoles = ['admin', 'support'] as const
 
 const isPlatformUser = (user: PayloadRequest['user']): boolean => {
-  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+  return Boolean(user && user.collection === 'platformStaff')
 }
 
 const hasClinicTrustManagerRole = async (req: PayloadRequest): Promise<boolean> => {
@@ -26,11 +26,7 @@ const hasClinicTrustManagerRole = async (req: PayloadRequest): Promise<boolean> 
       req,
       where: {
         and: [
-          {
-            user: {
-              equals: req.user?.id,
-            },
-          },
+          { id: { equals: req.user?.id } },
           {
             role: {
               in: [...clinicTrustManagerRoles],

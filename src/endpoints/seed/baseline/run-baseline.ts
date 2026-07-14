@@ -26,14 +26,13 @@ async function resolvePlatformSeedActorId(
   if (req?.user && typeof req.user === 'object' && 'collection' in req.user && 'id' in req.user) {
     const collection = (req.user as { collection?: unknown }).collection
     const id = (req.user as { id?: unknown }).id
-    if (collection === 'basicUsers' && (typeof id === 'string' || typeof id === 'number')) {
+    if (collection === 'platformStaff' && (typeof id === 'string' || typeof id === 'number')) {
       return id
     }
   }
 
   const users = await payload.find({
-    collection: 'basicUsers',
-    where: { userType: { equals: 'platform' } },
+    collection: 'platformStaff',
     limit: 1,
     sort: 'createdAt',
     overrideAccess: true,
@@ -76,7 +75,7 @@ export async function runBaselineSeeds(
         }
 
         if (!platformSeedActorId) {
-          const stepWarnings = [`Skipped ${step.name}: no platform basic user available for media attribution.`]
+          const stepWarnings = [`Skipped ${step.name}: no platform staff principal available for media attribution.`]
           units.push({ name: step.name, created: 0, updated: 0, warnings: stepWarnings, failures: [] })
           warnings.push(...stepWarnings)
           continue

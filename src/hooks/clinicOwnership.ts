@@ -1,6 +1,6 @@
 import type { CollectionBeforeChangeHook } from 'payload'
 
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { isClinicStaff } from '@/access/isClinicStaff'
 import { getDoctorClinicId } from '@/access/utils/getDoctorClinic'
 import { getUserAssignedClinicId, normalizeClinicId } from '@/access/utils/getClinicAssignment'
 import { extractRelationId } from '@/collections/common/mediaPathHelpers'
@@ -29,7 +29,7 @@ export function beforeChangeAssignClinicFromUser(options?: {
   return async ({ data, req }) => {
     const draft = { ...(data || {}) } as Record<string, unknown>
 
-    if (!isClinicBasicUser({ req })) {
+    if (!isClinicStaff({ req })) {
       return draft
     }
 
@@ -60,7 +60,7 @@ export function beforeChangeEnforceDoctorInAssignedClinic(options?: {
   return async ({ data, originalDoc, req }) => {
     const draft = { ...(data || {}) } as Record<string, unknown>
 
-    if (!isClinicBasicUser({ req })) {
+    if (!isClinicStaff({ req })) {
       return draft
     }
 

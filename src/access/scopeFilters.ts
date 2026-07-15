@@ -7,8 +7,8 @@
  */
 
 import type { Access } from 'payload'
-import { isPlatformBasicUser } from './isPlatformBasicUser'
-import { isClinicBasicUser } from './isClinicBasicUser'
+import { isPlatformStaff } from './isPlatformStaff'
+import { isClinicStaff } from './isClinicStaff'
 import { isPatient } from './isPatient'
 import { getUserAssignedClinicId } from './utils/getClinicAssignment'
 
@@ -18,12 +18,12 @@ import { getUserAssignedClinicId } from './utils/getClinicAssignment'
  */
 export const platformOrOwnClinicResource: Access = async ({ req }) => {
   // Platform Staff: Full access
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
   // Clinic Staff: Only their assigned clinic's resources
-  if (isClinicBasicUser({ req })) {
+  if (isClinicStaff({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     if (clinicId) {
       return {
@@ -43,11 +43,11 @@ export const platformOrOwnClinicResource: Access = async ({ req }) => {
  * is enforced in beforeChange hooks.
  */
 export const platformOrAssignedClinicMutation: Access = async ({ req }) => {
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
-  if (isClinicBasicUser({ req })) {
+  if (isClinicStaff({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     return clinicId !== null
   }
@@ -61,7 +61,7 @@ export const platformOrAssignedClinicMutation: Access = async ({ req }) => {
  */
 export const platformOrOwnPatientResource: Access = async ({ req }) => {
   // Platform Staff: Full access
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
@@ -84,12 +84,12 @@ export const platformOrOwnPatientResource: Access = async ({ req }) => {
  */
 export const platformOrOwnClinicProfile: Access = async ({ req }) => {
   // Platform Staff: Full access
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
   // Clinic Staff: Only their assigned clinic
-  if (isClinicBasicUser({ req })) {
+  if (isClinicStaff({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     if (clinicId) {
       return {
@@ -123,12 +123,12 @@ export const ownResourceOnly: Access = ({ req }) => {
  */
 export const platformOrOwnClinicDoctorResource: Access = async ({ req }) => {
   // Platform Staff: Full access
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
   // Clinic Staff: Only doctor resources from their assigned clinic
-  if (isClinicBasicUser({ req })) {
+  if (isClinicStaff({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     if (clinicId) {
       return {

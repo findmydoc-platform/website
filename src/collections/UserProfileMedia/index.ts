@@ -2,7 +2,7 @@ import type { CollectionConfig, PayloadRequest, Where } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
@@ -185,7 +185,7 @@ export const UserProfileMedia: CollectionConfig = {
   },
   access: {
     read: async ({ data, id, isReadingStaticFile, req }) => {
-      if (isPlatformBasicUser({ req })) return true
+      if (isPlatformStaff({ req })) return true
 
       const ownedFilter = ownerFilter(req)
       const publicAuthorAvatarFilter = await publishedPlatformAuthorAvatarFilter({ data, id, isReadingStaticFile, req })
@@ -193,7 +193,7 @@ export const UserProfileMedia: CollectionConfig = {
       return ownedFilter ? { or: [ownedFilter, publicAuthorAvatarFilter] } : publicAuthorAvatarFilter
     },
     create: ({ req, data }) => {
-      if (isPlatformBasicUser({ req })) return true
+      if (isPlatformStaff({ req })) return true
       const filter = ownerFilter(req)
       if (!filter) return false
 
@@ -211,8 +211,8 @@ export const UserProfileMedia: CollectionConfig = {
 
       return ownerMatches(req, incomingOwner)
     },
-    update: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
-    delete: ({ req }) => (isPlatformBasicUser({ req }) ? true : (ownerFilter(req) ?? false)),
+    update: ({ req }) => (isPlatformStaff({ req }) ? true : (ownerFilter(req) ?? false)),
+    delete: ({ req }) => (isPlatformStaff({ req }) ? true : (ownerFilter(req) ?? false)),
   },
   trash: true,
   hooks: {

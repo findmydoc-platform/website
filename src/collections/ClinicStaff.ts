@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
-import { isClinicBasicUser, isOwnClinicStaffProfile } from '@/access/isClinicBasicUser'
+import { isClinicStaff, isOwnClinicStaffProfile } from '@/access/isClinicStaff'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 
@@ -20,10 +20,10 @@ export const ClinicStaff: CollectionConfig = {
   },
   access: {
     read: async ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
+      if (isPlatformStaff({ req })) return true
 
       // Clinic Staff: Can only see ClinicStaff from their own clinic
-      if (isClinicBasicUser({ req })) {
+      if (isClinicStaff({ req })) {
         const assignedClinicId = await getUserAssignedClinicId(req.user, req.payload)
         if (!assignedClinicId) return false
 
@@ -36,7 +36,7 @@ export const ClinicStaff: CollectionConfig = {
     },
     create: () => false,
     update: ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
+      if (isPlatformStaff({ req })) return true
       return isOwnClinicStaffProfile({ req })
     },
     delete: () => false,

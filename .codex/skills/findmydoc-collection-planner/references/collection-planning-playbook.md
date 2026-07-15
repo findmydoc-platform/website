@@ -61,7 +61,7 @@ Avoid questions about file locations, helper names, or test patterns when the re
 Reuse existing helpers:
 
 - `anyone`: public read
-- `isPlatformBasicUser`: platform-only create/update/delete
+- `isPlatformStaff`: platform-only create/update/delete
 - `platformOnlyOrApproved`: platform reads all, others read approved clinics
 - `platformOnlyOrApprovedReviews`: review visibility
 - `platformOrAssignedClinicMutation`: platform or assigned clinic create

@@ -8,7 +8,7 @@ import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import {
   asClinicScopedPayloadUser,
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   createClinicTestUser,
   createPlatformTestUser,
   cleanupTrackedUsers,
@@ -18,7 +18,7 @@ import { doctorTitles } from '@/collections/Doctors'
 import { generateFullName } from '@/utilities/nameUtils'
 import type { Doctor } from '@/payload-types'
 
-const createdBasicUserIds: Array<number | string> = []
+const createdStaffIds: Array<number | string> = []
 
 describe('Doctors lifecycle integration', () => {
   let payload: Payload
@@ -26,21 +26,21 @@ describe('Doctors lifecycle integration', () => {
   const slugPrefix = testSlug('doctors.lifecycle.test.ts')
 
   const createPlatformUser = async (emailPrefix: string) => {
-    const basicUser = await createPlatformTestUser(payload, {
+    const staffUser = await createPlatformTestUser(payload, {
       emailPrefix,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
-    return asPayloadBasicUser(basicUser)
+    return asPayloadStaffUser(staffUser)
   }
 
   const createClinicUser = async (emailPrefix: string, clinicId: number) => {
-    const basicUser = await createClinicTestUser(payload, {
+    const staffUser = await createClinicTestUser(payload, {
       emailPrefix,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
-    return asClinicScopedPayloadUser(payload, basicUser, clinicId)
+    return asClinicScopedPayloadUser(payload, staffUser, clinicId)
   }
 
   beforeAll(async () => {
@@ -54,7 +54,7 @@ describe('Doctors lifecycle integration', () => {
   }, 60000)
 
   afterEach(async () => {
-    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds })
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)

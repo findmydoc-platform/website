@@ -38,7 +38,7 @@ PR 8 must not ask the executor to decide cache classes, freshness expectations, 
 - [Logging Guide](../../../logging.md)
 - Current admin dashboard files: `src/dashboard/adminDashboard/config.ts`, `src/dashboard/adminDashboard/AGENTS.md`, and `tests/unit/dashboard/adminDashboard/config.test.ts`
 - Current Developer Dashboard files: `src/components/organisms/DeveloperDashboard/**`, `src/components/organisms/DeveloperDashboard/AGENTS.md`, `tests/unit/components/seedingCard.test.tsx`, and `tests/unit/components/seedingCardView.test.tsx`
-- Current access-control files: `src/access/isPlatformBasicUser.ts`, `src/access/fieldAccess.ts`, `src/collections/PlatformStaff.ts`, and related access tests
+- Current access-control files: `src/access/isPlatformStaff.ts`, `src/access/fieldAccess.ts`, `src/collections/PlatformStaff.ts`, and related access tests
 - Current logging files: `src/utilities/logging/**` and `tests/unit/utilities/loggingShared.test.ts`
 
 ## Objective

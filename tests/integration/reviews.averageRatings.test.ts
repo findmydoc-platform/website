@@ -7,7 +7,7 @@ import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import {
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   cleanupTrackedUsers,
   createPatientTestUser,
   createPlatformTestUser,
@@ -15,7 +15,7 @@ import {
 import type { Review } from '@/payload-types'
 
 const createdPatientIds: Array<string | number> = []
-const createdBasicUserIds: Array<string | number> = []
+const createdStaffIds: Array<string | number> = []
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
 async function createReviewPatient(payload: Payload) {
@@ -46,7 +46,7 @@ describe('Review average ratings hooks', () => {
   }, 60000)
 
   afterEach(async () => {
-    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds, patientIds: createdPatientIds })
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds, patientIds: createdPatientIds })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
@@ -69,9 +69,9 @@ describe('Review average ratings hooks', () => {
 
     const platformUser = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
-    const platformPayloadUser = asPayloadBasicUser(platformUser)
+    const platformPayloadUser = asPayloadStaffUser(platformUser)
 
     const treatment = await payload.create({
       collection: 'treatments',

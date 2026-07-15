@@ -6,7 +6,7 @@ import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
-import { asBasicUserPayload } from '../fixtures/clinicUserFixtures'
+import { asStaffPayloadUser } from '../fixtures/clinicUserFixtures'
 import { createTinyPngFile } from '../fixtures/mediaFile'
 import type { ClinicStaff, Patient, PlatformContentMedia, PlatformStaff } from '@/payload-types'
 
@@ -98,7 +98,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
         alt: 'Hero image',
       } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-hero.png`),
-      user: asBasicUserPayload(platformUser),
+      user: asStaffPayloadUser(platformUser),
       draft: false,
       depth: 0,
       overrideAccess: false,
@@ -120,7 +120,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
         alt: 'Before alt',
       } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-alt.png`),
-      user: asBasicUserPayload(platformUser),
+      user: asStaffPayloadUser(platformUser),
       draft: false,
       depth: 0,
       overrideAccess: false,
@@ -134,7 +134,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
       data: {
         alt: 'After alt',
       },
-      user: asBasicUserPayload(platformUser),
+      user: asStaffPayloadUser(platformUser),
       depth: 0,
       overrideAccess: false,
     })) as PlatformContentMedia
@@ -152,7 +152,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
       collection: 'platformContentMedia',
       data: { alt: 'Public readable media' } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-access.png`),
-      user: asBasicUserPayload(platformUser),
+      user: asStaffPayloadUser(platformUser),
       draft: false,
       overrideAccess: false,
       depth: 0,
@@ -174,7 +174,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
         collection: 'platformContentMedia',
         data: { alt: 'Clinic create blocked' } as Partial<PlatformContentMedia>,
         file: createTinyPngFile(`${slugPrefix}-clinic-blocked.png`),
-        user: asBasicUserPayload(clinicUser),
+        user: asStaffPayloadUser(clinicUser),
         draft: false,
         overrideAccess: false,
         depth: 0,

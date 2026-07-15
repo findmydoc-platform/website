@@ -1,7 +1,7 @@
 import type { Access } from 'payload'
 
 // Platform staff is a direct Payload principal. Legacy BasicUsers never authorize requests.
-export const isPlatformBasicUser: Access = ({ req: { user } }) => {
+export const isPlatformStaff: Access = ({ req: { user } }) => {
   return Boolean(user && user.collection === 'platformStaff')
 }
 

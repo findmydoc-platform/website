@@ -31,7 +31,7 @@ vi.mock('payload/shared', () => ({
 const setDefaultMocks = () => {
   mockUseAuth.mockReturnValue({
     user: {
-      collection: 'basicUsers',
+      collection: 'platformStaff',
       profileImage: null,
     },
   })
@@ -42,7 +42,7 @@ const setDefaultMocks = () => {
         routes: {
           account: '/account',
         },
-        user: 'basicUsers',
+        user: 'platformStaff',
       },
       routes: {
         admin: '/admin',
@@ -64,7 +64,7 @@ describe('AdminAccountAvatar', () => {
 
   it('renders profile image from /me response when available', () => {
     mockUsePayloadAPI.mockImplementation((url: string) => {
-      if (url === '/api/basicUsers/me') {
+      if (url === '/api/platformStaff/me') {
         return buildAPIReturn({
           user: {
             profileImage: {
@@ -87,7 +87,7 @@ describe('AdminAccountAvatar', () => {
 
   it('fetches media document when relation is id-only and renders the image', () => {
     mockUsePayloadAPI.mockImplementation((url: string) => {
-      if (url === '/api/basicUsers/me') {
+      if (url === '/api/platformStaff/me') {
         return buildAPIReturn({
           user: {
             profileImage: 42,
@@ -112,7 +112,7 @@ describe('AdminAccountAvatar', () => {
 
   it('fetches media document when relation id is numeric zero', () => {
     mockUsePayloadAPI.mockImplementation((url: string) => {
-      if (url === '/api/basicUsers/me') {
+      if (url === '/api/platformStaff/me') {
         return buildAPIReturn({
           user: {
             profileImage: 0,

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { formatAdminURL } from 'payload/shared'
 import React from 'react'
 
-type BasicUserLike = {
+type StaffUserLike = {
   collection?: string | null
   profileImage?: unknown
 }
@@ -112,7 +112,7 @@ const renderDefaultIcon = (isOnAccountPage: boolean): React.JSX.Element => (
 
 export const AdminAccountAvatar: React.FC = () => {
   const { config } = useConfig()
-  const { user } = useAuth<BasicUserLike>()
+  const { user } = useAuth<StaffUserLike>()
   const pathname = usePathname()
 
   const accountPath = formatAdminURL({

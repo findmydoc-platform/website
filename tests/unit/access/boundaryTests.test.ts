@@ -3,8 +3,8 @@ import { createMockReq, createMockPayload } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 
 // Import access functions to test boundary scenarios
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { isClinicStaff } from '@/access/isClinicStaff'
 import { isPatient } from '@/access/isPatient'
 import { authenticated } from '@/access/authenticated'
 import { platformOrOwnClinicResource, platformOrOwnClinicProfile } from '@/access/scopeFilters'
@@ -41,8 +41,8 @@ describe('Permission Boundary Tests', () => {
     ])('$scenario', ({ user, expected }) => {
       const req = createMockReq(user)
 
-      expect(isPlatformBasicUser({ req })).toBe(expected.isPlatform)
-      expect(isClinicBasicUser({ req })).toBe(expected.isClinic)
+      expect(isPlatformStaff({ req })).toBe(expected.isPlatform)
+      expect(isClinicStaff({ req })).toBe(expected.isClinic)
       expect(isPatient({ req })).toBe(expected.isPatient)
       expect(authenticated({ req })).toBe(expected.isAuth)
     })
@@ -55,7 +55,7 @@ describe('Permission Boundary Tests', () => {
 
       const req = createMockReq({ id: 1, collection: 'clinicStaff' }, mockPayload)
 
-      expect(isClinicBasicUser({ req })).toBe(true) // Basic check passes
+      expect(isClinicStaff({ req })).toBe(true) // Basic check passes
       const result = await platformOrOwnClinicResource({ req })
       expect(result).toBe(false) // Scoped access fails
     })
@@ -120,8 +120,8 @@ describe('Permission Boundary Tests', () => {
     ])('Functions handle invalid userType "$userType" gracefully', ({ userType, expected }) => {
       const req = createMockReq({ id: 1, collection: 'basicUsers', userType })
 
-      expect(isPlatformBasicUser({ req })).toBe(expected)
-      expect(isClinicBasicUser({ req })).toBe(expected)
+      expect(isPlatformStaff({ req })).toBe(expected)
+      expect(isClinicStaff({ req })).toBe(expected)
     })
 
     test('Invalid userType in patients collection should only pass isPatient check', () => {
@@ -131,8 +131,8 @@ describe('Permission Boundary Tests', () => {
         userType: 'invalid_type',
       })
 
-      expect(isPlatformBasicUser({ req })).toBe(false)
-      expect(isClinicBasicUser({ req })).toBe(false)
+      expect(isPlatformStaff({ req })).toBe(false)
+      expect(isClinicStaff({ req })).toBe(false)
       expect(isPatient({ req })).toBe(true) // Collection determines this
       expect(authenticated({ req })).toBe(true)
     })
@@ -165,8 +165,8 @@ describe('Permission Boundary Tests', () => {
       expect(result).toBe(false)
 
       expect(isPatient({ req })).toBe(true) // Collection determines this
-      expect(isPlatformBasicUser({ req })).toBe(false)
-      expect(isClinicBasicUser({ req })).toBe(false)
+      expect(isPlatformStaff({ req })).toBe(false)
+      expect(isClinicStaff({ req })).toBe(false)
     })
   })
 
@@ -177,8 +177,8 @@ describe('Permission Boundary Tests', () => {
       req.authToken = 'invalid-token'
 
       expect(authenticated({ req })).toBe(false)
-      expect(isPlatformBasicUser({ req })).toBe(false)
-      expect(isClinicBasicUser({ req })).toBe(false)
+      expect(isPlatformStaff({ req })).toBe(false)
+      expect(isClinicStaff({ req })).toBe(false)
       expect(isPatient({ req })).toBe(false)
     })
 
@@ -190,8 +190,8 @@ describe('Permission Boundary Tests', () => {
       })
 
       expect(authenticated({ req })).toBe(true) // Object exists
-      expect(isPlatformBasicUser({ req })).toBe(false) // Missing required fields
-      expect(isClinicBasicUser({ req })).toBe(false)
+      expect(isPlatformStaff({ req })).toBe(false) // Missing required fields
+      expect(isClinicStaff({ req })).toBe(false)
       expect(isPatient({ req })).toBe(false)
     })
   })

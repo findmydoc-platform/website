@@ -1,7 +1,7 @@
 import type { PayloadRequest } from 'payload'
 
-import { isPlatformBasicUser } from './isPlatformBasicUser'
+import { isPlatformStaff } from './isPlatformStaff'
 
 export const canRunPayloadJobs = ({ req }: { req: PayloadRequest }): boolean => {
-  return isPlatformBasicUser({ req }) === true
+  return isPlatformStaff({ req }) === true
 }

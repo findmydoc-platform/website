@@ -7,7 +7,7 @@ import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import { createClinicFixture } from '../../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../../fixtures/cleanupTestEntities'
 import {
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
   createClinicTestUser,
@@ -15,7 +15,7 @@ import {
   createPlatformTestUser,
 } from '../../fixtures/testUsers'
 import { testSlug } from '../../fixtures/testSlug'
-import type { BasicUser, Review } from '@/payload-types'
+import type { PlatformStaff, Review } from '@/payload-types'
 
 function extractRelationId(value: unknown): number | string | null {
   if (typeof value === 'number' || typeof value === 'string') return value
@@ -54,15 +54,15 @@ describe('Reviews access', () => {
   let treatmentId: number
   const slugPrefix = testSlug('reviews-access.test.ts')
   const createdReviewIds: Array<number | string> = []
-  const createdBasicUserIds: Array<number | string> = []
+  const createdStaffIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
 
-  const createPlatformUser = async (suffix: string): Promise<BasicUser> => {
+  const createPlatformUser = async (suffix: string): Promise<PlatformStaff> => {
     return createPlatformTestUser(payload, {
       emailPrefix: suffix,
       firstName: 'Review',
       lastName: 'Moderator',
-      createdBasicUserIds,
+      createdStaffIds,
     })
   }
 
@@ -103,7 +103,7 @@ describe('Reviews access', () => {
     }
 
     await cleanupTrackedUsers(payload, {
-      basicUserIds: createdBasicUserIds,
+      staffIds: createdStaffIds,
       patientIds: createdPatientIds,
     })
 
@@ -184,7 +184,7 @@ describe('Reviews access', () => {
       collection: 'reviews',
       id: created.id,
       data: { status: 'approved', comment: 'Platform approved review' } as unknown as Review,
-      user: asPayloadBasicUser(moderator),
+      user: asPayloadStaffUser(moderator),
       overrideAccess: false,
     })
 
@@ -199,7 +199,7 @@ describe('Reviews access', () => {
     const deleted = await payload.delete({
       collection: 'reviews',
       id: created.id,
-      user: asPayloadBasicUser(moderator),
+      user: asPayloadStaffUser(moderator),
       overrideAccess: false,
     })
 
@@ -277,13 +277,13 @@ describe('Reviews access', () => {
 
     const clinicUser = await createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic-reader`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const clinicRead = await payload.find({
       collection: 'reviews',
       where: { clinic: { equals: clinic.id } },
-      user: asPayloadBasicUser(clinicUser),
+      user: asPayloadStaffUser(clinicUser),
       overrideAccess: false,
     })
 
@@ -295,7 +295,7 @@ describe('Reviews access', () => {
     const platformRead = await payload.find({
       collection: 'reviews',
       where: { clinic: { equals: clinic.id } },
-      user: asPayloadBasicUser(moderator),
+      user: asPayloadStaffUser(moderator),
       overrideAccess: false,
     })
 

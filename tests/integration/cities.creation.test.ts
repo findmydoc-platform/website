@@ -7,7 +7,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import {
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
   createClinicTestUser,
   createPatientTestUser,
@@ -221,7 +221,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
         coordinates: [41.1, 29.1],
         country: countryId,
       },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
@@ -229,7 +229,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
     const deniedUsers = [
       {
         label: 'clinic',
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         createData: {
           name: `${slugPrefix}-clinic-denied-create`,
           coordinates: [41.25, 29.25] as [number, number],
@@ -280,7 +280,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
       collection: 'cities',
       id: city.id,
       data: { name: `${slugPrefix}-platform-update` },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
@@ -290,7 +290,7 @@ describe('Cities Integration Tests (Clinic Dependency)', () => {
     const deleted = await payload.delete({
       collection: 'cities',
       id: city.id,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 

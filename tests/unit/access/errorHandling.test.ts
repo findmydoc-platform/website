@@ -2,8 +2,8 @@ import { describe, test, expect } from 'vitest'
 import { createMockReq, createMockPayload } from '../helpers/testHelpers'
 
 // Import access functions to test error handling
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { isClinicStaff } from '@/access/isClinicStaff'
 import { isPatient } from '@/access/isPatient'
 import { authenticated } from '@/access/authenticated'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
@@ -61,8 +61,8 @@ describe('Access Function Error Handling', () => {
     ])('Access functions handle $scenario correctly', ({ user, expected }) => {
       const req = createMockReq(user)
 
-      expect(isPlatformBasicUser({ req })).toBe(expected.isPlatform)
-      expect(isClinicBasicUser({ req })).toBe(expected.isClinic)
+      expect(isPlatformStaff({ req })).toBe(expected.isPlatform)
+      expect(isClinicStaff({ req })).toBe(expected.isClinic)
       expect(isPatient({ req })).toBe(expected.isPatient)
       expect(authenticated({ req })).toBe(expected.isAuth)
     })
@@ -88,8 +88,8 @@ describe('Access Function Error Handling', () => {
     ])('Functions handle $scenario gracefully', ({ user, expected }) => {
       const req = createMockReq(user)
 
-      expect(isPlatformBasicUser({ req })).toBe(expected)
-      expect(isClinicBasicUser({ req })).toBe(expected)
+      expect(isPlatformStaff({ req })).toBe(expected)
+      expect(isClinicStaff({ req })).toBe(expected)
       expect(isPatient({ req })).toBe(expected)
     })
   })
@@ -144,9 +144,9 @@ describe('Access Function Error Handling', () => {
 
       // Functions should handle missing user gracefully
       // @ts-expect-error - Intentionally testing invalid input
-      expect(isPlatformBasicUser({ req })).toBe(false)
+      expect(isPlatformStaff({ req })).toBe(false)
       // @ts-expect-error - Intentionally testing invalid input
-      expect(isClinicBasicUser({ req })).toBe(false)
+      expect(isClinicStaff({ req })).toBe(false)
       // @ts-expect-error - Intentionally testing invalid input
       expect(isPatient({ req })).toBe(false)
       // @ts-expect-error - Intentionally testing invalid input
@@ -157,7 +157,7 @@ describe('Access Function Error Handling', () => {
       const invalidReq = { someRandomProperty: 'value' }
 
       // These may throw due to destructuring - that's acceptable behavior
-      const functions = [isPlatformBasicUser, isClinicBasicUser, isPatient, authenticated]
+      const functions = [isPlatformStaff, isClinicStaff, isPatient, authenticated]
 
       functions.forEach((fn) => {
         try {

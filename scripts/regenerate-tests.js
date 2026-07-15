@@ -9,8 +9,8 @@ const TESTS_DIR = path.join(__dirname, '../tests/unit/access-matrix')
 // Map of access function names to their behavior patterns
 const ACCESS_PATTERNS = {
   // Simple boolean functions
-  isPlatformBasicUser: { type: 'boolean', platform: true, others: false },
-  isClinicBasicUser: { type: 'boolean', clinic: true, others: false },
+  isPlatformStaff: { type: 'boolean', platform: true, others: false },
+  isClinicStaff: { type: 'boolean', clinic: true, others: false },
   isPatient: { type: 'boolean', patient: true, others: false },
   anyone: { type: 'boolean', all: true },
 

@@ -311,18 +311,8 @@ export const ensureApprovedClinicStaffAccess = async (
   const clinic = options.clinicId
     ? { clinicId: options.clinicId }
     : await ensureClinicFixture(request, { reuseExisting: true })
-  const basicUserResponse = await request.get(
-    `/api/basicUsers?depth=0&limit=1&where[email][equals]=${encodeURIComponent(options.email)}`,
-  )
-  expect(basicUserResponse.ok()).toBeTruthy()
-
-  const basicUserBody = (await basicUserResponse.json()) as CollectionListResponse
-  const basicUser = basicUserBody.docs?.[0]
-  const basicUserId = getRecordId(basicUser?.id)
-  expect(basicUserId).toBeTruthy()
-
   const clinicStaffResponse = await request.get(
-    `/api/clinicStaff?depth=0&limit=1&where[user][equals]=${encodeURIComponent(String(basicUserId))}`,
+    `/api/clinicStaff?depth=0&limit=1&where[email][equals]=${encodeURIComponent(options.email)}`,
   )
   expect(clinicStaffResponse.ok()).toBeTruthy()
 
@@ -345,7 +335,6 @@ export const ensureApprovedClinicStaffAccess = async (
   }
 
   return {
-    basicUserId: basicUserId as string | number,
     clinicId: clinic.clinicId,
     clinicStaffId: clinicStaffId as string | number,
   }

@@ -1,7 +1,7 @@
 import type { Access } from 'payload'
 
 // Clinic: Check if the user is authenticated and is clinic staff
-export const isClinicBasicUser: Access = ({ req: { user } }) => {
+export const isClinicStaff: Access = ({ req: { user } }) => {
   return Boolean(user && user.collection === 'clinicStaff')
 }
 

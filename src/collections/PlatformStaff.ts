@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { guardPlatformStaffRoleChange } from './PlatformStaff/hooks/guardRoleChange'
@@ -21,9 +21,9 @@ export const PlatformStaff: CollectionConfig = {
     description: 'Platform staff authentication principals',
   },
   access: {
-    read: isPlatformBasicUser,
+    read: isPlatformStaff,
     create: () => false,
-    update: isPlatformBasicUser,
+    update: isPlatformStaff,
     delete: () => false,
   },
   hooks: {

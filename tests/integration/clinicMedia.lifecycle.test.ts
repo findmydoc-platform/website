@@ -8,7 +8,7 @@ import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { createTinyPngFile } from '../fixtures/mediaFile'
-import { approveClinicStaff, asBasicUserPayload, createClinicUserWithStaff } from '../fixtures/clinicUserFixtures'
+import { approveClinicStaff, asStaffPayloadUser, createClinicStaffFixture } from '../fixtures/clinicUserFixtures'
 import type { ClinicMedia } from '@/payload-types'
 import { ClinicMedia as ClinicMediaCollection } from '@/collections/ClinicMedia'
 
@@ -26,7 +26,7 @@ describe('ClinicMedia integration - lifecycle', () => {
 
   const createdMediaIds: Array<number> = []
   const createdClinicStaffIds: Array<number> = []
-  const createdBasicUserIds: Array<number> = []
+  const createdStaffIds: Array<number> = []
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -42,7 +42,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     await cleanupTrackedDocs(payload, [
       { collection: 'clinicMedia', ids: createdMediaIds },
       { collection: 'clinicStaff', ids: createdClinicStaffIds },
-      { collection: 'platformStaff', ids: createdBasicUserIds },
+      { collection: 'platformStaff', ids: createdStaffIds },
     ])
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
@@ -51,10 +51,9 @@ describe('ClinicMedia integration - lifecycle', () => {
 
   it('creates clinic media for own clinic with createdBy and storage path', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix })
-    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+    const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'create',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
 
@@ -67,23 +66,22 @@ describe('ClinicMedia integration - lifecycle', () => {
         clinic: clinic.id,
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-clinic.png`),
-      user: asBasicUserPayload(basicUser),
+      user: asStaffPayloadUser(staffUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
 
     createdMediaIds.push(created.id)
 
-    expect(created.createdBy).toEqual({ relationTo: 'clinicStaff', value: basicUser.id })
+    expect(created.createdBy).toEqual({ relationTo: 'clinicStaff', value: staffUser.id })
     expect(created.storagePath).toMatch(new RegExp(`^clinics/${clinic.id}-[a-f0-9]{10}-.+\\.png$`))
   })
 
   it('auto-assigns clinic on create when clinic users omit the clinic field', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-auto-assign` })
-    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+    const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'auto-assign',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
 
@@ -95,7 +93,7 @@ describe('ClinicMedia integration - lifecycle', () => {
         alt: 'Auto assign media',
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-auto-assign.png`),
-      user: asBasicUserPayload(basicUser),
+      user: asStaffPayloadUser(staffUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
@@ -108,10 +106,9 @@ describe('ClinicMedia integration - lifecycle', () => {
     const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-a` })
     const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-b` })
 
-    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+    const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'blocked',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
     await approveClinicStaff(payload, clinicStaff.id, clinicA.id as number)
@@ -124,7 +121,7 @@ describe('ClinicMedia integration - lifecycle', () => {
           clinic: clinicB.id,
         } as Partial<ClinicMedia>,
         file: createTinyPngFile(`${slugPrefix}-blocked.png`),
-        user: asBasicUserPayload(basicUser),
+        user: asStaffPayloadUser(staffUser),
         overrideAccess: false,
         depth: 0,
       } as PayloadCreateArgs)
@@ -135,10 +132,9 @@ describe('ClinicMedia integration - lifecycle', () => {
     const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-freeze-a` })
     const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-freeze-b` })
 
-    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+    const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'freeze',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
     await approveClinicStaff(payload, clinicStaff.id, clinicA.id as number)
@@ -150,7 +146,7 @@ describe('ClinicMedia integration - lifecycle', () => {
         clinic: clinicA.id,
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-freeze.png`),
-      user: asBasicUserPayload(basicUser),
+      user: asStaffPayloadUser(staffUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
@@ -162,7 +158,7 @@ describe('ClinicMedia integration - lifecycle', () => {
         collection: 'clinicMedia',
         id: created.id,
         data: { clinic: clinicB.id },
-        user: asBasicUserPayload(basicUser),
+        user: asStaffPayloadUser(staffUser),
         overrideAccess: false,
         depth: 0,
       } as PayloadUpdateArgs)
@@ -171,10 +167,9 @@ describe('ClinicMedia integration - lifecycle', () => {
 
   it('updates metadata without altering createdBy or storagePath', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-update` })
-    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+    const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'update',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
 
@@ -187,7 +182,7 @@ describe('ClinicMedia integration - lifecycle', () => {
         clinic: clinic.id,
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-update.png`),
-      user: asBasicUserPayload(basicUser),
+      user: asStaffPayloadUser(staffUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
@@ -200,21 +195,20 @@ describe('ClinicMedia integration - lifecycle', () => {
       data: {
         alt: 'After alt',
       },
-      user: asBasicUserPayload(basicUser),
+      user: asStaffPayloadUser(staffUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadUpdateArgs)) as ClinicMedia
 
-    expect(updated.createdBy).toEqual({ relationTo: 'clinicStaff', value: basicUser.id })
+    expect(updated.createdBy).toEqual({ relationTo: 'clinicStaff', value: staffUser.id })
     expect(updated.storagePath).toMatch(new RegExp(`^clinics/${clinic.id}-(\\d+|[a-f0-9]{10})-.+\\.png$`))
   })
 
   it('allows clinic users to delete their media', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-delete` })
-    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+    const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'delete',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
 
@@ -227,7 +221,7 @@ describe('ClinicMedia integration - lifecycle', () => {
         clinic: clinic.id,
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-delete.png`),
-      user: asBasicUserPayload(basicUser),
+      user: asStaffPayloadUser(staffUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
@@ -237,7 +231,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     await payload.delete({
       collection: 'clinicMedia',
       id: created.id,
-      user: asBasicUserPayload(basicUser),
+      user: asStaffPayloadUser(staffUser),
       overrideAccess: false,
     })
 
@@ -254,10 +248,9 @@ describe('ClinicMedia integration - lifecycle', () => {
 
   it('returns the expected read filters for clinic, patient, and unassigned static-file requests', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-access-filters` })
-    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+    const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'access-filters',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
     await approveClinicStaff(payload, clinicStaff.id, clinic.id as number)
@@ -265,7 +258,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     const documentReadFilter = await ClinicMediaCollection.access!.read!({
       req: {
         payload,
-        user: asBasicUserPayload(basicUser),
+        user: asStaffPayloadUser(staffUser),
       } as unknown as PayloadRequest,
     })
 
@@ -278,7 +271,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     const staticClinicFilter = await ClinicMediaCollection.access!.read!({
       req: {
         payload,
-        user: asBasicUserPayload(basicUser),
+        user: asStaffPayloadUser(staffUser),
       } as unknown as PayloadRequest,
       isReadingStaticFile: true,
     })
@@ -303,17 +296,16 @@ describe('ClinicMedia integration - lifecycle', () => {
       },
     })
 
-    const { basicUser: unassignedClinicUser } = await createClinicUserWithStaff(payload, {
+    const { staffUser: unassignedClinicUser } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'access-unassigned',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
 
     const deniedStaticRead = await ClinicMediaCollection.access!.read!({
       req: {
         payload,
-        user: asBasicUserPayload(unassignedClinicUser),
+        user: asStaffPayloadUser(unassignedClinicUser),
       } as unknown as PayloadRequest,
       isReadingStaticFile: true,
     })

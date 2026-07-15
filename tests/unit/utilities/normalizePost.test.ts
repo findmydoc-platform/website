@@ -54,7 +54,7 @@ describe('normalizePost', () => {
       alt: 'Blog hero image',
       width: 576,
       height: 968,
-      sizes: '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
+      sizes: '(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw',
       quality: 70,
     })
   })

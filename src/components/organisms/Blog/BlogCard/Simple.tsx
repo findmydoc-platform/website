@@ -23,10 +23,10 @@ export const Simple: React.FC<BlogCardBaseProps> = ({
   const resolvedImage = image ?? {
     src: '/images/blog-placeholder-1600-900.svg',
     alt: 'Blog placeholder',
-    sizes: '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
+    sizes: '(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw',
     quality: 70,
   }
-  const imageSizes = resolvedImage.sizes ?? '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
+  const imageSizes = resolvedImage.sizes ?? '(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw'
   const imageQuality = resolvedImage.quality ?? 70
   const authorName = author?.name || 'findmydoc Editorial Team'
 

@@ -93,3 +93,15 @@ export const buildTemporaryLandingLanguageOptions = (
     label: TEMPORARY_LANDING_LABELS[locale],
     href: buildTemporaryLandingLocaleHref(locale, searchParams),
   }))
+
+export const resolveTemporaryLandingContentLocale = (locale: TemporaryLandingLocale): ContentLocaleContext => {
+  if (locale === 'de') {
+    return {
+      locale: 'de',
+      fallbackLocale: 'en',
+    }
+  }
+
+  return {}
+}
+import type { ContentLocaleContext } from '@/utilities/contentLocalization'

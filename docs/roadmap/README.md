@@ -7,3 +7,4 @@ Use these roadmap notes for planned work that has real future implementation or 
   [Direct Staff Authentication Implementation Plan](./clinic-dashboard/direct-staff-auth-implementation-plan.md)
 - [Localization Planning](./localization/README.md)
 - [Patient Favorites Roadmap](./patient-favorites/README.md)
+- [Temporary Landing Public Blog](./temporary-landing-public-blog.md)

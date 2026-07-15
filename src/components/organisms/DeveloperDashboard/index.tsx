@@ -4,29 +4,10 @@ import { Banner } from '@payloadcms/ui/elements/Banner'
 
 import { Heading } from '@/components/atoms/Heading'
 import { SeedingCard } from './Seeding/SeedingCard'
-import type { DashboardUserType } from './Seeding/SeedingCardView'
+import { resolveDashboardUserType } from './userType'
 
 type DeveloperDashboardProps = {
   seedingSlot?: React.ReactNode
-}
-
-type DashboardUserLike = {
-  collection?: unknown
-  userType?: unknown
-}
-
-const isDashboardUserType = (value: unknown): value is DashboardUserType => {
-  return value === 'platform' || value === 'clinic' || value === 'patient' || value === 'unknown'
-}
-
-const resolveDashboardUserType = (user: DashboardUserLike | null | undefined): DashboardUserType => {
-  const rawUserType = user?.userType
-  if (isDashboardUserType(rawUserType)) return rawUserType
-
-  const rawCollection = user?.collection
-  if (rawCollection === 'patients') return 'patient'
-  if (rawCollection === 'clinicStaff') return 'clinic'
-  return 'unknown'
 }
 
 export const DeveloperDashboardView: React.FC<DeveloperDashboardProps> = (props) => {
@@ -69,7 +50,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardProps> = (props)
 }
 
 const DeveloperDashboardWidget: React.FC<WidgetServerProps> = (props) => {
-  const user = (props.req?.user as DashboardUserLike | null | undefined) ?? null
+  const user = props.req?.user ?? null
   const forcedUserType = resolveDashboardUserType(user)
 
   return <SeedingCard controls={props.widgetData} forcedUserType={forcedUserType} />

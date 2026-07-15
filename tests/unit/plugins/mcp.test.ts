@@ -1,0 +1,15 @@
+import { describe, expect, it } from 'vitest'
+import { isPlatformStaffMcpUser } from '@/plugins/mcp'
+
+describe('MCP principal authorization', () => {
+  it('accepts direct platform staff without the removed legacy userType field', () => {
+    expect(isPlatformStaffMcpUser({ id: 7, collection: 'platformStaff' })).toBe(true)
+  })
+
+  it('rejects every other principal collection', () => {
+    expect(isPlatformStaffMcpUser({ id: 7, collection: 'clinicStaff' })).toBe(false)
+    expect(isPlatformStaffMcpUser({ id: 7, collection: 'patients' })).toBe(false)
+    expect(isPlatformStaffMcpUser({ id: 7, collection: 'basicUsers', userType: 'platform' })).toBe(false)
+    expect(isPlatformStaffMcpUser(null)).toBe(false)
+  })
+})

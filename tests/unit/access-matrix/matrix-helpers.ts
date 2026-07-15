@@ -767,6 +767,11 @@ function matchesPolymorphicRelationshipAndFilter(
 ): boolean {
   if (typeof value !== 'object' || value === null) return false
 
+  const maybeOr = (value as Record<string, unknown>).or
+  if (Array.isArray(maybeOr)) {
+    return maybeOr.some((clause) => matchesPolymorphicRelationshipAndFilter(clause, fieldName, relationTo, expectedId))
+  }
+
   const maybeAnd = (value as Record<string, unknown>).and
   if (!Array.isArray(maybeAnd)) return false
 

@@ -41,6 +41,7 @@ import * as migration_20260620_143121_clinic_partner_team_cta from './20260620_1
 import * as migration_20260622_191754_add_doctor_media_stable_id from './20260622_191754_add_doctor_media_stable_id'
 import * as migration_20260714_142106_direct_staff_auth_expand from './20260714_142106_direct_staff_auth_expand'
 import * as migration_20260714_172812_direct_staff_auth_switch from './20260714_172812_direct_staff_auth_switch'
+import * as migration_20260715_070513_direct_staff_auth_follow_up from './20260715_070513_direct_staff_auth_follow_up'
 
 export const migrations = [
   {
@@ -257,5 +258,10 @@ export const migrations = [
     up: migration_20260714_172812_direct_staff_auth_switch.up,
     down: migration_20260714_172812_direct_staff_auth_switch.down,
     name: '20260714_172812_direct_staff_auth_switch',
+  },
+  {
+    up: migration_20260715_070513_direct_staff_auth_follow_up.up,
+    down: migration_20260715_070513_direct_staff_auth_follow_up.down,
+    name: '20260715_070513_direct_staff_auth_follow_up',
   },
 ]

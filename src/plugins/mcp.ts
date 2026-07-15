@@ -14,6 +14,11 @@ type McpCollectionConfig = {
 
 const mcpUserCollection: CollectionSlug = 'platformStaff'
 
+export const isPlatformStaffMcpUser = (user: unknown): boolean => {
+  if (typeof user !== 'object' || user === null) return false
+  return (user as Record<string, unknown>).collection === mcpUserCollection
+}
+
 const mcpReadCollections = [
   'pages',
   'posts',
@@ -100,13 +105,7 @@ export const createMcpPlugin = (): Plugin =>
     overrideAuth: async (_req, getDefaultMcpAccessSettings) => {
       const mcpAccessSettings = await getDefaultMcpAccessSettings()
 
-      const isPlatformStaffUser = (user: unknown): boolean => {
-        if (typeof user !== 'object' || user === null) return false
-        const record = user as Record<string, unknown>
-        return record.collection === mcpUserCollection && record.userType === 'platform'
-      }
-
-      if (!isPlatformStaffUser(mcpAccessSettings.user as unknown)) {
+      if (!isPlatformStaffMcpUser(mcpAccessSettings.user as unknown)) {
         throw new UnauthorizedError()
       }
 

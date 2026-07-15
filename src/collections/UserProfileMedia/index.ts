@@ -10,6 +10,7 @@ import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploa
 import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import {
+  captureUserProfileMediaPlatformAuthorsBeforeDelete,
   revalidateDeletedUserProfileMediaPlatformAuthorPosts,
   revalidateUserProfileMediaPlatformAuthorPosts,
 } from './hooks/revalidatePlatformAuthorPosts'
@@ -23,6 +24,7 @@ import {
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+const LOOKUP_PAGE_SIZE = 100
 
 const normalizeUserId = (value: unknown): number | null => {
   if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return value
@@ -97,46 +99,57 @@ const ownerMatches = (
 }
 
 const publishedPlatformAuthorAvatarFilter = async (req: PayloadRequest): Promise<Where> => {
-  const posts = await req.payload.find({
-    collection: 'posts',
-    where: { _status: { equals: 'published' } },
-    depth: 0,
-    limit: 1000,
-    pagination: false,
-    select: { authors: true },
-    overrideAccess: true,
-    req,
-  })
-  const authorIds = Array.from(
-    new Set(
-      (posts?.docs ?? []).flatMap((post) =>
-        Array.isArray(post.authors)
-          ? post.authors
-              .map((author) => normalizeUserId(typeof author === 'object' ? author.id : author))
-              .filter((id): id is number => id !== null)
-          : [],
-      ),
-    ),
-  )
+  const authorIds = new Set<number>()
+  let page = 1
 
-  if (authorIds.length === 0) return { id: { in: [] } }
+  while (page > 0) {
+    const posts = await req.payload.find({
+      collection: 'posts',
+      where: { _status: { equals: 'published' } },
+      depth: 0,
+      limit: LOOKUP_PAGE_SIZE,
+      page,
+      select: { authors: true },
+      overrideAccess: true,
+      req,
+    })
 
-  const principals = await req.payload.find({
-    collection: 'platformStaff',
-    where: { id: { in: authorIds } },
-    depth: 0,
-    limit: authorIds.length,
-    pagination: false,
-    select: { profileImage: true },
-    overrideAccess: true,
-    req,
-  })
-  const mediaIds = (principals?.docs ?? [])
-    .map((principal) => normalizeUserId(principal.profileImage))
-    .filter((id): id is number => id !== null)
+    for (const post of posts?.docs ?? []) {
+      if (!Array.isArray(post.authors)) continue
+      for (const author of post.authors) {
+        const id = normalizeUserId(typeof author === 'object' ? author.id : author)
+        if (id !== null) authorIds.add(id)
+      }
+    }
+
+    page = posts?.hasNextPage && posts.nextPage ? posts.nextPage : 0
+  }
+
+  if (authorIds.size === 0) return { id: { in: [] } }
+
+  const authorIdList = Array.from(authorIds)
+  const mediaIds = new Set<number>()
+
+  for (let offset = 0; offset < authorIdList.length; offset += LOOKUP_PAGE_SIZE) {
+    const principals = await req.payload.find({
+      collection: 'platformStaff',
+      where: { id: { in: authorIdList.slice(offset, offset + LOOKUP_PAGE_SIZE) } },
+      depth: 0,
+      limit: LOOKUP_PAGE_SIZE,
+      pagination: false,
+      select: { profileImage: true },
+      overrideAccess: true,
+      req,
+    })
+
+    for (const principal of principals.docs) {
+      const mediaId = normalizeUserId(principal.profileImage)
+      if (mediaId !== null) mediaIds.add(mediaId)
+    }
+  }
 
   return {
-    and: [{ 'user.relationTo': { equals: 'platformStaff' } }, { id: { in: mediaIds } }],
+    and: [{ 'user.relationTo': { equals: 'platformStaff' } }, { id: { in: Array.from(mediaIds) } }],
   }
 }
 
@@ -157,9 +170,9 @@ export const UserProfileMedia: CollectionConfig = {
       if (isPlatformBasicUser({ req })) return true
 
       const ownedFilter = ownerFilter(req)
-      if (ownedFilter) return ownedFilter
+      const publicAuthorAvatarFilter = await publishedPlatformAuthorAvatarFilter(req)
 
-      return publishedPlatformAuthorAvatarFilter(req)
+      return ownedFilter ? { or: [ownedFilter, publicAuthorAvatarFilter] } : publicAuthorAvatarFilter
     },
     create: ({ req, data }) => {
       if (isPlatformBasicUser({ req })) return true
@@ -246,6 +259,7 @@ export const UserProfileMedia: CollectionConfig = {
         storagePrefix: 'users',
       }),
     ],
+    beforeDelete: [captureUserProfileMediaPlatformAuthorsBeforeDelete],
     beforeOperation: [
       beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,

@@ -5138,45 +5138,6 @@ export interface LandingPage {
        */
       description: string;
     };
-    pricing: {
-      /**
-       * Section headline.
-       */
-      title: string;
-      /**
-       * Section supporting text.
-       */
-      description: string;
-      /**
-       * Partner pricing cards.
-       */
-      plans: {
-        price: string;
-        billingLabel?: string | null;
-        plan: string;
-        description: string;
-        highlights?:
-          | {
-              text: string;
-              id?: string | null;
-            }[]
-          | null;
-        buttonText: string;
-        badge?: string | null;
-        layout: 'primary' | 'compact';
-        id?: string | null;
-      }[];
-    };
-    /**
-     * Pricing model explanation items.
-     */
-    pricingModel?:
-      | {
-          title: string;
-          description: string;
-          id?: string | null;
-        }[]
-      | null;
     faq: {
       /**
        * Section headline.
@@ -5646,37 +5607,6 @@ export interface LandingPagesSelect<T extends boolean = true> {
           | {
               title?: T;
               description?: T;
-            };
-        pricing?:
-          | T
-          | {
-              title?: T;
-              description?: T;
-              plans?:
-                | T
-                | {
-                    price?: T;
-                    billingLabel?: T;
-                    plan?: T;
-                    description?: T;
-                    highlights?:
-                      | T
-                      | {
-                          text?: T;
-                          id?: T;
-                        };
-                    buttonText?: T;
-                    badge?: T;
-                    layout?: T;
-                    id?: T;
-                  };
-            };
-        pricingModel?:
-          | T
-          | {
-              title?: T;
-              description?: T;
-              id?: T;
             };
         faq?:
           | T

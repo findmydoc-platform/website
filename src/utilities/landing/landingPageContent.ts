@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import { CheckCircle, Eye, Target, TrendingUp } from 'lucide-react'
 
 import type { FAQItem } from '@/components/organisms/FAQ'
-import type { LandingPricingModelItem, LandingPricingPlan } from '@/components/organisms/Landing/LandingPricing'
 import type { LandingTestimonial } from '@/components/organisms/Landing/LandingTestimonials.types'
 import { resolveHrefFromCMSLink } from '@/blocks/_shared/utils'
 import type { LandingPage, PlatformContentMedia } from '@/payload-types'
@@ -141,10 +140,6 @@ export type ClinicPartnerLandingContent = {
   teamCta: LandingButtonCta
   testimonials: LandingTestimonial[]
   testimonialsIntro: SectionIntro
-  pricing: SectionIntro & {
-    plans: LandingPricingPlan[]
-  }
-  pricingModel: LandingPricingModelItem[]
   faq: LandingFaqContent
   blogTeaser: SectionIntro
   registrationIntro: SectionIntro
@@ -262,21 +257,6 @@ const normalizeProcess = (process: LandingPage['home']['process'], fieldPath: st
     resolveRequiredLandingImage(step.image, `${fieldPath}.steps.${index}.image`, step.title),
   ),
 })
-
-const normalizePricingPlans = (
-  plans: LandingPage['clinicPartners']['pricing']['plans'] | null | undefined,
-  fieldPath: string,
-): LandingPricingPlan[] =>
-  requireLandingArray(plans, fieldPath).map((plan) => ({
-    price: plan.price,
-    billingLabel: optionalText(plan.billingLabel),
-    plan: plan.plan,
-    description: plan.description,
-    highlights: plan.highlights?.map((highlight) => highlight.text) ?? undefined,
-    buttonText: plan.buttonText,
-    badge: optionalText(plan.badge),
-    layout: plan.layout,
-  }))
 
 const normalizeTeam = (
   team: LandingPage['clinicPartners']['team'] | null | undefined,
@@ -462,7 +442,6 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
   const features = requireLandingSection(clinicPartners.features, 'clinicPartners.features')
   const process = requireLandingSection(clinicPartners.process, 'clinicPartners.process')
   const cta = requireLandingSection(clinicPartners.cta, 'clinicPartners.cta')
-  const pricing = requireLandingSection(clinicPartners.pricing, 'clinicPartners.pricing')
   const faq = requireLandingSection(clinicPartners.faq, 'clinicPartners.faq')
   const categoriesIntro = requireLandingSection(clinicPartners.categoriesIntro, 'clinicPartners.categoriesIntro')
   const blogTeaser = requireLandingSection(clinicPartners.blogTeaser, 'clinicPartners.blogTeaser')
@@ -471,7 +450,6 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
   const teamIntro = requireLandingSection(clinicPartners.teamIntro, 'clinicPartners.teamIntro')
   const teamCta = requireLandingSection(clinicPartners.teamCta, 'clinicPartners.teamCta')
   const testimonialsIntro = requireLandingSection(clinicPartners.testimonialsIntro, 'clinicPartners.testimonialsIntro')
-  const pricingModel = requireLandingArray(clinicPartners.pricingModel, 'clinicPartners.pricingModel')
   const aboutTeam = landingPages.about?.team && landingPages.about.team.length > 0 ? landingPages.about.team : undefined
 
   return {
@@ -506,15 +484,6 @@ export const normalizeClinicPartnerLandingContent = (landingPages: LandingPage) 
     },
     testimonials: normalizeTestimonials(clinicPartners.testimonials, 'clinicPartners.testimonials'),
     testimonialsIntro,
-    pricing: {
-      title: pricing.title,
-      description: pricing.description,
-      plans: normalizePricingPlans(pricing.plans, 'clinicPartners.pricing.plans'),
-    },
-    pricingModel: pricingModel.map((item) => ({
-      title: item.title,
-      description: item.description,
-    })),
     faq: normalizeFaq(faq, 'clinicPartners.faq'),
     blogTeaser,
     registrationIntro,

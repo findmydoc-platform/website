@@ -2,7 +2,7 @@ import * as React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import { LandingFeatures, LandingPricing } from '@/components/organisms/Landing'
+import { LandingFeatures } from '@/components/organisms/Landing'
 
 describe('landing sections', () => {
   it('renders LandingFeatures headings and descriptions', () => {
@@ -36,27 +36,5 @@ describe('landing sections', () => {
     expect(markup).toContain('Global reach')
     expect(markup).toContain('Worldwide')
     expect(markup).toContain('Reach patients everywhere.')
-  })
-
-  it('renders LandingPricing plans', () => {
-    const plans = [
-      { price: '€99', plan: 'Starter', description: 'For small teams.', buttonText: 'Choose Starter' },
-      { price: '€199', plan: 'Growth', description: 'For growing teams.', buttonText: 'Choose Growth' },
-    ]
-
-    const markup = renderToStaticMarkup(
-      React.createElement(LandingPricing, {
-        plans,
-        title: 'Pricing',
-        description: 'Our pricing model is transparent and designed for clinics of different sizes.',
-      }),
-    )
-
-    expect(markup).toContain('€99')
-    expect(markup).toContain('Starter')
-    expect(markup).toContain('Choose Starter')
-    expect(markup).toContain('€199')
-    expect(markup).toContain('Growth')
-    expect(markup).toContain('Choose Growth')
   })
 })

@@ -197,7 +197,7 @@ describe('landingPageContent normalizers', () => {
     )
   })
 
-  it('keeps pricing data while using CMS media for the clinic partner page', () => {
+  it('maps clinic partner content while using CMS media', () => {
     const content = normalizeClinicPartnerLandingContent(attachRequiredMedia(cloneBaselineLandingPages()))
 
     expect(content.hero.image).toMatchObject({
@@ -216,12 +216,6 @@ describe('landingPageContent normalizers', () => {
       sizes: '(min-width: 768px) 33vw, (min-width: 640px) 50vw, 85vw',
     })
     expect(content.team[0]?.socials).toBeUndefined()
-    expect(content.pricing.plans[0]?.highlights).toEqual([
-      'Priority profile visibility',
-      'Enhanced trust and profile depth',
-      'Built for clinics scaling inbound demand',
-    ])
-    expect(content.pricingModel).toHaveLength(3)
     expect(content.registrationIntro).toEqual({
       title: 'Ready for verified visibility?',
       description: 'Share the key details. We review your request personally and follow up with the next steps.',

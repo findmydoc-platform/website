@@ -34,8 +34,8 @@ describe('Permission Boundary Tests', () => {
         expected: { isPlatform: false, isClinic: false, isPatient: true, isAuth: true },
       },
       {
-        scenario: 'Invalid userType combinations should be rejected',
-        user: { id: 1, collection: 'basicUsers', userType: 'patient' },
+        scenario: 'Unknown principal collections should be rejected',
+        user: { id: 1, collection: 'unknown' },
         expected: { isPlatform: false, isClinic: false, isPatient: false, isAuth: true },
       },
     ])('$scenario', ({ user, expected }) => {
@@ -109,7 +109,7 @@ describe('Permission Boundary Tests', () => {
     })
   })
 
-  describe('Invalid User Types', () => {
+  describe('Unknown Principal Collections', () => {
     test.each([
       { userType: 'invalid_type', expected: false },
       { userType: 'admin', expected: false },
@@ -117,8 +117,8 @@ describe('Permission Boundary Tests', () => {
       { userType: '', expected: false },
       { userType: 'PLATFORM', expected: false }, // Case sensitive
       { userType: 'CLINIC', expected: false },
-    ])('Functions handle invalid userType "$userType" gracefully', ({ userType, expected }) => {
-      const req = createMockReq({ id: 1, collection: 'basicUsers', userType })
+    ])('Functions ignore legacy userType "$userType" on an unknown collection', ({ userType, expected }) => {
+      const req = createMockReq({ id: 1, collection: 'unknown', userType })
 
       expect(isPlatformStaff({ req })).toBe(expected)
       expect(isClinicStaff({ req })).toBe(expected)

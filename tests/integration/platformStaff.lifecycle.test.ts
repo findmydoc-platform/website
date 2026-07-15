@@ -34,6 +34,9 @@ describe('PlatformStaff integration - access and constraints', () => {
     try {
       await payload.delete({ collection: 'patients', where: {}, overrideAccess: true })
     } catch {}
+    try {
+      await payload.delete({ collection: 'clinicStaff', where: {}, overrideAccess: true })
+    } catch {}
   })
 
   const createPlatformUser = async (suffix: string, role: PlatformStaff['role'] = 'support') => {
@@ -126,6 +129,24 @@ describe('PlatformStaff integration - access and constraints', () => {
         overrideAccess: true,
       } as PayloadCreateArgs)
     }).rejects.toThrowError(/already assigned|unique|duplicate|violates|constraint/i)
+  })
+
+  it('rejects a Supabase identity assigned to another auth collection', async () => {
+    const platformUser = await createPlatformUser('cross-collection')
+
+    await expect(
+      payload.create({
+        collection: 'clinicStaff',
+        data: {
+          email: `${slugPrefix}-cross-collection@example.com`,
+          firstName: 'Clinic',
+          lastName: 'Identity',
+          status: 'pending',
+          supabaseUserId: platformUser.supabaseUserId,
+        },
+        overrideAccess: true,
+      } as PayloadCreateArgs),
+    ).rejects.toThrow(/already assigned/i)
   })
 
   it('allows platform reads but blocks patient reads', async () => {

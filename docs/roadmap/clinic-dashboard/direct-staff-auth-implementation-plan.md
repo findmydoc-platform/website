@@ -1,5 +1,13 @@
 # Direct Staff Authentication Implementation Plan
 
+## Implementation Status
+
+The direct-principal switch and its non-destructive runtime cleanup are released. The remaining contract stage removes
+the locked `basicUsers` collection and the physical legacy relationship columns after the production preflight,
+authentication checks, relationship verification, backup, and Ops dry-run have passed. Once that contract migration is
+deployed, this document is historical rollout context; collection definitions, migrations, access rules, cache policy,
+and automated tests are the current engineering sources of truth.
+
 ## Purpose
 
 This roadmap document translates
@@ -332,11 +340,12 @@ with it. The same key must be reused when comparing two reports. A missing staff
 Each controlled non-authenticating seed actor must be allowed explicitly by its exact stable ID for that run; prefixes
 and implicit fixture detection are not accepted.
 
-`pnpm staff-auth:inventory` is the explicit pre-migration inventory command and may report that the additive schema is
-not present. After the expand migration, `pnpm staff-auth:preflight` is the rollout gate and fails unless every additive
-identity column exists. Migration `up`, `status`, and schema-diff evidence separately verify the generated indexes and
-foreign keys. Both commands require `STAFF_AUTH_PREFLIGHT_DIGEST_KEY`; controlled seed actors are passed individually
-with `--allow-unbound-staff-stable-id=<stable-id>` after the pnpm argument separator.
+The temporary staff-auth inventory command was the explicit pre-migration inventory and could report that the additive
+schema was not present. After the expand migration, the temporary strict preflight command was the rollout gate and
+failed unless every additive identity column existed. Migration `up`, `status`, and schema-diff evidence separately
+verified the generated indexes and foreign keys. Both temporary commands required `STAFF_AUTH_PREFLIGHT_DIGEST_KEY`;
+controlled seed actors were passed individually with `--allow-unbound-staff-stable-id=<stable-id>` after the pnpm
+argument separator.
 
 The preflight records:
 

@@ -177,13 +177,13 @@ describe('SeedingCardView', () => {
     expect(screen.getByRole('button', { name: 'Export .log' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Export .json' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Copy Logs' })).not.toBeInTheDocument()
-    expect(screen.queryByText(/available to platform basic users only/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/available to platform staff only/)).not.toBeInTheDocument()
   })
 
   it('shows hint-only card for non-platform users', () => {
     render(<SeedingCardView {...baseProps} userType="clinic" isPlatformUser={false} />)
 
-    expect(screen.getByText(/available to platform basic users only/i)).toBeInTheDocument()
+    expect(screen.getByText(/available to platform staff only/i)).toBeInTheDocument()
     expect(screen.queryByText('Seed Baseline')).not.toBeInTheDocument()
     expect(screen.queryByText('Seed Demo')).not.toBeInTheDocument()
   })

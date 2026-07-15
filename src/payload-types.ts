@@ -79,7 +79,6 @@ export interface Config {
     doctorMedia: DoctorMedia;
     userProfileMedia: UserProfileMedia;
     categories: Category;
-    basicUsers: BasicUser;
     patients: Patient;
     clinicStaff: ClinicStaff;
     platformStaff: PlatformStaff;
@@ -142,7 +141,6 @@ export interface Config {
     doctorMedia: DoctorMediaSelect<false> | DoctorMediaSelect<true>;
     userProfileMedia: UserProfileMediaSelect<false> | UserProfileMediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
-    basicUsers: BasicUsersSelect<false> | BasicUsersSelect<true>;
     patients: PatientsSelect<false> | PatientsSelect<true>;
     clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
     platformStaff: PlatformStaffSelect<false> | PlatformStaffSelect<true>;
@@ -2209,37 +2207,6 @@ export interface Form {
   createdAt: string;
 }
 /**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "basicUsers".
- */
-export interface BasicUser {
-  id: number;
-  stableId?: string | null;
-  supabaseUserId?: string | null;
-  /**
-   * Given name
-   */
-  firstName: string;
-  /**
-   * Family name
-   */
-  lastName: string;
-  /**
-   * Email used to sign in
-   */
-  email: string;
-  /**
-   * Choose clinic staff or platform staff
-   */
-  userType: 'clinic' | 'platform';
-  /**
-   * Admin profile photo
-   */
-  profileImage?: (number | null) | UserProfileMedia;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * New clinic applications awaiting review
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2949,10 +2916,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'categories';
         value: number | Category;
-      } | null)
-    | ({
-        relationTo: 'basicUsers';
-        value: number | BasicUser;
       } | null)
     | ({
         relationTo: 'patients';
@@ -3819,21 +3782,6 @@ export interface CategoriesSelect<T extends boolean = true> {
         label?: T;
         id?: T;
       };
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "basicUsers_select".
- */
-export interface BasicUsersSelect<T extends boolean = true> {
-  stableId?: T;
-  supabaseUserId?: T;
-  firstName?: T;
-  lastName?: T;
-  email?: T;
-  userType?: T;
-  profileImage?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -5830,7 +5778,6 @@ export interface TaskCreateCollectionExport {
       | 'doctorMedia'
       | 'userProfileMedia'
       | 'categories'
-      | 'basicUsers'
       | 'patients'
       | 'clinicStaff'
       | 'platformStaff'

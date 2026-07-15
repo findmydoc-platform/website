@@ -8,8 +8,8 @@ describe('Developer dashboard principal mapping', () => {
     expect(resolveDashboardUserType({ collection: 'patients' })).toBe('patient')
   })
 
-  it('rejects legacy and unknown principal shapes', () => {
-    expect(resolveDashboardUserType({ collection: 'basicUsers' })).toBe('unknown')
+  it('rejects unknown principal shapes', () => {
+    expect(resolveDashboardUserType({ collection: 'unknown' })).toBe('unknown')
     expect(resolveDashboardUserType(null)).toBe('unknown')
   })
 })

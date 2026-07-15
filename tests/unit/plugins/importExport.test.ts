@@ -26,7 +26,6 @@ const expectedTargetSlugs = [
 ]
 
 const excludedSensitiveSlugs = [
-  'basicUsers',
   'patients',
   'clinicStaff',
   'platformStaff',

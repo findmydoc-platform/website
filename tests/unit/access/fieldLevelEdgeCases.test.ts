@@ -49,8 +49,8 @@ describe('Field-Level Permission Edge Cases', () => {
         expected: false,
       },
       {
-        scenario: 'User with correct collection but wrong userType',
-        user: { id: 1, collection: 'basicUsers', userType: 'clinic' },
+        scenario: 'User with unknown collection',
+        user: { id: 1, collection: 'unknown' },
         expected: false,
       },
       {
@@ -60,7 +60,7 @@ describe('Field-Level Permission Edge Cases', () => {
       },
       {
         scenario: 'User with missing userType property',
-        user: { id: 1, collection: 'basicUsers' },
+        user: { id: 1 },
         expected: false,
       },
       {
@@ -80,7 +80,7 @@ describe('Field-Level Permission Edge Cases', () => {
       },
       {
         scenario: 'User with boolean userType',
-        user: { id: 1, collection: 'basicUsers', userType: true as unknown as string },
+        user: { id: 1, collection: 'unknown', userType: true as unknown as string },
         expected: false,
       },
       {
@@ -111,8 +111,7 @@ describe('Field-Level Permission Edge Cases', () => {
     test('Malicious user properties should not bypass security', () => {
       const req = createMockReq({
         id: 1,
-        collection: 'basicUsers',
-        userType: 'clinic', // Actual userType
+        collection: 'unknown',
         // Malicious attempts to bypass checks
         isPlatform: true,
         adminAccess: true,

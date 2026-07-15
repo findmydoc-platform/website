@@ -493,7 +493,7 @@ export const NonPlatformHintOnly: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    expect(canvas.getByText(/available to platform basic users only/i)).toBeInTheDocument()
+    expect(canvas.getByText(/available to platform staff only/i)).toBeInTheDocument()
     expect(canvas.queryByRole('button', { name: 'Seed Baseline' })).not.toBeInTheDocument()
   },
 }

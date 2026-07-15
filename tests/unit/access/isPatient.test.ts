@@ -23,7 +23,7 @@ describe('isPatient', () => {
       { userType: 'Null', user: () => null, expected: false },
       {
         userType: 'Wrong collection',
-        user: () => ({ id: 123, collection: 'basicUsers' }),
+        user: () => ({ id: 123, collection: 'unknown' }),
         expected: false,
       },
     ])('$userType returns $expected', ({ user, expected }) => {

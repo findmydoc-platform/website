@@ -20,11 +20,11 @@ import {
   buildMediaPrefixField,
   buildMediaStoragePathField,
   buildMediaUploadConfig,
+  standardMediaImageSizes,
 } from '@/collections/common/mediaCollection'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-const LOOKUP_PAGE_SIZE = 100
 
 const normalizeUserId = (value: unknown): number | null => {
   if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return value
@@ -98,58 +98,76 @@ const ownerMatches = (
   return false
 }
 
-const publishedPlatformAuthorAvatarFilter = async (req: PayloadRequest): Promise<Where> => {
-  const authorIds = new Set<number>()
-  let page = 1
+const denyPublicAvatarRead: Where = { id: { in: [] } }
 
-  while (page > 0) {
-    const posts = await req.payload.find({
-      collection: 'posts',
-      where: { _status: { equals: 'published' } },
-      depth: 0,
-      limit: LOOKUP_PAGE_SIZE,
-      page,
-      select: { authors: true },
-      overrideAccess: true,
-      req,
-    })
+type PublicAvatarLookupArgs = {
+  data?: { filename?: unknown; id?: unknown }
+  id?: unknown
+  isReadingStaticFile?: boolean
+  req: PayloadRequest
+}
 
-    for (const post of posts?.docs ?? []) {
-      if (!Array.isArray(post.authors)) continue
-      for (const author of post.authors) {
-        const id = normalizeUserId(typeof author === 'object' ? author.id : author)
-        if (id !== null) authorIds.add(id)
-      }
-    }
+const requestedMediaIds = async ({ data, id, isReadingStaticFile, req }: PublicAvatarLookupArgs) => {
+  const requestedId = normalizeUserId(id ?? data?.id)
+  if (requestedId !== null) return [requestedId]
 
-    page = posts?.hasNextPage && posts.nextPage ? posts.nextPage : 0
-  }
+  if (!isReadingStaticFile || typeof data?.filename !== 'string' || !data.filename.trim().length) return []
 
-  if (authorIds.size === 0) return { id: { in: [] } }
+  const filename = data.filename.trim()
+  const matchingMedia = await req.payload.find({
+    collection: 'userProfileMedia',
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    select: { filename: true },
+    overrideAccess: true,
+    req,
+    where: {
+      or: [
+        { filename: { equals: filename } },
+        ...standardMediaImageSizes.map((size) => ({ [`sizes.${size.name}.filename`]: { equals: filename } })),
+      ],
+    },
+  })
 
-  const authorIdList = Array.from(authorIds)
-  const mediaIds = new Set<number>()
+  return matchingMedia.docs.map((media) => media.id)
+}
 
-  for (let offset = 0; offset < authorIdList.length; offset += LOOKUP_PAGE_SIZE) {
-    const principals = await req.payload.find({
-      collection: 'platformStaff',
-      where: { id: { in: authorIdList.slice(offset, offset + LOOKUP_PAGE_SIZE) } },
-      depth: 0,
-      limit: LOOKUP_PAGE_SIZE,
-      pagination: false,
-      select: { profileImage: true },
-      overrideAccess: true,
-      req,
-    })
+const publishedPlatformAuthorAvatarFilter = async (args: PublicAvatarLookupArgs): Promise<Where> => {
+  const mediaIds = await requestedMediaIds(args)
+  if (mediaIds.length === 0) return denyPublicAvatarRead
 
-    for (const principal of principals.docs) {
-      const mediaId = normalizeUserId(principal.profileImage)
-      if (mediaId !== null) mediaIds.add(mediaId)
-    }
-  }
+  const principals = await args.req.payload.find({
+    collection: 'platformStaff',
+    depth: 0,
+    limit: mediaIds.length,
+    pagination: false,
+    select: { profileImage: true },
+    overrideAccess: true,
+    req: args.req,
+    where: { profileImage: { in: mediaIds } },
+  })
+
+  const principalIds = principals.docs.map((principal) => principal.id)
+  if (principalIds.length === 0) return denyPublicAvatarRead
+
+  const publishedPost = await args.req.payload.find({
+    collection: 'posts',
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    select: { slug: true },
+    overrideAccess: true,
+    req: args.req,
+    where: {
+      and: [{ _status: { equals: 'published' } }, { authors: { in: principalIds } }],
+    },
+  })
+
+  if (publishedPost.docs.length === 0) return denyPublicAvatarRead
 
   return {
-    and: [{ 'user.relationTo': { equals: 'platformStaff' } }, { id: { in: Array.from(mediaIds) } }],
+    and: [{ 'user.relationTo': { equals: 'platformStaff' } }, { id: { in: mediaIds } }],
   }
 }
 
@@ -166,11 +184,11 @@ export const UserProfileMedia: CollectionConfig = {
     },
   },
   access: {
-    read: async ({ req }) => {
+    read: async ({ data, id, isReadingStaticFile, req }) => {
       if (isPlatformBasicUser({ req })) return true
 
       const ownedFilter = ownerFilter(req)
-      const publicAuthorAvatarFilter = await publishedPlatformAuthorAvatarFilter(req)
+      const publicAuthorAvatarFilter = await publishedPlatformAuthorAvatarFilter({ data, id, isReadingStaticFile, req })
 
       return ownedFilter ? { or: [ownedFilter, publicAuthorAvatarFilter] } : publicAuthorAvatarFilter
     },

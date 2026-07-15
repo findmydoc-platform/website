@@ -42,6 +42,7 @@ import * as migration_20260622_191754_add_doctor_media_stable_id from './2026062
 import * as migration_20260714_142106_direct_staff_auth_expand from './20260714_142106_direct_staff_auth_expand'
 import * as migration_20260714_172812_direct_staff_auth_switch from './20260714_172812_direct_staff_auth_switch'
 import * as migration_20260715_070513_direct_staff_auth_follow_up from './20260715_070513_direct_staff_auth_follow_up'
+import * as migration_20260715_200710_landing_subscription_pricing_compatibility from './20260715_200710_landing_subscription_pricing_compatibility'
 
 export const migrations = [
   {
@@ -263,5 +264,10 @@ export const migrations = [
     up: migration_20260715_070513_direct_staff_auth_follow_up.up,
     down: migration_20260715_070513_direct_staff_auth_follow_up.down,
     name: '20260715_070513_direct_staff_auth_follow_up',
+  },
+  {
+    up: migration_20260715_200710_landing_subscription_pricing_compatibility.up,
+    down: migration_20260715_200710_landing_subscription_pricing_compatibility.down,
+    name: '20260715_200710_landing_subscription_pricing_compatibility',
   },
 ]

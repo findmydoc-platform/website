@@ -38,7 +38,7 @@ const respond = (res: unknown, statusCode: number, body: unknown) => {
 }
 
 const isPlatformSeedUser = (req: PayloadRequest): boolean => {
-  return (req.user as { userType?: string } | null | undefined)?.userType === 'platform'
+  return req.user?.collection === 'platformStaff'
 }
 
 const getSeedType = (req: PayloadRequest): SeedType | null => {

@@ -8,7 +8,7 @@ import { testSlug } from '../fixtures/testSlug'
 import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { asBasicUserPayload } from '../fixtures/clinicUserFixtures'
 import { createTinyPngFile } from '../fixtures/mediaFile'
-import type { BasicUser, Patient, PlatformContentMedia } from '@/payload-types'
+import type { ClinicStaff, Patient, PlatformContentMedia, PlatformStaff } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -18,43 +18,45 @@ describe('PlatformContentMedia integration - lifecycle', () => {
   let payload: Payload
   const slugPrefix = testSlug('platformContentMedia.lifecycle.test.ts')
   const createdMediaIds: Array<number> = []
-  const createdUserIds: Array<number> = []
+  const createdPlatformStaffIds: Array<number> = []
+  const createdClinicStaffIds: Array<number> = []
   const createdPatientIds: Array<number> = []
 
   const uniqueSupabaseUserId = (suffix: string) => `${slugPrefix}-${suffix}-${randomUUID()}`
 
   const createPlatformUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const platformStaff = (await payload.create({
+      collection: 'platformStaff',
       data: {
         email: `${slugPrefix}-${suffix}@findmydoc.eu`,
         supabaseUserId: uniqueSupabaseUserId(suffix),
-        userType: 'platform',
         firstName: 'Platform',
         lastName: `User-${suffix}`,
+        role: 'support',
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
-    })) as BasicUser
+    })) as PlatformStaff
 
-    createdUserIds.push(basicUser.id)
-    return basicUser
+    createdPlatformStaffIds.push(platformStaff.id)
+    return platformStaff
   }
 
   const createClinicUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const clinicStaff = (await payload.create({
+      collection: 'clinicStaff',
       data: {
         email: `${slugPrefix}-clinic-${suffix}@example.com`,
         supabaseUserId: uniqueSupabaseUserId(`clinic-${suffix}`),
-        userType: 'clinic',
         firstName: 'Clinic',
         lastName: `User-${suffix}`,
+        status: 'pending',
       },
       overrideAccess: true,
-    })) as BasicUser
+    })) as ClinicStaff
 
-    createdUserIds.push(basicUser.id)
-    return basicUser
+    createdClinicStaffIds.push(clinicStaff.id)
+    return clinicStaff
   }
 
   const createPatientUser = async (suffix: string) => {
@@ -82,7 +84,8 @@ describe('PlatformContentMedia integration - lifecycle', () => {
     await cleanupTrackedDocs(payload, [
       { collection: 'platformContentMedia', ids: createdMediaIds },
       { collection: 'patients', ids: createdPatientIds },
-      { collection: 'basicUsers', ids: createdUserIds },
+      { collection: 'clinicStaff', ids: createdClinicStaffIds },
+      { collection: 'platformStaff', ids: createdPlatformStaffIds },
     ])
   })
 

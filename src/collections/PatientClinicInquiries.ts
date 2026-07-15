@@ -223,13 +223,10 @@ export const PatientClinicInquiries: CollectionConfig = {
     {
       name: 'assignedTo',
       type: 'relationship',
-      relationTo: 'basicUsers',
+      relationTo: 'platformStaff',
       admin: {
         description: 'Platform user handling this request',
       },
-      filterOptions: () => ({
-        userType: { equals: 'platform' },
-      }),
     },
   ],
   timestamps: true,

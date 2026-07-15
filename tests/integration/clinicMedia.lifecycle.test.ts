@@ -42,7 +42,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     await cleanupTrackedDocs(payload, [
       { collection: 'clinicMedia', ids: createdMediaIds },
       { collection: 'clinicStaff', ids: createdClinicStaffIds },
-      { collection: 'basicUsers', ids: createdBasicUserIds },
+      { collection: 'platformStaff', ids: createdBasicUserIds },
     ])
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
@@ -74,7 +74,7 @@ describe('ClinicMedia integration - lifecycle', () => {
 
     createdMediaIds.push(created.id)
 
-    expect(created.createdBy).toBe(basicUser.id)
+    expect(created.createdBy).toEqual({ relationTo: 'clinicStaff', value: basicUser.id })
     expect(created.storagePath).toMatch(new RegExp(`^clinics/${clinic.id}-[a-f0-9]{10}-.+\\.png$`))
   })
 
@@ -205,7 +205,7 @@ describe('ClinicMedia integration - lifecycle', () => {
       depth: 0,
     } as PayloadUpdateArgs)) as ClinicMedia
 
-    expect(updated.createdBy).toBe(basicUser.id)
+    expect(updated.createdBy).toEqual({ relationTo: 'clinicStaff', value: basicUser.id })
     expect(updated.storagePath).toMatch(new RegExp(`^clinics/${clinic.id}-(\\d+|[a-f0-9]{10})-.+\\.png$`))
   })
 

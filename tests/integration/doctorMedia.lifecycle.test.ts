@@ -42,7 +42,7 @@ describe('DoctorMedia integration - lifecycle', () => {
     await cleanupTrackedDocs(payload, [
       { collection: 'doctorMedia', ids: createdMediaIds },
       { collection: 'clinicStaff', ids: createdClinicStaffIds },
-      { collection: 'basicUsers', ids: createdBasicUserIds },
+      { collection: 'platformStaff', ids: createdBasicUserIds },
     ])
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
@@ -74,7 +74,7 @@ describe('DoctorMedia integration - lifecycle', () => {
 
     createdMediaIds.push(created.id)
 
-    expect(created.createdBy).toBe(basicUser.id)
+    expect(created.createdBy).toEqual({ relationTo: 'clinicStaff', value: basicUser.id })
     expect(created.clinic).toBe(clinic.id)
     expect(created.storagePath).toMatch(new RegExp(`^doctors/${doctor.id}-[a-f0-9]{10}-.+\\.png$`))
   })

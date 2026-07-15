@@ -1,4 +1,4 @@
-export type UserType = 'patient' | 'clinic' | 'platform'
+export type UserType = 'patient' | 'platform'
 
 export interface LoginRequest {
   email: string

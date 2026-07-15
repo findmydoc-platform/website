@@ -14,8 +14,8 @@ export const mockUsers = {
    */
   platform: (id = 1) => ({
     id,
-    collection: 'basicUsers',
-    userType: 'platform',
+    collection: 'platformStaff',
+    role: 'admin',
   }),
 
   /**
@@ -23,9 +23,9 @@ export const mockUsers = {
    */
   clinic: (id = 2, clinicId = 1) => ({
     id,
-    collection: 'basicUsers',
-    userType: 'clinic',
-    clinicId,
+    collection: 'clinicStaff',
+    clinic: clinicId,
+    status: 'approved',
   }),
 
   /**

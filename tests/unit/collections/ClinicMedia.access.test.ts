@@ -103,6 +103,7 @@ describe('ClinicMedia Collection Access Control', () => {
     test('Clinic staff can create when they have an assigned clinic', async () => {
       const user = mockUsers.clinic(2, mockClinicId)
       const req = createMockReq(user, payload)
+      payload.find.mockResolvedValueOnce({ docs: [{ clinic: mockClinicId, status: 'approved' }] })
       const can = await ClinicMedia.access!.create!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, {
           payload,
@@ -115,6 +116,7 @@ describe('ClinicMedia Collection Access Control', () => {
     test('Clinic staff create access does not depend on incoming clinic data', async () => {
       const user = mockUsers.clinic(2, 999)
       const req = createMockReq(user, payload)
+      payload.find.mockResolvedValueOnce({ docs: [{ clinic: 999, status: 'approved' }] })
       const can = await ClinicMedia.access!.create!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, {
           payload,
@@ -152,6 +154,7 @@ describe('ClinicMedia Collection Access Control', () => {
     test('Clinic staff can create when data.clinic is missing', async () => {
       const user = mockUsers.clinic(2, mockClinicId)
       const req = createMockReq(user, payload)
+      payload.find.mockResolvedValueOnce({ docs: [{ clinic: mockClinicId, status: 'approved' }] })
       const can = await ClinicMedia.access!.create!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, {
           payload,

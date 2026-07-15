@@ -7,7 +7,7 @@ import { toLoggedError } from '@/utilities/logging/shared'
 const loginSchema = z.object({
   email: z.string(),
   password: z.string(),
-  allowedUserTypes: z.array(z.enum(['patient', 'clinic', 'platform'])).min(1),
+  allowedUserTypes: z.array(z.enum(['patient', 'platform'])).min(1),
 })
 
 export async function POST(request: NextRequest) {
@@ -59,9 +59,6 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       )
     }
-
-    // For clinic users, verify they are approved (handled by auth strategy)
-    // The auth strategy will do the final verification
 
     // Determine redirect URL based on user type
     const redirectUrl = tokenUserType === 'patient' ? '/patient/dashboard' : '/admin'

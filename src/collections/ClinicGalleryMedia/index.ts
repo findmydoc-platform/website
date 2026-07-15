@@ -65,7 +65,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
         field: 'storageKey',
         message: 'Storage key cannot be changed once set',
       }),
-      beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' }),
+      beforeChangeCreatedBy({ createdByField: 'createdBy' }),
       beforeChangeComputeStorage({
         ownerField: 'clinic',
         key: { type: 'field', name: 'storageKey' },
@@ -104,8 +104,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
       index: true,
       admin: {
         description: 'Clinic that owns this media',
-        condition: (_data, _siblingData, { user }) =>
-          !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
+        condition: (_data, _siblingData, { user }) => !(user && user.collection === 'clinicStaff'),
       },
     },
     {
@@ -133,7 +132,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
       },
     },
     buildMediaCreatedByField({
-      relationTo: 'basicUsers',
+      relationTo: ['platformStaff', 'clinicStaff'],
       label: 'Created By',
       readOnly: true,
       position: 'sidebar',

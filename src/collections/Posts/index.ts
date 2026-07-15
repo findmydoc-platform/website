@@ -229,12 +229,7 @@ export const Posts: CollectionConfig<'posts'> = {
       },
       hasMany: true,
       maxDepth: 1,
-      relationTo: 'basicUsers',
-      filterOptions: {
-        userType: {
-          equals: 'platform',
-        },
-      },
+      relationTo: 'platformStaff',
     },
     // This virtual field projects safe public author metadata from `authors`.
     // The underlying relation remains persisted on the post document.

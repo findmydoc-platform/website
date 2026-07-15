@@ -1,5 +1,5 @@
 import type { Payload, PayloadRequest } from 'payload'
-import type { BasicUser } from '@/payload-types'
+import type { PlatformStaff } from '@/payload-types'
 import { createStableIdResolvers } from '../utils/resolvers'
 import { importCollection } from '../utils/import-collection'
 import { importGlobals } from '../utils/import-globals'
@@ -25,14 +25,13 @@ const resolvePlatformSeedActorId = async (
   if (req?.user && typeof req.user === 'object' && 'collection' in req.user && 'id' in req.user) {
     const collection = (req.user as { collection?: unknown }).collection
     const id = (req.user as { id?: unknown }).id
-    if (collection === 'basicUsers' && (typeof id === 'string' || typeof id === 'number')) {
+    if (collection === 'platformStaff' && (typeof id === 'string' || typeof id === 'number')) {
       return id
     }
   }
 
   const users = await payload.find({
-    collection: 'basicUsers',
-    where: { userType: { equals: 'platform' } },
+    collection: 'platformStaff',
     limit: 1,
     sort: 'createdAt',
     overrideAccess: true,
@@ -51,19 +50,19 @@ const resolveSeedReqForJob = async (
   }
 
   const resolvers = createStableIdResolvers(payload)
-  const userId = await resolvers.resolveIdByStableId('basicUsers', input.reqUserStableId)
+  const userId = await resolvers.resolveIdByStableId('platformStaff', input.reqUserStableId)
   if (!userId) {
     return undefined
   }
 
   const userDoc = (await payload.findByID({
-    collection: 'basicUsers',
+    collection: 'platformStaff',
     id: userId,
     overrideAccess: true,
-  })) as BasicUser
+  })) as PlatformStaff
 
   return {
-    user: { ...userDoc, collection: 'basicUsers' } as NonNullable<PayloadRequest['user']>,
+    user: { ...userDoc, collection: 'platformStaff' } as NonNullable<PayloadRequest['user']>,
   }
 }
 
@@ -72,7 +71,7 @@ const resolveAuthenticatedPlatformUserId = (req: PayloadRequest): string | numbe
   if (!user || typeof user !== 'object') return null
 
   const candidate = user as { collection?: unknown; id?: unknown; userType?: unknown }
-  if (candidate.collection !== 'basicUsers' || candidate.userType !== 'platform') return null
+  if (candidate.collection !== 'platformStaff') return null
 
   if (typeof candidate.id === 'number' && Number.isFinite(candidate.id)) {
     return candidate.id

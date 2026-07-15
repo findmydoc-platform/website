@@ -149,7 +149,7 @@ export const platformOrOwnClinicDoctorResource: Access = async ({ req }) => {
  */
 export const platformOnlyOrPublished: Access = ({ req: { user } }) => {
   // Platform Staff: Full access to all content including drafts
-  if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
+  if (user && user.collection === 'platformStaff') {
     return true
   }
 
@@ -167,7 +167,7 @@ export const platformOnlyOrPublished: Access = ({ req: { user } }) => {
  */
 export const platformOnlyOrApproved: Access = ({ req: { user } }) => {
   // Platform Staff: Full access to all clinics including drafts/pending
-  if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
+  if (user && user.collection === 'platformStaff') {
     return true
   }
 
@@ -185,7 +185,7 @@ export const platformOnlyOrApproved: Access = ({ req: { user } }) => {
  */
 export const platformOnlyOrApprovedReviews: Access = ({ req: { user } }) => {
   // Platform Staff: Full access to all reviews for moderation
-  if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
+  if (user && user.collection === 'platformStaff') {
     return true
   }
 

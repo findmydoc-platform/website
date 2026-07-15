@@ -6,7 +6,12 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import { asPayloadBasicUser, createPatientTestUser, createPlatformTestUser } from '../fixtures/testUsers'
+import {
+  asPayloadBasicUser,
+  cleanupTrackedUsers,
+  createPatientTestUser,
+  createPlatformTestUser,
+} from '../fixtures/testUsers'
 import type { Review } from '@/payload-types'
 
 const createdBasicUserIds: Array<string | number> = []
@@ -53,13 +58,7 @@ describe('Review audit trail hooks', () => {
       reviewId = null
     }
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds })
 
     while (createdPatientIds.length) {
       const id = createdPatientIds.pop()

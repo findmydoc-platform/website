@@ -145,7 +145,7 @@ export const createMockReq = (
 ): MockRequest => {
   const effectivePayload = payload ?? createMockPayload()
 
-  if (user && (user as { userType?: string }).userType === 'clinic' && !payload) {
+  if (user && (user as { collection?: string }).collection === 'clinicStaff' && !payload) {
     const clinicId =
       (user as { clinic?: number; clinicId?: number; id?: number | string }).clinic ??
       (user as { clinicId?: number; id?: number | string }).clinicId ??

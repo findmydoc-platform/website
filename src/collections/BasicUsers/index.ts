@@ -1,37 +1,17 @@
 import type { CollectionConfig } from 'payload'
-import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { createUserProfileHook } from './hooks/createUserProfile'
-import { createSupabaseUserHook } from './hooks/createSupabaseUser'
-import { deleteSupabaseUserHook } from './hooks/deleteSupabaseUser'
-import { enforcePlatformStaffEmailDomainHook } from './hooks/enforcePlatformStaffEmailDomain'
-import { stableIdBeforeChangeHook, stableIdField } from '../common/stableIdField'
+import { stableIdField } from '../common/stableIdField'
 
-// Authentication collection for Clinic and Platform Staff (Admin UI access)
+// Temporary, fully locked legacy data retained until the separate contract migration.
 export const BasicUsers: CollectionConfig = {
   slug: 'basicUsers',
-  auth: {
-    useSessions: false,
-    disableLocalStrategy: true,
-    strategies: [supabaseStrategy],
-  },
   admin: {
-    group: 'User Management',
-    useAsTitle: 'firstName',
-    description: 'Accounts for people who can sign in to the admin area',
-    defaultColumns: ['email', 'firstName', 'lastName', 'userType'],
-    groupBy: true,
+    hidden: true,
   },
   access: {
-    read: isPlatformBasicUser,
-    create: isPlatformBasicUser,
-    update: isPlatformBasicUser,
-    delete: isPlatformBasicUser,
-  },
-  hooks: {
-    beforeChange: [stableIdBeforeChangeHook, enforcePlatformStaffEmailDomainHook, createSupabaseUserHook],
-    afterChange: [createUserProfileHook],
-    beforeDelete: [deleteSupabaseUserHook],
+    read: () => false,
+    create: () => false,
+    update: () => false,
+    delete: () => false,
   },
   fields: [
     stableIdField(),

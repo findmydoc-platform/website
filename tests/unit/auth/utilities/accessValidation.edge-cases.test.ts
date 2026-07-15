@@ -9,17 +9,22 @@ import {
   validateUserAccess,
 } from '@/auth/utilities/accessValidation'
 import type { UserResult, UserType } from '@/auth/types/authTypes'
-import type { BasicUser, Patient } from '@/payload-types'
+import type { ClinicStaff as PayloadClinicStaff, Patient } from '@/payload-types'
 import { createMockPayload } from '../../helpers/testHelpers'
 import type { Payload } from 'payload'
 
-const makeBasicUser = (overrides: Partial<BasicUser> = {}): BasicUser => ({
+type ClinicUser = PayloadClinicStaff
+type ClinicUserOverrides = Partial<ClinicUser> & { userType?: string }
+
+const makeClinicUser = (overrides: ClinicUserOverrides = {}): ClinicUser => ({
   id: overrides.id ?? 123,
-  collection: overrides.collection ?? 'basicUsers',
+  collection: 'clinicStaff',
   email: overrides.email ?? 'user@example.com',
   firstName: overrides.firstName ?? 'Test',
   lastName: overrides.lastName ?? 'User',
-  userType: overrides.userType ?? 'clinic',
+  stableId: overrides.stableId ?? 'clinic-user-123',
+  status: overrides.status ?? 'approved',
+  clinic: overrides.clinic,
   createdAt: overrides.createdAt ?? '2023-01-01',
   updatedAt: overrides.updatedAt ?? '2023-01-02',
   supabaseUserId: overrides.supabaseUserId,
@@ -44,9 +49,9 @@ const makePatient = (overrides: Partial<Patient> = {}): Patient => ({
   profileImage: overrides.profileImage,
 })
 
-const basicUserResult = (overrides: Partial<BasicUser> = {}): UserResult => ({
-  user: makeBasicUser(overrides),
-  collection: 'basicUsers',
+const basicUserResult = (overrides: ClinicUserOverrides = {}): UserResult => ({
+  user: makeClinicUser(overrides),
+  collection: 'clinicStaff',
 })
 
 const patientUserResult = (overrides: Partial<Patient> = {}): UserResult => ({
@@ -167,8 +172,7 @@ describe('accessValidation edge cases', () => {
       expect(mockPayload.find).toHaveBeenCalledWith({
         collection: 'clinicStaff',
         where: {
-          user: { equals: 456 },
-          status: { equals: 'approved' },
+          and: [{ id: { equals: 456 } }, { status: { equals: 'approved' } }, { clinic: { exists: true } }],
         },
         limit: 1,
         overrideAccess: true,

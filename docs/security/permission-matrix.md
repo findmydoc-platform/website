@@ -62,7 +62,7 @@ Human-readable and machine-readable views are generated from the config on deman
 If you need to change permissions, update `src/security/permission-matrix.config.ts` and regenerate as needed.
 
 ### Notes on Specific Rows
-* ClinicStaff: Authentication is denied entirely until the staff profile is approved. After approval, Clinic Staff can read all staff in their own clinic and target only their own profile for updates; `user`, `clinic`, and `status` remain Platform-only at field level. Create/Delete operations occur exclusively via the BasicUsers lifecycle (no direct create/delete even for Platform Staff) †‡.
+* ClinicStaff: Authentication is denied entirely until the direct staff principal is approved. After approval, Clinic Staff can read all staff in their own clinic and target only their own principal for updates; `clinic` and `status` remain Platform-only at field level. Create/Delete operations occur exclusively through the trusted provisioning path (no direct create/delete even for Platform Staff) †‡.
 * Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
 * Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
 * PlatformContentMedia: Publicly readable marketing / page assets. Write restricted to Platform.
@@ -70,14 +70,14 @@ If you need to change permissions, update `src/security/permission-matrix.config
 * DoctorMedia: Similar scoping to ClinicMedia; ownership derives from doctor -> clinic relationship; `clinic` denormalized for access filtering.
 * UserProfileMedia: Self or Platform management of avatars; owner + createdBy auto-stamped for patients and staff uploads.
 * Global Upload Limit: 5MB per file (configured in root Payload `upload.limits.fileSize`).
-* † Provisioning and deletion of PlatformStaff & ClinicStaff profiles are performed indirectly through BasicUsers lifecycle hooks (no direct profile create/delete endpoints or UI forms).
+* † Provisioning and deletion of PlatformStaff & ClinicStaff principals are performed through the trusted provisioning path (no direct create/delete endpoints or UI forms).
 * ‡ ClinicStaff row: RW shown is conditional; before approval there is no authentication and therefore no access.
 
 ---
 
 ## 🛡️ Security Notes
 * Cross-clinic isolation enforced in access functions (Clinic Staff never read other clinics' protected data).
-* Staff profile create/delete only via BasicUsers lifecycle hooks (no direct profile CRUD endpoints/forms).
+* Staff principal create/delete only through the trusted provisioning path (no direct CRUD endpoints/forms).
 * Clinic Staff authentication denied until profile approved (no partial API access pre-approval).
 * Platform Staff are sole moderators (reviews, master data, approvals).
 * Patients cannot self-create/delete patient record; identity originates in Supabase.
@@ -90,7 +90,7 @@ Create/update/delete + provisioning events logged (basic logs only; advanced met
 ## 🔄 Key Workflows (Security-Focused)
 ### Clinic Onboarding
 1. Anonymous submission → `clinicApplications` (status `submitted`)
-2. Platform approval → provisioning hook creates Clinic (pending), BasicUser (clinic), ClinicStaff (pending)
+2. Platform approval → provisioning creates Clinic (pending) and ClinicStaff (pending)
 3. Platform finalizes & approves Clinic; ClinicStaff approved → gains access
 
 ---
@@ -100,7 +100,7 @@ Create/update/delete + provisioning events logged (basic logs only; advanced met
 ### **Clinic Onboarding Process**
 1. **Platform Staff** creates clinic profile and initial configuration
 2. **Platform Staff** approves clinic listing for public visibility
-3. **Clinic Staff** applies / is provisioned (BasicUser + pending ClinicStaff profile) — authentication still denied
+3. **Clinic Staff** applies / is provisioned as pending ClinicStaff — authentication still denied
 4. **Platform Staff** reviews and approves clinic staff application (status -> approved)
 5. **Clinic Staff** (now approved) authenticates, completes profile, and adds doctors / service offerings
 

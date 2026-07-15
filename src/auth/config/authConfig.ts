@@ -16,15 +16,15 @@ export type UserType = (typeof VALID_USER_TYPES)[number]
  */
 export const USER_CONFIG = {
   clinic: {
-    collection: 'basicUsers' as const,
-    profileCollection: 'clinicStaff' as const,
-    requiresProfile: true,
+    collection: 'clinicStaff' as const,
+    profileCollection: null,
+    requiresProfile: false,
     requiresApproval: true,
   },
   platform: {
-    collection: 'basicUsers' as const,
-    profileCollection: 'platformStaff' as const,
-    requiresProfile: true,
+    collection: 'platformStaff' as const,
+    profileCollection: null,
+    requiresProfile: false,
     requiresApproval: false,
   },
   patient: {
@@ -38,7 +38,7 @@ export const USER_CONFIG = {
 /**
  * Get user configuration for a specific user type
  */
-export function getUserConfig(userType: string) {
+export function getUserConfig(userType: string): import('@/auth/types/authTypes').UserConfig {
   if (!VALID_USER_TYPES.includes(userType as UserType)) {
     throw new Error(`Invalid user type: ${userType}`)
   }

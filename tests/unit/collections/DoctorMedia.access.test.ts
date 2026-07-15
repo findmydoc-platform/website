@@ -125,6 +125,7 @@ describe('DoctorMedia Collection Access Control', () => {
     test('Clinic staff can create if doctor belongs to their clinic', async () => {
       const req = createMockReq(mockUsers.clinic(5, clinicId), mockPayload)
       // getDoctorClinicId -> payload.findByID invoked; we mock via a helper method pattern used in hook path
+      vi.mocked(mockPayload.find).mockResolvedValueOnce({ docs: [{ clinic: clinicId, status: 'approved' }] })
       vi.mocked(mockPayload.findByID).mockResolvedValueOnce({ clinic: clinicId })
       const can = await DoctorMedia.access!.create!(
         createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, {

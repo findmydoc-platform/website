@@ -12,7 +12,7 @@ type McpCollectionConfig = {
   }
 }
 
-const mcpUserCollection: CollectionSlug = 'basicUsers'
+const mcpUserCollection: CollectionSlug = 'platformStaff'
 
 const mcpReadCollections = [
   'pages',

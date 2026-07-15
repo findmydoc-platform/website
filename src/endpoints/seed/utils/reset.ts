@@ -26,7 +26,6 @@ const demoResetOrder: CollectionSlug[] = [
   'platformStaff',
   'clinicStaff',
   'userProfileMedia',
-  'basicUsers',
 ]
 
 const baselineResetOrder: CollectionSlug[] = [
@@ -55,12 +54,6 @@ const buildResetWhere = (collection: CollectionSlug, preservePlatformUserId?: st
   }
 
   if (collection === 'platformStaff') {
-    return {
-      and: [allDocuments, { user: { not_equals: preservePlatformUserId } }],
-    }
-  }
-
-  if (collection === 'basicUsers') {
     return {
       and: [allDocuments, { id: { not_equals: preservePlatformUserId } }],
     }

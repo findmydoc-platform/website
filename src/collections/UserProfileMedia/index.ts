@@ -9,6 +9,10 @@ import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from
 import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
 import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
+import {
+  revalidateDeletedUserProfileMediaPlatformAuthorPosts,
+  revalidateUserProfileMediaPlatformAuthorPosts,
+} from './hooks/revalidatePlatformAuthorPosts'
 import type { UserProfileMedia as UserProfileMediaType } from '@/payload-types'
 import {
   buildMediaCreatedByField,
@@ -55,11 +59,11 @@ const extractPolymorphicRelationKey = (value: unknown): string | null => {
 const ownerFilter = (req: PayloadRequest): Where | null => {
   const user = req?.user
   if (!user) return null
-  if (user.collection !== 'basicUsers' && user.collection !== 'patients') return null
+  if (!['platformStaff', 'clinicStaff', 'patients'].includes(user.collection)) return null
   // NOTE: The `user` field on this collection is a polymorphic relationship stored
   // by Payload as an object with `{ relationTo, value }`. To scope queries to
   // media owned by the current authenticated user, we must match BOTH:
-  // - `user.relationTo`: the underlying collection slug (`basicUsers` | `patients`)
+  // - `user.relationTo`: the underlying principal collection
   // - `user.value`: the related document id
   // Using an `and` condition here ensures the filter shape aligns with how Payload
   // persists polymorphic relationships in the database and avoids returning media
@@ -77,7 +81,7 @@ const ownerMatches = (
 ) => {
   const user = req?.user
   if (!user) return false
-  if (user.collection !== 'basicUsers' && user.collection !== 'patients') return false
+  if (!['platformStaff', 'clinicStaff', 'patients'].includes(user.collection)) return false
 
   if (ownerValue && typeof ownerValue === 'object') {
     const relationTo = ownerValue.relationTo ?? ownerValue.collection
@@ -90,6 +94,50 @@ const ownerMatches = (
   }
 
   return false
+}
+
+const publishedPlatformAuthorAvatarFilter = async (req: PayloadRequest): Promise<Where> => {
+  const posts = await req.payload.find({
+    collection: 'posts',
+    where: { _status: { equals: 'published' } },
+    depth: 0,
+    limit: 1000,
+    pagination: false,
+    select: { authors: true },
+    overrideAccess: true,
+    req,
+  })
+  const authorIds = Array.from(
+    new Set(
+      (posts?.docs ?? []).flatMap((post) =>
+        Array.isArray(post.authors)
+          ? post.authors
+              .map((author) => normalizeUserId(typeof author === 'object' ? author.id : author))
+              .filter((id): id is number => id !== null)
+          : [],
+      ),
+    ),
+  )
+
+  if (authorIds.length === 0) return { id: { in: [] } }
+
+  const principals = await req.payload.find({
+    collection: 'platformStaff',
+    where: { id: { in: authorIds } },
+    depth: 0,
+    limit: authorIds.length,
+    pagination: false,
+    select: { profileImage: true },
+    overrideAccess: true,
+    req,
+  })
+  const mediaIds = (principals?.docs ?? [])
+    .map((principal) => normalizeUserId(principal.profileImage))
+    .filter((id): id is number => id !== null)
+
+  return {
+    and: [{ 'user.relationTo': { equals: 'platformStaff' } }, { id: { in: mediaIds } }],
+  }
 }
 
 export const UserProfileMedia: CollectionConfig = {
@@ -105,15 +153,13 @@ export const UserProfileMedia: CollectionConfig = {
     },
   },
   access: {
-    read: ({ req }) => {
+    read: async ({ req }) => {
       if (isPlatformBasicUser({ req })) return true
 
       const ownedFilter = ownerFilter(req)
       if (ownedFilter) return ownedFilter
 
-      // Public read is required for platform-staff avatars rendered on public pages.
-      // Restrict to BasicUser-owned media and keep patient-owned uploads private.
-      return { 'user.relationTo': { equals: 'basicUsers' } }
+      return publishedPlatformAuthorAvatarFilter(req)
     },
     create: ({ req, data }) => {
       if (isPlatformBasicUser({ req })) return true
@@ -127,7 +173,7 @@ export const UserProfileMedia: CollectionConfig = {
         | number
         | { relationTo?: string; collection?: string; value?: string | number; id?: string | number }
 
-      // NOTE: When creating media via an `upload` field (e.g. BasicUsers.profileImage),
+      // NOTE: When creating media via an `upload` field (for example a profile image),
       // Payload can submit the file before `user` is present. In that case we allow
       // the create and rely on the beforeChange hook to set `user` to the requester.
       if (incomingOwner == null) return true
@@ -139,6 +185,8 @@ export const UserProfileMedia: CollectionConfig = {
   },
   trash: true,
   hooks: {
+    afterChange: [revalidateUserProfileMediaPlatformAuthorPosts],
+    afterDelete: [revalidateDeletedUserProfileMediaPlatformAuthorPosts],
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [
       stableIdBeforeChangeHook,
@@ -161,27 +209,33 @@ export const UserProfileMedia: CollectionConfig = {
         const requester = req?.user as undefined | null | { id?: unknown; collection?: unknown; userType?: unknown }
 
         if (!requester) return draft
-        if (requester.collection !== 'basicUsers' && requester.collection !== 'patients') return draft
+        if (!['platformStaff', 'clinicStaff', 'patients'].includes(String(requester.collection))) return draft
 
         const requesterId = normalizeUserId(requester.id)
         if (requesterId == null) return draft
 
         if (draft.user == null) {
-          draft.user = { relationTo: requester.collection, value: requesterId }
+          draft.user = {
+            relationTo: requester.collection as 'platformStaff' | 'clinicStaff' | 'patients',
+            value: requesterId,
+          }
         }
 
         return draft
       },
-      // Stamp createdBy for both basicUsers and patients
+      // Stamp createdBy from every direct principal and prevent client-side spoofing.
       async ({ data, operation, req }) => {
         const draft = { ...(data || {}) } as Partial<UserProfileMediaType>
         if (
           operation === 'create' &&
           req?.user &&
-          (req.user.collection === 'basicUsers' || req.user.collection === 'patients')
+          ['platformStaff', 'clinicStaff', 'patients'].includes(req.user.collection)
         ) {
           // Always overwrite on create to prevent client-side spoofing.
-          draft.createdBy = { relationTo: req.user.collection, value: req.user.id }
+          draft.createdBy = {
+            relationTo: req.user.collection as 'platformStaff' | 'clinicStaff' | 'patients',
+            value: req.user.id,
+          }
         }
         return draft
       },
@@ -206,7 +260,7 @@ export const UserProfileMedia: CollectionConfig = {
     {
       name: 'user',
       type: 'relationship',
-      relationTo: ['basicUsers', 'patients'],
+      relationTo: ['platformStaff', 'clinicStaff', 'patients'],
       required: true,
       index: true,
       defaultValue: (args: unknown) => {
@@ -214,7 +268,7 @@ export const UserProfileMedia: CollectionConfig = {
         const requester = ctx?.user as undefined | null | { id?: unknown; collection?: unknown; userType?: unknown }
 
         if (!requester) return undefined
-        if (requester.collection !== 'basicUsers' && requester.collection !== 'patients') return undefined
+        if (!['platformStaff', 'clinicStaff', 'patients'].includes(String(requester.collection))) return undefined
         const requesterId = normalizeUserId(requester.id)
         if (requesterId == null) return undefined
 
@@ -223,12 +277,12 @@ export const UserProfileMedia: CollectionConfig = {
       admin: { description: 'User who owns this media' },
     },
     buildMediaCreatedByField({
-      relationTo: ['basicUsers', 'patients'],
+      relationTo: ['platformStaff', 'clinicStaff', 'patients'],
     }),
     buildMediaStoragePathField(),
     buildMediaPrefixField(),
   ],
   upload: buildMediaUploadConfig({
-    staticDir: path.resolve(dirname, '../../public/user-profile-media'),
+    staticDir: path.resolve(dirname, '../../.local/user-profile-media'),
   }),
 }

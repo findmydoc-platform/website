@@ -169,7 +169,6 @@ describe('resetCollections', () => {
       'platformStaff',
       'clinicStaff',
       'userProfileMedia',
-      'basicUsers',
     ]
 
     deleteMany.mockResolvedValue(undefined)
@@ -191,7 +190,7 @@ describe('resetCollections', () => {
     expect(versionOrder).toEqual(['posts'])
   })
 
-  it('preserves the active platform user and linked staff profile during reset', async () => {
+  it('preserves the active platform principal during reset', async () => {
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', 'test')
     vi.stubEnv('NODE_ENV', 'test')
@@ -209,9 +208,6 @@ describe('resetCollections', () => {
     )
 
     expect(deleteArgsByCollection.get('platformStaff')?.where).toEqual({
-      and: [{ id: { exists: true } }, { user: { not_equals: 42 } }],
-    })
-    expect(deleteArgsByCollection.get('basicUsers')?.where).toEqual({
       and: [{ id: { exists: true } }, { id: { not_equals: 42 } }],
     })
     expect(deleteArgsByCollection.get('clinics')?.where).toEqual({ id: { exists: true } })
@@ -239,7 +235,6 @@ describe('resetCollections', () => {
       'platformStaff',
       'clinicStaff',
       'userProfileMedia',
-      'basicUsers',
       'treatments',
       'categories',
       'tags',

@@ -83,7 +83,7 @@ describe('ClinicStaff access', () => {
       createdBasicUserIds,
       createdClinicStaffIds,
     })
-    const { basicUser: clinicUserB, clinicStaff: staffB } = await createClinicUserWithStaff(payload, {
+    const { basicUser: _clinicUserB, clinicStaff: staffB } = await createClinicUserWithStaff(payload, {
       slugPrefix,
       suffix: 'update-b',
       createdBasicUserIds,
@@ -96,7 +96,7 @@ describe('ClinicStaff access', () => {
     const updated = await payload.update({
       collection: 'clinicStaff',
       id: staffA.id,
-      data: { clinic: clinicB.id, user: clinicUserB.id },
+      data: { clinic: clinicB.id },
       user: asBasicUserPayload(clinicUserA),
       overrideAccess: false,
       depth: 0,
@@ -104,7 +104,6 @@ describe('ClinicStaff access', () => {
 
     expect(updated.id).toBe(staffA.id)
     expect(updated.clinic).toBe(clinicA.id)
-    expect(updated.user).toBe(clinicUserA.id)
 
     const persisted = await payload.findByID({
       collection: 'clinicStaff',
@@ -114,7 +113,6 @@ describe('ClinicStaff access', () => {
     })
 
     expect(persisted.clinic).toBe(clinicA.id)
-    expect(persisted.user).toBe(clinicUserA.id)
 
     await expect(
       payload.update({

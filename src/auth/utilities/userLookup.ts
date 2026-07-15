@@ -8,7 +8,7 @@ import { getUserConfig as getAuthConfig } from '@/auth/config/authConfig'
 import { AUTH_FLOW_ERROR_CODES, AuthFlowError, toErrorMessage } from '@/auth/errors/authFlowError'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import type { Payload, PayloadRequest } from 'payload'
-import type { BasicUser, Patient } from '@/payload-types'
+import type { ClinicStaff, Patient, PlatformStaff } from '@/payload-types'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 
 /**
@@ -22,7 +22,7 @@ export async function findUserBySupabaseId(
   authData: AuthData,
   req?: PayloadRequest,
   logger?: ServerLogger,
-): Promise<BasicUser | Patient | null> {
+): Promise<ClinicStaff | Patient | PlatformStaff | null> {
   const activeLogger = createScopedLogger((logger ?? payload.logger) as ServerLogger, {
     scope: 'auth.supabase',
     ...getRequestLogContext({ req, headers: req?.headers }),
@@ -39,11 +39,33 @@ export async function findUserBySupabaseId(
       req,
     })
 
-    if (userBySupabaseId.docs.length > 0) {
-      return userBySupabaseId.docs[0] as BasicUser | Patient
+    if (userBySupabaseId.docs.length !== 1) {
+      return null
     }
 
-    return null
+    const otherCollections = (['platformStaff', 'clinicStaff', 'patients'] as const).filter(
+      (candidate) => candidate !== collection,
+    )
+    const conflicts = await Promise.all(
+      otherCollections.map((candidate) =>
+        payload.find({
+          collection: candidate,
+          where: { supabaseUserId: { equals: authData.supabaseUserId } },
+          limit: 1,
+          overrideAccess: true,
+          req,
+        }),
+      ),
+    )
+
+    if (conflicts.some((result) => result.docs.length > 0)) {
+      throw new AuthFlowError({
+        code: AUTH_FLOW_ERROR_CODES.USER_LOOKUP_FAILED,
+        message: 'Supabase identity resolves to more than one Payload principal',
+      })
+    }
+
+    return userBySupabaseId.docs[0] as ClinicStaff | Patient | PlatformStaff
   } catch (error: unknown) {
     const message = toErrorMessage(error)
     activeLogger.error(
@@ -86,10 +108,7 @@ export async function isClinicUserApproved(
   try {
     const clinicStaffResult = await payload.find({
       collection: 'clinicStaff',
-      where: {
-        user: { equals: userId },
-        status: { equals: 'approved' },
-      },
+      where: { and: [{ id: { equals: userId } }, { status: { equals: 'approved' } }] },
       limit: 1,
       overrideAccess: true,
       req,

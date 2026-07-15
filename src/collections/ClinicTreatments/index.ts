@@ -52,8 +52,7 @@ export const ClinicTreatments: CollectionConfig = {
       admin: {
         description: 'Clinic that offers this treatment',
         allowCreate: false,
-        condition: (_data, _siblingData, { user }) =>
-          !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
+        condition: (_data, _siblingData, { user }) => !(user && user.collection === 'clinicStaff'),
       },
     },
     {

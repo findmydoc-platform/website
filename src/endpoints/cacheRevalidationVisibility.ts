@@ -19,19 +19,18 @@ const respond = (res: unknown, statusCode: number, body: unknown) => {
   return Response.json(body, { status: statusCode })
 }
 
-const isPlatformBasicUser = (req: PayloadRequest): boolean => {
-  const user = req.user as { collection?: unknown; userType?: unknown } | null | undefined
-  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+const isPlatformStaff = (req: PayloadRequest): boolean => {
+  return req.user?.collection === 'platformStaff'
 }
 
-const getPlatformBasicUserId = (req: PayloadRequest): string | number | null => {
+const getPlatformStaffId = (req: PayloadRequest): string | number | null => {
   const user = req.user as { id?: unknown } | null | undefined
   return typeof user?.id === 'string' || typeof user?.id === 'number' ? user.id : null
 }
 
 const hasVisibilityAccess = async (req: PayloadRequest): Promise<boolean> => {
-  if (!isPlatformBasicUser(req)) return false
-  const userId = getPlatformBasicUserId(req)
+  if (!isPlatformStaff(req)) return false
+  const userId = getPlatformStaffId(req)
   if (!userId) return false
 
   try {
@@ -44,7 +43,7 @@ const hasVisibilityAccess = async (req: PayloadRequest): Promise<boolean> => {
       where: {
         and: [
           {
-            user: {
+            id: {
               equals: userId,
             },
           },

@@ -34,7 +34,7 @@ const emptyContext = {} as unknown as RequestContext
 
 describe('beforeChangeDoctorMedia', () => {
   test('sets clinic and storage path on create', async () => {
-    const req = baseReq({ id: 5, collection: 'basicUsers' })
+    const req = baseReq({ id: 5, collection: 'platformStaff' })
     vi.mocked(req.payload.findByID).mockResolvedValue({ clinic: 8 } as unknown as Doctor)
 
     const data: Partial<DoctorMedia> = { id: 201, doctor: 3, filename: 'portraits/doc.png' }
@@ -55,18 +55,18 @@ describe('beforeChangeDoctorMedia', () => {
     expect(callArgs?.depth).toBe(0)
     expect(String(callArgs?.id)).toBe('3')
     // shortHash is mocked to 'aaaaaaaaaaaaaaaa...' so shortHash().slice(0,10) === 'aaaaaaaaaa'
-    expect(result.createdBy).toBe(5)
+    expect(result.createdBy).toEqual({ relationTo: 'platformStaff', value: 5 })
     expect(result.clinic).toBe(8)
     expect(result.filename).toBe('3-aaaaaaaaaa-doc.png')
     expect(result.storagePath).toBe('doctors/3-aaaaaaaaaa-doc.png')
   })
 
   test('overwrites client-supplied createdBy on create', async () => {
-    const req = baseReq({ id: 5, collection: 'basicUsers' })
+    const req = baseReq({ id: 5, collection: 'platformStaff' })
     vi.mocked(req.payload.findByID).mockResolvedValue({ clinic: 8 } as unknown as Doctor)
 
     const result = (await beforeChangeDoctorMedia({
-      data: { id: 202, doctor: 3, filename: 'portraits/doc.png', createdBy: 999 } as Partial<DoctorMedia>,
+      data: { id: 202, doctor: 3, filename: 'portraits/doc.png', createdBy: 999 } as unknown as Partial<DoctorMedia>,
       operation: 'create',
       req,
       originalDoc: undefined,
@@ -74,11 +74,11 @@ describe('beforeChangeDoctorMedia', () => {
       context: emptyContext,
     })) as Record<string, unknown>
 
-    expect(result.createdBy).toBe(5)
+    expect(result.createdBy).toEqual({ relationTo: 'platformStaff', value: 5 })
   })
 
   test('overwrites client-supplied clinic with the doctor clinic on create', async () => {
-    const req = baseReq({ id: 5, collection: 'basicUsers' })
+    const req = baseReq({ id: 5, collection: 'platformStaff' })
     vi.mocked(req.payload.findByID).mockResolvedValue({ clinic: 8 } as unknown as Doctor)
 
     const result = (await beforeChangeDoctorMedia({
@@ -94,7 +94,7 @@ describe('beforeChangeDoctorMedia', () => {
   })
 
   test('prevents doctor change on update', async () => {
-    const req = baseReq({ id: 2, collection: 'basicUsers' })
+    const req = baseReq({ id: 2, collection: 'platformStaff' })
 
     await expect(
       beforeChangeDoctorMedia({
@@ -109,20 +109,20 @@ describe('beforeChangeDoctorMedia', () => {
   })
 
   test('prevents changing createdBy on update', async () => {
-    const req = baseReq({ id: 2, collection: 'basicUsers' })
+    const req = baseReq({ id: 2, collection: 'platformStaff' })
 
     await expect(
       beforeChangeDoctorMedia({
-        data: { createdBy: 7 } as Partial<DoctorMedia>,
+        data: { createdBy: { relationTo: 'platformStaff', value: 7 } } as Partial<DoctorMedia>,
         operation: 'update',
         req,
         originalDoc: {
           doctor: 9,
           clinic: 12,
-          createdBy: 2,
+          createdBy: { relationTo: 'platformStaff', value: 2 },
           filename: '9-aaaaaaaaaa-doc.png',
           storagePath: 'doctors/9-aaaaaaaaaa-doc.png',
-        } as DoctorMedia,
+        } as unknown as DoctorMedia,
         collection: mockCollection,
         context: emptyContext,
       }),
@@ -130,7 +130,7 @@ describe('beforeChangeDoctorMedia', () => {
   })
 
   test('preserves createdBy when updating other fields', async () => {
-    const req = baseReq({ id: 2, collection: 'basicUsers' })
+    const req = baseReq({ id: 2, collection: 'platformStaff' })
     vi.mocked(req.payload.findByID).mockResolvedValue({ clinic: 12 } as unknown as Doctor)
 
     const result = (await beforeChangeDoctorMedia({
@@ -140,19 +140,19 @@ describe('beforeChangeDoctorMedia', () => {
       originalDoc: {
         doctor: 9,
         clinic: 12,
-        createdBy: 2,
+        createdBy: { relationTo: 'platformStaff', value: 2 },
         filename: '9-aaaaaaaaaa-doc.png',
         storagePath: 'doctors/9-aaaaaaaaaa-doc.png',
-      } as DoctorMedia,
+      } as unknown as DoctorMedia,
       collection: mockCollection,
       context: emptyContext,
     })) as Record<string, unknown>
 
-    expect(result.createdBy).toBe(2)
+    expect(result.createdBy).toEqual({ relationTo: 'platformStaff', value: 2 })
   })
 
   test('restores doctor clinic ownership when an update submits another clinic', async () => {
-    const req = baseReq({ id: 2, collection: 'basicUsers' })
+    const req = baseReq({ id: 2, collection: 'platformStaff' })
     vi.mocked(req.payload.findByID).mockResolvedValue({ clinic: 12 } as unknown as Doctor)
 
     const result = (await beforeChangeDoctorMedia({
@@ -162,10 +162,10 @@ describe('beforeChangeDoctorMedia', () => {
       originalDoc: {
         doctor: 9,
         clinic: 12,
-        createdBy: 2,
+        createdBy: { relationTo: 'platformStaff', value: 2 },
         filename: '9-aaaaaaaaaa-doc.png',
         storagePath: 'doctors/9-aaaaaaaaaa-doc.png',
-      } as DoctorMedia,
+      } as unknown as DoctorMedia,
       collection: mockCollection,
       context: emptyContext,
     })) as Record<string, unknown>

@@ -1,4 +1,4 @@
-import type { BasicUser, BasicUsersSelect, Post, PostsSelect } from '@/payload-types'
+import type { PlatformStaff, PlatformStaffSelect, Post, PostsSelect } from '@/payload-types'
 import type { FieldHook } from 'payload'
 import { resolveMediaDescriptorFromRelation } from '@/utilities/media/relationMedia'
 
@@ -14,9 +14,9 @@ const BASIC_USER_AUTHOR_SELECT = {
   firstName: true,
   lastName: true,
   profileImage: true,
-} satisfies BasicUsersSelect<true>
+} satisfies PlatformStaffSelect<true>
 
-const buildAuthorName = (authorDoc: Pick<BasicUser, 'firstName' | 'lastName'>): string => {
+const buildAuthorName = (authorDoc: Pick<PlatformStaff, 'firstName' | 'lastName'>): string => {
   const firstName = authorDoc.firstName?.trim()
   const lastName = authorDoc.lastName?.trim()
 
@@ -27,7 +27,7 @@ const buildAuthorName = (authorDoc: Pick<BasicUser, 'firstName' | 'lastName'>): 
   return 'Unknown Author'
 }
 
-// Basic users are not publicly readable, so we project only safe author metadata
+// Platform staff principals are not publicly readable, so we project only safe author metadata
 // into a dedicated virtual field consumed by frontend cards and post detail.
 export const populateAuthors: FieldHook<Post, PopulatedAuthorsValue, Post> = async ({
   data,
@@ -74,12 +74,12 @@ export const populateAuthors: FieldHook<Post, PopulatedAuthorsValue, Post> = asy
     try {
       const authorDoc = (await payload.findByID({
         id: authorId,
-        collection: 'basicUsers',
+        collection: 'platformStaff',
         depth: 0,
         select: BASIC_USER_AUTHOR_SELECT,
         overrideAccess: true,
         req,
-      })) as BasicUser
+      })) as PlatformStaff
 
       if (!authorDoc) continue
 

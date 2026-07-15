@@ -10,7 +10,7 @@ import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { createTinyPngFile } from '../fixtures/mediaFile'
 import { approveClinicStaff, asBasicUserPayload, createClinicUserWithStaff } from '../fixtures/clinicUserFixtures'
 import { ClinicGalleryMedia as ClinicGalleryMediaCollection } from '@/collections/ClinicGalleryMedia'
-import type { BasicUser, ClinicGalleryMedia } from '@/payload-types'
+import type { ClinicGalleryMedia, PlatformStaff } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -29,21 +29,22 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
   const createdBasicUserIds: Array<number> = []
 
   const createPlatformUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const platformStaff = (await payload.create({
+      collection: 'platformStaff',
       data: {
         email: `${slugPrefix}-platform-${suffix}@findmydoc.eu`,
-        userType: 'platform',
         firstName: 'Platform',
         lastName: `User-${suffix}`,
+        role: 'support',
         supabaseUserId: `sb-${slugPrefix}-platform-${suffix}`,
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
       depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
+    } as PayloadCreateArgs)) as PlatformStaff
 
-    createdBasicUserIds.push(basicUser.id)
-    return basicUser
+    createdBasicUserIds.push(platformStaff.id)
+    return platformStaff
   }
 
   beforeAll(async () => {
@@ -60,7 +61,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
     await cleanupTrackedDocs(payload, [
       { collection: 'clinicGalleryMedia', ids: createdMediaIds },
       { collection: 'clinicStaff', ids: createdClinicStaffIds },
-      { collection: 'basicUsers', ids: createdBasicUserIds },
+      { collection: 'platformStaff', ids: createdBasicUserIds },
     ])
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)

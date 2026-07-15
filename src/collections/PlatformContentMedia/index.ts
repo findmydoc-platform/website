@@ -62,7 +62,7 @@ export const PlatformContentMedia: CollectionConfig = {
     buildMediaAltField(),
     buildMediaCaptionField(),
     buildMediaCreatedByField({
-      relationTo: 'basicUsers',
+      relationTo: 'platformStaff',
     }),
     buildMediaStoragePathField(),
     buildMediaPrefixField(),

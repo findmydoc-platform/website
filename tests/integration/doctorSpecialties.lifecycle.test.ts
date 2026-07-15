@@ -11,12 +11,13 @@ import {
   asPayloadBasicUser,
   createClinicTestUser,
   createPlatformTestUser,
+  cleanupTrackedUsers,
 } from '../fixtures/testUsers'
 import type { Doctor, Doctorspecialty, MedicalSpecialty } from '@/payload-types'
 
 const createdDoctorSpecialtyIds: Array<number> = []
 const createdMedicalSpecialtyIds: Array<number> = []
-const createdBasicUserIds: Array<number> = []
+const createdBasicUserIds: Array<number | string> = []
 
 describe('DoctorSpecialties lifecycle integration', () => {
   let payload: Payload
@@ -39,7 +40,7 @@ describe('DoctorSpecialties lifecycle integration', () => {
       createdBasicUserIds,
     })
 
-    return asClinicScopedPayloadUser(basicUser, clinicId)
+    return asClinicScopedPayloadUser(payload, basicUser, clinicId)
   }
 
   const ensureMedicalSpecialty = async () => {
@@ -97,13 +98,7 @@ describe('DoctorSpecialties lifecycle integration', () => {
       } catch {}
     }
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)

@@ -63,8 +63,9 @@ export type SupportedTimezones =
 
 export interface Config {
   auth: {
-    basicUsers: BasicUserAuthOperations;
     patients: PatientAuthOperations;
+    clinicStaff: ClinicStaffAuthOperations;
+    platformStaff: PlatformStaffAuthOperations;
     'payload-mcp-api-keys': PayloadMcpApiKeyAuthOperations;
   };
   blocks: {};
@@ -195,7 +196,7 @@ export interface Config {
     'cache-revalidation-visibility': CacheRevalidationVisibilityWidget;
     collections: CollectionsWidget;
   };
-  user: BasicUser | Patient | PayloadMcpApiKey;
+  user: Patient | ClinicStaff | PlatformStaff | PayloadMcpApiKey;
   jobs: {
     tasks: {
       seedChunk: TaskSeedChunk;
@@ -210,7 +211,7 @@ export interface Config {
     workflows: unknown;
   };
 }
-export interface BasicUserAuthOperations {
+export interface PatientAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -228,7 +229,25 @@ export interface BasicUserAuthOperations {
     password: string;
   };
 }
-export interface PatientAuthOperations {
+export interface ClinicStaffAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface PlatformStaffAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -433,7 +452,7 @@ export interface Post {
   /**
    * Authors for this article
    */
-  authors?: (number | BasicUser)[] | null;
+  authors?: (number | PlatformStaff)[] | null;
   populatedAuthors?:
     | {
         id?: string | null;
@@ -834,7 +853,7 @@ export interface PlatformContentMedia {
   /**
    * Person who uploaded this media
    */
-  createdBy?: (number | null) | BasicUser;
+  createdBy?: (number | null) | PlatformStaff;
   /**
    * File path
    */
@@ -915,38 +934,26 @@ export interface PlatformContentMedia {
   };
 }
 /**
- * Accounts for people who can sign in to the admin area
+ * Platform staff authentication principals
  *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "basicUsers".
+ * via the `definition` "platformStaff".
  */
-export interface BasicUser {
+export interface PlatformStaff {
   id: number;
   stableId?: string | null;
   supabaseUserId?: string | null;
-  /**
-   * Given name
-   */
-  firstName: string;
-  /**
-   * Family name
-   */
-  lastName: string;
-  /**
-   * Email used to sign in
-   */
-  email: string;
-  /**
-   * Choose clinic staff or platform staff
-   */
-  userType: 'clinic' | 'platform';
-  /**
-   * Admin profile photo
-   */
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
   profileImage?: (number | null) | UserProfileMedia;
+  /**
+   * Choose the access level for this staff member
+   */
+  role: 'admin' | 'support' | 'content-manager';
   updatedAt: string;
   createdAt: string;
-  collection: 'basicUsers';
+  collection: 'platformStaff';
 }
 /**
  * Profile images and personal media
@@ -962,8 +969,12 @@ export interface UserProfileMedia {
    */
   user:
     | {
-        relationTo: 'basicUsers';
-        value: number | BasicUser;
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      }
+    | {
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
       }
     | {
         relationTo: 'patients';
@@ -974,8 +985,12 @@ export interface UserProfileMedia {
    */
   createdBy?:
     | ({
-        relationTo: 'basicUsers';
-        value: number | BasicUser;
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
       } | null)
     | ({
         relationTo: 'patients';
@@ -1059,6 +1074,32 @@ export interface UserProfileMedia {
       filename?: string | null;
     };
   };
+}
+/**
+ * Clinic staff authentication principals
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicStaff".
+ */
+export interface ClinicStaff {
+  id: number;
+  stableId?: string | null;
+  supabaseUserId?: string | null;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImage?: (number | null) | UserProfileMedia;
+  /**
+   * Clinic this staff member belongs to
+   */
+  clinic?: (number | null) | Clinic;
+  /**
+   * Staff approval status
+   */
+  status?: ('pending' | 'approved' | 'rejected') | null;
+  updatedAt: string;
+  createdAt: string;
+  collection: 'clinicStaff';
 }
 /**
  * Patient profiles for appointments and reviews
@@ -1317,7 +1358,15 @@ export interface DoctorMedia {
   /**
    * Person who uploaded this media
    */
-  createdBy?: (number | null) | BasicUser;
+  createdBy?:
+    | ({
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      } | null);
   /**
    * File path
    */
@@ -1463,7 +1512,15 @@ export interface ClinicMedia {
   /**
    * Person who uploaded this media
    */
-  createdBy?: (number | null) | BasicUser;
+  createdBy?:
+    | ({
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      } | null);
   /**
    * File path
    */
@@ -1597,7 +1654,15 @@ export interface ClinicGalleryEntry {
   /**
    * Person who created this entry
    */
-  createdBy?: (number | null) | BasicUser;
+  createdBy?:
+    | ({
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      } | null);
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -1647,7 +1712,15 @@ export interface ClinicGalleryMedia {
   /**
    * Person who uploaded this media
    */
-  createdBy?: (number | null) | BasicUser;
+  createdBy?:
+    | ({
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      } | null);
   storageKey: string;
   /**
    * File path
@@ -2136,56 +2209,33 @@ export interface Form {
   createdAt: string;
 }
 /**
- * Clinic staff profiles
- *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "clinicStaff".
+ * via the `definition` "basicUsers".
  */
-export interface ClinicStaff {
+export interface BasicUser {
   id: number;
   stableId?: string | null;
   supabaseUserId?: string | null;
-  email?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
+  /**
+   * Given name
+   */
+  firstName: string;
+  /**
+   * Family name
+   */
+  lastName: string;
+  /**
+   * Email used to sign in
+   */
+  email: string;
+  /**
+   * Choose clinic staff or platform staff
+   */
+  userType: 'clinic' | 'platform';
+  /**
+   * Admin profile photo
+   */
   profileImage?: (number | null) | UserProfileMedia;
-  /**
-   * Login account for this staff member
-   */
-  user: number | BasicUser;
-  /**
-   * Clinic this staff member belongs to
-   */
-  clinic?: (number | null) | Clinic;
-  /**
-   * Staff approval status
-   */
-  status?: ('pending' | 'approved' | 'rejected') | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Platform staff profiles
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "platformStaff".
- */
-export interface PlatformStaff {
-  id: number;
-  stableId?: string | null;
-  supabaseUserId?: string | null;
-  email?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  profileImage?: (number | null) | UserProfileMedia;
-  /**
-   * Select the account for this staff member
-   */
-  user: number | BasicUser;
-  /**
-   * Choose the access level for this staff member
-   */
-  role: 'admin' | 'support' | 'content-manager';
   updatedAt: string;
   createdAt: string;
 }
@@ -2238,7 +2288,6 @@ export interface ClinicApplication {
    */
   linkedRecords?: {
     clinic?: (number | null) | Clinic;
-    basicUser?: (number | null) | BasicUser;
     clinicStaff?: (number | null) | ClinicStaff;
     processedAt?: string | null;
   };
@@ -2318,7 +2367,7 @@ export interface PatientClinicInquiry {
   /**
    * Platform user handling this request
    */
-  assignedTo?: (number | null) | BasicUser;
+  assignedTo?: (number | null) | PlatformStaff;
   updatedAt: string;
   createdAt: string;
 }
@@ -2402,7 +2451,7 @@ export interface Review {
   /**
    * User who last edited this review
    */
-  editedBy?: (number | null) | BasicUser;
+  editedBy?: (number | null) | PlatformStaff;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -2585,7 +2634,7 @@ export interface PayloadMcpApiKey {
   /**
    * The user that the API key is associated with.
    */
-  user: number | BasicUser;
+  user: number | PlatformStaff;
   /**
    * A useful label for the API key.
    */
@@ -3000,12 +3049,16 @@ export interface PayloadLockedDocument {
   globalSlug?: string | null;
   user:
     | {
-        relationTo: 'basicUsers';
-        value: number | BasicUser;
-      }
-    | {
         relationTo: 'patients';
         value: number | Patient;
+      }
+    | {
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      }
+    | {
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
       }
     | {
         relationTo: 'payload-mcp-api-keys';
@@ -3022,12 +3075,16 @@ export interface PayloadPreference {
   id: number;
   user:
     | {
-        relationTo: 'basicUsers';
-        value: number | BasicUser;
-      }
-    | {
         relationTo: 'patients';
         value: number | Patient;
+      }
+    | {
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      }
+    | {
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
       }
     | {
         relationTo: 'payload-mcp-api-keys';
@@ -3811,7 +3868,6 @@ export interface ClinicStaffSelect<T extends boolean = true> {
   firstName?: T;
   lastName?: T;
   profileImage?: T;
-  user?: T;
   clinic?: T;
   status?: T;
   updatedAt?: T;
@@ -3828,7 +3884,6 @@ export interface PlatformStaffSelect<T extends boolean = true> {
   firstName?: T;
   lastName?: T;
   profileImage?: T;
-  user?: T;
   role?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -3851,7 +3906,6 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
     | T
     | {
         clinic?: T;
-        basicUser?: T;
         clinicStaff?: T;
         processedAt?: T;
       };
@@ -5859,7 +5913,7 @@ export interface TaskSchedulePublish {
           value: number | Post;
         } | null);
     global?: string | null;
-    user?: (number | null) | BasicUser;
+    user?: (number | null) | PlatformStaff;
   };
   output?: unknown;
 }

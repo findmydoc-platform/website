@@ -10,7 +10,10 @@ import {
 } from '@/auth/utilities/accessValidation'
 import type { Payload } from 'payload'
 import type { UserResult, UserType } from '@/auth/types/authTypes'
-import type { BasicUser } from '@/payload-types'
+import type { ClinicStaff as PayloadClinicStaff } from '@/payload-types'
+
+type ClinicUser = PayloadClinicStaff
+type ClinicUserOverrides = Partial<ClinicUser> & { userType?: string }
 
 // Mock payload
 const mockPayload = {
@@ -26,13 +29,15 @@ const mockPayload = {
   },
 }
 
-const makeBasicUser = (overrides: Partial<BasicUser> = {}): BasicUser => ({
+const makeClinicUser = (overrides: ClinicUserOverrides = {}): ClinicUser => ({
   id: overrides.id ?? 123,
-  collection: overrides.collection ?? 'basicUsers',
+  collection: 'clinicStaff',
   email: overrides.email ?? 'user@example.com',
   firstName: overrides.firstName ?? 'Test',
   lastName: overrides.lastName ?? 'User',
-  userType: overrides.userType ?? 'clinic',
+  stableId: overrides.stableId ?? 'clinic-user-123',
+  status: overrides.status ?? 'approved',
+  clinic: overrides.clinic,
   createdAt: overrides.createdAt ?? '2023-01-01',
   updatedAt: overrides.updatedAt ?? '2023-01-02',
   supabaseUserId: overrides.supabaseUserId,
@@ -53,8 +58,8 @@ describe('accessValidation utilities', () => {
       }
 
       const userResult: UserResult = {
-        user: makeBasicUser({ id: 123, userType: 'clinic' }),
-        collection: 'basicUsers',
+        user: makeClinicUser({ id: 123 }),
+        collection: 'clinicStaff',
       }
 
       const result = await validateClinicAccess(mockPayload as unknown as Payload, authData, userResult)
@@ -69,8 +74,8 @@ describe('accessValidation utilities', () => {
       }
 
       const userResult: UserResult = {
-        user: makeBasicUser({ id: 123, userType: 'platform' }),
-        collection: 'basicUsers',
+        user: makeClinicUser({ id: 123 }),
+        collection: 'clinicStaff',
       }
 
       const result = await validateClinicAccess(mockPayload as unknown as Payload, authData, userResult)
@@ -89,8 +94,8 @@ describe('accessValidation utilities', () => {
       }
 
       const userResult: UserResult = {
-        user: makeBasicUser({ id: 123, userType: 'clinic' }),
-        collection: 'basicUsers',
+        user: makeClinicUser({ id: 123 }),
+        collection: 'clinicStaff',
       }
 
       const result = await validateClinicAccess(mockPayload as unknown as Payload, authData, userResult)
@@ -139,8 +144,8 @@ describe('accessValidation utilities', () => {
       }
 
       const userResult: UserResult = {
-        user: makeBasicUser({ id: 123, userType: 'clinic' }),
-        collection: 'basicUsers',
+        user: makeClinicUser({ id: 123 }),
+        collection: 'clinicStaff',
       }
 
       const result = await validateUserAccess(mockPayload as unknown as Payload, authData, userResult)
@@ -155,8 +160,8 @@ describe('accessValidation utilities', () => {
       }
 
       const userResult: UserResult = {
-        user: makeBasicUser({ id: 123, userType: 'clinic' }),
-        collection: 'basicUsers',
+        user: makeClinicUser({ id: 123 }),
+        collection: 'clinicStaff',
       }
 
       const result = await validateUserAccess(mockPayload as unknown as Payload, authData, userResult)

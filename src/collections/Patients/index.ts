@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
-import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { isPatient, isOwnPatient } from '@/access/isPatient'
+import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { anonymizePatientReviewAuthorsBeforeDeleteHook } from './hooks/anonymizePatientReviewAuthors'
@@ -13,7 +13,6 @@ export const Patients: CollectionConfig = {
   auth: {
     useSessions: false,
     disableLocalStrategy: true,
-    strategies: [supabaseStrategy],
   },
   admin: {
     hidden: false,
@@ -44,7 +43,7 @@ export const Patients: CollectionConfig = {
     delete: isPlatformBasicUser,
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook, patientSupabaseCreateHook],
+    beforeChange: [stableIdBeforeChangeHook, patientSupabaseCreateHook, enforceSupabaseIdentityInvariant],
     beforeDelete: [anonymizePatientReviewAuthorsBeforeDeleteHook, patientSupabaseDeleteHook],
   },
   fields: [

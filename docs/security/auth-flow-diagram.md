@@ -1,212 +1,43 @@
 # Supabase Authentication Flow
 
-This diagram shows the current order for staff login, platform-user provisioning boundaries, and account setup in the healthcare platform.
-
 ```mermaid
 sequenceDiagram
-    actor User as User
-    participant Login as Next.js admin login
+    actor User
+    participant Browser as Website or Clinic Dashboard
     participant Supabase as Supabase Auth
-    participant Strategy as Payload auth strategy
-    participant Payload as Payload Local API / DB
-    participant Logs as Server logs
+    participant Payload as Payload auth strategy
+    participant DB as Payload database
 
-    Note over User,Logs: Public bootstrap boundary
-
-    User->>Login: GET /admin/first-admin or /admin/create-first-user
-    Login-->>User: 404
-
-    User->>Login: GET /admin/login
-    Login->>Login: Read Supabase session from request headers
-
-    alt No active Supabase session
-        Login->>Payload: Read platformStaff and linked basicUsers
-        alt No platform staff exists
-            Login->>Logs: warn auth.admin_login.no_platform_staff
-        else Platform staff exists without login-capable link
-            Login->>Logs: warn auth.admin_login.no_login_capable_platform_staff
-        else Platform staff exists but no admin role exists
-            Login->>Logs: warn auth.admin_login.no_platform_admins
-        else State check fails
-            Login->>Logs: warn auth.admin_login.platform_admin_check_failed
-        end
-        Login-->>User: Render login form without bootstrap guidance
-    else Active Supabase session
-        alt Platform session outside @findmydoc.eu
-            Login->>Logs: warn auth.admin_login.platform_user.invalid_email_domain with hashed IDs
-            Login-->>User: Render login form with generic account status
-        else Staff session is eligible
-            Login->>Payload: Find staff user by Supabase ID
-            alt Staff user exists and is allowed for login target
-                Login-->>User: Redirect to /admin or requested preview path
-            else Staff user missing or not allowed
-                Login-->>User: Render login form with generic account status
-            end
-        end
-    end
-
-    User->>Login: Submit staff credentials
-    Login->>Supabase: signInWithPassword(email, password)
-
-    alt Supabase rejects credentials
-        Supabase-->>Login: Authentication error
-        Login-->>User: Generic login error
-    else Supabase accepts credentials
-        Supabase-->>Login: Session / JWT with app_metadata.user_type
-        Login->>Strategy: Payload admin authenticate()
-        Strategy->>Strategy: Extract user_type, Supabase user ID, email
-
-        alt user_type is platform and email is outside @findmydoc.eu
-            Strategy->>Logs: warn auth.supabase.platform_user.invalid_email_domain with hashed IDs
-            Strategy-->>Login: Deny Payload authentication
-            Login-->>User: Account not available / contact support
-
-        else user_type is platform
-            Strategy->>Payload: Find basicUsers by supabaseUserId
-            alt Payload platform user exists
-                Payload-->>Strategy: Return basicUsers record
-                Strategy-->>Login: Authenticated Payload user
-                Login->>Payload: Admin and collection access checks apply
-                Login-->>User: Admin session if access rules allow it
-            else Payload platform user missing
-                Strategy->>Logs: warn auth.supabase.platform_user.not_provisioned with hashed IDs
-                Strategy-->>Login: Deny Payload authentication
-                Login-->>User: Account not available / contact support
-            end
-
-        else user_type is clinic
-            Strategy->>Payload: Find basicUsers by supabaseUserId
-            alt Payload clinic user missing
-                Strategy->>Payload: Create basicUsers clinic record
-                Payload->>Payload: Create clinicStaff profile through hook
-            end
-            Strategy->>Payload: Check approved clinicStaff profile
-            alt Clinic staff approved
-                Strategy-->>Login: Authenticated Payload user
-                Login-->>User: Admin session
-            else Clinic staff not approved
-                Strategy-->>Login: Deny admin access
-                Login-->>User: Pending approval message
-            end
-
-        else user_type is patient
-            Strategy->>Payload: Ensure patient record for API use
-            Strategy-->>Login: No admin UI access
-            Login-->>User: Admin access denied
-        end
+    User->>Browser: Sign in
+    Browser->>Supabase: Authenticate
+    Supabase-->>Browser: Access token with app_metadata.user_type
+    Browser->>Payload: Authenticated request
+    Payload->>Payload: Validate JWT and select principal collection
+    alt Platform staff
+        Payload->>DB: Resolve platformStaff by Supabase id
+        DB-->>Payload: Principal with current role
+        Payload-->>Browser: Authorized only for platform capabilities
+    else Clinic staff
+        Payload->>DB: Resolve clinicStaff by Supabase id
+        DB-->>Payload: Principal with status and clinic
+        Payload-->>Browser: Authorized only if approved and assigned
+    else Patient
+        Payload->>DB: Ensure or resolve patients principal
+        DB-->>Payload: Patient principal
+        Payload-->>Browser: Patient capabilities only
+    else Missing, duplicate, or conflicting principal
+        Payload-->>Browser: Deny access
     end
 ```
 
-## Business Logic Concepts
+## Website Admin Boundary
 
-### User Types & Collections
+The website admin login only handles platform staff and redirects only an existing, eligible `platformStaff` principal to Payload Admin. Clinic staff do not receive Payload Admin access and later authenticate in the separate Clinic Dashboard. Patients do not receive Payload Admin access.
 
-The system supports three distinct user roles with different data storage patterns:
+## Authorization Facts
 
-- **Platform Staff** → Stored in `basicUsers` with `platformStaff` profile
-- **Clinic Staff** → Stored in `basicUsers` with `clinicStaff` profile
-- **Patients** → Stored directly in `patients` collection (no separate profile)
+The Supabase claim chooses a collection only. Payload reads the current platform role, clinic relation, and clinic approval status from the resolved principal for every request. This prevents a stale or user-controlled claim from granting platform or clinic authority.
 
-### Profile Management Strategy
+## Provisioning
 
-**Platform Staff**:
-- Supabase Auth user, Payload `basicUsers`, and Payload `platformStaff` profile are provisioned outside the public website runtime.
-- Platform staff accounts must use `@findmydoc.eu`; Payload writes and Supabase platform-user login reject outside-domain email addresses before Payload lookup.
-- Public login never creates missing platform records.
-- Public runtime never links platform users by email; drift repair belongs in the private `ops` repository workflow.
-
-**Clinic Staff**:
-- Main user record stores authentication data
-- Separate profile record stores role-specific information
-- Records are created in two phases: user first, profile shortly after (non-transactional)
-
-**Patient Users**:
-- Single record contains both authentication and profile data
-- Simpler data model for end-user management
-
-### Approval Workflow
-
-**Clinic Staff Access Control**:
-- New clinic users can authenticate but cannot access admin features
-- Platform administrators must manually approve clinic staff
-- Approved status controls admin interface access only
-- API access remains available regardless of approval status
-
-**Platform Staff**:
-- Public runtime login requires an existing Payload platform user.
-- Public runtime login also requires the Supabase platform user's email address to be inside `@findmydoc.eu`.
-- Platform staff login-state checks distinguish whether a platform admin role exists, without exposing public bootstrap guidance.
-
-**Patients**:
-- Patient authentication is for API use, not Payload admin UI access.
-
-### Consistency & Recovery
-
-**Creation Semantics**:
-- Platform staff creation is not part of public runtime authentication.
-- Clinic user and profile creation are not wrapped in a single transaction; a temporary gap can exist if profile creation fails.
-- Concurrent create conflicts are handled by re-querying and reusing the already-created record where public runtime creation is still allowed.
-
-## Authentication Flow Stages
-
-### Stage 1: Token Processing
-- Extract JWT token from authorization headers
-- Validate token signature against Supabase secrets
-- Parse user metadata from token claims
-
-### Stage 2: User Type Resolution
-- Identify user type from Supabase metadata
-- Map user type to appropriate PayloadCMS collections
-- Apply user-type-specific configuration rules
-
-### Stage 3: User Management
-- Search for existing user by Supabase identifier
-- Reject Supabase platform users whose email address is outside `@findmydoc.eu` before Payload lookup
-- For platform users, do not create missing Payload records during public runtime login
-- For clinic users, create a missing user/profile record when allowed by the auth flow
-- For patients, ensure a patient record for API use
-- Recover from concurrent create conflicts by re-lookup where public runtime creation is still allowed
-
-### Stage 4: Access Authorization
-- Validate user permissions based on type and approval status
-- Apply collection-level and field-level access controls
-- Return authenticated user or deny access
-
-### Stage 5: Session Establishment
-- Provide authenticated user context to PayloadCMS
-- Enable API access based on user permissions
-- Log authentication events for monitoring
-
-## Error Handling Philosophy
-
-### Graceful Degradation
-- Authentication failures result in access denial, not system errors
-- Users receive appropriate feedback without exposing system internals
-- Failed operations are logged for administrator review
-- Admin login page remains read-only for provisioning to avoid retry/redirect loops on failures
-
-### Creation Integrity
-- User persistence precedes profile creation (non-atomic). Failures in profile creation are logged; recovery may require manual or future automated repair.
-
-### Security Boundaries
-- Invalid tokens are rejected without revealing validation details
-- User enumeration attacks are prevented through consistent response timing
-- Error messages provide minimal information to unauthorized users
-
-## Monitoring & Operations
-
-### Business Metrics
-- **User Onboarding**: Track new user creation by type
-- **Approval Workflow**: Monitor clinic staff approval rates and timing
-- **Authentication Success**: Measure login success rates by user type
-- **Profile Consistency**: Track profile creation and recovery events
-
-### Operational Considerations
-- **Performance**: Authentication operations optimized for healthcare platform scale
-- **Reliability**: Idempotent lookups and conflict recovery improve consistency under concurrency
-- **Security**: Comprehensive logging enables security monitoring and audit trails
-- **Scalability**: Stateless design supports horizontal scaling requirements
-
----
-
-*This authentication flow is designed specifically for healthcare platform requirements, balancing security, usability, and operational efficiency.*
+Staff principals are provisioned before login through trusted workflows. Patient principals retain ensure-on-auth. A missing staff principal is denied; no website login creates a staff account.

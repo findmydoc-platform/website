@@ -11,7 +11,7 @@ type PayloadAdminCandidate = {
 }
 type PlatformStaffCandidate = {
   role?: string | null
-  user?: number | string | { id?: number | string | null } | null
+  supabaseUserId?: string | null
 }
 type LocalPlatformStaffUserCheckFailureReason =
   'payload_check_failed' | 'supabase_admin_client_failed' | 'supabase_user_validation_failed'
@@ -36,19 +36,6 @@ type LocalPlatformStaffUserStateOptions = {
 }
 
 const isTruthy = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
-
-const toRelationshipId = (value: unknown): number | string | null => {
-  if (typeof value === 'number' || typeof value === 'string') {
-    return value
-  }
-
-  if (!value || typeof value !== 'object') {
-    return null
-  }
-
-  const id = (value as { id?: unknown }).id
-  return typeof id === 'number' || typeof id === 'string' ? id : null
-}
 
 const isMissingSupabaseUserError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false
@@ -77,35 +64,13 @@ const findPayloadPlatformStaffUsers = async (payload: PayloadForAdminCheck): Pro
   })
 
   const platformStaffProfiles = (platformStaffResult.docs as PlatformStaffCandidate[]) ?? []
-  const platformStaffUserIds = Array.from(
-    new Set(
-      platformStaffProfiles
-        .map((profile) => toRelationshipId(profile.user))
-        .filter((id): id is number | string => id !== null),
-    ),
-  )
-
-  if (platformStaffUserIds.length === 0) {
+  if (platformStaffProfiles.length === 0) {
     return { hasPlatformAdmin: false, users: [] }
   }
-
-  const result = await payload.find({
-    collection: 'basicUsers',
-    where: {
-      and: [{ id: { in: platformStaffUserIds } }, { userType: { equals: 'platform' } }],
-    },
-    limit: platformStaffUserIds.length,
-    overrideAccess: true,
-  })
-
-  const users = (result.docs as PayloadAdminCandidate[]) ?? []
-  const platformUserIds = new Set(users.map((user) => String(user.id)))
-  const hasPlatformAdmin = platformStaffProfiles.some((profile) => {
-    const userId = toRelationshipId(profile.user)
-    return profile.role === 'admin' && userId !== null && platformUserIds.has(String(userId))
-  })
-
-  return { hasPlatformAdmin, users }
+  return {
+    hasPlatformAdmin: platformStaffProfiles.some((profile) => profile.role === 'admin'),
+    users: platformStaffProfiles as PayloadAdminCandidate[],
+  }
 }
 
 export async function getLocalPlatformStaffUserState(

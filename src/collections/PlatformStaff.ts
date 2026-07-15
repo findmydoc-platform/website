@@ -1,16 +1,24 @@
 import type { CollectionConfig } from 'payload'
 import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
+import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
+import { guardPlatformStaffRoleChange } from './PlatformStaff/hooks/guardRoleChange'
+import { revalidatePlatformAuthorPosts } from './PlatformStaff/hooks/revalidatePlatformAuthorPosts'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
-// Profile collection for Platform Staff members
+// Direct authentication principal for platform operations and Payload Admin.
 export const PlatformStaff: CollectionConfig = {
   slug: 'platformStaff',
-  auth: false,
+  auth: {
+    useSessions: false,
+    disableLocalStrategy: true,
+    strategies: [supabaseStrategy],
+  },
   admin: {
     group: 'User Management',
-    useAsTitle: 'user',
-    defaultColumns: ['user', 'role'],
-    description: 'Platform staff profiles',
+    useAsTitle: 'email',
+    defaultColumns: ['email', 'firstName', 'lastName', 'role'],
+    description: 'Platform staff authentication principals',
   },
   access: {
     read: isPlatformBasicUser,
@@ -19,7 +27,8 @@ export const PlatformStaff: CollectionConfig = {
     delete: () => false,
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook],
+    afterChange: [revalidatePlatformAuthorPosts],
+    beforeChange: [stableIdBeforeChangeHook, enforceSupabaseIdentityInvariant, guardPlatformStaffRoleChange],
   },
   fields: [
     stableIdField(),
@@ -93,23 +102,6 @@ export const PlatformStaff: CollectionConfig = {
       admin: {
         hidden: true,
         readOnly: true,
-      },
-    },
-    {
-      name: 'user',
-      type: 'relationship',
-      label: 'User',
-      relationTo: 'basicUsers',
-      required: true,
-      unique: true,
-      hasMany: false,
-      admin: {
-        description: 'Select the account for this staff member',
-      },
-      filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
-        return {
-          userType: { equals: 'platform' },
-        }
       },
     },
     {

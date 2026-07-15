@@ -91,7 +91,7 @@ describe('cacheRevalidationVisibilityGetHandler', () => {
         pagination: false,
         where: {
           and: [
-            { user: { equals: 123 } },
+            { id: { equals: 123 } },
             {
               role: {
                 in: ['admin', 'support'],
@@ -107,7 +107,7 @@ describe('cacheRevalidationVisibilityGetHandler', () => {
   it.each([
     ['platform content manager', mockUsers.platform(1), 'content-manager' as const],
     ['platform user without profile', mockUsers.platform(1), undefined],
-    ['platform user without id', { collection: 'basicUsers', userType: 'platform' }, undefined],
+    ['platform user without id', { collection: 'platformStaff' }, undefined],
     ['clinic user', mockUsers.clinic(), undefined],
     ['patient user', mockUsers.patient(), undefined],
     ['anonymous user', mockUsers.anonymous(), undefined],
@@ -121,7 +121,7 @@ describe('cacheRevalidationVisibilityGetHandler', () => {
     expect(res._body).toEqual({ error: 'Access denied' })
     expect(getSnapshotMock).not.toHaveBeenCalled()
 
-    if (user && (user as { userType?: unknown; id?: unknown }).userType === 'platform' && 'id' in user) {
+    if (user && (user as { collection?: unknown; id?: unknown }).collection === 'platformStaff' && 'id' in user) {
       expect(payload.find).toHaveBeenCalledTimes(1)
     } else {
       expect(payload.find).not.toHaveBeenCalled()

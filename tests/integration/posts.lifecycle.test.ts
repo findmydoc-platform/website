@@ -9,11 +9,11 @@ import { buildRichText, buildRichTextWithInternalPostLink } from '../fixtures/ri
 import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
 import { findPostBySlug, findPublishedPostsPage } from '@/utilities/content/serverData'
-import type { Post, Tag, Category, BasicUser } from '@/payload-types'
+import type { Post, Tag, Category, PlatformStaff } from '@/payload-types'
 import demoPosts from '@/endpoints/seed/data/demo/posts.json'
 
 type CreatedUser = {
-  basicUserId: number
+  platformStaffId: number
   name: string
 }
 
@@ -47,7 +47,7 @@ const buildPostData = (args: {
 describe('Posts integration - lifecycle and access', () => {
   let payload: Payload
   const slugPrefix = slugify(testSlug('posts.lifecycle.test.ts'))
-  const createdBasicUserIds: Array<number | string> = []
+  const createdPlatformStaffIds: Array<number> = []
 
   const ensureTag = async (): Promise<number> => {
     const res = await payload.find({ collection: 'tags', limit: 1, overrideAccess: true, depth: 0 })
@@ -78,23 +78,24 @@ describe('Posts integration - lifecycle and access', () => {
   }
 
   const createAuthor = async (identifier: string): Promise<CreatedUser> => {
-    const basicUser = await payload.create({
-      collection: 'basicUsers',
+    const platformStaff = await payload.create({
+      collection: 'platformStaff',
       data: {
         email: `${identifier}@findmydoc.eu`,
         supabaseUserId: `sb-${identifier}`,
-        userType: 'platform',
         firstName: 'Post',
         lastName: 'Author',
-      } as unknown as BasicUser,
+        role: 'support',
+      } as unknown as PlatformStaff,
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
     })
 
-    createdBasicUserIds.push(Number(basicUser.id))
+    createdPlatformStaffIds.push(Number(platformStaff.id))
 
     return {
-      basicUserId: Number(basicUser.id),
-      name: `${basicUser.firstName} ${basicUser.lastName}`,
+      platformStaffId: Number(platformStaff.id),
+      name: `${platformStaff.firstName} ${platformStaff.lastName}`,
     }
   }
 
@@ -106,11 +107,11 @@ describe('Posts integration - lifecycle and access', () => {
   afterEach(async () => {
     await cleanupTestEntities(payload, 'posts', slugPrefix)
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
+    while (createdPlatformStaffIds.length) {
+      const id = createdPlatformStaffIds.pop()
       if (!id) continue
       try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
+        await payload.delete({ collection: 'platformStaff', id, overrideAccess: true })
       } catch {
         // ignore cleanup errors
       }
@@ -145,7 +146,7 @@ describe('Posts integration - lifecycle and access', () => {
         title,
         tagId,
         categoryId,
-        authorId: author.basicUserId,
+        authorId: author.platformStaffId,
         status: 'draft',
       }),
       draft: true,
@@ -162,7 +163,7 @@ describe('Posts integration - lifecycle and access', () => {
 
     expect(read.tags).toContain(Number(tagId))
     expect(read.categories).toContain(Number(categoryId))
-    expect(read.authors).toContain(Number(author.basicUserId))
+    expect(read.authors).toContain(Number(author.platformStaffId))
     expect(read.populatedAuthors?.[0]?.name).toBe(author.name)
   })
 
@@ -173,7 +174,7 @@ describe('Posts integration - lifecycle and access', () => {
       collection: 'posts',
       data: buildPostData({
         title: `${slugPrefix} related child`,
-        authorId: author.basicUserId,
+        authorId: author.platformStaffId,
         status: 'draft',
       }),
       draft: true,

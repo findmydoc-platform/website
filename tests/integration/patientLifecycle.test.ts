@@ -4,37 +4,38 @@ import type { Payload } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
-import type { BasicUser, Patient } from '@/payload-types'
+import type { Patient, PlatformStaff } from '@/payload-types'
 
 describe('Patient lifecycle integration', () => {
   let payload: Payload
   const slugPrefix = testSlug('patientLifecycle.test.ts')
-  const createdBasicUserIds: Array<number> = []
+  const createdPlatformStaffIds: Array<number> = []
 
   type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
   type PayloadCreateArgs = Parameters<Payload['create']>[0]
   type PayloadUpdateArgs = Parameters<Payload['update']>[0]
 
   const asPatientUser = (patient: Patient): PayloadUser => ({ ...patient, collection: 'patients' }) as PayloadUser
-  const asPlatformUser = (basicUser: BasicUser): PayloadUser =>
-    ({ ...basicUser, collection: 'basicUsers' }) as PayloadUser
+  const asPlatformUser = (platformStaff: PlatformStaff): PayloadUser =>
+    ({ ...platformStaff, collection: 'platformStaff' }) as PayloadUser
 
   const createPlatformUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const platformStaff = (await payload.create({
+      collection: 'platformStaff',
       data: {
         email: `${slugPrefix}-platform-${suffix}@findmydoc.eu`,
-        userType: 'platform',
         firstName: 'Platform',
         lastName: `User-${suffix}`,
+        role: 'support',
         supabaseUserId: `sb-${slugPrefix}-platform-${suffix}`,
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
       depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
+    } as PayloadCreateArgs)) as PlatformStaff
 
-    createdBasicUserIds.push(basicUser.id)
-    return basicUser
+    createdPlatformStaffIds.push(platformStaff.id)
+    return platformStaff
   }
 
   beforeAll(async () => {
@@ -49,18 +50,11 @@ describe('Patient lifecycle integration', () => {
   })
 
   afterEach(async () => {
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
+    while (createdPlatformStaffIds.length) {
+      const id = createdPlatformStaffIds.pop()
       if (!id) continue
       try {
-        await payload.delete({
-          collection: 'platformStaff',
-          where: { user: { equals: id } },
-          overrideAccess: true,
-        })
-      } catch {}
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
+        await payload.delete({ collection: 'platformStaff', id, overrideAccess: true })
       } catch {}
     }
   })

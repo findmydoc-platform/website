@@ -103,7 +103,7 @@ export const createMcpPlugin = (): Plugin =>
       const isPlatformStaffUser = (user: unknown): boolean => {
         if (typeof user !== 'object' || user === null) return false
         const record = user as Record<string, unknown>
-        return record.collection === mcpUserCollection && record.userType === 'platform'
+        return record.collection === mcpUserCollection
       }
 
       if (!isPlatformStaffUser(mcpAccessSettings.user as unknown)) {

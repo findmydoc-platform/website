@@ -1,6 +1,6 @@
 import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 
 export const patientClinicInquiryStatusOptions = [
   { label: 'Submitted', value: 'submitted' },
@@ -88,10 +88,10 @@ export const PatientClinicInquiries: CollectionConfig = {
     description: 'Contact requests submitted from clinic profile pages',
   },
   access: {
-    create: isPlatformBasicUser,
-    read: isPlatformBasicUser,
-    update: isPlatformBasicUser,
-    delete: isPlatformBasicUser,
+    create: isPlatformStaff,
+    read: isPlatformStaff,
+    update: isPlatformStaff,
+    delete: isPlatformStaff,
   },
   hooks: {
     beforeChange: [freezeSubmissionEvidence],

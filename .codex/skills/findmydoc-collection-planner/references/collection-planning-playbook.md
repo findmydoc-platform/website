@@ -61,7 +61,7 @@ Avoid questions about file locations, helper names, or test patterns when the re
 Reuse existing helpers:
 
 - `anyone`: public read
-- `isPlatformBasicUser`: platform-only create/update/delete
+- `isPlatformStaff`: platform-only create/update/delete
 - `platformOnlyOrApproved`: platform reads all, others read approved clinics
 - `platformOnlyOrApprovedReviews`: review visibility
 - `platformOrAssignedClinicMutation`: platform or assigned clinic create
@@ -109,22 +109,24 @@ Never hand-write Payload migration files from scratch.
 
 ## Validation
 
+The validation examples below avoid workstation-specific paths. Run pnpm commands through the pnpm 10 launcher required by the active root `AGENTS.md`.
+
 For planning-only skill edits:
 
 ```bash
-rtk pnpm format
-rtk python3 /Users/razorspoint/.codex/skills/.system/skill-creator/scripts/quick_validate.py .codex/skills/findmydoc-collection-planner
+pnpm format
+rtk python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" .codex/skills/findmydoc-collection-planner
 ```
 
 For actual approved collection implementation, choose from:
 
 ```bash
-rtk pnpm matrix:derive json
-rtk pnpm matrix:verify
-rtk pnpm vitest run tests/unit/access-matrix/<slug>.permission.test.ts
-rtk pnpm vitest run tests/integration/<domain>.lifecycle.test.ts
-rtk pnpm check
-rtk pnpm build
+pnpm matrix:derive json
+pnpm matrix:verify
+pnpm vitest run tests/unit/access-matrix/<slug>.permission.test.ts
+pnpm vitest run tests/integration/<domain>.lifecycle.test.ts
+pnpm check
+pnpm build
 ```
 
 Run `pnpm build` when build-relevant sources, Payload config, routing, or tooling output changes.

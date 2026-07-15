@@ -1,8 +1,8 @@
 // src/collections/DoctorSpecialties.ts
 import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isClinicStaff } from '@/access/isClinicStaff'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { platformOrAssignedClinicMutation, platformOrOwnClinicDoctorResource } from '@/access/scopeFilters'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
@@ -25,7 +25,7 @@ export const DoctorSpecialties: CollectionConfig = {
     read: anyone, // Public read access
     create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
     update: platformOrOwnClinicDoctorResource, // Platform: all, Clinic: only doctors from their clinic
-    delete: isPlatformBasicUser, // Only Platform can delete
+    delete: isPlatformStaff, // Only Platform can delete
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook, beforeChangeEnforceDoctorInAssignedClinic({ doctorField: 'doctor' })],
@@ -47,8 +47,8 @@ export const DoctorSpecialties: CollectionConfig = {
       },
       filterOptions: async ({ req }) => {
         if (!req.user) return true
-        if (isPlatformBasicUser({ req })) return true
-        if (!isClinicBasicUser({ req })) return false
+        if (isPlatformStaff({ req })) return true
+        if (!isClinicStaff({ req })) return false
 
         const clinicId = await getUserAssignedClinicId(req.user, req.payload)
         if (clinicId === null) return false

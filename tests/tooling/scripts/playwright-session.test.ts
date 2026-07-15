@@ -95,7 +95,7 @@ describe('playwright-session URLs', () => {
     )
     expect(
       isAuthenticatedPlaywrightSessionUrl(
-        'http://localhost:3000/admin/collections/basicUsers',
+        'http://localhost:3000/admin/collections/platformStaff',
         'admin',
         'http://localhost:3000/',
       ),
@@ -105,9 +105,9 @@ describe('playwright-session URLs', () => {
     )
   })
 
-  it('accepts admin persona sessions only when basicUsers stays readable', async () => {
+  it('accepts admin persona sessions only when platformStaff is readable', async () => {
     const request = createRequestContext({
-      '/api/basicUsers?depth=0&limit=1': {
+      '/api/platformStaff?depth=0&limit=1': {
         body: { docs: [] },
         ok: true,
       },
@@ -118,9 +118,9 @@ describe('playwright-session URLs', () => {
     ).resolves.toBe(true)
   })
 
-  it('rejects clinic persona validation when basicUsers is still readable', async () => {
+  it('rejects clinic persona validation when platformStaff is readable', async () => {
     const request = createRequestContext({
-      '/api/basicUsers?depth=0&limit=1': {
+      '/api/platformStaff?depth=0&limit=1': {
         body: { docs: [{ id: 'admin-user' }] },
         ok: true,
       },
@@ -137,7 +137,7 @@ describe('playwright-session URLs', () => {
 
   it('accepts clinic persona validation only with a clinic staff assignment', async () => {
     const request = createRequestContext({
-      '/api/basicUsers?depth=0&limit=1': {
+      '/api/platformStaff?depth=0&limit=1': {
         ok: false,
       },
       '/api/clinicStaff?depth=1&limit=1': {

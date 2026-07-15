@@ -6,7 +6,7 @@ import config from '@payload-config'
 import type { Export, Import } from '@/payload-types'
 import { testSlug } from '../../fixtures/testSlug'
 import {
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
   createClinicTestUser,
@@ -26,7 +26,7 @@ describe('Import and export access integration', () => {
   let patientUser: PayloadRequestUser
 
   const slugPrefix = testSlug('importExport-access.test.ts')
-  const createdBasicUserIds: Array<number | string> = []
+  const createdStaffIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
   const createdExportIds: Array<number | string> = []
   const createdImportIds: Array<number | string> = []
@@ -82,19 +82,19 @@ describe('Import and export access integration', () => {
 
     const platform = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
     const clinic = await createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
     const patient = await createPatientTestUser(payload, {
       emailPrefix: `${slugPrefix}-patient`,
       createdPatientIds,
     })
 
-    platformUser = asPayloadBasicUser(platform)
-    clinicUser = asPayloadBasicUser(clinic)
+    platformUser = asPayloadStaffUser(platform)
+    clinicUser = asPayloadStaffUser(clinic)
     patientUser = asPayloadPatientUser(patient)
   })
 
@@ -118,7 +118,7 @@ describe('Import and export access integration', () => {
 
   afterAll(async () => {
     await cleanupTrackedUsers(payload, {
-      basicUserIds: createdBasicUserIds,
+      staffIds: createdStaffIds,
       patientIds: createdPatientIds,
     })
   })

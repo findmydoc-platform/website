@@ -1,43 +1,43 @@
 import type { Access, CollectionConfig, PayloadHandler } from 'payload'
 
 import { anyone } from '@/access/anyone'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 
 const denyAllCollectionAccess: Access = () => false
 
 const platformAdminAccess: NonNullable<CollectionConfig['access']>['admin'] = async ({ req }) => {
-  return (await isPlatformBasicUser({ req })) === true
+  return (await isPlatformStaff({ req })) === true
 }
 
 const importExportCollectionAccess = {
-  create: isPlatformBasicUser,
-  read: isPlatformBasicUser,
+  create: isPlatformStaff,
+  read: isPlatformStaff,
   update: denyAllCollectionAccess,
-  delete: isPlatformBasicUser,
+  delete: isPlatformStaff,
   admin: platformAdminAccess,
 } satisfies NonNullable<CollectionConfig['access']>
 
 const publicReadPlatformManagedCollectionAccess = {
-  create: isPlatformBasicUser,
+  create: isPlatformStaff,
   read: anyone,
-  update: isPlatformBasicUser,
-  delete: isPlatformBasicUser,
+  update: isPlatformStaff,
+  delete: isPlatformStaff,
   admin: platformAdminAccess,
 } satisfies NonNullable<CollectionConfig['access']>
 
 const formSubmissionCollectionAccess = {
   create: anyone,
-  read: isPlatformBasicUser,
+  read: isPlatformStaff,
   update: denyAllCollectionAccess,
-  delete: isPlatformBasicUser,
+  delete: isPlatformStaff,
   admin: platformAdminAccess,
 } satisfies NonNullable<CollectionConfig['access']>
 
 const searchCollectionAccess = {
   create: denyAllCollectionAccess,
   read: anyone,
-  update: isPlatformBasicUser,
-  delete: isPlatformBasicUser,
+  update: isPlatformStaff,
+  delete: isPlatformStaff,
   admin: platformAdminAccess,
 } satisfies NonNullable<CollectionConfig['access']>
 
@@ -71,7 +71,7 @@ export const searchPluginCollectionAccessOverrides = {
 
 const withPlatformEndpointAccess = (handler: PayloadHandler): PayloadHandler => {
   return async (req) => {
-    const allowed = await isPlatformBasicUser({ req })
+    const allowed = await isPlatformStaff({ req })
 
     if (allowed !== true) {
       return Response.json({ errors: [{ message: 'Forbidden' }] }, { status: 403 })

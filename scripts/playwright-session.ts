@@ -115,12 +115,12 @@ export const isValidPlaywrightSessionForPersona = async (
 
   switch (persona) {
     case 'admin': {
-      const basicUserDocs = await readCollectionDocs(request, '/api/basicUsers?depth=0&limit=1')
-      return Array.isArray(basicUserDocs)
+      const platformStaffDocs = await readCollectionDocs(request, '/api/platformStaff?depth=0&limit=1')
+      return Array.isArray(platformStaffDocs)
     }
     case 'clinic': {
-      const basicUserDocs = await readCollectionDocs(request, '/api/basicUsers?depth=0&limit=1')
-      if (Array.isArray(basicUserDocs)) {
+      const platformStaffDocs = await readCollectionDocs(request, '/api/platformStaff?depth=0&limit=1')
+      if (Array.isArray(platformStaffDocs)) {
         return false
       }
 

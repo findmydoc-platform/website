@@ -10,7 +10,7 @@ import { testSlug } from '../fixtures/testSlug'
 import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { createTinyPngFile } from '../fixtures/mediaFile'
 import { buildRichText } from '../fixtures/richText'
-import { approveClinicStaff, asBasicUserPayload, createClinicUserWithStaff } from '../fixtures/clinicUserFixtures'
+import { approveClinicStaff, asStaffPayloadUser, createClinicStaffFixture } from '../fixtures/clinicUserFixtures'
 import type { ClinicMedia, Clinictreatment, DoctorMedia, Doctortreatment, Treatment } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
@@ -38,7 +38,7 @@ describe('Medical network defaultPopulate', () => {
   const createdClinicMediaIds: Array<number> = []
   const createdDoctorMediaIds: Array<number> = []
   const createdClinicStaffIds: Array<number> = []
-  const createdBasicUserIds: Array<number> = []
+  const createdStaffIds: Array<number> = []
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -67,7 +67,7 @@ describe('Medical network defaultPopulate', () => {
       { collection: 'doctorMedia', ids: createdDoctorMediaIds },
       { collection: 'clinicMedia', ids: createdClinicMediaIds },
       { collection: 'clinicStaff', ids: createdClinicStaffIds },
-      { collection: 'platformStaff', ids: createdBasicUserIds },
+      { collection: 'platformStaff', ids: createdStaffIds },
     ])
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
@@ -91,10 +91,9 @@ describe('Medical network defaultPopulate', () => {
       depth: 0,
     })) as Treatment
 
-    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+    const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'clinic-treatment',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
 
@@ -107,7 +106,7 @@ describe('Medical network defaultPopulate', () => {
         clinic: clinic.id,
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-clinic-card.png`),
-      user: asBasicUserPayload(basicUser),
+      user: asStaffPayloadUser(staffUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
@@ -191,10 +190,9 @@ describe('Medical network defaultPopulate', () => {
       depth: 0,
     })) as Treatment
 
-    const { basicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+    const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'doctor',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
 
@@ -207,7 +205,7 @@ describe('Medical network defaultPopulate', () => {
         doctor: doctor.id,
       } as Partial<DoctorMedia>,
       file: createTinyPngFile(`${slugPrefix}-doctor-card.png`),
-      user: asBasicUserPayload(basicUser),
+      user: asStaffPayloadUser(staffUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as DoctorMedia

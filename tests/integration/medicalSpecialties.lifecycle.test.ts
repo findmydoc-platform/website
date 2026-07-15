@@ -8,7 +8,7 @@ import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import {
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
   createClinicTestUser,
@@ -36,14 +36,14 @@ describe('MedicalSpecialties lifecycle integration', () => {
     createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-${suffix}`,
       lastName: `User-${suffix}`,
-      createdBasicUserIds: createdUserIds,
+      createdStaffIds: createdUserIds,
     })
 
   const createClinicUser = (suffix: string) =>
     createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic-${suffix}`,
       lastName: `User-${suffix}`,
-      createdBasicUserIds: createdUserIds,
+      createdStaffIds: createdUserIds,
     })
 
   const createPatientUser = (suffix: string) =>
@@ -81,7 +81,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
     }
 
     await cleanupTrackedUsers(payload, {
-      basicUserIds: createdUserIds,
+      staffIds: createdUserIds,
       patientIds: createdPatientIds,
     })
 
@@ -98,7 +98,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: 'Cosmetic Surgery',
         description: 'Parent specialty',
       } as unknown as MedicalSpecialty,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -112,7 +112,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         description: 'Child specialty',
         parentSpecialty: parent.id,
       } as unknown as MedicalSpecialty,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -140,7 +140,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: 'Orthopedics',
         description: 'Parent A',
       } as unknown as MedicalSpecialty,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -151,7 +151,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: 'Sports Medicine',
         description: 'Parent B',
       } as unknown as MedicalSpecialty,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -163,7 +163,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         description: 'Child specialty',
         parentSpecialty: parentA.id,
       } as unknown as MedicalSpecialty,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -177,7 +177,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         description: 'Updated child specialty',
         parentSpecialty: parentB.id,
       },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -200,7 +200,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
       data: {
         name: 'Sports Medicine Updated',
       },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
@@ -224,7 +224,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: 'Root Specialty',
         description: 'Level 1 specialty',
       } as unknown as MedicalSpecialty,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -237,7 +237,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         description: 'Level 2 specialty',
         parentSpecialty: root.id,
       } as unknown as MedicalSpecialty,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -251,7 +251,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
           description: 'Should be rejected as level 3',
           parentSpecialty: child.id,
         } as unknown as MedicalSpecialty,
-        user: asPayloadBasicUser(platformUser),
+        user: asPayloadStaffUser(platformUser),
         overrideAccess: false,
         depth: 0,
       }),
@@ -264,7 +264,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         data: {
           parentSpecialty: root.id,
         },
-        user: asPayloadBasicUser(platformUser),
+        user: asPayloadStaffUser(platformUser),
         overrideAccess: false,
         depth: 0,
       }),
@@ -281,7 +281,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: 'Aesthetic',
         description: 'Appearance-focused care',
       } as unknown as MedicalSpecialty,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -329,7 +329,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: 'General Practice',
         description: 'Primary care',
       } as unknown as MedicalSpecialty,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -337,7 +337,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
     await payload.delete({
       collection: 'medical-specialties',
       id: specialty.id,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
@@ -361,7 +361,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
         name: `${slugPrefix}-platform-write`,
         description: 'Platform can create specialties',
       } as unknown as MedicalSpecialty,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as MedicalSpecialty
@@ -369,7 +369,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
     createdSpecialtyIds.push(createdByPlatform.id)
 
     const deniedUsers = [
-      { label: 'clinic', user: asPayloadBasicUser(clinicUser) },
+      { label: 'clinic', user: asPayloadStaffUser(clinicUser) },
       { label: 'patient', user: asPayloadPatientUser(patientUser) },
       { label: 'anonymous' as const, user: undefined },
     ]
@@ -410,7 +410,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
       collection: 'medical-specialties',
       id: createdByPlatform.id,
       data: { description: 'Platform update works' },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })

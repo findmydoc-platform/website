@@ -11,10 +11,10 @@ import {
   cleanupTrackedUsers,
   createClinicTestUser,
   createPlatformTestUser,
-  asPayloadBasicUser,
+  asPayloadStaffUser,
 } from '../fixtures/testUsers'
 import { runBaselineContract } from './contracts/baselineContract'
-import type { BasicUser, PatientClinicInquiry } from '@/payload-types'
+import type { ClinicStaff, PatientClinicInquiry, PlatformStaff } from '@/payload-types'
 
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 type PayloadUpdateArgs = Parameters<Payload['update']>[0]
@@ -25,7 +25,7 @@ describe('PatientClinicInquiries lifecycle integration', () => {
   let cityId: number
   const slugPrefix = testSlug('patientClinicInquiries.lifecycle.test.ts')
   const createdInquiryIds: Array<number> = []
-  const createdBasicUserIds: Array<number | string> = []
+  const createdStaffIds: Array<number | string> = []
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -46,22 +46,22 @@ describe('PatientClinicInquiries lifecycle integration', () => {
       } catch {}
     }
 
-    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds })
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
     await cleanupTestEntities(payload, 'patientClinicInquiries', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
-  const createPlatformUser = async (suffix: string): Promise<BasicUser> =>
+  const createPlatformUser = async (suffix: string): Promise<PlatformStaff> =>
     createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform-${suffix}`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
-  const createClinicUser = async (suffix: string): Promise<BasicUser> =>
+  const createClinicUser = async (suffix: string): Promise<ClinicStaff> =>
     createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic-${suffix}`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
   const buildInquiryData = async (suffix: string) => {
@@ -131,7 +131,7 @@ describe('PatientClinicInquiries lifecycle integration', () => {
         status: 'contacted',
         assignedTo: platformUser.id,
       },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadUpdateArgs)) as PatientClinicInquiry
@@ -144,7 +144,7 @@ describe('PatientClinicInquiries lifecycle integration', () => {
     await expect(
       payload.find({
         collection: 'patientClinicInquiries',
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         overrideAccess: false,
         depth: 0,
       } as PayloadFindArgs),
@@ -154,7 +154,7 @@ describe('PatientClinicInquiries lifecycle integration', () => {
       payload.create({
         collection: 'patientClinicInquiries',
         data,
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         overrideAccess: false,
         depth: 0,
       } as PayloadCreateArgs),
@@ -186,7 +186,7 @@ describe('PatientClinicInquiries lifecycle integration', () => {
             text: 'Tampered consent.',
           },
         },
-        user: asPayloadBasicUser(platformUser),
+        user: asPayloadStaffUser(platformUser),
         overrideAccess: false,
         depth: 0,
       } as PayloadUpdateArgs),
@@ -197,7 +197,7 @@ describe('PatientClinicInquiries lifecycle integration', () => {
         collection: 'patientClinicInquiries',
         id: inquiry.id,
         data: { treatmentTimeline: 'flexible' },
-        user: asPayloadBasicUser(platformUser),
+        user: asPayloadStaffUser(platformUser),
         overrideAccess: false,
         depth: 0,
       } as PayloadUpdateArgs),
@@ -257,7 +257,7 @@ describe('PatientClinicInquiries lifecycle integration', () => {
             collection: 'patientClinicInquiries',
             id,
             data: { status: 'closed' },
-            user: asPayloadBasicUser(clinicUser),
+            user: asPayloadStaffUser(clinicUser),
             overrideAccess: false,
             depth: 0,
           } as PayloadUpdateArgs),
@@ -269,7 +269,7 @@ describe('PatientClinicInquiries lifecycle integration', () => {
         const deleted = await payload.delete({
           collection: 'patientClinicInquiries',
           id,
-          user: asPayloadBasicUser(platformUser),
+          user: asPayloadStaffUser(platformUser),
           overrideAccess: false,
           depth: 0,
         })

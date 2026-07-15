@@ -2,7 +2,7 @@ import { CollectionConfig, slugField } from 'payload'
 import { languageOptions } from './common/selectionOptions'
 import { generateFullName } from '@/utilities/nameUtils'
 import { computedOnlyFieldAccess } from '@/access/fieldAccess'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { anyone } from '@/access/anyone'
 import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
@@ -46,7 +46,7 @@ export const Doctors: CollectionConfig<'doctors'> = {
     read: anyone, // Public read access for all users
     create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
     update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
-    delete: isPlatformBasicUser, // Only Platform can delete
+    delete: isPlatformStaff, // Only Platform can delete
   },
   hooks: {
     beforeChange: [

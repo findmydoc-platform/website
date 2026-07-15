@@ -3,7 +3,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { anyone } from '@/access/anyone'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { beforeChangePlatformContentMedia } from './hooks/beforeChangePlatformContentMedia'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import {
@@ -39,9 +39,9 @@ export const PlatformContentMedia: CollectionConfig = {
   },
   access: {
     read: anyone,
-    create: ({ req }) => isPlatformBasicUser({ req }),
-    update: ({ req }) => isPlatformBasicUser({ req }),
-    delete: ({ req }) => isPlatformBasicUser({ req }),
+    create: ({ req }) => isPlatformStaff({ req }),
+    update: ({ req }) => isPlatformStaff({ req }),
+    delete: ({ req }) => isPlatformStaff({ req }),
   },
   trash: true,
   hooks: {

@@ -1,6 +1,6 @@
 import { mcpPlugin } from '@payloadcms/plugin-mcp'
 import { UnauthorizedError, type CollectionSlug, type Plugin } from 'payload'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 
 type McpCollectionConfig = {
   description: string
@@ -94,10 +94,10 @@ export const createMcpPlugin = (): Plugin =>
         ...collection,
         access: {
           ...collection.access,
-          create: isPlatformBasicUser,
-          read: isPlatformBasicUser,
-          update: isPlatformBasicUser,
-          delete: isPlatformBasicUser,
+          create: isPlatformStaff,
+          read: isPlatformStaff,
+          update: isPlatformStaff,
+          delete: isPlatformStaff,
         },
       }
     },

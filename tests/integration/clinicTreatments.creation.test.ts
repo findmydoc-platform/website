@@ -10,7 +10,7 @@ import { asClinicScopedPayloadUser, cleanupTrackedUsers, createClinicTestUser } 
 import type { Clinictreatment, Treatment } from '@/payload-types'
 
 const createdClinicTreatmentIds: Array<string | number> = []
-const createdBasicUserIds: Array<number | string> = []
+const createdStaffIds: Array<number | string> = []
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
 describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
@@ -21,12 +21,12 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
   const slugPrefix = testSlug('clinicTreatments.creation.test.ts')
 
   const createClinicUser = async (emailPrefix: string, clinicId: number) => {
-    const basicUser = await createClinicTestUser(payload, {
+    const staffUser = await createClinicTestUser(payload, {
       emailPrefix,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
-    return asClinicScopedPayloadUser(payload, basicUser, clinicId)
+    return asClinicScopedPayloadUser(payload, staffUser, clinicId)
   }
 
   beforeAll(async () => {
@@ -61,7 +61,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
 
-    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds })
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
   })
 
   it('creates a clinic treatment with required fields', async () => {

@@ -1,5 +1,5 @@
 import { CollectionConfig } from 'payload'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { anyone } from '@/access/anyone'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { enforceTwoLevelHierarchy } from './MedicalSpecialties/hooks/enforceTwoLevelHierarchy'
@@ -16,9 +16,9 @@ export const MedicalSpecialties: CollectionConfig = {
   },
   access: {
     read: anyone,
-    create: isPlatformBasicUser,
-    update: isPlatformBasicUser,
-    delete: isPlatformBasicUser,
+    create: isPlatformStaff,
+    update: isPlatformStaff,
+    delete: isPlatformStaff,
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook, enforceTwoLevelHierarchy],

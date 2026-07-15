@@ -1,5 +1,5 @@
 /**
- * Unit Tests for isClinicBasicUser Access Functions
+ * Unit Tests for isClinicStaff Access Functions
  *
  * Tests clinic staff identification and profile access functions.
  */
@@ -7,14 +7,14 @@
 import { describe, test, beforeEach } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
-import { isClinicBasicUser, isOwnClinicStaffProfile } from '@/access/isClinicBasicUser'
+import { isClinicStaff, isOwnClinicStaffProfile } from '@/access/isClinicStaff'
 
-describe('isClinicBasicUser', () => {
+describe('isClinicStaff', () => {
   beforeEach(() => {
     clearAllMocks()
   })
 
-  describe('isClinicBasicUser', () => {
+  describe('isClinicStaff', () => {
     test.each([
       { userType: 'Clinic Staff', user: () => mockUsers.clinic(), expected: true },
       { userType: 'Platform Staff', user: () => mockUsers.platform(), expected: false },
@@ -32,7 +32,7 @@ describe('isClinicBasicUser', () => {
         expected: false,
       },
     ])('$userType returns $expected', ({ user, expected }) => {
-      const result = isClinicBasicUser(createAccessArgs(user()))
+      const result = isClinicStaff(createAccessArgs(user()))
       if (expected) {
         expectAccess.full(result)
       } else {

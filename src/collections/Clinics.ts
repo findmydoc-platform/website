@@ -2,7 +2,7 @@ import type { Clinic } from '@/payload-types'
 import type { CollectionBeforeValidateHook, CollectionConfig } from 'payload'
 import { slugField } from 'payload'
 import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
 import {
   computedOnlyFieldAccess,
@@ -96,7 +96,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
     read: platformOnlyOrApproved, // Platform Staff: all clinics, Others: approved only
     create: platformClinicTrustAccess, // Only Platform admin/support can create clinics
     update: platformOrOwnClinicProfile, // Platform: all clinics, Clinic: only own profile
-    delete: isPlatformBasicUser, // Only Platform can delete clinics
+    delete: isPlatformStaff, // Only Platform can delete clinics
   },
   hooks: {
     beforeValidate: [validateInternalPrimaryContactBeforeValidate],

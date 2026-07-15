@@ -1,5 +1,5 @@
 import { CollectionConfig, PayloadRequest } from 'payload'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { clinicContactRoleOptions } from './common/selectionOptions'
 
 // Platform-controlled application intake for clinics.
@@ -16,10 +16,10 @@ export const ClinicApplications: CollectionConfig = {
     description: 'New clinic applications awaiting review',
   },
   access: {
-    create: isPlatformBasicUser, // public intake is handled by /api/auth/register/clinic
-    read: isPlatformBasicUser, // only platform staff can view
-    update: isPlatformBasicUser,
-    delete: isPlatformBasicUser,
+    create: isPlatformStaff, // public intake is handled by /api/auth/register/clinic
+    read: isPlatformStaff, // only platform staff can view
+    update: isPlatformStaff,
+    delete: isPlatformStaff,
   },
   fields: [
     {

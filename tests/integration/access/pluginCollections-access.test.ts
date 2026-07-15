@@ -7,7 +7,7 @@ import type { Form, FormSubmission, Post, Redirect, Search } from '@/payload-typ
 import { buildRichText } from '../../fixtures/richText'
 import { testSlug } from '../../fixtures/testSlug'
 import {
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
   createClinicTestUser,
@@ -27,7 +27,7 @@ describe('Plugin collection access integration', () => {
   let patientUser: PayloadRequestUser
 
   const slugPrefix = testSlug('pluginCollections-access.test.ts')
-  const createdBasicUserIds: Array<number | string> = []
+  const createdStaffIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
   const createdFormIds: Array<number | string> = []
   const createdSubmissionIds: Array<number | string> = []
@@ -132,19 +132,19 @@ describe('Plugin collection access integration', () => {
 
     const platform = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
     const clinic = await createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
     const patient = await createPatientTestUser(payload, {
       emailPrefix: `${slugPrefix}-patient`,
       createdPatientIds,
     })
 
-    platformUser = asPayloadBasicUser(platform)
-    clinicUser = asPayloadBasicUser(clinic)
+    platformUser = asPayloadStaffUser(platform)
+    clinicUser = asPayloadStaffUser(clinic)
     patientUser = asPayloadPatientUser(patient)
   })
 
@@ -158,7 +158,7 @@ describe('Plugin collection access integration', () => {
 
   afterAll(async () => {
     await cleanupTrackedUsers(payload, {
-      basicUserIds: createdBasicUserIds,
+      staffIds: createdStaffIds,
       patientIds: createdPatientIds,
     })
   })

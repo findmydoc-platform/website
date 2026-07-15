@@ -10,7 +10,7 @@ import {
   createClinicTestUser,
   createPatientTestUser,
   createPlatformTestUser,
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
 } from '../../fixtures/testUsers'
 import { testSlug } from '../../fixtures/testSlug'
@@ -36,7 +36,7 @@ const buildPostData = (opts: { title: string; status: 'draft' | 'published' }) =
 describe('Posts & Pages integration access', () => {
   let payload: Payload
   const slugPrefix = testSlug('pages-posts-access.test.ts')
-  const createdBasicUserIds: Array<number | string> = []
+  const createdStaffIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
 
   beforeAll(async () => {
@@ -47,7 +47,7 @@ describe('Posts & Pages integration access', () => {
   afterEach(async () => {
     await cleanupTestEntities(payload, 'posts', slugPrefix)
     await cleanupTestEntities(payload, 'pages', slugPrefix)
-    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds, patientIds: createdPatientIds })
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds, patientIds: createdPatientIds })
   })
 
   it('enforces draft visibility and platform-only mutations for posts', async () => {
@@ -84,12 +84,12 @@ describe('Posts & Pages integration access', () => {
 
     const platformUser = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform-posts`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
     const platformRead = await payload.find({
       collection: 'posts',
       where: { slug: { in: [draftSlug, publishedSlug] } },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
@@ -98,7 +98,7 @@ describe('Posts & Pages integration access', () => {
     const platformPost = await payload.create({
       collection: 'posts',
       data: buildPostData({ title: `${slugPrefix}-platform-write`, status: 'draft' }),
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       draft: true,
     })
@@ -107,7 +107,7 @@ describe('Posts & Pages integration access', () => {
       collection: 'posts',
       id: platformPost.id,
       data: { _status: 'published', title: `${slugPrefix}-platform-write-updated` },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
@@ -116,19 +116,19 @@ describe('Posts & Pages integration access', () => {
     await payload.delete({
       collection: 'posts',
       id: platformPost.id,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
     const clinicUser = await createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic-posts`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const clinicRead = await payload.find({
       collection: 'posts',
       where: { slug: { in: [draftSlug, publishedSlug] } },
-      user: asPayloadBasicUser(clinicUser),
+      user: asPayloadStaffUser(clinicUser),
       overrideAccess: false,
     })
 
@@ -139,7 +139,7 @@ describe('Posts & Pages integration access', () => {
       payload.create({
         collection: 'posts',
         data: buildPostData({ title: `${slugPrefix}-clinic-fail`, status: 'draft' }),
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         overrideAccess: false,
         draft: true,
       }),
@@ -174,7 +174,7 @@ describe('Posts & Pages integration access', () => {
       payload.delete({
         collection: 'posts',
         id: publishedPost.id,
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         overrideAccess: false,
       }),
     ).rejects.toThrow()
@@ -218,13 +218,13 @@ describe('Posts & Pages integration access', () => {
 
     const platformUser = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform-pages`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const platformRead = await payload.find({
       collection: 'pages',
       where: { slug: { in: [draftSlug, publishedSlug] } },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
@@ -239,7 +239,7 @@ describe('Posts & Pages integration access', () => {
         slug: slugify(`${slugPrefix}-platform-page`),
       },
       draft: true,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
@@ -247,7 +247,7 @@ describe('Posts & Pages integration access', () => {
       collection: 'pages',
       id: platformPage.id,
       data: { _status: 'published' },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
@@ -256,19 +256,19 @@ describe('Posts & Pages integration access', () => {
     await payload.delete({
       collection: 'pages',
       id: platformPage.id,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
     const clinicUser = await createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic-pages`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const clinicRead = await payload.find({
       collection: 'pages',
       where: { slug: { in: [draftSlug, publishedSlug] } },
-      user: asPayloadBasicUser(clinicUser),
+      user: asPayloadStaffUser(clinicUser),
       overrideAccess: false,
     })
 
@@ -284,7 +284,7 @@ describe('Posts & Pages integration access', () => {
           _status: 'draft',
         },
         draft: true,
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         overrideAccess: false,
       }),
     ).rejects.toThrow()
@@ -318,7 +318,7 @@ describe('Posts & Pages integration access', () => {
       payload.delete({
         collection: 'pages',
         id: publishedPage.id,
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         overrideAccess: false,
       }),
     ).rejects.toThrow()

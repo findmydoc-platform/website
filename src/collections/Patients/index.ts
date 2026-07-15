@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { isPatient, isOwnPatient } from '@/access/isPatient'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { anonymizePatientReviewAuthorsBeforeDeleteHook } from './hooks/anonymizePatientReviewAuthors'
 import { patientSupabaseCreateHook } from './hooks/patientSupabaseCreate'
@@ -23,7 +23,7 @@ export const Patients: CollectionConfig = {
   },
   access: {
     read: ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
+      if (isPlatformStaff({ req })) return true
 
       if (isPatient({ req })) {
         return {
@@ -35,12 +35,12 @@ export const Patients: CollectionConfig = {
 
       return false
     },
-    create: isPlatformBasicUser,
+    create: isPlatformStaff,
     update: ({ req, id }) => {
-      if (isPlatformBasicUser({ req })) return true
+      if (isPlatformStaff({ req })) return true
       return isOwnPatient({ req, id })
     },
-    delete: isPlatformBasicUser,
+    delete: isPlatformStaff,
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook, patientSupabaseCreateHook, enforceSupabaseIdentityInvariant],

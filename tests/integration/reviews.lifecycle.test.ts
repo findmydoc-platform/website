@@ -8,7 +8,7 @@ import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import {
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
   createClinicTestUser,
@@ -17,7 +17,7 @@ import {
 } from '../fixtures/testUsers'
 import type { Review } from '@/payload-types'
 
-const createdBasicUserIds: Array<string | number> = []
+const createdStaffIds: Array<string | number> = []
 const createdPatientIds: Array<string | number> = []
 const createdReviewIds: Array<string | number> = []
 
@@ -34,7 +34,7 @@ async function createPlatformModerator(payload: Payload, suffix: string) {
     emailPrefix: suffix,
     firstName: 'Review',
     lastName: 'Owner',
-    createdBasicUserIds,
+    createdStaffIds,
   })
 }
 
@@ -52,7 +52,7 @@ async function createClinicUser(payload: Payload, suffix: string) {
     emailPrefix: suffix,
     lastName: 'Reviewer',
     supabaseUserId: `sb-clinic-${suffix}`,
-    createdBasicUserIds,
+    createdStaffIds,
   })
 }
 
@@ -94,7 +94,7 @@ describe('Reviews integration - lifecycle and access', () => {
       } catch {}
     }
 
-    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds })
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
@@ -105,7 +105,7 @@ describe('Reviews integration - lifecycle and access', () => {
       slugPrefix: `${slugPrefix}-defaults`,
     })
 
-    const basicUser = await createPlatformModerator(payload, `${slugPrefix}-platform-defaults`)
+    const staffUser = await createPlatformModerator(payload, `${slugPrefix}-platform-defaults`)
     const patient = await createPatient(payload, `${slugPrefix}-platform-defaults-patient`)
 
     const created = await payload.create({
@@ -118,7 +118,7 @@ describe('Reviews integration - lifecycle and access', () => {
         starRating: 4,
         comment: 'Defaulted review fields',
       } as unknown as Review,
-      user: asPayloadBasicUser(basicUser),
+      user: asPayloadStaffUser(staffUser),
       overrideAccess: false,
     })
 
@@ -217,7 +217,7 @@ describe('Reviews integration - lifecycle and access', () => {
         status: 'approved',
         authorVisibility: 'firstNameInitial',
       } as unknown as Review,
-      user: asPayloadBasicUser(moderator),
+      user: asPayloadStaffUser(moderator),
       overrideAccess: false,
       depth: 0,
     })
@@ -229,7 +229,7 @@ describe('Reviews integration - lifecycle and access', () => {
     await payload.delete({
       collection: 'patients',
       id: patient.id,
-      user: asPayloadBasicUser(moderator),
+      user: asPayloadStaffUser(moderator),
       overrideAccess: false,
     })
 
@@ -266,7 +266,7 @@ describe('Reviews integration - lifecycle and access', () => {
           starRating: 4,
           comment: 'Clinic user should not create reviews',
         } as unknown as Review,
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         overrideAccess: false,
       }),
     ).rejects.toThrow()
@@ -345,7 +345,7 @@ describe('Reviews integration - lifecycle and access', () => {
       slugPrefix: `${slugPrefix}-read-scope`,
     })
 
-    const basicUser = await createPlatformModerator(payload, `${slugPrefix}-read-platform`)
+    const staffUser = await createPlatformModerator(payload, `${slugPrefix}-read-platform`)
     const patientA = await createPatient(payload, `${slugPrefix}-read-a`)
     const patientB = await createPatient(payload, `${slugPrefix}-read-b`)
 
@@ -391,7 +391,7 @@ describe('Reviews integration - lifecycle and access', () => {
     const platformRead = await payload.find({
       collection: 'reviews',
       where: { clinic: { equals: clinic.id } },
-      user: asPayloadBasicUser(basicUser),
+      user: asPayloadStaffUser(staffUser),
       overrideAccess: false,
     })
 

@@ -8,7 +8,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import {
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
   createClinicTestUser,
   createPatientTestUser,
@@ -192,7 +192,7 @@ describe('Countries integration - lifecycle and access', () => {
         language: 'Spanish',
         currency: 'EUR',
       } as unknown as Country,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
@@ -200,7 +200,7 @@ describe('Countries integration - lifecycle and access', () => {
     const deniedUsers = [
       {
         label: 'clinic',
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         createData: {
           name: `${slugPrefix}-clinic-write`,
           isoCode: 'NL',
@@ -253,7 +253,7 @@ describe('Countries integration - lifecycle and access', () => {
       collection: 'countries',
       id: platformCreated.id,
       data: { name: `${slugPrefix}-platform-update` } as unknown as Country,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
@@ -263,7 +263,7 @@ describe('Countries integration - lifecycle and access', () => {
     const deleted = await payload.delete({
       collection: 'countries',
       id: platformCreated.id,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 

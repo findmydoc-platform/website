@@ -1,6 +1,6 @@
 import type { Field, GlobalConfig } from 'payload'
 
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { link } from '@/fields/link'
 import { landingSocialHosts, validateLandingHref } from '@/utilities/landing/safeLandingHref'
 
@@ -477,7 +477,7 @@ export const LandingPages: GlobalConfig = {
   slug: 'landingPages',
   access: {
     read: () => true,
-    update: ({ req }) => isPlatformBasicUser({ req }),
+    update: ({ req }) => isPlatformStaff({ req }),
   },
   admin: {
     group: 'Content & Media',

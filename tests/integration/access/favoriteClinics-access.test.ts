@@ -10,7 +10,7 @@ import {
   cleanupTrackedUsers,
   createPatientTestUser,
   createPlatformTestUser,
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
 } from '../../fixtures/testUsers'
 import { testSlug } from '../../fixtures/testSlug'
@@ -21,7 +21,7 @@ describe('FavoriteClinics access', () => {
   const slugPrefix = testSlug('favoriteClinics-access.test.ts')
   const createdFavoriteIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
-  const createdBasicUserIds: Array<number | string> = []
+  const createdStaffIds: Array<number | string> = []
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -42,7 +42,7 @@ describe('FavoriteClinics access', () => {
       } catch {}
     }
 
-    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds, patientIds: createdPatientIds })
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds, patientIds: createdPatientIds })
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
   })
@@ -66,14 +66,14 @@ describe('FavoriteClinics access', () => {
 
     const platformUser = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const updated = await payload.update({
       collection: 'favoriteclinics',
       id: favorite.id,
       data: { clinic: clinicB.id },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
@@ -83,7 +83,7 @@ describe('FavoriteClinics access', () => {
     await payload.delete({
       collection: 'favoriteclinics',
       id: updated.id,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
@@ -127,12 +127,12 @@ describe('FavoriteClinics access', () => {
 
     const platformUser = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform-reader`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const platformRead = await payload.find({
       collection: 'favoriteclinics',
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 

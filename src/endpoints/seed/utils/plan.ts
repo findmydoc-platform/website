@@ -165,6 +165,7 @@ export const demoPlan: SeedPlanStep[] = [
     name: 'posts',
     collection: 'posts',
     fileName: 'posts',
+    context: { resetSeedPublishedAt: true },
     localizedFields: ['title', 'content', 'excerpt', 'meta.title', 'meta.description'],
     mapping: [
       {

@@ -173,7 +173,8 @@ export const seedChunkTask = {
           throw new Error('Seed reset jobs require an authenticated platform user')
         }
 
-        await resetCollections(payload, input.type, { preservePlatformUserId })
+        const resetResult = await resetCollections(payload, input.type, { preservePlatformUserId })
+        const affectedPostSlugs = resetResult.affectedPostSlugs
 
         const next = await finishSeedRunJob(payload, runId, {
           jobId,
@@ -192,6 +193,7 @@ export const seedChunkTask = {
             updated: 0,
             warnings: [],
             failures: [],
+            affectedPostSlugs,
           },
         })
 
@@ -212,6 +214,7 @@ export const seedChunkTask = {
             updated: 0,
             warnings: [],
             failures: [],
+            affectedPostSlugs,
           },
         }
       }
@@ -403,6 +406,7 @@ export const seedChunkTask = {
           status: jobStatus,
           created: result.created,
           updated: result.updated,
+          affectedPostSlugs: result.affectedPostSlugs ?? [],
           warnings,
           failures,
         },
@@ -459,6 +463,7 @@ export const seedChunkTask = {
           status: 'succeeded',
           created: result.created,
           updated: result.updated,
+          affectedPostSlugs: result.affectedPostSlugs ?? [],
           warnings,
           failures,
           chunkIndex: input.chunkIndex,

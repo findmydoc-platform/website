@@ -112,19 +112,19 @@ Never hand-write Payload migration files from scratch.
 For planning-only skill edits:
 
 ```bash
-rtk pnpm format
+rtk proxy /Users/razorspoint/Library/pnpm/pnpm format
 rtk python3 /Users/razorspoint/.codex/skills/.system/skill-creator/scripts/quick_validate.py .codex/skills/findmydoc-collection-planner
 ```
 
 For actual approved collection implementation, choose from:
 
 ```bash
-rtk pnpm matrix:derive json
-rtk pnpm matrix:verify
-rtk pnpm vitest run tests/unit/access-matrix/<slug>.permission.test.ts
-rtk pnpm vitest run tests/integration/<domain>.lifecycle.test.ts
-rtk pnpm check
-rtk pnpm build
+rtk proxy /Users/razorspoint/Library/pnpm/pnpm matrix:derive json
+rtk proxy /Users/razorspoint/Library/pnpm/pnpm matrix:verify
+rtk proxy /Users/razorspoint/Library/pnpm/pnpm vitest run tests/unit/access-matrix/<slug>.permission.test.ts
+rtk proxy /Users/razorspoint/Library/pnpm/pnpm vitest run tests/integration/<domain>.lifecycle.test.ts
+rtk proxy /Users/razorspoint/Library/pnpm/pnpm check
+rtk proxy /Users/razorspoint/Library/pnpm/pnpm build
 ```
 
 Run `pnpm build` when build-relevant sources, Payload config, routing, or tooling output changes.

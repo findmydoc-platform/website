@@ -5,12 +5,20 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
     DO $migration$
     BEGIN
       IF EXISTS (
-        SELECT 1
+        SELECT legacy."id"
         FROM "basic_users" AS legacy
-        LEFT JOIN "platform_staff" AS platform_principal ON platform_principal."user_id" = legacy."id"
-        LEFT JOIN "clinic_staff" AS clinic_principal ON clinic_principal."user_id" = legacy."id"
-        WHERE (legacy."user_type" = 'platform' AND (platform_principal."id" IS NULL OR clinic_principal."id" IS NOT NULL))
-           OR (legacy."user_type" = 'clinic' AND (clinic_principal."id" IS NULL OR platform_principal."id" IS NOT NULL))
+        LEFT JOIN (
+          SELECT "user_id", 'platform'::text AS "principal_type"
+          FROM "platform_staff"
+          WHERE "user_id" IS NOT NULL
+          UNION ALL
+          SELECT "user_id", 'clinic'::text AS "principal_type"
+          FROM "clinic_staff"
+          WHERE "user_id" IS NOT NULL
+        ) AS direct_principal ON direct_principal."user_id" = legacy."id"
+        GROUP BY legacy."id", legacy."user_type"
+        HAVING COUNT(direct_principal."user_id") <> 1
+          OR BOOL_OR(direct_principal."principal_type" IS DISTINCT FROM legacy."user_type"::text)
       ) THEN
         RAISE EXCEPTION 'Direct staff auth contract aborted: a legacy staff identity does not map exactly once to its direct principal collection';
       END IF;

@@ -1,8 +1,6 @@
 import { BadgeCheck, Eye, FileText, Hospital, MapPin, Target, TrendingUp } from 'lucide-react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
-import type { LandingPricingModelItem, LandingPricingPlan } from '@/components/organisms/Landing/LandingPricing'
-
 import { getStoryImageSrc, storyClinicImages, storyClinicMedia, storyPortraits } from './assets'
 
 const mergeField = <T>(baseValue: T, override?: Partial<T>): T =>
@@ -725,59 +723,6 @@ export const clinicTestimonialsData = [
     image: getStoryImageSrc(storyPortraits.testimonials.robertHayes),
   },
 ]
-
-export const clinicPricingData = [
-  {
-    price: 'EUR 199',
-    billingLabel: '/ month',
-    plan: 'Premium',
-    description:
-      'For clinics that want stronger category visibility, a more competitive profile presence, and a reliable stream of qualified international inquiries.',
-    highlights: ['Priority profile visibility', 'Enhanced profile depth', 'Built for clinics scaling inbound demand'],
-    buttonText: 'Choose Premium',
-    badge: 'Most popular',
-    layout: 'primary',
-  },
-  {
-    price: 'EUR 349',
-    billingLabel: '/ month',
-    plan: 'Pro',
-    description:
-      'For established clinics and networks that need the strongest presentation, highest visibility, and a structure ready for more active international growth.',
-    highlights: [
-      'Highest visibility tier',
-      'Best fit for multi-market growth',
-      'Designed for advanced partner collaboration',
-    ],
-    buttonText: 'Talk to us about Pro',
-    layout: 'primary',
-  },
-  {
-    price: 'EUR 99',
-    billingLabel: '/ month',
-    plan: 'Basic',
-    description:
-      'A focused entry plan for clinics that want to get listed, present core strengths clearly, and start testing international demand without a heavy commitment.',
-    highlights: ['Lean monthly entry point', 'Clear profile presence', 'Good fit for first traction'],
-    buttonText: 'Start with Basic',
-    layout: 'compact',
-  },
-] satisfies LandingPricingPlan[]
-
-export const clinicPricingModelItems = [
-  {
-    title: 'Monthly subscription tiers',
-    description: 'Basic, Premium, and Pro cover ongoing visibility, profile management, and partner presence.',
-  },
-  {
-    title: 'Performance-based commission',
-    description: 'A variable fee can apply on successful patient cases, separate from the monthly subscription.',
-  },
-  {
-    title: 'Optional add-ons',
-    description: 'Extra visibility or support modules can be added without bloating the base pricing cards.',
-  },
-] satisfies LandingPricingModelItem[]
 
 export const clinicBlogData = [
   {

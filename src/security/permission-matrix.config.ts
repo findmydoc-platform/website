@@ -209,26 +209,6 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Public search index with platform management and internal-only document creation',
     },
-    basicUsers: {
-      slug: 'basicUsers',
-      displayName: 'BasicUsers',
-      operations: {
-        create: { type: 'conditional', details: 'disabled legacy collection' },
-        read: { type: 'conditional', details: 'disabled legacy collection' },
-        update: { type: 'conditional', details: 'disabled legacy collection' },
-        delete: { type: 'conditional', details: 'disabled legacy collection' },
-        admin: { type: 'conditional', details: 'hidden legacy collection' },
-      },
-      meta: {
-        conditional: {
-          create: { kind: 'always-false' },
-          read: { kind: 'always-false' },
-          update: { kind: 'always-false' },
-          delete: { kind: 'always-false' },
-        },
-      },
-      notes: 'Locked legacy staff data retained only until the separate contract migration',
-    },
     platformStaff: {
       slug: 'platformStaff',
       displayName: 'PlatformStaff',

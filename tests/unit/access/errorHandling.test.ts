@@ -34,13 +34,13 @@ describe('Access Function Error Handling', () => {
         expected: { isPlatform: false, isClinic: false, isPatient: false, isAuth: true },
       },
       {
-        scenario: 'user with invalid userType',
-        user: { id: 1, collection: 'basicUsers', userType: 'invalid' },
+        scenario: 'user with invalid collection and userType',
+        user: { id: 1, collection: 'unknown', userType: 'invalid' },
         expected: { isPlatform: false, isClinic: false, isPatient: false, isAuth: true },
       },
       {
-        scenario: 'user with missing userType',
-        user: { id: 1, collection: 'basicUsers' },
+        scenario: 'user with unknown collection',
+        user: { id: 1, collection: 'unknown' },
         expected: { isPlatform: false, isClinic: false, isPatient: false, isAuth: true },
       },
       {
@@ -99,7 +99,7 @@ describe('Access Function Error Handling', () => {
       const mockPayload = createMockPayload()
       mockPayload.find.mockRejectedValue(new Error('Database connection failed'))
 
-      const req = createMockReq({ id: 1, collection: 'basicUsers', userType: 'clinic' }, mockPayload)
+      const req = createMockReq({ id: 1, collection: 'clinicStaff' }, mockPayload)
 
       const result = await platformOrOwnClinicResource({ req })
       expect(result).toBe(false)
@@ -107,7 +107,7 @@ describe('Access Function Error Handling', () => {
 
     test('platformOrOwnClinicResource handles missing payload', async () => {
       const req = {
-        user: { id: 1, collection: 'basicUsers', userType: 'clinic' },
+        user: { id: 1, collection: 'clinicStaff' },
         context: {},
         // payload missing
       }

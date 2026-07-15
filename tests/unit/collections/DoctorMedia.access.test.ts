@@ -95,8 +95,7 @@ describe('DoctorMedia Collection Access Control', () => {
     test('Non-patient static file read stays denied when scoped access is missing', async () => {
       const user = {
         id: 101,
-        collection: 'basicUsers',
-        userType: 'support',
+        collection: 'unknown',
         email: 'support@example.com',
       }
       const req = createMockReq(user, mockPayload)

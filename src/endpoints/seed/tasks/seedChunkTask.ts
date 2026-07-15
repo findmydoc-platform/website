@@ -311,7 +311,7 @@ export const seedChunkTask = {
       if (input.requiresPlatformUser) {
         const platformSeedActorId = await resolvePlatformSeedActorId(payload, seedReq)
         if (!platformSeedActorId) {
-          const warning = 'No platform basic user available for media attribution.'
+          const warning = 'No platform staff actor available for media attribution.'
           await attachSeedRunWarning(payload, runId, warning, getLogContext(input, jobId))
 
           const next = await finishSeedRunJob(payload, runId, {

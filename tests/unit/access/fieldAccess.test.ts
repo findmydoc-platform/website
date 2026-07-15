@@ -44,11 +44,7 @@ describe('Field Access Control', () => {
         user: () => ({ id: 123, collection: 'patients', userType: 'platform' }),
         expected: false,
       },
-      {
-        userType: 'Wrong userType (clinic)',
-        user: () => ({ id: 123, collection: 'basicUsers', userType: 'clinic' }),
-        expected: false,
-      },
+      { userType: 'Unknown collection', user: () => ({ id: 123, collection: 'unknown' }), expected: false },
       {
         userType: 'Missing collection',
         user: () => ({ id: 123, userType: 'platform' }),
@@ -56,7 +52,7 @@ describe('Field Access Control', () => {
       },
       {
         userType: 'Missing userType',
-        user: () => ({ id: 123, collection: 'basicUsers' }),
+        user: () => ({ id: 123 }),
         expected: false,
       },
     ])('$userType field access returns $expected', ({ user, expected }) => {

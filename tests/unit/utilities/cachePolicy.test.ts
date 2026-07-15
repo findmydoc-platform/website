@@ -102,7 +102,6 @@ describe('cache policy contract', () => {
     const privateCollections = [
       'favoriteclinics',
       'patients',
-      'basicUsers',
       'clinicStaff',
       'platformStaff',
       'clinicApplications',

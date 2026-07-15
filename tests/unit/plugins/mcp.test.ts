@@ -9,7 +9,7 @@ describe('MCP principal authorization', () => {
   it('rejects every other principal collection', () => {
     expect(isPlatformStaffMcpUser({ id: 7, collection: 'clinicStaff' })).toBe(false)
     expect(isPlatformStaffMcpUser({ id: 7, collection: 'patients' })).toBe(false)
-    expect(isPlatformStaffMcpUser({ id: 7, collection: 'basicUsers', userType: 'platform' })).toBe(false)
+    expect(isPlatformStaffMcpUser({ id: 7, collection: 'unknown' })).toBe(false)
     expect(isPlatformStaffMcpUser(null)).toBe(false)
   })
 })

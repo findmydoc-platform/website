@@ -504,7 +504,7 @@ describe('seed endpoints success paths', () => {
     record.cancelledJobs = 1
     record.jobs = [
       {
-        id: 'job-basic-users',
+        id: 'job-patients',
         order: 1,
         status: 'cancelled',
         input: {
@@ -512,17 +512,17 @@ describe('seed endpoints success paths', () => {
           type: 'demo',
           reset: false,
           queue,
-          stepName: 'basic-users',
+          stepName: 'patients',
           kind: 'collection',
-          collection: 'basicUsers',
-          fileName: 'basicUsers',
+          collection: 'patients',
+          fileName: 'patients',
         },
         queue,
-        title: 'Basic users',
-        stepName: 'basic-users',
+        title: 'Patients',
+        stepName: 'patients',
         kind: 'collection',
-        collection: 'basicUsers',
-        fileName: 'basicUsers',
+        collection: 'patients',
+        fileName: 'patients',
         createdAt: '2026-07-08T09:00:00.000Z',
         completedAt: '2026-07-08T10:00:00.000Z',
         created: 0,

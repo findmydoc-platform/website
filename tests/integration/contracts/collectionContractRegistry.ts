@@ -8,9 +8,6 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/accreditation.lifecycle.test.ts'],
     deep: ['tests/integration/accreditation.lifecycle.test.ts'],
   },
-  basicUsers: {
-    baseline: ['tests/integration/basicUserLifecycle.test.ts'],
-  },
   categories: {
     baseline: ['tests/integration/categories.lifecycle.test.ts'],
   },

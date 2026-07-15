@@ -6,22 +6,14 @@ config:
 erDiagram
     direction TB
 
-    BasicUsers {
-        text id PK "UUID, auto by Payload"
-        text stableId "Stable seed identifier, unique"
-        text supabaseUserId "Supabase user id, unique, set by auth hook"
-        text firstName "Given name, required"
-        text lastName "Family name, required"
-        email email "Login email, required, unique"
-        select userType "enum: clinic, platform"
-        upload profileImage FK "Relationship to UserProfileMedia"
-        date createdAt "System: timestamps: true"
-        date updatedAt "System: timestamps: true"
-    }
-
     PlatformStaff {
         text id PK "UUID, auto by Payload"
-        relationship user FK "Relationship to BasicUsers (userType=platform), required, unique"
+        text stableId "Stable application identifier, unique"
+        text supabaseUserId "Supabase identity binding, unique"
+        email email "Private login email"
+        text firstName "Private given name"
+        text lastName "Private family name"
+        upload profileImage FK "Relationship to UserProfileMedia"
         select role "enum: admin, support, content-manager (default: support)"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
@@ -29,7 +21,12 @@ erDiagram
 
     ClinicStaff {
         text id PK "UUID, auto by Payload"
-        relationship user FK "Relationship to BasicUsers (userType=clinic), required, unique"
+        text stableId "Stable application identifier, unique"
+        text supabaseUserId "Supabase identity binding, unique"
+        email email "Private login email"
+        text firstName "Private given name"
+        text lastName "Private family name"
+        upload profileImage FK "Relationship to UserProfileMedia"
         relationship clinic FK "Relationship to Clinics, optional until assignment"
         select status "enum: pending, approved, rejected, default: pending"
         date createdAt "System: timestamps: true"
@@ -56,8 +53,8 @@ erDiagram
         text id PK "UUID, auto by Payload"
         text alt "Screen-reader text, required"
         richText caption "Optional caption"
-        relationship user FK "Polymorphic relationship to BasicUsers or Patients, required"
-        relationship createdBy FK "Uploader (BasicUsers or Patients), auto-set"
+        relationship user FK "Owner: PlatformStaff, ClinicStaff, or Patients"
+        relationship createdBy FK "Uploader: PlatformStaff, ClinicStaff, or Patients"
         text storagePath "Resolved storage path, readOnly"
         text prefix "S3 prefix, readOnly"
         upload file "User-owned image asset"
@@ -81,7 +78,6 @@ erDiagram
         select status "enum: submitted, approved, rejected (platform managed)"
         textarea reviewNotes "Internal reviewer notes"
         relationship linkedRecords_clinic FK "Optional relationship to Clinics"
-        relationship linkedRecords_basicUser FK "Optional relationship to BasicUsers"
         relationship linkedRecords_clinicStaff FK "Optional relationship to ClinicStaff"
         date linkedRecords_processedAt "Timestamp when materialized"
         text sourceMeta_ip "Captured submitter IP"
@@ -126,7 +122,7 @@ erDiagram
         text alt "Screen-reader alt text, required"
         richText caption "Optional caption"
         relationship clinic FK "Relationship to Clinics, required"
-        relationship createdBy FK "Uploader (BasicUsers), auto-set"
+        relationship createdBy FK "Uploader: PlatformStaff or ClinicStaff, auto-set"
         text storagePath "Resolved storage path, readOnly"
         text prefix "S3 prefix, readOnly"
         upload file "Clinic-owned image asset"
@@ -141,7 +137,7 @@ erDiagram
         relationship clinic FK "Owning clinic, required"
         select status "enum: draft, published"
         date publishedAt "Auto-set when status=published"
-        relationship createdBy FK "Uploader (BasicUsers), auto-set"
+        relationship createdBy FK "Uploader: PlatformStaff or ClinicStaff, auto-set"
         text storageKey "Immutable storage key, unique"
         text storagePath "Resolved storage path, readOnly"
         text prefix "S3 prefix, readOnly"
@@ -159,7 +155,7 @@ erDiagram
         richText description "Optional story/summary"
         select status "enum: draft, published"
         date publishedAt "Auto-set when status=published"
-        relationship createdBy FK "Curator (BasicUsers), auto-set"
+        relationship createdBy FK "Curator: PlatformStaff or ClinicStaff, auto-set"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
     }
@@ -191,7 +187,7 @@ erDiagram
         richText caption "Optional caption"
         relationship doctor FK "Owning doctor, required"
         relationship clinic FK "Derived clinic, readonly"
-        relationship createdBy FK "Uploader (BasicUsers), auto-set"
+        relationship createdBy FK "Uploader: PlatformStaff or ClinicStaff, auto-set"
         text storagePath "Resolved storage path, readOnly"
         text prefix "S3 prefix, readOnly"
         upload file "Doctor-owned image asset"
@@ -294,7 +290,7 @@ erDiagram
         relationship treatment FK "Relationship to Treatments, required"
         date lastEditedAt "Audit timestamp, readonly"
         text editedByName "Editor display name"
-        relationship editedBy FK "Relationship to BasicUsers"
+        relationship editedBy FK "Relationship to PlatformStaff"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
     }
@@ -335,7 +331,7 @@ erDiagram
         text stableId "Stable seed identifier, unique"
         text alt "Screen-reader alt text, required"
         richText caption "Optional caption"
-        relationship createdBy FK "Uploader (BasicUsers), auto-set, required"
+        relationship createdBy FK "Uploader (PlatformStaff), auto-set, required"
         text storagePath "Resolved storage path, readOnly"
         text prefix "S3 prefix, readOnly"
         upload file "Platform-managed media asset"
@@ -357,7 +353,7 @@ erDiagram
         text meta_description "SEO description"
         upload meta_image FK "Relationship to PlatformContentMedia"
         date publishedAt "Optional publish date"
-        relationship authors FK "Relationship to BasicUsers, hasMany"
+        relationship authors FK "Relationship to PlatformStaff, hasMany"
         array populatedAuthors "Virtual read-time author projection from authors"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
@@ -377,14 +373,17 @@ erDiagram
     }
 
     %% Relationships
-    BasicUsers ||--o| PlatformStaff : "has platform profile"
-    BasicUsers ||--o| ClinicStaff : "has clinic profile"
-    BasicUsers ||--o{ UserProfileMedia : "owns media"
-    BasicUsers ||--o{ ClinicGalleryEntries : "createdBy"
-    BasicUsers ||--o{ ClinicGalleryMedia : "createdBy"
-    BasicUsers ||--o{ ClinicMedia : "createdBy"
-    BasicUsers ||--o{ DoctorMedia : "createdBy"
-    BasicUsers ||--o{ PlatformContentMedia : "createdBy"
+    PlatformStaff ||--o{ UserProfileMedia : "owns or creates"
+    ClinicStaff ||--o{ UserProfileMedia : "owns or creates"
+    PlatformStaff ||--o{ ClinicGalleryEntries : "createdBy"
+    ClinicStaff ||--o{ ClinicGalleryEntries : "createdBy"
+    PlatformStaff ||--o{ ClinicGalleryMedia : "createdBy"
+    ClinicStaff ||--o{ ClinicGalleryMedia : "createdBy"
+    PlatformStaff ||--o{ ClinicMedia : "createdBy"
+    ClinicStaff ||--o{ ClinicMedia : "createdBy"
+    PlatformStaff ||--o{ DoctorMedia : "createdBy"
+    ClinicStaff ||--o{ DoctorMedia : "createdBy"
+    PlatformStaff ||--o{ PlatformContentMedia : "createdBy"
 
     Patients }o--|| Countries : "resides in"
     Patients ||--o{ FavoriteClinics : "saves"
@@ -394,7 +393,6 @@ erDiagram
     ClinicStaff }o--|| Clinics : "assigned to"
 
     ClinicApplications }o--|| Clinics : "linkedRecords.clinic"
-    ClinicApplications }o--|| BasicUsers : "linkedRecords.basicUser"
     ClinicApplications }o--|| ClinicStaff : "linkedRecords.clinicStaff"
 
     Clinics ||--o{ Doctors : "employs"
@@ -435,7 +433,7 @@ erDiagram
 
     Categories }o--o{ Posts : "categorizes posts"
 
-    BasicUsers ||--o{ Posts : "authors"
+    PlatformStaff ||--o{ Posts : "authors"
     Posts ||--o{ Posts : "related posts"
     Posts }o--|| PlatformContentMedia : "hero/meta image"
     Pages }o--|| PlatformContentMedia : "meta image"

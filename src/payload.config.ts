@@ -33,7 +33,6 @@ import { Reviews } from './collections/Reviews'
 import { Countries } from './collections/Countries'
 import { Cities } from './collections/Cities'
 import { Tags } from './collections/Tags'
-import { BasicUsers } from './collections/BasicUsers'
 import { Patients } from './collections/Patients'
 import { ClinicStaff } from './collections/ClinicStaff'
 import { FavoriteClinics } from './collections/FavoriteClinics'
@@ -176,7 +175,6 @@ export default buildConfig({
     DoctorMedia,
     UserProfileMedia,
     Categories,
-    BasicUsers,
     Patients,
     ClinicStaff,
     PlatformStaff,

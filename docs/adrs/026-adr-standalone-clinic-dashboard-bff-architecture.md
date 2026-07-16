@@ -126,7 +126,14 @@ Server Actions as public backend contracts. Its universal GraphQL requirement do
 REST and capability-specific endpoints are the selected integration contract.
 
 Payload CORS remains unchanged because no Dashboard browser request reaches Payload. State-changing BFF routes validate
-the session, input, request origin, and cross-site request forgery protection and fail closed.
+the session, input, request origin, and cross-site request forgery protection and fail closed. The Dashboard applies
+this protection centrally through one shared mutation guard. It uses a stateless HMAC-signed CSRF token bound to the
+current Supabase session; Staging and Production store that token in a host-only `__Host-` cookie. Payload requires no
+CSRF-specific change.
+
+The server-only Payload client accepts only the exact HTTPS Payload origin configured for the active environment.
+Authenticated requests do not follow redirects to another origin and never replay the Bearer token to a redirected
+host.
 
 ### Failure contract
 
@@ -141,13 +148,15 @@ the session, input, request origin, and cross-site request forgery protection an
 
 ### Cache contract
 
-Authentication, session, principal, clinic, capability, and Dashboard data are private live data under
-[ADR 023](./023-adr-public-website-cache-and-revalidation-strategy.md). Responses use private, no-store semantics. ISR,
-public shared caches, durable Dashboard caches, and the Vercel Data Cache are excluded for these data paths.
+Authentication, session, principal, clinic, capability, and authenticated Dashboard reads are private live data under
+[ADR 023](./023-adr-public-website-cache-and-revalidation-strategy.md). BFF responses use private, no-store semantics.
+ISR, public shared caches, durable Dashboard caches, and the Vercel Data Cache are excluded for these data paths.
 
 Request-local deduplication is allowed because it does not outlive or cross the authenticated request. This decision
-creates no public cache class, cache tag, revalidation event, invalidation owner, or public route. Any future public or
-shared cache requires a separate architecture decision.
+creates no new public cache class, cache tag, revalidation event, invalidation owner, or public route. An authorized
+Dashboard mutation can still change data rendered on the public website; in that case Payload must execute the existing
+ADR 023 invalidation contract for the affected public surfaces. The private BFF response does not replace or suppress
+that public revalidation. Any future shared Dashboard cache requires a separate architecture decision.
 
 ## Consequences
 

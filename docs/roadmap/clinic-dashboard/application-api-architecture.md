@@ -89,6 +89,11 @@ the upstream Payload behavior they require.
 There is no catch-all route that accepts a Payload path, collection slug, query, or arbitrary request body from the
 browser.
 
+All state-changing Dashboard routes use one shared mutation guard rather than route-local CSRF implementations. The
+guard validates the session and exact origin, then verifies a stateless HMAC-signed CSRF token bound to the current
+Supabase session. Staging and Production use a host-only `__Host-` CSRF cookie. This protection belongs entirely to the
+Dashboard BFF and requires no Payload change.
+
 ## Error Mapping
 
 | Payload or upstream condition | Dashboard BFF result | Session effect |
@@ -107,26 +112,33 @@ Payload errors, SQL details, stack traces, clinic data from a denied request, or
 
 | Environment | Dashboard origin | Supabase | Payload API | Callback allowlist |
 | --- | --- | --- | --- | --- |
-| Local | `http://localhost:3000` | Staging | Website Preview | Exact `http://localhost:3000/auth/callback` |
-| Pull-request preview | Trusted Vercel deployment URL | Staging | Website Preview | `https://clinic-dashboard-*-findmydoc.vercel.app/auth/callback` |
-| Production | `https://clinics.findmydoc.eu` | Production | Website Production | Exact `https://clinics.findmydoc.eu/auth/callback` |
+| Local | `http://localhost:3000` | Staging | Exact `https://preview.findmydoc.eu` | Exact `http://localhost:3000/auth/callback` |
+| Pull-request preview | Trusted Vercel deployment URL | Staging | Exact `https://preview.findmydoc.eu` | `https://clinic-dashboard-*-findmydoc.vercel.app/auth/callback` |
+| Production | `https://clinics.findmydoc.eu` | Production | Exact `https://findmydoc.eu` | Exact `https://clinics.findmydoc.eu/auth/callback` |
 
 The Dashboard validates `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `PAYLOAD_API_URL`, and its expected origin as one
 environment bundle. The names are implementation-contract names, not confirmation that variables already exist. No
 service-role key is permitted. Preview origin derivation may use trusted Vercel metadata after validating the expected
 project suffix and HTTPS scheme; it must not trust an arbitrary request `Host` header.
 
+`PAYLOAD_API_URL` must equal the exact Payload origin shown for the active environment. The server-only client requires
+HTTPS, treats redirects as errors, and never forwards a Bearer token after a redirect or origin change.
+
 Payload does not add Dashboard origins to CORS. Server-to-server requests are authenticated by Bearer token and
 environment, not browser-origin allowlisting.
 
 ## Cache and Data Handling
 
-All Dashboard authentication, principal, clinic, capability, and business responses remain `private-live` and use
-private, no-store semantics. The website does not add them to its public cache policy, tags, revalidation planner, or
-public discovery routes.
+All Dashboard authentication, principal, clinic, capability, and authenticated business responses remain
+`private-live` and use private, no-store semantics. The BFF does not add those reads or responses to the website's
+public cache policy, tags, revalidation planner, or public discovery routes.
 
 Request-local deduplication in one Dashboard render is allowed. Persistent Dashboard copies, ISR, shared Vercel Data
 Cache entries, or stale-while-revalidate behavior for authenticated data are not allowed by this plan.
+
+Payload mutations that affect existing public website surfaces still execute their established ADR 023 revalidation
+events, tags, and bounded paths. A private BFF response never suppresses public invalidation. This plan adds no new cache
+class, tag family, invalidation owner, or event.
 
 Cache impact for this documentation change: `no-public-impact`.
 
@@ -150,7 +162,10 @@ change in the Dashboard repository.
 - Browser JavaScript cannot read access or refresh tokens.
 - Payload resolves clinic, status, and capabilities from the current principal for every request.
 - Bootstrap and capability DTOs contain no unapproved internal fields.
+- Every state-changing Dashboard route uses the central session-bound HMAC-CSRF guard; Payload remains unchanged.
+- The Payload client accepts only the exact environment origin and does not follow authenticated redirects.
 - Invalid, missing, conflicting, and ineligible principals fail closed with the documented status mapping.
 - Payload and Supabase outages preserve an otherwise valid Dashboard session.
 - Local, preview, and production configurations reject cross-environment combinations.
 - Authenticated responses bypass shared and durable caches.
+- Public-impacting Payload mutations retain their established ADR 023 revalidation behavior.

@@ -5,9 +5,9 @@
 | Name    | Content           |
 | ------- | ----------------- |
 | Author  | Sebastian Schütze |
-| Version | 1.0               |
-| Date    | 26.03.2025        |
-| Status  | approved          |
+| Version | 1.1               |
+| Date    | 16.07.2026        |
+| Status  | Approved          |
 
 ## Background
 
@@ -55,6 +55,13 @@ We will use **GraphQL and route-based APIs** to handle all server-side logic. Th
 
 - Developers familiar with Server Actions may try to mix patterns. To mitigate this, we will document and enforce the API-first pattern using GraphQL and routes only.
 
-## Superseded by (Optional)
+## Partial Supersession
 
-N/A
+[ADR 026](./026-adr-standalone-clinic-dashboard-bff-architecture.md) supersedes the universal GraphQL requirement for
+the standalone Clinic Dashboard. That application uses REST and capability-specific endpoints behind its same-origin
+Backend for Frontend. This ADR's API-first boundary and its rejection of Server Actions as public backend contracts
+remain valid.
+
+## Superseded by
+
+Not otherwise superseded.

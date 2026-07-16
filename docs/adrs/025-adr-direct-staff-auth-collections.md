@@ -5,8 +5,8 @@
 | Name | Content |
 | --- | --- |
 | Author | Sebastian Schütze |
-| Version | 1.1 |
-| Date | 14.07.2026 |
+| Version | 1.2 |
+| Date | 16.07.2026 |
 | Status | Approved |
 
 ## Background
@@ -137,9 +137,10 @@ clinic-session bridge is required.
 
 ### Integration gate
 
-Dashboard origin, token transport, refresh, CORS, CSRF protection, and callbacks require a separate application-boundary
-decision. Production Dashboard API integration, CORS expansion, and clinic invitation callbacks remain blocked until
-that decision is approved.
+The standalone Dashboard application, session, token transport, callback, API, CSRF, environment, failure, and cache
+boundaries are defined by [ADR 026](./026-adr-standalone-clinic-dashboard-bff-architecture.md). The Dashboard uses a
+same-origin Backend for Frontend and server-to-server Payload requests; browser access to Payload and Payload CORS
+expansion are not part of that integration.
 
 ## Consequences
 
@@ -151,8 +152,8 @@ that decision is approved.
 - **Negative:** Polymorphic actors, platform relationship migration, and public-author cache symmetry add implementation
   obligations.
 - **Neutral:** The Dashboard owns clinic account interfaces; the portal retains patients and public registration.
-- **Neutral:** Staff-category changes require reprovisioning, and live Dashboard integration awaits a separate browser
-  session and cross-origin decision.
+- **Neutral:** Staff-category changes require reprovisioning, and live Dashboard integration follows the separate BFF
+  contract.
 
 ## Relationship to Existing Decisions
 
@@ -164,6 +165,8 @@ that decision is approved.
   [ADR 017](./017-adr-payload-virtual-fields-post-populated-authors.md).
 - This ADR applies the cache classes and invalidation ownership defined by
   [ADR 023](./023-adr-public-website-cache-and-revalidation-strategy.md).
+- This ADR's Dashboard integration boundary is completed by
+  [ADR 026](./026-adr-standalone-clinic-dashboard-bff-architecture.md).
 
 ## Superseded by
 

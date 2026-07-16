@@ -31,13 +31,10 @@ The website repository owns:
 - migrations, pre-production rebuilds, and target-state seeds; and
 - contract, integration, and end-to-end tests for those behaviors.
 
-The standalone Clinic Dashboard owns its login UI and browser session integration. Its exact origin, token transport,
-refresh behavior, CORS configuration, CSRF protection, callback targets, and API client contract require a separate
-application-boundary decision.
-
-That deferred decision is a release gate. This work must not enable production Dashboard API access, add a Dashboard
-origin to CORS, or send clinic invitation callbacks to the Dashboard before the application-boundary decision is
-approved and implemented.
+The standalone Clinic Dashboard owns its login UI, BFF session, callback, refresh, logout, same-origin Route Handlers,
+and server-only Payload client. [ADR 026](../../adrs/026-adr-standalone-clinic-dashboard-bff-architecture.md) now defines
+that boundary. This direct-principal rollout deliberately implemented none of it and did not add a Dashboard origin to
+Payload CORS.
 
 ## Target Collection Contracts
 
@@ -498,14 +495,14 @@ Implementation verification covers:
 - absence of the clinic branch in Payload Admin and portal login-role selection;
 - continued patient login, public clinic registration, clinic invitation completion, password reset, and generic auth
   callback behavior; and
-- absence of production Dashboard CORS, callbacks, or API integration before the application-boundary gate.
+- absence of Dashboard BFF, callbacks, or API integration in this direct-principal rollout.
 
 ## Out of Scope
 
 - Clinic Dashboard UI implementation;
-- the Dashboard origin and production domain;
-- browser token transport and refresh behavior;
-- CORS, CSRF, and cross-origin cookie configuration;
+- the Dashboard BFF origin, callback, server-side token transport, and refresh behavior;
+- Dashboard CSRF and host-bound cookie configuration;
+- Payload API bootstrap implementation and Dashboard Route Handlers;
 - a new public cache mechanism;
 - a generic Actor or identity-registry collection; and
 - compatibility with disposable non-production clinic identities or sessions.

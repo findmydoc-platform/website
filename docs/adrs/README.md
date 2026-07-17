@@ -74,3 +74,4 @@ When adding a new ADR:
 - [023 — Public website cache and revalidation strategy](./023-adr-public-website-cache-and-revalidation-strategy.md)
 - [024 — Production build webpack fallback](./024-adr-production-build-webpack-fallback.md)
 - [025 — Direct staff authentication collections](./025-adr-direct-staff-auth-collections.md)
+- [026 — Standalone Clinic Dashboard BFF architecture](./026-adr-standalone-clinic-dashboard-bff-architecture.md)

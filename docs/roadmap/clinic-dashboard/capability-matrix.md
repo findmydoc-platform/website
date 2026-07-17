@@ -6,29 +6,26 @@
 > permission matrix, and runtime code take precedence.
 
 > **Paired UI record.** The canonical visual reference, screen captures, fixtures, and temporary visibility gates live
-> in [the Clinic Dashboard UI plan](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/clinic-dashboard-prototype-and-capability-visibility.md).
+> in [the Clinic Dashboard UI plan](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/plans/clinic-dashboard-prototype-and-capability-visibility.md).
 > Read both records together. A UI/control/gate change updates the matching row here; a backend capability, API,
 > permission, cache, or owning-issue change updates the matching UI-plan note. Neither record may infer the other
 > repository's contract.
 
 ## Executive Outcome
 
-`website#1523` is the correct first task. The prototype contains enough product detail to expose backend assumptions,
-but not enough contract detail to safely start runtime integration. The first runtime gate is the staff-auth refactor
-currently duplicated across [website#1484](https://github.com/findmydoc-platform/website/issues/1484) and
-[website#1532](https://github.com/findmydoc-platform/website/issues/1532), because the current staff identity, tenant
-helpers, actor relationships, and Payload Admin ownership still depend on `basicUsers` and ADR 006. The owner must
-select one canonical execution issue before runtime work starts.
+`website#1523` established the product and capability inventory. The direct staff-principal decision is now defined by
+[ADR 025](../../adrs/025-adr-direct-staff-auth-collections.md), and the standalone application boundary is defined by
+[ADR 026](../../adrs/026-adr-standalone-clinic-dashboard-bff-architecture.md).
 
-[website#1522](https://github.com/findmydoc-platform/website/issues/1522) can start its application-boundary analysis in
-parallel with the canonical auth ADR slice, but it cannot be finalized until the replacement staff-auth decision exists.
-No work in #1524–#1531 should be merged against the outgoing `basicUsers` identity model.
+The first remaining runtime gate is [website#1524](https://github.com/findmydoc-platform/website/issues/1524): Payload
+must expose the focused, server-authenticated self-and-capability bootstrap required by the Dashboard BFF. The browser
+does not call Payload and Payload CORS is not expanded.
 
 The standalone app shell in
 [clinic-dashboard#1](https://github.com/findmydoc-platform/clinic-dashboard/issues/1) can proceed in parallel using only
 the rescued stories and fixtures. This includes all dashboard-overview metrics: no runtime PostHog query, analytics key,
-or reporting endpoint belongs in the prototype. Its backend wiring remains blocked by the canonical auth refactor, #1522,
-and #1524.
+or reporting endpoint belongs in the prototype. Its backend wiring remains blocked by the focused Payload contract in
+#1524.
 
 ## Decision Evidence
 
@@ -37,10 +34,10 @@ and #1524.
 | Visual truth | [Google Stitch project](https://stitch.withgoogle.com/projects/7627258445295331531), with seven screen IDs preserved in the prototype QA manifest |
 | Prototype implementation | Website commit [`be9efd19c98cf1461cb87dc5294c09a35d881f9d`](https://github.com/findmydoc-platform/website/commit/be9efd19c98cf1461cb87dc5294c09a35d881f9d) on `feature/rescue-clinic-dashboard-prototype` |
 | Backend implementation | Website `origin/main` at [`99b7534f49a8def0bdea0ba10689b100e126ce4a`](https://github.com/findmydoc-platform/website/commit/99b7534f49a8def0bdea0ba10689b100e126ce4a) (`fix(seeding): preserve seed reset operator (#1517)`) |
-| Auth architecture | [ADR 006](../../adrs/006-adr-supabase-payloadcms-multi-user-auth-strategy.md), accepted for the current runtime but explicitly due to be superseded by #1532 |
+| Auth architecture | [ADR 025](../../adrs/025-adr-direct-staff-auth-collections.md) for direct principals and [ADR 026](../../adrs/026-adr-standalone-clinic-dashboard-bff-architecture.md) for the Dashboard BFF, session, API, environment, and cache boundary |
 | Cache architecture | [ADR 023](../../adrs/023-adr-public-website-cache-and-revalidation-strategy.md), the [runtime guide](../../engineering/cache-revalidation-runtime.md), policy catalog, planner, and executor |
 | Analytics capability | [PostHog Query API](https://posthog.com/docs/api/queries) documents aggregated data for embedded analytics; its [embedded analytics tutorial](https://posthog.com/tutorials/embedded-analytics) demonstrates the server-query plus application-rendering pattern. |
-| Issue contract | website#1522–#1533, the overlapping open website#1484, and clinic-dashboard#1, read on 2026-07-13; no issues were created or rewritten by this record |
+| Issue contract | website#1522–#1533 and clinic-dashboard#1; this record is updated when an accepted architecture decision changes a dependency |
 
 Decision status: the capability classification and dependency order are ready for execution planning. Product choices
 called out as data gaps remain intentionally unresolved.
@@ -48,7 +45,7 @@ called out as data gaps remain intentionally unresolved.
 Authoritative implementation destinations:
 
 - Website backend, schema, access, cache, and public surfaces: `findmydoc-platform/website`
-- Standalone shell and dashboard UI: [`findmydoc-platform/clinic-dashboard`](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/clinic-dashboard-prototype-and-capability-visibility.md)
+- Standalone shell and dashboard UI: [`findmydoc-platform/clinic-dashboard`](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/plans/clinic-dashboard-prototype-and-capability-visibility.md)
 - Architecture decisions: accepted ADRs in the repository that owns the affected boundary
 
 ## Scope
@@ -91,12 +88,10 @@ The dashboard may hold only request- or session-scoped material in the browser o
 material, ephemeral UI state, and an optional Next.js cache. Any Next.js cache is temporary, non-authoritative, and an
 optimization only; it must not be used as durable dashboard storage or as a substitute for Payload authorization.
 
-The existing website already provides reusable authentication mechanics: Supabase SSR cookie sessions via
-`src/auth/utilities/supaBaseServer.ts` and bearer-token extraction/validation via
-`src/auth/utilities/jwtValidation.ts`. The implementation should reuse those patterns instead of introducing a second
-session or token system. The exact transport (cookie, bearer token, or a deliberate combination) remains a #1522/#1524
-architecture decision, and the current `basicUsers` staff resolution remains blocked on the canonical #1484/#1532
-auth refactor.
+ADR 026 fixes the transport: the Dashboard BFF owns secure, host-bound, `HttpOnly` session cookies and sends the current
+Supabase access token to Payload server-side. Browser application code receives no tokens and never calls Payload. The
+Dashboard may reuse suitable server-only Supabase and bearer-validation patterns, but it does not reuse the website's
+browser-session surface or create a second identity system.
 
 ## Status Semantics
 
@@ -106,8 +101,8 @@ still owned by clinic-dashboard#1.
 
 | Status | Meaning |
 | --- | --- |
-| `existing` | The current website model, access rule, hook/test coverage, or a backend-free UI behavior is sufficient for this action. Global #1532/#1524 integration gates still apply. |
-| `Access/API gap` | The data model is sufficient, but clinic staff lacks the required tenant-safe access, cross-origin transport, bootstrap, query, or mutation contract. |
+| `existing` | The current website model, access rule, hook/test coverage, or a backend-free UI behavior is sufficient for this action. The #1524 BFF/Payload bootstrap gate still applies to Dashboard wiring. |
+| `Access/API gap` | The data model is sufficient, but clinic staff lacks the required tenant-safe Payload endpoint, BFF contract, bootstrap, query, or mutation contract. |
 | `Schema gap` | Required state cannot be represented safely in the current model and an identified follow-up owns the domain. This status takes precedence over an additional access gap. |
 | `later scope` | The prototype exposes the action, but no backend contract is part of the current issue set. This status also applies when a new schema would be needed but no approved follow-up owns it. The action must remain fixture-only or disabled until explicitly scoped. |
 
@@ -127,35 +122,27 @@ Cache labels used below:
 
 | Boundary | Current repository fact | Consequence for the dashboard |
 | --- | --- | --- |
-| Staff identity | At the time of this assessment, `basicUsers` was auth-enabled while [`clinicStaff`](../../../src/collections/ClinicStaff.ts) and `platformStaff` were profile collections. | The direct-principal rollout supersedes this historical gap. |
-| Clinic authorization | [`getClinicAssignment`](../../../src/access/utils/getClinicAssignment.ts), [`scopeFilters`](../../../src/access/scopeFilters.ts), and role helpers expect authenticated `basicUsers` records and approved `clinicStaff` relationships. | Reusing these helpers unchanged would preserve the wrong identity boundary. |
-| Session and token mechanics | [`supaBaseServer.ts`](../../../src/auth/utilities/supaBaseServer.ts) already wires Supabase SSR sessions through Next.js cookies; [`jwtValidation.ts`](../../../src/auth/utilities/jwtValidation.ts) extracts and validates bearer tokens for API requests. | Reuse the mechanics; do not create dashboard-owned session storage. The transport choice and staff principal remain #1522/#1524 plus the canonical #1484/#1532 auth decision. |
-| External browser API | [`payload.config.ts`](../../../src/payload.config.ts) configures CORS only for `getServerSideURL()`. There is no clinic self/capability endpoint. | #1524 owns the environment allowlist, preflight behavior, and private-live bootstrap after #1532. |
+| Staff identity | `platformStaff`, `clinicStaff`, and `patients` are direct auth principals under ADR 025. | Dashboard authorization resolves `clinicStaff` directly and never grants clinic access to Payload Admin. |
+| Clinic authorization | Access helpers resolve the authenticated direct principal and require current approval plus clinic assignment. | Dashboard requests must use the same server-derived tenant boundary. |
+| Session and token mechanics | ADR 026 assigns Supabase session cookies to the Dashboard BFF and Bearer transport to its server-to-server Payload requests. | The Dashboard owns no database or browser-readable token; Payload remains the current authorization boundary. |
+| Dashboard API | There is no focused clinic self/capability endpoint yet. | #1524 owns the private-live bootstrap and related Payload contracts. Browser CORS is not part of that work. |
 | Payload API | Current collections expose Payload REST according to collection access rules; Payload remains the intended business API and authorization boundary. | The dashboard must not query Postgres directly or bypass collection/endpoint access. |
 | Analytics reporting | Typed PostHog events already carry `clinic_id` for profile views, CTA clicks, and inquiries, but no tenant-safe reporting endpoint exists. PostHog documents its Query API for embedded, aggregated analytics. | #1531 owns a server-only reporting facade that derives the clinic from the authenticated principal, composes approved PostHog and Payload aggregates, and returns dashboard-shaped data. |
 | Public freshness | Clinic detail and listing reads use canonical cache tags; clinic-related hooks normalize events into the central planner/executor. | New or changed public data in #1527–#1529 must prove read/write symmetry under ADR 023. |
-| Deployment | Website and Payload share the current website deployment boundary; the external dashboard origin is not configured. | Exact preview/production origins and responsibility belong to #1522/#1524, not this matrix. |
+| Deployment | Website and Payload share the website deployment boundary; the Dashboard deploys separately. | Local and pull-request Dashboard environments use Staging Supabase plus the preview Payload API; production uses only production systems. |
 
 ## Global Integration Gates
 
 These gates apply even to rows marked `existing`:
 
-1. **Canonical auth work order — #1484 versus #1532.**
-   [#1484](https://github.com/findmydoc-platform/website/issues/1484) and #1532 are both open and describe effectively
-   the same staff-auth refactor. This record references #1532 because it belongs to the Clinic Dashboard deliverable;
-   it does not declare either issue canonical. Runtime work must stop until the owner selects one execution issue and
-   prevents duplicate implementation/closure behavior.
-2. **Final staff principal — canonical auth issue.** `clinicStaff` becomes the direct auth collection, `basicUsers` is removed, tenant
-   helpers and actor relationships are migrated, and ADR 006 is superseded.
-3. **Application and trust boundary — #1522.** The standalone app, Payload, Supabase, website, Preview/Production
-   origins, token transport, and failure behavior receive one accepted architecture contract.
-4. **Browser/API bootstrap — #1524.** Fail-closed CORS and preflight behavior plus a private-live self/capability
-   response expose user, clinic, status, and allowed actions.
-5. **Typed dashboard actions — clinic-dashboard#1.** The rescued prototype currently emits only a string union. Target
+1. **Final staff principal — ADR 025.** `clinicStaff` is the direct clinic principal, tenant facts come from Payload, and
+   clinic access to Payload Admin is denied.
+2. **Application and trust boundary — ADR 026.** The Dashboard BFF owns host-bound session cookies, same-origin browser
+   routes, server-to-server Bearer transport, callback validation, failures, and private-live caching.
+3. **Payload bootstrap — #1524.** A focused private-live self/capability response exposes only the current principal,
+   clinic, status, and allowed actions to the BFF. Payload CORS remains unchanged.
+4. **Typed dashboard actions — clinic-dashboard#1.** The rescued prototype currently emits only a string union. Target
    actions need IDs and typed payloads before they can call any mutation safely.
-
-For traceability, later rows continue to cite #1532 because it is the Clinic Dashboard deliverable sub-issue. Those
-references do not resolve the #1484/#1532 ownership gate.
 
 ## Visible UI Contract
 
@@ -181,17 +168,17 @@ link can view the shared data; the later dashboard instead uses the server-side 
 | Navigate to Dashboard, Messages, Reviews, or Profile | Client routing only. The prototype closes mobile navigation but does not change screens in Storybook. | `existing` | clinic-dashboard#1 | `n/a` |
 | Open and close mobile navigation | Implemented as local prototype state and covered by responsive stories. | `existing` | clinic-dashboard#1 | `n/a` |
 | Render signed-in user and clinic identity | Fixture-only. Final values must come from a server-authorized self/capability response, never request-provided clinic IDs. | `Access/API gap` | #1532 → #1524 | `private-live` |
-| Sign out | The dashboard can end its Supabase session client-side, but final redirect/session failure behavior depends on the target auth ADR. | `Access/API gap` | #1532, #1522, clinic-dashboard#1 | `private-live` |
+| Sign out | The Dashboard BFF clears its host-bound session through a same-origin route; browser code does not call Supabase directly. | `Access/API gap` | clinic-dashboard#1 using ADR 026 | `private-live` |
 | Open notifications | No notification model or endpoint is in the current issue set. | `later scope` | Unowned; keep disabled/fixture-only | `n/a` |
 | Contact support | No support destination or case contract is in the current issue set. | `later scope` | Unowned; external link is a later product decision | `n/a` |
 
 ### Screen 1 — Dashboard Overview
 
-Stitch screen `402f5f9f449145448cb341ace9c8a7cc`; prototype evidence in `P-Stories` and `P-Fixtures`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/dashboard-overview.png)
+Stitch screen `402f5f9f449145448cb341ace9c8a7cc`; prototype evidence in `P-Stories` and `P-Fixtures`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/plans/assets/clinic-dashboard-prototype/dashboard-overview.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
-| Select 7, 30, or 90 days | UI controls and fixture values exist, but the fixture remains fixed at 30 days. #1531 must define the three accepted reporting periods and return the same dashboard shape for each. | `Access/API gap` | #1531 after #1532/#1524 | `private-live` |
+| Select 7, 30, or 90 days | UI controls and fixture values exist, but the fixture remains fixed at 30 days. #1531 must define the three accepted reporting periods and return the same dashboard shape for each. | `Access/API gap` | #1531 after #1524 | `private-live` |
 | Render profile views, inquiries, conversion, reviews, profile completeness, chart, funnel, and comparisons | Keep all values fixture-backed in the prototype. #1531 later queries PostHog for consent-eligible interaction aggregates (profile views, CTA engagement, trends) and reads Payload for authoritative inquiry, review, and completeness facts. There is no impression or booking source. | `Access/API gap` | #1531; inquiry access/completeness depend on #1526/#1528. Existing reviews already support the review overview; #1529 is needed only for future response metrics. | `private-live` |
 | Activate doctor profile | Doctors are clinic-scoped, but no `active` field or activation lifecycle exists despite `active` appearing in admin columns. | `later scope` | No owning backend issue; #1531 may only surface a source-backed remediation code | `public-cached` if later activated publicly |
 | Upload certificate | `accreditation` is public master data and platform-writable; no clinic-owned credential document/upload lifecycle exists. | `later scope` | No owning backend issue; do not map to platform accreditation implicitly | `public-cached` only if a later public credential model is approved |
@@ -199,12 +186,12 @@ Stitch screen `402f5f9f449145448cb341ace9c8a7cc`; prototype evidence in `P-Stori
 | Fix a profile-completeness task | Deterministic completeness is not implemented. Tasks need stable source-backed codes; arbitrary fixture labels are not contracts. | `Schema gap` | #1528 defines calculation; target action depends on the owning domain | `private-live` for the task list; target write may be `public-cached` |
 | Download profile views | Raw provider access must stay server-side, and #1531 does not define an export format or download endpoint. | `later scope` | No owning backend issue | `private-live` if later approved |
 | Open clinic preview | The allowed implementation is the existing approved public clinic profile. A clinic-staff draft preview is not implied. | `existing` | clinic-dashboard#1 opens the public URL; a draft preview would be later scope | `public-cached` read |
-| Edit profile | Base clinic fields can be updated for the assigned clinic. Opening the editor is client routing; missing fields are classified on Screen 5. | `existing` | clinic-dashboard#1; global #1532/#1524 gates apply | Depends on the field written |
+| Edit profile | Base clinic fields can be updated for the assigned clinic. Opening the editor is client routing; missing fields are classified on Screen 5. | `existing` | clinic-dashboard#1; #1524 gates Dashboard API wiring | Depends on the field written |
 | Open public profile | Approved clinic detail is an existing public route backed by cached server data. | `existing` | clinic-dashboard#1 supplies the URL/navigation | `public-cached` read |
 
 ### Screen 2 — Messages
 
-Stitch screen `b4e343c4f5cc4ea8b3bbe5144e6e97ec`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/messages-default.png)
+Stitch screen `b4e343c4f5cc4ea8b3bbe5144e6e97ec`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/plans/assets/clinic-dashboard-prototype/messages-default.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -222,7 +209,7 @@ Stitch screen `b4e343c4f5cc4ea8b3bbe5144e6e97ec`. [Screen capture](https://githu
 
 ### Screen 3 — Patient Profile Dialog
 
-Stitch screen `b704e3e6c44b493f87d977fa0cb33f76`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/patient-profile-dialog.png)
+Stitch screen `b704e3e6c44b493f87d977fa0cb33f76`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/plans/assets/clinic-dashboard-prototype/patient-profile-dialog.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -233,7 +220,7 @@ Stitch screen `b704e3e6c44b493f87d977fa0cb33f76`. [Screen capture](https://githu
 
 ### Screen 4 — Reviews Management
 
-Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/reviews-management.png)
+Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/plans/assets/clinic-dashboard-prototype/reviews-management.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -248,11 +235,11 @@ Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`. [Screen capture](https://githu
 
 ### Screen 5 — Clinic Profile Editor
 
-Stitch screen `42ffc21e25c74fe3be7b7f6317d12436`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/clinic-profile-editor.png)
+Stitch screen `42ffc21e25c74fe3be7b7f6317d12436`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/plans/assets/clinic-dashboard-prototype/clinic-profile-editor.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
-| Edit clinic name, description, address, phone, coordinates, and thumbnail | Fields and own-clinic update rules exist in `clinics`; approved writes already revalidate public clinic surfaces. | `existing` | #1532/#1524 for external access | `public-cached` |
+| Edit clinic name, description, address, phone, coordinates, and thumbnail | Fields and own-clinic update rules exist in `clinics`; approved writes already revalidate public clinic surfaces. | `existing` | #1524 for BFF/Payload access | `public-cached` |
 | Change an existing thumbnail or before/after gallery item | Clinic-owned media and published before/after gallery entries exist. Direct media changes still have the deferred #1468 revalidation gap. | `existing` | #1468 blocks complete public freshness | `public-cached` |
 | Add or reorder a generic clinic gallery | The prototype assumes a generic ordered gallery that the current before/after model does not provide. | `later scope` | No owning backend issue | `public-cached` if later approved |
 | Add or remove clinic specialties | Applications capture `medicalSpecialties`, clinics expose only generic tags, and doctor specialties belong to doctors. Approval does not materialize an equivalent clinic field. | `later scope` | No owning target model; #1525 must explicitly preserve or deliberately decline the application data, and the UI must not silently reuse tags | `public-cached` if later approved |
@@ -261,7 +248,7 @@ Stitch screen `42ffc21e25c74fe3be7b7f6317d12436`. [Screen capture](https://githu
 | Add, edit, remove, or photograph a non-doctor team member | No public clinic-team collection exists. `clinicStaff` must remain auth-only and doctors remain separate. | `Schema gap` | #1527 | `public-cached` |
 | Add a treatment | `clinictreatments` supports clinic-scoped create/update against platform-owned treatment master data, but the full dialog schema does not exist. | `Schema gap` | #1528 | `public-cached` |
 | Reorder treatments | `clinictreatments` has no ordering field or reorder contract, and #1528 does not include ordering. | `later scope` | No owning backend issue | `public-cached` if later approved |
-| Edit map position | Address, latitude, and longitude already exist and can be updated for the assigned clinic. | `existing` | #1532/#1524 for external access | `public-cached` |
+| Edit map position | Address, latitude, and longitude already exist and can be updated for the assigned clinic. | `existing` | #1524 for BFF/Payload access | `public-cached` |
 | Edit opening hours | No structured opening/closing-time model exists. | `Schema gap` | #1528 | `public-cached` |
 | Cancel or discard local edits | Client form-state behavior; no backend write should occur. | `existing` | clinic-dashboard#1 | `n/a` |
 | Save local draft | Clinics have no versions/draft workflow. Updating an approved clinic is immediately live and revalidates public surfaces. The prototype's “saved locally” label is not a backend contract. | `later scope` | No owning backend issue; clinic-dashboard#1 may keep unsaved client state only | `private-live` only if a real draft model is approved |
@@ -269,7 +256,7 @@ Stitch screen `42ffc21e25c74fe3be7b7f6317d12436`. [Screen capture](https://githu
 
 ### Screen 6 — New Treatment Dialog
 
-Stitch screen `4403f6cc252e441783ae584fd7e38eaf`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/new-treatment-dialog.png)
+Stitch screen `4403f6cc252e441783ae584fd7e38eaf`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/plans/assets/clinic-dashboard-prototype/new-treatment-dialog.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -280,7 +267,7 @@ Stitch screen `4403f6cc252e441783ae584fd7e38eaf`. [Screen capture](https://githu
 
 ### Screen 7 — Add Team Member Dialog
 
-Stitch screen `df09d7542d1e4be8b3ae1b9165a2a584`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/assets/clinic-dashboard-prototype/add-team-member-dialog.png)
+Stitch screen `df09d7542d1e4be8b3ae1b9165a2a584`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/plans/assets/clinic-dashboard-prototype/add-team-member-dialog.png)
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
@@ -294,7 +281,7 @@ Stitch screen `df09d7542d1e4be8b3ae1b9165a2a584`. [Screen capture](https://githu
 
 | Collection or source | Fields or capability | Relationship | Current permission | Provenance or freshness | Status |
 | --- | --- | --- | --- | --- | --- |
-| `basicUsers` + `clinicStaff` | Staff identity, approval, clinic assignment | `clinicStaff.profile → basicUsers`; `clinicStaff.clinic → clinics` | `basicUsers` is the auth principal; approved clinic profile resolves tenant scope | Private live through Supabase strategy and Payload lookup | `Access/API gap` — replace through #1532 |
+| `clinicStaff` | Direct staff identity, approval, clinic assignment | `clinicStaff.clinic → clinics` | Approved direct principal resolves tenant scope; clinic access to Payload Admin is denied | Private live through Supabase strategy and Payload lookup | `existing` under ADR 025; Dashboard bootstrap remains #1524 |
 | `clinics` | Name, rich description, address, phone, coordinates, thumbnail, status, tags | One clinic is assigned through clinic staff | Clinic staff can update only its assigned clinic; approved reads are public | Approved public detail/listing is cached; write hooks exist | `existing` for current fields; missing fields remain #1528 |
 | `clinicMedia`, `clinicGalleryMedia`, `clinicGalleryEntries` | Clinic-owned uploads and published before/after gallery entries | Media/entry belongs to one clinic | Clinic-scoped writes; published assets/entries can be public | Public clinic detail is cached; direct media invalidation is deferred | `existing` for the current model; prototype generic gallery remains `later scope` |
 | `treatments` + `clinictreatments` | Platform master treatment plus clinic price/relationship | Clinic treatment belongs to one clinic and one master treatment | Master writes are platform-only; clinic may create/update own relationship but not delete | Public clinic detail/listing is cached and clinic-treatment hooks exist | `Schema gap` for duration, description, currency, active, order |
@@ -306,7 +293,7 @@ Stitch screen `df09d7542d1e4be8b3ae1b9165a2a584`. [Screen capture](https://githu
 | `reviews` | Patient review, moderation status, aggregate updates, edit audit | Review relates to clinic, doctor, treatment | Approved public read; patient/platform create; update/delete platform-only | Approved reviews affect cached clinic detail/listing | `Schema gap` for responses/appeals and own-clinic management — #1529 |
 | Public non-doctor clinic team | Name, role, biography, photo, order, visibility | Must belong to one clinic, separate from auth staff | No collection or permission exists | Must be public-cached when approved/active | `Schema gap` — #1527 |
 | Conversations/messages/private attachments | Thread, sender, message, read state, internal note, upload | Must derive clinic and participants from inquiry/auth context | No collections or permission rules exist | Must remain private-live/no-public-impact | `Schema gap` — #1530 |
-| PostHog analytics + Payload reporting facade | PostHog: consent-eligible profile views, CTA engagement, and trend aggregates. Payload: authoritative inquiry, review, and completeness facts. | The server derives one clinic from the authenticated principal; callers never supply a clinic ID or arbitrary query. | Events exist, but no server reporting contract exists. PostHog Query Read credentials are server-only; the browser receives only the shaped aggregate. | Private live; an optional private TTL cache is non-authoritative | `Access/API gap` — #1531 |
+| PostHog analytics + Payload reporting facade | PostHog: consent-eligible profile views, CTA engagement, and trend aggregates. Payload: authoritative inquiry, review, and completeness facts. | The server derives one clinic from the authenticated principal; callers never supply a clinic ID or arbitrary query. | Events exist, but no server reporting contract exists. PostHog Query Read credentials are server-only; the browser receives only the shaped aggregate. | Private live and no-store; a later shared or durable cache requires a separate decision | `Access/API gap` — #1531 |
 
 ## Cache Impact Contract
 
@@ -319,11 +306,11 @@ For the planned implementation slices, the decision is domain-specific:
 | Domain | Cache-impact decision | Reason |
 | --- | --- | --- |
 | Private auth, session, invitation, application, and clinic bootstrap state | `no-public-impact` | Identity, approval workflow, sessions, and capabilities are private-live. |
-| #1532 actor-relation migration on public documents | `public-cached` | `posts.authors` currently references `basicUsers`; relation rewrites must assess public reader output plus migration/seed flush behavior. |
+| Direct-principal actor relations on public documents | `public-cached` | ADR 025 preserves the public author projection and existing post revalidation contract after the completed relation change. |
 | Approved clinic materialization from onboarding | `public-cached` | The application remains private, but creation or approval of a public clinic must pass through the clinic hook/planner boundary or an explicit terminal flush. |
 | Inquiries | `no-public-impact` | Tenant-bound operational data; never public cached. |
 | Conversations, messages, attachments, internal notes | `no-public-impact` | Patient- and clinic-bound private data. |
-| Dashboard analytics | `no-public-impact` | Tenant-scoped server aggregation; optional private TTL caching is non-authoritative and must not become a second reporting store. |
+| Dashboard analytics | `no-public-impact` | Tenant-scoped server aggregation remains private-live and no-store; a later shared or durable cache requires a separate decision. |
 | Approved clinic fields and opening hours | `public-cached` | Rendered on public clinic detail and potentially listing surfaces. |
 | Active clinic treatments | `public-cached` | Rendered on public clinic detail and listing comparison. |
 | Approved/active public team members | `public-cached` | New public clinic-detail dependency. |
@@ -415,38 +402,36 @@ Stop implementation and obtain an ADR or explicit work order when any slice requ
 | Prototype funnel language conflates inquiries with bookings/reservations. | The repository has inquiry events but no booking domain. | #1531 must define conversion only from available sources; appointments remain later scope. |
 | The inquiry capture prefers a per-submission fallback `distinct_id` over the existing PostHog browser cookie. | A true person-level PostHog funnel from profile view to inquiry cannot currently be trusted; only a period-based event ratio is safe. | #1531 must either preserve the consented browser identity through the inquiry event or label the metric as an aggregate ratio rather than a person funnel. |
 | PostHog event capture is consent-gated. | PostHog interaction counts can undercount real business activity and cannot be presented as the authoritative inquiry total. | #1531 reads actual inquiry, review, and completeness facts from Payload; PostHog remains the behavioural analytics source. |
-| Clinic application approval does not materialize clinic/auth/staff records and partial profile creation errors can be swallowed. | No reproducible first clinic account exists for dashboard use. | #1525 after the selected #1484/#1532 auth refactor. |
-| #1484 and #1532 are both open with effectively the same staff-auth target. | Two runtime work orders could produce duplicate PRs, conflicting relationships, or ambiguous closure. | Owner must select one canonical execution issue before auth implementation; this document changes neither issue. |
-| Current CORS and self/bootstrap behavior is website-only. | An external browser app cannot safely discover tenant/capabilities. | #1524 after the selected #1484/#1532 auth refactor. |
+| Clinic application approval does not materialize clinic/auth/staff records and partial profile creation errors can be swallowed. | No reproducible first clinic account exists for dashboard use. | #1525 using the direct `clinicStaff` model. |
+| No focused clinic self/capability bootstrap exists. | The Dashboard BFF cannot initialize current tenant and capability state from a purpose-limited contract. | #1524 implements the server-authenticated Payload endpoint; no browser CORS change is required. |
 | Public media and nested master-data cache dependencies are incomplete. | Public profile updates can appear stale after otherwise successful dashboard writes. | #1468 and the #1528 read/write-symmetry work. |
 
 ## Issue Impact and Dependency Matrix
 
 | Issue | Primary work | Schema | Auth/session | Permission/API | Public cache/revalidation | Hard dependency or gate |
 | --- | --- | --- | --- | --- | --- | --- |
-| [#1484](https://github.com/findmydoc-platform/website/issues/1484) | Staff-auth refactor overlapping #1532 | Yes, broad migration | Primary change | Rewrites actor/tenant helpers | Private auth plus public actor-relation assessment | Ownership stop-gate: select one canonical execution issue with #1532 |
-| [#1522](https://github.com/findmydoc-platform/website/issues/1522) | Application/API architecture ADR | No | Defines transport boundary | Defines ownership/trust boundary | References, does not implement | #1523 input; final text needs the selected auth ADR |
+| [#1522](https://github.com/findmydoc-platform/website/issues/1522) | Application/API ADR, durable architecture contracts, and synchronized implementation plans | No | Defines BFF session and Bearer transport | Defines ownership/trust boundary | `no-public-impact` documentation | ADR 025 principal decision and #1523 capability inventory |
 | [#1523](https://github.com/findmydoc-platform/website/issues/1523) | Historical website capability contract; paired UI plan is in clinic-dashboard | No | No | No | Classification only | First task; keep the paired records synchronized |
-| [#1524](https://github.com/findmydoc-platform/website/issues/1524) | CORS, preflight, bearer bootstrap | No | Yes, at external API edge | Yes | No public impact | #1532 principal; #1522 boundary |
+| [#1524](https://github.com/findmydoc-platform/website/issues/1524) | Server-authenticated Payload bootstrap and typed DTO | No | Bearer validation at Payload | Yes | No public impact | ADR 025 principal and ADR 026 BFF boundary |
 | [#1525](https://github.com/findmydoc-platform/website/issues/1525) | Provisioning, invites, lifecycle | Yes, auth/lifecycle fields and migration | Yes | Platform-only privileged transitions | No public impact until an approved clinic is materialized | #1532; dashboard destinations from #1522 |
-| [#1526](https://github.com/findmydoc-platform/website/issues/1526) | Own-clinic inquiry access/status | Existing schema with protected field rules | Uses final principal | Yes, tenant and field-level | No public impact/private-live | #1532; #1524 for browser integration |
-| [#1527](https://github.com/findmydoc-platform/website/issues/1527) | Public non-doctor clinic team | Yes, new collection | Must remain separate from auth staff | Yes, own-clinic writes | Yes, new policy/read/hook/planner coverage | #1532 principal; #1522/#1524 for dashboard writes |
-| [#1528](https://github.com/findmydoc-platform/website/issues/1528) | Clinic fields, treatments, completeness | Yes, migrations | Uses final principal | Own-clinic writes | Yes, clinic/listing symmetry | #1532; current Treatment master remains authoritative |
-| [#1529](https://github.com/findmydoc-platform/website/issues/1529) | Review responses, appeals, audit | Yes | Uses final principal | Yes, own-clinic vs platform moderation | Yes for approved responses only | #1532; public response visibility contract |
-| [#1530](https://github.com/findmydoc-platform/website/issues/1530) | Conversations, messages, private attachments | Yes, new private domain | Uses final principal and patient identity | Yes, participant/tenant/field isolation | Explicit private-live policy only | #1526 inquiry ownership; #1532 |
-| [#1531](https://github.com/findmydoc-platform/website/issues/1531) | Tenant-safe PostHog + Payload reporting facade; prototype fixtures remain until this slice | No dashboard persistence assumed | Uses final principal | Yes, fixed server-side aggregate queries and shaped response | No public impact/private-live; optional private TTL cache only | Existing reviews plus source definitions from #1526/#1528; PostHog identity continuity for a true funnel; #1529/#1530 only if their data is explicitly reported |
-| [#1532](https://github.com/findmydoc-platform/website/issues/1532) | Replace staff auth collections and ADR 006; overlaps #1484 | Yes, broad migration | Primary change | Rewrites actor/tenant helpers | Private auth; public author relations must be checked | Resolve canonical ownership with #1484; then runtime gate for #1524–#1531 |
+| [#1526](https://github.com/findmydoc-platform/website/issues/1526) | Own-clinic inquiry access/status | Existing schema with protected field rules | Uses direct principal | Yes, tenant and field-level | No public impact/private-live | #1524 for Dashboard integration |
+| [#1527](https://github.com/findmydoc-platform/website/issues/1527) | Public non-doctor clinic team | Yes, new collection | Must remain separate from auth staff | Yes, own-clinic writes | Yes, new policy/read/hook/planner coverage | #1524 for Dashboard writes |
+| [#1528](https://github.com/findmydoc-platform/website/issues/1528) | Clinic fields, treatments, completeness | Yes, migrations | Uses direct principal | Own-clinic writes | Yes, clinic/listing symmetry | Current Treatment master remains authoritative |
+| [#1529](https://github.com/findmydoc-platform/website/issues/1529) | Review responses, appeals, audit | Yes | Uses direct principal | Yes, own-clinic vs platform moderation | Yes for approved responses only | Public response visibility contract |
+| [#1530](https://github.com/findmydoc-platform/website/issues/1530) | Conversations, messages, private attachments | Yes, new private domain | Uses direct principal and patient identity | Yes, participant/tenant/field isolation | Explicit private-live policy only | #1526 inquiry ownership |
+| [#1531](https://github.com/findmydoc-platform/website/issues/1531) | Tenant-safe PostHog + Payload reporting facade; prototype fixtures remain until this slice | No dashboard persistence assumed | Uses final principal | Yes, fixed server-side aggregate queries and shaped response | No public impact/private-live and no-store; later shared caching needs a separate decision | Existing reviews plus source definitions from #1526/#1528; PostHog identity continuity for a true funnel; #1529/#1530 only if their data is explicitly reported |
+| [#1532](https://github.com/findmydoc-platform/website/issues/1532) | Historical direct-staff-auth rollout under ADR 025 | Yes, completed migration | Direct principals | Direct actor/tenant helpers | Private auth and preserved public authors | Completed prerequisite |
 | [#1533](https://github.com/findmydoc-platform/website/issues/1533) | Remove website clinic auth paths | No expected domain schema | Removes old routes/targets | Redirect/cutover checks | No public data impact | Verified dashboard login/invite/reset/logout cutover |
-| [clinic-dashboard#1](https://github.com/findmydoc-platform/clinic-dashboard/issues/1) | Deployable fixture-backed app shell and paired UI plan | No backend schema | Explicitly out of scope | Explicitly out of scope | None | Can run after #1523; API wiring waits for #1532/#1522/#1524 |
+| [clinic-dashboard#1](https://github.com/findmydoc-platform/clinic-dashboard/issues/1) | Deployable fixture-backed app shell and paired UI plan | No backend schema | Runtime auth remains separate | Runtime API remains separate | None | Fixture work can proceed; API wiring waits for #1524 and the Dashboard runtime slice |
 
 ## Recommended Work Order and Parallelism
 
 | Phase | Work | Parallelism and gate |
 | --- | --- | --- |
 | 0 | **#1523 capability matrix** | First. It prevents architecture and schema work from treating fixture assumptions as contracts. |
-| 1 | **Resolve #1484/#1532, then execute the canonical auth ADR and identity refactor** | Ownership and runtime gate. #1522 research and schema design notes for #1527–#1530 may proceed in parallel, but runtime changes must target the final principal. |
-| 2 | **Finalize #1522**, then implement **#1524** | #1522 consumes the auth decision; #1524 implements the approved origin/token/bootstrap boundary. clinic-dashboard#1 can continue fixture-only throughout. |
-| 3 | **#1525, #1526, #1527, #1528, #1529** | Backend slices can run in parallel once #1532 and shared API rules are stable. #1527–#1529 share cache/revalidation surfaces and need coordination to avoid conflicting planner/catalog edits. End-to-end dashboard calls also require #1524. |
+| 1 | **ADR 025 direct-principal rollout** | Completed prerequisite: runtime work targets direct `clinicStaff` principals. |
+| 2 | **Finalize #1522**, then implement **#1524** | ADR 026 fixes the BFF boundary; #1524 implements the focused Payload bootstrap. clinic-dashboard#1 can continue fixture-only throughout. |
+| 3 | **#1525, #1526, #1527, #1528, #1529** | Backend slices can run in parallel once the shared API contracts are stable. #1527–#1529 share cache/revalidation surfaces and need coordination to avoid conflicting planner/catalog edits. End-to-end Dashboard calls also require #1524. |
 | 4 | **#1530 conversations/messages** | Requires the inquiry tenant/ownership contract from #1526. UI shell work may prepare empty/loading/error states earlier. |
 | 5 | **#1531 reporting** | Keep the prototype fixture-backed until this slice. Implement the PostHog Query API plus Payload reporting facade only after each metric source is real and source-backed; it must not label inquiries as bookings. |
 | 6 | **Dashboard integration and cutover evidence** | Wire typed UI commands to the available capability contract; verify tenant, auth expiry, forbidden origin, and empty states. |
@@ -454,9 +439,8 @@ Stop implementation and obtain an ADR or explicit work order when any slice requ
 
 Hard dependencies are narrower than the recommended sequence:
 
-- The owner must first resolve the open #1484/#1532 duplicate; the selected auth issue is then a hard runtime dependency
-  for #1524–#1531 because current actor and tenant helpers are being removed.
-- #1522 can be drafted alongside #1532, but its accepted target must reference the final auth ADR.
+- ADR 025 is the accepted principal prerequisite for #1524–#1531.
+- ADR 026 is the accepted application and API boundary; runtime work must not reintroduce browser-to-Payload access.
 - #1530 requires #1526's inquiry ownership and tenant rules.
 - #1531 requires source-backed metric definitions; unavailable sources must return stable empty states.
 - #1533 requires successful dashboard cutover evidence.
@@ -466,10 +450,10 @@ Hard dependencies are narrower than the recommended sequence:
 
 | Feature | Reuse, change, or new | Candidate owner/module | Notes |
 | --- | --- | --- | --- |
-| Prototype screens, fixture states, and responsive behavior | Reuse visual structure | [clinic-dashboard#1 UI plan](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/clinic-dashboard-ui-contract/docs/plans/clinic-dashboard-prototype-and-capability-visibility.md) | Preserve seven stable states and temporary gates; remove website runtime dependency. |
+| Prototype screens, fixture states, and responsive behavior | Reuse visual structure | [clinic-dashboard#1 UI plan](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/plans/clinic-dashboard-prototype-and-capability-visibility.md) | Preserve seven stable states and temporary gates; remove website runtime dependency. |
 | Typed commands and routing | Change | clinic-dashboard app shell | Replace string-only callbacks with IDs and validated payload types. |
-| Staff principal and tenant resolution | Change | #1532 in website auth/access modules | Supersede ADR 006; no Payload Admin access for clinic staff. |
-| Self/capability bootstrap | New endpoint/contract | #1524 under website API boundary | Private-live, fail-closed, derived server-side. |
+| Staff principal and tenant resolution | Reuse | Direct auth/access modules under ADR 025 | No Payload Admin access for clinic staff. |
+| Self/capability bootstrap | New endpoint/contract | #1524 under the ADR 026 Payload boundary | Private-live, fail-closed, derived server-side; no Payload CORS expansion. |
 | Inquiry management | Change existing collection/access | #1526 | Protect evidence/internal fields; no direct patient collection read. |
 | Public team | New collection and public reader dependency | #1527 | Separate doctors, public team, and auth staff. |
 | Clinic profile/treatment fields | Change existing collections | #1528 | Reuse current Sources of Truth and revalidation architecture. |

@@ -1,20 +1,38 @@
 # Authentication System
 
-Supabase owns browser identity and sessions. Payload owns the current application principal and authorization data. The website runtime stores neither Supabase credentials nor a server-side browser session.
+Supabase owns identity and user sessions. Payload owns the current application principal and authorization data. Each
+application surface establishes its own session boundary and then relies on Payload for current business authorization.
 
 ## Principals
 
 | Principal | Payload collection | Payload Admin | Runtime behavior |
 | --- | --- | --- | --- |
 | Platform staff | `platformStaff` | Allowed | Existing principal required; role is read from Payload on every request. |
-| Clinic staff | `clinicStaff` | Denied | Existing approved principal with a clinic assignment required. Dashboard access is a separate application concern. |
+| Clinic staff | `clinicStaff` | Denied | Existing approved principal with a clinic assignment required. Dashboard requests arrive through the Dashboard BFF. |
 | Patient | `patients` | Denied | The strategy may idempotently ensure the patient principal after authentication. |
 
 All three are direct Payload auth collections. Payload local passwords and Payload sessions are disabled. The shared Supabase strategy is registered once on `platformStaff`; Payload makes that strategy available across the auth collections.
 
-## Login Boundary
+## Application Surfaces
 
-The website `/admin/login` only accepts platform staff. It contains no clinic role choice or clinic redirect. Clinic staff later sign in through the separate Clinic Dashboard. Patient login, public clinic registration, invitation completion, password reset, and the generic auth callback retain their existing routes until that dashboard cutover.
+| Surface | Login and session boundary | Payload access |
+| --- | --- | --- |
+| Payload Admin | The website `/admin/login` accepts platform staff only. | Payload Admin uses the resolved `platformStaff` principal and current role. |
+| Patient portal | The website owns patient login, public clinic registration, invitation completion, password reset, callback, and logout routes. | Website-owned API paths authenticate the current patient principal. |
+| Clinic Dashboard | The standalone Dashboard owns login, PKCE callback, refresh, and logout in secure, host-bound, `HttpOnly` cookies. The portal may link to it but transfers no session. | Browser application code calls only the Dashboard origin. The Dashboard BFF sends the current access token to Payload server-side. |
+
+The website contains no clinic role choice, clinic login form, clinic redirect, or clinic access to Payload Admin.
+
+## Clinic Dashboard BFF Boundary
+
+The Clinic Dashboard is a stateless Next.js application without a database. React Server Components use a server-only
+Payload client directly. Browser-initiated application reads and mutations use capability-specific Route Handlers on
+the Dashboard origin. Those routes validate session, input, origin, and CSRF before calling Payload. There is no generic
+Payload proxy and no browser-to-Payload data path.
+
+Dashboard browser code receives neither Supabase access nor refresh tokens and does not create a Supabase browser
+client. The Dashboard uses only a publishable key. Payload CORS does not include Dashboard origins because all Payload
+requests are server-to-server.
 
 ## Authorization and Integrity
 
@@ -34,4 +52,5 @@ Patient provisioning remains the established ensure-on-auth flow. Staff deletion
 
 ## Related References
 
-The detailed request sequence is documented in `auth-flow-diagram.md`. The direct-collection decision is recorded in ADR 025.
+The detailed request sequences are documented in `auth-flow-diagram.md`. ADR 025 records the direct principal
+collections. ADR 026 records the standalone Clinic Dashboard BFF, session, callback, API, error, and cache boundaries.

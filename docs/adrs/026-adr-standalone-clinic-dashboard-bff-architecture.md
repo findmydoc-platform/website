@@ -43,14 +43,103 @@ shared caches.
 
 ## Considerations
 
-| Option | Tradeoff |
-| --- | --- |
-| Browser calls Payload directly | Minimizes the Dashboard server layer but exposes tokens to browser code and requires Payload CORS for every Dashboard origin. |
-| Generic Dashboard-to-Payload proxy | Keeps tokens server-side but exports Payload paths and documents without a capability contract. |
-| Browser-managed Supabase session | Follows the standard browser-client model but makes tokens available to application code and expands the browser trust boundary. |
-| Mandatory GraphQL integration | Provides one query language but adds a prescribed layer where REST and focused endpoints already express the required capabilities. |
-| Stable preview aliases or a callback relay | Simplifies callback allowlisting but creates additional routing and operational infrastructure. |
-| Same-origin Backend for Frontend | Keeps the browser boundary narrow, supports server rendering, and exposes capability-specific contracts at the cost of an explicit session and route layer. Chosen. |
+### Browser calls Payload directly
+
+The browser obtains a Supabase token and sends it across origins to Payload. This minimizes the Dashboard server layer,
+but exposes the token to browser application code and requires Payload CORS for every Dashboard origin. Rejected.
+
+```mermaid
+flowchart LR
+    Browser["Dashboard browser<br/>owns Supabase token"]
+    Supabase["Supabase Auth"]
+    Payload["Payload API"]
+    Database[("Business database")]
+
+    Browser <-->|"login and refresh"| Supabase
+    Browser -->|"cross-origin Bearer request"| Payload
+    Payload --> Database
+```
+
+### Generic Dashboard-to-Payload proxy
+
+The browser calls a generic same-origin proxy that forwards Payload paths, queries, and documents. Tokens remain on the
+server, but the proxy reproduces Payload's interface instead of defining stable Dashboard capabilities. Rejected.
+
+```mermaid
+flowchart LR
+    Browser["Dashboard browser"]
+    Proxy["Generic BFF proxy<br/>/api/payload/*"]
+    Payload["Payload API"]
+    Database[("Business database")]
+
+    Browser -->|"Payload-shaped request"| Proxy
+    Proxy -->|"forward path, query, and token"| Payload
+    Payload --> Database
+```
+
+### Browser-managed Supabase session
+
+A Supabase client in the browser owns access and refresh tokens and attaches an access token to Dashboard requests.
+This follows the standard browser-client model but expands the browser trust boundary. Rejected.
+
+```mermaid
+flowchart LR
+    Browser["Dashboard browser<br/>Supabase client and tokens"]
+    Supabase["Supabase Auth"]
+    BFF["Dashboard BFF"]
+    Payload["Payload API"]
+    Database[("Business database")]
+
+    Browser <-->|"login and refresh"| Supabase
+    Browser -->|"Bearer request"| BFF
+    BFF -->|"Bearer request"| Payload
+    Payload --> Database
+```
+
+### Mandatory GraphQL integration
+
+Every Dashboard capability uses a prescribed GraphQL layer between the BFF and Payload. This provides one query
+language but adds a mandatory contract where REST resources and focused endpoints already express the required
+capabilities. Rejected as a universal requirement.
+
+```mermaid
+flowchart LR
+    Browser["Dashboard browser"]
+    BFF["Dashboard BFF"]
+    GraphQL["Mandatory GraphQL client<br/>and query contract"]
+    Payload["Payload GraphQL API"]
+    Database[("Business database")]
+
+    Browser -->|"same-origin capability request"| BFF
+    BFF --> GraphQL
+    GraphQL --> Payload
+    Payload --> Database
+```
+
+### Same-origin Backend for Frontend
+
+The browser communicates only with the Dashboard origin. React Server Components and capability-specific Route
+Handlers share a server-only Payload client, while the BFF owns the Supabase session in `HttpOnly` cookies. This keeps
+the browser boundary narrow and supports server rendering at the cost of an explicit session and route layer. Chosen.
+
+```mermaid
+flowchart LR
+    Browser["Dashboard browser<br/>no application tokens"]
+    RSC["React Server Components"]
+    Routes["Capability Route Handlers"]
+    Client["Server-only Payload client"]
+    Supabase["Supabase Auth"]
+    Payload["Payload API"]
+    Database[("Business database")]
+
+    Browser -->|"page request"| RSC
+    Browser -->|"same-origin interaction"| Routes
+    RSC --> Client
+    Routes --> Client
+    Routes <-->|"login, callback, refresh"| Supabase
+    Client -->|"server-side Bearer request"| Payload
+    Payload --> Database
+```
 
 ## Decision with Rationale
 
@@ -84,13 +173,10 @@ user-specific state are created per request and are never shared across requests
 Every response that reads, refreshes, or writes a session is private and not cacheable. When session handling returns
 cookies or cache-control headers, the BFF preserves all of them on the final response.
 
-### Callback and environment contract
+### Vercel preview URLs and Supabase callbacks
 
-Automatically generated Vercel deployment URLs remain unchanged. No stable pull-request alias or callback relay is
-introduced.
-
-Supabase Staging accepts one exact local callback and the project-specific Vercel preview wildcard on the exact callback
-path. The preview pattern is:
+The existing automatically generated Vercel deployment URLs remain unchanged. Supabase Staging accepts the exact local
+callback and the project-specific Vercel preview wildcard on the exact callback path:
 
 ```text
 https://clinic-dashboard-*-findmydoc.vercel.app/auth/callback
@@ -102,13 +188,13 @@ Supabase Production accepts only:
 https://clinics.findmydoc.eu/auth/callback
 ```
 
-Local development and pull-request previews use Supabase Staging and the preview Payload API. Production uses only the
+Local development and pull-request previews use Supabase Staging and the preview Payload API. Production uses the
 production Supabase project and production Payload API. Cross-environment combinations are invalid.
 
 The callback origin comes from validated environment configuration or trusted Vercel deployment metadata, never from
 an unchecked `Host` header. Post-authentication destinations are restricted to validated relative Dashboard paths;
-arbitrary or external `next` destinations are rejected. The Supabase redirect allowlist is an authentication redirect
-control and does not authorize browser access to Payload.
+arbitrary or external `next` destinations are rejected. This callback allowlist is an operational Supabase Auth
+requirement for the existing deployment URLs, not an application-architecture alternative or a Payload CORS rule.
 
 ### Payload API contract
 
@@ -165,7 +251,6 @@ that public revalidation. Any future shared Dashboard cache requires a separate 
   database.
 - **Positive:** React Server Components can render through direct server code while interactive clients use explicit,
   testable same-origin routes.
-- **Positive:** Preview authentication works with existing Vercel deployment URLs and a path-limited Staging wildcard.
 - **Negative:** The Dashboard must implement and test a complete server-side cookie, refresh, callback, origin, and
   cross-site request forgery boundary.
 - **Negative:** Purpose-specific routes and data transfer objects require deliberate contract maintenance across the

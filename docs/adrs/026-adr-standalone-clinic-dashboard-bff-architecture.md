@@ -173,29 +173,6 @@ user-specific state are created per request and are never shared across requests
 Every response that reads, refreshes, or writes a session is private and not cacheable. When session handling returns
 cookies or cache-control headers, the BFF preserves all of them on the final response.
 
-### Vercel preview URLs and Supabase callbacks
-
-The existing automatically generated Vercel deployment URLs remain unchanged. Supabase Staging accepts the exact local
-callback and the project-specific Vercel preview wildcard on the exact callback path:
-
-```text
-https://clinic-dashboard-*-findmydoc.vercel.app/auth/callback
-```
-
-Supabase Production accepts only:
-
-```text
-https://clinics.findmydoc.eu/auth/callback
-```
-
-Local development and pull-request previews use Supabase Staging and the preview Payload API. Production uses the
-production Supabase project and production Payload API. Cross-environment combinations are invalid.
-
-The callback origin comes from validated environment configuration or trusted Vercel deployment metadata, never from
-an unchecked `Host` header. Post-authentication destinations are restricted to validated relative Dashboard paths;
-arbitrary or external `next` destinations are rejected. This callback allowlist is an operational Supabase Auth
-requirement for the existing deployment URLs, not an application-architecture alternative or a Payload CORS rule.
-
 ### Payload API contract
 
 The Dashboard server sends the current Supabase access token to Payload as a Bearer token. Payload validates it against

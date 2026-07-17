@@ -410,7 +410,7 @@ Stop implementation and obtain an ADR or explicit work order when any slice requ
 
 | Issue | Primary work | Schema | Auth/session | Permission/API | Public cache/revalidation | Hard dependency or gate |
 | --- | --- | --- | --- | --- | --- | --- |
-| [#1522](https://github.com/findmydoc-platform/website/issues/1522) | Application/API architecture ADR and synchronized implementation plans | No | Defines BFF session and Bearer transport | Defines ownership/trust boundary | `no-public-impact` documentation | ADR 025 principal decision and #1523 capability inventory |
+| [#1522](https://github.com/findmydoc-platform/website/issues/1522) | Application/API ADR, durable architecture contracts, and synchronized implementation plans | No | Defines BFF session and Bearer transport | Defines ownership/trust boundary | `no-public-impact` documentation | ADR 025 principal decision and #1523 capability inventory |
 | [#1523](https://github.com/findmydoc-platform/website/issues/1523) | Historical website capability contract; paired UI plan is in clinic-dashboard | No | No | No | Classification only | First task; keep the paired records synchronized |
 | [#1524](https://github.com/findmydoc-platform/website/issues/1524) | Server-authenticated Payload bootstrap and typed DTO | No | Bearer validation at Payload | Yes | No public impact | ADR 025 principal and ADR 026 BFF boundary |
 | [#1525](https://github.com/findmydoc-platform/website/issues/1525) | Provisioning, invites, lifecycle | Yes, auth/lifecycle fields and migration | Yes | Platform-only privileged transitions | No public impact until an approved clinic is materialized | #1532; dashboard destinations from #1522 |

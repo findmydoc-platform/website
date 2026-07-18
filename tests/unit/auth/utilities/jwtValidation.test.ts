@@ -49,6 +49,12 @@ describe('jwtValidation utilities', () => {
       const result = extractTokenFromHeader(headers)
       expect(result).toBe('test-token-123')
     })
+
+    it('should reject a Bearer value containing multiple token segments', () => {
+      const headers = new Headers([['authorization', 'Bearer token unexpected']])
+
+      expect(extractTokenFromHeader(headers)).toBeUndefined()
+    })
   })
 
   describe('validateSupabaseUser', () => {

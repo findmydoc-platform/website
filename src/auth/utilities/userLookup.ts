@@ -74,7 +74,7 @@ export async function findUserBySupabaseId(
         err: error instanceof Error ? error : new Error(message),
         event: 'auth.supabase.user.lookup_failed',
         userType: authData.userType,
-        supabaseUserId: authData.supabaseUserId,
+        supabaseUserIdHash: hashLogValue(authData.supabaseUserId),
         userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
       },
       'Failed to find payload user during Supabase authentication',

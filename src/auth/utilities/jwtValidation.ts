@@ -15,6 +15,27 @@ type SupabaseAuthErrorLike = {
   code?: string
   message?: string
   name?: string
+  status?: number
+}
+
+export type SupabaseBearerValidationResult =
+  { status: 'authenticated'; authData: AuthData } | { status: 'invalid' } | { status: 'unavailable' }
+
+const isTemporarySupabaseError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false
+
+  const authError = error as SupabaseAuthErrorLike
+  const normalizedMessage = authError.message?.toLowerCase() ?? ''
+
+  return (
+    authError.name === 'AuthRetryableFetchError' ||
+    authError.status === 0 ||
+    authError.status === 429 ||
+    (typeof authError.status === 'number' && authError.status >= 500) ||
+    normalizedMessage.includes('fetch failed') ||
+    normalizedMessage.includes('network error') ||
+    normalizedMessage.includes('timed out')
+  )
 }
 
 const isExpectedMissingSessionError = (error: unknown): boolean => {
@@ -43,9 +64,9 @@ export function extractTokenFromHeader(headers?: Headers): string | undefined {
   if (!authHeader) return undefined
 
   const [scheme, ...rest] = authHeader.trim().split(/\s+/)
-  if (scheme?.toLowerCase() !== 'bearer' || rest.length === 0) return undefined
+  if (scheme?.toLowerCase() !== 'bearer' || rest.length !== 1) return undefined
 
-  return rest.join(' ')
+  return rest[0]
 }
 
 /**
@@ -82,6 +103,64 @@ export function transformSupabaseUser(user: User): AuthData {
 }
 
 /**
+ * Validates one explicit Supabase Bearer token without consulting cookie state.
+ */
+export async function validateSupabaseBearerToken({
+  token,
+  headers,
+  logger,
+}: {
+  token: string
+  headers?: Headers
+  logger?: ServerLogger
+}): Promise<SupabaseBearerValidationResult> {
+  const activeLogger = await getSupabaseLogger({ headers, logger })
+
+  try {
+    const supabaseClient = await createClient()
+    const {
+      data: { user },
+      error,
+    } = await supabaseClient.auth.getUser(token)
+
+    if (error) {
+      const unavailable = isTemporarySupabaseError(error)
+      activeLogger[unavailable ? 'error' : 'warn'](
+        {
+          event: unavailable ? 'auth.supabase.token.unavailable' : 'auth.supabase.token.invalid',
+          err: error,
+        },
+        unavailable ? 'Supabase bearer validation is temporarily unavailable' : 'Supabase bearer token is invalid',
+      )
+      return { status: unavailable ? 'unavailable' : 'invalid' }
+    }
+
+    if (!user || !validateSupabaseUser(user)) {
+      activeLogger.warn(
+        {
+          event: 'auth.supabase.user.invalid',
+          supabaseUserIdHash: user?.id ? hashLogValue(user.id) : undefined,
+          userEmailHash: user?.email ? hashLogValue(user.email) : undefined,
+        },
+        'Supabase user payload is missing required fields',
+      )
+      return { status: 'invalid' }
+    }
+
+    return { status: 'authenticated', authData: transformSupabaseUser(user) }
+  } catch (error: unknown) {
+    activeLogger.error(
+      {
+        err: toLoggedError(error),
+        event: 'auth.supabase.token.unavailable',
+      },
+      'Supabase bearer validation is temporarily unavailable',
+    )
+    return { status: 'unavailable' }
+  }
+}
+
+/**
  * Extracts and validates user data from Supabase authentication.
  * Supports both header-based tokens (API calls) and cookie-based sessions (Admin UI).
  * @param headers - Request headers
@@ -98,28 +177,14 @@ export async function extractSupabaseUserData({
   const activeLogger = await getSupabaseLogger({ headers, logger })
 
   try {
-    const supabaseClient = await createClient()
     let user: User | null
 
     if (token) {
-      // Validate specific token (for API requests)
-      const {
-        data: { user: tokenUser },
-        error,
-      } = await supabaseClient.auth.getUser(token)
-      if (error) {
-        activeLogger.warn(
-          {
-            event: 'auth.supabase.token.invalid',
-            err: error,
-          },
-          'Supabase bearer token validation failed',
-        )
-      }
-      if (error || !tokenUser) return null
-      user = tokenUser
+      const result = await validateSupabaseBearerToken({ token, headers, logger: activeLogger })
+      return result.status === 'authenticated' ? result.authData : null
     } else {
       // Fallback to session-based authentication (for Admin UI)
+      const supabaseClient = await createClient()
       const {
         data: { user: sessionUser },
         error,
@@ -155,7 +220,7 @@ export async function extractSupabaseUserData({
       activeLogger.warn(
         {
           event: 'auth.supabase.user.invalid',
-          supabaseUserId: user?.id,
+          supabaseUserIdHash: user?.id ? hashLogValue(user.id) : undefined,
           userEmailHash: user?.email ? hashLogValue(user.email) : undefined,
         },
         'Supabase user payload is missing required fields',

@@ -2,11 +2,9 @@
 
 ## Implementation Status
 
-The direct-principal switch and its non-destructive runtime cleanup are released. The remaining contract stage removes
-the locked `basicUsers` collection and the physical legacy relationship columns after the production preflight,
-authentication checks, relationship verification, backup, and Ops dry-run have passed. Once that contract migration is
-deployed, this document is historical rollout context; collection definitions, migrations, access rules, cache policy,
-and automated tests are the current engineering sources of truth.
+The direct-principal switch, runtime cleanup, and contract migration are released. This document is historical rollout
+context; collection definitions, migrations, access rules, cache policy, and automated tests are the current
+engineering sources of truth.
 
 ## Purpose
 
@@ -15,8 +13,7 @@ This roadmap document translates
 contains schema, authentication, relationship, migration, seed, cache, and verification details that are intentionally
 more changeable than the architecture decision.
 
-This document is planning context while the work remains open. After implementation, collection definitions,
-migrations, access rules, cache policy, and automated tests become the current engineering sources of truth.
+This document preserves the reviewed rollout contract and implementation sequence.
 
 ## Scope Boundary
 

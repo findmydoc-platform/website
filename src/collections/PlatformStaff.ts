@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { guardPlatformStaffRoleChange } from './PlatformStaff/hooks/guardRoleChange'
@@ -19,6 +20,9 @@ export const PlatformStaff: CollectionConfig = {
     useAsTitle: 'email',
     defaultColumns: ['email', 'firstName', 'lastName', 'role'],
     description: 'Platform staff authentication principals',
+    components: {
+      beforeList: ['@/components/organisms/StaffAdminGuidance#PlatformStaffAdminGuidance'],
+    },
   },
   access: {
     read: isPlatformStaff,
@@ -31,6 +35,15 @@ export const PlatformStaff: CollectionConfig = {
     beforeChange: [stableIdBeforeChangeHook, enforceSupabaseIdentityInvariant, guardPlatformStaffRoleChange],
   },
   fields: [
+    {
+      name: 'provisioningGuidance',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/components/organisms/StaffAdminGuidance#PlatformStaffAdminGuidance',
+        },
+      },
+    },
     stableIdField(),
     {
       name: 'supabaseUserId',
@@ -54,11 +67,10 @@ export const PlatformStaff: CollectionConfig = {
       label: 'Email',
       access: {
         create: () => false,
-        read: () => false,
+        read: platformOnlyFieldAccess,
         update: () => false,
       },
       admin: {
-        hidden: true,
         readOnly: true,
       },
     },
@@ -68,11 +80,10 @@ export const PlatformStaff: CollectionConfig = {
       label: 'First Name',
       access: {
         create: () => false,
-        read: () => false,
+        read: platformOnlyFieldAccess,
         update: () => false,
       },
       admin: {
-        hidden: true,
         readOnly: true,
       },
     },
@@ -82,11 +93,10 @@ export const PlatformStaff: CollectionConfig = {
       label: 'Last Name',
       access: {
         create: () => false,
-        read: () => false,
+        read: platformOnlyFieldAccess,
         update: () => false,
       },
       admin: {
-        hidden: true,
         readOnly: true,
       },
     },
@@ -96,11 +106,10 @@ export const PlatformStaff: CollectionConfig = {
       relationTo: 'userProfileMedia',
       access: {
         create: () => false,
-        read: () => false,
+        read: platformOnlyFieldAccess,
         update: () => false,
       },
       admin: {
-        hidden: true,
         readOnly: true,
       },
     },

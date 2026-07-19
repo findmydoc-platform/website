@@ -23,6 +23,8 @@ import { ImportListMenuItem as ImportListMenuItem_cdf7e044479f899a31f804427d568b
 import { HorizontalRuleFeatureClient as HorizontalRuleFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { BlocksFeatureClient as BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { default as default_5ecb274b48d69152edaeef5b36c5c4d8 } from '@/app/(payload)/components/PolicyAwareUpload'
+import { ClinicStaffAdminGuidance as ClinicStaffAdminGuidance_80cf3eec4e61f10efb4cdd4b1cd04c55 } from '@/components/organisms/StaffAdminGuidance'
+import { PlatformStaffAdminGuidance as PlatformStaffAdminGuidance_80cf3eec4e61f10efb4cdd4b1cd04c55 } from '@/components/organisms/StaffAdminGuidance'
 import { default as default_edf1bab331b69df45f809a41e2fc2349 } from '@/components/organisms/MedicalSpecialtiesAdminGuidance'
 import { LinkToDoc as LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { ReindexButton as ReindexButton_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
@@ -78,6 +80,8 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#HorizontalRuleFeatureClient": HorizontalRuleFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#BlocksFeatureClient": BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@/app/(payload)/components/PolicyAwareUpload#default": default_5ecb274b48d69152edaeef5b36c5c4d8,
+  "@/components/organisms/StaffAdminGuidance#ClinicStaffAdminGuidance": ClinicStaffAdminGuidance_80cf3eec4e61f10efb4cdd4b1cd04c55,
+  "@/components/organisms/StaffAdminGuidance#PlatformStaffAdminGuidance": PlatformStaffAdminGuidance_80cf3eec4e61f10efb4cdd4b1cd04c55,
   "@/components/organisms/MedicalSpecialtiesAdminGuidance#default": default_edf1bab331b69df45f809a41e2fc2349,
   "@payloadcms/plugin-search/client#LinkToDoc": LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634,
   "@payloadcms/plugin-search/client#ReindexButton": ReindexButton_aead06e4cbf6b2620c5c51c9ab283634,

@@ -62,7 +62,8 @@ Human-readable and machine-readable views are generated from the config on deman
 If you need to change permissions, update `src/security/permission-matrix.config.ts` and regenerate as needed.
 
 ### Notes on Specific Rows
-* ClinicStaff: Authentication is denied entirely until the direct staff principal is approved. After approval, Clinic Staff can read all staff in their own clinic and target only their own principal for updates; `clinic` and `status` remain Platform-only at field level. Create/Delete operations occur exclusively through the trusted provisioning path (no direct create/delete even for Platform Staff) †‡.
+* PlatformStaff: Platform Staff can review safe identity fields and manage roles. The Supabase identity binding remains hidden, and Create/Delete operations use the trusted provisioning path instead of direct Admin forms †.
+* ClinicStaff: Authentication is denied entirely until the direct staff principal is approved. Platform Staff can review safe identity fields and manage clinic assignment and status. After approval, Clinic Staff can read staff in their own clinic and target only their own principal for updates; the Supabase identity binding remains hidden. Create/Delete operations occur exclusively through the trusted provisioning path †‡.
 * Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
 * Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
 * PlatformContentMedia: Publicly readable marketing / page assets. Write restricted to Platform.

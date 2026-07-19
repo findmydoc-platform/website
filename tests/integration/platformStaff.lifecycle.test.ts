@@ -166,6 +166,14 @@ describe('PlatformStaff integration - access and constraints', () => {
 
     expect(platformStaffIds).toContain(platformUserB.id)
 
+    const readableTarget = platformRead.docs.find((doc) => doc.id === platformUserB.id)
+    expect(readableTarget).toMatchObject({
+      email: platformUserB.email,
+      firstName: platformUserB.firstName,
+      lastName: platformUserB.lastName,
+    })
+    expect(readableTarget).not.toHaveProperty('supabaseUserId')
+
     await expect(
       payload.find({
         collection: 'platformStaff',

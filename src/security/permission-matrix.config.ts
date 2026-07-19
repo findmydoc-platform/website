@@ -225,7 +225,8 @@ export const permissionMatrix: PermissionMatrix = {
           delete: { kind: 'always-false' },
         },
       },
-      notes: 'Platform staff management through the trusted provisioning path',
+      notes:
+        'Platform staff review safe identity fields and manage roles; identity bindings and create/delete remain provisioning-only',
     },
     clinicStaff: {
       slug: 'clinicStaff',
@@ -249,7 +250,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Authentication denied until approval; clinic staff read their clinic and update only non-authorization fields on their own profile',
+        'Platform staff review safe identity fields and manage clinic/status; clinic staff read their clinic; identity bindings and create/delete remain provisioning-only',
     },
     patients: {
       slug: 'patients',

@@ -1,4 +1,5 @@
 import type { Clinic, ClinicStaff } from '@/payload-types'
+import { AUTH_FLOW_ERROR_CODES, isAuthFlowError } from '@/auth/errors/authFlowError'
 import { extractTokenFromHeader, validateSupabaseBearerToken } from '@/auth/utilities/jwtValidation'
 import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import type { PayloadRequest } from 'payload'
@@ -93,7 +94,11 @@ export async function resolveClinicDashboardBootstrap(req: PayloadRequest): Prom
         return { status: 'unauthorized' }
       }
       principalId = principal.id
-    } catch {
+    } catch (error: unknown) {
+      if (isAuthFlowError(error) && error.code === AUTH_FLOW_ERROR_CODES.USER_LOOKUP_FAILED && !error.retryable) {
+        return { status: 'unauthorized' }
+      }
+
       return { status: 'unavailable' }
     }
   }

@@ -109,7 +109,7 @@ The bootstrap always returns one of these stable Payload status and code pairs:
 
 | Payload or upstream condition | Payload result | Session effect |
 | --- | --- | --- |
-| Missing or invalid explicit Bearer token, non-clinic principal, or valid identity without matching clinic staff | `401` with `CLINIC_DASHBOARD_UNAUTHORIZED` | Dashboard may attempt one controlled refresh; persistent failure clears invalid cookies. Staff is never created during authentication. |
+| Missing or invalid explicit Bearer token, non-clinic principal, conflicting identity mapping, or valid identity without matching clinic staff | `401` with `CLINIC_DASHBOARD_UNAUTHORIZED` | Dashboard may attempt one controlled refresh; persistent failure clears invalid cookies. Staff is never created during authentication. |
 | Principal not approved or missing a current clinic assignment | `403` with `CLINIC_DASHBOARD_ACCESS_DENIED` | Preserve the session so the Dashboard can render an access-state explanation. |
 | Supabase or Payload temporarily unavailable | `503` with `CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE` | Preserve the session; do not present an upstream outage as logout. |
 

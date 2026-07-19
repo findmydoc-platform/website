@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
+import { AUTH_FLOW_ERROR_CODES } from '@/auth/errors/authFlowError'
 import { getUserConfig } from '@/auth/config/authConfig'
 import { createMockPayload } from '../../helpers/testHelpers'
 import type { Payload } from 'payload'
@@ -41,7 +42,11 @@ describe('userLookup utilities', () => {
         userType: 'clinic',
         userEmail: 'clinic@example.com',
       }),
-    ).rejects.toThrow(/more than one Payload principal/i)
+    ).rejects.toMatchObject({
+      code: AUTH_FLOW_ERROR_CODES.USER_LOOKUP_FAILED,
+      message: expect.stringMatching(/more than one Payload principal/i),
+      retryable: false,
+    })
   })
 
   it('requires approved clinic staff with a clinic assignment', async () => {

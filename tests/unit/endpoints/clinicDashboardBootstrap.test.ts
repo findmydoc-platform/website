@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { clinicDashboardBootstrapGetHandler } from '@/endpoints/clinicDashboardBootstrap'
+import { AUTH_FLOW_ERROR_CODES, AuthFlowError } from '@/auth/errors/authFlowError'
 import { CLINIC_DASHBOARD_CAPABILITIES } from '@/features/clinicDashboard/bootstrap'
 import { createMockPayload, createMockReq, type MockPayload } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
@@ -238,7 +239,7 @@ describe('Clinic Dashboard bootstrap endpoint', () => {
     expectPrivateLiveHeaders(databaseResponse)
   })
 
-  it('maps a conflicting Payload principal resolution to 503', async () => {
+  it('maps a conflicting Payload principal resolution to 401', async () => {
     const payload = createMockPayload()
     mocks.validateSupabaseBearerToken.mockResolvedValue({
       status: 'authenticated',
@@ -248,12 +249,47 @@ describe('Clinic Dashboard bootstrap endpoint', () => {
         userType: 'clinic',
       },
     })
-    mocks.findUserBySupabaseId.mockRejectedValue(new Error('conflicting principal'))
+    mocks.findUserBySupabaseId.mockRejectedValue(
+      new AuthFlowError({
+        code: AUTH_FLOW_ERROR_CODES.USER_LOOKUP_FAILED,
+        message: 'Supabase identity resolves to more than one Payload principal',
+      }),
+    )
 
     const response = await clinicDashboardBootstrapGetHandler(request(payload, null))
 
-    expect(response.status).toBe(503)
+    expect(await readResponse(response)).toEqual({
+      status: 401,
+      body: { error: { code: 'CLINIC_DASHBOARD_UNAUTHORIZED' } },
+    })
     expect(payload.create).not.toHaveBeenCalled()
+    expectPrivateLiveHeaders(response)
+  })
+
+  it('maps a temporary principal lookup failure to 503', async () => {
+    const payload = createMockPayload()
+    mocks.validateSupabaseBearerToken.mockResolvedValue({
+      status: 'authenticated',
+      authData: {
+        supabaseUserId: 'clinic-user',
+        userEmail: 'clinic@example.com',
+        userType: 'clinic',
+      },
+    })
+    mocks.findUserBySupabaseId.mockRejectedValue(
+      new AuthFlowError({
+        code: AUTH_FLOW_ERROR_CODES.USER_LOOKUP_FAILED,
+        message: 'Payload lookup temporarily failed',
+        retryable: true,
+      }),
+    )
+
+    const response = await clinicDashboardBootstrapGetHandler(request(payload, null))
+
+    expect(await readResponse(response)).toEqual({
+      status: 503,
+      body: { error: { code: 'CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE' } },
+    })
     expectPrivateLiveHeaders(response)
   })
 

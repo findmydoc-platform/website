@@ -424,4 +424,29 @@ describe('importCollection', () => {
       req: undefined,
     })
   })
+
+  it('returns old and new post slugs for terminal cache invalidation', async () => {
+    mockLoadSeedFile.mockResolvedValueOnce([
+      {
+        stableId: 'post-1',
+        slug: 'new-editorial-post',
+      },
+    ])
+    mockUpsertByStableId.mockResolvedValueOnce({
+      created: false,
+      updated: true,
+      previousSlug: 'old-demo-post',
+      nextSlug: 'new-editorial-post',
+    })
+
+    const outcome = await importCollection({
+      payload: makePayload(),
+      kind: 'demo',
+      collection: 'posts',
+      fileName: 'posts',
+      resolvers: makeResolvers(),
+    })
+
+    expect(outcome.affectedPostSlugs).toEqual(['new-editorial-post', 'old-demo-post'])
+  })
 })

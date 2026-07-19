@@ -182,6 +182,9 @@ describe('seed endpoints success paths', () => {
           updated: status === 'failed' || status === 'cancelled' ? 1 : 0,
           warnings: [],
           failures: status === 'failed' ? ['partial write failed'] : [],
+          output: {
+            affectedPostSlugs: ['old-demo-post', 'new-editorial-post'],
+          },
         },
       ]
       await saveSeedRunRecord(payload as unknown as Payload, record)
@@ -199,13 +202,15 @@ describe('seed endpoints success paths', () => {
       expect(body.finalFlush).toMatchObject({
         status: 'executed',
         tagCount: 5,
-        pathCount: 4,
+        pathCount: 6,
       })
       expect(revalidateTag).toHaveBeenCalledWith('collection:posts', { expire: 0 })
       expect(revalidateTag).toHaveBeenCalledWith('surface:posts-list', { expire: 0 })
       expect(revalidateTag).toHaveBeenCalledWith('surface:sitemap:posts', { expire: 0 })
       expect(revalidatePath).toHaveBeenCalledWith('/posts')
       expect(revalidatePath).toHaveBeenCalledWith('/posts-sitemap.xml')
+      expect(revalidatePath).toHaveBeenCalledWith('/posts/old-demo-post')
+      expect(revalidatePath).toHaveBeenCalledWith('/posts/new-editorial-post')
 
       const tagCallCount = vi.mocked(revalidateTag).mock.calls.length
       const secondRes = makeRes()

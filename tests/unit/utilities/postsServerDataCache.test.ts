@@ -43,21 +43,53 @@ describe('posts server data cache contract', () => {
 
     await expect(getCachedLatestPosts(3)).resolves.toEqual([{ id: 1, slug: 'latest-post' }])
 
-    expect(cacheMocks.unstableCache).toHaveBeenCalledWith(expect.any(Function), ['posts-latest', '3'], {
-      tags: [
-        'collection:posts',
-        'surface:posts-list',
-        'surface:home',
-        'surface:partners-clinics',
-        'surface:sitemap:posts',
-      ],
-    })
+    expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
+      expect.any(Function),
+      ['posts-latest', buildPostListDataCacheKey({ contentLocale: {}, limit: 3, page: 1 })],
+      {
+        tags: [
+          'collection:posts',
+          'surface:posts-list',
+          'surface:home',
+          'surface:partners-clinics',
+          'surface:sitemap:posts',
+        ],
+      },
+    )
     expect(payload.find).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'posts',
         draft: false,
         overrideAccess: false,
         pagination: false,
+      }),
+    )
+  })
+
+  it('couples latest post locale query options to the cache key', async () => {
+    const payload = {
+      find: vi.fn().mockResolvedValue({ docs: [{ id: 3, slug: 'deutscher-beitrag' }] }),
+    }
+    cacheMocks.getPayload.mockResolvedValue(payload)
+
+    await getCachedLatestPosts(3, { locale: 'de', fallbackLocale: 'en' })
+
+    expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
+      expect.any(Function),
+      [
+        'posts-latest',
+        buildPostListDataCacheKey({
+          contentLocale: { locale: 'de', fallbackLocale: 'en' },
+          limit: 3,
+          page: 1,
+        }),
+      ],
+      expect.any(Object),
+    )
+    expect(payload.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fallbackLocale: 'en',
+        locale: 'de',
       }),
     )
   })

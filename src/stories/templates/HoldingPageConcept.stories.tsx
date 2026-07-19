@@ -2,10 +2,40 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 
 import { HoldingPageConcept } from '@/components/templates/HoldingPageConcept'
+import { TemporaryLandingBlogSection } from '@/components/templates/TemporaryLandingPage/TemporaryLandingBlogSection'
 import { holdingPageConcept } from '@/stories/fixtures/holdingPageConcepts'
 import { withViewportStory } from '../utils/viewportMatrix'
 
 const submitContact = () => new Promise<void>((resolve) => setTimeout(resolve, 120))
+
+const holdingBlogSection = (
+  <TemporaryLandingBlogSection
+    ctaHref="/posts"
+    ctaLabel="View all articles"
+    description="Practical guidance and clear context for comparing clinics, treatments, and quality signals."
+    posts={[
+      {
+        title: 'How to compare clinic quality signals',
+        excerpt: 'A practical guide to structured comparisons before contacting a clinic.',
+        href: '/posts/quality-signals',
+        category: 'Clinic comparison',
+      },
+      {
+        title: 'Questions to ask before treatment abroad',
+        excerpt: 'Prepare the first conversation and make expectations easier to compare.',
+        href: '/posts/questions-before-treatment',
+        category: 'Patient guidance',
+      },
+      {
+        title: 'Understanding treatment estimates',
+        excerpt: 'Put estimates, services, and follow-up details into context.',
+        href: '/posts/treatment-estimates',
+        category: 'Treatments',
+      },
+    ]}
+    title="Latest insights"
+  />
+)
 
 const meta = {
   title: 'Internal/Landing/Templates/HoldingPageConcept',
@@ -46,6 +76,7 @@ const meta = {
   tags: ['autodocs', 'domain:landing', 'layer:template', 'status:experimental', 'used-in:shared'],
   args: {
     ...holdingPageConcept,
+    afterSignals: holdingBlogSection,
     onSubmitContact: submitContact,
   },
 } satisfies Meta<typeof HoldingPageConcept>
@@ -56,6 +87,7 @@ type Story = StoryObj<typeof meta>
 
 const mobileStressArgs = {
   ...holdingPageConcept,
+  afterSignals: holdingBlogSection,
   onSubmitContact: submitContact,
   contactDescription:
     'Use this contact form to send us a direct request. Include a short title, your message, and your email so we can reply with launch timing and first-access details.',
@@ -75,6 +107,7 @@ const assertConceptFrame: Story['play'] = async ({ args, canvasElement }) => {
   await expect(canvas.getByLabelText('Email')).toBeInTheDocument()
   await expect(canvas.getByText('Why findmydoc')).toBeInTheDocument()
   await expect(canvas.getByText('What you get')).toBeInTheDocument()
+  await expect(canvas.getByRole('heading', { level: 2, name: 'Latest insights' })).toBeInTheDocument()
 
   if (args.contactMode === 'compact') {
     await expect(canvas.queryByLabelText('Name')).not.toBeInTheDocument()
@@ -128,6 +161,7 @@ const assertConceptFrame: Story['play'] = async ({ args, canvasElement }) => {
 export const HoldingPage: Story = {
   args: {
     ...holdingPageConcept,
+    afterSignals: holdingBlogSection,
     onSubmitContact: submitContact,
   },
   play: assertConceptFrame,

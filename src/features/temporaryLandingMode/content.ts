@@ -4,6 +4,9 @@ import { ArrowLeftRight, ShieldCheck, UserRoundSearch } from 'lucide-react'
 import { TEMPORARY_LANDING_DEFAULT_LOCALE, type TemporaryLandingLocale } from './i18n'
 
 type TemporaryLandingCopy = {
+  blogCtaLabel: string
+  blogDescription: string
+  blogTitle: string
   contactConsent: string
   contactDescription: string
   contactEyebrow: string
@@ -40,6 +43,9 @@ type TemporaryLandingCopy = {
 
 const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
   en: {
+    blogCtaLabel: 'View all articles',
+    blogDescription: 'Practical guidance and clear context for comparing clinics, treatments, and quality signals.',
+    blogTitle: 'Latest insights',
     contactConsent: 'By sending this request, you agree that findmydoc may contact you about your inquiry.',
     contactDescription:
       'Use this contact form to send us a direct request. Include a short title, your message, and your email so we can reply.',
@@ -90,6 +96,10 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
     whySectionHeading: 'Patients from the DACH region',
   },
   de: {
+    blogCtaLabel: 'Alle Beiträge ansehen',
+    blogDescription:
+      'Praktische Orientierung und verständlicher Kontext zum Vergleich von Kliniken, Behandlungen und Qualitätsmerkmalen.',
+    blogTitle: 'Aktuelle Einblicke',
     contactConsent: 'Mit dem Absenden stimmst du zu, dass findmydoc dich zu deiner Anfrage kontaktieren darf.',
     contactDescription:
       'Nutze dieses Kontaktformular für eine direkte Anfrage. Gib einen kurzen Titel, deine Nachricht und deine E-Mail an, damit wir antworten können.',
@@ -143,6 +153,10 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
     whySectionHeading: 'Patient:innen DACH',
   },
   tr: {
+    blogCtaLabel: 'Tüm yazıları görüntüle',
+    blogDescription:
+      'Klinikleri, tedavileri ve kalite göstergelerini karşılaştırmak için pratik rehberler ve anlaşılır bilgiler.',
+    blogTitle: 'Güncel bilgiler',
     contactConsent:
       'Bu formu göndererek findmydoc’un talebinizle ilgili sizinle iletişime geçebileceğini kabul etmiş olursunuz.',
     contactDescription:
@@ -283,3 +297,19 @@ export const temporaryLandingPageContentByLocale: Record<TemporaryLandingLocale,
 
 export const getTemporaryLandingPageContent = (locale: TemporaryLandingLocale): HoldingPageConceptProps =>
   temporaryLandingPageContentByLocale[locale] ?? temporaryLandingPageContentByLocale[TEMPORARY_LANDING_DEFAULT_LOCALE]
+
+export type TemporaryLandingBlogCopy = {
+  ctaLabel: string
+  description: string
+  title: string
+}
+
+export const getTemporaryLandingBlogCopy = (locale: TemporaryLandingLocale): TemporaryLandingBlogCopy => {
+  const copy = copyByLocale[locale] ?? copyByLocale[TEMPORARY_LANDING_DEFAULT_LOCALE]
+
+  return {
+    ctaLabel: copy.blogCtaLabel,
+    description: copy.blogDescription,
+    title: copy.blogTitle,
+  }
+}

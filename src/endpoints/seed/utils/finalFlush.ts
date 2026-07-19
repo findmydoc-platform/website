@@ -198,7 +198,12 @@ const hasCompletedOrWritten = (job: SeedRunJobRecord): boolean => {
 
 const buildScopeFromCompletedPublicJobs = (
   record: SeedRunRecord,
-): { completedJobCount: number; publicJobs: SeedRunJobRecord[]; scope: SeedFinalFlushScope } => {
+): {
+  affectedPostSlugs: string[]
+  completedJobCount: number
+  publicJobs: SeedRunJobRecord[]
+  scope: SeedFinalFlushScope
+} => {
   const scope = createScope()
   const completedJobs = record.jobs.filter(hasCompletedOrWritten)
   const publicJobs = completedJobs.filter((job) => isPublicAffectingJob(job))
@@ -207,7 +212,17 @@ const buildScopeFromCompletedPublicJobs = (
     addJobScope(scope, job, record.type)
   }
 
+  const affectedPostSlugs = [
+    ...new Set(
+      publicJobs.flatMap((job) => {
+        const slugs = job.output?.affectedPostSlugs
+        return Array.isArray(slugs) ? slugs.filter((slug): slug is string => typeof slug === 'string') : []
+      }),
+    ),
+  ].sort()
+
   return {
+    affectedPostSlugs,
     completedJobCount: completedJobs.length,
     publicJobs,
     scope,
@@ -345,7 +360,7 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
   if (!record || isFinalFlushComplete(record.finalFlush)) return
 
   const terminalStatus = snapshot.status as FlushableSeedRunStatus
-  const { completedJobCount, publicJobs, scope } = buildScopeFromCompletedPublicJobs(record)
+  const { affectedPostSlugs, completedJobCount, publicJobs, scope } = buildScopeFromCompletedPublicJobs(record)
 
   if (publicJobs.length === 0) {
     await markFinalFlush(payload, snapshot.runId, {
@@ -379,6 +394,7 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
         affectedSurfaces: [...scope.surfaces].sort(),
         affectedSitemaps: [...scope.sitemaps].sort(),
         affectedDiscovery: [],
+        affectedPostSlugs,
         completedJobCount,
         publicJobCount: publicJobs.length,
       },

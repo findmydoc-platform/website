@@ -30,6 +30,7 @@ describe('seedChunkTask', () => {
       failures: [],
     })
     resetCollections.mockReset()
+    resetCollections.mockResolvedValue({ affectedPostSlugs: [] })
   })
 
   afterEach(() => {
@@ -138,6 +139,8 @@ describe('seedChunkTask', () => {
       failures: [],
     })
 
+    resetCollections.mockResolvedValue({ affectedPostSlugs: ['retired-post'] })
+
     const result = await seedChunkTask.handler({
       input,
       job: { id: 'job-reset' },
@@ -151,6 +154,7 @@ describe('seedChunkTask', () => {
         jobId: 'job-reset',
         kind: 'reset',
         status: 'succeeded',
+        affectedPostSlugs: ['retired-post'],
       },
     })
   })

@@ -18,7 +18,15 @@ export function beforeChangePublishedAt(options?: {
   publishedValue?: string
 }) {
   const { statusKey = 'status', publishedAtKey = 'publishedAt', publishedValue = 'published' } = options || {}
-  return async ({ data, originalDoc }: { data: Record<string, unknown>; originalDoc?: Record<string, unknown> }) => {
+  return async ({
+    data,
+    originalDoc,
+    context,
+  }: {
+    data: Record<string, unknown>
+    originalDoc?: Record<string, unknown>
+    context?: Record<string, unknown>
+  }) => {
     const draft: Record<string, unknown> = { ...(data || {}) }
     const nextStatus = draft?.[statusKey] ?? originalDoc?.[statusKey] ?? 'draft'
     draft[statusKey] = nextStatus
@@ -29,6 +37,11 @@ export function beforeChangePublishedAt(options?: {
       incomingPublishedAt !== undefined && incomingPublishedAt !== null && incomingPublishedAt !== ''
     const hasPreviousPublishedAt =
       previousPublishedAt !== undefined && previousPublishedAt !== null && previousPublishedAt !== ''
+
+    if (context?.resetSeedPublishedAt === true && nextStatus !== publishedValue) {
+      draft[publishedAtKey] = null
+      return draft
+    }
 
     if (nextStatus === publishedValue && previousStatus !== publishedValue) {
       if (hasIncomingPublishedAt) {

@@ -20,6 +20,7 @@ export type CollectionImportResult = {
   name: string
   created: number
   updated: number
+  affectedPostSlugs?: string[]
   warnings: string[]
   failures: string[]
 }
@@ -172,6 +173,7 @@ export async function importCollection(options: {
       : allRecords
   const warnings: string[] = []
   const failures: string[] = []
+  const affectedPostSlugs = new Set<string>()
   let created = 0
   let updated = 0
 
@@ -272,6 +274,8 @@ export async function importCollection(options: {
       })
       if (result.created) created += 1
       if (result.updated) updated += 1
+      if (result.previousSlug) affectedPostSlugs.add(result.previousSlug)
+      if (result.nextSlug) affectedPostSlugs.add(result.nextSlug)
 
       if (Object.keys(localizedUpdates).length > 0) {
         const docId = await resolvers.resolveIdByStableId(collection, record.stableId)
@@ -299,6 +303,7 @@ export async function importCollection(options: {
     name: fileName,
     created,
     updated,
+    affectedPostSlugs: [...affectedPostSlugs].sort(),
     warnings,
     failures,
   }

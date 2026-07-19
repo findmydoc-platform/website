@@ -76,6 +76,14 @@ const findElementByType = (node: ReactNodeLike, type: unknown): React.ReactEleme
   return findElementByType(element.props.children, type)
 }
 
+const getTextContent = (node: ReactNodeLike): string => {
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(getTextContent).join(' ')
+  if (!React.isValidElement(node)) return ''
+
+  return getTextContent((node as React.ReactElement<{ children?: ReactNodeLike }>).props.children)
+}
+
 describe('frontend posts index route', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -157,5 +165,25 @@ describe('frontend posts index route', () => {
         path: '/posts?locale=de',
       }),
     )
+  })
+
+  it('renders a visible localized empty state when no posts are published', async () => {
+    mocks.getCachedPublishedPostsPageMock.mockResolvedValue({
+      docs: [],
+      totalDocs: 0,
+      totalPages: 0,
+      page: 1,
+    })
+
+    const pageModule = await import('@/app/(frontend)/posts/page')
+    const result = await pageModule.default({
+      searchParams: Promise.resolve({ locale: 'de' }),
+    })
+
+    const emptySection = findElementByType(result, 'section')
+    expect(emptySection?.props['aria-labelledby']).toBe('empty-posts-heading')
+    expect(getTextContent(emptySection)).toContain('Neue Beiträge sind in Vorbereitung')
+    expect(getTextContent(emptySection)).toContain('praktische Orientierung')
+    expect(mocks.normalizePostMock).not.toHaveBeenCalled()
   })
 })

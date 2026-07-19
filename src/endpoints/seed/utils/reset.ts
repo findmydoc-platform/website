@@ -42,6 +42,32 @@ type ResetCollectionsOptions = {
   preservePlatformUserId?: string | number
 }
 
+type ResetCollectionsResult = {
+  affectedPostSlugs: string[]
+}
+
+const collectPostSlugsBeforeReset = async (payload: Payload): Promise<string[]> => {
+  const posts = await payload.find({
+    collection: 'posts',
+    depth: 0,
+    overrideAccess: true,
+    pagination: false,
+    select: {
+      slug: true,
+    },
+    trash: true,
+  })
+
+  return [
+    ...new Set(
+      posts.docs
+        .map((post) => post.slug)
+        .filter((slug): slug is string => typeof slug === 'string' && slug.trim().length > 0)
+        .map((slug) => slug.trim()),
+    ),
+  ].sort()
+}
+
 const buildResetWhere = (collection: CollectionSlug, preservePlatformUserId?: string | number): Where => {
   const allDocuments: Where = {
     id: {
@@ -96,7 +122,7 @@ export async function resetCollections(
   payload: Payload,
   kind: 'baseline' | 'demo',
   options: ResetCollectionsOptions = {},
-) {
+): Promise<ResetCollectionsResult> {
   const runtimeEnv = resolveSeedRuntimeEnv(undefined, process.env)
   const policy = resolveSeedRuntimePolicy(runtimeEnv)
 
@@ -112,6 +138,8 @@ export async function resetCollections(
     throw new Error('Seed reset is disabled in this runtime')
   }
 
+  const affectedPostSlugs = await collectPostSlugsBeforeReset(payload)
+
   // Baseline reference data is commonly referenced by demo data (e.g. treatments
   // referenced by clinictreatments). To avoid FK / NOT NULL violations during
   // deletion, baseline resets must clear demo collections first.
@@ -120,4 +148,6 @@ export async function resetCollections(
     payload.logger.info(`Resetting ${collection} (${kind})`)
     await deleteCollection(payload, collection, options.preservePlatformUserId)
   }
+
+  return { affectedPostSlugs }
 }

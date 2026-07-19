@@ -4,6 +4,20 @@ import * as mediaImageModule from '@/utilities/media/resolveMediaImage'
 import { resolveMediaImage, type MediaImageUsage } from '@/utilities/media/resolveMediaImage'
 
 describe('resolveMediaImage', () => {
+  it('matches blog card image hints to the sm and xl grid breakpoints', () => {
+    const image = resolveMediaImage(
+      {
+        alt: 'Blog image',
+        url: '/api/platformContentMedia/file/blog.webp',
+        width: 1600,
+        height: 900,
+      },
+      { usage: 'blogCard' },
+    )
+
+    expect(image?.sizes).toBe('(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw')
+  })
+
   it('preserves intentionally empty alt text instead of replacing it with fallback text', () => {
     const image = resolveMediaImage(
       {

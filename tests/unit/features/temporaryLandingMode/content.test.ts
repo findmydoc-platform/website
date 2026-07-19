@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  getTemporaryLandingBlogCopy,
   getTemporaryLandingPageContent,
   TEMPORARY_LANDING_LOCALES,
   type TemporaryLandingLocale,
@@ -154,5 +155,20 @@ describe('temporaryLandingMode content', () => {
 
     expect(fallbackContent.title).toBe(getTemporaryLandingPageContent('en').title)
     expect(fallbackContent.searchSnapshot.metaTitle).toBe(getTemporaryLandingPageContent('en').searchSnapshot.metaTitle)
+  })
+
+  it('returns localized blog teaser copy for every holding locale', () => {
+    expect(getTemporaryLandingBlogCopy('en')).toMatchObject({
+      ctaLabel: 'View all articles',
+      title: 'Latest insights',
+    })
+    expect(getTemporaryLandingBlogCopy('de')).toMatchObject({
+      ctaLabel: 'Alle Beiträge ansehen',
+      title: 'Aktuelle Einblicke',
+    })
+    expect(getTemporaryLandingBlogCopy('tr')).toMatchObject({
+      ctaLabel: 'Tüm yazıları görüntüle',
+      title: 'Güncel bilgiler',
+    })
   })
 })

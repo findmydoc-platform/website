@@ -17,6 +17,7 @@ import {
   buildTemporaryLandingLanguageOptions,
   getTemporaryLandingPageContent,
   isTemporaryLandingModeRequest,
+  resolveTemporaryLandingContentLocale,
   resolveTemporaryLandingLocale,
 } from '@/features/temporaryLandingMode'
 import { getPayload } from 'payload'
@@ -37,8 +38,18 @@ export default async function Home({
     const searchParams = (await searchParamsPromise) ?? {}
     const locale = resolveTemporaryLandingLocale(searchParams)
     const languageOptions = buildTemporaryLandingLanguageOptions(searchParams)
+    const contentLocale = resolveTemporaryLandingContentLocale(locale)
+    const posts = await getCachedLatestPosts(3, contentLocale)
+    const normalizedPosts = posts.map((post) => normalizePost(post, { contentLocale }))
 
-    return <TemporaryLandingPage locale={locale} languageOptions={languageOptions} />
+    return (
+      <TemporaryLandingPage
+        contentLocale={contentLocale}
+        locale={locale}
+        languageOptions={languageOptions}
+        posts={normalizedPosts}
+      />
+    )
   }
 
   const payload = await getPayload({ config: configPromise })

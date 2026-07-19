@@ -88,6 +88,7 @@ describe('frontend home page route', () => {
     const result = await pageModule.default({})
 
     expect(mocks.getPayloadMock).not.toHaveBeenCalled()
+    expect(mocks.getCachedLatestPostsMock).toHaveBeenCalledWith(3, {})
     expect(result.type).toBe(mocks.temporaryLandingPageComponent)
     expect(result.props.locale).toBe('en')
     expect(result.props.languageOptions).toEqual([
@@ -95,6 +96,8 @@ describe('frontend home page route', () => {
       { value: 'de', label: 'DE', href: '/?lang=de' },
       { value: 'tr', label: 'TR', href: '/?lang=tr' },
     ])
+    expect(result.props.contentLocale).toEqual({})
+    expect(result.props.posts).toEqual([])
   })
 
   it('passes resolved locale and language options to temporary landing page', async () => {
@@ -110,6 +113,11 @@ describe('frontend home page route', () => {
 
     expect(result.type).toBe(mocks.temporaryLandingPageComponent)
     expect(result.props.locale).toBe('de')
+    expect(mocks.getCachedLatestPostsMock).toHaveBeenCalledWith(3, {
+      locale: 'de',
+      fallbackLocale: 'en',
+    })
+    expect(result.props.contentLocale).toEqual({ locale: 'de', fallbackLocale: 'en' })
     expect(result.props.languageOptions).toEqual([
       { value: 'en', label: 'EN', href: '/?foo=bar&lang=en' },
       { value: 'de', label: 'DE', href: '/?foo=bar&lang=de' },

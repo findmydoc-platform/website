@@ -256,13 +256,43 @@ describe('preview lock proxy', () => {
 
   it('returns 404 for non-root routes in temporary landing mode', async () => {
     mockGuardFlags({ 'temporary-landing-mode': true })
-    const request = new NextRequest('https://findmydoc.eu/posts/example')
+    const request = new NextRequest('https://findmydoc.eu/clinics/example')
 
     const response = await proxy(request)
 
     expect(response.status).toBe(404)
     expect(response.headers.get('location')).toBeNull()
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+  })
+
+  it('keeps only exact public blog route shapes reachable in temporary landing mode', async () => {
+    mockGuardFlags({ 'temporary-landing-mode': true })
+
+    const allowedPaths = ['/posts', '/posts/', '/posts/example', '/posts/page/2']
+    const blockedPaths = [
+      '/posts-admin',
+      '/postscript',
+      '/posts-sitemap.xml',
+      '/posts/foo/bar',
+      '/posts/page/0',
+      '/posts/page/2/extra',
+    ]
+
+    for (const path of allowedPaths) {
+      const response = await proxy(new NextRequest(`https://findmydoc.eu${path}`))
+      expect(response.status).toBe(200)
+      expect(response.headers.get('location')).toBeNull()
+      expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+      expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
+      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+    }
+
+    for (const path of blockedPaths) {
+      const response = await proxy(new NextRequest(`https://findmydoc.eu${path}`))
+      expect(response.status).toBe(404)
+      expect(response.headers.get('location')).toBeNull()
+      expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    }
   })
 
   it('applies temporary landing mode to canonical crawl entrypoints', async () => {
@@ -395,9 +425,11 @@ describe('preview lock proxy', () => {
     const request = new NextRequest('https://preview.findmydoc.eu/posts/example')
     const response = await proxy(request)
 
-    expect(response.status).toBe(404)
+    expect(response.status).toBe(200)
     expect(response.headers.get('location')).toBeNull()
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
   })
 
   it('keeps preview guard restrictions on temporary landing exempt admin routes', async () => {

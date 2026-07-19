@@ -36,17 +36,17 @@ describe('staff Admin identity visibility', () => {
 
   it('registers prominent provisioning guidance on staff lists and documents', () => {
     expect(PlatformStaff.admin?.components?.beforeList).toContain(
-      '@/components/organisms/StaffAdminGuidance#PlatformStaffAdminGuidance',
+      '@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance#PlatformStaffAdminGuidance',
     )
     expect(ClinicStaff.admin?.components?.beforeList).toContain(
-      '@/components/organisms/StaffAdminGuidance#ClinicStaffAdminGuidance',
+      '@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance#ClinicStaffAdminGuidance',
     )
 
     expect(findField(platformFields, 'provisioningGuidance')?.admin?.components?.Field).toBe(
-      '@/components/organisms/StaffAdminGuidance#PlatformStaffAdminGuidance',
+      '@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance#PlatformStaffAdminGuidance',
     )
     expect(findField(clinicFields, 'provisioningGuidance')?.admin?.components?.Field).toBe(
-      '@/components/organisms/StaffAdminGuidance#ClinicStaffAdminGuidance',
+      '@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance#ClinicStaffAdminGuidance',
     )
   })
 

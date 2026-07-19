@@ -18,7 +18,7 @@ export const ClinicStaff: CollectionConfig = {
     defaultColumns: ['email', 'clinic', 'status'],
     description: 'Clinic staff authentication principals',
     components: {
-      beforeList: ['@/components/organisms/StaffAdminGuidance#ClinicStaffAdminGuidance'],
+      beforeList: ['@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance#ClinicStaffAdminGuidance'],
     },
   },
   access: {
@@ -53,7 +53,7 @@ export const ClinicStaff: CollectionConfig = {
       type: 'ui',
       admin: {
         components: {
-          Field: '@/components/organisms/StaffAdminGuidance#ClinicStaffAdminGuidance',
+          Field: '@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance#ClinicStaffAdminGuidance',
         },
       },
     },

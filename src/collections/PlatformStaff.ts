@@ -21,7 +21,7 @@ export const PlatformStaff: CollectionConfig = {
     defaultColumns: ['email', 'firstName', 'lastName', 'role'],
     description: 'Platform staff authentication principals',
     components: {
-      beforeList: ['@/components/organisms/StaffAdminGuidance#PlatformStaffAdminGuidance'],
+      beforeList: ['@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance#PlatformStaffAdminGuidance'],
     },
   },
   access: {
@@ -40,7 +40,7 @@ export const PlatformStaff: CollectionConfig = {
       type: 'ui',
       admin: {
         components: {
-          Field: '@/components/organisms/StaffAdminGuidance#PlatformStaffAdminGuidance',
+          Field: '@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance#PlatformStaffAdminGuidance',
         },
       },
     },

@@ -28,7 +28,7 @@ test('platform staff can open content creation forms @smoke', async ({ page }) =
 
   for (const collectionSlug of ['posts', 'pages']) {
     await openAdminCreatePage(page, collectionSlug)
-    await expect(page.getByLabel(/^Title(?:\s*\*)?$/i)).toBeVisible()
+    await expect(page.getByRole('textbox', { name: /^Title\b/i })).toBeVisible()
   }
 
   await expectNoBrowserIssues(issues)

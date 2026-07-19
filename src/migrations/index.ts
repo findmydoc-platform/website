@@ -44,6 +44,7 @@ import * as migration_20260714_172812_direct_staff_auth_switch from './20260714_
 import * as migration_20260715_070513_direct_staff_auth_follow_up from './20260715_070513_direct_staff_auth_follow_up'
 import * as migration_20260715_142254_direct_staff_auth_contract from './20260715_142254_direct_staff_auth_contract'
 import * as migration_20260715_200710_landing_subscription_pricing_compatibility from './20260715_200710_landing_subscription_pricing_compatibility'
+import * as migration_20260719_195546_direct_staff_auth_snapshot_alignment from './20260719_195546_direct_staff_auth_snapshot_alignment'
 
 export const migrations = [
   {
@@ -275,5 +276,10 @@ export const migrations = [
     up: migration_20260715_200710_landing_subscription_pricing_compatibility.up,
     down: migration_20260715_200710_landing_subscription_pricing_compatibility.down,
     name: '20260715_200710_landing_subscription_pricing_compatibility',
+  },
+  {
+    up: migration_20260719_195546_direct_staff_auth_snapshot_alignment.up,
+    down: migration_20260719_195546_direct_staff_auth_snapshot_alignment.down,
+    name: '20260719_195546_direct_staff_auth_snapshot_alignment',
   },
 ]

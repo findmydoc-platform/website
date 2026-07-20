@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import configPromise from '@payload-config'
-import { createHash } from 'crypto'
 import { getPayload } from 'payload'
 import { z } from 'zod'
 
@@ -15,6 +14,7 @@ const CONSENT_TEXT =
 
 const DUPLICATE_INQUIRY_WINDOW_MS = 15 * 60 * 1000
 
+// Best-effort only: separate runtimes may still create concurrent duplicates.
 const inProcessDuplicateLocks = new Map<string, Promise<void>>()
 
 const numericIdSchema = z.preprocess((value) => {
@@ -59,14 +59,6 @@ const inquiryRequestSchema = z
   })
 
 type InquiryRequestData = z.infer<typeof inquiryRequestSchema>
-type PayloadClient = Awaited<ReturnType<typeof getPayload>>
-type AdvisoryLockClient = {
-  query: (query: string, params: [number, number]) => Promise<unknown>
-  release: () => void
-}
-type AdvisoryLockPool = {
-  connect: () => Promise<AdvisoryLockClient>
-}
 
 function getFirstValidationMessage(error: z.ZodError): string {
   return error.issues[0]?.message || 'Invalid request payload.'
@@ -106,20 +98,6 @@ function buildDuplicateFingerprint(data: InquiryRequestData): string {
   })
 }
 
-function toAdvisoryLockKeys(fingerprint: string): [number, number] {
-  const digest = createHash('sha256').update(fingerprint).digest()
-  return [digest.readInt32BE(0), digest.readInt32BE(4)]
-}
-
-function getAdvisoryLockPool(payload: PayloadClient): AdvisoryLockPool | null {
-  const pool = (payload as unknown as { db?: { pool?: unknown } }).db?.pool
-  if (!pool || typeof pool !== 'object' || !('connect' in pool) || typeof pool.connect !== 'function') {
-    return null
-  }
-
-  return pool as AdvisoryLockPool
-}
-
 async function withInProcessDuplicateLock<T>(fingerprint: string, action: () => Promise<T>): Promise<T> {
   while (true) {
     const existingLock = inProcessDuplicateLocks.get(fingerprint)
@@ -140,29 +118,6 @@ async function withInProcessDuplicateLock<T>(fingerprint: string, action: () => 
       inProcessDuplicateLocks.delete(fingerprint)
     }
     releaseLock()
-  }
-}
-
-async function withDuplicateLock<T>(payload: PayloadClient, fingerprint: string, action: () => Promise<T>): Promise<T> {
-  const pool = getAdvisoryLockPool(payload)
-
-  if (!pool) {
-    return withInProcessDuplicateLock(fingerprint, action)
-  }
-
-  const client = await pool.connect()
-  const lockKeys = toAdvisoryLockKeys(fingerprint)
-
-  try {
-    await client.query('select pg_advisory_lock($1, $2)', lockKeys)
-    return await action()
-  } finally {
-    try {
-      await client.query('select pg_advisory_unlock($1, $2)', lockKeys)
-    } catch (error: unknown) {
-      payload.logger.warn({ error: serializeError(error) }, 'Patient clinic inquiry duplicate lock release failed')
-    }
-    client.release()
   }
 }
 
@@ -385,7 +340,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Treatment is not available for this clinic.' }, { status: 400 })
     }
 
-    return await withDuplicateLock(payload, buildDuplicateFingerprint(parsed.data), async () => {
+    return await withInProcessDuplicateLock(buildDuplicateFingerprint(parsed.data), async () => {
       const duplicateInquiry = await findDuplicateInquiry(payload, parsed.data)
       if (duplicateInquiry) {
         payload.logger.info(

@@ -38,19 +38,6 @@ type ScopeEntry = {
   readonly sitemaps?: readonly CacheSitemapId[]
 }
 
-type PostgresLockClient = {
-  query: (text: string, params?: readonly unknown[]) => Promise<{ rows?: Array<{ acquired?: unknown }> }>
-  release: () => void
-}
-
-type PayloadWithOptionalPostgresPool = Payload & {
-  db?: {
-    pool?: {
-      connect?: () => Promise<PostgresLockClient>
-    }
-  }
-}
-
 type FinalFlushClaim = {
   release: () => Promise<void>
 }
@@ -62,6 +49,7 @@ const PUBLIC_GLOBALS = [
   'cookieConsent',
 ] as const satisfies readonly CachePolicyGlobal[]
 
+// Best-effort only: separate runtimes may execute the same idempotent flush.
 const activeFinalFlushRunIds = new Set<string>()
 
 const isFinalFlushComplete = (finalFlush: SeedRunFinalFlushRecord | undefined): boolean => {
@@ -258,85 +246,28 @@ const markFinalFlush = async (
   })
 }
 
-const acquireDatabaseFinalFlushLock = async (
-  payload: Payload,
-  runId: string,
-): Promise<(() => Promise<void>) | null | undefined> => {
-  const pool = (payload as PayloadWithOptionalPostgresPool).db?.pool
-  if (typeof pool?.connect !== 'function') return undefined
-
-  const client = await pool.connect()
-
-  try {
-    const result = await client.query('select pg_try_advisory_lock(hashtext($1), hashtext($2)) as acquired', [
-      'seed-final-flush',
-      runId,
-    ])
-    const acquired = result.rows?.[0]?.acquired === true
-
-    if (!acquired) {
-      client.release()
-      return null
-    }
-
-    return async () => {
-      try {
-        await client.query('select pg_advisory_unlock(hashtext($1), hashtext($2))', ['seed-final-flush', runId])
-      } finally {
-        client.release()
-      }
-    }
-  } catch (error) {
-    client.release()
-    throw error
-  }
-}
-
 const claimFinalFlush = async (payload: Payload, runId: string): Promise<FinalFlushClaim | null> => {
   if (activeFinalFlushRunIds.has(runId)) {
     return null
   }
 
   activeFinalFlushRunIds.add(runId)
-  let releaseDatabaseLock: (() => Promise<void>) | undefined
 
   try {
-    const databaseLock = await acquireDatabaseFinalFlushLock(payload, runId)
-    if (databaseLock === null) {
+    const record = await loadSeedRunRecord(payload, runId)
+    if (!record || isFinalFlushComplete(record.finalFlush)) {
       activeFinalFlushRunIds.delete(runId)
       return null
     }
-    releaseDatabaseLock = databaseLock
+
+    return {
+      release: async () => {
+        activeFinalFlushRunIds.delete(runId)
+      },
+    }
   } catch (error) {
     activeFinalFlushRunIds.delete(runId)
-    payload.logger.warn({
-      event: 'cache.revalidation.failed',
-      operation: 'seed-final-flush',
-      source: { kind: 'seed-runner', id: runId },
-      message: error instanceof Error ? error.message : String(error),
-    })
-    return null
-  }
-
-  const record = await loadSeedRunRecord(payload, runId)
-  if (!record || isFinalFlushComplete(record.finalFlush)) {
-    if (releaseDatabaseLock) {
-      await releaseDatabaseLock()
-    }
-    activeFinalFlushRunIds.delete(runId)
-    return null
-  }
-
-  return {
-    release: async () => {
-      try {
-        if (releaseDatabaseLock) {
-          await releaseDatabaseLock()
-        }
-      } finally {
-        activeFinalFlushRunIds.delete(runId)
-      }
-    },
+    throw error
   }
 }
 

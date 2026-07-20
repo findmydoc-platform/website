@@ -7,7 +7,7 @@ import { createMockReq } from '../helpers/testHelpers'
 type PageDoc = {
   id: string | number
   _status?: 'draft' | 'published'
-  slug: string
+  slug?: string
 }
 
 const buildReq = (disableRevalidate = false): PayloadRequest =>
@@ -121,6 +121,17 @@ describe('Pages revalidation hooks', () => {
     expect(getTagCalls()).toEqual([])
   })
 
+  it('skips incomplete autosaved drafts until a slug exists', () => {
+    const req = buildReq(false)
+    const doc: PageDoc = { id: 1, _status: 'draft' }
+
+    const result = revalidatePage(buildAfterChangeArgs({ doc, req })) as PageDoc
+
+    expect(result).toBe(doc)
+    expect(getPathCalls()).toEqual([])
+    expect(getTagCalls()).toEqual([])
+  })
+
   it('revalidates deleted page path and pages sitemap', () => {
     const req = buildReq(false)
     const doc: PageDoc = { id: 1, _status: 'published', slug: 'home' }
@@ -132,7 +143,7 @@ describe('Pages revalidation hooks', () => {
     expect(getTagCalls()).toEqual(['entity:pages:1', 'collection:pages', 'slug:pages:home', 'surface:sitemap:pages'])
   })
 
-  it('throws strict adapter errors before revalidating invalid page events', () => {
+  it('throws strict adapter errors before revalidating published page events without a slug', () => {
     const req = buildReq(false)
     const doc = { id: 1, _status: 'published' } as PageDoc
 

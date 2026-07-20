@@ -69,6 +69,39 @@ describe('ClinicStaff access', () => {
     expect(results.docs).toHaveLength(1)
     expect(results.docs[0]?.id).toBe(staffA.id)
     expect(results.docs[0]?.clinic).toBe(clinicA.id)
+    expect(results.docs[0]).toMatchObject({
+      email: staffA.email,
+      firstName: staffA.firstName,
+      lastName: staffA.lastName,
+    })
+    expect(results.docs[0]).not.toHaveProperty('supabaseUserId')
+  })
+
+  it('allows platform staff to review safe clinic identity fields', async () => {
+    const { clinicStaff } = await createClinicStaffFixture(payload, {
+      slugPrefix,
+      suffix: 'platform-review',
+      createdClinicStaffIds,
+    })
+    const platformUser = await createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-platform-review`,
+      createdStaffIds,
+    })
+
+    const result = await payload.findByID({
+      collection: 'clinicStaff',
+      id: clinicStaff.id,
+      user: asPayloadStaffUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    expect(result).toMatchObject({
+      email: clinicStaff.email,
+      firstName: clinicStaff.firstName,
+      lastName: clinicStaff.lastName,
+    })
+    expect(result).not.toHaveProperty('supabaseUserId')
   })
 
   it('keeps authorization fields immutable for clinic staff', async () => {

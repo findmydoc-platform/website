@@ -44,10 +44,18 @@ const hasClinicTrustManagerRole = async (req: PayloadRequest): Promise<boolean> 
 }
 
 /**
- * Only Platform Staff can create/edit this field
+ * Only Platform Staff can access this field operation.
  */
 export const platformOnlyFieldAccess: FieldAccess = ({ req }) => {
   return isPlatformUser(req.user)
+}
+
+/**
+ * Safe staff profile fields are readable to authenticated staff. Collection access
+ * remains responsible for limiting which staff records each principal can read.
+ */
+export const staffProfileFieldReadAccess: FieldAccess = ({ req }) => {
+  return Boolean(req.user && (req.user.collection === 'platformStaff' || req.user.collection === 'clinicStaff'))
 }
 
 /**

@@ -3,7 +3,7 @@ import { isClinicStaff, isOwnClinicStaffProfile } from '@/access/isClinicStaff'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
-import { platformOnlyFieldAccess } from '@/access/fieldAccess'
+import { platformOnlyFieldAccess, staffProfileFieldReadAccess } from '@/access/fieldAccess'
 
 // Direct authentication principal for clinic dashboard and API access, never Payload Admin.
 export const ClinicStaff: CollectionConfig = {
@@ -17,6 +17,9 @@ export const ClinicStaff: CollectionConfig = {
     useAsTitle: 'email',
     defaultColumns: ['email', 'clinic', 'status'],
     description: 'Clinic staff authentication principals',
+    components: {
+      beforeList: ['@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance#ClinicStaffAdminGuidance'],
+    },
   },
   access: {
     read: async ({ req }) => {
@@ -45,6 +48,15 @@ export const ClinicStaff: CollectionConfig = {
     beforeChange: [enforceSupabaseIdentityInvariant],
   },
   fields: [
+    {
+      name: 'provisioningGuidance',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance#ClinicStaffAdminGuidance',
+        },
+      },
+    },
     {
       name: 'stableId',
       type: 'text',
@@ -82,11 +94,10 @@ export const ClinicStaff: CollectionConfig = {
       label: 'Email',
       access: {
         create: () => false,
-        read: () => false,
+        read: staffProfileFieldReadAccess,
         update: () => false,
       },
       admin: {
-        hidden: true,
         readOnly: true,
       },
     },
@@ -96,11 +107,10 @@ export const ClinicStaff: CollectionConfig = {
       label: 'First Name',
       access: {
         create: () => false,
-        read: () => false,
+        read: staffProfileFieldReadAccess,
         update: () => false,
       },
       admin: {
-        hidden: true,
         readOnly: true,
       },
     },
@@ -110,11 +120,10 @@ export const ClinicStaff: CollectionConfig = {
       label: 'Last Name',
       access: {
         create: () => false,
-        read: () => false,
+        read: staffProfileFieldReadAccess,
         update: () => false,
       },
       admin: {
-        hidden: true,
         readOnly: true,
       },
     },
@@ -124,11 +133,10 @@ export const ClinicStaff: CollectionConfig = {
       relationTo: 'userProfileMedia',
       access: {
         create: () => false,
-        read: () => false,
+        read: staffProfileFieldReadAccess,
         update: () => false,
       },
       admin: {
-        hidden: true,
         readOnly: true,
       },
     },

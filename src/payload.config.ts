@@ -5,6 +5,7 @@ import sharp from 'sharp'
 import path from 'path'
 import { buildConfig, PayloadHandler, type EmailAdapter } from 'payload'
 import { cacheRevalidationVisibilityGetHandler } from './endpoints/cacheRevalidationVisibility'
+import { clinicDashboardBootstrapGetHandler } from './endpoints/clinicDashboardBootstrap'
 import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
 import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
@@ -87,6 +88,11 @@ export default buildConfig({
     safeFileNames: true,
   },
   endpoints: [
+    {
+      path: '/clinic-dashboard/bootstrap',
+      method: 'get',
+      handler: clinicDashboardBootstrapGetHandler as PayloadHandler,
+    },
     { path: '/seed', method: 'post', handler: seedPostHandler as PayloadHandler },
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
     { path: '/seed/retry', method: 'post', handler: seedRetryHandler as PayloadHandler },

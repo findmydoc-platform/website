@@ -16,13 +16,13 @@
 
 ## Runtime Status and Scope
 
-> **Temporary runtime notice:** The website does not yet expose the Dashboard bootstrap and capability
-> contracts described here. This notice must be removed when those runtime contracts are deployed.
-
 This document records the approved server-to-server integration contract for the standalone Clinic Dashboard. It is
 durable architecture documentation, not an execution plan. The contract does not add browser access to Payload,
 Payload CORS origins, a Dashboard database, service-role credentials, public cache behavior, or clinic login UI to the
 website.
+
+Payload exposes the initial private bootstrap contract. The Clinic Dashboard session and BFF runtime remain separate
+work owned by the Dashboard repository.
 
 ## Boundary and Ownership
 
@@ -52,6 +52,8 @@ The endpoint:
 The initial response shape is owned by the website repository:
 
 ```ts
+type ClinicDashboardCapability = 'clinic-profile:view' | 'clinic-profile:edit'
+
 type ClinicDashboardBootstrapDTO = {
   principal: {
     id: string
@@ -67,9 +69,14 @@ type ClinicDashboardBootstrapDTO = {
 }
 ```
 
+The two initial capabilities are returned exactly once in the order shown above for every approved clinic principal
+with a current clinic assignment. They support profile display and editing controls already backed by current access
+rules. A successful bootstrap implies Dashboard access, so there is no separate `dashboard:access` capability.
+
 `ClinicDashboardCapability` is a closed, version-controlled string union. It describes user-visible operations, not
-Payload collection names or field-level access details. New capability values require synchronized type, endpoint,
-Dashboard behavior, and permission tests.
+Payload collection names or field-level access details. It is a UI projection and never replaces Payload authorization:
+each later read or mutation must authorize the current principal, clinic, document, and fields again. New capability
+values require synchronized type, endpoint, Dashboard behavior, and permission tests.
 
 The DTO deliberately omits Supabase identifiers, tokens, internal roles, access-control metadata, Payload timestamps,
 and unrelated clinic fields. Later capability endpoints may add their own DTOs without expanding this bootstrap into a
@@ -98,17 +105,33 @@ Dashboard BFF and requires no Payload change.
 
 ## Error Mapping
 
+The bootstrap always returns one of these stable Payload status and code pairs:
+
+| Payload or upstream condition | Payload result | Session effect |
+| --- | --- | --- |
+| Missing or invalid explicit Bearer token, non-clinic principal, conflicting identity mapping, or valid identity without matching clinic staff | `401` with `CLINIC_DASHBOARD_UNAUTHORIZED` | Dashboard may attempt one controlled refresh; persistent failure clears invalid cookies. Staff is never created during authentication. |
+| Principal not approved or missing a current clinic assignment | `403` with `CLINIC_DASHBOARD_ACCESS_DENIED` | Preserve the session so the Dashboard can render an access-state explanation. |
+| Supabase or Payload temporarily unavailable | `503` with `CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE` | Preserve the session; do not present an upstream outage as logout. |
+
+Later capability routes may additionally use these general semantics:
+
 | Payload or upstream condition | Dashboard BFF result | Session effect |
 | --- | --- | --- |
-| Missing or invalid Supabase access token | `401 Unauthorized` | Dashboard may attempt one controlled refresh; persistent failure clears invalid cookies. |
-| Valid identity without a matching clinic principal | `401 Unauthorized` | Fail closed; do not create staff during authentication. |
-| Principal not approved, missing clinic, or forbidden capability | `403 Forbidden` | Preserve the session so the Dashboard can render an access-state explanation. |
 | Invalid request input | `400 Bad Request` with a stable error code | Preserve the session. |
 | Conflict with current business state | `409 Conflict` with a stable error code | Preserve the session and allow a controlled refresh. |
 | Payload unavailable or timed out | `502 Bad Gateway` or `504 Gateway Timeout` | Preserve the session; do not present an upstream outage as logout. |
 
 Error bodies expose stable machine-readable codes and safe user-facing categories. They do not expose tokens, raw
 Payload errors, SQL details, stack traces, clinic data from a denied request, or Supabase response bodies.
+
+Every bootstrap response, including errors, carries:
+
+```text
+Cache-Control: private, no-store
+Pragma: no-cache
+Expires: 0
+Vary: Authorization
+```
 
 ## Environment Matrix
 

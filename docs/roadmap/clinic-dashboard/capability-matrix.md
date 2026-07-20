@@ -17,9 +17,11 @@
 [ADR 025](../../adrs/025-adr-direct-staff-auth-collections.md), and the standalone application boundary is defined by
 [ADR 026](../../adrs/026-adr-standalone-clinic-dashboard-bff-architecture.md).
 
-The first remaining runtime gate is [website#1524](https://github.com/findmydoc-platform/website/issues/1524): Payload
-must expose the focused, server-authenticated self-and-capability bootstrap required by the Dashboard BFF. The browser
-does not call Payload and Payload CORS is not expanded.
+The initial runtime handoff is implemented by
+[website#1524](https://github.com/findmydoc-platform/website/issues/1524): this matrix defines the full product and
+capability inventory, while the first Payload bootstrap projects only `clinic-profile:view` and
+`clinic-profile:edit`. Later capabilities remain owned by their listed data and permission contracts. The browser does
+not call Payload and Payload CORS is not expanded.
 
 The standalone app shell in
 [clinic-dashboard#1](https://github.com/findmydoc-platform/clinic-dashboard/issues/1) can proceed in parallel using only
@@ -125,7 +127,7 @@ Cache labels used below:
 | Staff identity | `platformStaff`, `clinicStaff`, and `patients` are direct auth principals under ADR 025. | Dashboard authorization resolves `clinicStaff` directly and never grants clinic access to Payload Admin. |
 | Clinic authorization | Access helpers resolve the authenticated direct principal and require current approval plus clinic assignment. | Dashboard requests must use the same server-derived tenant boundary. |
 | Session and token mechanics | ADR 026 assigns Supabase session cookies to the Dashboard BFF and Bearer transport to its server-to-server Payload requests. | The Dashboard owns no database or browser-readable token; Payload remains the current authorization boundary. |
-| Dashboard API | There is no focused clinic self/capability endpoint yet. | #1524 owns the private-live bootstrap and related Payload contracts. Browser CORS is not part of that work. |
+| Dashboard API | Payload exposes the private-live `GET /api/clinic-dashboard/bootstrap` contract with the two initial profile capabilities. | The Dashboard may integrate this focused contract server-side. Later actions require their owning API and permission work; browser CORS remains unnecessary. |
 | Payload API | Current collections expose Payload REST according to collection access rules; Payload remains the intended business API and authorization boundary. | The dashboard must not query Postgres directly or bypass collection/endpoint access. |
 | Analytics reporting | Typed PostHog events already carry `clinic_id` for profile views, CTA clicks, and inquiries, but no tenant-safe reporting endpoint exists. PostHog documents its Query API for embedded, aggregated analytics. | #1531 owns a server-only reporting facade that derives the clinic from the authenticated principal, composes approved PostHog and Payload aggregates, and returns dashboard-shaped data. |
 | Public freshness | Clinic detail and listing reads use canonical cache tags; clinic-related hooks normalize events into the central planner/executor. | New or changed public data in #1527–#1529 must prove read/write symmetry under ADR 023. |

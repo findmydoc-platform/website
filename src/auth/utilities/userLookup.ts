@@ -5,7 +5,7 @@
 
 import type { AuthData } from '@/auth/types/authTypes'
 import { getUserConfig as getAuthConfig } from '@/auth/config/authConfig'
-import { AUTH_FLOW_ERROR_CODES, AuthFlowError, toErrorMessage } from '@/auth/errors/authFlowError'
+import { AUTH_FLOW_ERROR_CODES, AuthFlowError, isAuthFlowError, toErrorMessage } from '@/auth/errors/authFlowError'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import type { Payload, PayloadRequest } from 'payload'
 import type { ClinicStaff, Patient, PlatformStaff } from '@/payload-types'
@@ -74,11 +74,16 @@ export async function findUserBySupabaseId(
         err: error instanceof Error ? error : new Error(message),
         event: 'auth.supabase.user.lookup_failed',
         userType: authData.userType,
-        supabaseUserId: authData.supabaseUserId,
+        supabaseUserIdHash: hashLogValue(authData.supabaseUserId),
         userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
       },
       'Failed to find payload user during Supabase authentication',
     )
+
+    if (isAuthFlowError(error)) {
+      throw error
+    }
+
     throw new AuthFlowError({
       code: AUTH_FLOW_ERROR_CODES.USER_LOOKUP_FAILED,
       message: `User lookup failed: ${message}`,

@@ -1,4 +1,5 @@
 import type { Payload, PayloadRequest } from 'payload'
+import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 
 // Normalize a clinic identifier into a numeric id if possible.
 // Accepts raw numbers, numeric strings, or prefixed values like "clinic-123".
@@ -26,30 +27,13 @@ export async function getUserAssignedClinicId(user: PayloadRequest['user'], payl
   }
 
   try {
-    const clinicStaffResult = await payload.find({
-      collection: 'clinicStaff',
-      where: {
-        and: [{ id: { equals: user.id } }, { status: { equals: 'approved' } }],
-      },
-      limit: 1,
-    })
-
-    if (clinicStaffResult.docs.length === 0) {
-      payload.logger.warn(`No approved clinic staff principal found for user ${user.id}`)
+    const accessState = await readClinicAccessState(payload, user.id)
+    if (!accessState) {
+      payload.logger.warn(`No access-ready clinic staff principal found for user ${user.id}`)
       return null
     }
 
-    const clinicIdFromProfile = clinicStaffResult.docs[0]?.clinic
-
-    const clinicIdValue =
-      clinicIdFromProfile && typeof clinicIdFromProfile === 'object'
-        ? ((clinicIdFromProfile as { id?: unknown; value?: unknown }).id ??
-          (clinicIdFromProfile as { id?: unknown; value?: unknown }).value)
-        : clinicIdFromProfile
-
-    const normalizedClinicId = normalizeClinicId(clinicIdValue)
-
-    return normalizedClinicId
+    return normalizeClinicId(accessState.clinic.id)
   } catch (error) {
     payload.logger.error(error, 'Error getting clinic assignment')
     return null

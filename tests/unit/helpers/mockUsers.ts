@@ -26,6 +26,7 @@ export const mockUsers = {
     collection: 'clinicStaff',
     clinic: clinicId,
     status: 'approved',
+    authSync: { status: 'synced' },
   }),
 
   /**

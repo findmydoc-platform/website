@@ -4,6 +4,8 @@ import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseId
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { platformOnlyFieldAccess, staffProfileFieldReadAccess } from '@/access/fieldAccess'
+import { synchronizeClinicStaffAuthState, validateClinicStaffStatusTransition } from '@/hooks/clinicStaffLifecycle'
+import { beforeChangeImmutableField } from '@/hooks/immutability'
 
 // Direct authentication principal for clinic dashboard and API access, never Payload Admin.
 export const ClinicStaff: CollectionConfig = {
@@ -15,7 +17,7 @@ export const ClinicStaff: CollectionConfig = {
   admin: {
     group: 'User Management',
     useAsTitle: 'email',
-    defaultColumns: ['email', 'clinic', 'status'],
+    defaultColumns: ['email', 'clinic', 'status', 'authSync.status'],
     description: 'Clinic staff authentication principals',
     components: {
       beforeList: ['@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance#ClinicStaffAdminGuidance'],
@@ -45,7 +47,12 @@ export const ClinicStaff: CollectionConfig = {
     delete: () => false,
   },
   hooks: {
-    beforeChange: [enforceSupabaseIdentityInvariant],
+    beforeChange: [
+      validateClinicStaffStatusTransition,
+      beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
+      enforceSupabaseIdentityInvariant,
+    ],
+    afterChange: [synchronizeClinicStaffAuthState],
   },
   fields: [
     {
@@ -86,6 +93,20 @@ export const ClinicStaff: CollectionConfig = {
       admin: {
         hidden: true,
         readOnly: true,
+      },
+    },
+    {
+      name: 'onboardingKey',
+      type: 'text',
+      index: true,
+      access: {
+        create: () => false,
+        read: () => false,
+        update: () => false,
+      },
+      admin: {
+        hidden: true,
+        disableListColumn: true,
       },
     },
     {
@@ -164,6 +185,8 @@ export const ClinicStaff: CollectionConfig = {
         { label: 'Pending', value: 'pending' },
         { label: 'Approved', value: 'approved' },
         { label: 'Rejected', value: 'rejected' },
+        { label: 'Disabled', value: 'disabled' },
+        { label: 'Offboarded', value: 'offboarded' },
       ],
       defaultValue: 'pending',
       required: true,
@@ -179,6 +202,42 @@ export const ClinicStaff: CollectionConfig = {
           return Boolean(user && user.collection === 'platformStaff')
         },
       },
+    },
+    {
+      name: 'authSync',
+      type: 'group',
+      access: {
+        create: () => false,
+        read: platformOnlyFieldAccess,
+        update: () => false,
+      },
+      admin: {
+        description: 'Current consistency between this principal and Supabase Auth',
+        position: 'sidebar',
+        readOnly: true,
+      },
+      fields: [
+        {
+          name: 'status',
+          type: 'select',
+          defaultValue: 'pending',
+          options: [
+            { label: 'Pending', value: 'pending' },
+            { label: 'Synced', value: 'synced' },
+            { label: 'Failed', value: 'failed' },
+            { label: 'Deleted', value: 'deleted' },
+          ],
+        },
+        {
+          name: 'errorCode',
+          type: 'select',
+          options: [
+            { label: 'Missing identity', value: 'missing_identity' },
+            { label: 'Account update failed', value: 'account_update_failed' },
+            { label: 'Account deletion failed', value: 'account_delete_failed' },
+          ],
+        },
+      ],
     },
   ],
   timestamps: true,

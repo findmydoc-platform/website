@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 
 describe('enforceSupabaseIdentityInvariant', () => {
-  it('serializes cross-collection checks on the active transaction client', async () => {
+  it('checks principal collections sequentially through Payload', async () => {
     let activeQueries = 0
     let maximumConcurrentQueries = 0
     const find = vi.fn(async () => {
@@ -22,14 +22,8 @@ describe('enforceSupabaseIdentityInvariant', () => {
       originalDoc: undefined,
       req: {
         payload: {
-          db: {
-            sessions: {
-              transaction: { db: { execute: vi.fn().mockResolvedValue(undefined) } },
-            },
-          },
           find,
         },
-        transactionID: 'transaction',
       },
     } as never)
 
@@ -53,14 +47,8 @@ describe('enforceSupabaseIdentityInvariant', () => {
         originalDoc: undefined,
         req: {
           payload: {
-            db: {
-              sessions: {
-                transaction: { db: { execute: vi.fn().mockResolvedValue(undefined) } },
-              },
-            },
             find,
           },
-          transactionID: 'transaction',
         },
       } as never),
     ).rejects.toThrow('Supabase identity is already assigned to another authentication principal')

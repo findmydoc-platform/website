@@ -54,44 +54,18 @@ describe('Clinics collection verification field', () => {
     ])
   })
 
-  it('requires an internal primary contact object with all contact fields', () => {
+  it('keeps internal primary contact fields optional before clinic approval', () => {
     const contactField = findFieldByName((Clinics.fields ?? []) as FieldNode[], 'internalPrimaryContact')
 
     expect(contactField).toBeTruthy()
     expect(contactField?.type).toBe('group')
-
-    const validate = contactField?.validate
-    expect(validate).toBeTypeOf('function')
-    if (!validate) throw new Error('Expected internal primary contact validation')
-
-    expect(validate(null, {})).toBe('Internal primary contact is required.')
-    expect(validate({}, {})).toBe('Internal primary contact is required.')
-    expect(
-      validate(
-        {
-          firstName: 'Aylin',
-          lastName: 'Korkmaz',
-          email: ' ',
-          role: 'Clinic Management',
-        },
-        {},
-      ),
-    ).toBe('Internal primary contact is required.')
-    expect(
-      validate(
-        {
-          firstName: 'Aylin',
-          lastName: 'Korkmaz',
-          email: 'aylin.korkmaz@example.com',
-          role: 'Clinic Management',
-        },
-        {},
-      ),
-    ).toBe(true)
-    expect(validate(undefined, { operation: 'update', previousValue: undefined })).toBe(true)
+    expect(contactField?.validate).toBeUndefined()
+    for (const fieldName of ['firstName', 'lastName', 'email', 'role']) {
+      expect(findFieldByName(contactField?.fields, fieldName)?.required).not.toBe(true)
+    }
   })
 
-  it('rejects clinic writes without a complete internal primary contact before validation', async () => {
+  it('requires complete operational fields only when the clinic is approved', async () => {
     const validateClinic = Clinics.hooks?.beforeValidate?.[0] as ((args: unknown) => unknown) | undefined
     const validContact = {
       firstName: 'Aylin',
@@ -105,20 +79,15 @@ describe('Clinics collection verification field', () => {
 
     const runHook = async (args: unknown) => validateClinic(args)
 
-    await expect(runHook({ data: {}, operation: 'create' })).rejects.toThrow('Internal primary contact is required.')
+    await expect(runHook({ data: { status: 'pending' }, operation: 'create' })).resolves.toEqual({
+      status: 'pending',
+    })
     await expect(
       runHook({
-        data: {
-          internalPrimaryContact: {
-            firstName: null,
-            lastName: null,
-            email: null,
-            role: null,
-          },
-        },
+        data: { status: 'approved' },
         operation: 'create',
       }),
-    ).rejects.toThrow('Internal primary contact is required.')
+    ).rejects.toThrow(/complete address, internal primary contact, and at least one supported language/i)
     await expect(
       runHook({
         data: {
@@ -126,7 +95,16 @@ describe('Clinics collection verification field', () => {
         },
         operation: 'update',
         originalDoc: {
+          address: {
+            country: 'Germany',
+            street: 'Clinic Street',
+            houseNumber: '1',
+            zipCode: 10115,
+            city: 8,
+          },
           internalPrimaryContact: validContact,
+          status: 'approved',
+          supportedLanguages: ['english'],
         },
       }),
     ).resolves.toEqual({ name: 'Updated clinic' })
@@ -146,9 +124,18 @@ describe('Clinics collection verification field', () => {
         },
         operation: 'update',
         originalDoc: {
+          address: {
+            country: 'Germany',
+            street: 'Clinic Street',
+            houseNumber: '1',
+            zipCode: 10115,
+            city: 8,
+          },
           internalPrimaryContact: validContact,
+          status: 'approved',
+          supportedLanguages: ['english'],
         },
       }),
-    ).rejects.toThrow('Internal primary contact is required.')
+    ).rejects.toThrow(/complete address, internal primary contact, and at least one supported language/i)
   })
 })

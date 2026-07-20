@@ -230,7 +230,7 @@ export async function getClinicDetailServerData(
   ])
 
   const accreditationLookupIds = collectAccreditationLookupIds(clinic.accreditations)
-  const cityLookupIds = collectCityLookupIds(clinic.address.city)
+  const cityLookupIds = collectCityLookupIds(clinic.address?.city)
   const galleryEntryLookupIds = collectGalleryEntryLookupIds(clinic.galleryEntries)
 
   const [accreditationDocs, cityDocs, fetchedGalleryEntries] = await Promise.all([

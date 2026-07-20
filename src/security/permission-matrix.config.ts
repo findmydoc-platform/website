@@ -236,7 +236,8 @@ export const permissionMatrix: PermissionMatrix = {
         read: { type: 'conditional', details: 'platform full + clinic own clinic' },
         update: {
           type: 'conditional',
-          details: 'platform + own profile after approval; user, clinic, and status fields are platform-only',
+          details:
+            'platform + own profile only when staff and clinic are access-ready; clinic, lifecycle, identity, and sync fields are system/platform controlled',
         },
         delete: { type: 'conditional', details: 'disabled API delete; managed via provisioning' },
         admin: { type: 'platform' },
@@ -250,7 +251,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform staff review safe identity fields and manage clinic/status; clinic staff read their clinic; identity bindings and create/delete remain provisioning-only',
+        'Platform staff manage clinic assignment and lifecycle; approved and synced staff read their approved clinic; identity binding, auth sync, and create/delete remain provisioning-only',
     },
     patients: {
       slug: 'patients',
@@ -652,7 +653,8 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'platform' },
         admin: { type: 'platform' },
       },
-      notes: 'Intake/applications - public submissions use the controlled API route only, platform moderation',
+      notes:
+        'Public submissions use the controlled API route; platform approval creates a pending clinic and initial clinic staff principal with duplicate-write observability',
     },
     patientClinicInquiries: {
       slug: 'patientClinicInquiries',

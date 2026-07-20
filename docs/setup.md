@@ -30,6 +30,19 @@ The repository supports `local`, `hybrid`, and `cloud` operation with the same c
 
 If `USE_S3_IN_DEV=true`, the S3 adapter in `src/plugins/index.ts` becomes active in development too.
 
+### Clinic Dashboard Redirect Origin
+
+Set the server-only `CLINIC_DASHBOARD_URL` to the exact Clinic Dashboard origin. Clinic staff invitations and eligible
+clinic password resets use this origin for their callback links.
+
+```bash
+CLINIC_DASHBOARD_URL=http://localhost:3000
+```
+
+The value must be an absolute HTTP(S) origin without credentials, path, query, or fragment. Configure the matching
+preview and production origins in their environment settings; do not expose this variable through a `NEXT_PUBLIC_`
+name.
+
 ### Codegen (required after schema/plugin changes)
 
 This repo uses a single command to regenerate all generated Payload artifacts (admin import map + TypeScript types):

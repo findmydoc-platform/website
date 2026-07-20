@@ -7,6 +7,7 @@ import type { AuthData, UserResult } from '@/auth/types/authTypes'
 import { VALID_USER_TYPES } from '@/auth/config/authConfig'
 import type { Payload } from 'payload'
 import { createScopedLogger, getRequestLogContext, type ServerLogger } from '@/utilities/logging/shared'
+import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 
 /**
  * Validates if a clinic user has authorized API access.
@@ -34,20 +35,13 @@ export async function validateClinicAccess(
   const userId = userResult.user.id
 
   try {
-    const clinicStaffResult = await payload.find({
-      collection: 'clinicStaff',
-      where: { and: [{ id: { equals: userId } }, { status: { equals: 'approved' } }, { clinic: { exists: true } }] },
-      limit: 1,
-      overrideAccess: true,
-    })
-
-    const isApproved = clinicStaffResult.docs.length > 0
+    const isApproved = Boolean(await readClinicAccessState(payload, userId))
 
     if (!isApproved) {
       activeLogger.warn(
         {
           event: 'auth.supabase.access.denied',
-          reason: 'clinic_not_approved',
+          reason: 'clinic_not_access_ready',
           userId: userResult.user.id,
         },
         'Clinic principal is not approved for authorized access',

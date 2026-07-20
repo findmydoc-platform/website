@@ -1,19 +1,6 @@
-import { sql } from '@payloadcms/db-postgres'
-import type { CollectionBeforeChangeHook, PayloadRequest, Where } from 'payload'
+import type { CollectionBeforeChangeHook, Where } from 'payload'
 
 const principalCollections = ['platformStaff', 'clinicStaff', 'patients'] as const
-
-type TransactionDatabase = {
-  execute: (query: ReturnType<typeof sql>) => Promise<unknown>
-}
-
-type TransactionalPayloadRequest = PayloadRequest & {
-  transactionID?: string | number | Promise<string | number | null> | null
-}
-
-type TransactionalDatabaseAdapter = {
-  sessions?: Record<string | number, { db?: TransactionDatabase }>
-}
 
 const normalizeSupabaseUserId = (value: unknown): string | null => {
   if (typeof value !== 'string') return null
@@ -21,23 +8,10 @@ const normalizeSupabaseUserId = (value: unknown): string | null => {
   return normalized.length > 0 ? normalized : null
 }
 
-async function acquireIdentityLock(req: TransactionalPayloadRequest, supabaseUserId: string): Promise<void> {
-  const transactionID = await req.transactionID
-  const adapter = req.payload.db as unknown as TransactionalDatabaseAdapter
-  const transactionDatabase = transactionID == null ? undefined : adapter.sessions?.[transactionID]?.db
-
-  if (!transactionDatabase) {
-    throw new Error('Supabase identity invariant requires an active Payload database transaction')
-  }
-
-  await transactionDatabase.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${supabaseUserId}))`)
-}
-
 /**
  * Prevents a Supabase identity from being attached to more than one direct
- * authentication collection. Payload executes collection writes in a database
- * transaction, so the transaction-scoped advisory lock serializes concurrent
- * cross-collection creates before any unique index can be bypassed by timing.
+ * authentication collection by checking each principal collection through the
+ * Payload Local API before the write proceeds.
  */
 export const enforceSupabaseIdentityInvariant: CollectionBeforeChangeHook = async ({
   collection,
@@ -49,11 +23,6 @@ export const enforceSupabaseIdentityInvariant: CollectionBeforeChangeHook = asyn
   const supabaseUserId = normalizeSupabaseUserId(data.supabaseUserId ?? originalDoc?.supabaseUserId)
   if (!supabaseUserId) return data
 
-  await acquireIdentityLock(req, supabaseUserId)
-
-  // Payload binds every query carrying `req` to the same transaction client.
-  // Run the checks sequentially because node-postgres does not support parallel
-  // queries on one client and concurrent calls can fail before the write.
   for (const candidateCollection of principalCollections) {
     const where: Where =
       operation === 'update' && candidateCollection === collection.slug && originalDoc?.id != null

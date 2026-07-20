@@ -4,6 +4,7 @@ declare global {
       PAYLOAD_SECRET: string
       DATABASE_URI: string
       NEXT_PUBLIC_SERVER_URL: string
+      CLINIC_DASHBOARD_URL: string
       VERCEL_PROJECT_PRODUCTION_URL: string
       DEPLOYMENT_ENV?: string
       NEXT_PUBLIC_DEPLOYMENT_ENV?: string

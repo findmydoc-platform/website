@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SupabaseUserConfig } from '@/auth/utilities/registration'
 import { getServerLogger } from '@/utilities/logging/serverLogger'
@@ -12,7 +12,9 @@ const registrationMock = vi.hoisted(() => ({
 const adminClient = vi.hoisted(() => ({
   auth: {
     admin: {
+      deleteUser: vi.fn(),
       inviteUserByEmail: vi.fn(),
+      listUsers: vi.fn(),
       updateUserById: vi.fn(),
     },
   },
@@ -206,5 +208,130 @@ describe('inviteSupabaseAccount', () => {
       }),
       'Failed to initialize Supabase admin client',
     )
+  })
+})
+
+describe('clinic Supabase provisioning', () => {
+  const originalDashboardUrl = process.env.CLINIC_DASHBOARD_URL
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getServerLogger).mockResolvedValue(logger)
+    process.env.CLINIC_DASHBOARD_URL = 'https://dashboard.example.com'
+    adminClient.auth.admin.inviteUserByEmail.mockResolvedValue({
+      data: {
+        user: {
+          id: 'clinic-user-id',
+          email: 'clinic@example.com',
+          app_metadata: {},
+          user_metadata: {},
+        },
+      },
+      error: null,
+    })
+    adminClient.auth.admin.listUsers.mockResolvedValue({ data: { users: [], nextPage: null }, error: null })
+    adminClient.auth.admin.updateUserById.mockResolvedValue({ data: {}, error: null })
+    adminClient.auth.admin.deleteUser.mockResolvedValue({ data: {}, error: null })
+  })
+
+  afterEach(() => {
+    if (originalDashboardUrl === undefined) Reflect.deleteProperty(process.env, 'CLINIC_DASHBOARD_URL')
+    else process.env.CLINIC_DASHBOARD_URL = originalDashboardUrl
+  })
+
+  it('sends clinic invites to the Dashboard and binds reconciliation metadata', async () => {
+    const { inviteClinicSupabaseAccount } = await actualModulePromise
+
+    await expect(
+      inviteClinicSupabaseAccount({
+        email: ' Clinic@Example.com ',
+        onboardingKey: 'clinic-application:42',
+        userMetadata: { firstName: 'Ada', lastName: 'Lovelace' },
+      }),
+    ).resolves.toBe('clinic-user-id')
+
+    expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledWith('clinic@example.com', {
+      data: {
+        first_name: 'Ada',
+        last_name: 'Lovelace',
+        onboarding_key: 'clinic-application:42',
+      },
+      redirectTo: 'https://dashboard.example.com/auth/callback?next=/auth/invite/complete',
+    })
+    expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith('clinic-user-id', {
+      app_metadata: { user_type: 'clinic' },
+      user_metadata: {
+        first_name: 'Ada',
+        last_name: 'Lovelace',
+        onboarding_key: 'clinic-application:42',
+      },
+    })
+  })
+
+  it('reconciles an unknown invite result by normalized email and onboarding key', async () => {
+    const { inviteClinicSupabaseAccount } = await actualModulePromise
+    adminClient.auth.admin.inviteUserByEmail.mockRejectedValueOnce(new Error('connection closed'))
+    adminClient.auth.admin.listUsers.mockResolvedValueOnce({
+      data: {
+        users: [
+          {
+            id: 'reconciled-id',
+            email: 'CLINIC@example.com',
+            app_metadata: {},
+            user_metadata: { onboarding_key: 'clinic-application:42' },
+          },
+        ],
+        nextPage: null,
+      },
+      error: null,
+    })
+
+    await expect(
+      inviteClinicSupabaseAccount({
+        email: 'clinic@example.com',
+        onboardingKey: 'clinic-application:42',
+      }),
+    ).resolves.toBe('reconciled-id')
+  })
+
+  it('fails closed when invite reconciliation finds no matching identity', async () => {
+    const { inviteClinicSupabaseAccount } = await actualModulePromise
+    adminClient.auth.admin.inviteUserByEmail.mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: 'already registered' },
+    })
+
+    await expect(
+      inviteClinicSupabaseAccount({
+        email: 'clinic@example.com',
+        onboardingKey: 'clinic-application:42',
+      }),
+    ).rejects.toThrow('Supabase clinic invite failed: already registered')
+  })
+
+  it('synchronizes clinic access with explicit ban and unban durations', async () => {
+    const { setClinicSupabaseAccountAccess } = await actualModulePromise
+
+    await setClinicSupabaseAccountAccess({ enabled: false, supabaseUserId: 'clinic-user-id' })
+    await setClinicSupabaseAccountAccess({ enabled: true, supabaseUserId: 'clinic-user-id' })
+
+    expect(adminClient.auth.admin.updateUserById).toHaveBeenNthCalledWith(1, 'clinic-user-id', {
+      app_metadata: { user_type: 'clinic' },
+      ban_duration: '876000h',
+    })
+    expect(adminClient.auth.admin.updateUserById).toHaveBeenNthCalledWith(2, 'clinic-user-id', {
+      app_metadata: { user_type: 'clinic' },
+      ban_duration: 'none',
+    })
+  })
+
+  it('treats an already missing offboarded identity as deleted', async () => {
+    const { deleteClinicSupabaseAccount } = await actualModulePromise
+    adminClient.auth.admin.deleteUser.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'User not found', status: 404 },
+    })
+
+    await expect(deleteClinicSupabaseAccount('clinic-user-id')).resolves.toBeUndefined()
   })
 })

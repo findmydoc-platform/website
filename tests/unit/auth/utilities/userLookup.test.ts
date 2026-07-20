@@ -5,10 +5,17 @@ import { getUserConfig } from '@/auth/config/authConfig'
 import { createMockPayload } from '../../helpers/testHelpers'
 import type { Payload } from 'payload'
 
+const accessStateMocks = vi.hoisted(() => ({
+  readClinicAccessState: vi.fn(),
+}))
+
+vi.mock('@/auth/utilities/clinicAccessState', () => accessStateMocks)
+
 const mockPayload = createMockPayload()
 
 beforeEach(() => {
   vi.clearAllMocks()
+  accessStateMocks.readClinicAccessState.mockResolvedValue(null)
 })
 
 describe('userLookup utilities', () => {
@@ -49,16 +56,11 @@ describe('userLookup utilities', () => {
     })
   })
 
-  it('requires approved clinic staff with a clinic assignment', async () => {
-    mockPayload.find.mockResolvedValue({ docs: [{ id: 12, status: 'approved', clinic: 4 }] })
+  it('requires synced clinic staff assigned to an approved clinic', async () => {
+    accessStateMocks.readClinicAccessState.mockResolvedValue({ clinic: { id: 4 }, staff: { id: 12 } })
 
     await expect(isClinicUserApproved(mockPayload as unknown as Payload, '12')).resolves.toBe(true)
-    expect(mockPayload.find).toHaveBeenCalledWith(
-      expect.objectContaining({
-        collection: 'clinicStaff',
-        where: { and: [{ id: { equals: '12' } }, { status: { equals: 'approved' } }] },
-      }),
-    )
+    expect(accessStateMocks.readClinicAccessState).toHaveBeenCalledWith(mockPayload, '12', undefined)
   })
 
   it('maps clinic authentication directly to clinicStaff', () => {

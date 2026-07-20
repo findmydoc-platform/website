@@ -2,7 +2,7 @@
  * Simple unit tests for access validation utilities.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import {
   validateClinicAccess,
   validateUserTypePermissions,
@@ -11,6 +11,12 @@ import {
 import type { Payload } from 'payload'
 import type { UserResult, UserType } from '@/auth/types/authTypes'
 import type { ClinicStaff as PayloadClinicStaff } from '@/payload-types'
+
+const accessStateMocks = vi.hoisted(() => ({
+  readClinicAccessState: vi.fn(),
+}))
+
+vi.mock('@/auth/utilities/clinicAccessState', () => accessStateMocks)
 
 type ClinicUser = PayloadClinicStaff
 type ClinicUserOverrides = Partial<ClinicUser> & { userType?: string }
@@ -45,11 +51,14 @@ const makeClinicUser = (overrides: ClinicUserOverrides = {}): ClinicUser => ({
 })
 
 describe('accessValidation utilities', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    accessStateMocks.readClinicAccessState.mockResolvedValue(null)
+  })
+
   describe('validateClinicAccess', () => {
     it('should return true for approved clinic user', async () => {
-      mockPayload.find.mockResolvedValue({
-        docs: [{ id: 'staff-123', status: 'approved' }],
-      })
+      accessStateMocks.readClinicAccessState.mockResolvedValue({ clinic: { id: 44 }, staff: { id: 123 } })
 
       const authData = {
         supabaseUserId: 'supabase-123',
@@ -83,10 +92,6 @@ describe('accessValidation utilities', () => {
     })
 
     it('should return false for non-approved clinic user', async () => {
-      mockPayload.find.mockResolvedValue({
-        docs: [],
-      })
-
       const authData = {
         supabaseUserId: 'supabase-123',
         userEmail: 'test@example.com',
@@ -133,9 +138,7 @@ describe('accessValidation utilities', () => {
 
   describe('validateUserAccess', () => {
     it('should pass comprehensive validation for approved clinic user', async () => {
-      mockPayload.find.mockResolvedValue({
-        docs: [{ id: 'staff-123', status: 'approved' }],
-      })
+      accessStateMocks.readClinicAccessState.mockResolvedValue({ clinic: { id: 44 }, staff: { id: 123 } })
 
       const authData = {
         supabaseUserId: 'supabase-123',

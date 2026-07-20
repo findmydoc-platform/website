@@ -3,7 +3,7 @@ import clinicsJson from '@/endpoints/seed/data/demo/clinics.json'
 import doctorsJson from '@/endpoints/seed/data/demo/doctors.json'
 import type { Clinic, Doctor } from '@/payload-types'
 
-type ClinicLanguage = Clinic['supportedLanguages'][number]
+type ClinicLanguage = NonNullable<Clinic['supportedLanguages']>[number]
 type ClinicStatus = NonNullable<Clinic['status']>
 type ClinicContactRole = NonNullable<NonNullable<Clinic['internalPrimaryContact']>['role']>
 type DoctorTitle = NonNullable<Doctor['title']>

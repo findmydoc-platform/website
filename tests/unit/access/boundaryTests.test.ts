@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest'
+import { beforeEach, describe, test, expect, vi } from 'vitest'
 import { createMockReq, createMockPayload } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 
@@ -9,6 +9,12 @@ import { isPatient } from '@/access/isPatient'
 import { authenticated } from '@/access/authenticated'
 import { platformOrOwnClinicResource, platformOrOwnClinicProfile } from '@/access/scopeFilters'
 
+const accessStateMocks = vi.hoisted(() => ({
+  readClinicAccessState: vi.fn(),
+}))
+
+vi.mock('@/auth/utilities/clinicAccessState', () => accessStateMocks)
+
 /**
  * Permission Boundary Tests for Access Control Functions
  *
@@ -16,6 +22,11 @@ import { platformOrOwnClinicResource, platformOrOwnClinicProfile } from '@/acces
  * that could occur due to data inconsistencies or edge cases.
  */
 describe('Permission Boundary Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    accessStateMocks.readClinicAccessState.mockResolvedValue(null)
+  })
+
   describe('User Role and Collection Mismatches', () => {
     test.each([
       {
@@ -51,7 +62,6 @@ describe('Permission Boundary Tests', () => {
   describe('Clinic Staff Assignment Edge Cases', () => {
     test('Clinic staff without clinic assignment should be denied scoped access', async () => {
       const mockPayload = createMockPayload()
-      mockPayload.find.mockResolvedValue({ docs: [] })
 
       const req = createMockReq({ id: 1, collection: 'clinicStaff' }, mockPayload)
 
@@ -60,32 +70,14 @@ describe('Permission Boundary Tests', () => {
       expect(result).toBe(false) // Scoped access fails
     })
 
-    test.each([
-      {
-        scenario: 'Clinic staff with pending assignment is denied',
-        status: 'pending',
-        clinicId: 123,
-      },
-      {
-        scenario: 'Clinic staff with rejected assignment is denied',
-        status: 'rejected',
-        clinicId: 456,
-      },
-      {
-        scenario: 'Clinic staff with approved assignment gets clinic access',
-        status: 'approved',
-        clinicId: 789,
-      },
-    ])('$scenario', async ({ status, clinicId }) => {
+    test('Clinic staff with an access-ready assignment gets clinic access', async () => {
       const mockPayload = createMockPayload()
-      mockPayload.find.mockResolvedValue({
-        docs: status === 'approved' ? [{ id: 1, clinic: clinicId, status }] : [],
-      })
+      accessStateMocks.readClinicAccessState.mockResolvedValue({ clinic: { id: 789 }, staff: { id: 1 } })
 
       const req = createMockReq({ id: 1, collection: 'clinicStaff' }, mockPayload)
 
       const result = await platformOrOwnClinicResource({ req })
-      expect(result).toEqual(status === 'approved' ? { clinic: { equals: clinicId } } : false)
+      expect(result).toEqual({ clinic: { equals: 789 } })
     })
   })
 
@@ -199,24 +191,12 @@ describe('Permission Boundary Tests', () => {
   describe('Database Error Handling', () => {
     test('Database errors should result in access denial', async () => {
       const mockPayload = createMockPayload()
-      mockPayload.find.mockRejectedValue(new Error('Database connection failed'))
+      accessStateMocks.readClinicAccessState.mockRejectedValue(new Error('Database connection failed'))
 
       const req = createMockReq({ id: 1, collection: 'clinicStaff' }, mockPayload)
 
       const result = await platformOrOwnClinicResource({ req })
       expect(result).toBe(false)
-    })
-
-    test('Non-existent clinic references should return filter anyway', async () => {
-      const mockPayload = createMockPayload()
-      mockPayload.find.mockResolvedValue({
-        docs: [{ id: 1, user: 1, clinic: 99999, status: 'approved' }],
-      })
-
-      const req = createMockReq({ id: 1, collection: 'clinicStaff' }, mockPayload)
-
-      const result = await platformOrOwnClinicResource({ req })
-      expect(result).toEqual({ clinic: { equals: 99999 } })
     })
   })
 })

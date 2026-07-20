@@ -1,24 +1,28 @@
-import { describe, it, expect, beforeAll, afterEach } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { runBaselineContract } from './contracts/baselineContract'
-import type { ClinicApplication, ClinicStaff, PlatformStaff } from '@/payload-types'
+import type { Clinic, ClinicApplication, ClinicStaff, PlatformStaff } from '@/payload-types'
+import { inviteClinicSupabaseAccount } from '@/auth/utilities/supabaseProvision'
+import { provisionClinicOnboarding } from '@/features/clinicOnboarding/provisionClinicOnboarding'
 
 type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 type PayloadUpdateArgs = Parameters<Payload['update']>[0]
 type PayloadFindArgs = Parameters<Payload['find']>[0]
 
-describe('ClinicApplications approval integration (manual provisioning era)', () => {
+describe('ClinicApplications approval integration', () => {
   let payload: Payload
   let medicalSpecialtyIds: number[] = []
   const slugPrefix = testSlug('clinicApplications.approval.test.ts')
   const createdApplicationIds: Array<number> = []
+  const createdClinicIds: Array<number> = []
   const createdClinicStaffIds: Array<number> = []
   const createdPlatformStaffIds: Array<number> = []
+  const createdOnboardingKeys: Array<string> = []
 
   const asClinicUser = (user: ClinicStaff): PayloadUser =>
     ({ ...user, collection: 'clinicStaff' }) as unknown as PayloadUser
@@ -115,7 +119,46 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
     }
   }, 60000)
 
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(inviteClinicSupabaseAccount).mockImplementation(async ({ onboardingKey }) => `sb-clinic-${onboardingKey}`)
+  })
+
   afterEach(async () => {
+    const onboardingKeys = [
+      ...createdOnboardingKeys.splice(0),
+      ...createdApplicationIds.map((id) => `clinic-application:${id}`),
+    ]
+
+    for (const onboardingKey of onboardingKeys) {
+      const [staffResult, clinicResult] = await Promise.all([
+        payload.find({
+          collection: 'clinicStaff',
+          depth: 0,
+          limit: 10,
+          overrideAccess: true,
+          pagination: false,
+          where: { onboardingKey: { equals: onboardingKey } },
+        }),
+        payload.find({
+          collection: 'clinics',
+          depth: 0,
+          limit: 10,
+          overrideAccess: true,
+          pagination: false,
+          trash: true,
+          where: { onboardingKey: { equals: onboardingKey } },
+        }),
+      ])
+
+      for (const staff of staffResult.docs) {
+        if (!createdClinicStaffIds.includes(staff.id)) createdClinicStaffIds.push(staff.id)
+      }
+      for (const clinic of clinicResult.docs) {
+        if (!createdClinicIds.includes(clinic.id)) createdClinicIds.push(clinic.id)
+      }
+    }
+
     while (createdApplicationIds.length) {
       const id = createdApplicationIds.pop()
       if (!id) continue
@@ -132,6 +175,14 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
       } catch {}
     }
 
+    while (createdClinicIds.length) {
+      const id = createdClinicIds.pop()
+      if (!id) continue
+      try {
+        await payload.delete({ collection: 'clinics', id, overrideAccess: true })
+      } catch {}
+    }
+
     while (createdPlatformStaffIds.length) {
       const id = createdPlatformStaffIds.pop()
       if (!id) continue
@@ -141,7 +192,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
     }
   }, 30000)
 
-  it('creates application and allows manual approval status change (no auto-provisioning)', async () => {
+  it('materializes a pending clinic and initial staff principal after approval', async () => {
     const email = `${slugPrefix}-approval@example.com`
     const app = (await payload.create({
       collection: 'clinicApplications',
@@ -158,15 +209,13 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
     expect(app.id).toBeDefined()
     expect(app.status).toBe('submitted')
 
-    const approved = (await payload.update({
+    await payload.update({
       collection: 'clinicApplications',
       id: app.id,
       data: { status: 'approved' },
       overrideAccess: true,
       depth: 0,
-    } as PayloadUpdateArgs)) as ClinicApplication
-
-    expect(approved.status).toBe('approved')
+    } as PayloadUpdateArgs)
 
     const appAfter = (await payload.findByID({
       collection: 'clinicApplications',
@@ -175,9 +224,183 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
       depth: 0,
     })) as ClinicApplication
 
-    const links = appAfter.linkedRecords
-    expect(links?.clinic ?? null).toBeFalsy()
-    expect(links?.clinicStaff ?? null).toBeFalsy()
+    expect(appAfter.status).toBe('approved')
+    expect(appAfter.provisioningStatus).toBe('completed')
+    expect(appAfter.provisioningErrorCode ?? null).toBeNull()
+
+    const clinicId = extractRelationId(appAfter.linkedRecords?.clinic)
+    const clinicStaffId = extractRelationId(appAfter.linkedRecords?.clinicStaff)
+    expect(clinicId).not.toBeNull()
+    expect(clinicStaffId).not.toBeNull()
+    expect(appAfter.linkedRecords?.processedAt).toBeTruthy()
+    expect('basicUsers' in (appAfter.linkedRecords ?? {})).toBe(false)
+
+    const [clinic, clinicStaff] = await Promise.all([
+      payload.findByID({ collection: 'clinics', id: clinicId!, overrideAccess: true, depth: 0 }),
+      payload.findByID({ collection: 'clinicStaff', id: clinicStaffId!, overrideAccess: true, depth: 0 }),
+    ])
+    expect((clinic as Clinic).status).toBe('pending')
+    expect((clinic as Clinic).internalPrimaryContact?.email).toBe(email)
+    expect(clinicStaff as ClinicStaff).toMatchObject({
+      email,
+      status: 'pending',
+      authSync: { status: 'synced' },
+    })
+
+    await payload.update({
+      collection: 'clinicApplications',
+      id: app.id,
+      data: { reviewNotes: 'No duplicate provisioning.' },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadUpdateArgs)
+
+    const [clinics, staff] = await Promise.all([
+      payload.find({
+        collection: 'clinics',
+        depth: 0,
+        limit: 10,
+        overrideAccess: true,
+        pagination: false,
+        where: { onboardingKey: { equals: `clinic-application:${app.id}` } },
+      }),
+      payload.find({
+        collection: 'clinicStaff',
+        depth: 0,
+        limit: 10,
+        overrideAccess: true,
+        pagination: false,
+        where: { onboardingKey: { equals: `clinic-application:${app.id}` } },
+      }),
+    ])
+    expect(clinics.docs).toHaveLength(1)
+    expect(staff.docs).toHaveLength(1)
+    expect(inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
+  }, 45000)
+
+  it('keeps retry-created records traceable after an invite failure', async () => {
+    const email = `${slugPrefix}-resume@example.com`
+    const app = (await payload.create({
+      collection: 'clinicApplications',
+      data: buildApplicationData(email),
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as ClinicApplication
+    createdApplicationIds.push(app.id)
+    vi.mocked(inviteClinicSupabaseAccount).mockRejectedValueOnce(new Error('temporary auth failure'))
+
+    await payload.update({
+      collection: 'clinicApplications',
+      id: app.id,
+      data: { status: 'approved' },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadUpdateArgs)
+
+    const failed = (await payload.findByID({
+      collection: 'clinicApplications',
+      id: app.id,
+      overrideAccess: true,
+      depth: 0,
+    })) as ClinicApplication
+    expect(failed.provisioningStatus).toBe('failed')
+    expect(failed.provisioningErrorCode).toBe('auth_failed')
+
+    await payload.update({
+      collection: 'clinicApplications',
+      id: app.id,
+      data: { reviewNotes: 'This must not retry provisioning.' },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadUpdateArgs)
+
+    const stillFailed = (await payload.findByID({
+      collection: 'clinicApplications',
+      id: app.id,
+      overrideAccess: true,
+      depth: 0,
+    })) as ClinicApplication
+    expect(stillFailed.provisioningStatus).toBe('failed')
+    expect(inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
+
+    await payload.update({
+      collection: 'clinicApplications',
+      id: app.id,
+      data: { contactLastName: 'Retried Tester' },
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadUpdateArgs)
+
+    const completed = (await payload.findByID({
+      collection: 'clinicApplications',
+      id: app.id,
+      overrideAccess: true,
+      depth: 0,
+    })) as ClinicApplication
+    expect(completed.provisioningStatus).toBe('completed')
+    expect(completed.provisioningErrorCode ?? null).toBeNull()
+
+    const [clinics, staff] = await Promise.all([
+      payload.find({
+        collection: 'clinics',
+        depth: 0,
+        limit: 10,
+        overrideAccess: true,
+        pagination: false,
+        where: { onboardingKey: { equals: `clinic-application:${app.id}` } },
+      }),
+      payload.find({
+        collection: 'clinicStaff',
+        depth: 0,
+        limit: 10,
+        overrideAccess: true,
+        pagination: false,
+        where: { onboardingKey: { equals: `clinic-application:${app.id}` } },
+      }),
+    ])
+    expect(clinics.docs).toHaveLength(2)
+    expect(staff.docs).toHaveLength(2)
+    expect(inviteClinicSupabaseAccount).toHaveBeenCalledTimes(2)
+  }, 45000)
+
+  it('allows repeated generic onboarding commands to leave traceable duplicate records', async () => {
+    const onboardingKey = `${slugPrefix}:duplicate`
+    createdOnboardingKeys.push(onboardingKey)
+    const command = {
+      onboardingKey,
+      clinicName: 'Duplicate Clinic',
+      website: 'https://duplicate-clinic.example',
+      contactFirstName: 'Grace',
+      contactLastName: 'Hopper',
+      contactEmail: `${slugPrefix}-duplicate@example.com`,
+      contactRole: 'Clinic Management' as const,
+    }
+
+    await provisionClinicOnboarding(payload, command)
+    await expect(provisionClinicOnboarding(payload, command)).rejects.toMatchObject({ code: 'binding_failed' })
+
+    const [clinics, staff] = await Promise.all([
+      payload.find({
+        collection: 'clinics',
+        depth: 0,
+        limit: 10,
+        overrideAccess: true,
+        pagination: false,
+        where: { onboardingKey: { equals: onboardingKey } },
+      }),
+      payload.find({
+        collection: 'clinicStaff',
+        depth: 0,
+        limit: 10,
+        overrideAccess: true,
+        pagination: false,
+        where: { onboardingKey: { equals: onboardingKey } },
+      }),
+    ])
+
+    expect(clinics.docs).toHaveLength(2)
+    expect(staff.docs).toHaveLength(2)
+    expect(inviteClinicSupabaseAccount).toHaveBeenCalledTimes(2)
   }, 45000)
 
   it('blocks public collection create outside the controlled API route', async () => {
@@ -262,7 +485,7 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
     ).rejects.toThrow()
   })
 
-  it('allows linkedRecords updates after status changes', async () => {
+  it('keeps linked records system-owned', async () => {
     const email = `${slugPrefix}-linked@example.com`
     const app = (await payload.create({
       collection: 'clinicApplications',
@@ -276,12 +499,11 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
     expect(app.linkedRecords?.processedAt ?? null).toBeNull()
 
     const platformUser = await createPlatformUser('linked-records')
-    const processedAt = new Date().toISOString()
+    const processedAt = '2020-01-01T00:00:00.000Z'
     const updated = (await payload.update({
       collection: 'clinicApplications',
       id: app.id,
       data: {
-        status: 'approved',
         linkedRecords: { processedAt },
       },
       user: asPlatformUser(platformUser),
@@ -289,8 +511,8 @@ describe('ClinicApplications approval integration (manual provisioning era)', ()
       depth: 0,
     } as PayloadUpdateArgs)) as ClinicApplication
 
-    expect(updated.status).toBe('approved')
-    expect(updated.linkedRecords?.processedAt).toBeTruthy()
+    expect(updated.status).toBe('submitted')
+    expect(updated.linkedRecords?.processedAt ?? null).toBeNull()
   })
 
   it('matches the baseline collection contract', async () => {

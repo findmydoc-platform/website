@@ -523,6 +523,7 @@ export interface Tag {
 export interface Clinic {
   id: number;
   stableId?: string | null;
+  onboardingKey?: string | null;
   /**
    * Clinic name shown to patients
    */
@@ -579,27 +580,27 @@ export interface Clinic {
   /**
    * Clinic address
    */
-  address: {
+  address?: {
     /**
      * Country where the clinic is located
      */
-    country: string;
+    country?: string | null;
     /**
      * Street name
      */
-    street: string;
+    street?: string | null;
     /**
      * Building or suite number
      */
-    houseNumber: string;
+    houseNumber?: string | null;
     /**
      * Postal code
      */
-    zipCode: number;
+    zipCode?: number | null;
     /**
      * City where the clinic is located
      */
-    city: number | City;
+    city?: (number | null) | City;
   };
   /**
    * Clinic contact details
@@ -625,19 +626,19 @@ export interface Clinic {
     /**
      * Given name of the first contact
      */
-    firstName: string;
+    firstName?: string | null;
     /**
      * Family name of the first contact
      */
-    lastName: string;
+    lastName?: string | null;
     /**
      * Email for internal follow-up
      */
-    email: string;
+    email?: string | null;
     /**
      * Role of the first contact
      */
-    role: 'Medical Director' | 'Clinic Management' | 'International Office';
+    role?: ('Medical Director' | 'Clinic Management' | 'International Office') | null;
   };
   /**
    * Clinic accreditations
@@ -654,20 +655,22 @@ export interface Clinic {
   /**
    * Languages the clinic supports
    */
-  supportedLanguages: (
-    | 'german'
-    | 'english'
-    | 'french'
-    | 'spanish'
-    | 'italian'
-    | 'turkish'
-    | 'russian'
-    | 'arabic'
-    | 'chinese'
-    | 'japanese'
-    | 'korean'
-    | 'portuguese'
-  )[];
+  supportedLanguages?:
+    | (
+        | 'german'
+        | 'english'
+        | 'french'
+        | 'spanish'
+        | 'italian'
+        | 'turkish'
+        | 'russian'
+        | 'arabic'
+        | 'chinese'
+        | 'japanese'
+        | 'korean'
+        | 'portuguese'
+      )[]
+    | null;
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -1083,6 +1086,7 @@ export interface ClinicStaff {
   id: number;
   stableId?: string | null;
   supabaseUserId?: string | null;
+  onboardingKey?: string | null;
   email?: string | null;
   firstName?: string | null;
   lastName?: string | null;
@@ -1094,7 +1098,14 @@ export interface ClinicStaff {
   /**
    * Staff approval status
    */
-  status?: ('pending' | 'approved' | 'rejected') | null;
+  status?: ('pending' | 'approved' | 'rejected' | 'disabled' | 'offboarded') | null;
+  /**
+   * Current consistency between this principal and Supabase Auth
+   */
+  authSync?: {
+    status?: ('pending' | 'synced' | 'failed' | 'deleted') | null;
+    errorCode?: ('missing_identity' | 'account_update_failed' | 'account_delete_failed') | null;
+  };
   updatedAt: string;
   createdAt: string;
   collection: 'clinicStaff';
@@ -2251,7 +2262,15 @@ export interface ClinicApplication {
    */
   reviewNotes?: string | null;
   /**
-   * Clinic, user, and staff records created after approval
+   * Provisioning result; saving a failed approved application retries the process
+   */
+  provisioningStatus?: ('not_started' | 'failed' | 'completed') | null;
+  /**
+   * Stable failure category for retry and support
+   */
+  provisioningErrorCode?: ('record_failed' | 'auth_failed' | 'binding_failed') | null;
+  /**
+   * Clinic and staff records created after approval
    */
   linkedRecords?: {
     clinic?: (number | null) | Clinic;
@@ -3812,12 +3831,19 @@ export interface PatientsSelect<T extends boolean = true> {
 export interface ClinicStaffSelect<T extends boolean = true> {
   stableId?: T;
   supabaseUserId?: T;
+  onboardingKey?: T;
   email?: T;
   firstName?: T;
   lastName?: T;
   profileImage?: T;
   clinic?: T;
   status?: T;
+  authSync?:
+    | T
+    | {
+        status?: T;
+        errorCode?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3850,6 +3876,8 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
   medicalSpecialties?: T;
   status?: T;
   reviewNotes?: T;
+  provisioningStatus?: T;
+  provisioningErrorCode?: T;
   linkedRecords?:
     | T
     | {
@@ -3904,6 +3932,7 @@ export interface PatientClinicInquiriesSelect<T extends boolean = true> {
  */
 export interface ClinicsSelect<T extends boolean = true> {
   stableId?: T;
+  onboardingKey?: T;
   name?: T;
   averageRating?: T;
   description?: T;

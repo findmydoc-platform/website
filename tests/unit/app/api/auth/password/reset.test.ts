@@ -5,6 +5,20 @@ import { getServerLogger } from '@/utilities/logging/serverLogger'
 import { NextRequest } from 'next/server'
 import { SupabaseClient } from '@supabase/supabase-js'
 
+const routeMocks = vi.hoisted(() => ({
+  getPayload: vi.fn(),
+  resolvePasswordResetTarget: vi.fn(),
+}))
+
+vi.mock('payload', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('payload')>()),
+  getPayload: routeMocks.getPayload,
+}))
+
+vi.mock('@/auth/utilities/passwordResetTarget', () => ({
+  resolvePasswordResetTarget: routeMocks.resolvePasswordResetTarget,
+}))
+
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createClient: vi.fn(),
 }))
@@ -30,16 +44,23 @@ describe('POST /api/auth/password/reset', () => {
   }
 
   const originalServerUrl = process.env.NEXT_PUBLIC_SERVER_URL
+  const originalClinicDashboardUrl = process.env.CLINIC_DASHBOARD_URL
 
   beforeEach(() => {
     vi.clearAllMocks()
+    routeMocks.getPayload.mockResolvedValue({})
+    routeMocks.resolvePasswordResetTarget.mockResolvedValue('website')
     vi.mocked(createClient).mockResolvedValue(mockSupabaseClient as unknown as SupabaseClient)
     vi.mocked(getServerLogger).mockResolvedValue(logger)
     process.env.NEXT_PUBLIC_SERVER_URL = 'http://localhost:3000'
+    process.env.CLINIC_DASHBOARD_URL = 'https://dashboard.example.com'
   })
 
   afterEach(() => {
-    process.env.NEXT_PUBLIC_SERVER_URL = originalServerUrl
+    if (originalServerUrl === undefined) Reflect.deleteProperty(process.env, 'NEXT_PUBLIC_SERVER_URL')
+    else process.env.NEXT_PUBLIC_SERVER_URL = originalServerUrl
+    if (originalClinicDashboardUrl === undefined) Reflect.deleteProperty(process.env, 'CLINIC_DASHBOARD_URL')
+    else process.env.CLINIC_DASHBOARD_URL = originalClinicDashboardUrl
     vi.clearAllMocks()
   })
 
@@ -79,6 +100,41 @@ describe('POST /api/auth/password/reset', () => {
     expect(mockSupabaseClient.auth.resetPasswordForEmail).toHaveBeenCalledWith('operator@findmydoc.eu', {
       redirectTo: 'http://localhost:3000/auth/callback?next=/auth/password/reset/complete',
     })
+  })
+
+  it('routes eligible clinic password resets to the Clinic Dashboard', async () => {
+    routeMocks.resolvePasswordResetTarget.mockResolvedValueOnce('dashboard')
+    mockSupabaseClient.auth.resetPasswordForEmail.mockResolvedValue({ error: null })
+
+    const request = new NextRequest('http://localhost/api/auth/password/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'clinic@example.com' }),
+    })
+
+    const response = await POST(request)
+
+    expect(response.status).toBe(200)
+    expect(mockSupabaseClient.auth.resetPasswordForEmail).toHaveBeenCalledWith('clinic@example.com', {
+      redirectTo: 'https://dashboard.example.com/auth/callback?next=/auth/password/reset/complete',
+    })
+  })
+
+  it('suppresses resets for blocked or ambiguous clinic identities', async () => {
+    routeMocks.resolvePasswordResetTarget.mockResolvedValueOnce('suppress')
+
+    const request = new NextRequest('http://localhost/api/auth/password/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'blocked-clinic@example.com' }),
+    })
+
+    const response = await POST(request)
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ success: true })
+    expect(createClient).not.toHaveBeenCalled()
+    expect(mockSupabaseClient.auth.resetPasswordForEmail).not.toHaveBeenCalled()
   })
 
   it('returns validation errors for invalid payloads', async () => {

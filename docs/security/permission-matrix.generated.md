@@ -12,7 +12,7 @@
 | Redirects `(redirects)` | Platform | Anyone | Platform | Platform | Platform |
 | Search `(search)` | Conditional<br/><sub>disabled for direct writes; internal search sync only</sub> | Anyone | Platform | Platform | Platform |
 | PlatformStaff `(platformStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Platform | Platform | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform |
-| ClinicStaff `(clinicStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform + own profile after approval; user, clinic, and status fields are platform-only</sub> | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform |
+| ClinicStaff `(clinicStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform + own profile only when staff and clinic are access-ready; clinic, lifecycle, identity, and sync fields are system/platform controlled</sub> | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform |
 | Patients `(patients)` | Platform | Conditional<br/><sub>platform full + patient own profile</sub> | Conditional<br/><sub>platform full + own profile only</sub> | Platform | Platform |
 | Posts `(posts)` | Platform | Published (approved) | Platform | Platform | Platform |
 | Pages `(pages)` | Platform | Published (approved) | Platform | Platform | Platform |
@@ -48,7 +48,7 @@
 - **Redirects**: Public redirect rules with platform-only management
 - **Search**: Public search index with platform management and internal-only document creation
 - **PlatformStaff**: Platform staff review safe identity fields and manage roles; identity bindings and create/delete remain provisioning-only
-- **ClinicStaff**: Platform staff review safe identity fields and manage clinic/status; clinic staff read their clinic; identity bindings and create/delete remain provisioning-only
+- **ClinicStaff**: Platform staff manage clinic assignment and lifecycle; approved and synced staff read their approved clinic; identity binding, auth sync, and create/delete remain provisioning-only
 - **Patients**: Patients can update own profile; no self-create/delete
 - **Posts**: Blog content - platform write, published content readable by all
 - **Pages**: Static pages - platform write, published content readable by all
@@ -72,5 +72,5 @@
 - **Tags**: Supporting data - platform write, everyone read
 - **Categories**: Supporting data - platform write, everyone read
 - **Accreditation**: Supporting data - platform write, everyone read
-- **ClinicApplications**: Intake/applications - public submissions use the controlled API route only, platform moderation
+- **ClinicApplications**: Public submissions use the controlled API route; platform approval creates a pending clinic and initial clinic staff principal with duplicate-write observability
 - **PatientClinicInquiries**: Patient-to-clinic inquiry queue - public submissions use the controlled API route only

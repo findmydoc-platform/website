@@ -1,5 +1,33 @@
 # Supabase Authentication Flows by Application Surface
 
+## Clinic Onboarding and Access Activation
+
+```mermaid
+sequenceDiagram
+    actor Platform as Platform Staff
+    participant Application as Clinic Application
+    participant Payload as Payload Onboarding Service
+    participant Collections as Payload Collections
+    participant Supabase as Supabase Auth
+    participant Dashboard as Clinic Dashboard
+
+    Platform->>Application: Approve registration request
+    Application->>Payload: Provision with stable onboarding key
+    Payload->>Collections: Create pending clinic and clinicStaff through Local API
+    Payload->>Collections: Check key after creation and warn on duplicates
+    Payload->>Supabase: Invite or reconcile clinic identity
+    Supabase-->>Dashboard: Invitation callback target
+    Payload->>Collections: Bind Supabase id and mark auth sync as synced
+    Payload->>Application: Store completed links or retryable failure
+    Note over Dashboard,DB: Authentication may complete, but business access remains denied
+    Platform->>Collections: Complete and approve clinic; approve clinicStaff
+    Collections-->>Dashboard: Access becomes eligible on the next fresh Payload check
+```
+
+`clinicApplications` is the current trigger and audit record, not a permanent relationship on the clinic. A future CRM
+can replace the trigger by sending the same stable onboarding command. Partial and repeated records retain that key;
+Payload emits a structured warning when one execution source resolves to multiple clinics or staff principals.
+
 ## Clinic Dashboard
 
 ```mermaid
@@ -21,8 +49,8 @@ sequenceDiagram
     Browser->>BFF: Request Dashboard data
     BFF->>Payload: Bearer access token
     Payload->>Payload: Validate token and select clinicStaff
-    Payload->>DB: Read current status, clinic, and permissions
-    alt Approved and assigned
+    Payload->>DB: Read staff status, auth sync, clinic status, and permissions
+    alt Staff and clinic are access-ready
         DB-->>Payload: Current clinic principal
         Payload-->>BFF: Purpose-specific DTO
         BFF-->>Browser: Private no-store response
@@ -82,6 +110,7 @@ The Dashboard decision does not change the patient portal session or ensure-on-a
 
 ## Shared Authorization Facts
 
-The Supabase claim chooses a principal collection only. Payload reads the current platform role, clinic relation, and
-clinic approval status from the resolved principal for every request. Staff principals are provisioned before login;
-patients retain ensure-on-auth. Missing, duplicate, or conflicting principals fail closed.
+The Supabase claim chooses a principal collection only. Payload reads the current platform role, staff lifecycle and
+auth synchronization state, clinic relation, and clinic approval/deletion state from the resolved principal for every
+request. Staff principals are provisioned before login; patients retain ensure-on-auth. Missing, duplicate,
+conflicting, or unsynchronized principals fail closed.

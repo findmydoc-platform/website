@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/auth/utilities/supaBaseServer'
 import { getSupabaseLogger } from '@/auth/utilities/supabaseLogger'
+import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
+import { resolvePasswordResetTarget } from '@/auth/utilities/passwordResetTarget'
 import { hashLogValue, toLoggedError } from '@/utilities/logging/shared'
+import configPromise from '@/payload.config'
+import { getPayload } from 'payload'
 
 const requestSchema = z.object({
   email: z.string().email(),
@@ -27,7 +31,16 @@ export async function POST(request: NextRequest) {
     }
 
     requestedEmail = validation.data.email
-    const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
+    const payload = await getPayload({ config: configPromise })
+    const resetTarget = await resolvePasswordResetTarget(payload, validation.data.email)
+    if (resetTarget === 'suppress') {
+      return NextResponse.json({ success: true })
+    }
+
+    const baseUrl =
+      resetTarget === 'dashboard'
+        ? getClinicDashboardOrigin()
+        : process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
     // Redirect to callback route which handles PKCE code exchange
     const redirectTo = `${baseUrl}/auth/callback?next=/auth/password/reset/complete`
 

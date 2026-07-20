@@ -10,6 +10,7 @@ import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import type { Payload, PayloadRequest } from 'payload'
 import type { ClinicStaff, Patient, PlatformStaff } from '@/payload-types'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
+import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 
 /**
  * Finds an existing user by Supabase ID in the appropriate collection.
@@ -111,15 +112,7 @@ export async function isClinicUserApproved(
   })
 
   try {
-    const clinicStaffResult = await payload.find({
-      collection: 'clinicStaff',
-      where: { and: [{ id: { equals: userId } }, { status: { equals: 'approved' } }] },
-      limit: 1,
-      overrideAccess: true,
-      req,
-    })
-
-    return clinicStaffResult.docs.length > 0
+    return Boolean(await readClinicAccessState(payload, userId, req))
   } catch (error: unknown) {
     activeLogger.error(
       {

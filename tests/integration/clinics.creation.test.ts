@@ -13,7 +13,6 @@ vi.mock('@payloadcms/storage-s3', () => ({
 
 describe('Clinic Creation Integration Tests', () => {
   let payload: Payload
-  type PayloadCreateArgs = Parameters<Payload['create']>[0]
   const slugPrefix = testSlug('clinics.creation.test.ts')
   let cityId: number
   let tagId: number
@@ -166,7 +165,7 @@ describe('Clinic Creation Integration Tests', () => {
 
     expect(clinic.id).toBeDefined()
     expect(clinic.name).toBe(`${slugPrefix}-basic-clinic`)
-    expect(clinic.address.city).toBe(cityId)
+    expect(clinic.address?.city).toBe(cityId)
     expect(clinic.contact?.email).toBe(`${slugPrefix}@test.com`)
     expect(clinic.status).toBe('draft')
     expect(clinic.supportedLanguages).toEqual(['english', 'turkish'])
@@ -369,50 +368,53 @@ describe('Clinic Creation Integration Tests', () => {
     expect(thumbnailId).toBe(clinicMedia.id)
   })
 
-  it('validates required fields when creating a clinic', async () => {
-    await expect(
-      payload.create({
-        collection: 'clinics',
-        data: {
-          name: `${slugPrefix}-invalid-clinic`,
-          // Missing required address fields
-          supportedLanguages: ['english'],
-          status: 'draft',
-          slug: `${slugPrefix}-invalid-clinic`,
-        } as Partial<Clinic>,
-        draft: false,
-        overrideAccess: true,
-        depth: 0,
-      } as PayloadCreateArgs),
-    ).rejects.toThrow()
+  it('allows an incomplete pending clinic during onboarding', async () => {
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-pending-clinic`,
+        contact: { website: 'https://pending-clinic.example' },
+        status: 'pending',
+        slug: `${slugPrefix}-pending-clinic`,
+      },
+      draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(clinic.status).toBe('pending')
+    expect(clinic.address).toEqual({
+      city: null,
+      country: null,
+      houseNumber: null,
+      street: null,
+      zipCode: null,
+    })
   })
 
-  it('validates the internal primary contact when creating a clinic', async () => {
+  it('requires complete operational data before a clinic can be approved', async () => {
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-incomplete-approval`,
+        contact: { website: 'https://incomplete-approval.example' },
+        status: 'pending',
+        slug: `${slugPrefix}-incomplete-approval`,
+      },
+      draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
     await expect(
-      payload.create({
+      payload.update({
         collection: 'clinics',
-        data: {
-          name: `${slugPrefix}-missing-primary-contact`,
-          address: {
-            street: 'Primary Contact Street',
-            houseNumber: '12',
-            zipCode: 34000,
-            country: 'Turkey',
-            city: cityId,
-          },
-          contact: {
-            phoneNumber: '+90 555 1234567',
-            email: `${slugPrefix}-missing-primary-contact@test.com`,
-          },
-          supportedLanguages: ['english'],
-          status: 'draft',
-          slug: `${slugPrefix}-missing-primary-contact`,
-        },
-        draft: false,
+        id: clinic.id,
+        data: { status: 'approved' },
         overrideAccess: true,
         depth: 0,
       }),
-    ).rejects.toThrow()
+    ).rejects.toThrow(/complete address, internal primary contact, and at least one supported language/i)
   })
 
   it('validates email format in contact information', async () => {
@@ -570,7 +572,7 @@ describe('Clinic Creation Integration Tests', () => {
         },
         internalPrimaryContact: buildInternalPrimaryContact('status'),
         supportedLanguages: ['english'],
-        status: 'draft',
+        status: 'approved',
         slug: `${slugPrefix}-status-clinic`,
       },
       draft: false,
@@ -584,7 +586,7 @@ describe('Clinic Creation Integration Tests', () => {
       collection: 'clinics',
       id: clinic.id,
       data: {
-        status: 'approved',
+        status: 'rejected',
         verification: 'gold',
       },
       user: clinicUser,
@@ -592,7 +594,7 @@ describe('Clinic Creation Integration Tests', () => {
       depth: 0,
     })) as Clinic
 
-    expect(updatedClinic.status).toBe('draft')
+    expect(updatedClinic.status).toBe('approved')
     expect(updatedClinic.verification).toBe('unverified')
   })
 

@@ -1,7 +1,8 @@
-import type { Clinic, ClinicStaff } from '@/payload-types'
+import type { ClinicStaff } from '@/payload-types'
 import { AUTH_FLOW_ERROR_CODES, isAuthFlowError } from '@/auth/errors/authFlowError'
 import { extractTokenFromHeader, validateSupabaseBearerToken } from '@/auth/utilities/jwtValidation'
 import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
+import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import type { PayloadRequest } from 'payload'
 import { toLoggedError } from '@/utilities/logging/shared'
 
@@ -29,12 +30,6 @@ export type ClinicDashboardBootstrapResult =
   | { status: 'access-denied' }
   | { status: 'unavailable' }
 
-const relationId = (relation: ClinicStaff['clinic']): number | string | null => {
-  if (typeof relation === 'number' || typeof relation === 'string') return relation
-  if (relation && typeof relation === 'object' && 'id' in relation) return relation.id
-  return null
-}
-
 const displayName = (staff: ClinicStaff): string => {
   const name = [staff.firstName, staff.lastName]
     .map((value) => value?.trim())
@@ -56,20 +51,6 @@ const readCurrentClinicStaff = async (req: PayloadRequest, id: number | string):
   })
 
   return (result.docs[0] as ClinicStaff | undefined) ?? null
-}
-
-const readAssignedClinic = async (req: PayloadRequest, id: number | string): Promise<Clinic | null> => {
-  const result = await req.payload.find({
-    collection: 'clinics',
-    depth: 0,
-    limit: 1,
-    overrideAccess: true,
-    pagination: false,
-    req,
-    where: { id: { equals: id } },
-  })
-
-  return (result.docs[0] as Clinic | undefined) ?? null
 }
 
 export async function resolveClinicDashboardBootstrap(req: PayloadRequest): Promise<ClinicDashboardBootstrapResult> {
@@ -104,14 +85,14 @@ export async function resolveClinicDashboardBootstrap(req: PayloadRequest): Prom
   }
 
   try {
-    const staff = await readCurrentClinicStaff(req, principalId)
-    if (!staff?.id || !staff.email) return { status: 'unauthorized' }
+    const accessState = await readClinicAccessState(req.payload, principalId, req)
+    if (!accessState) {
+      const staff = await readCurrentClinicStaff(req, principalId)
+      return staff?.id && staff.email ? { status: 'access-denied' } : { status: 'unauthorized' }
+    }
 
-    const clinicId = relationId(staff.clinic)
-    if (staff.status !== 'approved' || clinicId === null) return { status: 'access-denied' }
-
-    const clinic = await readAssignedClinic(req, clinicId)
-    if (!clinic?.id || !clinic.name?.trim()) return { status: 'access-denied' }
+    const { clinic, staff } = accessState
+    if (!staff.email || !clinic.name?.trim()) return { status: 'access-denied' }
 
     return {
       status: 'success',

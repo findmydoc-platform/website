@@ -20,7 +20,7 @@ sequenceDiagram
     Payload->>Collections: Bind Supabase id and mark auth sync as synced
     Payload->>Application: Store completed links or retryable failure
     Note over Dashboard,DB: Authentication may complete, but business access remains denied
-    Platform->>Collections: Complete and approve clinic; approve clinicStaff
+    Platform->>Collections: Complete and approve clinic and clinicStaff
     Collections-->>Dashboard: Access becomes eligible on the next fresh Payload check
 ```
 

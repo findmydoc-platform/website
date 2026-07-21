@@ -47,6 +47,7 @@ import * as migration_20260715_200710_landing_subscription_pricing_compatibility
 import * as migration_20260719_195546_direct_staff_auth_snapshot_alignment from './20260719_195546_direct_staff_auth_snapshot_alignment'
 import * as migration_20260720_095925_clinic_onboarding_lifecycle from './20260720_095925_clinic_onboarding_lifecycle'
 import * as migration_20260720_130148_clinic_onboarding_observability from './20260720_130148_clinic_onboarding_observability'
+import * as migration_20260721_121344_disable_clinic_gallery_mcp from './20260721_121344_disable_clinic_gallery_mcp'
 import * as migration_20260721_133332_doctor_availability_and_geo_point_order from './20260721_133332_doctor_availability_and_geo_point_order'
 
 export const migrations = [
@@ -294,6 +295,11 @@ export const migrations = [
     up: migration_20260720_130148_clinic_onboarding_observability.up,
     down: migration_20260720_130148_clinic_onboarding_observability.down,
     name: '20260720_130148_clinic_onboarding_observability',
+  },
+  {
+    up: migration_20260721_121344_disable_clinic_gallery_mcp.up,
+    down: migration_20260721_121344_disable_clinic_gallery_mcp.down,
+    name: '20260721_121344_disable_clinic_gallery_mcp',
   },
   {
     up: migration_20260721_133332_doctor_availability_and_geo_point_order.up,

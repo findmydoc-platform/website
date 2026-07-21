@@ -186,6 +186,7 @@ async function isDoctorAvailableForClinic(
     pagination: false,
     select: {
       id: true,
+      active: true,
       clinic: true,
     },
     where: {
@@ -198,6 +199,11 @@ async function isDoctorAvailableForClinic(
         {
           clinic: {
             equals: clinicId,
+          },
+        },
+        {
+          active: {
+            equals: true,
           },
         },
       ],

@@ -31,8 +31,8 @@ function normalizeVerification(value: unknown): VerificationBadgeVariant {
 function mapLocationHref(coordinates: unknown): string | undefined {
   if (!Array.isArray(coordinates) || coordinates.length !== 2) return undefined
 
-  const lat = Number(coordinates[0])
-  const lng = Number(coordinates[1])
+  const lng = Number(coordinates[0])
+  const lat = Number(coordinates[1])
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return undefined
 
   return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}`

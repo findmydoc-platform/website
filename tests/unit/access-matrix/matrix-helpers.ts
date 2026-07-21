@@ -47,6 +47,7 @@ export type ConditionalScenarioKind =
   | 'user-profile-media-own'
   | 'user-profile-media-create'
   | 'clinic-gallery-read'
+  | 'clinic-or-active'
 
 export interface ConditionalScenarioMeta {
   kind: ConditionalScenarioKind
@@ -247,6 +248,7 @@ type ConditionalScenario =
   | { kind: 'user-profile-media-own' }
   | { kind: 'user-profile-media-create' }
   | { kind: 'clinic-gallery-read'; path: string; status?: string; statusField?: string }
+  | { kind: 'clinic-or-active'; path: string; activePath: string }
 function getCollectionMeta(collectionSlug: string): CollectionMeta | undefined {
   return getMatrixRow(collectionSlug).meta
 }
@@ -292,6 +294,12 @@ function convertMetaToScenario(config: ConditionalScenarioMeta): ConditionalScen
         path: config.path ?? 'clinic',
         status: config.value ?? 'published',
         statusField: config.statusPath ?? 'status',
+      }
+    case 'clinic-or-active':
+      return {
+        kind: 'clinic-or-active',
+        path: config.path ?? 'clinic',
+        activePath: config.statusPath ?? 'active',
       }
     case 'always-false':
       return { kind: 'always-false' }
@@ -671,6 +679,29 @@ function validateConditional(ctx: ValidationContext, value: unknown) {
         const expectedStatus = scenario.status ?? 'published'
         const statusField = scenario.statusField ?? 'status'
         expectFilter(value, statusField, expectedStatus, ctx)
+      }
+      return
+    case 'clinic-or-active':
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+      } else if (ctx.userType === 'clinic') {
+        const clinicId = getClinicIdFromUser(ctx.user)
+        expect(value).toEqual({
+          or: [
+            {
+              [scenario.activePath]: {
+                equals: true,
+              },
+            },
+            {
+              [scenario.path]: {
+                equals: clinicId,
+              },
+            },
+          ],
+        })
+      } else {
+        expectFilter(value, scenario.activePath, true, ctx)
       }
       return
   }

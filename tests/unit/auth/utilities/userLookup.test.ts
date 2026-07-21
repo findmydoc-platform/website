@@ -35,13 +35,14 @@ describe('userLookup utilities', () => {
       1,
       expect.objectContaining({ collection: 'clinicStaff', where: { supabaseUserId: { equals: 'supabase-123' } } }),
     )
+    expect(mockPayload.find).toHaveBeenNthCalledWith(2, expect.objectContaining({ collection: 'platformStaff' }))
+    expect(mockPayload.find).toHaveBeenNthCalledWith(3, expect.objectContaining({ collection: 'patients' }))
   })
 
   it('fails closed when the identity also resolves in another principal collection', async () => {
-    mockPayload.find
-      .mockResolvedValueOnce({ docs: [{ id: 12 }] })
-      .mockResolvedValueOnce({ docs: [{ id: 13 }] })
-      .mockResolvedValue({ docs: [] })
+    mockPayload.find.mockImplementation(async ({ collection }) => ({
+      docs: collection === 'clinicStaff' ? [{ id: 12 }] : collection === 'platformStaff' ? [{ id: 13 }] : [],
+    }))
 
     await expect(
       findUserBySupabaseId(mockPayload as unknown as Payload, {
@@ -54,6 +55,12 @@ describe('userLookup utilities', () => {
       message: expect.stringMatching(/more than one Payload principal/i),
       retryable: false,
     })
+    expect(mockPayload.find).toHaveBeenCalledTimes(3)
+    expect(mockPayload.find.mock.calls.map(([query]) => query.collection)).toEqual([
+      'clinicStaff',
+      'platformStaff',
+      'patients',
+    ])
   })
 
   it('requires synced clinic staff assigned to an approved clinic', async () => {

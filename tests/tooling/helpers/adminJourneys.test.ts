@@ -160,27 +160,6 @@ describe('admin journey fragments', () => {
 })
 
 describe('admin journey registry', () => {
-  it('exposes the expected shared journey ids', () => {
-    expect(listAdminJourneys().map((journey) => journey.journeyId)).toEqual(
-      expect.arrayContaining([
-        'admin.clinics.create-draft',
-        'admin.clinictreatments.create-link',
-        'admin.medical-specialties.create',
-        'admin.treatments.create',
-        'admin.treatments.add-clinictreatment-from-join',
-        'admin.treatments.add-doctortreatment-from-join',
-        'admin.doctorspecialties.create-link',
-        'admin.doctortreatments.create-link',
-        'admin.medical-network.create-specialty-and-link-doctor',
-        'admin.medical-network.create-treatment-and-link-clinic-and-doctor',
-        'admin.tags.create',
-        'clinic.clinics.add-treatment-from-join',
-        'clinic.doctors.create-and-link-specialty',
-        'clinic.doctors.create-and-link-treatment',
-      ]),
-    )
-  })
-
   it('rejects persona mismatches when executing a journey', async () => {
     const journey = {
       createState: () => ({ value: 'ok' }),

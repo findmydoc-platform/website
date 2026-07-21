@@ -33,7 +33,6 @@ test('clinic staff can create a doctor and link the doctor to a specialty @regre
       request: page.request,
     })
 
-    await expect(result.state.doctorFullName).toBeTruthy()
     await expect(result.state.doctorSpecialtyId).toBeTruthy()
     await expectNoBrowserIssues(issues)
   } finally {

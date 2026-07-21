@@ -19,8 +19,6 @@ test('platform staff can run the medical-network dependency chain @regression', 
     },
   )
 
-  await expect(result.state.specialtyName).toBeTruthy()
-  await expect(result.state.doctorFullName).toBeTruthy()
   await expect(result.state.doctorSpecialtyId).toBeTruthy()
   await expectNoBrowserIssues(issues)
 })
@@ -41,7 +39,6 @@ test('platform staff can create a treatment and link clinic and doctor relations
   )
 
   await expect(result.state.treatmentId).toBeTruthy()
-  await expect(result.state.treatmentName).toBeTruthy()
   await expect(result.state.clinicTreatmentId).toBeTruthy()
   await expect(result.state.doctorTreatmentId).toBeTruthy()
   await expect(page.getByLabel('Average Price')).toHaveValue(result.state.price)

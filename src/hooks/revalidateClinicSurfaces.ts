@@ -397,40 +397,6 @@ export const revalidateReviewDelete: CollectionAfterDeleteHook = async ({ doc, r
   })
 }
 
-export const revalidateClinicGalleryEntryChange: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
-  if (isRevalidationDisabled(req)) return doc
-
-  const current = doc as RevalidatableDoc
-  const previous = previousDoc as RevalidatableDoc | undefined
-
-  return revalidateRelatedClinicSurface({
-    collection: 'clinicGalleryEntries',
-    currentClinics: [await resolveClinicIdentity(req, current.clinic)].filter(isClinicIdentity),
-    previousClinics: [await resolveClinicIdentity(req, previous?.clinic)].filter(isClinicIdentity),
-    doc: current,
-    operation: 'related-update',
-    req,
-    status: normalizeOptionalStatus(current.status),
-    previousStatus: normalizeOptionalStatus(previous?.status),
-  })
-}
-
-export const revalidateClinicGalleryEntryDelete: CollectionAfterDeleteHook = async ({ doc, req }) => {
-  if (isRevalidationDisabled(req)) return doc
-
-  const current = doc as RevalidatableDoc
-
-  return revalidateRelatedClinicSurface({
-    collection: 'clinicGalleryEntries',
-    currentClinics: [await resolveClinicIdentity(req, current.clinic)].filter(isClinicIdentity),
-    doc: current,
-    operation: 'delete',
-    req,
-    status: normalizeOptionalStatus(current.status),
-    previousStatus: normalizeOptionalStatus(current.status),
-  })
-}
-
 const buildBroadCollectionHook =
   (collection: ClinicSurfaceRevalidationCollection): CollectionAfterChangeHook =>
   ({ doc, req }) => {

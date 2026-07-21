@@ -6,7 +6,6 @@ import { Activity, HeartPulse, Stethoscope, Syringe } from 'lucide-react'
 import { Container } from '@/components/molecules/Container'
 import { DisclaimerNotice } from '@/components/molecules/DisclaimerNotice'
 import {
-  BeforeAfterCaseGallerySection,
   ClinicAppointmentSection,
   ClinicLocationSection,
   ClinicReviewsSection,
@@ -300,12 +299,6 @@ export function ClinicDetail({
           onChooseTreatment={handleFurtherTreatmentClick}
         />
       </Container>
-
-      {data.beforeAfterEntries.length > 0 ? (
-        <Container className="pb-10">
-          <BeforeAfterCaseGallerySection entries={data.beforeAfterEntries} variant="spotlightQueueReveal" />
-        </Container>
-      ) : null}
 
       {relatedDoctors.length ? (
         <section ref={interaction.ourDoctorsRef}>

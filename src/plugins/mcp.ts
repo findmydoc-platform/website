@@ -19,7 +19,7 @@ export const isPlatformStaffMcpUser = (user: unknown): boolean => {
   return (user as Record<string, unknown>).collection === mcpUserCollection
 }
 
-const mcpReadCollections = [
+export const mcpReadCollectionSlugs = [
   'pages',
   'posts',
   'clinics',
@@ -35,7 +35,6 @@ const mcpReadCollections = [
   'doctortreatments',
   'doctorspecialties',
   'reviews',
-  'clinicGalleryEntries',
 ] as const
 
 // Note: Collections that contain `point` fields (e.g., `cities`, `clinics`) are intentionally
@@ -51,7 +50,7 @@ const mcpWriteCollections = new Set<string>([
   'countries',
 ])
 
-const mcpCollectionDescriptions: Record<(typeof mcpReadCollections)[number], string> = {
+const mcpCollectionDescriptions: Record<(typeof mcpReadCollectionSlugs)[number], string> = {
   pages: 'Published pages and structured content for the website.',
   posts: 'Editorial posts and long-form articles.',
   clinics: 'Clinic profiles and directory listings.',
@@ -67,10 +66,9 @@ const mcpCollectionDescriptions: Record<(typeof mcpReadCollections)[number], str
   doctortreatments: 'Doctor-to-treatment offerings.',
   doctorspecialties: 'Doctor-to-specialty relationships.',
   reviews: 'Approved patient reviews and ratings.',
-  clinicGalleryEntries: 'Curated clinic gallery entries and captions.',
 }
 
-const mcpCollections = mcpReadCollections.reduce<Record<string, McpCollectionConfig>>((acc, slug) => {
+const mcpCollections = mcpReadCollectionSlugs.reduce<Record<string, McpCollectionConfig>>((acc, slug) => {
   const writable = mcpWriteCollections.has(slug)
   acc[slug] = {
     description: mcpCollectionDescriptions[slug],

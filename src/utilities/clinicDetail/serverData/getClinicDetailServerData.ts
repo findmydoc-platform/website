@@ -3,7 +3,7 @@ import type { Payload } from 'payload'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { unstable_cache } from 'next/cache'
-import type { Accreditation, City, ClinicGalleryEntry } from '@/payload-types'
+import type { Accreditation, City } from '@/payload-types'
 
 import {
   buildCollectionTag,
@@ -25,7 +25,6 @@ import {
   findApprovedClinicReviewsByClinicId,
   findCitiesByIds,
   findClinicBySlug,
-  findClinicGalleryEntriesByIds,
   findClinicTreatmentsByClinicId,
   findDoctorsByClinicId,
   findDoctorSpecialtiesByDoctorIds,
@@ -43,7 +42,6 @@ const CLINIC_DETAIL_RELATED_COLLECTION_TAGS = [
   buildCollectionTag('doctorspecialties'),
   buildCollectionTag('reviews'),
   buildCollectionTag('accreditation'),
-  buildCollectionTag('clinicGalleryEntries'),
   buildCollectionTag('cities'),
 ] as const
 
@@ -180,29 +178,6 @@ function collectCityLookupIds(cityRelation: unknown): number[] {
   return typeof cityId === 'number' ? [cityId] : []
 }
 
-function collectGalleryEntryLookupIds(galleryRelations: unknown[] | null | undefined): number[] {
-  return collectLookupIds(galleryRelations ?? [], (item) => extractRelationId(item))
-}
-
-function mergeGalleryEntries(
-  relations: unknown[] | null | undefined,
-  fetchedEntries: ClinicGalleryEntry[],
-): ClinicGalleryEntry[] {
-  const mapById = new Map<number, ClinicGalleryEntry>()
-
-  for (const entry of fetchedEntries) {
-    mapById.set(entry.id, entry)
-  }
-
-  for (const relation of relations ?? []) {
-    if (relation && typeof relation === 'object' && 'id' in relation) {
-      mapById.set(relation.id as number, relation as ClinicGalleryEntry)
-    }
-  }
-
-  return Array.from(mapById.values())
-}
-
 export async function getClinicDetailServerData(
   payload: Payload,
   slug: string,
@@ -231,15 +206,12 @@ export async function getClinicDetailServerData(
 
   const accreditationLookupIds = collectAccreditationLookupIds(clinic.accreditations)
   const cityLookupIds = collectCityLookupIds(clinic.address?.city)
-  const galleryEntryLookupIds = collectGalleryEntryLookupIds(clinic.galleryEntries)
 
-  const [accreditationDocs, cityDocs, fetchedGalleryEntries] = await Promise.all([
+  const [accreditationDocs, cityDocs] = await Promise.all([
     findAccreditationsByIds(payload, accreditationLookupIds),
     findCitiesByIds(payload, cityLookupIds),
-    findClinicGalleryEntriesByIds(payload, galleryEntryLookupIds),
   ])
 
-  const galleryEntries = mergeGalleryEntries(clinic.galleryEntries, fetchedGalleryEntries)
   const clinicThumbnailDescriptorsByClinicId = await buildClinicThumbnailDescriptorsByClinicId({
     payload,
     clinics: [clinic],
@@ -258,7 +230,6 @@ export async function getClinicDetailServerData(
     clinicReviewCount,
     approvedClinicReviews,
     doctorReviewCounts,
-    galleryEntries,
     accreditations: accreditationDocs as Accreditation[],
     cities: cityDocs as City[],
   })

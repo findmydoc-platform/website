@@ -91,7 +91,6 @@ export type ClinicDetailData = {
   reviews: ClinicDetailReviews
   treatments: ClinicDetailTreatment[]
   doctors: ClinicDetailDoctor[]
-  beforeAfterEntries: ClinicBeforeAfterEntry[]
   location: ClinicDetailLocation
   freshness: FreshnessSignals
   contact?: ClinicDetailContact

@@ -9,6 +9,12 @@ import { getUserAssignedClinicId } from './utils/getClinicAssignment'
  */
 
 /**
+ * The before-and-after gallery is intentionally disabled pending a new product decision and legal review.
+ * Keep the schema and stored data intact, but do not expose the feature through regular application access.
+ */
+export const disabledClinicGalleryAccess = (_args?: unknown): false => false
+
+/**
  * Read access: platform users see everything, clinic staff are scoped to their clinic,
  * everyone else only sees published documents.
  */

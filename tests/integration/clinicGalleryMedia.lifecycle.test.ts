@@ -86,7 +86,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
       } as Partial<ClinicGalleryMedia>,
       file: createTinyPngFile(`${slugPrefix}-gallery.png`),
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicGalleryMedia
 
@@ -115,7 +115,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
           size: 46,
         },
         user: asStaffPayloadUser(platformUser),
-        overrideAccess: false,
+        overrideAccess: true,
         depth: 0,
       } as PayloadCreateArgs),
     ).rejects.toThrow(acceptedFormatsMessage)
@@ -134,7 +134,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
           size: 12,
         },
         user: asStaffPayloadUser(platformUser),
-        overrideAccess: false,
+        overrideAccess: true,
         depth: 0,
       } as PayloadCreateArgs),
     ).rejects.toThrow(acceptedFormatsMessage)
@@ -157,7 +157,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
       } as Partial<ClinicGalleryMedia>,
       file: createTinyPngFile(`${slugPrefix}-auto-assign.png`),
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicGalleryMedia
 
@@ -183,7 +183,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
       } as Partial<ClinicGalleryMedia>,
       file: createTinyPngFile(`${slugPrefix}-publish.png`),
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicGalleryMedia
 
@@ -194,7 +194,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
       id: created.id,
       data: { status: 'published' },
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadUpdateArgs)) as ClinicGalleryMedia
 
@@ -221,7 +221,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
       } as Partial<ClinicGalleryMedia>,
       file: createTinyPngFile(`${slugPrefix}-freeze.png`),
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicGalleryMedia
 
@@ -233,7 +233,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
         id: created.id,
         data: { clinic: clinicB.id },
         user: asStaffPayloadUser(staffUser),
-        overrideAccess: false,
+        overrideAccess: true,
         depth: 0,
       } as PayloadUpdateArgs)
     }).rejects.toThrow(/clinic ownership|assign records to another clinic/i)
@@ -244,7 +244,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
         id: created.id,
         data: { storageKey: 'cgmedia-manual' },
         user: asStaffPayloadUser(staffUser),
-        overrideAccess: false,
+        overrideAccess: true,
         depth: 0,
       } as PayloadUpdateArgs)
     }).rejects.toThrow(/storage key/i)
@@ -268,7 +268,7 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
       } as Partial<ClinicGalleryMedia>,
       file: createTinyPngFile(`${slugPrefix}-update.png`),
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicGalleryMedia
 
@@ -290,153 +290,25 @@ describe('ClinicGalleryMedia integration - lifecycle', () => {
         },
       },
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadUpdateArgs)) as ClinicGalleryMedia
 
     expect(updated.storageKey).toBe(created.storageKey)
   })
 
-  it('returns scoped gallery access for assigned clinic staff and denies unassigned or patient mutations', async () => {
-    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-access` })
-    const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
-      slugPrefix,
-      suffix: 'access-assigned',
-      createdClinicStaffIds,
-    })
-    await approveClinicStaff(payload, clinicStaff.id, clinic.id as number)
+  it('denies regular gallery media access for every principal', async () => {
+    const accessOperations = ['admin', 'read', 'create', 'update', 'delete'] as const
 
-    const scopedRead = await ClinicGalleryMediaCollection.access!.read!({
-      req: {
-        payload,
-        user: asStaffPayloadUser(staffUser),
-      } as unknown as PayloadRequest,
-    })
-
-    expect(scopedRead).toEqual({
-      clinic: {
-        equals: clinic.id,
-      },
-    })
-
-    const { staffUser: unassignedClinicUser } = await createClinicStaffFixture(payload, {
-      slugPrefix,
-      suffix: 'access-unassigned',
-      createdClinicStaffIds,
-    })
-
-    const deniedRead = await ClinicGalleryMediaCollection.access!.read!({
-      req: {
-        payload,
-        user: asStaffPayloadUser(unassignedClinicUser),
-      } as unknown as PayloadRequest,
-    })
-
-    expect(deniedRead).toBe(false)
-
-    const deniedClinicMutation = await ClinicGalleryMediaCollection.access!.update!({
-      req: {
-        payload,
-        user: asStaffPayloadUser(unassignedClinicUser),
-      } as unknown as PayloadRequest,
-    })
-
-    expect(deniedClinicMutation).toBe(false)
-
-    const deniedPatientMutation = await ClinicGalleryMediaCollection.access!.update!({
-      req: {
-        payload,
-        user: { id: 500, collection: 'patients' },
-      } as unknown as PayloadRequest,
-    })
-
-    expect(deniedPatientMutation).toBe(false)
-
-    const platformUser = await createPlatformUser('access')
-    const platformMutation = await ClinicGalleryMediaCollection.access!.update!({
-      req: {
-        payload,
-        user: asStaffPayloadUser(platformUser),
-      } as unknown as PayloadRequest,
-    })
-
-    expect(platformMutation).toBe(true)
-  })
-
-  it('scopes reads to published for public, clinic for staff, and all for platform', async () => {
-    const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-read-a` })
-    const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-read-b` })
-
-    const { staffUser: clinicUserA, clinicStaff: staffA } = await createClinicStaffFixture(payload, {
-      slugPrefix,
-      suffix: 'read-a',
-      createdClinicStaffIds,
-    })
-    await approveClinicStaff(payload, staffA.id, clinicA.id as number)
-
-    const { staffUser: clinicUserB, clinicStaff: staffB } = await createClinicStaffFixture(payload, {
-      slugPrefix,
-      suffix: 'read-b',
-      createdClinicStaffIds,
-    })
-    await approveClinicStaff(payload, staffB.id, clinicB.id as number)
-
-    const mediaA = (await payload.create({
-      collection: 'clinicGalleryMedia',
-      data: {
-        alt: 'Clinic A draft',
-        clinic: clinicA.id,
-      } as Partial<ClinicGalleryMedia>,
-      file: createTinyPngFile(`${slugPrefix}-read-a.png`),
-      user: asStaffPayloadUser(clinicUserA),
-      overrideAccess: false,
-      depth: 0,
-    } as PayloadCreateArgs)) as ClinicGalleryMedia
-    createdMediaIds.push(mediaA.id)
-
-    const mediaB = (await payload.create({
-      collection: 'clinicGalleryMedia',
-      data: {
-        alt: 'Clinic B published',
-        clinic: clinicB.id,
-        status: 'published',
-      } as Partial<ClinicGalleryMedia>,
-      file: createTinyPngFile(`${slugPrefix}-read-b.png`),
-      user: asStaffPayloadUser(clinicUserB),
-      overrideAccess: false,
-      depth: 0,
-    } as PayloadCreateArgs)) as ClinicGalleryMedia
-    createdMediaIds.push(mediaB.id)
-
-    const publicRead = await payload.find({
-      collection: 'clinicGalleryMedia',
-      overrideAccess: false,
-      depth: 0,
-    })
-
-    const publicIds = publicRead.docs.map((doc) => doc.id)
-    expect(publicIds).toContain(mediaB.id)
-    expect(publicIds).not.toContain(mediaA.id)
-
-    const clinicRead = await payload.find({
-      collection: 'clinicGalleryMedia',
-      user: asStaffPayloadUser(clinicUserA),
-      overrideAccess: false,
-      depth: 0,
-    })
-
-    expect(clinicRead.docs).toHaveLength(1)
-    expect(clinicRead.docs[0]?.id).toBe(mediaA.id)
-
-    const platformUser = await createPlatformUser('read')
-    const platformRead = await payload.find({
-      collection: 'clinicGalleryMedia',
-      user: asStaffPayloadUser(platformUser),
-      overrideAccess: false,
-      depth: 0,
-    })
-
-    const platformIds = platformRead.docs.map((doc) => doc.id)
-    expect(platformIds).toEqual(expect.arrayContaining([mediaA.id, mediaB.id]))
+    for (const operation of accessOperations) {
+      expect(
+        await ClinicGalleryMediaCollection.access![operation]!({
+          req: {
+            payload,
+            user: null,
+          } as unknown as PayloadRequest,
+        } as never),
+      ).toBe(false)
+    }
   })
 })

@@ -1,15 +1,6 @@
 import type { Payload } from 'payload'
 
-import type {
-  Accreditation,
-  City,
-  Clinic,
-  ClinicGalleryEntry,
-  Clinictreatment,
-  Doctor,
-  Doctorspecialty,
-  Review,
-} from '@/payload-types'
+import type { Accreditation, City, Clinic, Clinictreatment, Doctor, Doctorspecialty, Review } from '@/payload-types'
 
 const QUERY_PAGE_SIZE = 500
 const QUERY_CHUNK_SIZE = 200
@@ -72,6 +63,10 @@ export async function findClinicBySlug(payload: Payload, slug: string, draft: bo
       slug: {
         equals: slug,
       },
+    },
+    // Keep the disabled before-and-after relationship out of public and preview product reads.
+    select: {
+      galleryEntries: false,
     },
   })
 
@@ -325,54 +320,6 @@ export async function countApprovedDoctorReviews(payload: Payload, doctorIds: nu
   }
 
   return countsByDoctorId
-}
-
-export async function findClinicGalleryEntriesByIds(
-  payload: Payload,
-  entryIds: number[],
-): Promise<ClinicGalleryEntry[]> {
-  if (entryIds.length === 0) return []
-
-  const allDocs: ClinicGalleryEntry[] = []
-  const entryIdChunks = chunkArray(entryIds, QUERY_CHUNK_SIZE)
-
-  for (const entryIdChunk of entryIdChunks) {
-    const chunkDocs = await collectAllPages<ClinicGalleryEntry>(async (page) => {
-      const result = await payload.find({
-        collection: 'clinicGalleryEntries',
-        depth: 2,
-        page,
-        limit: QUERY_PAGE_SIZE,
-        pagination: true,
-        overrideAccess: false,
-        where: {
-          id: {
-            in: entryIdChunk,
-          },
-        },
-        select: {
-          id: true,
-          clinic: true,
-          title: true,
-          beforeMedia: true,
-          afterMedia: true,
-          description: true,
-          status: true,
-          publishedAt: true,
-          updatedAt: true,
-        },
-      })
-
-      return {
-        docs: result.docs as ClinicGalleryEntry[],
-        hasNextPage: result.hasNextPage,
-      }
-    })
-
-    allDocs.push(...chunkDocs)
-  }
-
-  return allDocs
 }
 
 export async function findAccreditationsByIds(payload: Payload, accreditationIds: number[]): Promise<Accreditation[]> {

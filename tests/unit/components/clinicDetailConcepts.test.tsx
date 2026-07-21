@@ -5,7 +5,6 @@ import { render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  beforeAfterCaseGallerySection: vi.fn(() => null),
   clinicAppointmentSection: vi.fn(() => null),
   clinicLocationSection: vi.fn(() => null),
   clinicReviewsSection: vi.fn(() => null),
@@ -63,7 +62,6 @@ vi.mock('@/components/molecules/DisclaimerNotice', () => ({
 }))
 
 vi.mock('@/components/organisms/ClinicDetail', () => ({
-  BeforeAfterCaseGallerySection: mocks.beforeAfterCaseGallerySection,
   ClinicAppointmentSection: mocks.clinicAppointmentSection,
   ClinicLocationSection: mocks.clinicLocationSection,
   ClinicReviewsSection: mocks.clinicReviewsSection,
@@ -150,7 +148,6 @@ const baseData = {
       contactHref: '#contact',
     },
   ],
-  beforeAfterEntries: [],
   location: {},
   contactHref: '#contact',
 }

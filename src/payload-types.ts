@@ -2771,12 +2771,6 @@ export interface PayloadMcpApiKey {
      */
     find?: boolean | null;
   };
-  clinicGalleryEntries?: {
-    /**
-     * Allow clients to find clinicGalleryEntries.
-     */
-    find?: boolean | null;
-  };
   updatedAt: string;
   createdAt: string;
   enableAPIKey?: boolean | null;
@@ -4530,11 +4524,6 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
       };
   reviews?:
-    | T
-    | {
-        find?: T;
-      };
-  clinicGalleryEntries?:
     | T
     | {
         find?: T;

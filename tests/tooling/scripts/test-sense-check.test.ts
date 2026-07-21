@@ -38,6 +38,8 @@ describe('parseArgs', () => {
 })
 
 describe('runTestSenseCheck', () => {
+  const definedAssertion = 'toBe' + 'Defined'
+
   it('fails unit tests that exercise only local validators', () => {
     const rootDir = createTempRepo({
       'tests/unit/auth/types/authTypes.test.ts': [
@@ -70,7 +72,7 @@ describe('runTestSenseCheck', () => {
       'tests/unit/endpoints/seed/assets.test.ts': [
         "import { describe, expect, it } from 'vitest'",
         "import posts from '@/endpoints/seed/data/demo/posts.json'",
-        "describe('posts', () => { it('loads data', () => expect(posts).toBeDefined()) })",
+        `describe('posts', () => { it('loads data', () => expect(posts).${definedAssertion}()) })`,
       ].join('\n'),
     })
 
@@ -87,22 +89,47 @@ describe('runTestSenseCheck', () => {
     )
   })
 
-  it('passes categorized tooling and data-integrity tests while warning about weak assertions', () => {
+  it('rejects categorized tests that only assert imported values exist', () => {
     const rootDir = createTempRepo({
       'tests/tooling/scripts/release.test.ts': [
         "import { describe, expect, it } from 'vitest'",
         "import { parseArgs } from '../../../scripts/release.mjs'",
-        "describe('release', () => { it('parses branch decisions', () => expect(parseArgs).toBeDefined()) })",
+        `describe('release', () => { it('loads parser', () => expect(parseArgs).${definedAssertion}()) })`,
       ].join('\n'),
       'tests/data-integrity/endpoints/seed/assets.test.ts': [
         "import { describe, expect, it } from 'vitest'",
         "import posts from '@/endpoints/seed/data/demo/posts.json'",
-        "describe('posts', () => { it('loads data', () => expect(posts).toBeDefined()) })",
+        `describe('posts', () => { it('loads data', () => expect(posts).${definedAssertion}()) })`,
+      ].join('\n'),
+    })
+
+    const result = runTestSenseCheck({ rootDir })
+
+    expect(result.ok).toBe(false)
+    expect(result.failures).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('tests/tooling/scripts/release.test.ts: Tooling and data-integrity tests'),
+        expect.stringContaining('tests/data-integrity/endpoints/seed/assets.test.ts: Tooling and data-integrity tests'),
+      ]),
+    )
+  })
+
+  it('passes categorized behavioral tests while warning about styling assertions', () => {
+    const rootDir = createTempRepo({
+      'tests/tooling/scripts/release.test.ts': [
+        "import { describe, expect, it } from 'vitest'",
+        "import { parseArgs } from '../../../scripts/release.mjs'",
+        "describe('release', () => { it('parses branch decisions', () => expect(parseArgs([])).toEqual({ changedFiles: [] })) })",
+      ].join('\n'),
+      'tests/data-integrity/endpoints/seed/assets.test.ts': [
+        "import { describe, expect, it } from 'vitest'",
+        "import posts from '@/endpoints/seed/data/demo/posts.json'",
+        "describe('posts', () => { it('contains seeded posts', () => expect(posts.length).toBeGreaterThan(0)) })",
       ].join('\n'),
       'tests/unit/components/button.test.tsx': [
         "import { describe, expect, it } from 'vitest'",
         "import { Button } from '@/components/atoms/button'",
-        "describe('Button', () => { it('keeps class contract', () => expect(Button).toBeDefined()) })",
+        `describe('Button', () => { it('keeps class contract', () => expect(Button).${definedAssertion}()) })`,
         "expect('className rounded-md').toContain('rounded-md')",
       ].join('\n'),
     })

@@ -56,6 +56,12 @@ describe('Collection contract coverage gate', () => {
       for (const relativePath of [...entry.baseline, ...(deepReferences ?? [])]) {
         const absolutePath = path.join(repositoryRoot, relativePath)
         expect(fs.existsSync(absolutePath), `${slug} references missing test: ${relativePath}`).toBe(true)
+
+        const source = fs.readFileSync(absolutePath, 'utf8')
+        expect(source, `${slug} references a test file without an executable test: ${relativePath}`).toMatch(
+          /\b(?:it|test)(?:\.(?:each|only|skip))?\s*\(/u,
+        )
+        expect(source, `${slug} is not exercised by its registered test: ${relativePath}`).toContain(slug)
       }
     }
   })

@@ -65,7 +65,11 @@ describe('Admin LoginPage', () => {
     className: string
     children: React.ReactNode
   }>
-  type LoginRootElement = React.ReactElement<{ children: React.ReactNode; redirectPath: string }>
+  type LoginRootElement = React.ReactElement<{
+    children: React.ReactNode
+    redirectPath: string
+    userTypes: string
+  }>
   type LogoElement = React.ReactElement<{ className?: string; showPreviewBadge?: boolean }>
 
   const makeStaffUser = (overrides: StaffUserOverrides): PlatformStaff =>
@@ -89,7 +93,7 @@ describe('Admin LoginPage', () => {
   const isLoginRootElement = (value: React.ReactNode): value is LoginRootElement => {
     if (!React.isValidElement(value)) return false
     if (!isObjectRecord(value.props)) return false
-    return typeof value.props.redirectPath === 'string'
+    return typeof value.props.redirectPath === 'string' && value.props.userTypes === 'platform'
   }
 
   const isLogoElement = (value: React.ReactNode): value is LogoElement => {
@@ -172,9 +176,10 @@ describe('Admin LoginPage', () => {
     vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({ status: 'no_platform_staff' })
 
     const result = await LoginPage({})
+    const rootElement = getLoginRootElement(result as LoginPageElement)
 
     expect(redirect).not.toHaveBeenCalled()
-    expect(result).toBeTruthy()
+    expect(rootElement.props).toMatchObject({ redirectPath: '/admin', userTypes: 'platform' })
   })
 
   it('logs a distinct warning when platform staff exists without an admin role', async () => {
@@ -494,10 +499,10 @@ describe('Admin LoginPage', () => {
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage({})
+    const rootElement = getLoginRootElement(result as LoginPageElement)
 
     expect(redirect).not.toHaveBeenCalled()
-    expect(result).toBeTruthy()
-    expect(result.props.className).toContain('flex')
+    expect(rootElement.props).toMatchObject({ redirectPath: '/admin', userTypes: 'platform' })
   })
 
   it('shows preview-required message from search params', async () => {

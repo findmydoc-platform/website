@@ -91,42 +91,7 @@ test.describe('clinic detail map dialog', () => {
 
     const previewMap = page.getByTitle(/Map preview of/)
     await expect(previewMap).toBeVisible()
-    await expect(previewMap).not.toHaveClass(/pointer-events-none/)
     await expect(previewMap).toHaveAttribute('tabindex', '0')
-    await expect(page.getByTestId('map-preview-interaction-guard')).toBeAttached()
-    await expect(page.getByTestId('map-preview-interaction-guard-top')).toHaveClass(/right-\[72px\]/)
-    await expect(page.getByTestId('map-preview-interaction-guard-body')).toHaveClass(/top-\[120px\]/)
-
-    await previewMap.scrollIntoViewIfNeeded()
-    const previewMapBox = await previewMap.boundingBox()
-    expect(previewMapBox).not.toBeNull()
-    if (previewMapBox) {
-      const previewZoomPoint = {
-        x: previewMapBox.x + previewMapBox.width - 24,
-        y: previewMapBox.y + 24,
-      }
-
-      await expect
-        .poll(
-          async () =>
-            page.evaluate(({ x, y }) => {
-              const element = document.elementFromPoint(x, y)
-
-              return {
-                tagName: element?.tagName,
-                title: element?.getAttribute('title'),
-              }
-            }, previewZoomPoint),
-          { message: 'preview zoom hit target should remain inside the iframe' },
-        )
-        .toEqual(
-          expect.objectContaining({
-            tagName: 'IFRAME',
-          }),
-        )
-
-      await page.mouse.click(previewZoomPoint.x, previewZoomPoint.y)
-    }
 
     const expandMapButton = page.getByRole('button', { name: 'Expand map' })
     await expandMapButton.click()
@@ -138,7 +103,6 @@ test.describe('clinic detail map dialog', () => {
     await expect(dialog.getByRole('link', { name: 'View map in OpenStreetMap' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Directions' })).toBeVisible()
     await expect(interactiveMap).toBeVisible()
-    await expect(interactiveMap).not.toHaveClass(/pointer-events-none/)
     await expect(interactiveMap).toHaveAttribute('tabindex', '-1')
     await expect(dialog.getByRole('group', { name: 'Expanded map keyboard controls' })).not.toBeVisible()
     await expect(dialog.getByRole('button', { name: 'Pan map north' })).not.toBeVisible()

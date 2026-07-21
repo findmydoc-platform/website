@@ -59,6 +59,21 @@ describe('supabaseStrategy', () => {
 
     await expect(supabaseStrategy.authenticate(args)).resolves.toEqual({ user: null })
     expect(mocks.ensurePatientOnAuth).not.toHaveBeenCalled()
+    expect(mocks.validateUserAccess).not.toHaveBeenCalled()
+    expect(mocks.identifyPostHogActor).not.toHaveBeenCalled()
+  })
+
+  it('rejects platform identities outside the findmydoc email domain before principal lookup', async () => {
+    mocks.extractSupabaseUserData.mockResolvedValue({
+      supabaseUserId: 'supabase-external',
+      userEmail: 'staff@example.com',
+      userType: 'platform',
+    })
+
+    await expect(supabaseStrategy.authenticate(args)).resolves.toEqual({ user: null })
+    expect(mocks.findUserBySupabaseId).not.toHaveBeenCalled()
+    expect(mocks.validateUserAccess).not.toHaveBeenCalled()
+    expect(mocks.ensurePatientOnAuth).not.toHaveBeenCalled()
   })
 
   it('keeps patient ensure-on-auth behavior', async () => {

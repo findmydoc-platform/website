@@ -20,38 +20,6 @@ describe('FAQSection', () => {
     expect(screen.getByText('Common questions.')).toBeInTheDocument()
   })
 
-  it('renders compact pointer-enabled accordion triggers', () => {
-    render(
-      <FAQSection
-        title="FAQ"
-        description="Common questions."
-        defaultOpenItemId="q1"
-        items={[{ id: 'q1', question: 'Question 1?', answer: 'Answer 1.' }]}
-      />,
-    )
-
-    const trigger = screen.getByRole('button', { name: 'Question 1?' })
-    const icon = trigger.querySelector('svg')
-    if (!icon) throw new Error('Expected FAQ trigger icon')
-
-    expect(trigger).toHaveClass('cursor-pointer')
-    expect(trigger).toHaveClass('bg-accent')
-    expect(trigger).toHaveClass('text-accent-foreground')
-    expect(trigger).toHaveClass('text-base')
-    expect(trigger).toHaveClass('sm:text-lg')
-    expect(trigger).not.toHaveClass('md:text-xl')
-    expect(trigger).toHaveClass('focus-visible:ring-ring')
-    expect(trigger).not.toHaveClass('before:bg-secondary')
-    expect(trigger).not.toHaveClass('data-[state=open]:before:bg-secondary')
-    expect(icon).toHaveClass('text-accent-foreground')
-    expect(icon).toHaveClass('group-data-[state=open]:rotate-180')
-    expect(screen.getByText('Answer 1.')).toHaveClass('text-foreground/80')
-    expect(screen.getByText('Answer 1.')).toHaveClass('bg-white')
-    expect(screen.getByText('Answer 1.')).toHaveClass('text-sm')
-    expect(screen.getByText('Answer 1.')).toHaveClass('sm:text-base')
-    expect(trigger.parentElement?.parentElement).toHaveClass('scroll-mb-24')
-  })
-
   it('supports default open item and switching between items', () => {
     render(
       <FAQSection

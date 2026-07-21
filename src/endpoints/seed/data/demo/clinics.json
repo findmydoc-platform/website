@@ -31,7 +31,7 @@
         "version": 1
       }
     },
-    "coordinates": [41.0212, 28.987],
+    "coordinates": [28.987, 41.0212],
     "address": {
       "street": "Valikonagi Avenue",
       "houseNumber": "21",
@@ -89,7 +89,7 @@
         "version": 1
       }
     },
-    "coordinates": [41.0547, 29.0152],
+    "coordinates": [29.0152, 41.0547],
     "address": {
       "street": "Nispetiye Street",
       "houseNumber": "88",
@@ -147,7 +147,7 @@
         "version": 1
       }
     },
-    "coordinates": [39.9258, 32.8663],
+    "coordinates": [32.8663, 39.9258],
     "address": {
       "street": "Ataturk Boulevard",
       "houseNumber": "145",
@@ -205,7 +205,7 @@
         "version": 1
       }
     },
-    "coordinates": [39.9174, 32.8596],
+    "coordinates": [32.8596, 39.9174],
     "address": {
       "street": "Tunali Hilmi Street",
       "houseNumber": "42",
@@ -263,7 +263,7 @@
         "version": 1
       }
     },
-    "coordinates": [38.4324, 27.1482],
+    "coordinates": [27.1482, 38.4324],
     "address": {
       "street": "Cumhuriyet Square",
       "houseNumber": "12",
@@ -321,7 +321,7 @@
         "version": 1
       }
     },
-    "coordinates": [38.4198, 27.1321],
+    "coordinates": [27.1321, 38.4198],
     "address": {
       "street": "Mithatpasa Street",
       "houseNumber": "205",
@@ -379,7 +379,7 @@
         "version": 1
       }
     },
-    "coordinates": [36.8841, 30.7052],
+    "coordinates": [30.7052, 36.8841],
     "address": {
       "street": "Lara Avenue",
       "houseNumber": "310",
@@ -437,7 +437,7 @@
         "version": 1
       }
     },
-    "coordinates": [36.9004, 30.6897],
+    "coordinates": [30.6897, 36.9004],
     "address": {
       "street": "Isiklar Street",
       "houseNumber": "77",
@@ -495,7 +495,7 @@
         "version": 1
       }
     },
-    "coordinates": [40.195, 29.0603],
+    "coordinates": [29.0603, 40.195],
     "address": {
       "street": "Ataturk Caddesi",
       "houseNumber": "56",
@@ -553,7 +553,7 @@
         "version": 1
       }
     },
-    "coordinates": [40.1772, 29.0749],
+    "coordinates": [29.0749, 40.1772],
     "address": {
       "street": "Fomara Street",
       "houseNumber": "19",

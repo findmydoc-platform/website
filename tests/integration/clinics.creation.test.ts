@@ -225,7 +225,7 @@ describe('Clinic Creation Integration Tests', () => {
       collection: 'clinics',
       data: {
         name: `${slugPrefix}-geo-clinic`,
-        coordinates: [41.0082, 28.9784], // Istanbul coordinates
+        coordinates: [28.9784, 41.0082], // Istanbul coordinates (longitude, latitude)
         address: {
           street: 'Geo Street',
           houseNumber: '789',
@@ -248,7 +248,7 @@ describe('Clinic Creation Integration Tests', () => {
     })
 
     expect(clinic.id).toBeDefined()
-    expect(clinic.coordinates).toEqual([41.0082, 28.9784])
+    expect(clinic.coordinates).toEqual([28.9784, 41.0082])
   })
 
   it('creates a clinic with accreditations', async () => {

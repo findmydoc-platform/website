@@ -52,7 +52,7 @@ const mockData: MockData = {
       description: lexicalText('Transparent pediatric care for international families.'),
       thumbnail: 100,
       galleryEntries: [901, 902],
-      coordinates: [52.5168332, 13.4264519],
+      coordinates: [13.4264519, 52.5168332],
       address: {
         street: 'Lichtenberger Strasse',
         houseNumber: '24',
@@ -144,6 +144,7 @@ const mockData: MockData = {
   doctors: [
     {
       id: 601,
+      active: true,
       fullName: 'Dr. Amelia Carter',
       firstName: 'Amelia',
       lastName: 'Carter',
@@ -159,6 +160,7 @@ const mockData: MockData = {
     },
     {
       id: 602,
+      active: true,
       fullName: 'Dr. Jonas Meyer',
       firstName: 'Jonas',
       lastName: 'Meyer',
@@ -171,6 +173,22 @@ const mockData: MockData = {
       experienceYears: 6,
       languages: ['english', 'german'],
       updatedAt: '2026-01-08T00:00:00.000Z',
+    },
+    {
+      id: 603,
+      active: false,
+      fullName: 'Dr. Hidden Profile',
+      firstName: 'Hidden',
+      lastName: 'Profile',
+      gender: 'female',
+      averageRating: 4.9,
+      biography: lexicalText('This inactive profile must not reach public clinic data.'),
+      profileImage: null,
+      clinic: 1,
+      qualifications: ['MD'],
+      experienceYears: 12,
+      languages: ['english'],
+      updatedAt: '2026-01-10T00:00:00.000Z',
     },
   ],
   doctorspecialties: [
@@ -423,6 +441,7 @@ describe('getClinicDetailServerData (contract)', () => {
       lng: 13.4264519,
     })
 
+    expect(result?.doctors).toHaveLength(2)
     expect(result?.doctors[0]?.specialty).toBe('Pediatric Cardiology')
     expect(result?.doctors[1]?.specialty).toBe('General Practice')
     expect(result?.doctors[0]?.reviewCount).toBe(2)

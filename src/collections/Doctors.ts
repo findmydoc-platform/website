@@ -3,8 +3,11 @@ import { languageOptions } from './common/selectionOptions'
 import { generateFullName } from '@/utilities/nameUtils'
 import { computedOnlyFieldAccess } from '@/access/fieldAccess'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
-import { anyone } from '@/access/anyone'
-import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@/access/scopeFilters'
+import {
+  platformOrAssignedClinicMutation,
+  platformOrOwnClinicDoctorsOrActive,
+  platformOrOwnClinicResource,
+} from '@/access/scopeFilters'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateDoctorChange, revalidateDoctorDelete } from '@/hooks/revalidateClinicSurfaces'
@@ -33,6 +36,7 @@ export const Doctors: CollectionConfig<'doctors'> = {
     lastName: true,
     slug: true,
     gender: true,
+    active: true,
     averageRating: true,
     profileImage: true,
   },
@@ -43,7 +47,7 @@ export const Doctors: CollectionConfig<'doctors'> = {
     description: 'Doctor profiles with specialties, languages, and experience',
   },
   access: {
-    read: anyone, // Public read access for all users
+    read: platformOrOwnClinicDoctorsOrActive,
     create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
     update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
     delete: isPlatformStaff, // Only Platform can delete
@@ -66,6 +70,16 @@ export const Doctors: CollectionConfig<'doctors'> = {
       options: doctorTitles,
       admin: {
         description: "Title before the doctor's name",
+      },
+    },
+    {
+      name: 'active',
+      type: 'checkbox',
+      defaultValue: true,
+      required: true,
+      admin: {
+        description: 'Show this doctor on public clinic pages',
+        position: 'sidebar',
       },
     },
     {

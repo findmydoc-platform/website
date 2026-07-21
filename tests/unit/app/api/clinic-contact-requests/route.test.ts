@@ -235,6 +235,22 @@ describe('POST /api/clinic-contact-requests', () => {
     expect(createArgs?.data).not.toHaveProperty('preferredTime')
     expect(createArgs?.data).not.toHaveProperty('formUrl')
     expect(createArgs?.data).not.toHaveProperty('sourceMeta')
+
+    const doctorLookup = findMock.mock.calls
+      .map(([args]) => args as { collection?: string; select?: unknown; where?: unknown })
+      .find((args) => args.collection === 'doctors')
+    expect(doctorLookup).toEqual(
+      expect.objectContaining({
+        select: expect.objectContaining({ active: true }),
+        where: {
+          and: expect.arrayContaining([
+            { id: { equals: 601 } },
+            { clinic: { equals: 1 } },
+            { active: { equals: true } },
+          ]),
+        },
+      }),
+    )
   })
 
   it('returns an existing inquiry for an identical recent duplicate request', async () => {

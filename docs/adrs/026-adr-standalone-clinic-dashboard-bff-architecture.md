@@ -163,8 +163,8 @@ restricted to platform staff, consistent with [ADR 025](./025-adr-direct-staff-a
 
 Supabase owns identity and the access and refresh session. The Dashboard stores the session in secure, host-bound,
 `HttpOnly` cookies. Browser application code receives neither token and does not instantiate a Supabase browser client.
-Login, callback, refresh, and logout are BFF operations. Redirect-based authentication uses Proof Key for Code Exchange
-(PKCE).
+Password login, TokenHash callback confirmation, refresh, and logout are BFF operations. Invite and recovery callbacks
+do not consume tokens on `GET`; a same-origin confirmation `POST` performs `verifyOtp`.
 
 The browser may navigate to Supabase or an identity provider during authentication, but it never calls Payload
 directly. The Dashboard uses a Supabase publishable key only; a service-role key is prohibited. Supabase clients and
@@ -191,8 +191,8 @@ REST and capability-specific endpoints are the selected integration contract.
 Payload CORS remains unchanged because no Dashboard browser request reaches Payload. State-changing BFF routes validate
 the session, input, request origin, and cross-site request forgery protection and fail closed. The Dashboard applies
 this protection centrally through one shared mutation guard. It uses a stateless HMAC-signed CSRF token bound to the
-current Supabase session; Staging and Production store that token in a host-only `__Host-` cookie. Payload requires no
-CSRF-specific change.
+current Supabase session, with a pre-session token for public forms. Deployed cookies are host-only and secure. Payload
+requires no CSRF-specific change.
 
 The server-only Payload client accepts only the exact HTTPS Payload origin configured for the active environment.
 Authenticated requests do not follow redirects to another origin and never replay the Bearer token to a redirected
@@ -204,7 +204,7 @@ host.
   session cookies, and produces a controlled login state.
 - A clinic principal that is not approved, has no clinic assignment, or lacks a requested capability returns `403`
   without exposing clinic data.
-- An invalid callback code produces a sanitized authentication error and no session.
+- An invalid callback code or TokenHash produces a sanitized authentication error and no session.
 - A rejected origin or cross-site request forgery check returns `403`.
 - Payload or Supabase unavailability is a temporary upstream failure. It does not clear an otherwise valid session or
   present the failure as an intentional logout.

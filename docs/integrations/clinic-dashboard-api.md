@@ -21,14 +21,14 @@ durable architecture documentation, not an execution plan. The contract does not
 Payload CORS origins, a Dashboard database, service-role credentials, public cache behavior, or clinic login UI to the
 website.
 
-Payload exposes the initial private bootstrap contract. The Clinic Dashboard session and BFF runtime remain separate
-work owned by the Dashboard repository.
+Payload exposes the initial private bootstrap contract. The Clinic Dashboard session and BFF runtime are implemented
+in the Dashboard repository; trusted preview and production rollout evidence remain pending.
 
 ## Boundary and Ownership
 
 | Concern | Website and Payload | Clinic Dashboard |
 | --- | --- | --- |
-| Identity validation | Validate the Supabase access token against the matching environment. | Complete PKCE, store and refresh the user session in host-bound `HttpOnly` cookies. |
+| Identity validation | Validate the Supabase access token against the matching environment. | Complete server-side password login or explicitly confirmed TokenHash invite/recovery, then store and refresh the user session in host-bound `HttpOnly` cookies. |
 | Current principal | Resolve `clinicStaff`, status, clinic assignment, and access on every request. | Treat the returned principal and capabilities as authoritative for the current request only. |
 | Business authorization | Enforce collection and endpoint permissions; derive clinic and actor from the principal. | Never send an authoritative clinic, role, or actor value. |
 | Browser API | Not exposed to the Dashboard browser. | Expose capability-specific, same-origin Route Handlers. |
@@ -100,8 +100,8 @@ browser.
 
 All state-changing Dashboard routes use one shared mutation guard rather than route-local CSRF implementations. The
 guard validates the session and exact origin, then verifies a stateless HMAC-signed CSRF token bound to the current
-Supabase session. Staging and Production use a host-only `__Host-` CSRF cookie. This protection belongs entirely to the
-Dashboard BFF and requires no Payload change.
+Supabase session. Public forms use a pre-session token; deployed cookies are host-only and secure. This protection
+belongs entirely to the Dashboard BFF and requires no Payload change.
 
 ## Error Mapping
 

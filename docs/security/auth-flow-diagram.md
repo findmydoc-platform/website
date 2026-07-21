@@ -39,12 +39,9 @@ sequenceDiagram
     participant Payload as Payload API and Auth Strategy
     participant DB as Payload Database
 
-    User->>Browser: Sign in
-    Browser->>BFF: Start login on same origin
-    BFF->>Supabase: Start PKCE flow
-    Supabase-->>Browser: Identity provider redirect
-    Browser->>BFF: Callback with authorization code
-    BFF->>Supabase: Exchange code and establish session
+    User->>Browser: Submit email and password
+    Browser->>BFF: Same-origin login with CSRF proof
+    BFF->>Supabase: signInWithPassword
     BFF-->>Browser: Secure HttpOnly session cookies
     Browser->>BFF: Request Dashboard data
     BFF->>Payload: Bearer access token
@@ -59,6 +56,10 @@ sequenceDiagram
         BFF-->>Browser: Controlled login or access state
     end
 ```
+
+Invite and recovery emails use a separate prefetch-safe sequence: the callback `GET` validates `TokenHash`, fixed flow,
+and internal destination without consuming the token; the user confirms on `/auth/confirm`; only the same-origin
+callback `POST` calls `verifyOtp` and establishes the temporary completion session.
 
 The Dashboard browser calls only the Dashboard origin for application data. Tokens remain in host-bound `HttpOnly`
 cookies and server code. Payload receives server-to-server requests from the BFF, so Dashboard origins are not Payload

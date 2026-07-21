@@ -19,7 +19,7 @@ All three are direct Payload auth collections. Payload local passwords and Paylo
 | --- | --- | --- |
 | Payload Admin | The website `/admin/login` accepts platform staff only. | Payload Admin uses the resolved `platformStaff` principal and current role. |
 | Patient portal | The website owns patient login, public clinic registration, patient invitation completion, password reset, callback, and logout routes. | Website-owned API paths authenticate the current patient principal. |
-| Clinic Dashboard | The standalone Dashboard owns login, PKCE callback, refresh, and logout in secure, host-bound, `HttpOnly` cookies. The portal may link to it but transfers no session. | Browser application code calls only the Dashboard origin. The Dashboard BFF sends the current access token to Payload server-side. |
+| Clinic Dashboard | The standalone Dashboard owns server-side password login, explicitly confirmed TokenHash invite/recovery callbacks, refresh, and logout in secure, host-bound, `HttpOnly` cookies. The portal may link to it but transfers no session. | Browser application code calls only the Dashboard origin. The Dashboard BFF sends the current access token to Payload server-side. |
 
 The website contains no clinic role choice, clinic login form, or clinic access to Payload Admin. Server-generated
 clinic invitation and password-reset links target the Clinic Dashboard origin configured through
@@ -66,6 +66,12 @@ email matches receive the same neutral API response without sending a reset. Pat
 requests retain the website callback and its existing enumeration-resistant response.
 
 Patient provisioning remains the established ensure-on-auth flow. Staff deletion first removes the Payload principal, so a later Supabase deletion failure cannot leave an authorized principal. The trusted operations path can safely retry cleanup.
+
+Invite and recovery email templates use `TokenHash`, not browser hash tokens. The callback `GET` validates the fixed
+flow and internal destination but does not consume the token. A same-origin confirmation `POST` performs `verifyOtp`.
+The website retains its existing authorization-code callback and legacy hash hydration paths during compatibility
+rollout. Template snapshot, rollback, staging-first activation, and production gates are documented in
+`supabase-email-template-rollout.md`.
 
 ## Related References
 

@@ -181,4 +181,44 @@ describe('patientSupabaseDeleteHook', () => {
     expect(deleteSupabaseAccount).toHaveBeenCalledWith('sb-unit-1')
     expect(payload.logger.info).toHaveBeenCalled()
   })
+
+  it('blocks patient deletion when supabase deletion returns false', async () => {
+    const { req, payload } = getMocks()
+    vi.mocked(payload.findByID).mockResolvedValue({
+      id: 1,
+      email: 'p@test.com',
+      firstName: 'P',
+      lastName: 'T',
+      supabaseUserId: 'sb-unit-1',
+      createdAt: '2023-01-01',
+      updatedAt: '2023-01-02',
+    } as Patient)
+    vi.mocked(deleteSupabaseAccount).mockResolvedValueOnce(false)
+
+    await expect(
+      patientSupabaseDeleteHook({ req, id: '1', collection: mockCollection, context: emptyContext }),
+    ).rejects.toThrow('Failed to delete the external account for Patient 1')
+
+    expect(payload.logger.error).toHaveBeenCalled()
+  })
+
+  it('blocks patient deletion when supabase deletion throws', async () => {
+    const { req, payload } = getMocks()
+    vi.mocked(payload.findByID).mockResolvedValue({
+      id: 1,
+      email: 'p@test.com',
+      firstName: 'P',
+      lastName: 'T',
+      supabaseUserId: 'sb-unit-1',
+      createdAt: '2023-01-01',
+      updatedAt: '2023-01-02',
+    } as Patient)
+    vi.mocked(deleteSupabaseAccount).mockRejectedValueOnce(new Error('identity provider unavailable'))
+
+    await expect(
+      patientSupabaseDeleteHook({ req, id: '1', collection: mockCollection, context: emptyContext }),
+    ).rejects.toThrow('Failed to delete the external account for Patient 1')
+
+    expect(payload.logger.error).toHaveBeenCalled()
+  })
 })

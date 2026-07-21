@@ -2,7 +2,7 @@ import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
-   ALTER TABLE "doctors" ADD COLUMN "active" boolean DEFAULT true NOT NULL;
+   ALTER TABLE "doctors" ADD COLUMN IF NOT EXISTS "active" boolean DEFAULT true NOT NULL;
 
    UPDATE "cities" AS target
    SET "coordinates" = ST_MakePoint(source.longitude, source.latitude)
@@ -69,5 +69,5 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
    WHERE target."stable_id" = source.stable_id
      AND target."coordinates" IS DISTINCT FROM ST_MakePoint(source.latitude, source.longitude);
 
-   ALTER TABLE "doctors" DROP COLUMN "active";`)
+   ALTER TABLE "doctors" DROP COLUMN IF EXISTS "active";`)
 }

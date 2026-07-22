@@ -119,7 +119,6 @@ const clinicDetailData = {
   },
   treatments: [],
   doctors: [],
-  beforeAfterEntries: [],
   location: {},
   freshness: {
     sourceCollections: ['clinics'],

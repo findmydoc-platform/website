@@ -23,16 +23,13 @@ export type ClinicSurfaceRevalidationCollection =
   | 'treatments'
   | 'medical-specialties'
   | 'cities'
-  | 'clinicGalleryEntries'
   | 'accreditation'
 
 export type ClinicPublicStatus = 'draft' | 'pending' | 'approved' | 'rejected'
 
 export type ReviewPublicStatus = 'pending' | 'approved' | 'rejected'
 
-export type GalleryEntryPublicStatus = 'draft' | 'published'
-
-export type ClinicSurfacePublicStatus = ClinicPublicStatus | ReviewPublicStatus | GalleryEntryPublicStatus | 'public'
+export type ClinicSurfacePublicStatus = ClinicPublicStatus | ReviewPublicStatus | 'public'
 
 export type RevalidationSourceKind =
   'payload-hook' | 'global-hook' | 'redirect-hook' | 'public-discovery' | 'seed-runner' | 'test'

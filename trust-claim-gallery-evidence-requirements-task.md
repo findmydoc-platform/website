@@ -1,5 +1,7 @@
 # Feature: Evidenzanforderungen für öffentliche Before-/After Case Gallery definieren
 
+> Implementation notice: The before-and-after gallery is disabled in the frontend and Payload CMS under [website issue #1576](https://github.com/findmydoc-platform/website/issues/1576). This document defines prerequisites only; it does not authorize reactivation. A new product decision and legal review are required before any public or editorial use.
+
 ## Problem
 
 Before-/After-Fälle sind öffentliche Trust Claims mit besonders hoher Sensibilität. Ein sichtbarer Fall kann implizieren, dass Bildmaterial, Behandlungskontext, Ergebnisdarstellung und Einwilligung geprüft wurden.

@@ -3,6 +3,7 @@ import type { CollectionBeforeValidateHook, CollectionConfig } from 'payload'
 import { slugField } from 'payload'
 import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { disabledClinicGalleryAccess } from '@/access/clinicGallery'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
 import {
   computedOnlyFieldAccess,
@@ -271,7 +272,13 @@ export const Clinics: CollectionConfig<'clinics'> = {
               type: 'relationship',
               relationTo: 'clinicGalleryEntries',
               hasMany: true,
+              access: {
+                create: disabledClinicGalleryAccess,
+                read: disabledClinicGalleryAccess,
+                update: disabledClinicGalleryAccess,
+              },
               admin: {
+                hidden: true,
                 description: 'Before-and-after stories shown on the clinic profile',
               },
             },

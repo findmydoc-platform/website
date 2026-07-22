@@ -2,13 +2,13 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from 'storybook/test'
 
 import { BeforeAfterCaseGallerySection } from '@/components/organisms/ClinicDetail'
-import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
+import { disabledClinicBeforeAfterEntriesFixture } from '@/stories/fixtures/clinicDetail'
 
 const meta = {
-  title: 'Domain/Clinic/Templates/ClinicDetail/BeforeAfter Case Gallery',
+  title: 'Internal/Clinic/Templates/ClinicDetail/Disabled BeforeAfter Case Gallery',
   component: BeforeAfterCaseGallerySection,
   args: {
-    entries: clinicDetailFixture.beforeAfterEntries,
+    entries: disabledClinicBeforeAfterEntriesFixture,
     variant: 'spotlightQueue',
   },
   parameters: {
@@ -16,11 +16,11 @@ const meta = {
     docs: {
       description: {
         component:
-          'Unified before/after case gallery with two functional variants controlled by a single `variant` prop.',
+          'Deprecated implementation retained for possible reactivation. Do not use it in product routes without a new product decision and legal approval.',
       },
     },
   },
-  tags: ['autodocs', 'domain:clinic', 'layer:template', 'status:stable', 'used-in:route:/clinics/[slug]'],
+  tags: ['autodocs', 'domain:clinic', 'layer:template', 'status:deprecated', 'used-in:shared'],
 } satisfies Meta<typeof BeforeAfterCaseGallerySection>
 
 export default meta

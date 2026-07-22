@@ -439,7 +439,7 @@ describe('cache revalidation planner', () => {
     expect(plan.paths.some((path) => path.startsWith('/clinics/'))).toBe(false)
   })
 
-  it('keeps non-public review and gallery changes as private-live no-op plans', () => {
+  it('keeps non-public review changes as private-live no-op plans', () => {
     expect(
       planRevalidation({
         kind: 'clinic-surface',
@@ -452,27 +452,6 @@ describe('cache revalidation planner', () => {
           previousStatus: 'pending',
           clinicIds: [12],
           clinicSlugs: ['hidden-review'],
-        },
-      }),
-    ).toMatchObject({
-      cacheClasses: ['private-live'],
-      tags: [],
-      paths: [],
-      emptyReason: 'private-live-noop',
-    })
-
-    expect(
-      planRevalidation({
-        kind: 'clinic-surface',
-        collection: 'clinicGalleryEntries',
-        operation: 'related-update',
-        source: { kind: 'payload-hook' },
-        subject: {
-          id: 'gallery-1',
-          status: 'draft',
-          previousStatus: 'draft',
-          clinicIds: [12],
-          clinicSlugs: ['hidden-gallery'],
         },
       }),
     ).toMatchObject({

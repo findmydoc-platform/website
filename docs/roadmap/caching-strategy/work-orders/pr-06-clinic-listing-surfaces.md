@@ -6,6 +6,8 @@ This work order defines the future PR 6 implementation packet for the public cac
 
 PR 6 expands the cache stack to Clinic Detail, Listing Comparison, and the known clinic-visible related collections. It adds tag-backed public Data Cache coverage for the public server data that these surfaces use, while keeping request-bound route state live.
 
+The gallery-specific instructions in this historical work order are superseded by [website issue #1576](https://github.com/findmydoc-platform/website/issues/1576). `clinicGalleryEntries` and `clinicGalleryMedia` remain registered for data preservation, but they have no public cache or revalidation owner while the before-and-after feature is disabled. Do not restore the gallery paths from this work order without a new product decision and legal review.
+
 - Branch: `feature/cache-revalidation/06-clinic-listing-surfaces`
 - PR title: `fix(collections): invalidate cache stack 6/8 clinic surfaces`
 - Base branch: `feature/cache-revalidation/05-redirect-documents`

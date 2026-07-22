@@ -2,8 +2,6 @@ import type {
   Accreditation,
   City,
   Clinic,
-  ClinicGalleryEntry,
-  ClinicGalleryMedia,
   Clinictreatment,
   Doctor,
   Doctorspecialty,
@@ -12,7 +10,6 @@ import type {
   Treatment,
 } from '@/payload-types'
 import type {
-  ClinicBeforeAfterEntry,
   ClinicDetailData,
   ClinicDetailDoctor,
   ClinicDetailLocation,
@@ -24,7 +21,6 @@ import type {
 } from '@/components/templates/ClinicDetailConcepts/types'
 import { CLINICS_BREADCRUMB, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { resolveDoctorProfileImage } from '@/utilities/media/doctorProfileImage'
-import { versionPayloadMediaFileUrl } from '@/utilities/media/fileUrls'
 import type { MediaDescriptor } from '@/utilities/media/relationMedia'
 import { buildFreshnessSignals } from '@/utilities/freshness'
 import { findLatestIsoTimestampString } from '@/utilities/timestamps'
@@ -116,21 +112,6 @@ function toVerificationTier(value: unknown): ClinicVerificationTier {
   }
 
   return 'unverified'
-}
-
-function toGalleryMediaDescriptor(value: unknown): { url: string | null; alt: string | null } | undefined {
-  if (!value || typeof value !== 'object') return undefined
-
-  const media = value as Partial<ClinicGalleryMedia>
-
-  const urlFromField = typeof media.url === 'string' && media.url.trim().length > 0 ? media.url : null
-  const filename = typeof media.filename === 'string' && media.filename.trim().length > 0 ? media.filename : null
-  const rawUrl = urlFromField ?? (filename ? `/api/clinicGalleryMedia/file/${filename}` : null)
-  const url = rawUrl ? versionPayloadMediaFileUrl(rawUrl, media.updatedAt) : null
-  const alt = typeof media.alt === 'string' && media.alt.trim().length > 0 ? media.alt : null
-
-  if (!url && !alt) return undefined
-  return { url, alt }
 }
 
 function resolveMedicalSpecialtyName(value: unknown): string | null {
@@ -397,65 +378,6 @@ function mapReviews({
   }
 }
 
-function mergeOrderedGalleryEntries(clinic: Clinic, fetchedEntries: ClinicGalleryEntry[]): ClinicGalleryEntry[] {
-  const entriesById = new Map<number, ClinicGalleryEntry>()
-
-  for (const entry of fetchedEntries) {
-    entriesById.set(entry.id, entry)
-  }
-
-  for (const relation of clinic.galleryEntries ?? []) {
-    if (relation && typeof relation === 'object' && 'id' in relation) {
-      const entry = relation as ClinicGalleryEntry
-      entriesById.set(entry.id, entry)
-    }
-  }
-
-  const orderedByClinic = (clinic.galleryEntries ?? [])
-    .map((relation) => {
-      const id = extractRelationId(relation)
-      return typeof id === 'number' ? entriesById.get(id) : null
-    })
-    .filter((entry): entry is ClinicGalleryEntry => Boolean(entry))
-
-  if (orderedByClinic.length > 0) {
-    return orderedByClinic
-  }
-
-  return fetchedEntries
-}
-
-function mapBeforeAfterEntries(clinic: Clinic, fetchedEntries: ClinicGalleryEntry[]): ClinicBeforeAfterEntry[] {
-  const orderedEntries = mergeOrderedGalleryEntries(clinic, fetchedEntries)
-  const mappedEntries: ClinicBeforeAfterEntry[] = []
-
-  for (const entry of orderedEntries) {
-    if (entry.status !== 'published') continue
-
-    const beforeMedia = toGalleryMediaDescriptor(entry.beforeMedia)
-    const afterMedia = toGalleryMediaDescriptor(entry.afterMedia)
-    if (!beforeMedia?.url || !afterMedia?.url) continue
-
-    const description = extractLexicalPlainText(entry.description)
-
-    mappedEntries.push({
-      id: String(entry.id),
-      title: entry.title,
-      before: {
-        src: beforeMedia.url,
-        alt: beforeMedia.alt ?? `${entry.title} before`,
-      },
-      after: {
-        src: afterMedia.url,
-        alt: afterMedia.alt ?? `${entry.title} after`,
-      },
-      ...(description ? { description } : {}),
-    })
-  }
-
-  return mappedEntries
-}
-
 function buildContactHref(slug: string): string {
   return `/contact?clinic=${encodeURIComponent(slug)}&source=clinic-detail`
 }
@@ -474,7 +396,6 @@ function mapClinicFreshness({
   doctors,
   doctorSpecialties,
   approvedClinicReviews,
-  galleryEntries,
   accreditations,
   cities,
 }: Pick<
@@ -484,7 +405,6 @@ function mapClinicFreshness({
   | 'doctors'
   | 'doctorSpecialties'
   | 'approvedClinicReviews'
-  | 'galleryEntries'
   | 'accreditations'
   | 'cities'
 >) {
@@ -494,7 +414,6 @@ function mapClinicFreshness({
       ...clinicTreatments.map((item) => item.updatedAt),
       ...doctors.map((item) => item.updatedAt),
       ...doctorSpecialties.map((item) => item.updatedAt),
-      ...galleryEntries.map((item) => item.updatedAt),
       ...accreditations.map((item) => item.updatedAt),
       ...cities.map((item) => item.updatedAt),
     ]),
@@ -504,7 +423,6 @@ function mapClinicFreshness({
       'accreditation',
       'cities',
       'clinics',
-      'clinicGalleryEntries',
       'clinictreatments',
       'doctors',
       'doctorspecialties',
@@ -523,7 +441,6 @@ export function mapClinicToClinicDetailData({
   clinicReviewCount,
   approvedClinicReviews,
   doctorReviewCounts,
-  galleryEntries,
   accreditations,
   cities,
 }: ClinicDetailMappingArgs): ClinicDetailData {
@@ -558,7 +475,6 @@ export function mapClinicToClinicDetailData({
       doctorMediaByDoctorId,
       contactHref,
     }),
-    beforeAfterEntries: mapBeforeAfterEntries(clinic, galleryEntries),
     location: buildLocation(clinic, cityNameById),
     freshness: mapClinicFreshness({
       clinic,
@@ -566,7 +482,6 @@ export function mapClinicToClinicDetailData({
       doctors,
       doctorSpecialties,
       approvedClinicReviews,
-      galleryEntries,
       accreditations,
       cities,
     }),

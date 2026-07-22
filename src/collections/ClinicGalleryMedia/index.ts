@@ -3,8 +3,7 @@ import { randomUUID } from 'crypto'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-import { clinicGalleryReadAccess, clinicGalleryScopedMutationAccess } from '@/access/clinicGallery'
-import { platformOrAssignedClinicMutation } from '@/access/scopeFilters'
+import { disabledClinicGalleryAccess } from '@/access/clinicGallery'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
@@ -37,6 +36,7 @@ const dirname = path.dirname(filename)
 export const ClinicGalleryMedia: CollectionConfig = {
   slug: 'clinicGalleryMedia',
   admin: {
+    hidden: true,
     group: 'Clinics',
     description: 'Clinic gallery media',
     defaultColumns: ['clinic', 'status', 'alt', 'createdBy'],
@@ -47,11 +47,14 @@ export const ClinicGalleryMedia: CollectionConfig = {
     },
   },
   access: {
-    read: clinicGalleryReadAccess,
-    create: platformOrAssignedClinicMutation,
-    update: clinicGalleryScopedMutationAccess,
-    delete: clinicGalleryScopedMutationAccess,
+    admin: disabledClinicGalleryAccess,
+    read: disabledClinicGalleryAccess,
+    create: disabledClinicGalleryAccess,
+    update: disabledClinicGalleryAccess,
+    delete: disabledClinicGalleryAccess,
   },
+  endpoints: false,
+  graphQL: false,
   trash: true,
   hooks: {
     afterError: [afterErrorLogMediaUploadError],

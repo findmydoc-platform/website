@@ -133,7 +133,9 @@ export const createFillClinicDraftStep = <TState extends { clinicName: string }>
       await getAdminFieldRoot(page, 'contact.email').getByLabel('Email').fill(`admin-e2e+${Date.now()}@example.com`)
 
       await openAdminTab(page, 'Details & Status')
-      await selectComboboxOption(page, 'Supported Languages', 'English')
+      await selectComboboxOption(page, 'Supported Languages', 'English', {
+        scope: getAdminFieldRoot(page, 'supportedLanguages'),
+      })
     },
     stepId: options.stepId,
   }) satisfies AdminJourneyStep<TState>

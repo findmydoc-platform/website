@@ -7,7 +7,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { buildRichText } from '../fixtures/richText'
 import { testSlug } from '../fixtures/testSlug'
 import {
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
   createClinicTestUser,
@@ -15,7 +15,7 @@ import {
   createPlatformTestUser,
   type PayloadRequestUser,
 } from '../fixtures/testUsers'
-import type { Accreditation, BasicUser, PlatformContentMedia } from '@/payload-types'
+import type { Accreditation, PlatformContentMedia, PlatformStaff } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -45,14 +45,14 @@ describe('Accreditation lifecycle integration', () => {
     createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-${suffix}`,
       lastName: `User-${suffix}`,
-      createdBasicUserIds: createdUserIds,
+      createdStaffIds: createdUserIds,
     })
 
   const createClinicUser = (suffix: string) =>
     createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic-${suffix}`,
       lastName: `User-${suffix}`,
-      createdBasicUserIds: createdUserIds,
+      createdStaffIds: createdUserIds,
     })
 
   const createPatientUser = (suffix: string) =>
@@ -62,14 +62,14 @@ describe('Accreditation lifecycle integration', () => {
       createdPatientIds: createdPatientIds,
     })
 
-  const createPlatformContentMedia = async (suffix: string, platformUser: BasicUser) => {
+  const createPlatformContentMedia = async (suffix: string, platformUser: PlatformStaff) => {
     const created = (await payload.create({
       collection: 'platformContentMedia',
       data: {
         alt: `Accreditation icon ${suffix}`,
       } as Partial<PlatformContentMedia>,
       file: buildImageFile(`${slugPrefix}-icon-${suffix}.png`),
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       draft: false,
       depth: 0,
       overrideAccess: false,
@@ -99,7 +99,7 @@ describe('Accreditation lifecycle integration', () => {
     }
 
     await cleanupTrackedUsers(payload, {
-      basicUserIds: createdUserIds,
+      staffIds: createdUserIds,
       patientIds: createdPatientIds,
     })
   })
@@ -117,7 +117,7 @@ describe('Accreditation lifecycle integration', () => {
         description: buildRichText('Accreditation description'),
         icon: icon.id,
       } as unknown as Accreditation,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as Accreditation
@@ -143,7 +143,7 @@ describe('Accreditation lifecycle integration', () => {
         description: buildRichText('Original description'),
         icon: icon.id,
       } as unknown as Accreditation,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as Accreditation
@@ -162,7 +162,7 @@ describe('Accreditation lifecycle integration', () => {
         description: buildRichText('Updated description'),
         icon: nextIcon.id,
       } as unknown as Accreditation,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as Accreditation
@@ -186,7 +186,7 @@ describe('Accreditation lifecycle integration', () => {
         description: buildRichText('Temporary description'),
         icon: icon.id,
       } as unknown as Accreditation,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as Accreditation
@@ -194,7 +194,7 @@ describe('Accreditation lifecycle integration', () => {
     await payload.delete({
       collection: 'accreditation',
       id: accreditation.id,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
@@ -220,7 +220,7 @@ describe('Accreditation lifecycle integration', () => {
         country: 'Turkey',
         description: buildRichText('Public read validation'),
       } as unknown as Accreditation,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as Accreditation
@@ -237,7 +237,7 @@ describe('Accreditation lifecycle integration', () => {
     expect(publicRead.docs).toHaveLength(1)
 
     const blockedUsers: Array<{ label: string; user?: PayloadRequestUser }> = [
-      { label: 'clinic', user: asPayloadBasicUser(clinicUser) },
+      { label: 'clinic', user: asPayloadStaffUser(clinicUser) },
       { label: 'patient', user: asPayloadPatientUser(patientUser) },
       { label: 'anonymous' },
     ]
@@ -292,7 +292,7 @@ describe('Accreditation lifecycle integration', () => {
           description: buildRichText('Invalid icon relation'),
           icon: 99999999,
         } as unknown as Accreditation,
-        user: asPayloadBasicUser(platformUser),
+        user: asPayloadStaffUser(platformUser),
         overrideAccess: false,
         depth: 0,
       }),

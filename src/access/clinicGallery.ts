@@ -1,7 +1,7 @@
 import type { Access, Where } from 'payload'
 
-import { isPlatformBasicUser } from './isPlatformBasicUser'
-import { isClinicBasicUser } from './isClinicBasicUser'
+import { isPlatformStaff } from './isPlatformStaff'
+import { isClinicStaff } from './isClinicStaff'
 import { getUserAssignedClinicId } from './utils/getClinicAssignment'
 
 /**
@@ -13,11 +13,11 @@ import { getUserAssignedClinicId } from './utils/getClinicAssignment'
  * everyone else only sees published documents.
  */
 export const clinicGalleryReadAccess: Access = async ({ req }) => {
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
-  if (isClinicBasicUser({ req })) {
+  if (isClinicStaff({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     if (clinicId) {
       const clinicFilter: Where = {
@@ -42,11 +42,11 @@ export const clinicGalleryReadAccess: Access = async ({ req }) => {
  * Mutation access: platform users get full control; clinic staff are scoped to their clinic.
  */
 export const clinicGalleryScopedMutationAccess: Access = async ({ req }) => {
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
-  if (isClinicBasicUser({ req })) {
+  if (isClinicStaff({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     if (clinicId) {
       const clinicFilter: Where = {

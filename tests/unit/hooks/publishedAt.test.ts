@@ -5,14 +5,16 @@ import type { CollectionConfig, RequestContext } from 'payload'
 const makeArgs = ({
   data,
   originalDoc,
+  context,
 }: {
   data?: Record<string, unknown>
   originalDoc?: Record<string, unknown>
+  context?: Record<string, unknown>
 }) => ({
   data: { ...(data ?? {}) },
   originalDoc,
   collection: { slug: 'mock' } as unknown as CollectionConfig,
-  context: {} as unknown as RequestContext,
+  context: (context ?? {}) as unknown as RequestContext,
   req: undefined,
 })
 
@@ -77,5 +79,19 @@ describe('beforeChangePublishedAt', () => {
     )
 
     expect(result.publishedAt).toBe('2024-01-01T00:00:00.000Z')
+  })
+
+  it('clears an old publication date only for trusted seed draft replacement', async () => {
+    const hook = beforeChangePublishedAt({ statusKey: '_status' })
+
+    const result = await hook(
+      makeArgs({
+        data: { _status: 'draft', publishedAt: null },
+        originalDoc: { _status: 'published', publishedAt: '2023-10-10' },
+        context: { resetSeedPublishedAt: true },
+      }),
+    )
+
+    expect(result.publishedAt).toBeNull()
   })
 })

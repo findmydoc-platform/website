@@ -6,9 +6,9 @@ import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
-import { asBasicUserPayload } from '../fixtures/clinicUserFixtures'
+import { asStaffPayloadUser } from '../fixtures/clinicUserFixtures'
 import { createTinyPngFile } from '../fixtures/mediaFile'
-import type { BasicUser, Patient, PlatformContentMedia } from '@/payload-types'
+import type { ClinicStaff, Patient, PlatformContentMedia, PlatformStaff } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -18,43 +18,45 @@ describe('PlatformContentMedia integration - lifecycle', () => {
   let payload: Payload
   const slugPrefix = testSlug('platformContentMedia.lifecycle.test.ts')
   const createdMediaIds: Array<number> = []
-  const createdUserIds: Array<number> = []
+  const createdPlatformStaffIds: Array<number> = []
+  const createdClinicStaffIds: Array<number> = []
   const createdPatientIds: Array<number> = []
 
   const uniqueSupabaseUserId = (suffix: string) => `${slugPrefix}-${suffix}-${randomUUID()}`
 
   const createPlatformUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const platformStaff = (await payload.create({
+      collection: 'platformStaff',
       data: {
         email: `${slugPrefix}-${suffix}@findmydoc.eu`,
         supabaseUserId: uniqueSupabaseUserId(suffix),
-        userType: 'platform',
         firstName: 'Platform',
         lastName: `User-${suffix}`,
+        role: 'support',
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
-    })) as BasicUser
+    })) as PlatformStaff
 
-    createdUserIds.push(basicUser.id)
-    return basicUser
+    createdPlatformStaffIds.push(platformStaff.id)
+    return platformStaff
   }
 
   const createClinicUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const clinicStaff = (await payload.create({
+      collection: 'clinicStaff',
       data: {
         email: `${slugPrefix}-clinic-${suffix}@example.com`,
         supabaseUserId: uniqueSupabaseUserId(`clinic-${suffix}`),
-        userType: 'clinic',
         firstName: 'Clinic',
         lastName: `User-${suffix}`,
+        status: 'pending',
       },
       overrideAccess: true,
-    })) as BasicUser
+    })) as ClinicStaff
 
-    createdUserIds.push(basicUser.id)
-    return basicUser
+    createdClinicStaffIds.push(clinicStaff.id)
+    return clinicStaff
   }
 
   const createPatientUser = async (suffix: string) => {
@@ -82,7 +84,8 @@ describe('PlatformContentMedia integration - lifecycle', () => {
     await cleanupTrackedDocs(payload, [
       { collection: 'platformContentMedia', ids: createdMediaIds },
       { collection: 'patients', ids: createdPatientIds },
-      { collection: 'basicUsers', ids: createdUserIds },
+      { collection: 'clinicStaff', ids: createdClinicStaffIds },
+      { collection: 'platformStaff', ids: createdPlatformStaffIds },
     ])
   })
 
@@ -95,7 +98,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
         alt: 'Hero image',
       } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-hero.png`),
-      user: asBasicUserPayload(platformUser),
+      user: asStaffPayloadUser(platformUser),
       draft: false,
       depth: 0,
       overrideAccess: false,
@@ -117,7 +120,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
         alt: 'Before alt',
       } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-alt.png`),
-      user: asBasicUserPayload(platformUser),
+      user: asStaffPayloadUser(platformUser),
       draft: false,
       depth: 0,
       overrideAccess: false,
@@ -131,7 +134,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
       data: {
         alt: 'After alt',
       },
-      user: asBasicUserPayload(platformUser),
+      user: asStaffPayloadUser(platformUser),
       depth: 0,
       overrideAccess: false,
     })) as PlatformContentMedia
@@ -149,7 +152,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
       collection: 'platformContentMedia',
       data: { alt: 'Public readable media' } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-access.png`),
-      user: asBasicUserPayload(platformUser),
+      user: asStaffPayloadUser(platformUser),
       draft: false,
       overrideAccess: false,
       depth: 0,
@@ -171,7 +174,7 @@ describe('PlatformContentMedia integration - lifecycle', () => {
         collection: 'platformContentMedia',
         data: { alt: 'Clinic create blocked' } as Partial<PlatformContentMedia>,
         file: createTinyPngFile(`${slugPrefix}-clinic-blocked.png`),
-        user: asBasicUserPayload(clinicUser),
+        user: asStaffPayloadUser(clinicUser),
         draft: false,
         overrideAccess: false,
         depth: 0,

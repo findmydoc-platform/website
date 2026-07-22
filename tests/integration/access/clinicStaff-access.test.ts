@@ -6,15 +6,15 @@ import config from '@payload-config'
 import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import { createClinicFixture } from '../../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../../fixtures/cleanupTestEntities'
-import { cleanupTrackedUsers, createPlatformTestUser, asPayloadBasicUser } from '../../fixtures/testUsers'
-import { asBasicUserPayload, createClinicUserWithStaff, approveClinicStaff } from '../../fixtures/clinicUserFixtures'
+import { cleanupTrackedUsers, createPlatformTestUser, asPayloadStaffUser } from '../../fixtures/testUsers'
+import { asStaffPayloadUser, createClinicStaffFixture, approveClinicStaff } from '../../fixtures/clinicUserFixtures'
 import { testSlug } from '../../fixtures/testSlug'
 
 describe('ClinicStaff access', () => {
   let payload: Payload
   let cityId: number
   const slugPrefix = testSlug('clinicStaff-access.test.ts')
-  const createdBasicUserIds: Array<number | string> = []
+  const createdStaffIds: Array<number | string> = []
   const createdClinicStaffIds: Array<number | string> = []
 
   beforeAll(async () => {
@@ -36,7 +36,7 @@ describe('ClinicStaff access', () => {
       } catch {}
     }
 
-    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds })
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
   })
@@ -45,16 +45,14 @@ describe('ClinicStaff access', () => {
     const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-read-a` })
     const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-read-b` })
 
-    const { basicUser: clinicUserA, clinicStaff: staffA } = await createClinicUserWithStaff(payload, {
+    const { staffUser: clinicUserA, clinicStaff: staffA } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'read-a',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
-    const { clinicStaff: staffB } = await createClinicUserWithStaff(payload, {
+    const { clinicStaff: staffB } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'read-b',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
 
@@ -63,7 +61,7 @@ describe('ClinicStaff access', () => {
 
     const results = await payload.find({
       collection: 'clinicStaff',
-      user: asBasicUserPayload(clinicUserA),
+      user: asStaffPayloadUser(clinicUserA),
       overrideAccess: false,
       depth: 0,
     })
@@ -71,22 +69,53 @@ describe('ClinicStaff access', () => {
     expect(results.docs).toHaveLength(1)
     expect(results.docs[0]?.id).toBe(staffA.id)
     expect(results.docs[0]?.clinic).toBe(clinicA.id)
+    expect(results.docs[0]).toMatchObject({
+      email: staffA.email,
+      firstName: staffA.firstName,
+      lastName: staffA.lastName,
+    })
+    expect(results.docs[0]).not.toHaveProperty('supabaseUserId')
+  })
+
+  it('allows platform staff to review safe clinic identity fields', async () => {
+    const { clinicStaff } = await createClinicStaffFixture(payload, {
+      slugPrefix,
+      suffix: 'platform-review',
+      createdClinicStaffIds,
+    })
+    const platformUser = await createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-platform-review`,
+      createdStaffIds,
+    })
+
+    const result = await payload.findByID({
+      collection: 'clinicStaff',
+      id: clinicStaff.id,
+      user: asPayloadStaffUser(platformUser),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    expect(result).toMatchObject({
+      email: clinicStaff.email,
+      firstName: clinicStaff.firstName,
+      lastName: clinicStaff.lastName,
+    })
+    expect(result).not.toHaveProperty('supabaseUserId')
   })
 
   it('keeps authorization fields immutable for clinic staff', async () => {
     const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-update-a` })
     const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-update-b` })
 
-    const { basicUser: clinicUserA, clinicStaff: staffA } = await createClinicUserWithStaff(payload, {
+    const { staffUser: clinicUserA, clinicStaff: staffA } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'update-a',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
-    const { basicUser: clinicUserB, clinicStaff: staffB } = await createClinicUserWithStaff(payload, {
+    const { staffUser: _clinicUserB, clinicStaff: staffB } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'update-b',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
 
@@ -96,15 +125,14 @@ describe('ClinicStaff access', () => {
     const updated = await payload.update({
       collection: 'clinicStaff',
       id: staffA.id,
-      data: { clinic: clinicB.id, user: clinicUserB.id },
-      user: asBasicUserPayload(clinicUserA),
+      data: { clinic: clinicB.id },
+      user: asStaffPayloadUser(clinicUserA),
       overrideAccess: false,
       depth: 0,
     })
 
     expect(updated.id).toBe(staffA.id)
     expect(updated.clinic).toBe(clinicA.id)
-    expect(updated.user).toBe(clinicUserA.id)
 
     const persisted = await payload.findByID({
       collection: 'clinicStaff',
@@ -114,14 +142,13 @@ describe('ClinicStaff access', () => {
     })
 
     expect(persisted.clinic).toBe(clinicA.id)
-    expect(persisted.user).toBe(clinicUserA.id)
 
     await expect(
       payload.update({
         collection: 'clinicStaff',
         id: staffB.id,
         data: { clinic: clinicB.id },
-        user: asBasicUserPayload(clinicUserA),
+        user: asStaffPayloadUser(clinicUserA),
         overrideAccess: false,
         depth: 0,
       }),
@@ -129,14 +156,14 @@ describe('ClinicStaff access', () => {
 
     const platformUser = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const platformUpdated = await payload.update({
       collection: 'clinicStaff',
       id: staffB.id,
       data: { clinic: clinicA.id },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
@@ -147,7 +174,7 @@ describe('ClinicStaff access', () => {
       payload.delete({
         collection: 'clinicStaff',
         id: staffA.id,
-        user: asPayloadBasicUser(platformUser),
+        user: asPayloadStaffUser(platformUser),
         overrideAccess: false,
       }),
     ).rejects.toThrow()

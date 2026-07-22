@@ -1,6 +1,7 @@
 import { CollectionConfig } from 'payload'
+import { computedOnlyFieldAccess } from '@/access/fieldAccess'
 import { anyone } from '@/access/anyone'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateTreatmentChange, revalidateTreatmentDelete } from '@/hooks/revalidateClinicSurfaces'
 
@@ -22,9 +23,9 @@ export const Treatments: CollectionConfig<'treatments'> = {
   },
   access: {
     read: anyone,
-    create: isPlatformBasicUser,
-    update: isPlatformBasicUser,
-    delete: isPlatformBasicUser,
+    create: isPlatformStaff,
+    update: isPlatformStaff,
+    delete: isPlatformStaff,
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook],
@@ -89,6 +90,10 @@ export const Treatments: CollectionConfig<'treatments'> = {
               type: 'number',
               min: 0,
               max: 5,
+              access: {
+                create: computedOnlyFieldAccess,
+                update: computedOnlyFieldAccess,
+              },
               admin: {
                 description: 'Average patient rating',
                 readOnly: true,

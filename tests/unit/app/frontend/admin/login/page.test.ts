@@ -2,7 +2,9 @@ import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PREVIEW_GUARD_LOCK_REQUEST_HEADER, PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY } from '@/features/previewGuard'
 import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
-import type { BasicUser } from '@/payload-types'
+import type { PlatformStaff } from '@/payload-types'
+
+type StaffUserOverrides = Partial<PlatformStaff> & { userType?: 'clinic' | 'platform' }
 
 // Ensure React is available globally for JSX emitted during tests
 ;(globalThis as unknown as { React: typeof React }).React = React
@@ -63,21 +65,27 @@ describe('Admin LoginPage', () => {
     className: string
     children: React.ReactNode
   }>
-  type LoginRootElement = React.ReactElement<{ children: React.ReactNode; redirectPath: string }>
+  type LoginRootElement = React.ReactElement<{
+    children: React.ReactNode
+    redirectPath: string
+    userTypes: string
+  }>
   type LogoElement = React.ReactElement<{ className?: string; showPreviewBadge?: boolean }>
 
-  const makeStaffUser = (overrides: Partial<BasicUser>): BasicUser => ({
-    id: overrides.id ?? 1,
-    collection: overrides.collection ?? 'basicUsers',
-    email: overrides.email ?? 'staff@example.com',
-    firstName: overrides.firstName ?? 'Staff',
-    lastName: overrides.lastName ?? 'User',
-    userType: overrides.userType ?? 'clinic',
-    createdAt: overrides.createdAt ?? '2023-01-01T00:00:00.000Z',
-    updatedAt: overrides.updatedAt ?? '2023-01-01T00:00:00.000Z',
-    supabaseUserId: overrides.supabaseUserId,
-    profileImage: overrides.profileImage,
-  })
+  const makeStaffUser = (overrides: StaffUserOverrides): PlatformStaff =>
+    ({
+      id: overrides.id ?? 1,
+      collection: 'platformStaff',
+      email: overrides.email ?? 'staff@example.com',
+      firstName: overrides.firstName ?? 'Staff',
+      lastName: overrides.lastName ?? 'User',
+      role: overrides.role ?? 'support',
+      stableId: overrides.stableId ?? 'platform-staff-1',
+      createdAt: overrides.createdAt ?? '2023-01-01T00:00:00.000Z',
+      updatedAt: overrides.updatedAt ?? '2023-01-01T00:00:00.000Z',
+      supabaseUserId: overrides.supabaseUserId,
+      profileImage: overrides.profileImage,
+    }) as PlatformStaff
 
   const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
@@ -85,7 +93,7 @@ describe('Admin LoginPage', () => {
   const isLoginRootElement = (value: React.ReactNode): value is LoginRootElement => {
     if (!React.isValidElement(value)) return false
     if (!isObjectRecord(value.props)) return false
-    return typeof value.props.redirectPath === 'string'
+    return typeof value.props.redirectPath === 'string' && value.props.userTypes === 'platform'
   }
 
   const isLogoElement = (value: React.ReactNode): value is LogoElement => {
@@ -168,9 +176,10 @@ describe('Admin LoginPage', () => {
     vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({ status: 'no_platform_staff' })
 
     const result = await LoginPage({})
+    const rootElement = getLoginRootElement(result as LoginPageElement)
 
     expect(redirect).not.toHaveBeenCalled()
-    expect(result).toBeTruthy()
+    expect(rootElement.props).toMatchObject({ redirectPath: '/admin', userTypes: 'platform' })
   })
 
   it('logs a distinct warning when platform staff exists without an admin role', async () => {
@@ -271,7 +280,7 @@ describe('Admin LoginPage', () => {
     )
   })
 
-  it('redirects to admin when a clinic session is active', async () => {
+  it('does not use a clinic session for the portal admin login', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
@@ -294,11 +303,8 @@ describe('Admin LoginPage', () => {
 
     await LoginPage({})
 
-    expect(findUserBySupabaseId).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.objectContaining({ supabaseUserId: 'user-1', userType: 'clinic' }),
-    )
-    expect(redirect).toHaveBeenCalledWith('/admin')
+    expect(findUserBySupabaseId).not.toHaveBeenCalled()
+    expect(redirect).not.toHaveBeenCalled()
   })
 
   it('redirects to admin when a platform session is active', async () => {
@@ -493,10 +499,10 @@ describe('Admin LoginPage', () => {
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
     const result = await LoginPage({})
+    const rootElement = getLoginRootElement(result as LoginPageElement)
 
     expect(redirect).not.toHaveBeenCalled()
-    expect(result).toBeTruthy()
-    expect(result.props.className).toContain('flex')
+    expect(rootElement.props).toMatchObject({ redirectPath: '/admin', userTypes: 'platform' })
   })
 
   it('shows preview-required message from search params', async () => {
@@ -575,7 +581,7 @@ describe('Admin LoginPage', () => {
     expect(logoElement?.props.showPreviewBadge).toBe(true)
   })
 
-  it('redirects approved clinic users in preview runtime when preview guard is disabled', async () => {
+  it('does not redirect clinic sessions in preview runtime', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
@@ -599,10 +605,10 @@ describe('Admin LoginPage', () => {
 
     await LoginPage({})
 
-    expect(redirect).toHaveBeenCalledWith('/admin')
+    expect(redirect).not.toHaveBeenCalled()
   })
 
-  it('blocks clinic sessions when preview guard lock header is present', async () => {
+  it('shows the generic preview login message for clinic sessions', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
@@ -633,10 +639,10 @@ describe('Admin LoginPage', () => {
     const statusElement = rootChildren[1]
 
     expect(redirect).not.toHaveBeenCalled()
-    expect(statusElement?.props.message).toBe('This preview deployment is restricted to platform staff accounts.')
+    expect(statusElement?.props.message).toBe('This is a preview deployment. Please sign in to continue.')
   })
 
-  it('does not treat a temporary landing-only lock as preview guard login restriction', async () => {
+  it('does not redirect clinic sessions during a temporary landing-only lock', async () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
     const { redirect } = await import('next/navigation')
@@ -665,6 +671,6 @@ describe('Admin LoginPage', () => {
 
     await LoginPage({})
 
-    expect(redirect).toHaveBeenCalledWith('/admin')
+    expect(redirect).not.toHaveBeenCalled()
   })
 })

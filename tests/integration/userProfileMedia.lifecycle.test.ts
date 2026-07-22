@@ -7,7 +7,7 @@ import { testSlug } from '../fixtures/testSlug'
 import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { createTinyPngFile } from '../fixtures/mediaFile'
 import { runBaselineContract } from './contracts/baselineContract'
-import type { BasicUser, Patient, UserProfileMedia } from '@/payload-types'
+import type { Patient, PlatformStaff, UserProfileMedia } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -25,10 +25,10 @@ describe('UserProfileMedia integration - lifecycle', () => {
 
   const createdMediaIds: Array<number> = []
   const createdPatientIds: Array<number> = []
-  const createdBasicUserIds: Array<number> = []
+  const createdPlatformStaffIds: Array<number> = []
 
   const asPatientUser = (patient: Patient): PayloadUser => ({ ...patient, collection: 'patients' }) as PayloadUser
-  const asPlatformUser = (user: BasicUser): PayloadUser => ({ ...user, collection: 'basicUsers' }) as PayloadUser
+  const asPlatformUser = (user: PlatformStaff): PayloadUser => ({ ...user, collection: 'platformStaff' }) as PayloadUser
 
   const createPatient = async (suffix: string) => {
     const patient = (await payload.create({
@@ -48,21 +48,22 @@ describe('UserProfileMedia integration - lifecycle', () => {
   }
 
   const createPlatformUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const platformStaff = (await payload.create({
+      collection: 'platformStaff',
       data: {
         email: `${slugPrefix}-platform-${suffix}@findmydoc.eu`,
-        userType: 'platform',
         firstName: 'Platform',
         lastName: `User-${suffix}`,
+        role: 'support',
         supabaseUserId: `sb-${slugPrefix}-platform-${suffix}`,
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
       depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
+    } as PayloadCreateArgs)) as PlatformStaff
 
-    createdBasicUserIds.push(basicUser.id)
-    return basicUser
+    createdPlatformStaffIds.push(platformStaff.id)
+    return platformStaff
   }
 
   const getRelationValueId = (relation: UserRelation) => {
@@ -79,7 +80,7 @@ describe('UserProfileMedia integration - lifecycle', () => {
     await cleanupTrackedDocs(payload, [
       { collection: 'userProfileMedia', ids: createdMediaIds },
       { collection: 'patients', ids: createdPatientIds },
-      { collection: 'basicUsers', ids: createdBasicUserIds },
+      { collection: 'platformStaff', ids: createdPlatformStaffIds },
     ])
   })
 

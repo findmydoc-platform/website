@@ -26,8 +26,6 @@ describe('ClinicMedia Collection Access Control', () => {
     test('Clinic Staff document read is scoped to their clinic', async () => {
       const clinicId = 555
       const req = createMockReq(mockUsers.clinic(2, clinicId), payload)
-      // simulate clinic assignment resolution for scoping
-      payload.find.mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
       const result = await ClinicMedia.access!.read!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, { payload }),
       )
@@ -77,7 +75,6 @@ describe('ClinicMedia Collection Access Control', () => {
     test('Clinic Staff static file read keeps clinic scoping', async () => {
       const clinicId = 777
       const req = createMockReq(mockUsers.clinic(2, clinicId), payload)
-      payload.find.mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
 
       const result = await ClinicMedia.access!.read!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, {
@@ -177,13 +174,9 @@ describe('ClinicMedia Collection Access Control', () => {
 
     test('Clinic staff scoped to their clinic', async () => {
       const req = createMockReq(mockUsers.clinic(2, mockClinicId), payload)
-      // Mock getUserAssignedClinicId lookup path: simulate payload.find returning assigned clinic
-      payload.find.mockResolvedValueOnce({ docs: [{ clinic: mockClinicId }] })
       const updateScope = await ClinicMedia.access!.update!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, { payload }),
       )
-      // For delete we need another call
-      payload.find.mockResolvedValueOnce({ docs: [{ clinic: mockClinicId }] })
       const deleteScope = await ClinicMedia.access!.delete!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, { payload }),
       )

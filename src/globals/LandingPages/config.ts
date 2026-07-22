@@ -1,6 +1,6 @@
 import type { Field, GlobalConfig } from 'payload'
 
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { link } from '@/fields/link'
 import { landingSocialHosts, validateLandingHref } from '@/utilities/landing/safeLandingHref'
 
@@ -421,63 +421,11 @@ const aboutTeamField: Field = {
   ],
 }
 
-const pricingFields: Field[] = [
-  ...sectionIntroFields,
-  {
-    name: 'plans',
-    type: 'array',
-    required: true,
-    minRows: 1,
-    admin: {
-      description: 'Partner pricing cards.',
-      initCollapsed: true,
-    },
-    fields: [
-      { name: 'price', type: 'text', required: true },
-      { name: 'billingLabel', type: 'text', required: false },
-      { name: 'plan', type: 'text', required: true },
-      { name: 'description', type: 'textarea', required: true },
-      {
-        name: 'highlights',
-        type: 'array',
-        required: false,
-        fields: [{ name: 'text', type: 'text', required: true }],
-      },
-      { name: 'buttonText', type: 'text', required: true },
-      { name: 'badge', type: 'text', required: false },
-      {
-        name: 'layout',
-        type: 'select',
-        required: true,
-        defaultValue: 'primary',
-        options: [
-          { label: 'Primary', value: 'primary' },
-          { label: 'Compact', value: 'compact' },
-        ],
-      },
-    ],
-  },
-]
-
-const pricingModelField: Field = {
-  name: 'pricingModel',
-  type: 'array',
-  required: false,
-  admin: {
-    description: 'Pricing model explanation items.',
-    initCollapsed: true,
-  },
-  fields: [
-    { name: 'title', type: 'text', required: true },
-    { name: 'description', type: 'textarea', required: true },
-  ],
-}
-
 export const LandingPages: GlobalConfig = {
   slug: 'landingPages',
   access: {
     read: () => true,
-    update: ({ req }) => isPlatformBasicUser({ req }),
+    update: ({ req }) => isPlatformStaff({ req }),
   },
   admin: {
     group: 'Content & Media',
@@ -603,12 +551,6 @@ export const LandingPages: GlobalConfig = {
               type: 'group',
               fields: sectionIntroFields,
             },
-            {
-              name: 'pricing',
-              type: 'group',
-              fields: pricingFields,
-            },
-            pricingModelField,
             {
               name: 'faq',
               type: 'group',

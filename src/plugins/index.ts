@@ -4,7 +4,6 @@ import { redirectsPlugin } from '@payloadcms/plugin-redirects'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import { searchPlugin } from '@payloadcms/plugin-search'
 import { s3Storage } from '@payloadcms/storage-s3'
-import { importExportPlugin } from '@payloadcms/plugin-import-export'
 import { Plugin, slugField, type Field } from 'payload'
 import { revalidateRedirects } from '@/hooks/revalidateRedirects'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
@@ -13,6 +12,8 @@ import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
 import { createMcpPlugin } from './mcp'
 import { shouldUseCloudStorage } from './storageConfig'
+import { importExport } from './importExport'
+import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -108,6 +109,7 @@ export const plugins: Plugin[] = [
   redirectsPlugin({
     collections: ['pages', 'posts'],
     overrides: {
+      access: generatedCollectionAccess.redirects,
       admin: {
         group: 'Settings',
       },
@@ -149,6 +151,7 @@ export const plugins: Plugin[] = [
       payment: false,
     },
     formOverrides: {
+      access: generatedCollectionAccess.forms,
       admin: {
         group: 'Settings',
       },
@@ -188,6 +191,7 @@ export const plugins: Plugin[] = [
       },
     },
     formSubmissionOverrides: {
+      access: generatedCollectionAccess['form-submissions'],
       admin: {
         group: 'Platform Management',
       },
@@ -201,6 +205,7 @@ export const plugins: Plugin[] = [
     // and rely on regular writes / manual reindex afterwards.
     skipSync: ({ req }) => Boolean(req.context?.disableSearchSync),
     searchOverrides: {
+      access: searchPluginCollectionAccessOverrides,
       admin: {
         group: 'Settings',
       },
@@ -210,40 +215,6 @@ export const plugins: Plugin[] = [
     },
   }),
   createMcpPlugin(),
-  importExportPlugin({
-    collections: [
-      { slug: 'pages' },
-      { slug: 'posts' },
-      { slug: 'platformContentMedia' },
-      { slug: 'clinicMedia' },
-      { slug: 'clinicGalleryMedia' },
-      { slug: 'clinicGalleryEntries' },
-      { slug: 'doctorMedia' },
-      { slug: 'userProfileMedia' },
-      { slug: 'categories' },
-      { slug: 'basicUsers' },
-      { slug: 'patients' },
-      { slug: 'clinicStaff' },
-      { slug: 'platformStaff' },
-      { slug: 'clinicApplications', import: false },
-      { slug: 'patientClinicInquiries', import: false },
-      { slug: 'clinics' },
-      { slug: 'doctors' },
-      { slug: 'accreditation' },
-      { slug: 'medical-specialties' },
-      { slug: 'treatments' },
-      { slug: 'clinictreatments' },
-      { slug: 'doctortreatments' },
-      { slug: 'doctorspecialties' },
-      { slug: 'favoriteclinics' },
-      { slug: 'reviews' },
-      { slug: 'countries' },
-      { slug: 'cities' },
-      { slug: 'tags' },
-      { slug: 'redirects' },
-      { slug: 'forms' },
-      { slug: 'form-submissions', import: false },
-    ],
-  }),
+  importExport,
   s3StoragePlugin,
 ]

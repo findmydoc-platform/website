@@ -6,7 +6,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { BasicUser, Favoriteclinic, Patient } from '@/payload-types'
+import type { Favoriteclinic, Patient, PlatformStaff } from '@/payload-types'
 
 type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
 
@@ -17,14 +17,14 @@ describe('FavoriteClinics lifecycle integration', () => {
 
   const createdFavoriteIds: Array<number> = []
   const createdPatientIds: Array<number> = []
-  const createdBasicUserIds: Array<number> = []
+  const createdPlatformStaffIds: Array<number> = []
 
   const asPatientUser = (patient: Patient): PayloadUser => {
     return { ...patient, collection: 'patients' as const } as PayloadUser
   }
 
-  const asPlatformUser = (basicUser: BasicUser): PayloadUser => {
-    return { ...basicUser, collection: 'basicUsers' as const } as PayloadUser
+  const asPlatformUser = (platformStaff: PlatformStaff): PayloadUser => {
+    return { ...platformStaff, collection: 'platformStaff' as const } as PayloadUser
   }
 
   const createPatient = async (suffix: string) => {
@@ -45,21 +45,22 @@ describe('FavoriteClinics lifecycle integration', () => {
   }
 
   const createPlatformUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const platformStaff = (await payload.create({
+      collection: 'platformStaff',
       data: {
         email: `${slugPrefix}-platform-${suffix}@findmydoc.eu`,
-        userType: 'platform',
         firstName: 'Platform',
         lastName: `User-${suffix}`,
+        role: 'support',
         supabaseUserId: `sb-${slugPrefix}-platform-${suffix}`,
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
       depth: 0,
-    })) as BasicUser
+    })) as PlatformStaff
 
-    createdBasicUserIds.push(basicUser.id)
-    return basicUser
+    createdPlatformStaffIds.push(platformStaff.id)
+    return platformStaff
   }
 
   beforeAll(async () => {
@@ -89,11 +90,11 @@ describe('FavoriteClinics lifecycle integration', () => {
       } catch {}
     }
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
+    while (createdPlatformStaffIds.length) {
+      const id = createdPlatformStaffIds.pop()
       if (!id) continue
       try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
+        await payload.delete({ collection: 'platformStaff', id, overrideAccess: true })
       } catch {}
     }
 

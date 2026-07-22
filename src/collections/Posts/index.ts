@@ -14,7 +14,7 @@ import {
   PreviewField,
 } from '@payloadcms/plugin-seo/fields'
 import { slugField } from 'payload'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 import {
   BlocksFeature,
@@ -29,10 +29,10 @@ import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/st
 export const Posts: CollectionConfig<'posts'> = {
   slug: 'posts',
   access: {
-    create: ({ req }) => isPlatformBasicUser({ req }),
-    delete: ({ req }) => isPlatformBasicUser({ req }),
+    create: ({ req }) => isPlatformStaff({ req }),
+    delete: ({ req }) => isPlatformStaff({ req }),
     read: ({ req }) => platformOnlyOrPublished({ req }),
-    update: ({ req }) => isPlatformBasicUser({ req }),
+    update: ({ req }) => isPlatformStaff({ req }),
   },
   // This config controls what's populated by default when a post is referenced
   // https://payloadcms.com/docs/queries/select#defaultpopulate-collection-config-property
@@ -229,12 +229,7 @@ export const Posts: CollectionConfig<'posts'> = {
       },
       hasMany: true,
       maxDepth: 1,
-      relationTo: 'basicUsers',
-      filterOptions: {
-        userType: {
-          equals: 'platform',
-        },
-      },
+      relationTo: 'platformStaff',
     },
     // This virtual field projects safe public author metadata from `authors`.
     // The underlying relation remains persisted on the post document.

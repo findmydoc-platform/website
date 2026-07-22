@@ -180,9 +180,12 @@ function resolveDoctorName(doctor: Doctor): string {
 }
 
 function buildFullAddress(clinic: Clinic, cityNameById: Map<number, string>): string | undefined {
-  const streetLine = normalizeWhitespace(`${clinic.address.street} ${clinic.address.houseNumber}`)
+  const address = clinic.address
+  if (!address) return undefined
 
-  const cityRelation = clinic.address.city
+  const streetLine = normalizeWhitespace(`${address.street ?? ''} ${address.houseNumber ?? ''}`)
+
+  const cityRelation = address.city
   const cityNameFromRelation =
     cityRelation && typeof cityRelation === 'object' && 'name' in cityRelation && typeof cityRelation.name === 'string'
       ? cityRelation.name
@@ -190,10 +193,10 @@ function buildFullAddress(clinic: Clinic, cityNameById: Map<number, string>): st
   const cityNameFromMap = cityNameById.get(extractRelationId(cityRelation) ?? -1) ?? null
   const cityName = cityNameFromRelation ?? cityNameFromMap
 
-  const zipCode = Number.isFinite(clinic.address.zipCode) ? String(clinic.address.zipCode) : ''
+  const zipCode = Number.isFinite(address.zipCode) ? String(address.zipCode) : ''
   const cityLine = normalizeWhitespace(`${zipCode} ${cityName ?? ''}`)
 
-  const country = typeof clinic.address.country === 'string' ? clinic.address.country.trim() : ''
+  const country = typeof address.country === 'string' ? address.country.trim() : ''
 
   const fullAddress = [streetLine, cityLine, country].filter((part) => part.length > 0).join(', ')
   return fullAddress.length > 0 ? fullAddress : undefined
@@ -203,8 +206,8 @@ function buildLocation(clinic: Clinic, cityNameById: Map<number, string>): Clini
   const coordinates =
     Array.isArray(clinic.coordinates) && clinic.coordinates.length === 2
       ? {
-          lat: Number(clinic.coordinates[0]),
-          lng: Number(clinic.coordinates[1]),
+          lat: Number(clinic.coordinates[1]),
+          lng: Number(clinic.coordinates[0]),
         }
       : undefined
 
@@ -340,7 +343,7 @@ function mapTrust({
 
   const accreditationNames = Array.from(new Set([...accreditationNamesFromClinic, ...accreditationNamesFromLookup]))
 
-  const languages = clinic.supportedLanguages
+  const languages = (clinic.supportedLanguages ?? [])
     .map((value) => toLanguageLabel(value))
     .filter((value): value is string => Boolean(value))
 

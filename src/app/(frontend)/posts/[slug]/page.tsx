@@ -4,7 +4,7 @@ import { RelatedPosts } from '@/blocks/RelatedPosts/Component'
 import { PayloadRedirects } from '@/app/(frontend)/_components/PayloadRedirects'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
-import { draftMode } from 'next/headers'
+import { draftMode, headers } from 'next/headers'
 import React, { cache } from 'react'
 import RichText from '@/blocks/_shared/RichText'
 
@@ -23,6 +23,7 @@ import { resolveContentLocaleContext, type ContentLocaleContext } from '@/utilit
 import { buildPostPath, buildPostsIndexPath } from '@/utilities/content/postPaths'
 import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { JsonLdScript, buildArticlePageJsonLd } from '@/utilities/structuredData'
+import { isTemporaryLandingModeRequest } from '@/features/temporaryLandingMode'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -45,13 +46,13 @@ type Args = {
 }
 
 export default async function Post({ params: paramsPromise, searchParams: searchParamsPromise }: Args) {
-  const { isEnabled: draft } = await draftMode()
+  const draft = await resolveDraftAccess()
   const { slug = '' } = await paramsPromise
   const searchParams = await searchParamsPromise
   const contentLocale = resolveContentLocaleContext(searchParams.locale)
   const canonicalPostPath = buildPostPath(slug)
   const localizedPostPath = buildPostPath(slug, contentLocale)
-  const post = await queryPostBySlug({ contentLocale, slug })
+  const post = await queryPostBySlug({ contentLocale, draft, slug })
 
   if (!post) return <PayloadRedirects url={canonicalPostPath} />
 
@@ -166,19 +167,24 @@ export async function generateMetadata({
   const { slug = '' } = await paramsPromise
   const searchParams = await searchParamsPromise
   const contentLocale = resolveContentLocaleContext(searchParams.locale)
-  const post = await queryPostBySlug({ contentLocale, slug })
+  const draft = await resolveDraftAccess()
+  const post = await queryPostBySlug({ contentLocale, draft, slug })
 
   return generateMeta({ doc: post, path: buildPostPath(slug, contentLocale), sourceCollection: 'posts' })
 }
 
 const queryPostBySlug = cache(
-  async ({ slug, contentLocale }: { contentLocale?: ContentLocaleContext; slug: string }) => {
+  async ({ slug, contentLocale, draft }: { contentLocale?: ContentLocaleContext; draft: boolean; slug: string }) => {
     const normalizedContentLocale = contentLocale ?? {}
-
-    const { isEnabled: draft } = await draftMode()
 
     const payload = await getPayload({ config: configPromise })
 
     return findPostBySlug(payload, slug, draft, normalizedContentLocale)
   },
 )
+
+const resolveDraftAccess = async (): Promise<boolean> => {
+  const [{ isEnabled }, requestHeaders] = await Promise.all([draftMode(), headers()])
+
+  return isEnabled && !isTemporaryLandingModeRequest(requestHeaders)
+}

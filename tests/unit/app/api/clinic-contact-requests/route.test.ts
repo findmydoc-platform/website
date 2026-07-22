@@ -5,6 +5,9 @@ const findMock = vi.fn()
 const findByIDMock = vi.fn()
 const createMock = vi.fn()
 const loggerMock = { error: vi.fn(), info: vi.fn() }
+const databaseAdapterAccessMock = vi.fn(() => {
+  throw new Error('Payload database adapter must not be accessed')
+})
 
 vi.mock('payload', async (importOriginal) => {
   const actual = await importOriginal<typeof import('payload')>()
@@ -17,6 +20,9 @@ vi.mock('payload', async (importOriginal) => {
       findByID: findByIDMock,
       create: createMock,
       logger: loggerMock,
+      get db() {
+        return databaseAdapterAccessMock()
+      },
     }),
   }
 })
@@ -229,6 +235,22 @@ describe('POST /api/clinic-contact-requests', () => {
     expect(createArgs?.data).not.toHaveProperty('preferredTime')
     expect(createArgs?.data).not.toHaveProperty('formUrl')
     expect(createArgs?.data).not.toHaveProperty('sourceMeta')
+
+    const doctorLookup = findMock.mock.calls
+      .map(([args]) => args as { collection?: string; select?: unknown; where?: unknown })
+      .find((args) => args.collection === 'doctors')
+    expect(doctorLookup).toEqual(
+      expect.objectContaining({
+        select: expect.objectContaining({ active: true }),
+        where: {
+          and: expect.arrayContaining([
+            { id: { equals: 601 } },
+            { clinic: { equals: 1 } },
+            { active: { equals: true } },
+          ]),
+        },
+      }),
+    )
   })
 
   it('returns an existing inquiry for an identical recent duplicate request', async () => {
@@ -344,7 +366,7 @@ describe('POST /api/clinic-contact-requests', () => {
     expect(createMock).toHaveBeenCalledTimes(1)
   })
 
-  it('serializes concurrent identical requests before creating a duplicate', async () => {
+  it('serializes concurrent identical requests within the current runtime without database access', async () => {
     let createdInquiry: Record<string, unknown> | null = null
 
     findMock.mockImplementation(async (args: { collection: string }) => {
@@ -387,5 +409,6 @@ describe('POST /api/clinic-contact-requests', () => {
     expect(createMock).toHaveBeenCalledTimes(1)
     expect([firstJson, secondJson]).toContainEqual({ success: true, id: 42, status: 'submitted' })
     expect([firstJson, secondJson]).toContainEqual({ success: true, id: 42, status: 'submitted', deduped: true })
+    expect(databaseAdapterAccessMock).not.toHaveBeenCalled()
   })
 })

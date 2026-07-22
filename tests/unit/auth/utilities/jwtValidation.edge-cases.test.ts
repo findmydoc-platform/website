@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
+import { extractSupabaseUserData, validateSupabaseBearerToken } from '@/auth/utilities/jwtValidation'
 import type { User } from '@supabase/supabase-js'
 
 // Mock the supabase client
@@ -49,6 +49,57 @@ describe('jwtValidation edge cases', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(createClient).mockResolvedValue(mockSupabaseClient as unknown as Awaited<ReturnType<typeof createClient>>)
+  })
+
+  describe('validateSupabaseBearerToken', () => {
+    it('returns authenticated data for a valid explicit token', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: makeSupabaseUser() },
+        error: null,
+      })
+
+      await expect(validateSupabaseBearerToken({ token: 'valid-token', logger })).resolves.toEqual({
+        status: 'authenticated',
+        authData: {
+          supabaseUserId: 'user-123',
+          userEmail: 'test@example.com',
+          userType: 'clinic',
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+      })
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('valid-token')
+    })
+
+    it('classifies an invalid token separately from an upstream outage', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: null },
+        error: { message: 'Invalid JWT', name: 'AuthApiError', status: 401 },
+      })
+
+      await expect(validateSupabaseBearerToken({ token: 'invalid-token', logger })).resolves.toEqual({
+        status: 'invalid',
+      })
+    })
+
+    it.each([429, 500, 503])('classifies Supabase status %s as temporarily unavailable', async (status) => {
+      mockSupabaseClient.auth.getUser.mockResolvedValue({
+        data: { user: null },
+        error: { message: 'Temporary error', name: 'AuthApiError', status },
+      })
+
+      await expect(validateSupabaseBearerToken({ token: 'valid-token', logger })).resolves.toEqual({
+        status: 'unavailable',
+      })
+    })
+
+    it('classifies network failures as temporarily unavailable', async () => {
+      mockSupabaseClient.auth.getUser.mockRejectedValue(new TypeError('fetch failed'))
+
+      await expect(validateSupabaseBearerToken({ token: 'valid-token', logger })).resolves.toEqual({
+        status: 'unavailable',
+      })
+    })
   })
 
   afterEach(() => {

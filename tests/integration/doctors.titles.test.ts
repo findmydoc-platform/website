@@ -55,7 +55,7 @@ describe('Doctor title integration', () => {
           data: {
             name: 'New York',
             country: countryId,
-            coordinates: [40.7128, -74.006],
+            coordinates: [-74.006, 40.7128],
           },
           overrideAccess: true,
           depth: 0,

@@ -7,7 +7,7 @@ import { createMockReq } from '../helpers/testHelpers'
 type PostDoc = {
   id: string | number
   _status?: 'draft' | 'published'
-  slug: string
+  slug?: string
 }
 
 const buildReq = (disableRevalidate = false): PayloadRequest =>
@@ -152,6 +152,36 @@ describe('Posts revalidation hooks', () => {
     ])
   })
 
+  it('skips incomplete autosaved drafts until a slug exists', () => {
+    const req = buildReq(false)
+    const doc: PostDoc = { id: 'post-1', _status: 'draft' }
+
+    const result = revalidatePost(buildAfterChangeArgs({ doc, req })) as PostDoc
+
+    expect(result).toBe(doc)
+    expect(getPathCalls()).toEqual([])
+    expect(getTagCalls()).toEqual([])
+  })
+
+  it('revalidates the previous public path when an unpublished draft has no slug', () => {
+    const req = buildReq(false)
+    const previousDoc: PostDoc = { id: 'post-1', _status: 'published', slug: 'old-post' }
+    const doc: PostDoc = { id: 'post-1', _status: 'draft' }
+
+    revalidatePost(buildAfterChangeArgs({ doc, previousDoc, req }))
+
+    expect(getPathCalls()).toEqual(['/posts/old-post', '/posts'])
+    expect(getTagCalls()).toEqual([
+      'entity:posts:post-1',
+      'collection:posts',
+      'slug:posts:old-post',
+      'surface:sitemap:posts',
+      'surface:posts-list',
+      'surface:home',
+      'surface:partners-clinics',
+    ])
+  })
+
   it('skips revalidation when disabled via context', () => {
     const req = buildReq(true)
     const doc: PostDoc = { id: 'post-1', _status: 'published', slug: 'skip-post' }
@@ -189,7 +219,7 @@ describe('Posts revalidation hooks', () => {
     ])
   })
 
-  it('throws strict adapter errors before revalidating invalid post events', () => {
+  it('throws strict adapter errors before revalidating events without a status', () => {
     const req = buildReq(false)
     const doc = { id: 'post-1', slug: 'missing-status' } as PostDoc
 

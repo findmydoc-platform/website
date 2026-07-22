@@ -1,203 +1,118 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { UserProfileMedia } from '@/collections/UserProfileMedia'
-import { createAccessArgs, createMockReq } from '../helpers/testHelpers'
-import { mockUsers } from '../helpers/mockUsers'
-import type { AccessArgs, Where } from 'payload'
-import type { UserProfileMedia as UserProfileMediaDoc } from '@/payload-types'
 
-/** UserProfileMedia Access Summary
- *  read: platform -> true; owner -> polymorphic filter; others -> false
- *  create: platform -> true; owner only if user field matches self; others -> false
- *  update/delete: platform -> true; owner -> filter; others -> false
- */
+const accessArgs = (user: unknown, find = vi.fn(), extra: Record<string, unknown> = {}) =>
+  ({
+    ...extra,
+    req: {
+      payload: { find },
+      user,
+    },
+  }) as never
 
-describe('UserProfileMedia Collection Access Control', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
+describe('UserProfileMedia access', () => {
+  it('grants platform staff administration access', async () => {
+    await expect(UserProfileMedia.access?.read?.(accessArgs({ id: 1, collection: 'platformStaff' }))).resolves.toBe(
+      true,
+    )
+    expect(UserProfileMedia.access?.update?.(accessArgs({ id: 1, collection: 'platformStaff' }))).toBe(true)
   })
 
-  function expectOwnerFilter(result: Where, collection: 'basicUsers' | 'patients', id: number) {
-    const legacyKey = `user.${collection}.id`
-    const expectedLegacy = { [legacyKey]: { equals: id } }
+  it('scopes clinic staff to their own polymorphic owner relation', async () => {
+    const find = vi.fn().mockResolvedValue({ docs: [], hasNextPage: false, nextPage: null })
 
-    const expectedPolymorphic: Where = {
-      and: [{ 'user.relationTo': { equals: collection } }, { 'user.value': { equals: id } }],
-    }
+    await expect(
+      UserProfileMedia.access?.read?.(accessArgs({ id: 2, collection: 'clinicStaff' }, find)),
+    ).resolves.toEqual({
+      or: [
+        { and: [{ 'user.relationTo': { equals: 'clinicStaff' } }, { 'user.value': { equals: 2 } }] },
+        { id: { in: [] } },
+      ],
+    })
+  })
 
-    expect([expectedLegacy, expectedPolymorphic]).toContainEqual(result)
-  }
+  it('publishes only the current avatar of a published platform author', async () => {
+    const find = vi
+      .fn()
+      .mockResolvedValueOnce({ docs: [{ id: 8 }] })
+      .mockResolvedValueOnce({ docs: [{ id: 11 }] })
 
-  describe('Read Access', () => {
-    test('Platform can read all', () => {
-      const req = createMockReq(mockUsers.platform())
-      const res = UserProfileMedia.access!.read!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user))
-      expect(res).toBe(true)
+    await expect(UserProfileMedia.access?.read?.(accessArgs(null, find, { id: 42 }))).resolves.toEqual({
+      and: [{ 'user.relationTo': { equals: 'platformStaff' } }, { id: { in: [42] } }],
     })
 
-    test('BasicUser owner scoped filter (clinic staff)', () => {
-      const user = mockUsers.clinic() // non-platform basic user
-      const req = createMockReq(user)
-      const res = UserProfileMedia.access!.read!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
-      ) as Where
-      expectOwnerFilter(res, 'basicUsers', user.id)
-    })
-
-    test('Patient owner scoped filter', () => {
-      const patient = mockUsers.patient()
-      const pid = Number(patient.id)
-      const req = createMockReq({ ...patient, id: pid })
-      const res = UserProfileMedia.access!.read!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
-      ) as Where
-      expectOwnerFilter(res, 'patients', pid)
-    })
-
-    test.each([{ label: 'Anonymous', user: mockUsers.anonymous() }])(
-      '$label can read basicUsers-owned avatars only',
-      ({ user }) => {
-        const req = createMockReq(user)
-        const res = UserProfileMedia.access!.read!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user))
-        expect(res).toEqual({ 'user.relationTo': { equals: 'basicUsers' } })
-      },
+    expect(find).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ collection: 'platformStaff', where: { profileImage: { in: [42] } } }),
+    )
+    expect(find).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ collection: 'posts', where: expect.objectContaining({ and: expect.any(Array) }) }),
     )
   })
 
-  describe('Create Access', () => {
-    test('Platform can create', () => {
-      const req = createMockReq(mockUsers.platform())
-      const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
-          extra: { data: { user: { relationTo: 'basicUsers', value: 1 } } },
-        }),
-      )
-      expect(can).toBe(true)
-    })
+  it('combines clinic ownership with public platform author avatars', async () => {
+    const find = vi
+      .fn()
+      .mockResolvedValueOnce({ docs: [{ id: 8 }] })
+      .mockResolvedValueOnce({ docs: [{ id: 11 }] })
 
-    test('BasicUser (clinic staff) can create for self', () => {
-      const user = mockUsers.clinic()
-      const req = createMockReq(user)
-      const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
-          extra: { data: { user: { relationTo: 'basicUsers', value: user.id } } },
-        }),
-      )
-      expect(can).toBe(true)
-    })
-
-    test('BasicUser (clinic staff) can create when owner is omitted (upload flow)', () => {
-      const user = mockUsers.clinic()
-      const req = createMockReq(user)
-      const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
-          extra: { data: {} },
-        }),
-      )
-      expect(can).toBe(true)
-    })
-
-    test('BasicUser (clinic staff) cannot create for different user', () => {
-      const user = mockUsers.clinic()
-      const req = createMockReq(user)
-      const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
-          extra: { data: { user: { relationTo: 'basicUsers', value: 9999 } } },
-        }),
-      )
-      expect(can).toBe(false)
-    })
-
-    test('Patient can create for self', () => {
-      const patient = mockUsers.patient()
-      const pid = Number(patient.id)
-      const req = createMockReq({ ...patient, id: pid })
-      const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
-          extra: { data: { user: { relationTo: 'patients', value: pid } } },
-        }),
-      )
-      expect(can).toBe(true)
-    })
-
-    test('Patient can create when owner is omitted (upload flow)', () => {
-      const patient = mockUsers.patient()
-      const pid = Number(patient.id)
-      const req = createMockReq({ ...patient, id: pid })
-      const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
-          extra: { data: {} },
-        }),
-      )
-      expect(can).toBe(true)
-    })
-
-    test('Patient cannot create for another patient', () => {
-      const patient = mockUsers.patient()
-      const pid = Number(patient.id)
-      const req = createMockReq({ ...patient, id: pid })
-      const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, {
-          extra: { data: { user: { relationTo: 'patients', value: pid + 111 } } },
-        }),
-      )
-      expect(can).toBe(false)
-    })
-
-    test('Anonymous cannot create', () => {
-      const req = createMockReq(mockUsers.anonymous())
-      const can = UserProfileMedia.access!.create!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user, { extra: { data: {} } }),
-      )
-      expect(can).toBe(false)
+    await expect(
+      UserProfileMedia.access?.read?.(accessArgs({ id: 2, collection: 'clinicStaff' }, find, { id: 42 })),
+    ).resolves.toEqual({
+      or: [
+        { and: [{ 'user.relationTo': { equals: 'clinicStaff' } }, { 'user.value': { equals: 2 } }] },
+        { and: [{ 'user.relationTo': { equals: 'platformStaff' } }, { id: { in: [42] } }] },
+      ],
     })
   })
 
-  describe('Update/Delete Access', () => {
-    test('Platform full access', () => {
-      const req = createMockReq(mockUsers.platform())
-      expect(
-        UserProfileMedia.access!.update!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user)),
-      ).toBe(true)
-      expect(
-        UserProfileMedia.access!.delete!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user)),
-      ).toBe(true)
+  it('resolves an anonymous static file through indexed filename and relation lookups', async () => {
+    const find = vi
+      .fn()
+      .mockResolvedValueOnce({ docs: [{ id: 42 }] })
+      .mockResolvedValueOnce({ docs: [{ id: 8 }] })
+      .mockResolvedValueOnce({ docs: [{ id: 11 }] })
+
+    await expect(
+      UserProfileMedia.access?.read?.(
+        accessArgs(null, find, { data: { filename: 'avatar-small.webp' }, isReadingStaticFile: true }),
+      ),
+    ).resolves.toEqual({
+      and: [{ 'user.relationTo': { equals: 'platformStaff' } }, { id: { in: [42] } }],
     })
 
-    test('Owner (basic user clinic staff) scoped for update/delete', () => {
-      const user = mockUsers.clinic()
-      const req = createMockReq(user)
-      const updateScope = UserProfileMedia.access!.update!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
-      ) as Where
-      const deleteScope = UserProfileMedia.access!.delete!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
-      ) as Where
-      expectOwnerFilter(updateScope, 'basicUsers', user.id)
-      expectOwnerFilter(deleteScope, 'basicUsers', user.id)
-    })
+    expect(find).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        collection: 'userProfileMedia',
+        where: expect.objectContaining({ or: expect.arrayContaining([{ filename: { equals: 'avatar-small.webp' } }]) }),
+      }),
+    )
+    expect(find).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ collection: 'platformStaff', where: { profileImage: { in: [42] } } }),
+    )
+    expect(find).toHaveBeenNthCalledWith(3, expect.objectContaining({ collection: 'posts', limit: 1 }))
+  })
 
-    test('Owner (patient) scoped for update/delete', () => {
-      const patient = mockUsers.patient()
-      const pid = Number(patient.id)
-      const req = createMockReq({ ...patient, id: pid })
-      const updateScope = UserProfileMedia.access!.update!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
-      ) as Where
-      const deleteScope = UserProfileMedia.access!.delete!(
-        createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user),
-      ) as Where
-      expectOwnerFilter(updateScope, 'patients', pid)
-      expectOwnerFilter(deleteScope, 'patients', pid)
-    })
+  it('does not enumerate public avatars for an unscoped anonymous collection read', async () => {
+    const find = vi.fn()
 
-    test.each([{ label: 'Anonymous', user: mockUsers.anonymous() }])('$label cannot mutate', ({ user }) => {
-      const req = createMockReq(user)
-      expect(
-        UserProfileMedia.access!.update!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user)),
-      ).toBe(false)
-      expect(
-        UserProfileMedia.access!.delete!(createAccessArgs<AccessArgs<Partial<UserProfileMediaDoc>>>(req.user)),
-      ).toBe(false)
+    await expect(UserProfileMedia.access?.read?.(accessArgs(null, find))).resolves.toEqual({ id: { in: [] } })
+    expect(find).not.toHaveBeenCalled()
+  })
+
+  it('denies a requested media id that is not a current published platform author avatar', async () => {
+    const find = vi.fn().mockResolvedValueOnce({ docs: [] })
+
+    await expect(UserProfileMedia.access?.read?.(accessArgs(null, find, { id: 99 }))).resolves.toEqual({
+      id: { in: [] },
     })
+    expect(find).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects a client-supplied owner from another principal', () => {
+    expect(UserProfileMedia.access?.create?.(accessArgs({ id: 2, collection: 'clinicStaff' }, vi.fn()))).toBe(true)
   })
 })

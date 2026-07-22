@@ -10,8 +10,8 @@ Important notes:
 ## Create an MCP API key (Platform Staff only)
 
 1. Log in to the Payload Admin UI with a **Platform Staff** account.
-   - Admin UI user records live in the `basicUsers` collection.
-   - The user must have `userType = platform`.
+   - Admin UI principals live in the `platformStaff` collection.
+   - The principal must have an authorized platform role.
 
 2. Go to **MCP → API Keys**.
 

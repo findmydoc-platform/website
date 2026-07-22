@@ -28,7 +28,21 @@ export const isTemporaryLandingModeExemptPath = (pathname: string): boolean => {
 }
 
 export const isTemporaryLandingPublicExemptPath = (pathname: string): boolean => {
-  return TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS.has(normalizePathname(pathname))
+  const normalizedPath = normalizePathname(pathname)
+
+  if (TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS.has(normalizedPath)) {
+    return true
+  }
+
+  if (normalizedPath === '/posts') {
+    return true
+  }
+
+  if (/^\/posts\/page\/[1-9]\d*$/.test(normalizedPath)) {
+    return true
+  }
+
+  return /^\/posts\/[^/]+$/.test(normalizedPath)
 }
 
 export const isTemporaryLandingRootPath = (pathname: string): boolean => {

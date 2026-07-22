@@ -8,7 +8,7 @@ import { Content } from '../../blocks/Content/config'
 import { FormBlock } from '../../blocks/Form/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { slugField } from 'payload'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { revalidateDelete, revalidatePage } from './hooks/revalidatePage'
@@ -24,10 +24,10 @@ import {
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
   access: {
-    create: ({ req }) => isPlatformBasicUser({ req }),
-    delete: ({ req }) => isPlatformBasicUser({ req }),
+    create: ({ req }) => isPlatformStaff({ req }),
+    delete: ({ req }) => isPlatformStaff({ req }),
     read: ({ req }) => platformOnlyOrPublished({ req }),
-    update: ({ req }) => isPlatformBasicUser({ req }),
+    update: ({ req }) => isPlatformStaff({ req }),
   },
   // This config controls what's populated by default when a page is referenced
   // https://payloadcms.com/docs/queries/select#defaultpopulate-collection-config-property

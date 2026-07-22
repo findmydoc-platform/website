@@ -104,6 +104,7 @@ describe('upsertByStableId', () => {
 })
 
 describe('resetCollections', () => {
+  const find = vi.fn().mockResolvedValue({ docs: [] })
   const deleteMany = vi.fn()
   const deleteVersions = vi.fn()
   const tableNameMap = {
@@ -111,6 +112,7 @@ describe('resetCollections', () => {
   }
 
   const payload = {
+    find,
     logger: {
       info: vi.fn(),
     },
@@ -124,6 +126,7 @@ describe('resetCollections', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    find.mockResolvedValue({ docs: [] })
     vi.unstubAllEnvs()
   })
 
@@ -135,6 +138,7 @@ describe('resetCollections', () => {
     await expect(resetCollections(payload, 'baseline')).rejects.toThrow(/seed reset is disabled in this runtime/i)
     expect(deleteMany).not.toHaveBeenCalled()
     expect(deleteVersions).not.toHaveBeenCalled()
+    expect(find).not.toHaveBeenCalled()
   })
 
   it('throws for demo reset in production', async () => {
@@ -145,6 +149,30 @@ describe('resetCollections', () => {
     await expect(resetCollections(payload, 'demo')).rejects.toThrow(/demo reset is disabled in production/i)
     expect(deleteMany).not.toHaveBeenCalled()
     expect(deleteVersions).not.toHaveBeenCalled()
+    expect(find).not.toHaveBeenCalled()
+  })
+
+  it('returns the post slugs that must be invalidated after reset', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', '')
+    vi.stubEnv('NODE_ENV', 'test')
+    find.mockResolvedValue({
+      docs: [{ slug: ' old-post ' }, { slug: 'another-post' }, { slug: 'old-post' }, { slug: null }],
+    })
+    deleteMany.mockResolvedValue(undefined)
+    deleteVersions.mockResolvedValue(undefined)
+
+    const result = await resetCollections(payload, 'demo')
+
+    expect(result).toEqual({ affectedPostSlugs: ['another-post', 'old-post'] })
+    expect(find).toHaveBeenCalledWith({
+      collection: 'posts',
+      depth: 0,
+      overrideAccess: true,
+      pagination: false,
+      select: { slug: true },
+      trash: true,
+    })
   })
 
   it('deletes demo collections in order for demo reset', async () => {
@@ -169,7 +197,6 @@ describe('resetCollections', () => {
       'platformStaff',
       'clinicStaff',
       'userProfileMedia',
-      'basicUsers',
     ]
 
     deleteMany.mockResolvedValue(undefined)
@@ -189,6 +216,29 @@ describe('resetCollections', () => {
 
     expect(actualOrder).toEqual(expectedOrder)
     expect(versionOrder).toEqual(['posts'])
+  })
+
+  it('preserves the active platform principal during reset', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('NODE_ENV', 'test')
+
+    deleteMany.mockResolvedValue(undefined)
+    deleteVersions.mockResolvedValue(undefined)
+
+    await resetCollections(payload, 'demo', { preservePlatformUserId: 42 })
+
+    const deleteArgsByCollection = new Map(
+      deleteMany.mock.calls.map((call: unknown[]) => {
+        const args = call[0] as { collection: string; where: unknown }
+        return [args.collection, args] as const
+      }),
+    )
+
+    expect(deleteArgsByCollection.get('platformStaff')?.where).toEqual({
+      and: [{ id: { exists: true } }, { id: { not_equals: 42 } }],
+    })
+    expect(deleteArgsByCollection.get('clinics')?.where).toEqual({ id: { exists: true } })
   })
 
   it('deletes demo then baseline collections for baseline reset', async () => {
@@ -213,7 +263,6 @@ describe('resetCollections', () => {
       'platformStaff',
       'clinicStaff',
       'userProfileMedia',
-      'basicUsers',
       'treatments',
       'categories',
       'tags',

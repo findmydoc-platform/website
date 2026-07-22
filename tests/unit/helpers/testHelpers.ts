@@ -145,14 +145,23 @@ export const createMockReq = (
 ): MockRequest => {
   const effectivePayload = payload ?? createMockPayload()
 
-  if (user && (user as { userType?: string }).userType === 'clinic' && !payload) {
+  if (
+    user &&
+    (user as { collection?: string }).collection === 'clinicStaff' &&
+    !effectivePayload.find.getMockImplementation()
+  ) {
+    const userId = (user as { id?: number | string }).id
     const clinicId =
       (user as { clinic?: number; clinicId?: number; id?: number | string }).clinic ??
       (user as { clinicId?: number; id?: number | string }).clinicId ??
       (user as { id?: number | string }).id
-    effectivePayload.find.mockResolvedValue({
-      docs: clinicId ? [{ clinic: clinicId, status: 'approved' }] : [],
-    })
+    effectivePayload.find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs: clinicId
+        ? collection === 'clinicStaff'
+          ? [{ id: userId, clinic: clinicId, status: 'approved', authSync: { status: 'synced' } }]
+          : [{ id: clinicId, name: 'Mock Clinic', status: 'approved' }]
+        : [],
+    }))
     effectivePayload.findByID.mockResolvedValue({ clinic: clinicId })
   }
 

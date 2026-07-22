@@ -1,5 +1,5 @@
 import type { Payload, PayloadRequest } from 'payload'
-import type { BasicUser } from '@/payload-types'
+import type { PlatformStaff } from '@/payload-types'
 import { createStableIdResolvers } from '../utils/resolvers'
 import { importCollection } from '../utils/import-collection'
 import { importGlobals } from '../utils/import-globals'
@@ -25,14 +25,13 @@ const resolvePlatformSeedActorId = async (
   if (req?.user && typeof req.user === 'object' && 'collection' in req.user && 'id' in req.user) {
     const collection = (req.user as { collection?: unknown }).collection
     const id = (req.user as { id?: unknown }).id
-    if (collection === 'basicUsers' && (typeof id === 'string' || typeof id === 'number')) {
+    if (collection === 'platformStaff' && (typeof id === 'string' || typeof id === 'number')) {
       return id
     }
   }
 
   const users = await payload.find({
-    collection: 'basicUsers',
-    where: { userType: { equals: 'platform' } },
+    collection: 'platformStaff',
     limit: 1,
     sort: 'createdAt',
     overrideAccess: true,
@@ -51,20 +50,38 @@ const resolveSeedReqForJob = async (
   }
 
   const resolvers = createStableIdResolvers(payload)
-  const userId = await resolvers.resolveIdByStableId('basicUsers', input.reqUserStableId)
+  const userId = await resolvers.resolveIdByStableId('platformStaff', input.reqUserStableId)
   if (!userId) {
     return undefined
   }
 
   const userDoc = (await payload.findByID({
-    collection: 'basicUsers',
+    collection: 'platformStaff',
     id: userId,
     overrideAccess: true,
-  })) as BasicUser
+  })) as PlatformStaff
 
   return {
-    user: { ...userDoc, collection: 'basicUsers' } as NonNullable<PayloadRequest['user']>,
+    user: { ...userDoc, collection: 'platformStaff' } as NonNullable<PayloadRequest['user']>,
   }
+}
+
+const resolveAuthenticatedPlatformUserId = (req: PayloadRequest): string | number | null => {
+  const user = req.user
+  if (!user || typeof user !== 'object') return null
+
+  const candidate = user as { collection?: unknown; id?: unknown; userType?: unknown }
+  if (candidate.collection !== 'platformStaff') return null
+
+  if (typeof candidate.id === 'number' && Number.isFinite(candidate.id)) {
+    return candidate.id
+  }
+
+  if (typeof candidate.id === 'string' && candidate.id.trim().length > 0) {
+    return candidate.id
+  }
+
+  return null
 }
 
 const getLogContext = (
@@ -151,7 +168,13 @@ export const seedChunkTask = {
       }
 
       if (input.kind === 'reset') {
-        await resetCollections(payload, input.type)
+        const preservePlatformUserId = resolveAuthenticatedPlatformUserId(req)
+        if (preservePlatformUserId === null) {
+          throw new Error('Seed reset jobs require an authenticated platform user')
+        }
+
+        const resetResult = await resetCollections(payload, input.type, { preservePlatformUserId })
+        const affectedPostSlugs = resetResult.affectedPostSlugs
 
         const next = await finishSeedRunJob(payload, runId, {
           jobId,
@@ -170,6 +193,7 @@ export const seedChunkTask = {
             updated: 0,
             warnings: [],
             failures: [],
+            affectedPostSlugs,
           },
         })
 
@@ -190,6 +214,7 @@ export const seedChunkTask = {
             updated: 0,
             warnings: [],
             failures: [],
+            affectedPostSlugs,
           },
         }
       }
@@ -289,7 +314,7 @@ export const seedChunkTask = {
       if (input.requiresPlatformUser) {
         const platformSeedActorId = await resolvePlatformSeedActorId(payload, seedReq)
         if (!platformSeedActorId) {
-          const warning = 'No platform basic user available for media attribution.'
+          const warning = 'No platform staff actor available for media attribution.'
           await attachSeedRunWarning(payload, runId, warning, getLogContext(input, jobId))
 
           const next = await finishSeedRunJob(payload, runId, {
@@ -381,6 +406,7 @@ export const seedChunkTask = {
           status: jobStatus,
           created: result.created,
           updated: result.updated,
+          affectedPostSlugs: result.affectedPostSlugs ?? [],
           warnings,
           failures,
         },
@@ -437,6 +463,7 @@ export const seedChunkTask = {
           status: 'succeeded',
           created: result.created,
           updated: result.updated,
+          affectedPostSlugs: result.affectedPostSlugs ?? [],
           warnings,
           failures,
           chunkIndex: input.chunkIndex,

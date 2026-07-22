@@ -8,8 +8,13 @@ import { extractRelationId } from '@/collections/common/mediaPathHelpers'
 export function beforeChangeCreatedBy(options?: {
   createdByField?: string
   userCollection?: string
+  userCollections?: readonly string[]
 }): CollectionBeforeChangeHook {
-  const { createdByField = 'createdBy', userCollection = 'basicUsers' } = options || {}
+  const {
+    createdByField = 'createdBy',
+    userCollection,
+    userCollections = ['platformStaff', 'clinicStaff'],
+  } = options || {}
   return async ({ data, operation, req, originalDoc }) => {
     const draft = { ...(data || {}) }
     enforceCreatedByFromRequest({
@@ -18,7 +23,7 @@ export function beforeChangeCreatedBy(options?: {
       reqUser: req?.user,
       originalDoc,
       createdByField,
-      userCollection,
+      userCollections: userCollection ? [userCollection] : userCollections,
     })
     return draft
   }
@@ -30,7 +35,8 @@ export function enforceCreatedByFromRequest({
   reqUser,
   originalDoc,
   createdByField = 'createdBy',
-  userCollection = 'basicUsers',
+  userCollection,
+  userCollections = ['platformStaff', 'clinicStaff'],
 }: {
   draft: Record<string, unknown>
   operation: 'create' | 'update'
@@ -38,12 +44,19 @@ export function enforceCreatedByFromRequest({
   originalDoc?: unknown
   createdByField?: string
   userCollection?: string
+  userCollections?: readonly string[]
 }) {
+  const allowedCollections = userCollection ? [userCollection] : userCollections
   if (operation === 'create') {
     delete draft[createdByField]
 
-    if (reqUser?.collection === userCollection && reqUser.id != null) {
-      draft[createdByField] = reqUser.id
+    if (
+      typeof reqUser?.collection === 'string' &&
+      allowedCollections.includes(reqUser.collection) &&
+      reqUser.id != null
+    ) {
+      draft[createdByField] =
+        allowedCollections.length === 1 ? reqUser.id : { relationTo: reqUser.collection, value: reqUser.id }
     }
 
     return

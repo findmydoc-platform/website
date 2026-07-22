@@ -4,6 +4,8 @@ import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/b
 import { setCookieConsent } from '../helpers/cookieConsent'
 
 const getSearchParam = (page: Page, key: string) => new URL(page.url()).searchParams.get(key)
+const missingListingMediaError =
+  /Failed to load resource: the server responded with a status of 400 .*\/api\/clinicMedia\/file\//
 
 async function waitForSearchParam(page: Page, key: string, value: string) {
   await expect.poll(() => getSearchParam(page, key)).toBe(value)
@@ -21,7 +23,7 @@ test.beforeEach(async ({ context }) => {
 test('listing filters preserve the selected specialty when rating changes @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page, {
     // Baseline listing cards reference seeded clinic media that is not present in the lightweight local E2E dataset.
-    ignoredConsoleErrors: ['Failed to load resource: the server responded with a status of 400 (Bad Request)'],
+    ignoredConsoleErrors: [missingListingMediaError],
   })
 
   await page.goto('/listing-comparison', { waitUntil: 'domcontentloaded' })
@@ -43,20 +45,20 @@ test('listing filters preserve the selected specialty when rating changes @smoke
 
   await waitForSearchParam(page, 'ratingMin', '4')
   await waitForSearchParam(page, 'specialty', '1')
-  await expect(fourStarButton).toHaveClass(/bg-secondary/)
+  await expect(fourStarButton).toHaveAttribute('aria-pressed', 'true')
 
   const allRatingsButton = page.getByRole('button', { name: 'All', exact: true })
   await allRatingsButton.click()
 
   await waitForMissingSearchParam(page, 'ratingMin')
   await waitForSearchParam(page, 'specialty', '1')
-  await expect(allRatingsButton).toHaveClass(/bg-secondary/)
+  await expect(allRatingsButton).toHaveAttribute('aria-pressed', 'true')
   await expectNoBrowserIssues(issues)
 })
 
 test('rating filter rehydrates from the URL across browser navigation @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page, {
-    ignoredConsoleErrors: ['Failed to load resource: the server responded with a status of 400 (Bad Request)'],
+    ignoredConsoleErrors: [missingListingMediaError],
   })
 
   await page.goto('/listing-comparison?ratingMin=4.5', { waitUntil: 'domcontentloaded' })
@@ -66,26 +68,26 @@ test('rating filter rehydrates from the URL across browser navigation @smoke', a
   const allRatingsButton = page.getByRole('button', { name: 'All', exact: true })
 
   await waitForSearchParam(page, 'ratingMin', '4.5')
-  await expect(ratingButton).toHaveClass(/bg-secondary/)
+  await expect(ratingButton).toHaveAttribute('aria-pressed', 'true')
 
   await page.reload({ waitUntil: 'domcontentloaded' })
   await waitForSearchParam(page, 'ratingMin', '4.5')
-  await expect(ratingButton).toHaveClass(/bg-secondary/)
+  await expect(ratingButton).toHaveAttribute('aria-pressed', 'true')
 
   await page.goto('/listing-comparison', { waitUntil: 'domcontentloaded' })
   await waitForMissingSearchParam(page, 'ratingMin')
-  await expect(allRatingsButton).toHaveClass(/bg-secondary/)
+  await expect(allRatingsButton).toHaveAttribute('aria-pressed', 'true')
 
   await page.goBack()
 
   await waitForSearchParam(page, 'ratingMin', '4.5')
-  await expect(ratingButton).toHaveClass(/bg-secondary/)
+  await expect(ratingButton).toHaveAttribute('aria-pressed', 'true')
   await expectNoBrowserIssues(issues)
 })
 
 test('clearing the specialty chip also clears any selected treatments from the URL @smoke', async ({ page }) => {
   const issues = createBrowserIssueCollector(page, {
-    ignoredConsoleErrors: ['Failed to load resource: the server responded with a status of 400 (Bad Request)'],
+    ignoredConsoleErrors: [missingListingMediaError],
   })
 
   await page.goto('/listing-comparison?specialty=2&treatment=101', { waitUntil: 'domcontentloaded' })

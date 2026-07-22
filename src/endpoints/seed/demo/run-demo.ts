@@ -1,5 +1,5 @@
 import type { Payload, PayloadRequest } from 'payload'
-import type { BasicUser } from '@/payload-types'
+import type { PlatformStaff } from '@/payload-types'
 import { createStableIdResolvers } from '../utils/resolvers'
 import { importCollection } from '../utils/import-collection'
 import { demoPlan } from '../utils/plan'
@@ -102,16 +102,16 @@ export async function runDemoSeeds(payload: Payload, options: { reset?: boolean 
 
       let req: Partial<PayloadRequest> | undefined
       if ('reqUserStableId' in step && step.reqUserStableId) {
-        const userId = await resolvers.resolveIdByStableId('basicUsers', step.reqUserStableId)
+        const userId = await resolvers.resolveIdByStableId('platformStaff', step.reqUserStableId)
         if (!userId) {
-          warnings.push(`Missing basicUsers for demo seed reqUserStableId: ${step.reqUserStableId}`)
+          warnings.push(`Missing platformStaff for demo seed reqUserStableId: ${step.reqUserStableId}`)
         } else {
           const userDoc = (await payload.findByID({
-            collection: 'basicUsers',
+            collection: 'platformStaff',
             id: userId,
             overrideAccess: true,
-          })) as BasicUser
-          req = { user: { ...userDoc, collection: 'basicUsers' } as NonNullable<PayloadRequest['user']> }
+          })) as PlatformStaff
+          req = { user: { ...userDoc, collection: 'platformStaff' } as NonNullable<PayloadRequest['user']> }
         }
       }
 

@@ -6,7 +6,6 @@ import { PublicContactSection } from '@/components/organisms/Contact'
 import {
   LandingCategories,
   LandingFeatures,
-  LandingPricing,
   LandingProcess,
   LandingTeam,
   LandingTestimonials,
@@ -20,8 +19,6 @@ import {
   clinicCTAData,
   clinicFeaturesData,
   clinicHeroData,
-  clinicPricingData,
-  clinicPricingModelItems,
   clinicProcessData,
   clinicTeamData,
   clinicTestimonialsData,
@@ -117,13 +114,6 @@ export const FullPage: StoryObj = {
         testimonials={clinicTestimonialsData}
         title="Testimonials"
         description="What our partners say about working with us."
-      />
-      <LandingPricing
-        plans={clinicPricingData}
-        title="Pricing"
-        description="Flexible pricing and partnership options to suit clinics of any size."
-        modelItems={clinicPricingModelItems}
-        ctaHref="#contact"
       />
       <BlogCardCollection
         posts={clinicBlogData.map((p) => ({
@@ -248,18 +238,6 @@ export const Testimonials: StoryObj<typeof LandingTestimonials> = {
   ),
 }
 
-export const Pricing: StoryObj<typeof LandingPricing> = {
-  render: () => (
-    <LandingPricing
-      plans={clinicPricingData}
-      title="Pricing"
-      description="Flexible pricing and partnership options to suit clinics of any size."
-      modelItems={clinicPricingModelItems}
-      ctaHref="#contact"
-    />
-  ),
-}
-
 export const Blog: StoryObj = {
   render: () => (
     <section className="py-20">
@@ -325,13 +303,6 @@ export const Testimonials1280: StoryObj<typeof LandingTestimonials> = withViewpo
   'public1280',
   'Testimonials / 1280',
 )
-
-export const Pricing320: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public320', 'Pricing / 320')
-export const Pricing375: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public375', 'Pricing / 375')
-export const Pricing640: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public640', 'Pricing / 640')
-export const Pricing768: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public768', 'Pricing / 768')
-export const Pricing1024: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public1024', 'Pricing / 1024')
-export const Pricing1280: StoryObj<typeof LandingPricing> = withViewportStory(Pricing, 'public1280', 'Pricing / 1280')
 
 export const Contact320: StoryObj<typeof PublicContactSection> = withViewportStory(
   Contact,

@@ -3,10 +3,10 @@
     "stableId": "seed-user-profile-admin",
     "alt": "Professional healthcare editorial team portrait",
     "user": {
-      "relationTo": "basicUsers"
+      "relationTo": "platformStaff"
     },
     "createdBy": {
-      "relationTo": "basicUsers"
+      "relationTo": "platformStaff"
     },
     "userStableId": "seed-platform-admin",
     "createdByStableId": "seed-platform-admin",

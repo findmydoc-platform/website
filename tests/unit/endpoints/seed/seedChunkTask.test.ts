@@ -6,6 +6,7 @@ import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
 import { mockUsers } from '../../helpers/mockUsers'
 
 const importCollection = vi.hoisted(() => vi.fn<() => Promise<CollectionImportResult>>())
+const resetCollections = vi.hoisted(() => vi.fn())
 
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock('next/cache', () => ({
 }))
 
 vi.mock('@/endpoints/seed/utils/import-collection', () => ({ importCollection }))
+vi.mock('@/endpoints/seed/utils/reset', () => ({ resetCollections }))
 
 import { seedChunkTask } from '@/endpoints/seed/tasks/seedChunkTask'
 import { createSeedRunRecord, registerSeedRunJob, saveSeedRunRecord } from '@/endpoints/seed/utils/state'
@@ -27,6 +29,8 @@ describe('seedChunkTask', () => {
       warnings: [],
       failures: [],
     })
+    resetCollections.mockReset()
+    resetCollections.mockResolvedValue({ affectedPostSlugs: [] })
   })
 
   afterEach(() => {
@@ -91,6 +95,68 @@ describe('seedChunkTask', () => {
         localizedFields,
       }),
     )
+  })
+
+  it('preserves the authenticated platform identity during reset jobs', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('NODE_ENV', 'test')
+
+    const payload = createMockPayload()
+    const runId = 'seed-run-reset-preserve-actor'
+    const queue = `seed:${runId}`
+    const input: SeedQueueJobInput = {
+      runId,
+      type: 'demo',
+      reset: true,
+      queue,
+      title: 'Reset demo data',
+      stepName: 'reset',
+      kind: 'reset',
+    }
+
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: true,
+      queue,
+      totalJobs: 1,
+    })
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+    await registerSeedRunJob(payload as unknown as Payload, runId, {
+      id: 'job-reset',
+      order: 1,
+      status: 'queued',
+      input,
+      queue,
+      title: 'Reset demo data',
+      stepName: 'reset',
+      kind: 'reset',
+      createdAt: '2026-07-13T10:00:00.000Z',
+      created: 0,
+      updated: 0,
+      warnings: [],
+      failures: [],
+    })
+
+    resetCollections.mockResolvedValue({ affectedPostSlugs: ['retired-post'] })
+
+    const result = await seedChunkTask.handler({
+      input,
+      job: { id: 'job-reset' },
+      req: createMockReq(mockUsers.platform(42), payload) as PayloadRequest,
+    })
+
+    expect(resetCollections).toHaveBeenCalledWith(payload, 'demo', { preservePlatformUserId: 42 })
+    expect(result).toMatchObject({
+      output: {
+        runId,
+        jobId: 'job-reset',
+        kind: 'reset',
+        status: 'succeeded',
+        affectedPostSlugs: ['retired-post'],
+      },
+    })
   })
 
   it('blocks demo chunk execution in production before importing records', async () => {

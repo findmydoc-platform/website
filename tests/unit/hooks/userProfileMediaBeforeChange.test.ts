@@ -44,7 +44,7 @@ const baseReq = (user?: unknown) =>
 
 describe('beforeChangeUserProfileMedia (hash-based)', () => {
   test('defaults owner, computes hashed storage path, and stamps createdBy on create', async () => {
-    const req = baseReq({ id: 24, collection: 'basicUsers' })
+    const req = baseReq({ id: 24, collection: 'platformStaff' })
     const data = { id: 301, filename: 'avatars/photo.jpeg' }
 
     const result = (await runBeforeChangeHooks({ data, operation: 'create', req, originalDoc: undefined })) as Record<
@@ -52,16 +52,16 @@ describe('beforeChangeUserProfileMedia (hash-based)', () => {
       unknown
     >
 
-    expect(result.user).toEqual({ relationTo: 'basicUsers', value: 24 })
+    expect(result.user).toEqual({ relationTo: 'platformStaff', value: 24 })
     // CreatedBy is stamped as a union
-    expect(result.createdBy).toEqual({ relationTo: 'basicUsers', value: 24 })
+    expect(result.createdBy).toEqual({ relationTo: 'platformStaff', value: 24 })
     // shortHash('owner:filename') first 10 chars from mocked digest => 'abcdef1234'
     expect(result.filename).toBe('24-abcdef1234-photo.jpeg')
     expect(result.storagePath).toBe('users/24-abcdef1234-photo.jpeg')
   })
 
   test('overwrites createdBy on create (prevents spoofing)', async () => {
-    const req = baseReq({ id: 24, collection: 'basicUsers' })
+    const req = baseReq({ id: 24, collection: 'platformStaff' })
     const data = {
       id: 302,
       filename: 'avatars/spoof.jpeg',
@@ -73,27 +73,27 @@ describe('beforeChangeUserProfileMedia (hash-based)', () => {
       unknown
     >
 
-    expect(result.createdBy).toEqual({ relationTo: 'basicUsers', value: 24 })
+    expect(result.createdBy).toEqual({ relationTo: 'platformStaff', value: 24 })
   })
 
   test('prevents changing createdBy on update', async () => {
-    const req = baseReq({ id: 24, collection: 'basicUsers' })
+    const req = baseReq({ id: 24, collection: 'platformStaff' })
 
     await expect(
       runBeforeChangeHooks({
-        data: { createdBy: { relationTo: 'basicUsers', value: 77 } },
+        data: { createdBy: { relationTo: 'platformStaff', value: 77 } },
         operation: 'update',
         req,
-        originalDoc: { createdBy: { relationTo: 'basicUsers', value: 24 } },
+        originalDoc: { createdBy: { relationTo: 'platformStaff', value: 24 } },
       }),
     ).rejects.toThrow('createdBy cannot be changed once set')
   })
 
   test('prevents changing owner on update', async () => {
-    const req = baseReq({ id: '11', collection: 'basicUsers' })
+    const req = baseReq({ id: '11', collection: 'platformStaff' })
     await expect(
       runBeforeChangeHooks({
-        data: { user: { relationTo: 'basicUsers', value: '99' } },
+        data: { user: { relationTo: 'platformStaff', value: '99' } },
         operation: 'update',
         req,
         originalDoc: { user: { relationTo: 'patients', value: '44' } },

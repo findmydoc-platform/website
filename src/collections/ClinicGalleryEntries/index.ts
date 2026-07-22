@@ -37,7 +37,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
         relationField: 'clinic',
         message: 'Clinic ownership cannot be changed once set',
       }),
-      beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' }),
+      beforeChangeCreatedBy({ createdByField: 'createdBy' }),
       beforeChangeClinicGalleryEntry,
       beforeChangePublishedAt({
         statusKey: 'status',
@@ -59,8 +59,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       index: true,
       admin: {
         description: 'Clinic that owns this entry',
-        condition: (_data, _siblingData, { user }) =>
-          !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
+        condition: (_data, _siblingData, { user }) => !(user && user.collection === 'clinicStaff'),
       },
     },
     {
@@ -128,7 +127,7 @@ export const ClinicGalleryEntries: CollectionConfig = {
       name: 'createdBy',
       label: 'Created By',
       type: 'relationship',
-      relationTo: 'basicUsers',
+      relationTo: ['platformStaff', 'clinicStaff'],
       required: true,
       admin: {
         description: 'Person who created this entry',

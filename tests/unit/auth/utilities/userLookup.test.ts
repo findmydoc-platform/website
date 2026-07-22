@@ -1,133 +1,76 @@
-/**
- * Simple unit tests for user lookup utilities.
- */
-
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { findUserBySupabaseId, isClinicUserApproved } from '@/auth/utilities/userLookup'
+import { AUTH_FLOW_ERROR_CODES } from '@/auth/errors/authFlowError'
 import { getUserConfig } from '@/auth/config/authConfig'
-import type { UserType } from '@/auth/types/authTypes'
-import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
-import type { Payload, PayloadRequest } from 'payload'
+import { createMockPayload } from '../../helpers/testHelpers'
+import type { Payload } from 'payload'
 
-// Mock payload
+const accessStateMocks = vi.hoisted(() => ({
+  readClinicAccessState: vi.fn(),
+}))
+
+vi.mock('@/auth/utilities/clinicAccessState', () => accessStateMocks)
+
 const mockPayload = createMockPayload()
 
 beforeEach(() => {
   vi.clearAllMocks()
+  accessStateMocks.readClinicAccessState.mockResolvedValue(null)
 })
 
 describe('userLookup utilities', () => {
-  describe('findUserBySupabaseId', () => {
-    it('should find existing user', async () => {
-      const mockUser = { id: 'user-123', supabaseUserId: 'supabase-123' }
-      const req = createMockReq(undefined, mockPayload) as unknown as PayloadRequest
-      mockPayload.find.mockResolvedValue({
-        docs: [mockUser],
-      })
+  it('looks up a clinic principal in clinicStaff and checks the other direct collections', async () => {
+    const clinicPrincipal = { id: 12, supabaseUserId: 'supabase-123', collection: 'clinicStaff' }
+    mockPayload.find.mockResolvedValueOnce({ docs: [clinicPrincipal] }).mockResolvedValue({ docs: [] })
 
-      const authData = {
+    await expect(
+      findUserBySupabaseId(mockPayload as unknown as Payload, {
         supabaseUserId: 'supabase-123',
-        userType: 'clinic' as const,
-        userEmail: 'test@example.com',
-      }
+        userType: 'clinic',
+        userEmail: 'clinic@example.com',
+      }),
+    ).resolves.toEqual(clinicPrincipal)
 
-      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData, req)
-      expect(result).toEqual(mockUser)
-      expect(mockPayload.find).toHaveBeenCalledWith({
-        collection: 'basicUsers',
-        where: { supabaseUserId: { equals: 'supabase-123' } },
-        limit: 1,
-        overrideAccess: true,
-        req,
-      })
-    })
-
-    it('should return null if user not found', async () => {
-      mockPayload.find.mockResolvedValueOnce({ docs: [] })
-
-      const authData = {
-        supabaseUserId: 'supabase-123',
-        userType: 'clinic' as const,
-        userEmail: 'test@example.com',
-      }
-
-      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData)
-      expect(result).toBeNull()
-      expect(mockPayload.find).toHaveBeenCalledTimes(1)
-    })
-
-    it('does not reconcile by email when the Supabase ID lookup misses', async () => {
-      mockPayload.find.mockResolvedValueOnce({ docs: [] })
-
-      const authData = {
-        supabaseUserId: 'supabase-disabled',
-        userType: 'clinic' as const,
-        userEmail: 'test@example.com',
-      }
-
-      const result = await findUserBySupabaseId(mockPayload as unknown as Payload, authData)
-
-      expect(result).toBeNull()
-      expect(mockPayload.update).not.toHaveBeenCalled()
-      expect(mockPayload.find).toHaveBeenCalledTimes(1)
-    })
+    expect(mockPayload.find).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ collection: 'clinicStaff', where: { supabaseUserId: { equals: 'supabase-123' } } }),
+    )
+    expect(mockPayload.find).toHaveBeenNthCalledWith(2, expect.objectContaining({ collection: 'platformStaff' }))
+    expect(mockPayload.find).toHaveBeenNthCalledWith(3, expect.objectContaining({ collection: 'patients' }))
   })
 
-  describe('isClinicUserApproved', () => {
-    it('should return true for approved clinic user', async () => {
-      mockPayload.find.mockResolvedValue({
-        docs: [{ id: 'staff-123', status: 'approved' }],
-      })
+  it('fails closed when the identity also resolves in another principal collection', async () => {
+    mockPayload.find.mockImplementation(async ({ collection }) => ({
+      docs: collection === 'clinicStaff' ? [{ id: 12 }] : collection === 'platformStaff' ? [{ id: 13 }] : [],
+    }))
 
-      const result = await isClinicUserApproved(mockPayload as unknown as Payload, 'user-123')
-      expect(result).toBe(true)
-      expect(mockPayload.find).toHaveBeenCalledWith({
-        collection: 'clinicStaff',
-        where: {
-          user: { equals: 'user-123' },
-          status: { equals: 'approved' },
-        },
-        limit: 1,
-        overrideAccess: true,
-        req: undefined,
-      })
+    await expect(
+      findUserBySupabaseId(mockPayload as unknown as Payload, {
+        supabaseUserId: 'supabase-duplicate',
+        userType: 'clinic',
+        userEmail: 'clinic@example.com',
+      }),
+    ).rejects.toMatchObject({
+      code: AUTH_FLOW_ERROR_CODES.USER_LOOKUP_FAILED,
+      message: expect.stringMatching(/more than one Payload principal/i),
+      retryable: false,
     })
-
-    it('should return false for non-approved clinic user', async () => {
-      mockPayload.find.mockResolvedValue({
-        docs: [],
-      })
-
-      const result = await isClinicUserApproved(mockPayload as unknown as Payload, 'user-123')
-      expect(result).toBe(false)
-    })
+    expect(mockPayload.find).toHaveBeenCalledTimes(3)
+    expect(mockPayload.find.mock.calls.map(([query]) => query.collection)).toEqual([
+      'clinicStaff',
+      'platformStaff',
+      'patients',
+    ])
   })
 
-  describe('getUserConfig', () => {
-    it('should return config for clinic user', () => {
-      const result = getUserConfig('clinic')
-      expect(result).toEqual({
-        collection: 'basicUsers',
-        profileCollection: 'clinicStaff',
-        requiresProfile: true,
-        requiresApproval: true,
-      })
-    })
+  it('requires synced clinic staff assigned to an approved clinic', async () => {
+    accessStateMocks.readClinicAccessState.mockResolvedValue({ clinic: { id: 4 }, staff: { id: 12 } })
 
-    it('should return config for patient user', () => {
-      const result = getUserConfig('patient')
-      expect(result).toEqual({
-        collection: 'patients',
-        profileCollection: null,
-        requiresProfile: false,
-        requiresApproval: false,
-      })
-    })
+    await expect(isClinicUserApproved(mockPayload as unknown as Payload, '12')).resolves.toBe(true)
+    expect(accessStateMocks.readClinicAccessState).toHaveBeenCalledWith(mockPayload, '12', undefined)
+  })
 
-    it('should throw error for invalid user type', () => {
-      expect(() => {
-        getUserConfig('invalid' as UserType)
-      }).toThrow('Invalid user type: invalid')
-    })
+  it('maps clinic authentication directly to clinicStaff', () => {
+    expect(getUserConfig('clinic')).toMatchObject({ collection: 'clinicStaff', requiresApproval: true })
   })
 })

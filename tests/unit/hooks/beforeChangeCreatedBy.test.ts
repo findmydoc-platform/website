@@ -23,29 +23,29 @@ const createHookArgs = ({
 
 describe('beforeChangeCreatedBy hook', () => {
   test('stamps createdBy from matching user collection on create', async () => {
-    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' })
-    const req = { user: { id: 42, collection: 'basicUsers' } }
+    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'platformStaff' })
+    const req = { user: { id: 42, collection: 'platformStaff' } }
     const result = await hook(createHookArgs({ data: {}, operation: 'create', req }))
     expect(result.createdBy).toBe(42)
   })
 
   test('overwrites client-supplied createdBy on create', async () => {
-    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' })
-    const req = { user: { id: 11, collection: 'basicUsers' } }
+    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'platformStaff' })
+    const req = { user: { id: 11, collection: 'platformStaff' } }
     const result = await hook(createHookArgs({ data: { createdBy: 99 }, operation: 'create', req }))
     expect(result.createdBy).toBe(11)
   })
 
   test('drops client-supplied createdBy when the user collection does not match', async () => {
-    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' })
-    const req = { user: { id: 3, collection: 'platformStaff' } }
+    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'platformStaff' })
+    const req = { user: { id: 3, collection: 'clinicStaff' } }
     const result = await hook(createHookArgs({ data: { createdBy: 99 }, operation: 'create', req }))
     expect(result.createdBy).toBeUndefined()
   })
 
   test('preserves original createdBy when updating other fields', async () => {
-    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' })
-    const req = { user: { id: 55, collection: 'basicUsers' } }
+    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'platformStaff' })
+    const req = { user: { id: 55, collection: 'platformStaff' } }
     const result = await hook(
       createHookArgs({
         data: { title: 'Updated' },
@@ -58,8 +58,8 @@ describe('beforeChangeCreatedBy hook', () => {
   })
 
   test('rejects changing createdBy on update', async () => {
-    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' })
-    const req = { user: { id: 55, collection: 'basicUsers' } }
+    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'platformStaff' })
+    const req = { user: { id: 55, collection: 'platformStaff' } }
 
     await expect(
       hook(
@@ -74,8 +74,8 @@ describe('beforeChangeCreatedBy hook', () => {
   })
 
   test('allows update payloads that repeat the original relation id', async () => {
-    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'basicUsers' })
-    const req = { user: { id: 55, collection: 'basicUsers' } }
+    const hook = beforeChangeCreatedBy({ createdByField: 'createdBy', userCollection: 'platformStaff' })
+    const req = { user: { id: 55, collection: 'platformStaff' } }
     const result = await hook(
       createHookArgs({
         data: { createdBy: 21 },

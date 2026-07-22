@@ -56,9 +56,9 @@ describe('clinicGalleryEntries beforeChange hook', () => {
 
     const draft = await invokeHook({
       data: {
-        clinic: 1,
-        beforeMedia: 1,
-        afterMedia: 2,
+        clinic: { id: '1' } as never,
+        beforeMedia: { id: '1' } as never,
+        afterMedia: '2' as never,
         status: 'published',
       },
       req: req as unknown as Request,

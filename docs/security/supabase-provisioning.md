@@ -1,60 +1,57 @@
-# Supabase Provisioning (High‑Level)
+# Supabase Provisioning
 
-This document summarizes what the platform’s provisioning layer accomplishes for identities; it deliberately omits code specifics already covered by the sequence diagram (`auth-flow-diagram.md`).
+Supabase creates and manages external identities. Payload stores the direct application principals and remains the authorization source.
 
-## Purpose
-Guarantee that every persisted platform user (staff or patient) has a corresponding Supabase identity and that related role/profile data stays consistent over time without manual intervention.
+## Staff Provisioning
 
-## Design Tenets
-* Single Flow: All creation & deletion side‑effects run through collection lifecycle hooks – no parallel “manual” pathway.
-* Centralized Runtime Provisioning: Strategy and hooks own provisioning/reconciliation; login pages do not perform user-creation writes.
-* Two-Phase Creation (Staff): User auth record is created first; profile creation follows via lifecycle hook (non-transactional).
-* Email Hygiene: Emails are normalized and validated before lookup/provisioning to reduce identity drift and invalid-write failures.
-* Idempotent Lookup: Re‑creating existing external identities is avoided; existing Supabase user ids short‑circuit provisioning.
-* Conflict Recovery: Concurrent create conflicts are recovered by re-lookup instead of immediate hard failure.
-* Fail Fast on Create, Lenient on Delete: Inbound creation stops on external failure; deletion proceeds even if external cleanup fails (logged for follow‑up).
-* Stateless Auth Consumption: The platform never stores Supabase credentials; it stores only the linking identifier.
+The trusted operations workflow creates, repairs, and deletes platform staff. It first verifies that the Supabase id is not assigned to a patient or clinic staff principal, ensures Supabase metadata identifies the account as `platform`, then creates or updates the matching `platformStaff` document. New platform staff default to `support`; an elevated role is always explicit.
 
-## Scope by User Category
-| Category | Internal Records | External Link | Extra Workflow |
-|----------|------------------|---------------|----------------|
-| Platform Staff | basic user + platform profile | Supabase user id | Immediate access |
-| Clinic Staff | basic user + clinic profile | Supabase user id | Requires approval checkpoint |
-| Patient | single patient record | Supabase user id | None |
+Clinic onboarding currently uses an approved `clinicApplications` record as its trigger. The trigger passes a stable
+onboarding key and the application data to a reusable provisioning service. Each execution creates a pending `clinics`
+record and a pending initial `clinicStaff` principal, sends the invitation to the configured Clinic Dashboard origin,
+and stores the Supabase user id on the staff principal. Login never creates clinic staff.
 
-## Provisioning Lifecycle
-1. Initiate create (admin UI or API) with minimal required fields (email, user type, and a transient password supplied upstream).
-2. The password field is VIRTUAL & EPHEMERAL: it is only used to call Supabase and is never stored or hashed in Payload (credential storage lives solely in Supabase).
-3. Hook (`createSupabaseUserHook` in `src/collections/BasicUsers/hooks/createSupabaseUser.ts`) ensures an external Supabase identity exists (creates if absent) and stores its id.
-4. Staff: role profile is instantiated (or repaired if historically missing) after identity confirmation by subsequent lifecycle hooks.
-5. Deletion runs in reverse order (profile → auth record → external identity) to avoid foreign key & orphan issues.
+The application remains a review and audit record; the resulting clinic and staff ids are stored on its
+`linkedRecords` group. The clinic does not keep a `sourceApplication` relationship. This keeps the materialization
+service independent from the temporary application collection so a later CRM adapter can call the same service and
+fully replace `clinicApplications` without changing the resulting clinic or staff model.
 
-## Integrity Safeguards
-* Profile drift possible until recovery mechanism is implemented; current safeguard halts on Supabase identity failure only.
-* No orphan identities on partial create: Failure to establish external identity halts persistence (user not stored).
-* Duplicate external identity calls are prevented for strategy-originated writes through hook context flags (`skipSupabaseUserCreation`).
-* Email-based reconciliation updates stale/missing Supabase ids when an existing internal record is confidently matched.
-* External deletion best‑effort: Internal data correctness prioritized; operational logs surface external cleanup failures.
+The initial staff account exists in Supabase after a successful invitation, but it is only prepared for onboarding.
+Business access remains denied until the staff principal is `approved`, its `authSync.status` is `synced`, and its
+assigned clinic is approved and not deleted.
 
-## Operational Signals (Monitor)
-* Provisioning failure count (create aborts)
-* External deletion failure count
-* Auto‑recovered profile events
-* Clinic approval latency (identity created → approval granted)
+All staff writes use the shared identity invariant, which checks all auth collections through the Payload Local API before committing. Clinic onboarding does not lock or deduplicate its onboarding key. After creating records, it queries Payload for the same key and logs a structured warning with the affected ids when duplicates exist.
 
-## Extension Guidelines
-When introducing another user category:
-1. Decide between single vs. dual record (auth + profile) based on role complexity.
-2. Reuse existing hook pattern; do not introduce ad‑hoc provisioning endpoints.
-3. Emit structured logs for create/delete to feed monitoring dashboards.
-4. Add approval or gating only if materially distinct from existing clinic workflow.
+## Clinic Staff Lifecycle
 
-## Folder Reference
-* `src/collections/BasicUsers/hooks/` – Staff provisioning lifecycle hooks.
-  * `createSupabaseUser.ts` – Creates Supabase account (uses transient password then discards).
-* `src/collections/Patients/hooks/` – Patient provisioning lifecycle hooks.
-  * `patientSupabaseCreate.ts` / `patientSupabaseDelete.ts` – Patient identity lifecycle handling.
-* `src/auth/utilities/` – Shared utilities for external identity orchestration.
-* `src/collections/` – User & profile schema definitions (authorization boundaries).
+Payload is the lifecycle authority for clinic staff:
 
-Consult the auth flow diagram for step‑by‑step interaction ordering; this page focuses on intent and guarantees.
+- `pending` can become `approved`, `rejected`, or `offboarded`;
+- `approved` can become `disabled` or `offboarded`;
+- `disabled` can become `approved` or `offboarded`;
+- `rejected` can become `offboarded`;
+- `offboarded` is terminal.
+
+Approving or reactivating staff unbans the Supabase identity. Rejecting or disabling staff bans it. Offboarding
+permanently deletes the Supabase identity while retaining the offboarded Payload row as the business record. Invalid
+transitions are rejected server-side.
+
+## Patient Provisioning
+
+Patients retain ensure-on-auth. After Supabase confirms the browser identity, the strategy may create or update the matching `patients` principal idempotently. Patient creation does not create staff records or alter a staff classification.
+
+## Failure Behavior
+
+Clinic application provisioning records `not_started`, `failed`, or `completed` and exposes only a stable failure
+category. Partial clinic and staff records are retained after a failure. Saving the failed approved application starts
+another provisioning attempt with the same onboarding key and may create additional records. Those records remain
+traceable through the shared key and the duplicate warning log. Unknown invite responses are reconciled by normalized
+email and onboarding key before another identity is accepted.
+
+Clinic staff auth synchronization records `pending`, `synced`, `failed`, or `deleted`. Saving a failed non-terminal
+lifecycle state retries the same Supabase operation. Authorization fails closed whenever Supabase and Payload do not
+resolve to the same eligible principal. No runtime path promises immediate invalidation of an already-issued Supabase
+access token.
+
+The operations workflow still owns platform-staff production writes. Clinic staff creation and lifecycle synchronization
+are owned by the clinic onboarding service and Payload lifecycle hooks.

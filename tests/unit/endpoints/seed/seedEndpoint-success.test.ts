@@ -182,6 +182,9 @@ describe('seed endpoints success paths', () => {
           updated: status === 'failed' || status === 'cancelled' ? 1 : 0,
           warnings: [],
           failures: status === 'failed' ? ['partial write failed'] : [],
+          output: {
+            affectedPostSlugs: ['old-demo-post', 'new-editorial-post'],
+          },
         },
       ]
       await saveSeedRunRecord(payload as unknown as Payload, record)
@@ -199,13 +202,15 @@ describe('seed endpoints success paths', () => {
       expect(body.finalFlush).toMatchObject({
         status: 'executed',
         tagCount: 5,
-        pathCount: 4,
+        pathCount: 6,
       })
       expect(revalidateTag).toHaveBeenCalledWith('collection:posts', { expire: 0 })
       expect(revalidateTag).toHaveBeenCalledWith('surface:posts-list', { expire: 0 })
       expect(revalidateTag).toHaveBeenCalledWith('surface:sitemap:posts', { expire: 0 })
       expect(revalidatePath).toHaveBeenCalledWith('/posts')
       expect(revalidatePath).toHaveBeenCalledWith('/posts-sitemap.xml')
+      expect(revalidatePath).toHaveBeenCalledWith('/posts/old-demo-post')
+      expect(revalidatePath).toHaveBeenCalledWith('/posts/new-editorial-post')
 
       const tagCallCount = vi.mocked(revalidateTag).mock.calls.length
       const secondRes = makeRes()
@@ -220,7 +225,7 @@ describe('seed endpoints success paths', () => {
     },
   )
 
-  it('retries a failed terminal seed final flush on a later poll', async () => {
+  it('retries a failed terminal seed final flush with at-least-once invalidation', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-retry-failed-final-flush'
     const queue = `seed:${runId}`
@@ -284,9 +289,8 @@ describe('seed endpoints success paths', () => {
       failureCount: 1,
       reason: 'executor-error',
     })
-
-    vi.mocked(revalidateTag).mockClear()
-    vi.mocked(revalidatePath).mockClear()
+    expect(revalidateTag).toHaveBeenCalledWith('surface:posts-list', { expire: 0 })
+    expect(revalidatePath).toHaveBeenCalledWith('/posts')
 
     const secondRes = makeRes()
     await seedAdvanceHandler(
@@ -303,6 +307,8 @@ describe('seed endpoints success paths', () => {
     })
     expect(revalidateTag).toHaveBeenCalledWith('collection:posts', { expire: 0 })
     expect(revalidatePath).toHaveBeenCalledWith('/posts')
+    expect(vi.mocked(revalidateTag).mock.calls.filter(([tag]) => tag === 'surface:posts-list')).toHaveLength(2)
+    expect(vi.mocked(revalidatePath).mock.calls.filter(([path]) => path === '/posts')).toHaveLength(2)
   })
 
   it('does not flush a cancelled public seed job that never wrote public work', async () => {
@@ -504,7 +510,7 @@ describe('seed endpoints success paths', () => {
     record.cancelledJobs = 1
     record.jobs = [
       {
-        id: 'job-basic-users',
+        id: 'job-patients',
         order: 1,
         status: 'cancelled',
         input: {
@@ -512,17 +518,17 @@ describe('seed endpoints success paths', () => {
           type: 'demo',
           reset: false,
           queue,
-          stepName: 'basic-users',
+          stepName: 'patients',
           kind: 'collection',
-          collection: 'basicUsers',
-          fileName: 'basicUsers',
+          collection: 'patients',
+          fileName: 'patients',
         },
         queue,
-        title: 'Basic users',
-        stepName: 'basic-users',
+        title: 'Patients',
+        stepName: 'patients',
         kind: 'collection',
-        collection: 'basicUsers',
-        fileName: 'basicUsers',
+        collection: 'patients',
+        fileName: 'patients',
         createdAt: '2026-07-08T09:00:00.000Z',
         completedAt: '2026-07-08T10:00:00.000Z',
         created: 0,
@@ -547,9 +553,9 @@ describe('seed endpoints success paths', () => {
     expect(revalidatePath).not.toHaveBeenCalled()
   })
 
-  it('does not flush while another runtime holds the database final-flush lock', async () => {
+  it('runs the final flush without accessing the Payload database adapter', async () => {
     const { payload } = makePayloadReq({})
-    const runId = 'seed-run-cross-runtime-final-flush-lock'
+    const runId = 'seed-run-without-database-adapter'
     const queue = `seed:${runId}`
     const record = createSeedRunRecord({
       runId,
@@ -593,15 +599,10 @@ describe('seed endpoints success paths', () => {
     ]
     await saveSeedRunRecord(payload as unknown as Payload, record)
 
-    const release = vi.fn()
-    const query = vi.fn(async (text: string) => ({
-      rows: text.includes('pg_try_advisory_lock') ? [{ acquired: false }] : [],
-    }))
-    ;(payload as typeof payload & { db: { pool: { connect: ReturnType<typeof vi.fn> } } }).db = {
-      pool: {
-        connect: vi.fn(async () => ({ query, release })),
-      },
-    }
+    const databaseAdapterAccess = vi.fn(() => {
+      throw new Error('Payload database adapter must not be accessed')
+    })
+    Object.defineProperty(payload, 'db', { configurable: true, get: databaseAdapterAccess })
 
     const res = makeRes()
     await seedAdvanceHandler(
@@ -612,92 +613,13 @@ describe('seed endpoints success paths', () => {
     )
 
     expect(res._status).toBe(200)
-    expect((res._body as { finalFlush?: unknown }).finalFlush).toBeUndefined()
-    expect(revalidateTag).not.toHaveBeenCalled()
-    expect(revalidatePath).not.toHaveBeenCalled()
-    expect(query).toHaveBeenCalledWith('select pg_try_advisory_lock(hashtext($1), hashtext($2)) as acquired', [
-      'seed-final-flush',
-      runId,
-    ])
-    expect(release).toHaveBeenCalledTimes(1)
-  })
-
-  it('holds and releases the database final-flush lock around execution when available', async () => {
-    const { payload } = makePayloadReq({})
-    const runId = 'seed-run-database-final-flush-lock'
-    const queue = `seed:${runId}`
-    const record = createSeedRunRecord({
-      runId,
-      type: 'demo',
-      reset: false,
-      queue,
-      totalJobs: 1,
-    }) as SeedRunRecord
-    record.status = 'completed'
-    record.completedAt = '2026-07-08T10:00:00.000Z'
-    record.completedJobs = 1
-    record.succeededJobs = 1
-    record.jobs = [
-      {
-        id: 'job-posts',
-        order: 1,
-        status: 'succeeded',
-        input: {
-          runId,
-          type: 'demo',
-          reset: false,
-          queue,
-          stepName: 'posts',
-          kind: 'collection',
-          collection: 'posts',
-          fileName: 'posts',
-        },
-        queue,
-        title: 'Posts',
-        stepName: 'posts',
-        kind: 'collection',
-        collection: 'posts',
-        fileName: 'posts',
-        createdAt: '2026-07-08T09:00:00.000Z',
-        completedAt: '2026-07-08T10:00:00.000Z',
-        created: 1,
-        updated: 0,
-        warnings: [],
-        failures: [],
-      },
-    ]
-    await saveSeedRunRecord(payload as unknown as Payload, record)
-
-    const release = vi.fn()
-    const query = vi.fn(async (text: string) => ({
-      rows: text.includes('pg_try_advisory_lock') ? [{ acquired: true }] : [],
-    }))
-    ;(payload as typeof payload & { db: { pool: { connect: ReturnType<typeof vi.fn> } } }).db = {
-      pool: {
-        connect: vi.fn(async () => ({ query, release })),
-      },
-    }
-
-    await finalizeSeedRunPublicCaches(payload as unknown as Payload, {
-      ...record,
-      progress: { completed: 1, total: 1, percent: 100 },
-      jobIds: ['job-posts'],
-      hasActiveJob: false,
-    })
-
+    expect((res._body as { finalFlush?: { status: string } }).finalFlush?.status).toBe('executed')
     expect(revalidateTag).toHaveBeenCalled()
-    expect(query).toHaveBeenCalledWith('select pg_try_advisory_lock(hashtext($1), hashtext($2)) as acquired', [
-      'seed-final-flush',
-      runId,
-    ])
-    expect(query).toHaveBeenCalledWith('select pg_advisory_unlock(hashtext($1), hashtext($2))', [
-      'seed-final-flush',
-      runId,
-    ])
-    expect(release).toHaveBeenCalledTimes(1)
+    expect(revalidatePath).toHaveBeenCalled()
+    expect(databaseAdapterAccess).not.toHaveBeenCalled()
   })
 
-  it('guards final flush execution so concurrent terminal pollers do not both flush', async () => {
+  it('keeps a best-effort in-process guard for concurrent terminal pollers', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-concurrent-final-flush'
     const queue = `seed:${runId}`

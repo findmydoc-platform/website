@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   buildArticlePageJsonLdMock: vi.fn(() => [{ '@type': 'Article' }]),
   calculateReadTimeMock: vi.fn(() => '5 min read'),
   draftModeMock: vi.fn(),
+  headersMock: vi.fn(),
   findPostBySlugMock: vi.fn(),
   findPostSlugsMock: vi.fn(),
   generateMetaMock: vi.fn((args: unknown) => args),
@@ -21,6 +22,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('next/headers', () => ({
   draftMode: mocks.draftModeMock,
+  headers: mocks.headersMock,
 }))
 
 vi.mock('@payload-config', () => ({
@@ -114,6 +116,7 @@ describe('frontend post detail route', () => {
     vi.clearAllMocks()
 
     mocks.draftModeMock.mockResolvedValue({ isEnabled: false })
+    mocks.headersMock.mockResolvedValue(new Headers())
     mocks.getPayloadMock.mockResolvedValue({})
     mocks.findPostSlugsMock.mockResolvedValue([{ slug: 'hello-world' }])
     mocks.resolveMediaImageMock.mockReturnValue({
@@ -261,5 +264,32 @@ describe('frontend post detail route', () => {
         path: '/posts/hello-world?locale=de',
       }),
     )
+  })
+
+  it('disables draft access for anonymous temporary landing requests', async () => {
+    mocks.draftModeMock.mockResolvedValue({ isEnabled: true })
+    mocks.headersMock.mockResolvedValue(new Headers({ 'x-temporary-landing-mode': '1' }))
+
+    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
+    const result = await pageModule.default({
+      params: Promise.resolve({ slug: 'hello-world' }),
+      searchParams: Promise.resolve({}),
+    })
+
+    expect(mocks.findPostBySlugMock).toHaveBeenCalledWith({}, 'hello-world', false, {})
+    expect(findElementByType(result, mocks.jsonLdScriptComponent)?.props.data).toEqual([{ '@type': 'Article' }])
+  })
+
+  it('keeps authorized draft access when temporary landing headers are absent', async () => {
+    mocks.draftModeMock.mockResolvedValue({ isEnabled: true })
+
+    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
+    const result = await pageModule.default({
+      params: Promise.resolve({ slug: 'hello-world' }),
+      searchParams: Promise.resolve({}),
+    })
+
+    expect(mocks.findPostBySlugMock).toHaveBeenCalledWith({}, 'hello-world', true, {})
+    expect(findElementByType(result, mocks.jsonLdScriptComponent)?.props.data).toBeNull()
   })
 })

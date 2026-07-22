@@ -639,6 +639,7 @@ const buildSeedFinalFlushPlan = (event: SeedFinalFlushRevalidationEvent): Revali
   const discovery = unique(
     event.subject.affectedDiscovery.map((discoveryId) => normalizeRequiredText(discoveryId, 'discovery')),
   )
+  const postSlugs = unique(event.subject.affectedPostSlugs.map((slug) => normalizeRequiredText(slug, 'post slug')))
   const tags = [
     ...collections.map((collection) => buildCollectionTag(collection)),
     ...globals.map((global) => buildGlobalTag(global)),
@@ -659,6 +660,7 @@ const buildSeedFinalFlushPlan = (event: SeedFinalFlushRevalidationEvent): Revali
       }
     }),
     ...sitemaps.map((sitemap) => buildSitemapPath(sitemap)),
+    ...postSlugs.map((slug) => buildPostPath(slug)),
   ]
 
   return createPlan({
@@ -678,6 +680,7 @@ const buildSeedFinalFlushPlan = (event: SeedFinalFlushRevalidationEvent): Revali
       affectedSurfaces: event.subject.affectedSurfaces,
       affectedSitemaps: event.subject.affectedSitemaps,
       affectedDiscovery: event.subject.affectedDiscovery,
+      affectedPostSlugs: postSlugs,
       completedJobCount: event.subject.completedJobCount,
       publicJobCount: event.subject.publicJobCount,
     },

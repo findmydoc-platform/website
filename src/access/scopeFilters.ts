@@ -7,8 +7,8 @@
  */
 
 import type { Access } from 'payload'
-import { isPlatformBasicUser } from './isPlatformBasicUser'
-import { isClinicBasicUser } from './isClinicBasicUser'
+import { isPlatformStaff } from './isPlatformStaff'
+import { isClinicStaff } from './isClinicStaff'
 import { isPatient } from './isPatient'
 import { getUserAssignedClinicId } from './utils/getClinicAssignment'
 
@@ -18,12 +18,12 @@ import { getUserAssignedClinicId } from './utils/getClinicAssignment'
  */
 export const platformOrOwnClinicResource: Access = async ({ req }) => {
   // Platform Staff: Full access
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
   // Clinic Staff: Only their assigned clinic's resources
-  if (isClinicBasicUser({ req })) {
+  if (isClinicStaff({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     if (clinicId) {
       return {
@@ -39,15 +39,50 @@ export const platformOrOwnClinicResource: Access = async ({ req }) => {
 }
 
 /**
+ * Platform Staff: All doctor profiles
+ * Clinic Staff: Active doctor profiles plus inactive profiles from their clinic
+ * Patients and anonymous users: Active doctor profiles only
+ */
+export const platformOrOwnClinicDoctorsOrActive: Access = async ({ req }) => {
+  if (isPlatformStaff({ req })) {
+    return true
+  }
+
+  const activeDoctors = {
+    active: {
+      equals: true,
+    },
+  }
+
+  if (isClinicStaff({ req })) {
+    const clinicId = await getUserAssignedClinicId(req.user, req.payload)
+    if (clinicId) {
+      return {
+        or: [
+          activeDoctors,
+          {
+            clinic: {
+              equals: clinicId,
+            },
+          },
+        ],
+      }
+    }
+  }
+
+  return activeDoctors
+}
+
+/**
  * Mutation access for create operations where field-level ownership
  * is enforced in beforeChange hooks.
  */
 export const platformOrAssignedClinicMutation: Access = async ({ req }) => {
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
-  if (isClinicBasicUser({ req })) {
+  if (isClinicStaff({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     return clinicId !== null
   }
@@ -61,7 +96,7 @@ export const platformOrAssignedClinicMutation: Access = async ({ req }) => {
  */
 export const platformOrOwnPatientResource: Access = async ({ req }) => {
   // Platform Staff: Full access
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
@@ -84,12 +119,12 @@ export const platformOrOwnPatientResource: Access = async ({ req }) => {
  */
 export const platformOrOwnClinicProfile: Access = async ({ req }) => {
   // Platform Staff: Full access
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
   // Clinic Staff: Only their assigned clinic
-  if (isClinicBasicUser({ req })) {
+  if (isClinicStaff({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     if (clinicId) {
       return {
@@ -123,12 +158,12 @@ export const ownResourceOnly: Access = ({ req }) => {
  */
 export const platformOrOwnClinicDoctorResource: Access = async ({ req }) => {
   // Platform Staff: Full access
-  if (isPlatformBasicUser({ req })) {
+  if (isPlatformStaff({ req })) {
     return true
   }
 
   // Clinic Staff: Only doctor resources from their assigned clinic
-  if (isClinicBasicUser({ req })) {
+  if (isClinicStaff({ req })) {
     const clinicId = await getUserAssignedClinicId(req.user, req.payload)
     if (clinicId) {
       return {
@@ -149,7 +184,7 @@ export const platformOrOwnClinicDoctorResource: Access = async ({ req }) => {
  */
 export const platformOnlyOrPublished: Access = ({ req: { user } }) => {
   // Platform Staff: Full access to all content including drafts
-  if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
+  if (user && user.collection === 'platformStaff') {
     return true
   }
 
@@ -167,7 +202,7 @@ export const platformOnlyOrPublished: Access = ({ req: { user } }) => {
  */
 export const platformOnlyOrApproved: Access = ({ req: { user } }) => {
   // Platform Staff: Full access to all clinics including drafts/pending
-  if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
+  if (user && user.collection === 'platformStaff') {
     return true
   }
 
@@ -185,7 +220,7 @@ export const platformOnlyOrApproved: Access = ({ req: { user } }) => {
  */
 export const platformOnlyOrApprovedReviews: Access = ({ req: { user } }) => {
   // Platform Staff: Full access to all reviews for moderation
-  if (user && user.collection === 'basicUsers' && user.userType === 'platform') {
+  if (user && user.collection === 'platformStaff') {
     return true
   }
 

@@ -7,10 +7,11 @@ import type { AuthData, UserResult } from '@/auth/types/authTypes'
 import { VALID_USER_TYPES } from '@/auth/config/authConfig'
 import type { Payload } from 'payload'
 import { createScopedLogger, getRequestLogContext, type ServerLogger } from '@/utilities/logging/shared'
+import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 
 /**
- * Validates if a clinic user has admin access.
- * Clinic users need to be approved in the clinicStaff collection.
+ * Validates if a clinic user has authorized API access.
+ * Clinic principals must be approved and assigned to a clinic.
  * @param payload - The PayloadCMS instance
  * @param authData - The authentication data
  * @param userResult - The user lookup result
@@ -34,26 +35,16 @@ export async function validateClinicAccess(
   const userId = userResult.user.id
 
   try {
-    const clinicStaffResult = await payload.find({
-      collection: 'clinicStaff',
-      where: {
-        user: { equals: userId },
-        status: { equals: 'approved' },
-      },
-      limit: 1,
-      overrideAccess: true,
-    })
-
-    const isApproved = clinicStaffResult.docs.length > 0
+    const isApproved = Boolean(await readClinicAccessState(payload, userId))
 
     if (!isApproved) {
       activeLogger.warn(
         {
           event: 'auth.supabase.access.denied',
-          reason: 'clinic_not_approved',
+          reason: 'clinic_not_access_ready',
           userId: userResult.user.id,
         },
-        'Clinic user is not approved for admin access',
+        'Clinic principal is not approved for authorized access',
       )
     }
 

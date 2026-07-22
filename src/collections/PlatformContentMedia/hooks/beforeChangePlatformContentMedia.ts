@@ -11,7 +11,7 @@ export const beforeChangePlatformContentMedia: CollectionBeforeChangeHook<Platfo
   const draft = { ...(data || {}) } as Partial<PlatformContentMedia>
 
   if (operation === 'create') {
-    if (req.user && req.user.collection === 'basicUsers') {
+    if (req.user && req.user.collection === 'platformStaff') {
       // Enforce createdBy from the authenticated user (ignore client input).
       draft.createdBy = req.user.id
     } else if (draft.createdBy == null) {

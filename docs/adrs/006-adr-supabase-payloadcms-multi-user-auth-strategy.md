@@ -4,7 +4,7 @@
 
 | Field       | Value             |
 | ----------- | ----------------- |
-| **Status**  | Accepted          |
+| **Status**  | Superseded        |
 | **Date**    | 20 May 2025       |
 | **Version** | 2.1               |
 | **Author**  | Sebastian Schütze |
@@ -296,3 +296,7 @@ PayloadCMS only allows one collection to authenticate as admin for the admin UI 
 * Use collection-level access controls and field-level permissions to restrict data access.
 * Implement approval workflows through profile status fields.
 * Regular security audits to ensure access controls are working correctly.
+
+## Superseded by
+
+[ADR 025 – Direct Staff Authentication Collections](./025-adr-direct-staff-auth-collections.md)

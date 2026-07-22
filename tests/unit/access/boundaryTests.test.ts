@@ -1,13 +1,19 @@
-import { describe, test, expect } from 'vitest'
+import { beforeEach, describe, test, expect, vi } from 'vitest'
 import { createMockReq, createMockPayload } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 
 // Import access functions to test boundary scenarios
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { isClinicStaff } from '@/access/isClinicStaff'
 import { isPatient } from '@/access/isPatient'
 import { authenticated } from '@/access/authenticated'
 import { platformOrOwnClinicResource, platformOrOwnClinicProfile } from '@/access/scopeFilters'
+
+const accessStateMocks = vi.hoisted(() => ({
+  readClinicAccessState: vi.fn(),
+}))
+
+vi.mock('@/auth/utilities/clinicAccessState', () => accessStateMocks)
 
 /**
  * Permission Boundary Tests for Access Control Functions
@@ -16,11 +22,16 @@ import { platformOrOwnClinicResource, platformOrOwnClinicProfile } from '@/acces
  * that could occur due to data inconsistencies or edge cases.
  */
 describe('Permission Boundary Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    accessStateMocks.readClinicAccessState.mockResolvedValue(null)
+  })
+
   describe('User Role and Collection Mismatches', () => {
     test.each([
       {
-        scenario: 'Platform user with additional clinic data should follow userType',
-        user: { id: 1, collection: 'basicUsers', userType: 'platform', clinicId: 123 },
+        scenario: 'Platform principal with additional clinic data stays platform',
+        user: { id: 1, collection: 'platformStaff', clinic: 123 },
         expected: { isPlatform: true, isClinic: false, isPatient: false, isAuth: true },
       },
       {
@@ -34,15 +45,15 @@ describe('Permission Boundary Tests', () => {
         expected: { isPlatform: false, isClinic: false, isPatient: true, isAuth: true },
       },
       {
-        scenario: 'Invalid userType combinations should be rejected',
-        user: { id: 1, collection: 'basicUsers', userType: 'patient' },
+        scenario: 'Unknown principal collections should be rejected',
+        user: { id: 1, collection: 'unknown' },
         expected: { isPlatform: false, isClinic: false, isPatient: false, isAuth: true },
       },
     ])('$scenario', ({ user, expected }) => {
       const req = createMockReq(user)
 
-      expect(isPlatformBasicUser({ req })).toBe(expected.isPlatform)
-      expect(isClinicBasicUser({ req })).toBe(expected.isClinic)
+      expect(isPlatformStaff({ req })).toBe(expected.isPlatform)
+      expect(isClinicStaff({ req })).toBe(expected.isClinic)
       expect(isPatient({ req })).toBe(expected.isPatient)
       expect(authenticated({ req })).toBe(expected.isAuth)
     })
@@ -51,41 +62,22 @@ describe('Permission Boundary Tests', () => {
   describe('Clinic Staff Assignment Edge Cases', () => {
     test('Clinic staff without clinic assignment should be denied scoped access', async () => {
       const mockPayload = createMockPayload()
-      mockPayload.find.mockResolvedValue({ docs: [] })
 
-      const req = createMockReq({ id: 1, collection: 'basicUsers', userType: 'clinic' }, mockPayload)
+      const req = createMockReq({ id: 1, collection: 'clinicStaff' }, mockPayload)
 
-      expect(isClinicBasicUser({ req })).toBe(true) // Basic check passes
+      expect(isClinicStaff({ req })).toBe(true) // Basic check passes
       const result = await platformOrOwnClinicResource({ req })
       expect(result).toBe(false) // Scoped access fails
     })
 
-    test.each([
-      {
-        scenario: 'Clinic staff with pending assignment should get clinic access',
-        status: 'pending',
-        clinicId: 123,
-      },
-      {
-        scenario: 'Clinic staff with rejected assignment should still get access',
-        status: 'rejected',
-        clinicId: 456,
-      },
-      {
-        scenario: 'Clinic staff with approved assignment should get access',
-        status: 'approved',
-        clinicId: 789,
-      },
-    ])('$scenario', async ({ status, clinicId }) => {
+    test('Clinic staff with an access-ready assignment gets clinic access', async () => {
       const mockPayload = createMockPayload()
-      mockPayload.find.mockResolvedValue({
-        docs: [{ id: 1, user: 1, clinic: clinicId, status }],
-      })
+      accessStateMocks.readClinicAccessState.mockResolvedValue({ clinic: { id: 789 }, staff: { id: 1 } })
 
-      const req = createMockReq({ id: 1, collection: 'basicUsers', userType: 'clinic' }, mockPayload)
+      const req = createMockReq({ id: 1, collection: 'clinicStaff' }, mockPayload)
 
       const result = await platformOrOwnClinicResource({ req })
-      expect(result).toEqual({ clinic: { equals: clinicId } })
+      expect(result).toEqual({ clinic: { equals: 789 } })
     })
   })
 
@@ -109,7 +101,7 @@ describe('Permission Boundary Tests', () => {
     })
   })
 
-  describe('Invalid User Types', () => {
+  describe('Unknown Principal Collections', () => {
     test.each([
       { userType: 'invalid_type', expected: false },
       { userType: 'admin', expected: false },
@@ -117,11 +109,11 @@ describe('Permission Boundary Tests', () => {
       { userType: '', expected: false },
       { userType: 'PLATFORM', expected: false }, // Case sensitive
       { userType: 'CLINIC', expected: false },
-    ])('Functions handle invalid userType "$userType" gracefully', ({ userType, expected }) => {
-      const req = createMockReq({ id: 1, collection: 'basicUsers', userType })
+    ])('Functions ignore legacy userType "$userType" on an unknown collection', ({ userType, expected }) => {
+      const req = createMockReq({ id: 1, collection: 'unknown', userType })
 
-      expect(isPlatformBasicUser({ req })).toBe(expected)
-      expect(isClinicBasicUser({ req })).toBe(expected)
+      expect(isPlatformStaff({ req })).toBe(expected)
+      expect(isClinicStaff({ req })).toBe(expected)
     })
 
     test('Invalid userType in patients collection should only pass isPatient check', () => {
@@ -131,8 +123,8 @@ describe('Permission Boundary Tests', () => {
         userType: 'invalid_type',
       })
 
-      expect(isPlatformBasicUser({ req })).toBe(false)
-      expect(isClinicBasicUser({ req })).toBe(false)
+      expect(isPlatformStaff({ req })).toBe(false)
+      expect(isClinicStaff({ req })).toBe(false)
       expect(isPatient({ req })).toBe(true) // Collection determines this
       expect(authenticated({ req })).toBe(true)
     })
@@ -165,8 +157,8 @@ describe('Permission Boundary Tests', () => {
       expect(result).toBe(false)
 
       expect(isPatient({ req })).toBe(true) // Collection determines this
-      expect(isPlatformBasicUser({ req })).toBe(false)
-      expect(isClinicBasicUser({ req })).toBe(false)
+      expect(isPlatformStaff({ req })).toBe(false)
+      expect(isClinicStaff({ req })).toBe(false)
     })
   })
 
@@ -177,8 +169,8 @@ describe('Permission Boundary Tests', () => {
       req.authToken = 'invalid-token'
 
       expect(authenticated({ req })).toBe(false)
-      expect(isPlatformBasicUser({ req })).toBe(false)
-      expect(isClinicBasicUser({ req })).toBe(false)
+      expect(isPlatformStaff({ req })).toBe(false)
+      expect(isClinicStaff({ req })).toBe(false)
       expect(isPatient({ req })).toBe(false)
     })
 
@@ -190,8 +182,8 @@ describe('Permission Boundary Tests', () => {
       })
 
       expect(authenticated({ req })).toBe(true) // Object exists
-      expect(isPlatformBasicUser({ req })).toBe(false) // Missing required fields
-      expect(isClinicBasicUser({ req })).toBe(false)
+      expect(isPlatformStaff({ req })).toBe(false) // Missing required fields
+      expect(isClinicStaff({ req })).toBe(false)
       expect(isPatient({ req })).toBe(false)
     })
   })
@@ -199,24 +191,12 @@ describe('Permission Boundary Tests', () => {
   describe('Database Error Handling', () => {
     test('Database errors should result in access denial', async () => {
       const mockPayload = createMockPayload()
-      mockPayload.find.mockRejectedValue(new Error('Database connection failed'))
+      accessStateMocks.readClinicAccessState.mockRejectedValue(new Error('Database connection failed'))
 
-      const req = createMockReq({ id: 1, collection: 'basicUsers', userType: 'clinic' }, mockPayload)
+      const req = createMockReq({ id: 1, collection: 'clinicStaff' }, mockPayload)
 
       const result = await platformOrOwnClinicResource({ req })
       expect(result).toBe(false)
-    })
-
-    test('Non-existent clinic references should return filter anyway', async () => {
-      const mockPayload = createMockPayload()
-      mockPayload.find.mockResolvedValue({
-        docs: [{ id: 1, user: 1, clinic: 99999, status: 'approved' }],
-      })
-
-      const req = createMockReq({ id: 1, collection: 'basicUsers', userType: 'clinic' }, mockPayload)
-
-      const result = await platformOrOwnClinicResource({ req })
-      expect(result).toEqual({ clinic: { equals: 99999 } })
     })
   })
 })

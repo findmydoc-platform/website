@@ -26,11 +26,7 @@ describe('authenticatedAndAdmin', () => {
       user: () => ({ id: 123, collection: 'patients', userType: 'platform' }),
       expected: false,
     },
-    {
-      userType: 'Wrong userType (clinic)',
-      user: () => ({ id: 123, collection: 'basicUsers', userType: 'clinic' }),
-      expected: false,
-    },
+    { userType: 'Unknown collection', user: () => ({ id: 123, collection: 'unknown' }), expected: false },
   ])('$userType returns $expected', ({ user, expected }) => {
     const result = authenticatedAndAdmin(createAccessArgs(user()))
     if (expected) {

@@ -8,7 +8,7 @@ import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { buildRichText } from '../fixtures/richText'
 import { testSlug } from '../fixtures/testSlug'
 import {
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
   createClinicTestUser,
@@ -23,7 +23,7 @@ describe('Treatments Creation Integration Tests', () => {
   type PayloadCreateArgs = Parameters<Payload['create']>[0]
   let medicalSpecialtyId: number
   let tagId: number
-  const createdBasicUserIds: Array<number> = []
+  const createdStaffIds: Array<number> = []
   const createdPatientIds: Array<number> = []
 
   beforeAll(async () => {
@@ -52,7 +52,7 @@ describe('Treatments Creation Integration Tests', () => {
     await cleanupTestEntities(payload, 'treatments', slugPrefix)
 
     await cleanupTrackedUsers(payload, {
-      basicUserIds: createdBasicUserIds,
+      staffIds: createdStaffIds,
       patientIds: createdPatientIds,
     })
   })
@@ -61,14 +61,14 @@ describe('Treatments Creation Integration Tests', () => {
     createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform-${suffix}`,
       lastName: `User-${suffix}`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
   const createClinicUser = (suffix: string) =>
     createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic-${suffix}`,
       lastName: `User-${suffix}`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
   const createPatientUser = (suffix: string) =>
@@ -260,13 +260,13 @@ describe('Treatments Creation Integration Tests', () => {
         description: buildRichText('Platform write access check'),
         medicalSpecialty: medicalSpecialtyId,
       } as unknown as Treatment,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })) as Treatment
 
     const deniedUsers = [
-      { label: 'clinic', user: asPayloadBasicUser(clinicUser) },
+      { label: 'clinic', user: asPayloadStaffUser(clinicUser) },
       { label: 'patient', user: asPayloadPatientUser(patientUser) },
       { label: 'anonymous' as const, user: undefined },
     ]
@@ -308,7 +308,7 @@ describe('Treatments Creation Integration Tests', () => {
       collection: 'treatments',
       id: platformCreated.id,
       data: { name: `${slugPrefix}-platform-update` } as unknown as Treatment,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
@@ -318,7 +318,7 @@ describe('Treatments Creation Integration Tests', () => {
     const deletedByPlatform = await payload.delete({
       collection: 'treatments',
       id: platformCreated.id,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 

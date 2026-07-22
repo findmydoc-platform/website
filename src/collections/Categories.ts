@@ -2,16 +2,16 @@ import type { CollectionConfig } from 'payload'
 import { slugField } from 'payload'
 
 import { anyone } from '../access/anyone'
-import { isPlatformBasicUser } from '../access/isPlatformBasicUser'
+import { isPlatformStaff } from '../access/isPlatformStaff'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
 export const Categories: CollectionConfig = {
   slug: 'categories',
   access: {
-    create: isPlatformBasicUser,
-    delete: isPlatformBasicUser,
+    create: isPlatformStaff,
+    delete: isPlatformStaff,
     read: anyone,
-    update: isPlatformBasicUser,
+    update: isPlatformStaff,
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook],

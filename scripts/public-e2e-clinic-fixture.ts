@@ -99,7 +99,7 @@ async function createFixture(prefix: string) {
     data: {
       name: `${prefix}-city`,
       airportcode: 'E2E',
-      coordinates: [52.52, 13.405],
+      coordinates: [13.405, 52.52],
       country: countryId,
     },
     overrideAccess: true,
@@ -115,7 +115,7 @@ async function createFixture(prefix: string) {
     id: clinic.id,
     data: {
       status: 'approved',
-      coordinates: [52.52, 13.405],
+      coordinates: [13.405, 52.52],
     },
     overrideAccess: true,
     depth: 0,

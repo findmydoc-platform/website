@@ -4,15 +4,15 @@ import type { Payload } from 'payload'
 import config from '@payload-config'
 
 import { testSlug } from '../fixtures/testSlug'
-import type { BasicUser, Patient, PlatformStaff } from '@/payload-types'
+import type { Patient, PlatformStaff } from '@/payload-types'
 
 type PayloadUser = NonNullable<Parameters<Payload['update']>[0]['user']>
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 type PayloadFindArgs = Parameters<Payload['find']>[0]
 type PayloadUpdateArgs = Parameters<Payload['update']>[0]
 
-const asPayloadUser = (user: BasicUser): PayloadUser => {
-  return { ...user, collection: 'basicUsers' } as unknown as PayloadUser
+const asPlatformUser = (user: PlatformStaff): PayloadUser => {
+  return { ...user, collection: 'platformStaff' } as unknown as PayloadUser
 }
 
 const asPatientUser = (user: Patient): PayloadUser => {
@@ -35,22 +35,23 @@ describe('PlatformStaff integration - access and constraints', () => {
       await payload.delete({ collection: 'patients', where: {}, overrideAccess: true })
     } catch {}
     try {
-      await payload.delete({ collection: 'basicUsers', where: {}, overrideAccess: true })
+      await payload.delete({ collection: 'clinicStaff', where: {}, overrideAccess: true })
     } catch {}
   })
 
-  const createPlatformUser = async (suffix: string) => {
+  const createPlatformUser = async (suffix: string, role: PlatformStaff['role'] = 'support') => {
     return (await payload.create({
-      collection: 'basicUsers',
+      collection: 'platformStaff',
       data: {
         email: `${slugPrefix}-${suffix}@findmydoc.eu`,
         supabaseUserId: `sb-${slugPrefix}-${suffix}`,
-        userType: 'platform',
         firstName: 'Platform',
         lastName: `Staff-${suffix}`,
+        role,
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
-    } as PayloadCreateArgs)) as unknown as BasicUser
+    } as PayloadCreateArgs)) as unknown as PlatformStaff
   }
 
   const createPatientUser = async (suffix: string) => {
@@ -65,28 +66,19 @@ describe('PlatformStaff integration - access and constraints', () => {
     } as PayloadCreateArgs)) as unknown as Patient
   }
 
-  it('allows platform users to update role but blocks non-platform users', async () => {
-    const platformUser = await createPlatformUser('role-update')
-
-    const profileResult = await payload.find({
-      collection: 'platformStaff',
-      where: { user: { equals: platformUser.id } },
-      limit: 1,
-      overrideAccess: true,
-    } as PayloadFindArgs)
-
-    expect(profileResult.docs).toHaveLength(1)
-    const profile = profileResult.docs[0] as PlatformStaff
+  it('allows platform admins to update another role but blocks non-platform users', async () => {
+    const adminUser = await createPlatformUser('role-admin', 'admin')
+    const profile = await createPlatformUser('role-target')
 
     const updated = (await payload.update({
       collection: 'platformStaff',
       id: profile.id,
-      data: { role: 'support' },
-      user: asPayloadUser(platformUser),
+      data: { role: 'content-manager' },
+      user: asPlatformUser(adminUser),
       overrideAccess: false,
     } as PayloadUpdateArgs)) as unknown as PlatformStaff
 
-    expect(updated.role).toBe('support')
+    expect(updated.role).toBe('content-manager')
 
     const patientUser = await createPatientUser('role-blocked')
 
@@ -107,32 +99,54 @@ describe('PlatformStaff integration - access and constraints', () => {
     await expect(async () => {
       await payload.create({
         collection: 'platformStaff',
-        data: { user: platformUser.id, role: 'admin' },
-        user: asPayloadUser(platformUser),
+        data: {
+          email: `${slugPrefix}-direct-attempt@findmydoc.eu`,
+          firstName: 'Direct',
+          lastName: 'Attempt',
+          role: 'admin',
+          supabaseUserId: `sb-${slugPrefix}-direct-attempt`,
+        },
+        user: asPlatformUser(platformUser),
         overrideAccess: false,
       } as PayloadCreateArgs)
     }).rejects.toThrow()
   })
 
-  it('rejects duplicate user assignments (unique constraint)', async () => {
+  it('rejects duplicate Supabase identity assignments', async () => {
     const platformUser = await createPlatformUser('duplicate')
-
-    const profileResult = await payload.find({
-      collection: 'platformStaff',
-      where: { user: { equals: platformUser.id } },
-      limit: 1,
-      overrideAccess: true,
-    } as PayloadFindArgs)
-
-    expect(profileResult.docs).toHaveLength(1)
 
     await expect(async () => {
       await payload.create({
         collection: 'platformStaff',
-        data: { user: platformUser.id, role: 'support' },
+        data: {
+          email: `${slugPrefix}-duplicate-second@findmydoc.eu`,
+          firstName: 'Duplicate',
+          lastName: 'Identity',
+          role: 'support',
+          supabaseUserId: platformUser.supabaseUserId,
+        },
+        context: { trustedPlatformStaffOps: true },
         overrideAccess: true,
       } as PayloadCreateArgs)
-    }).rejects.toThrowError(/user|unique|duplicate|violates|constraint|platformstaff/i)
+    }).rejects.toThrowError(/already assigned|unique|duplicate|violates|constraint/i)
+  })
+
+  it('rejects a Supabase identity assigned to another auth collection', async () => {
+    const platformUser = await createPlatformUser('cross-collection')
+
+    await expect(
+      payload.create({
+        collection: 'clinicStaff',
+        data: {
+          email: `${slugPrefix}-cross-collection@example.com`,
+          firstName: 'Clinic',
+          lastName: 'Identity',
+          status: 'pending',
+          supabaseUserId: platformUser.supabaseUserId,
+        },
+        overrideAccess: true,
+      } as PayloadCreateArgs),
+    ).rejects.toThrow(/already assigned/i)
   })
 
   it('allows platform reads but blocks patient reads', async () => {
@@ -142,7 +156,7 @@ describe('PlatformStaff integration - access and constraints', () => {
 
     const platformRead = await payload.find({
       collection: 'platformStaff',
-      user: asPayloadUser(platformUserA),
+      user: asPlatformUser(platformUserA),
       overrideAccess: false,
       depth: 0,
     } as PayloadFindArgs)
@@ -150,15 +164,15 @@ describe('PlatformStaff integration - access and constraints', () => {
     const platformStaffIds = platformRead.docs.map((doc) => doc.id)
     expect(platformStaffIds.length).toBeGreaterThanOrEqual(2)
 
-    const profileBResult = await payload.find({
-      collection: 'platformStaff',
-      where: { user: { equals: platformUserB.id } },
-      limit: 1,
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadFindArgs)
-    expect(profileBResult.docs).toHaveLength(1)
-    expect(platformStaffIds).toContain(profileBResult.docs[0]?.id)
+    expect(platformStaffIds).toContain(platformUserB.id)
+
+    const readableTarget = platformRead.docs.find((doc) => doc.id === platformUserB.id)
+    expect(readableTarget).toMatchObject({
+      email: platformUserB.email,
+      firstName: platformUserB.firstName,
+      lastName: platformUserB.lastName,
+    })
+    expect(readableTarget).not.toHaveProperty('supabaseUserId')
 
     await expect(
       payload.find({
@@ -171,24 +185,14 @@ describe('PlatformStaff integration - access and constraints', () => {
   })
 
   it('blocks delete attempts even for platform users', async () => {
-    const platformUser = await createPlatformUser('delete-blocked')
-
-    const profileResult = await payload.find({
-      collection: 'platformStaff',
-      where: { user: { equals: platformUser.id } },
-      limit: 1,
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadFindArgs)
-
-    expect(profileResult.docs).toHaveLength(1)
-    const profile = profileResult.docs[0] as PlatformStaff
+    const platformUser = await createPlatformUser('delete-actor')
+    const profile = await createPlatformUser('delete-target')
 
     await expect(
       payload.delete({
         collection: 'platformStaff',
         id: profile.id,
-        user: asPayloadUser(platformUser),
+        user: asPlatformUser(platformUser),
         overrideAccess: false,
       }),
     ).rejects.toThrow()

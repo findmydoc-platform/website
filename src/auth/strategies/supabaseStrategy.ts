@@ -13,7 +13,6 @@ import {
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { isFindmydocPlatformEmail } from '@/auth/utilities/platformStaffEmailPolicy'
 import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
-import { createUser } from '@/auth/utilities/userCreation'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { validateUserAccess } from '@/auth/utilities/accessValidation'
 import { identifyPostHogActor, resolvePostHogActor } from '@/posthog/api'
@@ -21,9 +20,10 @@ import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 
 /**
- * Unified Supabase authentication strategy for both BasicUsers and Patients
- * - BasicUsers (clinic/platform staff): Can access admin UI and APIs
- * - Patients: Can only access APIs for their own data
+ * Unified Supabase authentication strategy for direct staff principals and patients.
+ * - PlatformStaff can access Payload Admin and authorized APIs.
+ * - ClinicStaff can access authorized APIs but not Payload Admin.
+ * - Patients can only access their own authorized APIs.
  * - Admin UI access is controlled by payload.config.ts admin.user setting
  * - API access is controlled by collection-level access rules
  * - User type validation is handled by the login API endpoints
@@ -57,53 +57,26 @@ async function createOrFindUser(
     return { user: patient, collection }
   }
 
-  // Try to find existing user
+  // Staff principals are provisioned only through trusted operations. Never auto-create them at login.
   const existingUser = await findUserBySupabaseId(payload, authData, req, logger)
 
   if (existingUser) {
     return { user: existingUser, collection }
   }
 
-  if (authData.userType === 'platform') {
-    logger.warn(
-      {
-        event: 'auth.supabase.platform_user.not_provisioned',
-        supabaseUserIdHash: hashLogValue(authData.supabaseUserId),
-        userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
-      },
-      'Platform Supabase user is not provisioned in Payload',
-    )
-    throw new AuthFlowError({
-      code: AUTH_FLOW_ERROR_CODES.PLATFORM_USER_NOT_PROVISIONED,
-      message: 'Platform user is not provisioned in Payload',
-    })
-  }
-
-  try {
-    // Create new user if not found
-    const userDoc = await createUser(payload, authData, config, req, logger)
-    return { user: userDoc, collection }
-  } catch (error: unknown) {
-    const authError = toAuthFlowError(error, AUTH_FLOW_ERROR_CODES.USER_CREATE_FAILED)
-
-    if (authError.code === AUTH_FLOW_ERROR_CODES.USER_CREATE_CONFLICT || authError.retryable) {
-      const recoveredUser = await findUserBySupabaseId(payload, authData, req, logger)
-      if (recoveredUser) {
-        logger.warn(
-          {
-            event: 'auth.supabase.user.conflict_recovered',
-            supabaseUserId: authData.supabaseUserId,
-            userType: authData.userType,
-            recoveredUserId: recoveredUser.id,
-          },
-          'Recovered user provisioning from concurrent conflict',
-        )
-        return { user: recoveredUser, collection }
-      }
-    }
-
-    throw authError
-  }
+  logger.warn(
+    {
+      event: 'auth.supabase.staff_principal.not_provisioned',
+      supabaseUserIdHash: hashLogValue(authData.supabaseUserId),
+      userEmailHash: hashLogValue(normalizeEmail(authData.userEmail)),
+      userType: authData.userType,
+    },
+    'Staff Supabase user is not provisioned in Payload',
+  )
+  throw new AuthFlowError({
+    code: AUTH_FLOW_ERROR_CODES.PLATFORM_USER_NOT_PROVISIONED,
+    message: 'Staff user is not provisioned in Payload',
+  })
 }
 
 const toAuthFlowError = (

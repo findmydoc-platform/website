@@ -29,7 +29,7 @@ export type PostSummaryDoc = Pick<
   | 'meta'
 >
 
-export type PostLatestDoc = PostSummaryDoc & Pick<Post, 'content'>
+export type PostLatestDoc = PostSummaryDoc
 
 export type PostDetailDoc = Omit<
   Pick<
@@ -89,10 +89,7 @@ const POST_LIST_SELECT = {
   },
 } satisfies PostsSelect<true>
 
-const POST_LATEST_SELECT = {
-  ...POST_LIST_SELECT,
-  content: true,
-} satisfies PostsSelect<true>
+const POST_LATEST_SELECT = POST_LIST_SELECT
 
 const POST_RELATED_SELECT = {
   title: true,
@@ -264,8 +261,13 @@ async function queryPosts<TDoc>(
   return result as unknown as PagedResult<TDoc>
 }
 
-export async function findLatestPosts(payload: Payload, limit = 3): Promise<PostLatestDoc[]> {
+export async function findLatestPosts(
+  payload: Payload,
+  limit = 3,
+  contentLocale: LocalizedDocQuery = {},
+): Promise<PostLatestDoc[]> {
   const result = await queryPosts<PostLatestDoc>(payload, {
+    contentLocale,
     depth: 1,
     limit,
     pagination: false,
@@ -276,21 +278,28 @@ export async function findLatestPosts(payload: Payload, limit = 3): Promise<Post
   return result.docs
 }
 
-const getCachedLatestPostsByLimit = (limit: number) =>
+const getCachedLatestPostsByArgs = (limit: number, contentLocale: LocalizedDocQuery) =>
   unstable_cache(
     async () => {
       const payload = await getPayload({ config: configPromise })
 
-      return findLatestPosts(payload, limit)
+      return findLatestPosts(payload, limit, contentLocale)
     },
-    ['posts-latest', String(limit)],
+    [
+      'posts-latest',
+      buildPostListDataCacheKey({
+        contentLocale,
+        limit,
+        page: 1,
+      }),
+    ],
     {
       tags: buildPostListDataCacheTags(),
     },
   )
 
-export async function getCachedLatestPosts(limit = 3): Promise<PostLatestDoc[]> {
-  return getCachedLatestPostsByLimit(limit)()
+export async function getCachedLatestPosts(limit = 3, contentLocale: LocalizedDocQuery = {}): Promise<PostLatestDoc[]> {
+  return getCachedLatestPostsByArgs(limit, contentLocale)()
 }
 
 export async function findPublishedPostsPage(

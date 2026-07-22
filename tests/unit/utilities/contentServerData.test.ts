@@ -56,6 +56,22 @@ describe('content server data helpers', () => {
         select: POST_LATEST_SELECT,
       }),
     )
+    expect(POST_LATEST_SELECT).toBe(POST_LIST_SELECT)
+  })
+
+  it('passes content locale through latest post queries', async () => {
+    const { payload, findMock } = createPayloadMock()
+    findMock.mockResolvedValue({ docs: [], totalDocs: 0, totalPages: 0 })
+
+    await findLatestPosts(payload, 3, { locale: 'de', fallbackLocale: 'en' })
+
+    expect(findMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fallbackLocale: 'en',
+        locale: 'de',
+        select: POST_LIST_SELECT,
+      }),
+    )
   })
 
   it('keeps the paginated post archive filter and count semantics intact', async () => {

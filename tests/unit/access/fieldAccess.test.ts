@@ -9,6 +9,7 @@ import { describe, test, beforeEach, expect } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks, createMockPayload } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 import {
+  computedOnlyFieldAccess,
   platformClinicTrustAccess,
   platformClinicTrustFieldAccess,
   platformOnlyFieldAccess,
@@ -17,6 +18,17 @@ import {
 describe('Field Access Control', () => {
   beforeEach(() => {
     clearAllMocks()
+  })
+
+  describe('computedOnlyFieldAccess', () => {
+    test.each([
+      { userType: 'Platform Staff', user: () => mockUsers.platform() },
+      { userType: 'Clinic Staff', user: () => mockUsers.clinic() },
+      { userType: 'Patient', user: () => mockUsers.patient() },
+      { userType: 'Anonymous', user: () => mockUsers.anonymous() },
+    ])('denies $userType writes', ({ user }) => {
+      expectAccess.none(computedOnlyFieldAccess(createAccessArgs(user())))
+    })
   })
 
   describe('platformOnlyFieldAccess', () => {
@@ -32,11 +44,7 @@ describe('Field Access Control', () => {
         user: () => ({ id: 123, collection: 'patients', userType: 'platform' }),
         expected: false,
       },
-      {
-        userType: 'Wrong userType (clinic)',
-        user: () => ({ id: 123, collection: 'basicUsers', userType: 'clinic' }),
-        expected: false,
-      },
+      { userType: 'Unknown collection', user: () => ({ id: 123, collection: 'unknown' }), expected: false },
       {
         userType: 'Missing collection',
         user: () => ({ id: 123, userType: 'platform' }),
@@ -44,7 +52,7 @@ describe('Field Access Control', () => {
       },
       {
         userType: 'Missing userType',
-        user: () => ({ id: 123, collection: 'basicUsers' }),
+        user: () => ({ id: 123 }),
         expected: false,
       },
     ])('$userType field access returns $expected', ({ user, expected }) => {
@@ -75,7 +83,7 @@ describe('Field Access Control', () => {
         expect.objectContaining({
           collection: 'platformStaff',
           where: expect.objectContaining({
-            and: expect.arrayContaining([{ user: { equals: 1 } }, { role: { in: ['admin', 'support'] } }]),
+            and: expect.arrayContaining([{ id: { equals: 1 } }, { role: { in: ['admin', 'support'] } }]),
           }),
         }),
       )

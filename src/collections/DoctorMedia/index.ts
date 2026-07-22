@@ -2,8 +2,8 @@ import type { CollectionConfig } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
-import { isClinicBasicUser } from '@/access/isClinicBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { isClinicStaff } from '@/access/isClinicStaff'
 import { getUserAssignedClinicId, normalizeClinicId } from '@/access/utils/getClinicAssignment'
 import { doctorMediaReadAccess } from '@/access/doctorMediaRead'
 import { platformOrOwnClinicResource } from '@/access/scopeFilters'
@@ -46,9 +46,9 @@ export const DoctorMedia: CollectionConfig = {
     // goes beyond the simple clinic scoping handled by platformOrOwnClinicResource, so we keep a
     // bespoke create handler here.
     create: async ({ req, data }) => {
-      if (isPlatformBasicUser({ req })) return true
+      if (isPlatformStaff({ req })) return true
 
-      if (isClinicBasicUser({ req })) {
+      if (isClinicStaff({ req })) {
         const clinicId = await getUserAssignedClinicId(req.user, req.payload)
         const mediaData = data as Partial<DoctorMediaType>
         const doctorId = extractRelationId(mediaData?.doctor)
@@ -102,7 +102,7 @@ export const DoctorMedia: CollectionConfig = {
       admin: { description: 'Clinic where the doctor works', readOnly: true },
     },
     buildMediaCreatedByField({
-      relationTo: 'basicUsers',
+      relationTo: ['platformStaff', 'clinicStaff'],
     }),
     buildMediaStoragePathField(),
     buildMediaPrefixField(),

@@ -24,10 +24,10 @@ export type SeedPlanStep = CollectionPlanStep | GlobalsPlanStep
 export const baselinePlan: SeedPlanStep[] = [
   {
     kind: 'collection',
-    name: 'basic-users',
-    collection: 'basicUsers',
-    fileName: 'basicUsers',
-    context: { skipSupabaseUserCreation: true },
+    name: 'platform-staff',
+    collection: 'platformStaff',
+    fileName: 'platformStaff',
+    context: { trustedPlatformStaffOps: true },
   },
   {
     kind: 'collection',
@@ -107,10 +107,10 @@ export const baselinePlan: SeedPlanStep[] = [
 export const demoPlan: SeedPlanStep[] = [
   {
     kind: 'collection',
-    name: 'basic-users',
-    collection: 'basicUsers',
-    fileName: 'basicUsers',
-    context: { skipSupabaseUserCreation: true },
+    name: 'platform-staff',
+    collection: 'platformStaff',
+    fileName: 'platformStaff',
+    context: { trustedPlatformStaffOps: true },
   },
   {
     kind: 'collection',
@@ -121,13 +121,13 @@ export const demoPlan: SeedPlanStep[] = [
       {
         sourceField: 'userStableId',
         targetField: 'user.value',
-        collection: 'basicUsers',
+        collection: 'platformStaff',
         required: true,
       },
       {
         sourceField: 'createdByStableId',
         targetField: 'createdBy.value',
-        collection: 'basicUsers',
+        collection: 'platformStaff',
         required: true,
       },
     ],
@@ -135,9 +135,9 @@ export const demoPlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
-    name: 'basic-users-profile-images',
-    collection: 'basicUsers',
-    fileName: 'basicUsers',
+    name: 'platform-staff-profile-images',
+    collection: 'platformStaff',
+    fileName: 'platformStaff',
     mapping: [
       {
         sourceField: 'profileImageStableId',
@@ -165,6 +165,7 @@ export const demoPlan: SeedPlanStep[] = [
     name: 'posts',
     collection: 'posts',
     fileName: 'posts',
+    context: { resetSeedPublishedAt: true },
     localizedFields: ['title', 'content', 'excerpt', 'meta.title', 'meta.description'],
     mapping: [
       {
@@ -192,7 +193,7 @@ export const demoPlan: SeedPlanStep[] = [
       {
         sourceField: 'authorsUserStableIds',
         targetField: 'authors',
-        collection: 'basicUsers',
+        collection: 'platformStaff',
         many: true,
         required: true,
       },

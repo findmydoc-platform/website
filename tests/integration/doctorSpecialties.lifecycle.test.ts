@@ -8,15 +8,16 @@ import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import {
   asClinicScopedPayloadUser,
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   createClinicTestUser,
   createPlatformTestUser,
+  cleanupTrackedUsers,
 } from '../fixtures/testUsers'
 import type { Doctor, Doctorspecialty, MedicalSpecialty } from '@/payload-types'
 
 const createdDoctorSpecialtyIds: Array<number> = []
 const createdMedicalSpecialtyIds: Array<number> = []
-const createdBasicUserIds: Array<number> = []
+const createdStaffIds: Array<number | string> = []
 
 describe('DoctorSpecialties lifecycle integration', () => {
   let payload: Payload
@@ -25,21 +26,21 @@ describe('DoctorSpecialties lifecycle integration', () => {
   const slugPrefix = testSlug('doctorSpecialties.lifecycle.test.ts')
 
   const createPlatformUser = async (emailPrefix: string) => {
-    const basicUser = await createPlatformTestUser(payload, {
+    const staffUser = await createPlatformTestUser(payload, {
       emailPrefix,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
-    return asPayloadBasicUser(basicUser)
+    return asPayloadStaffUser(staffUser)
   }
 
   const createClinicUser = async (emailPrefix: string, clinicId: number) => {
-    const basicUser = await createClinicTestUser(payload, {
+    const staffUser = await createClinicTestUser(payload, {
       emailPrefix,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
-    return asClinicScopedPayloadUser(basicUser, clinicId)
+    return asClinicScopedPayloadUser(payload, staffUser, clinicId)
   }
 
   const ensureMedicalSpecialty = async () => {
@@ -97,13 +98,7 @@ describe('DoctorSpecialties lifecycle integration', () => {
       } catch {}
     }
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)

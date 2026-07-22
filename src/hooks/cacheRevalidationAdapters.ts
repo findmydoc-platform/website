@@ -66,6 +66,32 @@ const normalizePreviousSlug = (
   return undefined
 }
 
+const resolveChangeSlug = ({
+  currentSlug,
+  currentStatus,
+  previousSlug,
+  previousStatus,
+}: {
+  readonly currentSlug: string | null | undefined
+  readonly currentStatus: PublicDocumentStatus
+  readonly previousSlug?: string
+  readonly previousStatus?: PublicDocumentStatus
+}): string | undefined => {
+  if (typeof currentSlug === 'string' && currentSlug.trim()) {
+    return currentSlug
+  }
+
+  if (currentStatus === 'draft' && previousStatus !== 'published') {
+    return undefined
+  }
+
+  if (currentStatus === 'draft' && previousSlug) {
+    return previousSlug
+  }
+
+  return normalizeSlug(currentSlug, 'document slug')
+}
+
 const resolveCollectionOperation = ({
   slug,
   status,
@@ -109,10 +135,18 @@ export const executeCollectionChangeRevalidation = ({
   readonly previousDoc?: RevalidatableCollectionDoc
 }): void => {
   const id = normalizeId(doc.id, 'document id')
-  const slug = normalizeSlug(doc.slug, 'document slug')
   const status = normalizeStatus(doc._status, 'document status')
   const previousStatus = normalizePreviousStatus(previousDoc?._status)
   const previousSlug = normalizePreviousSlug(previousDoc, previousStatus)
+  const slug = resolveChangeSlug({
+    currentSlug: doc.slug,
+    currentStatus: status,
+    previousSlug,
+    previousStatus,
+  })
+
+  // Payload autosaves new drafts before a slug exists. They cannot affect public output.
+  if (!slug) return
 
   executePlan(
     {

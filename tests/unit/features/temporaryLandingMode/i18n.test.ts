@@ -4,6 +4,7 @@ import {
   buildTemporaryLandingLanguageOptions,
   buildTemporaryLandingLocaleHref,
   getTemporaryLandingPageContent,
+  resolveTemporaryLandingContentLocale,
   resolveTemporaryLandingLocale,
   TEMPORARY_LANDING_LOCALES,
   type TemporaryLandingLocale,
@@ -36,6 +37,12 @@ describe('temporaryLandingMode i18n', () => {
       { value: 'de', label: 'DE', href: '/?source=hero&lang=de' },
       { value: 'tr', label: 'TR', href: '/?source=hero&lang=tr' },
     ])
+  })
+
+  it('maps holding locales to supported blog content locales', () => {
+    expect(resolveTemporaryLandingContentLocale('en')).toEqual({})
+    expect(resolveTemporaryLandingContentLocale('de')).toEqual({ locale: 'de', fallbackLocale: 'en' })
+    expect(resolveTemporaryLandingContentLocale('tr')).toEqual({})
   })
 
   it('returns localized content for every supported locale', () => {

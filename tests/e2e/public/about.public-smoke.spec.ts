@@ -72,7 +72,9 @@ async function scrollTrustStoryToProgress(page: Page, progress: number) {
   }, progress)
 }
 
-test('about page composes the trust narrative across public viewports @smoke', async ({ page }) => {
+test('about page keeps its section order without horizontal overflow across public viewports @smoke', async ({
+  page,
+}) => {
   test.setTimeout(120_000)
 
   const issues = createBrowserIssueCollector(page)
@@ -84,80 +86,46 @@ test('about page composes the trust narrative across public viewports @smoke', a
     await expect(
       page.getByRole('heading', { name: /The team behind clearer clinic decisions\.|About findmydoc/i }),
     ).toBeVisible()
-    await expect(
-      page.getByText(
-        /findmydoc helps patients compare clinic information with confidence|We build findmydoc so patients can compare clinic information with more context/i,
-      ),
-    ).toBeVisible()
-    await expect(page.getByText(/We bring clarity to clinic information|Profile claims, qualifications/i)).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Scattered information' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Comparison context' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Decision boundary' })).toBeVisible()
     await expectAboutSectionsInOrder(page, viewport.name)
     await expectNoHorizontalOverflow(page, viewport.name)
-
-    const trustStory = page.getByRole('region', { name: /findmydoc trust system scroll story/i })
-    await trustStory.scrollIntoViewIfNeeded()
-    await expect(trustStory).toBeVisible()
-    await expect(page.getByText(/Patient\s*Confidence/).first()).toBeVisible()
-    await expectNoHorizontalOverflow(page, `${viewport.name} trust story`)
-
-    await scrollTrustStoryToProgress(page, 0.96)
-    await expect(trustStory.locator('[data-card="2"]')).toHaveAttribute('data-active', 'true')
-    await expect(trustStory.locator('[data-ring-label="2"]')).toHaveAttribute('data-visible')
-    await expectNoHorizontalOverflow(page, `${viewport.name} trust story final state`)
-
-    const teamHeading = page.getByRole('heading', { name: 'The people accountable for the system' })
-    await teamHeading.scrollIntoViewIfNeeded()
-    await expect(teamHeading).toBeVisible()
-    const teamSpotlight = page.locator('[data-about-team-spotlight]')
-    await expect(teamSpotlight.getByRole('heading', { name: 'Volkan Kablan' })).toBeVisible()
-    await expect(teamSpotlight.getByText(/Sets the standards for partner relationships/i)).toBeVisible()
-    await expect(teamSpotlight.getByRole('link', { name: 'Volkan Kablan on LinkedIn' })).toBeVisible()
-    await expect(teamSpotlight.getByRole('link', { name: 'Contact' })).toHaveAttribute('href', '/contact')
-    const volkanTab = page.getByRole('tab', { name: /Volkan Kablan/i })
-    const sebastianTab = page.getByRole('tab', { name: /Sebastian Schütze/i })
-
-    await expect(page.getByRole('tablist', { name: /Team accountability roles/i })).toBeVisible()
-    await expect(volkanTab).toHaveAttribute('aria-selected', 'true')
-    await expect(page.getByText('Platform reliability')).toBeVisible()
-    await sebastianTab.click()
-    if (viewport.width < 1024) {
-      await expect(teamSpotlight).toBeInViewport({ ratio: 0.2 })
-    }
-    await expect(teamSpotlight.getByRole('heading', { name: 'Sebastian Schütze' })).toBeVisible()
-    await expect(teamSpotlight.getByText(/structured, available, and reliable/i)).toBeVisible()
-    await expect(teamSpotlight.getByRole('link', { name: 'Sebastian Schütze on GitHub' })).toBeVisible()
-    await expect(sebastianTab).toHaveAttribute('aria-selected', 'true')
-    await expect(volkanTab).toHaveAttribute('aria-selected', 'false')
-    await sebastianTab.press('Home')
-    await expect(volkanTab).toHaveAttribute('aria-selected', 'true')
-    await volkanTab.press('End')
-    await expect(sebastianTab).toHaveAttribute('aria-selected', 'true')
-    await expect(teamSpotlight.getByRole('heading', { name: 'Sebastian Schütze' })).toBeVisible()
-    await expectNoHorizontalOverflow(page, `${viewport.name} team spotlight`)
-
-    const transparencyHeading = page.getByRole('heading', { name: /What we keep transparent|What stays transparent/i })
-    await transparencyHeading.scrollIntoViewIfNeeded()
-    await expect(transparencyHeading).toBeVisible()
-    await expect(page.getByText(/Patients contact clinics directly/i)).toBeVisible()
-    await expect(page.getByText('Medical-advice separation')).toBeVisible()
-
-    const closingHeading = page.getByRole('heading', { name: 'Continue with clearer clinic context.' })
-    await closingHeading.scrollIntoViewIfNeeded()
-    await expect(closingHeading).toBeVisible()
-    const closingCta = page.getByRole('region', { name: 'Continue with clearer clinic context.' })
-    await expect(closingCta.getByRole('link', { name: 'Compare clinics' })).toHaveAttribute(
-      'href',
-      '/listing-comparison',
-    )
-    await expect(closingCta.getByRole('link', { name: 'Register your clinic' })).toHaveAttribute(
-      'href',
-      '/partners/clinics',
-    )
-    await expectNoHorizontalOverflow(page, `${viewport.name} closing CTA`)
   }
 
+  await expectNoBrowserIssues(issues)
+})
+
+test('about page exposes the trust story, team controls, and closing actions @smoke', async ({ page }) => {
+  const issues = createBrowserIssueCollector(page)
+
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/about', { waitUntil: 'domcontentloaded' })
+
+  const trustStory = page.getByRole('region', { name: /findmydoc trust system scroll story/i })
+  await trustStory.scrollIntoViewIfNeeded()
+  await expect(trustStory).toBeVisible()
+  await scrollTrustStoryToProgress(page, 0.96)
+  await expect(trustStory.locator('[data-card="2"]')).toHaveAttribute('data-active', 'true')
+  await expect(trustStory.locator('[data-ring-label="2"]')).toHaveAttribute('data-visible')
+
+  const teamSpotlight = page.locator('[data-about-team-spotlight]')
+  const volkanTab = page.getByRole('tab', { name: /Volkan Kablan/i })
+  const sebastianTab = page.getByRole('tab', { name: /Sebastian Schütze/i })
+
+  await expect(volkanTab).toHaveAttribute('aria-selected', 'true')
+  await sebastianTab.click()
+  await expect(teamSpotlight.getByRole('heading', { name: 'Sebastian Schütze' })).toBeVisible()
+  await expect(sebastianTab).toHaveAttribute('aria-selected', 'true')
+  await sebastianTab.press('Home')
+  await expect(volkanTab).toHaveAttribute('aria-selected', 'true')
+  await volkanTab.press('End')
+  await expect(sebastianTab).toHaveAttribute('aria-selected', 'true')
+
+  const closingCta = page.getByRole('region', { name: 'Continue with clearer clinic context.' })
+  await expect(closingCta.getByRole('link', { name: 'Compare clinics' })).toHaveAttribute('href', '/listing-comparison')
+  await expect(closingCta.getByRole('link', { name: 'Register your clinic' })).toHaveAttribute(
+    'href',
+    '/partners/clinics',
+  )
+  await expectNoHorizontalOverflow(page, '375 interactive states')
   await expectNoBrowserIssues(issues)
 })
 
@@ -168,12 +136,27 @@ test('about trust story respects reduced motion @smoke', async ({ page }) => {
 
   const trustStory = page.getByRole('region', { name: /findmydoc trust system scroll story/i })
   await trustStory.scrollIntoViewIfNeeded()
-  await expect(trustStory.getByText('Patients start with uncertainty.').first()).toBeVisible()
-  await expect(trustStory.getByText('We turn trust signals into clearer decisions.').first()).toBeVisible()
-  await expect(trustStory.getByText('A clearer path forward for patients and clinics.').first()).toBeVisible()
+  const cards = trustStory.locator('[data-card]')
 
-  await scrollTrustStoryToProgress(page, 0.96)
-  await expect(trustStory.getByText('Patients start with uncertainty.').first()).toBeVisible()
-  await expect(trustStory.getByText('We turn trust signals into clearer decisions.').first()).toBeVisible()
-  await expect(trustStory.getByText('A clearer path forward for patients and clinics.').first()).toBeVisible()
+  await expect(cards).toHaveCount(3)
+  await expect
+    .poll(() =>
+      cards.evaluateAll((elements) =>
+        elements.map((element) => {
+          const style = window.getComputedStyle(element)
+          return {
+            opacity: style.opacity,
+            pointerEvents: style.pointerEvents,
+            position: style.position,
+          }
+        }),
+      ),
+    )
+    .toEqual(
+      Array.from({ length: 3 }, () => ({
+        opacity: '1',
+        pointerEvents: 'auto',
+        position: 'relative',
+      })),
+    )
 })

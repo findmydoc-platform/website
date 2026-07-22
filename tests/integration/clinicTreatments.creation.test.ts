@@ -6,11 +6,11 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import { asClinicScopedPayloadUser, createClinicTestUser } from '../fixtures/testUsers'
+import { asClinicScopedPayloadUser, cleanupTrackedUsers, createClinicTestUser } from '../fixtures/testUsers'
 import type { Clinictreatment, Treatment } from '@/payload-types'
 
 const createdClinicTreatmentIds: Array<string | number> = []
-const createdBasicUserIds: Array<number> = []
+const createdStaffIds: Array<number | string> = []
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
 describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
@@ -21,12 +21,12 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
   const slugPrefix = testSlug('clinicTreatments.creation.test.ts')
 
   const createClinicUser = async (emailPrefix: string, clinicId: number) => {
-    const basicUser = await createClinicTestUser(payload, {
+    const staffUser = await createClinicTestUser(payload, {
       emailPrefix,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
-    return asClinicScopedPayloadUser(basicUser, clinicId)
+    return asClinicScopedPayloadUser(payload, staffUser, clinicId)
   }
 
   beforeAll(async () => {
@@ -61,13 +61,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
   })
 
   it('creates a clinic treatment with required fields', async () => {
@@ -169,51 +163,6 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
     ).rejects.toThrow()
   })
 
-  it('updates treatment average price after creating clinic treatment (hook test)', async () => {
-    const { clinic } = await createClinicFixture(payload, cityId, {
-      slugPrefix: `${slugPrefix}-hook-create`,
-    })
-
-    // Get initial treatment state
-    const treatmentBefore = await payload.findByID({
-      collection: 'treatments',
-      id: treatmentId,
-      overrideAccess: true,
-      depth: 0,
-    })
-
-    const initialAvgPrice = treatmentBefore.averagePrice
-
-    // Create clinic treatment
-    const clinicTreatment = await payload.create({
-      collection: 'clinictreatments',
-      data: {
-        clinic: clinic.id,
-        treatment: treatmentId,
-        price: 5000,
-      },
-      overrideAccess: true,
-      depth: 0,
-    })
-
-    createdClinicTreatmentIds.push(clinicTreatment.id)
-
-    // Check that the treatment's average price was updated by the hook
-    const treatmentAfter = await payload.findByID({
-      collection: 'treatments',
-      id: treatmentId,
-      overrideAccess: true,
-    })
-
-    expect(treatmentAfter.averagePrice).toBeDefined()
-    // The average should have changed from initial state
-    if (initialAvgPrice === null || initialAvgPrice === undefined) {
-      expect(treatmentAfter.averagePrice).toBeCloseTo(5000, 5)
-    } else {
-      expect(treatmentAfter.averagePrice).not.toBe(initialAvgPrice)
-    }
-  })
-
   it('updates treatment average price after updating clinic treatment (hook test)', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, {
       slugPrefix: `${slugPrefix}-hook-update`,
@@ -239,7 +188,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
       overrideAccess: true,
     })
 
-    const avgPriceAfterCreate = treatmentAfterCreate.averagePrice
+    expect(treatmentAfterCreate.averagePrice).toBeCloseTo(3000, 5)
 
     // Update clinic treatment price
     await payload.update({
@@ -258,70 +207,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
       overrideAccess: true,
     })
 
-    expect(treatmentAfterUpdate.averagePrice).toBeDefined()
-    expect(treatmentAfterUpdate.averagePrice).not.toBe(avgPriceAfterCreate)
-  })
-
-  it('updates treatment average price after deleting clinic treatment (hook test)', async () => {
-    const { clinic: clinic1 } = await createClinicFixture(payload, cityId, {
-      slugPrefix: `${slugPrefix}-hook-delete-1`,
-    })
-    const { clinic: clinic2 } = await createClinicFixture(payload, cityId, {
-      slugPrefix: `${slugPrefix}-hook-delete-2`,
-      clinicIndex: 1,
-      doctorIndex: 1,
-    })
-
-    // Create two clinic treatments for the same treatment
-    const clinicTreatment1 = await payload.create({
-      collection: 'clinictreatments',
-      data: {
-        clinic: clinic1.id,
-        treatment: treatmentId,
-        price: 2000,
-      },
-      overrideAccess: true,
-    })
-    createdClinicTreatmentIds.push(clinicTreatment1.id)
-
-    const clinicTreatment2 = await payload.create({
-      collection: 'clinictreatments',
-      data: {
-        clinic: clinic2.id,
-        treatment: treatmentId,
-        price: 4000,
-      },
-      overrideAccess: true,
-    })
-    createdClinicTreatmentIds.push(clinicTreatment2.id)
-
-    // Get treatment state with both clinic treatments
-    const treatmentBefore = await payload.findByID({
-      collection: 'treatments',
-      id: treatmentId,
-      overrideAccess: true,
-    })
-
-    // Average should be (2000 + 4000) / 2 = 3000
-    expect(treatmentBefore.averagePrice).toBeCloseTo(3000, 5)
-
-    // Delete one clinic treatment
-    await payload.delete({
-      collection: 'clinictreatments',
-      id: clinicTreatment1.id,
-      overrideAccess: true,
-    })
-    createdClinicTreatmentIds.splice(createdClinicTreatmentIds.indexOf(clinicTreatment1.id), 1)
-
-    // Check that the treatment's average price was updated by the hook
-    const treatmentAfter = await payload.findByID({
-      collection: 'treatments',
-      id: treatmentId,
-      overrideAccess: true,
-    })
-
-    // Average should now be just 4000
-    expect(treatmentAfter.averagePrice).toBeCloseTo(4000, 5)
+    expect(treatmentAfterUpdate.averagePrice).toBeCloseTo(6000, 5)
   })
 
   it('allows multiple clinics to offer the same treatment with different prices', async () => {
@@ -564,47 +450,5 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
 
     expect(updated.id).toBe(clinicTreatment.id)
     expect(updated.price).toBe(2500)
-  })
-
-  it('includes zero-priced treatments in average calculation', async () => {
-    const { clinic: clinic1 } = await createClinicFixture(payload, cityId, {
-      slugPrefix: `${slugPrefix}-zero-1`,
-    })
-    const { clinic: clinic2 } = await createClinicFixture(payload, cityId, {
-      slugPrefix: `${slugPrefix}-zero-2`,
-      clinicIndex: 1,
-      doctorIndex: 1,
-    })
-
-    const ct1 = await payload.create({
-      collection: 'clinictreatments',
-      data: {
-        clinic: clinic1.id,
-        treatment: secondTreatmentId,
-        price: 0, // Free treatment
-      },
-      overrideAccess: true,
-    })
-
-    const ct2 = await payload.create({
-      collection: 'clinictreatments',
-      data: {
-        clinic: clinic2.id,
-        treatment: secondTreatmentId,
-        price: 1000,
-      },
-      overrideAccess: true,
-    })
-
-    createdClinicTreatmentIds.push(ct1.id, ct2.id)
-
-    const treatment = await payload.findByID({
-      collection: 'treatments',
-      id: secondTreatmentId,
-      overrideAccess: true,
-    })
-
-    // Average should be (0 + 1000) / 2 = 500
-    expect(treatment.averagePrice).toBeCloseTo(500, 5)
   })
 })

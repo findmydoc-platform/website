@@ -62,6 +62,7 @@ export type HoldingPageConceptVisualVariant =
   | 'videoImmersiveHero'
 
 export type HoldingPageConceptProps = {
+  afterSignals?: ReactNode
   backgroundImage: StaticImageData | string
   backgroundImageClassName?: string
   bestFor: string
@@ -551,6 +552,7 @@ function renderVariantLayout(
   isVideoLayout: boolean,
 ) {
   const {
+    afterSignals,
     backgroundImage,
     backgroundImageClassName,
     bestFor,
@@ -1441,6 +1443,8 @@ function renderVariantLayout(
                 </div>
               </div>
             </ScrollReveal>
+
+            {afterSignals ? <ScrollReveal preset="surface">{afterSignals}</ScrollReveal> : null}
           </div>
 
           <ScrollReveal>
@@ -1460,6 +1464,7 @@ function renderVariantLayout(
 }
 
 export function HoldingPageConcept({
+  afterSignals,
   backgroundImage,
   backgroundImageClassName,
   bestFor,
@@ -1498,6 +1503,7 @@ export function HoldingPageConcept({
   const showMetadataPills = visualVariant !== 'videoImmersiveHero'
 
   const sharedData: SharedConceptData = {
+    afterSignals,
     backgroundImage,
     backgroundImageClassName,
     bestFor,

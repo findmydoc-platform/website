@@ -13,7 +13,7 @@ import {
 } from '@/auth/errors/authFlowError'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 import type { Payload, PayloadRequest } from 'payload'
-import type { BasicUser, Patient } from '@/payload-types'
+import type { Patient } from '@/payload-types'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
 
 /**
@@ -22,23 +22,20 @@ import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogg
  * @param config - The user configuration for the collection
  * @returns The prepared user data object
  */
-export function prepareUserData(authData: AuthData, config: UserConfig): Partial<BasicUser | Patient> {
+export function prepareUserData(authData: AuthData, config: UserConfig): Partial<Patient> {
   const normalizedEmail = normalizeEmail(authData.userEmail)
 
-  const userData: Partial<BasicUser | Patient> = {
+  const userData: Partial<Patient> = {
     supabaseUserId: authData.supabaseUserId,
     email: normalizedEmail,
   }
 
-  // Collection-specific fields
-  if (config.collection === 'basicUsers') {
-    ;(userData as Partial<BasicUser>).userType = authData.userType as BasicUser['userType']
-    ;(userData as Partial<BasicUser>).firstName = authData.firstName || ''
-    ;(userData as Partial<BasicUser>).lastName = authData.lastName || ''
-  } else if (config.collection === 'patients') {
-    ;(userData as Partial<Patient>).firstName = authData.firstName || ''
-    ;(userData as Partial<Patient>).lastName = authData.lastName || ''
+  if (config.collection !== 'patients') {
+    throw new Error('Staff principals must be provisioned through the trusted operations path')
   }
+
+  userData.firstName = authData.firstName || ''
+  userData.lastName = authData.lastName || ''
 
   return userData
 }
@@ -53,7 +50,7 @@ export async function createUser(
   config: UserConfig,
   req: PayloadRequest | undefined,
   logger?: ServerLogger,
-): Promise<BasicUser | Patient> {
+): Promise<Patient> {
   const normalizedEmail = normalizeEmail(authData.userEmail)
   const activeLogger = createScopedLogger((logger ?? payload.logger) as ServerLogger, {
     scope: 'auth.supabase',
@@ -68,43 +65,11 @@ export async function createUser(
   }
 
   try {
-    if (config.collection === 'basicUsers') {
-      const data: Pick<BasicUser, 'supabaseUserId' | 'email' | 'userType' | 'firstName' | 'lastName'> = {
-        supabaseUserId: authData.supabaseUserId,
-        email: normalizedEmail,
-        userType: authData.userType as BasicUser['userType'],
-        firstName: authData.firstName ?? '',
-        lastName: authData.lastName ?? '',
-      }
-
-      const createArgs = {
-        collection: config.collection,
-        data,
-        req,
-        context: {
-          skipSupabaseUserCreation: true,
-          userMetadata: {
-            firstName: authData.firstName ?? '',
-            lastName: authData.lastName ?? '',
-          },
-        },
-        overrideAccess: true,
-        ...(config.requiresApproval ? { draft: false } : {}),
-      }
-
-      const userDoc = (await payload.create(createArgs)) as BasicUser
-
-      activeLogger.info(
-        {
-          event: 'auth.supabase.user.created',
-          userEmailHash: hashLogValue(normalizedEmail),
-          userId: userDoc.id,
-          userType: authData.userType,
-          supabaseUserId: authData.supabaseUserId,
-        },
-        'Created payload user from authenticated Supabase session',
-      )
-      return userDoc
+    if (config.collection !== 'patients') {
+      throw new AuthFlowError({
+        code: AUTH_FLOW_ERROR_CODES.USER_CREATE_FAILED,
+        message: 'Staff principals must be provisioned through the trusted operations path',
+      })
     }
 
     const data: Pick<Patient, 'supabaseUserId' | 'email' | 'firstName' | 'lastName'> = {

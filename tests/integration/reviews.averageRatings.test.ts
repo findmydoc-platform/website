@@ -6,10 +6,16 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import { createPatientTestUser } from '../fixtures/testUsers'
+import {
+  asPayloadStaffUser,
+  cleanupTrackedUsers,
+  createPatientTestUser,
+  createPlatformTestUser,
+} from '../fixtures/testUsers'
 import type { Review } from '@/payload-types'
 
 const createdPatientIds: Array<string | number> = []
+const createdStaffIds: Array<string | number> = []
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
 async function createReviewPatient(payload: Payload) {
@@ -40,13 +46,7 @@ describe('Review average ratings hooks', () => {
   }, 60000)
 
   afterEach(async () => {
-    while (createdPatientIds.length) {
-      const id = createdPatientIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'patients', id, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds, patientIds: createdPatientIds })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
@@ -66,6 +66,12 @@ describe('Review average ratings hooks', () => {
     })
     const medicalSpecialty = medicalSpecialtyRes.docs[0]
     if (!medicalSpecialty) throw new Error('Expected baseline medical specialty for review rating tests')
+
+    const platformUser = await createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-platform`,
+      createdStaffIds,
+    })
+    const platformPayloadUser = asPayloadStaffUser(platformUser)
 
     const treatment = await payload.create({
       collection: 'treatments',
@@ -88,10 +94,14 @@ describe('Review average ratings hooks', () => {
           },
         },
         medicalSpecialty: medicalSpecialty.id,
+        averageRating: 1,
       },
-      overrideAccess: true,
+      user: platformPayloadUser,
+      overrideAccess: false,
       depth: 0,
     })
+
+    expect(treatment.averageRating ?? null).toBeNull()
 
     const patient = await createReviewPatient(payload)
 
@@ -121,6 +131,51 @@ describe('Review average ratings hooks', () => {
     expect(clinicAfterCreate.averageRating).toBeCloseTo(4, 5)
     expect(doctorAfterCreate.averageRating).toBeCloseTo(4, 5)
     expect(treatmentAfterCreate.averageRating).toBeCloseTo(4, 5)
+
+    await payload.update({
+      collection: 'clinics',
+      id: clinic.id,
+      data: { averageRating: 1 },
+      user: platformPayloadUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    await payload.update({
+      collection: 'doctors',
+      id: doctor.id,
+      data: { averageRating: 1 },
+      user: platformPayloadUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    await payload.update({
+      collection: 'treatments',
+      id: treatment.id,
+      data: { averageRating: 1 },
+      user: platformPayloadUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const clinicAfterDirectWrite = await payload.findByID({
+      collection: 'clinics',
+      id: clinic.id,
+      overrideAccess: true,
+    })
+    const doctorAfterDirectWrite = await payload.findByID({
+      collection: 'doctors',
+      id: doctor.id,
+      overrideAccess: true,
+    })
+    const treatmentAfterDirectWrite = await payload.findByID({
+      collection: 'treatments',
+      id: treatment.id,
+      overrideAccess: true,
+    })
+
+    expect(clinicAfterDirectWrite.averageRating).toBeCloseTo(4, 5)
+    expect(doctorAfterDirectWrite.averageRating).toBeCloseTo(4, 5)
+    expect(treatmentAfterDirectWrite.averageRating).toBeCloseTo(4, 5)
 
     const reviewAfterUpdate = await payload.update({
       collection: 'reviews',

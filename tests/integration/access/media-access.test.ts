@@ -8,7 +8,7 @@ import {
   createClinicTestUser,
   createPatientTestUser,
   createPlatformTestUser,
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
 } from '../../fixtures/testUsers'
 import { createTinyPngFile } from '../../fixtures/mediaFile'
@@ -19,7 +19,7 @@ describe('PlatformContentMedia access', () => {
   let payload: Payload
   const slugPrefix = testSlug('media-access.test.ts')
   const createdMediaIds: Array<number | string> = []
-  const createdBasicUserIds: Array<number | string> = []
+  const createdStaffIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
 
   beforeAll(async () => {
@@ -36,13 +36,13 @@ describe('PlatformContentMedia access', () => {
       } catch {}
     }
 
-    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds, patientIds: createdPatientIds })
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds, patientIds: createdPatientIds })
   })
 
   it('allows platform users to manage media entries', async () => {
     const platformUser = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform`,
-      createdBasicUserIds,
+      createdStaffIds,
       firstName: 'Media',
       lastName: 'Owner',
     })
@@ -51,7 +51,7 @@ describe('PlatformContentMedia access', () => {
       collection: 'platformContentMedia',
       data: { alt: `${slugPrefix}-hero` } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-hero.png`),
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       draft: false,
       depth: 0,
       overrideAccess: false,
@@ -66,7 +66,7 @@ describe('PlatformContentMedia access', () => {
       collection: 'platformContentMedia',
       id: created.id,
       data: { alt: 'updated alt' },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })) as PlatformContentMedia
 
@@ -75,7 +75,7 @@ describe('PlatformContentMedia access', () => {
     await payload.delete({
       collection: 'platformContentMedia',
       id: created.id,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
@@ -85,7 +85,7 @@ describe('PlatformContentMedia access', () => {
   it('blocks clinic and anonymous requests from creating, updating, or deleting media', async () => {
     const clinicUser = await createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     await expect(
@@ -93,7 +93,7 @@ describe('PlatformContentMedia access', () => {
         collection: 'platformContentMedia',
         data: { alt: `${slugPrefix}-blocked` } as Partial<PlatformContentMedia>,
         file: createTinyPngFile(`${slugPrefix}-blocked.png`),
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         draft: false,
         overrideAccess: false,
       } as Parameters<Payload['create']>[0]),
@@ -111,14 +111,14 @@ describe('PlatformContentMedia access', () => {
 
     const platformUser = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform-mutation`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const created = (await payload.create({
       collection: 'platformContentMedia',
       data: { alt: `${slugPrefix}-mutable` } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-mutable.png`),
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       draft: false,
       depth: 0,
       overrideAccess: false,
@@ -131,7 +131,7 @@ describe('PlatformContentMedia access', () => {
         collection: 'platformContentMedia',
         id: created.id,
         data: { alt: `${slugPrefix}-clinic-update-blocked` },
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         overrideAccess: false,
       }),
     ).rejects.toThrow()
@@ -140,7 +140,7 @@ describe('PlatformContentMedia access', () => {
       payload.delete({
         collection: 'platformContentMedia',
         id: created.id,
-        user: asPayloadBasicUser(clinicUser),
+        user: asPayloadStaffUser(clinicUser),
         overrideAccess: false,
       }),
     ).rejects.toThrow()
@@ -166,14 +166,14 @@ describe('PlatformContentMedia access', () => {
   it('allows anyone to read platform media', async () => {
     const platformUser = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform-read`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const created = (await payload.create({
       collection: 'platformContentMedia',
       data: { alt: `${slugPrefix}-public` } as Partial<PlatformContentMedia>,
       file: createTinyPngFile(`${slugPrefix}-public.png`),
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       draft: false,
       depth: 0,
       overrideAccess: false,
@@ -196,7 +196,7 @@ describe('PlatformContentMedia access', () => {
 
     const clinicUser = await createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-clinic-reader`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const patientRead = await payload.findByID({
@@ -211,7 +211,7 @@ describe('PlatformContentMedia access', () => {
     const clinicRead = await payload.findByID({
       collection: 'platformContentMedia',
       id: created.id,
-      user: asPayloadBasicUser(clinicUser),
+      user: asPayloadStaffUser(clinicUser),
       overrideAccess: false,
     })
 

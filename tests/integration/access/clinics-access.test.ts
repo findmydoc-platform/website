@@ -8,10 +8,10 @@ import {
   cleanupTrackedUsers,
   createPatientTestUser,
   createPlatformTestUser,
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   asPayloadPatientUser,
 } from '../../fixtures/testUsers'
-import { createClinicUserWithStaff, approveClinicStaff } from '../../fixtures/clinicUserFixtures'
+import { createClinicStaffFixture, approveClinicStaff } from '../../fixtures/clinicUserFixtures'
 import { testSlug } from '../../fixtures/testSlug'
 import type { Clinic } from '@/payload-types'
 
@@ -51,7 +51,7 @@ describe('Clinics access', () => {
   let payload: Payload
   let cityId: number
   const slugPrefix = testSlug('clinics-access.test.ts')
-  const createdBasicUserIds: Array<number | string> = []
+  const createdStaffIds: Array<number | string> = []
   const createdClinicStaffIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
 
@@ -74,7 +74,7 @@ describe('Clinics access', () => {
       } catch {}
     }
 
-    await cleanupTrackedUsers(payload, { basicUserIds: createdBasicUserIds, patientIds: createdPatientIds })
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds, patientIds: createdPatientIds })
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
   })
@@ -113,10 +113,9 @@ describe('Clinics access', () => {
     expect(patientRead.docs).toHaveLength(1)
     expect(patientRead.docs[0]?.status).toBe('approved')
 
-    const { basicUser: clinicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+    const { staffUser: clinicUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'clinic-read',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
     await approveClinicStaff(payload, clinicStaff.id, approved.id as number)
@@ -124,7 +123,7 @@ describe('Clinics access', () => {
     const clinicRead = await payload.find({
       collection: 'clinics',
       where: { slug: { in: [approved.slug, draft.slug] } },
-      user: asPayloadBasicUser(clinicUser),
+      user: asPayloadStaffUser(clinicUser),
       overrideAccess: false,
     })
 
@@ -133,13 +132,13 @@ describe('Clinics access', () => {
 
     const platformUser = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const platformRead = await payload.find({
       collection: 'clinics',
       where: { slug: { in: [approved.slug, draft.slug] } },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 
@@ -162,14 +161,13 @@ describe('Clinics access', () => {
       depth: 0,
     })
 
-    const { basicUser: clinicUser, clinicStaff } = await createClinicUserWithStaff(payload, {
+    const { staffUser: clinicUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
       suffix: 'staff',
-      createdBasicUserIds,
       createdClinicStaffIds,
     })
     await approveClinicStaff(payload, clinicStaff.id, clinicA.id as number)
-    const clinicPayloadUser = asPayloadBasicUser(clinicUser)
+    const clinicPayloadUser = asPayloadStaffUser(clinicUser)
 
     const updated = await payload.update({
       collection: 'clinics',
@@ -206,14 +204,14 @@ describe('Clinics access', () => {
 
     const platformUser = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-platform-manager`,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
     const platformCreated = await payload.create({
       collection: 'clinics',
       data: buildClinicData(`${slugPrefix}-platform-create`, cityId, 'draft'),
       draft: false,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
@@ -224,7 +222,7 @@ describe('Clinics access', () => {
       collection: 'clinics',
       id: clinicB.id,
       data: { name: `${slugPrefix}-other-platform` },
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,
     })
@@ -234,7 +232,7 @@ describe('Clinics access', () => {
     await payload.delete({
       collection: 'clinics',
       id: clinicB.id,
-      user: asPayloadBasicUser(platformUser),
+      user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
     })
 

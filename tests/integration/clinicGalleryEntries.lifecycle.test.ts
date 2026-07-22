@@ -7,7 +7,7 @@ import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import { runBaselineContract } from './contracts/baselineContract'
-import type { BasicUser, ClinicGalleryEntry, ClinicGalleryMedia, ClinicStaff } from '@/payload-types'
+import type { Clinic, ClinicGalleryEntry, ClinicGalleryMedia, ClinicStaff, PlatformStaff } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -25,7 +25,7 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
   const createdEntryIds: Array<number> = []
   const createdMediaIds: Array<number> = []
   const createdClinicStaffIds: Array<number> = []
-  const createdBasicUserIds: Array<number> = []
+  const createdPlatformStaffIds: Array<number> = []
 
   const buildImageFile = (name: string): File => {
     const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
@@ -39,57 +39,45 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
     }
   }
 
-  const asClinicUser = (user: BasicUser): PayloadUser => ({ ...user, collection: 'basicUsers' }) as PayloadUser
-  const asPlatformUser = (user: BasicUser): PayloadUser => ({ ...user, collection: 'basicUsers' }) as PayloadUser
+  const asClinicUser = (user: ClinicStaff): PayloadUser => ({ ...user, collection: 'clinicStaff' }) as PayloadUser
+  const asPlatformUser = (user: PlatformStaff): PayloadUser => ({ ...user, collection: 'platformStaff' }) as PayloadUser
 
   const createClinicUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const clinicStaff = (await payload.create({
+      collection: 'clinicStaff',
       data: {
         email: `${slugPrefix}-clinic-${suffix}@example.com`,
-        userType: 'clinic',
         firstName: 'Clinic',
         lastName: `User-${suffix}`,
+        status: 'pending',
         supabaseUserId: `sb-${slugPrefix}-clinic-${suffix}`,
       },
       overrideAccess: true,
       depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
-
-    createdBasicUserIds.push(basicUser.id)
-
-    const clinicStaffResult = await payload.find({
-      collection: 'clinicStaff',
-      where: { user: { equals: basicUser.id } },
-      limit: 1,
-      overrideAccess: true,
-      depth: 0,
-    })
-
-    const clinicStaff = clinicStaffResult.docs[0] as ClinicStaff | undefined
-    if (!clinicStaff) throw new Error('Expected clinic staff profile to be created')
+    } as PayloadCreateArgs)) as ClinicStaff
 
     createdClinicStaffIds.push(clinicStaff.id)
 
-    return { basicUser, clinicStaff }
+    return { clinicUser: clinicStaff, clinicStaff }
   }
 
   const createPlatformUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
+    const platformStaff = (await payload.create({
+      collection: 'platformStaff',
       data: {
         email: `${slugPrefix}-platform-${suffix}@findmydoc.eu`,
-        userType: 'platform',
         firstName: 'Platform',
         lastName: `User-${suffix}`,
+        role: 'support',
         supabaseUserId: `sb-${slugPrefix}-platform-${suffix}`,
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
       depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
+    } as PayloadCreateArgs)) as PlatformStaff
 
-    createdBasicUserIds.push(basicUser.id)
-    return basicUser
+    createdPlatformStaffIds.push(platformStaff.id)
+    return platformStaff
   }
 
   const approveClinicStaff = async (clinicStaffId: number, clinicId: number) => {
@@ -104,7 +92,7 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
 
   const createGalleryMedia = async (
     clinicId: number,
-    user: BasicUser,
+    user: ClinicStaff,
     suffix: string,
     status: ClinicGalleryMedia['status'] = 'draft',
   ) => {
@@ -127,7 +115,7 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
 
   const createEntry = async (params: {
     clinicId: number
-    user: BasicUser
+    user: ClinicStaff
     beforeMediaId: number
     afterMediaId: number
     status?: ClinicGalleryEntry['status']
@@ -180,10 +168,10 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
       await payload.delete({ collection: 'clinicStaff', id, overrideAccess: true })
     }
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
+    while (createdPlatformStaffIds.length) {
+      const id = createdPlatformStaffIds.pop()
       if (!id) continue
-      await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
+      await payload.delete({ collection: 'platformStaff', id, overrideAccess: true })
     }
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
@@ -192,16 +180,16 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
 
   it('creates a draft entry when media belongs to the same clinic', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix })
-    const { basicUser, clinicStaff } = await createClinicUser('create')
+    const { clinicUser, clinicStaff } = await createClinicUser('create')
 
     await approveClinicStaff(clinicStaff.id, clinic.id as number)
 
-    const before = await createGalleryMedia(clinic.id as number, basicUser, 'before-draft')
-    const after = await createGalleryMedia(clinic.id as number, basicUser, 'after-draft')
+    const before = await createGalleryMedia(clinic.id as number, clinicUser, 'before-draft')
+    const after = await createGalleryMedia(clinic.id as number, clinicUser, 'after-draft')
 
     const entry = await createEntry({
       clinicId: clinic.id as number,
-      user: basicUser,
+      user: clinicUser,
       beforeMediaId: before.id,
       afterMediaId: after.id,
       titleSuffix: 'draft-entry',
@@ -211,17 +199,17 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
     expect(entry.clinic).toBe(clinic.id)
     expect(entry.beforeMedia).toBe(before.id)
     expect(entry.afterMedia).toBe(after.id)
-    expect(entry.createdBy).toBe(basicUser.id)
+    expect(entry.createdBy).toEqual({ relationTo: 'clinicStaff', value: clinicUser.id })
   })
 
   it('auto-assigns clinic on create when clinic users omit the clinic field', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-auto-assign` })
-    const { basicUser, clinicStaff } = await createClinicUser('auto-assign')
+    const { clinicUser, clinicStaff } = await createClinicUser('auto-assign')
 
     await approveClinicStaff(clinicStaff.id, clinic.id as number)
 
-    const before = await createGalleryMedia(clinic.id as number, basicUser, 'auto-before')
-    const after = await createGalleryMedia(clinic.id as number, basicUser, 'auto-after')
+    const before = await createGalleryMedia(clinic.id as number, clinicUser, 'auto-before')
+    const after = await createGalleryMedia(clinic.id as number, clinicUser, 'auto-after')
 
     const entry = (await payload.create({
       collection: 'clinicGalleryEntries',
@@ -230,7 +218,7 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
         beforeMedia: before.id,
         afterMedia: after.id,
       } as Partial<ClinicGalleryEntry>,
-      user: asClinicUser(basicUser),
+      user: asClinicUser(clinicUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicGalleryEntry
@@ -241,16 +229,16 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
 
   it('sets publishedAt when publishing an entry', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-publish` })
-    const { basicUser, clinicStaff } = await createClinicUser('publish')
+    const { clinicUser, clinicStaff } = await createClinicUser('publish')
 
     await approveClinicStaff(clinicStaff.id, clinic.id as number)
 
-    const before = await createGalleryMedia(clinic.id as number, basicUser, 'before-published', 'published')
-    const after = await createGalleryMedia(clinic.id as number, basicUser, 'after-published', 'published')
+    const before = await createGalleryMedia(clinic.id as number, clinicUser, 'before-published', 'published')
+    const after = await createGalleryMedia(clinic.id as number, clinicUser, 'after-published', 'published')
 
     const entry = await createEntry({
       clinicId: clinic.id as number,
-      user: basicUser,
+      user: clinicUser,
       beforeMediaId: before.id,
       afterMediaId: after.id,
       titleSuffix: 'publish-entry',
@@ -260,7 +248,7 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
       collection: 'clinicGalleryEntries',
       id: entry.id,
       data: { status: 'published' },
-      user: asClinicUser(basicUser),
+      user: asClinicUser(clinicUser),
       overrideAccess: false,
       depth: 0,
     } as PayloadUpdateArgs)) as ClinicGalleryEntry
@@ -271,19 +259,19 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
 
   it('matches the baseline collection contract', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-baseline-contract` })
-    const { basicUser, clinicStaff } = await createClinicUser('baseline-contract')
+    const { clinicUser, clinicStaff } = await createClinicUser('baseline-contract')
 
     await approveClinicStaff(clinicStaff.id, clinic.id as number)
 
-    const before = await createGalleryMedia(clinic.id as number, basicUser, 'baseline-before')
-    const after = await createGalleryMedia(clinic.id as number, basicUser, 'baseline-after')
+    const before = await createGalleryMedia(clinic.id as number, clinicUser, 'baseline-before')
+    const after = await createGalleryMedia(clinic.id as number, clinicUser, 'baseline-after')
 
     await runBaselineContract<ClinicGalleryEntry>({
       collection: 'clinicGalleryEntries',
       createPrivileged: async () =>
         createEntry({
           clinicId: clinic.id as number,
-          user: basicUser,
+          user: clinicUser,
           beforeMediaId: before.id,
           afterMediaId: after.id,
           titleSuffix: 'baseline-create',
@@ -293,7 +281,7 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
         (await payload.findByID({
           collection: 'clinicGalleryEntries',
           id,
-          user: asClinicUser(basicUser),
+          user: asClinicUser(clinicUser),
           overrideAccess: false,
           depth: 0,
         })) as ClinicGalleryEntry,
@@ -302,7 +290,7 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
           collection: 'clinicGalleryEntries',
           id,
           data: { title: `${slugPrefix}-baseline-updated` },
-          user: asClinicUser(basicUser),
+          user: asClinicUser(clinicUser),
           overrideAccess: false,
           depth: 0,
         } as PayloadUpdateArgs)) as ClinicGalleryEntry,
@@ -328,7 +316,7 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
         const deleted = await payload.delete({
           collection: 'clinicGalleryEntries',
           id,
-          user: asClinicUser(basicUser),
+          user: asClinicUser(clinicUser),
           overrideAccess: false,
           depth: 0,
         })
@@ -344,10 +332,10 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
     const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-mixed-a` })
     const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-mixed-b` })
 
-    const { basicUser: clinicUserA, clinicStaff: staffA } = await createClinicUser('mixed-a')
+    const { clinicUser: clinicUserA, clinicStaff: staffA } = await createClinicUser('mixed-a')
     await approveClinicStaff(staffA.id, clinicA.id as number)
 
-    const { basicUser: clinicUserB, clinicStaff: staffB } = await createClinicUser('mixed-b')
+    const { clinicUser: clinicUserB, clinicStaff: staffB } = await createClinicUser('mixed-b')
     await approveClinicStaff(staffB.id, clinicB.id as number)
 
     const beforeA = await createGalleryMedia(clinicA.id as number, clinicUserA, 'mixed-before-a', 'published')
@@ -370,14 +358,51 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
     ).rejects.toThrow(/same clinic/i)
   })
 
+  it('rejects gallery entries from a different clinic on clinic profiles', async () => {
+    const { clinic: clinicA } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-profile-gallery-a`,
+    })
+    const { clinic: clinicB } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-profile-gallery-b`,
+    })
+
+    const { clinicUser: clinicUserA, clinicStaff: staffA } = await createClinicUser('profile-gallery-a')
+    await approveClinicStaff(staffA.id, clinicA.id as number)
+
+    const { clinicUser: clinicUserB, clinicStaff: staffB } = await createClinicUser('profile-gallery-b')
+    await approveClinicStaff(staffB.id, clinicB.id as number)
+
+    const beforeB = await createGalleryMedia(clinicB.id as number, clinicUserB, 'profile-before-b', 'published')
+    const afterB = await createGalleryMedia(clinicB.id as number, clinicUserB, 'profile-after-b', 'published')
+    const entryB = await createEntry({
+      clinicId: clinicB.id as number,
+      user: clinicUserB,
+      beforeMediaId: beforeB.id,
+      afterMediaId: afterB.id,
+      status: 'published',
+      titleSuffix: 'profile-gallery-entry-b',
+    })
+
+    await expect(
+      payload.update({
+        collection: 'clinics',
+        id: clinicA.id,
+        data: { galleryEntries: [entryB.id] } as Partial<Clinic>,
+        user: asClinicUser(clinicUserA),
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadUpdateArgs),
+    ).rejects.toThrow(/belong to this clinic/i)
+  })
+
   it('scopes reads to published for public, clinic for staff, and all for platform', async () => {
     const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-read-a` })
     const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-read-b` })
 
-    const { basicUser: clinicUserA, clinicStaff: staffA } = await createClinicUser('read-a')
+    const { clinicUser: clinicUserA, clinicStaff: staffA } = await createClinicUser('read-a')
     await approveClinicStaff(staffA.id, clinicA.id as number)
 
-    const { basicUser: clinicUserB, clinicStaff: staffB } = await createClinicUser('read-b')
+    const { clinicUser: clinicUserB, clinicStaff: staffB } = await createClinicUser('read-b')
     await approveClinicStaff(staffB.id, clinicB.id as number)
 
     const beforeA = await createGalleryMedia(clinicA.id as number, clinicUserA, 'read-a-before')

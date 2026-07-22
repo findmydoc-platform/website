@@ -125,12 +125,22 @@ export async function findDoctorsByClinicId(payload: Payload, clinicId: number):
       pagination: true,
       overrideAccess: false,
       where: {
-        clinic: {
-          equals: clinicId,
-        },
+        and: [
+          {
+            clinic: {
+              equals: clinicId,
+            },
+          },
+          {
+            active: {
+              equals: true,
+            },
+          },
+        ],
       },
       select: {
         id: true,
+        active: true,
         fullName: true,
         firstName: true,
         lastName: true,

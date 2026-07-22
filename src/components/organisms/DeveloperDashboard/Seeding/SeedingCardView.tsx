@@ -462,7 +462,7 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
             color: 'var(--theme-elevation-700)',
           }}
         >
-          This widget is available to platform basic users only.
+          This widget is available to platform staff only.
         </div>
       </div>
     )

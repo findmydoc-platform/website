@@ -47,6 +47,7 @@ export type ConditionalScenarioKind =
   | 'user-profile-media-own'
   | 'user-profile-media-create'
   | 'clinic-gallery-read'
+  | 'clinic-or-active'
 
 export interface ConditionalScenarioMeta {
   kind: ConditionalScenarioKind
@@ -154,14 +155,14 @@ export function buildOperationArgs(
 
   if (collectionSlug === 'userProfileMedia' && operation === 'create') {
     if (userType === 'clinic') {
-      return { data: { user: { relationTo: 'basicUsers', value: user?.id ?? 1 } } }
+      return { data: { user: { relationTo: 'clinicStaff', value: user?.id ?? 1 } } }
     }
 
     if (userType === 'patient') {
       return { data: { user: { relationTo: 'patients', value: user?.id ?? 1 } } }
     }
 
-    return { data: { user: { relationTo: 'basicUsers', value: 1 } } }
+    return { data: { user: { relationTo: 'platformStaff', value: 1 } } }
   }
 
   if (collectionSlug === 'clinicGalleryMedia' && operation === 'create') {
@@ -247,6 +248,7 @@ type ConditionalScenario =
   | { kind: 'user-profile-media-own' }
   | { kind: 'user-profile-media-create' }
   | { kind: 'clinic-gallery-read'; path: string; status?: string; statusField?: string }
+  | { kind: 'clinic-or-active'; path: string; activePath: string }
 function getCollectionMeta(collectionSlug: string): CollectionMeta | undefined {
   return getMatrixRow(collectionSlug).meta
 }
@@ -292,6 +294,12 @@ function convertMetaToScenario(config: ConditionalScenarioMeta): ConditionalScen
         path: config.path ?? 'clinic',
         status: config.value ?? 'published',
         statusField: config.statusPath ?? 'status',
+      }
+    case 'clinic-or-active':
+      return {
+        kind: 'clinic-or-active',
+        path: config.path ?? 'clinic',
+        activePath: config.statusPath ?? 'active',
       }
     case 'always-false':
       return { kind: 'always-false' }
@@ -648,7 +656,7 @@ function validateConditional(ctx: ValidationContext, value: unknown) {
                 'relationTo' in owner.value &&
                 owner.value.relationTo)
             : undefined
-        const expectedCollection = ctx.userType === 'clinic' ? 'basicUsers' : 'patients'
+        const expectedCollection = ctx.userType === 'clinic' ? 'clinicStaff' : 'patients'
         expect(value).toBe(
           Boolean(ownerId) && String(ownerId) === String(ctx.user?.id) && ownerCollection === expectedCollection,
         )
@@ -671,6 +679,29 @@ function validateConditional(ctx: ValidationContext, value: unknown) {
         const expectedStatus = scenario.status ?? 'published'
         const statusField = scenario.statusField ?? 'status'
         expectFilter(value, statusField, expectedStatus, ctx)
+      }
+      return
+    case 'clinic-or-active':
+      if (ctx.userType === 'platform') {
+        expect(value).toBe(true)
+      } else if (ctx.userType === 'clinic') {
+        const clinicId = getClinicIdFromUser(ctx.user)
+        expect(value).toEqual({
+          or: [
+            {
+              [scenario.activePath]: {
+                equals: true,
+              },
+            },
+            {
+              [scenario.path]: {
+                equals: clinicId,
+              },
+            },
+          ],
+        })
+      } else {
+        expectFilter(value, scenario.activePath, true, ctx)
       }
       return
   }
@@ -704,13 +735,17 @@ function validateUserProfileMediaAccess(ctx: ValidationContext, value: unknown) 
   }
 
   if (ctx.userType === 'clinic' || ctx.userType === 'patient') {
-    const key = ctx.userType === 'clinic' ? 'user.basicUsers.id' : 'user.patients.id'
+    const key = ctx.userType === 'clinic' ? 'user.clinicStaff.id' : 'user.patients.id'
     expectFilter(value, key, ctx.user?.id, ctx)
     return
   }
 
   if (ctx.operation === 'read') {
-    expectFilter(value, 'user.relationTo', 'basicUsers', ctx)
+    if (typeof value === 'object' && value !== null && 'id' in value) {
+      expect((value as { id?: unknown }).id).toEqual({ in: [] })
+      return
+    }
+    expectFilter(value, 'user.relationTo', 'platformStaff', ctx)
     return
   }
 
@@ -724,7 +759,7 @@ function expectFilter(value: unknown, path: string, expected: unknown, ctx: Vali
     )
   }
 
-  const polymorphicMatch = path.match(/^user\.(basicUsers|patients)\.id$/)
+  const polymorphicMatch = path.match(/^user\.(platformStaff|clinicStaff|patients)\.id$/)
   if (polymorphicMatch) {
     const relationTo = polymorphicMatch[1]
     if (relationTo && matchesPolymorphicRelationshipAndFilter(value, 'user', relationTo, expected)) {
@@ -762,6 +797,11 @@ function matchesPolymorphicRelationshipAndFilter(
   expectedId: unknown,
 ): boolean {
   if (typeof value !== 'object' || value === null) return false
+
+  const maybeOr = (value as Record<string, unknown>).or
+  if (Array.isArray(maybeOr)) {
+    return maybeOr.some((clause) => matchesPolymorphicRelationshipAndFilter(clause, fieldName, relationTo, expectedId))
+  }
 
   const maybeAnd = (value as Record<string, unknown>).and
   if (!Array.isArray(maybeAnd)) return false

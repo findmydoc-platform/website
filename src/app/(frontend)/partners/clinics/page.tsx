@@ -5,7 +5,6 @@ import { Heading } from '@/components/atoms/Heading'
 import {
   LandingCategories,
   LandingFeatures,
-  LandingPricing,
   LandingProcess,
   LandingTeam,
   LandingTestimonials,
@@ -105,15 +104,6 @@ export default async function ClinicLandingPage() {
           testimonials={landingContent.testimonials}
           title={landingContent.testimonialsIntro.title}
           description={landingContent.testimonialsIntro.description}
-        />
-      </ScrollReveal>
-      <ScrollReveal>
-        <LandingPricing
-          plans={landingContent.pricing.plans}
-          title={landingContent.pricing.title}
-          description={landingContent.pricing.description}
-          modelItems={landingContent.pricingModel}
-          ctaHref={partnerContactHref}
         />
       </ScrollReveal>
       <ScrollReveal>

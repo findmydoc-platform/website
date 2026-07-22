@@ -32,7 +32,6 @@ describe('DoctorMedia Collection Access Control', () => {
 
     test('Clinic staff scoped to clinic', async () => {
       const req = createMockReq(mockUsers.clinic(10, clinicId), mockPayload)
-      vi.mocked(mockPayload.find).mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
       const res = (await DoctorMedia.access!.read!(
         createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
       )) as unknown
@@ -81,7 +80,6 @@ describe('DoctorMedia Collection Access Control', () => {
 
     test('Clinic staff static file read keeps clinic scoping', async () => {
       const req = createMockReq(mockUsers.clinic(10, clinicId), mockPayload)
-      vi.mocked(mockPayload.find).mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
       const res = await DoctorMedia.access!.read!(
         createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, {
           payload: mockPayload,
@@ -95,8 +93,7 @@ describe('DoctorMedia Collection Access Control', () => {
     test('Non-patient static file read stays denied when scoped access is missing', async () => {
       const user = {
         id: 101,
-        collection: 'basicUsers',
-        userType: 'support',
+        collection: 'unknown',
         email: 'support@example.com',
       }
       const req = createMockReq(user, mockPayload)
@@ -187,11 +184,9 @@ describe('DoctorMedia Collection Access Control', () => {
 
     test('Clinic staff scoped', async () => {
       const req = createMockReq(mockUsers.clinic(3, clinicId), mockPayload)
-      vi.mocked(mockPayload.find).mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
       const updateScope = (await DoctorMedia.access!.update!(
         createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
       )) as unknown
-      vi.mocked(mockPayload.find).mockResolvedValueOnce({ docs: [{ clinic: clinicId }] })
       const deleteScope = (await DoctorMedia.access!.delete!(
         createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
       )) as unknown

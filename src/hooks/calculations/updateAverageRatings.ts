@@ -83,6 +83,7 @@ async function updateEntityRating(
         ...context,
         skipHooks: true, // Prevent infinite loops
       },
+      overrideAccess: true,
       req,
     })
   } catch (error) {

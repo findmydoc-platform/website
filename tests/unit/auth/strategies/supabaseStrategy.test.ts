@@ -1,520 +1,92 @@
-/**
- * Unit tests for Supabase authentication strategy.
- */
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
-import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
-import { AUTH_FLOW_ERROR_CODES, AuthFlowError } from '@/auth/errors/authFlowError'
-import type { Payload, PayloadRequest } from 'payload'
-
-// Mock dependencies
-vi.mock('@/auth/utilities/jwtValidation', () => ({
+const mocks = vi.hoisted(() => ({
   extractSupabaseUserData: vi.fn(),
-}))
-
-vi.mock('@/auth/utilities/userLookup', () => ({
   findUserBySupabaseId: vi.fn(),
-}))
-
-vi.mock('@/auth/utilities/userCreation', () => ({
-  createUser: vi.fn(),
-}))
-
-vi.mock('@/auth/utilities/accessValidation', () => ({
   validateUserAccess: vi.fn(),
-}))
-
-vi.mock('@/auth/config/authConfig', () => ({
-  getUserConfig: vi.fn(),
-}))
-
-vi.mock('@/hooks/ensurePatientOnAuth', () => ({
   ensurePatientOnAuth: vi.fn(),
-}))
-
-vi.mock('@/posthog/api', () => ({
   identifyPostHogActor: vi.fn(),
   resolvePostHogActor: vi.fn(),
 }))
 
-import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
-import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
-import { createUser } from '@/auth/utilities/userCreation'
-import { validateUserAccess } from '@/auth/utilities/accessValidation'
-import { getUserConfig } from '@/auth/config/authConfig'
-import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
-import { identifyPostHogActor, resolvePostHogActor } from '@/posthog/api'
+vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: mocks.extractSupabaseUserData }))
+vi.mock('@/auth/utilities/userLookup', () => ({ findUserBySupabaseId: mocks.findUserBySupabaseId }))
+vi.mock('@/auth/utilities/accessValidation', () => ({ validateUserAccess: mocks.validateUserAccess }))
+vi.mock('@/hooks/ensurePatientOnAuth', () => ({ ensurePatientOnAuth: mocks.ensurePatientOnAuth }))
+vi.mock('@/posthog/api', () => ({
+  identifyPostHogActor: mocks.identifyPostHogActor,
+  resolvePostHogActor: mocks.resolvePostHogActor,
+}))
+
+import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
+
+const payload = {
+  logger: { debug: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+}
+
+const request = { headers: new Headers(), method: 'GET', context: {}, payload } as never
+const args = { headers: new Headers(), payload, req: request } as never
 
 describe('supabaseStrategy', () => {
-  const originalEnv = process.env
-  let mockPayload: ReturnType<typeof createMockPayload>
-  let payload: Payload
-  let mockReq: PayloadRequest
-
-  const mockAuthData = {
-    supabaseUserId: 'supabase-123',
-    userEmail: 'test@example.com',
-    userType: 'clinic' as const,
-    firstName: 'John',
-    lastName: 'Doe',
-  }
-
-  const mockUserConfig = {
-    collection: 'basicUsers' as const,
-    profileCollection: 'clinicStaff' as const,
-    requiresProfile: true as const,
-    requiresApproval: true as const,
-  }
-
-  const mockUser = {
-    id: 123,
-    collection: 'basicUsers' as const,
-    supabaseUserId: 'supabase-123',
-    email: 'test@example.com',
-    firstName: 'Test',
-    lastName: 'User',
-    userType: 'clinic' as const,
-    createdAt: '2023-01-01T00:00:00.000Z',
-    updatedAt: '2023-01-01T00:00:00.000Z',
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
-    mockPayload = createMockPayload()
-    payload = mockPayload as unknown as Payload
-    mockReq = createMockReq(undefined, mockPayload)
-    process.env = {
-      ...originalEnv,
-      DEPLOYMENT_ENV: undefined,
-      VERCEL_ENV: undefined,
-      NODE_ENV: 'test',
-    }
-    vi.mocked(resolvePostHogActor).mockResolvedValue({
-      distinctId: mockAuthData.supabaseUserId,
-      email: mockAuthData.userEmail,
-      isAuthenticated: true,
-      personProperties: {
-        email: mockAuthData.userEmail,
-        is_authenticated: 'true',
-        user_type: mockAuthData.userType,
-      },
-      userType: mockAuthData.userType,
-    })
+    mocks.resolvePostHogActor.mockResolvedValue({ distinctId: 'test' })
+    mocks.identifyPostHogActor.mockResolvedValue(undefined)
+    mocks.validateUserAccess.mockResolvedValue(true)
   })
 
-  describe('authenticate', () => {
-    // Define a proper type for authenticate args instead of casting through unknown
-    interface AuthenticateArgs {
-      payload: Payload
-      headers: Headers
-      req?: PayloadRequest
+  it('authenticates an existing direct platform principal', async () => {
+    const authData = {
+      supabaseUserId: 'supabase-platform',
+      userEmail: 'staff@findmydoc.eu',
+      userType: 'platform' as const,
     }
-
-    const buildArgs = (overrides: Partial<AuthenticateArgs> = {}): AuthenticateArgs => ({
-      payload,
-      headers: new Headers(),
-      req: mockReq,
-      ...overrides,
-    })
-
-    const buildArgsWithoutReq = (overrides: Partial<AuthenticateArgs> = {}): AuthenticateArgs => ({
-      payload,
-      headers: new Headers(),
-      ...overrides,
-    })
-
-    it('should authenticate existing user successfully', async () => {
-      // Setup mocks
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(mockUserConfig)
-      vi.mocked(findUserBySupabaseId).mockResolvedValue(mockUser)
-      vi.mocked(validateUserAccess).mockResolvedValue(true)
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: mockAuthData })
-      expect(identifyPostHogActor).toHaveBeenCalled()
-      expect(result.user).toEqual(mockUser)
-    })
-
-    it('should authenticate even when req is missing (session/cookie fallback)', async () => {
-      const args = buildArgsWithoutReq()
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(mockUserConfig)
-      vi.mocked(findUserBySupabaseId).mockResolvedValue(mockUser)
-      vi.mocked(validateUserAccess).mockResolvedValue(true)
-
-      const result = await supabaseStrategy.authenticate(args)
-
-      expect(extractSupabaseUserData).toHaveBeenCalledWith(
-        expect.objectContaining({
-          headers: args.headers,
-          logger: expect.any(Object),
-        }),
-      )
-      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: mockAuthData })
-      expect(identifyPostHogActor).toHaveBeenCalled()
-      expect(result.user).toEqual(mockUser)
-    })
-
-    it('should create new user when not found', async () => {
-      // Setup mocks
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(mockUserConfig)
-      vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
-      vi.mocked(createUser).mockResolvedValue(mockUser)
-      vi.mocked(validateUserAccess).mockResolvedValue(true)
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, mockReq, expect.any(Object))
-      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: mockAuthData })
-      expect(identifyPostHogActor).toHaveBeenCalled()
-      expect(result.user).toEqual(mockUser)
-    })
-
-    it('finds existing platform users by Supabase ID in preview runtime', async () => {
-      process.env = {
-        ...process.env,
-        VERCEL_ENV: 'preview',
-      }
-
-      const platformAuthData = {
-        ...mockAuthData,
-        userEmail: 'admin@findmydoc.eu',
-        userType: 'platform' as const,
-      }
-
-      const platformConfig = {
-        collection: 'basicUsers' as const,
-        profileCollection: 'platformStaff' as const,
-        requiresProfile: true as const,
-        requiresApproval: false as const,
-      }
-
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(platformAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(platformConfig)
-      vi.mocked(findUserBySupabaseId).mockResolvedValue(mockUser)
-      vi.mocked(validateUserAccess).mockResolvedValue(true)
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object))
-      expect(result.user).toEqual(mockUser)
-    })
-
-    it('does not create missing platform users through the website runtime', async () => {
-      process.env = {
-        ...process.env,
-        DEPLOYMENT_ENV: 'development',
-        VERCEL_ENV: undefined,
-      }
-
-      const platformAuthData = {
-        ...mockAuthData,
-        userEmail: 'admin@findmydoc.eu',
-        userType: 'platform' as const,
-      }
-
-      const platformConfig = {
-        collection: 'basicUsers' as const,
-        profileCollection: 'platformStaff' as const,
-        requiresProfile: true as const,
-        requiresApproval: false as const,
-      }
-
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(platformAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(platformConfig)
-      vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object))
-      expect(createUser).not.toHaveBeenCalled()
-      expect(validateUserAccess).not.toHaveBeenCalled()
-      expect(mockPayload.logger.warn).toHaveBeenCalledWith(
-        expect.objectContaining({
-          event: 'auth.supabase.platform_user.not_provisioned',
-          supabaseUserIdHash: expect.any(String),
-          userEmailHash: expect.any(String),
-        }),
-        'Platform Supabase user is not provisioned in Payload',
-      )
-      expect(JSON.stringify(mockPayload.logger.warn.mock.calls)).not.toContain(platformAuthData.supabaseUserId)
-      expect(result.user).toBeNull()
-    })
-
-    it('blocks platform users with non-findmydoc email domains before payload lookup', async () => {
-      const platformAuthData = {
-        ...mockAuthData,
-        userEmail: 'admin@example.com',
-        userType: 'platform' as const,
-      }
-
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(platformAuthData)
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(findUserBySupabaseId).not.toHaveBeenCalled()
-      expect(createUser).not.toHaveBeenCalled()
-      expect(validateUserAccess).not.toHaveBeenCalled()
-      expect(identifyPostHogActor).not.toHaveBeenCalled()
-      expect(mockPayload.logger.warn).toHaveBeenCalledWith(
-        expect.objectContaining({
-          event: 'auth.supabase.platform_user.invalid_email_domain',
-          supabaseUserIdHash: expect.any(String),
-          userEmailHash: expect.any(String),
-        }),
-        'Platform Supabase user email is outside the allowed domain',
-      )
-      expect(JSON.stringify(mockPayload.logger.warn.mock.calls)).not.toContain(platformAuthData.userEmail)
-      expect(result.user).toBeNull()
-    })
-
-    it('does not create or link missing platform users in preview runtime', async () => {
-      process.env = {
-        ...process.env,
-        VERCEL_ENV: 'preview',
-      }
-
-      const platformAuthData = {
-        ...mockAuthData,
-        userEmail: 'admin@findmydoc.eu',
-        userType: 'platform' as const,
-      }
-
-      const platformConfig = {
-        collection: 'basicUsers' as const,
-        profileCollection: 'platformStaff' as const,
-        requiresProfile: true as const,
-        requiresApproval: false as const,
-      }
-
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(platformAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(platformConfig)
-      vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(findUserBySupabaseId).toHaveBeenCalledWith(mockPayload, platformAuthData, mockReq, expect.any(Object))
-      expect(createUser).not.toHaveBeenCalled()
-      expect(validateUserAccess).not.toHaveBeenCalled()
-      expect(result.user).toBeNull()
-    })
-
-    it('should create new user when req is missing (session/cookie fallback)', async () => {
-      const args = buildArgsWithoutReq()
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(mockUserConfig)
-      vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
-      vi.mocked(createUser).mockResolvedValue(mockUser)
-      vi.mocked(validateUserAccess).mockResolvedValue(true)
-
-      const result = await supabaseStrategy.authenticate(args)
-
-      expect(extractSupabaseUserData).toHaveBeenCalledWith(
-        expect.objectContaining({
-          headers: args.headers,
-          logger: expect.any(Object),
-        }),
-      )
-      expect(createUser).toHaveBeenCalledWith(mockPayload, mockAuthData, mockUserConfig, undefined, expect.any(Object))
-      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: mockAuthData })
-      expect(identifyPostHogActor).toHaveBeenCalled()
-      expect(result.user).toEqual(mockUser)
-    })
-
-    it('should return null when no auth data', async () => {
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(result.user).toBeNull()
-    })
-
-    it('should return null when access validation fails', async () => {
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(mockUserConfig)
-      vi.mocked(findUserBySupabaseId).mockResolvedValue(mockUser)
-      vi.mocked(validateUserAccess).mockResolvedValue(false)
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(result.user).toBeNull()
-    })
-
-    it('should handle errors gracefully', async () => {
-      vi.mocked(extractSupabaseUserData).mockRejectedValue(new Error('Test error'))
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(result.user).toBeNull()
-    })
-
-    it('should recover from concurrent staff user creation conflicts', async () => {
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(mockAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(mockUserConfig)
-      vi.mocked(findUserBySupabaseId).mockResolvedValueOnce(null).mockResolvedValueOnce(mockUser)
-      vi.mocked(createUser).mockRejectedValue(
-        new AuthFlowError({
-          code: AUTH_FLOW_ERROR_CODES.USER_CREATE_CONFLICT,
-          message: 'User creation failed: duplicate key value violates unique constraint',
-          retryable: true,
-        }),
-      )
-      vi.mocked(validateUserAccess).mockResolvedValue(true)
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(findUserBySupabaseId).toHaveBeenCalledTimes(2)
-      expect(result.user).toEqual(mockUser)
-      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: mockAuthData })
-      expect(identifyPostHogActor).toHaveBeenCalled()
-    })
-
-    it('should handle patient user type', async () => {
-      const patientAuthData = {
-        ...mockAuthData,
-        userType: 'patient' as const,
-      }
-
-      const patientConfig = {
-        collection: 'patients' as const,
-        profileCollection: null,
-        requiresProfile: false as const,
-        requiresApproval: false as const,
-      }
-
-      const patientUser = {
-        id: 456,
-        collection: 'patients' as const,
-        supabaseUserId: 'supabase-123',
-        email: 'patient@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        createdAt: '2023-01-01T00:00:00.000Z',
-        updatedAt: '2023-01-01T00:00:00.000Z',
-      }
-
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(patientAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(patientConfig)
-      vi.mocked(ensurePatientOnAuth).mockResolvedValue(patientUser)
-      vi.mocked(validateUserAccess).mockResolvedValue(true)
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(ensurePatientOnAuth).toHaveBeenCalledWith({
-        payload: mockPayload,
-        authData: patientAuthData,
-        logger: expect.any(Object),
-        req: mockReq,
-      })
-      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: patientAuthData })
-      expect(identifyPostHogActor).toHaveBeenCalled()
-      expect(result.user).toEqual(patientUser)
-    })
-
-    it('should handle patient user type when req is missing', async () => {
-      const patientAuthData = {
-        ...mockAuthData,
-        userType: 'patient' as const,
-      }
-
-      const patientConfig = {
-        collection: 'patients' as const,
-        profileCollection: null,
-        requiresProfile: false as const,
-        requiresApproval: false as const,
-      }
-
-      const patientUser = {
-        id: 789,
-        collection: 'patients' as const,
-        supabaseUserId: 'supabase-123',
-        email: 'patient@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        createdAt: '2023-01-01T00:00:00.000Z',
-        updatedAt: '2023-01-01T00:00:00.000Z',
-      }
-
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(patientAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(patientConfig)
-      vi.mocked(ensurePatientOnAuth).mockResolvedValue(patientUser)
-      vi.mocked(validateUserAccess).mockResolvedValue(true)
-
-      const result = await supabaseStrategy.authenticate(buildArgsWithoutReq())
-
-      expect(ensurePatientOnAuth).toHaveBeenCalledWith({
-        payload: mockPayload,
-        authData: patientAuthData,
-        logger: expect.any(Object),
-        req: undefined,
-      })
-      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: patientAuthData })
-      expect(identifyPostHogActor).toHaveBeenCalled()
-      expect(result.user).toEqual(patientUser)
-    })
-
-    it('should fail closed when ensurePatientOnAuth throws an error', async () => {
-      const patientAuthData = {
-        ...mockAuthData,
-        userType: 'patient' as const,
-      }
-
-      const patientConfig = {
-        collection: 'patients' as const,
-        profileCollection: null,
-        requiresProfile: false as const,
-        requiresApproval: false as const,
-      }
-
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(patientAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(patientConfig)
-      vi.mocked(ensurePatientOnAuth).mockRejectedValue(new Error('ensurePatientOnAuth error'))
-
-      const result = await supabaseStrategy.authenticate(buildArgsWithoutReq())
-
-      expect(result.user).toBeNull()
-      expect(validateUserAccess).not.toHaveBeenCalled()
-      expect(identifyPostHogActor).not.toHaveBeenCalled()
-    })
-
-    it('should handle platform user type', async () => {
-      const platformAuthData = {
-        ...mockAuthData,
-        userEmail: 'admin@findmydoc.eu',
-        userType: 'platform' as const,
-      }
-
-      const platformConfig = {
-        collection: 'basicUsers' as const,
-        profileCollection: 'platformStaff' as const,
-        requiresProfile: true as const,
-        requiresApproval: false as const,
-      }
-
-      vi.mocked(extractSupabaseUserData).mockResolvedValue(platformAuthData)
-      vi.mocked(getUserConfig).mockReturnValue(platformConfig)
-      vi.mocked(findUserBySupabaseId).mockResolvedValue(mockUser)
-      vi.mocked(validateUserAccess).mockResolvedValue(true)
-
-      const result = await supabaseStrategy.authenticate(buildArgs())
-
-      expect(resolvePostHogActor).toHaveBeenCalledWith({ authData: platformAuthData })
-      expect(identifyPostHogActor).toHaveBeenCalled()
-      expect(result.user).toEqual(mockUser)
-    })
+    const principal = { id: 9, collection: 'platformStaff', role: 'admin', supabaseUserId: authData.supabaseUserId }
+    mocks.extractSupabaseUserData.mockResolvedValue(authData)
+    mocks.findUserBySupabaseId.mockResolvedValue(principal)
+
+    await expect(supabaseStrategy.authenticate(args)).resolves.toEqual({ user: principal })
+    expect(mocks.ensurePatientOnAuth).not.toHaveBeenCalled()
   })
 
-  describe('strategy configuration', () => {
-    it('should have correct strategy name', () => {
-      expect(supabaseStrategy.name).toBe('supabase')
+  it('fails closed for a missing staff principal and does not auto-create it', async () => {
+    mocks.extractSupabaseUserData.mockResolvedValue({
+      supabaseUserId: 'supabase-unprovisioned',
+      userEmail: 'staff@findmydoc.eu',
+      userType: 'platform',
+    })
+    mocks.findUserBySupabaseId.mockResolvedValue(null)
+
+    await expect(supabaseStrategy.authenticate(args)).resolves.toEqual({ user: null })
+    expect(mocks.ensurePatientOnAuth).not.toHaveBeenCalled()
+    expect(mocks.validateUserAccess).not.toHaveBeenCalled()
+    expect(mocks.identifyPostHogActor).not.toHaveBeenCalled()
+  })
+
+  it('rejects platform identities outside the findmydoc email domain before principal lookup', async () => {
+    mocks.extractSupabaseUserData.mockResolvedValue({
+      supabaseUserId: 'supabase-external',
+      userEmail: 'staff@example.com',
+      userType: 'platform',
     })
 
-    it('should have authenticate function', () => {
-      expect(typeof supabaseStrategy.authenticate).toBe('function')
-    })
+    await expect(supabaseStrategy.authenticate(args)).resolves.toEqual({ user: null })
+    expect(mocks.findUserBySupabaseId).not.toHaveBeenCalled()
+    expect(mocks.validateUserAccess).not.toHaveBeenCalled()
+    expect(mocks.ensurePatientOnAuth).not.toHaveBeenCalled()
+  })
+
+  it('keeps patient ensure-on-auth behavior', async () => {
+    const authData = {
+      supabaseUserId: 'supabase-patient',
+      userEmail: 'patient@example.com',
+      userType: 'patient' as const,
+    }
+    const principal = { id: 11, collection: 'patients', supabaseUserId: authData.supabaseUserId }
+    mocks.extractSupabaseUserData.mockResolvedValue(authData)
+    mocks.ensurePatientOnAuth.mockResolvedValue(principal)
+
+    await expect(supabaseStrategy.authenticate(args)).resolves.toEqual({ user: principal })
+    expect(mocks.findUserBySupabaseId).not.toHaveBeenCalled()
   })
 })

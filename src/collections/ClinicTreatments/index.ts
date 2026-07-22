@@ -1,6 +1,6 @@
 import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@/access/scopeFilters'
 import { updateAveragePriceAfterChange } from './hooks/updateAveragePriceAfterChange'
 import { updateAveragePriceAfterDelete } from './hooks/updateAveragePriceAfterDelete'
@@ -24,7 +24,7 @@ export const ClinicTreatments: CollectionConfig = {
     read: anyone, // Public read access
     create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
     update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
-    delete: isPlatformBasicUser, // Only Platform can delete
+    delete: isPlatformStaff, // Only Platform can delete
   },
   timestamps: true,
   hooks: {
@@ -52,8 +52,7 @@ export const ClinicTreatments: CollectionConfig = {
       admin: {
         description: 'Clinic that offers this treatment',
         allowCreate: false,
-        condition: (_data, _siblingData, { user }) =>
-          !(user && user.collection === 'basicUsers' && user.userType === 'clinic'),
+        condition: (_data, _siblingData, { user }) => !(user && user.collection === 'clinicStaff'),
       },
     },
     {

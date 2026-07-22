@@ -1,7 +1,7 @@
 import { isPatient } from '@/access/isPatient'
 import type { CollectionConfig } from 'payload'
 import { platformOrOwnPatientResource } from '@/access/scopeFilters'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 
 export const FavoriteClinics: CollectionConfig = {
@@ -19,7 +19,7 @@ export const FavoriteClinics: CollectionConfig = {
   access: {
     read: platformOrOwnPatientResource,
     create: ({ req }) => {
-      if (isPlatformBasicUser({ req })) return true
+      if (isPlatformStaff({ req })) return true
       return isPatient({ req })
     },
     update: platformOrOwnPatientResource,

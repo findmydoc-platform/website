@@ -1,7 +1,7 @@
 import type { CollectionConfig, PayloadRequest, Where } from 'payload'
 import { isPatient } from '@/access/isPatient'
 import { platformOnlyFieldAccess } from '@/access/fieldAccess'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { platformOnlyOrApprovedReviews } from '@/access/scopeFilters'
 import {
   updateAverageRatingsAfterChange,
@@ -44,9 +44,7 @@ function isPlatformStaffRequest(req: { user?: unknown }): boolean {
     req.user &&
     typeof req.user === 'object' &&
     'collection' in req.user &&
-    'userType' in req.user &&
-    (req.user as { collection?: unknown; userType?: unknown }).collection === 'basicUsers' &&
-    (req.user as { collection?: unknown; userType?: unknown }).userType === 'platform',
+    (req.user as { collection?: unknown }).collection === 'platformStaff',
   )
 }
 
@@ -130,13 +128,13 @@ export const Reviews: CollectionConfig = {
     read: ({ req }) => {
       return platformOnlyOrApprovedReviews({ req })
     },
-    create: ({ req }) => isPatient({ req }) || isPlatformBasicUser({ req }),
+    create: ({ req }) => isPatient({ req }) || isPlatformStaff({ req }),
     update: ({ req }) => {
       // Only Platform Staff can edit reviews for quality control and moderation
       // Patients must contact support for review modifications
-      return isPlatformBasicUser({ req })
+      return isPlatformStaff({ req })
     },
-    delete: ({ req }) => isPlatformBasicUser({ req }),
+    delete: ({ req }) => isPlatformStaff({ req }),
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
@@ -305,7 +303,7 @@ export const Reviews: CollectionConfig = {
         {
           name: 'editedBy',
           type: 'relationship',
-          relationTo: 'basicUsers',
+          relationTo: 'platformStaff',
           label: 'Edited by',
           access: {
             create: platformOnlyFieldAccess,
@@ -343,7 +341,7 @@ export const Reviews: CollectionConfig = {
 
         // Audit logging for Platform Staff edits
         if (operation === 'update' && originalDoc && req.user) {
-          if (isPlatformBasicUser({ req })) {
+          if (isPlatformStaff({ req })) {
             if (process.env.NODE_ENV !== 'production') {
               req.payload.logger.info(
                 `Platform Staff ${req.user.id} modified review ${originalDoc.id} (Patient: ${originalDoc.patient})`,

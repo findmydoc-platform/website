@@ -1,231 +1,200 @@
-import { describe, it, expect, beforeAll, afterEach } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
-import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
-import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
+import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
-import type { BasicUser, ClinicStaff } from '@/payload-types'
-
-type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
-type PayloadCreateArgs = Parameters<Payload['create']>[0]
-type PayloadUpdateArgs = Parameters<Payload['update']>[0]
+import { deleteClinicSupabaseAccount, setClinicSupabaseAccountAccess } from '@/auth/utilities/supabaseProvision'
 
 describe('ClinicStaff lifecycle integration', () => {
   let payload: Payload
   let cityId: number
   const slugPrefix = testSlug('clinicStaff.lifecycle.test.ts')
-
-  const createdClinicStaffIds: Array<number> = []
-  const createdBasicUserIds: Array<number> = []
-
-  const asPlatformUser = (user: BasicUser): PayloadUser => ({ ...user, collection: 'basicUsers' }) as PayloadUser
-  const asClinicUser = (user: BasicUser): PayloadUser => ({ ...user, collection: 'basicUsers' }) as PayloadUser
-
-  const createClinicUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: `${slugPrefix}-clinic-${suffix}@example.com`,
-        userType: 'clinic',
-        firstName: 'Clinic',
-        lastName: `User-${suffix}`,
-        supabaseUserId: `sb-${slugPrefix}-clinic-${suffix}`,
-      },
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
-
-    createdBasicUserIds.push(basicUser.id)
-
-    const clinicStaffResult = await payload.find({
-      collection: 'clinicStaff',
-      where: { user: { equals: basicUser.id } },
-      limit: 1,
-      overrideAccess: true,
-      depth: 0,
-    })
-
-    const clinicStaff = clinicStaffResult.docs[0] as ClinicStaff | undefined
-    if (!clinicStaff) throw new Error('Expected clinic staff profile to be created')
-
-    createdClinicStaffIds.push(clinicStaff.id)
-
-    return { basicUser, clinicStaff }
-  }
-
-  const createPlatformUser = async (suffix: string) => {
-    const basicUser = (await payload.create({
-      collection: 'basicUsers',
-      data: {
-        email: `${slugPrefix}-platform-${suffix}@findmydoc.eu`,
-        userType: 'platform',
-        firstName: 'Platform',
-        lastName: `User-${suffix}`,
-        supabaseUserId: `sb-${slugPrefix}-platform-${suffix}`,
-      },
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as BasicUser
-
-    createdBasicUserIds.push(basicUser.id)
-    return basicUser
-  }
-
-  const approveClinicStaff = async (clinicStaffId: number, clinicId: number) => {
-    return (await payload.update({
-      collection: 'clinicStaff',
-      id: clinicStaffId,
-      data: { clinic: clinicId, status: 'approved' },
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadUpdateArgs)) as ClinicStaff
-  }
+  const staffIds: number[] = []
+  const clinicIds: number[] = []
 
   beforeAll(async () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
+    const city = await payload.find({ collection: 'cities', limit: 1, overrideAccess: true })
+    if (!city.docs[0]) throw new Error('Expected a baseline city')
+    cityId = city.docs[0].id
+  })
 
-    const cityRes = await payload.find({ collection: 'cities', limit: 1, overrideAccess: true, depth: 0 })
-    const cityDoc = cityRes.docs[0]
-    if (!cityDoc) throw new Error('Expected baseline city for clinic staff tests')
-    cityId = cityDoc.id as number
-  }, 60000)
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(deleteClinicSupabaseAccount).mockResolvedValue(undefined)
+    vi.mocked(setClinicSupabaseAccountAccess).mockResolvedValue(undefined)
+  })
 
   afterEach(async () => {
-    while (createdClinicStaffIds.length) {
-      const id = createdClinicStaffIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'clinicStaff', id, overrideAccess: true })
-      } catch {}
+    while (staffIds.length) {
+      const id = staffIds.pop()
+      if (id) await payload.delete({ collection: 'clinicStaff', id, overrideAccess: true }).catch(() => undefined)
     }
-
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-      } catch {}
+    while (clinicIds.length) {
+      const id = clinicIds.pop()
+      if (id) await payload.delete({ collection: 'clinics', id, overrideAccess: true }).catch(() => undefined)
     }
-
-    await cleanupTestEntities(payload, 'doctors', slugPrefix)
-    await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
-  it('allows platform users to read all clinic staff', async () => {
-    const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-read-a` })
-    const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-read-b` })
-
-    const { clinicStaff: staffA } = await createClinicUser('read-a')
-    const { clinicStaff: staffB } = await createClinicUser('read-b')
-
-    await approveClinicStaff(staffA.id, clinicA.id as number)
-    await approveClinicStaff(staffB.id, clinicB.id as number)
-
-    const platformUser = await createPlatformUser('read')
-
-    const results = await payload.find({
+  it('synchronizes approval, disable, reactivation, and offboarding with Supabase', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix })
+    clinicIds.push(clinic.id)
+    const staff = await payload.create({
       collection: 'clinicStaff',
-      user: asPlatformUser(platformUser),
-      overrideAccess: false,
-      depth: 0,
+      data: {
+        email: `${slugPrefix}-pending@example.com`,
+        firstName: 'Clinic',
+        lastName: 'Staff',
+        status: 'pending',
+        supabaseUserId: `sb-${slugPrefix}-pending`,
+      },
+      overrideAccess: true,
+    })
+    staffIds.push(staff.id)
+
+    const approved = await payload.update({
+      collection: 'clinicStaff',
+      id: staff.id,
+      data: { clinic: clinic.id, status: 'approved' },
+      overrideAccess: true,
     })
 
-    const resultIds = results.docs.map((doc) => doc.id)
-    expect(resultIds).toEqual(expect.arrayContaining([staffA.id, staffB.id]))
-  })
-
-  it('scopes clinic staff reads to their clinic', async () => {
-    const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-scope-a` })
-    const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-scope-b` })
-
-    const { basicUser: clinicUserA, clinicStaff: staffA } = await createClinicUser('scope-a')
-    const { clinicStaff: staffB } = await createClinicUser('scope-b')
-
-    await approveClinicStaff(staffA.id, clinicA.id as number)
-    await approveClinicStaff(staffB.id, clinicB.id as number)
-
-    const results = await payload.find({
-      collection: 'clinicStaff',
-      user: asClinicUser(clinicUserA),
-      overrideAccess: false,
-      depth: 0,
-    })
-
-    expect(results.docs).toHaveLength(1)
-    expect(results.docs[0]?.id).toBe(staffA.id)
-  })
-
-  it('prevents direct API create for clinicStaff', async () => {
-    const { basicUser: clinicUser } = await createClinicUser('create-blocked')
-    const platformUser = await createPlatformUser('create-blocked')
-
-    await expect(async () => {
-      await payload.create({
-        collection: 'clinicStaff',
-        data: { user: clinicUser.id, status: 'pending' },
-        user: asPlatformUser(platformUser),
-        overrideAccess: false,
-        depth: 0,
-      } as PayloadCreateArgs)
-    }).rejects.toThrow()
-  })
-
-  it('allows platform users to update clinic staff status', async () => {
-    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-status` })
-    const { clinicStaff } = await createClinicUser('status-update')
-    const platformUser = await createPlatformUser('status-update')
-
-    const updated = (await payload.update({
-      collection: 'clinicStaff',
-      id: clinicStaff.id,
-      data: { status: 'approved', clinic: clinic.id },
-      user: asPlatformUser(platformUser),
-      overrideAccess: false,
-      depth: 0,
-    } as PayloadUpdateArgs)) as ClinicStaff
-
-    expect(updated.status).toBe('approved')
-    expect(updated.clinic).toBe(clinic.id)
-  })
-
-  it('blocks non-platform users from changing status', async () => {
-    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-status-blocked` })
-    const { basicUser, clinicStaff } = await createClinicUser('status-blocked')
-
-    await approveClinicStaff(clinicStaff.id, clinic.id as number)
+    expect(approved.status).toBe('approved')
+    expect(typeof approved.clinic === 'object' ? approved.clinic?.id : approved.clinic).toBe(clinic.id)
+    expect(setClinicSupabaseAccountAccess).toHaveBeenLastCalledWith(
+      { enabled: true, supabaseUserId: `sb-${slugPrefix}-pending` },
+      expect.anything(),
+    )
 
     await payload.update({
       collection: 'clinicStaff',
-      id: clinicStaff.id,
-      data: { status: 'rejected' },
-      user: asClinicUser(basicUser),
-      overrideAccess: false,
-      depth: 0,
-    } as PayloadUpdateArgs)
+      id: staff.id,
+      data: { status: 'disabled' },
+      overrideAccess: true,
+    })
+    expect(setClinicSupabaseAccountAccess).toHaveBeenLastCalledWith(
+      { enabled: false, supabaseUserId: `sb-${slugPrefix}-pending` },
+      expect.anything(),
+    )
 
-    const refreshed = (await payload.findByID({
+    await payload.update({
       collection: 'clinicStaff',
-      id: clinicStaff.id,
+      id: staff.id,
+      data: { status: 'approved' },
+      overrideAccess: true,
+    })
+    await payload.update({
+      collection: 'clinicStaff',
+      id: staff.id,
+      data: { status: 'offboarded' },
+      overrideAccess: true,
+    })
+
+    const offboarded = await payload.findByID({
+      collection: 'clinicStaff',
+      id: staff.id,
       overrideAccess: true,
       depth: 0,
-    })) as ClinicStaff
-
-    expect(refreshed.status).toBe('approved')
+    })
+    expect(offboarded.status).toBe('offboarded')
+    expect(offboarded.authSync).toEqual({ status: 'deleted', errorCode: null })
+    expect(deleteClinicSupabaseAccount).toHaveBeenCalledWith(`sb-${slugPrefix}-pending`, expect.anything())
   })
 
-  it('rejects duplicate clinic staff for the same user', async () => {
-    const { clinicStaff } = await createClinicUser('duplicate')
+  it('rejects invalid status transitions', async () => {
+    const staff = await payload.create({
+      collection: 'clinicStaff',
+      data: {
+        email: `${slugPrefix}-invalid-transition@example.com`,
+        firstName: 'Clinic',
+        lastName: 'Staff',
+        status: 'pending',
+        supabaseUserId: `sb-${slugPrefix}-invalid-transition`,
+      },
+      overrideAccess: true,
+    })
+    staffIds.push(staff.id)
 
-    await expect(async () => {
-      await payload.create({
+    await expect(
+      payload.update({
         collection: 'clinicStaff',
-        data: { user: clinicStaff.user, status: 'pending' },
+        id: staff.id,
+        data: { status: 'disabled' },
         overrideAccess: true,
-        depth: 0,
-      } as PayloadCreateArgs)
-    }).rejects.toThrowError(/user|unique|duplicate|constraint|clinicstaff/i)
+      }),
+    ).rejects.toThrow(/pending -> disabled/)
+  })
+
+  it('stores and retries a resumable Supabase synchronization failure', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-retry` })
+    clinicIds.push(clinic.id)
+    const staff = await payload.create({
+      collection: 'clinicStaff',
+      data: {
+        clinic: clinic.id,
+        email: `${slugPrefix}-retry@example.com`,
+        firstName: 'Retry',
+        lastName: 'Staff',
+        status: 'pending',
+        supabaseUserId: `sb-${slugPrefix}-retry`,
+      },
+      overrideAccess: true,
+    })
+    staffIds.push(staff.id)
+    vi.mocked(setClinicSupabaseAccountAccess).mockRejectedValueOnce(new Error('temporary Supabase failure'))
+
+    await payload.update({
+      collection: 'clinicStaff',
+      id: staff.id,
+      data: { status: 'approved' },
+      overrideAccess: true,
+    })
+
+    const failed = await payload.findByID({ collection: 'clinicStaff', id: staff.id, overrideAccess: true, depth: 0 })
+    expect(failed.authSync).toEqual({ status: 'failed', errorCode: 'account_update_failed' })
+
+    await payload.update({
+      collection: 'clinicStaff',
+      id: staff.id,
+      data: { firstName: 'Retried' },
+      overrideAccess: true,
+    })
+
+    const synced = await payload.findByID({ collection: 'clinicStaff', id: staff.id, overrideAccess: true, depth: 0 })
+    expect(synced.authSync).toEqual({ status: 'synced', errorCode: null })
+    expect(setClinicSupabaseAccountAccess).toHaveBeenCalledTimes(2)
+  })
+
+  it('rejects a duplicate Supabase identity', async () => {
+    const identity = `sb-${slugPrefix}-duplicate`
+    const first = await payload.create({
+      collection: 'clinicStaff',
+      data: {
+        email: `${slugPrefix}-one@example.com`,
+        firstName: 'One',
+        lastName: 'Staff',
+        status: 'pending',
+        supabaseUserId: identity,
+      },
+      overrideAccess: true,
+    })
+    staffIds.push(first.id)
+
+    await expect(
+      payload.create({
+        collection: 'clinicStaff',
+        data: {
+          email: `${slugPrefix}-two@example.com`,
+          firstName: 'Two',
+          lastName: 'Staff',
+          status: 'pending',
+          supabaseUserId: identity,
+        },
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/already assigned|unique|duplicate/i)
   })
 })

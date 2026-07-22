@@ -1,25 +1,37 @@
 import { CollectionConfig, PayloadRequest } from 'payload'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { computedOnlyFieldAccess } from '@/access/fieldAccess'
+import { CLINIC_ONBOARDING_ERROR_CODES } from '@/features/clinicOnboarding/provisionClinicOnboarding'
+import { provisionApprovedClinicApplication } from '@/hooks/clinicApplicationProvisioning'
 import { clinicContactRoleOptions } from './common/selectionOptions'
 
 // Platform-controlled application intake for clinics.
 // Public submissions are accepted only through /api/auth/register/clinic.
 // Only platform staff can create/read/update/delete records directly.
-// Approval workflow: platform sets status to approved; future hook will materialize real Clinic & user.
+// Approval workflow: platform sets status to approved; provisioning creates the pending clinic and initial staff access.
+
+const provisioningErrorLabels: Record<(typeof CLINIC_ONBOARDING_ERROR_CODES)[number], string> = {
+  record_failed: 'Record failed',
+  auth_failed: 'Authentication failed',
+  binding_failed: 'Identity binding failed',
+}
 
 export const ClinicApplications: CollectionConfig = {
   slug: 'clinicApplications',
   admin: {
     useAsTitle: 'clinicName',
     group: 'Medical Network',
-    defaultColumns: ['clinicName', 'status', 'contactEmail', 'clinicWebsite', 'createdAt'],
+    defaultColumns: ['clinicName', 'status', 'provisioningStatus', 'contactEmail', 'createdAt'],
     description: 'New clinic applications awaiting review',
   },
   access: {
-    create: isPlatformBasicUser, // public intake is handled by /api/auth/register/clinic
-    read: isPlatformBasicUser, // only platform staff can view
-    update: isPlatformBasicUser,
-    delete: isPlatformBasicUser,
+    create: isPlatformStaff, // public intake is handled by /api/auth/register/clinic
+    read: isPlatformStaff, // only platform staff can view
+    update: isPlatformStaff,
+    delete: isPlatformStaff,
+  },
+  hooks: {
+    afterChange: [provisionApprovedClinicApplication],
   },
   fields: [
     {
@@ -138,21 +150,58 @@ export const ClinicApplications: CollectionConfig = {
       access: {
         update: ({ req }: { req: PayloadRequest }) => {
           const u = req.user
-          return Boolean(u && u.collection === 'basicUsers' && u.userType === 'platform')
+          return Boolean(u && u.collection === 'platformStaff')
         },
+      },
+    },
+    {
+      name: 'provisioningStatus',
+      type: 'select',
+      defaultValue: 'not_started',
+      options: [
+        { label: 'Not started', value: 'not_started' },
+        { label: 'Failed', value: 'failed' },
+        { label: 'Completed', value: 'completed' },
+      ],
+      access: {
+        create: computedOnlyFieldAccess,
+        update: computedOnlyFieldAccess,
+      },
+      admin: {
+        description: 'Provisioning result; saving a failed approved application retries the process',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'provisioningErrorCode',
+      type: 'select',
+      options: CLINIC_ONBOARDING_ERROR_CODES.map((value) => ({ label: provisioningErrorLabels[value], value })),
+      access: {
+        create: computedOnlyFieldAccess,
+        update: computedOnlyFieldAccess,
+      },
+      admin: {
+        description: 'Stable failure category for retry and support',
+        position: 'sidebar',
+        readOnly: true,
       },
     },
     {
       name: 'linkedRecords',
       type: 'group',
       label: 'Created records',
+      access: {
+        create: computedOnlyFieldAccess,
+        update: computedOnlyFieldAccess,
+      },
       admin: {
-        description: 'Clinic, user, and staff records created after approval',
+        description: 'Clinic and staff records created after approval',
+        readOnly: true,
         condition: (data) => data?.status !== 'submitted',
       },
       fields: [
         { name: 'clinic', type: 'relationship', relationTo: 'clinics' },
-        { name: 'basicUser', type: 'relationship', relationTo: 'basicUsers' },
         { name: 'clinicStaff', type: 'relationship', relationTo: 'clinicStaff' },
         { name: 'processedAt', type: 'date' },
       ],

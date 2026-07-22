@@ -28,7 +28,7 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 
 ### Global Engineering Rules (Critical First)
 
-1. Schema changes use Payload migrations; do not hand-write SQL.
+1. Use Payload-native APIs and migrations for Payload-managed data; never use direct SQL or database-adapter access, and stop for an explicit architecture decision if Payload has no suitable mechanism.
 2. Business logic and side effects belong in hooks (`src/hooks/**` or collection hooks), not UI components.
 3. Access rules must reuse helpers in `src/access/**`; avoid duplicate role logic.
 4. Collections should remain minimal, indexed where needed, and documented via `admin.description`.

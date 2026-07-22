@@ -70,6 +70,8 @@ export type ConditionalScenarioKind =
   | 'user-profile-media-create'
   // Clinic gallery read: non-platform users must receive a filter enforcing the clinic scope for gallery access.
   | 'clinic-gallery-read'
+  // Doctor public state: clinic staff also see their own inactive doctors; everyone else sees active doctors only.
+  | 'clinic-or-active'
 
 export interface ConditionalScenarioMeta {
   kind: ConditionalScenarioKind
@@ -117,17 +119,97 @@ export const permissionMatrix: PermissionMatrix = {
   version: '1.0.0',
   source: 'src/security/permission-matrix.config.ts',
   collections: {
-    basicUsers: {
-      slug: 'basicUsers',
-      displayName: 'BasicUsers',
+    imports: {
+      slug: 'imports',
+      displayName: 'Imports',
       operations: {
         create: { type: 'platform' },
         read: { type: 'platform' },
+        update: { type: 'conditional', details: 'disabled for direct writes; plugin lifecycle only' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          update: { kind: 'always-false' },
+        },
+      },
+      notes: 'Import jobs and custom endpoints are restricted to platform staff',
+    },
+    exports: {
+      slug: 'exports',
+      displayName: 'Exports',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'platform' },
+        update: { type: 'conditional', details: 'disabled for direct writes; plugin lifecycle only' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          update: { kind: 'always-false' },
+        },
+      },
+      notes: 'Export jobs, previews, and downloads are restricted to platform staff',
+    },
+    forms: {
+      slug: 'forms',
+      displayName: 'Forms',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'anyone' },
         update: { type: 'platform' },
         delete: { type: 'platform' },
         admin: { type: 'platform' },
       },
-      notes: 'User management restricted to platform staff',
+      notes: 'Public form definitions with platform-only management',
+    },
+    'form-submissions': {
+      slug: 'form-submissions',
+      displayName: 'Form Submissions',
+      operations: {
+        create: { type: 'anyone' },
+        read: { type: 'platform' },
+        update: { type: 'conditional', details: 'disabled for direct writes' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          update: { kind: 'always-false' },
+        },
+      },
+      notes: 'Public create path with platform-only read and delete access; direct updates are disabled',
+    },
+    redirects: {
+      slug: 'redirects',
+      displayName: 'Redirects',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'anyone' },
+        update: { type: 'platform' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      notes: 'Public redirect rules with platform-only management',
+    },
+    search: {
+      slug: 'search',
+      displayName: 'Search',
+      operations: {
+        create: { type: 'conditional', details: 'disabled for direct writes; internal search sync only' },
+        read: { type: 'anyone' },
+        update: { type: 'platform' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+        },
+      },
+      notes: 'Public search index with platform management and internal-only document creation',
     },
     platformStaff: {
       slug: 'platformStaff',
@@ -145,7 +227,8 @@ export const permissionMatrix: PermissionMatrix = {
           delete: { kind: 'always-false' },
         },
       },
-      notes: 'Platform staff management - indirect via BasicUsers lifecycle',
+      notes:
+        'Platform staff review safe identity fields and manage roles; identity bindings and create/delete remain provisioning-only',
     },
     clinicStaff: {
       slug: 'clinicStaff',
@@ -155,7 +238,8 @@ export const permissionMatrix: PermissionMatrix = {
         read: { type: 'conditional', details: 'platform full + clinic own clinic' },
         update: {
           type: 'conditional',
-          details: 'platform + own profile after approval; user, clinic, and status fields are platform-only',
+          details:
+            'platform + own profile only when staff and clinic are access-ready; clinic, lifecycle, identity, and sync fields are system/platform controlled',
         },
         delete: { type: 'conditional', details: 'disabled API delete; managed via provisioning' },
         admin: { type: 'platform' },
@@ -164,12 +248,12 @@ export const permissionMatrix: PermissionMatrix = {
         conditional: {
           create: { kind: 'always-false' },
           read: { kind: 'clinic-scope', path: 'clinic' },
-          update: { kind: 'clinic-staff-update', path: 'user' },
+          update: { kind: 'clinic-staff-update', path: 'id' },
           delete: { kind: 'always-false' },
         },
       },
       notes:
-        'Authentication denied until approval; clinic staff read their clinic and update only non-authorization fields on their own profile',
+        'Platform staff manage clinic assignment and lifecycle; approved and synced staff read their approved clinic; identity binding, auth sync, and create/delete remain provisioning-only',
     },
     patients: {
       slug: 'patients',
@@ -218,7 +302,7 @@ export const permissionMatrix: PermissionMatrix = {
       displayName: 'Doctors',
       operations: {
         create: { type: 'conditional', details: 'platform full + clinic allowed (hook assigns clinic ownership)' },
-        read: { type: 'anyone' },
+        read: { type: 'conditional', details: 'platform all + clinic own inactive + everyone active' },
         update: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
         delete: { type: 'platform' },
         admin: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
@@ -226,11 +310,13 @@ export const permissionMatrix: PermissionMatrix = {
       meta: {
         conditional: {
           create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
+          read: { kind: 'clinic-or-active', path: 'clinic', statusPath: 'active' },
           update: { kind: 'clinic-scope', path: 'clinic' },
           admin: { kind: 'clinic-scope', path: 'clinic' },
         },
       },
-      notes: 'Platform RWDA, clinic RWA own clinic, patients/anonymous R',
+      notes:
+        'Platform RWDA, clinic RWA own clinic including inactive doctors, patients/anonymous R active doctors; averageRating is computed-only',
     },
     clinics: {
       slug: 'clinics',
@@ -250,7 +336,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved',
+        'Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved; averageRating is computed-only',
     },
     doctorspecialties: {
       slug: 'doctorspecialties',
@@ -367,7 +453,7 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'platform' },
         admin: { type: 'platform' },
       },
-      notes: 'Master data - platform write, everyone read',
+      notes: 'Master data - platform write, everyone read; averageRating is computed-only',
     },
     'medical-specialties': {
       slug: 'medical-specialties',
@@ -571,7 +657,8 @@ export const permissionMatrix: PermissionMatrix = {
         delete: { type: 'platform' },
         admin: { type: 'platform' },
       },
-      notes: 'Intake/applications - public submissions use the controlled API route only, platform moderation',
+      notes:
+        'Public submissions use the controlled API route; platform approval creates a pending clinic and initial clinic staff principal with duplicate-write observability',
     },
     patientClinicInquiries: {
       slug: 'patientClinicInquiries',

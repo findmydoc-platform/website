@@ -108,7 +108,6 @@ estimated_mb = (active_rows + historical_rows + retention_rows)
 | doctortreatments | 180 |
 | doctorspecialties | 185 |
 | clinicStaff | 150 |
-| basicUsers | 145 |
 | platformStaff | 120 |
 | posts | 4084 |
 | pages | 2500 |
@@ -135,12 +134,11 @@ estimated_mb = (active_rows + historical_rows + retention_rows)
 | doctortreatments | 4800 | 0 | 480 | 0 | 1.99 | doctors * doctor_treatments_per_doctor |
 | doctorspecialties | 2400 | 0 | 240 | 0 | 1.02 | doctors * doctor_specialties_per_doctor |
 | clinicStaff | 600 | 0 | 60 | 0 | 0.21 | clinics * clinic_staff_users_per_clinic |
-| basicUsers | 608 | 0 | 61 | 0 | 0.20 | clinicStaff users + fixed platform staff |
 | platformStaff | 8 | 0 | 1 | 0 | 0.00 | fixed platform operations team |
 | posts | 60 | 240 | 6 | 60 | 2.62 | posts_total |
 | pages | 8 | 32 | 1 | 0 | 0.22 | pages_total |
 | search | 3099 | 0 | 0 | 0 | 3.58 | indexed docs from posts+clinics+doctors+treatments |
-| **Dynamic total** |  |  |  |  | **25.29** |  |
+| **Dynamic total** |  |  |  |  | **25.08** |  |
 
 ### Med Scenario
 
@@ -153,12 +151,11 @@ estimated_mb = (active_rows + historical_rows + retention_rows)
 | doctortreatments | 19200 | 0 | 2880 | 0 | 8.34 | doctors * doctor_treatments_per_doctor |
 | doctorspecialties | 9600 | 0 | 1440 | 0 | 4.29 | doctors * doctor_specialties_per_doctor |
 | clinicStaff | 1200 | 0 | 180 | 0 | 0.43 | clinics * clinic_staff_users_per_clinic |
-| basicUsers | 1208 | 0 | 181 | 0 | 0.42 | clinicStaff users + fixed platform staff |
 | platformStaff | 8 | 0 | 1 | 0 | 0.00 | fixed platform operations team |
 | posts | 180 | 1440 | 27 | 180 | 14.11 | posts_total |
 | pages | 15 | 120 | 2 | 0 | 0.72 | pages_total |
 | search | 5619 | 0 | 0 | 0 | 6.48 | indexed docs from posts+clinics+doctors+treatments |
-| **Dynamic total** |  |  |  |  | **87.83** |  |
+| **Dynamic total** |  |  |  |  | **87.40** |  |
 
 ### High Scenario
 
@@ -171,12 +168,11 @@ estimated_mb = (active_rows + historical_rows + retention_rows)
 | doctortreatments | 54000 | 0 | 13500 | 0 | 25.49 | doctors * doctor_treatments_per_doctor |
 | doctorspecialties | 27000 | 0 | 6750 | 0 | 13.10 | doctors * doctor_specialties_per_doctor |
 | clinicStaff | 2400 | 0 | 600 | 0 | 0.94 | clinics * clinic_staff_users_per_clinic |
-| basicUsers | 2408 | 0 | 602 | 0 | 0.92 | clinicStaff users + fixed platform staff |
 | platformStaff | 8 | 0 | 2 | 0 | 0.00 | fixed platform operations team |
 | posts | 420 | 8400 | 105 | 420 | 76.47 | posts_total |
 | pages | 30 | 600 | 8 | 0 | 3.35 | pages_total |
 | search | 10059 | 0 | 0 | 0 | 11.61 | indexed docs from posts+clinics+doctors+treatments |
-| **Dynamic total** |  |  |  |  | **289.21** |  |
+| **Dynamic total** |  |  |  |  | **288.29** |  |
 
 ## Fixed Baseline (Non-Linear Block)
 
@@ -200,15 +196,15 @@ Naming note: the Payload collection slug is `accreditation` (singular), and this
 
 | Scenario | Clinic-Centric MB | Page/Post-Centric MB | User-Centric MB | Dynamic MB | Baseline MB | Total MB |
 |---|---:|---:|---:|---:|---:|---:|
-| Low | 18.46 | 6.41 | 0.41 | 25.29 | 0.066 | 25.35 |
-| Med | 65.65 | 21.32 | 0.86 | 87.83 | 0.066 | 87.89 |
-| High | 195.92 | 91.43 | 1.86 | 289.21 | 0.066 | 289.27 |
+| Low | 18.46 | 6.41 | 0.21 | 25.08 | 0.066 | 25.15 |
+| Med | 65.65 | 21.32 | 0.44 | 87.40 | 0.066 | 87.47 |
+| High | 195.92 | 91.43 | 0.94 | 288.29 | 0.066 | 288.36 |
 
 Centric definitions:
 
 - Clinic-centric: `clinics`, `doctors`, `reviews`, `clinictreatments`, `doctortreatments`, `doctorspecialties`
 - Page/Post-centric: `posts`, `pages`, `search`
-- User-centric: `clinicStaff`, `basicUsers`, `platformStaff`
+- User-centric: `clinicStaff`, `platformStaff`
 
 ## Consistency Checks
 
@@ -224,9 +220,9 @@ Centric definitions:
 
 | Scenario | Dynamic MB (Exact) | Baseline MB (Exact) | Dynamic + Baseline (Exact) | Total MB (Exact) | Match |
 |---|---:|---:|---:|---:|---|
-| Low | 25.285135 | 0.065611 | 25.350746 | 25.350746 | Yes |
-| Med | 87.826369 | 0.065611 | 87.891980 | 87.891980 | Yes |
-| High | 289.207277 | 0.065611 | 289.272888 | 289.272888 | Yes |
+| Low | 25.081610 | 0.065611 | 25.147221 | 25.147221 | Yes |
+| Med | 87.403804 | 0.065611 | 87.469415 | 87.469415 | Yes |
+| High | 288.291568 | 0.065611 | 288.357179 | 288.357179 | Yes |
 
 ## Seed Plausibility Check
 

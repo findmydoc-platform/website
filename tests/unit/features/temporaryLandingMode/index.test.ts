@@ -31,8 +31,18 @@ describe('temporaryLandingMode feature', () => {
     expect(isTemporaryLandingPublicExemptPath('/privacy-policy')).toBe(true)
     expect(isTemporaryLandingPublicExemptPath('/imprint')).toBe(true)
     expect(isTemporaryLandingPublicExemptPath('/contact')).toBe(true)
+    expect(isTemporaryLandingPublicExemptPath('/posts')).toBe(true)
+    expect(isTemporaryLandingPublicExemptPath('/posts/clinic-quality-signals')).toBe(true)
+    expect(isTemporaryLandingPublicExemptPath('/posts/page/2')).toBe(true)
+    expect(isTemporaryLandingPublicExemptPath('/posts/page/02')).toBe(false)
     expect(isTemporaryLandingPublicExemptPath('/admin/login')).toBe(false)
     expect(isTemporaryLandingPublicExemptPath('/login/patient')).toBe(false)
+    expect(isTemporaryLandingPublicExemptPath('/posts-admin')).toBe(false)
+    expect(isTemporaryLandingPublicExemptPath('/postscript')).toBe(false)
+    expect(isTemporaryLandingPublicExemptPath('/posts-sitemap.xml')).toBe(false)
+    expect(isTemporaryLandingPublicExemptPath('/posts/foo/bar')).toBe(false)
+    expect(isTemporaryLandingPublicExemptPath('/posts/page/0')).toBe(false)
+    expect(isTemporaryLandingPublicExemptPath('/posts/page/2/extra')).toBe(false)
   })
 
   it('recognizes temporary landing root paths', () => {

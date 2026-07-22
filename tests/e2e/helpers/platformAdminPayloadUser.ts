@@ -3,7 +3,7 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { isFindmydocPlatformEmail } from '@/auth/utilities/platformStaffEmailPolicy'
-import type { BasicUser, PlatformStaff } from '@/payload-types'
+import type { PlatformStaff } from '@/payload-types'
 import type { AdminSessionCredentials } from './adminSession'
 
 const readRequiredEnv = (name: string): string => {
@@ -63,7 +63,7 @@ export const ensurePlatformAdminPayloadUser = async (credentials: AdminSessionCr
 
   const payload = await getPayload({ config: configPromise })
   const bySupabaseId = await payload.find({
-    collection: 'basicUsers',
+    collection: 'platformStaff',
     where: { supabaseUserId: { equals: supabaseUser.id } },
     limit: 1,
     overrideAccess: true,
@@ -72,82 +72,46 @@ export const ensurePlatformAdminPayloadUser = async (credentials: AdminSessionCr
     bySupabaseId.docs.length > 0
       ? bySupabaseId
       : await payload.find({
-          collection: 'basicUsers',
+          collection: 'platformStaff',
           where: { email: { equals: normalizedEmail } },
           limit: 1,
           overrideAccess: true,
         })
 
-  let basicUser = byEmail.docs[0] as BasicUser | undefined
+  let platformStaff = byEmail.docs[0] as PlatformStaff | undefined
   const firstName = resolveName(supabaseUser, 'first_name', 'E2E')
   const lastName = resolveName(supabaseUser, 'last_name', 'Admin')
 
-  if (basicUser) {
-    if (basicUser.userType !== 'platform') {
-      throw new Error('The fixed E2E admin email already belongs to a non-platform Payload user.')
-    }
-
-    basicUser = (await payload.update({
-      collection: 'basicUsers',
-      id: basicUser.id,
+  if (platformStaff) {
+    platformStaff = (await payload.update({
+      collection: 'platformStaff',
+      id: platformStaff.id,
       data: {
         email: normalizedEmail,
-        firstName: basicUser.firstName || firstName,
-        lastName: basicUser.lastName || lastName,
+        firstName: platformStaff.firstName || firstName,
+        lastName: platformStaff.lastName || lastName,
+        role: 'admin',
         supabaseUserId: supabaseUser.id,
-        userType: 'platform',
       },
       context: {
-        skipProfileCreation: true,
-        skipSupabaseUserCreation: true,
+        trustedPlatformStaffOps: true,
       },
       overrideAccess: true,
-    })) as BasicUser
+    })) as PlatformStaff
   } else {
-    basicUser = (await payload.create({
-      collection: 'basicUsers',
+    platformStaff = (await payload.create({
+      collection: 'platformStaff',
       data: {
         email: normalizedEmail,
         firstName,
         lastName,
+        role: 'admin',
         supabaseUserId: supabaseUser.id,
-        userType: 'platform',
       },
       context: {
-        skipSupabaseUserCreation: true,
+        trustedPlatformStaffOps: true,
       },
       overrideAccess: true,
-    })) as BasicUser
-  }
-
-  const platformStaff = await payload.find({
-    collection: 'platformStaff',
-    where: { user: { equals: basicUser.id } },
-    limit: 1,
-    overrideAccess: true,
-  })
-  const existingStaff = platformStaff.docs[0] as PlatformStaff | undefined
-
-  if (!existingStaff) {
-    await payload.create({
-      collection: 'platformStaff',
-      data: {
-        role: 'admin',
-        user: basicUser.id,
-      },
-      overrideAccess: true,
-    })
-    return
-  }
-
-  if (existingStaff.role !== 'admin') {
-    await payload.update({
-      collection: 'platformStaff',
-      id: existingStaff.id,
-      data: {
-        role: 'admin',
-      },
-      overrideAccess: true,
-    })
+    })) as PlatformStaff
   }
 }

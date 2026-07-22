@@ -9,17 +9,28 @@ import {
   validateUserAccess,
 } from '@/auth/utilities/accessValidation'
 import type { UserResult, UserType } from '@/auth/types/authTypes'
-import type { BasicUser, Patient } from '@/payload-types'
+import type { ClinicStaff as PayloadClinicStaff, Patient } from '@/payload-types'
 import { createMockPayload } from '../../helpers/testHelpers'
 import type { Payload } from 'payload'
 
-const makeBasicUser = (overrides: Partial<BasicUser> = {}): BasicUser => ({
+const accessStateMocks = vi.hoisted(() => ({
+  readClinicAccessState: vi.fn(),
+}))
+
+vi.mock('@/auth/utilities/clinicAccessState', () => accessStateMocks)
+
+type ClinicUser = PayloadClinicStaff
+type ClinicUserOverrides = Partial<ClinicUser> & { userType?: string }
+
+const makeClinicUser = (overrides: ClinicUserOverrides = {}): ClinicUser => ({
   id: overrides.id ?? 123,
-  collection: overrides.collection ?? 'basicUsers',
+  collection: 'clinicStaff',
   email: overrides.email ?? 'user@example.com',
   firstName: overrides.firstName ?? 'Test',
   lastName: overrides.lastName ?? 'User',
-  userType: overrides.userType ?? 'clinic',
+  stableId: overrides.stableId ?? 'clinic-user-123',
+  status: overrides.status ?? 'approved',
+  clinic: overrides.clinic,
   createdAt: overrides.createdAt ?? '2023-01-01',
   updatedAt: overrides.updatedAt ?? '2023-01-02',
   supabaseUserId: overrides.supabaseUserId,
@@ -44,9 +55,9 @@ const makePatient = (overrides: Partial<Patient> = {}): Patient => ({
   profileImage: overrides.profileImage,
 })
 
-const basicUserResult = (overrides: Partial<BasicUser> = {}): UserResult => ({
-  user: makeBasicUser(overrides),
-  collection: 'basicUsers',
+const basicUserResult = (overrides: ClinicUserOverrides = {}): UserResult => ({
+  user: makeClinicUser(overrides),
+  collection: 'clinicStaff',
 })
 
 const patientUserResult = (overrides: Partial<Patient> = {}): UserResult => ({
@@ -60,13 +71,14 @@ describe('accessValidation edge cases', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    accessStateMocks.readClinicAccessState.mockResolvedValue(null)
     mockPayload = createMockPayload()
     payload = mockPayload as unknown as Payload
   })
 
   describe('validateClinicAccess', () => {
     it('should handle database errors gracefully', async () => {
-      mockPayload.find.mockRejectedValue(new Error('Database connection failed'))
+      accessStateMocks.readClinicAccessState.mockRejectedValue(new Error('Database connection failed'))
 
       const authData = {
         supabaseUserId: 'supabase-123',
@@ -95,13 +107,8 @@ describe('accessValidation edge cases', () => {
       expect(mockPayload.find).not.toHaveBeenCalled()
     })
 
-    it('should handle multiple clinic staff records correctly', async () => {
-      mockPayload.find.mockResolvedValue({
-        docs: [
-          { id: 'staff-123', status: 'approved' },
-          { id: 'staff-456', status: 'pending' }, // Should still pass with one approved
-        ],
-      })
+    it('should allow an access-ready staff principal assigned to an approved clinic', async () => {
+      accessStateMocks.readClinicAccessState.mockResolvedValue({ clinic: { id: 44 }, staff: { id: 123 } })
 
       const authData = {
         supabaseUserId: 'supabase-123',
@@ -113,66 +120,6 @@ describe('accessValidation edge cases', () => {
 
       const result = await validateClinicAccess(payload, authData, userResult)
       expect(result).toBe(true)
-    })
-
-    it('should handle clinic staff with pending status', async () => {
-      // The query filters for status='approved', so pending records won't be returned
-      mockPayload.find.mockResolvedValue({
-        docs: [], // No approved records found
-      })
-
-      const authData = {
-        supabaseUserId: 'supabase-123',
-        userEmail: 'test@example.com',
-        userType: 'clinic' as const,
-      }
-
-      const userResult = basicUserResult({ id: 123, userType: 'clinic' })
-
-      const result = await validateClinicAccess(payload, authData, userResult)
-      expect(result).toBe(false)
-    })
-
-    it('should handle clinic staff with rejected status', async () => {
-      // The query filters for status='approved', so rejected records won't be returned
-      mockPayload.find.mockResolvedValue({
-        docs: [], // No approved records found
-      })
-
-      const authData = {
-        supabaseUserId: 'supabase-123',
-        userEmail: 'test@example.com',
-        userType: 'clinic' as const,
-      }
-
-      const userResult = basicUserResult({ id: 456, userType: 'clinic' })
-
-      const result = await validateClinicAccess(payload, authData, userResult)
-      expect(result).toBe(false)
-    })
-
-    it('should use correct query parameters', async () => {
-      mockPayload.find.mockResolvedValue({ docs: [] })
-
-      const authData = {
-        supabaseUserId: 'supabase-123',
-        userEmail: 'test@example.com',
-        userType: 'clinic' as const,
-      }
-
-      const userResult = basicUserResult({ id: 456, userType: 'clinic' })
-
-      await validateClinicAccess(payload, authData, userResult)
-
-      expect(mockPayload.find).toHaveBeenCalledWith({
-        collection: 'clinicStaff',
-        where: {
-          user: { equals: 456 },
-          status: { equals: 'approved' },
-        },
-        limit: 1,
-        overrideAccess: true,
-      })
     })
   })
 
@@ -234,13 +181,10 @@ describe('accessValidation edge cases', () => {
 
       const result = await validateUserAccess(payload, authData, userResult)
       expect(result).toBe(false)
-      // Should not call payload.find if user type is invalid
-      expect(mockPayload.find).not.toHaveBeenCalled()
+      expect(accessStateMocks.readClinicAccessState).not.toHaveBeenCalled()
     })
 
     it('should fail when clinic access is denied', async () => {
-      mockPayload.find.mockResolvedValue({ docs: [] }) // No approved clinic staff
-
       const authData = {
         supabaseUserId: 'supabase-123',
         userEmail: 'test@example.com',
@@ -284,7 +228,7 @@ describe('accessValidation edge cases', () => {
     })
 
     it('should handle database errors during clinic validation', async () => {
-      mockPayload.find.mockRejectedValue(new Error('Database timeout'))
+      accessStateMocks.readClinicAccessState.mockRejectedValue(new Error('Database timeout'))
 
       const authData = {
         supabaseUserId: 'supabase-123',

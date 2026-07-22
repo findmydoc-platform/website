@@ -8,16 +8,17 @@ import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import {
   asClinicScopedPayloadUser,
-  asPayloadBasicUser,
+  asPayloadStaffUser,
   createClinicTestUser,
   createPlatformTestUser,
+  cleanupTrackedUsers,
 } from '../fixtures/testUsers'
 import { slugify } from '@/utilities/slugify'
 import { doctorTitles } from '@/collections/Doctors'
 import { generateFullName } from '@/utilities/nameUtils'
 import type { Doctor } from '@/payload-types'
 
-const createdBasicUserIds: Array<number> = []
+const createdStaffIds: Array<number | string> = []
 
 describe('Doctors lifecycle integration', () => {
   let payload: Payload
@@ -25,21 +26,21 @@ describe('Doctors lifecycle integration', () => {
   const slugPrefix = testSlug('doctors.lifecycle.test.ts')
 
   const createPlatformUser = async (emailPrefix: string) => {
-    const basicUser = await createPlatformTestUser(payload, {
+    const staffUser = await createPlatformTestUser(payload, {
       emailPrefix,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
-    return asPayloadBasicUser(basicUser)
+    return asPayloadStaffUser(staffUser)
   }
 
   const createClinicUser = async (emailPrefix: string, clinicId: number) => {
-    const basicUser = await createClinicTestUser(payload, {
+    const staffUser = await createClinicTestUser(payload, {
       emailPrefix,
-      createdBasicUserIds,
+      createdStaffIds,
     })
 
-    return asClinicScopedPayloadUser(basicUser, clinicId)
+    return asClinicScopedPayloadUser(payload, staffUser, clinicId)
   }
 
   beforeAll(async () => {
@@ -53,13 +54,7 @@ describe('Doctors lifecycle integration', () => {
   }, 60000)
 
   afterEach(async () => {
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
@@ -306,6 +301,84 @@ describe('Doctors lifecycle integration', () => {
         depth: 0,
       }),
     ).rejects.toThrow()
+  })
+
+  it('lets clinic staff toggle their doctors while keeping inactive doctors private', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-active-state` })
+    const clinicUser = await createClinicUser(`${slugPrefix}-active-state-clinic`, clinic.id as number)
+    const platformUser = await createPlatformUser(`${slugPrefix}-active-state-platform`)
+
+    const doctor = (await payload.create({
+      collection: 'doctors',
+      data: {
+        title: 'dr',
+        gender: 'female',
+        firstName: `${slugPrefix}-active-state`,
+        lastName: 'Doctor',
+        clinic: clinic.id,
+        qualifications: ['MD'],
+        languages: ['english'],
+      } as unknown as Doctor,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Doctor
+
+    expect(doctor.active).toBe(true)
+
+    const deactivated = (await payload.update({
+      collection: 'doctors',
+      id: doctor.id,
+      data: { active: false },
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Doctor
+
+    expect(deactivated.active).toBe(false)
+
+    const publicRead = await payload.find({
+      collection: 'doctors',
+      where: { id: { equals: doctor.id } },
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(publicRead.docs).toHaveLength(0)
+
+    const clinicRead = await payload.find({
+      collection: 'doctors',
+      where: { id: { equals: doctor.id } },
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(clinicRead.docs).toHaveLength(1)
+
+    const platformRead = await payload.find({
+      collection: 'doctors',
+      where: { id: { equals: doctor.id } },
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(platformRead.docs).toHaveLength(1)
+
+    await payload.update({
+      collection: 'doctors',
+      id: doctor.id,
+      data: { active: true },
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const reactivatedPublicRead = await payload.find({
+      collection: 'doctors',
+      where: { id: { equals: doctor.id } },
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(reactivatedPublicRead.docs).toHaveLength(1)
   })
 
   it('allows platform delete but blocks clinic delete', async () => {

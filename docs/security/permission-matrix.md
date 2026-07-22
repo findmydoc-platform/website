@@ -6,7 +6,7 @@ Security-focused reference for roles and collection access; business narrative i
 
 ## 👥 Roles (Condensed)
 * Platform Staff: Global administrative & moderation authority (RWDA all collections; approval + master data control).
-* Clinic Staff: Post-approval, manage only their clinic's operational data; scoped staff/doctor reads; self profile update.
+* Clinic Staff: After staff approval, successful auth synchronization, and clinic approval, manage only their clinic's operational data; scoped staff/doctor reads; self profile update.
 * Patients: Read public data; manage own reviews (create-only), favorites, and profile updates.
 * Anonymous: Read-only approved public content.
 
@@ -62,7 +62,8 @@ Human-readable and machine-readable views are generated from the config on deman
 If you need to change permissions, update `src/security/permission-matrix.config.ts` and regenerate as needed.
 
 ### Notes on Specific Rows
-* ClinicStaff: Authentication is denied entirely until the staff profile is approved. After approval, Clinic Staff can read all staff in their own clinic and target only their own profile for updates; `user`, `clinic`, and `status` remain Platform-only at field level. Create/Delete operations occur exclusively via the BasicUsers lifecycle (no direct create/delete even for Platform Staff) †‡.
+* PlatformStaff: Platform Staff can review safe identity fields and manage roles. The Supabase identity binding remains hidden, and Create/Delete operations use the trusted provisioning path instead of direct Admin forms †.
+* ClinicStaff: Business access is denied until the direct staff principal is approved, its Supabase synchronization is successful, and its assigned clinic is approved and not deleted. Platform Staff can review safe identity fields and manage clinic assignment and lifecycle status. Eligible Clinic Staff can read staff in their own clinic and target only their own principal for updates; identity and synchronization fields remain system-owned. Create/Delete operations occur exclusively through the trusted provisioning path †‡.
 * Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
 * Reviews: Patients can create reviews. Only Platform can edit or delete reviews. Non-platform users only read approved reviews.
 * PlatformContentMedia: Publicly readable marketing / page assets. Write restricted to Platform.
@@ -70,15 +71,15 @@ If you need to change permissions, update `src/security/permission-matrix.config
 * DoctorMedia: Similar scoping to ClinicMedia; ownership derives from doctor -> clinic relationship; `clinic` denormalized for access filtering.
 * UserProfileMedia: Self or Platform management of avatars; owner + createdBy auto-stamped for patients and staff uploads.
 * Global Upload Limit: 5MB per file (configured in root Payload `upload.limits.fileSize`).
-* † Provisioning and deletion of PlatformStaff & ClinicStaff profiles are performed indirectly through BasicUsers lifecycle hooks (no direct profile create/delete endpoints or UI forms).
-* ‡ ClinicStaff row: RW shown is conditional; before approval there is no authentication and therefore no access.
+* † Provisioning and deletion of PlatformStaff & ClinicStaff principals are performed through the trusted provisioning path (no direct create/delete endpoints or UI forms).
+* ‡ ClinicStaff row: RW shown is conditional; Supabase authentication may exist before approval, but Payload business access remains denied until the staff and clinic are access-ready.
 
 ---
 
 ## 🛡️ Security Notes
 * Cross-clinic isolation enforced in access functions (Clinic Staff never read other clinics' protected data).
-* Staff profile create/delete only via BasicUsers lifecycle hooks (no direct profile CRUD endpoints/forms).
-* Clinic Staff authentication denied until profile approved (no partial API access pre-approval).
+* Staff principal create/delete only through the trusted provisioning path (no direct CRUD endpoints/forms).
+* Clinic Staff business access is denied until staff approval, successful auth synchronization, and clinic approval (no partial API access).
 * Platform Staff are sole moderators (reviews, master data, approvals).
 * Patients cannot self-create/delete patient record; identity originates in Supabase.
 
@@ -90,19 +91,21 @@ Create/update/delete + provisioning events logged (basic logs only; advanced met
 ## 🔄 Key Workflows (Security-Focused)
 ### Clinic Onboarding
 1. Anonymous submission → `clinicApplications` (status `submitted`)
-2. Platform approval → provisioning hook creates Clinic (pending), BasicUser (clinic), ClinicStaff (pending)
-3. Platform finalizes & approves Clinic; ClinicStaff approved → gains access
+2. Platform approval → provisioning creates Clinic (pending), ClinicStaff (pending), and a Dashboard-targeted Supabase invitation
+3. Provisioning failures remain visible; retries may create additional records carrying the same onboarding key
+4. Payload logs a structured warning with all affected record ids when more than one clinic or staff principal exists for that key
+5. Platform finalizes and approves Clinic; ClinicStaff approved and auth sync successful → gains access
 
 ---
 
 ## 🔄 **Permission Workflows & User Journeys**
 
 ### **Clinic Onboarding Process**
-1. **Platform Staff** creates clinic profile and initial configuration
-2. **Platform Staff** approves clinic listing for public visibility
-3. **Clinic Staff** applies / is provisioned (BasicUser + pending ClinicStaff profile) — authentication still denied
-4. **Platform Staff** reviews and approves clinic staff application (status -> approved)
-5. **Clinic Staff** (now approved) authenticates, completes profile, and adds doctors / service offerings
+1. **Clinic** submits a public registration request
+2. **Platform Staff** approves the request; the system creates the pending clinic and initial pending ClinicStaff principal
+3. **Clinic Staff** receives a Dashboard invitation; authentication can complete, while business access remains denied
+4. **Platform Staff** completes and approves the clinic and approves the staff principal
+5. **Clinic Staff** gains scoped access after the current Payload checks also confirm successful auth synchronization
 
 ### Review Moderation
 1. Patient submits review (pending)

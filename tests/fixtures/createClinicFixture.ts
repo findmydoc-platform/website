@@ -3,7 +3,7 @@ import clinicsJson from '@/endpoints/seed/data/demo/clinics.json'
 import doctorsJson from '@/endpoints/seed/data/demo/doctors.json'
 import type { Clinic, Doctor } from '@/payload-types'
 
-type ClinicLanguage = Clinic['supportedLanguages'][number]
+type ClinicLanguage = NonNullable<Clinic['supportedLanguages']>[number]
 type ClinicStatus = NonNullable<Clinic['status']>
 type ClinicContactRole = NonNullable<NonNullable<Clinic['internalPrimaryContact']>['role']>
 type DoctorTitle = NonNullable<Doctor['title']>
@@ -163,6 +163,7 @@ export async function createClinicFixture(
   const doctor = await payload.create({
     collection: 'doctors',
     data: {
+      active: true,
       title: normalizeEnum(doctorData.title, doctorTitles, 'dr'),
       gender: normalizeEnum(doctorData.gender, doctorGenders, 'male'),
       firstName: doctorData.firstName ?? 'Test',

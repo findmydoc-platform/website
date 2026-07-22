@@ -20,18 +20,18 @@ describe('authConfig', () => {
   describe('USER_CONFIG', () => {
     it('should have correct clinic configuration', () => {
       expect(USER_CONFIG.clinic).toEqual({
-        collection: 'basicUsers',
-        profileCollection: 'clinicStaff',
-        requiresProfile: true,
+        collection: 'clinicStaff',
+        profileCollection: null,
+        requiresProfile: false,
         requiresApproval: true,
       })
     })
 
     it('should have correct platform configuration', () => {
       expect(USER_CONFIG.platform).toEqual({
-        collection: 'basicUsers',
-        profileCollection: 'platformStaff',
-        requiresProfile: true,
+        collection: 'platformStaff',
+        profileCollection: null,
+        requiresProfile: false,
         requiresApproval: false,
       })
     })

@@ -27,18 +27,18 @@ const runBeforeChangeHooks = async ({
 }
 
 describe('beforeChangeClinicMedia', () => {
-  test('auto-sets createdBy on create for basicUsers', async () => {
-    const req = baseReq({ id: 42, collection: 'basicUsers', userType: 'clinic', clinicId: 7 })
+  test('auto-sets createdBy on create for clinic staff', async () => {
+    const req = baseReq({ id: 42, collection: 'platformStaff' })
     const data = { id: '123', clinic: 7, filename: 'photo.jpg', createdBy: 999 }
     const result = (await runBeforeChangeHooks({ data, operation: 'create', req, originalDoc: undefined })) as Record<
       string,
       unknown
     >
-    expect(result.createdBy).toBe(42)
+    expect(result.createdBy).toEqual({ relationTo: 'platformStaff', value: 42 })
   })
 
   test('prevents changing createdBy on update', async () => {
-    const req = baseReq({ id: 1, collection: 'basicUsers', userType: 'platform' })
+    const req = baseReq({ id: 1, collection: 'platformStaff' })
 
     await expect(
       runBeforeChangeHooks({
@@ -51,7 +51,7 @@ describe('beforeChangeClinicMedia', () => {
   })
 
   test('freezes clinic ownership on update (throws when changed)', async () => {
-    const req = baseReq({ id: 1, collection: 'basicUsers', userType: 'platform' })
+    const req = baseReq({ id: 1, collection: 'platformStaff' })
     const originalDoc = { clinic: 5 }
     await expect(runBeforeChangeHooks({ data: { clinic: 6 }, operation: 'update', req, originalDoc })).rejects.toThrow(
       'Clinic ownership cannot be changed once set',
@@ -59,7 +59,7 @@ describe('beforeChangeClinicMedia', () => {
   })
 
   test('sets storagePath and prefixes filename with clinicId on create', async () => {
-    const req = baseReq({ id: 9, collection: 'basicUsers', userType: 'clinic', clinicId: 11 })
+    const req = baseReq({ id: 9, collection: 'platformStaff' })
     const data = { id: '77', clinic: 11, filename: 'images/pic.png' }
     const result = (await runBeforeChangeHooks({ data, operation: 'create', req, originalDoc: undefined })) as Record<
       string,
@@ -70,7 +70,7 @@ describe('beforeChangeClinicMedia', () => {
   })
 
   test('does not change filename on update, but keeps storagePath', async () => {
-    const req = baseReq({ id: 9, collection: 'basicUsers', userType: 'clinic', clinicId: 11 })
+    const req = baseReq({ id: 9, collection: 'platformStaff' })
     const data = { clinic: 11 }
     const result = (await runBeforeChangeHooks({
       data,

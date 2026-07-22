@@ -4,7 +4,12 @@ import path from 'path'
 import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
 import { prepareUploadFilenameFromFilePathSync } from '@/hooks/media/prepareUploadFilename'
 
-export type UpsertResult = { created: boolean; updated: boolean }
+export type UpsertResult = {
+  created: boolean
+  updated: boolean
+  previousSlug?: string
+  nextSlug?: string
+}
 
 function buildOperationReq(
   req: Partial<PayloadRequest> | undefined,
@@ -483,10 +488,14 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
         `retry create ${collection}:${stableId}`,
       )
     }
-    return { created: true, updated: false }
+    return {
+      created: true,
+      updated: false,
+      ...(collection === 'posts' && typeof data.slug === 'string' ? { nextSlug: data.slug } : {}),
+    }
   }
 
-  const current = existing.docs[0] as { id: string | number; deletedAt?: unknown }
+  const current = existing.docs[0] as { id: string | number; deletedAt?: unknown; slug?: unknown }
   const nextData: Record<string, unknown> = { ...data }
 
   // If found doc is trashed, restore it by clearing deletedAt.
@@ -518,5 +527,10 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
     req: operationReq,
     filePath: options?.filePath,
   })
-  return { created: false, updated: true }
+  return {
+    created: false,
+    updated: true,
+    ...(collection === 'posts' && typeof current.slug === 'string' ? { previousSlug: current.slug } : {}),
+    ...(collection === 'posts' && typeof data.slug === 'string' ? { nextSlug: data.slug } : {}),
+  }
 }

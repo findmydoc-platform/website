@@ -6,10 +6,15 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import { asPayloadBasicUser, createPatientTestUser, createPlatformTestUser } from '../fixtures/testUsers'
+import {
+  asPayloadStaffUser,
+  cleanupTrackedUsers,
+  createPatientTestUser,
+  createPlatformTestUser,
+} from '../fixtures/testUsers'
 import type { Review } from '@/payload-types'
 
-const createdBasicUserIds: Array<string | number> = []
+const createdStaffIds: Array<string | number> = []
 const createdPatientIds: Array<string | number> = []
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
@@ -19,7 +24,7 @@ async function createPlatformUser(payload: Payload, emailPrefix: string) {
     firstName: 'Audit',
     lastName: 'Tester',
     supabaseUserId: `sb-${emailPrefix}`,
-    createdBasicUserIds,
+    createdStaffIds,
   })
 }
 
@@ -53,13 +58,7 @@ describe('Review audit trail hooks', () => {
       reviewId = null
     }
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
-      } catch {}
-    }
+    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
 
     while (createdPatientIds.length) {
       const id = createdPatientIds.pop()
@@ -78,7 +77,7 @@ describe('Review audit trail hooks', () => {
       slugPrefix: `${slugPrefix}-audit`,
     })
 
-    const basicUser = await createPlatformUser(payload, 'audit.tester')
+    const staffUser = await createPlatformUser(payload, 'audit.tester')
     const patient = await createPatientTestUser(payload, {
       emailPrefix: `${slugPrefix}-audit-patient`,
       createdPatientIds,
@@ -115,7 +114,7 @@ describe('Review audit trail hooks', () => {
         status: 'approved',
         comment: 'Moderated comment',
       },
-      user: asPayloadBasicUser(basicUser), // This sets req.user
+      user: asPayloadStaffUser(staffUser), // This sets req.user
       overrideAccess: false, // Ensure we use the access control/hooks that utilize req.user
       depth: 0,
     })
@@ -126,13 +125,13 @@ describe('Review audit trail hooks', () => {
       typeof updatedReview.editedBy === 'object' && updatedReview.editedBy !== null
         ? updatedReview.editedBy.id
         : updatedReview.editedBy
-    expect(editedBy).toBe(basicUser.id)
+    expect(editedBy).toBe(staffUser.id)
 
     expect(updatedReview.editedByName).toBe('Audit Tester')
     expect(updatedReview.lastEditedAt).toBeDefined()
 
     // Verify string is constructed from firstName + lastName
-    expect(basicUser.firstName).toBe('Audit')
-    expect(basicUser.lastName).toBe('Tester')
+    expect(staffUser.firstName).toBe('Audit')
+    expect(staffUser.lastName).toBe('Tester')
   }, 60000)
 })

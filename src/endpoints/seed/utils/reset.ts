@@ -1,4 +1,4 @@
-import type { CollectionSlug, Payload } from 'payload'
+import type { CollectionSlug, Payload, Where } from 'payload'
 import { resolveSeedRuntimeEnv } from './runtime'
 import { resolveSeedRuntimePolicy } from '@/features/runtimePolicy'
 
@@ -26,7 +26,6 @@ const demoResetOrder: CollectionSlug[] = [
   'platformStaff',
   'clinicStaff',
   'userProfileMedia',
-  'basicUsers',
 ]
 
 const baselineResetOrder: CollectionSlug[] = [
@@ -39,17 +38,68 @@ const baselineResetOrder: CollectionSlug[] = [
   'countries',
 ]
 
-async function deleteCollection(payload: Payload, collection: CollectionSlug) {
+type ResetCollectionsOptions = {
+  preservePlatformUserId?: string | number
+}
+
+type ResetCollectionsResult = {
+  affectedPostSlugs: string[]
+}
+
+const collectPostSlugsBeforeReset = async (payload: Payload): Promise<string[]> => {
+  const posts = await payload.find({
+    collection: 'posts',
+    depth: 0,
+    overrideAccess: true,
+    pagination: false,
+    select: {
+      slug: true,
+    },
+    trash: true,
+  })
+
+  return [
+    ...new Set(
+      posts.docs
+        .map((post) => post.slug)
+        .filter((slug): slug is string => typeof slug === 'string' && slug.trim().length > 0)
+        .map((slug) => slug.trim()),
+    ),
+  ].sort()
+}
+
+const buildResetWhere = (collection: CollectionSlug, preservePlatformUserId?: string | number): Where => {
+  const allDocuments: Where = {
+    id: {
+      exists: true,
+    },
+  }
+
+  if (typeof preservePlatformUserId === 'undefined') {
+    return allDocuments
+  }
+
+  if (collection === 'platformStaff') {
+    return {
+      and: [allDocuments, { id: { not_equals: preservePlatformUserId } }],
+    }
+  }
+
+  return allDocuments
+}
+
+async function deleteCollection(
+  payload: Payload,
+  collection: CollectionSlug,
+  preservePlatformUserId?: string | number,
+) {
   const req = { payload }
+  const where = buildResetWhere(collection, preservePlatformUserId)
 
   await payload.db.deleteMany({
     collection,
     req,
-    where: {
-      id: {
-        exists: true,
-      },
-    },
+    where,
   })
 
   const versionTableName = payload.db.tableNameMap.get(`_${toSnakeCaseKey(collection)}${payload.db.versionsSuffix}`)
@@ -68,7 +118,11 @@ async function deleteCollection(payload: Payload, collection: CollectionSlug) {
   })
 }
 
-export async function resetCollections(payload: Payload, kind: 'baseline' | 'demo') {
+export async function resetCollections(
+  payload: Payload,
+  kind: 'baseline' | 'demo',
+  options: ResetCollectionsOptions = {},
+): Promise<ResetCollectionsResult> {
   const runtimeEnv = resolveSeedRuntimeEnv(undefined, process.env)
   const policy = resolveSeedRuntimePolicy(runtimeEnv)
 
@@ -84,12 +138,16 @@ export async function resetCollections(payload: Payload, kind: 'baseline' | 'dem
     throw new Error('Seed reset is disabled in this runtime')
   }
 
+  const affectedPostSlugs = await collectPostSlugsBeforeReset(payload)
+
   // Baseline reference data is commonly referenced by demo data (e.g. treatments
   // referenced by clinictreatments). To avoid FK / NOT NULL violations during
   // deletion, baseline resets must clear demo collections first.
   const order = kind === 'demo' ? demoResetOrder : [...demoResetOrder, ...baselineResetOrder]
   for (const collection of order) {
     payload.logger.info(`Resetting ${collection} (${kind})`)
-    await deleteCollection(payload, collection)
+    await deleteCollection(payload, collection, options.preservePlatformUserId)
   }
+
+  return { affectedPostSlugs }
 }

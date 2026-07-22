@@ -171,6 +171,7 @@ describe('cache revalidation planner', () => {
         affectedSurfaces: ['posts-list', 'home', 'listing-comparison'],
         affectedSitemaps: ['posts', 'pages'],
         affectedDiscovery: [],
+        affectedPostSlugs: ['old-post-slug', 'new-post-slug'],
         completedJobCount: 4,
         publicJobCount: 3,
       },
@@ -186,7 +187,15 @@ describe('cache revalidation planner', () => {
       'surface:sitemap:posts',
       'surface:sitemap:pages',
     ])
-    expect(plan.paths).toEqual(['/posts', '/', '/listing-comparison', '/posts-sitemap.xml', '/pages-sitemap.xml'])
+    expect(plan.paths).toEqual([
+      '/posts',
+      '/',
+      '/listing-comparison',
+      '/posts-sitemap.xml',
+      '/pages-sitemap.xml',
+      '/posts/old-post-slug',
+      '/posts/new-post-slug',
+    ])
     expect(plan.logContext).toMatchObject({
       operation: 'seed-final-flush',
       sourceKind: 'seed-runner',
@@ -194,7 +203,7 @@ describe('cache revalidation planner', () => {
       subjectKind: 'seed-final-flush',
       subjectId: 'seed-run-1',
       tagCount: 8,
-      pathCount: 5,
+      pathCount: 7,
     })
   })
 

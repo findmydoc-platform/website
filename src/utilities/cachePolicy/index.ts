@@ -70,7 +70,6 @@ export const CACHE_POLICY_COLLECTIONS = [
   'tags',
   'favoriteclinics',
   'patients',
-  'basicUsers',
   'clinicStaff',
   'platformStaff',
   'clinicApplications',
@@ -390,7 +389,7 @@ export const CACHE_POLICY_CATALOG = [
     tagFamilies: [],
     pathRelationship: 'private-live',
     pathFamilies: ['none'],
-    collections: ['favoriteclinics', 'patients', 'basicUsers', 'userProfileMedia'],
+    collections: ['favoriteclinics', 'patients', 'clinicStaff', 'platformStaff', 'userProfileMedia'],
     surfaces: ['patient-favorites', 'auth'],
   },
   {

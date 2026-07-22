@@ -36,7 +36,7 @@ export const beforeChangeDoctorMedia: CollectionBeforeChangeHook<DoctorMedia> = 
     reqUser: req.user,
     originalDoc,
     createdByField: 'createdBy',
-    userCollection: 'basicUsers',
+    userCollections: ['platformStaff', 'clinicStaff'],
   })
 
   draft.doctor = draft.doctor ?? doctorId

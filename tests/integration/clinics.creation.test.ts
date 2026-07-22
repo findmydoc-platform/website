@@ -5,7 +5,7 @@ import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
-import type { Clinic, ClinicMedia, Accreditation, BasicUser, PlatformStaff } from '@/payload-types'
+import type { Clinic, ClinicMedia, Accreditation, PlatformStaff } from '@/payload-types'
 
 vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
@@ -13,14 +13,14 @@ vi.mock('@payloadcms/storage-s3', () => ({
 
 describe('Clinic Creation Integration Tests', () => {
   let payload: Payload
-  type PayloadCreateArgs = Parameters<Payload['create']>[0]
   const slugPrefix = testSlug('clinics.creation.test.ts')
   let cityId: number
   let tagId: number
   let treatmentId: number
   const createdClinicMediaIds: Array<number> = []
   const createdAccreditationIds: Array<number> = []
-  const createdBasicUserIds: Array<number> = []
+  const createdPlatformStaffIds: Array<number> = []
+  const createdClinicStaffIds: Array<number> = []
 
   const buildImageFile = (name: string): File => {
     const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
@@ -35,80 +35,39 @@ describe('Clinic Creation Integration Tests', () => {
   }
 
   const createPlatformUser = async (emailPrefix: string, role: NonNullable<PlatformStaff['role']> = 'admin') => {
-    const basicUser = await payload.create({
-      collection: 'basicUsers',
+    const platformStaff = await payload.create({
+      collection: 'platformStaff',
       data: {
         email: `${emailPrefix}@findmydoc.eu`,
-        userType: 'platform',
         firstName: 'Platform',
         lastName: 'Tester',
         supabaseUserId: `sb-${emailPrefix}`,
+        role,
       },
+      context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
     })
 
-    createdBasicUserIds.push(basicUser.id as number)
-
-    const platformStaffResult = await payload.find({
-      collection: 'platformStaff',
-      where: {
-        user: {
-          equals: basicUser.id,
-        },
-      },
-      limit: 1,
-      overrideAccess: true,
-      depth: 0,
-    })
-    const platformStaff = platformStaffResult.docs[0]
-
-    if (platformStaff) {
-      await payload.update({
-        collection: 'platformStaff',
-        id: platformStaff.id,
-        data: {
-          role,
-        },
-        overrideAccess: true,
-        depth: 0,
-      })
-    } else {
-      await payload.create({
-        collection: 'platformStaff',
-        data: {
-          user: basicUser.id,
-          role,
-        },
-        overrideAccess: true,
-        depth: 0,
-      })
-    }
-
-    return { ...basicUser, collection: 'basicUsers' as const }
+    createdPlatformStaffIds.push(platformStaff.id)
+    return { ...platformStaff, collection: 'platformStaff' as const }
   }
 
   const createClinicUser = async (emailPrefix: string, clinicId: number) => {
-    const basicUser = await payload.create({
-      collection: 'basicUsers',
+    const clinicStaff = await payload.create({
+      collection: 'clinicStaff',
       data: {
         email: `${emailPrefix}@example.com`,
-        userType: 'clinic',
         firstName: 'Clinic',
         lastName: 'Tester',
         supabaseUserId: `sb-${emailPrefix}`,
+        clinic: clinicId,
+        status: 'approved',
       },
       overrideAccess: true,
     })
 
-    createdBasicUserIds.push(basicUser.id as number)
-
-    const clinicUser = {
-      ...(basicUser as BasicUser),
-      collection: 'basicUsers' as const,
-      clinicId,
-    }
-
-    return clinicUser
+    createdClinicStaffIds.push(clinicStaff.id)
+    return { ...clinicStaff, collection: 'clinicStaff' as const }
   }
 
   const buildInternalPrimaryContact = (suffix: string): NonNullable<Clinic['internalPrimaryContact']> => ({
@@ -157,11 +116,19 @@ describe('Clinic Creation Integration Tests', () => {
       } catch {}
     }
 
-    while (createdBasicUserIds.length) {
-      const id = createdBasicUserIds.pop()
+    while (createdPlatformStaffIds.length) {
+      const id = createdPlatformStaffIds.pop()
       if (!id) continue
       try {
-        await payload.delete({ collection: 'basicUsers', id, overrideAccess: true })
+        await payload.delete({ collection: 'platformStaff', id, overrideAccess: true })
+      } catch {}
+    }
+
+    while (createdClinicStaffIds.length) {
+      const id = createdClinicStaffIds.pop()
+      if (!id) continue
+      try {
+        await payload.delete({ collection: 'clinicStaff', id, overrideAccess: true })
       } catch {}
     }
 
@@ -198,7 +165,7 @@ describe('Clinic Creation Integration Tests', () => {
 
     expect(clinic.id).toBeDefined()
     expect(clinic.name).toBe(`${slugPrefix}-basic-clinic`)
-    expect(clinic.address.city).toBe(cityId)
+    expect(clinic.address?.city).toBe(cityId)
     expect(clinic.contact?.email).toBe(`${slugPrefix}@test.com`)
     expect(clinic.status).toBe('draft')
     expect(clinic.supportedLanguages).toEqual(['english', 'turkish'])
@@ -258,7 +225,7 @@ describe('Clinic Creation Integration Tests', () => {
       collection: 'clinics',
       data: {
         name: `${slugPrefix}-geo-clinic`,
-        coordinates: [41.0082, 28.9784], // Istanbul coordinates
+        coordinates: [28.9784, 41.0082], // Istanbul coordinates (longitude, latitude)
         address: {
           street: 'Geo Street',
           houseNumber: '789',
@@ -281,7 +248,7 @@ describe('Clinic Creation Integration Tests', () => {
     })
 
     expect(clinic.id).toBeDefined()
-    expect(clinic.coordinates).toEqual([41.0082, 28.9784])
+    expect(clinic.coordinates).toEqual([28.9784, 41.0082])
   })
 
   it('creates a clinic with accreditations', async () => {
@@ -401,50 +368,53 @@ describe('Clinic Creation Integration Tests', () => {
     expect(thumbnailId).toBe(clinicMedia.id)
   })
 
-  it('validates required fields when creating a clinic', async () => {
-    await expect(
-      payload.create({
-        collection: 'clinics',
-        data: {
-          name: `${slugPrefix}-invalid-clinic`,
-          // Missing required address fields
-          supportedLanguages: ['english'],
-          status: 'draft',
-          slug: `${slugPrefix}-invalid-clinic`,
-        } as Partial<Clinic>,
-        draft: false,
-        overrideAccess: true,
-        depth: 0,
-      } as PayloadCreateArgs),
-    ).rejects.toThrow()
+  it('allows an incomplete pending clinic during onboarding', async () => {
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-pending-clinic`,
+        contact: { website: 'https://pending-clinic.example' },
+        status: 'pending',
+        slug: `${slugPrefix}-pending-clinic`,
+      },
+      draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(clinic.status).toBe('pending')
+    expect(clinic.address).toEqual({
+      city: null,
+      country: null,
+      houseNumber: null,
+      street: null,
+      zipCode: null,
+    })
   })
 
-  it('validates the internal primary contact when creating a clinic', async () => {
+  it('requires complete operational data before a clinic can be approved', async () => {
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-incomplete-approval`,
+        contact: { website: 'https://incomplete-approval.example' },
+        status: 'pending',
+        slug: `${slugPrefix}-incomplete-approval`,
+      },
+      draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
     await expect(
-      payload.create({
+      payload.update({
         collection: 'clinics',
-        data: {
-          name: `${slugPrefix}-missing-primary-contact`,
-          address: {
-            street: 'Primary Contact Street',
-            houseNumber: '12',
-            zipCode: 34000,
-            country: 'Turkey',
-            city: cityId,
-          },
-          contact: {
-            phoneNumber: '+90 555 1234567',
-            email: `${slugPrefix}-missing-primary-contact@test.com`,
-          },
-          supportedLanguages: ['english'],
-          status: 'draft',
-          slug: `${slugPrefix}-missing-primary-contact`,
-        },
-        draft: false,
+        id: clinic.id,
+        data: { status: 'approved' },
         overrideAccess: true,
         depth: 0,
       }),
-    ).rejects.toThrow()
+    ).rejects.toThrow(/complete address, internal primary contact, and at least one supported language/i)
   })
 
   it('validates email format in contact information', async () => {
@@ -602,7 +572,7 @@ describe('Clinic Creation Integration Tests', () => {
         },
         internalPrimaryContact: buildInternalPrimaryContact('status'),
         supportedLanguages: ['english'],
-        status: 'draft',
+        status: 'approved',
         slug: `${slugPrefix}-status-clinic`,
       },
       draft: false,
@@ -616,7 +586,7 @@ describe('Clinic Creation Integration Tests', () => {
       collection: 'clinics',
       id: clinic.id,
       data: {
-        status: 'approved',
+        status: 'rejected',
         verification: 'gold',
       },
       user: clinicUser,
@@ -624,7 +594,7 @@ describe('Clinic Creation Integration Tests', () => {
       depth: 0,
     })) as Clinic
 
-    expect(updatedClinic.status).toBe('draft')
+    expect(updatedClinic.status).toBe('approved')
     expect(updatedClinic.verification).toBe('unverified')
   })
 

@@ -80,8 +80,7 @@ describe('clinicMediaReadAccess', () => {
 
     const user = {
       id: 44,
-      collection: 'basicUsers',
-      userType: 'support',
+      collection: 'unknown',
       email: 'support@example.com',
     }
 

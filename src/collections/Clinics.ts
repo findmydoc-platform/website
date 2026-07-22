@@ -2,66 +2,148 @@ import type { Clinic } from '@/payload-types'
 import type { CollectionBeforeValidateHook, CollectionConfig } from 'payload'
 import { slugField } from 'payload'
 import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
-import { platformClinicTrustAccess, platformClinicTrustFieldAccess } from '@/access/fieldAccess'
+import {
+  computedOnlyFieldAccess,
+  platformClinicTrustAccess,
+  platformClinicTrustFieldAccess,
+} from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateClinicChange, revalidateClinicDelete } from '@/hooks/revalidateClinicSurfaces'
+import { beforeChangeImmutableField } from '@/hooks/immutability'
 
-const INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE = 'Internal primary contact is required.'
+const APPROVED_CLINIC_REQUIRED_MESSAGE =
+  'Approved clinics require a complete address, internal primary contact, and at least one supported language.'
+const GALLERY_ENTRIES_SAME_CLINIC_MESSAGE = 'Gallery entries must belong to this clinic.'
+
+const getRelationshipId = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isSafeInteger(value)) return value
+
+  if (typeof value === 'string') {
+    const numericId = Number(value)
+    return Number.isSafeInteger(numericId) ? numericId : null
+  }
+
+  if (value && typeof value === 'object' && 'id' in value) {
+    return getRelationshipId((value as { id?: unknown }).id)
+  }
+
+  return null
+}
+
+const isNonEmptyString = (value: unknown): boolean => typeof value === 'string' && value.trim().length > 0
+
+const hasRelation = (value: unknown): boolean => {
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (typeof value === 'string') return value.trim().length > 0
+  return Boolean(value && typeof value === 'object' && 'id' in value)
+}
+
+const mergeGroup = (
+  existingValue: unknown,
+  incomingValue: unknown,
+  hasIncomingValue: boolean,
+): Record<string, unknown> => {
+  const existing = existingValue && typeof existingValue === 'object' ? existingValue : {}
+  if (!hasIncomingValue) return { ...existing }
+  if (!incomingValue || typeof incomingValue !== 'object') return {}
+  return { ...existing, ...incomingValue }
+}
 
 const hasCompleteInternalPrimaryContact = (value: unknown): boolean => {
   if (!value || typeof value !== 'object') return false
 
   const contact = value as Record<string, unknown>
-  const requiredKeys = ['firstName', 'lastName', 'email', 'role']
-
-  return requiredKeys.every((key) => {
-    const fieldValue = contact[key]
-
-    return typeof fieldValue === 'string' && fieldValue.trim().length > 0
-  })
+  return ['firstName', 'lastName', 'email', 'role'].every((key) => isNonEmptyString(contact[key]))
 }
 
-const shouldRequireInternalPrimaryContact = ({
-  existingValue,
-  hasIncomingValue,
-  operation,
-}: {
-  existingValue?: unknown
-  hasIncomingValue: boolean
-  operation?: 'create' | 'update'
-}): boolean => {
-  if (operation === 'create') return true
-  if (hasIncomingValue) return true
+const hasCompleteAddress = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false
 
-  return hasCompleteInternalPrimaryContact(existingValue)
+  const address = value as Record<string, unknown>
+  return (
+    isNonEmptyString(address.country) &&
+    isNonEmptyString(address.street) &&
+    isNonEmptyString(address.houseNumber) &&
+    typeof address.zipCode === 'number' &&
+    Number.isFinite(address.zipCode) &&
+    hasRelation(address.city)
+  )
 }
 
-const validateInternalPrimaryContactBeforeValidate: CollectionBeforeValidateHook<Clinic> = ({
-  data,
-  operation,
-  originalDoc,
-}) => {
+const validateApprovedClinicCompleteness: CollectionBeforeValidateHook<Clinic> = ({ data, originalDoc }) => {
   if (!data) return data
 
-  const hasIncomingInternalPrimaryContact = Object.prototype.hasOwnProperty.call(data, 'internalPrimaryContact')
-  const existingInternalPrimaryContact = operation === 'update' ? originalDoc?.internalPrimaryContact : undefined
+  const status = data.status ?? originalDoc?.status
+  if (status !== 'approved') return data
+
+  const address = mergeGroup(originalDoc?.address, data.address, Object.prototype.hasOwnProperty.call(data, 'address'))
+  const internalPrimaryContact = mergeGroup(
+    originalDoc?.internalPrimaryContact,
+    data.internalPrimaryContact,
+    Object.prototype.hasOwnProperty.call(data, 'internalPrimaryContact'),
+  )
+  const supportedLanguages = Object.prototype.hasOwnProperty.call(data, 'supportedLanguages')
+    ? data.supportedLanguages
+    : originalDoc?.supportedLanguages
 
   if (
-    !shouldRequireInternalPrimaryContact({
-      existingValue: existingInternalPrimaryContact,
-      hasIncomingValue: hasIncomingInternalPrimaryContact,
-      operation,
-    })
+    !hasCompleteAddress(address) ||
+    !hasCompleteInternalPrimaryContact(internalPrimaryContact) ||
+    !Array.isArray(supportedLanguages) ||
+    supportedLanguages.length === 0
   ) {
-    return data
+    throw new Error(APPROVED_CLINIC_REQUIRED_MESSAGE)
   }
 
-  const contact = hasIncomingInternalPrimaryContact ? data.internalPrimaryContact : existingInternalPrimaryContact
+  return data
+}
 
-  if (!hasCompleteInternalPrimaryContact(contact)) {
-    throw new Error(INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE)
+const validateGalleryEntriesBeforeValidate: CollectionBeforeValidateHook<Clinic> = async ({
+  data,
+  originalDoc,
+  req,
+}) => {
+  if (!data || !Object.prototype.hasOwnProperty.call(data, 'galleryEntries')) return data
+
+  const incomingEntries = data.galleryEntries
+  if (incomingEntries === null || incomingEntries === undefined || incomingEntries.length === 0) return data
+
+  const clinicId = getRelationshipId(originalDoc?.id)
+  const entryIds = Array.from(new Set(incomingEntries.map(getRelationshipId)))
+
+  if (!clinicId || entryIds.some((id) => id === null)) {
+    throw new Error(GALLERY_ENTRIES_SAME_CLINIC_MESSAGE)
+  }
+
+  const normalizedEntryIds = entryIds as number[]
+  const entries = await req.payload.find({
+    collection: 'clinicGalleryEntries',
+    depth: 0,
+    limit: normalizedEntryIds.length,
+    pagination: false,
+    overrideAccess: true,
+    req,
+    select: {
+      id: true,
+      clinic: true,
+    },
+    where: {
+      id: {
+        in: normalizedEntryIds,
+      },
+    },
+  })
+
+  const validEntryIds = new Set(
+    entries.docs
+      .filter((entry) => getRelationshipId(entry.clinic) === clinicId)
+      .map((entry) => getRelationshipId(entry.id)),
+  )
+
+  if (normalizedEntryIds.some((id) => !validEntryIds.has(id))) {
+    throw new Error(GALLERY_ENTRIES_SAME_CLINIC_MESSAGE)
   }
 
   return data
@@ -92,17 +174,34 @@ export const Clinics: CollectionConfig<'clinics'> = {
     read: platformOnlyOrApproved, // Platform Staff: all clinics, Others: approved only
     create: platformClinicTrustAccess, // Only Platform admin/support can create clinics
     update: platformOrOwnClinicProfile, // Platform: all clinics, Clinic: only own profile
-    delete: isPlatformBasicUser, // Only Platform can delete clinics
+    delete: isPlatformStaff, // Only Platform can delete clinics
   },
   hooks: {
-    beforeValidate: [validateInternalPrimaryContactBeforeValidate],
-    beforeChange: [stableIdBeforeChangeHook],
+    beforeValidate: [validateApprovedClinicCompleteness, validateGalleryEntriesBeforeValidate],
+    beforeChange: [
+      stableIdBeforeChangeHook,
+      beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
+    ],
     afterChange: [revalidateClinicChange],
     afterDelete: [revalidateClinicDelete],
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
     stableIdField(),
+    {
+      name: 'onboardingKey',
+      type: 'text',
+      index: true,
+      access: {
+        create: () => false,
+        read: () => false,
+        update: () => false,
+      },
+      admin: {
+        hidden: true,
+        disableListColumn: true,
+      },
+    },
     {
       name: 'name',
       type: 'text',
@@ -116,6 +215,10 @@ export const Clinics: CollectionConfig<'clinics'> = {
       type: 'number',
       min: 0,
       max: 5,
+      access: {
+        create: computedOnlyFieldAccess,
+        update: computedOnlyFieldAccess,
+      },
       admin: {
         description: 'Average patient rating',
         readOnly: true,
@@ -194,8 +297,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 {
                   name: 'country',
                   type: 'text',
-                  required: true,
-                  defaultValue: 'Turkey',
                   admin: {
                     description: 'Country where the clinic is located',
                   },
@@ -206,7 +307,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                     {
                       name: 'street',
                       type: 'text',
-                      required: true,
                       admin: {
                         description: 'Street name',
                         width: '70%',
@@ -215,7 +315,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                     {
                       name: 'houseNumber',
                       type: 'text',
-                      required: true,
                       admin: {
                         description: 'Building or suite number',
                         width: '30%',
@@ -229,7 +328,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                     {
                       name: 'zipCode',
                       type: 'number',
-                      required: true,
                       admin: {
                         description: 'Postal code',
                         width: '40%',
@@ -239,7 +337,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                       name: 'city',
                       type: 'relationship',
                       relationTo: 'cities',
-                      required: true,
                       admin: {
                         description: 'City where the clinic is located',
                         width: '60%',
@@ -294,27 +391,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
               name: 'internalPrimaryContact',
               label: 'Internal Primary Contact',
               type: 'group',
-              validate: (value: unknown, options) => {
-                const operation =
-                  options.operation === 'create' || options.operation === 'update' ? options.operation : undefined
-                const { previousValue } = options
-
-                if (
-                  !shouldRequireInternalPrimaryContact({
-                    existingValue: previousValue,
-                    hasIncomingValue: value !== undefined,
-                    operation,
-                  })
-                ) {
-                  return true
-                }
-
-                if (!hasCompleteInternalPrimaryContact(value)) {
-                  return INTERNAL_PRIMARY_CONTACT_REQUIRED_MESSAGE
-                }
-
-                return true
-              },
               access: {
                 read: platformClinicTrustFieldAccess,
                 create: platformClinicTrustFieldAccess,
@@ -322,8 +398,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
               },
               admin: {
                 description: 'First clinic contact for findmydoc follow-up',
-                condition: (_data, _siblingData, { user }) =>
-                  Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform'),
+                condition: (_data, _siblingData, { user }) => Boolean(user && user.collection === 'platformStaff'),
               },
               fields: [
                 {
@@ -333,7 +408,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                       name: 'firstName',
                       label: 'First Name',
                       type: 'text',
-                      required: true,
                       admin: {
                         description: 'Given name of the first contact',
                         width: '50%',
@@ -343,7 +417,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                       name: 'lastName',
                       label: 'Last Name',
                       type: 'text',
-                      required: true,
                       admin: {
                         description: 'Family name of the first contact',
                         width: '50%',
@@ -355,7 +428,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                   name: 'email',
                   label: 'Email',
                   type: 'email',
-                  required: true,
                   admin: {
                     description: 'Email for internal follow-up',
                   },
@@ -365,7 +437,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                   label: 'Role',
                   type: 'select',
                   options: clinicContactRoleOptions,
-                  required: true,
                   admin: {
                     description: 'Role of the first contact',
                   },
@@ -405,7 +476,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 description: 'Clinic approval status',
                 condition: (data, siblingData, { user }) => {
                   // Hide status field from non-platform users in admin UI
-                  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+                  return Boolean(user && user.collection === 'platformStaff')
                 },
               },
             },
@@ -427,7 +498,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 description: 'Verification level',
                 condition: (data, siblingData, { user }) => {
                   // Hide verification field from non-platform users in admin UI
-                  return Boolean(user && user.collection === 'basicUsers' && user.userType === 'platform')
+                  return Boolean(user && user.collection === 'platformStaff')
                 },
               },
             },
@@ -436,7 +507,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
               type: 'select',
               options: languageOptions,
               hasMany: true,
-              required: true,
               admin: {
                 description: 'Languages the clinic supports',
               },

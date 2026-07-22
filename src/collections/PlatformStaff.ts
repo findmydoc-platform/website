@@ -1,43 +1,116 @@
 import type { CollectionConfig } from 'payload'
-import { isPlatformBasicUser } from '@/access/isPlatformBasicUser'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { platformOnlyFieldAccess } from '@/access/fieldAccess'
+import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
+import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
+import { guardPlatformStaffRoleChange } from './PlatformStaff/hooks/guardRoleChange'
+import { revalidatePlatformAuthorPosts } from './PlatformStaff/hooks/revalidatePlatformAuthorPosts'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
-// Profile collection for Platform Staff members
+// Direct authentication principal for platform operations and Payload Admin.
 export const PlatformStaff: CollectionConfig = {
   slug: 'platformStaff',
-  auth: false,
+  auth: {
+    useSessions: false,
+    disableLocalStrategy: true,
+    strategies: [supabaseStrategy],
+  },
   admin: {
     group: 'User Management',
-    useAsTitle: 'user',
-    defaultColumns: ['user', 'role'],
-    description: 'Platform staff profiles',
+    useAsTitle: 'email',
+    defaultColumns: ['email', 'firstName', 'lastName', 'role'],
+    description: 'Platform staff authentication principals',
+    components: {
+      beforeList: ['@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance#PlatformStaffAdminGuidance'],
+    },
   },
   access: {
-    read: isPlatformBasicUser,
+    read: isPlatformStaff,
     create: () => false,
-    update: isPlatformBasicUser,
+    update: isPlatformStaff,
     delete: () => false,
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook],
+    afterChange: [revalidatePlatformAuthorPosts],
+    beforeChange: [stableIdBeforeChangeHook, enforceSupabaseIdentityInvariant, guardPlatformStaffRoleChange],
   },
   fields: [
+    {
+      name: 'provisioningGuidance',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance#PlatformStaffAdminGuidance',
+        },
+      },
+    },
     stableIdField(),
     {
-      name: 'user',
-      type: 'relationship',
-      label: 'User',
-      relationTo: 'basicUsers',
-      required: true,
+      name: 'supabaseUserId',
+      label: 'Supabase User ID',
+      type: 'text',
       unique: true,
-      hasMany: false,
-      admin: {
-        description: 'Select the account for this staff member',
+      index: true,
+      access: {
+        create: () => false,
+        read: () => false,
+        update: () => false,
       },
-      filterOptions: ({ relationTo: _relationTo, siblingData: _siblingData }) => {
-        return {
-          userType: { equals: 'platform' },
-        }
+      admin: {
+        hidden: true,
+        readOnly: true,
+      },
+    },
+    {
+      name: 'email',
+      type: 'email',
+      label: 'Email',
+      access: {
+        create: () => false,
+        read: platformOnlyFieldAccess,
+        update: () => false,
+      },
+      admin: {
+        readOnly: true,
+      },
+    },
+    {
+      name: 'firstName',
+      type: 'text',
+      label: 'First Name',
+      access: {
+        create: () => false,
+        read: platformOnlyFieldAccess,
+        update: () => false,
+      },
+      admin: {
+        readOnly: true,
+      },
+    },
+    {
+      name: 'lastName',
+      type: 'text',
+      label: 'Last Name',
+      access: {
+        create: () => false,
+        read: platformOnlyFieldAccess,
+        update: () => false,
+      },
+      admin: {
+        readOnly: true,
+      },
+    },
+    {
+      name: 'profileImage',
+      type: 'upload',
+      relationTo: 'userProfileMedia',
+      access: {
+        create: () => false,
+        read: platformOnlyFieldAccess,
+        update: () => false,
+      },
+      admin: {
+        readOnly: true,
       },
     },
     {

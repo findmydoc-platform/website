@@ -117,6 +117,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Run tooling and data integrity tests
+        run: pnpm vitest --project tooling --project data-integrity --run
+
       - name: Check formatting
         run: pnpm format:check
 

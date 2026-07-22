@@ -153,6 +153,13 @@ function analyzeTestFile(rootDir, filePath) {
     failures.push('Data-integrity tests must exercise seed fixtures or repository data contracts.')
   }
 
+  if (
+    /^tests\/(?:tooling|data-integrity)\//u.test(relativePath) &&
+    /expect\(\s*[A-Za-z_$][\w$]*\s*\)\.toBeDefined\(\)/u.test(source)
+  ) {
+    failures.push('Tooling and data-integrity tests must assert executed behavior, not only imported existence.')
+  }
+
   if (/(?:toHaveClass|className|(?:^|\s)(?:bg|text|grid|flex|gap|px|py|mt|mb|rounded)-)/u.test(source)) {
     warnings.push(
       'Contains styling/class assertions; prefer behavior or visual coverage unless the class is a contract.',

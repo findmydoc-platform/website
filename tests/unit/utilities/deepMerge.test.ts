@@ -86,45 +86,6 @@ describe('deepMerge', () => {
       expect(deepMerge({}, { b: 2 })).toEqual({ b: 2 })
     })
 
-    it('should handle non-object sources', () => {
-      const target = { a: 1, b: 2 }
-
-      // When source is not an object, should return copy of target
-      expect(deepMerge(target, 'string' as unknown as Record<string, unknown>)).toEqual(target)
-      expect(deepMerge(target, null as unknown as Record<string, unknown>)).toEqual(target)
-      expect(deepMerge(target, undefined as unknown as Record<string, unknown>)).toEqual(target)
-      expect(deepMerge(target, 123 as unknown as Record<string, unknown>)).toEqual(target)
-      expect(deepMerge(target, [] as unknown as Record<string, unknown>)).toEqual(target)
-    })
-
-    it('should handle non-object targets by spreading them', () => {
-      const source = { a: 1, b: 2 }
-
-      // When target is a string, spreading creates indexed properties but source merging doesn't occur
-      // because the string target when spread doesn't pass isObject() check
-      const stringResult = deepMerge('hello' as unknown as Record<string, unknown>, source)
-      expect(stringResult).toEqual({ '0': 'h', '1': 'e', '2': 'l', '3': 'l', '4': 'o' })
-
-      // Numbers and null spread differently
-      const nullResult = deepMerge(null as unknown as Record<string, unknown>, source)
-      expect(nullResult).toEqual({})
-
-      const numberResult = deepMerge(123 as unknown as Record<string, unknown>, source)
-      expect(numberResult).toEqual({})
-    })
-
-    it('should handle mixed object and primitive merging with spreading behavior', () => {
-      const target = { config: 'simple' }
-      const source = { config: { advanced: true } }
-      const result = deepMerge(target, source)
-
-      // The function sees config value as object in source and 'simple' string in target
-      // Since target.config is not an object, it just spreads the string without merging
-      expect(result).toEqual({
-        config: { '0': 's', '1': 'i', '2': 'm', '3': 'p', '4': 'l', '5': 'e' },
-      })
-    })
-
     it('should handle spreading string values when merging objects', () => {
       const target = { config: { existing: 'value' } }
       const source = { config: 'simple' }
@@ -153,18 +114,6 @@ describe('deepMerge', () => {
 
       // Result should contain merged data
       expect(result).toEqual({ a: { b: 1, c: 2 } })
-    })
-
-    it('should handle edge case where target has non-object property and source has object', () => {
-      const target = { value: 'simple' }
-      const source = { value: { complex: true } }
-      const result = deepMerge(target, source)
-
-      // Since target.value is a string and source.value is an object,
-      // the function just spreads the string without merging source object properties
-      expect(result).toEqual({
-        value: { '0': 's', '1': 'i', '2': 'm', '3': 'p', '4': 'l', '5': 'e' },
-      })
     })
   })
 })

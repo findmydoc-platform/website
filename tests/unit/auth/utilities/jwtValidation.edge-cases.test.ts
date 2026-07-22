@@ -68,6 +68,7 @@ describe('jwtValidation edge cases', () => {
           lastName: 'Doe',
         },
       })
+      expect(mockSupabaseClient.auth.getUser).toHaveBeenCalledWith('valid-token')
     })
 
     it('classifies an invalid token separately from an upstream outage', async () => {

@@ -181,8 +181,7 @@ describe('accessValidation edge cases', () => {
 
       const result = await validateUserAccess(payload, authData, userResult)
       expect(result).toBe(false)
-      // Should not call payload.find if user type is invalid
-      expect(mockPayload.find).not.toHaveBeenCalled()
+      expect(accessStateMocks.readClinicAccessState).not.toHaveBeenCalled()
     })
 
     it('should fail when clinic access is denied', async () => {

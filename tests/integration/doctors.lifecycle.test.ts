@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeAll, afterEach } from 'vitest'
-import { getPayload } from 'payload'
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
+import { getPayload, ValidationError } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
+import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
+import { createTinyPngFile } from '../fixtures/mediaFile'
 import { testSlug } from '../fixtures/testSlug'
 import {
   asClinicScopedPayloadUser,
@@ -16,14 +18,20 @@ import {
 import { slugify } from '@/utilities/slugify'
 import { doctorTitles } from '@/collections/Doctors'
 import { generateFullName } from '@/utilities/nameUtils'
-import type { Doctor } from '@/payload-types'
+import type { Doctor, DoctorMedia } from '@/payload-types'
+
+vi.mock('@payloadcms/storage-s3', () => ({
+  s3Storage: () => (incomingConfig: unknown) => incomingConfig,
+}))
 
 const createdStaffIds: Array<number | string> = []
+type PayloadCreateArgs = Parameters<Payload['create']>[0]
 
 describe('Doctors lifecycle integration', () => {
   let payload: Payload
   let cityId: number
   const slugPrefix = testSlug('doctors.lifecycle.test.ts')
+  const createdMediaIds: Array<number> = []
 
   const createPlatformUser = async (emailPrefix: string) => {
     const staffUser = await createPlatformTestUser(payload, {
@@ -54,10 +62,118 @@ describe('Doctors lifecycle integration', () => {
   }, 60000)
 
   afterEach(async () => {
+    await cleanupTrackedDocs(payload, [{ collection: 'doctorMedia', ids: createdMediaIds }])
     await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
+  })
+
+  it('validates profile image ownership on create, assignment, and clinic changes', async () => {
+    const { clinic: clinicA, doctor: doctorA } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-profile-a`,
+    })
+    const { clinic: clinicB, doctor: doctorB } = await createClinicFixture(payload, cityId, {
+      clinicIndex: 1,
+      doctorIndex: 1,
+      slugPrefix: `${slugPrefix}-profile-b`,
+    })
+    const platformUser = await createPlatformUser(`${slugPrefix}-profile-platform`)
+
+    const createMedia = async (doctor: Doctor, suffix: string) => {
+      const media = (await payload.create({
+        collection: 'doctorMedia',
+        data: { alt: `Profile ${suffix}`, doctor: doctor.id } as Partial<DoctorMedia>,
+        file: createTinyPngFile(`${slugPrefix}-${suffix}.png`),
+        user: platformUser,
+        overrideAccess: false,
+        depth: 0,
+      } as PayloadCreateArgs)) as DoctorMedia
+      createdMediaIds.push(media.id)
+      return media
+    }
+
+    const mediaA = await createMedia(doctorA as Doctor, 'profile-a')
+    const mediaB = await createMedia(doctorB as Doctor, 'profile-b')
+
+    const createWithImage = payload.create({
+      collection: 'doctors',
+      data: {
+        firstName: `${slugPrefix}-profile-create`,
+        gender: 'female',
+        lastName: 'Doctor',
+        clinic: clinicA.id,
+        profileImage: mediaA.id,
+        qualifications: ['MD'],
+        languages: ['english'],
+      } as unknown as Doctor,
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    await expect(createWithImage).rejects.toBeInstanceOf(ValidationError)
+    await expect(createWithImage).rejects.toMatchObject({
+      data: {
+        errors: [
+          expect.objectContaining({
+            message: 'Save the doctor before assigning a profile image.',
+            path: 'profileImage',
+          }),
+        ],
+      },
+      status: 400,
+    })
+
+    const assigned = (await payload.update({
+      collection: 'doctors',
+      id: doctorA.id,
+      data: { profileImage: mediaA.id },
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Doctor
+    expect(assigned.profileImage).toBe(mediaA.id)
+
+    const wrongDoctor = payload.update({
+      collection: 'doctors',
+      id: doctorA.id,
+      data: { profileImage: mediaB.id },
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    await expect(wrongDoctor).rejects.toMatchObject({
+      data: {
+        errors: [
+          expect.objectContaining({
+            message: 'Selected profile image does not belong to this doctor.',
+            path: 'profileImage',
+          }),
+        ],
+      },
+      status: 400,
+    })
+
+    const clinicChange = payload.update({
+      collection: 'doctors',
+      id: doctorA.id,
+      data: { clinic: clinicB.id },
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    await expect(clinicChange).rejects.toMatchObject({
+      data: {
+        errors: [
+          expect.objectContaining({
+            message: "Selected profile image does not belong to this doctor's clinic.",
+            path: 'profileImage',
+          }),
+        ],
+      },
+      status: 400,
+    })
   })
 
   it('creates a doctor and sets slug from fullName', async () => {

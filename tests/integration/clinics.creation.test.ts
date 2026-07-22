@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
-import { getPayload } from 'payload'
+import { getPayload, ValidationError } from 'payload'
 import type { Payload, File } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
@@ -406,15 +406,78 @@ describe('Clinic Creation Integration Tests', () => {
       depth: 0,
     })
 
+    const incompleteApproval = payload.update({
+      collection: 'clinics',
+      id: clinic.id,
+      data: { status: 'approved' },
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    await expect(incompleteApproval).rejects.toBeInstanceOf(ValidationError)
+    await expect(incompleteApproval).rejects.toMatchObject({
+      data: {
+        errors: expect.arrayContaining([
+          expect.objectContaining({ path: 'address.country' }),
+          expect.objectContaining({ path: 'address.street' }),
+          expect.objectContaining({ path: 'address.houseNumber' }),
+          expect.objectContaining({ path: 'address.zipCode' }),
+          expect.objectContaining({ path: 'address.city' }),
+          expect.objectContaining({ path: 'internalPrimaryContact.firstName' }),
+          expect.objectContaining({ path: 'internalPrimaryContact.lastName' }),
+          expect.objectContaining({ path: 'internalPrimaryContact.email' }),
+          expect.objectContaining({ path: 'internalPrimaryContact.role' }),
+          expect.objectContaining({ path: 'supportedLanguages' }),
+        ]),
+      },
+      status: 400,
+    })
+
+    const approved = await payload.update({
+      collection: 'clinics',
+      id: clinic.id,
+      data: {
+        address: {
+          country: 'Turkey',
+          street: 'Approval Street',
+          houseNumber: '10',
+          zipCode: 34000,
+          city: cityId,
+        },
+        internalPrimaryContact: buildInternalPrimaryContact('approval'),
+        status: 'approved',
+        supportedLanguages: ['english'],
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(approved.status).toBe('approved')
+
     await expect(
       payload.update({
         collection: 'clinics',
         id: clinic.id,
-        data: { status: 'approved' },
+        data: { name: `${slugPrefix}-approved-partial-update` },
         overrideAccess: true,
         depth: 0,
       }),
-    ).rejects.toThrow(/complete address, internal primary contact, and at least one supported language/i)
+    ).resolves.toMatchObject({ name: `${slugPrefix}-approved-partial-update` })
+
+    await expect(
+      payload.update({
+        collection: 'clinics',
+        id: clinic.id,
+        data: { internalPrimaryContact: { ...buildInternalPrimaryContact('approval-cleared'), firstName: '' } },
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toMatchObject({
+      data: {
+        errors: [expect.objectContaining({ path: 'internalPrimaryContact.firstName' })],
+      },
+      status: 400,
+    })
   })
 
   it('validates email format in contact information', async () => {

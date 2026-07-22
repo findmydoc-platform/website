@@ -1,4 +1,5 @@
-import type { CollectionConfig, PayloadRequest, Where } from 'payload'
+import type { CollectionBeforeChangeHook, CollectionConfig, PayloadRequest, Where } from 'payload'
+import { ValidationError, validations } from 'payload'
 import { isPatient } from '@/access/isPatient'
 import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
@@ -9,6 +10,16 @@ import {
 } from '@/hooks/calculations/updateAverageRatings'
 import { revalidateReviewChange, revalidateReviewDelete } from '@/hooks/revalidateClinicSurfaces'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
+import {
+  createConditionalRequiredValidator,
+  toValidationFieldErrors,
+} from '@/collections/common/conditionalRequirements'
+import {
+  getMissingReviewCreationRequirements,
+  REVIEW_CREATE_MARKER,
+  reviewCreationRequirements,
+  reviewCreationRequirementSet,
+} from '@/collections/reviews/creationRequirements'
 
 type ReviewDraft = Record<string, unknown>
 type RelationId = string | number
@@ -106,6 +117,24 @@ function readRelationshipId(data: ReviewDraft, originalDoc: unknown, field: stri
   return extractRelationId((originalDoc as Record<string, unknown>)[field])
 }
 
+const validateReviewCreationRequirements: CollectionBeforeChangeHook = ({ data, operation, originalDoc, req }) => {
+  const missingRequirements = getMissingReviewCreationRequirements(data, operation)
+
+  if (missingRequirements.length > 0) {
+    throw new ValidationError({
+      collection: 'reviews',
+      errors: toValidationFieldErrors(missingRequirements),
+      id:
+        originalDoc && typeof originalDoc === 'object' && 'id' in originalDoc
+          ? (extractRelationId(originalDoc.id) ?? undefined)
+          : undefined,
+      req,
+    })
+  }
+
+  return data
+}
+
 export const Reviews: CollectionConfig = {
   slug: 'reviews',
   admin: {
@@ -167,9 +196,17 @@ export const Reviews: CollectionConfig = {
                 read: ({ req }) => isPlatformStaffRequest(req),
               },
               admin: {
-                description: 'Patient who wrote this review',
+                components: {
+                  Error: '@/app/(payload)/components/ReviewCreationRequirementError#ReviewCreationRequirementError',
+                },
+                description: `Patient who wrote this review. ${REVIEW_CREATE_MARKER}.`,
                 width: '50%',
               },
+              validate: createConditionalRequiredValidator(
+                validations.relationship,
+                reviewCreationRequirementSet,
+                reviewCreationRequirements.patient,
+              ),
             },
             {
               name: 'status',
@@ -365,6 +402,7 @@ export const Reviews: CollectionConfig = {
 
         return draft
       },
+      validateReviewCreationRequirements,
     ],
     beforeValidate: [
       async ({ data, req, operation, originalDoc, collection }) => {
@@ -381,10 +419,6 @@ export const Reviews: CollectionConfig = {
 
         if (!clinicId || !doctorId || !treatmentId) {
           throw new Error('A review must be linked to a clinic, doctor, and treatment.')
-        }
-
-        if (operation === 'create' && !patientId) {
-          throw new Error('A review must be linked to a patient when it is created.')
         }
 
         if (!patientId) {

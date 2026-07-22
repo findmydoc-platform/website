@@ -1,5 +1,7 @@
-import type { CollectionBeforeChangeHook } from 'payload'
+import type { CollectionBeforeChangeHook, PayloadRequest } from 'payload'
+import { ValidationError } from 'payload'
 import { findInternalByID } from '@/hooks/internalFindByID'
+import { MEDICAL_SPECIALTY_PARENT_MESSAGES } from '../parentEligibility'
 
 function relationId(value: unknown): number | string | null {
   if (typeof value === 'number' || typeof value === 'string') {
@@ -14,6 +16,23 @@ function relationId(value: unknown): number | string | null {
   }
 
   return null
+}
+
+const throwParentValidation = ({
+  id,
+  message,
+  req,
+}: {
+  id?: number | string
+  message: string
+  req: PayloadRequest
+}): never => {
+  throw new ValidationError({
+    collection: 'medical-specialties',
+    errors: [{ label: 'Parent Specialty', message, path: 'parentSpecialty' }],
+    id,
+    req,
+  })
 }
 
 export const enforceTwoLevelHierarchy: CollectionBeforeChangeHook = async ({ data, originalDoc, req }) => {
@@ -31,7 +50,7 @@ export const enforceTwoLevelHierarchy: CollectionBeforeChangeHook = async ({ dat
     relationId((data as { id?: unknown }).id) || relationId((originalDoc as { id?: unknown } | undefined)?.id)
 
   if (currentDocId !== null && String(currentDocId) === String(parentId)) {
-    throw new Error('A medical specialty cannot be its own parent.')
+    throwParentValidation({ id: currentDocId, message: MEDICAL_SPECIALTY_PARENT_MESSAGES.self, req })
   }
 
   const parentDoc = await findInternalByID({
@@ -43,9 +62,11 @@ export const enforceTwoLevelHierarchy: CollectionBeforeChangeHook = async ({ dat
 
   const grandParentId = relationId((parentDoc as { parentSpecialty?: unknown }).parentSpecialty)
   if (grandParentId !== null) {
-    throw new Error(
-      'Only two hierarchy levels are allowed for medical specialties. Create level 3 entries as treatments.',
-    )
+    throwParentValidation({
+      id: currentDocId ?? undefined,
+      message: MEDICAL_SPECIALTY_PARENT_MESSAGES.nested,
+      req,
+    })
   }
 
   return data

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterEach } from 'vitest'
-import { getPayload } from 'payload'
+import { getPayload, ValidationError } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
 import { assertDeniedCrud } from '../fixtures/accessAssertions'
@@ -21,6 +21,16 @@ function breadcrumbLabels(specialty: MedicalSpecialty): string[] {
   return (specialty.breadcrumbs ?? [])
     .map((entry) => (entry && typeof entry === 'object' && 'label' in entry ? entry.label : null))
     .filter((label): label is string => typeof label === 'string')
+}
+
+const expectParentValidation = async (result: Promise<unknown>, message: string) => {
+  await expect(result).rejects.toBeInstanceOf(ValidationError)
+  await expect(result).rejects.toMatchObject({
+    data: {
+      errors: [expect.objectContaining({ message, path: 'parentSpecialty' })],
+    },
+    status: 400,
+  })
 }
 
 describe('MedicalSpecialties lifecycle integration', () => {
@@ -243,7 +253,7 @@ describe('MedicalSpecialties lifecycle integration', () => {
     })) as MedicalSpecialty
     createdSpecialtyIds.push(child.id)
 
-    await expect(
+    await expectParentValidation(
       payload.create({
         collection: 'medical-specialties',
         data: {
@@ -255,9 +265,10 @@ describe('MedicalSpecialties lifecycle integration', () => {
         overrideAccess: false,
         depth: 0,
       }),
-    ).rejects.toThrow(/Only two hierarchy levels are allowed for medical specialties/)
+      'Only two hierarchy levels are allowed for medical specialties. Create level 3 entries as treatments.',
+    )
 
-    await expect(
+    await expectParentValidation(
       payload.update({
         collection: 'medical-specialties',
         id: root.id,
@@ -268,7 +279,8 @@ describe('MedicalSpecialties lifecycle integration', () => {
         overrideAccess: false,
         depth: 0,
       }),
-    ).rejects.toThrow('A medical specialty cannot be its own parent.')
+      'A medical specialty cannot be its own parent.',
+    )
   })
 
   it('exposes doctorLinks join for medical specialties', async () => {

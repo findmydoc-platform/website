@@ -47,15 +47,31 @@ export const openAdminDocumentPage = async (page: Page, collectionSlug: string, 
 }
 
 export const openAdminTab = async (page: Page, label: string) => {
-  const exactLabel = new RegExp(`^${escapeRegExp(label)}$`, 'i')
-  const tab = page.getByRole('tab', { name: exactLabel }).first()
+  const exactLabel = new RegExp(`^${escapeRegExp(label)}(?:\\s+\\d+)?$`, 'i')
 
-  if ((await tab.count()) > 0) {
+  await expect(async () => {
+    const semanticTab = page.getByRole('tab', { name: exactLabel }).first()
+    const tab = (await semanticTab.count()) > 0 ? semanticTab : page.getByRole('button', { name: exactLabel }).first()
+
+    await expect(tab).toBeVisible()
     await tab.click()
-    return
-  }
 
-  await page.getByRole('button', { name: exactLabel }).first().click()
+    if ((await tab.getAttribute('aria-selected')) !== null) {
+      await expect(tab).toHaveAttribute('aria-selected', 'true')
+    } else {
+      await expect(tab).toHaveClass(/tabs-field__tab-button--active/)
+    }
+
+    // A first visit can compile the tab lazily and trigger Fast Refresh in the
+    // local dev server. Confirm that the selected state survives that refresh.
+    await page.waitForTimeout(250)
+
+    if ((await tab.getAttribute('aria-selected')) !== null) {
+      await expect(tab).toHaveAttribute('aria-selected', 'true')
+    } else {
+      await expect(tab).toHaveClass(/tabs-field__tab-button--active/)
+    }
+  }).toPass({ timeout: 10_000 })
 }
 
 export const selectComboboxOption = async (
@@ -112,7 +128,7 @@ export const getAdminFieldRoot = (surface: AdminSurface, fieldPath: string) => {
     .locator('xpath=ancestor-or-self::*[contains(concat(" ", normalize-space(@class), " "), " field-type ")][1]')
 }
 
-export const getAdminDocumentDrawer = (page: Page) => page.locator('.doc-drawer').last()
+export const getAdminDocumentDrawer = (page: Page) => page.locator('.doc-drawer, .list-drawer, dialog').last()
 
 export const openAdminJoinCreateDrawer = async (page: Page, fieldPath: string) => {
   const fieldRoot = getAdminFieldRoot(page, fieldPath)
@@ -124,6 +140,7 @@ export const openAdminJoinCreateDrawer = async (page: Page, fieldPath: string) =
 
   const drawer = getAdminDocumentDrawer(page)
   await expect(drawer).toBeVisible()
+  await expect(drawer.locator('form[data-form-ready="true"]')).toBeVisible({ timeout: 10_000 })
   return drawer
 }
 
@@ -133,11 +150,26 @@ export const saveAdminDocument = async (page: Page) => {
 
 export const saveAdminDocumentForCollection = async (page: Page, collectionSlug: string) => {
   const escapedSlug = escapeRegExp(collectionSlug)
-  await page.getByRole('button', { name: /^Save$/ }).click()
-  await page.waitForURL(new RegExp(`/admin/collections/${escapedSlug}/[^/]+$`))
+  const documentPath = new RegExp(`^/admin/collections/${escapedSlug}/([^/?#]+)$`)
+  const saveResponse = page.waitForResponse((response) => {
+    const method = response.request().method()
+    const pathname = new URL(response.url()).pathname
 
-  const currentUrl = page.url()
-  const match = currentUrl.match(new RegExp(`/admin/collections/${escapedSlug}/([^/?#]+)$`))
+    return (
+      (method === 'PATCH' || method === 'POST') &&
+      (pathname === `/api/${collectionSlug}` || pathname.startsWith(`/api/${collectionSlug}/`)) &&
+      response.ok()
+    )
+  })
+
+  await page.getByRole('button', { name: /^Save$/ }).click()
+  await saveResponse
+  await page.waitForURL((url) => {
+    const match = url.pathname.match(documentPath)
+    return Boolean(match?.[1] && match[1] !== 'create')
+  })
+
+  const match = new URL(page.url()).pathname.match(documentPath)
   return match?.[1]
 }
 

@@ -1,7 +1,14 @@
 import type { Clinic } from '@/payload-types'
-import type { CollectionBeforeValidateHook, CollectionConfig } from 'payload'
-import { slugField } from 'payload'
+import type { CollectionBeforeChangeHook, CollectionBeforeValidateHook, CollectionConfig } from 'payload'
+import { slugField, ValidationError, validations } from 'payload'
 import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
+import { createConditionalRequiredValidator, toValidationFieldErrors } from './common/conditionalRequirements'
+import {
+  CLINIC_APPROVAL_MARKER,
+  clinicApprovalRequirements,
+  clinicApprovalRequirementSet,
+  getMissingClinicApprovalRequirements,
+} from './clinics/approvalRequirements'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { disabledClinicGalleryAccess } from '@/access/clinicGallery'
 import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
@@ -14,9 +21,9 @@ import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateClinicChange, revalidateClinicDelete } from '@/hooks/revalidateClinicSurfaces'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
 
-const APPROVED_CLINIC_REQUIRED_MESSAGE =
-  'Approved clinics require a complete address, internal primary contact, and at least one supported language.'
 const GALLERY_ENTRIES_SAME_CLINIC_MESSAGE = 'Gallery entries must belong to this clinic.'
+const CLINIC_APPROVAL_ERROR_COMPONENT =
+  '@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirementError'
 
 const getRelationshipId = (value: unknown): number | null => {
   if (typeof value === 'number' && Number.isSafeInteger(value)) return value
@@ -33,69 +40,16 @@ const getRelationshipId = (value: unknown): number | null => {
   return null
 }
 
-const isNonEmptyString = (value: unknown): boolean => typeof value === 'string' && value.trim().length > 0
+const validateApprovedClinicCompleteness: CollectionBeforeChangeHook<Clinic> = ({ data, originalDoc, req }) => {
+  const missingRequirements = getMissingClinicApprovalRequirements(data, originalDoc)
 
-const hasRelation = (value: unknown): boolean => {
-  if (typeof value === 'number') return Number.isFinite(value)
-  if (typeof value === 'string') return value.trim().length > 0
-  return Boolean(value && typeof value === 'object' && 'id' in value)
-}
-
-const mergeGroup = (
-  existingValue: unknown,
-  incomingValue: unknown,
-  hasIncomingValue: boolean,
-): Record<string, unknown> => {
-  const existing = existingValue && typeof existingValue === 'object' ? existingValue : {}
-  if (!hasIncomingValue) return { ...existing }
-  if (!incomingValue || typeof incomingValue !== 'object') return {}
-  return { ...existing, ...incomingValue }
-}
-
-const hasCompleteInternalPrimaryContact = (value: unknown): boolean => {
-  if (!value || typeof value !== 'object') return false
-
-  const contact = value as Record<string, unknown>
-  return ['firstName', 'lastName', 'email', 'role'].every((key) => isNonEmptyString(contact[key]))
-}
-
-const hasCompleteAddress = (value: unknown): boolean => {
-  if (!value || typeof value !== 'object') return false
-
-  const address = value as Record<string, unknown>
-  return (
-    isNonEmptyString(address.country) &&
-    isNonEmptyString(address.street) &&
-    isNonEmptyString(address.houseNumber) &&
-    typeof address.zipCode === 'number' &&
-    Number.isFinite(address.zipCode) &&
-    hasRelation(address.city)
-  )
-}
-
-const validateApprovedClinicCompleteness: CollectionBeforeValidateHook<Clinic> = ({ data, originalDoc }) => {
-  if (!data) return data
-
-  const status = data.status ?? originalDoc?.status
-  if (status !== 'approved') return data
-
-  const address = mergeGroup(originalDoc?.address, data.address, Object.prototype.hasOwnProperty.call(data, 'address'))
-  const internalPrimaryContact = mergeGroup(
-    originalDoc?.internalPrimaryContact,
-    data.internalPrimaryContact,
-    Object.prototype.hasOwnProperty.call(data, 'internalPrimaryContact'),
-  )
-  const supportedLanguages = Object.prototype.hasOwnProperty.call(data, 'supportedLanguages')
-    ? data.supportedLanguages
-    : originalDoc?.supportedLanguages
-
-  if (
-    !hasCompleteAddress(address) ||
-    !hasCompleteInternalPrimaryContact(internalPrimaryContact) ||
-    !Array.isArray(supportedLanguages) ||
-    supportedLanguages.length === 0
-  ) {
-    throw new Error(APPROVED_CLINIC_REQUIRED_MESSAGE)
+  if (missingRequirements.length > 0) {
+    throw new ValidationError({
+      collection: 'clinics',
+      errors: toValidationFieldErrors(missingRequirements),
+      id: originalDoc?.id,
+      req,
+    })
   }
 
   return data
@@ -178,10 +132,11 @@ export const Clinics: CollectionConfig<'clinics'> = {
     delete: isPlatformStaff, // Only Platform can delete clinics
   },
   hooks: {
-    beforeValidate: [validateApprovedClinicCompleteness, validateGalleryEntriesBeforeValidate],
+    beforeValidate: [validateGalleryEntriesBeforeValidate],
     beforeChange: [
       stableIdBeforeChangeHook,
       beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
+      validateApprovedClinicCompleteness,
     ],
     afterChange: [revalidateClinicChange],
     afterDelete: [revalidateClinicDelete],
@@ -305,8 +260,16 @@ export const Clinics: CollectionConfig<'clinics'> = {
                   name: 'country',
                   type: 'text',
                   admin: {
-                    description: 'Country where the clinic is located',
+                    components: {
+                      Error: CLINIC_APPROVAL_ERROR_COMPONENT,
+                    },
+                    description: `Country where the clinic is located. ${CLINIC_APPROVAL_MARKER}.`,
                   },
+                  validate: createConditionalRequiredValidator(
+                    validations.text,
+                    clinicApprovalRequirementSet,
+                    clinicApprovalRequirements.country,
+                  ),
                 },
                 {
                   type: 'row',
@@ -315,17 +278,33 @@ export const Clinics: CollectionConfig<'clinics'> = {
                       name: 'street',
                       type: 'text',
                       admin: {
-                        description: 'Street name',
+                        components: {
+                          Error: CLINIC_APPROVAL_ERROR_COMPONENT,
+                        },
+                        description: `Street name. ${CLINIC_APPROVAL_MARKER}.`,
                         width: '70%',
                       },
+                      validate: createConditionalRequiredValidator(
+                        validations.text,
+                        clinicApprovalRequirementSet,
+                        clinicApprovalRequirements.street,
+                      ),
                     },
                     {
                       name: 'houseNumber',
                       type: 'text',
                       admin: {
-                        description: 'Building or suite number',
+                        components: {
+                          Error: CLINIC_APPROVAL_ERROR_COMPONENT,
+                        },
+                        description: `Building or suite number. ${CLINIC_APPROVAL_MARKER}.`,
                         width: '30%',
                       },
+                      validate: createConditionalRequiredValidator(
+                        validations.text,
+                        clinicApprovalRequirementSet,
+                        clinicApprovalRequirements.houseNumber,
+                      ),
                     },
                   ],
                 },
@@ -336,18 +315,34 @@ export const Clinics: CollectionConfig<'clinics'> = {
                       name: 'zipCode',
                       type: 'number',
                       admin: {
-                        description: 'Postal code',
+                        components: {
+                          Error: CLINIC_APPROVAL_ERROR_COMPONENT,
+                        },
+                        description: `Postal code. ${CLINIC_APPROVAL_MARKER}.`,
                         width: '40%',
                       },
+                      validate: createConditionalRequiredValidator(
+                        validations.number,
+                        clinicApprovalRequirementSet,
+                        clinicApprovalRequirements.zipCode,
+                      ),
                     },
                     {
                       name: 'city',
                       type: 'relationship',
                       relationTo: 'cities',
                       admin: {
-                        description: 'City where the clinic is located',
+                        components: {
+                          Error: CLINIC_APPROVAL_ERROR_COMPONENT,
+                        },
+                        description: `City where the clinic is located. ${CLINIC_APPROVAL_MARKER}.`,
                         width: '60%',
                       },
+                      validate: createConditionalRequiredValidator(
+                        validations.relationship,
+                        clinicApprovalRequirementSet,
+                        clinicApprovalRequirements.city,
+                      ),
                     },
                   ],
                 },
@@ -416,18 +411,34 @@ export const Clinics: CollectionConfig<'clinics'> = {
                       label: 'First Name',
                       type: 'text',
                       admin: {
-                        description: 'Given name of the first contact',
+                        components: {
+                          Error: CLINIC_APPROVAL_ERROR_COMPONENT,
+                        },
+                        description: `Given name of the first contact. ${CLINIC_APPROVAL_MARKER}.`,
                         width: '50%',
                       },
+                      validate: createConditionalRequiredValidator(
+                        validations.text,
+                        clinicApprovalRequirementSet,
+                        clinicApprovalRequirements.contactFirstName,
+                      ),
                     },
                     {
                       name: 'lastName',
                       label: 'Last Name',
                       type: 'text',
                       admin: {
-                        description: 'Family name of the first contact',
+                        components: {
+                          Error: CLINIC_APPROVAL_ERROR_COMPONENT,
+                        },
+                        description: `Family name of the first contact. ${CLINIC_APPROVAL_MARKER}.`,
                         width: '50%',
                       },
+                      validate: createConditionalRequiredValidator(
+                        validations.text,
+                        clinicApprovalRequirementSet,
+                        clinicApprovalRequirements.contactLastName,
+                      ),
                     },
                   ],
                 },
@@ -436,8 +447,16 @@ export const Clinics: CollectionConfig<'clinics'> = {
                   label: 'Email',
                   type: 'email',
                   admin: {
-                    description: 'Email for internal follow-up',
+                    components: {
+                      Error: CLINIC_APPROVAL_ERROR_COMPONENT,
+                    },
+                    description: `Email for internal follow-up. ${CLINIC_APPROVAL_MARKER}.`,
                   },
+                  validate: createConditionalRequiredValidator(
+                    validations.email,
+                    clinicApprovalRequirementSet,
+                    clinicApprovalRequirements.contactEmail,
+                  ),
                 },
                 {
                   name: 'role',
@@ -445,8 +464,16 @@ export const Clinics: CollectionConfig<'clinics'> = {
                   type: 'select',
                   options: clinicContactRoleOptions,
                   admin: {
-                    description: 'Role of the first contact',
+                    components: {
+                      Error: CLINIC_APPROVAL_ERROR_COMPONENT,
+                    },
+                    description: `Role of the first contact. ${CLINIC_APPROVAL_MARKER}.`,
                   },
+                  validate: createConditionalRequiredValidator(
+                    validations.select,
+                    clinicApprovalRequirementSet,
+                    clinicApprovalRequirements.contactRole,
+                  ),
                 },
               ],
             },
@@ -488,6 +515,16 @@ export const Clinics: CollectionConfig<'clinics'> = {
               },
             },
             {
+              name: 'approvalRequirements',
+              type: 'ui',
+              admin: {
+                condition: (_data, _siblingData, { user }) => Boolean(user && user.collection === 'platformStaff'),
+                components: {
+                  Field: '@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirements',
+                },
+              },
+            },
+            {
               name: 'verification',
               type: 'select',
               options: [
@@ -515,8 +552,16 @@ export const Clinics: CollectionConfig<'clinics'> = {
               options: languageOptions,
               hasMany: true,
               admin: {
-                description: 'Languages the clinic supports',
+                components: {
+                  Error: CLINIC_APPROVAL_ERROR_COMPONENT,
+                },
+                description: `Languages the clinic supports. ${CLINIC_APPROVAL_MARKER}.`,
               },
+              validate: createConditionalRequiredValidator(
+                validations.select,
+                clinicApprovalRequirementSet,
+                clinicApprovalRequirements.supportedLanguages,
+              ),
             },
           ],
         },

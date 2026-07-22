@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterEach } from 'vitest'
-import { getPayload } from 'payload'
+import { getPayload, ValidationError } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
 
@@ -128,6 +128,34 @@ describe('Reviews integration - lifecycle and access', () => {
     expect(created.reviewDate).toBeTruthy()
   }, 60000)
 
+  it('requires a patient when platform staff creates a review', async () => {
+    const { clinic, doctor } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-missing-patient`,
+    })
+
+    const staffUser = await createPlatformModerator(payload, `${slugPrefix}-missing-patient-platform`)
+    const createWithoutPatient = payload.create({
+      collection: 'reviews',
+      data: {
+        clinic: clinic.id,
+        doctor: doctor.id,
+        treatment: treatmentId,
+        starRating: 4,
+        comment: 'Review without a patient',
+      } as unknown as Review,
+      user: asPayloadStaffUser(staffUser),
+      overrideAccess: false,
+    })
+
+    await expect(createWithoutPatient).rejects.toBeInstanceOf(ValidationError)
+    await expect(createWithoutPatient).rejects.toMatchObject({
+      data: {
+        errors: [expect.objectContaining({ path: 'patient' })],
+      },
+      status: 400,
+    })
+  }, 60000)
+
   it('allows patient create but blocks update and delete', async () => {
     const { clinic, doctor } = await createClinicFixture(payload, cityId, {
       slugPrefix: `${slugPrefix}-patient-access`,
@@ -186,6 +214,16 @@ describe('Reviews integration - lifecycle and access', () => {
         overrideAccess: false,
       }),
     ).rejects.toThrow()
+
+    await expect(
+      payload.update({
+        collection: 'reviews',
+        id: created.id,
+        data: { comment: 'Platform moderation edit' } as unknown as Review,
+        user: asPayloadStaffUser(spoofedEditor),
+        overrideAccess: false,
+      }),
+    ).resolves.toMatchObject({ comment: 'Platform moderation edit' })
 
     await expect(
       payload.delete({

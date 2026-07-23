@@ -26,15 +26,28 @@ export type PlaywrightJourneyCaptureCliOptions = {
   outputDir: string
   persona: ReturnType<typeof parsePlaywrightSessionArgs>['persona']
   stateFile: string
+  viewportHeight: number
+  viewportWidth: number
 }
 
 const stripArgSeparators = (argv: string[]) => argv.filter((arg) => arg !== '--')
+const parseViewportDimension = (flag: string, value: string | undefined) => {
+  const dimension = Number(value)
+
+  if (!value || !Number.isInteger(dimension) || dimension <= 0) {
+    throw new Error(`Invalid value for ${flag}: ${value ?? ''}`)
+  }
+
+  return dimension
+}
 
 export function parsePlaywrightJourneyCaptureArgs(argv: string[]): PlaywrightJourneyCaptureCliOptions {
   const args = stripArgSeparators(argv)
   const sessionArgs: string[] = []
   let journeyId = ''
   let outputDir = path.join('output', 'playwright', 'journeys')
+  let viewportHeight = 720
+  let viewportWidth = 1280
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i]
@@ -66,6 +79,26 @@ export function parsePlaywrightJourneyCaptureArgs(argv: string[]): PlaywrightJou
       continue
     }
 
+    if (arg === '--viewport-height' || arg === '--viewport-width') {
+      const value = args[i + 1]
+      const dimension = parseViewportDimension(arg, value)
+
+      if (arg === '--viewport-height') viewportHeight = dimension
+      else viewportWidth = dimension
+      i += 1
+      continue
+    }
+
+    if (arg.startsWith('--viewport-height=')) {
+      viewportHeight = parseViewportDimension('--viewport-height', arg.slice('--viewport-height='.length))
+      continue
+    }
+
+    if (arg.startsWith('--viewport-width=')) {
+      viewportWidth = parseViewportDimension('--viewport-width', arg.slice('--viewport-width='.length))
+      continue
+    }
+
     sessionArgs.push(arg)
 
     if (arg === '--persona' || arg === '--base-url' || arg === '--state-file') {
@@ -88,6 +121,8 @@ export function parsePlaywrightJourneyCaptureArgs(argv: string[]): PlaywrightJou
     outputDir,
     persona: sessionOptions.persona,
     stateFile: sessionOptions.stateFile,
+    viewportHeight,
+    viewportWidth,
   }
 }
 
@@ -101,6 +136,8 @@ Usage:
 Additional options:
   --journey <id>         Registered journey id to execute
   --output-dir <path>    Root output directory (default: output/playwright/journeys)
+  --viewport-width <px>  Browser viewport width (default: 1280)
+  --viewport-height <px> Browser viewport height (default: 720)
 `
 
 export async function captureAdminJourneyFromCliArgs(argv: string[]) {
@@ -150,6 +187,10 @@ export async function captureAdminJourneyFromCliArgs(argv: string[]) {
     const context = await browser.newContext({
       baseURL: options.baseUrl,
       storageState: absoluteStateFile,
+      viewport: {
+        height: options.viewportHeight,
+        width: options.viewportWidth,
+      },
     })
     const page = await context.newPage()
     const issues = createBrowserIssueCollector(page)
@@ -183,6 +224,10 @@ export async function captureAdminJourneyFromCliArgs(argv: string[]) {
         {
           ...result,
           issues,
+          viewport: {
+            height: options.viewportHeight,
+            width: options.viewportWidth,
+          },
         },
         null,
         2,

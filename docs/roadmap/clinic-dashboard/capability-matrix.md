@@ -239,10 +239,12 @@ Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`. [Screen capture](https://githu
 
 Stitch screen `42ffc21e25c74fe3be7b7f6317d12436`. [Screen capture](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/plans/assets/clinic-dashboard-prototype/clinic-profile-editor.png)
 
+The before-and-after gallery is deliberately disabled by [website#1576](https://github.com/findmydoc-platform/website/issues/1576) pending a new product decision and legal review. Its schema and stored data remain, but it is not an available dashboard, CMS, API, MCP, or public-site capability.
+
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
 | Edit clinic name, description, address, phone, coordinates, and thumbnail | Fields and own-clinic update rules exist in `clinics`; approved writes already revalidate public clinic surfaces. | `existing` | #1524 for BFF/Payload access | `public-cached` |
-| Change an existing thumbnail or before/after gallery item | Clinic-owned media and published before/after gallery entries exist. Direct media changes still have the deferred #1468 revalidation gap. | `existing` | #1468 blocks complete public freshness | `public-cached` |
+| Change an existing thumbnail or before/after gallery item | Thumbnail editing remains available. Before/after collections and relationships are retained but hidden and fail-closed. | `disabled` for before/after | #1576; reactivation requires a new decision and legal review | Thumbnail `public-cached`; before/after `private-live` |
 | Add or reorder a generic clinic gallery | The prototype assumes a generic ordered gallery that the current before/after model does not provide. | `later scope` | No owning backend issue | `public-cached` if later approved |
 | Add or remove clinic specialties | Applications capture `medicalSpecialties`, clinics expose only generic tags, and doctor specialties belong to doctors. Approval does not materialize an equivalent clinic field. | `later scope` | No owning target model; #1525 must explicitly preserve or deliberately decline the application data, and the UI must not silently reuse tags | `public-cached` if later approved |
 | Add or edit a doctor profile/photo | The visible team fixtures include doctors. `doctors` and `doctorMedia` already support own-clinic create/update, but the generic dialog does not provide all required doctor fields. | `existing` | A dedicated clinic-dashboard#1 doctor editor is required; #1468 blocks complete photo freshness | `public-cached` |
@@ -285,7 +287,7 @@ Stitch screen `df09d7542d1e4be8b3ae1b9165a2a584`. [Screen capture](https://githu
 | --- | --- | --- | --- | --- | --- |
 | `clinicStaff` | Direct staff identity, approval, clinic assignment | `clinicStaff.clinic → clinics` | Approved direct principal resolves tenant scope; clinic access to Payload Admin is denied | Private live through Supabase strategy and Payload lookup | `existing` under ADR 025; Dashboard bootstrap remains #1524 |
 | `clinics` | Name, rich description, address, phone, coordinates, thumbnail, status, tags | One clinic is assigned through clinic staff | Clinic staff can update only its assigned clinic; approved reads are public | Approved public detail/listing is cached; write hooks exist | `existing` for current fields; missing fields remain #1528 |
-| `clinicMedia`, `clinicGalleryMedia`, `clinicGalleryEntries` | Clinic-owned uploads and published before/after gallery entries | Media/entry belongs to one clinic | Clinic-scoped writes; published assets/entries can be public | Public clinic detail is cached; direct media invalidation is deferred | `existing` for the current model; prototype generic gallery remains `later scope` |
+| `clinicMedia`, `clinicGalleryMedia`, `clinicGalleryEntries` | Clinic thumbnail uploads plus retained before/after schema and records | Media/entry belongs to one clinic | `clinicMedia` remains clinic-scoped; both before/after collections are hidden and fail-closed | Thumbnail output remains cached; before/after has no public consumer | Before/after is `disabled` by #1576; generic gallery remains `later scope` |
 | `treatments` + `clinictreatments` | Platform master treatment plus clinic price/relationship | Clinic treatment belongs to one clinic and one master treatment | Master writes are platform-only; clinic may create/update own relationship but not delete | Public clinic detail/listing is cached and clinic-treatment hooks exist | `Schema gap` for duration, description, currency, active, order |
 | `doctors`, `doctorspecialties`, `doctortreatments` | Public doctor profiles and their clinic-scoped relationships | Doctor belongs to one clinic | Clinic may create/update own doctor and relationships; delete is platform-only | Public clinic detail is cached; related hooks exist | `existing` for doctor profiles; activation semantics are a `Schema gap` |
 | `accreditation` | Public accreditation master data | No clinic credential/submission relationship | Anyone may read; only platform may write | Public clinic-related output is cached | `Schema gap` for certificate submission/verification |
@@ -324,8 +326,8 @@ For the planned implementation slices, the decision is domain-specific:
 | --- | --- | --- | --- |
 | `clinics` update/status/slug change | Clinic detail, listing comparison, sitemap-related surface | Clinic hooks → clinic-surface planner event | Draft/preview and staff bootstrap |
 | `clinictreatments` change/delete | Clinic detail and listing comparison | Clinic-treatment hooks resolve current/previous clinic relations | Internal edit form state |
-| `clinicGalleryEntries` publish/change/delete | Clinic detail | Gallery-entry hooks → clinic-surface event | Unpublished entries |
-| `clinicMedia`, `clinicGalleryMedia`, `doctorMedia` change/delete | Clinic/detail imagery when referenced | Deferred; no complete dependency invalidation | Private upload metadata |
+| `clinicGalleryEntries` change/delete through controlled maintenance | None | Private-live; no public revalidation owner | All retained gallery records |
+| `clinicMedia`, `doctorMedia` change/delete | Clinic/detail imagery when referenced | Deferred; no complete dependency invalidation | Private upload metadata |
 | New public team record | Clinic detail | No owner/event exists yet | Authenticated `clinicStaff` identity and roles |
 | Approved review change | Clinic detail, listing comparison, rating output | Review hooks cover current review visibility | Appeals, internal notes, moderation drafts |
 | Approved clinic response change | Clinic detail is the only evidenced target surface; the response model/reader is absent | Model choice determines whether the existing review hook or a new owner/event applies | Draft response, appeal, and moderation state |
@@ -337,14 +339,14 @@ For the planned implementation slices, the decision is domain-specific:
 | --- | --- | --- | --- | --- | --- |
 | Clinic profile | `critical-public` clinic detail + `aggregated-public` listing | Clinic-detail identity tags are slug + surface; data tags are entity + slug + surface + instance + related collections. `collection:clinics` belongs to listing reads, not the clinic-detail loader. | `Clinics` hooks → `revalidateClinicSurfaces` → planner/executor | Planner handles current/previous slug and status; clinic detail paths are bounded | Existing runtime symmetry for current fields; policy catalog still declares a clinic-detail collection family that the loader does not use |
 | Clinic treatments | Same clinic/listing classes | Clinic detail tags `clinictreatments`; listing dependency tags | Treatment hooks resolve current and previous clinics | Bounded affected clinic slugs/IDs plus listing surface | Existing for relation writes; nested master-data tag gap remains |
-| Gallery entries | `critical-public` clinic detail | Clinic detail collection/surface/instance tags | Entry hooks resolve clinic relation and publish state | Current/previous clinic identities and clinic path | Existing for entries; media-file gap remains #1468 |
+| Gallery entries and media | `private-live` while disabled | No public cache keys or tags | No public revalidation event | No public paths | Disabled by #1576; schema and stored data remain |
 | Public team | Must join `critical-public` clinic detail | New collection tag plus clinic-detail surface/instance tags required | New collection hook and normalized planner event required | Current/previous clinic and visibility state; bounded clinic path | Missing — #1527 |
 | Review responses | Existing clinic-detail public class if stored on review; otherwise explicit new policy entry | Public reader must tag the response source and clinic-detail surface. Listing is not a proven response consumer. | Review hook can be extended only if the response lives on review; separate collection needs a new owner/event | Current/previous clinic and response visibility; bounded clinic path | Missing — #1529 and a model decision |
 | Private domains | `private-live`, non-taggable policy entry for each new collection | No public cache key or tags | No public revalidation event | No public paths | Required classification in #1530 and any new private collection |
 
 Known symmetry gaps that later work must not conceal:
 
-1. Direct changes to `clinicMedia`, `clinicGalleryMedia`, and `doctorMedia` do not invalidate all public consumers. The
+1. Direct changes to `clinicMedia` and `doctorMedia` do not invalidate all public consumers. The
    policy deliberately defers media dependency handling to
    [website#1468](https://github.com/findmydoc-platform/website/issues/1468).
 2. Clinic detail renders nested treatment and medical-specialty names, but its read tags do not include
@@ -397,7 +399,7 @@ Stop implementation and obtain an ADR or explicit work order when any slice requ
 | Patient phone renders blank; medical notes and last visit have no source. | Encourages unsupported sensitive-data exposure. | clinic-dashboard#1 rendering fix; #1526 permits only the inquiry projection, while extra sensitive fields remain later scope. |
 | Profile “saved locally”, discard, and publish controls imply a draft workflow. | Current approved clinic writes are immediately public and revalidated. | Unowned later scope; no implicit persistence. |
 | Free treatment name/category implies clinic-owned master data. | Current treatment master is platform-owned; accepting free text would bypass taxonomy rules. | clinic-dashboard#1 must select existing master data; redesign remains unowned later scope. |
-| Generic ordered gallery is not the current before/after gallery model. | Existing media endpoints do not prove the intended UI contract. | Unowned later scope plus #1468 freshness gate for current media. |
+| Generic ordered gallery is not the retained before/after gallery model. | The before/after implementation is disabled and its existing media endpoints do not authorize a new gallery contract. | Unowned later scope; reactivation requires a new product decision and legal review. |
 | The generic team action conflates doctor cards with the future non-doctor public team. | Doctors, public team profiles, and auth staff have different required fields, permissions, and cache behavior. | clinic-dashboard#1 separates doctor UI; #1527 owns only non-doctor public team records. |
 | `active` appears in Doctors admin columns, but no field/lifecycle exists. | “Activate doctor profile” cannot be implemented from current data. | Later scope; no backend issue was created by this matrix. |
 | Review fixtures claim 1,248 reviews and pagination while only three records exist. | Fixture totals cannot seed reporting or acceptance expectations. | #1529/#1531 must return source-backed empty/real states. |

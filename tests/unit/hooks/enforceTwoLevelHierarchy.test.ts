@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { PayloadRequest } from 'payload'
+import { ValidationError } from 'payload'
 import { enforceTwoLevelHierarchy } from '@/collections/MedicalSpecialties/hooks/enforceTwoLevelHierarchy'
 
 const createReq = () => {
@@ -14,6 +15,16 @@ const createReq = () => {
 }
 
 describe('enforceTwoLevelHierarchy', () => {
+  const expectParentError = async (result: ReturnType<typeof enforceTwoLevelHierarchy>, message: string) => {
+    await expect(result).rejects.toBeInstanceOf(ValidationError)
+    await expect(result).rejects.toMatchObject({
+      data: {
+        errors: [expect.objectContaining({ message, path: 'parentSpecialty' })],
+      },
+      status: 400,
+    })
+  }
+
   it('returns data unchanged when parentSpecialty was not provided', async () => {
     const { payload, req } = createReq()
     const data = { title: 'Dermatology' }
@@ -51,7 +62,7 @@ describe('enforceTwoLevelHierarchy', () => {
   it('rejects self-references using the original document id fallback', async () => {
     const { req } = createReq()
 
-    await expect(
+    await expectParentError(
       enforceTwoLevelHierarchy({
         collection: { slug: 'medical-specialties' } as never,
         context: {},
@@ -60,14 +71,15 @@ describe('enforceTwoLevelHierarchy', () => {
         originalDoc: { id: 42 },
         req,
       }),
-    ).rejects.toThrow('A medical specialty cannot be its own parent.')
+      'A medical specialty cannot be its own parent.',
+    )
   })
 
   it('rejects parents that already have a parent and loads them with elevated access', async () => {
     const { payload, req } = createReq()
     payload.findByID.mockResolvedValue({ id: 50, parentSpecialty: { id: 1 } })
 
-    await expect(
+    await expectParentError(
       enforceTwoLevelHierarchy({
         collection: { slug: 'medical-specialties' } as never,
         context: {},
@@ -76,7 +88,6 @@ describe('enforceTwoLevelHierarchy', () => {
         originalDoc: undefined,
         req,
       }),
-    ).rejects.toThrow(
       'Only two hierarchy levels are allowed for medical specialties. Create level 3 entries as treatments.',
     )
 

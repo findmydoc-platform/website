@@ -1,5 +1,8 @@
 import type { AdminJourneyDefinition } from './types'
-import { clinicCreateDraftJourney, clinicTreatmentJoinJourney } from './journeys/clinics'
+import { clinicApprovalJourney, clinicCreateDraftJourney, clinicTreatmentJoinJourney } from './journeys/clinics'
+import { clinicApplicationLifecycleJourney, clinicStaffLifecycleJourney } from './journeys/clinicLifecycle'
+import { reviewPatientValidationJourney } from './journeys/reviews'
+import { relationshipEligibilityJourney } from './journeys/relationshipEligibility'
 import {
   clinicDoctorSpecialtyJourney,
   doctorSpecialtyLinkJourney,
@@ -18,6 +21,9 @@ import {
 } from './journeys/treatments'
 
 export const adminJourneyRegistry = {
+  'admin.clinic-applications.provisioning-guidance': clinicApplicationLifecycleJourney,
+  'admin.clinic-staff.lifecycle-guidance': clinicStaffLifecycleJourney,
+  'admin.clinics.approve-pending': clinicApprovalJourney,
   'admin.clinics.create-draft': clinicCreateDraftJourney,
   'admin.clinictreatments.create-link': clinicTreatmentLinkJourney,
   'admin.doctorspecialties.create-link': doctorSpecialtyLinkJourney,
@@ -25,6 +31,8 @@ export const adminJourneyRegistry = {
   'admin.medical-network.create-specialty-and-link-doctor': medicalNetworkRegressionJourney,
   'admin.medical-network.create-treatment-and-link-clinic-and-doctor': treatmentMedicalNetworkJourney,
   'admin.medical-specialties.create': medicalSpecialtyCreateJourney,
+  'admin.reviews.validate-patient': reviewPatientValidationJourney,
+  'admin.relationships.validate-eligibility': relationshipEligibilityJourney,
   'admin.tags.create': tagCreateJourney,
   'admin.treatments.add-clinictreatment-from-join': treatmentJoinClinicJourney,
   'admin.treatments.add-doctortreatment-from-join': treatmentJoinDoctorJourney,

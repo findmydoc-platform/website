@@ -5,19 +5,8 @@ import {
   type ClinicOnboardingErrorCode,
 } from '@/features/clinicOnboarding/provisionClinicOnboarding'
 import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
+import { hasClinicApplicationProvisioningInputChanged } from '@/collections/clinicApplications/provisioningLifecycle'
 import type { CollectionAfterChangeHook } from 'payload'
-
-const provisioningInputFields = [
-  'clinicName',
-  'clinicWebsite',
-  'contactFirstName',
-  'contactLastName',
-  'contactEmail',
-  'contactRole',
-] as const satisfies ReadonlyArray<keyof ClinicApplication>
-
-const hasProvisioningInputChanged = (doc: ClinicApplication, previousDoc: ClinicApplication): boolean =>
-  provisioningInputFields.some((field) => doc[field] !== previousDoc[field])
 
 const updateProvisioningState = async (
   req: Parameters<CollectionAfterChangeHook<ClinicApplication>>[0]['req'],
@@ -48,7 +37,7 @@ export const provisionApprovedClinicApplication: CollectionAfterChangeHook<Clini
 
   const transitionedToApproved = previousDoc?.status !== 'approved'
   const shouldRetryFailedProvisioning =
-    provisioningStatus === 'failed' && previousDoc && hasProvisioningInputChanged(doc, previousDoc)
+    provisioningStatus === 'failed' && previousDoc && hasClinicApplicationProvisioningInputChanged(doc, previousDoc)
 
   if (!transitionedToApproved && !shouldRetryFailedProvisioning) return doc
 

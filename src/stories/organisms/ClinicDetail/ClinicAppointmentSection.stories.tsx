@@ -43,7 +43,7 @@ const meta = {
     selectedTreatmentId: '',
     doctors,
     treatments,
-    appointmentImage: clinicDetailFixture.beforeAfterEntries[0]?.after ?? clinicDetailFixture.heroImage,
+    appointmentImage: clinicDetailFixture.heroImage,
     message: null,
     messageTone: 'success',
     selectionError: null,

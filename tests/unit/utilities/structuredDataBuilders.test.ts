@@ -127,7 +127,6 @@ describe('structured data builders', () => {
 
   it('builds conservative MedicalClinic data without ratings or trust claims', () => {
     const clinicDetailData = {
-      beforeAfterEntries: [],
       breadcrumbs: [
         { label: 'Home', href: '/' },
         { label: 'Clinics', href: '/listing-comparison' },

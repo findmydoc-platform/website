@@ -254,6 +254,10 @@ function BeforeAfterRevealCompare({
   )
 }
 
+/**
+ * Retained for a possible future reactivation. Do not wire this gallery into product routes or CMS flows
+ * without a new product decision and legal approval.
+ */
 export function BeforeAfterCaseGallerySection({
   entries,
   variant = 'spotlightQueue',

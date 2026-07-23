@@ -6,6 +6,7 @@ import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { platformOnlyFieldAccess, staffProfileFieldReadAccess } from '@/access/fieldAccess'
 import { synchronizeClinicStaffAuthState, validateClinicStaffStatusTransition } from '@/hooks/clinicStaffLifecycle'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
+import { clinicStaffStatusOptions } from './clinicStaff/lifecycle'
 
 // Direct authentication principal for clinic dashboard and API access, never Payload Admin.
 export const ClinicStaff: CollectionConfig = {
@@ -181,13 +182,7 @@ export const ClinicStaff: CollectionConfig = {
     {
       name: 'status',
       type: 'select',
-      options: [
-        { label: 'Pending', value: 'pending' },
-        { label: 'Approved', value: 'approved' },
-        { label: 'Rejected', value: 'rejected' },
-        { label: 'Disabled', value: 'disabled' },
-        { label: 'Offboarded', value: 'offboarded' },
-      ],
+      options: clinicStaffStatusOptions,
       defaultValue: 'pending',
       required: true,
       access: {
@@ -196,11 +191,24 @@ export const ClinicStaff: CollectionConfig = {
         update: platformOnlyFieldAccess,
       },
       admin: {
+        components: {
+          Field: '@/app/(payload)/components/ClinicStaffLifecycle#ClinicStaffStatusField',
+        },
         description: 'Staff approval status',
         condition: (data, siblingData, { user }) => {
           // Hide status field from non-platform users in admin UI
           return Boolean(user && user.collection === 'platformStaff')
         },
+      },
+    },
+    {
+      name: 'lifecycleGuidance',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/app/(payload)/components/ClinicStaffLifecycle#ClinicStaffLifecyclePanel',
+        },
+        condition: (data, siblingData, { user }) => Boolean(user && user.collection === 'platformStaff'),
       },
     },
     {

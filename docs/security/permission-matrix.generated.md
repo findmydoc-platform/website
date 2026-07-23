@@ -29,8 +29,8 @@
 | Cities `(cities)` | Platform | Anyone | Platform | Platform | Platform |
 | PlatformContentMedia `(platformContentMedia)` | Platform | Anyone | Platform | Platform | Platform |
 | ClinicMedia `(clinicMedia)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Conditional<br/><sub>document read scoped; static file read allows approved clinics</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Platform |
-| ClinicGalleryMedia `(clinicGalleryMedia)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Conditional<br/><sub>platform full + clinic scoped; patients/anonymous published only</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Platform |
-| ClinicGalleryEntries `(clinicGalleryEntries)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Conditional<br/><sub>platform full + clinic scoped; patients/anonymous published only</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Platform |
+| ClinicGalleryMedia `(clinicGalleryMedia)` | Conditional<br/><sub>disabled pending a new product decision and legal review</sub> | Conditional<br/><sub>disabled pending a new product decision and legal review</sub> | Conditional<br/><sub>disabled pending a new product decision and legal review</sub> | Conditional<br/><sub>disabled pending a new product decision and legal review</sub> | Conditional<br/><sub>disabled pending a new product decision and legal review</sub> |
+| ClinicGalleryEntries `(clinicGalleryEntries)` | Conditional<br/><sub>disabled pending a new product decision and legal review</sub> | Conditional<br/><sub>disabled pending a new product decision and legal review</sub> | Conditional<br/><sub>disabled pending a new product decision and legal review</sub> | Conditional<br/><sub>disabled pending a new product decision and legal review</sub> | Conditional<br/><sub>disabled pending a new product decision and legal review</sub> |
 | DoctorMedia `(doctorMedia)` | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>served when referenced</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> |
 | UserProfileMedia `(userProfileMedia)` | Conditional<br/><sub>platform full + user own profile (auto owner when omitted)</sub> | Conditional<br/><sub>platform full + staff profiles in own clinic + patient own</sub> | Conditional<br/><sub>platform full + user own profile</sub> | Conditional<br/><sub>platform full + user own profile</sub> | Platform |
 | Tags `(tags)` | Platform | Anyone | Platform | Platform | Platform |
@@ -65,8 +65,8 @@
 - **Cities**: Geographic data - platform write, everyone read
 - **PlatformContentMedia**: Platform marketing assets - platform write, public read
 - **ClinicMedia**: Clinic-owned files - scoped document read, approved static file read for public listing images
-- **ClinicGalleryMedia**: Clinic gallery assets with publication control; platform RWDA, clinic RWD own clinic, others published only
-- **ClinicGalleryEntries**: Structured gallery stories referencing clinic gallery media; publication gates public visibility
+- **ClinicGalleryMedia**: Retained gallery assets are unavailable through regular application and admin access
+- **ClinicGalleryEntries**: Retained gallery stories are unavailable through regular application and admin access
 - **DoctorMedia**: Platform full + clinic-managed doctor images scoped to the assigned clinic
 - **UserProfileMedia**: User &amp; patient avatars - self or platform management; owner + createdBy auto-stamped for requesters
 - **Tags**: Supporting data - platform write, everyone read

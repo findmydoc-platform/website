@@ -5,6 +5,7 @@ import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { enforceTwoLevelHierarchy } from './MedicalSpecialties/hooks/enforceTwoLevelHierarchy'
 import { fallbackMedicalSpecialtyIconKey, medicalSpecialtyIconOptions } from '@/utilities/medicalSpecialties/iconKeys'
 import { revalidateMedicalSpecialtyChange, revalidateMedicalSpecialtyDelete } from '@/hooks/revalidateClinicSurfaces'
+import { buildMedicalSpecialtyParentFilter } from './MedicalSpecialties/parentEligibility'
 
 export const MedicalSpecialties: CollectionConfig = {
   slug: 'medical-specialties',
@@ -80,8 +81,9 @@ export const MedicalSpecialties: CollectionConfig = {
       required: false,
       admin: {
         position: 'sidebar',
-        description: 'Broader specialty if this belongs under one',
+        description: 'Top-level specialty this entry belongs under',
       },
+      filterOptions: ({ id }) => buildMedicalSpecialtyParentFilter(id),
     },
     {
       name: 'doctorLinks',

@@ -95,6 +95,20 @@ describe('beforeChangeValidateDoctorProfileImage', () => {
     )
   })
 
+  it('does not trust an incoming document ID when validating ownership on update', async () => {
+    const req = createReq()
+    vi.mocked(req.payload.findByID).mockResolvedValue({ id: 20, doctor: 11, clinic: 4 } as never)
+
+    await expectProfileImageError(
+      runHook({
+        data: { id: 11, profileImage: 20 },
+        originalDoc: { id: 10, clinic: 4 },
+        req,
+      }),
+      'Selected profile image does not belong to this doctor.',
+    )
+  })
+
   it('rejects media owned by another clinic', async () => {
     const req = createReq()
     vi.mocked(req.payload.findByID).mockResolvedValue({ id: 20, doctor: 10, clinic: 5 } as never)

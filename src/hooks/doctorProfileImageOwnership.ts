@@ -1,7 +1,7 @@
 import type { CollectionBeforeChangeHook, PayloadRequest } from 'payload'
 import { ValidationError } from 'payload'
 
-import { extractRelationId, resolveDocumentId } from '@/collections/common/mediaPathHelpers'
+import { extractRelationId } from '@/collections/common/mediaPathHelpers'
 import { DOCTOR_PROFILE_IMAGE_MESSAGES } from '@/collections/doctors/profileImageEligibility'
 import type { Doctor, DoctorMedia } from '@/payload-types'
 
@@ -38,12 +38,7 @@ export const beforeChangeValidateDoctorProfileImage: CollectionBeforeChangeHook<
   const profileImageId = extractRelationId(profileImageSubmitted ? draft.profileImage : originalDoc?.profileImage)
   if (!profileImageId) return draft
 
-  const doctorId = resolveDocumentId({
-    operation,
-    data: draft as Record<string, unknown>,
-    originalDoc: originalDoc as unknown as Record<string, unknown> | undefined,
-    req: req as unknown as Record<string, unknown>,
-  })
+  const doctorId = operation === 'update' ? extractRelationId(originalDoc?.id) : null
   if (!doctorId) {
     throwProfileImageValidation({ message: DOCTOR_PROFILE_IMAGE_MESSAGES.doctorMissing, req })
   }

@@ -1,0 +1,8 @@
+@layer payload-default {
+  .conditional-requirement-field-error {
+    color: var(--theme-error-750);
+    font-size: 13px;
+    line-height: 1.4;
+    margin: calc(var(--base) * 0.25) 0 0;
+  }
+}

@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import {
   ensureClinicFixture,
   ensureDoctorFixture,
+  ensureIncompleteClinicFixture,
   ensureMedicalSpecialtyFixture,
   ensureTreatmentFixture,
   readAssignedClinicFixture,
@@ -132,7 +133,185 @@ export const createFillClinicDraftStep = <TState extends { clinicName: string }>
       await getAdminFieldRoot(page, 'contact.email').getByLabel('Email').fill(`admin-e2e+${Date.now()}@example.com`)
 
       await openAdminTab(page, 'Details & Status')
-      await selectComboboxOption(page, 'Supported Languages', 'English')
+      await selectComboboxOption(page, 'Supported Languages', 'English', {
+        scope: getAdminFieldRoot(page, 'supportedLanguages'),
+      })
+    },
+    stepId: options.stepId,
+  }) satisfies AdminJourneyStep<TState>
+
+export const createEnsureIncompleteClinicStep = <
+  TState extends {
+    clinicId?: RecordId
+    clinicName: string
+  },
+>(options: {
+  stepId: string
+}) =>
+  ({
+    collections: ['clinics'],
+    kind: 'api-fixture',
+    label: 'Provision an incomplete pending clinic through the API',
+    producesState: ['clinicId', 'clinicName'],
+    run: async ({ request, state }) => {
+      const clinic = await ensureIncompleteClinicFixture(request)
+      state.clinicId = clinic.clinicId
+      state.clinicName = clinic.clinicName
+    },
+    stepId: options.stepId,
+  }) satisfies AdminJourneyStep<TState>
+
+export const createSelectClinicApprovedStep = <TState extends Record<string, unknown>>(options: {
+  checkpoint?: AdminJourneyStep<TState>['checkpoint']
+  stepId: string
+}) =>
+  ({
+    checkpoint: options.checkpoint,
+    kind: 'form-fill',
+    label: 'Select the approved clinic status',
+    run: async ({ page }) => {
+      await selectComboboxOption(page, 'Status', 'Approved')
+      await expect(page.getByText('10 requirements are incomplete.')).toBeVisible()
+    },
+    stepId: options.stepId,
+  }) satisfies AdminJourneyStep<TState>
+
+export const createAssertClinicApprovalValidationStep = <TState extends Record<string, unknown>>(options: {
+  checkpoint?: AdminJourneyStep<TState>['checkpoint']
+  stepId: string
+}) =>
+  ({
+    checkpoint: options.checkpoint,
+    kind: 'assertion',
+    label: 'Verify field-level clinic approval validation',
+    run: async ({ page }) => {
+      const saveButton = page.getByRole('button', { name: /^Save$/ })
+      const validationResponse = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'PATCH' &&
+          response.url().includes('/api/clinics/') &&
+          response.status() === 400,
+      )
+      await saveButton.click()
+      await validationResponse
+      await openAdminTab(page, 'Address')
+      const countryError = page.getByText('Country is required before this clinic can be approved.')
+      await expect(countryError).toBeVisible()
+      await expect(page.getByText('Something went wrong.')).toHaveCount(0)
+    },
+    stepId: options.stepId,
+  }) satisfies AdminJourneyStep<TState>
+
+export const createFillClinicApprovalRequirementsStep = <TState extends Record<string, unknown>>(options: {
+  checkpoint?: AdminJourneyStep<TState>['checkpoint']
+  stepId: string
+}) =>
+  ({
+    checkpoint: options.checkpoint,
+    kind: 'form-fill',
+    label: 'Fill every clinic approval requirement',
+    run: async ({ page }) => {
+      await page.getByLabel('Country').fill('Turkey')
+      await page.getByLabel('Street').fill('Approval Street')
+      await page.getByLabel('House Number').fill('12A')
+      await page.getByLabel('Zip Code').fill('34000')
+      await selectComboboxOption(page, 'City', 'Istanbul')
+
+      await openAdminTab(page, 'Contact')
+      await getAdminFieldRoot(page, 'internalPrimaryContact.firstName').getByLabel('First Name').fill('Journey')
+      await getAdminFieldRoot(page, 'internalPrimaryContact.lastName').getByLabel('Last Name').fill('Coordinator')
+      await getAdminFieldRoot(page, 'internalPrimaryContact.email')
+        .getByLabel('Email')
+        .fill(`journey-approval-${Date.now()}@example.com`)
+      await selectComboboxOption(page, 'Role', 'Clinic Management', {
+        scope: getAdminFieldRoot(page, 'internalPrimaryContact.role'),
+      })
+
+      await openAdminTab(page, 'Details & Status')
+      await selectComboboxOption(page, 'Supported Languages', 'English', {
+        scope: getAdminFieldRoot(page, 'supportedLanguages'),
+      })
+      await expect(page.getByText('All requirements are complete.')).toBeVisible()
+    },
+    stepId: options.stepId,
+  }) satisfies AdminJourneyStep<TState>
+
+export const createEnsureReviewContextStep = <
+  TState extends {
+    clinicId?: RecordId
+    clinicName: string
+    doctorId?: RecordId
+    doctorName: string
+    treatmentId?: RecordId
+    treatmentName: string
+  },
+>(options: {
+  stepId: string
+}) =>
+  ({
+    collections: ['clinics', 'doctors', 'treatments'],
+    kind: 'api-fixture',
+    label: 'Provision review context fixtures through the API',
+    producesState: ['clinicId', 'clinicName', 'doctorId', 'doctorName', 'treatmentId', 'treatmentName'],
+    run: async ({ request, state }) => {
+      const clinic = await ensureClinicFixture(request, { reuseExisting: true })
+      const doctor = await ensureDoctorFixture(request, { clinicId: clinic.clinicId })
+      const treatment = await ensureTreatmentFixture(request, { reuseExisting: true })
+
+      state.clinicId = clinic.clinicId
+      state.clinicName = clinic.clinicName
+      state.doctorId = doctor.doctorId
+      state.doctorName = doctor.doctorFullName
+      state.treatmentId = treatment.treatmentId
+      state.treatmentName = treatment.treatmentName
+    },
+    stepId: options.stepId,
+  }) satisfies AdminJourneyStep<TState>
+
+export const createFillReviewWithoutPatientStep = <
+  TState extends {
+    clinicName: string
+    doctorName: string
+    treatmentName: string
+  },
+>(options: {
+  checkpoint?: AdminJourneyStep<TState>['checkpoint']
+  stepId: string
+}) =>
+  ({
+    checkpoint: options.checkpoint,
+    kind: 'form-fill',
+    label: 'Fill review fields without a patient',
+    run: async ({ page, state }) => {
+      await page.getByLabel('Star Rating').fill('4')
+      await page.getByLabel('Comment').fill('Review validation journey')
+      await page
+        .getByText('Review Context', { exact: true })
+        .locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " collapsible-field ")][1]')
+        .locator('button.collapsible__toggle')
+        .click()
+      await selectComboboxOption(page, 'Clinic', state.clinicName)
+      await selectComboboxOption(page, 'Doctor', state.doctorName)
+      await selectComboboxOption(page, 'Treatment', state.treatmentName)
+    },
+    stepId: options.stepId,
+  }) satisfies AdminJourneyStep<TState>
+
+export const createAssertReviewPatientValidationStep = <TState extends Record<string, unknown>>(options: {
+  checkpoint?: AdminJourneyStep<TState>['checkpoint']
+  stepId: string
+}) =>
+  ({
+    checkpoint: options.checkpoint,
+    kind: 'assertion',
+    label: 'Verify patient validation on review creation',
+    run: async ({ page }) => {
+      const saveButton = page.getByRole('button', { name: /^Save$/ })
+      await saveButton.click()
+      const patientError = page.getByText('Patient is required when creating a review.')
+      await patientError.scrollIntoViewIfNeeded()
+      await expect(patientError).toBeVisible()
+      await expect(page.getByText('Something went wrong.')).toHaveCount(0)
     },
     stepId: options.stepId,
   }) satisfies AdminJourneyStep<TState>
@@ -491,7 +670,7 @@ export const createFillClinicTreatmentStep = <
       const price = state.price || '3500'
       state.price = price
 
-      await page.getByLabel('Price (USD)').fill(price)
+      await getAdminFieldRoot(page, 'price').getByRole('spinbutton').fill(price)
 
       if (state.clinicName) {
         await selectComboboxOptionIfVisible(page, 'Clinic', state.clinicName)

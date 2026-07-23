@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ValidationError } from 'payload'
 
 import { Clinics } from '@/collections/Clinics'
 
@@ -66,7 +67,7 @@ describe('Clinics collection verification field', () => {
   })
 
   it('requires complete operational fields only when the clinic is approved', async () => {
-    const validateClinic = Clinics.hooks?.beforeValidate?.[0] as ((args: unknown) => unknown) | undefined
+    const validateClinic = Clinics.hooks?.beforeChange?.at(-1) as ((args: unknown) => unknown) | undefined
     const validContact = {
       firstName: 'Aylin',
       lastName: 'Korkmaz',
@@ -75,19 +76,36 @@ describe('Clinics collection verification field', () => {
     }
 
     expect(validateClinic).toBeTypeOf('function')
-    if (!validateClinic) throw new Error('Expected clinic beforeValidate hook')
+    if (!validateClinic) throw new Error('Expected clinic beforeChange hook')
 
     const runHook = async (args: unknown) => validateClinic(args)
 
     await expect(runHook({ data: { status: 'pending' }, operation: 'create' })).resolves.toEqual({
       status: 'pending',
     })
-    await expect(
-      runHook({
-        data: { status: 'approved' },
-        operation: 'create',
-      }),
-    ).rejects.toThrow(/complete address, internal primary contact, and at least one supported language/i)
+    const incompleteApproval = runHook({
+      data: { status: 'approved' },
+      operation: 'create',
+    })
+
+    await expect(incompleteApproval).rejects.toBeInstanceOf(ValidationError)
+    await expect(incompleteApproval).rejects.toMatchObject({
+      data: {
+        errors: expect.arrayContaining([
+          expect.objectContaining({ path: 'address.country' }),
+          expect.objectContaining({ path: 'address.street' }),
+          expect.objectContaining({ path: 'address.houseNumber' }),
+          expect.objectContaining({ path: 'address.zipCode' }),
+          expect.objectContaining({ path: 'address.city' }),
+          expect.objectContaining({ path: 'internalPrimaryContact.firstName' }),
+          expect.objectContaining({ path: 'internalPrimaryContact.lastName' }),
+          expect.objectContaining({ path: 'internalPrimaryContact.email' }),
+          expect.objectContaining({ path: 'internalPrimaryContact.role' }),
+          expect.objectContaining({ path: 'supportedLanguages' }),
+        ]),
+      },
+      status: 400,
+    })
     await expect(
       runHook({
         data: {
@@ -136,6 +154,15 @@ describe('Clinics collection verification field', () => {
           supportedLanguages: ['english'],
         },
       }),
-    ).rejects.toThrow(/complete address, internal primary contact, and at least one supported language/i)
+    ).rejects.toMatchObject({
+      data: {
+        errors: expect.arrayContaining([
+          expect.objectContaining({ path: 'internalPrimaryContact.firstName' }),
+          expect.objectContaining({ path: 'internalPrimaryContact.lastName' }),
+          expect.objectContaining({ path: 'internalPrimaryContact.email' }),
+          expect.objectContaining({ path: 'internalPrimaryContact.role' }),
+        ]),
+      },
+    })
   })
 })

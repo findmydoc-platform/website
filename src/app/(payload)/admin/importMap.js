@@ -25,7 +25,10 @@ import { BlocksFeatureClient as BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0
 import { default as default_5ecb274b48d69152edaeef5b36c5c4d8 } from '@/app/(payload)/components/PolicyAwareUpload'
 import { ClinicStaffAdminGuidance as ClinicStaffAdminGuidance_40aac613a756cdcd1ea79946bc7d5b3e } from '@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance'
 import { PlatformStaffAdminGuidance as PlatformStaffAdminGuidance_44a83a5fcf2c50f5e0c31ed343de2547 } from '@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance'
+import { ClinicApprovalRequirementError as ClinicApprovalRequirementError_6b9b57c3f957a81847439b14fa4ed9d4 } from '@/app/(payload)/components/ClinicApprovalRequirements'
+import { ClinicApprovalRequirements as ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4 } from '@/app/(payload)/components/ClinicApprovalRequirements'
 import { default as default_edf1bab331b69df45f809a41e2fc2349 } from '@/components/organisms/MedicalSpecialtiesAdminGuidance'
+import { ReviewCreationRequirementError as ReviewCreationRequirementError_8940a50fccf58880bb0f9c9a8202ef0e } from '@/app/(payload)/components/ReviewCreationRequirementError'
 import { LinkToDoc as LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { ReindexButton as ReindexButton_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { FormatField as FormatField_cdf7e044479f899a31f804427d568b36 } from '@payloadcms/plugin-import-export/rsc'
@@ -82,7 +85,10 @@ export const importMap = {
   "@/app/(payload)/components/PolicyAwareUpload#default": default_5ecb274b48d69152edaeef5b36c5c4d8,
   "@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance#ClinicStaffAdminGuidance": ClinicStaffAdminGuidance_40aac613a756cdcd1ea79946bc7d5b3e,
   "@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance#PlatformStaffAdminGuidance": PlatformStaffAdminGuidance_44a83a5fcf2c50f5e0c31ed343de2547,
+  "@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirementError": ClinicApprovalRequirementError_6b9b57c3f957a81847439b14fa4ed9d4,
+  "@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirements": ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4,
   "@/components/organisms/MedicalSpecialtiesAdminGuidance#default": default_edf1bab331b69df45f809a41e2fc2349,
+  "@/app/(payload)/components/ReviewCreationRequirementError#ReviewCreationRequirementError": ReviewCreationRequirementError_8940a50fccf58880bb0f9c9a8202ef0e,
   "@payloadcms/plugin-search/client#LinkToDoc": LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634,
   "@payloadcms/plugin-search/client#ReindexButton": ReindexButton_aead06e4cbf6b2620c5c51c9ab283634,
   "@payloadcms/plugin-import-export/rsc#FormatField": FormatField_cdf7e044479f899a31f804427d568b36,

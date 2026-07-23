@@ -12,6 +12,7 @@ import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateDoctorChange, revalidateDoctorDelete } from '@/hooks/revalidateClinicSurfaces'
 import { beforeChangeValidateDoctorProfileImage } from '@/hooks/doctorProfileImageOwnership'
+import { buildDoctorProfileImageFilter } from './doctors/profileImageEligibility'
 
 export const doctorTitles = [
   { label: 'Dr.', value: 'dr' },
@@ -168,8 +169,9 @@ export const Doctors: CollectionConfig<'doctors'> = {
               relationTo: 'doctorMedia',
               required: false,
               admin: {
-                description: 'Doctor profile photo',
+                description: 'Save the doctor first, then select an image owned by this doctor and clinic.',
               },
+              filterOptions: ({ data, id }) => buildDoctorProfileImageFilter({ clinicId: data?.clinic, doctorId: id }),
             },
           ],
         },

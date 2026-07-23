@@ -74,7 +74,6 @@ const COLLECTION_FLUSH_SCOPE: Partial<Record<CacheTaggableCollection, ScopeEntry
   doctortreatments: { surfaces: ['clinic-detail'] },
   reviews: { surfaces: ['clinic-detail', 'listing-comparison'], sitemaps: ['pages'] },
   accreditation: { surfaces: ['clinic-detail'] },
-  clinicGalleryEntries: { surfaces: ['clinic-detail'] },
   treatments: { surfaces: ['listing-comparison', 'partners-clinics'], sitemaps: ['pages'] },
   'medical-specialties': { surfaces: ['listing-comparison', 'home', 'partners-clinics'], sitemaps: ['pages'] },
   cities: { surfaces: ['listing-comparison', 'home'], sitemaps: ['pages'] },
@@ -82,7 +81,6 @@ const COLLECTION_FLUSH_SCOPE: Partial<Record<CacheTaggableCollection, ScopeEntry
   categories: { surfaces: ['listing-comparison'] },
   tags: { surfaces: ['listing-comparison'] },
   clinicMedia: {},
-  clinicGalleryMedia: {},
   doctorMedia: {},
   platformContentMedia: {},
 }

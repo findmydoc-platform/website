@@ -1,32 +1,31 @@
 import type { CollectionConfig } from 'payload'
 
-import { clinicGalleryReadAccess, clinicGalleryScopedMutationAccess } from '@/access/clinicGallery'
-import { platformOrAssignedClinicMutation } from '@/access/scopeFilters'
+import { disabledClinicGalleryAccess } from '@/access/clinicGallery'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { beforeChangeClinicGalleryEntry } from './hooks/beforeChangeClinicGalleryEntry'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
-import {
-  revalidateClinicGalleryEntryChange,
-  revalidateClinicGalleryEntryDelete,
-} from '@/hooks/revalidateClinicSurfaces'
 
 export const ClinicGalleryEntries: CollectionConfig = {
   slug: 'clinicGalleryEntries',
   admin: {
+    hidden: true,
     group: 'Clinics',
     defaultColumns: ['clinic', 'status', 'title', 'createdBy'],
     description: 'Before-and-after stories',
     useAsTitle: 'title',
   },
   access: {
-    read: clinicGalleryReadAccess,
-    create: platformOrAssignedClinicMutation,
-    update: clinicGalleryScopedMutationAccess,
-    delete: clinicGalleryScopedMutationAccess,
+    admin: disabledClinicGalleryAccess,
+    read: disabledClinicGalleryAccess,
+    create: disabledClinicGalleryAccess,
+    update: disabledClinicGalleryAccess,
+    delete: disabledClinicGalleryAccess,
   },
+  endpoints: false,
+  graphQL: false,
   trash: true,
   timestamps: true,
   hooks: {
@@ -45,8 +44,6 @@ export const ClinicGalleryEntries: CollectionConfig = {
         publishedValue: 'published',
       }),
     ],
-    afterChange: [revalidateClinicGalleryEntryChange],
-    afterDelete: [revalidateClinicGalleryEntryDelete],
   },
   fields: [
     stableIdField(),

@@ -582,23 +582,23 @@ export interface Clinic {
    */
   address?: {
     /**
-     * Country where the clinic is located
+     * Country where the clinic is located. Required for approval.
      */
     country?: string | null;
     /**
-     * Street name
+     * Street name. Required for approval.
      */
     street?: string | null;
     /**
-     * Building or suite number
+     * Building or suite number. Required for approval.
      */
     houseNumber?: string | null;
     /**
-     * Postal code
+     * Postal code. Required for approval.
      */
     zipCode?: number | null;
     /**
-     * City where the clinic is located
+     * City where the clinic is located. Required for approval.
      */
     city?: (number | null) | City;
   };
@@ -624,19 +624,19 @@ export interface Clinic {
    */
   internalPrimaryContact?: {
     /**
-     * Given name of the first contact
+     * Given name of the first contact. Required for approval.
      */
     firstName?: string | null;
     /**
-     * Family name of the first contact
+     * Family name of the first contact. Required for approval.
      */
     lastName?: string | null;
     /**
-     * Email for internal follow-up
+     * Email for internal follow-up. Required for approval.
      */
     email?: string | null;
     /**
-     * Role of the first contact
+     * Role of the first contact. Required for approval.
      */
     role?: ('Medical Director' | 'Clinic Management' | 'International Office') | null;
   };
@@ -653,7 +653,7 @@ export interface Clinic {
    */
   verification?: ('unverified' | 'bronze' | 'silver' | 'gold') | null;
   /**
-   * Languages the clinic supports
+   * Languages the clinic supports. Required for approval.
    */
   supportedLanguages?:
     | (
@@ -797,7 +797,7 @@ export interface MedicalSpecialty {
    */
   featureImage?: (number | null) | PlatformContentMedia;
   /**
-   * Broader specialty if this belongs under one
+   * Top-level specialty this entry belongs under
    */
   parentSpecialty?: (number | null) | MedicalSpecialty;
   /**
@@ -1272,7 +1272,7 @@ export interface Doctor {
     [k: string]: unknown;
   } | null;
   /**
-   * Doctor profile photo
+   * Save the doctor first, then select an image owned by this doctor and clinic.
    */
   profileImage?: (number | null) | DoctorMedia;
   /**
@@ -2395,7 +2395,7 @@ export interface Review {
    */
   reviewDate: string;
   /**
-   * Patient who wrote this review
+   * Patient who wrote this review. Required when creating a review.
    */
   patient?: (number | null) | Patient;
   /**
@@ -2768,12 +2768,6 @@ export interface PayloadMcpApiKey {
   reviews?: {
     /**
      * Allow clients to find reviews.
-     */
-    find?: boolean | null;
-  };
-  clinicGalleryEntries?: {
-    /**
-     * Allow clients to find clinicGalleryEntries.
      */
     find?: boolean | null;
   };
@@ -4530,11 +4524,6 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
       };
   reviews?:
-    | T
-    | {
-        find?: T;
-      };
-  clinicGalleryEntries?:
     | T
     | {
         find?: T;

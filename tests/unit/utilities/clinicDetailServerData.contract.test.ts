@@ -17,7 +17,11 @@ type MockData = {
   reviews: Array<Record<string, unknown>>
   accreditation: Array<Record<string, unknown>>
   cities: Array<Record<string, unknown>>
-  clinicGalleryEntries: Array<Record<string, unknown>>
+}
+
+type FindCall = {
+  collection: string
+  select?: Record<string, unknown>
 }
 
 function lexicalText(value: string) {
@@ -256,42 +260,6 @@ const mockData: MockData = {
     { id: 802, name: 'JCI' },
   ],
   cities: [{ id: 501, name: 'Berlin' }],
-  clinicGalleryEntries: [
-    {
-      id: 901,
-      clinic: 1,
-      title: 'Orthopedic recovery case',
-      beforeMedia: {
-        id: 1201,
-        filename: 'before-1.jpg',
-        alt: 'Before recovery',
-      },
-      afterMedia: {
-        id: 1202,
-        filename: 'after-1.jpg',
-        alt: 'After recovery',
-      },
-      description: lexicalText('Improved mobility after a guided program.'),
-      status: 'published',
-    },
-    {
-      id: 902,
-      clinic: 1,
-      title: 'Draft case should not appear',
-      beforeMedia: {
-        id: 1203,
-        filename: 'before-2.jpg',
-        alt: 'Draft before',
-      },
-      afterMedia: {
-        id: 1204,
-        filename: 'after-2.jpg',
-        alt: 'Draft after',
-      },
-      description: lexicalText('Draft description'),
-      status: 'draft',
-    },
-  ],
 }
 
 function matchesClause(doc: Record<string, unknown>, clause: Record<string, unknown>): boolean {
@@ -321,7 +289,7 @@ function matchesClause(doc: Record<string, unknown>, clause: Record<string, unkn
   })
 }
 
-function createMockPayload(data: MockData): Payload {
+function createMockPayload(data: MockData, findCalls: FindCall[] = []): Payload {
   return {
     find: async (args: {
       collection: keyof MockData
@@ -333,6 +301,7 @@ function createMockPayload(data: MockData): Payload {
       overrideAccess?: boolean
       pagination?: boolean
     }) => {
+      findCalls.push({ collection: args.collection, select: args.select })
       const source = data[args.collection] ?? []
 
       const accessFiltered =
@@ -387,13 +356,13 @@ describe('getClinicDetailServerData (contract)', () => {
       'collection:doctorspecialties',
       'collection:reviews',
       'collection:accreditation',
-      'collection:clinicGalleryEntries',
       'collection:cities',
     ])
   })
 
-  it('maps approved clinic data with trust, doctors, gallery and fallback fields', async () => {
-    const payload = createMockPayload(mockData)
+  it('maps approved clinic data without loading the disabled gallery', async () => {
+    const findCalls: FindCall[] = []
+    const payload = createMockPayload(mockData, findCalls)
 
     const result = await getClinicDetailServerData(payload, 'berlin-health-clinic', {
       draft: false,
@@ -455,8 +424,11 @@ describe('getClinicDetailServerData (contract)', () => {
       label: 'Compare clinics for Routine Checkup',
     })
 
-    expect(result?.beforeAfterEntries).toHaveLength(1)
-    expect(result?.beforeAfterEntries[0]?.title).toBe('Orthopedic recovery case')
+    expect(findCalls.some((call) => call.collection === 'clinicGalleryEntries')).toBe(false)
+    expect(findCalls.find((call) => call.collection === 'clinics')?.select).toMatchObject({
+      galleryEntries: false,
+    })
+    expect(result).not.toHaveProperty('beforeAfterEntries')
   })
 
   it('rejects approved clinic reviews without an aggregate clinic rating', async () => {

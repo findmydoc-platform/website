@@ -54,7 +54,6 @@ export class UnsupportedRevalidationEventError extends Error {
 const PUBLIC_STATUS = 'published'
 const APPROVED_CLINIC_STATUS = 'approved'
 const APPROVED_REVIEW_STATUS = 'approved'
-const PUBLISHED_GALLERY_STATUS = 'published'
 
 const unique = <Value extends string>(values: readonly Value[]): Value[] => [...new Set(values)]
 
@@ -302,8 +301,6 @@ const isPublicRelatedEvent = (event: ClinicSurfaceRevalidationEvent): boolean =>
   switch (event.collection) {
     case 'reviews':
       return status === APPROVED_REVIEW_STATUS || previousStatus === APPROVED_REVIEW_STATUS
-    case 'clinicGalleryEntries':
-      return status === PUBLISHED_GALLERY_STATUS || previousStatus === PUBLISHED_GALLERY_STATUS
     default:
       return true
   }
@@ -380,7 +377,6 @@ const CLINIC_DETAIL_RELATED_COLLECTIONS = [
   'doctorspecialties',
   'reviews',
   'accreditation',
-  'clinicGalleryEntries',
 ] as const satisfies readonly ClinicSurfaceRevalidationCollection[]
 
 const LISTING_COMPARISON_COLLECTIONS = [

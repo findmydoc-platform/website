@@ -9,6 +9,35 @@ type ClinicFixture = {
   clinicName: string
 }
 
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=',
+  'base64',
+)
+
+const createUploadFixture = async (
+  request: APIRequestContext,
+  collectionSlug: 'doctorMedia',
+  data: Record<string, unknown>,
+  fileName: string,
+) => {
+  const response = await request.post(`/api/${collectionSlug}`, {
+    multipart: {
+      _payload: JSON.stringify(data),
+      file: {
+        buffer: TINY_PNG,
+        mimeType: 'image/png',
+        name: fileName,
+      },
+    },
+  })
+  expect(response.ok()).toBeTruthy()
+
+  const body = (await response.json()) as CreatedDocResponse
+  const id = getRecordId(body.doc?.id)
+  expect(id).toBeTruthy()
+  return id as string | number
+}
+
 export const ensureCountryFixture = async (request: APIRequestContext) => {
   const existingCountry = await getFirstCollectionDoc(request, '/api/countries?depth=0&limit=1&sort=-createdAt')
   const existingCountryId = getRecordId(existingCountry?.id)
@@ -121,6 +150,87 @@ export const ensureClinicFixture = async (
   return {
     clinicId: clinicId as string | number,
     clinicName,
+  }
+}
+
+export const ensureIncompleteClinicFixture = async (
+  request: APIRequestContext,
+  options: {
+    clinicNamePrefix?: string
+  } = {},
+) => {
+  const uniqueSuffix = Date.now()
+  const clinicName = `${options.clinicNamePrefix ?? 'E2E Pending Clinic'} ${uniqueSuffix}`
+  const response = await request.post('/api/clinics', {
+    data: {
+      name: clinicName,
+      status: 'pending',
+    },
+  })
+  expect(response.ok()).toBeTruthy()
+
+  const body = (await response.json()) as CreatedDocResponse
+  const clinicId = getRecordId(body.doc?.id)
+  expect(clinicId).toBeTruthy()
+
+  return {
+    clinicId: clinicId as string | number,
+    clinicName,
+  }
+}
+
+export const ensureRelationshipEligibilityFixtures = async (request: APIRequestContext) => {
+  const suffix = Date.now()
+  const clinicA = await ensureClinicFixture(request, {
+    clinicNamePrefix: `E2E Relationship Clinic A ${suffix}`,
+    reuseExisting: false,
+  })
+  const doctorA = await ensureDoctorFixture(request, { clinicId: clinicA.clinicId })
+  const doctorB = await ensureDoctorFixture(request, { clinicId: clinicA.clinicId })
+  const ownProfileAlt = `E2E own profile ${suffix}`
+  const foreignProfileAlt = `E2E foreign profile ${suffix}`
+  await createUploadFixture(
+    request,
+    'doctorMedia',
+    { alt: ownProfileAlt, doctor: doctorA.doctorId },
+    `doctor-own-${suffix}.png`,
+  )
+  await createUploadFixture(
+    request,
+    'doctorMedia',
+    { alt: foreignProfileAlt, doctor: doctorB.doctorId },
+    `doctor-foreign-${suffix}.png`,
+  )
+
+  const createSpecialty = async (name: string, parentSpecialty?: string | number) => {
+    const response = await request.post('/api/medical-specialties', {
+      data: {
+        name,
+        ...(parentSpecialty === undefined ? {} : { parentSpecialty }),
+      },
+    })
+    expect(response.ok()).toBeTruthy()
+    const body = (await response.json()) as CreatedDocResponse
+    const id = getRecordId(body.doc?.id)
+    expect(id).toBeTruthy()
+    return id as string | number
+  }
+
+  const rootAName = `E2E Root A ${suffix}`
+  const rootBName = `E2E Root B ${suffix}`
+  const childName = `E2E Child ${suffix}`
+  const rootAId = await createSpecialty(rootAName)
+  await createSpecialty(rootBName)
+  await createSpecialty(childName, rootAId)
+
+  return {
+    childName,
+    doctorAId: doctorA.doctorId,
+    foreignProfileLabel: foreignProfileAlt,
+    ownProfileLabel: ownProfileAlt,
+    rootAId,
+    rootAName,
+    rootBName,
   }
 }
 

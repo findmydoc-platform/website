@@ -1,22 +1,17 @@
 import type { ClinicStaff } from '@/payload-types'
 import { deleteClinicSupabaseAccount, setClinicSupabaseAccountAccess } from '@/auth/utilities/supabaseProvision'
+import {
+  isClinicStaffStatusTransitionAllowed,
+  type ClinicStaffAuthSyncErrorCode,
+} from '@/collections/clinicStaff/lifecycle'
 import type { CollectionAfterChangeHook, CollectionBeforeChangeHook } from 'payload'
-
-type ClinicStaffStatus = NonNullable<ClinicStaff['status']>
-type AuthSyncErrorCode = NonNullable<NonNullable<ClinicStaff['authSync']>['errorCode']>
-
-const allowedTransitions: Record<ClinicStaffStatus, readonly ClinicStaffStatus[]> = {
-  pending: ['approved', 'rejected', 'offboarded'],
-  approved: ['disabled', 'offboarded'],
-  disabled: ['approved', 'offboarded'],
-  rejected: ['offboarded'],
-  offboarded: [],
-}
+import { ValidationError } from 'payload'
 
 export const validateClinicStaffStatusTransition: CollectionBeforeChangeHook<ClinicStaff> = async ({
   data,
   operation,
   originalDoc,
+  req,
 }) => {
   if (operation !== 'update' || !originalDoc?.status) return data
 
@@ -24,8 +19,19 @@ export const validateClinicStaffStatusTransition: CollectionBeforeChangeHook<Cli
   const nextStatus = data.status ?? previousStatus
   if (nextStatus === previousStatus) return data
 
-  if (!allowedTransitions[previousStatus].includes(nextStatus)) {
-    throw new Error(`Clinic staff status transition ${previousStatus} -> ${nextStatus} is not allowed`)
+  if (!isClinicStaffStatusTransitionAllowed(previousStatus, nextStatus)) {
+    throw new ValidationError({
+      collection: 'clinicStaff',
+      errors: [
+        {
+          label: 'Status',
+          message: `Clinic staff status transition ${previousStatus} -> ${nextStatus} is not allowed.`,
+          path: 'status',
+        },
+      ],
+      id: originalDoc.id,
+      req,
+    })
   }
 
   return data
@@ -35,7 +41,7 @@ const updateAuthSync = async (
   req: Parameters<CollectionAfterChangeHook<ClinicStaff>>[0]['req'],
   id: number | string,
   status: 'deleted' | 'failed' | 'synced',
-  errorCode: AuthSyncErrorCode | null,
+  errorCode: ClinicStaffAuthSyncErrorCode | null,
 ) => {
   await req.payload.update({
     collection: 'clinicStaff',
@@ -59,7 +65,8 @@ export const synchronizeClinicStaffAuthState: CollectionAfterChangeHook<ClinicSt
   const statusChanged = previousDoc?.status !== doc.status
   if (!statusChanged && doc.authSync?.status === expectedSyncStatus) return doc
 
-  let failureCode: AuthSyncErrorCode = doc.status === 'offboarded' ? 'account_delete_failed' : 'account_update_failed'
+  let failureCode: ClinicStaffAuthSyncErrorCode =
+    doc.status === 'offboarded' ? 'account_delete_failed' : 'account_update_failed'
 
   try {
     if (!doc.supabaseUserId) {

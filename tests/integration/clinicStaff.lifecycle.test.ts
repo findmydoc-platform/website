@@ -6,6 +6,9 @@ import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { deleteClinicSupabaseAccount, setClinicSupabaseAccountAccess } from '@/auth/utilities/supabaseProvision'
+import { clinicStaffStatusTransitions, type ClinicStaffStatus } from '@/collections/clinicStaff/lifecycle'
+
+const clinicStaffStatuses: readonly ClinicStaffStatus[] = ['pending', 'approved', 'rejected', 'disabled', 'offboarded']
 
 describe('ClinicStaff lifecycle integration', () => {
   let payload: Payload
@@ -118,14 +121,104 @@ describe('ClinicStaff lifecycle integration', () => {
     })
     staffIds.push(staff.id)
 
+    const invalidTransition = payload.update({
+      collection: 'clinicStaff',
+      id: staff.id,
+      data: { status: 'disabled' },
+      overrideAccess: true,
+    })
+
+    await expect(invalidTransition).rejects.toMatchObject({
+      data: {
+        errors: [expect.objectContaining({ path: 'status' })],
+      },
+      status: 400,
+    })
+
+    const unchanged = await payload.findByID({
+      collection: 'clinicStaff',
+      id: staff.id,
+      overrideAccess: true,
+      depth: 0,
+    })
+    expect(unchanged.status).toBe('pending')
+  })
+
+  it('enforces every allowed and forbidden status transition through the collection', async () => {
+    for (const previousStatus of clinicStaffStatuses) {
+      for (const nextStatus of clinicStaffStatuses) {
+        if (nextStatus === previousStatus) continue
+
+        const transitionStaff = await payload.create({
+          collection: 'clinicStaff',
+          data: {
+            email: `${slugPrefix}-${previousStatus}-${nextStatus}@example.com`,
+            firstName: 'Matrix',
+            lastName: 'Staff',
+            status: previousStatus,
+            supabaseUserId: `sb-${slugPrefix}-${previousStatus}-${nextStatus}`,
+          },
+          overrideAccess: true,
+          depth: 0,
+        })
+        staffIds.push(transitionStaff.id)
+
+        const update = payload.update({
+          collection: 'clinicStaff',
+          id: transitionStaff.id,
+          data: { status: nextStatus },
+          overrideAccess: true,
+          depth: 0,
+        })
+        const isAllowed = clinicStaffStatusTransitions[previousStatus].includes(nextStatus as never)
+
+        if (isAllowed) {
+          await expect(update).resolves.toMatchObject({ status: nextStatus })
+        } else {
+          await expect(update).rejects.toMatchObject({
+            data: {
+              errors: [expect.objectContaining({ path: 'status' })],
+            },
+            status: 400,
+          })
+          await expect(
+            payload.findByID({
+              collection: 'clinicStaff',
+              id: transitionStaff.id,
+              overrideAccess: true,
+              depth: 0,
+            }),
+          ).resolves.toMatchObject({ status: previousStatus })
+        }
+      }
+    }
+  }, 45000)
+
+  it('allows an unchanged status update without repeating a successful sync', async () => {
+    const staff = await payload.create({
+      collection: 'clinicStaff',
+      data: {
+        email: `${slugPrefix}-unchanged@example.com`,
+        firstName: 'Unchanged',
+        lastName: 'Staff',
+        status: 'approved',
+        supabaseUserId: `sb-${slugPrefix}-unchanged`,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+    staffIds.push(staff.id)
+    vi.clearAllMocks()
+
     await expect(
       payload.update({
         collection: 'clinicStaff',
         id: staff.id,
-        data: { status: 'disabled' },
+        data: { lastName: 'Updated', status: 'approved' },
         overrideAccess: true,
       }),
-    ).rejects.toThrow(/pending -> disabled/)
+    ).resolves.toMatchObject({ lastName: 'Updated', status: 'approved' })
+    expect(setClinicSupabaseAccountAccess).not.toHaveBeenCalled()
   })
 
   it('stores and retries a resumable Supabase synchronization failure', async () => {

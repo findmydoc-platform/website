@@ -20,6 +20,41 @@ test('platform staff sees and completes clinic approval requirements @regression
   await expectNoBrowserIssues(issues)
 })
 
+test('platform staff sees valid clinic staff transitions and structured API validation @regression', async ({
+  page,
+}) => {
+  const issues = createBrowserIssueCollector(page)
+  const result = await executeAdminJourney(getAdminJourneyDefinition('admin.clinic-staff.lifecycle-guidance'), {
+    mode: 'regression',
+    page,
+    persona: 'admin',
+    request: page.request,
+  })
+
+  await expect(result.state.clinicStaffId).toBeTruthy()
+  await expect(page.getByText('Saving disables the Supabase identity.')).toBeVisible()
+  await expectNoBrowserIssues(issues)
+})
+
+test('platform staff sees clinic application provisioning guidance without starting provisioning @regression', async ({
+  page,
+}) => {
+  const issues = createBrowserIssueCollector(page)
+  const result = await executeAdminJourney(
+    getAdminJourneyDefinition('admin.clinic-applications.provisioning-guidance'),
+    {
+      mode: 'regression',
+      page,
+      persona: 'admin',
+      request: page.request,
+    },
+  )
+
+  await expect(result.state.applicationId).toBeTruthy()
+  await expect(page.getByText('Provisioning pending', { exact: true })).toBeVisible()
+  await expectNoBrowserIssues(issues)
+})
+
 test('platform staff sees the patient requirement while creating a review @regression', async ({ page }) => {
   const issues = createBrowserIssueCollector(page, {
     ignoredConsoleErrors: [/status of 400.*\/api\/reviews(?:\?|$)/, /server responded with a status of 400/i],

@@ -4,17 +4,12 @@ import { computedOnlyFieldAccess } from '@/access/fieldAccess'
 import { CLINIC_ONBOARDING_ERROR_CODES } from '@/features/clinicOnboarding/provisionClinicOnboarding'
 import { provisionApprovedClinicApplication } from '@/hooks/clinicApplicationProvisioning'
 import { clinicContactRoleOptions } from './common/selectionOptions'
+import { clinicApplicationProvisioningErrorLabels } from './clinicApplications/provisioningLifecycle'
 
 // Platform-controlled application intake for clinics.
 // Public submissions are accepted only through /api/auth/register/clinic.
 // Only platform staff can create/read/update/delete records directly.
 // Approval workflow: platform sets status to approved; provisioning creates the pending clinic and initial staff access.
-
-const provisioningErrorLabels: Record<(typeof CLINIC_ONBOARDING_ERROR_CODES)[number], string> = {
-  record_failed: 'Record failed',
-  auth_failed: 'Authentication failed',
-  binding_failed: 'Identity binding failed',
-}
 
 export const ClinicApplications: CollectionConfig = {
   slug: 'clinicApplications',
@@ -144,6 +139,15 @@ export const ClinicApplications: CollectionConfig = {
       admin: { description: 'Application review status' },
     },
     {
+      name: 'lifecycleGuidance',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/app/(payload)/components/ClinicApplicationLifecycle#ClinicApplicationLifecyclePanel',
+        },
+      },
+    },
+    {
       name: 'reviewNotes',
       type: 'textarea',
       admin: { description: 'Notes about this application' },
@@ -176,7 +180,10 @@ export const ClinicApplications: CollectionConfig = {
     {
       name: 'provisioningErrorCode',
       type: 'select',
-      options: CLINIC_ONBOARDING_ERROR_CODES.map((value) => ({ label: provisioningErrorLabels[value], value })),
+      options: CLINIC_ONBOARDING_ERROR_CODES.map((value) => ({
+        label: clinicApplicationProvisioningErrorLabels[value],
+        value,
+      })),
       access: {
         create: computedOnlyFieldAccess,
         update: computedOnlyFieldAccess,

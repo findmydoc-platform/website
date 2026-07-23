@@ -155,6 +155,49 @@ describe('Doctors lifecycle integration', () => {
       status: 400,
     })
 
+    const sameClinicDoctor = (await payload.create({
+      collection: 'doctors',
+      data: {
+        firstName: `${slugPrefix}-profile-same-clinic`,
+        gender: 'female',
+        lastName: 'Doctor',
+        clinic: clinicA.id,
+        qualifications: ['MD'],
+        languages: ['english'],
+      } as unknown as Doctor,
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+    })) as Doctor
+    const sameClinicMedia = await createMedia(sameClinicDoctor, 'profile-same-clinic')
+    const clinicUser = await createClinicUser(`${slugPrefix}-profile-clinic`, clinicA.id)
+
+    const spoofedDoctorId = payload.update({
+      collection: 'doctors',
+      id: doctorA.id,
+      data: {
+        id: sameClinicDoctor.id,
+        profileImage: sameClinicMedia.id,
+      } as unknown as Partial<Doctor>,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    await expect(spoofedDoctorId).rejects.toMatchObject({
+      data: {
+        errors: [expect.objectContaining({ path: 'profileImage' })],
+      },
+      status: 400,
+    })
+    await expect(
+      payload.findByID({
+        collection: 'doctors',
+        id: doctorA.id,
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).resolves.toMatchObject({ profileImage: mediaA.id })
+
     const clinicChange = payload.update({
       collection: 'doctors',
       id: doctorA.id,

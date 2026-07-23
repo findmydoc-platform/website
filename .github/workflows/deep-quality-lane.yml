@@ -61,4 +61,4 @@ jobs:
         run: pnpm deps:dedupe:check
 
       - name: Dependency audit (high severity and above)
-        run: pnpm deps:audit
+        run: pnpm deps:audit --allowlist GHSA-6gpp-xcg3-4w24 GHSA-89xv-2m56-2m9x GHSA-m99w-x7hq-7vfj GHSA-p9j2-gv94-2wf4

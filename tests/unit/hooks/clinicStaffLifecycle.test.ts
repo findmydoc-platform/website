@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ValidationError } from 'payload'
 import { synchronizeClinicStaffAuthState, validateClinicStaffStatusTransition } from '@/hooks/clinicStaffLifecycle'
 import type { ClinicStaff } from '@/payload-types'
 
@@ -48,9 +49,12 @@ describe('ClinicStaff lifecycle hooks', () => {
   it.each([
     ['pending', 'approved'],
     ['pending', 'rejected'],
+    ['pending', 'offboarded'],
     ['approved', 'disabled'],
     ['disabled', 'approved'],
     ['approved', 'offboarded'],
+    ['disabled', 'offboarded'],
+    ['rejected', 'offboarded'],
   ] as const)('allows %s -> %s', async (previousStatus, nextStatus) => {
     await expect(
       validateClinicStaffStatusTransition({
@@ -67,13 +71,25 @@ describe('ClinicStaff lifecycle hooks', () => {
     ['rejected', 'approved'],
     ['offboarded', 'approved'],
   ] as const)('rejects %s -> %s', async (previousStatus, nextStatus) => {
-    await expect(
-      validateClinicStaffStatusTransition({
-        data: { status: nextStatus },
-        operation: 'update',
-        originalDoc: staff({ status: previousStatus }),
-      } as never),
-    ).rejects.toThrow(`${previousStatus} -> ${nextStatus}`)
+    const result = validateClinicStaffStatusTransition({
+      data: { status: nextStatus },
+      operation: 'update',
+      originalDoc: staff({ status: previousStatus }),
+      req: {},
+    } as never)
+
+    await expect(result).rejects.toBeInstanceOf(ValidationError)
+    await expect(result).rejects.toMatchObject({
+      data: {
+        errors: [
+          expect.objectContaining({
+            message: expect.stringContaining(`${previousStatus} -> ${nextStatus}`),
+            path: 'status',
+          }),
+        ],
+      },
+      status: 400,
+    })
   })
 
   it.each([

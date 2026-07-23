@@ -24,7 +24,10 @@ import { HorizontalRuleFeatureClient as HorizontalRuleFeatureClient_e70f5e05f09f
 import { BlocksFeatureClient as BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { default as default_5ecb274b48d69152edaeef5b36c5c4d8 } from '@/app/(payload)/components/PolicyAwareUpload'
 import { ClinicStaffAdminGuidance as ClinicStaffAdminGuidance_40aac613a756cdcd1ea79946bc7d5b3e } from '@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance'
+import { ClinicStaffStatusField as ClinicStaffStatusField_d0a2f65900e52a342fe0b74a98d8adc2 } from '@/app/(payload)/components/ClinicStaffLifecycle'
+import { ClinicStaffLifecyclePanel as ClinicStaffLifecyclePanel_d0a2f65900e52a342fe0b74a98d8adc2 } from '@/app/(payload)/components/ClinicStaffLifecycle'
 import { PlatformStaffAdminGuidance as PlatformStaffAdminGuidance_44a83a5fcf2c50f5e0c31ed343de2547 } from '@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance'
+import { ClinicApplicationLifecyclePanel as ClinicApplicationLifecyclePanel_2ecefdcb5754cece59d0633a49b851df } from '@/app/(payload)/components/ClinicApplicationLifecycle'
 import { ClinicApprovalRequirementError as ClinicApprovalRequirementError_6b9b57c3f957a81847439b14fa4ed9d4 } from '@/app/(payload)/components/ClinicApprovalRequirements'
 import { ClinicApprovalRequirements as ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4 } from '@/app/(payload)/components/ClinicApprovalRequirements'
 import { default as default_edf1bab331b69df45f809a41e2fc2349 } from '@/components/organisms/MedicalSpecialtiesAdminGuidance'
@@ -84,7 +87,10 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#BlocksFeatureClient": BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@/app/(payload)/components/PolicyAwareUpload#default": default_5ecb274b48d69152edaeef5b36c5c4d8,
   "@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance#ClinicStaffAdminGuidance": ClinicStaffAdminGuidance_40aac613a756cdcd1ea79946bc7d5b3e,
+  "@/app/(payload)/components/ClinicStaffLifecycle#ClinicStaffStatusField": ClinicStaffStatusField_d0a2f65900e52a342fe0b74a98d8adc2,
+  "@/app/(payload)/components/ClinicStaffLifecycle#ClinicStaffLifecyclePanel": ClinicStaffLifecyclePanel_d0a2f65900e52a342fe0b74a98d8adc2,
   "@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance#PlatformStaffAdminGuidance": PlatformStaffAdminGuidance_44a83a5fcf2c50f5e0c31ed343de2547,
+  "@/app/(payload)/components/ClinicApplicationLifecycle#ClinicApplicationLifecyclePanel": ClinicApplicationLifecyclePanel_2ecefdcb5754cece59d0633a49b851df,
   "@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirementError": ClinicApprovalRequirementError_6b9b57c3f957a81847439b14fa4ed9d4,
   "@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirements": ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4,
   "@/components/organisms/MedicalSpecialtiesAdminGuidance#default": default_edf1bab331b69df45f809a41e2fc2349,

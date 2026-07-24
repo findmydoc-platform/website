@@ -20,11 +20,11 @@ Keep schema changes safe and repeatable across local development, preview, and p
    The build job starts a local Postgres service and prepares a disposable build database before `pnpm build`. Migration status and schema/migration enforcement live in DB Quality.
 
 3. **Preview deployment (Vercel)**
-   Vercel executes `pnpm run ci` via `vercel.json`.
-   `pnpm run ci` runs `pnpm run migrate` before `pnpm build`.
+   Vercel executes the deployment environment preflight and then `pnpm run ci` via `vercel.json`.
+   The preflight validates `CLINIC_DASHBOARD_URL` before `pnpm run ci` runs migrations and the Next.js build.
 
 4. **Production deployment (Vercel)**
-   Same as preview: `pnpm run ci` runs migrations before the build.
+   Same as preview: the deployment environment preflight runs before migrations and the build.
 
 ## Developer Workflow for Schema Changes
 

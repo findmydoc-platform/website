@@ -43,6 +43,17 @@ The value must be an absolute HTTP(S) origin without credentials, path, query, o
 preview and production origins in their environment settings; do not expose this variable through a `NEXT_PUBLIC_`
 name.
 
+Hosted deployments use this required matrix:
+
+| Deployment | `CLINIC_DASHBOARD_URL` |
+| --- | --- |
+| Preview | `https://clinic-dashboard-findmydoc.vercel.app` |
+| Production | `https://clinics.findmydoc.eu` |
+
+Vercel runs `node scripts/validate-clinic-dashboard-deployment-env.mjs` before migrations and the Next.js build.
+Preview and production deployments fail when the value is missing, is not an exact HTTPS origin, or differs from the
+approved origin above. Production environment changes remain a separately approved operator action.
+
 ### Codegen (required after schema/plugin changes)
 
 This repo uses a single command to regenerate all generated Payload artifacts (admin import map + TypeScript types):

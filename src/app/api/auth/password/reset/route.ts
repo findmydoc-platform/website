@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       resetTarget === 'dashboard'
         ? getClinicDashboardOrigin()
         : process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
-    // Redirect to callback route which handles PKCE code exchange
+    // Redirect to the callback route that stages the confirmed recovery flow.
     const redirectTo = `${baseUrl}/auth/callback?next=/auth/password/reset/complete`
 
     const supabase = await createClient()

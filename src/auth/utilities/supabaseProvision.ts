@@ -9,6 +9,7 @@ import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalizatio
 import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
 import { getLoggedSupabaseAdminClient, getSupabaseLogger } from './supabaseLogger'
 import { hashLogValue, toLoggedError, type ServerLogger } from '@/utilities/logging/shared'
+import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 import type { User } from '@supabase/supabase-js'
 
 type SupabaseUserType = 'platform' | 'clinic' | 'patient'
@@ -148,7 +149,11 @@ export async function inviteSupabaseUser(
   })
 
   const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
-  const redirectTo = `${baseUrl}/auth/callback?next=${redirectPath}`
+  const safeRedirectPath = sanitizeInternalRedirectPath({
+    fallbackPath: '/auth/invite/complete',
+    nextPath: redirectPath,
+  })
+  const redirectTo = `${baseUrl}/auth/callback?next=${safeRedirectPath}`
   const { data, error } = await supabase.auth.admin.inviteUserByEmail(config.email, {
     data: config.user_metadata,
     redirectTo,

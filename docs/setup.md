@@ -47,7 +47,7 @@ Hosted deployments use this required matrix:
 
 | Deployment | `CLINIC_DASHBOARD_URL` |
 | --- | --- |
-| Preview | `https://clinic-dashboard-findmydoc.vercel.app` |
+| Preview | `https://clinic-dashboard-preview-findmydoc.vercel.app` |
 | Production | `https://clinics.findmydoc.eu` |
 
 Vercel runs `node scripts/validate-clinic-dashboard-deployment-env.mjs` before migrations and the Next.js build.

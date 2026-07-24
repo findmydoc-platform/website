@@ -25,11 +25,11 @@ describe('Clinic Dashboard deployment environment preflight', () => {
   })
 
   it.each([
-    'http://clinic-dashboard-findmydoc.vercel.app',
-    'https://clinic-dashboard-findmydoc.vercel.app/auth/callback',
-    'https://clinic-dashboard-findmydoc.vercel.app?source=preview',
-    'https://clinic-dashboard-findmydoc.vercel.app#callback',
-    'https://user:password@clinic-dashboard-findmydoc.vercel.app',
+    'http://clinic-dashboard-preview-findmydoc.vercel.app',
+    'https://clinic-dashboard-preview-findmydoc.vercel.app/auth/callback',
+    'https://clinic-dashboard-preview-findmydoc.vercel.app?source=preview',
+    'https://clinic-dashboard-preview-findmydoc.vercel.app#callback',
+    'https://user:password@clinic-dashboard-preview-findmydoc.vercel.app',
   ])('rejects a value that is not an exact HTTPS origin', (origin) => {
     expect(() =>
       validateClinicDashboardDeploymentEnv({

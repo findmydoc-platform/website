@@ -54,10 +54,48 @@ describe('POST /api/auth/callback', () => {
     expect(verifyOtpMock).not.toHaveBeenCalled()
   })
 
-  it('returns a stable error without provider details', async () => {
-    verifyOtpMock.mockResolvedValueOnce({ error: { message: 'provider details' } })
+  it('clears the pending callback after a definitive provider rejection', async () => {
+    verifyOtpMock.mockResolvedValueOnce({
+      error: { message: 'provider details', status: 400 },
+    })
     const response = await POST(request('recovery').request)
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toEqual({ code: 'INVALID_OR_EXPIRED_LINK' })
+    expect(response.headers.get('set-cookie')).toContain('findmydoc_auth_token_hash=;')
+  })
+
+  it.each([
+    {
+      error: { message: 'rate limited', status: 429 },
+      label: 'a rate limit response',
+    },
+    {
+      error: { message: 'upstream unavailable', status: 503 },
+      label: 'an upstream failure',
+    },
+    {
+      error: { message: 'fetch failed' },
+      label: 'an unclassified provider failure',
+    },
+  ])('retains the pending callback after $label', async ({ error }) => {
+    verifyOtpMock.mockResolvedValueOnce({ error })
+    const response = await POST(request('recovery').request)
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({
+      code: 'VERIFICATION_TEMPORARILY_UNAVAILABLE',
+    })
+    expect(response.headers.get('set-cookie')).toBeNull()
+  })
+
+  it('retains the pending callback after a thrown transport failure', async () => {
+    verifyOtpMock.mockRejectedValueOnce(new Error('connection closed'))
+    const response = await POST(request('invite').request)
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({
+      code: 'VERIFICATION_TEMPORARILY_UNAVAILABLE',
+    })
+    expect(response.headers.get('set-cookie')).toBeNull()
   })
 })

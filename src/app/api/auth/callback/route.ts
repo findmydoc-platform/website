@@ -11,6 +11,13 @@ function jsonResponse(body: unknown, status: number) {
   return applyPrivateAuthHeaders(NextResponse.json(body, { status }))
 }
 
+function isDefinitiveVerificationRejection(error: unknown): boolean {
+  if (!error || typeof error !== 'object' || !('status' in error)) return false
+
+  const status = error.status
+  return typeof status === 'number' && status >= 400 && status < 500 && status !== 429
+}
+
 export async function POST(request: NextRequest) {
   if (
     request.headers.get('origin') !== request.nextUrl.origin ||
@@ -30,8 +37,12 @@ export async function POST(request: NextRequest) {
       type: callback.type,
     })
     verificationError = error
-  } catch (error) {
-    verificationError = error
+  } catch {
+    return jsonResponse({ code: 'VERIFICATION_TEMPORARILY_UNAVAILABLE' }, 503)
+  }
+
+  if (verificationError && !isDefinitiveVerificationRejection(verificationError)) {
+    return jsonResponse({ code: 'VERIFICATION_TEMPORARILY_UNAVAILABLE' }, 503)
   }
 
   const response = verificationError

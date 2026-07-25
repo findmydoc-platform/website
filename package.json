@@ -158,7 +158,7 @@
     "knip": "^6.23.0",
     "pg": "^8.22.0",
     "playwright": "^1.61.1",
-    "postcss": "^8.5.16",
+    "postcss": "^8.5.18",
     "prettier": "^3.9.4",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "shadcn": "^4.12.0",
@@ -193,11 +193,14 @@
       "esbuild@<0.28.1": "0.28.1",
       "esbuild@<=0.24.2": ">=0.25.0",
       "hono@<4.12.21": ">=4.12.21",
-      "postcss@<8.5.10": ">=8.5.10",
-      "brace-expansion@<1.1.16": "1.1.16",
+      "postcss@<8.5.18": "8.5.18",
+      "brace-expansion@<5.0.8": "5.0.8",
       "sharp@<0.35.0": "0.35.3",
       "fast-uri@<3.1.4": "3.1.4",
       "payload@3.85.1>tsx": "4.21.0"
+    },
+    "patchedDependencies": {
+      "minimatch@3.1.5": "patches/minimatch@3.1.5.patch"
     }
   },
   "packageManager": "pnpm@10.28.2"

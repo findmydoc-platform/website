@@ -95,7 +95,7 @@ export async function findUserBySupabaseId(
 }
 
 /**
- * Checks if a clinic user is approved for admin access.
+ * Checks if a clinic user is approved for business access.
  * @param payload - The PayloadCMS instance
  * @param userId - The user ID to check
  * @returns true if approved, false otherwise

@@ -1,6 +1,6 @@
 import type { APIRequestContext, Page } from '@playwright/test'
 
-export const ADMIN_JOURNEY_PERSONAS = ['admin', 'clinic'] as const
+export const ADMIN_JOURNEY_PERSONAS = ['admin'] as const
 export const ADMIN_JOURNEY_MODES = ['smoke', 'regression', 'capture'] as const
 
 export type AdminJourneyPersona = (typeof ADMIN_JOURNEY_PERSONAS)[number]

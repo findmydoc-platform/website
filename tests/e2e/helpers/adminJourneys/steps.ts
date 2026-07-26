@@ -5,7 +5,6 @@ import {
   ensureIncompleteClinicFixture,
   ensureMedicalSpecialtyFixture,
   ensureTreatmentFixture,
-  readAssignedClinicFixture,
 } from '../adminFixtures'
 import {
   getRecordId,
@@ -425,40 +424,6 @@ export const createEnsureClinicFixtureStep = <
       const clinicFixture = await ensureClinicFixture(request, {
         reuseExisting: options.reuseExisting ?? true,
       })
-
-      state.clinicId = clinicFixture.clinicId
-      state.clinicName = clinicFixture.clinicName
-    },
-    stepId: options.stepId,
-  }) satisfies AdminJourneyStep<TState>
-
-export const createEnsureAssignedClinicStep = <
-  TState extends {
-    clinicId?: RecordId
-    clinicName: string
-  },
->(options: {
-  checkpoint?: AdminJourneyStep<TState>['checkpoint']
-  stepId: string
-}) =>
-  ({
-    collections: ['clinics', 'clinicStaff'],
-    checkpoint: options.checkpoint,
-    kind: 'api-fixture',
-    label: 'Resolve the assigned clinic through the authenticated clinic session',
-    producesState: ['clinicId', 'clinicName'],
-    run: async ({ request, state }) => {
-      if (state.clinicId && state.clinicName) {
-        return
-      }
-
-      if (state.clinicId) {
-        const clinicDoc = await readRequiredCollectionDocById(request, 'clinics', state.clinicId)
-        state.clinicName = String(clinicDoc.name ?? state.clinicId)
-        return
-      }
-
-      const clinicFixture = await readAssignedClinicFixture(request)
 
       state.clinicId = clinicFixture.clinicId
       state.clinicName = clinicFixture.clinicName

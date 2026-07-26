@@ -22,6 +22,6 @@
 - Treat `tests/e2e/helpers/adminJourneys/**`, `tests/e2e/helpers/adminFixtures.ts`, `tests/e2e/helpers/adminSession.ts`, `tests/e2e/helpers/adminUI.ts`, `tests/e2e/setup/**`, `scripts/playwright-session*.ts`, and `scripts/playwright-journey-capture.ts` as shared admin-journey infrastructure.
 - When shared admin-journey infrastructure changes, run the smallest local Playwright lane that proves the affected consumer behavior instead of stopping at unit tests.
 - Run `pnpm tests:e2e:smoke:admin` for platform-admin auth, reachability, or small CRUD journey changes.
-- Run `pnpm tests:e2e:regression:admin` for shared step plumbing, clinic-staff flows, persona/session changes, fixture provisioning changes, or longer dependent admin chains.
-- Run `pnpm playwright:journey:capture -- --journey <id> --persona <admin|clinic>` when checkpoint metadata, guide-capture behavior, or screenshot sequencing changes.
+- Run `pnpm tests:e2e:regression:admin` for shared step plumbing, admin session changes, fixture provisioning changes, or longer dependent admin chains.
+- Run `pnpm playwright:journey:capture -- --journey <id> --persona admin` when checkpoint metadata, guide-capture behavior, or screenshot sequencing changes.
 - If a change affects both smoke and regression consumers, run both lanes and state which journey ids or specs were exercised in the handoff.

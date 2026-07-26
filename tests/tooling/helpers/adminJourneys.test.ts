@@ -160,31 +160,6 @@ describe('admin journey fragments', () => {
 })
 
 describe('admin journey registry', () => {
-  it('rejects persona mismatches when executing a journey', async () => {
-    const journey = {
-      createState: () => ({ value: 'ok' }),
-      description: 'test journey',
-      journeyId: 'admin.test',
-      metadata: {
-        collections: ['clinics'],
-        consumers: ['smoke'],
-        entrypoints: ['collection-create'],
-        riskTags: ['test'],
-      },
-      persona: 'admin' as const,
-      steps: [],
-    } satisfies AdminJourneyDefinition<{ value: string }>
-
-    await expect(
-      executeAdminJourney(journey, {
-        mode: 'smoke',
-        page: {} as Page,
-        persona: 'clinic',
-        request: {} as APIRequestContext,
-      }),
-    ).rejects.toThrow('Journey admin.test only supports persona admin. Received clinic.')
-  })
-
   it('requires coverage metadata for every registered journey', () => {
     for (const journey of listAdminJourneys()) {
       expect(journey.metadata.collections.length, journey.journeyId).toBeGreaterThan(0)
@@ -305,19 +280,7 @@ describe('admin journey runtime', () => {
   })
 
   it('normalizes journey ids into filesystem-safe output slugs', () => {
-    expect(getAdminJourneyOutputSlug('clinic.doctors.create-and-link-specialty')).toBe(
-      'clinic-doctors-create-and-link-specialty',
-    )
-  })
-
-  it('keeps clinic journeys scoped to the clinic persona in the registry', () => {
-    const journey = getAdminJourneyDefinition('clinic.doctors.create-and-link-specialty')
-    expect(journey.persona).toBe('clinic')
-  })
-
-  it('keeps clinic treatment journeys scoped to the clinic persona in the registry', () => {
-    const journey = getAdminJourneyDefinition('clinic.clinics.add-treatment-from-join')
-    expect(journey.persona).toBe('clinic')
+    expect(getAdminJourneyOutputSlug('admin.medical-specialties.create')).toBe('admin-medical-specialties-create')
   })
 
   it('registers join-based treatment journeys with ordered reusable steps', () => {
@@ -340,20 +303,6 @@ describe('admin journey runtime', () => {
       'open-clinic-treatment-join-drawer',
       'fill-clinic-treatment-form',
       'save-clinic-treatment-drawer',
-    ])
-  })
-
-  it('provisions the assigned clinic before opening clinic join journeys', () => {
-    const journey = getAdminJourneyDefinition('clinic.clinics.add-treatment-from-join')
-
-    expect(journey.steps.map((step) => step.stepId)).toEqual([
-      'ensure-assigned-clinic-fixture',
-      'open-assigned-clinic-document',
-      'open-clinic-general-tab',
-      'open-clinic-treatment-join-drawer',
-      'fill-clinic-treatment-form',
-      'save-clinic-treatment-drawer',
-      'capture-clinic-treatment-id',
     ])
   })
 })

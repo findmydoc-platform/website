@@ -14,7 +14,6 @@ import {
   createEnsureMedicalSpecialtyFixtureStep,
   createEnsureTreatmentFixtureStep,
   createFillClinicTreatmentStep,
-  createFillDoctorProfileStep,
   createFillDoctorTreatmentStep,
   createFillTreatmentStep,
 } from '../steps'
@@ -62,15 +61,6 @@ type MedicalNetworkTreatmentJourneyState = {
   price: string
   specialtyId?: RecordId
   specialtyName: string
-  specializationLevel?: string
-  treatmentId?: RecordId
-  treatmentName: string
-}
-
-type ClinicDoctorTreatmentJourneyState = {
-  doctorFullName: string
-  doctorId?: RecordId
-  doctorTreatmentId?: RecordId
   specializationLevel?: string
   treatmentId?: RecordId
   treatmentName: string
@@ -597,90 +587,6 @@ export const treatmentMedicalNetworkJourney: AdminJourneyDefinition<MedicalNetwo
         label: 'Open the associated doctors tab',
         stepId: 'open-associated-doctors-tab',
         tabLabel: 'Associated Doctors',
-      },
-    }),
-  ),
-}
-
-export const clinicDoctorTreatmentJourney: AdminJourneyDefinition<ClinicDoctorTreatmentJourneyState> = {
-  createState: () => ({
-    doctorFullName: '',
-    doctorId: undefined,
-    doctorTreatmentId: undefined,
-    specializationLevel: 'Specialist',
-    treatmentId: undefined,
-    treatmentName: '',
-  }),
-  description: 'Create a doctor as clinic staff and link the doctor to a treatment from the doctor join drawer.',
-  journeyId: 'clinic.doctors.create-and-link-treatment',
-  metadata: {
-    collections: ['doctors', 'doctortreatments', 'treatments'],
-    consumers: ['regression', 'capture'],
-    entrypoints: ['collection-create', 'join-drawer'],
-    riskTags: ['clinic-access', 'doctor-treatment', 'clinic-staff'],
-  },
-  persona: 'clinic',
-  steps: defineJourneySteps<ClinicDoctorTreatmentJourneyState>(
-    createCollectionCreateFragment<ClinicDoctorTreatmentJourneyState, 'doctorId'>({
-      collectionSlug: 'doctors',
-      fill: createFillDoctorProfileStep({
-        stepId: 'fill-doctor-profile',
-        checkpoint: {
-          label: 'Clinic doctor treatment form filled',
-          screenshotSlug: 'clinic-doctor-treatment-form-filled',
-        },
-      }),
-      open: {
-        label: 'Open the doctor create page',
-        stepId: 'open-doctor-create-page',
-        checkpoint: {
-          label: 'Clinic doctor treatment create page',
-          screenshotSlug: 'clinic-doctor-treatment-create-page',
-        },
-      },
-      recordIdField: 'doctorId',
-      save: {
-        label: 'Save the clinic doctor',
-        stepId: 'save-clinic-doctor',
-        checkpoint: {
-          label: 'Clinic doctor treatment doctor saved',
-          screenshotSlug: 'clinic-doctor-treatment-doctor-saved',
-        },
-      },
-    }),
-    createJoinDrawerRelationFragment<ClinicDoctorTreatmentJourneyState, 'doctorId'>({
-      capture: createCaptureDoctorTreatmentIdStep({
-        label: 'Resolve the created doctor treatment id',
-        stepId: 'capture-doctor-treatment-id',
-      }),
-      drawer: {
-        fieldPath: 'treatments',
-        label: 'Open the doctor treatment join drawer',
-        stepId: 'open-doctor-treatment-join-drawer',
-        checkpoint: {
-          label: 'Clinic doctor treatment join drawer opened',
-          screenshotSlug: 'clinic-doctor-treatment-join-drawer-open',
-        },
-      },
-      fill: createFillDoctorTreatmentStep({
-        stepId: 'fill-doctor-treatment-form',
-        checkpoint: {
-          label: 'Clinic doctor treatment join drawer filled',
-          screenshotSlug: 'clinic-doctor-treatment-join-drawer-filled',
-        },
-      }),
-      save: {
-        label: 'Save the doctor treatment drawer',
-        stepId: 'save-doctor-treatment-drawer',
-        checkpoint: {
-          label: 'Clinic doctor treatment join drawer saved',
-          screenshotSlug: 'clinic-doctor-treatment-join-drawer-saved',
-        },
-      },
-      tab: {
-        label: 'Open the specialties and treatments tab',
-        stepId: 'open-doctor-specialties-and-treatments-tab',
-        tabLabel: 'Specialties & Treatments',
       },
     }),
   ),

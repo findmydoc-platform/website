@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ResetPasswordCompleteForm } from './ResetPasswordCompleteForm'
+import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 
 export const dynamic = 'force-dynamic'
@@ -15,6 +16,7 @@ const signInOptionLinkClassName =
 
 export default async function CompleteResetPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const params = await searchParams
+  const clinicLoginHref = process.env.CLINIC_DASHBOARD_URL?.trim() ? `${getClinicDashboardOrigin()}/login` : undefined
 
   return (
     <main className="min-h-svh bg-site-canvas py-6 sm:py-12">
@@ -29,7 +31,7 @@ export default async function CompleteResetPage({ searchParams }: { searchParams
             </Link>
           </nav>
         </div>
-        <ResetPasswordCompleteForm error={params.error} />
+        <ResetPasswordCompleteForm clinicLoginHref={clinicLoginHref} error={params.error} />
       </div>
     </main>
   )

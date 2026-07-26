@@ -1,10 +1,9 @@
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PREVIEW_GUARD_LOCK_REQUEST_HEADER, PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY } from '@/features/previewGuard'
-import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import { PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY } from '@/features/previewGuard'
 import type { PlatformStaff } from '@/payload-types'
 
-type StaffUserOverrides = Partial<PlatformStaff> & { userType?: 'clinic' | 'platform' }
+type StaffUserOverrides = Partial<PlatformStaff>
 
 // Ensure React is available globally for JSX emitted during tests
 ;(globalThis as unknown as { React: typeof React }).React = React
@@ -55,7 +54,6 @@ vi.mock('@/auth/utilities/jwtValidation', () => ({
 
 vi.mock('@/auth/utilities/userLookup', () => ({
   findUserBySupabaseId: vi.fn().mockResolvedValue(null),
-  isClinicUserApproved: vi.fn().mockResolvedValue(true),
 }))
 
 describe('Admin LoginPage', () => {
@@ -280,33 +278,6 @@ describe('Admin LoginPage', () => {
     )
   })
 
-  it('does not use a clinic session for the portal admin login', async () => {
-    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
-    const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
-    const { redirect } = await import('next/navigation')
-    const LoginPage = await getPageModule()
-
-    vi.mocked(findUserBySupabaseId).mockResolvedValue(
-      makeStaffUser({
-        id: 1,
-        userType: 'clinic',
-      }),
-    )
-    vi.mocked(isClinicUserApproved).mockResolvedValue(true)
-    vi.mocked(extractSupabaseUserData).mockResolvedValue({
-      supabaseUserId: 'user-1',
-      userEmail: 'staff@example.com',
-      userType: 'clinic',
-      firstName: 'Clinic',
-      lastName: 'User',
-    })
-
-    await LoginPage({})
-
-    expect(findUserBySupabaseId).not.toHaveBeenCalled()
-    expect(redirect).not.toHaveBeenCalled()
-  })
-
   it('redirects to admin when a platform session is active', async () => {
     process.env.DEPLOYMENT_ENV = 'development'
 
@@ -318,7 +289,6 @@ describe('Admin LoginPage', () => {
     vi.mocked(findUserBySupabaseId).mockResolvedValue(
       makeStaffUser({
         id: 2,
-        userType: 'platform',
         email: 'platform@findmydoc.eu',
       }),
     )
@@ -386,7 +356,6 @@ describe('Admin LoginPage', () => {
     vi.mocked(findUserBySupabaseId).mockResolvedValue(
       makeStaffUser({
         id: 22,
-        userType: 'platform',
         email: 'platform@findmydoc.eu',
         supabaseUserId: 'user-22',
       }),
@@ -579,98 +548,5 @@ describe('Admin LoginPage', () => {
 
     expect(logoElement).toBeTruthy()
     expect(logoElement?.props.showPreviewBadge).toBe(true)
-  })
-
-  it('does not redirect clinic sessions in preview runtime', async () => {
-    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
-    const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
-    const { redirect } = await import('next/navigation')
-    const LoginPage = await getPageModule()
-
-    process.env.DEPLOYMENT_ENV = 'preview'
-    vi.mocked(findUserBySupabaseId).mockResolvedValue(
-      makeStaffUser({
-        id: 3,
-        userType: 'clinic',
-      }),
-    )
-    vi.mocked(isClinicUserApproved).mockResolvedValue(true)
-    vi.mocked(extractSupabaseUserData).mockResolvedValue({
-      supabaseUserId: 'clinic-user',
-      userEmail: 'clinic@example.com',
-      userType: 'clinic',
-      firstName: 'Clinic',
-      lastName: 'User',
-    })
-
-    await LoginPage({})
-
-    expect(redirect).not.toHaveBeenCalled()
-  })
-
-  it('shows the generic preview login message for clinic sessions', async () => {
-    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
-    const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
-    const { redirect } = await import('next/navigation')
-    const LoginPage = await getPageModule()
-
-    mockHeaders.headers.mockResolvedValue(new Headers({ [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1' }))
-    vi.mocked(findUserBySupabaseId).mockResolvedValue(
-      makeStaffUser({
-        id: 4,
-        userType: 'clinic',
-      }),
-    )
-    vi.mocked(isClinicUserApproved).mockResolvedValue(true)
-    vi.mocked(extractSupabaseUserData).mockResolvedValue({
-      supabaseUserId: 'clinic-user',
-      userEmail: 'clinic@example.com',
-      userType: 'clinic',
-      firstName: 'Clinic',
-      lastName: 'User',
-    })
-
-    const result = await LoginPage({})
-    const pageElement = result as LoginPageElement
-    const rootElement = getLoginRootElement(pageElement)
-    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
-      message?: string
-    }>[]
-    const statusElement = rootChildren[1]
-
-    expect(redirect).not.toHaveBeenCalled()
-    expect(statusElement?.props.message).toBe('This is a preview deployment. Please sign in to continue.')
-  })
-
-  it('does not redirect clinic sessions during a temporary landing-only lock', async () => {
-    const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
-    const { findUserBySupabaseId, isClinicUserApproved } = await import('@/auth/utilities/userLookup')
-    const { redirect } = await import('next/navigation')
-    const LoginPage = await getPageModule()
-
-    mockHeaders.headers.mockResolvedValue(
-      new Headers({
-        [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
-        [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
-      }),
-    )
-    vi.mocked(findUserBySupabaseId).mockResolvedValue(
-      makeStaffUser({
-        id: 5,
-        userType: 'clinic',
-      }),
-    )
-    vi.mocked(isClinicUserApproved).mockResolvedValue(true)
-    vi.mocked(extractSupabaseUserData).mockResolvedValue({
-      supabaseUserId: 'clinic-user',
-      userEmail: 'clinic@example.com',
-      userType: 'clinic',
-      firstName: 'Clinic',
-      lastName: 'User',
-    })
-
-    await LoginPage({})
-
-    expect(redirect).not.toHaveBeenCalled()
   })
 })

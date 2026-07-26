@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 import { getPayload, type Payload } from 'payload'
 import config from '@payload-config'
 
-import { ensureApprovedClinicStaffAccess, ensureMedicalSpecialtyFixture } from '../../adminFixtures'
+import { ensureMedicalSpecialtyFixture } from '../../adminFixtures'
 import { getRecordId, type CollectionListResponse, type CreatedDocResponse, type RecordId } from '../../adminApi'
 import { getAdminFieldRoot, openAdminDocumentPage, selectComboboxOption } from '../../adminUI'
 import { defineJourneySteps } from '../fragments'
@@ -41,16 +41,6 @@ const ensureApprovedClinicStaffStep = {
   label: 'Ensure the fixed clinic staff account is approved',
   producesState: ['clinicStaffId'],
   run: async ({ request, state }) => {
-    const fixedClinicEmail = process.env.E2E_CLINIC_EMAIL?.trim()
-
-    if (fixedClinicEmail) {
-      const fixture = await ensureApprovedClinicStaffAccess(request, {
-        email: fixedClinicEmail,
-      })
-      state.clinicStaffId = fixture.clinicStaffId
-      return
-    }
-
     const fixtureResponse = await request.get(
       '/api/clinicStaff?depth=0&limit=1&where[status][equals]=approved&where[authSync.status][equals]=synced',
     )

@@ -4,7 +4,6 @@ import {
   createAssertFieldValueStep,
   createEnsureDoctorFixtureStep,
   createEnsureMedicalSpecialtyFixtureStep,
-  createFillDoctorProfileStep,
   createFillDoctorSpecialtyRelationStep,
   createFillMedicalSpecialtyStep,
 } from '../steps'
@@ -20,14 +19,6 @@ type DoctorSpecialtyJourneyState = {
   clinicId?: RecordId
   doctorFullName: string
   doctorId?: RecordId
-  doctorSpecialtyId?: string
-  specialtyId?: RecordId
-  specialtyName: string
-}
-
-type ClinicDoctorSpecialtyJourneyState = {
-  doctorFullName: string
-  doctorId?: string
   doctorSpecialtyId?: string
   specialtyId?: RecordId
   specialtyName: string
@@ -212,77 +203,6 @@ export const medicalNetworkRegressionJourney: AdminJourneyDefinition<DoctorSpeci
         checkpoint: {
           label: 'Medical network relation saved',
           screenshotSlug: 'medical-network-relation-saved',
-        },
-      },
-    }),
-  ),
-}
-
-export const clinicDoctorSpecialtyJourney: AdminJourneyDefinition<ClinicDoctorSpecialtyJourneyState> = {
-  createState: () => ({
-    doctorFullName: '',
-    doctorId: undefined,
-    doctorSpecialtyId: undefined,
-    specialtyId: undefined,
-    specialtyName: '',
-  }),
-  description: 'Create a doctor as clinic staff and link the doctor to a specialty.',
-  journeyId: 'clinic.doctors.create-and-link-specialty',
-  metadata: {
-    collections: ['doctors', 'doctorspecialties', 'medical-specialties'],
-    consumers: ['regression', 'capture'],
-    entrypoints: ['collection-create'],
-    riskTags: ['clinic-access', 'doctor-specialty', 'clinic-staff'],
-  },
-  persona: 'clinic',
-  steps: defineJourneySteps<ClinicDoctorSpecialtyJourneyState>(
-    createCollectionCreateFragment<ClinicDoctorSpecialtyJourneyState, 'doctorId'>({
-      collectionSlug: 'doctors',
-      fill: createFillDoctorProfileStep({
-        stepId: 'fill-doctor-profile',
-        checkpoint: {
-          label: 'Clinic doctor form filled',
-          screenshotSlug: 'clinic-doctor-form-filled',
-        },
-      }),
-      open: {
-        label: 'Open the doctor create page',
-        stepId: 'open-doctor-create-page',
-        checkpoint: {
-          label: 'Clinic doctor create page',
-          screenshotSlug: 'clinic-doctor-create-page',
-        },
-      },
-      recordIdField: 'doctorId',
-      save: {
-        label: 'Save the clinic doctor',
-        stepId: 'save-clinic-doctor',
-        checkpoint: {
-          label: 'Clinic doctor saved',
-          screenshotSlug: 'clinic-doctor-saved',
-        },
-      },
-    }),
-    createCollectionCreateFragment<ClinicDoctorSpecialtyJourneyState, 'doctorSpecialtyId'>({
-      collectionSlug: 'doctorspecialties',
-      fill: createFillDoctorSpecialtyRelationStep({
-        stepId: 'fill-clinic-doctor-specialty-relation',
-        checkpoint: {
-          label: 'Clinic doctor specialty relation filled',
-          screenshotSlug: 'clinic-doctor-specialty-filled',
-        },
-      }),
-      open: {
-        label: 'Open the doctor specialty create page',
-        stepId: 'open-clinic-doctor-specialty-create-page',
-      },
-      recordIdField: 'doctorSpecialtyId',
-      save: {
-        label: 'Save the clinic doctor specialty relation',
-        stepId: 'save-clinic-doctor-specialty-relation',
-        checkpoint: {
-          label: 'Clinic doctor specialty saved',
-          screenshotSlug: 'clinic-doctor-specialty-saved',
         },
       },
     }),

@@ -31,12 +31,12 @@ type PasswordState = z.infer<typeof passwordSchema>
 
 const expiredRecoveryHref = '/auth/password/reset?reason=expired'
 
-export function ResetPasswordCompleteForm({ error }: { error?: string }) {
+export function ResetPasswordCompleteForm({ clinicLoginHref, error }: { clinicLoginHref?: string; error?: string }) {
   const supabase = useMemo(() => createClient(), [])
   const router = useRouter()
   const [isSessionReady, setSessionReady] = useState(false)
   const [loginTarget, setLoginTarget] = useState<PasswordResetLoginTarget>(() =>
-    resolvePasswordResetLoginTarget(undefined),
+    resolvePasswordResetLoginTarget(undefined, clinicLoginHref),
   )
   const formValidation = usePublicFormValidation({
     messages: {
@@ -74,7 +74,7 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
         return
       }
 
-      setLoginTarget(resolvePasswordResetLoginTarget(session.user.app_metadata?.user_type))
+      setLoginTarget(resolvePasswordResetLoginTarget(session.user.app_metadata?.user_type, clinicLoginHref))
       setSessionReady(true)
     }
 
@@ -83,7 +83,7 @@ export function ResetPasswordCompleteForm({ error }: { error?: string }) {
     return () => {
       active = false
     }
-  }, [error, router, supabase])
+  }, [clinicLoginHref, error, router, supabase])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()

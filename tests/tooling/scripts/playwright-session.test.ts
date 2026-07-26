@@ -57,15 +57,6 @@ describe('playwright-session argument parsing', () => {
     })
   })
 
-  it('supports clinic persona defaults', () => {
-    expect(parsePlaywrightSessionArgs(['--persona', 'clinic'])).toEqual({
-      baseUrl: 'http://localhost:3000/',
-      help: false,
-      persona: 'clinic',
-      stateFile: getDefaultStateFile('clinic'),
-    })
-  })
-
   it('ignores shell argument separators', () => {
     expect(parsePlaywrightSessionArgs(['--', '--persona', 'admin'])).toMatchObject({
       persona: 'admin',
@@ -85,8 +76,6 @@ describe('playwright-session URLs', () => {
   it('builds admin login and check urls from the local base url', () => {
     expect(getPlaywrightSessionLoginUrl('admin', 'http://localhost:3000/')).toBe('http://localhost:3000/admin/login')
     expect(getPlaywrightSessionCheckUrl('admin', 'http://localhost:3000/')).toBe('http://localhost:3000/admin')
-    expect(getPlaywrightSessionLoginUrl('clinic', 'http://localhost:3000/')).toBe('http://localhost:3000/admin/login')
-    expect(getPlaywrightSessionCheckUrl('clinic', 'http://localhost:3000/')).toBe('http://localhost:3000/admin')
   })
 
   it('accepts authenticated admin urls', () => {
@@ -100,9 +89,6 @@ describe('playwright-session URLs', () => {
         'http://localhost:3000/',
       ),
     ).toBe(true)
-    expect(isAuthenticatedPlaywrightSessionUrl('http://localhost:3000/admin', 'clinic', 'http://localhost:3000/')).toBe(
-      true,
-    )
   })
 
   it('accepts admin persona sessions only when platformStaff is readable', async () => {
@@ -115,39 +101,6 @@ describe('playwright-session URLs', () => {
 
     await expect(
       isValidPlaywrightSessionForPersona('http://localhost:3000/admin', 'admin', 'http://localhost:3000/', request),
-    ).resolves.toBe(true)
-  })
-
-  it('rejects clinic persona validation when platformStaff is readable', async () => {
-    const request = createRequestContext({
-      '/api/platformStaff?depth=0&limit=1': {
-        body: { docs: [{ id: 'admin-user' }] },
-        ok: true,
-      },
-      '/api/clinicStaff?depth=1&limit=1': {
-        body: { docs: [{ clinic: { id: 'clinic-1' } }] },
-        ok: true,
-      },
-    })
-
-    await expect(
-      isValidPlaywrightSessionForPersona('http://localhost:3000/admin', 'clinic', 'http://localhost:3000/', request),
-    ).resolves.toBe(false)
-  })
-
-  it('accepts clinic persona validation only with a clinic staff assignment', async () => {
-    const request = createRequestContext({
-      '/api/platformStaff?depth=0&limit=1': {
-        ok: false,
-      },
-      '/api/clinicStaff?depth=1&limit=1': {
-        body: { docs: [{ clinic: { id: 'clinic-1' } }] },
-        ok: true,
-      },
-    })
-
-    await expect(
-      isValidPlaywrightSessionForPersona('http://localhost:3000/admin', 'clinic', 'http://localhost:3000/', request),
     ).resolves.toBe(true)
   })
 

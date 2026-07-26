@@ -309,6 +309,69 @@ describe('clinic Supabase provisioning', () => {
     ).rejects.toThrow('Supabase clinic invite failed: already registered')
   })
 
+  it('reconciles one existing clinic-tagged identity without sending another invite', async () => {
+    const { reconcileExistingClinicSupabaseAccount } = await actualModulePromise
+    adminClient.auth.admin.listUsers.mockResolvedValueOnce({
+      data: {
+        users: [
+          {
+            id: 'reconciled-id',
+            email: 'CLINIC@example.com',
+            app_metadata: { user_type: 'clinic' },
+            user_metadata: {},
+          },
+        ],
+        nextPage: null,
+      },
+      error: null,
+    })
+
+    await expect(
+      reconcileExistingClinicSupabaseAccount({
+        email: 'clinic@example.com',
+        onboardingKey: 'clinic-application:42',
+        userMetadata: { firstName: 'Ada', lastName: 'Lovelace' },
+      }),
+    ).resolves.toBe('reconciled-id')
+
+    expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled()
+    expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith('reconciled-id', {
+      app_metadata: { user_type: 'clinic' },
+      user_metadata: {
+        first_name: 'Ada',
+        last_name: 'Lovelace',
+        onboarding_key: 'clinic-application:42',
+      },
+    })
+  })
+
+  it('refuses to reconcile an existing identity tagged for another principal type', async () => {
+    const { reconcileExistingClinicSupabaseAccount } = await actualModulePromise
+    adminClient.auth.admin.listUsers.mockResolvedValueOnce({
+      data: {
+        users: [
+          {
+            id: 'patient-id',
+            email: 'clinic@example.com',
+            app_metadata: { user_type: 'patient' },
+            user_metadata: { onboarding_key: 'clinic-application:42' },
+          },
+        ],
+        nextPage: null,
+      },
+      error: null,
+    })
+
+    await expect(
+      reconcileExistingClinicSupabaseAccount({
+        email: 'clinic@example.com',
+        onboardingKey: 'clinic-application:42',
+      }),
+    ).rejects.toThrow('Supabase clinic reconciliation found a non-clinic identity')
+
+    expect(adminClient.auth.admin.updateUserById).not.toHaveBeenCalled()
+  })
+
   it('synchronizes clinic access with explicit ban and unban durations', async () => {
     const { setClinicSupabaseAccountAccess } = await actualModulePromise
 

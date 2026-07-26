@@ -660,12 +660,22 @@ export const permissionMatrix: PermissionMatrix = {
       displayName: 'PatientClinicInquiries',
       operations: {
         create: { type: 'platform' },
-        read: { type: 'platform' },
-        update: { type: 'platform' },
+        read: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        update: {
+          type: 'conditional',
+          details: 'platform full + clinic own clinic status transitions only',
+        },
         delete: { type: 'platform' },
         admin: { type: 'platform' },
       },
-      notes: 'Patient-to-clinic inquiry queue - public submissions use the controlled API route only',
+      meta: {
+        conditional: {
+          read: { kind: 'clinic-scope', path: 'clinic' },
+          update: { kind: 'clinic-scope', path: 'clinic' },
+        },
+      },
+      notes:
+        'Patient-to-clinic inquiry queue - public submissions use the controlled API route; clinic staff read own-clinic inquiries and update controlled statuses only',
     },
   },
 }

@@ -16,7 +16,7 @@
 | Patients `(patients)` | Platform | Conditional<br/><sub>platform full + patient own profile</sub> | Conditional<br/><sub>platform full + own profile only</sub> | Platform | Platform |
 | Posts `(posts)` | Platform | Published (approved) | Platform | Platform | Platform |
 | Pages `(pages)` | Platform | Published (approved) | Platform | Platform | Platform |
-| Doctors `(doctors)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
+| Doctors `(doctors)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Conditional<br/><sub>platform all + clinic own inactive + everyone active</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
 | Clinics `(clinics)` | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>anyone approved, platform all</sub> | Conditional<br/><sub>platform full + clinic own profile only</sub> | Platform | Platform |
 | DoctorSpecialties `(doctorspecialties)` | Conditional<br/><sub>platform full + clinic allowed (hook enforces doctor clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
 | DoctorTreatments `(doctortreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook enforces doctor clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
@@ -37,7 +37,7 @@
 | Categories `(categories)` | Platform | Anyone | Platform | Platform | Platform |
 | Accreditation `(accreditation)` | Platform | Anyone | Platform | Platform | Platform |
 | ClinicApplications `(clinicApplications)` | Platform | Platform | Platform | Platform | Platform |
-| PatientClinicInquiries `(patientClinicInquiries)` | Platform | Platform | Platform | Platform | Platform |
+| PatientClinicInquiries `(patientClinicInquiries)` | Platform | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic status transitions only</sub> | Platform | Platform |
 
 ## Notes
 
@@ -52,7 +52,7 @@
 - **Patients**: Patients can update own profile; no self-create/delete
 - **Posts**: Blog content - platform write, published content readable by all
 - **Pages**: Static pages - platform write, published content readable by all
-- **Doctors**: Platform RWDA, clinic RWA own clinic, patients/anonymous R; averageRating is computed-only
+- **Doctors**: Platform RWDA, clinic RWA own clinic including inactive doctors, patients/anonymous R active doctors; averageRating is computed-only
 - **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved; averageRating is computed-only
 - **DoctorSpecialties**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **DoctorTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
@@ -73,4 +73,4 @@
 - **Categories**: Supporting data - platform write, everyone read
 - **Accreditation**: Supporting data - platform write, everyone read
 - **ClinicApplications**: Public submissions use the controlled API route; platform approval creates a pending clinic and initial clinic staff principal with duplicate-write observability
-- **PatientClinicInquiries**: Patient-to-clinic inquiry queue - public submissions use the controlled API route only
+- **PatientClinicInquiries**: Patient-to-clinic inquiry queue - public submissions use the controlled API route; clinic staff read own-clinic inquiries and update controlled statuses only

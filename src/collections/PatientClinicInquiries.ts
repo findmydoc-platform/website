@@ -1,6 +1,11 @@
+import { ValidationError } from 'payload'
 import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 
+import { platformOnlyFieldAccess } from '@/access/fieldAccess'
+import { isClinicStaff } from '@/access/isClinicStaff'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { platformOrOwnClinicResource } from '@/access/scopeFilters'
+import type { PatientClinicInquiry } from '@/payload-types'
 
 export const patientClinicInquiryStatusOptions = [
   { label: 'Submitted', value: 'submitted' },
@@ -9,6 +14,16 @@ export const patientClinicInquiryStatusOptions = [
   { label: 'Closed', value: 'closed' },
   { label: 'Spam', value: 'spam' },
 ] as const
+
+type PatientClinicInquiryStatus = (typeof patientClinicInquiryStatusOptions)[number]['value']
+
+export const patientClinicInquiryStatusTransitions = {
+  submitted: ['in_review', 'contacted', 'closed', 'spam'],
+  in_review: ['contacted', 'closed', 'spam'],
+  contacted: ['closed'],
+  closed: [],
+  spam: [],
+} as const satisfies Record<PatientClinicInquiryStatus, readonly PatientClinicInquiryStatus[]>
 
 export const patientClinicInquiryTreatmentTimelineValues = [
   'as_soon_as_possible',
@@ -75,6 +90,36 @@ const freezeSubmissionEvidence: CollectionBeforeChangeHook = ({ data, operation,
   return data
 }
 
+const validateClinicStaffStatusTransition: CollectionBeforeChangeHook<PatientClinicInquiry> = ({
+  data,
+  operation,
+  originalDoc,
+  req,
+}) => {
+  if (operation !== 'update' || !originalDoc?.status || !isClinicStaff({ req })) return data
+
+  const previousStatus = originalDoc.status
+  const nextStatus = data.status ?? previousStatus
+  if (nextStatus === previousStatus) return data
+
+  if (!patientClinicInquiryStatusTransitions[previousStatus].includes(nextStatus as never)) {
+    throw new ValidationError({
+      collection: 'patientClinicInquiries',
+      errors: [
+        {
+          label: 'Status',
+          message: `Clinic inquiry status transition ${previousStatus} -> ${nextStatus} is not allowed.`,
+          path: 'status',
+        },
+      ],
+      id: originalDoc.id,
+      req,
+    })
+  }
+
+  return data
+}
+
 export const PatientClinicInquiries: CollectionConfig = {
   slug: 'patientClinicInquiries',
   labels: {
@@ -89,12 +134,12 @@ export const PatientClinicInquiries: CollectionConfig = {
   },
   access: {
     create: isPlatformStaff,
-    read: isPlatformStaff,
-    update: isPlatformStaff,
+    read: platformOrOwnClinicResource,
+    update: platformOrOwnClinicResource,
     delete: isPlatformStaff,
   },
   hooks: {
-    beforeChange: [freezeSubmissionEvidence],
+    beforeChange: [freezeSubmissionEvidence, validateClinicStaffStatusTransition],
   },
   fields: [
     {
@@ -103,6 +148,9 @@ export const PatientClinicInquiries: CollectionConfig = {
       relationTo: 'clinics',
       required: true,
       index: true,
+      access: {
+        update: platformOnlyFieldAccess,
+      },
       admin: {
         description: 'Clinic profile the request was sent from',
       },
@@ -114,6 +162,9 @@ export const PatientClinicInquiries: CollectionConfig = {
           name: 'fullName',
           type: 'text',
           required: true,
+          access: {
+            update: platformOnlyFieldAccess,
+          },
           admin: {
             description: 'Name entered by the requester',
             width: '50%',
@@ -124,6 +175,9 @@ export const PatientClinicInquiries: CollectionConfig = {
           type: 'email',
           required: true,
           index: true,
+          access: {
+            update: platformOnlyFieldAccess,
+          },
           admin: {
             description: 'Email address for follow-up',
             width: '50%',
@@ -135,6 +189,9 @@ export const PatientClinicInquiries: CollectionConfig = {
       name: 'phoneNumber',
       type: 'text',
       required: true,
+      access: {
+        update: platformOnlyFieldAccess,
+      },
       admin: {
         description: 'Phone number for follow-up',
       },
@@ -146,6 +203,9 @@ export const PatientClinicInquiries: CollectionConfig = {
           name: 'treatmentTimeline',
           type: 'select',
           options: [...patientClinicInquiryTreatmentTimelineOptions],
+          access: {
+            update: platformOnlyFieldAccess,
+          },
           admin: {
             description: 'How soon the requester is considering treatment',
             width: '50%',
@@ -155,6 +215,9 @@ export const PatientClinicInquiries: CollectionConfig = {
           name: 'preferredContactWindow',
           type: 'select',
           options: [...patientClinicInquiryContactWindowOptions],
+          access: {
+            update: platformOnlyFieldAccess,
+          },
           admin: {
             description: 'When the requester prefers to be contacted',
             width: '50%',
@@ -166,6 +229,9 @@ export const PatientClinicInquiries: CollectionConfig = {
       name: 'doctor',
       type: 'relationship',
       relationTo: 'doctors',
+      access: {
+        update: platformOnlyFieldAccess,
+      },
       admin: {
         description: 'Doctor selected on the clinic profile',
       },
@@ -174,6 +240,9 @@ export const PatientClinicInquiries: CollectionConfig = {
       name: 'treatment',
       type: 'relationship',
       relationTo: 'treatments',
+      access: {
+        update: platformOnlyFieldAccess,
+      },
       admin: {
         description: 'Treatment selected on the clinic profile',
       },
@@ -182,6 +251,9 @@ export const PatientClinicInquiries: CollectionConfig = {
       name: 'message',
       type: 'textarea',
       required: true,
+      access: {
+        update: platformOnlyFieldAccess,
+      },
       admin: {
         description: 'Message entered by the requester',
       },
@@ -189,6 +261,10 @@ export const PatientClinicInquiries: CollectionConfig = {
     {
       name: 'consent',
       type: 'group',
+      access: {
+        read: platformOnlyFieldAccess,
+        update: platformOnlyFieldAccess,
+      },
       admin: {
         description: 'Consent captured at submission time',
         readOnly: true,
@@ -224,6 +300,10 @@ export const PatientClinicInquiries: CollectionConfig = {
       name: 'assignedTo',
       type: 'relationship',
       relationTo: 'platformStaff',
+      access: {
+        read: platformOnlyFieldAccess,
+        update: platformOnlyFieldAccess,
+      },
       admin: {
         description: 'Platform user handling this request',
       },

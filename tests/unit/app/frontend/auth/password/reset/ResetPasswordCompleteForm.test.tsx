@@ -7,6 +7,7 @@ import { AUTH_FLASH_STORAGE_KEY } from '@/auth/utilities/authFlash'
 import { ResetPasswordCompleteForm } from '@/app/(frontend)/auth/password/reset/complete/ResetPasswordCompleteForm'
 
 const resetPassword = 'RecoveredPass123' // pragma: allowlist secret
+const clinicLoginHref = 'https://clinics.example.com/login'
 
 const routerMock = vi.hoisted(() => ({
   refresh: vi.fn(),
@@ -49,8 +50,8 @@ const mockRecoverySession = (userType: unknown) => {
   })
 }
 
-async function submitResetForm() {
-  render(<ResetPasswordCompleteForm />)
+async function submitResetForm(configuredClinicLoginHref?: string) {
+  render(<ResetPasswordCompleteForm clinicLoginHref={configuredClinicLoginHref} />)
 
   const passwordInput = await screen.findByLabelText('New password')
   const confirmPasswordInput = screen.getByLabelText('Confirm password')
@@ -74,51 +75,54 @@ describe('ResetPasswordCompleteForm', () => {
   })
 
   it.each([
-    ['patient', '/login/patient'],
-    ['clinic', '/admin/login'],
-    ['platform', '/admin/login'],
-  ] as const)('redirects %s users to the correct login page after updating the password', async (userType, href) => {
-    mockRecoverySession(userType)
-    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
+    ['patient', undefined, '/login/patient'],
+    ['clinic', clinicLoginHref, clinicLoginHref],
+    ['platform', undefined, '/admin/login'],
+  ] as const)(
+    'redirects %s users with clinic target %s to %s after updating the password',
+    async (userType, configuredClinicLoginHref, href) => {
+      mockRecoverySession(userType)
+      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
 
-    await submitResetForm()
+      await submitResetForm(configuredClinicLoginHref)
 
-    await waitFor(() => {
-      expect(routerMock.replace).toHaveBeenCalledWith(href)
-    })
+      await waitFor(() => {
+        expect(routerMock.replace).toHaveBeenCalledWith(href)
+      })
 
-    expect(supabaseAuthMock.updateUser).toHaveBeenCalledWith({ password: resetPassword })
-    expect(supabaseAuthMock.signOut).toHaveBeenCalledWith({ scope: 'global' })
-    expect(resetPostHogBrowserIdentityMock).toHaveBeenCalled()
-    expect(routerMock.refresh).toHaveBeenCalled()
+      expect(supabaseAuthMock.updateUser).toHaveBeenCalledWith({ password: resetPassword })
+      expect(supabaseAuthMock.signOut).toHaveBeenCalledWith({ scope: 'global' })
+      expect(resetPostHogBrowserIdentityMock).toHaveBeenCalled()
+      expect(routerMock.refresh).toHaveBeenCalled()
 
-    const rawFlash = window.sessionStorage.getItem(AUTH_FLASH_STORAGE_KEY)
-    expect(rawFlash).not.toBeNull()
-    expect(JSON.parse(rawFlash ?? '{}')).toMatchObject({
-      kind: 'password-reset-complete',
-    })
+      const rawFlash = window.sessionStorage.getItem(AUTH_FLASH_STORAGE_KEY)
+      expect(rawFlash).not.toBeNull()
+      expect(JSON.parse(rawFlash ?? '{}')).toMatchObject({
+        kind: 'password-reset-complete',
+      })
 
-    const updateUserCallOrder = supabaseAuthMock.updateUser.mock.invocationCallOrder[0]
-    const signOutCallOrder = supabaseAuthMock.signOut.mock.invocationCallOrder[0]
-    const flashWriteCallOrder = setItemSpy.mock.invocationCallOrder[0]
-    const redirectCallOrder = routerMock.replace.mock.invocationCallOrder[0]
+      const updateUserCallOrder = supabaseAuthMock.updateUser.mock.invocationCallOrder[0]
+      const signOutCallOrder = supabaseAuthMock.signOut.mock.invocationCallOrder[0]
+      const flashWriteCallOrder = setItemSpy.mock.invocationCallOrder[0]
+      const redirectCallOrder = routerMock.replace.mock.invocationCallOrder[0]
 
-    expect(updateUserCallOrder).toEqual(expect.any(Number))
-    expect(signOutCallOrder).toEqual(expect.any(Number))
-    expect(flashWriteCallOrder).toEqual(expect.any(Number))
-    expect(redirectCallOrder).toEqual(expect.any(Number))
+      expect(updateUserCallOrder).toEqual(expect.any(Number))
+      expect(signOutCallOrder).toEqual(expect.any(Number))
+      expect(flashWriteCallOrder).toEqual(expect.any(Number))
+      expect(redirectCallOrder).toEqual(expect.any(Number))
 
-    expect(updateUserCallOrder!).toBeLessThan(signOutCallOrder!)
-    expect(signOutCallOrder!).toBeLessThan(flashWriteCallOrder!)
-    expect(flashWriteCallOrder!).toBeLessThan(redirectCallOrder!)
+      expect(updateUserCallOrder!).toBeLessThan(signOutCallOrder!)
+      expect(signOutCallOrder!).toBeLessThan(flashWriteCallOrder!)
+      expect(flashWriteCallOrder!).toBeLessThan(redirectCallOrder!)
 
-    setItemSpy.mockRestore()
-  })
+      setItemSpy.mockRestore()
+    },
+  )
 
   it('redirects to the reset request page when the recovery link did not create a session', async () => {
     supabaseAuthMock.getSession.mockResolvedValue({ data: { session: null } })
 
-    render(<ResetPasswordCompleteForm />)
+    render(<ResetPasswordCompleteForm clinicLoginHref={clinicLoginHref} />)
 
     await waitFor(() => {
       expect(routerMock.replace).toHaveBeenCalledWith('/auth/password/reset?reason=expired')
@@ -127,7 +131,7 @@ describe('ResetPasswordCompleteForm', () => {
   })
 
   it('redirects callback errors to the reset request page without exposing the raw error', async () => {
-    render(<ResetPasswordCompleteForm error="otp_expired" />)
+    render(<ResetPasswordCompleteForm clinicLoginHref={clinicLoginHref} error="otp_expired" />)
 
     await waitFor(() => {
       expect(routerMock.replace).toHaveBeenCalledWith('/auth/password/reset?reason=expired')

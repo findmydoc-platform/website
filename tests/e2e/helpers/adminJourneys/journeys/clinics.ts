@@ -2,16 +2,13 @@ import { expect } from '@playwright/test'
 
 import { openAdminTab } from '../../adminUI'
 import type { AdminJourneyDefinition, AdminJourneyStep } from '../types'
-import { createCollectionCreateFragment, createJoinDrawerRelationFragment, defineJourneySteps } from '../fragments'
+import { createCollectionCreateFragment, defineJourneySteps } from '../fragments'
 import {
   createAssertFieldValueStep,
   createAssertClinicApprovalValidationStep,
-  createCaptureClinicTreatmentIdStep,
-  createEnsureAssignedClinicStep,
   createEnsureIncompleteClinicStep,
   createFillClinicApprovalRequirementsStep,
   createFillClinicDraftStep,
-  createFillClinicTreatmentStep,
   createOpenDocumentPageStep,
   createOpenTabStep,
   createSaveDocumentStep,
@@ -23,15 +20,6 @@ type RecordId = number | string
 type ClinicDraftJourneyState = {
   clinicId?: string
   clinicName: string
-}
-
-type ClinicTreatmentJoinJourneyState = {
-  clinicId?: RecordId
-  clinicName: string
-  clinicTreatmentId?: RecordId
-  price: string
-  treatmentId?: RecordId
-  treatmentName: string
 }
 
 type ClinicApprovalJourneyState = {
@@ -164,76 +152,4 @@ export const clinicCreateDraftJourney: AdminJourneyDefinition<ClinicDraftJourney
       },
     },
   }),
-}
-
-export const clinicTreatmentJoinJourney: AdminJourneyDefinition<ClinicTreatmentJoinJourneyState> = {
-  createState: () => ({
-    clinicId: undefined,
-    clinicName: '',
-    clinicTreatmentId: undefined,
-    price: '3500',
-    treatmentId: undefined,
-    treatmentName: '',
-  }),
-  description: 'Open the assigned clinic profile and add a treatment from the clinic join drawer.',
-  journeyId: 'clinic.clinics.add-treatment-from-join',
-  metadata: {
-    collections: ['clinics', 'clinicStaff', 'clinictreatments', 'treatments'],
-    consumers: ['regression', 'capture'],
-    entrypoints: ['document-page', 'join-drawer'],
-    riskTags: ['clinic-access', 'join-drawer', 'clinic-treatment'],
-  },
-  persona: 'clinic',
-  steps: defineJourneySteps<ClinicTreatmentJoinJourneyState>(
-    [
-      createEnsureAssignedClinicStep({
-        stepId: 'ensure-assigned-clinic-fixture',
-      }),
-    ],
-    createJoinDrawerRelationFragment<ClinicTreatmentJoinJourneyState, 'clinicId'>({
-      capture: createCaptureClinicTreatmentIdStep({
-        label: 'Resolve the created clinic treatment id',
-        stepId: 'capture-clinic-treatment-id',
-      }),
-      drawer: {
-        fieldPath: 'treatments',
-        label: 'Open the clinic treatment join drawer',
-        stepId: 'open-clinic-treatment-join-drawer',
-        checkpoint: {
-          label: 'Clinic treatment join drawer opened',
-          screenshotSlug: 'clinic-treatment-join-drawer-open',
-        },
-      },
-      fill: createFillClinicTreatmentStep({
-        stepId: 'fill-clinic-treatment-form',
-        checkpoint: {
-          label: 'Clinic treatment join drawer filled',
-          screenshotSlug: 'clinic-treatment-join-drawer-filled',
-        },
-      }),
-      openDocument: {
-        collectionSlug: 'clinics',
-        label: 'Open the assigned clinic document',
-        recordIdField: 'clinicId',
-        stepId: 'open-assigned-clinic-document',
-        checkpoint: {
-          label: 'Assigned clinic opened',
-          screenshotSlug: 'clinic-treatment-clinic-opened',
-        },
-      },
-      save: {
-        label: 'Save the clinic treatment drawer',
-        stepId: 'save-clinic-treatment-drawer',
-        checkpoint: {
-          label: 'Clinic treatment join drawer saved',
-          screenshotSlug: 'clinic-treatment-join-drawer-saved',
-        },
-      },
-      tab: {
-        label: 'Open the general clinic tab',
-        stepId: 'open-clinic-general-tab',
-        tabLabel: 'General',
-      },
-    }),
-  ),
 }

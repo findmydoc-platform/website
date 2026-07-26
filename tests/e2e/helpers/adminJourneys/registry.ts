@@ -1,17 +1,15 @@
 import type { AdminJourneyDefinition } from './types'
-import { clinicApprovalJourney, clinicCreateDraftJourney, clinicTreatmentJoinJourney } from './journeys/clinics'
+import { clinicApprovalJourney, clinicCreateDraftJourney } from './journeys/clinics'
 import { clinicApplicationLifecycleJourney, clinicStaffLifecycleJourney } from './journeys/clinicLifecycle'
 import { reviewPatientValidationJourney } from './journeys/reviews'
 import { relationshipEligibilityJourney } from './journeys/relationshipEligibility'
 import {
-  clinicDoctorSpecialtyJourney,
   doctorSpecialtyLinkJourney,
   medicalNetworkRegressionJourney,
   medicalSpecialtyCreateJourney,
 } from './journeys/specialties'
 import { tagCreateJourney } from './journeys/tags'
 import {
-  clinicDoctorTreatmentJourney,
   clinicTreatmentLinkJourney,
   doctorTreatmentLinkJourney,
   treatmentCreateJourney,
@@ -37,9 +35,6 @@ export const adminJourneyRegistry = {
   'admin.treatments.add-clinictreatment-from-join': treatmentJoinClinicJourney,
   'admin.treatments.add-doctortreatment-from-join': treatmentJoinDoctorJourney,
   'admin.treatments.create': treatmentCreateJourney,
-  'clinic.clinics.add-treatment-from-join': clinicTreatmentJoinJourney,
-  'clinic.doctors.create-and-link-specialty': clinicDoctorSpecialtyJourney,
-  'clinic.doctors.create-and-link-treatment': clinicDoctorTreatmentJourney,
 } as const
 
 export type KnownAdminJourneyId = keyof typeof adminJourneyRegistry

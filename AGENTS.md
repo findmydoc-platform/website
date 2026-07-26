@@ -36,10 +36,10 @@
 ## Instruction Design Principles (AI-Slop v2)
 
 1. Prefer hierarchy over volume: prioritize P0/P1/P2 rules.
-2. Keep constraints minimal and precise; avoid overloading prompts.
-3. Remove conflicts across instruction files.
-4. Use short examples only when they materially reduce ambiguity.
-5. Scope rules through nested `AGENTS.md` files; avoid unnecessary global rules.
+2. Keep constraints minimal and precise; avoid overloading prompts. Completeness, consistency, and gap analyses check only the stated scope, acceptance criteria, and existing evidence; they do not add architecture, safeguards, transition paths, hardening, or product behavior.
+3. Remove conflicts across instruction files. Do not assume backward compatibility or legacy support; if a concrete dependency and risk indicate a need, ask the user before adding either.
+4. Use short examples only when they materially reduce ambiguity. Keep optional hardening separate, proportionate to a concrete risk, and subject to the user's decision; mandatory security requirements still apply.
+5. Scope rules through nested `AGENTS.md` files; avoid unnecessary global rules. When removing behavior, find and remove obsolete tests without replacing them with absence-only tests; test the surviving behavior and explicit acceptance criteria.
 
 ## Execution Requirements (Repository-Specific)
 

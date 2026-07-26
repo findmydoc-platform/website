@@ -1,7 +1,7 @@
 import path from 'node:path'
 import type { APIRequestContext } from '@playwright/test'
 
-export const SUPPORTED_PLAYWRIGHT_SESSION_PERSONAS = ['admin', 'clinic'] as const
+export const SUPPORTED_PLAYWRIGHT_SESSION_PERSONAS = ['admin'] as const
 
 export type PlaywrightSessionPersona = (typeof SUPPORTED_PLAYWRIGHT_SESSION_PERSONAS)[number]
 
@@ -20,7 +20,6 @@ const DEFAULT_BASE_URL = 'http://localhost:3000/'
 
 const DEFAULT_STATE_FILES: Record<PlaywrightSessionPersona, string> = {
   admin: path.join('output', 'playwright', 'sessions', 'admin.local.json'),
-  clinic: path.join('output', 'playwright', 'sessions', 'clinic.local.json'),
 }
 
 const ADMIN_AUTH_BLOCKED_PATHS = new Set(['/admin/login', '/admin/first-admin'])
@@ -40,21 +39,11 @@ export const normalizeBaseUrl = (value: string): string => {
   return url.toString()
 }
 
-export const getPlaywrightSessionLoginUrl = (persona: PlaywrightSessionPersona, baseUrl: string): string => {
-  switch (persona) {
-    case 'admin':
-    case 'clinic':
-      return new URL('/admin/login', baseUrl).toString()
-  }
-}
+export const getPlaywrightSessionLoginUrl = (_persona: PlaywrightSessionPersona, baseUrl: string): string =>
+  new URL('/admin/login', baseUrl).toString()
 
-export const getPlaywrightSessionCheckUrl = (persona: PlaywrightSessionPersona, baseUrl: string): string => {
-  switch (persona) {
-    case 'admin':
-    case 'clinic':
-      return new URL('/admin', baseUrl).toString()
-  }
-}
+export const getPlaywrightSessionCheckUrl = (_persona: PlaywrightSessionPersona, baseUrl: string): string =>
+  new URL('/admin', baseUrl).toString()
 
 export const isAuthenticatedPlaywrightSessionUrl = (
   value: string | URL,
@@ -68,26 +57,7 @@ export const isAuthenticatedPlaywrightSessionUrl = (
     return false
   }
 
-  switch (persona) {
-    case 'admin':
-    case 'clinic':
-      return candidateUrl.pathname.startsWith('/admin') && !ADMIN_AUTH_BLOCKED_PATHS.has(candidateUrl.pathname)
-  }
-}
-
-const getRecordId = (value: unknown): string | number | undefined => {
-  if (typeof value === 'string' || typeof value === 'number') {
-    return value
-  }
-
-  if (value && typeof value === 'object') {
-    const candidate = (value as { id?: unknown; value?: unknown }).id ?? (value as { value?: unknown }).value
-    if (typeof candidate === 'string' || typeof candidate === 'number') {
-      return candidate
-    }
-  }
-
-  return undefined
+  return candidateUrl.pathname.startsWith('/admin') && !ADMIN_AUTH_BLOCKED_PATHS.has(candidateUrl.pathname)
 }
 
 const readCollectionDocs = async (
@@ -113,23 +83,8 @@ export const isValidPlaywrightSessionForPersona = async (
     return false
   }
 
-  switch (persona) {
-    case 'admin': {
-      const platformStaffDocs = await readCollectionDocs(request, '/api/platformStaff?depth=0&limit=1')
-      return Array.isArray(platformStaffDocs)
-    }
-    case 'clinic': {
-      const platformStaffDocs = await readCollectionDocs(request, '/api/platformStaff?depth=0&limit=1')
-      if (Array.isArray(platformStaffDocs)) {
-        return false
-      }
-
-      const clinicStaffDocs = await readCollectionDocs(request, '/api/clinicStaff?depth=1&limit=1')
-      const assignedClinicId = getRecordId(clinicStaffDocs?.[0]?.clinic)
-
-      return assignedClinicId !== undefined
-    }
-  }
+  const platformStaffDocs = await readCollectionDocs(request, '/api/platformStaff?depth=0&limit=1')
+  return Array.isArray(platformStaffDocs)
 }
 
 export function parsePlaywrightSessionArgs(argv: string[]): PlaywrightSessionCliOptions {
@@ -216,8 +171,7 @@ Usage:
   ${command}
 
 Options:
-  --persona <admin|clinic>
-                         Persona to record or verify (default: admin)
+  --persona <admin>      Persona to record or verify (default: admin)
   --base-url <url>       Base URL for the local app (default: ${DEFAULT_BASE_URL})
   --state-file <path>    Session state path (default: ${getDefaultStateFile('admin')})
   -h, --help             Show this help

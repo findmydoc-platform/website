@@ -4,11 +4,6 @@ import { getFirstCollectionDoc, getRecordId, type CollectionListResponse, type C
 
 export { createSessionBoundRequestContext, getFirstCollectionDoc, getRecordId } from './adminApi'
 
-type ClinicFixture = {
-  clinicId: string | number
-  clinicName: string
-}
-
 const TINY_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=',
   'base64',
@@ -231,36 +226,6 @@ export const ensureRelationshipEligibilityFixtures = async (request: APIRequestC
     rootAId,
     rootAName,
     rootBName,
-  }
-}
-
-export const readAssignedClinicFixture = async (request: APIRequestContext): Promise<ClinicFixture> => {
-  const clinicStaff = await getFirstCollectionDoc(request, '/api/clinicStaff?depth=1&limit=1&sort=-updatedAt')
-  const clinicValue = clinicStaff?.clinic
-  const clinicId = getRecordId(clinicValue)
-  expect(clinicId).toBeTruthy()
-
-  const populatedClinicName =
-    clinicValue && typeof clinicValue === 'object' && typeof (clinicValue as { name?: unknown }).name === 'string'
-      ? (clinicValue as { name: string }).name
-      : undefined
-
-  if (populatedClinicName) {
-    return {
-      clinicId: clinicId as string | number,
-      clinicName: populatedClinicName,
-    }
-  }
-
-  const clinicDoc = await getFirstCollectionDoc(
-    request,
-    `/api/clinics?depth=0&limit=1&where[id][equals]=${encodeURIComponent(String(clinicId))}`,
-  )
-  const clinicName = typeof clinicDoc?.name === 'string' ? clinicDoc.name : undefined
-
-  return {
-    clinicId: clinicId as string | number,
-    clinicName: clinicName ?? String(clinicId),
   }
 }
 

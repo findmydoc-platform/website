@@ -1,5 +1,9 @@
 import type { ClinicStaff } from '@/payload-types'
-import { deleteClinicSupabaseAccount, setClinicSupabaseAccountAccess } from '@/auth/utilities/supabaseProvision'
+import {
+  deleteClinicSupabaseAccount,
+  reconcileExistingClinicSupabaseAccount,
+  setClinicSupabaseAccountAccess,
+} from '@/auth/utilities/supabaseProvision'
 import {
   isClinicStaffStatusTransitionAllowed,
   type ClinicStaffAuthSyncErrorCode,
@@ -69,24 +73,43 @@ export const synchronizeClinicStaffAuthState: CollectionAfterChangeHook<ClinicSt
     doc.status === 'offboarded' ? 'account_delete_failed' : 'account_update_failed'
 
   try {
-    if (!doc.supabaseUserId) {
+    let supabaseUserId = doc.supabaseUserId?.trim()
+
+    if (!supabaseUserId) {
       if (doc.status === 'offboarded') {
         await updateAuthSync(req, doc.id, 'deleted', null)
         return doc
       }
 
       failureCode = 'missing_identity'
-      throw new Error('Clinic staff has no Supabase identity')
+      supabaseUserId = await reconcileExistingClinicSupabaseAccount(
+        {
+          email: doc.email ?? '',
+          onboardingKey: doc.onboardingKey,
+          userMetadata: {
+            firstName: doc.firstName ?? undefined,
+            lastName: doc.lastName ?? undefined,
+          },
+        },
+        req.payload.logger,
+      )
+      await req.payload.update({
+        collection: 'clinicStaff',
+        id: doc.id,
+        context: { ...req.context, skipClinicStaffAuthSync: true },
+        data: { supabaseUserId },
+        depth: 0,
+        overrideAccess: true,
+        req,
+      })
     }
 
     if (doc.status === 'offboarded') {
-      await deleteClinicSupabaseAccount(doc.supabaseUserId, req.payload.logger)
+      await deleteClinicSupabaseAccount(supabaseUserId, req.payload.logger)
       await updateAuthSync(req, doc.id, 'deleted', null)
     } else {
-      await setClinicSupabaseAccountAccess(
-        { enabled: doc.status === 'approved', supabaseUserId: doc.supabaseUserId },
-        req.payload.logger,
-      )
+      failureCode = 'account_update_failed'
+      await setClinicSupabaseAccountAccess({ enabled: doc.status === 'approved', supabaseUserId }, req.payload.logger)
       await updateAuthSync(req, doc.id, 'synced', null)
     }
   } catch (error) {

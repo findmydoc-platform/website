@@ -5,6 +5,7 @@ import type { ClinicStaff } from '@/payload-types'
 
 const authMocks = vi.hoisted(() => ({
   deleteClinicSupabaseAccount: vi.fn(),
+  reconcileExistingClinicSupabaseAccount: vi.fn(),
   setClinicSupabaseAccountAccess: vi.fn(),
 }))
 
@@ -43,6 +44,7 @@ describe('ClinicStaff lifecycle hooks', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authMocks.deleteClinicSupabaseAccount.mockResolvedValue(undefined)
+    authMocks.reconcileExistingClinicSupabaseAccount.mockResolvedValue('reconciled-supabase-4')
     authMocks.setClinicSupabaseAccountAccess.mockResolvedValue(undefined)
   })
 
@@ -129,8 +131,50 @@ describe('ClinicStaff lifecycle hooks', () => {
     )
   })
 
-  it('stores a resumable failure when a non-pending principal has no identity', async () => {
+  it('reconciles and binds an existing identity when a non-pending principal has no identity', async () => {
     const request = req()
+
+    await synchronizeClinicStaffAuthState({
+      doc: staff({
+        status: 'approved',
+        supabaseUserId: null,
+        onboardingKey: 'clinic-application:42',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+      }),
+      previousDoc: staff({ status: 'pending' }),
+      req: request,
+    } as never)
+
+    expect(authMocks.reconcileExistingClinicSupabaseAccount).toHaveBeenCalledWith(
+      {
+        email: 'clinic@example.com',
+        onboardingKey: 'clinic-application:42',
+        userMetadata: { firstName: 'Ada', lastName: 'Lovelace' },
+      },
+      request.payload.logger,
+    )
+    expect(request.payload.update).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        data: { supabaseUserId: 'reconciled-supabase-4' },
+      }),
+    )
+    expect(authMocks.setClinicSupabaseAccountAccess).toHaveBeenCalledWith(
+      { enabled: true, supabaseUserId: 'reconciled-supabase-4' },
+      request.payload.logger,
+    )
+    expect(request.payload.update).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        data: { authSync: { errorCode: null, status: 'synced' } },
+      }),
+    )
+  })
+
+  it('stores a resumable missing-identity failure when reconciliation cannot verify an account', async () => {
+    const request = req()
+    authMocks.reconcileExistingClinicSupabaseAccount.mockRejectedValueOnce(new Error('No verified clinic identity'))
 
     await synchronizeClinicStaffAuthState({
       doc: staff({ status: 'approved', supabaseUserId: null }),
@@ -143,6 +187,7 @@ describe('ClinicStaff lifecycle hooks', () => {
         data: { authSync: { errorCode: 'missing_identity', status: 'failed' } },
       }),
     )
+    expect(authMocks.setClinicSupabaseAccountAccess).not.toHaveBeenCalled()
   })
 
   it('retries a failed unchanged lifecycle state and skips an already synchronized one', async () => {

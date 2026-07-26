@@ -39,6 +39,12 @@ export interface ClinicInviteProvisionArgs {
   userMetadata?: SupabaseProvisionMetadata
 }
 
+export interface ExistingClinicAccountReconciliationArgs {
+  email: string
+  onboardingKey?: string | null
+  userMetadata?: SupabaseProvisionMetadata
+}
+
 export interface ClinicAccountAccessArgs {
   enabled: boolean
   supabaseUserId: string
@@ -215,11 +221,10 @@ const toSupabaseErrorMessage = (error: unknown): string =>
       ? error.message
       : String(error)
 
-const findClinicSupabaseUser = async (
+const findSupabaseUsersByEmail = async (
   supabase: Awaited<ReturnType<typeof getProvisionAdminClient>>['supabase'],
   email: string,
-  onboardingKey: string,
-): Promise<User | null> => {
+): Promise<User[]> => {
   const matches: User[] = []
   let page: number | null = 1
 
@@ -229,13 +234,21 @@ const findClinicSupabaseUser = async (
       throw new Error(`Supabase user reconciliation failed: ${error.message}`)
     }
 
-    matches.push(
-      ...data.users.filter(
-        (user) => normalizeEmail(user.email) === email && user.user_metadata?.onboarding_key === onboardingKey,
-      ),
-    )
+    matches.push(...data.users.filter((user) => normalizeEmail(user.email) === email))
     page = data.nextPage
   }
+
+  return matches
+}
+
+const findClinicSupabaseUser = async (
+  supabase: Awaited<ReturnType<typeof getProvisionAdminClient>>['supabase'],
+  email: string,
+  onboardingKey: string,
+): Promise<User | null> => {
+  const matches = (await findSupabaseUsersByEmail(supabase, email)).filter(
+    (user) => user.user_metadata?.onboarding_key === onboardingKey,
+  )
 
   if (matches.length > 1) {
     throw new Error('Supabase user reconciliation found multiple clinic identities')
@@ -253,7 +266,7 @@ const repairClinicSupabaseUser = async ({
 }: {
   firstName?: string
   lastName?: string
-  onboardingKey: string
+  onboardingKey?: string
   supabase: Awaited<ReturnType<typeof getProvisionAdminClient>>['supabase']
   user: User
 }): Promise<void> => {
@@ -263,7 +276,7 @@ const repairClinicSupabaseUser = async ({
       ...user.user_metadata,
       first_name: firstName ?? user.user_metadata?.first_name,
       last_name: lastName ?? user.user_metadata?.last_name,
-      onboarding_key: onboardingKey,
+      ...(onboardingKey ? { onboarding_key: onboardingKey } : {}),
     },
   })
 
@@ -347,6 +360,72 @@ export async function inviteClinicSupabaseAccount(
       userType: 'clinic',
     },
     invitedUser ? 'Invited Supabase clinic user' : 'Reconciled Supabase clinic user',
+  )
+
+  return user.id
+}
+
+/**
+ * Reconciles one existing clinic-tagged Supabase account without creating or inviting a user.
+ */
+export async function reconcileExistingClinicSupabaseAccount(
+  { email, onboardingKey, userMetadata }: ExistingClinicAccountReconciliationArgs,
+  logger?: ServerLogger,
+): Promise<string> {
+  const normalizedEmail = normalizeEmail(email)
+  const normalizedOnboardingKey = onboardingKey?.trim() || undefined
+  if (!isValidEmail(normalizedEmail)) {
+    throw new Error('Supabase clinic reconciliation failed: Invalid email format')
+  }
+
+  const { activeLogger, supabase } = await getProvisionAdminClient(logger, {
+    emailHash: hashLogValue(normalizedEmail),
+    operation: 'reconcile_clinic_user',
+    userType: 'clinic',
+  })
+  const matches = await findSupabaseUsersByEmail(supabase, normalizedEmail)
+
+  if (matches.length !== 1) {
+    throw new Error(`Supabase clinic reconciliation expected one identity, found ${matches.length}`)
+  }
+
+  const user = matches[0]
+  if (!user) {
+    throw new Error('Supabase clinic reconciliation found no identity')
+  }
+  const existingUserType = typeof user.app_metadata?.user_type === 'string' ? user.app_metadata.user_type : undefined
+  const existingOnboardingKey =
+    typeof user.user_metadata?.onboarding_key === 'string' ? user.user_metadata.onboarding_key.trim() : undefined
+
+  if (existingUserType && existingUserType !== 'clinic') {
+    throw new Error('Supabase clinic reconciliation found a non-clinic identity')
+  }
+  if (normalizedOnboardingKey && existingOnboardingKey && existingOnboardingKey !== normalizedOnboardingKey) {
+    throw new Error('Supabase clinic reconciliation found a different onboarding identity')
+  }
+  if (
+    existingUserType !== 'clinic' &&
+    (!normalizedOnboardingKey || existingOnboardingKey !== normalizedOnboardingKey)
+  ) {
+    throw new Error('Supabase clinic reconciliation could not verify the clinic identity')
+  }
+
+  await repairClinicSupabaseUser({
+    firstName: userMetadata?.firstName,
+    lastName: userMetadata?.lastName,
+    onboardingKey: normalizedOnboardingKey ?? existingOnboardingKey,
+    supabase,
+    user,
+  })
+
+  activeLogger.info(
+    {
+      emailHash: hashLogValue(normalizedEmail),
+      event: 'auth.supabase.admin.clinic_identity_reconciled',
+      supabaseUserId: user.id,
+      userType: 'clinic',
+    },
+    'Reconciled existing Supabase clinic user',
   )
 
   return user.id

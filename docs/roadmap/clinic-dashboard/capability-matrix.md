@@ -425,7 +425,7 @@ Stop implementation and obtain an ADR or explicit work order when any slice requ
 | [#1530](https://github.com/findmydoc-platform/website/issues/1530) | Conversations, messages, private attachments | Yes, new private domain | Uses direct principal and patient identity | Yes, participant/tenant/field isolation | Explicit private-live policy only | #1526 inquiry ownership |
 | [#1531](https://github.com/findmydoc-platform/website/issues/1531) | Tenant-safe PostHog + Payload reporting facade; prototype fixtures remain until this slice | No dashboard persistence assumed | Uses final principal | Yes, fixed server-side aggregate queries and shaped response | No public impact/private-live and no-store; later shared caching needs a separate decision | Existing reviews plus source definitions from #1526/#1528; PostHog identity continuity for a true funnel; #1529/#1530 only if their data is explicitly reported |
 | [#1532](https://github.com/findmydoc-platform/website/issues/1532) | Historical direct-staff-auth rollout under ADR 025 | Yes, completed migration | Direct principals | Direct actor/tenant helpers | Private auth and preserved public authors | Completed prerequisite |
-| [#1533](https://github.com/findmydoc-platform/website/issues/1533) | Remove website clinic auth paths | No expected domain schema | Removes old routes/targets | Redirect/cutover checks | No public data impact | Verified dashboard login/invite/reset/logout cutover |
+| [#1533](https://github.com/findmydoc-platform/website/issues/1533) | Remove website clinic auth paths | No domain schema change | Dashboard-only Clinic auth targets | Redirect/cutover checks | No public data impact | Dashboard login, refresh, logout, invite, and reset verified in clinic-dashboard PRs [#69](https://github.com/findmydoc-platform/clinic-dashboard/pull/69) and [#80](https://github.com/findmydoc-platform/clinic-dashboard/pull/80) |
 | [clinic-dashboard#1](https://github.com/findmydoc-platform/clinic-dashboard/issues/1) | Deployable fixture-backed app shell and paired UI plan | No backend schema | Runtime auth remains separate | Runtime API remains separate | None | Fixture work can proceed; API wiring waits for #1524 and the Dashboard runtime slice |
 
 ## Recommended Work Order and Parallelism
@@ -439,7 +439,7 @@ Stop implementation and obtain an ADR or explicit work order when any slice requ
 | 4 | **#1530 conversations/messages** | Requires the inquiry tenant/ownership contract from #1526. UI shell work may prepare empty/loading/error states earlier. |
 | 5 | **#1531 reporting** | Keep the prototype fixture-backed until this slice. Implement the PostHog Query API plus Payload reporting facade only after each metric source is real and source-backed; it must not label inquiries as bookings. |
 | 6 | **Dashboard integration and cutover evidence** | Wire typed UI commands to the available capability contract; verify tenant, auth expiry, forbidden origin, and empty states. |
-| 7 | **#1533 website auth-path removal** | Last. Requires proven dashboard login, refresh, logout, invite, reset, and redirect behavior. |
+| 7 | **#1533 website auth-path removal** | Final cutover step after the proven Dashboard login, refresh, logout, invite, reset, and redirect behavior. |
 
 Hard dependencies are narrower than the recommended sequence:
 
@@ -447,7 +447,7 @@ Hard dependencies are narrower than the recommended sequence:
 - ADR 026 is the accepted application and API boundary; runtime work must not reintroduce browser-to-Payload access.
 - #1530 requires #1526's inquiry ownership and tenant rules.
 - #1531 requires source-backed metric definitions; unavailable sources must return stable empty states.
-- #1533 requires successful dashboard cutover evidence.
+- #1533 follows the successful Dashboard cutover evidence from clinic-dashboard PRs #69 and #80.
 - clinic-dashboard#1 has no backend dependency while it remains fixture-only.
 
 ## Component and Implementation Ownership Plan

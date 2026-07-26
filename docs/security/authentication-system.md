@@ -69,9 +69,9 @@ Patient provisioning remains the established ensure-on-auth flow. Staff deletion
 
 Invite and recovery email templates use `TokenHash`, not browser hash tokens. The callback `GET` validates the fixed
 flow and internal destination but does not consume the token. A same-origin confirmation `POST` performs `verifyOtp`.
-The website retains its existing authorization-code callback and legacy hash hydration paths during compatibility
-rollout. Template snapshot, rollback, staging-first activation, and production gates are documented in
-`supabase-email-template-rollout.md`.
+The website authorization-code, TokenHash, and browser-hash callback paths serve its Platform and Patient flows.
+Clinic invite and recovery callbacks use the Clinic Dashboard. Template snapshot, rollback, staging-first activation,
+and production gates are documented in `supabase-email-template-rollout.md`.
 
 ## Related References
 

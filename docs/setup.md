@@ -167,7 +167,7 @@ The website runtime returns `404` for public first-admin bootstrap routes.
 
 For local screenshots, manual QA, and ad-hoc browser automation, reuse a stored Playwright session instead of signing in from scratch every time.
 
-Use an existing local or test platform admin or clinic staff account for this workflow. The shared session helper does not provision or clean up auth users.
+Use an existing local or test platform admin account for this workflow. The shared session helper does not provision or clean up auth users.
 
 Record the shared local admin session:
 
@@ -181,17 +181,10 @@ This command:
 2. waits for you to complete the real login flow manually
 3. stores the resulting Playwright `storageState` at `output/playwright/sessions/admin.local.json`
 
-Record the shared local clinic session:
-
-```bash
-pnpm playwright:session:record -- --persona clinic
-```
-
 Verify an existing local session before using it in screenshots or scripts:
 
 ```bash
 pnpm playwright:session:check -- --persona admin
-pnpm playwright:session:check -- --persona clinic
 ```
 
 Reuse the session in local Playwright contexts with:

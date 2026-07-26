@@ -163,10 +163,9 @@ The runtime switch removes the clinic branch from the Payload Admin login and fr
 portal login endpoint rejects `clinic` as a portal target. No portal route or redirect may imply that clinic staff can
 enter Payload Admin.
 
-Clinic invitation completion, password reset, and the generic authentication callback remain available until the
-Clinic Dashboard owns those flows and the separate application-boundary gate has been satisfied. Removing those
-transitional routes earlier would break account setup without providing a replacement. Patient login and public clinic
-registration also remain unchanged.
+The Clinic Dashboard owns clinic invitation completion, password reset completion, and callback handling. Website
+callback and completion paths serve Patient and Platform flows. Patient login and public clinic registration remain
+unchanged.
 
 The portal may later expose one normal navigation link to the standalone Clinic Dashboard. The link performs no
 authentication and transfers no session.
@@ -490,8 +489,7 @@ Implementation verification covers:
 - explicit non-production guards for fixture rebuild operations;
 - production baseline seeds that cannot create or elevate an administrator;
 - absence of the clinic branch in Payload Admin and portal login-role selection;
-- continued patient login, public clinic registration, clinic invitation completion, password reset, and generic auth
-  callback behavior; and
+- continued patient login, public clinic registration, and Website-owned Patient and Platform callback behavior; and
 - absence of Dashboard BFF, callbacks, or API integration in this direct-principal rollout.
 
 ## Out of Scope

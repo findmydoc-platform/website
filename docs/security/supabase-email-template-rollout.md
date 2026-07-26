@@ -31,5 +31,5 @@ during rollout.
 6. Send fresh Production invite and recovery emails, repeat the proof, and keep the exported templates as the rollback
    source. If verification fails, restore the exact prior template and stop the rollout.
 
-The later clinic-login cutover issue remains a separate gate. Template rollout must not remove existing website auth
-flows or change patient and platform-staff routing.
+Clinic invite and recovery links target the Clinic Dashboard callback. Website callbacks continue to serve Patient and
+Platform flows.

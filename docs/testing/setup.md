@@ -24,7 +24,6 @@ Test mode guidance:
 - Do not enable development S3 in tests (`USE_S3_IN_DEV` should remain unset or `false`).
 - If a test scenario needs Supabase endpoints, use `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - The Playwright admin smoke lane additionally expects `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD` for an already existing Supabase platform admin account.
-- The admin regression lane additionally expects `E2E_CLINIC_EMAIL` and `E2E_CLINIC_PASSWORD` for an already existing Supabase clinic staff account.
 - Do not put blank `E2E_ADMIN_*` values into `.env.test`; that file overrides `.env.local` during test startup.
 
 A couple of notes about logging and test-time behavior:
@@ -101,9 +100,8 @@ Set `TEST_DB_REBUILD_TEMPLATES=1` when you need a manual repair run that discard
 - The Playwright config lives in `playwright.config.ts`.
 - Artifacts are written to `output/playwright/**`.
 - The admin smoke suite logs in with fixed environment credentials, records session state in `output/playwright/sessions/admin.e2e.json`, and expects the Supabase admin account to exist already.
-- The admin regression lane records a second session state in `output/playwright/sessions/clinic.e2e.json` for a fixed clinic staff account after the platform admin fixture approves and assigns that user to a clinic.
 - Current smoke coverage includes admin login, dashboard reachability, clinics create flow, and additional medical-network/content flows (medical specialties, treatments, doctor specialty relation, tags).
-- Regression coverage exercises longer admin journeys via the shared journey registry, including platform specialty and treatment medical-network chains plus clinic staff specialty and treatment flows.
+- Regression coverage exercises longer platform-admin journeys via the shared journey registry, including specialty and treatment medical-network chains.
 - The E2E harness restores the working database from the `baseline` template before starting `pnpm dev`; baseline seeding only runs again when that template is rebuilt.
 - The smoke lane does not check whether that Supabase admin exists and does not provision or clean it up. If the account is missing or invalid, the login test fails immediately.
 - In `test` runtime, `/admin/login` stays reachable even after a fresh Payload DB reset so the first successful Supabase login can recreate the CMS-side admin records.
@@ -112,12 +110,9 @@ Set `TEST_DB_REBUILD_TEMPLATES=1` when you need a manual repair run that discard
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   - `E2E_ADMIN_EMAIL`
   - `E2E_ADMIN_PASSWORD`
-  - `E2E_CLINIC_EMAIL`
-  - `E2E_CLINIC_PASSWORD`
 - By default Playwright starts its own local stack on `http://localhost:3100`. To target an already running instance instead, set `PLAYWRIGHT_BASE_URL`. To change the local port, set `E2E_PORT`.
 - CI uses the dedicated GitHub Actions workflow `.github/workflows/admin-e2e-smoke.yml`, triggered on `pull_request` to `main`, `push` to `main`, and `workflow_dispatch`.
 - Store `E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the protected `admin-e2e-smoke` environment.
-- Store `E2E_CLINIC_EMAIL` and `E2E_CLINIC_PASSWORD` alongside the admin credentials when running the regression lane in CI or another shared environment.
 - The workflow uploads Playwright report/debug artifacts on every run and removes `output/playwright/sessions/**` before upload so session state never becomes a CI artifact.
 
 ### Shared Admin Journeys
@@ -125,8 +120,8 @@ Set `TEST_DB_REBUILD_TEMPLATES=1` when you need a manual repair run that discard
 - The shared admin journey registry lives under `tests/e2e/helpers/adminJourneys/**`.
 - New journeys should compose reusable fragments from `adminJourneys/fragments.ts` before adding lower-level step sequences directly.
 - `pnpm tests:e2e:smoke:admin` keeps the small platform-admin smoke lane.
-- `pnpm tests:e2e:regression:admin` runs the heavier multi-step admin journeys on dedicated projects for platform admin and clinic staff.
-- Local screenshot capture for supported admin journeys uses `pnpm playwright:journey:capture -- --journey <id> --persona <admin|clinic>`.
+- `pnpm tests:e2e:regression:admin` runs the heavier multi-step platform-admin journeys.
+- Local screenshot capture for supported admin journeys uses `pnpm playwright:journey:capture -- --journey <id> --persona admin`.
 - Admin journey coverage uses `pnpm admin:journey:coverage` and writes JSON/Markdown reports to `output/playwright/journey-coverage/**`.
 - Capture-ready medical-network journeys now include:
   - `admin.treatments.create`

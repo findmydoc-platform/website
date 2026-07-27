@@ -96,6 +96,6 @@ describe('Patient LoginPage', () => {
 
     expect(loginRoot?.props.redirectPath).toBe('/patient/favorites')
     expect(containsHref(result, '/register/patient')).toBe(false)
-    expect(containsText(result, 'Patient accounts are created by findmydoc staff.')).toBe(true)
+    expect(containsText(result, 'In Preview, patient accounts are created by findmydoc staff.')).toBe(true)
   })
 })

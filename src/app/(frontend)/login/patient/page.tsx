@@ -51,7 +51,9 @@ export default async function LoginPage({
         </LoginForm.Form>
         <LoginForm.Footer>
           {isPreview ? (
-            <p className="text-sm text-muted-foreground">Patient accounts are created by findmydoc staff.</p>
+            <p className="text-sm text-muted-foreground">
+              In Preview, patient accounts are created by findmydoc staff.
+            </p>
           ) : (
             <p className="text-sm text-muted-foreground">
               Don&apos;t have an account?{' '}

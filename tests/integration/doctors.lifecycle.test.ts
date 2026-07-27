@@ -262,22 +262,73 @@ describe('Doctors lifecycle integration', () => {
   it('rejects invalid experienceYears values', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix })
 
-    await expect(
-      payload.create({
-        collection: 'doctors',
-        data: {
-          firstName: `${slugPrefix}-invalid-exp`,
-          gender: 'male',
-          lastName: 'Doctor',
-          clinic: clinic.id,
-          qualifications: ['MD'],
-          languages: ['english'],
-          experienceYears: 'ten' as unknown as number,
-        } as unknown as Doctor,
-        overrideAccess: true,
-        depth: 0,
-      }),
-    ).rejects.toThrow()
+    for (const [suffix, experienceYears] of [
+      ['text', 'ten'],
+      ['negative', -1],
+      ['fraction', 2.5],
+    ] as const) {
+      await expect(
+        payload.create({
+          collection: 'doctors',
+          data: {
+            firstName: `${slugPrefix}-invalid-exp-${suffix}`,
+            gender: 'male',
+            lastName: 'Doctor',
+            clinic: clinic.id,
+            qualifications: ['MD'],
+            languages: ['english'],
+            experienceYears: experienceYears as unknown as number,
+          } as unknown as Doctor,
+          overrideAccess: true,
+          depth: 0,
+        }),
+      ).rejects.toThrow()
+    }
+  })
+
+  it('accepts zero experience years', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix })
+
+    const doctor = (await payload.create({
+      collection: 'doctors',
+      data: {
+        firstName: `${slugPrefix}-new-doctor`,
+        gender: 'female',
+        lastName: 'Doctor',
+        clinic: clinic.id,
+        qualifications: ['MD'],
+        languages: ['english'],
+        experienceYears: 0,
+      } as unknown as Doctor,
+      overrideAccess: true,
+      depth: 0,
+    })) as Doctor
+
+    expect(doctor.experienceYears).toBe(0)
+  })
+
+  it('stores multiline plain-text biographies and positive whole experience years', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix })
+    const biography = 'First paragraph.\n\nSecond paragraph.'
+
+    const doctor = (await payload.create({
+      collection: 'doctors',
+      data: {
+        firstName: `${slugPrefix}-biography`,
+        gender: 'female',
+        lastName: 'Doctor',
+        biography,
+        clinic: clinic.id,
+        qualifications: ['MD'],
+        languages: ['english'],
+        experienceYears: 12,
+      } as unknown as Doctor,
+      overrideAccess: true,
+      depth: 0,
+    })) as Doctor
+
+    expect(doctor.biography).toBe(biography)
+    expect(doctor.experienceYears).toBe(12)
   })
 
   it('requires non-empty languages', async () => {

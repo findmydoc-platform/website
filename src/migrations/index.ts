@@ -50,6 +50,7 @@ import * as migration_20260720_130148_clinic_onboarding_observability from './20
 import * as migration_20260721_121344_disable_clinic_gallery_mcp from './20260721_121344_disable_clinic_gallery_mcp'
 import * as migration_20260721_133332_doctor_availability_and_geo_point_order from './20260721_133332_doctor_availability_and_geo_point_order'
 import * as migration_20260722_144920_clinic_gallery_mcp_snapshot_alignment from './20260722_144920_clinic_gallery_mcp_snapshot_alignment'
+import * as migration_20260727_145822_doctor_biography_plain_text from './20260727_145822_doctor_biography_plain_text'
 
 export const migrations = [
   {
@@ -311,5 +312,10 @@ export const migrations = [
     up: migration_20260722_144920_clinic_gallery_mcp_snapshot_alignment.up,
     down: migration_20260722_144920_clinic_gallery_mcp_snapshot_alignment.down,
     name: '20260722_144920_clinic_gallery_mcp_snapshot_alignment',
+  },
+  {
+    up: migration_20260727_145822_doctor_biography_plain_text.up,
+    down: migration_20260727_145822_doctor_biography_plain_text.down,
+    name: '20260727_145822_doctor_biography_plain_text',
   },
 ]

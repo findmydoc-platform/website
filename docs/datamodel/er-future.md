@@ -70,11 +70,11 @@ erDiagram
         string fullName "System: hook beforeValidate, readOnly"
         string title "Title (e.g. Dr., Prof.)"
         array qualifications "List of qualifications"
-        number yearsExperience "Years of experience"
+        number yearsExperience "Non-negative whole years of experience"
         array languages "List of languages with proficiency level"
         number averageRating "System: hook on Review change, readOnly"
         upload profileImage "Relationship to Media"
-        richText biography "Professional career"
+        text biography "Plain-text professional career"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
     }

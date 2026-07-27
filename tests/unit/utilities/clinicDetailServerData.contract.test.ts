@@ -154,7 +154,7 @@ const mockData: MockData = {
       lastName: 'Carter',
       gender: 'female',
       averageRating: 4.6,
-      biography: lexicalText('Focused on pediatric cardiology and clear communication.'),
+      biography: 'Focused on pediatric cardiology and clear communication.\n\nSpecial interest in family education.',
       profileImage: 701,
       clinic: 1,
       qualifications: ['MD', 'FAAP'],
@@ -170,7 +170,7 @@ const mockData: MockData = {
       lastName: 'Meyer',
       gender: 'male',
       averageRating: 4.2,
-      biography: lexicalText('General pediatric follow-up and preventive care.'),
+      biography: null,
       profileImage: null,
       clinic: 1,
       qualifications: ['MD'],
@@ -186,7 +186,7 @@ const mockData: MockData = {
       lastName: 'Profile',
       gender: 'female',
       averageRating: 4.9,
-      biography: lexicalText('This inactive profile must not reach public clinic data.'),
+      biography: 'This inactive profile must not reach public clinic data.',
       profileImage: null,
       clinic: 1,
       qualifications: ['MD'],
@@ -414,6 +414,10 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.doctors[0]?.specialty).toBe('Pediatric Cardiology')
     expect(result?.doctors[1]?.specialty).toBe('General Practice')
     expect(result?.doctors[0]?.reviewCount).toBe(2)
+    expect(result?.doctors[0]?.description).toBe(
+      'Focused on pediatric cardiology and clear communication.\n\nSpecial interest in family education.',
+    )
+    expect(result?.doctors[1]?.description).toBeUndefined()
     expect(result?.doctors[0]?.image).toEqual({
       src: '/api/doctorMedia/file/doctor-amelia.jpg',
       alt: 'Professional portrait of Dr. Amelia Carter',

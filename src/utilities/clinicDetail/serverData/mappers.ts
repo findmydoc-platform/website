@@ -279,7 +279,7 @@ function mapDoctors({
       qualifications: doctor.qualifications,
       yearsExperience: typeof doctor.experienceYears === 'number' ? doctor.experienceYears : undefined,
       languages,
-      description: extractLexicalPlainText(doctor.biography) || undefined,
+      description: doctor.biography ?? undefined,
       image: resolveDoctorProfileImage({
         doctor,
         descriptorsByDoctorId: doctorMediaByDoctorId,

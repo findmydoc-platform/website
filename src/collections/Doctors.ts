@@ -157,7 +157,7 @@ export const Doctors: CollectionConfig<'doctors'> = {
           fields: [
             {
               name: 'biography',
-              type: 'richText',
+              type: 'textarea',
               required: false,
               admin: {
                 description: 'Short doctor bio',
@@ -202,11 +202,12 @@ export const Doctors: CollectionConfig<'doctors'> = {
               name: 'experienceYears',
               label: 'Years of Experience',
               type: 'number',
+              min: 0,
               required: false,
               validate: (value: unknown) => {
                 if (value === null || value === undefined) return true
-                if (typeof value === 'number' && Number.isFinite(value)) return true
-                return 'Experience years must be a valid number'
+                if (typeof value === 'number' && Number.isInteger(value) && value >= 0) return true
+                return 'Experience years must be a non-negative whole number'
               },
               admin: {
                 description: 'How many years the doctor has practiced',

@@ -144,7 +144,8 @@ PostHog can enable a temporary public landing mode through the server-side featu
 Priority behavior:
 - Temporary Landing Mode takes precedence over normal preview access behavior for non-platform sessions.
 - Preview Guard is evaluated through the separate PostHog flag `preview-guard-enabled`.
-- When both flags are active, public legal/contact exemptions stay reachable while admin/auth/login/register exemptions remain subject to Preview Guard unless they are Preview Guard login/recovery routes.
+- When both flags are active, public legal/contact exemptions stay reachable while admin/auth/login/register exemptions remain subject to Preview Guard unless they are exact Preview Guard login, recovery, or invitation routes.
+- Preview patient creation is staff-managed through Payload Admin. Patient login, reset, invitation completion, and `/patient/**` remain available for patient-side Preview QA.
 
 ## Preview Access Policy
 

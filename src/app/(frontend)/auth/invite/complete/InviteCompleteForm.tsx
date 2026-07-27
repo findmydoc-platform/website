@@ -12,6 +12,7 @@ import { Button } from '@/components/atoms/button'
 import { Alert } from '@/components/atoms/alert'
 import { createClient } from '@/auth/utilities/supaBaseClient'
 import { hydrateSessionFromHash } from '@/auth/utilities/hydrateSessionFromHash'
+import { resolvePasswordResetLoginTarget, type PasswordResetLoginTarget } from '@/auth/utilities/loginRedirects'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 
 const expiredRecoveryHref = '/auth/password/reset?reason=expired'
@@ -28,10 +29,13 @@ const passwordSchema = z
 
 type PasswordState = z.infer<typeof passwordSchema>
 
-export function InviteCompleteForm({ error }: { error?: string }) {
+export function InviteCompleteForm({ clinicLoginHref, error }: { clinicLoginHref?: string; error?: string }) {
   const supabase = useMemo(() => createClient(), [])
   const router = useRouter()
   const [isSessionReady, setSessionReady] = useState(false)
+  const [loginTarget, setLoginTarget] = useState<PasswordResetLoginTarget>(() =>
+    resolvePasswordResetLoginTarget(undefined, clinicLoginHref),
+  )
   const formValidation = usePublicFormValidation({
     messages: {
       confirmPassword: { valueMissing: 'Confirm your new password.' },
@@ -76,6 +80,7 @@ export function InviteCompleteForm({ error }: { error?: string }) {
         return
       }
 
+      setLoginTarget(resolvePasswordResetLoginTarget(session.user.app_metadata?.user_type, clinicLoginHref))
       setSessionReady(true)
     }
 
@@ -84,7 +89,7 @@ export function InviteCompleteForm({ error }: { error?: string }) {
     return () => {
       active = false
     }
-  }, [error, router, supabase])
+  }, [clinicLoginHref, error, router, supabase])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -145,7 +150,7 @@ export function InviteCompleteForm({ error }: { error?: string }) {
               <Alert className="space-y-2" variant="success" role="status">
                 <p>Password set successfully.</p>
                 <p>
-                  <Link href="/admin/login" className="text-primary hover:underline">
+                  <Link href={loginTarget.href} className="text-primary hover:underline">
                     Return to sign in
                   </Link>
                   .

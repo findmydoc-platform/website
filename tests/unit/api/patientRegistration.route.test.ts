@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { POST } from '@/app/api/auth/register/patient/route'
 
 const logger = { info: vi.fn(), error: vi.fn(), warn: vi.fn() }
@@ -51,7 +51,15 @@ const validBody = {
 }
 
 describe('POST /api/auth/register/patient', () => {
+  const originalEnv = process.env
+
   beforeEach(() => {
+    process.env = {
+      ...originalEnv,
+      DEPLOYMENT_ENV: undefined,
+      VERCEL_ENV: undefined,
+      NODE_ENV: 'test',
+    }
     vi.clearAllMocks()
     signupClient.auth.signUp.mockResolvedValue({
       data: {
@@ -65,6 +73,23 @@ describe('POST /api/auth/register/patient', () => {
       error: null,
     })
     adminClient.auth.admin.updateUserById.mockResolvedValue({ data: {}, error: null })
+  })
+
+  afterEach(() => {
+    process.env = originalEnv
+  })
+
+  test('rejects direct patient self-registration in preview', async () => {
+    process.env.VERCEL_ENV = 'preview'
+
+    const response = await POST(makeRequest(validBody))
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Patient accounts are created by platform staff in preview.',
+    })
+    expect(createClientMock).not.toHaveBeenCalled()
+    expect(createAdminClientMock).not.toHaveBeenCalled()
   })
 
   test('creates a patient signup and sets app metadata server-side', async () => {

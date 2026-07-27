@@ -224,6 +224,88 @@ describe('preview lock proxy', () => {
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
+  it('keeps the exact patient auth lifecycle reachable without a staff session', async () => {
+    process.env.DEPLOYMENT_ENV = 'preview'
+    mockGuardFlags({ 'preview-guard-enabled': true })
+
+    const allowedPaths = [
+      '/login/patient',
+      '/auth/password/reset',
+      '/auth/callback',
+      '/auth/confirm?type=recovery',
+      '/auth/password/reset/complete',
+      '/auth/invite/complete',
+      '/logout',
+    ]
+
+    for (const path of allowedPaths) {
+      const response = await proxy(new NextRequest(`https://preview.findmydoc.eu${path}`))
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('location')).toBeNull()
+      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+      expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    }
+  })
+
+  it('keeps patient self-registration behind the staff preview guard', async () => {
+    process.env.DEPLOYMENT_ENV = 'preview'
+    mockGuardFlags({ 'preview-guard-enabled': true })
+
+    const response = await proxy(new NextRequest('https://preview.findmydoc.eu/register/patient'))
+    const location = response.headers.get('location')
+
+    expect(response.status).toBe(307)
+    expect(location).toContain('/admin/login')
+    expect(location).toContain('next=%2Fregister%2Fpatient')
+  })
+
+  it('redirects anonymous patient routes to the patient login with a safe next path', async () => {
+    process.env.DEPLOYMENT_ENV = 'preview'
+    mockGuardFlags({ 'preview-guard-enabled': true })
+
+    const response = await proxy(new NextRequest('https://preview.findmydoc.eu/patient/favorites?from=account-menu'))
+    const location = response.headers.get('location')
+
+    expect(response.status).toBe(307)
+    expect(location).toContain('/login/patient')
+    expect(location).toContain('next=%2Fpatient%2Ffavorites%3Ffrom%3Daccount-menu')
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+  })
+
+  it('allows patient sessions only on patient routes', async () => {
+    process.env.DEPLOYMENT_ENV = 'preview'
+    mockGuardFlags({ 'preview-guard-enabled': true })
+    mocks.getUser.mockResolvedValue({
+      data: { user: { id: 'patient-1', app_metadata: { user_type: 'patient' } } },
+      error: null,
+    })
+
+    const patientResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/patient/favorites'))
+    const adminResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/admin'))
+
+    expect(patientResponse.status).toBe(200)
+    expect(patientResponse.headers.get('location')).toBeNull()
+    expect(patientResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+
+    expect(adminResponse.status).toBe(307)
+    expect(adminResponse.headers.get('location')).toContain('/admin/login')
+  })
+
+  it('does not grant clinic sessions access to patient routes', async () => {
+    process.env.DEPLOYMENT_ENV = 'preview'
+    mockGuardFlags({ 'preview-guard-enabled': true })
+    mocks.getUser.mockResolvedValue({
+      data: { user: { id: 'clinic-1', app_metadata: { user_type: 'clinic' } } },
+      error: null,
+    })
+
+    const response = await proxy(new NextRequest('https://preview.findmydoc.eu/patient/favorites'))
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toContain('/admin/login')
+  })
+
   it('returns 404 for first-admin bootstrap paths before preview guard redirects', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
@@ -445,6 +527,28 @@ describe('preview lock proxy', () => {
     expect(location).toContain('message=preview-login-required')
     expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBeNull()
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+  })
+
+  it('keeps patient login and patient routes usable when both guards are active', async () => {
+    process.env.DEPLOYMENT_ENV = 'preview'
+    mockGuardFlags({ 'preview-guard-enabled': true, 'temporary-landing-mode': true })
+
+    const loginResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/login/patient'))
+    const anonymousPatientResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/patient/favorites'))
+
+    mocks.getUser.mockResolvedValue({
+      data: { user: { id: 'patient-2', app_metadata: { user_type: 'patient' } } },
+      error: null,
+    })
+    const authenticatedPatientResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/patient/favorites'))
+
+    expect(loginResponse.status).toBe(200)
+    expect(loginResponse.headers.get('location')).toBeNull()
+    expect(anonymousPatientResponse.status).toBe(307)
+    expect(anonymousPatientResponse.headers.get('location')).toContain('/login/patient')
+    expect(authenticatedPatientResponse.status).toBe(200)
+    expect(authenticatedPatientResponse.headers.get('location')).toBeNull()
+    expect(authenticatedPatientResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
   it('bypasses API routes before evaluating PostHog flags', async () => {

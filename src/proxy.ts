@@ -3,8 +3,11 @@ import { type NextRequest, NextResponse } from 'next/server'
 
 import {
   buildPreviewGuardLoginRedirect,
+  buildPreviewGuardPatientLoginRedirect,
+  isAllowedPreviewPatient,
   isAllowedPreviewUser,
   isPreviewGuardExemptPath,
+  isPreviewGuardPatientPath,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
 } from '@/features/previewGuard'
 import {
@@ -146,10 +149,23 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   const user = await getPreviewUser(request)
   const isPlatformUser = isAllowedPreviewUser(user)
+  const isPatientUser = isAllowedPreviewPatient(user)
+  const isPatientPath = isPreviewGuardPatientPath(pathname)
 
   if (temporaryLandingModeEnabled && !isPlatformUser) {
     if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {
       return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request))
+    }
+
+    if (previewGuardEnabled && isPatientPath) {
+      if (isPatientUser) {
+        return withSearchRobotsHeader(nextWithGuardLockHeader(request))
+      }
+
+      const redirectTarget = user
+        ? buildPreviewGuardLoginRedirect(request.nextUrl)
+        : buildPreviewGuardPatientLoginRedirect(request.nextUrl)
+      return withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url)))
     }
 
     if (previewGuardEnabled && isTemporaryLandingModeExemptPath(pathname)) {
@@ -174,6 +190,17 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   if (isPlatformUser) {
     return withSearchRobotsHeader(NextResponse.next())
+  }
+
+  if (isPatientPath) {
+    if (isPatientUser) {
+      return withSearchRobotsHeader(NextResponse.next())
+    }
+
+    const redirectTarget = user
+      ? buildPreviewGuardLoginRedirect(request.nextUrl)
+      : buildPreviewGuardPatientLoginRedirect(request.nextUrl)
+    return withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url)))
   }
 
   if (isPreviewGuardExemptPath(pathname)) {

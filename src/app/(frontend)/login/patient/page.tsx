@@ -5,6 +5,7 @@ import {
 import { AuthFlashStatus } from '@/app/(frontend)/_components/AuthFlashStatus'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
+import { isPreviewRuntime } from '@/features/runtimePolicy'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 import Link from 'next/link'
 
@@ -23,9 +24,10 @@ export default async function LoginPage({
   const resolvedSearchParams = await searchParamsPromise
   const messageKey = resolvedSearchParams?.message
   const statusMessage = messageKey ? patientLoginMessages[messageKey] : undefined
+  const isPreview = isPreviewRuntime()
   const postLoginRedirectPath = sanitizeInternalRedirectPath({
     nextPath: resolvedSearchParams?.next,
-    fallbackPath: '/',
+    fallbackPath: isPreview ? '/patient/favorites' : '/',
     blockedPaths: [PATIENT_LOGIN_PATH],
   })
 
@@ -48,12 +50,16 @@ export default async function LoginPage({
           <LoginForm.SubmitButton>Sign in</LoginForm.SubmitButton>
         </LoginForm.Form>
         <LoginForm.Footer>
-          <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
-            <Link href="/register/patient" className="text-primary hover:underline">
-              Register here
-            </Link>
-          </p>
+          {isPreview ? (
+            <p className="text-sm text-muted-foreground">Patient accounts are created by findmydoc staff.</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Don&apos;t have an account?{' '}
+              <Link href="/register/patient" className="text-primary hover:underline">
+                Register here
+              </Link>
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             <Link href="/" className="text-primary hover:underline">
               ← Back to home

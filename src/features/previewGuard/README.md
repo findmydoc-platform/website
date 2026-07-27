@@ -5,7 +5,7 @@
 - Provide a temporary in-app guard for preview deployments when external deployment protection is unavailable.
 - Restrict general frontend pages to platform staff sessions.
 - Keep the patient login, recovery, invitation, and patient-owned route flow available for Preview QA.
-- Keep patient account creation staff-managed through the Payload Admin.
+- Keep patient account creation staff-managed through the Payload Admin while the guard is enabled.
 - Keep the code default off unless the server-side PostHog flag `preview-guard-enabled` evaluates to enabled.
 - Let PostHog decide where the guard is active; missing PostHog evaluation keeps the code default off.
 
@@ -22,7 +22,7 @@
 - Platform users: Supabase users with `app_metadata.user_type === "platform"` may access all guarded routes.
 - Patient users: Supabase users with `app_metadata.user_type === "patient"` may access `/patient` and `/patient/**`.
 - Anonymous patient-route requests are redirected to `/login/patient` with a safe internal `next` path.
-- `/register/patient` is not exempt. In Preview, patient creation is redirected to the staff-only Payload Admin form and the public registration API rejects direct submissions.
+- `/register/patient` is not exempt. While Preview Guard is enabled, patient creation is redirected to the staff-only Payload Admin form and the public registration API rejects direct submissions.
 - Unauthorized users are redirected to `/admin/login?message=preview-login-required&next=...`.
 
 ## Related Auth Flow

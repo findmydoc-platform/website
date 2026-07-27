@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { POST } from '@/app/api/auth/register/patient/route'
+import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER } from '@/features/previewGuard'
 
 const logger = { info: vi.fn(), error: vi.fn(), warn: vi.fn() }
 
@@ -35,11 +36,14 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createClient: createClientMock,
 }))
 
-function makeRequest(body: unknown) {
+function makeRequest(body: unknown, { previewGuardActive = false }: { previewGuardActive?: boolean } = {}) {
   return new Request('http://localhost/api/auth/register/patient', {
     method: 'POST',
     body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(previewGuardActive ? { [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1' } : {}),
+    },
   })
 }
 
@@ -51,15 +55,7 @@ const validBody = {
 }
 
 describe('POST /api/auth/register/patient', () => {
-  const originalEnv = process.env
-
   beforeEach(() => {
-    process.env = {
-      ...originalEnv,
-      DEPLOYMENT_ENV: undefined,
-      VERCEL_ENV: undefined,
-      NODE_ENV: 'test',
-    }
     vi.clearAllMocks()
     signupClient.auth.signUp.mockResolvedValue({
       data: {
@@ -75,18 +71,12 @@ describe('POST /api/auth/register/patient', () => {
     adminClient.auth.admin.updateUserById.mockResolvedValue({ data: {}, error: null })
   })
 
-  afterEach(() => {
-    process.env = originalEnv
-  })
-
-  test('rejects direct patient self-registration in preview', async () => {
-    process.env.VERCEL_ENV = 'preview'
-
-    const response = await POST(makeRequest(validBody))
+  test('rejects direct patient self-registration while Preview Guard is active', async () => {
+    const response = await POST(makeRequest(validBody, { previewGuardActive: true }))
 
     expect(response.status).toBe(403)
     await expect(response.json()).resolves.toEqual({
-      error: 'Patient accounts are created by platform staff in preview.',
+      error: 'Patient accounts are created by platform staff while Preview Guard is active.',
     })
     expect(createClientMock).not.toHaveBeenCalled()
     expect(createAdminClientMock).not.toHaveBeenCalled()

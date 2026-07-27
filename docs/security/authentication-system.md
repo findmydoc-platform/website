@@ -67,11 +67,12 @@ requests retain the website callback and its existing enumeration-resistant resp
 
 Patient provisioning remains the established ensure-on-auth flow. Staff deletion first removes the Payload principal, so a later Supabase deletion failure cannot leave an authorized principal. The trusted operations path can safely retry cleanup.
 
-Preview patient creation is staff-managed. Platform staff create the patient principal through Payload Admin, which
-sends the patient invitation and binds the Supabase identity. The public Preview registration page redirects to that
-Admin form, and direct Preview submissions to the patient registration API are rejected. Patient login, invitation
-completion, password recovery, and patient-owned routes remain available without a platform session. Production
-patient self-registration is unchanged.
+Patient creation is staff-managed while Preview Guard is enabled. Platform staff create the patient principal through
+Payload Admin, which sends the patient invitation and binds the Supabase identity. The public registration page
+redirects to that Admin form, and direct submissions to the patient registration API are rejected for guarded requests.
+Patient login, invitation completion, password recovery, and patient-owned routes remain available without a platform
+session. When Preview Guard is disabled, public patient self-registration is unchanged regardless of deployment
+environment.
 
 Invite and recovery email templates use `TokenHash`, not browser hash tokens. The callback `GET` validates the fixed
 flow and internal destination but does not consume the token. A same-origin confirmation `POST` performs `verifyOtp`.

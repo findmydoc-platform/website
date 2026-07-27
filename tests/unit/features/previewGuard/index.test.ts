@@ -10,6 +10,7 @@ import {
   isPreviewDeployment,
   isPreviewGuardExemptPath,
   isPreviewGuardPatientPath,
+  isPreviewGuardPatientRegistrationApiPath,
   PREVIEW_GUARD_FALLBACK_REDIRECT,
   PREVIEW_GUARD_LOGIN_PATH,
   PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
@@ -123,6 +124,13 @@ describe('previewGuard feature', () => {
     expect(isPreviewGuardPatientPath('/patient/favorites')).toBe(true)
     expect(isPreviewGuardPatientPath('/patients')).toBe(false)
     expect(isPreviewGuardPatientPath('/patient-support')).toBe(false)
+  })
+
+  it('recognizes only the patient registration API path', () => {
+    expect(isPreviewGuardPatientRegistrationApiPath('/api/auth/register/patient')).toBe(true)
+    expect(isPreviewGuardPatientRegistrationApiPath('/api/auth/register/patient/')).toBe(true)
+    expect(isPreviewGuardPatientRegistrationApiPath('/api/auth/register/patients')).toBe(false)
+    expect(isPreviewGuardPatientRegistrationApiPath('/register/patient')).toBe(false)
   })
 
   it('builds preview guard login redirect with message and next path', () => {

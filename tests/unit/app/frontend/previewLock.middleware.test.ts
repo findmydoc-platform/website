@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-import { PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
+import {
+  PREVIEW_GUARD_ACTIVE_REQUEST_HEADER,
+  PREVIEW_GUARD_LOCK_REQUEST_HEADER,
+  PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH,
+} from '@/features/previewGuard'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 
@@ -243,6 +247,7 @@ describe('preview lock proxy', () => {
 
       expect(response.status).toBe(200)
       expect(response.headers.get('location')).toBeNull()
+      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
       expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
       expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     }
@@ -258,6 +263,20 @@ describe('preview lock proxy', () => {
     expect(response.status).toBe(307)
     expect(location).toContain('/admin/login')
     expect(location).toContain('next=%2Fregister%2Fpatient')
+  })
+
+  it('forwards the active guard state to staff opening patient registration', async () => {
+    mockGuardFlags({ 'preview-guard-enabled': true })
+    mocks.getUser.mockResolvedValue({
+      data: { user: { id: 'platform-1', app_metadata: { user_type: 'platform' } } },
+      error: null,
+    })
+
+    const response = await proxy(new NextRequest('https://findmydoc.eu/register/patient'))
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
   })
 
   it('redirects anonymous patient routes to the patient login with a safe next path', async () => {
@@ -286,6 +305,7 @@ describe('preview lock proxy', () => {
 
     expect(patientResponse.status).toBe(200)
     expect(patientResponse.headers.get('location')).toBeNull()
+    expect(patientResponse.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
     expect(patientResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
 
     expect(adminResponse.status).toBe(307)
@@ -562,6 +582,39 @@ describe('preview lock proxy', () => {
     expect(mocks.logCrawlerRequest).not.toHaveBeenCalled()
   })
 
+  it('forwards the active Preview Guard state to the patient registration API', async () => {
+    mockGuardFlags({ 'preview-guard-enabled': true })
+    const request = new NextRequest(`https://preview.findmydoc.eu${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}`, {
+      method: 'POST',
+    })
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
+    expect(mocks.evaluatePostHogFlags).toHaveBeenCalledTimes(1)
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
+  it('removes spoofed guard headers when Preview Guard is inactive', async () => {
+    const request = new NextRequest(`https://preview.findmydoc.eu${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}`, {
+      method: 'POST',
+      headers: {
+        [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1',
+        [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
+        [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
+      },
+    })
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBeNull()
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBeNull()
+    expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBeNull()
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
   it('bypasses known public assets before evaluating PostHog flags', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
@@ -602,6 +655,7 @@ describe('preview lock proxy', () => {
   })
 
   it('matcher excludes API and Next internals without excluding all dotted content paths', () => {
+    expect(config.matcher).toContain(PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH)
     expect(config.matcher).toContain('/((?!api|_next/static|_next/image|_next/data).*)')
     expect(config.matcher.join(' ')).not.toContain('.*\\..*')
   })

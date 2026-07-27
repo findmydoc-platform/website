@@ -4,9 +4,11 @@ import { isPreviewRuntime, resolveServerRuntimeEnvironment } from '@/features/ru
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
 export const PREVIEW_GUARD_LOCK_REQUEST_HEADER = 'x-preview-guard-lock'
+export const PREVIEW_GUARD_ACTIVE_REQUEST_HEADER = 'x-preview-guard-active'
 export const PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY = 'preview-login-required'
 export const PREVIEW_GUARD_LOGIN_PATH = '/admin/login'
 export const PREVIEW_GUARD_FALLBACK_REDIRECT = '/admin'
+export const PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH = '/api/auth/register/patient'
 
 const PREVIEW_GUARD_EXEMPT_PATHS = new Set([
   PREVIEW_GUARD_LOGIN_PATH,
@@ -46,6 +48,9 @@ export const isPreviewGuardPatientPath = (pathname: string): boolean => {
   const normalizedPath = normalizePathname(pathname)
   return normalizedPath === '/patient' || normalizedPath.startsWith('/patient/')
 }
+
+export const isPreviewGuardPatientRegistrationApiPath = (pathname: string): boolean =>
+  normalizePathname(pathname) === PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH
 
 export const isAllowedPreviewUser = (user: UserTypeCarrier): boolean => {
   const userType = user?.app_metadata?.user_type

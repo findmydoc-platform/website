@@ -101,7 +101,7 @@ sequenceDiagram
     participant Payload as Website Payload Boundary
     participant DB as Payload Database
 
-    opt Preview account creation
+    opt Patient creation while Preview Guard is enabled
         Platform->>Admin: Create patient principal
         Admin->>Payload: Persist patient through Local API
         Payload->>Supabase: Send patient invitation
@@ -116,9 +116,10 @@ sequenceDiagram
     Payload-->>Portal: Patient-scoped result
 ```
 
-Preview patient creation requires an authenticated platform staff member and uses the existing Payload Admin invite
-flow. Patient login, reset, invitation completion, and patient-owned routes remain available without a platform
-session. Production patient self-registration and the patient ensure-on-auth behavior are unchanged.
+While Preview Guard is enabled, patient creation requires an authenticated platform staff member and uses the existing
+Payload Admin invite flow. Patient login, reset, invitation completion, and patient-owned routes remain available
+without a platform session. When Preview Guard is disabled, public patient self-registration remains available
+regardless of deployment environment; the patient ensure-on-auth behavior is unchanged.
 
 ## Shared Authorization Facts
 

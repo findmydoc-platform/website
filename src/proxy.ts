@@ -8,6 +8,8 @@ import {
   isAllowedPreviewUser,
   isPreviewGuardExemptPath,
   isPreviewGuardPatientPath,
+  isPreviewGuardPatientRegistrationApiPath,
+  PREVIEW_GUARD_ACTIVE_REQUEST_HEADER,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
 } from '@/features/previewGuard'
 import {
@@ -70,7 +72,7 @@ const isFirstAdminBootstrapPath = (pathname: string): boolean => {
 }
 
 const shouldBypassProxy = (pathname: string): boolean => {
-  if (pathname.startsWith('/api')) return true
+  if (pathname.startsWith('/api') && !isPreviewGuardPatientRegistrationApiPath(pathname)) return true
   if (pathname.startsWith('/_next')) return true
   if (isPublicAssetPath(pathname)) return true
   return false
@@ -101,9 +103,14 @@ const getPreviewUser = async (request: NextRequest) => {
   return user
 }
 
-const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<string, string>): NextResponse => {
+const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<string, string | null>): NextResponse => {
   const requestHeaders = new Headers(request.headers)
   Object.entries(headersToSet).forEach(([key, value]) => {
+    if (value === null) {
+      requestHeaders.delete(key)
+      return
+    }
+
     requestHeaders.set(key, value)
   })
 
@@ -115,13 +122,32 @@ const withSearchRobotsHeader = (response: NextResponse): NextResponse => {
   return response
 }
 
+const nextWithGuardActiveHeader = (request: NextRequest): NextResponse =>
+  nextWithRequestHeaders(request, {
+    [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1',
+    [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: null,
+    [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: null,
+  })
+
 const nextWithGuardLockHeader = (request: NextRequest): NextResponse =>
-  nextWithRequestHeaders(request, { [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1' })
+  nextWithRequestHeaders(request, {
+    [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1',
+    [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
+    [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: null,
+  })
 
 const nextWithTemporaryLandingHeaders = (request: NextRequest): NextResponse =>
   nextWithRequestHeaders(request, {
+    [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
     [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
+  })
+
+const nextWithoutGuardHeaders = (request: NextRequest): NextResponse =>
+  nextWithRequestHeaders(request, {
+    [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
+    [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: null,
+    [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: null,
   })
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
@@ -144,7 +170,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const previewGuardEnabled = flags.isEnabled('preview-guard-enabled')
 
   if (!previewGuardEnabled && !temporaryLandingModeEnabled) {
-    return NextResponse.next()
+    return nextWithoutGuardHeaders(request)
+  }
+
+  if (isPreviewGuardPatientRegistrationApiPath(pathname)) {
+    return previewGuardEnabled ? nextWithGuardActiveHeader(request) : nextWithoutGuardHeaders(request)
   }
 
   const user = await getPreviewUser(request)
@@ -185,16 +215,16 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   if (!previewGuardEnabled) {
-    return withSearchRobotsHeader(NextResponse.next())
+    return withSearchRobotsHeader(nextWithoutGuardHeaders(request))
   }
 
   if (isPlatformUser) {
-    return withSearchRobotsHeader(NextResponse.next())
+    return withSearchRobotsHeader(nextWithGuardActiveHeader(request))
   }
 
   if (isPatientPath) {
     if (isPatientUser) {
-      return withSearchRobotsHeader(NextResponse.next())
+      return withSearchRobotsHeader(nextWithGuardActiveHeader(request))
     }
 
     const redirectTarget = user
@@ -212,5 +242,5 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|_next/data).*)'],
+  matcher: ['/api/auth/register/patient', '/((?!api|_next/static|_next/image|_next/data).*)'],
 }

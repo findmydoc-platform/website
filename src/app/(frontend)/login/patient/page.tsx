@@ -5,9 +5,12 @@ import {
 import { AuthFlashStatus } from '@/app/(frontend)/_components/AuthFlashStatus'
 import * as LoginForm from '@/components/organisms/Auth/LoginForm'
 import { PATIENT_LOGIN_PATH } from '@/features/favorites/redirects'
-import { isPreviewRuntime } from '@/features/runtimePolicy'
+import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER } from '@/features/previewGuard'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 import Link from 'next/link'
+import { headers } from 'next/headers'
+
+export const dynamic = 'force-dynamic'
 
 const patientLoginMessages: Record<string, { text: string; variant?: 'success' | 'info' | 'warning' }> = {
   'patient-check-email': {
@@ -16,18 +19,26 @@ const patientLoginMessages: Record<string, { text: string; variant?: 'success' |
   },
 }
 
+const previewGuardPatientAccountStatus = {
+  text: 'While Preview Guard is active, patient accounts are created by findmydoc staff.',
+  variant: 'info' as const,
+}
+
 export default async function LoginPage({
   searchParams: searchParamsPromise,
 }: {
   searchParams?: Promise<{ message?: string; next?: string }>
 }) {
   const resolvedSearchParams = await searchParamsPromise
+  const requestHeaders = await headers()
   const messageKey = resolvedSearchParams?.message
-  const statusMessage = messageKey ? patientLoginMessages[messageKey] : undefined
-  const isPreview = isPreviewRuntime()
+  const isPreviewGuardActive = requestHeaders.get(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER) === '1'
+  const statusMessage =
+    (messageKey ? patientLoginMessages[messageKey] : undefined) ??
+    (isPreviewGuardActive ? previewGuardPatientAccountStatus : undefined)
   const postLoginRedirectPath = sanitizeInternalRedirectPath({
     nextPath: resolvedSearchParams?.next,
-    fallbackPath: isPreview ? '/patient/favorites' : '/',
+    fallbackPath: isPreviewGuardActive ? '/patient/favorites' : '/',
     blockedPaths: [PATIENT_LOGIN_PATH],
   })
 
@@ -50,18 +61,14 @@ export default async function LoginPage({
           <LoginForm.SubmitButton>Sign in</LoginForm.SubmitButton>
         </LoginForm.Form>
         <LoginForm.Footer>
-          {isPreview ? (
-            <p className="text-sm text-muted-foreground">
-              In Preview, patient accounts are created by findmydoc staff.
-            </p>
-          ) : (
+          {!isPreviewGuardActive ? (
             <p className="text-sm text-muted-foreground">
               Don&apos;t have an account?{' '}
               <Link href="/register/patient" className="text-primary hover:underline">
                 Register here
               </Link>
             </p>
-          )}
+          ) : null}
           <p className="text-sm text-muted-foreground">
             <Link href="/" className="text-primary hover:underline">
               ← Back to home

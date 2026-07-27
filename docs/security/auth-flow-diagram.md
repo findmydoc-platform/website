@@ -93,12 +93,21 @@ Only `platformStaff` can enter Payload Admin. Clinic staff and patients are expl
 
 ```mermaid
 sequenceDiagram
+    actor Platform as Platform Staff
     actor Patient
+    participant Admin as Payload Admin
     participant Portal as Website Portal
     participant Supabase as Supabase Auth
     participant Payload as Website Payload Boundary
     participant DB as Payload Database
 
+    opt Patient creation while Preview Guard is enabled
+        Platform->>Admin: Create patient principal
+        Admin->>Payload: Persist patient through Local API
+        Payload->>Supabase: Send patient invitation
+        Supabase-->>Patient: Website invitation callback
+        Patient->>Portal: Confirm invitation and set password
+    end
     Patient->>Portal: Start patient authentication
     Portal->>Supabase: Authenticate or complete callback
     Portal->>Payload: Make an authenticated website request
@@ -107,7 +116,10 @@ sequenceDiagram
     Payload-->>Portal: Patient-scoped result
 ```
 
-The Dashboard decision does not change the patient portal session or ensure-on-auth behavior.
+While Preview Guard is enabled, patient creation requires an authenticated platform staff member and uses the existing
+Payload Admin invite flow. Patient login, reset, invitation completion, and patient-owned routes remain available
+without a platform session. When Preview Guard is disabled, public patient self-registration remains available
+regardless of deployment environment; the patient ensure-on-auth behavior is unchanged.
 
 ## Shared Authorization Facts
 

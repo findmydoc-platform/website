@@ -1,13 +1,25 @@
 import type { User } from '@supabase/supabase-js'
+import { buildPatientLoginHref } from '@/features/favorites/redirects'
 import { isPreviewRuntime, resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
 export const PREVIEW_GUARD_LOCK_REQUEST_HEADER = 'x-preview-guard-lock'
+export const PREVIEW_GUARD_ACTIVE_REQUEST_HEADER = 'x-preview-guard-active'
 export const PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY = 'preview-login-required'
 export const PREVIEW_GUARD_LOGIN_PATH = '/admin/login'
 export const PREVIEW_GUARD_FALLBACK_REDIRECT = '/admin'
+export const PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH = '/api/auth/register/patient'
 
-const PREVIEW_GUARD_EXEMPT_PATHS = new Set([PREVIEW_GUARD_LOGIN_PATH, '/logout'])
+const PREVIEW_GUARD_EXEMPT_PATHS = new Set([
+  PREVIEW_GUARD_LOGIN_PATH,
+  '/auth/callback',
+  '/auth/confirm',
+  '/auth/invite/complete',
+  '/auth/password/reset',
+  '/auth/password/reset/complete',
+  '/login/patient',
+  '/logout',
+])
 
 type DeploymentEnvInput = Pick<NodeJS.ProcessEnv, 'DEPLOYMENT_ENV' | 'NODE_ENV' | 'VERCEL_ENV'>
 type UserTypeCarrier = Pick<User, 'app_metadata'> | null
@@ -32,9 +44,22 @@ export const isNonProductionDeployment = (env: DeploymentEnvInput = process.env)
 export const isPreviewGuardExemptPath = (pathname: string): boolean =>
   PREVIEW_GUARD_EXEMPT_PATHS.has(normalizePathname(pathname))
 
+export const isPreviewGuardPatientPath = (pathname: string): boolean => {
+  const normalizedPath = normalizePathname(pathname)
+  return normalizedPath === '/patient' || normalizedPath.startsWith('/patient/')
+}
+
+export const isPreviewGuardPatientRegistrationApiPath = (pathname: string): boolean =>
+  normalizePathname(pathname) === PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH
+
 export const isAllowedPreviewUser = (user: UserTypeCarrier): boolean => {
   const userType = user?.app_metadata?.user_type
   return typeof userType === 'string' && userType.trim().toLowerCase() === 'platform'
+}
+
+export const isAllowedPreviewPatient = (user: UserTypeCarrier): boolean => {
+  const userType = user?.app_metadata?.user_type
+  return typeof userType === 'string' && userType.trim().toLowerCase() === 'patient'
 }
 
 export const buildPreviewGuardLoginRedirect = (url: URL): string => {
@@ -45,6 +70,11 @@ export const buildPreviewGuardLoginRedirect = (url: URL): string => {
   })
 
   return `${PREVIEW_GUARD_LOGIN_PATH}?${params.toString()}`
+}
+
+export const buildPreviewGuardPatientLoginRedirect = (url: URL): string => {
+  const nextPath = `${url.pathname}${url.search || ''}` || '/patient/favorites'
+  return buildPatientLoginHref(nextPath)
 }
 
 export const sanitizePreviewGuardNextPath = (nextPath: string | null | undefined): string => {

@@ -4,6 +4,7 @@ import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { createAdminClient, createClient } from '@/auth/utilities/supaBaseServer'
 import configPromise from '@/payload.config'
 import { hashLogValue, toLoggedError } from '@/utilities/logging/shared'
+import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER } from '@/features/previewGuard'
 import type { User } from '@supabase/supabase-js'
 import { getPayload } from 'payload'
 
@@ -20,6 +21,13 @@ const bodySchema = z.object({
 const isObfuscatedExistingUser = (user: User): boolean => Array.isArray(user.identities) && user.identities.length === 0
 
 export async function POST(request: Request) {
+  if (request.headers.get(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER) === '1') {
+    return NextResponse.json(
+      { error: 'Patient accounts are created by platform staff while Preview Guard is active.' },
+      { status: 403 },
+    )
+  }
+
   const payloadClient = await getPayload({ config: configPromise })
 
   try {

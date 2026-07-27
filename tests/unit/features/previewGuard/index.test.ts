@@ -3,10 +3,14 @@ import { type User } from '@supabase/supabase-js'
 
 import {
   buildPreviewGuardLoginRedirect,
+  buildPreviewGuardPatientLoginRedirect,
+  isAllowedPreviewPatient,
   isAllowedPreviewUser,
   isNonProductionDeployment,
   isPreviewDeployment,
   isPreviewGuardExemptPath,
+  isPreviewGuardPatientPath,
+  isPreviewGuardPatientRegistrationApiPath,
   PREVIEW_GUARD_FALLBACK_REDIRECT,
   PREVIEW_GUARD_LOGIN_PATH,
   PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
@@ -62,23 +66,47 @@ describe('previewGuard feature', () => {
   })
 
   it('recognizes preview guard exempt paths', () => {
-    expect(isPreviewGuardExemptPath('/admin/login')).toBe(true)
+    const exemptPaths = [
+      '/admin/login',
+      '/auth/callback',
+      '/auth/confirm',
+      '/auth/invite/complete',
+      '/auth/password/reset',
+      '/auth/password/reset/complete',
+      '/login/patient',
+      '/logout',
+    ]
+
+    for (const path of exemptPaths) {
+      expect(isPreviewGuardExemptPath(path)).toBe(true)
+      expect(isPreviewGuardExemptPath(`${path}/`)).toBe(true)
+    }
+
     expect(isPreviewGuardExemptPath('/admin/first-admin/')).toBe(false)
-    expect(isPreviewGuardExemptPath('/logout')).toBe(true)
+    expect(isPreviewGuardExemptPath('/auth/password/reset-help')).toBe(false)
+    expect(isPreviewGuardExemptPath('/register/patient')).toBe(false)
     expect(isPreviewGuardExemptPath('/posts')).toBe(false)
   })
 
-  it('allows only platform users', () => {
+  it('keeps platform and patient access roles separate', () => {
     const platformUser = {
       app_metadata: { user_type: 'platform' },
+    } as Pick<User, 'app_metadata'>
+    const patientUser = {
+      app_metadata: { user_type: 'patient' },
     } as Pick<User, 'app_metadata'>
     const clinicUser = {
       app_metadata: { user_type: 'clinic' },
     } as Pick<User, 'app_metadata'>
 
     expect(isAllowedPreviewUser(platformUser)).toBe(true)
+    expect(isAllowedPreviewPatient(platformUser)).toBe(false)
+    expect(isAllowedPreviewUser(patientUser)).toBe(false)
+    expect(isAllowedPreviewPatient(patientUser)).toBe(true)
     expect(isAllowedPreviewUser(clinicUser)).toBe(false)
+    expect(isAllowedPreviewPatient(clinicUser)).toBe(false)
     expect(isAllowedPreviewUser(null)).toBe(false)
+    expect(isAllowedPreviewPatient(null)).toBe(false)
   })
 
   it('returns false for malformed user_type values without throwing', () => {
@@ -87,6 +115,22 @@ describe('previewGuard feature', () => {
     } as unknown as Pick<User, 'app_metadata'>
 
     expect(isAllowedPreviewUser(malformedUser)).toBe(false)
+    expect(isAllowedPreviewPatient(malformedUser)).toBe(false)
+  })
+
+  it('recognizes only the patient route family', () => {
+    expect(isPreviewGuardPatientPath('/patient')).toBe(true)
+    expect(isPreviewGuardPatientPath('/patient/')).toBe(true)
+    expect(isPreviewGuardPatientPath('/patient/favorites')).toBe(true)
+    expect(isPreviewGuardPatientPath('/patients')).toBe(false)
+    expect(isPreviewGuardPatientPath('/patient-support')).toBe(false)
+  })
+
+  it('recognizes only the patient registration API path', () => {
+    expect(isPreviewGuardPatientRegistrationApiPath('/api/auth/register/patient')).toBe(true)
+    expect(isPreviewGuardPatientRegistrationApiPath('/api/auth/register/patient/')).toBe(true)
+    expect(isPreviewGuardPatientRegistrationApiPath('/api/auth/register/patients')).toBe(false)
+    expect(isPreviewGuardPatientRegistrationApiPath('/register/patient')).toBe(false)
   })
 
   it('builds preview guard login redirect with message and next path', () => {
@@ -96,6 +140,16 @@ describe('previewGuard feature', () => {
     expect(url.pathname).toBe(PREVIEW_GUARD_LOGIN_PATH)
     expect(url.searchParams.get('message')).toBe(PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY)
     expect(url.searchParams.get('next')).toBe('/posts/a?foo=bar')
+  })
+
+  it('builds a patient login redirect with the protected route as next path', () => {
+    const redirectPath = buildPreviewGuardPatientLoginRedirect(
+      new URL('https://example.com/patient/favorites?from=header'),
+    )
+    const url = new URL(redirectPath, 'https://example.com')
+
+    expect(url.pathname).toBe('/login/patient')
+    expect(url.searchParams.get('next')).toBe('/patient/favorites?from=header')
   })
 
   it('keeps valid relative redirect paths', () => {

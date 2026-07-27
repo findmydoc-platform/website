@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { InviteCompleteForm } from '@/app/(frontend)/auth/invite/complete/InviteCompleteForm'
@@ -93,5 +93,30 @@ describe('InviteCompleteForm', () => {
       expect(passwordInput).toBeEnabled()
     })
     expect(routerMock.replace).not.toHaveBeenCalled()
+  })
+
+  it('links invited patients to the patient login after setting their password', async () => {
+    supabaseAuthMock.getSession.mockResolvedValueOnce({
+      data: {
+        session: {
+          user: {
+            app_metadata: { user_type: 'patient' },
+          },
+        },
+      },
+    })
+
+    render(<InviteCompleteForm />)
+
+    const passwordInput = await screen.findByLabelText('New password')
+    const confirmationInput = screen.getByLabelText('Confirm password')
+    await waitFor(() => expect(passwordInput).toBeEnabled())
+
+    fireEvent.change(passwordInput, { target: { value: 'PatientPass123' } })
+    fireEvent.change(confirmationInput, { target: { value: 'PatientPass123' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Set password' }))
+
+    const signInLink = await screen.findByRole('link', { name: 'Return to sign in' })
+    expect(signInLink).toHaveAttribute('href', '/login/patient')
   })
 })

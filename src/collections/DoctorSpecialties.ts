@@ -1,13 +1,29 @@
 // src/collections/DoctorSpecialties.ts
-import { CollectionConfig } from 'payload'
+import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isClinicStaff } from '@/access/isClinicStaff'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { platformOrAssignedClinicMutation, platformOrOwnClinicDoctorResource } from '@/access/scopeFilters'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
+import { extractRelationId } from '@/collections/common/mediaPathHelpers'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeEnforceDoctorInAssignedClinic } from '@/hooks/clinicOwnership'
 import { revalidateDoctorSpecialtyChange, revalidateDoctorSpecialtyDelete } from '@/hooks/revalidateClinicSurfaces'
+
+const beforeChangeNormalizeMedicalSpecialty: CollectionBeforeChangeHook = ({ data }) => {
+  const draft = { ...(data || {}) } as Record<string, unknown>
+  const specialtyId = extractRelationId(
+    draft.medicalSpecialty as string | number | { id?: string | number; value?: string | number } | null,
+  )
+  if (!specialtyId) return draft
+
+  const numericSpecialtyId = Number(specialtyId)
+  if (Number.isSafeInteger(numericSpecialtyId) && numericSpecialtyId > 0) {
+    draft.medicalSpecialty = numericSpecialtyId
+  }
+
+  return draft
+}
 
 export const DoctorSpecialties: CollectionConfig = {
   slug: 'doctorspecialties',
@@ -28,7 +44,11 @@ export const DoctorSpecialties: CollectionConfig = {
     delete: isPlatformStaff, // Only Platform can delete
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook, beforeChangeEnforceDoctorInAssignedClinic({ doctorField: 'doctor' })],
+    beforeChange: [
+      stableIdBeforeChangeHook,
+      beforeChangeNormalizeMedicalSpecialty,
+      beforeChangeEnforceDoctorInAssignedClinic({ doctorField: 'doctor' }),
+    ],
     afterChange: [revalidateDoctorSpecialtyChange],
     afterDelete: [revalidateDoctorSpecialtyDelete],
   },

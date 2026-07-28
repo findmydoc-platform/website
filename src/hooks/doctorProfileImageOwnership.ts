@@ -85,5 +85,10 @@ export const beforeChangeValidateDoctorProfileImage: CollectionBeforeChangeHook<
     })
   }
 
+  const numericProfileImageId = Number(profileImageId)
+  if (profileImageSubmitted && Number.isSafeInteger(numericProfileImageId) && numericProfileImageId > 0) {
+    draft.profileImage = numericProfileImageId
+  }
+
   return draft
 }

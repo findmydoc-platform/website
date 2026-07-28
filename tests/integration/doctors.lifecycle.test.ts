@@ -128,7 +128,7 @@ describe('Doctors lifecycle integration', () => {
     const assigned = (await payload.update({
       collection: 'doctors',
       id: doctorA.id,
-      data: { profileImage: mediaA.id },
+      data: { profileImage: String(mediaA.id) as unknown as number },
       user: platformUser,
       overrideAccess: false,
       depth: 0,

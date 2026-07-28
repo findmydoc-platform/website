@@ -63,7 +63,7 @@ describe('DoctorMedia integration - lifecycle', () => {
       collection: 'doctorMedia',
       data: {
         alt: 'Doctor headshot',
-        doctor: doctor.id,
+        doctor: String(doctor.id) as unknown as number,
       } as Partial<DoctorMedia>,
       file: createTinyPngFile(`${slugPrefix}-doctor.png`),
       user: asStaffPayloadUser(staffUser),
@@ -75,6 +75,7 @@ describe('DoctorMedia integration - lifecycle', () => {
 
     expect(created.createdBy).toEqual({ relationTo: 'clinicStaff', value: staffUser.id })
     expect(created.clinic).toBe(clinic.id)
+    expect(created.doctor).toBe(doctor.id)
     expect(created.storagePath).toMatch(new RegExp(`^doctors/${doctor.id}-[a-f0-9]{10}-.+\\.png$`))
   })
 

@@ -5,14 +5,21 @@ import path from 'path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { PayloadRequest, SanitizedCollectionConfig } from 'payload'
 
+import { ClinicGalleryMedia } from '@/collections/ClinicGalleryMedia'
+import { ClinicMedia } from '@/collections/ClinicMedia'
+import { DoctorMedia } from '@/collections/DoctorMedia'
+import { PlatformContentMedia } from '@/collections/PlatformContentMedia'
+import { UserProfileMedia } from '@/collections/UserProfileMedia'
 import {
   beforeOperationPrepareUploadFilename,
   prepareUploadFilenameFromFilePathSync,
 } from '@/hooks/media/prepareUploadFilename'
+import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
 
 const collection = {
   slug: 'clinicMedia',
 } as SanitizedCollectionConfig
+const sharedMediaCollections = [PlatformContentMedia, ClinicMedia, ClinicGalleryMedia, DoctorMedia, UserProfileMedia]
 
 function createReq(overrides: Partial<PayloadRequest> = {}): PayloadRequest {
   return {
@@ -99,5 +106,87 @@ describe('beforeOperationPrepareUploadFilename', () => {
     } as never)
 
     expect(req.context.mediaPreparedUploadFilename).toBeUndefined()
+  })
+
+  it('keeps the prepared filename stable during the internal cloud-storage update', async () => {
+    const buffer = Buffer.from('doctor portrait')
+    const uploadFile = {
+      name: 'portrait.png',
+      originalname: 'portrait.png',
+      data: buffer,
+      size: buffer.length,
+    }
+    const req = createReq({
+      file: uploadFile,
+      files: {
+        file: [uploadFile],
+      },
+    } as unknown as Partial<PayloadRequest>)
+
+    await beforeOperationPrepareUploadFilename({
+      args: { data: {} },
+      collection,
+      operation: 'create',
+      req,
+    } as never)
+
+    const expected = `${shortHash(buffer)}-portrait.png`
+    expect(uploadFile.name).toBe(expected)
+
+    req.file = undefined
+    req.context.skipCloudStorage = true
+
+    await beforeOperationPrepareUploadFilename({
+      args: { data: {} },
+      collection,
+      operation: 'update',
+      req,
+    } as never)
+
+    expect(uploadFile.name).toBe(expected)
+    expect(uploadFile.originalname).toBe(expected)
+    expect(req.context.mediaPreparedUploadFilename).toBe(expected)
+  })
+
+  it.each(sharedMediaCollections)(
+    'wires filename preparation directly after upload validation for $slug',
+    (mediaCollection) => {
+      const beforeOperationHooks = mediaCollection.hooks?.beforeOperation ?? []
+
+      expect(beforeOperationHooks).toContain(beforeOperationValidateMediaUpload)
+      expect(beforeOperationHooks).toContain(beforeOperationPrepareUploadFilename)
+      expect(beforeOperationHooks.indexOf(beforeOperationPrepareUploadFilename)).toBe(
+        beforeOperationHooks.indexOf(beforeOperationValidateMediaUpload) + 1,
+      )
+    },
+  )
+
+  it('does not hash an upload twice when the hook is invoked repeatedly for one request', async () => {
+    const buffer = Buffer.from('repeatable seed image')
+    const uploadFile = {
+      name: 'seed-image.webp',
+      data: buffer,
+      size: buffer.length,
+    }
+    const req = createReq({
+      context: {
+        seedMediaExpectedNoSuchKeyRecovery: true,
+      },
+      file: uploadFile,
+    } as unknown as Partial<PayloadRequest>)
+
+    const hookArgs = {
+      args: { data: {} },
+      collection,
+      operation: 'update',
+      req,
+    } as never
+
+    await beforeOperationPrepareUploadFilename(hookArgs)
+    await beforeOperationPrepareUploadFilename(hookArgs)
+
+    const expected = `${shortHash(buffer)}-seed-image.webp`
+    expect(uploadFile.name).toBe(expected)
+    expect(req.context.mediaPreparedUploadFilename).toBe(expected)
   })
 })

@@ -45,6 +45,43 @@ describe('computeStorage', () => {
     expect(result).toEqual({ storagePath: 'platform/draft-asset.png' })
   })
 
+  it('ignores stale request files during internal cloud-storage updates', () => {
+    const req = createReq({
+      context: {
+        skipCloudStorage: true,
+      },
+      files: {
+        file: [
+          {
+            name: 'second-hash-original.png',
+            size: 321,
+          },
+        ],
+      },
+    } as unknown as Partial<PayloadRequest>)
+
+    const result = computeStorage({
+      operation: 'update',
+      draft: {
+        filename: 'first-hash-original.png',
+        storagePath: 'platform/untrusted-path.png',
+      },
+      originalDoc: {
+        filename: 'first-hash-original.png',
+        storagePath: 'platform/first-hash-original.png',
+      },
+      req,
+      key: { type: 'hash' },
+      storagePrefix: 'platform',
+      ownerField: 'platformOwner',
+      ownerRequired: false,
+    })
+
+    expect(result).toEqual({
+      storagePath: 'platform/first-hash-original.png',
+    })
+  })
+
   it('derives a stable fallback hash when a field key is missing on create', () => {
     const result = computeStorage({
       operation: 'create',

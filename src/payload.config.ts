@@ -86,6 +86,7 @@ export default buildConfig({
     abortOnLimit: true,
     responseOnLimit: MEDIA_UPLOAD_TOO_LARGE_MESSAGE,
     safeFileNames: true,
+    preserveExtension: true,
   },
   endpoints: [
     {

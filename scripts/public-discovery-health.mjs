@@ -16,6 +16,7 @@ export const PUBLIC_DISCOVERY_HEALTH_PATHS = [
 ]
 
 const SITEMAP_PATHS = new Set(['/pages-sitemap.xml', '/posts-sitemap.xml'])
+const SITEMAP_NAMESPACE = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 
 export function parseArgs(argv = process.argv.slice(2)) {
   const options = {
@@ -60,7 +61,7 @@ export function buildAbsoluteUrl(baseUrl, path) {
 export function extractSitemapLocations(xml) {
   const document = new JSDOM(xml, { contentType: 'text/xml' }).window.document
 
-  return Array.from(document.getElementsByTagNameNS('*', 'loc'))
+  return Array.from(document.getElementsByTagNameNS(SITEMAP_NAMESPACE, 'loc'))
     .map((element) => element.textContent?.trim())
     .filter((location) => typeof location === 'string' && location.length > 0)
 }

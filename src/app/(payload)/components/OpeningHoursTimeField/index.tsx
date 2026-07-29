@@ -6,7 +6,7 @@ import type { TextFieldClientComponent } from 'payload'
 
 import { normalizeOpeningHoursTimeInput } from './normalizeOpeningHoursTimeInput'
 
-const openingHoursTimeInputDescription = 'Enter a local 24-hour time, for example 8, 08, 8:00, or 08:00.'
+const openingHoursTimeInputDescription = 'Accepts 8, 08, 8:00, and 08:00.'
 
 export const OpeningHoursTimeField: TextFieldClientComponent = (props) => {
   const { setValue, value } = useField<string>({ path: props.path })

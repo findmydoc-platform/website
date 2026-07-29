@@ -2,6 +2,8 @@
 
 import { pathToFileURL } from 'node:url'
 
+import { JSDOM } from 'jsdom'
+
 export const DEFAULT_PUBLIC_DISCOVERY_BASE_URL = 'http://localhost:3000'
 
 export const PUBLIC_DISCOVERY_HEALTH_PATHS = [
@@ -14,6 +16,7 @@ export const PUBLIC_DISCOVERY_HEALTH_PATHS = [
 ]
 
 const SITEMAP_PATHS = new Set(['/pages-sitemap.xml', '/posts-sitemap.xml'])
+const SITEMAP_NAMESPACE = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 
 export function parseArgs(argv = process.argv.slice(2)) {
   const options = {
@@ -56,8 +59,10 @@ export function buildAbsoluteUrl(baseUrl, path) {
 }
 
 export function extractSitemapLocations(xml) {
-  return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/giu)]
-    .map((match) => match[1]?.trim())
+  const document = new JSDOM(xml, { contentType: 'text/xml' }).window.document
+
+  return Array.from(document.getElementsByTagNameNS(SITEMAP_NAMESPACE, 'loc'))
+    .map((element) => element.textContent?.trim())
     .filter((location) => typeof location === 'string' && location.length > 0)
 }
 
@@ -116,7 +121,20 @@ export async function runPublicDiscoveryHealthCheck({
 
     if (!SITEMAP_PATHS.has(path)) continue
 
-    for (const location of extractSitemapLocations(text)) {
+    let locations
+    try {
+      locations = extractSitemapLocations(text)
+    } catch {
+      failures.push({
+        kind: 'sitemap-xml',
+        path,
+        status: 'invalid-xml',
+        url,
+      })
+      continue
+    }
+
+    for (const location of locations) {
       const sitemapUrl = new URL(location, baseUrl)
       const base = new URL(baseUrl)
       if (sitemapUrl.origin !== base.origin) {

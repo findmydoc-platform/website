@@ -7,6 +7,7 @@ import {
 } from '../../../scripts/public-discovery-health.mjs'
 
 const createResponse = (body: string, status = 200): Response => new Response(body, { status })
+const EMPTY_SITEMAP_XML = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
 
 describe('public discovery health script', () => {
   it('parses base URL arguments', () => {
@@ -14,15 +15,23 @@ describe('public discovery health script', () => {
     expect(parseArgs(['--base-url=https://preview.findmydoc.eu']).baseUrl).toBe('https://preview.findmydoc.eu')
   })
 
-  it('extracts sitemap locations from XML', () => {
+  it('extracts sitemap locations from namespaced XML', () => {
     expect(
-      extractSitemapLocations(`
-        <urlset>
+      extractSitemapLocations(`<?xml version="1.0" encoding="UTF-8"?>
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
           <url><loc>https://findmydoc.eu/</loc></url>
           <url><loc> https://findmydoc.eu/posts/example </loc></url>
         </urlset>
       `),
     ).toEqual(['https://findmydoc.eu/', 'https://findmydoc.eu/posts/example'])
+  })
+
+  it('accepts a valid empty sitemap', () => {
+    expect(extractSitemapLocations('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>')).toEqual([])
+  })
+
+  it('rejects malformed sitemap XML', () => {
+    expect(() => extractSitemapLocations('<urlset><url><loc>https://findmydoc.eu/</url></urlset>')).toThrow()
   })
 
   it('passes when discovery endpoints and sitemap URLs are reachable', async () => {
@@ -59,6 +68,9 @@ describe('public discovery health script', () => {
       if (init?.method === 'GET' && url.endsWith('/pages-sitemap.xml')) {
         return createResponse('<urlset><url><loc>https://findmydoc.eu/missing</loc></url></urlset>')
       }
+      if (init?.method === 'GET' && url.endsWith('/posts-sitemap.xml')) {
+        return createResponse(EMPTY_SITEMAP_XML)
+      }
       if (init?.method === 'GET' && url.endsWith('/sitemap.xml')) {
         return createResponse('<sitemapindex></sitemapindex>')
       }
@@ -86,6 +98,9 @@ describe('public discovery health script', () => {
       if (init?.method === 'GET' && url.endsWith('/pages-sitemap.xml')) {
         return createResponse('<urlset><url><loc>https://findmydoc.eu/head-not-allowed</loc></url></urlset>')
       }
+      if (init?.method === 'GET' && url.endsWith('/posts-sitemap.xml')) {
+        return createResponse(EMPTY_SITEMAP_XML)
+      }
       if (init?.method === 'GET' && url.endsWith('/sitemap.xml')) {
         return createResponse('<sitemapindex></sitemapindex>')
       }
@@ -110,6 +125,9 @@ describe('public discovery health script', () => {
       const url = String(input)
       if (init?.method === 'GET' && url.endsWith('/pages-sitemap.xml')) {
         return createResponse('<urlset><url><loc>https://other.example.com/private</loc></url></urlset>')
+      }
+      if (init?.method === 'GET' && url.endsWith('/posts-sitemap.xml')) {
+        return createResponse(EMPTY_SITEMAP_XML)
       }
       return createResponse('', 200)
     })

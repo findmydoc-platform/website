@@ -2,6 +2,8 @@
 
 import { pathToFileURL } from 'node:url'
 
+import { JSDOM } from 'jsdom'
+
 export const DEFAULT_PUBLIC_DISCOVERY_BASE_URL = 'http://localhost:3000'
 
 export const PUBLIC_DISCOVERY_HEALTH_PATHS = [
@@ -56,8 +58,10 @@ export function buildAbsoluteUrl(baseUrl, path) {
 }
 
 export function extractSitemapLocations(xml) {
-  return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/giu)]
-    .map((match) => match[1]?.trim())
+  const document = new JSDOM(xml, { contentType: 'text/xml' }).window.document
+
+  return Array.from(document.getElementsByTagNameNS('*', 'loc'))
+    .map((element) => element.textContent?.trim())
     .filter((location) => typeof location === 'string' && location.length > 0)
 }
 

@@ -94,7 +94,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
       <div className="flex flex-1 items-center px-4 py-2 md:px-6 md:py-0">
         <div className="w-full">
           <label className="text-sm text-foreground" htmlFor="clinic-search-budget">
-            Budget (USD)
+            Budget (EUR)
           </label>
           <Input
             id="clinic-search-budget"
@@ -109,7 +109,7 @@ export const ClinicSearchBar: React.FC<ClinicSearchBarProps> = ({
               'placeholder:text-muted-foreground focus-visible:ring-0',
             )}
             placeholder="12000"
-            aria-label="Budget in USD"
+            aria-label="Budget in EUR"
           />
         </div>
       </div>

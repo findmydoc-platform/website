@@ -8,6 +8,7 @@ describe('ClinicTreatments hooks (unit)', () => {
   const mockCollection = { slug: 'clinicTreatments' } as unknown as SanitizedCollectionConfig
 
   const makeDoc = (id: number, treatment: number): Clinictreatment => ({
+    active: true,
     id,
     treatment,
     clinic: 1,
@@ -33,7 +34,16 @@ describe('ClinicTreatments hooks (unit)', () => {
       collection: mockCollection,
     })
 
+    expect(payload.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        overrideAccess: true,
+        where: {
+          and: [{ treatment: { equals: 1 } }, { active: { equals: true } }],
+        },
+      }),
+    )
     expect(payload.update).toHaveBeenCalledWith(expect.objectContaining({ data: { averagePrice: 50 } }))
+    expect(payload.update).toHaveBeenCalledWith(expect.objectContaining({ overrideAccess: true }))
   })
 
   it('afterChange excludes negative, NaN and non-number prices', async () => {

@@ -166,3 +166,40 @@ describe('Clinics collection verification field', () => {
     })
   })
 })
+
+describe('Clinics opening-hours contract', () => {
+  const buildWeek = () => ({
+    monday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+    tuesday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+    wednesday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+    thursday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+    friday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+    saturday: { isClosed: false, opensAt: '10:00', closesAt: '14:00' },
+    sunday: { isClosed: true, opensAt: null, closesAt: null },
+  })
+
+  it('keeps checkbox defaults unset and validates explicit seven-day schedules with actionable messages', () => {
+    const openingHours = findFieldByName((Clinics.fields ?? []) as FieldNode[], 'openingHours')
+
+    expect(openingHours?.type).toBe('group')
+    expect(openingHours?.validate).toBeTypeOf('function')
+    for (const day of openingHours?.fields ?? []) {
+      expect(findFieldByName(day.fields, 'isClosed')?.defaultValue).toBeUndefined()
+    }
+
+    const validate = openingHours?.validate
+    if (!validate) throw new Error('Expected opening-hours validator')
+
+    expect(validate(buildWeek())).toBe(true)
+    expect(validate({ monday: buildWeek().monday })).toBe('Opening hours must include tuesday.')
+    expect(validate({ ...buildWeek(), monday: { isClosed: false, opensAt: '9:00', closesAt: '17:00' } })).toBe(
+      'monday times must use the 24-hour HH:mm format.',
+    )
+    expect(validate({ ...buildWeek(), monday: { isClosed: false, opensAt: '09:00', closesAt: null } })).toBe(
+      'monday requires both opening and closing times.',
+    )
+    expect(validate({ ...buildWeek(), monday: { isClosed: false, opensAt: '17:00', closesAt: '16:59' } })).toBe(
+      'monday closing time must be later than opening time.',
+    )
+  })
+})

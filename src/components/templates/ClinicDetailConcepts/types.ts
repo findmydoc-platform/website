@@ -28,7 +28,7 @@ export type ClinicDetailDoctor = {
 export type ClinicDetailTreatment = {
   id: string
   name: string
-  priceFromUsd?: number
+  priceFrom?: number
   category?: string
   comparisonLink?: {
     href: string

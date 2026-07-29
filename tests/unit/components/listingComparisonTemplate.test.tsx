@@ -32,7 +32,7 @@ const baseResult: ListingCardData = {
   priceFrom: {
     label: 'From',
     value: 4200,
-    currency: 'USD',
+    currency: 'EUR',
   },
   actions: {
     details: {

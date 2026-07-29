@@ -59,6 +59,7 @@ describe('Clinic treatment average price hooks', () => {
         clinic: firstClinic.id,
         treatment: treatmentId,
         price: 100,
+        active: true,
       },
       overrideAccess: true,
     })
@@ -77,6 +78,7 @@ describe('Clinic treatment average price hooks', () => {
         clinic: secondClinic.id,
         treatment: treatmentId,
         price: 200,
+        active: true,
       },
       overrideAccess: true,
     })
@@ -111,6 +113,77 @@ describe('Clinic treatment average price hooks', () => {
     expect(treatmentAfterDeleteTwo.averagePrice ?? null).toBeNull()
   }, 60000)
 
+  it('excludes inactive clinic treatments and recalculates when activation changes', async () => {
+    const { clinic: firstClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-activation-a`,
+    })
+    const { clinic: secondClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-activation-b`,
+      clinicIndex: 1,
+      doctorIndex: 1,
+    })
+
+    const activeTreatment = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        active: true,
+        clinic: firstClinic.id,
+        price: 100,
+        treatment: treatmentId,
+      },
+      overrideAccess: true,
+    })
+    const inactiveTreatment = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        active: false,
+        clinic: secondClinic.id,
+        price: 300,
+        treatment: treatmentId,
+      },
+      overrideAccess: true,
+    })
+    createdClinicTreatmentIds.push(activeTreatment.id, inactiveTreatment.id)
+
+    await expect(
+      payload.findByID({
+        collection: 'treatments',
+        id: treatmentId,
+        overrideAccess: true,
+      }),
+    ).resolves.toMatchObject({ averagePrice: 100 })
+
+    await payload.update({
+      collection: 'clinictreatments',
+      id: inactiveTreatment.id,
+      data: { active: true },
+      overrideAccess: true,
+    })
+
+    await expect(
+      payload.findByID({
+        collection: 'treatments',
+        id: treatmentId,
+        overrideAccess: true,
+      }),
+    ).resolves.toMatchObject({ averagePrice: 200 })
+
+    await payload.update({
+      collection: 'clinictreatments',
+      id: activeTreatment.id,
+      data: { active: false },
+      overrideAccess: true,
+    })
+
+    await expect(
+      payload.findByID({
+        collection: 'treatments',
+        id: treatmentId,
+        overrideAccess: true,
+      }),
+    ).resolves.toMatchObject({ averagePrice: 300 })
+  }, 60000)
+
   it('includes zero-priced clinic treatments in average calculation (integration)', async () => {
     // create one clinic treatment with zero price and one with 100
     const { clinic: zeroClinic } = await createClinicFixture(payload, cityId, {
@@ -124,14 +197,14 @@ describe('Clinic treatment average price hooks', () => {
 
     const zeroTreatment = await payload.create({
       collection: 'clinictreatments',
-      data: { clinic: zeroClinic.id, treatment: treatmentId, price: 0 },
+      data: { active: true, clinic: zeroClinic.id, treatment: treatmentId, price: 0 },
       overrideAccess: true,
     })
     createdClinicTreatmentIds.push(zeroTreatment.id)
 
     const hundredTreatment = await payload.create({
       collection: 'clinictreatments',
-      data: { clinic: hundredClinic.id, treatment: treatmentId, price: 100 },
+      data: { active: true, clinic: hundredClinic.id, treatment: treatmentId, price: 100 },
       overrideAccess: true,
     })
     createdClinicTreatmentIds.push(hundredTreatment.id)

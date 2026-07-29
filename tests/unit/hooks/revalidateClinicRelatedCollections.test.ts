@@ -72,6 +72,30 @@ describe('clinic related collection revalidation hooks', () => {
     ])
   })
 
+  it('revalidates the owning clinic and listing when a clinic treatment activation changes', async () => {
+    const req = buildReq()
+
+    await revalidateClinicTreatmentChange({
+      collection: { slug: 'clinictreatments' } as unknown as ClinicTreatmentChangeArgs['collection'],
+      context: req.context,
+      data: { active: true },
+      doc: { id: 201, active: true, clinic: 12 },
+      operation: 'update',
+      previousDoc: { id: 201, active: false, clinic: 12 },
+      req,
+    } as ClinicTreatmentChangeArgs)
+
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getTagCalls()).toEqual(
+      expect.arrayContaining([
+        'entity:clinictreatments:201',
+        'collection:clinictreatments',
+        'surface:clinic-detail:12',
+        'surface:listing-comparison',
+      ]),
+    )
+  })
+
   it('skips duplicate review revalidation for hook-triggered average updates before relation reads', async () => {
     const req = buildReq({ skipHooks: true })
 

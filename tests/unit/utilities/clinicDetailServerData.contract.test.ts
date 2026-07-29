@@ -118,6 +118,7 @@ const mockData: MockData = {
   clinictreatments: [
     {
       id: 201,
+      active: true,
       clinic: 1,
       treatment: {
         id: 301,
@@ -132,6 +133,7 @@ const mockData: MockData = {
     },
     {
       id: 202,
+      active: true,
       clinic: 1,
       treatment: {
         id: 302,
@@ -143,6 +145,21 @@ const mockData: MockData = {
       },
       price: 180,
       updatedAt: '2026-01-09T00:00:00.000Z',
+    },
+    {
+      id: 203,
+      active: false,
+      clinic: 1,
+      treatment: {
+        id: 303,
+        name: 'Hidden Treatment',
+        medicalSpecialty: {
+          id: 403,
+          name: 'Hidden Specialty',
+        },
+      },
+      price: 9999,
+      updatedAt: '2026-01-12T00:00:00.000Z',
     },
   ],
   doctors: [
@@ -427,6 +444,9 @@ describe('getClinicDetailServerData (contract)', () => {
       href: '/listing-comparison?treatment=301',
       label: 'Compare clinics for Routine Checkup',
     })
+    expect(result?.treatments).toHaveLength(2)
+    expect(result?.treatments.map((treatment) => treatment.name)).not.toContain('Hidden Treatment')
+    expect(result?.treatments[0]?.priceFrom).toBe(120)
 
     expect(findCalls.some((call) => call.collection === 'clinicGalleryEntries')).toBe(false)
     expect(findCalls.find((call) => call.collection === 'clinics')?.select).toMatchObject({

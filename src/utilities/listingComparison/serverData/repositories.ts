@@ -198,12 +198,22 @@ export async function findClinicTreatmentsForClinics(
         pagination: true,
         overrideAccess: false,
         where: {
-          clinic: {
-            in: clinicIdChunk,
-          },
+          and: [
+            {
+              clinic: {
+                in: clinicIdChunk,
+              },
+            },
+            {
+              active: {
+                equals: true,
+              },
+            },
+          ],
         },
         select: {
           id: true,
+          active: true,
           clinic: true,
           treatment: true,
           price: true,

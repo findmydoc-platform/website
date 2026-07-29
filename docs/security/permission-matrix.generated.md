@@ -20,7 +20,7 @@
 | Clinics `(clinics)` | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>anyone approved, platform all</sub> | Conditional<br/><sub>platform full + clinic own profile only</sub> | Platform | Platform |
 | DoctorSpecialties `(doctorspecialties)` | Conditional<br/><sub>platform full + clinic allowed (hook enforces doctor clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
 | DoctorTreatments `(doctortreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook enforces doctor clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
-| ClinicTreatments `(clinictreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
+| ClinicTreatments `(clinictreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Conditional<br/><sub>platform all + clinic own inactive + everyone active</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> |
 | FavoriteClinics `(favoriteclinics)` | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> |
 | Reviews `(reviews)` | Conditional<br/><sub>platform full + patient create only</sub> | Published (approved) | Platform | Platform | Platform |
 | Treatments `(treatments)` | Platform | Anyone | Platform | Platform | Platform |
@@ -56,7 +56,7 @@
 - **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved; averageRating is computed-only
 - **DoctorSpecialties**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **DoctorTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
-- **ClinicTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
+- **ClinicTreatments**: Platform RWDA, clinic RWA own clinic including inactive offerings, patients/anonymous R active offerings
 - **FavoriteClinics**: Platform RWDA, patients RWDA own list only
 - **Reviews**: Platform RWDA moderation, patients W create own pending reviews only, all R approved
 - **Treatments**: Master data - platform write, everyone read; averageRating is computed-only

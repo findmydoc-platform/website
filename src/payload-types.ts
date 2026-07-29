@@ -641,6 +641,109 @@ export interface Clinic {
     role?: ('Medical Director' | 'Clinic Management' | 'International Office') | null;
   };
   /**
+   * Local opening hours for each day. Leave the whole week empty until it is configured.
+   */
+  openingHours?: {
+    monday?: {
+      /**
+       * Mark Monday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    tuesday?: {
+      /**
+       * Mark Tuesday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    wednesday?: {
+      /**
+       * Mark Wednesday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    thursday?: {
+      /**
+       * Mark Thursday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    friday?: {
+      /**
+       * Mark Friday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    saturday?: {
+      /**
+       * Mark Saturday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    sunday?: {
+      /**
+       * Mark Sunday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+  };
+  /**
    * Clinic accreditations
    */
   accreditations?: (number | Accreditation)[] | null;
@@ -681,7 +784,7 @@ export interface Clinic {
   deletedAt?: string | null;
 }
 /**
- * Clinics and their treatment prices
+ * Treatments offered by clinics with EUR prices and public activation status
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinictreatments".
@@ -690,9 +793,13 @@ export interface Clinictreatment {
   id: number;
   stableId?: string | null;
   /**
-   * Price the clinic charges in USD
+   * Price the clinic charges in EUR
    */
   price: number;
+  /**
+   * Show this treatment publicly and include it in prices and patient inquiries.
+   */
+  active: boolean;
   /**
    * Clinic that offers this treatment
    */
@@ -744,7 +851,7 @@ export interface Treatment {
    */
   medicalSpecialty: number | MedicalSpecialty;
   /**
-   * Average price across clinics
+   * Average EUR price across active clinic offerings
    */
   averagePrice?: number | null;
   /**
@@ -3940,6 +4047,59 @@ export interface ClinicsSelect<T extends boolean = true> {
         email?: T;
         role?: T;
       };
+  openingHours?:
+    | T
+    | {
+        monday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        tuesday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        wednesday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        thursday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        friday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        saturday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        sunday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+      };
   accreditations?: T;
   status?: T;
   verification?: T;
@@ -4040,6 +4200,7 @@ export interface TreatmentsSelect<T extends boolean = true> {
 export interface ClinictreatmentsSelect<T extends boolean = true> {
   stableId?: T;
   price?: T;
+  active?: T;
   clinic?: T;
   treatment?: T;
   updatedAt?: T;

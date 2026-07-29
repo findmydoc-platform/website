@@ -17,8 +17,11 @@ export async function calculateAveragePrice(
   try {
     const clinicTreatments = await payload.find({
       collection: 'clinictreatments',
-      where: { treatment: { equals: treatmentId } },
+      where: {
+        and: [{ treatment: { equals: treatmentId } }, { active: { equals: true } }],
+      },
       limit: 1000,
+      overrideAccess: true,
       req,
     })
 
@@ -51,6 +54,7 @@ export async function updateTreatmentAveragePrice(
       id: treatmentId,
       data: { averagePrice },
       context: { ...context, skipHooks: true },
+      overrideAccess: true,
       req,
     })
   } catch (error) {

@@ -46,11 +46,16 @@ export const collectionContractRegistry = {
     deep: [
       'tests/integration/clinicTreatments.creation.test.ts',
       'tests/integration/clinicTreatments.averagePrice.test.ts',
+      'tests/integration/migrations/clinicOpeningHoursActiveTreatments.test.ts',
     ],
   },
   clinics: {
     baseline: ['tests/integration/clinics.creation.test.ts'],
-    deep: ['tests/integration/clinics.creation.test.ts', 'tests/integration/access/clinics-access.test.ts'],
+    deep: [
+      'tests/integration/clinics.creation.test.ts',
+      'tests/integration/access/clinics-access.test.ts',
+      'tests/integration/migrations/clinicOpeningHoursActiveTreatments.test.ts',
+    ],
   },
   countries: {
     baseline: ['tests/integration/countries.lifecycle.test.ts'],

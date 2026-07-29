@@ -131,6 +131,7 @@ describe('Medical network defaultPopulate', () => {
         clinic: clinic.id,
         treatment: treatment.id,
         price: 2200,
+        active: true,
       },
       overrideAccess: true,
       depth: 0,

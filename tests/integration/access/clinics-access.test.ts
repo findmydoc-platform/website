@@ -15,6 +15,16 @@ import { createClinicStaffFixture, approveClinicStaff } from '../../fixtures/cli
 import { testSlug } from '../../fixtures/testSlug'
 import type { Clinic } from '@/payload-types'
 
+const openingHours: NonNullable<Clinic['openingHours']> = {
+  monday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  tuesday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  wednesday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  thursday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  friday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  saturday: { isClosed: true, opensAt: null, closesAt: null },
+  sunday: { isClosed: true, opensAt: null, closesAt: null },
+}
+
 const buildClinicData = (
   suffix: string,
   cityId: number,
@@ -172,13 +182,17 @@ describe('Clinics access', () => {
     const updated = await payload.update({
       collection: 'clinics',
       id: clinicA.id,
-      data: { name: `${slugPrefix}-own-updated` },
+      data: {
+        name: `${slugPrefix}-own-updated`,
+        openingHours,
+      },
       user: clinicPayloadUser,
       overrideAccess: false,
       depth: 0,
     })
 
     expect(updated.name).toContain('own-updated')
+    expect(updated.openingHours).toMatchObject(openingHours)
 
     await expect(
       payload.update({

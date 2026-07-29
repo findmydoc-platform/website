@@ -22,10 +22,10 @@ export const DOCTORS_PAGE_SIZE = 10
 
 const NO_REVIEWS_TEXT = 'No reviews yet'
 
-export function formatUsd(value: number): string {
+export function formatEur(value: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'EUR',
     maximumFractionDigits: 0,
   }).format(value)
 }
@@ -40,8 +40,8 @@ export function formatRatingSummary(ratingValue?: number | null, reviewCount?: n
 
 export function sortTreatmentsByPrice(treatments: ClinicDetailTreatment[]): ClinicDetailTreatment[] {
   return [...treatments].sort((left, right) => {
-    const leftPrice = typeof left.priceFromUsd === 'number' ? left.priceFromUsd : Number.POSITIVE_INFINITY
-    const rightPrice = typeof right.priceFromUsd === 'number' ? right.priceFromUsd : Number.POSITIVE_INFINITY
+    const leftPrice = typeof left.priceFrom === 'number' ? left.priceFrom : Number.POSITIVE_INFINITY
+    const rightPrice = typeof right.priceFrom === 'number' ? right.priceFrom : Number.POSITIVE_INFINITY
 
     if (leftPrice !== rightPrice) return leftPrice - rightPrice
     return left.name.localeCompare(right.name, 'en')
@@ -144,8 +144,8 @@ export function TreatmentsPricePanel({
                   {treatment.category ? <p className="text-sm text-muted-foreground">{treatment.category}</p> : null}
                 </div>
                 <p className="text-sm font-medium text-primary">
-                  {typeof treatment.priceFromUsd === 'number'
-                    ? `From ${formatUsd(treatment.priceFromUsd)}`
+                  {typeof treatment.priceFrom === 'number'
+                    ? `From ${formatEur(treatment.priceFrom)}`
                     : 'Price on request'}
                 </p>
               </div>

@@ -5,7 +5,7 @@ import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import { Card, CardContent } from '@/components/atoms/card'
 import { UiLink } from '@/components/molecules/Link'
-import { formatUsd } from '@/components/templates/ClinicDetailConcepts/shared'
+import { formatEur } from '@/components/templates/ClinicDetailConcepts/shared'
 
 import type { ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
 
@@ -45,8 +45,8 @@ export function FurtherTreatmentsSection({
                 <p className="text-base font-semibold text-secondary">{treatment.name}</p>
                 <p className="mt-1 text-sm text-secondary/60">{treatment.category ?? 'General treatment'}</p>
                 <p className="mt-2 text-sm font-semibold text-primary">
-                  {typeof treatment.priceFromUsd === 'number'
-                    ? `From ${formatUsd(treatment.priceFromUsd)}`
+                  {typeof treatment.priceFrom === 'number'
+                    ? `From ${formatEur(treatment.priceFrom)}`
                     : 'Price on request'}
                 </p>
               </div>

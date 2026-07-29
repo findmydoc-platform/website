@@ -5,7 +5,7 @@ import { computedOnlyFieldAccess } from '@/access/fieldAccess'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import {
   platformOrAssignedClinicMutation,
-  platformOrOwnClinicDoctorsOrActive,
+  platformOrOwnClinicResourceOrActive,
   platformOrOwnClinicResource,
 } from '@/access/scopeFilters'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
@@ -48,7 +48,7 @@ export const Doctors: CollectionConfig<'doctors'> = {
     description: 'Doctor profiles with specialties, languages, and experience',
   },
   access: {
-    read: platformOrOwnClinicDoctorsOrActive,
+    read: platformOrOwnClinicResourceOrActive,
     create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
     update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
     delete: isPlatformStaff, // Only Platform can delete

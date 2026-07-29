@@ -22,7 +22,7 @@ import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { cn } from '@/utilities/ui'
 
 import { useClinicDetailInteractionState } from './hooks/useClinicDetailInteractionState'
-import { buildOpenStreetMapHref, formatUsd, sortTreatmentsByPrice } from './shared'
+import { buildOpenStreetMapHref, formatEur, sortTreatmentsByPrice } from './shared'
 import type { ClinicDetailConceptProps } from './types'
 
 const CURATED_TREATMENT_COUNT = 4
@@ -46,8 +46,8 @@ const initialContactFormFields: ContactFormFields = {
   consentAccepted: false,
 }
 
-function buildTreatmentDescription({ category, priceFromUsd }: { category?: string; priceFromUsd?: number }): string {
-  const priceText = typeof priceFromUsd === 'number' ? `From ${formatUsd(priceFromUsd)}` : 'Price on request'
+function buildTreatmentDescription({ category, priceFrom }: { category?: string; priceFrom?: number }): string {
+  const priceText = typeof priceFrom === 'number' ? `From ${formatEur(priceFrom)}` : 'Price on request'
   const categoryText = category ? `${category}. ` : ''
   return `${categoryText}${priceText}.`
 }
@@ -172,7 +172,7 @@ export function ClinicDetail({
           title: treatment.name,
           description: buildTreatmentDescription({
             category: treatment.category,
-            priceFromUsd: treatment.priceFromUsd,
+            priceFrom: treatment.priceFrom,
           }),
           icon: <Icon className="size-7" aria-hidden={true} />,
           comparisonLink: treatment.comparisonLink,

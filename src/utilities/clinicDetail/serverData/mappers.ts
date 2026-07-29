@@ -216,7 +216,7 @@ function mapTreatments(treatments: Clinictreatment[]): ClinicDetailTreatment[] {
     return {
       id: String(treatmentId),
       name: treatmentName,
-      priceFromUsd: Number.isFinite(entry.price) ? entry.price : undefined,
+      priceFrom: Number.isFinite(entry.price) ? entry.price : undefined,
       category: resolveTreatmentCategory(treatment),
       comparisonLink:
         typeof treatmentRelationId === 'number'

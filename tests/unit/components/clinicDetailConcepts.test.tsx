@@ -95,7 +95,7 @@ vi.mock('@/components/templates/ClinicDetailConcepts/hooks/useClinicDetailIntera
 
 vi.mock('@/components/templates/ClinicDetailConcepts/shared', () => ({
   buildOpenStreetMapHref: vi.fn(() => null),
-  formatUsd: vi.fn((value: number) => `$${value}`),
+  formatEur: vi.fn((value: number) => `€${value}`),
   sortTreatmentsByPrice: vi.fn((treatments: Array<{ id: string }>) => treatments),
 }))
 
@@ -132,7 +132,7 @@ const baseData = {
     {
       id: 't1',
       name: 'Treatment 1',
-      priceFromUsd: 1200,
+      priceFrom: 1200,
       comparisonLink: {
         href: '/listing-comparison?treatment=t1',
         label: 'Compare clinics for Treatment 1',

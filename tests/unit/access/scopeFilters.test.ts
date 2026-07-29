@@ -12,7 +12,7 @@ import { mockUsers } from '../helpers/mockUsers'
 // Import all scope filter functions
 import {
   platformOrAssignedClinicMutation,
-  platformOrOwnClinicDoctorsOrActive,
+  platformOrOwnClinicResourceOrActive,
   platformOrOwnClinicResource,
   platformOrOwnPatientResource,
   platformOrOwnClinicProfile,
@@ -106,16 +106,16 @@ describe('Scope Filter Functions', () => {
     })
   })
 
-  describe('platformOrOwnClinicDoctorsOrActive', () => {
+  describe('platformOrOwnClinicResourceOrActive', () => {
     it('gives Platform Staff full access', async () => {
-      const result = await platformOrOwnClinicDoctorsOrActive(createAccessArgs(mockUsers.platform()))
+      const result = await platformOrOwnClinicResourceOrActive(createAccessArgs(mockUsers.platform()))
       expectAccess.full(result)
     })
 
     it('gives Clinic Staff active doctors plus doctors from their clinic', async () => {
       mockGetUserAssignedClinicId.mockResolvedValue(123)
 
-      const result = await platformOrOwnClinicDoctorsOrActive(createAccessArgs(mockUsers.clinic()))
+      const result = await platformOrOwnClinicResourceOrActive(createAccessArgs(mockUsers.clinic()))
       expectAccess.scoped(result, {
         or: [
           {
@@ -135,7 +135,7 @@ describe('Scope Filter Functions', () => {
     it('limits unassigned Clinic Staff to active doctors', async () => {
       mockGetUserAssignedClinicId.mockResolvedValue(null)
 
-      const result = await platformOrOwnClinicDoctorsOrActive(createAccessArgs(mockUsers.clinic()))
+      const result = await platformOrOwnClinicResourceOrActive(createAccessArgs(mockUsers.clinic()))
       expectAccess.scoped(result, {
         active: {
           equals: true,
@@ -147,7 +147,7 @@ describe('Scope Filter Functions', () => {
       ['patient', mockUsers.patient()],
       ['anonymous', mockUsers.anonymous()],
     ])('limits %s reads to active doctors', async (_label, user) => {
-      const result = await platformOrOwnClinicDoctorsOrActive(createAccessArgs(user))
+      const result = await platformOrOwnClinicResourceOrActive(createAccessArgs(user))
       expectAccess.scoped(result, {
         active: {
           equals: true,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { TextField, useField } from '@payloadcms/ui'
 import type { TextFieldClientComponent } from 'payload'
 
@@ -9,6 +9,7 @@ import { normalizeOpeningHoursTimeInput } from './normalizeOpeningHoursTimeInput
 const openingHoursTimeInputDescription = 'Accepts 8, 08, 8:00, and 08:00.'
 
 export const OpeningHoursTimeField: TextFieldClientComponent = (props) => {
+  const wrapperRef = useRef<HTMLDivElement>(null)
   const { setValue, value } = useField<string>({ path: props.path })
   const field = useMemo(
     () => ({
@@ -21,7 +22,7 @@ export const OpeningHoursTimeField: TextFieldClientComponent = (props) => {
     [props.field],
   )
 
-  const handleBlur = useCallback(() => {
+  const normalizeValue = useCallback(() => {
     if (typeof value !== 'string') return
 
     const normalizedValue = normalizeOpeningHoursTimeInput(value)
@@ -30,8 +31,16 @@ export const OpeningHoursTimeField: TextFieldClientComponent = (props) => {
     }
   }, [setValue, value])
 
+  useEffect(() => {
+    const form = wrapperRef.current?.closest('form')
+    if (!form) return
+
+    form.addEventListener('submit', normalizeValue, true)
+    return () => form.removeEventListener('submit', normalizeValue, true)
+  }, [normalizeValue])
+
   return (
-    <div onBlurCapture={handleBlur}>
+    <div ref={wrapperRef} onBlurCapture={normalizeValue}>
       <TextField {...props} field={field} />
     </div>
   )

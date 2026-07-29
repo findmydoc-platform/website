@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { ValidationError } from 'payload'
 
+import { normalizeOpeningHoursTimeInput } from '@/app/(payload)/components/OpeningHoursTimeField/normalizeOpeningHoursTimeInput'
 import { Clinics } from '@/collections/Clinics'
 
 type FieldNode = {
+  admin?: {
+    components?: {
+      Field?: string
+    }
+    description?: string
+  }
   name?: string
   type?: string
   fields?: FieldNode[]
@@ -168,6 +175,8 @@ describe('Clinics collection verification field', () => {
 })
 
 describe('Clinics opening-hours contract', () => {
+  const openingHoursTimeField = '@/app/(payload)/components/OpeningHoursTimeField#OpeningHoursTimeField'
+
   const buildWeek = () => ({
     monday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
     tuesday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
@@ -201,5 +210,41 @@ describe('Clinics opening-hours contract', () => {
     expect(validate({ ...buildWeek(), monday: { isClosed: false, opensAt: '17:00', closesAt: '16:59' } })).toBe(
       'monday closing time must be later than opening time.',
     )
+  })
+
+  it.each([
+    ['8', '08:00'],
+    ['08', '08:00'],
+    ['8:00', '08:00'],
+    ['08:00', '08:00'],
+    ['8:30', '08:30'],
+    [' 8 ', '08:00'],
+    ['0', '00:00'],
+    ['00:00', '00:00'],
+    ['23', '23:00'],
+    ['23:59', '23:59'],
+    ['   ', ''],
+  ])('normalizes supported admin time input %j to %j', (input, expected) => {
+    expect(normalizeOpeningHoursTimeInput(input)).toBe(expected)
+  })
+
+  it.each(['8:5', '800', '8.00', '24', '24:00', '08:60', 'morning'])(
+    'leaves unsupported admin time input %j for Payload validation',
+    (input) => {
+      expect(normalizeOpeningHoursTimeInput(input)).toBeNull()
+    },
+  )
+
+  it('uses the Payload time-field wrapper for opening and closing times on every day', () => {
+    const openingHours = findFieldByName((Clinics.fields ?? []) as FieldNode[], 'openingHours')
+
+    for (const day of openingHours?.fields ?? []) {
+      for (const fieldName of ['opensAt', 'closesAt']) {
+        const timeField = findFieldByName(day.fields, fieldName)
+
+        expect(timeField?.admin?.components?.Field).toBe(openingHoursTimeField)
+        expect(timeField?.admin?.description).toBe('Local time in 24-hour HH:mm format.')
+      }
+    }
   })
 })

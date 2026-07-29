@@ -13,6 +13,7 @@ export const openingHoursDayNames = [
 type OpeningHoursDayName = (typeof openingHoursDayNames)[number]
 
 const timePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/u
+const openingHoursTimeField = '@/app/(payload)/components/OpeningHoursTimeField#OpeningHoursTimeField'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -127,6 +128,9 @@ const buildDayField = (name: OpeningHoursDayName, label: string): GroupField => 
           label: 'Opens At',
           type: 'text',
           admin: {
+            components: {
+              Field: openingHoursTimeField,
+            },
             condition: (_data, siblingData) => siblingData?.isClosed !== true,
             description: 'Local time in 24-hour HH:mm format.',
             placeholder: '09:00',
@@ -138,6 +142,9 @@ const buildDayField = (name: OpeningHoursDayName, label: string): GroupField => 
           label: 'Closes At',
           type: 'text',
           admin: {
+            components: {
+              Field: openingHoursTimeField,
+            },
             condition: (_data, siblingData) => siblingData?.isClosed !== true,
             description: 'Local time in 24-hour HH:mm format.',
             placeholder: '17:00',

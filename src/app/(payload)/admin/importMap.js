@@ -29,6 +29,7 @@ import { ClinicStaffLifecyclePanel as ClinicStaffLifecyclePanel_d0a2f65900e52a34
 import { PlatformStaffAdminGuidance as PlatformStaffAdminGuidance_44a83a5fcf2c50f5e0c31ed343de2547 } from '@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance'
 import { ClinicApplicationLifecyclePanel as ClinicApplicationLifecyclePanel_2ecefdcb5754cece59d0633a49b851df } from '@/app/(payload)/components/ClinicApplicationLifecycle'
 import { ClinicApprovalRequirementError as ClinicApprovalRequirementError_6b9b57c3f957a81847439b14fa4ed9d4 } from '@/app/(payload)/components/ClinicApprovalRequirements'
+import { OpeningHoursTimeField as OpeningHoursTimeField_75ea827af6a03f373c3e1bcdcb127d93 } from '@/app/(payload)/components/OpeningHoursTimeField'
 import { ClinicApprovalRequirements as ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4 } from '@/app/(payload)/components/ClinicApprovalRequirements'
 import { default as default_edf1bab331b69df45f809a41e2fc2349 } from '@/components/organisms/MedicalSpecialtiesAdminGuidance'
 import { ReviewCreationRequirementError as ReviewCreationRequirementError_8940a50fccf58880bb0f9c9a8202ef0e } from '@/app/(payload)/components/ReviewCreationRequirementError'
@@ -92,6 +93,7 @@ export const importMap = {
   "@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance#PlatformStaffAdminGuidance": PlatformStaffAdminGuidance_44a83a5fcf2c50f5e0c31ed343de2547,
   "@/app/(payload)/components/ClinicApplicationLifecycle#ClinicApplicationLifecyclePanel": ClinicApplicationLifecyclePanel_2ecefdcb5754cece59d0633a49b851df,
   "@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirementError": ClinicApprovalRequirementError_6b9b57c3f957a81847439b14fa4ed9d4,
+  "@/app/(payload)/components/OpeningHoursTimeField#OpeningHoursTimeField": OpeningHoursTimeField_75ea827af6a03f373c3e1bcdcb127d93,
   "@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirements": ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4,
   "@/components/organisms/MedicalSpecialtiesAdminGuidance#default": default_edf1bab331b69df45f809a41e2fc2349,
   "@/app/(payload)/components/ReviewCreationRequirementError#ReviewCreationRequirementError": ReviewCreationRequirementError_8940a50fccf58880bb0f9c9a8202ef0e,

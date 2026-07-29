@@ -11,6 +11,16 @@ vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
 }))
 
+const buildOpeningHours = (): NonNullable<Clinic['openingHours']> => ({
+  monday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  tuesday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  wednesday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  thursday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  friday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  saturday: { isClosed: false, opensAt: '10:00', closesAt: '14:00' },
+  sunday: { isClosed: true, opensAt: null, closesAt: null },
+})
+
 describe('Clinic Creation Integration Tests', () => {
   let payload: Payload
   const slugPrefix = testSlug('clinics.creation.test.ts')
@@ -169,6 +179,88 @@ describe('Clinic Creation Integration Tests', () => {
     expect(clinic.contact?.email).toBe(`${slugPrefix}@test.com`)
     expect(clinic.status).toBe('draft')
     expect(clinic.supportedLanguages).toEqual(['english', 'turkish'])
+    expect(clinic.openingHours).toBeUndefined()
+  })
+
+  it('stores a complete opening-hours week and clears times for closed days', async () => {
+    const openingHours = buildOpeningHours()
+    openingHours.sunday = {
+      isClosed: true,
+      opensAt: '08:00',
+      closesAt: '12:00',
+    }
+
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-opening-hours`,
+        openingHours,
+        slug: `${slugPrefix}-opening-hours`,
+        status: 'draft',
+      },
+      draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(clinic.openingHours).toMatchObject({
+      monday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+      sunday: { isClosed: true, opensAt: null, closesAt: null },
+    })
+  })
+
+  it.each([
+    {
+      label: 'a partial week',
+      openingHours: {
+        monday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+      },
+    },
+    {
+      label: 'a malformed time',
+      openingHours: {
+        ...buildOpeningHours(),
+        monday: { isClosed: false, opensAt: '9:00', closesAt: '17:00' },
+      },
+    },
+    {
+      label: 'an open day with a missing time',
+      openingHours: {
+        ...buildOpeningHours(),
+        monday: { isClosed: false, opensAt: '09:00', closesAt: null },
+      },
+    },
+    {
+      label: 'a closing time equal to opening',
+      openingHours: {
+        ...buildOpeningHours(),
+        monday: { isClosed: false, opensAt: '17:00', closesAt: '17:00' },
+      },
+    },
+    {
+      label: 'a closing time before opening',
+      openingHours: {
+        ...buildOpeningHours(),
+        monday: { isClosed: false, opensAt: '17:00', closesAt: '16:59' },
+      },
+    },
+  ])('rejects $label', async ({ label, openingHours }) => {
+    const invalidSlug = `${slugPrefix}-invalid-${label.replace(/[^a-z0-9]+/giu, '-')}`
+
+    await expect(
+      payload.create({
+        collection: 'clinics',
+        data: {
+          name: invalidSlug,
+          openingHours: openingHours as Clinic['openingHours'],
+          slug: invalidSlug,
+          status: 'draft',
+        },
+        draft: false,
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
   })
 
   it('creates a clinic with description and tags', async () => {
@@ -977,6 +1069,7 @@ describe('Clinic Creation Integration Tests', () => {
         clinic: clinic.id,
         treatment: treatmentId,
         price: 1250,
+        active: true,
       },
       overrideAccess: true,
       depth: 0,

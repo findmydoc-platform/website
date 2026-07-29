@@ -39,16 +39,16 @@ export const platformOrOwnClinicResource: Access = async ({ req }) => {
 }
 
 /**
- * Platform Staff: All doctor profiles
- * Clinic Staff: Active doctor profiles plus inactive profiles from their clinic
- * Patients and anonymous users: Active doctor profiles only
+ * Platform Staff: All resources
+ * Clinic Staff: Active resources plus inactive resources from their clinic
+ * Patients and anonymous users: Active resources only
  */
-export const platformOrOwnClinicDoctorsOrActive: Access = async ({ req }) => {
+export const platformOrOwnClinicResourceOrActive: Access = async ({ req }) => {
   if (isPlatformStaff({ req })) {
     return true
   }
 
-  const activeDoctors = {
+  const activeResources = {
     active: {
       equals: true,
     },
@@ -59,7 +59,7 @@ export const platformOrOwnClinicDoctorsOrActive: Access = async ({ req }) => {
     if (clinicId) {
       return {
         or: [
-          activeDoctors,
+          activeResources,
           {
             clinic: {
               equals: clinicId,
@@ -70,7 +70,7 @@ export const platformOrOwnClinicDoctorsOrActive: Access = async ({ req }) => {
     }
   }
 
-  return activeDoctors
+  return activeResources
 }
 
 /**

@@ -43,6 +43,15 @@
       "email": "hello@istanbulsmile.example",
       "website": "https://istanbulsmile.example"
     },
+    "openingHours": {
+      "monday": { "isClosed": false, "opensAt": "09:00", "closesAt": "18:00" },
+      "tuesday": { "isClosed": false, "opensAt": "09:00", "closesAt": "18:00" },
+      "wednesday": { "isClosed": false, "opensAt": "09:00", "closesAt": "18:00" },
+      "thursday": { "isClosed": false, "opensAt": "09:00", "closesAt": "18:00" },
+      "friday": { "isClosed": false, "opensAt": "09:00", "closesAt": "18:00" },
+      "saturday": { "isClosed": false, "opensAt": "10:00", "closesAt": "14:00" },
+      "sunday": { "isClosed": true, "opensAt": null, "closesAt": null }
+    },
     "internalPrimaryContact": {
       "firstName": "Aylin",
       "lastName": "Korkmaz",

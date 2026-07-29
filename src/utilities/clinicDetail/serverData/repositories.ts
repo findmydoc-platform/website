@@ -90,12 +90,22 @@ export async function findClinicTreatmentsByClinicId(payload: Payload, clinicId:
       pagination: true,
       overrideAccess: false,
       where: {
-        clinic: {
-          equals: clinicId,
-        },
+        and: [
+          {
+            clinic: {
+              equals: clinicId,
+            },
+          },
+          {
+            active: {
+              equals: true,
+            },
+          },
+        ],
       },
       select: {
         id: true,
+        active: true,
         price: true,
         clinic: true,
         treatment: true,

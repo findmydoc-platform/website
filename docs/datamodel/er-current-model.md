@@ -104,6 +104,7 @@ erDiagram
         text contact_phoneNumber "Primary phone, required"
         email contact_email "Primary email, required"
         text contact_website "Public website URL"
+        group openingHours "Optional fixed Monday-Sunday local-time schedule"
         text internalPrimaryContact_firstName "Internal first contact given name, required"
         text internalPrimaryContact_lastName "Internal first contact family name, required"
         email internalPrimaryContact_email "Internal first contact email, required"
@@ -242,7 +243,8 @@ erDiagram
 
     ClinicTreatments {
         text id PK "UUID, auto by Payload"
-        number price "Clinic price (USD), required"
+        number price "Clinic price (EUR), required"
+        boolean active "Public offering status, default false"
         relationship clinic FK "Relationship to Clinics, required"
         relationship treatment FK "Relationship to Treatments, required"
         date createdAt "System: timestamps: true"

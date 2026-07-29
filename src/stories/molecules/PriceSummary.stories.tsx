@@ -22,11 +22,11 @@ export const Default: Story = {
   },
 }
 
-export const UsdCurrency: Story = {
+export const EurCurrency: Story = {
   args: {
     priceFrom: {
       value: 4200,
-      currency: 'USD',
+      currency: 'EUR',
       label: 'Starting at',
     },
   },

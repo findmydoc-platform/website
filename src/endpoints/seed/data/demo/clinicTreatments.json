@@ -3,180 +3,210 @@
     "stableId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
     "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
     "treatmentStableId": "77777777-7777-7777-7777-777777777777",
-    "price": 1200
+    "price": 1200,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-02",
     "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
     "treatmentStableId": "10000000-0000-0000-0000-000000000001",
-    "price": 4800
+    "price": 4800,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-03",
     "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
     "treatmentStableId": "10000000-0000-0000-0000-000000000003",
-    "price": 1750
+    "price": 1750,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-04",
     "clinicStableId": "seed-clinic-istanbul-bosphorus",
     "treatmentStableId": "10000000-0000-0000-0000-000000000007",
-    "price": 6900
+    "price": 6900,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-05",
     "clinicStableId": "seed-clinic-istanbul-bosphorus",
     "treatmentStableId": "10000000-0000-0000-0000-000000000008",
-    "price": 3600
+    "price": 3600,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-06",
     "clinicStableId": "seed-clinic-istanbul-bosphorus",
     "treatmentStableId": "10000000-0000-0000-0000-000000000005",
-    "price": 950
+    "price": 950,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-07",
     "clinicStableId": "seed-clinic-ankara-harmony",
     "treatmentStableId": "88888888-8888-8888-8888-888888888888",
-    "price": 180
+    "price": 180,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-08",
     "clinicStableId": "seed-clinic-ankara-harmony",
     "treatmentStableId": "10000000-0000-0000-0000-000000000003",
-    "price": 1650
+    "price": 1650,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-09",
     "clinicStableId": "seed-clinic-ankara-harmony",
     "treatmentStableId": "10000000-0000-0000-0000-000000000004",
-    "price": 1950
+    "price": 1950,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-10",
     "clinicStableId": "seed-clinic-ankara-capital",
     "treatmentStableId": "10000000-0000-0000-0000-000000000005",
-    "price": 800
+    "price": 800,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-11",
     "clinicStableId": "seed-clinic-ankara-capital",
     "treatmentStableId": "10000000-0000-0000-0000-000000000006",
-    "price": 1100
+    "price": 1100,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-12",
     "clinicStableId": "seed-clinic-ankara-capital",
     "treatmentStableId": "10000000-0000-0000-0000-000000000008",
-    "price": 3200
+    "price": 3200,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-13",
     "clinicStableId": "seed-clinic-izmir-coast",
     "treatmentStableId": "77777777-7777-7777-7777-777777777777",
-    "price": 1050
+    "price": 1050,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-14",
     "clinicStableId": "seed-clinic-izmir-coast",
     "treatmentStableId": "88888888-8888-8888-8888-888888888888",
-    "price": 140
+    "price": 140,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-15",
     "clinicStableId": "seed-clinic-izmir-coast",
     "treatmentStableId": "10000000-0000-0000-0000-000000000001",
-    "price": 4200
+    "price": 4200,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-16",
     "clinicStableId": "seed-clinic-izmir-ege",
     "treatmentStableId": "10000000-0000-0000-0000-000000000007",
-    "price": 6100
+    "price": 6100,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-17",
     "clinicStableId": "seed-clinic-izmir-ege",
     "treatmentStableId": "10000000-0000-0000-0000-000000000009",
-    "price": 5400
+    "price": 5400,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-18",
     "clinicStableId": "seed-clinic-izmir-ege",
     "treatmentStableId": "10000000-0000-0000-0000-000000000010",
-    "price": 7700
+    "price": 7700,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-19",
     "clinicStableId": "seed-clinic-antalya-medvista",
     "treatmentStableId": "10000000-0000-0000-0000-000000000005",
-    "price": 880
+    "price": 880,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-20",
     "clinicStableId": "seed-clinic-antalya-medvista",
     "treatmentStableId": "10000000-0000-0000-0000-000000000006",
-    "price": 1250
+    "price": 1250,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-21",
     "clinicStableId": "seed-clinic-antalya-medvista",
     "treatmentStableId": "10000000-0000-0000-0000-000000000007",
-    "price": 6400
+    "price": 6400,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-22",
     "clinicStableId": "seed-clinic-antalya-riviera",
     "treatmentStableId": "10000000-0000-0000-0000-000000000010",
-    "price": 8200
+    "price": 8200,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-23",
     "clinicStableId": "seed-clinic-antalya-riviera",
     "treatmentStableId": "10000000-0000-0000-0000-000000000009",
-    "price": 5900
+    "price": 5900,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-24",
     "clinicStableId": "seed-clinic-antalya-riviera",
     "treatmentStableId": "10000000-0000-0000-0000-000000000008",
-    "price": 3500
+    "price": 3500,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-25",
     "clinicStableId": "seed-clinic-bursa-nova",
     "treatmentStableId": "10000000-0000-0000-0000-000000000001",
-    "price": 4000
+    "price": 4000,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-26",
     "clinicStableId": "seed-clinic-bursa-nova",
     "treatmentStableId": "10000000-0000-0000-0000-000000000002",
-    "price": 2600
+    "price": 2600,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-27",
     "clinicStableId": "seed-clinic-bursa-nova",
     "treatmentStableId": "10000000-0000-0000-0000-000000000003",
-    "price": 1500
+    "price": 1500,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-28",
     "clinicStableId": "seed-clinic-bursa-green",
     "treatmentStableId": "77777777-7777-7777-7777-777777777777",
-    "price": 950
+    "price": 950,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-29",
     "clinicStableId": "seed-clinic-bursa-green",
     "treatmentStableId": "10000000-0000-0000-0000-000000000006",
-    "price": 980
+    "price": 980,
+    "active": true
   },
   {
     "stableId": "seed-clinic-treatment-30",
     "clinicStableId": "seed-clinic-bursa-green",
     "treatmentStableId": "10000000-0000-0000-0000-000000000004",
-    "price": 1880
+    "price": 1880,
+    "active": true
   }
 ]

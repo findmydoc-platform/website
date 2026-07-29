@@ -34,6 +34,36 @@ describe('public discovery health script', () => {
     expect(() => extractSitemapLocations('<urlset><url><loc>https://findmydoc.eu/</url></urlset>')).toThrow()
   })
 
+  it('reports malformed sitemap XML and continues checking discovery endpoints', async () => {
+    const fetchImpl = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input)
+      if (init?.method === 'GET' && url.endsWith('/pages-sitemap.xml')) {
+        return createResponse('<urlset><url><loc>https://findmydoc.eu/</url></urlset>')
+      }
+      if (init?.method === 'GET' && url.endsWith('/posts-sitemap.xml')) {
+        return createResponse(EMPTY_SITEMAP_XML)
+      }
+      return createResponse('', 200)
+    })
+
+    const result = await runPublicDiscoveryHealthCheck({
+      baseUrl: 'https://findmydoc.eu',
+      fetchImpl,
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.failures).toContainEqual({
+      kind: 'sitemap-xml',
+      path: '/pages-sitemap.xml',
+      status: 'invalid-xml',
+      url: 'https://findmydoc.eu/pages-sitemap.xml',
+    })
+    expect(fetchImpl).toHaveBeenCalledWith('https://findmydoc.eu/posts-sitemap.xml', {
+      method: 'GET',
+      redirect: 'follow',
+    })
+  })
+
   it('passes when discovery endpoints and sitemap URLs are reachable', async () => {
     const fetchImpl = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const url = String(input)

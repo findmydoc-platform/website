@@ -120,7 +120,20 @@ export async function runPublicDiscoveryHealthCheck({
 
     if (!SITEMAP_PATHS.has(path)) continue
 
-    for (const location of extractSitemapLocations(text)) {
+    let locations
+    try {
+      locations = extractSitemapLocations(text)
+    } catch {
+      failures.push({
+        kind: 'sitemap-xml',
+        path,
+        status: 'invalid-xml',
+        url,
+      })
+      continue
+    }
+
+    for (const location of locations) {
       const sitemapUrl = new URL(location, baseUrl)
       const base = new URL(baseUrl)
       if (sitemapUrl.origin !== base.origin) {

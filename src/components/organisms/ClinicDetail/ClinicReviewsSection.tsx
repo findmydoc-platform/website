@@ -173,13 +173,8 @@ function ClinicResponse({ review }: { review: ClinicDetailReview }) {
   const canCollapse = response.body.length > COLLAPSIBLE_RESPONSE_MIN_LENGTH
 
   return (
-    <div
-      role="group"
-      aria-label={`Response from ${response.clinicName}`}
-      className="border-t border-primary/10 pt-5 sm:pt-6"
-    >
+    <div role="group" aria-label="Clinic response" className="border-t border-primary/10 pt-5 sm:pt-6">
       <div className="min-w-0 space-y-3">
-        <p className="font-semibold [overflow-wrap:anywhere] text-secondary sm:hidden">{response.clinicName}</p>
         <div className="flex min-w-0 items-start gap-3 sm:gap-4">
           <div
             className="flex size-12 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-600"
@@ -188,9 +183,6 @@ function ClinicResponse({ review }: { review: ClinicDetailReview }) {
             {getClinicInitials(response.clinicName)}
           </div>
           <div className="min-w-0 flex-1 space-y-1">
-            <p className="hidden font-semibold [overflow-wrap:anywhere] text-secondary sm:block">
-              {response.clinicName}
-            </p>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               <span className="font-medium text-primary">Clinic response</span>
               <span className="h-4 w-px bg-primary/15" aria-hidden={true} />

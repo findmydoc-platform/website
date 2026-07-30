@@ -74,7 +74,7 @@ export const Main_Default: Story = {
     await expect(canvas.getAllByText('Verified review').length).toBeGreaterThan(0)
     expect(canvas.getAllByText(/Demo review text describes appointment preparation/).length).toBeGreaterThan(0)
     expect(canvas.getAllByText('Clinic response')).toHaveLength(2)
-    expect(canvas.getAllByRole('group', { name: 'Response from Berlin Health Clinic' })).toHaveLength(2)
+    expect(canvas.getAllByRole('group', { name: 'Clinic response' })).toHaveLength(2)
 
     const showMoreButton = canvas.getByRole('button', { name: 'Show more reviews' })
     showMoreButton.focus()
@@ -83,7 +83,7 @@ export const Main_Default: Story = {
 
     await expect(canvas.getByText(/Demo review entry with shorter copy/)).toBeInTheDocument()
     await expect(canvas.getByText(/Demo anonymous review text about document preparation/)).toBeInTheDocument()
-    expect(canvas.getAllByRole('group', { name: 'Response from Berlin Health Clinic' })).toHaveLength(2)
+    expect(canvas.getAllByRole('group', { name: 'Clinic response' })).toHaveLength(2)
     await expect(
       canvas.getByText(
         'Thank you for taking the time to describe your visit. Your feedback helps us improve our scheduling communication.',
@@ -209,10 +209,14 @@ const LongClinicResponseMobile: Story = {
   ...LongClinicResponse,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const response = canvas.getByRole('group', {
-      name: 'Response from Berlin Health Clinic Center for Pediatric and Adolescent Interdisciplinary Specialist Care',
-    })
-    const responseBody = within(response).getByText(/We reviewed your feedback with the care and scheduling teams/)
+    const responseBody = canvas.getByText(/We reviewed your feedback with the care and scheduling teams/)
+    const response = responseBody.closest('[role="group"]')
+    if (!(response instanceof HTMLElement)) throw new Error('Expected the long clinic response group')
+    await expect(
+      within(response).queryByText(
+        'Berlin Health Clinic Center for Pediatric and Adolescent Interdisciplinary Specialist Care',
+      ),
+    ).not.toBeInTheDocument()
     const showMoreButton = within(response).getByRole('button', { name: 'Show more' })
 
     await expect(responseBody).toHaveClass('max-h-[10.5rem]')
@@ -231,10 +235,9 @@ const LongClinicResponseWide: Story = {
   ...LongClinicResponse,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const response = canvas.getByRole('group', {
-      name: 'Response from Berlin Health Clinic Center for Pediatric and Adolescent Interdisciplinary Specialist Care',
-    })
-    const responseBody = within(response).getByText(/We reviewed your feedback with the care and scheduling teams/)
+    const responseBody = canvas.getByText(/We reviewed your feedback with the care and scheduling teams/)
+    const response = responseBody.closest('[role="group"]')
+    if (!(response instanceof HTMLElement)) throw new Error('Expected the long clinic response group')
     const mobileToggle = within(response).getByText('Show more')
 
     await expect(window.getComputedStyle(responseBody).maxHeight).toBe('none')

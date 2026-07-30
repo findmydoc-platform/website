@@ -15,7 +15,7 @@
 - Full same-state contact sheet: `output/playwright/review-responses/design-contact-sheet-1536-review-fixes-final.jpg`
 - Final desktop implementation:
   `output/playwright/review-responses/clinic-detail-1536-response-same-state-review-fixes-final.png`
-- Focused mobile clinic response: `output/playwright/review-responses/clinic-detail-320-response-final.jpg`
+- Focused mobile clinic response: `output/playwright/review-responses/clinic-detail-320-response-without-clinic-name.png`
 - Long mobile response, collapsed:
   `output/playwright/review-responses/clinic-detail-320-long-response-collapsed-show-more-final.jpg`
 - Long mobile response, expanded:

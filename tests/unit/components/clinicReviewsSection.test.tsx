@@ -57,8 +57,9 @@ describe('ClinicReviewsSection clinic responses', () => {
   it('renders approved clinic responses as part of the review card without exposing staff attribution', () => {
     render(<ClinicReviewsSection ratingValue={4.8} reviews={reviews} />)
 
-    expect(screen.getByRole('group', { name: 'Response from Berlin Health Clinic' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Clinic response' })).toBeInTheDocument()
     expect(screen.getByText('Clinic response')).toBeInTheDocument()
+    expect(screen.queryByText('Berlin Health Clinic')).not.toBeInTheDocument()
     expect(
       screen.getByText('Thank you for your feedback. We are glad the preparation and follow-up information helped.'),
     ).toBeInTheDocument()
@@ -66,7 +67,7 @@ describe('ClinicReviewsSection clinic responses', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Show more reviews' }))
 
-    expect(screen.getAllByRole('group', { name: 'Response from Berlin Health Clinic' })).toHaveLength(2)
+    expect(screen.getAllByRole('group', { name: 'Clinic response' })).toHaveLength(2)
     expect(
       screen.getByText('Thank you for taking the time to share your experience with our team.'),
     ).toBeInTheDocument()

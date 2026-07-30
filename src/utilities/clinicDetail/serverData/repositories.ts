@@ -1,6 +1,15 @@
 import type { Payload } from 'payload'
 
-import type { Accreditation, City, Clinic, Clinictreatment, Doctor, Doctorspecialty, Review } from '@/payload-types'
+import type {
+  Accreditation,
+  City,
+  Clinic,
+  Clinictreatment,
+  Doctor,
+  Doctorspecialty,
+  Review,
+  ReviewResponse,
+} from '@/payload-types'
 
 const QUERY_PAGE_SIZE = 500
 const QUERY_CHUNK_SIZE = 200
@@ -278,6 +287,62 @@ export async function findApprovedClinicReviewsByClinicId(
   })
 
   return result.docs as Review[]
+}
+
+export async function findPublicReviewResponsesByReviewIds(
+  payload: Payload,
+  reviewIds: number[],
+): Promise<ReviewResponse[]> {
+  if (reviewIds.length === 0) return []
+
+  const allDocs: ReviewResponse[] = []
+  const reviewIdChunks = chunkArray(reviewIds, QUERY_CHUNK_SIZE)
+
+  for (const reviewIdChunk of reviewIdChunks) {
+    const chunkDocs = await collectAllPages<ReviewResponse>(async (page) => {
+      const result = await payload.find({
+        collection: 'reviewResponses',
+        depth: 0,
+        page,
+        limit: QUERY_PAGE_SIZE,
+        pagination: true,
+        overrideAccess: false,
+        where: {
+          and: [
+            {
+              review: {
+                in: reviewIdChunk,
+              },
+            },
+            {
+              'publishedResponse.body': {
+                exists: true,
+              },
+            },
+            {
+              'publishedResponse.isBlocked': {
+                not_equals: true,
+              },
+            },
+          ],
+        },
+        select: {
+          id: true,
+          review: true,
+          publishedResponse: true,
+        },
+      })
+
+      return {
+        docs: result.docs as ReviewResponse[],
+        hasNextPage: result.hasNextPage,
+      }
+    })
+
+    allDocs.push(...chunkDocs)
+  }
+
+  return allDocs
 }
 
 export async function countApprovedDoctorReviews(payload: Payload, doctorIds: number[]): Promise<Map<number, number>> {

@@ -97,6 +97,66 @@ describe('seedChunkTask', () => {
     )
   })
 
+  it('passes the configured upsert policy to collection imports', async () => {
+    const payload = createMockPayload()
+    const runId = 'seed-run-upsert-policy'
+    const queue = `seed:${runId}`
+    const upsertPolicy = {
+      recreateUploadOnRelationDrift: ['user', 'createdBy'],
+    }
+    const input: SeedQueueJobInput = {
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      title: 'User profile media',
+      stepName: 'user-profile-media',
+      kind: 'collection',
+      collection: 'userProfileMedia',
+      fileName: 'userProfileMedia',
+      upsertPolicy,
+    }
+
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    })
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+    await registerSeedRunJob(payload as unknown as Payload, runId, {
+      id: 'job-upsert-policy',
+      order: 1,
+      status: 'queued',
+      input,
+      queue,
+      title: 'User profile media',
+      stepName: 'user-profile-media',
+      kind: 'collection',
+      collection: 'userProfileMedia',
+      fileName: 'userProfileMedia',
+      createdAt: '2026-07-30T12:00:00.000Z',
+      created: 0,
+      updated: 0,
+      warnings: [],
+      failures: [],
+    })
+
+    await seedChunkTask.handler({
+      input,
+      job: { id: 'job-upsert-policy' },
+      req: createMockReq(mockUsers.platform(), payload) as PayloadRequest,
+    })
+
+    expect(importCollection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'userProfileMedia',
+        upsertPolicy,
+      }),
+    )
+  })
+
   it('preserves the authenticated platform identity during reset jobs', async () => {
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', 'test')

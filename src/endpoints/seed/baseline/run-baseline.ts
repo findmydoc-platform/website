@@ -98,6 +98,7 @@ export async function runBaselineSeeds(
         resolvers,
         context: step.context,
         req,
+        upsertPolicy: step.upsertPolicy,
       })
       const { name: _ignoredName, ...rest } = result
       units.push({ name: step.name, ...rest })

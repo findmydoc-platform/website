@@ -1,6 +1,7 @@
 import type { CollectionSlug } from 'payload'
 import type { RelationMapping } from './import-collection'
 import type { SeedType } from './runtime'
+import type { SeedUpsertPolicy } from './upsert'
 
 export type SeedQueueJobKind = 'reset' | 'globals' | 'collection'
 
@@ -19,6 +20,7 @@ export type SeedQueueJobInput = {
   localizedFields?: string[]
   reqUserStableId?: string
   requiresPlatformUser?: boolean
+  upsertPolicy?: SeedUpsertPolicy
   stableIds?: string[]
   chunkIndex?: number
   chunkTotal?: number

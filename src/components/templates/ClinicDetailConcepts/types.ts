@@ -60,6 +60,11 @@ export type ClinicDetailReview = {
   comment: string
   authorName?: string
   ratingValue: number
+  response?: {
+    body: string
+    clinicName: string
+    approvedAt: string
+  }
 }
 
 export type ClinicDetailReviews = {

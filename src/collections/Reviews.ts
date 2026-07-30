@@ -3,7 +3,7 @@ import { ValidationError, validations } from 'payload'
 import { isPatient } from '@/access/isPatient'
 import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
-import { platformOnlyOrApprovedReviews } from '@/access/scopeFilters'
+import { platformOrApprovedReviewsByClinic } from '@/access/scopeFilters'
 import {
   updateAverageRatingsAfterChange,
   updateAverageRatingsAfterDelete,
@@ -155,7 +155,7 @@ export const Reviews: CollectionConfig = {
   },
   access: {
     read: ({ req }) => {
-      return platformOnlyOrApprovedReviews({ req })
+      return platformOrApprovedReviewsByClinic({ req })
     },
     create: ({ req }) => isPatient({ req }) || isPlatformStaff({ req }),
     update: ({ req }) => {

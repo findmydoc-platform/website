@@ -69,6 +69,29 @@ describe('importCollection', () => {
     expect(outcome.failures).toHaveLength(0)
   })
 
+  it('passes the configured upsert policy to stable-id upserts', async () => {
+    mockLoadSeedFile.mockResolvedValueOnce([{ stableId: 'media-1', name: 'Profile media' }])
+    const upsertPolicy = {
+      recreateUploadOnRelationDrift: ['user', 'createdBy'],
+    }
+
+    await importCollection({
+      payload: makePayload(),
+      kind: 'demo',
+      collection: 'userProfileMedia',
+      fileName: 'userProfileMedia',
+      resolvers: makeResolvers(),
+      upsertPolicy,
+    })
+
+    expect(mockUpsertByStableId).toHaveBeenCalledWith(
+      expect.anything(),
+      'userProfileMedia',
+      expect.objectContaining({ stableId: 'media-1' }),
+      expect.objectContaining({ policy: upsertPolicy }),
+    )
+  })
+
   it('skips required relations when missing and records warnings', async () => {
     mockLoadSeedFile.mockResolvedValueOnce([{ stableId: 'r-1', cityRef: null }])
 

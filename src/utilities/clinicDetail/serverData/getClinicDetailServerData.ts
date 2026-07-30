@@ -28,6 +28,7 @@ import {
   findClinicTreatmentsByClinicId,
   findDoctorsByClinicId,
   findDoctorSpecialtiesByDoctorIds,
+  findPublicReviewResponsesByReviewIds,
 } from './repositories'
 import type { ClinicDetailServerDataOptions, ClinicDetailServerDataResult } from './types'
 
@@ -41,6 +42,7 @@ const CLINIC_DETAIL_RELATED_COLLECTION_TAGS = [
   buildCollectionTag('doctors'),
   buildCollectionTag('doctorspecialties'),
   buildCollectionTag('reviews'),
+  buildCollectionTag('reviewResponses'),
   buildCollectionTag('accreditation'),
   buildCollectionTag('cities'),
 ] as const
@@ -194,14 +196,16 @@ export async function getClinicDetailServerData(
   ])
 
   const doctorIds = doctors.map((doctor) => doctor.id)
+  const reviewIds = approvedClinicReviews.map((review) => review.id)
 
-  const [doctorSpecialties, doctorReviewCounts, doctorMediaByDoctorId] = await Promise.all([
+  const [doctorSpecialties, doctorReviewCounts, doctorMediaByDoctorId, reviewResponses] = await Promise.all([
     findDoctorSpecialtiesByDoctorIds(payload, doctorIds),
     countApprovedDoctorReviews(payload, doctorIds),
     buildDoctorProfileDescriptorsByDoctorId({
       payload,
       doctors,
     }),
+    findPublicReviewResponsesByReviewIds(payload, reviewIds),
   ])
 
   const accreditationLookupIds = collectAccreditationLookupIds(clinic.accreditations)
@@ -229,6 +233,7 @@ export async function getClinicDetailServerData(
     doctorMediaByDoctorId,
     clinicReviewCount,
     approvedClinicReviews,
+    reviewResponses,
     doctorReviewCounts,
     accreditations: accreditationDocs as Accreditation[],
     cities: cityDocs as City[],

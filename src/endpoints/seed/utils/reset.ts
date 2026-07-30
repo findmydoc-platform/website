@@ -11,6 +11,8 @@ function toSnakeCaseKey(value: string) {
 
 const demoResetOrder: CollectionSlug[] = [
   'search',
+  'reviewAppeals',
+  'reviewResponses',
   'reviews',
   'patientClinicInquiries',
   'favoriteclinics',
@@ -23,9 +25,9 @@ const demoResetOrder: CollectionSlug[] = [
   'doctors',
   'clinics',
   'posts',
+  'userProfileMedia',
   'platformStaff',
   'clinicStaff',
-  'userProfileMedia',
 ]
 
 const baselineResetOrder: CollectionSlug[] = [

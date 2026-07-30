@@ -377,6 +377,7 @@ export const seedChunkTask = {
         req: seedReq,
         stableIds: input.stableIds,
         localizedFields: input.localizedFields,
+        upsertPolicy: input.upsertPolicy,
       })
 
       const warnings = [...result.warnings]

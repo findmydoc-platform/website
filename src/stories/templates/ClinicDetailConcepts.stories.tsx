@@ -4,6 +4,7 @@ import { expect, userEvent, within } from 'storybook/test'
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import {
   clinicDetailFixture,
+  clinicDetailLongResponseFixture,
   clinicDetailNoReviewsFixture,
   clinicDetailReviewsPartiallyLoadedFixture,
   clinicDetailReviewsPendingTextFixture,
@@ -72,6 +73,8 @@ export const Main_Default: Story = {
     expect(canvas.getAllByText('Maya K.')).toHaveLength(1)
     await expect(canvas.getAllByText('Verified review').length).toBeGreaterThan(0)
     expect(canvas.getAllByText(/Demo review text describes appointment preparation/).length).toBeGreaterThan(0)
+    expect(canvas.getAllByText('Clinic response')).toHaveLength(2)
+    expect(canvas.getAllByRole('group', { name: 'Clinic response' })).toHaveLength(2)
 
     const showMoreButton = canvas.getByRole('button', { name: 'Show more reviews' })
     showMoreButton.focus()
@@ -80,6 +83,12 @@ export const Main_Default: Story = {
 
     await expect(canvas.getByText(/Demo review entry with shorter copy/)).toBeInTheDocument()
     await expect(canvas.getByText(/Demo anonymous review text about document preparation/)).toBeInTheDocument()
+    expect(canvas.getAllByRole('group', { name: 'Clinic response' })).toHaveLength(2)
+    await expect(
+      canvas.getByText(
+        'Thank you for taking the time to describe your visit. Your feedback helps us improve our scheduling communication.',
+      ),
+    ).toBeInTheDocument()
     await expect(
       canvas.getByRole('article', { name: 'Anonymous patient verified review from Dec 02, 2025' }),
     ).toHaveFocus()
@@ -189,12 +198,75 @@ export const Visual_FallbackHeroPreview: Story = {
   render: (args) => <ClinicDetail {...args} />,
 }
 
+const LongClinicResponse: Story = {
+  args: {
+    data: clinicDetailLongResponseFixture,
+  },
+  render: (args) => <ClinicDetail {...args} />,
+}
+
+const LongClinicResponseMobile: Story = {
+  ...LongClinicResponse,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const responseBody = canvas.getByText(/We reviewed your feedback with the care and scheduling teams/)
+    const response = responseBody.closest('[role="group"]')
+    if (!(response instanceof HTMLElement)) throw new Error('Expected the long clinic response group')
+    await expect(
+      within(response).queryByText(
+        'Berlin Health Clinic Center for Pediatric and Adolescent Interdisciplinary Specialist Care',
+      ),
+    ).not.toBeInTheDocument()
+    const showMoreButton = within(response).getByRole('button', { name: 'Show more' })
+
+    await expect(responseBody).toHaveClass('max-h-[10.5rem]')
+    await expect(showMoreButton).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(showMoreButton)
+    await expect(responseBody).not.toHaveClass('max-h-[10.5rem]')
+
+    const showLessButton = within(response).getByRole('button', { name: 'Show less' })
+    await expect(showLessButton).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.click(showLessButton)
+    await expect(responseBody).toHaveClass('max-h-[10.5rem]')
+  },
+}
+
+const LongClinicResponseWide: Story = {
+  ...LongClinicResponse,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const responseBody = canvas.getByText(/We reviewed your feedback with the care and scheduling teams/)
+    const response = responseBody.closest('[role="group"]')
+    if (!(response instanceof HTMLElement)) throw new Error('Expected the long clinic response group')
+    const mobileToggle = within(response).getByText('Show more')
+
+    await expect(window.getComputedStyle(responseBody).maxHeight).toBe('none')
+    await expect(responseBody.clientHeight).toBe(responseBody.scrollHeight)
+    await expect(window.getComputedStyle(mobileToggle).display).toBe('none')
+  },
+}
+
 export const MainDefault320: Story = withViewportStory(Main_Default, 'public320', 'Main default / 320')
 export const MainDefault375: Story = withViewportStory(Main_Default, 'public375', 'Main default / 375')
 export const MainDefault640: Story = withViewportStory(Main_Default, 'public640', 'Main default / 640')
 export const MainDefault768: Story = withViewportStory(Main_Default, 'public768', 'Main default / 768')
 export const MainDefault1024: Story = withViewportStory(Main_Default, 'public1024', 'Main default / 1024')
 export const MainDefault1280: Story = withViewportStory(Main_Default, 'public1280', 'Main default / 1280')
+export const LongClinicResponse320: Story = withViewportStory(
+  LongClinicResponseMobile,
+  'public320',
+  'Long clinic response / 320',
+)
+export const LongClinicResponse375: Story = withViewportStory(
+  LongClinicResponseMobile,
+  'public375',
+  'Long clinic response / 375',
+)
+export const LongClinicResponse640: Story = withViewportStory(
+  LongClinicResponseWide,
+  'public640',
+  'Long clinic response / 640',
+)
 
 export const NoReviews320: Story = withViewportStory(Edge_NoReviews_FallbackText, 'public320', 'No reviews / 320')
 export const NoReviews375: Story = withViewportStory(Edge_NoReviews_FallbackText, 'public375', 'No reviews / 375')

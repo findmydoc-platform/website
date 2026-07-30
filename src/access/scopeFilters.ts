@@ -6,7 +6,7 @@
  * that require scope filtering based on user roles.
  */
 
-import type { Access } from 'payload'
+import type { Access, Where } from 'payload'
 import { isPlatformStaff } from './isPlatformStaff'
 import { isClinicStaff } from './isClinicStaff'
 import { isPatient } from './isPatient'
@@ -230,4 +230,108 @@ export const platformOnlyOrApprovedReviews: Access = ({ req: { user } }) => {
       equals: 'approved',
     },
   }
+}
+
+/**
+ * Platform Staff: All reviews for moderation
+ * Clinic Staff: Approved reviews for their assigned clinic
+ * Patients and anonymous users: All approved reviews
+ */
+export const platformOrApprovedReviewsByClinic: Access = async ({ req }) => {
+  if (isPlatformStaff({ req })) {
+    return true
+  }
+
+  const approvedReviews = {
+    status: {
+      equals: 'approved',
+    },
+  }
+
+  if (isClinicStaff({ req })) {
+    const clinicId = await getUserAssignedClinicId(req.user, req.payload)
+    if (!clinicId) return false
+
+    return {
+      and: [
+        approvedReviews,
+        {
+          clinic: {
+            equals: clinicId,
+          },
+        },
+      ],
+    }
+  }
+
+  return approvedReviews
+}
+
+/**
+ * Platform Staff: All response records
+ * Clinic Staff: Response records for their assigned clinic, including moderation history
+ * Patients and anonymous users: Only the currently approved, non-blocked response projection
+ */
+export const platformClinicOrPublicReviewResponse: Access = async ({ req }): Promise<boolean | Where> => {
+  if (isPlatformStaff({ req })) {
+    return true
+  }
+
+  if (isClinicStaff({ req })) {
+    const clinicId = await getUserAssignedClinicId(req.user, req.payload)
+    if (!clinicId) return false
+
+    return {
+      clinic: {
+        equals: clinicId,
+      },
+    } satisfies Where
+  }
+
+  return {
+    and: [
+      {
+        'review.status': {
+          equals: 'approved',
+        },
+      },
+      {
+        'review.deletedAt': {
+          exists: false,
+        },
+      },
+      {
+        'publishedResponse.body': {
+          exists: true,
+        },
+      },
+      {
+        'publishedResponse.isBlocked': {
+          not_equals: true,
+        },
+      },
+    ],
+  } satisfies Where
+}
+
+/**
+ * Payload version documents wrap collection fields in `version`.
+ */
+export const platformOrOwnClinicReviewWorkflowVersions: Access = async ({ req }) => {
+  if (isPlatformStaff({ req })) {
+    return true
+  }
+
+  if (isClinicStaff({ req })) {
+    const clinicId = await getUserAssignedClinicId(req.user, req.payload)
+    if (!clinicId) return false
+
+    return {
+      'version.clinic': {
+        equals: clinicId,
+      },
+    }
+  }
+
+  return false
 }

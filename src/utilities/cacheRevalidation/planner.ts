@@ -301,6 +301,8 @@ const isPublicRelatedEvent = (event: ClinicSurfaceRevalidationEvent): boolean =>
   switch (event.collection) {
     case 'reviews':
       return status === APPROVED_REVIEW_STATUS || previousStatus === APPROVED_REVIEW_STATUS
+    case 'reviewResponses':
+      return status === 'public' || previousStatus === 'public'
     default:
       return true
   }
@@ -376,6 +378,7 @@ const CLINIC_DETAIL_RELATED_COLLECTIONS = [
   'doctors',
   'doctorspecialties',
   'reviews',
+  'reviewResponses',
   'accreditation',
 ] as const satisfies readonly ClinicSurfaceRevalidationCollection[]
 

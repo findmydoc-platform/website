@@ -94,6 +94,8 @@ export interface Config {
     doctorspecialties: Doctorspecialty;
     favoriteclinics: Favoriteclinic;
     reviews: Review;
+    reviewResponses: ReviewResponse;
+    reviewAppeals: ReviewAppeal;
     countries: Country;
     cities: City;
     tags: Tag;
@@ -156,6 +158,8 @@ export interface Config {
     doctorspecialties: DoctorspecialtiesSelect<false> | DoctorspecialtiesSelect<true>;
     favoriteclinics: FavoriteclinicsSelect<false> | FavoriteclinicsSelect<true>;
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
+    reviewResponses: ReviewResponsesSelect<false> | ReviewResponsesSelect<true>;
+    reviewAppeals: ReviewAppealsSelect<false> | ReviewAppealsSelect<true>;
     countries: CountriesSelect<false> | CountriesSelect<true>;
     cities: CitiesSelect<false> | CitiesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
@@ -2531,6 +2535,117 @@ export interface Review {
   deletedAt?: string | null;
 }
 /**
+ * Moderated clinic responses. The approved response remains public while a replacement is pending.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviewResponses".
+ */
+export interface ReviewResponse {
+  id: number;
+  stableId?: string | null;
+  /**
+   * Approved review that receives exactly one clinic response workflow.
+   */
+  review: number | Review;
+  /**
+   * Derived from the review and immutable.
+   */
+  clinic: number | Clinic;
+  /**
+   * Current public response projection. Platform moderation controls this group.
+   */
+  publishedResponse?: {
+    body?: string | null;
+    approvedAt?: string | null;
+    isBlocked?: boolean | null;
+  };
+  /**
+   * Clinic-authored response or revision awaiting platform moderation.
+   */
+  pendingResponse?: {
+    /**
+     * 10–2000 characters. Outer whitespace is removed before validation.
+     */
+    body?: string | null;
+    submittedAt?: string | null;
+  };
+  /**
+   * Approved replaces the public response. Rejected keeps the previous response. Blocked removes it from public output.
+   */
+  moderationStatus: 'pending' | 'approved' | 'rejected' | 'blocked';
+  /**
+   * Required when a response is rejected or blocked.
+   */
+  moderationReason?: string | null;
+  moderatedAt?: string | null;
+  lastAction: 'submitted' | 'pending_edited' | 'revision_submitted' | 'approved' | 'rejected' | 'blocked' | 'seeded';
+  lastActionAt: string;
+  lastActorType: 'clinic_staff' | 'platform_staff' | 'system';
+  /**
+   * Internal actor relation. Account erasure removes this relation while the non-personal action audit remains.
+   */
+  lastActionBy?:
+    | ({
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      } | null);
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Clinic appeals against approved patient reviews. Appeals are never public.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviewAppeals".
+ */
+export interface ReviewAppeal {
+  id: number;
+  stableId?: string | null;
+  /**
+   * Approved review that can have exactly one appeal for its entire lifetime.
+   */
+  review: number | Review;
+  /**
+   * Derived from the review and immutable.
+   */
+  clinic: number | Clinic;
+  reason: 'incorrect_clinic' | 'inappropriate_content' | 'privacy_concern' | 'other';
+  /**
+   * 10–2000 characters. The submitted appeal cannot be changed by clinic staff.
+   */
+  details: string;
+  /**
+   * Only platform staff can move an appeal through its lifecycle.
+   */
+  status: 'submitted' | 'under_review' | 'upheld' | 'dismissed';
+  /**
+   * Required when the appeal is upheld or dismissed.
+   */
+  decisionReason?: string | null;
+  decidedAt?: string | null;
+  lastAction: 'submitted' | 'reviewed' | 'under_review' | 'upheld' | 'dismissed' | 'seeded';
+  lastActionAt: string;
+  lastActorType: 'clinic_staff' | 'platform_staff' | 'system';
+  /**
+   * Internal actor relation. Account erasure removes this relation while the non-personal action audit remains.
+   */
+  lastActionBy?:
+    | ({
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      } | null);
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
@@ -3077,6 +3192,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'reviews';
         value: number | Review;
+      } | null)
+    | ({
+        relationTo: 'reviewResponses';
+        value: number | ReviewResponse;
+      } | null)
+    | ({
+        relationTo: 'reviewAppeals';
+        value: number | ReviewAppeal;
       } | null)
     | ({
         relationTo: 'countries';
@@ -4270,6 +4393,57 @@ export interface ReviewsSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviewResponses_select".
+ */
+export interface ReviewResponsesSelect<T extends boolean = true> {
+  stableId?: T;
+  review?: T;
+  clinic?: T;
+  publishedResponse?:
+    | T
+    | {
+        body?: T;
+        approvedAt?: T;
+        isBlocked?: T;
+      };
+  pendingResponse?:
+    | T
+    | {
+        body?: T;
+        submittedAt?: T;
+      };
+  moderationStatus?: T;
+  moderationReason?: T;
+  moderatedAt?: T;
+  lastAction?: T;
+  lastActionAt?: T;
+  lastActorType?: T;
+  lastActionBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviewAppeals_select".
+ */
+export interface ReviewAppealsSelect<T extends boolean = true> {
+  stableId?: T;
+  review?: T;
+  clinic?: T;
+  reason?: T;
+  details?: T;
+  status?: T;
+  decisionReason?: T;
+  decidedAt?: T;
+  lastAction?: T;
+  lastActionAt?: T;
+  lastActorType?: T;
+  lastActionBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -5884,6 +6058,8 @@ export interface TaskCreateCollectionExport {
       | 'doctorspecialties'
       | 'favoriteclinics'
       | 'reviews'
+      | 'reviewResponses'
+      | 'reviewAppeals'
       | 'countries'
       | 'cities'
       | 'tags'

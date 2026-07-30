@@ -32,15 +32,18 @@ Demo units (current):
 - Patients
 - Treatments (+ relations)
 - Reviews
+- Review responses and appeals, including native-version history fixtures
 
 Demo reset collection list (ordered for safe clearing):
-1. reviews (depends on patients, treatments, doctors, clinics)
-2. favoriteclinics (depends on patients and clinics)
-3. patients
-4. clinictreatments (join records)
-5. doctors (depends on clinics, specialties)
-6. clinics (depends on cities)
-7. posts
+1. reviewAppeals (depends on reviews and clinics)
+2. reviewResponses (depends on reviews and clinics)
+3. reviews (depends on patients, treatments, doctors, clinics)
+4. favoriteclinics (depends on patients and clinics)
+5. patients
+6. clinictreatments (join records)
+7. doctors (depends on clinics, specialties)
+8. clinics (depends on cities)
+9. posts
 
 ## Execution Path
 The Developer Dashboard is the primary operator entrypoint.

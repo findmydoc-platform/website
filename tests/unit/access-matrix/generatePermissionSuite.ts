@@ -11,6 +11,7 @@ interface CrudAccess {
   read: Access
   update: Access
   delete: Access
+  readVersions?: Access
 }
 
 export interface CollectionWithCrudAccess {
@@ -19,6 +20,7 @@ export interface CollectionWithCrudAccess {
     read?: Access
     update?: Access
     delete?: Access
+    readVersions?: Access
   }
 }
 
@@ -29,7 +31,7 @@ function getCrudAccess(collection: CollectionWithCrudAccess): CrudAccess {
     throw new Error('Collection is missing an access configuration.')
   }
 
-  const { create, read, update, delete: remove } = access
+  const { create, read, update, delete: remove, readVersions } = access
 
   if (typeof create !== 'function') {
     throw new Error('Collection access.create must be a function.')
@@ -52,6 +54,7 @@ function getCrudAccess(collection: CollectionWithCrudAccess): CrudAccess {
     read,
     update,
     delete: remove,
+    ...(typeof readVersions === 'function' ? { readVersions } : {}),
   }
 }
 
@@ -80,6 +83,12 @@ export function makePermissionSuite(slug: string, collection: CollectionWithCrud
         '%s delete access',
         createMatrixAccessTest(slug, 'delete', access.delete, matrixRow.operations.delete),
       )
+      if (access.readVersions && matrixRow.operations.readVersions) {
+        test.each(userMatrix)(
+          '%s version read access',
+          createMatrixAccessTest(slug, 'readVersions', access.readVersions, matrixRow.operations.readVersions),
+        )
+      }
     })
   })
 }

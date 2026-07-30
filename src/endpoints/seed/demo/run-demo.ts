@@ -125,6 +125,7 @@ export async function runDemoSeeds(payload: Payload, options: { reset?: boolean 
         context: 'context' in step ? step.context : undefined,
         resolvers,
         req,
+        upsertPolicy: step.upsertPolicy,
       })
       const { name: _ignoredName, ...rest } = result
       units.push({ name: step.name, ...rest })

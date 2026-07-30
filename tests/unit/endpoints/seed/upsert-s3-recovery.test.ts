@@ -123,6 +123,9 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
 
     const result = await upsertByStableId(payload, 'userProfileMedia', data, {
       filePath: '/tmp/seed-admin-profile.webp',
+      policy: {
+        recreateUploadOnRelationDrift: ['user', 'createdBy'],
+      },
     })
 
     expect(result).toEqual({ created: false, updated: true })
@@ -162,8 +165,42 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
       filePath: '/tmp/seed-admin-profile.webp',
     })
     expect(warn).toHaveBeenCalledWith(
-      'Seed user profile media replacement for immutable relation drift: userProfileMedia:seed-user-profile-admin',
+      'Seed upload replacement for immutable relation drift: userProfileMedia:seed-user-profile-admin',
     )
+  })
+
+  it('rejects configured upload replacement when relation drift has no source file', async () => {
+    find.mockResolvedValue({
+      totalDocs: 1,
+      docs: [
+        {
+          id: 'profile-media-1',
+          user: { relationTo: 'platformStaff', value: 41 },
+        },
+      ],
+    })
+
+    await expect(
+      upsertByStableId(
+        payload,
+        'userProfileMedia',
+        {
+          stableId: 'seed-user-profile-admin',
+          user: { relationTo: 'platformStaff', value: 84 },
+        },
+        {
+          policy: {
+            recreateUploadOnRelationDrift: ['user'],
+          },
+        },
+      ),
+    ).rejects.toThrow(
+      'Seed upload replacement for relation drift requires a file: userProfileMedia:seed-user-profile-admin',
+    )
+
+    expect(update).not.toHaveBeenCalled()
+    expect(updateOne).not.toHaveBeenCalled()
+    expect(create).not.toHaveBeenCalled()
   })
 
   it('retries a transient upload transport failure before succeeding', async () => {

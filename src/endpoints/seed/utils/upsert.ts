@@ -11,6 +11,10 @@ export type UpsertResult = {
   nextSlug?: string
 }
 
+export type SeedUpsertPolicy = {
+  recreateUploadOnRelationDrift?: string[]
+}
+
 function buildOperationReq(
   req: Partial<PayloadRequest> | undefined,
   context: Record<string, unknown>,
@@ -294,36 +298,37 @@ function shouldClearPlatformSeedUploadTargetsBeforeUpdate(options: {
   )
 }
 
-function extractPolymorphicRelationKey(value: unknown): string | null {
-  if (!value || typeof value !== 'object') return null
+function extractRelationKey(value: unknown): string | null {
+  let relationTo = ''
+  let id: unknown = value
 
-  const relation = value as Record<string, unknown>
-  const relationTo = typeof relation.relationTo === 'string' ? relation.relationTo.trim() : ''
-  if (!relationTo) return null
+  if (value && typeof value === 'object') {
+    const relation = value as Record<string, unknown>
+    relationTo = typeof relation.relationTo === 'string' ? relation.relationTo.trim() : ''
+    id = Object.prototype.hasOwnProperty.call(relation, 'value') ? relation.value : relation.id
 
-  const relationValue = relation.value
-  const id =
-    relationValue && typeof relationValue === 'object'
-      ? ((relationValue as Record<string, unknown>).id ?? (relationValue as Record<string, unknown>).value)
-      : relationValue
+    if (id && typeof id === 'object') {
+      const populatedRelation = id as Record<string, unknown>
+      id = populatedRelation.id ?? populatedRelation.value
+    }
+  }
 
   if (typeof id !== 'string' && typeof id !== 'number') return null
 
   const normalizedId = String(id).trim()
-  return normalizedId ? `${relationTo}:${normalizedId}` : null
+  if (!normalizedId) return null
+
+  return relationTo ? `${relationTo}:${normalizedId}` : normalizedId
 }
 
-function hasImmutableUserProfileMediaRelationDrift(options: {
-  collection: CollectionSlug
+function hasConfiguredRelationDrift(options: {
   current: Record<string, unknown>
   nextData: Record<string, unknown>
-  filePath?: string
+  relationFields: string[]
 }): boolean {
-  if (options.collection !== 'userProfileMedia' || !options.filePath) return false
-
-  return ['user', 'createdBy'].some((field) => {
-    const currentKey = extractPolymorphicRelationKey(options.current[field])
-    const nextKey = extractPolymorphicRelationKey(options.nextData[field])
+  return options.relationFields.some((field) => {
+    const currentKey = extractRelationKey(options.current[field])
+    const nextKey = extractRelationKey(options.nextData[field])
     return currentKey !== null && nextKey !== null && currentKey !== nextKey
   })
 }
@@ -392,7 +397,7 @@ async function updateWithNoSuchKeyRecovery(
       }
 
       payload.logger.warn(`Seed media replacement fallback for missing object key: ${missingKey}`)
-      await replaceBrokenUploadDocument(payload, {
+      await replaceSeedUploadDocument(payload, {
         ...params,
         filePath: params.filePath,
       })
@@ -401,7 +406,7 @@ async function updateWithNoSuchKeyRecovery(
   }
 }
 
-async function replaceBrokenUploadDocument(
+async function replaceSeedUploadDocument(
   payload: Payload,
   params: {
     collection: CollectionSlug
@@ -450,7 +455,12 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
   payload: Payload,
   collection: CollectionSlug,
   data: T,
-  options?: { filePath?: string; context?: Record<string, unknown>; req?: Partial<PayloadRequest> },
+  options?: {
+    filePath?: string
+    context?: Record<string, unknown>
+    req?: Partial<PayloadRequest>
+    policy?: SeedUpsertPolicy
+  },
 ): Promise<UpsertResult> {
   if (!hasStableId(data)) {
     throw new Error(`Missing stableId for ${collection} upsert`)
@@ -538,17 +548,21 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
   }
 
   const filePath = options?.filePath
+  const recreateOnRelationDrift = options?.policy?.recreateUploadOnRelationDrift ?? []
   if (
-    filePath &&
-    hasImmutableUserProfileMediaRelationDrift({
-      collection,
+    recreateOnRelationDrift.length > 0 &&
+    hasConfiguredRelationDrift({
       current: current as Record<string, unknown>,
       nextData,
-      filePath,
+      relationFields: recreateOnRelationDrift,
     })
   ) {
-    payload.logger.warn(`Seed user profile media replacement for immutable relation drift: ${collection}:${stableId}`)
-    await replaceBrokenUploadDocument(payload, {
+    if (!filePath) {
+      throw new Error(`Seed upload replacement for relation drift requires a file: ${collection}:${stableId}`)
+    }
+
+    payload.logger.warn(`Seed upload replacement for immutable relation drift: ${collection}:${stableId}`)
+    await replaceSeedUploadDocument(payload, {
       collection,
       id: current.id,
       data: nextData,

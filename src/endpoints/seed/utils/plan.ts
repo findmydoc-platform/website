@@ -1,5 +1,6 @@
 import type { CollectionSlug } from 'payload'
 import type { RelationMapping } from './import-collection'
+import type { SeedUpsertPolicy } from './upsert'
 
 type CollectionPlanStep = {
   kind: 'collection'
@@ -11,6 +12,7 @@ type CollectionPlanStep = {
   localizedFields?: string[]
   reqUserStableId?: string
   requiresPlatformUser?: boolean
+  upsertPolicy?: SeedUpsertPolicy
 }
 
 type GlobalsPlanStep = {
@@ -132,6 +134,9 @@ export const demoPlan: SeedPlanStep[] = [
       },
     ],
     reqUserStableId: 'seed-platform-admin',
+    upsertPolicy: {
+      recreateUploadOnRelationDrift: ['user', 'createdBy'],
+    },
   },
   {
     kind: 'collection',

@@ -182,6 +182,44 @@ describe('Clinic Creation Integration Tests', () => {
     expect(clinic.openingHours).toBeUndefined()
   })
 
+  it('stores trimmed international postal codes and rejects invalid postal values', async () => {
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-postal-code-clinic`,
+        address: {
+          zipCode: '  SW1A 1AA  ',
+        },
+        slug: `${slugPrefix}-postal-code-clinic`,
+        status: 'draft',
+      },
+      draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(clinic.address?.zipCode).toBe('SW1A 1AA')
+
+    for (const [index, zipCode] of ['---', '10115/2', 6420].entries()) {
+      await expect(
+        payload.create({
+          collection: 'clinics',
+          data: {
+            name: `${slugPrefix}-invalid-postal-${index}`,
+            address: {
+              zipCode,
+            },
+            slug: `${slugPrefix}-invalid-postal-${index}`,
+            status: 'draft',
+          } as never,
+          draft: false,
+          overrideAccess: true,
+          depth: 0,
+        }),
+      ).rejects.toThrow()
+    }
+  })
+
   it('stores a complete opening-hours week and clears times for closed days', async () => {
     const openingHours = buildOpeningHours()
     openingHours.sunday = {

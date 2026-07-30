@@ -223,7 +223,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
       collection: 'clinictreatments',
       id: clinicTreatment.id,
       data: {
-        price: 12.34,
+        price: 12.34000000005,
       },
       overrideAccess: true,
       depth: 0,

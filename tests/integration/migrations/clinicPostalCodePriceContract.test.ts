@@ -37,6 +37,8 @@ describe('clinics and clinictreatments postal code and EUR price migration', () 
     expect(sqlText).toContain('ROUND(GREATEST("price", 0), 2)')
     expect(sqlText).toContain('"price" < 0')
     expect(sqlText).toContain('"price" <> ROUND("price", 2)')
+    expect(sqlText).toContain('AVG("clinictreatments"."price")')
+    expect(sqlText).toContain('"clinictreatments"."active" = true')
   })
 
   it('migrates legacy postal codes and EUR prices in PostgreSQL', async () => {
@@ -46,11 +48,26 @@ describe('clinics and clinictreatments postal code and EUR price migration', () 
     try {
       await client.query('BEGIN')
       await client.query('CREATE TEMP TABLE clinics (id integer, address_zip_code numeric)')
-      await client.query('CREATE TEMP TABLE clinictreatments (id integer, price numeric)')
+      await client.query(
+        'CREATE TEMP TABLE treatments (id integer, average_price numeric, updated_at timestamptz DEFAULT now())',
+      )
+      await client.query(
+        'CREATE TEMP TABLE clinictreatments (id integer, price numeric, treatment_id integer, active boolean)',
+      )
       await client.query(`INSERT INTO clinics (id, address_zip_code) VALUES (1, 6420), (2, NULL)`)
       await client.query(`
-        INSERT INTO clinictreatments (id, price)
-        VALUES (1, 12.345), (2, 12.344), (3, -1.25), (4, 0), (5, 12.34), (6, NULL)
+        INSERT INTO treatments (id, average_price)
+        VALUES (10, 99), (11, 99), (12, 0), (13, 12.34), (14, NULL)
+      `)
+      await client.query(`
+        INSERT INTO clinictreatments (id, price, treatment_id, active)
+        VALUES
+          (1, 12.345, 10, true),
+          (2, 12.344, 10, true),
+          (3, -1.25, 11, true),
+          (4, 0, 12, true),
+          (5, 12.34, 13, true),
+          (6, NULL, 14, true)
       `)
 
       await up({
@@ -80,6 +97,22 @@ describe('clinics and clinictreatments postal code and EUR price migration', () 
         { id: 4, price: 0 },
         { id: 5, price: 12.34 },
         { id: 6, price: null },
+      ])
+
+      const averages = await client.query<{ average_price: string | null; id: number }>(
+        'SELECT id, average_price FROM treatments ORDER BY id',
+      )
+      expect(
+        averages.rows.map(({ average_price, id }) => ({
+          averagePrice: average_price === null ? null : Number(average_price),
+          id,
+        })),
+      ).toEqual([
+        { averagePrice: 12.345, id: 10 },
+        { averagePrice: 0, id: 11 },
+        { averagePrice: 0, id: 12 },
+        { averagePrice: 12.34, id: 13 },
+        { averagePrice: null, id: 14 },
       ])
     } finally {
       await client.query('ROLLBACK').catch(() => undefined)

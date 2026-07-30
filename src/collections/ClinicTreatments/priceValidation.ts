@@ -3,6 +3,15 @@ import type { NumberFieldValidation } from 'payload'
 const CENTS_PER_EURO = 100
 const FLOATING_POINT_TOLERANCE = 1e-8
 
+export const normalizeClinicTreatmentPrice = (value: unknown): unknown => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return value
+
+  const cents = value * CENTS_PER_EURO
+  const roundedCents = Math.round(cents)
+
+  return Math.abs(cents - roundedCents) <= FLOATING_POINT_TOLERANCE ? roundedCents / CENTS_PER_EURO : value
+}
+
 export const validateClinicTreatmentPrice: NumberFieldValidation = (value) => {
   if (value === null || value === undefined) return true
   if (typeof value !== 'number') return 'Price must be a single EUR amount.'

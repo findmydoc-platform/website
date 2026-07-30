@@ -10,7 +10,7 @@ import { updateAveragePriceAfterDelete } from './hooks/updateAveragePriceAfterDe
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { revalidateClinicTreatmentChange, revalidateClinicTreatmentDelete } from '@/hooks/revalidateClinicSurfaces'
-import { validateClinicTreatmentPrice } from './priceValidation'
+import { normalizeClinicTreatmentPrice, validateClinicTreatmentPrice } from './priceValidation'
 
 export const ClinicTreatments: CollectionConfig = {
   slug: 'clinictreatments',
@@ -45,6 +45,9 @@ export const ClinicTreatments: CollectionConfig = {
       required: true,
       min: 0,
       validate: validateClinicTreatmentPrice,
+      hooks: {
+        beforeValidate: [({ value }) => normalizeClinicTreatmentPrice(value)],
+      },
       admin: {
         description: 'Price the clinic charges in EUR, with at most two decimal places',
       },

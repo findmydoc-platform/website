@@ -20,6 +20,7 @@ type ClinicReviewsSectionProps = {
 const INITIAL_VISIBLE_REVIEW_COUNT = 4
 const REVIEW_LOAD_INCREMENT = 4
 const MAX_VISIBLE_REVIEW_COUNT = 16
+const COLLAPSIBLE_RESPONSE_MIN_LENGTH = 360
 const VERIFIED_REVIEW_DESCRIPTION =
   'Verified reviews come from patients or accompanying persons after a documented consultation or treatment through findmydoc. Reviews are checked before publication.'
 
@@ -164,8 +165,12 @@ function ReviewerIdentity({ review }: { review: ClinicDetailReview }) {
 }
 
 function ClinicResponse({ review }: { review: ClinicDetailReview }) {
+  const responseBodyId = `${React.useId()}-body`
+  const [isExpanded, setIsExpanded] = React.useState(false)
   const response = review.response
   if (!response) return null
+
+  const canCollapse = response.body.length > COLLAPSIBLE_RESPONSE_MIN_LENGTH
 
   return (
     <div
@@ -174,6 +179,7 @@ function ClinicResponse({ review }: { review: ClinicDetailReview }) {
       className="border-t border-primary/10 pt-5 sm:pt-6"
     >
       <div className="min-w-0 space-y-3">
+        <p className="font-semibold [overflow-wrap:anywhere] text-secondary sm:hidden">{response.clinicName}</p>
         <div className="flex min-w-0 items-start gap-3 sm:gap-4">
           <div
             className="flex size-12 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-600"
@@ -181,19 +187,41 @@ function ClinicResponse({ review }: { review: ClinicDetailReview }) {
           >
             {getClinicInitials(response.clinicName)}
           </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-            <p className="font-semibold [overflow-wrap:anywhere] text-secondary">{response.clinicName}</p>
-            <span className="hidden h-4 w-px bg-primary/15 sm:block" aria-hidden={true} />
-            <span className="font-medium text-primary">Clinic response</span>
-            <span className="hidden h-4 w-px bg-primary/15 sm:block" aria-hidden={true} />
-            <time className="text-secondary/55" dateTime={response.approvedAt}>
-              {formatReviewDate(response.approvedAt)}
-            </time>
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="hidden font-semibold [overflow-wrap:anywhere] text-secondary sm:block">
+              {response.clinicName}
+            </p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <span className="font-medium text-primary">Clinic response</span>
+              <span className="h-4 w-px bg-primary/15" aria-hidden={true} />
+              <time className="text-secondary/55" dateTime={response.approvedAt}>
+                {formatReviewDate(response.approvedAt)}
+              </time>
+            </div>
           </div>
         </div>
-        <p className="max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/75 sm:ml-16">
+        <p
+          id={responseBodyId}
+          className={cn(
+            'max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/75 sm:ml-16',
+            canCollapse && !isExpanded && 'max-h-[10.5rem] overflow-hidden sm:max-h-none sm:overflow-visible',
+          )}
+        >
           {response.body}
         </p>
+        {canCollapse ? (
+          <Button
+            type="button"
+            variant="link"
+            size="clear"
+            className="min-h-11 px-0 text-sm font-semibold sm:hidden"
+            aria-controls={responseBodyId}
+            aria-expanded={isExpanded}
+            onClick={() => setIsExpanded((current) => !current)}
+          >
+            {isExpanded ? 'Show less' : 'Show full clinic response'}
+          </Button>
+        ) : null}
       </div>
     </div>
   )

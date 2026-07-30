@@ -291,6 +291,11 @@ export const platformClinicOrPublicReviewResponse: Access = async ({ req }): Pro
   return {
     and: [
       {
+        'review.status': {
+          equals: 'approved',
+        },
+      },
+      {
         'publishedResponse.body': {
           exists: true,
         },

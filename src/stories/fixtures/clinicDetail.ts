@@ -207,13 +207,6 @@ export const clinicDetailFixture: ClinicDetailData = {
         },
       },
       {
-        id: 'review-3',
-        reviewDate: '2026-01-05T10:00:00.000Z',
-        ratingValue: 4,
-        authorName: 'James D.',
-        comment: 'Demo treatment-plan text covers timing, home-care checklist details, and line wrapping.',
-      },
-      {
         id: 'review-2',
         reviewDate: '2026-01-08T12:30:00.000Z',
         ratingValue: 5,
@@ -224,6 +217,13 @@ export const clinicDetailFixture: ClinicDetailData = {
           clinicName: 'Berlin Health Clinic',
           approvedAt: '2026-07-26T14:30:00.000Z',
         },
+      },
+      {
+        id: 'review-3',
+        reviewDate: '2026-01-05T10:00:00.000Z',
+        ratingValue: 4,
+        authorName: 'James D.',
+        comment: 'Demo treatment-plan text covers timing, home-care checklist details, and line wrapping.',
       },
       {
         id: 'review-4',
@@ -309,6 +309,30 @@ export const clinicDetailFixture: ClinicDetailData = {
     coordinates: { lat: 52.5168332, lng: 13.4264519 },
   },
   contactHref: clinicContactHref,
+}
+
+export const clinicDetailLongResponseFixture: ClinicDetailData = {
+  ...clinicDetailFixture,
+  reviews: {
+    ...clinicDetailFixture.reviews,
+    items: clinicDetailFixture.reviews.items.map((review, index) =>
+      index === 0
+        ? {
+            ...review,
+            response: {
+              body: [
+                'Thank you for taking the time to describe your experience in detail.',
+                'We reviewed your feedback with the care and scheduling teams and have documented the communication points you raised.',
+                'The clinic has also clarified the preparation checklist and follow-up process so that future patients receive the same information before their appointment.',
+                'If you need another copy of the written plan, our team can provide it through the usual patient communication channel.',
+              ].join(' '),
+              clinicName: 'Berlin Health Clinic Center for Pediatric and Adolescent Interdisciplinary Specialist Care',
+              approvedAt: '2026-07-28T10:00:00.000Z',
+            },
+          }
+        : review,
+    ),
+  },
 }
 
 export const clinicDetailNoCoordinatesFixture: ClinicDetailData = {

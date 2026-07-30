@@ -239,6 +239,33 @@ const prepareTrustedResponseSeed = (
   return stampAudit(draft, req, 'seeded')
 }
 
+const prepareAppealDecisionResponseBlock = (
+  draft: WorkflowDraft,
+  original: WorkflowDraft,
+  context: ReviewContext,
+  req: PayloadRequest,
+): WorkflowDraft => {
+  const timestamp = now()
+  const published = record(original.publishedResponse)
+
+  return stampAudit(
+    {
+      ...original,
+      stableId: draft.stableId ?? original.stableId,
+      review: context.reviewId,
+      clinic: context.clinicId,
+      publishedResponse: published.body ? { ...published, isBlocked: true } : emptyResponseGroup('published'),
+      pendingResponse: emptyResponseGroup('pending'),
+      moderationStatus: 'blocked',
+      moderationReason: requiredModerationReason('reviewResponses', draft.moderationReason, req),
+      moderatedAt: timestamp,
+    },
+    req,
+    'blocked',
+    timestamp,
+  )
+}
+
 export const prepareReviewResponseChange: CollectionBeforeChangeHook = async ({
   data,
   operation,
@@ -262,6 +289,10 @@ export const prepareReviewResponseChange: CollectionBeforeChangeHook = async ({
     ...incoming,
     review: context.reviewId,
     clinic: context.clinicId,
+  }
+
+  if (req.context.reviewAppealDecision === true) {
+    return prepareAppealDecisionResponseBlock(draft, original, context, req)
   }
 
   if (isTrustedSeed(req)) {
@@ -511,6 +542,46 @@ export const applyUpheldAppealDecision: CollectionAfterChangeHook = async ({ doc
 
   const reviewId = relationId(current.review)
   if (reviewId === null) return doc
+
+  const decisionReason =
+    optionalTrimmedText(current.decisionReason) ??
+    'The review appeal was upheld and the clinic response was removed from public output.'
+  const responseResult = await req.payload.find({
+    collection: 'reviewResponses',
+    where: {
+      review: {
+        equals: reviewId,
+      },
+    },
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    overrideAccess: true,
+    req,
+    select: {
+      id: true,
+      moderationStatus: true,
+    },
+  })
+  const response = responseResult.docs[0]
+
+  if (response && response.moderationStatus !== 'blocked') {
+    await req.payload.update({
+      collection: 'reviewResponses',
+      id: response.id,
+      data: {
+        moderationStatus: 'blocked',
+        moderationReason: decisionReason,
+      },
+      context: {
+        ...req.context,
+        reviewAppealDecision: true,
+      },
+      depth: 0,
+      overrideAccess: true,
+      req,
+    })
+  }
 
   await req.payload.update({
     collection: 'reviews',

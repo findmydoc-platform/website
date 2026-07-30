@@ -734,6 +734,11 @@ function validateConditional(ctx: ValidationContext, value: unknown) {
         expect(value).toEqual({
           and: [
             {
+              'review.status': {
+                equals: 'approved',
+              },
+            },
+            {
               'publishedResponse.body': {
                 exists: true,
               },

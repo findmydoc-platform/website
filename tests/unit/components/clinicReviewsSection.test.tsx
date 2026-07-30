@@ -71,4 +71,43 @@ describe('ClinicReviewsSection clinic responses', () => {
       screen.getByText('Thank you for taking the time to share your experience with our team.'),
     ).toBeInTheDocument()
   })
+
+  it('lets mobile users expand and collapse a long clinic response without truncating the stored text', () => {
+    const longBody = [
+      'Thank you for taking the time to describe your experience in detail.',
+      'We reviewed your feedback with the care and scheduling teams and documented the communication points you raised.',
+      'The clinic has clarified the preparation checklist and follow-up process so future patients receive the same information before their appointment.',
+      'If you need another copy of the written plan, our team can provide it through the usual patient communication channel.',
+    ].join(' ')
+    const longResponseReviews: ClinicDetailReviews = {
+      totalCount: 1,
+      items: [
+        {
+          ...reviews.items[0]!,
+          response: {
+            body: longBody,
+            clinicName: 'Berlin Health Clinic Center for Pediatric and Adolescent Interdisciplinary Specialist Care',
+            approvedAt: '2026-07-28T10:00:00.000Z',
+          },
+        },
+      ],
+    }
+
+    render(<ClinicReviewsSection ratingValue={5} reviews={longResponseReviews} />)
+
+    const responseBody = screen.getByText(longBody)
+    const showFullButton = screen.getByRole('button', { name: 'Show full clinic response' })
+    expect(responseBody).toHaveClass('max-h-[10.5rem]')
+    expect(showFullButton).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(showFullButton)
+
+    expect(responseBody).not.toHaveClass('max-h-[10.5rem]')
+    expect(screen.getByRole('button', { name: 'Show less' })).toHaveAttribute('aria-expanded', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show less' }))
+
+    expect(responseBody).toHaveClass('max-h-[10.5rem]')
+    expect(screen.getByRole('button', { name: 'Show full clinic response' })).toHaveAttribute('aria-expanded', 'false')
+  })
 })

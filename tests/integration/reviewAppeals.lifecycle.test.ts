@@ -2,7 +2,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 import config from '@payload-config'
 
-import type { Review, ReviewAppeal } from '@/payload-types'
+import type { Review, ReviewAppeal, ReviewResponse } from '@/payload-types'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
@@ -22,6 +22,7 @@ describe('reviewAppeals lifecycle', () => {
   let treatmentId: number
   const slugPrefix = testSlug('reviewAppeals.lifecycle.test.ts')
   const appealIds: Array<number | string> = []
+  const responseIds: Array<number | string> = []
   const reviewIds: Array<number | string> = []
   const staffIds: Array<number | string> = []
   const patientIds: Array<number | string> = []
@@ -38,6 +39,13 @@ describe('reviewAppeals lifecycle', () => {
   }, 60000)
 
   afterEach(async () => {
+    while (responseIds.length) {
+      const id = responseIds.pop()
+      if (!id) continue
+      try {
+        await payload.delete({ collection: 'reviewResponses', id, overrideAccess: true })
+      } catch {}
+    }
     while (appealIds.length) {
       const id = appealIds.pop()
       if (!id) continue
@@ -233,6 +241,22 @@ describe('reviewAppeals lifecycle', () => {
       emailPrefix: `${slugPrefix}-upheld-platform`,
       createdStaffIds: staffIds,
     })
+    const response = await payload.create({
+      collection: 'reviewResponses',
+      data: {
+        review: review.id,
+        pendingResponse: {
+          body: 'Thank you for raising this concern. The clinic has documented the reported privacy issue.',
+        },
+        moderationStatus: 'approved',
+      } as unknown as ReviewResponse,
+      user: asPayloadStaffUser(moderator),
+      overrideAccess: false,
+      depth: 0,
+    })
+    responseIds.push(response.id)
+    expect(response.moderationStatus).toBe('approved')
+    expect(response.publishedResponse?.isBlocked).toBe(false)
 
     const appeal = await payload.create({
       collection: 'reviewAppeals',
@@ -273,6 +297,20 @@ describe('reviewAppeals lifecycle', () => {
     })
     expect(internalReview.status).toBe('rejected')
 
+    const internalResponse = await payload.findByID({
+      collection: 'reviewResponses',
+      id: response.id,
+      overrideAccess: true,
+      depth: 0,
+    })
+    expect(internalResponse.moderationStatus).toBe('blocked')
+    expect(internalResponse.publishedResponse?.isBlocked).toBe(true)
+    expect(internalResponse.moderationReason).toBe(
+      'The privacy concern was confirmed and the review must be removed from public output.',
+    )
+    expect(internalResponse.lastAction).toBe('blocked')
+    expect(internalResponse.lastActorType).toBe('platform_staff')
+
     const publicReviews = await payload.find({
       collection: 'reviews',
       where: { id: { equals: review.id } },
@@ -280,5 +318,23 @@ describe('reviewAppeals lifecycle', () => {
       depth: 0,
     })
     expect(publicReviews.docs).toHaveLength(0)
+
+    const publicResponses = await payload.find({
+      collection: 'reviewResponses',
+      where: { id: { equals: response.id } },
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(publicResponses.docs).toHaveLength(0)
+
+    const responseVersions = await payload.findVersions({
+      collection: 'reviewResponses',
+      where: { parent: { equals: response.id } },
+      overrideAccess: true,
+      depth: 0,
+      pagination: false,
+    })
+    expect(responseVersions.docs.length).toBeGreaterThanOrEqual(2)
+    expect(responseVersions.docs.some((version) => version.version.moderationStatus === 'blocked')).toBe(true)
   }, 60000)
 })

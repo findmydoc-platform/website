@@ -229,6 +229,55 @@ describe('reviewResponses lifecycle', () => {
     ).rejects.toThrow('immutable audit records')
   }, 60000)
 
+  it('fails closed when a parent review is no longer approved even if its response was not blocked', async () => {
+    const { review } = await createApprovedReview('parent-rejected')
+    const moderator = await createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-parent-rejected-platform`,
+      createdStaffIds: staffIds,
+    })
+    const response = await payload.create({
+      collection: 'reviewResponses',
+      data: {
+        review: review.id,
+        pendingResponse: {
+          body: 'Thank you for the detailed feedback. The clinic has reviewed it with the responsible team.',
+        },
+        moderationStatus: 'approved',
+      } as unknown as ReviewResponse,
+      user: asPayloadStaffUser(moderator),
+      overrideAccess: false,
+      depth: 0,
+    })
+    responseIds.push(response.id)
+
+    await payload.update({
+      collection: 'reviews',
+      id: review.id,
+      data: {
+        status: 'rejected',
+      } as unknown as Review,
+      user: asPayloadStaffUser(moderator),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const internalResponse = await payload.findByID({
+      collection: 'reviewResponses',
+      id: response.id,
+      overrideAccess: true,
+      depth: 0,
+    })
+    expect(internalResponse.publishedResponse?.isBlocked).toBe(false)
+
+    const publicResponses = await payload.find({
+      collection: 'reviewResponses',
+      where: { id: { equals: response.id } },
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(publicResponses.docs).toHaveLength(0)
+  }, 60000)
+
   it('scopes private workflow reads and anonymizes actor relations without losing audit history', async () => {
     const { clinic, review } = await createApprovedReview('audit')
     const foreign = await createApprovedReview('foreign')

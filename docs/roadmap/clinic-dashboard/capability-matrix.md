@@ -231,7 +231,7 @@ Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`. [Screen capture](https://githu
 | Respond to or edit a clinic response | `reviewResponses` stores one clinic workflow per review. Clinic staff edit only the pending response; platform approval replaces the public projection, while rejection preserves the previous approved response. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | Approved response `public-cached`; pending/moderation `private-live` |
 | Add internal review note | No clinic-private review-note model exists, and #1529 does not include a general clinic note feature. | `later scope` | No owning backend issue | `private-live` if later approved |
 | Show response history | `reviewResponses` uses unlimited Payload native versions. Platform staff see all versions; clinic staff see versions for their assigned clinic. Restore is disabled. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | `private-live` |
-| Appeal or flag a review | `reviewAppeals` stores one immutable appeal per approved review with submitted, under-review, upheld, and dismissed states. Only platform staff decide; an upheld appeal removes the review from public output. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | `private-live` |
+| Appeal or flag a review | `reviewAppeals` stores one immutable appeal per approved review with submitted, under-review, upheld, and dismissed states. Only platform staff decide; an upheld appeal blocks any clinic response and removes the review from public output while both decisions remain in native version history. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | Appeal data is `private-live`; upheld decisions invalidate affected public review surfaces |
 | Export reviews | No export contract is in the current issue set. | `later scope` | Unowned | `n/a` |
 | Create appointment | No appointment or booking domain exists; #1528 and #1530 explicitly exclude it. | `later scope` | Unowned | `n/a` |
 
@@ -330,7 +330,7 @@ For the planned implementation slices, the decision is domain-specific:
 | `clinicMedia`, `doctorMedia` change/delete | Clinic/detail imagery when referenced | Deferred; no complete dependency invalidation | Private upload metadata |
 | New public team record | Clinic detail | No owner/event exists yet | Authenticated `clinicStaff` identity and roles |
 | Approved review change | Clinic detail, listing comparison, rating output | Review hooks cover current review visibility | Appeals, internal notes, moderation drafts |
-| Approved clinic response change | Clinic detail is the only evidenced target surface; the response model/reader is absent | Model choice determines whether the existing review hook or a new owner/event applies | Draft response, appeal, and moderation state |
+| Approved or blocked clinic response change | Clinic detail response projection | Review-response hook resolves the current/previous clinic relation and invalidates the existing clinic-detail tags and bounded path | Pending response, appeal details, moderation reason, and version history |
 | Inquiry/message/reporting writes | None | Private-live policy; no public revalidation | All patient/contact/message/analytics details |
 
 ### Read/Write Symmetry

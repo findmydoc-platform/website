@@ -499,4 +499,6 @@ erDiagram
 `ReviewResponses` and `ReviewAppeals` use Payload native versions with unlimited retention. The current document and
 every version retain state, action type, and timestamps. Actor relations are intentionally nullable: deleting a staff
 account removes the personal relation from current and version relation tables while the non-personal audit remains.
-Version restoration and physical workflow deletion are disabled through normal collection access.
+Version restoration and physical workflow deletion are disabled through normal collection access. Upholding an appeal
+blocks any related clinic response before rejecting the parent review, preserving both decisions in their respective
+version histories. Public response reads additionally require the parent review to remain approved.

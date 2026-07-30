@@ -214,12 +214,12 @@ function ClinicResponse({ review }: { review: ClinicDetailReview }) {
             type="button"
             variant="link"
             size="clear"
-            className="min-h-11 px-0 text-sm font-semibold sm:hidden"
+            className="min-h-11 px-0 text-sm font-semibold underline decoration-1 underline-offset-4 hover:decoration-2 focus-visible:decoration-2 focus-visible:ring-0 focus-visible:ring-offset-0 sm:hidden"
             aria-controls={responseBodyId}
             aria-expanded={isExpanded}
             onClick={() => setIsExpanded((current) => !current)}
           >
-            {isExpanded ? 'Show less' : 'Show full clinic response'}
+            {isExpanded ? 'Show less' : 'Show more'}
           </Button>
         ) : null}
       </div>

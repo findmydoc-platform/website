@@ -96,11 +96,11 @@ describe('ClinicReviewsSection clinic responses', () => {
     render(<ClinicReviewsSection ratingValue={5} reviews={longResponseReviews} />)
 
     const responseBody = screen.getByText(longBody)
-    const showFullButton = screen.getByRole('button', { name: 'Show full clinic response' })
+    const showMoreButton = screen.getByRole('button', { name: 'Show more' })
     expect(responseBody).toHaveClass('max-h-[10.5rem]')
-    expect(showFullButton).toHaveAttribute('aria-expanded', 'false')
+    expect(showMoreButton).toHaveAttribute('aria-expanded', 'false')
 
-    fireEvent.click(showFullButton)
+    fireEvent.click(showMoreButton)
 
     expect(responseBody).not.toHaveClass('max-h-[10.5rem]')
     expect(screen.getByRole('button', { name: 'Show less' })).toHaveAttribute('aria-expanded', 'true')
@@ -108,6 +108,6 @@ describe('ClinicReviewsSection clinic responses', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show less' }))
 
     expect(responseBody).toHaveClass('max-h-[10.5rem]')
-    expect(screen.getByRole('button', { name: 'Show full clinic response' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: 'Show more' })).toHaveAttribute('aria-expanded', 'false')
   })
 })

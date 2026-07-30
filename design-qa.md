@@ -17,7 +17,7 @@
   `output/playwright/review-responses/clinic-detail-1536-response-same-state-review-fixes-final.png`
 - Focused mobile clinic response: `output/playwright/review-responses/clinic-detail-320-response-final.jpg`
 - Long mobile response, collapsed:
-  `output/playwright/review-responses/clinic-detail-320-long-response-collapsed-final.png`
+  `output/playwright/review-responses/clinic-detail-320-long-response-collapsed-show-more-final.jpg`
 - Long mobile response, expanded:
   `output/playwright/review-responses/clinic-detail-320-long-response-expanded-final.png`
 - Tablet/desktop transition: `output/playwright/review-responses/clinic-detail-1024-reviews-final.jpg`
@@ -29,7 +29,7 @@ The contact sheet places the selected reference and implementation together. The
 1. The first comparison found a dark clinic avatar and fixture copy that did not match the selected reference. The avatar was changed to the reference's light mint treatment and the approved response fixture was aligned with the selected copy.
 2. The mobile comparison found that retaining the desktop avatar gutter for the response body made the 320 px text column unnecessarily narrow. The response body now uses the full card width on mobile while preserving its desktop alignment with the clinic metadata.
 3. The final comparison used the same expanded five-review state as the reference. No remaining visual difference changes the selected design direction or the response-to-review relationship.
-4. Reviewer follow-up covered unusually long response copy and clinic names. Mobile response copy now starts at a six-line-equivalent height and expands through a 44 px control. The clinic name gets the full card width before the avatar and response metadata, avoiding fragmented long words. From 640 px onward, the response remains fully visible and the mobile control is hidden.
+4. Reviewer follow-up covered unusually long response copy and clinic names. Mobile response copy now starts at a six-line-equivalent height and expands through a 44 px `Show more` / `Show less` control. The clinic name gets the full card width before the avatar and response metadata, avoiding fragmented long words. From 640 px onward, the response remains fully visible and the mobile control is hidden.
 
 ## Responsive and interaction QA
 

@@ -213,11 +213,11 @@ const LongClinicResponseMobile: Story = {
       name: 'Response from Berlin Health Clinic Center for Pediatric and Adolescent Interdisciplinary Specialist Care',
     })
     const responseBody = within(response).getByText(/We reviewed your feedback with the care and scheduling teams/)
-    const showFullButton = within(response).getByRole('button', { name: 'Show full clinic response' })
+    const showMoreButton = within(response).getByRole('button', { name: 'Show more' })
 
     await expect(responseBody).toHaveClass('max-h-[10.5rem]')
-    await expect(showFullButton).toHaveAttribute('aria-expanded', 'false')
-    await userEvent.click(showFullButton)
+    await expect(showMoreButton).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(showMoreButton)
     await expect(responseBody).not.toHaveClass('max-h-[10.5rem]')
 
     const showLessButton = within(response).getByRole('button', { name: 'Show less' })
@@ -235,7 +235,7 @@ const LongClinicResponseWide: Story = {
       name: 'Response from Berlin Health Clinic Center for Pediatric and Adolescent Interdisciplinary Specialist Care',
     })
     const responseBody = within(response).getByText(/We reviewed your feedback with the care and scheduling teams/)
-    const mobileToggle = within(response).getByText('Show full clinic response')
+    const mobileToggle = within(response).getByText('Show more')
 
     await expect(window.getComputedStyle(responseBody).maxHeight).toBe('none')
     await expect(responseBody.clientHeight).toBe(responseBody.scrollHeight)

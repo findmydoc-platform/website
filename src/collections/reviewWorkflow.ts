@@ -202,6 +202,19 @@ const normalizeResponseGroup = (
       }
 }
 
+const normalizeTrustedResponseGroup = (
+  value: unknown,
+  req: PayloadRequest,
+  kind: 'published' | 'pending',
+): ResponseGroup => {
+  const group = record(value)
+  if (!optionalTrimmedText(group.body)) {
+    return emptyResponseGroup(kind)
+  }
+
+  return normalizeResponseGroup(group, req, kind) ?? emptyResponseGroup(kind)
+}
+
 const prepareTrustedResponseSeed = (
   draft: WorkflowDraft,
   original: WorkflowDraft,
@@ -219,14 +232,8 @@ const prepareTrustedResponseSeed = (
   }
 
   draft.moderationStatus = status
-  draft.publishedResponse =
-    draft.publishedResponse === null
-      ? emptyResponseGroup('published')
-      : normalizeResponseGroup(draft.publishedResponse ?? original.publishedResponse, req, 'published')
-  draft.pendingResponse =
-    draft.pendingResponse === null
-      ? emptyResponseGroup('pending')
-      : normalizeResponseGroup(draft.pendingResponse ?? original.pendingResponse, req, 'pending')
+  draft.publishedResponse = normalizeTrustedResponseGroup(draft.publishedResponse, req, 'published')
+  draft.pendingResponse = normalizeTrustedResponseGroup(draft.pendingResponse, req, 'pending')
 
   if (status === 'rejected' || status === 'blocked') {
     draft.moderationReason = requiredModerationReason('reviewResponses', draft.moderationReason, req)

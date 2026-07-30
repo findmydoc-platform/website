@@ -8,6 +8,7 @@
       "approvedAt": "2026-01-06T10:00:00.000Z",
       "isBlocked": false
     },
+    "pendingResponse": null,
     "moderatedAt": "2026-01-06T10:00:00.000Z"
   },
   {
@@ -19,6 +20,7 @@
       "approvedAt": "2026-01-09T09:00:00.000Z",
       "isBlocked": false
     },
+    "pendingResponse": null,
     "moderatedAt": "2026-01-09T09:00:00.000Z"
   },
   {

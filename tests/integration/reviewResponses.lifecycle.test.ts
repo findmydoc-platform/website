@@ -97,6 +97,73 @@ describe('reviewResponses lifecycle', () => {
     return { clinic, review }
   }
 
+  it('applies trusted seed response groups as complete snapshots', async () => {
+    const { review } = await createApprovedReview('trusted-seed-snapshot')
+    const moderator = await createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-trusted-seed-platform`,
+      createdStaffIds: staffIds,
+    })
+    const platformUser = asPayloadStaffUser(moderator)
+
+    const response = await payload.create({
+      collection: 'reviewResponses',
+      data: {
+        review: review.id,
+        moderationStatus: 'pending',
+        publishedResponse: {
+          body: 'This approved response remains visible while a revision awaits moderation.',
+          approvedAt: '2026-01-06T10:00:00.000Z',
+          isBlocked: false,
+        },
+        pendingResponse: {
+          body: 'This newer response is still awaiting moderation by platform staff.',
+          submittedAt: '2026-01-21T13:00:00.000Z',
+        },
+      } as unknown as ReviewResponse,
+      context: {
+        disableRevalidate: true,
+        trustedReviewWorkflowSeed: true,
+      },
+      user: platformUser,
+      overrideAccess: true,
+      depth: 0,
+    })
+    responseIds.push(response.id)
+
+    const initialSnapshot = await payload.update({
+      collection: 'reviewResponses',
+      id: response.id,
+      data: {
+        moderationStatus: 'approved',
+        publishedResponse: {
+          body: 'This is the earlier approved response restored by the history seed.',
+          approvedAt: '2026-01-06T10:00:00.000Z',
+          isBlocked: false,
+        },
+        pendingResponse: {
+          body: null,
+          submittedAt: null,
+        },
+        moderatedAt: '2026-01-06T10:00:00.000Z',
+      } as unknown as ReviewResponse,
+      context: {
+        disableRevalidate: true,
+        trustedReviewWorkflowSeed: true,
+      },
+      user: platformUser,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(initialSnapshot.moderationStatus).toBe('approved')
+    expect(initialSnapshot.publishedResponse?.body).toBe(
+      'This is the earlier approved response restored by the history seed.',
+    )
+    expect(initialSnapshot.pendingResponse).toBeFalsy()
+    expect(initialSnapshot.lastAction).toBe('seeded')
+    expect(initialSnapshot.lastActorType).toBe('platform_staff')
+  }, 60000)
+
   it('keeps the approved response public while a clinic revision is pending or rejected', async () => {
     const { clinic, review } = await createApprovedReview('moderation')
     const clinicStaff = await createClinicTestUser(payload, {

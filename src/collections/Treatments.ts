@@ -78,11 +78,12 @@ export const Treatments: CollectionConfig<'treatments'> = {
             },
             {
               name: 'averagePrice',
+              label: 'Average Price (EUR)',
               type: 'number',
               required: false,
               admin: {
                 readOnly: true,
-                description: 'Average price across clinics',
+                description: 'Average EUR price across active clinic offerings',
               },
             },
             {
@@ -111,7 +112,7 @@ export const Treatments: CollectionConfig<'treatments'> = {
               collection: 'clinictreatments',
               on: 'treatment',
               admin: {
-                defaultColumns: ['clinic', 'price'],
+                defaultColumns: ['clinic', 'price', 'active'],
                 description: 'Clinics that offer this treatment',
                 allowCreate: true,
               },

@@ -15,6 +15,7 @@ type MockData = {
   doctors: Array<Record<string, unknown>>
   doctorspecialties: Array<Record<string, unknown>>
   reviews: Array<Record<string, unknown>>
+  reviewResponses: Array<Record<string, unknown>>
   accreditation: Array<Record<string, unknown>>
   cities: Array<Record<string, unknown>>
 }
@@ -60,7 +61,7 @@ const mockData: MockData = {
       address: {
         street: 'Lichtenberger Strasse',
         houseNumber: '24',
-        zipCode: 10179,
+        zipCode: '10179',
         city: 501,
         country: 'Germany',
       },
@@ -86,7 +87,7 @@ const mockData: MockData = {
       address: {
         street: 'Draft Street',
         houseNumber: '1',
-        zipCode: 10000,
+        zipCode: '10000',
         city: 501,
         country: 'Germany',
       },
@@ -118,6 +119,7 @@ const mockData: MockData = {
   clinictreatments: [
     {
       id: 201,
+      active: true,
       clinic: 1,
       treatment: {
         id: 301,
@@ -132,6 +134,7 @@ const mockData: MockData = {
     },
     {
       id: 202,
+      active: true,
       clinic: 1,
       treatment: {
         id: 302,
@@ -143,6 +146,21 @@ const mockData: MockData = {
       },
       price: 180,
       updatedAt: '2026-01-09T00:00:00.000Z',
+    },
+    {
+      id: 203,
+      active: false,
+      clinic: 1,
+      treatment: {
+        id: 303,
+        name: 'Hidden Treatment',
+        medicalSpecialty: {
+          id: 403,
+          name: 'Hidden Specialty',
+        },
+      },
+      price: 9999,
+      updatedAt: '2026-01-12T00:00:00.000Z',
     },
   ],
   doctors: [
@@ -255,6 +273,28 @@ const mockData: MockData = {
       comment: 'The treatment plan matched what was discussed.',
     },
   ],
+  reviewResponses: [
+    {
+      id: 1101,
+      review: 1001,
+      publishedResponse: {
+        body: 'Thank you for the review. We are glad the explanations and aftercare were helpful.',
+        approvedAt: '2026-01-13T10:00:00.000Z',
+        isBlocked: false,
+      },
+      updatedAt: '2026-02-01T10:00:00.000Z',
+    },
+    {
+      id: 1102,
+      review: 1002,
+      publishedResponse: {
+        body: 'This blocked response must not reach the public clinic detail.',
+        approvedAt: '2026-01-14T10:00:00.000Z',
+        isBlocked: true,
+      },
+      updatedAt: '2026-01-14T10:00:00.000Z',
+    },
+  ],
   accreditation: [
     { id: 801, name: 'ISO 9001' },
     { id: 802, name: 'JCI' },
@@ -270,7 +310,10 @@ function matchesClause(doc: Record<string, unknown>, clause: Record<string, unkn
 
     if (!rule || typeof rule !== 'object') return true
 
-    const sourceValue = doc[field]
+    const sourceValue = field.split('.').reduce<unknown>((value, segment) => {
+      if (!value || typeof value !== 'object') return undefined
+      return (value as Record<string, unknown>)[segment]
+    }, doc)
     const relationValue =
       sourceValue && typeof sourceValue === 'object' && 'id' in sourceValue
         ? (sourceValue as { id?: unknown }).id
@@ -283,6 +326,14 @@ function matchesClause(doc: Record<string, unknown>, clause: Record<string, unkn
     if ('in' in rule) {
       const options = (rule as { in?: unknown }).in
       return Array.isArray(options) ? options.includes(relationValue) : false
+    }
+
+    if ('exists' in rule) {
+      return (sourceValue !== null && sourceValue !== undefined) === (rule as { exists?: unknown }).exists
+    }
+
+    if ('not_equals' in rule) {
+      return relationValue !== (rule as { not_equals?: unknown }).not_equals
     }
 
     return true
@@ -355,6 +406,7 @@ describe('getClinicDetailServerData (contract)', () => {
       'collection:doctors',
       'collection:doctorspecialties',
       'collection:reviews',
+      'collection:reviewResponses',
       'collection:accreditation',
       'collection:cities',
     ])
@@ -389,19 +441,25 @@ describe('getClinicDetailServerData (contract)', () => {
       authorName: 'Maya K.',
       comment: 'Clear explanations and careful aftercare.',
       ratingValue: 5,
+      response: {
+        body: 'Thank you for the review. We are glad the explanations and aftercare were helpful.',
+        clinicName: 'Berlin Health Clinic',
+        approvedAt: '2026-01-13T10:00:00.000Z',
+      },
     })
     expect(result?.reviews.items[1]).not.toHaveProperty('authorName')
+    expect(result?.reviews.items[1]).not.toHaveProperty('response')
     expect(result?.reviews.items.map((review) => review.comment)).not.toContain('Pending review should not appear.')
     expect(result?.reviews.items.map((review) => review.comment)).not.toContain('Rejected review should not appear.')
     expect(result?.trust.accreditations).toContain('ISO 9001')
     expect(result?.trust.languages).toEqual(expect.arrayContaining(['English', 'German']))
     expect(result?.freshness).toMatchObject({
-      updatedAt: '2026-01-12T09:15:00.000Z',
+      updatedAt: '2026-01-13T10:00:00.000Z',
       latestPatientReviewAt: '2026-01-12T09:15:00.000Z',
       verificationTier: 'gold',
     })
     expect(result?.freshness.sourceCollections).toEqual(
-      expect.arrayContaining(['clinics', 'clinictreatments', 'reviews']),
+      expect.arrayContaining(['clinics', 'clinictreatments', 'reviews', 'reviewResponses']),
     )
 
     expect(result?.location.fullAddress).toBe('Lichtenberger Strasse 24, 10179 Berlin, Germany')
@@ -427,6 +485,9 @@ describe('getClinicDetailServerData (contract)', () => {
       href: '/listing-comparison?treatment=301',
       label: 'Compare clinics for Routine Checkup',
     })
+    expect(result?.treatments).toHaveLength(2)
+    expect(result?.treatments.map((treatment) => treatment.name)).not.toContain('Hidden Treatment')
+    expect(result?.treatments[0]?.priceFrom).toBe(120)
 
     expect(findCalls.some((call) => call.collection === 'clinicGalleryEntries')).toBe(false)
     expect(findCalls.find((call) => call.collection === 'clinics')?.select).toMatchObject({

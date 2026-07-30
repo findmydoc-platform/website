@@ -73,6 +73,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         clinic: clinic.id,
         treatment: treatmentId,
         price: 1500,
+        active: true,
       },
       overrideAccess: true,
       depth: 0,
@@ -84,6 +85,104 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
     expect(clinicTreatment.clinic).toBe(clinic.id)
     expect(clinicTreatment.treatment).toBe(treatmentId)
     expect(clinicTreatment.price).toBe(1500)
+    expect(clinicTreatment.active).toBe(true)
+  })
+
+  it('creates new clinic treatments as inactive when active is omitted', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-inactive-default`,
+    })
+
+    const clinicTreatment = (await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        clinic: clinic.id,
+        treatment: treatmentId,
+        price: 1500,
+      } as Partial<Clinictreatment>,
+      overrideAccess: true,
+      depth: 0,
+    } as PayloadCreateArgs)) as Clinictreatment
+
+    createdClinicTreatmentIds.push(clinicTreatment.id)
+    expect(clinicTreatment.active).toBe(false)
+  })
+
+  it('keeps inactive treatments private to platform and the owning clinic', async () => {
+    const { clinic: ownClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-read-scope-own`,
+    })
+    const { clinic: foreignClinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-read-scope-foreign`,
+      clinicIndex: 1,
+      doctorIndex: 1,
+    })
+
+    const ownInactive = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        active: false,
+        clinic: ownClinic.id,
+        price: 1500,
+        treatment: treatmentId,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+    const foreignInactive = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        active: false,
+        clinic: foreignClinic.id,
+        price: 1600,
+        treatment: treatmentId,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+    const foreignActive = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        active: true,
+        clinic: foreignClinic.id,
+        price: 1700,
+        treatment: secondTreatmentId,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    createdClinicTreatmentIds.push(ownInactive.id, foreignInactive.id, foreignActive.id)
+
+    const publicRead = await payload.find({
+      collection: 'clinictreatments',
+      depth: 0,
+      overrideAccess: false,
+      pagination: false,
+      where: {
+        id: {
+          in: [ownInactive.id, foreignInactive.id, foreignActive.id],
+        },
+      },
+    })
+
+    expect(publicRead.docs.map((doc) => doc.id)).toEqual([foreignActive.id])
+
+    const clinicUser = await createClinicUser(`${slugPrefix}-read-scope-user`, ownClinic.id as number)
+    const clinicRead = await payload.find({
+      collection: 'clinictreatments',
+      depth: 0,
+      overrideAccess: false,
+      pagination: false,
+      user: clinicUser,
+      where: {
+        id: {
+          in: [ownInactive.id, foreignInactive.id, foreignActive.id],
+        },
+      },
+    })
+
+    expect(clinicRead.docs.map((doc) => doc.id).sort()).toEqual([foreignActive.id, ownInactive.id].sort())
   })
 
   it('validates required fields when creating clinic treatment', async () => {
@@ -102,6 +201,48 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
     ).rejects.toThrow()
   })
 
+  it('accepts zero and cent-precise EUR prices while rejecting invalid amounts', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-price-contract`,
+    })
+
+    const clinicTreatment = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        active: false,
+        clinic: clinic.id,
+        treatment: treatmentId,
+        price: 0,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+    createdClinicTreatmentIds.push(clinicTreatment.id)
+
+    const updated = await payload.update({
+      collection: 'clinictreatments',
+      id: clinicTreatment.id,
+      data: {
+        price: 12.34000000005,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+    expect(updated.price).toBe(12.34)
+
+    for (const price of [-0.01, 12.345]) {
+      await expect(
+        payload.update({
+          collection: 'clinictreatments',
+          id: clinicTreatment.id,
+          data: { price },
+          overrideAccess: true,
+          depth: 0,
+        }),
+      ).rejects.toThrow()
+    }
+  })
+
   it('enforces unique constraint on clinic-treatment combination', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix })
 
@@ -111,6 +252,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         clinic: clinic.id,
         treatment: treatmentId,
         price: 1000,
+        active: true,
       },
       overrideAccess: true,
       depth: 0,
@@ -126,6 +268,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
           clinic: clinic.id,
           treatment: treatmentId,
           price: 2000,
+          active: true,
         },
         overrideAccess: true,
         depth: 0,
@@ -143,6 +286,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
           clinic: 99999999,
           treatment: treatmentId,
           price: 1200,
+          active: true,
         },
         overrideAccess: true,
         depth: 0,
@@ -156,6 +300,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
           clinic: clinic.id,
           treatment: 99999999,
           price: 1300,
+          active: true,
         },
         overrideAccess: true,
         depth: 0,
@@ -175,6 +320,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         clinic: clinic.id,
         treatment: secondTreatmentId,
         price: 3000,
+        active: true,
       },
       overrideAccess: true,
     })
@@ -196,6 +342,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
       id: clinicTreatment.id,
       data: {
         price: 6000,
+        active: true,
       },
       overrideAccess: true,
     })
@@ -226,6 +373,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         clinic: clinic1.id,
         treatment: treatmentId,
         price: 1000,
+        active: true,
       },
       overrideAccess: true,
     })
@@ -236,6 +384,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         clinic: clinic2.id,
         treatment: treatmentId,
         price: 2000,
+        active: true,
       },
       overrideAccess: true,
     })
@@ -257,6 +406,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         clinic: clinic.id,
         treatment: treatmentId,
         price: 1200,
+        active: true,
       },
       overrideAccess: true,
       depth: 0,
@@ -285,6 +435,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
       data: {
         treatment: treatmentId,
         price: 1700,
+        active: true,
       } as Partial<Clinictreatment>,
       user: clinicUser,
       overrideAccess: false,
@@ -313,6 +464,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
           clinic: foreignClinic.id,
           treatment: treatmentId,
           price: 1900,
+          active: true,
         },
         user: clinicUser,
         overrideAccess: false,
@@ -339,6 +491,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         clinic: ownClinic.id,
         treatment: treatmentId,
         price: 1600,
+        active: true,
       },
       user: ownClinicUser,
       overrideAccess: false,
@@ -352,6 +505,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
       id: ownClinicTreatment.id,
       data: {
         price: 1800,
+        active: true,
       },
       user: ownClinicUser,
       overrideAccess: false,
@@ -366,6 +520,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         clinic: foreignClinic.id,
         treatment: treatmentId,
         price: 2100,
+        active: true,
       },
       overrideAccess: true,
       depth: 0,
@@ -379,6 +534,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         id: foreignClinicTreatment.id,
         data: {
           price: 2200,
+          active: true,
         },
         user: ownClinicUser,
         overrideAccess: false,
@@ -398,6 +554,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         clinic: clinic.id,
         treatment: secondTreatmentId,
         price: 2200,
+        active: true,
       },
       overrideAccess: true,
       depth: 0,
@@ -433,6 +590,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
         clinic: clinic.id,
         treatment: treatmentId,
         price: 1500,
+        active: true,
       },
       overrideAccess: true,
     })
@@ -444,6 +602,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
       id: clinicTreatment.id,
       data: {
         price: 2500,
+        active: true,
       },
       overrideAccess: true,
     })

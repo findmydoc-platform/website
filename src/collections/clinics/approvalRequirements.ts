@@ -12,8 +12,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const isNonEmptyString = (value: unknown): boolean => typeof value === 'string' && value.trim().length > 0
 
-const isFiniteNumber = (value: unknown): boolean => typeof value === 'number' && Number.isFinite(value)
-
 const hasRelation = (value: unknown): boolean => {
   if (typeof value === 'number') return Number.isFinite(value)
   if (typeof value === 'string') return value.trim().length > 0
@@ -58,7 +56,7 @@ export const clinicApprovalRequirements = {
     'address.zipCode',
     'Zip Code',
     'Zip code is required before this clinic can be approved.',
-    isFiniteNumber,
+    isNonEmptyString,
   ),
   city: createRequirement('address.city', 'City', 'City is required before this clinic can be approved.', hasRelation),
   contactFirstName: createRequirement(

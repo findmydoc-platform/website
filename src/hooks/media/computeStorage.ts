@@ -55,7 +55,8 @@ export function computeStorage({
   overwriteFilename?: (op: 'create' | 'update', draft: Record<string, unknown>) => boolean
   ownerRequired?: boolean
 }): { filename?: string; storagePath?: string } {
-  const incomingFileSize = extractFileSizeFromRequest(req)
+  const isInternalCloudStorageUpdate = operation === 'update' && req?.context?.skipCloudStorage === true
+  const incomingFileSize = isInternalCloudStorageUpdate ? undefined : extractFileSizeFromRequest(req)
   const hasIncomingUpload = typeof incomingFileSize === 'number'
   const logger = req
     ? createScopedLogger(req.payload.logger as ServerLogger, {
@@ -65,6 +66,17 @@ export function computeStorage({
     : null
 
   type RelationInput = Parameters<typeof extractRelationId>[0]
+
+  if (isInternalCloudStorageUpdate) {
+    const existingStoragePath =
+      typeof originalDoc?.storagePath === 'string'
+        ? originalDoc.storagePath
+        : typeof draft.storagePath === 'string'
+          ? draft.storagePath
+          : null
+
+    return existingStoragePath ? { storagePath: existingStoragePath } : {}
+  }
 
   const ownerRelation =
     extractRelationId((draft as Record<string, unknown>)?.[ownerField] as RelationInput) ??

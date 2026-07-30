@@ -63,7 +63,7 @@ describe('ClinicApprovalRequirements', () => {
       'address.country': { value: 'Turkey' },
       'address.houseNumber': { value: '12A' },
       'address.street': { value: 'Clinic Street' },
-      'address.zipCode': { value: 34000 },
+      'address.zipCode': { value: '34000' },
       'internalPrimaryContact.email': { value: 'clinic@example.com' },
       'internalPrimaryContact.firstName': { value: 'Aylin' },
       'internalPrimaryContact.lastName': { value: 'Korkmaz' },

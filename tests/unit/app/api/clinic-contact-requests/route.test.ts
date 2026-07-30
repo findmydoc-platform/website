@@ -70,6 +70,7 @@ function mockSuccessfulLookups() {
         docs: [
           {
             id: 201,
+            active: true,
             clinic: 1,
             treatment: { id: 301, name: 'Routine Checkup' },
           },
@@ -246,6 +247,22 @@ describe('POST /api/clinic-contact-requests', () => {
           and: expect.arrayContaining([
             { id: { equals: 601 } },
             { clinic: { equals: 1 } },
+            { active: { equals: true } },
+          ]),
+        },
+      }),
+    )
+
+    const treatmentLookup = findMock.mock.calls
+      .map(([args]) => args as { collection?: string; select?: unknown; where?: unknown })
+      .find((args) => args.collection === 'clinictreatments')
+    expect(treatmentLookup).toEqual(
+      expect.objectContaining({
+        select: expect.objectContaining({ active: true }),
+        where: {
+          and: expect.arrayContaining([
+            { clinic: { equals: 1 } },
+            { treatment: { equals: 301 } },
             { active: { equals: true } },
           ]),
         },

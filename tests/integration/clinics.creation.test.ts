@@ -11,6 +11,16 @@ vi.mock('@payloadcms/storage-s3', () => ({
   s3Storage: () => (incomingConfig: unknown) => incomingConfig,
 }))
 
+const buildOpeningHours = (): NonNullable<Clinic['openingHours']> => ({
+  monday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  tuesday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  wednesday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  thursday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  friday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+  saturday: { isClosed: false, opensAt: '10:00', closesAt: '14:00' },
+  sunday: { isClosed: true, opensAt: null, closesAt: null },
+})
+
 describe('Clinic Creation Integration Tests', () => {
   let payload: Payload
   const slugPrefix = testSlug('clinics.creation.test.ts')
@@ -144,7 +154,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Test Street',
           houseNumber: '123',
-          zipCode: 34000,
+          zipCode: '34000',
           country: 'Turkey',
           city: cityId,
         },
@@ -169,6 +179,126 @@ describe('Clinic Creation Integration Tests', () => {
     expect(clinic.contact?.email).toBe(`${slugPrefix}@test.com`)
     expect(clinic.status).toBe('draft')
     expect(clinic.supportedLanguages).toEqual(['english', 'turkish'])
+    expect(clinic.openingHours).toBeUndefined()
+  })
+
+  it('stores trimmed international postal codes and rejects invalid postal values', async () => {
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-postal-code-clinic`,
+        address: {
+          zipCode: '  SW1A 1AA  ',
+        },
+        slug: `${slugPrefix}-postal-code-clinic`,
+        status: 'draft',
+      },
+      draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(clinic.address?.zipCode).toBe('SW1A 1AA')
+
+    for (const [index, zipCode] of ['---', '10115/2', 6420].entries()) {
+      await expect(
+        payload.create({
+          collection: 'clinics',
+          data: {
+            name: `${slugPrefix}-invalid-postal-${index}`,
+            address: {
+              zipCode,
+            },
+            slug: `${slugPrefix}-invalid-postal-${index}`,
+            status: 'draft',
+          } as never,
+          draft: false,
+          overrideAccess: true,
+          depth: 0,
+        }),
+      ).rejects.toThrow()
+    }
+  })
+
+  it('stores a complete opening-hours week and clears times for closed days', async () => {
+    const openingHours = buildOpeningHours()
+    openingHours.sunday = {
+      isClosed: true,
+      opensAt: '08:00',
+      closesAt: '12:00',
+    }
+
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-opening-hours`,
+        openingHours,
+        slug: `${slugPrefix}-opening-hours`,
+        status: 'draft',
+      },
+      draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    expect(clinic.openingHours).toMatchObject({
+      monday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+      sunday: { isClosed: true, opensAt: null, closesAt: null },
+    })
+  })
+
+  it.each([
+    {
+      label: 'a partial week',
+      openingHours: {
+        monday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+      },
+    },
+    {
+      label: 'a malformed time',
+      openingHours: {
+        ...buildOpeningHours(),
+        monday: { isClosed: false, opensAt: '9:00', closesAt: '17:00' },
+      },
+    },
+    {
+      label: 'an open day with a missing time',
+      openingHours: {
+        ...buildOpeningHours(),
+        monday: { isClosed: false, opensAt: '09:00', closesAt: null },
+      },
+    },
+    {
+      label: 'a closing time equal to opening',
+      openingHours: {
+        ...buildOpeningHours(),
+        monday: { isClosed: false, opensAt: '17:00', closesAt: '17:00' },
+      },
+    },
+    {
+      label: 'a closing time before opening',
+      openingHours: {
+        ...buildOpeningHours(),
+        monday: { isClosed: false, opensAt: '17:00', closesAt: '16:59' },
+      },
+    },
+  ])('rejects $label', async ({ label, openingHours }) => {
+    const invalidSlug = `${slugPrefix}-invalid-${label.replace(/[^a-z0-9]+/giu, '-')}`
+
+    await expect(
+      payload.create({
+        collection: 'clinics',
+        data: {
+          name: invalidSlug,
+          openingHours: openingHours as Clinic['openingHours'],
+          slug: invalidSlug,
+          status: 'draft',
+        },
+        draft: false,
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
   })
 
   it('creates a clinic with description and tags', async () => {
@@ -196,7 +326,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Tagged Street',
           houseNumber: '456',
-          zipCode: 34100,
+          zipCode: '34100',
           country: 'Turkey',
           city: cityId,
         },
@@ -229,7 +359,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Geo Street',
           houseNumber: '789',
-          zipCode: 34200,
+          zipCode: '34200',
           country: 'Turkey',
           city: cityId,
         },
@@ -288,7 +418,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Accredited Street',
           houseNumber: '101',
-          zipCode: 34900,
+          zipCode: '34900',
           country: 'Turkey',
           city: cityId,
         },
@@ -320,7 +450,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Thumbnail Street',
           houseNumber: '202',
-          zipCode: 35000,
+          zipCode: '35000',
           country: 'Turkey',
           city: cityId,
         },
@@ -441,7 +571,7 @@ describe('Clinic Creation Integration Tests', () => {
           country: 'Turkey',
           street: 'Approval Street',
           houseNumber: '10',
-          zipCode: 34000,
+          zipCode: '34000',
           city: cityId,
         },
         internalPrimaryContact: buildInternalPrimaryContact('approval'),
@@ -489,7 +619,7 @@ describe('Clinic Creation Integration Tests', () => {
           address: {
             street: 'Test Street',
             houseNumber: '123',
-            zipCode: 34000,
+            zipCode: '34000',
             country: 'Turkey',
             city: cityId,
           },
@@ -518,7 +648,7 @@ describe('Clinic Creation Integration Tests', () => {
           address: {
             street: 'Test Street',
             houseNumber: '123',
-            zipCode: 34000,
+            zipCode: '34000',
             country: 'Turkey',
             city: cityId,
           },
@@ -547,7 +677,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Slug Street',
           houseNumber: '999',
-          zipCode: 34300,
+          zipCode: '34300',
           country: 'Turkey',
           city: cityId,
         },
@@ -578,7 +708,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Update Street',
           houseNumber: '111',
-          zipCode: 34400,
+          zipCode: '34400',
           country: 'Turkey',
           city: cityId,
         },
@@ -625,7 +755,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Status Street',
           houseNumber: '505',
-          zipCode: 35100,
+          zipCode: '35100',
           country: 'Turkey',
           city: cityId,
         },
@@ -671,7 +801,7 @@ describe('Clinic Creation Integration Tests', () => {
           address: {
             street: 'Trust Street',
             houseNumber: '707',
-            zipCode: 35170,
+            zipCode: '35170',
             country: 'Turkey',
             city: cityId,
           },
@@ -724,7 +854,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Content Manager Street',
           houseNumber: '808',
-          zipCode: 35180,
+          zipCode: '35180',
           country: 'Turkey',
           city: cityId,
         },
@@ -785,7 +915,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Public Contact Street',
           houseNumber: '909',
-          zipCode: 35190,
+          zipCode: '35190',
           country: 'Turkey',
           city: cityId,
         },
@@ -834,7 +964,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Trash Street',
           houseNumber: '222',
-          zipCode: 34500,
+          zipCode: '34500',
           country: 'Turkey',
           city: cityId,
         },
@@ -889,7 +1019,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Multi Lang Street',
           houseNumber: '333',
-          zipCode: 34600,
+          zipCode: '34600',
           country: 'Turkey',
           city: cityId,
         },
@@ -923,7 +1053,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Approved Street',
           houseNumber: '444',
-          zipCode: 34700,
+          zipCode: '34700',
           country: 'Turkey',
           city: cityId,
         },
@@ -953,7 +1083,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Join Street',
           houseNumber: '606',
-          zipCode: 35200,
+          zipCode: '35200',
           country: 'Turkey',
           city: cityId,
         },
@@ -977,6 +1107,7 @@ describe('Clinic Creation Integration Tests', () => {
         clinic: clinic.id,
         treatment: treatmentId,
         price: 1250,
+        active: true,
       },
       overrideAccess: true,
       depth: 0,

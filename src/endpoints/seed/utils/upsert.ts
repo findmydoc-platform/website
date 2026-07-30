@@ -11,6 +11,10 @@ export type UpsertResult = {
   nextSlug?: string
 }
 
+export type SeedUpsertPolicy = {
+  recreateUploadOnRelationDrift?: string[]
+}
+
 function buildOperationReq(
   req: Partial<PayloadRequest> | undefined,
   context: Record<string, unknown>,
@@ -294,6 +298,41 @@ function shouldClearPlatformSeedUploadTargetsBeforeUpdate(options: {
   )
 }
 
+function extractRelationKey(value: unknown): string | null {
+  let relationTo = ''
+  let id: unknown = value
+
+  if (value && typeof value === 'object') {
+    const relation = value as Record<string, unknown>
+    relationTo = typeof relation.relationTo === 'string' ? relation.relationTo.trim() : ''
+    id = Object.prototype.hasOwnProperty.call(relation, 'value') ? relation.value : relation.id
+
+    if (id && typeof id === 'object') {
+      const populatedRelation = id as Record<string, unknown>
+      id = populatedRelation.id ?? populatedRelation.value
+    }
+  }
+
+  if (typeof id !== 'string' && typeof id !== 'number') return null
+
+  const normalizedId = String(id).trim()
+  if (!normalizedId) return null
+
+  return relationTo ? `${relationTo}:${normalizedId}` : normalizedId
+}
+
+function hasConfiguredRelationDrift(options: {
+  current: Record<string, unknown>
+  nextData: Record<string, unknown>
+  relationFields: string[]
+}): boolean {
+  return options.relationFields.some((field) => {
+    const currentKey = extractRelationKey(options.current[field])
+    const nextKey = extractRelationKey(options.nextData[field])
+    return currentKey !== null && nextKey !== null && currentKey !== nextKey
+  })
+}
+
 async function clearUploadDeletionTargetsBeforeUpdate(options: {
   payload: Payload
   collection: CollectionSlug
@@ -358,7 +397,7 @@ async function updateWithNoSuchKeyRecovery(
       }
 
       payload.logger.warn(`Seed media replacement fallback for missing object key: ${missingKey}`)
-      await replaceBrokenUploadDocument(payload, {
+      await replaceSeedUploadDocument(payload, {
         ...params,
         filePath: params.filePath,
       })
@@ -367,7 +406,7 @@ async function updateWithNoSuchKeyRecovery(
   }
 }
 
-async function replaceBrokenUploadDocument(
+async function replaceSeedUploadDocument(
   payload: Payload,
   params: {
     collection: CollectionSlug
@@ -416,7 +455,12 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
   payload: Payload,
   collection: CollectionSlug,
   data: T,
-  options?: { filePath?: string; context?: Record<string, unknown>; req?: Partial<PayloadRequest> },
+  options?: {
+    filePath?: string
+    context?: Record<string, unknown>
+    req?: Partial<PayloadRequest>
+    policy?: SeedUpsertPolicy
+  },
 ): Promise<UpsertResult> {
   if (!hasStableId(data)) {
     throw new Error(`Missing stableId for ${collection} upsert`)
@@ -501,6 +545,35 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
   // If found doc is trashed, restore it by clearing deletedAt.
   if (current.deletedAt) {
     nextData.deletedAt = null
+  }
+
+  const filePath = options?.filePath
+  const recreateOnRelationDrift = options?.policy?.recreateUploadOnRelationDrift ?? []
+  if (
+    recreateOnRelationDrift.length > 0 &&
+    hasConfiguredRelationDrift({
+      current: current as Record<string, unknown>,
+      nextData,
+      relationFields: recreateOnRelationDrift,
+    })
+  ) {
+    if (!filePath) {
+      throw new Error(`Seed upload replacement for relation drift requires a file: ${collection}:${stableId}`)
+    }
+
+    payload.logger.warn(`Seed upload replacement for immutable relation drift: ${collection}:${stableId}`)
+    await replaceSeedUploadDocument(payload, {
+      collection,
+      id: current.id,
+      data: nextData,
+      context: operationContext,
+      req: operationReq,
+      filePath,
+    })
+    return {
+      created: false,
+      updated: true,
+    }
   }
 
   if (

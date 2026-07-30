@@ -396,8 +396,8 @@ describe('DoctorSpecialties lifecycle integration', () => {
     const ownDoctorSpecialty = (await payload.create({
       collection: 'doctorspecialties',
       data: {
-        doctor: ownDoctor.id,
-        medicalSpecialty: medicalSpecialtyId,
+        doctor: String(ownDoctor.id) as unknown as number,
+        medicalSpecialty: String(medicalSpecialtyId) as unknown as number,
         specializationLevel: 'advanced',
       } as unknown as Doctorspecialty,
       user: clinicUser,
@@ -406,6 +406,8 @@ describe('DoctorSpecialties lifecycle integration', () => {
     })) as Doctorspecialty
 
     createdDoctorSpecialtyIds.push(ownDoctorSpecialty.id)
+    expect(ownDoctorSpecialty.doctor).toBe(ownDoctor.id)
+    expect(ownDoctorSpecialty.medicalSpecialty).toBe(medicalSpecialtyId)
 
     const updatedOwnDoctorSpecialty = (await payload.update({
       collection: 'doctorspecialties',

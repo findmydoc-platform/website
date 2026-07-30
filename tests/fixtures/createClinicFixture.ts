@@ -15,7 +15,7 @@ type ClinicSeed = {
   address: {
     street: string
     houseNumber: string
-    zipCode: string | number
+    zipCode: string
     country: string
   }
   contact?: {
@@ -88,19 +88,6 @@ function normalizeEnum<T extends string>(value: unknown, allowed: readonly T[], 
   return fallback
 }
 
-function normalizeZipCode(value: unknown): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value
-  }
-  if (typeof value === 'string') {
-    const parsed = Number.parseInt(value, 10)
-    if (Number.isFinite(parsed)) {
-      return parsed
-    }
-  }
-  return 0
-}
-
 const clinicSeedData = clinicsJson as unknown as ClinicSeed[]
 const doctorSeedData = doctorsJson as unknown as DoctorSeed[]
 
@@ -137,7 +124,7 @@ export async function createClinicFixture(
       address: {
         street: clinicData.address.street,
         houseNumber: clinicData.address.houseNumber,
-        zipCode: normalizeZipCode(clinicData.address.zipCode),
+        zipCode: clinicData.address.zipCode,
         country: clinicData.address.country,
         city: cityId,
       },

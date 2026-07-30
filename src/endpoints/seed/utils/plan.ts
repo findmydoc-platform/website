@@ -1,5 +1,6 @@
 import type { CollectionSlug } from 'payload'
 import type { RelationMapping } from './import-collection'
+import type { SeedUpsertPolicy } from './upsert'
 
 type CollectionPlanStep = {
   kind: 'collection'
@@ -11,6 +12,7 @@ type CollectionPlanStep = {
   localizedFields?: string[]
   reqUserStableId?: string
   requiresPlatformUser?: boolean
+  upsertPolicy?: SeedUpsertPolicy
 }
 
 type GlobalsPlanStep = {
@@ -132,6 +134,9 @@ export const demoPlan: SeedPlanStep[] = [
       },
     ],
     reqUserStableId: 'seed-platform-admin',
+    upsertPolicy: {
+      recreateUploadOnRelationDrift: ['user', 'createdBy'],
+    },
   },
   {
     kind: 'collection',
@@ -389,6 +394,70 @@ export const demoPlan: SeedPlanStep[] = [
         sourceField: 'patientStableId',
         targetField: 'patient',
         collection: 'patients',
+        required: true,
+      },
+    ],
+  },
+  {
+    kind: 'collection',
+    name: 'review-responses-initial-history',
+    collection: 'reviewResponses',
+    fileName: 'reviewResponsesInitial',
+    context: { trustedReviewWorkflowSeed: true },
+    reqUserStableId: 'seed-platform-admin',
+    mapping: [
+      {
+        sourceField: 'reviewStableId',
+        targetField: 'review',
+        collection: 'reviews',
+        required: true,
+      },
+    ],
+  },
+  {
+    kind: 'collection',
+    name: 'review-responses-final-state',
+    collection: 'reviewResponses',
+    fileName: 'reviewResponses',
+    context: { trustedReviewWorkflowSeed: true },
+    reqUserStableId: 'seed-platform-admin',
+    mapping: [
+      {
+        sourceField: 'reviewStableId',
+        targetField: 'review',
+        collection: 'reviews',
+        required: true,
+      },
+    ],
+  },
+  {
+    kind: 'collection',
+    name: 'review-appeals-initial-history',
+    collection: 'reviewAppeals',
+    fileName: 'reviewAppealsInitial',
+    context: { trustedReviewWorkflowSeed: true },
+    reqUserStableId: 'seed-platform-admin',
+    mapping: [
+      {
+        sourceField: 'reviewStableId',
+        targetField: 'review',
+        collection: 'reviews',
+        required: true,
+      },
+    ],
+  },
+  {
+    kind: 'collection',
+    name: 'review-appeals-final-state',
+    collection: 'reviewAppeals',
+    fileName: 'reviewAppeals',
+    context: { trustedReviewWorkflowSeed: true },
+    reqUserStableId: 'seed-platform-admin',
+    mapping: [
+      {
+        sourceField: 'reviewStableId',
+        targetField: 'review',
+        collection: 'reviews',
         required: true,
       },
     ],

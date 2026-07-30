@@ -162,6 +162,11 @@ async function prepareUploadFile(file: UploadFileLike, fallbackFilename: string 
 export const beforeOperationPrepareUploadFilename: CollectionBeforeOperationHook = async ({ args, operation, req }) => {
   if (operation !== 'create' && operation !== 'update') return args
 
+  req.context = req.context ?? {}
+  if (req.context.skipCloudStorage === true || typeof req.context[PREPARED_UPLOAD_FILENAME_CONTEXT_KEY] === 'string') {
+    return args
+  }
+
   const recordArgs = args as Record<string, unknown> | undefined
   const uploadFiles = getUploadFiles(recordArgs, req)
   const fallbackFilename =
@@ -170,7 +175,6 @@ export const beforeOperationPrepareUploadFilename: CollectionBeforeOperationHook
 
   if (uploadFiles.length === 0) return args
 
-  req.context = req.context ?? {}
   const preparedNames: string[] = []
 
   for (const file of uploadFiles) {

@@ -20,6 +20,7 @@ type ClinicReviewsSectionProps = {
 const INITIAL_VISIBLE_REVIEW_COUNT = 4
 const REVIEW_LOAD_INCREMENT = 4
 const MAX_VISIBLE_REVIEW_COUNT = 16
+const COLLAPSIBLE_RESPONSE_MIN_LENGTH = 360
 const VERIFIED_REVIEW_DESCRIPTION =
   'Verified reviews come from patients or accompanying persons after a documented consultation or treatment through findmydoc. Reviews are checked before publication.'
 
@@ -92,6 +93,18 @@ function getReviewerInitials(review: ClinicDetailReview): string {
   return initials.length > 0 ? initials : 'AP'
 }
 
+function getClinicInitials(clinicName: string): string {
+  const initials = clinicName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+
+  return initials.length > 0 ? initials : 'CL'
+}
+
 function VerifiedReviewsInfo({ count }: { count: number }) {
   return (
     <div className="inline-flex items-center gap-1.5">
@@ -151,6 +164,61 @@ function ReviewerIdentity({ review }: { review: ClinicDetailReview }) {
   )
 }
 
+function ClinicResponse({ review }: { review: ClinicDetailReview }) {
+  const responseBodyId = `${React.useId()}-body`
+  const [isExpanded, setIsExpanded] = React.useState(false)
+  const response = review.response
+  if (!response) return null
+
+  const canCollapse = response.body.length > COLLAPSIBLE_RESPONSE_MIN_LENGTH
+
+  return (
+    <div role="group" aria-label="Clinic response" className="border-t border-primary/10 pt-5 sm:pt-6">
+      <div className="min-w-0 space-y-3">
+        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+          <div
+            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-600"
+            aria-hidden={true}
+          >
+            {getClinicInitials(response.clinicName)}
+          </div>
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <span className="font-medium text-primary">Clinic response</span>
+              <span className="h-4 w-px bg-primary/15" aria-hidden={true} />
+              <time className="text-secondary/55" dateTime={response.approvedAt}>
+                {formatReviewDate(response.approvedAt)}
+              </time>
+            </div>
+          </div>
+        </div>
+        <p
+          id={responseBodyId}
+          className={cn(
+            'max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/75 sm:ml-16',
+            canCollapse && !isExpanded && 'max-h-[10.5rem] overflow-hidden sm:max-h-none sm:overflow-visible',
+          )}
+        >
+          {response.body}
+        </p>
+        {canCollapse ? (
+          <Button
+            type="button"
+            variant="link"
+            size="clear"
+            className="min-h-11 px-0 text-sm font-semibold underline decoration-1 underline-offset-4 hover:decoration-2 focus-visible:decoration-2 focus-visible:ring-0 focus-visible:ring-offset-0 sm:hidden"
+            aria-controls={responseBodyId}
+            aria-expanded={isExpanded}
+            onClick={() => setIsExpanded((current) => !current)}
+          >
+            {isExpanded ? 'Show less' : 'Show more'}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 function ReviewListItem({
   review,
   focusRef,
@@ -184,9 +252,12 @@ function ReviewListItem({
           <ReviewMeta review={review} />
         </div>
       </div>
-      <p className="max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/80">
-        {review.comment}
-      </p>
+      <div className="min-w-0 space-y-6">
+        <p className="max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/80">
+          {review.comment}
+        </p>
+        <ClinicResponse review={review} />
+      </div>
     </article>
   )
 }
@@ -214,6 +285,7 @@ function LatestReview({ review }: { review: ClinicDetailReview }) {
           <time dateTime={review.reviewDate}>{formatReviewDate(review.reviewDate)}</time>
         </div>
       </div>
+      <ClinicResponse review={review} />
     </article>
   )
 }

@@ -182,6 +182,8 @@ describe('resetCollections', () => {
 
     const expectedOrder = [
       'search',
+      'reviewAppeals',
+      'reviewResponses',
       'reviews',
       'patientClinicInquiries',
       'favoriteclinics',
@@ -194,9 +196,9 @@ describe('resetCollections', () => {
       'doctors',
       'clinics',
       'posts',
+      'userProfileMedia',
       'platformStaff',
       'clinicStaff',
-      'userProfileMedia',
     ]
 
     deleteMany.mockResolvedValue(undefined)
@@ -248,6 +250,8 @@ describe('resetCollections', () => {
 
     const expectedOrder = [
       'search',
+      'reviewAppeals',
+      'reviewResponses',
       'reviews',
       'patientClinicInquiries',
       'favoriteclinics',
@@ -260,9 +264,9 @@ describe('resetCollections', () => {
       'doctors',
       'clinics',
       'posts',
+      'userProfileMedia',
       'platformStaff',
       'clinicStaff',
-      'userProfileMedia',
       'treatments',
       'categories',
       'tags',

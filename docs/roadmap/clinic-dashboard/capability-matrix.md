@@ -19,9 +19,9 @@
 
 The initial runtime handoff is implemented by
 [website#1524](https://github.com/findmydoc-platform/website/issues/1524): this matrix defines the full product and
-capability inventory, while the first Payload bootstrap projects only `clinic-profile:view` and
-`clinic-profile:edit`. Later capabilities remain owned by their listed data and permission contracts. The browser does
-not call Payload and Payload CORS is not expanded.
+capability inventory. The Payload bootstrap now projects profile and treatment view/edit capabilities. Later
+capabilities remain owned by their listed data and permission contracts. The browser does not call Payload and Payload
+CORS is not expanded.
 
 The standalone app shell in
 [clinic-dashboard#1](https://github.com/findmydoc-platform/clinic-dashboard/issues/1) can proceed in parallel using only
@@ -185,7 +185,7 @@ Stitch screen `402f5f9f449145448cb341ace9c8a7cc`; prototype evidence in `P-Stori
 | Activate doctor profile | Doctors are clinic-scoped, but no `active` field or activation lifecycle exists despite `active` appearing in admin columns. | `later scope` | No owning backend issue; #1531 may only surface a source-backed remediation code | `public-cached` if later activated publicly |
 | Upload certificate | `accreditation` is public master data and platform-writable; no clinic-owned credential document/upload lifecycle exists. | `later scope` | No owning backend issue; do not map to platform accreditation implicitly | `public-cached` only if a later public credential model is approved |
 | Check certificate | There is no clinic-visible verification state or review contract for submitted credentials. | `later scope` | No owning backend issue | `private-live` until an explicit public visibility decision |
-| Fix a profile-completeness task | Deterministic completeness is not implemented. Tasks need stable source-backed codes; arbitrary fixture labels are not contracts. | `Schema gap` | #1528 defines calculation; target action depends on the owning domain | `private-live` for the task list; target write may be `public-cached` |
+| Fix a profile-completeness task | Payload stores no completeness percentage. The Dashboard derives tasks from source-backed fields and relationships; arbitrary fixture labels are not contracts. | `later scope` | clinic-dashboard#102 defines the calculation and task mapping | `private-live` for the task list; target write may be `public-cached` |
 | Download profile views | Raw provider access must stay server-side, and #1531 does not define an export format or download endpoint. | `later scope` | No owning backend issue | `private-live` if later approved |
 | Open clinic preview | The allowed implementation is the existing approved public clinic profile. A clinic-staff draft preview is not implied. | `existing` | clinic-dashboard#1 opens the public URL; a draft preview would be later scope | `public-cached` read |
 | Edit profile | Base clinic fields can be updated for the assigned clinic. Opening the editor is client routing; missing fields are classified on Screen 5. | `existing` | clinic-dashboard#1; #1524 gates Dashboard API wiring | Depends on the field written |
@@ -226,12 +226,12 @@ Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`. [Screen capture](https://githu
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
-| List, filter, refresh, and paginate own-clinic reviews | Approved reviews are publicly readable, but clinic staff cannot access a management projection or moderation states for its clinic. Prototype callbacks omit filter/page values. | `Access/API gap` | #1529; typed query contract in clinic-dashboard#1 | `private-live` management read |
+| List, filter, refresh, and paginate own-clinic reviews | Clinic staff can read approved reviews for their assigned clinic. The Dashboard still owns typed filters, pagination, refresh behavior, and its purpose-limited BFF projection. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | `private-live` management read |
 | Render rating total and distribution | Current reviews maintain public rating aggregates, but the fixture total/distribution is not tied to repository data. A tenant-safe management projection is missing. | `Access/API gap` | #1529 for review read; #1531 for dashboard aggregate | Public aggregate is `public-cached`; management view is `private-live` |
-| Respond to or edit a clinic response | Reviews have no clinic-response fields and clinic staff cannot update reviews. | `Schema gap` | #1529 | Approved response `public-cached`; draft/moderation `private-live` |
+| Respond to or edit a clinic response | `reviewResponses` stores one clinic workflow per review. Clinic staff edit only the pending response; platform approval replaces the public projection, while rejection preserves the previous approved response. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | Approved response `public-cached`; pending/moderation `private-live` |
 | Add internal review note | No clinic-private review-note model exists, and #1529 does not include a general clinic note feature. | `later scope` | No owning backend issue | `private-live` if later approved |
-| Show response/review history | Current platform edit audit does not provide the prototype's clinic-visible response history. | `Schema gap` | #1529 | `private-live` |
-| Appeal or flag a review | No appeal reason, status, platform decision, or own-clinic mutation exists. | `Schema gap` | #1529 | `private-live` |
+| Show response history | `reviewResponses` uses unlimited Payload native versions. Platform staff see all versions; clinic staff see versions for their assigned clinic. Restore is disabled. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | `private-live` |
+| Appeal or flag a review | `reviewAppeals` stores one immutable appeal per approved review with submitted, under-review, upheld, and dismissed states. Only platform staff decide; an upheld appeal blocks any clinic response and removes the review from public output while both decisions remain in native version history. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | Appeal data is `private-live`; upheld decisions invalidate affected public review surfaces |
 | Export reviews | No export contract is in the current issue set. | `later scope` | Unowned | `n/a` |
 | Create appointment | No appointment or booking domain exists; #1528 and #1530 explicitly exclude it. | `later scope` | Unowned | `n/a` |
 
@@ -250,10 +250,10 @@ The before-and-after gallery is deliberately disabled by [website#1576](https://
 | Add or edit a doctor profile/photo | The visible team fixtures include doctors. `doctors` and `doctorMedia` already support own-clinic create/update, but the generic dialog does not provide all required doctor fields. | `existing` | A dedicated clinic-dashboard#1 doctor editor is required; #1468 blocks complete photo freshness | `public-cached` |
 | Remove a doctor | Doctor deletion is platform-only. No current issue authorizes clinic-side removal or defines whether deactivation should replace deletion. | `Access/API gap` | Unowned permission/product decision; clinic-dashboard#1 keeps the action disabled | `public-cached` if later allowed |
 | Add, edit, remove, or photograph a non-doctor team member | No public clinic-team collection exists. `clinicStaff` must remain auth-only and doctors remain separate. | `Schema gap` | #1527 | `public-cached` |
-| Add a treatment | `clinictreatments` supports clinic-scoped create/update against platform-owned treatment master data, but the full dialog schema does not exist. | `Schema gap` | #1528 | `public-cached` |
+| Add a treatment | `clinictreatments` supports clinic-scoped create/update against platform-owned treatment master data with a fixed EUR price and explicit activation. New offerings start inactive. | `existing` | clinic-dashboard#101 supplies the typed form and BFF | `public-cached` |
 | Reorder treatments | `clinictreatments` has no ordering field or reorder contract, and #1528 does not include ordering. | `later scope` | No owning backend issue | `public-cached` if later approved |
 | Edit map position | Address, latitude, and longitude already exist and can be updated for the assigned clinic. | `existing` | #1524 for BFF/Payload access | `public-cached` |
-| Edit opening hours | No structured opening/closing-time model exists. | `Schema gap` | #1528 | `public-cached` |
+| Edit opening hours | `clinics.openingHours` provides an optional, validated Monday-to-Sunday local-time schedule. | `existing` | clinic-dashboard#1 supplies the typed form | `public-cached` |
 | Cancel or discard local edits | Client form-state behavior; no backend write should occur. | `existing` | clinic-dashboard#1 | `n/a` |
 | Save local draft | Clinics have no versions/draft workflow. Updating an approved clinic is immediately live and revalidates public surfaces. The prototype's “saved locally” label is not a backend contract. | `later scope` | No owning backend issue; clinic-dashboard#1 may keep unsaved client state only | `private-live` only if a real draft model is approved |
 | Publish profile changes | There is no separate profile publish transition. Current approved-clinic writes are immediately public. | `later scope` | No owning backend issue; do not expose this command against current writes | `public-cached` if later approved |
@@ -266,8 +266,8 @@ Stitch screen `4403f6cc252e441783ae584fd7e38eaf`. [Screen capture](https://githu
 | --- | --- | --- | --- | --- |
 | Open and cancel dialog with focus return | Local dialog behavior exists. The declared `cancel-treatment` action is not emitted, but no backend call is needed. | `existing` | clinic-dashboard#1 | `n/a` |
 | Enter free treatment name and category | Treatment names and medical-specialty relationships are platform-owned master data. Free clinic creation would contradict the current model and #1528's scope. | `later scope` | clinic-dashboard#1 must use existing master selection or keep the control disabled; a master-data redesign has no owner | `public-cached` if a later master-data change is approved |
-| Enter duration, price, currency, description, and active state | Price and relationship exist; duration, ISO currency, description, and active state do not. | `Schema gap` | #1528 | `public-cached` |
-| Save treatment | Prototype submit sends no values or target IDs. Target mutation must validate clinic ownership and master-data relationships. | `Schema gap` | #1528 plus typed clinic-dashboard#1 payload | `public-cached` |
+| Select a treatment, enter its EUR price, and set the active state | The clinic offering owns only the master-treatment relationship, EUR price, and activation. Duration and description remain central Treatment data; there is no currency input. | `existing` | clinic-dashboard#101 supplies the typed form | `public-cached` |
+| Save treatment | Payload validates clinic ownership and the master-data relationship. Clinic Staff can create and update its own offering but cannot delete it. | `existing` | clinic-dashboard#101 supplies the typed mutation and BFF | `public-cached` |
 
 ### Screen 7 — Add Team Member Dialog
 
@@ -286,9 +286,9 @@ Stitch screen `df09d7542d1e4be8b3ae1b9165a2a584`. [Screen capture](https://githu
 | Collection or source | Fields or capability | Relationship | Current permission | Provenance or freshness | Status |
 | --- | --- | --- | --- | --- | --- |
 | `clinicStaff` | Direct staff identity, approval, clinic assignment | `clinicStaff.clinic → clinics` | Approved direct principal resolves tenant scope; clinic access to Payload Admin is denied | Private live through Supabase strategy and Payload lookup | `existing` under ADR 025; Dashboard bootstrap remains #1524 |
-| `clinics` | Name, rich description, address, phone, coordinates, thumbnail, status, tags | One clinic is assigned through clinic staff | Clinic staff can update only its assigned clinic; approved reads are public | Approved public detail/listing is cached; write hooks exist | `existing` for current fields; missing fields remain #1528 |
+| `clinics` | Name, rich description, address, phone, coordinates, thumbnail, status, tags, opening hours | One clinic is assigned through clinic staff | Clinic staff can update only its assigned clinic; approved reads are public | Approved public detail/listing is cached; write hooks exist | `existing`; opening hours are optional until configured |
 | `clinicMedia`, `clinicGalleryMedia`, `clinicGalleryEntries` | Clinic thumbnail uploads plus retained before/after schema and records | Media/entry belongs to one clinic | `clinicMedia` remains clinic-scoped; both before/after collections are hidden and fail-closed | Thumbnail output remains cached; before/after has no public consumer | Before/after is `disabled` by #1576; generic gallery remains `later scope` |
-| `treatments` + `clinictreatments` | Platform master treatment plus clinic price/relationship | Clinic treatment belongs to one clinic and one master treatment | Master writes are platform-only; clinic may create/update own relationship but not delete | Public clinic detail/listing is cached and clinic-treatment hooks exist | `Schema gap` for duration, description, currency, active, order |
+| `treatments` + `clinictreatments` | Platform master treatment plus clinic EUR price, relationship, and public activation | Clinic treatment belongs to one clinic and one master treatment | Master writes are platform-only; clinic may create/update its own offering but not delete it; only active offerings are public | Public clinic detail/listing is cached and clinic-treatment hooks exist | `existing`; ordering remains later scope |
 | `doctors`, `doctorspecialties`, `doctortreatments` | Public doctor profiles and their clinic-scoped relationships | Doctor belongs to one clinic | Clinic may create/update own doctor and relationships; delete is platform-only | Public clinic detail is cached; related hooks exist | `existing` for doctor profiles; activation semantics are a `Schema gap` |
 | `accreditation` | Public accreditation master data | No clinic credential/submission relationship | Anyone may read; only platform may write | Public clinic-related output is cached | `Schema gap` for certificate submission/verification |
 | `patientClinicInquiries` | Contact submission, treatment interest, status, evidence, assignment | Inquiry belongs to a clinic | Current collection access is platform-only; public route writes with controlled override | Explicit private-live policy | `Access/API gap` — #1526 |
@@ -315,7 +315,7 @@ For the planned implementation slices, the decision is domain-specific:
 | Inquiries | `no-public-impact` | Tenant-bound operational data; never public cached. |
 | Conversations, messages, attachments, internal notes | `no-public-impact` | Patient- and clinic-bound private data. |
 | Dashboard analytics | `no-public-impact` | Tenant-scoped server aggregation remains private-live and no-store; a later shared or durable cache requires a separate decision. |
-| Approved clinic fields and opening hours | `public-cached` | Rendered on public clinic detail and potentially listing surfaces. |
+| Approved clinic fields and opening hours | `public-cached` | The opening-hours contract is public source data; no new public opening-hours component is part of #1528. |
 | Active clinic treatments | `public-cached` | Rendered on public clinic detail and listing comparison. |
 | Approved/active public team members | `public-cached` | New public clinic-detail dependency. |
 | Approved clinic review responses | `public-cached` | Public review presentation changes; draft, appeal, and moderation state remain private-live. |
@@ -330,7 +330,7 @@ For the planned implementation slices, the decision is domain-specific:
 | `clinicMedia`, `doctorMedia` change/delete | Clinic/detail imagery when referenced | Deferred; no complete dependency invalidation | Private upload metadata |
 | New public team record | Clinic detail | No owner/event exists yet | Authenticated `clinicStaff` identity and roles |
 | Approved review change | Clinic detail, listing comparison, rating output | Review hooks cover current review visibility | Appeals, internal notes, moderation drafts |
-| Approved clinic response change | Clinic detail is the only evidenced target surface; the response model/reader is absent | Model choice determines whether the existing review hook or a new owner/event applies | Draft response, appeal, and moderation state |
+| Approved or blocked clinic response change | Clinic detail response projection | Review-response hook resolves the current/previous clinic relation and invalidates the existing clinic-detail tags and bounded path | Pending response, appeal details, moderation reason, and version history |
 | Inquiry/message/reporting writes | None | Private-live policy; no public revalidation | All patient/contact/message/analytics details |
 
 ### Read/Write Symmetry

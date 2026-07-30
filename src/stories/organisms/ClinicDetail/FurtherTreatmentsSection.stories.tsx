@@ -11,14 +11,14 @@ const treatments: ClinicDetailTreatment[] = [
     id: 't-1',
     name: 'Neurology Consultation',
     category: 'Specialist Care',
-    priceFromUsd: 380,
+    priceFrom: 380,
     comparisonLink: { href: '/listing-comparison?treatment=t-1', label: 'Compare clinics for Neurology Consultation' },
   },
   {
     id: 't-2',
     name: 'Pediatric Cardiology Review',
     category: 'Specialist Care',
-    priceFromUsd: 460,
+    priceFrom: 460,
     comparisonLink: {
       href: '/listing-comparison?treatment=t-2',
       label: 'Compare clinics for Pediatric Cardiology Review',
@@ -34,7 +34,7 @@ const treatments: ClinicDetailTreatment[] = [
     id: 't-4',
     name: 'Family Nutrition Coaching',
     category: 'Supportive Care',
-    priceFromUsd: 150,
+    priceFrom: 150,
     comparisonLink: {
       href: '/listing-comparison?treatment=t-4',
       label: 'Compare clinics for Family Nutrition Coaching',
@@ -44,7 +44,7 @@ const treatments: ClinicDetailTreatment[] = [
     id: 't-5',
     name: 'Asthma Management Plan',
     category: 'Chronic Care',
-    priceFromUsd: 310,
+    priceFrom: 310,
     comparisonLink: { href: '/listing-comparison?treatment=t-5', label: 'Compare clinics for Asthma Management Plan' },
   },
 ]

@@ -5,6 +5,7 @@ import type { PayloadRequest } from 'payload'
 import {
   revalidateClinicTreatmentChange,
   revalidateMedicalSpecialtyChange,
+  revalidateReviewResponseChange,
   revalidateReviewChange,
 } from '@/hooks/revalidateClinicSurfaces'
 import { createMockReq } from '../helpers/testHelpers'
@@ -35,6 +36,7 @@ const getPathCalls = () => vi.mocked(revalidatePath).mock.calls.map(([path]) => 
 const getTagCalls = () => vi.mocked(revalidateTag).mock.calls.map(([tag]) => tag)
 
 type ClinicTreatmentChangeArgs = Parameters<typeof revalidateClinicTreatmentChange>[0]
+type ReviewResponseChangeArgs = Parameters<typeof revalidateReviewResponseChange>[0]
 type ReviewChangeArgs = Parameters<typeof revalidateReviewChange>[0]
 type MedicalSpecialtyChangeArgs = Parameters<typeof revalidateMedicalSpecialtyChange>[0]
 
@@ -72,6 +74,30 @@ describe('clinic related collection revalidation hooks', () => {
     ])
   })
 
+  it('revalidates the owning clinic and listing when a clinic treatment activation changes', async () => {
+    const req = buildReq()
+
+    await revalidateClinicTreatmentChange({
+      collection: { slug: 'clinictreatments' } as unknown as ClinicTreatmentChangeArgs['collection'],
+      context: req.context,
+      data: { active: true },
+      doc: { id: 201, active: true, clinic: 12 },
+      operation: 'update',
+      previousDoc: { id: 201, active: false, clinic: 12 },
+      req,
+    } as ClinicTreatmentChangeArgs)
+
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getTagCalls()).toEqual(
+      expect.arrayContaining([
+        'entity:clinictreatments:201',
+        'collection:clinictreatments',
+        'surface:clinic-detail:12',
+        'surface:listing-comparison',
+      ]),
+    )
+  })
+
   it('skips duplicate review revalidation for hook-triggered average updates before relation reads', async () => {
     const req = buildReq({ skipHooks: true })
 
@@ -88,6 +114,75 @@ describe('clinic related collection revalidation hooks', () => {
     expect(req.payload.findByID).not.toHaveBeenCalled()
     expect(getPathCalls()).toEqual([])
     expect(getTagCalls()).toEqual([])
+  })
+
+  it('keeps pending and rejected response revisions private when the public response is unchanged', async () => {
+    const req = buildReq()
+    const publishedResponse = {
+      approvedAt: '2026-07-29T10:00:00.000Z',
+      body: 'Thank you for sharing your experience with our clinic.',
+      isBlocked: false,
+    }
+
+    await revalidateReviewResponseChange({
+      collection: { slug: 'reviewResponses' } as unknown as ReviewResponseChangeArgs['collection'],
+      context: req.context,
+      data: {},
+      doc: {
+        id: 400,
+        clinic: 12,
+        moderationStatus: 'rejected',
+        publishedResponse,
+      },
+      operation: 'update',
+      previousDoc: {
+        id: 400,
+        clinic: 12,
+        moderationStatus: 'pending',
+        publishedResponse,
+      },
+      req,
+    } as ReviewResponseChangeArgs)
+
+    expect(req.payload.findByID).not.toHaveBeenCalled()
+    expect(getPathCalls()).toEqual([])
+    expect(getTagCalls()).toEqual([])
+  })
+
+  it('revalidates only clinic detail when a response enters the public projection', async () => {
+    const req = buildReq()
+
+    await revalidateReviewResponseChange({
+      collection: { slug: 'reviewResponses' } as unknown as ReviewResponseChangeArgs['collection'],
+      context: req.context,
+      data: {},
+      doc: {
+        id: 401,
+        clinic: 12,
+        publishedResponse: {
+          approvedAt: '2026-07-29T10:00:00.000Z',
+          body: 'Thank you for sharing your experience with our clinic.',
+          isBlocked: false,
+        },
+      },
+      operation: 'update',
+      previousDoc: {
+        id: 401,
+        clinic: 12,
+      },
+      req,
+    } as ReviewResponseChangeArgs)
+
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getTagCalls()).toEqual([
+      'entity:reviewResponses:401',
+      'collection:reviewResponses',
+      'surface:clinic-detail',
+      'surface:clinic-detail:12',
+      'slug:clinics:berlin-health',
+    ])
+    expect(getTagCalls()).not.toContain('surface:listing-comparison')
+    expect(getTagCalls()).not.toContain('surface:sitemap:pages')
   })
 
   it('uses broad listing, landing, and sitemap tags for medical specialty changes without clinic paths', async () => {

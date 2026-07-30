@@ -147,6 +147,7 @@ const createJobInput = (args: {
     localizedFields: args.step.localizedFields,
     reqUserStableId: args.step.reqUserStableId,
     requiresPlatformUser: args.step.requiresPlatformUser,
+    upsertPolicy: args.step.upsertPolicy,
     stableIds: args.stableIds,
     chunkIndex: args.chunkIndex,
     chunkTotal: args.chunkTotal,

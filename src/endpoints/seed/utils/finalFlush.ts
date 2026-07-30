@@ -73,6 +73,7 @@ const COLLECTION_FLUSH_SCOPE: Partial<Record<CacheTaggableCollection, ScopeEntry
   doctorspecialties: { surfaces: ['clinic-detail'] },
   doctortreatments: { surfaces: ['clinic-detail'] },
   reviews: { surfaces: ['clinic-detail', 'listing-comparison'], sitemaps: ['pages'] },
+  reviewResponses: { surfaces: ['clinic-detail'] },
   accreditation: { surfaces: ['clinic-detail'] },
   treatments: { surfaces: ['listing-comparison', 'partners-clinics'], sitemaps: ['pages'] },
   'medical-specialties': { surfaces: ['listing-comparison', 'home', 'partners-clinics'], sitemaps: ['pages'] },
@@ -126,6 +127,11 @@ const addCollectionScope = (scope: SeedFinalFlushScope, collection: CacheTaggabl
   }
 }
 
+const addReviewAppealPublicScope = (scope: SeedFinalFlushScope): void => {
+  addCollectionScope(scope, 'reviews')
+  addCollectionScope(scope, 'reviewResponses')
+}
+
 const addPlanScope = (scope: SeedFinalFlushScope, seedType: SeedType): void => {
   const plan = seedType === 'baseline' ? baselinePlan : demoPlan
 
@@ -139,6 +145,10 @@ const addPlanScope = (scope: SeedFinalFlushScope, seedType: SeedType): void => {
 
     if (isTaggableCollection(step.collection)) {
       addCollectionScope(scope, step.collection)
+    }
+
+    if (step.collection === 'reviewAppeals') {
+      addReviewAppealPublicScope(scope)
     }
 
     if (step.collection === 'platformStaff' || step.collection === 'userProfileMedia') {
@@ -164,6 +174,10 @@ const addJobScope = (scope: SeedFinalFlushScope, job: SeedRunJobRecord, seedType
     addCollectionScope(scope, job.collection)
   }
 
+  if (job.collection === 'reviewAppeals') {
+    addReviewAppealPublicScope(scope)
+  }
+
   if (job.collection === 'platformStaff' || job.collection === 'userProfileMedia') {
     addCollectionScope(scope, 'posts')
   }
@@ -172,6 +186,7 @@ const addJobScope = (scope: SeedFinalFlushScope, job: SeedRunJobRecord, seedType
 const isPublicAffectingJob = (job: SeedRunJobRecord): boolean => {
   if (job.kind === 'reset') return true
   if (job.kind === 'globals') return true
+  if (job.collection === 'reviewAppeals') return true
   if (!isTaggableCollection(job.collection)) return false
 
   return typeof COLLECTION_FLUSH_SCOPE[job.collection] !== 'undefined'

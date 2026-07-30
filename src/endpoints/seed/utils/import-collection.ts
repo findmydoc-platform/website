@@ -5,7 +5,7 @@ import { CONTENT_LOCALES, DEFAULT_CONTENT_LOCALE, type ContentLocale } from '@/u
 import type { SeedKind, SeedRecord } from './load-json'
 import type { StableIdResolvers } from './resolvers'
 import { loadSeedFile } from './load-json'
-import { upsertByStableId } from './upsert'
+import { upsertByStableId, type SeedUpsertPolicy } from './upsert'
 
 export type RelationMapping = {
   sourceField: string
@@ -151,6 +151,7 @@ export async function importCollection(options: {
   req?: Partial<import('payload').PayloadRequest>
   stableIds?: string[]
   localizedFields?: string[]
+  upsertPolicy?: SeedUpsertPolicy
 }): Promise<CollectionImportResult> {
   const {
     payload,
@@ -164,6 +165,7 @@ export async function importCollection(options: {
     req,
     stableIds,
     localizedFields = [],
+    upsertPolicy,
   } = options
 
   const allRecords = await loadSeedFile(kind, fileName)
@@ -271,6 +273,7 @@ export async function importCollection(options: {
         filePath,
         context,
         req,
+        policy: upsertPolicy,
       })
       if (result.created) created += 1
       if (result.updated) updated += 1

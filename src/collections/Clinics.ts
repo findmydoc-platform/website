@@ -1,5 +1,10 @@
 import type { Clinic } from '@/payload-types'
-import type { CollectionBeforeChangeHook, CollectionBeforeValidateHook, CollectionConfig } from 'payload'
+import type {
+  CollectionAfterReadHook,
+  CollectionBeforeChangeHook,
+  CollectionBeforeValidateHook,
+  CollectionConfig,
+} from 'payload'
 import { slugField, ValidationError, validations } from 'payload'
 import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
 import { createConditionalRequiredValidator, toValidationFieldErrors } from './common/conditionalRequirements'
@@ -20,6 +25,12 @@ import {
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateClinicChange, revalidateClinicDelete } from '@/hooks/revalidateClinicSurfaces'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
+import { normalizeOpeningHours, openingHoursField } from './clinics/openingHours'
+import {
+  CLINIC_POSTAL_CODE_MAX_LENGTH,
+  normalizeClinicPostalCode,
+  validateClinicPostalCode,
+} from './clinics/postalCode'
 
 const GALLERY_ENTRIES_SAME_CLINIC_MESSAGE = 'Gallery entries must belong to this clinic.'
 const CLINIC_APPROVAL_ERROR_COMPONENT =
@@ -104,6 +115,11 @@ const validateGalleryEntriesBeforeValidate: CollectionBeforeValidateHook<Clinic>
   return data
 }
 
+const normalizeClinicOpeningHoursAfterRead: CollectionAfterReadHook<Clinic> = ({ doc }) => {
+  doc.openingHours = normalizeOpeningHours(doc.openingHours) as Clinic['openingHours']
+  return doc
+}
+
 export const Clinics: CollectionConfig<'clinics'> = {
   slug: 'clinics',
   // This config controls what's populated by default when a clinic is referenced
@@ -140,6 +156,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
     ],
     afterChange: [revalidateClinicChange],
     afterDelete: [revalidateClinicDelete],
+    afterRead: [normalizeClinicOpeningHoursAfterRead],
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
@@ -209,7 +226,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
               collection: 'clinictreatments',
               on: 'clinic',
               admin: {
-                defaultColumns: ['treatment', 'price'],
+                defaultColumns: ['treatment', 'price', 'active'],
                 description: 'Treatments this clinic offers',
                 allowCreate: true,
               },
@@ -313,7 +330,11 @@ export const Clinics: CollectionConfig<'clinics'> = {
                   fields: [
                     {
                       name: 'zipCode',
-                      type: 'number',
+                      type: 'text',
+                      maxLength: CLINIC_POSTAL_CODE_MAX_LENGTH,
+                      hooks: {
+                        beforeValidate: [({ value }) => normalizeClinicPostalCode(value)],
+                      },
                       admin: {
                         components: {
                           Error: CLINIC_APPROVAL_ERROR_COMPONENT,
@@ -322,7 +343,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
                         width: '40%',
                       },
                       validate: createConditionalRequiredValidator(
-                        validations.number,
+                        validateClinicPostalCode,
                         clinicApprovalRequirementSet,
                         clinicApprovalRequirements.zipCode,
                       ),
@@ -478,6 +499,10 @@ export const Clinics: CollectionConfig<'clinics'> = {
               ],
             },
           ],
+        },
+        {
+          label: 'Opening Hours',
+          fields: [openingHoursField],
         },
         {
           label: 'Details & Status',

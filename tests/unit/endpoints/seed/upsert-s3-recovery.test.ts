@@ -101,6 +101,108 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
     })
   })
 
+  it('replaces seed user profile media when its immutable owner relation has drifted', async () => {
+    find.mockResolvedValue({
+      totalDocs: 1,
+      docs: [
+        {
+          id: 'profile-media-1',
+          user: { relationTo: 'platformStaff', value: { id: 41 } },
+          createdBy: { relationTo: 'platformStaff', value: 41 },
+        },
+      ],
+    })
+    create.mockResolvedValue({ id: 'profile-media-2' })
+
+    const data = {
+      stableId: 'seed-user-profile-admin',
+      alt: 'Seed admin profile',
+      user: { relationTo: 'platformStaff', value: 84 },
+      createdBy: { relationTo: 'platformStaff', value: 84 },
+    }
+
+    const result = await upsertByStableId(payload, 'userProfileMedia', data, {
+      filePath: '/tmp/seed-admin-profile.webp',
+      policy: {
+        recreateUploadOnRelationDrift: ['user', 'createdBy'],
+      },
+    })
+
+    expect(result).toEqual({ created: false, updated: true })
+    expect(update).not.toHaveBeenCalled()
+    expect(updateOne).toHaveBeenCalledWith({
+      collection: 'userProfileMedia',
+      id: 'profile-media-1',
+      req: {
+        context: {
+          disableRevalidate: true,
+          disableSearchSync: true,
+          seedMediaExpectedNoSuchKeyRecovery: true,
+        },
+      },
+      data: {
+        stableId: expect.any(String),
+        deletedAt: expect.any(Date),
+        filename: null,
+      },
+    })
+    expect(create).toHaveBeenCalledWith({
+      collection: 'userProfileMedia',
+      data,
+      overrideAccess: true,
+      context: {
+        disableRevalidate: true,
+        disableSearchSync: true,
+        seedMediaExpectedNoSuchKeyRecovery: true,
+      },
+      req: {
+        context: {
+          disableRevalidate: true,
+          disableSearchSync: true,
+          seedMediaExpectedNoSuchKeyRecovery: true,
+        },
+      },
+      filePath: '/tmp/seed-admin-profile.webp',
+    })
+    expect(warn).toHaveBeenCalledWith(
+      'Seed upload replacement for immutable relation drift: userProfileMedia:seed-user-profile-admin',
+    )
+  })
+
+  it('rejects configured upload replacement when relation drift has no source file', async () => {
+    find.mockResolvedValue({
+      totalDocs: 1,
+      docs: [
+        {
+          id: 'profile-media-1',
+          user: { relationTo: 'platformStaff', value: 41 },
+        },
+      ],
+    })
+
+    await expect(
+      upsertByStableId(
+        payload,
+        'userProfileMedia',
+        {
+          stableId: 'seed-user-profile-admin',
+          user: { relationTo: 'platformStaff', value: 84 },
+        },
+        {
+          policy: {
+            recreateUploadOnRelationDrift: ['user'],
+          },
+        },
+      ),
+    ).rejects.toThrow(
+      'Seed upload replacement for relation drift requires a file: userProfileMedia:seed-user-profile-admin',
+    )
+
+    expect(update).not.toHaveBeenCalled()
+    expect(updateOne).not.toHaveBeenCalled()
+    expect(create).not.toHaveBeenCalled()
+  })
+
   it('retries a transient upload transport failure before succeeding', async () => {
     let updateCalls = 0
     const payload = {

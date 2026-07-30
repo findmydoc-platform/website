@@ -1,6 +1,14 @@
 import type { Payload } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock('node:fs/promises', () => ({
+  default: {
+    readdir: async () => {
+      throw Object.assign(new Error('No static clinic media fixture directory'), { code: 'ENOENT' })
+    },
+  },
+}))
+
 import {
   buildListingComparisonDataCacheKey,
   buildListingComparisonResolvedDataCacheKey,
@@ -13,7 +21,6 @@ type MockCollectionData = {
   treatments: Array<Record<string, unknown>>
   'medical-specialties': Array<Record<string, unknown>>
   clinics: Array<Record<string, unknown>>
-  clinicMedia: Array<Record<string, unknown>>
   clinictreatments: Array<Record<string, unknown>>
   reviews: Array<Record<string, unknown>>
 }
@@ -46,7 +53,11 @@ const baseData: MockCollectionData = {
         city: { id: 10, name: 'Berlin' },
         country: 'Germany',
       },
-      thumbnail: 501,
+      thumbnail: {
+        id: 501,
+        filename: 'test-clinics-creation-test-thumbnail.png',
+        alt: 'Alpha clinic exterior',
+      },
       tags: [{ name: 'Premium' }],
       updatedAt: '2026-01-10T00:00:00.000Z',
     },
@@ -99,19 +110,12 @@ const baseData: MockCollectionData = {
       updatedAt: '2026-01-06T00:00:00.000Z',
     },
   ],
-  clinicMedia: [
-    {
-      id: 501,
-      filename: 'test-clinics-creation-test-thumbnail.png',
-      alt: 'Alpha clinic exterior',
-    },
-  ],
   clinictreatments: [
-    { id: 301, clinic: 201, treatment: 101, price: 5000, updatedAt: '2026-01-11T00:00:00.000Z' },
-    { id: 302, clinic: 201, treatment: 102, price: 7000, updatedAt: '2026-01-08T00:00:00.000Z' },
-    { id: 303, clinic: 202, treatment: 101, price: 5200, updatedAt: '2026-01-07T00:00:00.000Z' },
-    { id: 304, clinic: 202, treatment: 102, price: 6000, updatedAt: '2026-01-06T00:00:00.000Z' },
-    { id: 305, clinic: 203, treatment: 103, price: 2000, updatedAt: '2026-01-05T00:00:00.000Z' },
+    { id: 301, active: true, clinic: 201, treatment: 101, price: 5000, updatedAt: '2026-01-11T00:00:00.000Z' },
+    { id: 302, active: true, clinic: 201, treatment: 102, price: 7000, updatedAt: '2026-01-08T00:00:00.000Z' },
+    { id: 303, active: true, clinic: 202, treatment: 101, price: 5200, updatedAt: '2026-01-07T00:00:00.000Z' },
+    { id: 304, active: true, clinic: 202, treatment: 102, price: 6000, updatedAt: '2026-01-06T00:00:00.000Z' },
+    { id: 305, active: true, clinic: 203, treatment: 103, price: 2000, updatedAt: '2026-01-05T00:00:00.000Z' },
   ],
   reviews: [
     { id: 401, status: 'approved', clinic: 201, reviewDate: '2026-01-12T00:00:00.000Z' },
@@ -298,6 +302,7 @@ describe('getListingComparisonServerData (contract)', () => {
       src: '/api/clinicMedia/file/test-clinics-creation-test-thumbnail.png',
       alt: 'Alpha clinic exterior',
     })
+    expect(result.results[0]?.priceFrom?.currency).toBe('EUR')
 
     const cityLabels = result.filterOptions.cities.map((option) => option.label)
     expect(cityLabels).toContain('Berlin (1)')
@@ -356,9 +361,10 @@ describe('getListingComparisonServerData (contract)', () => {
       ...baseData,
       clinictreatments: [
         ...baseData.clinictreatments,
-        { id: 306, clinic: 201, treatment: 101, price: 5500 },
-        { id: 307, clinic: 202, treatment: 103, price: null },
-        { id: 308, clinic: 204, treatment: 103, price: 1800 },
+        { id: 306, active: true, clinic: 201, treatment: 101, price: 5500 },
+        { id: 307, active: true, clinic: 202, treatment: 103, price: null },
+        { id: 308, active: true, clinic: 204, treatment: 103, price: 1800 },
+        { id: 309, active: false, clinic: 201, treatment: 103, price: 1 },
       ],
     })
 

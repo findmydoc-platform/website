@@ -190,7 +190,7 @@ export function mapListingCardResults(
         priceFrom !== null
           ? {
               value: priceFrom,
-              currency: 'USD',
+              currency: 'EUR',
               label: 'From',
             }
           : undefined,

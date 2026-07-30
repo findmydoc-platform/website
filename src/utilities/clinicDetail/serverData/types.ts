@@ -1,6 +1,15 @@
 import type { Payload } from 'payload'
 
-import type { Accreditation, City, Clinic, Clinictreatment, Doctor, Doctorspecialty, Review } from '@/payload-types'
+import type {
+  Accreditation,
+  City,
+  Clinic,
+  Clinictreatment,
+  Doctor,
+  Doctorspecialty,
+  Review,
+  ReviewResponse,
+} from '@/payload-types'
 import type { ClinicDetailData } from '@/components/templates/ClinicDetailConcepts/types'
 import type { MediaDescriptor } from '@/utilities/media/relationMedia'
 
@@ -24,6 +33,7 @@ export type ClinicDetailMappingArgs = {
   doctorSpecialties: Doctorspecialty[]
   clinicReviewCount: number
   approvedClinicReviews: Review[]
+  reviewResponses: ReviewResponse[]
   doctorReviewCounts: Map<number, number>
   accreditations: Accreditation[]
   cities: City[]

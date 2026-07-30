@@ -433,6 +433,71 @@ describe('seed endpoints success paths', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/pages-sitemap.xml')
   })
 
+  it('flushes review and response surfaces when an appeal seed job can remove public content', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-review-appeal-public-transition'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    }) as SeedRunRecord
+    record.status = 'completed'
+    record.completedAt = '2026-07-08T10:00:00.000Z'
+    record.completedJobs = 1
+    record.succeededJobs = 1
+    record.jobs = [
+      {
+        id: 'job-review-appeals',
+        order: 1,
+        status: 'succeeded',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'review-appeals-final-state',
+          kind: 'collection',
+          collection: 'reviewAppeals',
+          fileName: 'reviewAppeals',
+        },
+        queue,
+        title: 'Review appeals final state',
+        stepName: 'review-appeals-final-state',
+        kind: 'collection',
+        collection: 'reviewAppeals',
+        fileName: 'reviewAppeals',
+        createdAt: '2026-07-08T09:00:00.000Z',
+        completedAt: '2026-07-08T10:00:00.000Z',
+        created: 0,
+        updated: 1,
+        warnings: [],
+        failures: [],
+      },
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    const res = makeRes()
+    await seedAdvanceHandler(
+      createMockReq(mockUsers.platform(), payload, {
+        query: { runId },
+      }) as PayloadRequest,
+      res,
+    )
+
+    expect(res._status).toBe(200)
+    expect((res._body as { finalFlush?: { status: string } }).finalFlush?.status).toBe('executed')
+    expect(revalidateTag).toHaveBeenCalledWith('collection:reviews', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('collection:reviewResponses', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('surface:clinic-detail', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('surface:listing-comparison', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('surface:sitemap:pages', { expire: 0 })
+    expect(revalidatePath).toHaveBeenCalledWith('/listing-comparison')
+    expect(revalidatePath).toHaveBeenCalledWith('/pages-sitemap.xml')
+  })
+
   it('does not flush a skipped public seed job that never wrote public work', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-skipped-public-empty'

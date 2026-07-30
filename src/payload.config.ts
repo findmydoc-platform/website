@@ -31,6 +31,8 @@ import { ClinicTreatments } from './collections/ClinicTreatments'
 import { DoctorTreatments } from './collections/DoctorTreatments'
 import { DoctorSpecialties } from './collections/DoctorSpecialties'
 import { Reviews } from './collections/Reviews'
+import { ReviewResponses } from './collections/ReviewResponses'
+import { ReviewAppeals } from './collections/ReviewAppeals'
 import { Countries } from './collections/Countries'
 import { Cities } from './collections/Cities'
 import { Tags } from './collections/Tags'
@@ -86,6 +88,7 @@ export default buildConfig({
     abortOnLimit: true,
     responseOnLimit: MEDIA_UPLOAD_TOO_LARGE_MESSAGE,
     safeFileNames: true,
+    preserveExtension: true,
   },
   endpoints: [
     {
@@ -196,6 +199,8 @@ export default buildConfig({
     DoctorSpecialties,
     FavoriteClinics,
     Reviews,
+    ReviewResponses,
+    ReviewAppeals,
     Countries,
     Cities,
     Tags,

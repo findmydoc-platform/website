@@ -228,6 +228,7 @@ async function isTreatmentAvailableForClinic(
     pagination: false,
     select: {
       id: true,
+      active: true,
       clinic: true,
       treatment: true,
     },
@@ -241,6 +242,11 @@ async function isTreatmentAvailableForClinic(
         {
           treatment: {
             equals: treatmentId,
+          },
+        },
+        {
+          active: {
+            equals: true,
           },
         },
       ],

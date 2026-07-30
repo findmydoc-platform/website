@@ -200,6 +200,11 @@ export const clinicDetailFixture: ClinicDetailData = {
         authorName: 'Maya K.',
         comment:
           'Demo review text describes appointment preparation, follow-up notes, and next-step communication for the review-card layout.',
+        response: {
+          body: 'Thank you for sharing your experience. We are pleased that the preparation and follow-up information were helpful.',
+          clinicName: 'Berlin Health Clinic',
+          approvedAt: '2026-07-28T10:00:00.000Z',
+        },
       },
       {
         id: 'review-2',
@@ -207,6 +212,11 @@ export const clinicDetailFixture: ClinicDetailData = {
         ratingValue: 5,
         authorName: 'Anna L.',
         comment: 'Demo feedback text covers reception flow, scheduling notes, and explanation copy in a review card.',
+        response: {
+          body: 'Thank you for taking the time to describe your visit. Your feedback helps us improve our scheduling communication.',
+          clinicName: 'Berlin Health Clinic',
+          approvedAt: '2026-07-26T14:30:00.000Z',
+        },
       },
       {
         id: 'review-3',
@@ -234,49 +244,49 @@ export const clinicDetailFixture: ClinicDetailData = {
     updatedAt: '2026-01-12T09:15:00.000Z',
     latestPatientReviewAt: '2026-01-12T09:15:00.000Z',
     verificationTier: 'gold',
-    sourceCollections: ['clinics', 'reviews'],
+    sourceCollections: ['clinics', 'reviews', 'reviewResponses'],
   },
   treatments: [
     {
       id: 'treatment-1',
       name: 'Routine Checkup',
       category: 'Preventive Care',
-      priceFromUsd: 120,
+      priceFrom: 120,
       comparisonLink: buildTreatmentComparisonLink('treatment-1', 'Routine Checkup'),
     },
     {
       id: 'treatment-2',
       name: 'Developmental Screening',
       category: 'Diagnostics',
-      priceFromUsd: 180,
+      priceFrom: 180,
       comparisonLink: buildTreatmentComparisonLink('treatment-2', 'Developmental Screening'),
     },
     {
       id: 'treatment-3',
       name: 'Vaccination Package',
       category: 'Preventive Care',
-      priceFromUsd: 230,
+      priceFrom: 230,
       comparisonLink: buildTreatmentComparisonLink('treatment-3', 'Vaccination Package'),
     },
     {
       id: 'treatment-4',
       name: 'Asthma Management Plan',
       category: 'Chronic Care',
-      priceFromUsd: 310,
+      priceFrom: 310,
       comparisonLink: buildTreatmentComparisonLink('treatment-4', 'Asthma Management Plan'),
     },
     {
       id: 'treatment-5',
       name: 'Neurology Consultation',
       category: 'Specialist Care',
-      priceFromUsd: 380,
+      priceFrom: 380,
       comparisonLink: buildTreatmentComparisonLink('treatment-5', 'Neurology Consultation'),
     },
     {
       id: 'treatment-6',
       name: 'Pediatric Cardiology Review',
       category: 'Specialist Care',
-      priceFromUsd: 460,
+      priceFrom: 460,
       comparisonLink: buildTreatmentComparisonLink('treatment-6', 'Pediatric Cardiology Review'),
     },
     {
@@ -289,7 +299,7 @@ export const clinicDetailFixture: ClinicDetailData = {
       id: 'treatment-8',
       name: 'Family Nutrition Coaching',
       category: 'Supportive Care',
-      priceFromUsd: 150,
+      priceFrom: 150,
       comparisonLink: buildTreatmentComparisonLink('treatment-8', 'Family Nutrition Coaching'),
     },
   ],
@@ -299,6 +309,30 @@ export const clinicDetailFixture: ClinicDetailData = {
     coordinates: { lat: 52.5168332, lng: 13.4264519 },
   },
   contactHref: clinicContactHref,
+}
+
+export const clinicDetailLongResponseFixture: ClinicDetailData = {
+  ...clinicDetailFixture,
+  reviews: {
+    ...clinicDetailFixture.reviews,
+    items: clinicDetailFixture.reviews.items.map((review, index) =>
+      index === 0
+        ? {
+            ...review,
+            response: {
+              body: [
+                'Thank you for taking the time to describe your experience in detail.',
+                'We reviewed your feedback with the care and scheduling teams and have documented the communication points you raised.',
+                'The clinic has also clarified the preparation checklist and follow-up process so that future patients receive the same information before their appointment.',
+                'If you need another copy of the written plan, our team can provide it through the usual patient communication channel.',
+              ].join(' '),
+              clinicName: 'Berlin Health Clinic Center for Pediatric and Adolescent Interdisciplinary Specialist Care',
+              approvedAt: '2026-07-28T10:00:00.000Z',
+            },
+          }
+        : review,
+    ),
+  },
 }
 
 export const clinicDetailNoCoordinatesFixture: ClinicDetailData = {

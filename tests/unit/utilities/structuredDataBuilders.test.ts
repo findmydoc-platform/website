@@ -150,7 +150,7 @@ describe('structured data builders', () => {
       heroImage: { src: '/clinic.webp', alt: 'Berlin Health' },
       location: { fullAddress: 'Example Street 1, Berlin' },
       reviews: { items: [], totalCount: 25 },
-      treatments: [{ id: 'dental-implant', name: 'Dental implant', priceFromUsd: 1000 }],
+      treatments: [{ id: 'dental-implant', name: 'Dental implant', priceFrom: 1000 }],
       trust: {
         accreditations: ['Visible badge'],
         languages: ['English'],

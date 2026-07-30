@@ -31,6 +31,10 @@ const demoPatients: unknown = loadSeedJson('../data/demo/patients.json')
 const demoPlatformContentMedia: unknown = loadSeedJson('../data/demo/platformContentMedia.json')
 const demoPosts: unknown = loadSeedJson('../data/demo/posts.json')
 const demoReviews: unknown = loadSeedJson('../data/demo/reviews.json')
+const demoReviewResponsesInitial: unknown = loadSeedJson('../data/demo/reviewResponsesInitial.json')
+const demoReviewResponses: unknown = loadSeedJson('../data/demo/reviewResponses.json')
+const demoReviewAppealsInitial: unknown = loadSeedJson('../data/demo/reviewAppealsInitial.json')
+const demoReviewAppeals: unknown = loadSeedJson('../data/demo/reviewAppeals.json')
 const demoUserProfileMedia: unknown = loadSeedJson('../data/demo/userProfileMedia.json')
 
 type SeedFileMap = Record<SeedKind, Record<string, unknown>>
@@ -62,6 +66,10 @@ const seedFileMap: SeedFileMap = {
     platformContentMedia: demoPlatformContentMedia,
     posts: demoPosts,
     reviews: demoReviews,
+    reviewResponsesInitial: demoReviewResponsesInitial,
+    reviewResponses: demoReviewResponses,
+    reviewAppealsInitial: demoReviewAppealsInitial,
+    reviewAppeals: demoReviewAppeals,
     userProfileMedia: demoUserProfileMedia,
   },
 }

@@ -1,12 +1,16 @@
 import { CollectionConfig } from 'payload'
-import { anyone } from '@/access/anyone'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
-import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@/access/scopeFilters'
+import {
+  platformOrAssignedClinicMutation,
+  platformOrOwnClinicResource,
+  platformOrOwnClinicResourceOrActive,
+} from '@/access/scopeFilters'
 import { updateAveragePriceAfterChange } from './hooks/updateAveragePriceAfterChange'
 import { updateAveragePriceAfterDelete } from './hooks/updateAveragePriceAfterDelete'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { revalidateClinicTreatmentChange, revalidateClinicTreatmentDelete } from '@/hooks/revalidateClinicSurfaces'
+import { normalizeClinicTreatmentPrice, validateClinicTreatmentPrice } from './priceValidation'
 
 export const ClinicTreatments: CollectionConfig = {
   slug: 'clinictreatments',
@@ -16,12 +20,12 @@ export const ClinicTreatments: CollectionConfig = {
   },
   admin: {
     group: 'Medical Network',
-    description: 'Clinics and their treatment prices',
+    description: 'Treatments offered by clinics with EUR prices and public activation status',
     useAsTitle: 'id',
-    defaultColumns: ['clinic', 'treatment', 'price'],
+    defaultColumns: ['clinic', 'treatment', 'price', 'active'],
   },
   access: {
-    read: anyone, // Public read access
+    read: platformOrOwnClinicResourceOrActive,
     create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
     update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
     delete: isPlatformStaff, // Only Platform can delete
@@ -36,11 +40,27 @@ export const ClinicTreatments: CollectionConfig = {
     stableIdField(),
     {
       name: 'price',
-      label: 'Price (USD)',
+      label: 'Price (EUR)',
       type: 'number',
       required: true,
+      min: 0,
+      validate: validateClinicTreatmentPrice,
+      hooks: {
+        beforeValidate: [({ value }) => normalizeClinicTreatmentPrice(value)],
+      },
       admin: {
-        description: 'Price the clinic charges in USD',
+        description: 'Price the clinic charges in EUR, with at most two decimal places',
+      },
+    },
+    {
+      name: 'active',
+      label: 'Publicly Offered',
+      type: 'checkbox',
+      defaultValue: false,
+      required: true,
+      admin: {
+        description: 'Show this treatment publicly and include it in prices and patient inquiries.',
+        position: 'sidebar',
       },
     },
     {

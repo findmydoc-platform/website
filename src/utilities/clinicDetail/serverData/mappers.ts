@@ -7,6 +7,7 @@ import type {
   Doctorspecialty,
   MedicalSpecialty,
   Review,
+  ReviewResponse,
   Treatment,
 } from '@/payload-types'
 import type {
@@ -174,7 +175,7 @@ function buildFullAddress(clinic: Clinic, cityNameById: Map<number, string>): st
   const cityNameFromMap = cityNameById.get(extractRelationId(cityRelation) ?? -1) ?? null
   const cityName = cityNameFromRelation ?? cityNameFromMap
 
-  const zipCode = Number.isFinite(address.zipCode) ? String(address.zipCode) : ''
+  const zipCode = typeof address.zipCode === 'string' ? address.zipCode.trim() : ''
   const cityLine = normalizeWhitespace(`${zipCode} ${cityName ?? ''}`)
 
   const country = typeof address.country === 'string' ? address.country.trim() : ''
@@ -216,7 +217,7 @@ function mapTreatments(treatments: Clinictreatment[]): ClinicDetailTreatment[] {
     return {
       id: String(treatmentId),
       name: treatmentName,
-      priceFromUsd: Number.isFinite(entry.price) ? entry.price : undefined,
+      priceFrom: Number.isFinite(entry.price) ? entry.price : undefined,
       category: resolveTreatmentCategory(treatment),
       comparisonLink:
         typeof treatmentRelationId === 'number'
@@ -340,10 +341,20 @@ function mapTrust({
 function mapReviews({
   clinicReviewCount,
   approvedClinicReviews,
+  reviewResponses,
+  clinicName,
 }: {
   clinicReviewCount: number
   approvedClinicReviews: Review[]
+  reviewResponses: ReviewResponse[]
+  clinicName: string
 }): ClinicDetailReviews {
+  const responseByReviewId = new Map<number, ReviewResponse>()
+  for (const response of reviewResponses) {
+    const reviewId = extractRelationId(response.review)
+    if (reviewId !== null) responseByReviewId.set(reviewId, response)
+  }
+
   const items: ClinicDetailReview[] = approvedClinicReviews
     .map((review): ClinicDetailReview | null => {
       const comment = typeof review.comment === 'string' ? normalizeWhitespace(review.comment) : ''
@@ -364,6 +375,22 @@ function mapReviews({
         const authorName = normalizeWhitespace(review.publicAuthorName)
         if (authorName.length > 0) {
           item.authorName = authorName
+        }
+      }
+
+      const response = responseByReviewId.get(review.id)
+      const responseBody =
+        typeof response?.publishedResponse?.body === 'string'
+          ? normalizeWhitespace(response.publishedResponse.body)
+          : ''
+      const approvedAt =
+        typeof response?.publishedResponse?.approvedAt === 'string' ? response.publishedResponse.approvedAt : ''
+
+      if (responseBody && approvedAt && response?.publishedResponse?.isBlocked !== true) {
+        item.response = {
+          body: responseBody,
+          clinicName,
+          approvedAt,
         }
       }
 
@@ -396,6 +423,7 @@ function mapClinicFreshness({
   doctors,
   doctorSpecialties,
   approvedClinicReviews,
+  reviewResponses,
   accreditations,
   cities,
 }: Pick<
@@ -405,6 +433,7 @@ function mapClinicFreshness({
   | 'doctors'
   | 'doctorSpecialties'
   | 'approvedClinicReviews'
+  | 'reviewResponses'
   | 'accreditations'
   | 'cities'
 >) {
@@ -414,6 +443,7 @@ function mapClinicFreshness({
       ...clinicTreatments.map((item) => item.updatedAt),
       ...doctors.map((item) => item.updatedAt),
       ...doctorSpecialties.map((item) => item.updatedAt),
+      ...reviewResponses.map((item) => item.publishedResponse?.approvedAt),
       ...accreditations.map((item) => item.updatedAt),
       ...cities.map((item) => item.updatedAt),
     ]),
@@ -427,6 +457,7 @@ function mapClinicFreshness({
       'doctors',
       'doctorspecialties',
       'reviews',
+      'reviewResponses',
     ],
   })
 }
@@ -440,6 +471,7 @@ export function mapClinicToClinicDetailData({
   doctorMediaByDoctorId,
   clinicReviewCount,
   approvedClinicReviews,
+  reviewResponses,
   doctorReviewCounts,
   accreditations,
   cities,
@@ -466,6 +498,8 @@ export function mapClinicToClinicDetailData({
     reviews: mapReviews({
       clinicReviewCount,
       approvedClinicReviews,
+      reviewResponses,
+      clinicName: clinic.name,
     }),
     treatments: mapTreatments(clinicTreatments),
     doctors: mapDoctors({
@@ -482,6 +516,7 @@ export function mapClinicToClinicDetailData({
       doctors,
       doctorSpecialties,
       approvedClinicReviews,
+      reviewResponses,
       accreditations,
       cities,
     }),

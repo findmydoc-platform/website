@@ -20,6 +20,7 @@ export type ClinicSurfaceRevalidationCollection =
   | 'doctors'
   | 'doctorspecialties'
   | 'reviews'
+  | 'reviewResponses'
   | 'treatments'
   | 'medical-specialties'
   | 'cities'

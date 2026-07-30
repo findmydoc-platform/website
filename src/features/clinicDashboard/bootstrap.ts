@@ -6,7 +6,12 @@ import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import type { PayloadRequest } from 'payload'
 import { toLoggedError } from '@/utilities/logging/shared'
 
-export const CLINIC_DASHBOARD_CAPABILITIES = ['clinic-profile:view', 'clinic-profile:edit'] as const
+export const CLINIC_DASHBOARD_CAPABILITIES = [
+  'clinic-profile:view',
+  'clinic-profile:edit',
+  'clinic-treatments:view',
+  'clinic-treatments:edit',
+] as const
 
 export type ClinicDashboardCapability = (typeof CLINIC_DASHBOARD_CAPABILITIES)[number]
 

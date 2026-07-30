@@ -62,6 +62,9 @@ describe('demo seed chunking', () => {
       'meta.title',
       'meta.description',
     ])
+    expect(queuedInputs.find((input) => input?.stepName === 'user-profile-media')?.upsertPolicy).toEqual({
+      recreateUploadOnRelationDrift: ['user', 'createdBy'],
+    })
 
     const runId = postBody.runId
     const getRes = makeRes()

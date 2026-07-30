@@ -1,0 +1,30 @@
+[
+  {
+    "stableId": "seed-review-appeal-01",
+    "reviewStableId": "seed-review-04",
+    "reason": "incorrect_clinic",
+    "details": "The clinic believes this review refers to a different location with a similar name.",
+    "status": "submitted"
+  },
+  {
+    "stableId": "seed-review-appeal-02",
+    "reviewStableId": "seed-review-05",
+    "reason": "inappropriate_content",
+    "details": "The clinic requests moderation because the review contains language unrelated to the treatment.",
+    "status": "submitted"
+  },
+  {
+    "stableId": "seed-review-appeal-03",
+    "reviewStableId": "seed-review-06",
+    "reason": "privacy_concern",
+    "details": "The clinic reports that the review includes details that could identify another patient.",
+    "status": "submitted"
+  },
+  {
+    "stableId": "seed-review-appeal-04",
+    "reviewStableId": "seed-review-07",
+    "reason": "other",
+    "details": "The clinic asks the moderation team to verify the documented treatment context.",
+    "status": "submitted"
+  }
+]

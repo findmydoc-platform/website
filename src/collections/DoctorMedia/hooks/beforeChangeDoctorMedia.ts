@@ -19,7 +19,7 @@ export const beforeChangeDoctorMedia: CollectionBeforeChangeHook<DoctorMedia> = 
   }
 
   const doctorId = Number(incomingDoctorId)
-  if (!Number.isFinite(doctorId)) {
+  if (!Number.isSafeInteger(doctorId) || doctorId <= 0) {
     throw new Error('Doctor id must be numeric')
   }
 
@@ -39,7 +39,7 @@ export const beforeChangeDoctorMedia: CollectionBeforeChangeHook<DoctorMedia> = 
     userCollections: ['platformStaff', 'clinicStaff'],
   })
 
-  draft.doctor = draft.doctor ?? doctorId
+  draft.doctor = doctorId
 
   const clinicId = await getDoctorClinicId(doctorId, req.payload)
 

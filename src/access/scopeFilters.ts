@@ -296,6 +296,11 @@ export const platformClinicOrPublicReviewResponse: Access = async ({ req }): Pro
         },
       },
       {
+        'review.deletedAt': {
+          exists: false,
+        },
+      },
+      {
         'publishedResponse.body': {
           exists: true,
         },

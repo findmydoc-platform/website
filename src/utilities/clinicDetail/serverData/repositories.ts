@@ -330,7 +330,6 @@ export async function findPublicReviewResponsesByReviewIds(
           id: true,
           review: true,
           publishedResponse: true,
-          updatedAt: true,
         },
       })
 

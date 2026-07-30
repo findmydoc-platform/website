@@ -357,7 +357,10 @@ export const prepareReviewResponseChange: CollectionBeforeChangeHook = async ({
     throw new APIError(`Unsupported review response status: ${String(requestedStatus)}`, 400)
   }
 
-  const pending = normalizeResponseGroup(incoming.pendingResponse ?? original.pendingResponse, req, 'pending')
+  const pending =
+    requestedStatus === 'blocked'
+      ? null
+      : normalizeResponseGroup(incoming.pendingResponse ?? original.pendingResponse, req, 'pending')
   const timestamp = now()
   const base: WorkflowDraft = {
     ...original,

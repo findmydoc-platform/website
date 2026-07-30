@@ -60,7 +60,7 @@ describe('reviewResponses lifecycle', () => {
       const id = reviewIds.pop()
       if (!id) continue
       try {
-        await payload.delete({ collection: 'reviews', id, overrideAccess: true })
+        await payload.delete({ collection: 'reviews', id, overrideAccess: true, trash: true })
       } catch {}
     }
 
@@ -296,12 +296,64 @@ describe('reviewResponses lifecycle', () => {
     ).rejects.toThrow('immutable audit records')
   }, 60000)
 
-  it('fails closed when a parent review is no longer approved even if its response was not blocked', async () => {
+  it('allows platform staff to block an approved response without a pending revision', async () => {
+    const { review } = await createApprovedReview('direct-block')
+    const moderator = await createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-direct-block-platform`,
+      createdStaffIds: staffIds,
+    })
+    const platformUser = asPayloadStaffUser(moderator)
+
+    const approved = await payload.create({
+      collection: 'reviewResponses',
+      data: {
+        review: review.id,
+        pendingResponse: {
+          body: 'Thank you for the review. We have shared the feedback with the responsible clinic team.',
+        },
+        moderationStatus: 'approved',
+      } as unknown as ReviewResponse,
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    responseIds.push(approved.id)
+
+    expect(approved.pendingResponse).toBeFalsy()
+    expect(approved.publishedResponse?.isBlocked).toBe(false)
+
+    const blocked = await payload.update({
+      collection: 'reviewResponses',
+      id: approved.id,
+      data: {
+        moderationStatus: 'blocked',
+        moderationReason: 'The published response contains information that must no longer be shown publicly.',
+      } as unknown as ReviewResponse,
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    expect(blocked.moderationStatus).toBe('blocked')
+    expect(blocked.pendingResponse).toBeFalsy()
+    expect(blocked.publishedResponse?.isBlocked).toBe(true)
+
+    const publicResponses = await payload.find({
+      collection: 'reviewResponses',
+      where: { id: { equals: approved.id } },
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(publicResponses.docs).toHaveLength(0)
+  }, 60000)
+
+  it('fails closed when a parent review is rejected or trashed even if its response was not blocked', async () => {
     const { review } = await createApprovedReview('parent-rejected')
     const moderator = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-parent-rejected-platform`,
       createdStaffIds: staffIds,
     })
+    const platformUser = asPayloadStaffUser(moderator)
     const response = await payload.create({
       collection: 'reviewResponses',
       data: {
@@ -311,7 +363,7 @@ describe('reviewResponses lifecycle', () => {
         },
         moderationStatus: 'approved',
       } as unknown as ReviewResponse,
-      user: asPayloadStaffUser(moderator),
+      user: platformUser,
       overrideAccess: false,
       depth: 0,
     })
@@ -323,7 +375,7 @@ describe('reviewResponses lifecycle', () => {
       data: {
         status: 'rejected',
       } as unknown as Review,
-      user: asPayloadStaffUser(moderator),
+      user: platformUser,
       overrideAccess: false,
       depth: 0,
     })
@@ -343,6 +395,43 @@ describe('reviewResponses lifecycle', () => {
       depth: 0,
     })
     expect(publicResponses.docs).toHaveLength(0)
+
+    await payload.update({
+      collection: 'reviews',
+      id: review.id,
+      data: {
+        status: 'approved',
+      } as unknown as Review,
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const publicAfterReapproval = await payload.find({
+      collection: 'reviewResponses',
+      where: { id: { equals: response.id } },
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(publicAfterReapproval.docs).toHaveLength(1)
+
+    await payload.update({
+      collection: 'reviews',
+      id: review.id,
+      data: {
+        deletedAt: new Date().toISOString(),
+      } as unknown as Review,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    const publicAfterTrash = await payload.find({
+      collection: 'reviewResponses',
+      where: { id: { equals: response.id } },
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(publicAfterTrash.docs).toHaveLength(0)
   }, 60000)
 
   it('scopes private workflow reads and anonymizes actor relations without losing audit history', async () => {

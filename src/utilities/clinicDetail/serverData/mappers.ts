@@ -443,7 +443,7 @@ function mapClinicFreshness({
       ...clinicTreatments.map((item) => item.updatedAt),
       ...doctors.map((item) => item.updatedAt),
       ...doctorSpecialties.map((item) => item.updatedAt),
-      ...reviewResponses.map((item) => item.updatedAt),
+      ...reviewResponses.map((item) => item.publishedResponse?.approvedAt),
       ...accreditations.map((item) => item.updatedAt),
       ...cities.map((item) => item.updatedAt),
     ]),

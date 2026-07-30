@@ -453,7 +453,8 @@ export const permissionMatrix: PermissionMatrix = {
         create: { type: 'conditional', details: 'platform + clinic staff with assigned clinic' },
         read: {
           type: 'conditional',
-          details: 'platform all + clinic own workflow + public approved-review non-blocked response projection',
+          details:
+            'platform all + clinic own workflow + public non-deleted approved-review non-blocked response projection',
         },
         readVersions: { type: 'conditional', details: 'platform all + clinic own clinic versions' },
         update: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
@@ -470,7 +471,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'One moderated response workflow per review; public reads require an approved parent review and an approved non-blocked response; unlimited immutable native versions',
+        'One moderated response workflow per review; public reads require a non-deleted approved parent review and an approved non-blocked response; unlimited immutable native versions',
     },
     reviewAppeals: {
       slug: 'reviewAppeals',

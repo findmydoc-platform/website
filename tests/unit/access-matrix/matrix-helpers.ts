@@ -739,6 +739,11 @@ function validateConditional(ctx: ValidationContext, value: unknown) {
               },
             },
             {
+              'review.deletedAt': {
+                exists: false,
+              },
+            },
+            {
               'publishedResponse.body': {
                 exists: true,
               },

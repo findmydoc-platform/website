@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { clinicDashboardBootstrapGetHandler } from '@/endpoints/clinicDashboardBootstrap'
 import { AUTH_FLOW_ERROR_CODES, AuthFlowError } from '@/auth/errors/authFlowError'
-import { CLINIC_DASHBOARD_CAPABILITIES } from '@/features/clinicDashboard/bootstrap'
 import { createMockPayload, createMockReq, type MockPayload } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 
@@ -113,7 +112,12 @@ describe('Clinic Dashboard bootstrap endpoint', () => {
           name: 'Berlin Clinic',
         },
         status: 'approved',
-        capabilities: [...CLINIC_DASHBOARD_CAPABILITIES],
+        capabilities: [
+          'clinic-profile:view',
+          'clinic-profile:edit',
+          'clinic-treatments:view',
+          'clinic-treatments:edit',
+        ],
       },
     })
     expectPrivateLiveHeaders(response)

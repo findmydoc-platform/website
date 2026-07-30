@@ -19,7 +19,7 @@ const extractSql = (chunk: unknown): string => {
   return ''
 }
 
-describe('clinic postal code and EUR price migration', () => {
+describe('clinics and clinictreatments postal code and EUR price migration', () => {
   it('casts numeric postal codes directly and normalizes every legacy price to cents', async () => {
     const execute = vi.fn().mockResolvedValue(undefined)
 

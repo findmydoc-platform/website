@@ -294,6 +294,40 @@ function shouldClearPlatformSeedUploadTargetsBeforeUpdate(options: {
   )
 }
 
+function extractPolymorphicRelationKey(value: unknown): string | null {
+  if (!value || typeof value !== 'object') return null
+
+  const relation = value as Record<string, unknown>
+  const relationTo = typeof relation.relationTo === 'string' ? relation.relationTo.trim() : ''
+  if (!relationTo) return null
+
+  const relationValue = relation.value
+  const id =
+    relationValue && typeof relationValue === 'object'
+      ? ((relationValue as Record<string, unknown>).id ?? (relationValue as Record<string, unknown>).value)
+      : relationValue
+
+  if (typeof id !== 'string' && typeof id !== 'number') return null
+
+  const normalizedId = String(id).trim()
+  return normalizedId ? `${relationTo}:${normalizedId}` : null
+}
+
+function hasImmutableUserProfileMediaRelationDrift(options: {
+  collection: CollectionSlug
+  current: Record<string, unknown>
+  nextData: Record<string, unknown>
+  filePath?: string
+}): boolean {
+  if (options.collection !== 'userProfileMedia' || !options.filePath) return false
+
+  return ['user', 'createdBy'].some((field) => {
+    const currentKey = extractPolymorphicRelationKey(options.current[field])
+    const nextKey = extractPolymorphicRelationKey(options.nextData[field])
+    return currentKey !== null && nextKey !== null && currentKey !== nextKey
+  })
+}
+
 async function clearUploadDeletionTargetsBeforeUpdate(options: {
   payload: Payload
   collection: CollectionSlug
@@ -501,6 +535,31 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
   // If found doc is trashed, restore it by clearing deletedAt.
   if (current.deletedAt) {
     nextData.deletedAt = null
+  }
+
+  const filePath = options?.filePath
+  if (
+    filePath &&
+    hasImmutableUserProfileMediaRelationDrift({
+      collection,
+      current: current as Record<string, unknown>,
+      nextData,
+      filePath,
+    })
+  ) {
+    payload.logger.warn(`Seed user profile media replacement for immutable relation drift: ${collection}:${stableId}`)
+    await replaceBrokenUploadDocument(payload, {
+      collection,
+      id: current.id,
+      data: nextData,
+      context: operationContext,
+      req: operationReq,
+      filePath,
+    })
+    return {
+      created: false,
+      updated: true,
+    }
   }
 
   if (

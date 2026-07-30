@@ -196,9 +196,9 @@ describe('resetCollections', () => {
       'doctors',
       'clinics',
       'posts',
+      'userProfileMedia',
       'platformStaff',
       'clinicStaff',
-      'userProfileMedia',
     ]
 
     deleteMany.mockResolvedValue(undefined)
@@ -264,9 +264,9 @@ describe('resetCollections', () => {
       'doctors',
       'clinics',
       'posts',
+      'userProfileMedia',
       'platformStaff',
       'clinicStaff',
-      'userProfileMedia',
       'treatments',
       'categories',
       'tags',

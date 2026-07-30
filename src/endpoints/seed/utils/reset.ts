@@ -25,9 +25,9 @@ const demoResetOrder: CollectionSlug[] = [
   'doctors',
   'clinics',
   'posts',
+  'userProfileMedia',
   'platformStaff',
   'clinicStaff',
-  'userProfileMedia',
 ]
 
 const baselineResetOrder: CollectionSlug[] = [

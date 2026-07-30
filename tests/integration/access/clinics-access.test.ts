@@ -38,7 +38,7 @@ const buildClinicData = (
   address: {
     street: 'Access Street',
     houseNumber: '1',
-    zipCode: 12345,
+    zipCode: '12345',
     country: 'Testland',
     city: cityId,
   },

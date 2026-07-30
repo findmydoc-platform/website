@@ -53,6 +53,7 @@ import * as migration_20260722_144920_clinic_gallery_mcp_snapshot_alignment from
 import * as migration_20260727_145822_doctor_biography_plain_text from './20260727_145822_doctor_biography_plain_text'
 import * as migration_20260728_225058_clinic_opening_hours_active_treatments from './20260728_225058_clinic_opening_hours_active_treatments'
 import * as migration_20260729_235647_review_responses_and_appeals from './20260729_235647_review_responses_and_appeals'
+import * as migration_20260730_121845_clinic_postal_code_price_contract from './20260730_121845_clinic_postal_code_price_contract'
 
 export const migrations = [
   {
@@ -329,5 +330,10 @@ export const migrations = [
     up: migration_20260729_235647_review_responses_and_appeals.up,
     down: migration_20260729_235647_review_responses_and_appeals.down,
     name: '20260729_235647_review_responses_and_appeals',
+  },
+  {
+    up: migration_20260730_121845_clinic_postal_code_price_contract.up,
+    down: migration_20260730_121845_clinic_postal_code_price_contract.down,
+    name: '20260730_121845_clinic_postal_code_price_contract',
   },
 ]

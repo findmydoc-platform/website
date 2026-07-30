@@ -201,6 +201,48 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
     ).rejects.toThrow()
   })
 
+  it('accepts zero and cent-precise EUR prices while rejecting invalid amounts', async () => {
+    const { clinic } = await createClinicFixture(payload, cityId, {
+      slugPrefix: `${slugPrefix}-price-contract`,
+    })
+
+    const clinicTreatment = await payload.create({
+      collection: 'clinictreatments',
+      data: {
+        active: false,
+        clinic: clinic.id,
+        treatment: treatmentId,
+        price: 0,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+    createdClinicTreatmentIds.push(clinicTreatment.id)
+
+    const updated = await payload.update({
+      collection: 'clinictreatments',
+      id: clinicTreatment.id,
+      data: {
+        price: 12.34000000005,
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+    expect(updated.price).toBe(12.34)
+
+    for (const price of [-0.01, 12.345]) {
+      await expect(
+        payload.update({
+          collection: 'clinictreatments',
+          id: clinicTreatment.id,
+          data: { price },
+          overrideAccess: true,
+          depth: 0,
+        }),
+      ).rejects.toThrow()
+    }
+  })
+
   it('enforces unique constraint on clinic-treatment combination', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix })
 

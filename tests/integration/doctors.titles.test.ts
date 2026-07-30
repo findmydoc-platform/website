@@ -72,7 +72,7 @@ describe('Doctor title integration', () => {
             country: 'Turkey',
             street: 'Main St',
             houseNumber: '1',
-            zipCode: 12345,
+            zipCode: '12345',
             city: cityId,
           },
           contact: {

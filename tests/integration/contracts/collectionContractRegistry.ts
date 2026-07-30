@@ -47,6 +47,7 @@ export const collectionContractRegistry = {
       'tests/integration/clinicTreatments.creation.test.ts',
       'tests/integration/clinicTreatments.averagePrice.test.ts',
       'tests/integration/migrations/clinicOpeningHoursActiveTreatments.test.ts',
+      'tests/integration/migrations/clinicPostalCodePriceContract.test.ts',
     ],
   },
   clinics: {
@@ -55,6 +56,7 @@ export const collectionContractRegistry = {
       'tests/integration/clinics.creation.test.ts',
       'tests/integration/access/clinics-access.test.ts',
       'tests/integration/migrations/clinicOpeningHoursActiveTreatments.test.ts',
+      'tests/integration/migrations/clinicPostalCodePriceContract.test.ts',
     ],
   },
   countries: {

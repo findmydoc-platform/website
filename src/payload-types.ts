@@ -600,7 +600,7 @@ export interface Clinic {
     /**
      * Postal code. Required for approval.
      */
-    zipCode?: number | null;
+    zipCode?: string | null;
     /**
      * City where the clinic is located. Required for approval.
      */
@@ -797,7 +797,7 @@ export interface Clinictreatment {
   id: number;
   stableId?: string | null;
   /**
-   * Price the clinic charges in EUR
+   * Price the clinic charges in EUR, with at most two decimal places
    */
   price: number;
   /**

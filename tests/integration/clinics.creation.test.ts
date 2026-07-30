@@ -154,7 +154,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Test Street',
           houseNumber: '123',
-          zipCode: 34000,
+          zipCode: '34000',
           country: 'Turkey',
           city: cityId,
         },
@@ -288,7 +288,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Tagged Street',
           houseNumber: '456',
-          zipCode: 34100,
+          zipCode: '34100',
           country: 'Turkey',
           city: cityId,
         },
@@ -321,7 +321,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Geo Street',
           houseNumber: '789',
-          zipCode: 34200,
+          zipCode: '34200',
           country: 'Turkey',
           city: cityId,
         },
@@ -380,7 +380,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Accredited Street',
           houseNumber: '101',
-          zipCode: 34900,
+          zipCode: '34900',
           country: 'Turkey',
           city: cityId,
         },
@@ -412,7 +412,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Thumbnail Street',
           houseNumber: '202',
-          zipCode: 35000,
+          zipCode: '35000',
           country: 'Turkey',
           city: cityId,
         },
@@ -533,7 +533,7 @@ describe('Clinic Creation Integration Tests', () => {
           country: 'Turkey',
           street: 'Approval Street',
           houseNumber: '10',
-          zipCode: 34000,
+          zipCode: '34000',
           city: cityId,
         },
         internalPrimaryContact: buildInternalPrimaryContact('approval'),
@@ -581,7 +581,7 @@ describe('Clinic Creation Integration Tests', () => {
           address: {
             street: 'Test Street',
             houseNumber: '123',
-            zipCode: 34000,
+            zipCode: '34000',
             country: 'Turkey',
             city: cityId,
           },
@@ -610,7 +610,7 @@ describe('Clinic Creation Integration Tests', () => {
           address: {
             street: 'Test Street',
             houseNumber: '123',
-            zipCode: 34000,
+            zipCode: '34000',
             country: 'Turkey',
             city: cityId,
           },
@@ -639,7 +639,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Slug Street',
           houseNumber: '999',
-          zipCode: 34300,
+          zipCode: '34300',
           country: 'Turkey',
           city: cityId,
         },
@@ -670,7 +670,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Update Street',
           houseNumber: '111',
-          zipCode: 34400,
+          zipCode: '34400',
           country: 'Turkey',
           city: cityId,
         },
@@ -717,7 +717,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Status Street',
           houseNumber: '505',
-          zipCode: 35100,
+          zipCode: '35100',
           country: 'Turkey',
           city: cityId,
         },
@@ -763,7 +763,7 @@ describe('Clinic Creation Integration Tests', () => {
           address: {
             street: 'Trust Street',
             houseNumber: '707',
-            zipCode: 35170,
+            zipCode: '35170',
             country: 'Turkey',
             city: cityId,
           },
@@ -816,7 +816,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Content Manager Street',
           houseNumber: '808',
-          zipCode: 35180,
+          zipCode: '35180',
           country: 'Turkey',
           city: cityId,
         },
@@ -877,7 +877,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Public Contact Street',
           houseNumber: '909',
-          zipCode: 35190,
+          zipCode: '35190',
           country: 'Turkey',
           city: cityId,
         },
@@ -926,7 +926,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Trash Street',
           houseNumber: '222',
-          zipCode: 34500,
+          zipCode: '34500',
           country: 'Turkey',
           city: cityId,
         },
@@ -981,7 +981,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Multi Lang Street',
           houseNumber: '333',
-          zipCode: 34600,
+          zipCode: '34600',
           country: 'Turkey',
           city: cityId,
         },
@@ -1015,7 +1015,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Approved Street',
           houseNumber: '444',
-          zipCode: 34700,
+          zipCode: '34700',
           country: 'Turkey',
           city: cityId,
         },
@@ -1045,7 +1045,7 @@ describe('Clinic Creation Integration Tests', () => {
         address: {
           street: 'Join Street',
           houseNumber: '606',
-          zipCode: 35200,
+          zipCode: '35200',
           country: 'Turkey',
           city: cityId,
         },

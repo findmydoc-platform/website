@@ -61,7 +61,7 @@ const mockData: MockData = {
       address: {
         street: 'Lichtenberger Strasse',
         houseNumber: '24',
-        zipCode: 10179,
+        zipCode: '10179',
         city: 501,
         country: 'Germany',
       },
@@ -87,7 +87,7 @@ const mockData: MockData = {
       address: {
         street: 'Draft Street',
         houseNumber: '1',
-        zipCode: 10000,
+        zipCode: '10000',
         city: 501,
         country: 'Germany',
       },

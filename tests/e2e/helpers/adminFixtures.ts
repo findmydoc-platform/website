@@ -118,7 +118,7 @@ export const ensureClinicFixture = async (
       address: {
         street: 'Journey Street',
         houseNumber: '12A',
-        zipCode: 34000,
+        zipCode: '34000',
         country: 'Turkey',
         city: cityId,
       },

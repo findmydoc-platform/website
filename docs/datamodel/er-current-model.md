@@ -99,7 +99,7 @@ erDiagram
         text address_country "Country, default: Turkey"
         text address_street "Street name, required"
         text address_houseNumber "House number, required"
-        number address_zipCode "Zip code, required"
+        text address_zipCode "Postal code, optional; max 32 characters"
         relationship city FK "Relationship to Cities, required"
         text contact_phoneNumber "Primary phone, required"
         email contact_email "Primary email, required"
@@ -243,7 +243,7 @@ erDiagram
 
     ClinicTreatments {
         text id PK "UUID, auto by Payload"
-        number price "Clinic price (EUR), required"
+        number price "Clinic price in EUR, required, >= 0, max 2 decimals"
         boolean active "Public offering status, default false"
         relationship clinic FK "Relationship to Clinics, required"
         relationship treatment FK "Relationship to Treatments, required"

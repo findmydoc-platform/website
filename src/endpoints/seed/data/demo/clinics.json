@@ -35,7 +35,7 @@
     "address": {
       "street": "Valikonagi Avenue",
       "houseNumber": "21",
-      "zipCode": 34367,
+      "zipCode": "34367",
       "country": "Turkey"
     },
     "contact": {
@@ -102,7 +102,7 @@
     "address": {
       "street": "Nispetiye Street",
       "houseNumber": "88",
-      "zipCode": 34340,
+      "zipCode": "34340",
       "country": "Turkey"
     },
     "contact": {
@@ -160,7 +160,7 @@
     "address": {
       "street": "Ataturk Boulevard",
       "houseNumber": "145",
-      "zipCode": 6420,
+      "zipCode": "6420",
       "country": "Turkey"
     },
     "contact": {
@@ -218,7 +218,7 @@
     "address": {
       "street": "Tunali Hilmi Street",
       "houseNumber": "42",
-      "zipCode": 6680,
+      "zipCode": "6680",
       "country": "Turkey"
     },
     "contact": {
@@ -276,7 +276,7 @@
     "address": {
       "street": "Cumhuriyet Square",
       "houseNumber": "12",
-      "zipCode": 35210,
+      "zipCode": "35210",
       "country": "Turkey"
     },
     "contact": {
@@ -334,7 +334,7 @@
     "address": {
       "street": "Mithatpasa Street",
       "houseNumber": "205",
-      "zipCode": 35260,
+      "zipCode": "35260",
       "country": "Turkey"
     },
     "contact": {
@@ -392,7 +392,7 @@
     "address": {
       "street": "Lara Avenue",
       "houseNumber": "310",
-      "zipCode": 7160,
+      "zipCode": "7160",
       "country": "Turkey"
     },
     "contact": {
@@ -450,7 +450,7 @@
     "address": {
       "street": "Isiklar Street",
       "houseNumber": "77",
-      "zipCode": 7100,
+      "zipCode": "7100",
       "country": "Turkey"
     },
     "contact": {
@@ -508,7 +508,7 @@
     "address": {
       "street": "Ataturk Caddesi",
       "houseNumber": "56",
-      "zipCode": 16010,
+      "zipCode": "16010",
       "country": "Turkey"
     },
     "contact": {
@@ -566,7 +566,7 @@
     "address": {
       "street": "Fomara Street",
       "houseNumber": "19",
-      "zipCode": 16220,
+      "zipCode": "16220",
       "country": "Turkey"
     },
     "contact": {

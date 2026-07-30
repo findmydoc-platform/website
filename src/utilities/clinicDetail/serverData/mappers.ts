@@ -175,7 +175,7 @@ function buildFullAddress(clinic: Clinic, cityNameById: Map<number, string>): st
   const cityNameFromMap = cityNameById.get(extractRelationId(cityRelation) ?? -1) ?? null
   const cityName = cityNameFromRelation ?? cityNameFromMap
 
-  const zipCode = Number.isFinite(address.zipCode) ? String(address.zipCode) : ''
+  const zipCode = typeof address.zipCode === 'string' ? address.zipCode.trim() : ''
   const cityLine = normalizeWhitespace(`${zipCode} ${cityName ?? ''}`)
 
   const country = typeof address.country === 'string' ? address.country.trim() : ''

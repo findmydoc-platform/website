@@ -707,6 +707,19 @@ export const permissionMatrix: PermissionMatrix = {
       notes:
         'Public submissions use the controlled API route; platform approval creates a pending clinic and initial clinic staff principal with duplicate-write observability',
     },
+    clinicProfileDrafts: {
+      slug: 'clinicProfileDrafts',
+      displayName: 'ClinicProfileDrafts',
+      operations: {
+        create: { type: 'platform' },
+        read: { type: 'platform' },
+        update: { type: 'platform' },
+        delete: { type: 'platform' },
+        admin: { type: 'platform' },
+      },
+      notes:
+        'Private active clinic profile drafts; Clinic Dashboard access is authorized and tenant-scoped through dedicated API endpoints',
+    },
     patientClinicInquiries: {
       slug: 'patientClinicInquiries',
       displayName: 'PatientClinicInquiries',

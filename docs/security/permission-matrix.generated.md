@@ -39,6 +39,7 @@
 | Categories `(categories)` | Platform | Anyone | Platform | Platform | Platform | – |
 | Accreditation `(accreditation)` | Platform | Anyone | Platform | Platform | Platform | – |
 | ClinicApplications `(clinicApplications)` | Platform | Platform | Platform | Platform | Platform | – |
+| ClinicProfileDrafts `(clinicProfileDrafts)` | Platform | Platform | Platform | Platform | Platform | – |
 | PatientClinicInquiries `(patientClinicInquiries)` | Platform | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic status transitions only</sub> | Platform | Platform | – |
 
 ## Notes
@@ -77,4 +78,5 @@
 - **Categories**: Supporting data - platform write, everyone read
 - **Accreditation**: Supporting data - platform write, everyone read
 - **ClinicApplications**: Public submissions use the controlled API route; platform approval creates a pending clinic and initial clinic staff principal with duplicate-write observability
+- **ClinicProfileDrafts**: Private active clinic profile drafts; Clinic Dashboard access is authorized and tenant-scoped through dedicated API endpoints
 - **PatientClinicInquiries**: Patient-to-clinic inquiry queue - public submissions use the controlled API route; clinic staff read own-clinic inquiries and update controlled statuses only

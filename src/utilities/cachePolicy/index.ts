@@ -75,6 +75,7 @@ export const CACHE_POLICY_COLLECTIONS = [
   'clinicStaff',
   'platformStaff',
   'clinicApplications',
+  'clinicProfileDrafts',
   'patientClinicInquiries',
   'userProfileMedia',
 ] as const
@@ -501,6 +502,7 @@ export const CACHE_POLICY_CATALOG = [
       'platformStaff',
       'clinicStaff',
       'clinicApplications',
+      'clinicProfileDrafts',
       'patientClinicInquiries',
       'clinicGalleryEntries',
       'clinicGalleryMedia',

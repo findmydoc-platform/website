@@ -81,6 +81,7 @@ export interface Config {
     categories: Category;
     patients: Patient;
     clinicStaff: ClinicStaff;
+    clinicProfileDrafts: ClinicProfileDraft;
     platformStaff: PlatformStaff;
     clinicApplications: ClinicApplication;
     patientClinicInquiries: PatientClinicInquiry;
@@ -145,6 +146,7 @@ export interface Config {
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     patients: PatientsSelect<false> | PatientsSelect<true>;
     clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
+    clinicProfileDrafts: ClinicProfileDraftsSelect<false> | ClinicProfileDraftsSelect<true>;
     platformStaff: PlatformStaffSelect<false> | PlatformStaffSelect<true>;
     clinicApplications: ClinicApplicationsSelect<false> | ClinicApplicationsSelect<true>;
     patientClinicInquiries: PatientClinicInquiriesSelect<false> | PatientClinicInquiriesSelect<true>;
@@ -527,6 +529,7 @@ export interface Tag {
 export interface Clinic {
   id: number;
   stableId?: string | null;
+  profileRevision?: number | null;
   onboardingKey?: string | null;
   /**
    * Clinic name shown to patients
@@ -2310,6 +2313,162 @@ export interface Form {
   createdAt: string;
 }
 /**
+ * Private clinic profile drafts managed through the Clinic Dashboard API
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicProfileDrafts".
+ */
+export interface ClinicProfileDraft {
+  id: number;
+  clinic: number | Clinic;
+  basePublishedRevision: number;
+  revision: number;
+  name?: string | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  supportedLanguages?:
+    | (
+        | 'german'
+        | 'english'
+        | 'french'
+        | 'spanish'
+        | 'italian'
+        | 'turkish'
+        | 'russian'
+        | 'arabic'
+        | 'chinese'
+        | 'japanese'
+        | 'korean'
+        | 'portuguese'
+      )[]
+    | null;
+  address: {
+    country: number | Country;
+    street?: string | null;
+    houseNumber?: string | null;
+    zipCode?: string | null;
+    city?: (number | null) | City;
+  };
+  /**
+   * Unpublished local opening hours. Incomplete open days are allowed until publication.
+   */
+  openingHours?: {
+    monday?: {
+      /**
+       * Mark Monday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    tuesday?: {
+      /**
+       * Mark Tuesday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    wednesday?: {
+      /**
+       * Mark Wednesday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    thursday?: {
+      /**
+       * Mark Thursday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    friday?: {
+      /**
+       * Mark Friday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    saturday?: {
+      /**
+       * Mark Saturday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+    sunday?: {
+      /**
+       * Mark Sunday as closed.
+       */
+      isClosed?: boolean | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      opensAt?: string | null;
+      /**
+       * Local time in 24-hour HH:mm format.
+       */
+      closesAt?: string | null;
+    };
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * New clinic applications awaiting review
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3140,6 +3299,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'clinicStaff';
         value: number | ClinicStaff;
+      } | null)
+    | ({
+        relationTo: 'clinicProfileDrafts';
+        value: number | ClinicProfileDraft;
       } | null)
     | ({
         relationTo: 'platformStaff';
@@ -4054,6 +4217,82 @@ export interface ClinicStaffSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicProfileDrafts_select".
+ */
+export interface ClinicProfileDraftsSelect<T extends boolean = true> {
+  clinic?: T;
+  basePublishedRevision?: T;
+  revision?: T;
+  name?: T;
+  description?: T;
+  supportedLanguages?: T;
+  address?:
+    | T
+    | {
+        country?: T;
+        street?: T;
+        houseNumber?: T;
+        zipCode?: T;
+        city?: T;
+      };
+  openingHours?:
+    | T
+    | {
+        monday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        tuesday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        wednesday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        thursday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        friday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        saturday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+        sunday?:
+          | T
+          | {
+              isClosed?: T;
+              opensAt?: T;
+              closesAt?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "platformStaff_select".
  */
 export interface PlatformStaffSelect<T extends boolean = true> {
@@ -4137,6 +4376,7 @@ export interface PatientClinicInquiriesSelect<T extends boolean = true> {
  */
 export interface ClinicsSelect<T extends boolean = true> {
   stableId?: T;
+  profileRevision?: T;
   onboardingKey?: T;
   name?: T;
   averageRating?: T;
@@ -6045,6 +6285,7 @@ export interface TaskCreateCollectionExport {
       | 'categories'
       | 'patients'
       | 'clinicStaff'
+      | 'clinicProfileDrafts'
       | 'platformStaff'
       | 'clinicApplications'
       | 'patientClinicInquiries'

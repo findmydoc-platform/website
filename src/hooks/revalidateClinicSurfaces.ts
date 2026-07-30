@@ -167,9 +167,15 @@ const resolveClinicOperation = ({
   return 'update'
 }
 
-export const revalidateClinicChange: CollectionAfterChangeHook = ({ doc, previousDoc, req }) => {
-  if (isRevalidationDisabled(req)) return doc
-
+export const dispatchClinicChangeRevalidation = ({
+  doc,
+  previousDoc,
+  req,
+}: {
+  readonly doc: RevalidatableDoc
+  readonly previousDoc?: RevalidatableDoc
+  readonly req: PayloadRequest
+}): void => {
   const current = doc as RevalidatableDoc
   const previous = previousDoc as RevalidatableDoc | undefined
   const id = normalizeId(current.id, 'clinic id')
@@ -198,6 +204,12 @@ export const revalidateClinicChange: CollectionAfterChangeHook = ({ doc, previou
     },
     req.payload.logger,
   )
+}
+
+export const revalidateClinicChange: CollectionAfterChangeHook = ({ doc, previousDoc, req }) => {
+  if (isRevalidationDisabled(req)) return doc
+
+  dispatchClinicChangeRevalidation({ doc, previousDoc, req })
 
   return doc
 }

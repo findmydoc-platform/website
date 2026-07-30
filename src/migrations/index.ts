@@ -55,6 +55,7 @@ import * as migration_20260728_225058_clinic_opening_hours_active_treatments fro
 import * as migration_20260729_235647_review_responses_and_appeals from './20260729_235647_review_responses_and_appeals'
 import * as migration_20260730_121845_clinic_postal_code_price_contract from './20260730_121845_clinic_postal_code_price_contract'
 import * as migration_20260730_201810_clinics_turkiye_country_relationship from './20260730_201810_clinics_turkiye_country_relationship'
+import * as migration_20260730_205420_clinic_profile_drafts from './20260730_205420_clinic_profile_drafts'
 import * as migration_20260730_213353_recalculate_normalized_treatment_prices from './20260730_213353_recalculate_normalized_treatment_prices'
 
 export const migrations = [
@@ -342,6 +343,11 @@ export const migrations = [
     up: migration_20260730_201810_clinics_turkiye_country_relationship.up,
     down: migration_20260730_201810_clinics_turkiye_country_relationship.down,
     name: '20260730_201810_clinics_turkiye_country_relationship',
+  },
+  {
+    up: migration_20260730_205420_clinic_profile_drafts.up,
+    down: migration_20260730_205420_clinic_profile_drafts.down,
+    name: '20260730_205420_clinic_profile_drafts',
   },
   {
     up: migration_20260730_213353_recalculate_normalized_treatment_prices.up,

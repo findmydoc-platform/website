@@ -74,7 +74,7 @@ export const normalizeOpeningHours = (value: unknown): unknown => {
   }
 }
 
-const validateOpeningHours = (value: unknown): true | string => {
+export const validateOpeningHours = (value: unknown): true | string => {
   const normalized = normalizeOpeningHours(value)
   if (normalized === undefined) return true
   if (!isRecord(normalized)) return 'Opening hours must be a complete Monday-to-Sunday schedule.'
@@ -102,6 +102,37 @@ const validateOpeningHours = (value: unknown): true | string => {
       return `${dayName} times must use the 24-hour HH:mm format.`
     }
     if (closesAt <= opensAt) return `${dayName} closing time must be later than opening time.`
+  }
+
+  return true
+}
+
+const validateDraftOpeningHours = (value: unknown): true | string => {
+  const normalized = normalizeOpeningHours(value)
+  if (normalized === undefined) return true
+  if (!isRecord(normalized)) return 'Draft opening hours must be a complete Monday-to-Sunday schedule.'
+
+  const unknownKeys = Object.keys(normalized).filter(
+    (key) => !openingHoursDayNames.includes(key as OpeningHoursDayName),
+  )
+  if (unknownKeys.length > 0) return 'Draft opening hours contain unsupported day fields.'
+
+  for (const dayName of openingHoursDayNames) {
+    const day = normalized[dayName]
+    if (!isRecord(day)) return `Draft opening hours must include ${dayName}.`
+    if (typeof day.isClosed !== 'boolean') return `${dayName} must specify whether the clinic is closed.`
+
+    const opensAt = normalizeTime(day.opensAt)
+    const closesAt = normalizeTime(day.closesAt)
+
+    if (day.isClosed) {
+      if (opensAt !== null || closesAt !== null) return `${dayName} cannot contain times when the clinic is closed.`
+      continue
+    }
+
+    if ((opensAt && !timePattern.test(opensAt)) || (closesAt && !timePattern.test(closesAt))) {
+      return `${dayName} times must use the 24-hour HH:mm format.`
+    }
   }
 
   return true
@@ -178,4 +209,12 @@ export const openingHoursField: GroupField = {
     buildDayField('saturday', 'Saturday'),
     buildDayField('sunday', 'Sunday'),
   ],
+}
+
+export const draftOpeningHoursField: GroupField = {
+  ...openingHoursField,
+  admin: {
+    description: 'Unpublished local opening hours. Incomplete open days are allowed until publication.',
+  },
+  validate: validateDraftOpeningHours,
 }

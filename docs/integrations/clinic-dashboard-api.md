@@ -21,8 +21,9 @@ durable architecture documentation, not an execution plan. The contract does not
 Payload CORS origins, a Dashboard database, service-role credentials, public cache behavior, or clinic login UI to the
 website.
 
-Payload exposes the initial private bootstrap contract. The Clinic Dashboard session and BFF runtime are implemented
-in the Dashboard repository; trusted preview and production rollout evidence remain pending.
+Payload exposes the private bootstrap contract and the persistent clinic-profile draft workflow. The Clinic Dashboard
+session and BFF runtime are implemented in the Dashboard repository; trusted preview and production rollout evidence
+remain pending.
 
 ## Boundary and Ownership
 
@@ -87,6 +88,88 @@ The DTO deliberately omits Supabase identifiers, tokens, internal roles, access-
 and unrelated clinic fields. Later capability endpoints may add their own DTOs without expanding this bootstrap into a
 generic data endpoint.
 
+## Clinic Profile Draft Contract
+
+The profile capability uses five custom Payload endpoints:
+
+| Method and route | Result |
+| --- | --- |
+| `GET /api/clinic-dashboard/profile` | Returns the current published profile, the optional active draft, and safe Türkiye city options. |
+| `POST /api/clinic-dashboard/profile/draft` | Creates the assigned clinic's active draft from the current published profile after a published-revision check. |
+| `PUT /api/clinic-dashboard/profile/draft` | Replaces the assigned clinic's active draft after published- and draft-revision checks. |
+| `POST /api/clinic-dashboard/profile/draft/discard` | Deletes the assigned clinic's active draft after a draft-revision check. |
+| `POST /api/clinic-dashboard/profile/publish` | Atomically applies the draft-owned fields to the public clinic, deletes the draft, and triggers the established clinic revalidation plan. |
+
+Every request repeats bootstrap authorization and derives the clinic from the current approved `clinicStaff`
+assignment. No route accepts a clinic ID as authority. Payload stores at most one active `clinicProfileDrafts` record
+per clinic.
+
+Draft creation accepts only `{ expectedPublishedRevision }`. The server copies the current published name,
+description, public postal address, supported languages, and opening hours into revision `1`; callers cannot supply
+initial field values or a clinic ID. Draft updates require the complete draft-owned field set plus
+`expectedPublishedRevision` and `expectedDraftRevision`.
+
+The response contract is:
+
+```ts
+type ClinicProfileSnapshotDTO = {
+  availableCities: Array<{ id: string; name: string }>
+  draft?: ClinicProfileSourceFieldsDTO & {
+    basePublishedRevision: number
+    revision: number
+  }
+  published: ClinicProfileSourceFieldsDTO & {
+    revision: number
+  }
+}
+
+type ClinicProfileSourceFieldsDTO = {
+  address: {
+    city?: { id: string; name: string }
+    country: { code: "TR"; name: "Türkiye" }
+    houseNumber: string
+    street: string
+    zipCode: string
+  }
+  descriptionText: string
+  name: string
+  openingHours?: Record<
+    "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday",
+    { closesAt: string; isClosed: boolean; opensAt: string }
+  >
+  supportedLanguages: Array<
+    | "german"
+    | "english"
+    | "french"
+    | "spanish"
+    | "italian"
+    | "turkish"
+    | "russian"
+    | "arabic"
+    | "chinese"
+    | "japanese"
+    | "korean"
+    | "portuguese"
+  >
+}
+```
+
+Draft updates carry `expectedDraftRevision: number` and `expectedPublishedRevision: number`. Discard carries
+`expectedDraftRevision`; publish carries both expected revisions. A changed published profile, changed active draft,
+or stale draft base returns `409 CLINIC_PROFILE_CONFLICT`. A missing draft returns
+`404 CLINIC_PROFILE_DRAFT_NOT_FOUND`. Structurally invalid input returns `400 CLINIC_PROFILE_INVALID_INPUT`; a
+structurally valid but business-incomplete draft remains saveable and returns the same code with `422` only when
+publication is attempted.
+
+The draft owns only clinic name, description, public address, supported languages, and opening hours. Coordinates,
+gallery entries, doctors, treatments, contact fields, trust state, and every other clinic field remain outside the
+draft and publish mutation. An unchanged description keeps its stored rich-text document exactly; deliberately changed
+plain text is stored as canonical rich-text paragraphs.
+
+Draft read, create, update, and discard do not mutate `clinics` and do not trigger public revalidation. Publish checks
+and writes the clinic plus draft deletion in one database transaction. It then dispatches the existing clinic-surface
+revalidation event after commit.
+
 ## Dashboard-facing Route Semantics
 
 The Dashboard owns its same-origin routes. The paired Dashboard architecture defines their local boundaries; this
@@ -142,11 +225,13 @@ The bootstrap always returns one of these stable Payload status and code pairs:
 | Principal not approved or missing a current clinic assignment | `403` with `CLINIC_DASHBOARD_ACCESS_DENIED` | Preserve the session so the Dashboard can render an access-state explanation. |
 | Supabase or Payload temporarily unavailable | `503` with `CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE` | Preserve the session; do not present an upstream outage as logout. |
 
-Later capability routes may additionally use these general semantics:
+Capability routes additionally use these general semantics:
 
 | Payload or upstream condition | Dashboard BFF result | Session effect |
 | --- | --- | --- |
 | Invalid request input | `400 Bad Request` with a stable error code | Preserve the session. |
+| Business-incomplete publish input | `422 Unprocessable Entity` with `CLINIC_PROFILE_INVALID_INPUT` | Preserve the session and keep the draft. |
+| Missing active draft | `404 Not Found` with `CLINIC_PROFILE_DRAFT_NOT_FOUND` | Preserve the session and refresh the profile snapshot. |
 | Conflict with current business state | `409 Conflict` with a stable error code | Preserve the session and allow a controlled refresh. |
 | Payload unavailable or timed out | `502 Bad Gateway` or `504 Gateway Timeout` | Preserve the session; do not present an upstream outage as logout. |
 
@@ -158,7 +243,7 @@ city-country mismatch even when a client submits manipulated identifiers.
 Error bodies expose stable machine-readable codes and safe user-facing categories. They do not expose tokens, raw
 Payload errors, SQL details, stack traces, clinic data from a denied request, or Supabase response bodies.
 
-Every bootstrap response, including errors, carries:
+Every bootstrap and clinic-profile response, including errors, carries:
 
 ```text
 Cache-Control: private, no-store

@@ -37,6 +37,7 @@ const excludedSensitiveSlugs = [
   'clinicGalleryEntries',
   'doctorMedia',
   'clinicApplications',
+  'clinicProfileDrafts',
   'patientClinicInquiries',
   'favoriteclinics',
   'reviews',

@@ -16,7 +16,6 @@ type ClinicSeed = {
     street: string
     houseNumber: string
     zipCode: string
-    country: string
   }
   contact?: {
     phoneNumber?: string
@@ -88,6 +87,14 @@ function normalizeEnum<T extends string>(value: unknown, allowed: readonly T[], 
   return fallback
 }
 
+function getRelationshipId(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isSafeInteger(value)) return value
+  if (value && typeof value === 'object' && 'id' in value) {
+    return getRelationshipId((value as { id?: unknown }).id)
+  }
+  return null
+}
+
 const clinicSeedData = clinicsJson as unknown as ClinicSeed[]
 const doctorSeedData = doctorsJson as unknown as DoctorSeed[]
 
@@ -116,6 +123,19 @@ export async function createClinicFixture(
 
   const clinicData = clinicSeedData[clinicIndex] ?? clinicSeedData[0]!
   const doctorData = doctorSeedData[doctorIndex] ?? doctorSeedData[0]!
+  const city = await payload.findByID({
+    collection: 'cities',
+    id: cityId,
+    depth: 0,
+    overrideAccess: true,
+    select: {
+      country: true,
+    },
+  })
+  const countryId = getRelationshipId(city.country)
+  if (countryId === null) {
+    throw new Error(`Expected city ${String(cityId)} to reference a country`)
+  }
 
   const clinic = await payload.create({
     collection: 'clinics',
@@ -125,7 +145,7 @@ export async function createClinicFixture(
         street: clinicData.address.street,
         houseNumber: clinicData.address.houseNumber,
         zipCode: clinicData.address.zipCode,
-        country: clinicData.address.country,
+        country: countryId,
         city: cityId,
       },
       contact: {

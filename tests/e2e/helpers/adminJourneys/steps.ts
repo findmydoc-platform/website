@@ -125,6 +125,7 @@ export const createFillClinicDraftStep = <TState extends { clinicName: string }>
       await page.getByLabel('Street').fill('Smoke Street')
       await page.getByLabel('House Number').fill('12A')
       await page.getByLabel('Zip Code').fill('34000')
+      await selectComboboxOption(page, 'Country', 'Turkey')
       await selectComboboxOption(page, 'City', 'Istanbul')
 
       await openAdminTab(page, 'Contact')

@@ -34,7 +34,10 @@ const createUploadFixture = async (
 }
 
 export const ensureCountryFixture = async (request: APIRequestContext) => {
-  const existingCountry = await getFirstCollectionDoc(request, '/api/countries?depth=0&limit=1&sort=-createdAt')
+  const existingCountry = await getFirstCollectionDoc(
+    request,
+    '/api/countries?depth=0&limit=1&sort=-createdAt&where[isoCode][equals]=TR',
+  )
   const existingCountryId = getRecordId(existingCountry?.id)
   if (existingCountryId) {
     return existingCountryId
@@ -58,13 +61,15 @@ export const ensureCountryFixture = async (request: APIRequestContext) => {
 }
 
 export const ensureCityFixture = async (request: APIRequestContext) => {
-  const existingCity = await getFirstCollectionDoc(request, '/api/cities?depth=0&limit=1&sort=-createdAt')
+  const countryId = await ensureCountryFixture(request)
+  const existingCity = await getFirstCollectionDoc(
+    request,
+    `/api/cities?depth=0&limit=1&sort=-createdAt&where[country][equals]=${encodeURIComponent(String(countryId))}`,
+  )
   const existingCityId = getRecordId(existingCity?.id)
   if (existingCityId) {
     return existingCityId
   }
-
-  const countryId = await ensureCountryFixture(request)
 
   const response = await request.post('/api/cities', {
     data: {
@@ -108,6 +113,7 @@ export const ensureClinicFixture = async (
     }
   }
 
+  const countryId = await ensureCountryFixture(request)
   const cityId = await ensureCityFixture(request)
   const uniqueSuffix = Date.now()
   const clinicName = `${clinicNamePrefix} ${uniqueSuffix}`
@@ -119,7 +125,7 @@ export const ensureClinicFixture = async (
         street: 'Journey Street',
         houseNumber: '12A',
         zipCode: '34000',
-        country: 'Turkey',
+        country: countryId,
         city: cityId,
       },
       contact: {

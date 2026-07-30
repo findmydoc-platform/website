@@ -63,7 +63,7 @@ const mockData: MockData = {
         houseNumber: '24',
         zipCode: '10179',
         city: 501,
-        country: 'Germany',
+        country: { id: 601, name: 'Germany' },
       },
       contact: {
         phoneNumber: '+49 30 123 456',
@@ -89,7 +89,7 @@ const mockData: MockData = {
         houseNumber: '1',
         zipCode: '10000',
         city: 501,
-        country: 'Germany',
+        country: { id: 601, name: 'Germany' },
       },
       contact: {
         phoneNumber: '+49 30 000 000',
@@ -409,6 +409,7 @@ describe('getClinicDetailServerData (contract)', () => {
       'collection:reviewResponses',
       'collection:accreditation',
       'collection:cities',
+      'collection:countries',
     ])
   })
 

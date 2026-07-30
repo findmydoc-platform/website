@@ -42,7 +42,7 @@ Demo reset collection list (ordered for safe clearing):
 5. patients
 6. clinictreatments (join records)
 7. doctors (depends on clinics, specialties)
-8. clinics (depends on cities)
+8. clinics (depends on countries and cities)
 9. posts
 
 ## Execution Path
@@ -168,7 +168,7 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 **Purpose**: Geographic reference data for medical tourism.
 - **Countries**: Turkey (ISO codes, language, currency)
 - **Turkey Cities**: Istanbul, Ankara, Izmir, Antalya, Bursa
-- **Implementation**: Countries first, then cities with country references
+- **Implementation**: Countries first, then cities with country references; demo clinics map both address relationships through stable IDs
 
 ### 6. Treatments
 **Data Source**: `src/endpoints/seed/data/baseline/treatments.json`

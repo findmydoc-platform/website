@@ -494,5 +494,7 @@ export const revalidateMedicalSpecialtyChange = buildBroadCollectionHook('medica
 export const revalidateMedicalSpecialtyDelete = buildBroadCollectionDeleteHook('medical-specialties')
 export const revalidateCityChange = buildBroadCollectionHook('cities')
 export const revalidateCityDelete = buildBroadCollectionDeleteHook('cities')
+export const revalidateCountryChange = buildBroadCollectionHook('countries')
+export const revalidateCountryDelete = buildBroadCollectionDeleteHook('countries')
 export const revalidateAccreditationChange = buildBroadCollectionHook('accreditation')
 export const revalidateAccreditationDelete = buildBroadCollectionDeleteHook('accreditation')

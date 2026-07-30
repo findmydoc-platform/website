@@ -150,6 +150,11 @@ Later capability routes may additionally use these general semantics:
 | Conflict with current business state | `409 Conflict` with a stable error code | Preserve the session and allow a controlled refresh. |
 | Payload unavailable or timed out | `502 Bad Gateway` or `504 Gateway Timeout` | Preserve the session; do not present an upstream outage as logout. |
 
+Clinic profile address capabilities use the Payload relationship contract directly: the clinic country references the
+`countries` record with ISO code `TR`, and the city references a `cities` record owned by that country. Relationship
+options for clinic profile editing expose only this country and its cities. Payload rejects a different country or a
+city-country mismatch even when a client submits manipulated identifiers.
+
 Error bodies expose stable machine-readable codes and safe user-facing categories. They do not expose tokens, raw
 Payload errors, SQL details, stack traces, clinic data from a denied request, or Supabase response bodies.
 

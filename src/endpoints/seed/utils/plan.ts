@@ -217,6 +217,12 @@ export const demoPlan: SeedPlanStep[] = [
         required: true,
       },
       {
+        sourceField: 'countryStableId',
+        targetField: 'address.country',
+        collection: 'countries',
+        required: true,
+      },
+      {
         sourceField: 'tagsStableIds',
         targetField: 'tags',
         collection: 'tags',

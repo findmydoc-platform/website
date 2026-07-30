@@ -121,7 +121,7 @@ describe('Clinics collection verification field', () => {
         operation: 'update',
         originalDoc: {
           address: {
-            country: 'Germany',
+            country: 9,
             street: 'Clinic Street',
             houseNumber: '1',
             zipCode: '10115',
@@ -150,7 +150,7 @@ describe('Clinics collection verification field', () => {
         operation: 'update',
         originalDoc: {
           address: {
-            country: 'Germany',
+            country: 9,
             street: 'Clinic Street',
             houseNumber: '1',
             zipCode: '10115',

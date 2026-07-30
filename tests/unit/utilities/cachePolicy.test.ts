@@ -231,6 +231,19 @@ describe('cache policy contract', () => {
       sitemapSurfaces: ['pages'],
     })
 
+    expect(getCachePolicyEntry('route:clinic-detail:related-data')).toMatchObject({
+      collections: [
+        'clinictreatments',
+        'doctors',
+        'doctorspecialties',
+        'reviews',
+        'reviewResponses',
+        'accreditation',
+        'countries',
+      ],
+      surfaces: ['clinic-detail'],
+    })
+
     expect(getCachePolicyEntry('collection:doctor-treatments-deferred')).toMatchObject({
       kind: 'collection',
       cacheClass: 'critical-public',

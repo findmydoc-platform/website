@@ -153,7 +153,8 @@ describe('Medical network defaultPopulate', () => {
     expect(populatedClinic.verification).toBe('gold')
 
     const clinicAddress = expectRelationObject(populatedClinic.address)
-    expect(clinicAddress.country).toBe(clinic.address?.country)
+    const populatedCountry = expectRelationObject(clinicAddress.country)
+    expect(populatedCountry.id).toBe(clinic.address?.country)
     expect(clinicAddress).not.toHaveProperty('street')
     expect(clinicAddress).not.toHaveProperty('houseNumber')
 

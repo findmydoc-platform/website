@@ -24,6 +24,7 @@ export type ClinicSurfaceRevalidationCollection =
   | 'treatments'
   | 'medical-specialties'
   | 'cities'
+  | 'countries'
   | 'accreditation'
 
 export type ClinicPublicStatus = 'draft' | 'pending' | 'approved' | 'rejected'

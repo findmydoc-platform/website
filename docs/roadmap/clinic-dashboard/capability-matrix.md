@@ -19,9 +19,9 @@
 
 The initial runtime handoff is implemented by
 [website#1524](https://github.com/findmydoc-platform/website/issues/1524): this matrix defines the full product and
-capability inventory, while the first Payload bootstrap projects only `clinic-profile:view` and
-`clinic-profile:edit`. Later capabilities remain owned by their listed data and permission contracts. The browser does
-not call Payload and Payload CORS is not expanded.
+capability inventory. The Payload bootstrap now projects profile and treatment view/edit capabilities. Later
+capabilities remain owned by their listed data and permission contracts. The browser does not call Payload and Payload
+CORS is not expanded.
 
 The standalone app shell in
 [clinic-dashboard#1](https://github.com/findmydoc-platform/clinic-dashboard/issues/1) can proceed in parallel using only
@@ -250,7 +250,7 @@ The before-and-after gallery is deliberately disabled by [website#1576](https://
 | Add or edit a doctor profile/photo | The visible team fixtures include doctors. `doctors` and `doctorMedia` already support own-clinic create/update, but the generic dialog does not provide all required doctor fields. | `existing` | A dedicated clinic-dashboard#1 doctor editor is required; #1468 blocks complete photo freshness | `public-cached` |
 | Remove a doctor | Doctor deletion is platform-only. No current issue authorizes clinic-side removal or defines whether deactivation should replace deletion. | `Access/API gap` | Unowned permission/product decision; clinic-dashboard#1 keeps the action disabled | `public-cached` if later allowed |
 | Add, edit, remove, or photograph a non-doctor team member | No public clinic-team collection exists. `clinicStaff` must remain auth-only and doctors remain separate. | `Schema gap` | #1527 | `public-cached` |
-| Add a treatment | `clinictreatments` supports clinic-scoped create/update against platform-owned treatment master data with a fixed EUR price and explicit activation. New offerings start inactive. | `existing` | clinic-dashboard#1 supplies the typed form | `public-cached` |
+| Add a treatment | `clinictreatments` supports clinic-scoped create/update against platform-owned treatment master data with a fixed EUR price and explicit activation. New offerings start inactive. | `existing` | clinic-dashboard#101 supplies the typed form and BFF | `public-cached` |
 | Reorder treatments | `clinictreatments` has no ordering field or reorder contract, and #1528 does not include ordering. | `later scope` | No owning backend issue | `public-cached` if later approved |
 | Edit map position | Address, latitude, and longitude already exist and can be updated for the assigned clinic. | `existing` | #1524 for BFF/Payload access | `public-cached` |
 | Edit opening hours | `clinics.openingHours` provides an optional, validated Monday-to-Sunday local-time schedule. | `existing` | clinic-dashboard#1 supplies the typed form | `public-cached` |
@@ -266,8 +266,8 @@ Stitch screen `4403f6cc252e441783ae584fd7e38eaf`. [Screen capture](https://githu
 | --- | --- | --- | --- | --- |
 | Open and cancel dialog with focus return | Local dialog behavior exists. The declared `cancel-treatment` action is not emitted, but no backend call is needed. | `existing` | clinic-dashboard#1 | `n/a` |
 | Enter free treatment name and category | Treatment names and medical-specialty relationships are platform-owned master data. Free clinic creation would contradict the current model and #1528's scope. | `later scope` | clinic-dashboard#1 must use existing master selection or keep the control disabled; a master-data redesign has no owner | `public-cached` if a later master-data change is approved |
-| Select a treatment, enter its EUR price, and set the active state | The clinic offering owns only the master-treatment relationship, EUR price, and activation. Duration and description remain central Treatment data; there is no currency input. | `existing` | clinic-dashboard#1 supplies the typed form | `public-cached` |
-| Save treatment | Payload validates clinic ownership and the master-data relationship. Clinic Staff can create and update its own offering but cannot delete it. | `existing` | clinic-dashboard#1 supplies the typed mutation | `public-cached` |
+| Select a treatment, enter its EUR price, and set the active state | The clinic offering owns only the master-treatment relationship, EUR price, and activation. Duration and description remain central Treatment data; there is no currency input. | `existing` | clinic-dashboard#101 supplies the typed form | `public-cached` |
+| Save treatment | Payload validates clinic ownership and the master-data relationship. Clinic Staff can create and update its own offering but cannot delete it. | `existing` | clinic-dashboard#101 supplies the typed mutation and BFF | `public-cached` |
 
 ### Screen 7 — Add Team Member Dialog
 

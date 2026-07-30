@@ -73,6 +73,7 @@ const COLLECTION_FLUSH_SCOPE: Partial<Record<CacheTaggableCollection, ScopeEntry
   doctorspecialties: { surfaces: ['clinic-detail'] },
   doctortreatments: { surfaces: ['clinic-detail'] },
   reviews: { surfaces: ['clinic-detail', 'listing-comparison'], sitemaps: ['pages'] },
+  reviewResponses: { surfaces: ['clinic-detail'] },
   accreditation: { surfaces: ['clinic-detail'] },
   treatments: { surfaces: ['listing-comparison', 'partners-clinics'], sitemaps: ['pages'] },
   'medical-specialties': { surfaces: ['listing-comparison', 'home', 'partners-clinics'], sitemaps: ['pages'] },

@@ -8,6 +8,7 @@ import { createClinicFixture } from '../../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../../fixtures/cleanupTestEntities'
 import {
   asPayloadStaffUser,
+  asClinicScopedPayloadUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
   createClinicTestUser,
@@ -279,11 +280,12 @@ describe('Reviews access', () => {
       emailPrefix: `${slugPrefix}-clinic-reader`,
       createdStaffIds,
     })
+    const scopedClinicUser = await asClinicScopedPayloadUser(payload, clinicUser, clinic.id)
 
     const clinicRead = await payload.find({
       collection: 'reviews',
       where: { clinic: { equals: clinic.id } },
-      user: asPayloadStaffUser(clinicUser),
+      user: scopedClinicUser,
       overrideAccess: false,
     })
 

@@ -98,6 +98,29 @@ repository owns only the upstream Payload behavior they require.
 There is no catch-all route that accepts a Payload path, collection slug, query, or arbitrary request body from the
 browser.
 
+### Review response and appeal upstream contract
+
+The Website provides the Payload persistence and authorization contract; the Dashboard follow-up provides
+purpose-limited same-origin BFF routes and UI DTOs. The Dashboard browser never calls either collection directly.
+
+- Clinic staff read approved `reviews` only for their assigned clinic. Patients and anonymous readers continue to see
+  approved reviews without clinic-management fields; platform staff retain the full moderation view.
+- `reviewResponses` contains exactly one workflow per review. Clinic staff create or edit only the pending response for
+  their assigned clinic. Platform approval copies it to the public projection; rejection leaves an existing public
+  response unchanged; blocking removes the public projection from public reads.
+- `reviewAppeals` contains at most one appeal per review. A clinic submission is immutable. Platform staff alone move
+  `submitted -> under_review -> upheld | dismissed`; an upheld appeal changes the related review to `rejected`.
+- Both collections use unlimited Payload native versions. Platform staff can read all versions, clinic staff can read
+  their clinic's versions, and public or patient principals cannot read versions. Restore and normal physical deletion
+  are disabled.
+- Clinic and actor values are derived from the authenticated principal and related review. DTOs must not accept them as
+  authoritative browser input.
+- Actor audit relations are internal and nullable. Account erasure removes the relation from current and version rows;
+  action type, time, workflow state, and moderation reason remain.
+
+Public clinic-detail reads include only the approved, non-blocked response body, current clinic name, and approval
+date. They never include staff identity, pending text, moderation reasons, appeal data, or version history.
+
 All state-changing Dashboard routes use one shared mutation guard rather than route-local CSRF implementations. The
 guard validates the session and exact origin, then verifies a stateless HMAC-signed CSRF token bound to the current
 Supabase session. Public forms use a pre-session token; deployed cookies are host-only and secure. This protection
@@ -163,6 +186,11 @@ Cache entries, or stale-while-revalidate behavior for authenticated data are not
 Payload mutations that affect existing public website surfaces still execute their established ADR 023 revalidation
 events, tags, and bounded paths. A private BFF response never suppresses public invalidation. This architecture adds no
 new cache class, tag family, invalidation owner, or event.
+
+An approved or blocked clinic-response change revalidates the existing clinic-detail collection, entity, surface,
+surface-instance, clinic slug, and bounded clinic path. Pending edits, rejected replacements that preserve the current
+public response, and all appeal-only changes remain private-live. The related review transition caused by an upheld
+appeal uses the existing review revalidation and rating-aggregate hooks.
 
 ## Verification Contract
 

@@ -72,6 +72,10 @@ export type ConditionalScenarioKind =
   | 'clinic-gallery-read'
   // Doctor public state: clinic staff also see their own inactive doctors; everyone else sees active doctors only.
   | 'clinic-or-active'
+  // Review visibility: clinic staff see approved reviews for their clinic; public users see all approved reviews.
+  | 'clinic-approved-review'
+  // Review response visibility: clinic staff see their own workflow; public users see only the public projection.
+  | 'clinic-public-response'
 
 export interface ConditionalScenarioMeta {
   kind: ConditionalScenarioKind
@@ -428,21 +432,67 @@ export const permissionMatrix: PermissionMatrix = {
       displayName: 'Reviews',
       operations: {
         create: { type: 'conditional', details: 'platform full + patient create only' },
-        read: { type: 'published' },
+        read: { type: 'conditional', details: 'platform all + clinic own approved + public approved' },
         update: { type: 'platform' },
         delete: { type: 'platform' },
         admin: { type: 'platform' },
       },
       meta: {
-        published: {
-          field: 'status',
-          value: 'approved',
-        },
         conditional: {
           create: { kind: 'role-allow', allow: ['platform', 'patient'] },
+          read: { kind: 'clinic-approved-review' },
         },
       },
-      notes: 'Platform RWDA moderation, patients W create own pending reviews only, all R approved',
+      notes:
+        'Platform RWDA moderation, patients W create own pending reviews only, clinic staff R own approved reviews, public R approved reviews',
+    },
+    reviewResponses: {
+      slug: 'reviewResponses',
+      displayName: 'ReviewResponses',
+      operations: {
+        create: { type: 'conditional', details: 'platform + clinic staff with assigned clinic' },
+        read: {
+          type: 'conditional',
+          details: 'platform all + clinic own workflow + public approved non-blocked response projection',
+        },
+        readVersions: { type: 'conditional', details: 'platform all + clinic own clinic versions' },
+        update: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
+        delete: { type: 'conditional', details: 'physical deletion disabled' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
+          read: { kind: 'clinic-public-response' },
+          readVersions: { kind: 'clinic-scope', path: 'version.clinic' },
+          update: { kind: 'clinic-scope', path: 'clinic' },
+          delete: { kind: 'always-false' },
+        },
+      },
+      notes:
+        'One moderated response workflow per review; public reads expose only approved non-blocked responses; unlimited immutable native versions',
+    },
+    reviewAppeals: {
+      slug: 'reviewAppeals',
+      displayName: 'ReviewAppeals',
+      operations: {
+        create: { type: 'conditional', details: 'platform + clinic staff with assigned clinic' },
+        read: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        readVersions: { type: 'conditional', details: 'platform all + clinic own clinic versions' },
+        update: { type: 'platform' },
+        delete: { type: 'conditional', details: 'physical deletion disabled' },
+        admin: { type: 'platform' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
+          read: { kind: 'clinic-scope', path: 'clinic' },
+          readVersions: { kind: 'clinic-scope', path: 'version.clinic' },
+          delete: { kind: 'always-false' },
+        },
+      },
+      notes:
+        'One immutable clinic appeal per approved review; platform-only lifecycle decisions; no public access; unlimited immutable native versions',
     },
     treatments: {
       slug: 'treatments',

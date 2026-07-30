@@ -1,6 +1,14 @@
 import type { Payload } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock('node:fs/promises', () => ({
+  default: {
+    readdir: async () => {
+      throw Object.assign(new Error('No static clinic media fixture directory'), { code: 'ENOENT' })
+    },
+  },
+}))
+
 import {
   buildListingComparisonDataCacheKey,
   buildListingComparisonResolvedDataCacheKey,
@@ -13,7 +21,6 @@ type MockCollectionData = {
   treatments: Array<Record<string, unknown>>
   'medical-specialties': Array<Record<string, unknown>>
   clinics: Array<Record<string, unknown>>
-  clinicMedia: Array<Record<string, unknown>>
   clinictreatments: Array<Record<string, unknown>>
   reviews: Array<Record<string, unknown>>
 }
@@ -46,7 +53,11 @@ const baseData: MockCollectionData = {
         city: { id: 10, name: 'Berlin' },
         country: 'Germany',
       },
-      thumbnail: 501,
+      thumbnail: {
+        id: 501,
+        filename: 'test-clinics-creation-test-thumbnail.png',
+        alt: 'Alpha clinic exterior',
+      },
       tags: [{ name: 'Premium' }],
       updatedAt: '2026-01-10T00:00:00.000Z',
     },
@@ -97,13 +108,6 @@ const baseData: MockCollectionData = {
       thumbnail: null,
       tags: [{ name: 'Draft' }],
       updatedAt: '2026-01-06T00:00:00.000Z',
-    },
-  ],
-  clinicMedia: [
-    {
-      id: 501,
-      filename: 'test-clinics-creation-test-thumbnail.png',
-      alt: 'Alpha clinic exterior',
     },
   ],
   clinictreatments: [

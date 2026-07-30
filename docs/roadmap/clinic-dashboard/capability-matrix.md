@@ -226,12 +226,12 @@ Stitch screen `ea6de0f88c9e44fd97b003b4bff0a39b`. [Screen capture](https://githu
 
 | Visible action or state | Current capability and allowed behavior | Status | Owner or dependency | Cache impact |
 | --- | --- | --- | --- | --- |
-| List, filter, refresh, and paginate own-clinic reviews | Approved reviews are publicly readable, but clinic staff cannot access a management projection or moderation states for its clinic. Prototype callbacks omit filter/page values. | `Access/API gap` | #1529; typed query contract in clinic-dashboard#1 | `private-live` management read |
+| List, filter, refresh, and paginate own-clinic reviews | Clinic staff can read approved reviews for their assigned clinic. The Dashboard still owns typed filters, pagination, refresh behavior, and its purpose-limited BFF projection. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | `private-live` management read |
 | Render rating total and distribution | Current reviews maintain public rating aggregates, but the fixture total/distribution is not tied to repository data. A tenant-safe management projection is missing. | `Access/API gap` | #1529 for review read; #1531 for dashboard aggregate | Public aggregate is `public-cached`; management view is `private-live` |
-| Respond to or edit a clinic response | Reviews have no clinic-response fields and clinic staff cannot update reviews. | `Schema gap` | #1529 | Approved response `public-cached`; draft/moderation `private-live` |
+| Respond to or edit a clinic response | `reviewResponses` stores one clinic workflow per review. Clinic staff edit only the pending response; platform approval replaces the public projection, while rejection preserves the previous approved response. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | Approved response `public-cached`; pending/moderation `private-live` |
 | Add internal review note | No clinic-private review-note model exists, and #1529 does not include a general clinic note feature. | `later scope` | No owning backend issue | `private-live` if later approved |
-| Show response/review history | Current platform edit audit does not provide the prototype's clinic-visible response history. | `Schema gap` | #1529 | `private-live` |
-| Appeal or flag a review | No appeal reason, status, platform decision, or own-clinic mutation exists. | `Schema gap` | #1529 | `private-live` |
+| Show response history | `reviewResponses` uses unlimited Payload native versions. Platform staff see all versions; clinic staff see versions for their assigned clinic. Restore is disabled. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | `private-live` |
+| Appeal or flag a review | `reviewAppeals` stores one immutable appeal per approved review with submitted, under-review, upheld, and dismissed states. Only platform staff decide; an upheld appeal removes the review from public output. | `existing` website contract; Dashboard UI pending | #1529; clinic-dashboard follow-up | `private-live` |
 | Export reviews | No export contract is in the current issue set. | `later scope` | Unowned | `n/a` |
 | Create appointment | No appointment or booking domain exists; #1528 and #1530 explicitly exclude it. | `later scope` | Unowned | `n/a` |
 

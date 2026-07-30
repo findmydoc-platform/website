@@ -56,6 +56,8 @@ export const CACHE_POLICY_COLLECTIONS = [
   'doctorspecialties',
   'doctortreatments',
   'reviews',
+  'reviewResponses',
+  'reviewAppeals',
   'accreditation',
   'clinicMedia',
   'clinicGalleryEntries',
@@ -89,6 +91,7 @@ export const CACHE_TAGGABLE_COLLECTIONS = [
   'doctorspecialties',
   'doctortreatments',
   'reviews',
+  'reviewResponses',
   'accreditation',
   'clinicMedia',
   'doctorMedia',
@@ -292,7 +295,7 @@ export const CACHE_POLICY_CATALOG = [
     tagFamilies: ['collection', 'surface'],
     pathRelationship: 'path-second',
     pathFamilies: ['clinic-detail'],
-    collections: ['clinictreatments', 'doctors', 'doctorspecialties', 'reviews', 'accreditation'],
+    collections: ['clinictreatments', 'doctors', 'doctorspecialties', 'reviews', 'reviewResponses', 'accreditation'],
     surfaces: ['clinic-detail'],
   },
   {
@@ -493,6 +496,7 @@ export const CACHE_POLICY_CATALOG = [
       'patientClinicInquiries',
       'clinicGalleryEntries',
       'clinicGalleryMedia',
+      'reviewAppeals',
     ],
   },
   {

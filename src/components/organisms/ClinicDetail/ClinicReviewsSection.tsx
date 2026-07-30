@@ -92,6 +92,18 @@ function getReviewerInitials(review: ClinicDetailReview): string {
   return initials.length > 0 ? initials : 'AP'
 }
 
+function getClinicInitials(clinicName: string): string {
+  const initials = clinicName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+
+  return initials.length > 0 ? initials : 'CL'
+}
+
 function VerifiedReviewsInfo({ count }: { count: number }) {
   return (
     <div className="inline-flex items-center gap-1.5">
@@ -151,6 +163,42 @@ function ReviewerIdentity({ review }: { review: ClinicDetailReview }) {
   )
 }
 
+function ClinicResponse({ review }: { review: ClinicDetailReview }) {
+  const response = review.response
+  if (!response) return null
+
+  return (
+    <div
+      role="group"
+      aria-label={`Response from ${response.clinicName}`}
+      className="border-t border-primary/10 pt-5 sm:pt-6"
+    >
+      <div className="min-w-0 space-y-3">
+        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+          <div
+            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-600"
+            aria-hidden={true}
+          >
+            {getClinicInitials(response.clinicName)}
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            <p className="font-semibold [overflow-wrap:anywhere] text-secondary">{response.clinicName}</p>
+            <span className="hidden h-4 w-px bg-primary/15 sm:block" aria-hidden={true} />
+            <span className="font-medium text-primary">Clinic response</span>
+            <span className="hidden h-4 w-px bg-primary/15 sm:block" aria-hidden={true} />
+            <time className="text-secondary/55" dateTime={response.approvedAt}>
+              {formatReviewDate(response.approvedAt)}
+            </time>
+          </div>
+        </div>
+        <p className="max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/75 sm:ml-16">
+          {response.body}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function ReviewListItem({
   review,
   focusRef,
@@ -184,9 +232,12 @@ function ReviewListItem({
           <ReviewMeta review={review} />
         </div>
       </div>
-      <p className="max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/80">
-        {review.comment}
-      </p>
+      <div className="min-w-0 space-y-6">
+        <p className="max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/80">
+          {review.comment}
+        </p>
+        <ClinicResponse review={review} />
+      </div>
     </article>
   )
 }
@@ -214,6 +265,7 @@ function LatestReview({ review }: { review: ClinicDetailReview }) {
           <time dateTime={review.reviewDate}>{formatReviewDate(review.reviewDate)}</time>
         </div>
       </div>
+      <ClinicResponse review={review} />
     </article>
   )
 }

@@ -16,6 +16,7 @@ type RevalidatableDoc = {
   readonly status?: string | null
   readonly clinic?: unknown
   readonly doctor?: unknown
+  readonly publishedResponse?: unknown
 }
 
 type ClinicIdentity = {
@@ -394,6 +395,54 @@ export const revalidateReviewDelete: CollectionAfterDeleteHook = async ({ doc, r
     req,
     status: normalizeOptionalStatus(current.status),
     previousStatus: normalizeOptionalStatus(current.status),
+  })
+}
+
+type PublicReviewResponseProjection = {
+  readonly approvedAt: string
+  readonly body: string
+}
+
+const publicReviewResponseProjection = (value: unknown): PublicReviewResponseProjection | null => {
+  if (!value || typeof value !== 'object') return null
+
+  const response = value as { approvedAt?: unknown; body?: unknown; isBlocked?: unknown }
+  const body = typeof response.body === 'string' ? response.body.trim() : ''
+  const approvedAt = typeof response.approvedAt === 'string' ? response.approvedAt.trim() : ''
+
+  if (!body || !approvedAt || response.isBlocked === true) return null
+  return { approvedAt, body }
+}
+
+const hasSamePublicReviewResponse = (
+  current: PublicReviewResponseProjection | null,
+  previous: PublicReviewResponseProjection | null,
+): boolean =>
+  current?.body === previous?.body &&
+  current?.approvedAt === previous?.approvedAt &&
+  Boolean(current) === Boolean(previous)
+
+export const revalidateReviewResponseChange: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
+  if (isRevalidationDisabled(req)) return doc
+
+  const current = doc as RevalidatableDoc
+  const previous = previousDoc as RevalidatableDoc | undefined
+  const currentPublic = publicReviewResponseProjection(current.publishedResponse)
+  const previousPublic = publicReviewResponseProjection(previous?.publishedResponse)
+
+  if (hasSamePublicReviewResponse(currentPublic, previousPublic)) {
+    return doc
+  }
+
+  return revalidateRelatedClinicSurface({
+    collection: 'reviewResponses',
+    currentClinics: [await resolveClinicIdentity(req, current.clinic)].filter(isClinicIdentity),
+    previousClinics: [await resolveClinicIdentity(req, previous?.clinic)].filter(isClinicIdentity),
+    doc: current,
+    operation: 'related-update',
+    req,
+    status: currentPublic ? 'public' : undefined,
+    previousStatus: previousPublic ? 'public' : undefined,
   })
 }
 

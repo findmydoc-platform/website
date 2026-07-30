@@ -120,6 +120,20 @@ export const collectionContractRegistry = {
       'tests/integration/reviews.averageRatings.test.ts',
     ],
   },
+  reviewResponses: {
+    baseline: ['tests/integration/reviewResponses.lifecycle.test.ts'],
+    deep: [
+      'tests/integration/reviewResponses.lifecycle.test.ts',
+      'tests/integration/migrations/reviewResponsesAppeals.test.ts',
+    ],
+  },
+  reviewAppeals: {
+    baseline: ['tests/integration/reviewAppeals.lifecycle.test.ts'],
+    deep: [
+      'tests/integration/reviewAppeals.lifecycle.test.ts',
+      'tests/integration/migrations/reviewResponsesAppeals.test.ts',
+    ],
+  },
   tags: {
     baseline: ['tests/integration/tags.associations.test.ts'],
   },
@@ -159,6 +173,8 @@ export const deepContractDomains = {
   ],
   trustWorkflow: [
     'reviews',
+    'reviewResponses',
+    'reviewAppeals',
     'favoriteclinics',
     'accreditation',
     'clinicApplications',

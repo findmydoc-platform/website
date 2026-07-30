@@ -395,6 +395,70 @@ export const demoPlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
+    name: 'review-responses-initial-history',
+    collection: 'reviewResponses',
+    fileName: 'reviewResponsesInitial',
+    context: { trustedReviewWorkflowSeed: true },
+    reqUserStableId: 'seed-platform-admin',
+    mapping: [
+      {
+        sourceField: 'reviewStableId',
+        targetField: 'review',
+        collection: 'reviews',
+        required: true,
+      },
+    ],
+  },
+  {
+    kind: 'collection',
+    name: 'review-responses-final-state',
+    collection: 'reviewResponses',
+    fileName: 'reviewResponses',
+    context: { trustedReviewWorkflowSeed: true },
+    reqUserStableId: 'seed-platform-admin',
+    mapping: [
+      {
+        sourceField: 'reviewStableId',
+        targetField: 'review',
+        collection: 'reviews',
+        required: true,
+      },
+    ],
+  },
+  {
+    kind: 'collection',
+    name: 'review-appeals-initial-history',
+    collection: 'reviewAppeals',
+    fileName: 'reviewAppealsInitial',
+    context: { trustedReviewWorkflowSeed: true },
+    reqUserStableId: 'seed-platform-admin',
+    mapping: [
+      {
+        sourceField: 'reviewStableId',
+        targetField: 'review',
+        collection: 'reviews',
+        required: true,
+      },
+    ],
+  },
+  {
+    kind: 'collection',
+    name: 'review-appeals-final-state',
+    collection: 'reviewAppeals',
+    fileName: 'reviewAppeals',
+    context: { trustedReviewWorkflowSeed: true },
+    reqUserStableId: 'seed-platform-admin',
+    mapping: [
+      {
+        sourceField: 'reviewStableId',
+        targetField: 'review',
+        collection: 'reviews',
+        required: true,
+      },
+    ],
+  },
+  {
+    kind: 'collection',
     name: 'favorite-clinics',
     collection: 'favoriteclinics',
     fileName: 'favoriteClinics',

@@ -297,6 +297,40 @@ erDiagram
         date updatedAt "System: timestamps: true"
     }
 
+    ReviewResponses {
+        text id PK "UUID, auto by Payload"
+        relationship review FK "Unique relationship to one approved Review"
+        relationship clinic FK "Derived from Review, immutable"
+        group publishedResponse "Public body, approval date, blocked flag"
+        group pendingResponse "Moderated body and submission date"
+        select moderationStatus "enum: pending, approved, rejected, blocked"
+        textarea moderationReason "Required for rejected or blocked"
+        date moderatedAt "Platform decision timestamp"
+        select lastAction "Non-personal action audit"
+        date lastActionAt "Action timestamp"
+        select lastActorType "enum: clinic_staff, platform_staff, system"
+        relationship lastActionBy FK "Optional internal actor relation"
+        date createdAt "System: timestamps: true"
+        date updatedAt "System: timestamps: true"
+    }
+
+    ReviewAppeals {
+        text id PK "UUID, auto by Payload"
+        relationship review FK "Unique relationship to one approved Review"
+        relationship clinic FK "Derived from Review, immutable"
+        select reason "incorrect_clinic, inappropriate_content, privacy_concern, other"
+        textarea details "Immutable clinic submission"
+        select status "submitted, under_review, upheld, dismissed"
+        textarea decisionReason "Required for upheld or dismissed"
+        date decidedAt "Platform decision timestamp"
+        select lastAction "Non-personal action audit"
+        date lastActionAt "Action timestamp"
+        select lastActorType "enum: clinic_staff, platform_staff, system"
+        relationship lastActionBy FK "Optional internal actor relation"
+        date createdAt "System: timestamps: true"
+        date updatedAt "System: timestamps: true"
+    }
+
     Countries {
         text id PK "UUID, auto by Payload"
         text name "Country name, required"
@@ -400,6 +434,8 @@ erDiagram
     Clinics ||--o{ Doctors : "employs"
     Clinics ||--o{ ClinicTreatments : "offers"
     Clinics ||--o{ Reviews : "receives"
+    Clinics ||--o{ ReviewResponses : "owns response workflow"
+    Clinics ||--o{ ReviewAppeals : "submits appeal"
     Clinics ||--o{ FavoriteClinics : "is favorited"
     Clinics }o--|| Cities : "located in"
     Clinics }o--o{ Tags : "tagged with"
@@ -447,8 +483,20 @@ erDiagram
     Reviews ||--|| Clinics : "references clinic"
     Reviews ||--|| Doctors : "references doctor"
     Reviews ||--|| Treatments : "references treatment"
+    Reviews ||--o| ReviewResponses : "has at most one response workflow"
+    Reviews ||--o| ReviewAppeals : "has at most one appeal"
+
+    PlatformStaff o|--o{ ReviewResponses : "lastActionBy, nullable"
+    ClinicStaff o|--o{ ReviewResponses : "lastActionBy, nullable"
+    PlatformStaff o|--o{ ReviewAppeals : "lastActionBy, nullable"
+    ClinicStaff o|--o{ ReviewAppeals : "lastActionBy, nullable"
 
     FavoriteClinics ||--|| Clinics : "references clinic"
 
     Countries ||--o{ Cities : "has cities"
 ```
+
+`ReviewResponses` and `ReviewAppeals` use Payload native versions with unlimited retention. The current document and
+every version retain state, action type, and timestamps. Actor relations are intentionally nullable: deleting a staff
+account removes the personal relation from current and version relation tables while the non-personal audit remains.
+Version restoration and physical workflow deletion are disabled through normal collection access.

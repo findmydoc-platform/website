@@ -53,7 +53,23 @@ export async function asClinicScopedPayloadUser(
     depth: 0,
   })) as ClinicStaff
 
-  return withCollection(approved)
+  const accessReady = (await payload.update({
+    collection: 'clinicStaff',
+    id: approved.id,
+    data: {
+      authSync: {
+        errorCode: null,
+        status: 'synced',
+      },
+    },
+    context: {
+      skipClinicStaffAuthSync: true,
+    },
+    overrideAccess: true,
+    depth: 0,
+  })) as ClinicStaff
+
+  return withCollection(accessReady)
 }
 
 export async function createPlatformTestUser(payload: Payload, options: CreateRoleUserOptions): Promise<PlatformStaff> {

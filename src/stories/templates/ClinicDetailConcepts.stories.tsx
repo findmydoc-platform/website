@@ -72,6 +72,8 @@ export const Main_Default: Story = {
     expect(canvas.getAllByText('Maya K.')).toHaveLength(1)
     await expect(canvas.getAllByText('Verified review').length).toBeGreaterThan(0)
     expect(canvas.getAllByText(/Demo review text describes appointment preparation/).length).toBeGreaterThan(0)
+    await expect(canvas.getAllByText('Clinic response').length).toBeGreaterThan(0)
+    await expect(canvas.getAllByRole('group', { name: 'Response from Berlin Health Clinic' }).length).toBeGreaterThan(0)
 
     const showMoreButton = canvas.getByRole('button', { name: 'Show more reviews' })
     showMoreButton.focus()

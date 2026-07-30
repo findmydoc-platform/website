@@ -200,13 +200,11 @@ export const clinicDetailFixture: ClinicDetailData = {
         authorName: 'Maya K.',
         comment:
           'Demo review text describes appointment preparation, follow-up notes, and next-step communication for the review-card layout.',
-      },
-      {
-        id: 'review-2',
-        reviewDate: '2026-01-08T12:30:00.000Z',
-        ratingValue: 5,
-        authorName: 'Anna L.',
-        comment: 'Demo feedback text covers reception flow, scheduling notes, and explanation copy in a review card.',
+        response: {
+          body: 'Thank you for sharing your experience. We are pleased that the preparation and follow-up information were helpful.',
+          clinicName: 'Berlin Health Clinic',
+          approvedAt: '2026-07-28T10:00:00.000Z',
+        },
       },
       {
         id: 'review-3',
@@ -214,6 +212,18 @@ export const clinicDetailFixture: ClinicDetailData = {
         ratingValue: 4,
         authorName: 'James D.',
         comment: 'Demo treatment-plan text covers timing, home-care checklist details, and line wrapping.',
+      },
+      {
+        id: 'review-2',
+        reviewDate: '2026-01-08T12:30:00.000Z',
+        ratingValue: 5,
+        authorName: 'Anna L.',
+        comment: 'Demo feedback text covers reception flow, scheduling notes, and explanation copy in a review card.',
+        response: {
+          body: 'Thank you for taking the time to describe your visit. Your feedback helps us improve our scheduling communication.',
+          clinicName: 'Berlin Health Clinic',
+          approvedAt: '2026-07-26T14:30:00.000Z',
+        },
       },
       {
         id: 'review-4',
@@ -234,7 +244,7 @@ export const clinicDetailFixture: ClinicDetailData = {
     updatedAt: '2026-01-12T09:15:00.000Z',
     latestPatientReviewAt: '2026-01-12T09:15:00.000Z',
     verificationTier: 'gold',
-    sourceCollections: ['clinics', 'reviews'],
+    sourceCollections: ['clinics', 'reviews', 'reviewResponses'],
   },
   treatments: [
     {

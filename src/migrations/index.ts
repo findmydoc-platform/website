@@ -52,6 +52,7 @@ import * as migration_20260721_133332_doctor_availability_and_geo_point_order fr
 import * as migration_20260722_144920_clinic_gallery_mcp_snapshot_alignment from './20260722_144920_clinic_gallery_mcp_snapshot_alignment'
 import * as migration_20260727_145822_doctor_biography_plain_text from './20260727_145822_doctor_biography_plain_text'
 import * as migration_20260728_225058_clinic_opening_hours_active_treatments from './20260728_225058_clinic_opening_hours_active_treatments'
+import * as migration_20260729_235647_review_responses_and_appeals from './20260729_235647_review_responses_and_appeals'
 
 export const migrations = [
   {
@@ -323,5 +324,10 @@ export const migrations = [
     up: migration_20260728_225058_clinic_opening_hours_active_treatments.up,
     down: migration_20260728_225058_clinic_opening_hours_active_treatments.down,
     name: '20260728_225058_clinic_opening_hours_active_treatments',
+  },
+  {
+    up: migration_20260729_235647_review_responses_and_appeals.up,
+    down: migration_20260729_235647_review_responses_and_appeals.down,
+    name: '20260729_235647_review_responses_and_appeals',
   },
 ]

@@ -8,6 +8,7 @@ export const normalizeClinicPostalCode = (value: unknown): unknown => (typeof va
 
 export const validateClinicPostalCode: TextFieldValidation = (value) => {
   if (value === null || value === undefined || value === '') return true
+  if (typeof value !== 'string') return 'Postal code must be entered as text.'
   if (value.length > CLINIC_POSTAL_CODE_MAX_LENGTH) {
     return `Postal code must be at most ${CLINIC_POSTAL_CODE_MAX_LENGTH} characters.`
   }

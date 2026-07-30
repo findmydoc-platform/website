@@ -1,3 +1,4 @@
+import { Client } from 'pg'
 import { describe, expect, it, vi } from 'vitest'
 
 import { down, up } from '@/migrations/20260730_121845_clinic_postal_code_price_contract'
@@ -38,22 +39,52 @@ describe('clinics and clinictreatments postal code and EUR price migration', () 
     expect(sqlText).toContain('"price" <> ROUND("price", 2)')
   })
 
-  it.each([
-    [6420, '6420'],
-    [null, null],
-  ])('preserves legacy postal code %s as %s', (legacyValue, expected) => {
-    expect(legacyValue === null ? null : String(legacyValue)).toBe(expected)
-  })
+  it('migrates legacy postal codes and EUR prices in PostgreSQL', async () => {
+    const client = new Client({ connectionString: process.env.DATABASE_URI })
+    await client.connect()
 
-  it.each([
-    [12.345, 12.35],
-    [12.344, 12.34],
-    [-1.25, 0],
-    [0, 0],
-    [12.34, 12.34],
-  ])('normalizes legacy EUR price %s to %s', (legacyValue, expected) => {
-    const normalized = Math.round((Math.max(legacyValue, 0) + Number.EPSILON) * 100) / 100
-    expect(normalized).toBe(expected)
+    try {
+      await client.query('BEGIN')
+      await client.query('CREATE TEMP TABLE clinics (id integer, address_zip_code numeric)')
+      await client.query('CREATE TEMP TABLE clinictreatments (id integer, price numeric)')
+      await client.query(`INSERT INTO clinics (id, address_zip_code) VALUES (1, 6420), (2, NULL)`)
+      await client.query(`
+        INSERT INTO clinictreatments (id, price)
+        VALUES (1, 12.345), (2, 12.344), (3, -1.25), (4, 0), (5, 12.34), (6, NULL)
+      `)
+
+      await up({
+        db: {
+          execute: (statement: unknown) => client.query(extractSql(statement)),
+        },
+        payload: {},
+        req: {},
+      } as never)
+
+      const postalCodes = await client.query<{
+        address_zip_code: string | null
+        id: number
+      }>('SELECT id, address_zip_code FROM clinics ORDER BY id')
+      expect(postalCodes.rows).toEqual([
+        { address_zip_code: '6420', id: 1 },
+        { address_zip_code: null, id: 2 },
+      ])
+
+      const prices = await client.query<{ id: number; price: string | null }>(
+        'SELECT id, price FROM clinictreatments ORDER BY id',
+      )
+      expect(prices.rows.map(({ id, price }) => ({ id, price: price === null ? null : Number(price) }))).toEqual([
+        { id: 1, price: 12.35 },
+        { id: 2, price: 12.34 },
+        { id: 3, price: 0 },
+        { id: 4, price: 0 },
+        { id: 5, price: 12.34 },
+        { id: 6, price: null },
+      ])
+    } finally {
+      await client.query('ROLLBACK').catch(() => undefined)
+      await client.end()
+    }
   })
 
   it('blocks the lossy rollback', async () => {

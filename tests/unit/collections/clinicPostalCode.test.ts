@@ -18,4 +18,8 @@ describe('clinic postal code contract', () => {
   it.each(['10115/2', '10115.', '10115_2'])('rejects %s', async (value) => {
     expect(await validateClinicPostalCode(value, {} as never)).not.toBe(true)
   })
+
+  it('rejects numeric API values instead of coercing them to text', async () => {
+    expect(await validateClinicPostalCode(6420 as never, {} as never)).toBe('Postal code must be entered as text.')
+  })
 })

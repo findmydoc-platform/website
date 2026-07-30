@@ -26,8 +26,8 @@ behavior, or clinic login UI to the website.
 
 1. **Implemented:** Contract tests cover explicit clinic Bearer authentication, principal resolution, approval, clinic
    assignment, tenant derivation, private response headers, upstream failure classification, and denied states.
-2. **Implemented:** Payload exposes `GET /api/clinic-dashboard/bootstrap` without changing Payload CORS. Its initial
-   projection contains only `clinic-profile:view` and `clinic-profile:edit`.
+2. **Implemented:** Payload exposes `GET /api/clinic-dashboard/bootstrap` without changing Payload CORS. Its projection
+   contains profile and treatment view/edit capabilities.
 3. **Implemented:** The bootstrap returns a purpose-limited DTO and stable error codes without raw principals, clinic
    documents, Supabase identifiers, tokens, roles, or timestamps.
 4. Coordinate the Dashboard server-only client and same-origin routes against the exact website contract and DTO
@@ -48,7 +48,7 @@ behavior, or clinic login UI to the website.
 
 - Payload resolves clinic, status, and capabilities from the current principal for every request.
 - Bootstrap and capability DTOs contain no unapproved internal fields.
-- The initial capability projection contains exactly `clinic-profile:view` and `clinic-profile:edit`; later values wait
+- The capability projection contains profile and treatment view/edit capabilities in a stable order; later values wait
   for their own data and permission contracts.
 - Invalid, missing, conflicting, and ineligible principals fail closed with the documented status mapping.
 - The Payload API remains inaccessible from the Dashboard browser and requires no Dashboard CORS origin.

@@ -52,7 +52,11 @@ The endpoint:
 The initial response shape is owned by the website repository:
 
 ```ts
-type ClinicDashboardCapability = 'clinic-profile:view' | 'clinic-profile:edit'
+type ClinicDashboardCapability =
+  | 'clinic-profile:view'
+  | 'clinic-profile:edit'
+  | 'clinic-treatments:view'
+  | 'clinic-treatments:edit'
 
 type ClinicDashboardBootstrapDTO = {
   principal: {
@@ -69,9 +73,10 @@ type ClinicDashboardBootstrapDTO = {
 }
 ```
 
-The two initial capabilities are returned exactly once in the order shown above for every approved clinic principal
-with a current clinic assignment. They support profile display and editing controls already backed by current access
-rules. A successful bootstrap implies Dashboard access, so there is no separate `dashboard:access` capability.
+The four capabilities are returned exactly once in the order shown above for every approved clinic principal with a
+current clinic assignment. Existing profile view and edit access respectively grant treatment view and edit access
+while the treatment workspace is introduced. A successful bootstrap implies Dashboard access, so there is no separate
+`dashboard:access` capability.
 
 `ClinicDashboardCapability` is a closed, version-controlled string union. It describes user-visible operations, not
 Payload collection names or field-level access details. It is a UI projection and never replaces Payload authorization:

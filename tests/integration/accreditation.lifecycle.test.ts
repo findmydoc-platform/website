@@ -217,7 +217,7 @@ describe('Accreditation lifecycle integration', () => {
       data: {
         name: `${slugPrefix}-public-read`,
         abbreviation: 'PUB',
-        country: 'Turkey',
+        country: 'Türkiye',
         description: buildRichText('Public read validation'),
       } as unknown as Accreditation,
       user: asPayloadStaffUser(platformUser),

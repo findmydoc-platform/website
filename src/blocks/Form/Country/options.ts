@@ -892,7 +892,7 @@ export const countryOptions = [
     value: 'TN',
   },
   {
-    label: 'Turkey',
+    label: 'Türkiye',
     value: 'TR',
   },
   {

@@ -20,7 +20,7 @@ function buildRow(clinic: Clinic): ClinicRow {
   return {
     clinic,
     cityId: null,
-    location: 'Istanbul, Turkey',
+    location: 'Istanbul, Türkiye',
     priceFrom: 1200,
   }
 }

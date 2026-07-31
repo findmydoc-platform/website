@@ -1,11 +1,10 @@
-# Current Estimate: Database Growth Model (Turkey, 600 Clinics)
+# Current Estimate: Database Growth Model (Türkiye, 600 Clinics)
 
 ## Scope
 
 Estimate timestamp: 2026-06-09.
 
-This document estimates PostgreSQL growth for the current data model under a Turkey-only clinic market (`600 clinics` max).  
-It includes:
+This document estimates PostgreSQL growth for the current data model under a Türkiye-only clinic market (`600 clinics` max). It includes:
 
 - Collection growth by `Low / Med / High` scenario
 - Historical versions for `posts` and `pages`
@@ -272,7 +271,7 @@ Assumptions:
 - Estimates target Supabase PostgreSQL growth for current product data only.
 - Image/object storage is modeled separately in `media-growth-model-current-estimate.md`.
 - Egress/CDN/network costs are intentionally excluded.
-- Turkey-only market (`600 clinics`) is fixed for this model.
+- Türkiye-only market (`600 clinics`) is fixed for this model.
 
 Confidence:
 

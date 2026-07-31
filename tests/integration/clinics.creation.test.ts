@@ -400,7 +400,7 @@ describe('Clinic Creation Integration Tests', () => {
       data: {
         name: `${slugPrefix}-accreditation`,
         abbreviation: 'ISO',
-        country: 'Turkey',
+        country: 'Türkiye',
         description: {
           root: {
             type: 'root',

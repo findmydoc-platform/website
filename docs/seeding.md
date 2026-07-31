@@ -166,8 +166,8 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 - `src/endpoints/seed/data/baseline/countries.json`
 - `src/endpoints/seed/data/baseline/cities.json`
 **Purpose**: Geographic reference data for medical tourism.
-- **Countries**: Turkey (ISO codes, language, currency)
-- **Turkey Cities**: Istanbul, Ankara, Izmir, Antalya, Bursa
+- **Countries**: Türkiye (ISO codes, language, currency)
+- **Türkiye Cities**: Istanbul, Ankara, Izmir, Antalya, Bursa
 - **Implementation**: Countries first, then cities with country references; demo clinics map both address relationships through stable IDs
 
 ### 6. Treatments

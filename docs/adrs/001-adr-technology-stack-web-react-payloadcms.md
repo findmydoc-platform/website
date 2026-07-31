@@ -11,7 +11,7 @@
 
 ## Background
 
-The startup is developing a web-based platform to compare healthcare services, particularly in plastic surgery and dental care in Turkey. This platform requires a scalable, high-performance, and easily maintainable architecture that supports dynamic content management and an optimized user experience. To meet these requirements, the selected technologies must enable rapid development, minimize downtime, and seamlessly integrate with cloud-based services for automation and scalability.
+The startup is developing a web-based platform to compare healthcare services, particularly in plastic surgery and dental care in Türkiye. This platform requires a scalable, high-performance, and easily maintainable architecture that supports dynamic content management and an optimized user experience. To meet these requirements, the selected technologies must enable rapid development, minimize downtime, and seamlessly integrate with cloud-based services for automation and scalability.
 
 ## Problem Description
 

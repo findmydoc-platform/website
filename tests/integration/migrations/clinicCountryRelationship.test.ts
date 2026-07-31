@@ -20,7 +20,7 @@ const extractSql = (chunk: unknown): string => {
 }
 
 describe('clinic country relationship migration', () => {
-  it('adds relationship columns and maps Turkey to ISO TR without dropping legacy text columns', async () => {
+  it('normalizes supported legacy country spellings and rejects every unmapped non-empty value', async () => {
     const execute = vi.fn().mockResolvedValue(undefined)
 
     await up({
@@ -39,12 +39,28 @@ describe('clinic country relationship migration', () => {
     expect(clinicBackfillIndex).toBeGreaterThan(addClinicCountryIndex)
     expect(clinicConstraintIndex).toBeGreaterThan(clinicBackfillIndex)
     expect(sqlText).toContain('UPPER(BTRIM("iso_code")) = \'TR\'')
-    expect(sqlText).toContain('"clinics"."address_country" = \'Turkey\'')
+    expect(sqlText).toContain("RAISE EXCEPTION 'Expected exactly one Countries record with ISO TR'")
+    expect(sqlText).toMatch(/EXISTS \(\s+SELECT 1\s+FROM "clinics"/)
+    expect(sqlText).toMatch(/OR EXISTS \(\s+SELECT 1\s+FROM "search"/)
+    expect(sqlText).toContain('"name" = \'Türkiye\'')
+    expect(sqlText).toContain('"iso_code" = \'TR\'')
+    expect(sqlText).toContain('LOWER(BTRIM("clinics"."address_country")) IN (\'turkey\', \'türkiye\')')
+    expect(sqlText).toContain('"address_country" = \'Türkiye\'')
     expect(sqlText).toContain('"clinics"."address_country_id" IS NULL')
     expect(sqlText).toContain('UPDATE "search"')
-    expect(sqlText).toContain('"search"."country" = \'Turkey\'')
+    expect(sqlText).toContain('LOWER(BTRIM("search"."country")) IN (\'turkey\', \'türkiye\')')
+    expect(sqlText).toContain('"country" = \'Türkiye\'')
+    expect(sqlText).toContain('ALTER TABLE "clinics" ALTER COLUMN "address_country" SET DEFAULT \'Türkiye\'')
+    expect(sqlText).toContain('ALTER TABLE "search" ALTER COLUMN "country" SET DEFAULT \'Türkiye\'')
     expect(sqlText).toContain('"search"."country_id" IS NULL')
-    expect(sqlText).toContain("RAISE EXCEPTION 'Cannot map clinic country Turkey to Countries ISO TR'")
+    expect(sqlText).toContain('NULLIF(BTRIM("address_country"), \'\') IS NOT NULL')
+    expect(sqlText).toContain('NULLIF(BTRIM("country"), \'\') IS NOT NULL')
+    expect(sqlText).toContain(
+      "RAISE EXCEPTION 'Cannot map one or more clinic legacy country values to Countries ISO TR'",
+    )
+    expect(sqlText).toContain(
+      "RAISE EXCEPTION 'Cannot map one or more search legacy country values to Countries ISO TR'",
+    )
     expect(sqlText).not.toContain('DROP COLUMN "address_country"')
     expect(sqlText).not.toContain('DROP COLUMN "country"')
     expect(sqlText).not.toContain('"address_street"')
@@ -52,7 +68,7 @@ describe('clinic country relationship migration', () => {
     expect(sqlText).not.toContain('"address_zip_code"')
   })
 
-  it('removes only the replacement relationship columns on rollback', async () => {
+  it('restores legacy defaults and removes only the replacement relationship columns on rollback', async () => {
     const execute = vi.fn().mockResolvedValue(undefined)
 
     await down({
@@ -65,6 +81,8 @@ describe('clinic country relationship migration', () => {
 
     expect(sqlText).toContain('DROP COLUMN "address_country_id"')
     expect(sqlText).toContain('DROP COLUMN "country_id"')
+    expect(sqlText).toContain('ALTER TABLE "clinics" ALTER COLUMN "address_country" SET DEFAULT \'Turkey\'')
+    expect(sqlText).toContain('ALTER TABLE "search" ALTER COLUMN "country" SET DEFAULT \'Turkey\'')
     expect(sqlText).not.toContain('ADD COLUMN "address_country"')
     expect(sqlText).not.toContain('ADD COLUMN "country"')
   })

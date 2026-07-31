@@ -45,7 +45,7 @@ export const ensureCountryFixture = async (request: APIRequestContext) => {
 
   const response = await request.post('/api/countries', {
     data: {
-      name: 'Turkey',
+      name: 'Türkiye',
       isoCode: 'TR',
       language: 'turkish',
       currency: 'TRY',

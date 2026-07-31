@@ -63,7 +63,7 @@ const savedClinicItems: FavoriteClinicListItem[] = [
     clinicId: 503,
     name: 'Istanbul Ortopedi Merkezi',
     href: '/clinics/istanbul-ortopedi-merkezi',
-    location: 'Istanbul, Turkey',
+    location: 'Istanbul, Türkiye',
     media: clinicMedia.hospitalCorridor,
     verification: {
       variant: 'bronze',

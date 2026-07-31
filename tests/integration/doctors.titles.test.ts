@@ -33,7 +33,7 @@ describe('Doctor title integration', () => {
         const country = await payload.create({
           collection: 'countries',
           data: {
-            name: 'Turkey',
+            name: 'Türkiye',
             isoCode: 'TR',
             language: 'turkish',
             currency: 'TRY',

@@ -1,4 +1,4 @@
-# Current Estimate: Media Growth Model (Turkey, 600 Clinics)
+# Current Estimate: Media Growth Model (Türkiye, 600 Clinics)
 
 ## Scope
 

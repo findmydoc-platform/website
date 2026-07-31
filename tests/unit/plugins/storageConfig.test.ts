@@ -22,7 +22,7 @@ describe('resolveS3StorageConfig', () => {
       clientConfig: {
         credentials: {
           accessKeyId: 's3mock-access-key',
-          secretAccessKey: 's3mock-secret-key',
+          secretAccessKey: 's3mock-secret-key', // pragma: allowlist secret
         },
         endpoint: 'http://localhost:9090',
         forcePathStyle: true,
@@ -76,7 +76,7 @@ describe('resolveS3StorageConfig', () => {
       clientConfig: {
         credentials: {
           accessKeyId: 'online-access-key',
-          secretAccessKey: 'online-secret-key',
+          secretAccessKey: 'online-secret-key', // pragma: allowlist secret
         },
         endpoint: 'https://storage.example.com',
         forcePathStyle: true,

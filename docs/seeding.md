@@ -75,6 +75,16 @@ Media-heavy seed runs can exceed a single request timeout in hosted environments
 
 This keeps the dashboard responsive, makes retries easier, and avoids the 60-second request ceiling for large media batches.
 
+## Upload Recovery
+
+Seed upload recovery uses Payload's Local API and the configured S3 adapter only. It does not patch upload metadata through direct database or adapter access.
+
+- If a previously seeded S3 object is missing, a normal Payload upload update restores it. If the adapter reports a missing key, the seed flow removes the stale upload through Payload and creates the replacement through the normal upload lifecycle.
+- If a trashed upload still blocks a filename, the seed flow clears that filename through a scoped Payload update before retrying the create.
+- If an immutable upload owner relation changes, the obsolete upload is deleted through Payload before a replacement is created.
+
+The recovery calls keep the existing seed, search, and cache contexts. They therefore preserve collection hooks, validation, file proxy behavior, and S3 object cleanup.
+
 
 ## Tiered Error Handling Policy
 Baseline (critical): first failure aborts and returns HTTP 500 (`status: failed`).
@@ -133,7 +143,7 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 - **L2 families**: Dental Implants; Orthodontics; Cosmetic Dentistry; Restorative Dentistry; Lens Surgery; Laser Vision Correction; Cataract Surgery; Cornea; Scalp Hair Transplant; Facial Hair Transplant; Hair Loss Therapy; Injectables; Skin Conditions; Laser Dermatology; Facial Surgery; Breast Surgery; Body Contouring
 - **Implementation**: Two-pass upsert (L1 first, then L2 with `parentSpecialty` references)
 - **Feature images**: Specialty images are seeded through baseline `platformContentMedia` and attached in a second specialty pass when a platform user is available for media attribution.
-- **Asset preparation**: Keep seed images as high-quality source-prepared assets, then let Payload generate deterministic variants and Next/Image handle final browser delivery. Use `pnpm images:optimize` only when raw source exports exceed storage limits or need deterministic seed derivatives. Current project setup uses a Supabase storage bucket with a `1 MB` object limit in the active free-plan environment, so raw photo exports can fail even when Payload accepts the request. In local development, storage-backed uploads still require explicit opt-in via `USE_S3_IN_DEV=true`.
+- **Asset preparation**: Keep seed images as high-quality source-prepared assets, then let Payload generate deterministic variants and Next/Image handle final browser delivery. Use `pnpm images:optimize` only when raw source exports exceed storage limits or need deterministic seed derivatives. The active online Supabase-compatible bucket has a `1 MB` object limit, so raw photo exports can fail in hosted environments even when Payload accepts the request. Local development always seeds into S3Mock.
 
 #### Specialty Image Optimization Workflow
 - Default preset for category or taxonomy imagery: `pnpm images:optimize -- --input src/endpoints/seed/assets/baseline/medical-specialties --output tmp/medical-specialties --preset category`

@@ -135,7 +135,7 @@ Clinic Detail and Listing Comparison public server data are cached with canonica
 
 Post list, latest-post teasers, and sitemap reads use canonical aggregated-public tags. Paginated post lists do not maintain a path matrix; freshness is owned by tags plus bounded route/Data Cache behavior.
 
-Seed imports suppress per-record public revalidation through `disableRevalidate`. A run that wrote public-affecting data emits one terminal `seed-final-flush` plan that aggregates affected collections, globals, surfaces, sitemaps, and discovery IDs.
+Seed imports suppress per-record public revalidation through `disableRevalidate`. A run that wrote public-affecting data emits one terminal `seed-final-flush` plan that aggregates affected collections, globals, surfaces, sitemaps, and discovery IDs. A `platformContentMedia` write adds its published Page, Post, landing-page, and sitemap consumers to that plan.
 
 ## Operational Visibility
 

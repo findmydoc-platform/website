@@ -3,6 +3,7 @@ import {
   buildNestedFilename,
   buildStoragePath,
   extractRelationId,
+  getIncomingUploadFilename,
   getBaseFilename,
   resolveDocumentId,
   resolveFilenameSource,
@@ -57,7 +58,12 @@ export function computeStorage({
 }): { filename?: string; storagePath?: string } {
   const isInternalCloudStorageUpdate = operation === 'update' && req?.context?.skipCloudStorage === true
   const incomingFileSize = isInternalCloudStorageUpdate ? undefined : extractFileSizeFromRequest(req)
-  const hasIncomingUpload = typeof incomingFileSize === 'number'
+  const hasIncomingUploadName =
+    !isInternalCloudStorageUpdate && Boolean(getIncomingUploadFilename(req as unknown as Record<string, unknown>))
+  // Payload can normalize a local upload before this hook observes its file size.
+  // A request file name still proves that this is an upload; the internal cloud
+  // metadata update is excluded by the guard above.
+  const hasIncomingUpload = typeof incomingFileSize === 'number' || hasIncomingUploadName
   const logger = req
     ? createScopedLogger(req.payload.logger as ServerLogger, {
         scope: 'storage.media',

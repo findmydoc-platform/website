@@ -4,6 +4,7 @@ import {
   resolveFilenameSource,
 } from '@/collections/common/mediaPathHelpers'
 import { MEDIA_STORAGE_LIMIT_MESSAGE } from '@/config/mediaUploadPolicy'
+import { resolveS3StorageBucket } from '@/plugins/storageConfig'
 import { extractFileSizeFromRequest } from '@/utilities/requestFileUtils'
 import { createScopedLogger, getRequestLogContext, type ServerLogger } from '@/utilities/logging/shared'
 import type { CollectionAfterErrorHook, CollectionBeforeOperationHook, PayloadRequest } from 'payload'
@@ -105,8 +106,7 @@ function parseMissingResourceFromMessage(message: string): string | null {
 }
 
 function resolveMissingS3Key(error: unknown): string | null {
-  const bucket = process.env.S3_BUCKET || ''
-  if (!bucket) return null
+  const bucket = resolveS3StorageBucket()
 
   for (const candidate of getNestedErrorCandidates(error)) {
     const name = typeof candidate.name === 'string' ? candidate.name : ''

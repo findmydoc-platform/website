@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload, ValidationError } from 'payload'
 import type { Payload, File } from 'payload'
 import config from '@payload-config'
@@ -6,10 +6,6 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { testSlug } from '../fixtures/testSlug'
 import type { Clinic, ClinicMedia, Accreditation, PlatformStaff } from '@/payload-types'
-
-vi.mock('@payloadcms/storage-s3', () => ({
-  s3Storage: () => (incomingConfig: unknown) => incomingConfig,
-}))
 
 const buildOpeningHours = (): NonNullable<Clinic['openingHours']> => ({
   monday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },

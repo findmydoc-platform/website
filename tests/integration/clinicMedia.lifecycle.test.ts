@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload, PayloadRequest, Where } from 'payload'
 import config from '@payload-config'
@@ -11,10 +11,6 @@ import { createTinyPngFile } from '../fixtures/mediaFile'
 import { approveClinicStaff, asStaffPayloadUser, createClinicStaffFixture } from '../fixtures/clinicUserFixtures'
 import type { ClinicMedia } from '@/payload-types'
 import { ClinicMedia as ClinicMediaCollection } from '@/collections/ClinicMedia'
-
-vi.mock('@payloadcms/storage-s3', () => ({
-  s3Storage: () => (incomingConfig: unknown) => incomingConfig,
-}))
 
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
 type PayloadUpdateArgs = Parameters<Payload['update']>[0]

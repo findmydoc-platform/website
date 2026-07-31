@@ -9,6 +9,8 @@ import {
   deriveDatabaseConfig,
   deriveTemplateDatabaseName,
   getTemplateFingerprintInputPaths,
+  getTestServiceStartupCommand,
+  getTestServiceTeardownCommands,
   isTemplateMetadataCurrent,
   resolveRequiredTemplateKinds,
   resolveTemplateKind,
@@ -185,11 +187,38 @@ describe('template dependencies', () => {
   })
 
   it('uses seed inputs only for the baseline template fingerprint', () => {
-    expect(getTemplateFingerprintInputPaths('empty')).toEqual(['src/migrations', 'src/payload.config.ts'])
+    expect(getTemplateFingerprintInputPaths('empty')).toEqual([
+      'docker-compose.test.yml',
+      'src/migrations',
+      'src/payload.config.ts',
+      'src/plugins/storageConfig.ts',
+    ])
     expect(getTemplateFingerprintInputPaths('baseline')).toEqual([
+      'docker-compose.test.yml',
       'src/migrations',
       'src/endpoints/seed',
       'src/payload.config.ts',
+      'src/plugins/storageConfig.ts',
+    ])
+  })
+})
+
+describe('test service teardown', () => {
+  it('keeps stopped S3Mock state aligned with the preserved Postgres templates', () => {
+    expect(getTestServiceTeardownCommands()).toEqual([
+      'docker compose -p findmydoc-test -f docker-compose.test.yml stop postgres s3mock',
+    ])
+  })
+
+  it('starts only S3Mock when an allowed remote database still uses local test storage', () => {
+    expect(getTestServiceStartupCommand({ includeDatabase: false, includeStorage: true })).toBe(
+      'docker compose -p findmydoc-test -f docker-compose.test.yml up -d s3mock',
+    )
+  })
+
+  it('stops only S3Mock after a remote database run', () => {
+    expect(getTestServiceTeardownCommands({ includeDatabase: false, includeStorage: true })).toEqual([
+      'docker compose -p findmydoc-test -f docker-compose.test.yml stop s3mock',
     ])
   })
 })

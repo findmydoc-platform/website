@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload, ValidationError } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
@@ -19,10 +19,6 @@ import { slugify } from '@/utilities/slugify'
 import { doctorTitles } from '@/collections/Doctors'
 import { generateFullName } from '@/utilities/nameUtils'
 import type { Doctor, DoctorMedia } from '@/payload-types'
-
-vi.mock('@payloadcms/storage-s3', () => ({
-  s3Storage: () => (incomingConfig: unknown) => incomingConfig,
-}))
 
 const createdStaffIds: Array<number | string> = []
 type PayloadCreateArgs = Parameters<Payload['create']>[0]

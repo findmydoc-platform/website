@@ -171,6 +171,7 @@ describe('cache revalidation planner', () => {
         affectedSurfaces: ['posts-list', 'home', 'listing-comparison'],
         affectedSitemaps: ['posts', 'pages'],
         affectedDiscovery: [],
+        affectedPageSlugs: ['editorial'],
         affectedPostSlugs: ['old-post-slug', 'new-post-slug'],
         completedJobCount: 4,
         publicJobCount: 3,
@@ -193,6 +194,7 @@ describe('cache revalidation planner', () => {
       '/listing-comparison',
       '/posts-sitemap.xml',
       '/pages-sitemap.xml',
+      '/editorial',
       '/posts/old-post-slug',
       '/posts/new-post-slug',
     ])
@@ -203,7 +205,7 @@ describe('cache revalidation planner', () => {
       subjectKind: 'seed-final-flush',
       subjectId: 'seed-run-1',
       tagCount: 8,
-      pathCount: 7,
+      pathCount: 8,
     })
   })
 

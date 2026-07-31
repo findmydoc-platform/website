@@ -225,6 +225,76 @@ describe('seed endpoints success paths', () => {
     },
   )
 
+  it('flushes published platform content media consumers after a seed write', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-platform-content-media'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'baseline',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    }) as SeedRunRecord
+    record.status = 'completed'
+    record.completedAt = '2026-07-08T10:00:00.000Z'
+    record.completedJobs = 1
+    record.succeededJobs = 1
+    record.jobs = [
+      {
+        id: 'job-platform-content-media',
+        order: 1,
+        status: 'succeeded',
+        input: {
+          runId,
+          type: 'baseline',
+          reset: false,
+          queue,
+          stepName: 'platform-content-media',
+          kind: 'collection',
+          collection: 'platformContentMedia',
+          fileName: 'platformContentMedia',
+        },
+        queue,
+        title: 'Platform content media',
+        stepName: 'platform-content-media',
+        kind: 'collection',
+        collection: 'platformContentMedia',
+        fileName: 'platformContentMedia',
+        createdAt: '2026-07-08T09:00:00.000Z',
+        completedAt: '2026-07-08T10:00:00.000Z',
+        created: 1,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      },
+    ]
+    payload.find.mockImplementation(async ({ collection }: { collection: string }) => {
+      if (collection === 'pages') {
+        return { docs: [{ slug: 'about' }, { slug: 'editorial' }], hasNextPage: false }
+      }
+      return { docs: [{ slug: 'old-post' }, { slug: 'new-post' }], hasNextPage: false }
+    })
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    await finalizeSeedRunPublicCaches(payload as unknown as Payload, {
+      ...record,
+      progress: { completed: 1, total: 1, percent: 100 },
+      jobIds: ['job-platform-content-media'],
+      hasActiveJob: false,
+    })
+
+    expect(revalidateTag).toHaveBeenCalledWith('collection:pages', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('collection:posts', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('global:landingPages', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('surface:sitemap:pages', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('surface:sitemap:posts', { expire: 0 })
+    expect(revalidatePath).toHaveBeenCalledWith('/about')
+    expect(revalidatePath).toHaveBeenCalledWith('/editorial')
+    expect(revalidatePath).toHaveBeenCalledWith('/posts/old-post')
+    expect(revalidatePath).toHaveBeenCalledWith('/posts/new-post')
+  })
+
   it('retries a failed terminal seed final flush with at-least-once invalidation', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-retry-failed-final-flush'

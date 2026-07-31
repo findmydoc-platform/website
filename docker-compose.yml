@@ -10,9 +10,14 @@ services:
     working_dir: /home/node/app/
     command: sh -c "corepack enable && corepack prepare pnpm@10.28.2 --activate && pnpm install && pnpm dev"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_started
+      s3mock:
+        condition: service_healthy
     env_file:
       - .env
+    environment:
+      S3_LOCAL_ENDPOINT: http://s3mock:9090
     stdin_open: true
     tty: true
 
@@ -28,6 +33,23 @@ services:
       POSTGIS_ENABLED: 'true'
     volumes:
       - data:/var/lib/postgresql/data
+
+  s3mock:
+    image: adobe/s3mock:5.1.0
+    container_name: s3mock
+    ports:
+      - '127.0.0.1:9090:9090'
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: findmydoc-local
+      COM_ADOBE_TESTING_S3MOCK_STORE_RETAIN_FILES_ON_EXIT: 'true'
+      COM_ADOBE_TESTING_S3MOCK_STORE_ROOT: /s3root
+    volumes:
+      - s3mock-data:/s3root
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:9090/favicon.ico']
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   pgadmin:
     image: dpage/pgadmin4
@@ -48,3 +70,4 @@ volumes:
   data:
   node_modules:
   pgadmin-data:
+  s3mock-data:

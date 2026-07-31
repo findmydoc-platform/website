@@ -6,7 +6,7 @@ Keep this page handy when preparing your local environment or CI jobs to run the
 
 - Node.js 24.x
 - pnpm 10+
-- Docker Desktop (used for the isolated Postgres instance)
+- Docker Desktop (used for isolated Postgres and S3Mock instances)
 
 ## Environment Variables
 
@@ -20,8 +20,10 @@ PREVIEW_SECRET=test-preview-secret
 ```
 
 Test mode guidance:
-- Tests should default to local Postgres and local storage.
-- Do not enable development S3 in tests (`USE_S3_IN_DEV` should remain unset or `false`).
+- Tests default to local Postgres and the isolated `findmydoc-test` S3Mock bucket on port `9091`.
+- No S3 credentials or development storage flag are required for tests.
+- The test S3Mock has no named data volume. The harness stops but does not remove its container between warm runs, so its ephemeral object state stays aligned with the preserved Postgres templates. `TEST_DB_REBUILD_TEMPLATES=1` removes both states before rebuilding.
+- With `TEST_DB_ALLOW_REMOTE=1`, the database lifecycle stays external. The harness still starts local S3Mock for the default local test endpoint; set `S3_TEST_ENDPOINT` to an isolated external endpoint when that storage lifecycle is external too.
 - If a test scenario needs Supabase endpoints, use `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - The Playwright admin smoke lane additionally expects `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD` for an already existing Supabase platform admin account.
 - Do not put blank `E2E_ADMIN_*` values into `.env.test`; that file overrides `.env.local` during test startup.
@@ -83,7 +85,7 @@ pnpm vitest --project integration --run tests/integration/contracts/collectionCo
 2. Rebuild the shared test DB templates required by the current run only when they are missing, stale, or `TEST_DB_REBUILD_TEMPLATES=1`
 3. Restore the working database from the selected template (`empty` for integration, `baseline` for Playwright E2E)
 4. Execute the test target
-5. Stop the container while preserving the Docker volume for the next warm run
+5. Stop the services while preserving the Postgres volume and matching S3Mock container state for the next warm run
 
 You do not need to run Docker commands manually; the setup script handles it.
 
@@ -93,7 +95,7 @@ Template fingerprints are derived per template kind. The `empty` template tracks
 
 Integration runs only require the `empty` template. Seed-only changes therefore rebuild `baseline` when needed without invalidating the `empty` integration template.
 
-Set `TEST_DB_REBUILD_TEMPLATES=1` when you need a manual repair run that discards the preserved Docker volume and rebuilds the templates required by the current run from scratch. Other template kinds are rebuilt lazily on their next use.
+Set `TEST_DB_REBUILD_TEMPLATES=1` when you need a manual repair run that discards the preserved Postgres volume and S3Mock container state, then rebuilds the templates required by the current run from scratch. Other template kinds are rebuilt lazily on their next use.
 
 ## Playwright E2E Setup
 

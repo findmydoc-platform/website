@@ -1,13 +1,12 @@
 # Setting Up Storage
 
-## Storage Options
+## Storage Backend
 
-The findmydoc portal supports two storage options:
+findmydoc always stores upload bytes through Payload's S3-compatible storage adapter. PayloadCMS remains the source of truth for media metadata (filename, sizes, alt text, ownership), while the selected S3 backend stores file bytes.
 
-1. **Local Storage**: Files stored on your server's filesystem (default in development)
-2. **S3-Compatible Storage**: Files stored in cloud storage using an S3-compatible provider (standard for production)
-
-In both cases, PayloadCMS remains the source of truth for media metadata (filename, sizes, alt text, ownership), while the storage backend determines where the bytes live.
+- Development uses the local Adobe S3Mock Docker service.
+- Tests and E2E use a separate local Adobe S3Mock service.
+- Preview and production use the configured S3-compatible bucket.
 
 ## Runtime Modes (Local / Hybrid / Cloud)
 
@@ -15,11 +14,11 @@ Storage and database choices are runtime decisions. The same app can run in diff
 
 | Mode | Database | Storage | Notes |
 | --- | --- | --- | --- |
-| `local` | Local Postgres (usually Docker) | Local filesystem | Fastest local iteration, minimal cloud dependency |
-| `hybrid` | Remote Postgres (commonly Supabase Postgres) | Local or S3-compatible | Local app with selected cloud dependencies |
+| `local` | Local Postgres (usually Docker) | Local S3Mock | Day-to-day development with no cloud storage dependency |
+| `hybrid` | Remote Postgres (commonly Supabase Postgres) | Local S3Mock | Local app with a selected remote database |
 | `cloud` | Managed Postgres (commonly Supabase Postgres) | S3-compatible storage (commonly Supabase Storage via S3 API) | Typical hosted/staging/production setup |
 
-This means "Supabase for database and storage" is valid for hybrid/cloud operation, while local mode can run entirely on local infrastructure.
+This means "Supabase for database and storage" is valid for hosted operation, while local and hybrid development keep media bytes in local S3Mock.
 
 ## Media Ownership Policy (Current)
 
@@ -71,25 +70,22 @@ A hash folder exists to:
 S3-compatible storage is configured via the official Payload S3 storage adapter.
 
 Source of truth for this configuration in the repo:
-- `src/plugins/index.ts` (look for the S3 storage adapter configuration and the `useCloudStorage` flag)
+- `src/plugins/index.ts` and `src/plugins/storageConfig.ts`
 
-### When S3 is active
+### Runtime selection
 
-S3 storage is intended for production, and can also be used in development.
+The S3 adapter is active in every runtime. There is no local filesystem fallback.
 
-- In production (`NODE_ENV=production`), cloud storage is enabled.
-- In development, cloud storage is enabled only when explicitly opted in.
-- Set `USE_S3_IN_DEV=true` to enable S3 in development.
-- If the flag is missing or set to any other value, development falls back to local storage.
-- In tests/CI, cloud storage should remain off so tests do not require external credentials or network access.
+- Development uses bucket `findmydoc-local` at `http://localhost:9090`. Docker Compose supplies its internal S3Mock address to the Payload container.
+- Tests and E2E use bucket `findmydoc-test` at `http://localhost:9091`.
+- Preview and production require all `S3_*` variables. Startup fails with the missing variable names if that configuration is incomplete.
+- Development and test use AWS SDK checksum validation only when required because S3Mock cannot validate the SDK's optional response checksum for ranged reads. Online S3 backends retain the SDK default validation.
 
-This prevents integration tests from accidentally attempting real uploads to S3 and keeps test runs deterministic.
+The test harness starts and stops its isolated S3Mock alongside Postgres. S3Mock has no named test-data volume, but its stopped container is retained with the cached Postgres templates between warm runs so baseline media records keep matching objects. `TEST_DB_REBUILD_TEMPLATES=1` removes both states before rebuilding. With `TEST_DB_ALLOW_REMOTE=1`, the harness still starts local S3Mock for the default local endpoint; an explicit external `S3_TEST_ENDPOINT` keeps both remote lifecycles external.
 
-The integration itself is always present in code. Runtime env decides whether the adapter is active.
+## Current Online Storage Constraint
 
-## Current Project Constraint
-
-In the active Supabase storage setup used for this project, the development bucket is currently constrained to `1 MB` per object. This is stricter than the app-level Payload upload guard and is the effective limit that seed and admin uploads must satisfy when S3-compatible storage is enabled.
+In the active Supabase-compatible online storage setup, the bucket is currently constrained to `1 MB` per object. This is stricter than the app-level Payload upload guard and is the effective limit for seed and admin uploads in preview/production.
 
 Practical consequence:
 - large original photos can fail with `413 EntityTooLarge` even when the Payload request itself is accepted
@@ -99,20 +95,21 @@ Practical consequence:
 
 ### Environment variables (what they mean)
 
-When using S3-compatible storage, the app needs credentials and connection details:
+Preview and production require credentials and connection details:
 
 - `S3_ENDPOINT`: The S3 API endpoint URL (often provider-specific).
 - `S3_ACCESS_KEY_ID`: Access key id used by the S3 client.
 - `S3_SECRET_ACCESS_KEY`: Secret access key used by the S3 client.
 - `S3_BUCKET`: The bucket name where uploads are stored.
 - `S3_REGION`: The bucket region used by the S3 client.
-- `USE_S3_IN_DEV`: Development opt-in flag. Set to `true` to enable S3 in development.
+- `S3_LOCAL_ENDPOINT`: Optional development override. Docker Compose uses `http://s3mock:9090`; host development defaults to `http://localhost:9090`.
+- `S3_TEST_ENDPOINT`: Optional test override. Tests default to `http://localhost:9091`.
 
-If any of these are missing while S3 is enabled, uploads will fail.
+Missing online values fail application startup before uploads can fall back to local disk. An otherwise unclassified `NODE_ENV=production` process is also treated as production for storage, so it fails fast instead of selecting S3Mock.
 
 ### What the storage plugin changes
 
-When the S3 adapter is active for a collection, local disk storage is disabled for that collection, and files are stored in S3 instead. This matters in production deployments where local filesystem storage is ephemeral or not shared between app instances.
+The S3 adapter disables local disk storage for every upload collection. Payload's existing file proxy and collection access controls remain in place, so internal S3Mock addresses are never used as public media URLs.
 
 ## Note: Join fields and “relationship reference” correctness
 
@@ -171,43 +168,31 @@ Existing media collections rely on hooks so behavior stays consistent across the
 
 These hooks keep business logic out of the frontend and prevent accidental cross-tenant moves.
 
-### 4) Local storage: pick a predictable directory
-
-Each upload collection specifies where files live locally (development). Keep this deterministic and grouped by collection (for example under `public/<collection>-media/`) so:
-
-- developers can inspect files locally,
-- and local URLs remain predictable.
-
-### 5) S3 storage: register the collection in the storage adapter
+### 4) S3 storage: register the collection in the storage adapter
 
 If the collection stores files, it must be included in the S3 adapter configuration in `src/plugins/index.ts`.
 
 What you decide there:
 
 - the **prefix/namespace** in the bucket (should match the repo’s naming conventions),
-- whether local storage is disabled when S3 is enabled (the adapter enforces this when active).
+- local disk storage remains disabled for the collection.
 
-If you skip this step, production deployments may behave inconsistently (for example, trying to use local disk in environments where it is not durable).
+If you skip this step, environments will not share the same S3-backed media behavior.
 
-### 6) Validate in three practical scenarios
+### 5) Validate in three practical scenarios
 
 Before merging, confirm:
 
-- local development uploads work with local storage,
-- a cloud-enabled environment stores new uploads in S3,
-- test runs do not require S3 credentials and do not attempt network uploads.
+- local development uploads use S3Mock,
+- preview and production store new uploads in their configured S3 bucket,
+- test runs use the isolated S3Mock service and do not reach an external bucket.
 
 ## Quick Configuration Guide
 
-### Local Storage (Development)
+### Local S3Mock (Development and Tests)
 
-Local storage is the default. If you do nothing, uploads will be stored locally using the collection’s configured static directory.
+Run Docker Compose before starting the app. Development and tests select their local S3Mock endpoints automatically; no storage flag or credential setup is required.
 
-### S3-Compatible Storage (Production or Development)
+### Online S3-Compatible Storage (Preview and Production)
 
-To use S3-compatible storage:
-
-- Enable it by environment (production is enabled automatically; development requires explicit opt-in with `USE_S3_IN_DEV=true`).
-- Provide the S3 environment variables listed above.
-
-If you are new to this repo, start with local storage to confirm uploads work end-to-end, then enable S3 once credentials are available.
+Provide the complete `S3_*` environment configuration before startup. The application does not substitute local disk storage when it is absent.

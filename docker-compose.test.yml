@@ -17,5 +17,18 @@ services:
     volumes:
       - postgres-test-data:/var/lib/postgresql/data
 
+  s3mock:
+    image: adobe/s3mock:5.1.0
+    container_name: findmydoc-s3mock-test
+    ports:
+      - '127.0.0.1:9091:9090'
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: findmydoc-test
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:9090/favicon.ico']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
 volumes:
   postgres-test-data:

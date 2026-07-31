@@ -45,6 +45,33 @@ describe('computeStorage', () => {
     expect(result).toEqual({ storagePath: 'platform/draft-asset.png' })
   })
 
+  it('derives a storage key when Payload no longer exposes the incoming file size', () => {
+    const req = createReq({
+      file: {
+        name: 'restored.png',
+      },
+    } as unknown as Partial<PayloadRequest>)
+
+    const result = computeStorage({
+      operation: 'update',
+      draft: {},
+      originalDoc: {
+        filename: 'old-asset.png',
+        storagePath: 'platform/old-asset.png',
+      },
+      req,
+      key: { type: 'hash' },
+      storagePrefix: 'platform',
+      ownerField: 'platformOwner',
+      ownerRequired: false,
+    })
+
+    expect(result).toEqual({
+      filename: '112233aabb-restored.png',
+      storagePath: 'platform/112233aabb-restored.png',
+    })
+  })
+
   it('ignores stale request files during internal cloud-storage updates', () => {
     const req = createReq({
       context: {

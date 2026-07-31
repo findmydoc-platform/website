@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { randomUUID } from 'crypto'
-import { getPayload } from 'payload'
+import { getPayload, handleEndpoints } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
@@ -9,10 +9,28 @@ import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { asStaffPayloadUser } from '../fixtures/clinicUserFixtures'
 import { createTinyPngFile } from '../fixtures/mediaFile'
 import type { ClinicStaff, Patient, PlatformContentMedia, PlatformStaff } from '@/payload-types'
+import { resolveS3StorageConfig } from '@/plugins/storageConfig'
 
-vi.mock('@payloadcms/storage-s3', () => ({
-  s3Storage: () => (incomingConfig: unknown) => incomingConfig,
-}))
+const storageConfig = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'test' })
+
+const storageObjectUrl = (storagePath: string): string =>
+  new URL(`${storageConfig.bucket}/${storagePath}`, `${storageConfig.clientConfig.endpoint}/`).toString()
+
+const requestPayloadFile = async (fileUrl: string, range?: string): Promise<Response> =>
+  handleEndpoints({
+    config,
+    request: new Request(new URL(fileUrl, 'https://payload-proxy.test'), {
+      headers: range ? { range } : undefined,
+    }),
+  })
+
+const requireMediaUrl = (value: string | null | undefined): string => {
+  if (!value) {
+    throw new Error('Expected uploaded media to expose a Payload file URL')
+  }
+
+  return value
+}
 
 describe('PlatformContentMedia integration - lifecycle', () => {
   let payload: Payload
@@ -109,6 +127,106 @@ describe('PlatformContentMedia integration - lifecycle', () => {
     expect(created.createdBy).toBe(platformUser.id)
     expect(created.filename).toMatch(/^[a-f0-9]{10}-.*\.png$/)
     expect(created.storagePath).toMatch(/^platform\/[a-f0-9]{10}-.*\.png$/)
+  })
+
+  it('streams full and ranged media through the Payload proxy without exposing S3Mock', async () => {
+    const platformUser = await createPlatformUser('s3-storage')
+    const file = createTinyPngFile(`${slugPrefix}-s3-storage.png`)
+    const created = (await payload.create({
+      collection: 'platformContentMedia',
+      data: {
+        alt: 'S3 storage image',
+      } as Partial<PlatformContentMedia>,
+      file,
+      user: asStaffPayloadUser(platformUser),
+      draft: false,
+      depth: 0,
+      overrideAccess: false,
+    } as Parameters<Payload['create']>[0])) as PlatformContentMedia
+
+    createdMediaIds.push(created.id)
+    const createdUrl = requireMediaUrl(created.url)
+
+    const proxyResponse = await requestPayloadFile(createdUrl)
+    expect(proxyResponse.status).toBe(200)
+    expect(proxyResponse.headers.get('content-type')).toContain('image/png')
+    expect(Buffer.from(await proxyResponse.arrayBuffer())).toEqual(file.data)
+
+    const rangeResponse = await requestPayloadFile(createdUrl, 'bytes=0-7')
+    expect(rangeResponse.status).toBe(206)
+    expect(rangeResponse.headers.get('content-range')).toBe(`bytes 0-7/${file.data.length}`)
+    expect(Buffer.from(await rangeResponse.arrayBuffer())).toEqual(file.data.subarray(0, 8))
+
+    expect(createdUrl).not.toContain('s3mock')
+    expect(createdUrl).not.toContain('localhost:9091')
+    expect(createdUrl).not.toContain(storageConfig.clientConfig.endpoint)
+    expect(new URL(createdUrl, 'https://payload-proxy.test').pathname).toBe(
+      `/api/platformContentMedia/file/${created.filename}`,
+    )
+
+    const objectResponse = await fetch(storageObjectUrl(created.storagePath))
+    expect(objectResponse.status).toBe(200)
+    expect(Buffer.from(await objectResponse.arrayBuffer())).toEqual(file.data)
+
+    await payload.delete({
+      collection: 'platformContentMedia',
+      id: created.id,
+      overrideAccess: true,
+    })
+    createdMediaIds.splice(createdMediaIds.indexOf(created.id), 1)
+
+    expect((await fetch(storageObjectUrl(created.storagePath))).status).toBe(404)
+  })
+
+  it('removes the previous object on replacement and the active object on delete', async () => {
+    const platformUser = await createPlatformUser('replace-delete')
+    const originalFile = createTinyPngFile(`${slugPrefix}-replace-original.png`)
+    const created = (await payload.create({
+      collection: 'platformContentMedia',
+      data: {
+        alt: 'Original storage image',
+      } as Partial<PlatformContentMedia>,
+      file: originalFile,
+      user: asStaffPayloadUser(platformUser),
+      draft: false,
+      depth: 0,
+      overrideAccess: false,
+    } as Parameters<Payload['create']>[0])) as PlatformContentMedia
+
+    createdMediaIds.push(created.id)
+
+    const originalStoragePath = created.storagePath
+    expect((await fetch(storageObjectUrl(originalStoragePath))).status).toBe(200)
+
+    const replacementFile = createTinyPngFile(`${slugPrefix}-replace-current.png`)
+    const updated = (await payload.update({
+      collection: 'platformContentMedia',
+      id: created.id,
+      data: {
+        alt: 'Replacement storage image',
+      },
+      file: replacementFile,
+      user: asStaffPayloadUser(platformUser),
+      draft: false,
+      depth: 0,
+      overrideAccess: false,
+    } as Parameters<Payload['update']>[0])) as PlatformContentMedia
+
+    expect(updated.storagePath).not.toBe(originalStoragePath)
+    expect((await fetch(storageObjectUrl(originalStoragePath))).status).toBe(404)
+
+    const currentObjectResponse = await fetch(storageObjectUrl(updated.storagePath))
+    expect(currentObjectResponse.status).toBe(200)
+    expect(Buffer.from(await currentObjectResponse.arrayBuffer())).toEqual(replacementFile.data)
+
+    await payload.delete({
+      collection: 'platformContentMedia',
+      id: updated.id,
+      overrideAccess: true,
+    })
+    createdMediaIds.splice(createdMediaIds.indexOf(updated.id), 1)
+
+    expect((await fetch(storageObjectUrl(updated.storagePath))).status).toBe(404)
   })
 
   it('updates metadata without changing createdBy', async () => {

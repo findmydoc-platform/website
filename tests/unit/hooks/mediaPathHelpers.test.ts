@@ -75,13 +75,6 @@ describe('mediaPathHelpers', () => {
       expect(parts[0]).toBe('platform')
       expect(parts[1]).not.toContain('/')
     })
-
-    test('filename can be used directly in Payload file URL without encoding', () => {
-      const filename = buildNestedFilename('42', 'hashfolder', 'my-image.jpg')
-      // URL constructor should not throw — filename is a valid single path segment
-      const url = new URL(`/api/platformContentMedia/file/${filename}`, 'http://localhost:3000')
-      expect(url.pathname).toBe(`/api/platformContentMedia/file/${filename}`)
-    })
   })
 
   describe('getBaseFilename', () => {

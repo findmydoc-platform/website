@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload, File } from 'payload'
 import config from '@payload-config'
@@ -16,10 +16,6 @@ import {
   type PayloadRequestUser,
 } from '../fixtures/testUsers'
 import type { Accreditation, PlatformContentMedia, PlatformStaff } from '@/payload-types'
-
-vi.mock('@payloadcms/storage-s3', () => ({
-  s3Storage: () => (incomingConfig: unknown) => incomingConfig,
-}))
 
 describe('Accreditation lifecycle integration', () => {
   let payload: Payload

@@ -24,11 +24,11 @@ The repository supports `local`, `hybrid`, and `cloud` operation with the same c
 
 | Mode | Database | Storage | Key Env Signals |
 | --- | --- | --- | --- |
-| `local` | Local Postgres (Docker) | Local filesystem uploads | `DATABASE_URI` points to local DB, `USE_S3_IN_DEV` unset/`false` |
-| `hybrid` | Remote Postgres (often Supabase) | Local or S3-compatible | `DATABASE_URI` points to remote DB, optional `USE_S3_IN_DEV=true` with S3 env |
+| `local` | Local Postgres (Docker) | Local S3Mock | `DATABASE_URI` points to local DB; Docker Compose runs S3Mock |
+| `hybrid` | Remote Postgres (often Supabase) | Local S3Mock | `DATABASE_URI` points to remote DB; development media remains local |
 | `cloud` | Managed Postgres (often Supabase) | S3-compatible | Production env with managed DB and complete S3 env variables |
 
-If `USE_S3_IN_DEV=true`, the S3 adapter in `src/plugins/index.ts` becomes active in development too.
+The S3 adapter is active in every runtime. Preview and production fail fast if their required S3 variables are missing.
 
 ### Clinic Dashboard Redirect Origin
 

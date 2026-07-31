@@ -135,15 +135,10 @@ const readProfileContext = async (req: PayloadRequest, clinicId: RelationId): Pr
   const countries = await req.payload.find({
     collection: 'countries',
     depth: 0,
-    limit: 2,
+    limit: 1,
     pagination: false,
     overrideAccess: true,
     req,
-    where: {
-      isoCode: {
-        equals: clinicProfileCountry.code,
-      },
-    },
   })
   const drafts = await req.payload.find({
     collection: 'clinicProfileDrafts',

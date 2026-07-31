@@ -30,13 +30,13 @@ The same codebase supports three operational modes. The runtime behavior is cont
 
 | Mode | Database | Media Storage | Typical Use |
 | --- | --- | --- | --- |
-| `local` | Local Postgres (usually Docker) | Local filesystem uploads | Day-to-day development with minimal cloud dependencies |
-| `hybrid` | Supabase Postgres (or another remote Postgres) | Local or S3-compatible storage | Local app runtime with selected cloud dependencies |
+| `local` | Local Postgres (usually Docker) | Local S3Mock | Day-to-day development with no cloud storage dependency |
+| `hybrid` | Supabase Postgres (or another remote Postgres) | Local S3Mock | Local app runtime with a selected remote database |
 | `cloud` | Supabase/managed Postgres | S3-compatible object storage (commonly Supabase Storage via S3 API) | Hosted/staging/production environments |
 
 Notes:
-- The S3 adapter is always integrated in code (`src/plugins/index.ts`), but only enabled at runtime when env conditions are met.
-- Saying "Supabase is used for DB/storage" is accurate for `hybrid` and `cloud` setups; in `local` mode, local infrastructure can fully replace those services.
+- The S3 adapter is active in every runtime. Development and tests select their isolated local S3Mock service; preview and production require a complete real S3 configuration.
+- Saying "Supabase is used for DB/storage" is accurate for hosted operation. Local and hybrid development keep media bytes in S3Mock.
 
 ## Globals
 Manage global site settings and content.

@@ -6,7 +6,7 @@ Keep this page handy when preparing your local environment or CI jobs to run the
 
 - Node.js 24.x
 - pnpm 10+
-- Docker Desktop (used for the isolated Postgres instance)
+- Docker Desktop (used for isolated Postgres and S3Mock instances)
 
 ## Environment Variables
 
@@ -20,8 +20,9 @@ PREVIEW_SECRET=test-preview-secret
 ```
 
 Test mode guidance:
-- Tests should default to local Postgres and local storage.
-- Do not enable development S3 in tests (`USE_S3_IN_DEV` should remain unset or `false`).
+- Tests default to local Postgres and the isolated `findmydoc-test` S3Mock bucket on port `9091`.
+- No S3 credentials or development storage flag are required for tests.
+- The test S3Mock has no named data volume. Recreating the test Compose project clears its objects together with the test database templates.
 - If a test scenario needs Supabase endpoints, use `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - The Playwright admin smoke lane additionally expects `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD` for an already existing Supabase platform admin account.
 - Do not put blank `E2E_ADMIN_*` values into `.env.test`; that file overrides `.env.local` during test startup.

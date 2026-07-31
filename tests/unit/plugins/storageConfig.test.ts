@@ -1,39 +1,80 @@
 import { describe, expect, it } from 'vitest'
 
-import { hasCloudStorageConfig, shouldUseCloudStorage } from '@/plugins/storageConfig'
+import { resolveS3StorageBucket, resolveS3StorageConfig } from '@/plugins/storageConfig'
 
-const completeS3Env = {
-  S3_BUCKET: 'bucket',
-  S3_ACCESS_KEY_ID: 'key',
-  S3_SECRET_ACCESS_KEY: 'example-value', // pragma: allowlist secret
-  S3_REGION: 'region',
+const completeOnlineS3Env = {
+  S3_ACCESS_KEY_ID: 'online-access-key',
+  S3_BUCKET: 'online-bucket',
   S3_ENDPOINT: 'https://storage.example.com',
+  S3_REGION: 'eu-central-1',
+  S3_SECRET_ACCESS_KEY: 'online-secret-key', // pragma: allowlist secret
 } satisfies Partial<NodeJS.ProcessEnv>
 
-describe('storageConfig', () => {
-  it('detects a complete cloud storage configuration', () => {
-    expect(hasCloudStorageConfig(completeS3Env)).toBe(true)
-    expect(hasCloudStorageConfig({ S3_BUCKET: 'bucket' })).toBe(false)
-  })
-
-  it('always enables cloud storage in production', () => {
-    expect(shouldUseCloudStorage({ NODE_ENV: 'production' })).toBe(true)
-  })
-
-  it('allows explicit opt-in and opt-out in development', () => {
-    expect(shouldUseCloudStorage({ NODE_ENV: 'development', USE_S3_IN_DEV: 'true' })).toBe(true)
+describe('resolveS3StorageConfig', () => {
+  it('always uses the local S3Mock configuration in development', () => {
     expect(
-      shouldUseCloudStorage({
-        NODE_ENV: 'development',
-        USE_S3_IN_DEV: 'false',
-        ...completeS3Env,
+      resolveS3StorageConfig({
+        DEPLOYMENT_ENV: 'development',
+        ...completeOnlineS3Env,
       }),
-    ).toBe(false)
+    ).toEqual({
+      bucket: 'findmydoc-local',
+      clientConfig: {
+        credentials: {
+          accessKeyId: 's3mock-access-key',
+          secretAccessKey: 's3mock-secret-key',
+        },
+        endpoint: 'http://localhost:9090',
+        forcePathStyle: true,
+        region: 'us-east-1',
+        responseChecksumValidation: 'WHEN_REQUIRED',
+      },
+    })
   })
 
-  it('keeps cloud storage disabled outside production without explicit opt-in', () => {
-    expect(shouldUseCloudStorage({ NODE_ENV: 'test', ...completeS3Env })).toBe(false)
-    expect(shouldUseCloudStorage({ NODE_ENV: 'development', ...completeS3Env })).toBe(false)
-    expect(shouldUseCloudStorage({ NODE_ENV: 'development' })).toBe(false)
+  it('allows the Docker development endpoint to override the host default', () => {
+    expect(
+      resolveS3StorageConfig({
+        DEPLOYMENT_ENV: 'development',
+        S3_LOCAL_ENDPOINT: 'http://s3mock:9090',
+      }).clientConfig.endpoint,
+    ).toBe('http://s3mock:9090')
+  })
+
+  it('uses a separate local S3Mock bucket and endpoint in tests', () => {
+    const config = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'test' })
+
+    expect(config.bucket).toBe('findmydoc-test')
+    expect(config.clientConfig.endpoint).toBe('http://localhost:9091')
+    expect(resolveS3StorageBucket({ DEPLOYMENT_ENV: 'test' })).toBe('findmydoc-test')
+  })
+
+  it.each(['preview', 'production'] as const)('requires complete S3 configuration in %s', (runtime) => {
+    expect(() => resolveS3StorageConfig({ DEPLOYMENT_ENV: runtime })).toThrow(
+      `Missing required S3 environment variables for ${runtime}: S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET, S3_REGION`,
+    )
+  })
+
+  it('fails closed for an unclassified production Node process', () => {
+    expect(() => resolveS3StorageConfig({ NODE_ENV: 'production' })).toThrow(
+      'Missing required S3 environment variables for production: S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET, S3_REGION',
+    )
+  })
+
+  it.each(['preview', 'production'] as const)('uses real S3 credentials in %s', (runtime) => {
+    const config = resolveS3StorageConfig({ DEPLOYMENT_ENV: runtime, ...completeOnlineS3Env })
+
+    expect(config).toEqual({
+      bucket: 'online-bucket',
+      clientConfig: {
+        credentials: {
+          accessKeyId: 'online-access-key',
+          secretAccessKey: 'online-secret-key',
+        },
+        endpoint: 'https://storage.example.com',
+        forcePathStyle: true,
+        region: 'eu-central-1',
+      },
+    })
   })
 })

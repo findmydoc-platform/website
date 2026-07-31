@@ -154,7 +154,7 @@ describe('media upload logging hooks', () => {
 
   it('downgrades expected NoSuchKey upload failures to warnings without stack traces', async () => {
     const req = createRequest()
-    vi.stubEnv('S3_BUCKET', 'portalfiles')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
     req.context.mediaUploadLog = {
       collection: 'clinicMedia',
       event: 'storage.media.upload_attempt',
@@ -169,7 +169,7 @@ describe('media upload logging hooks', () => {
     const error = {
       name: 'NoSuchKey',
       Code: 'NoSuchKey',
-      Resource: 'portalfiles/platform/eye-care-laser-vision-correction.webp',
+      Resource: 'findmydoc-test/platform/eye-care-laser-vision-correction.webp',
       message: 'Object not found',
     }
 

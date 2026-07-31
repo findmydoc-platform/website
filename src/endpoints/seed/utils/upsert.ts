@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
 import { prepareUploadFilenameFromFilePathSync } from '@/hooks/media/prepareUploadFilename'
+import { resolveS3StorageBucket } from '@/plugins/storageConfig'
 
 export type UpsertResult = {
   created: boolean
@@ -57,8 +58,7 @@ function parseMissingResourceFromMessage(message: string): string | null {
 }
 
 function resolveMissingS3Key(error: unknown): string | null {
-  const bucket = process.env.S3_BUCKET || ''
-  if (!bucket) return null
+  const bucket = resolveS3StorageBucket()
 
   const candidates: S3LikeError[] = []
   if (error && typeof error === 'object') {

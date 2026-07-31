@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { getPayload } from 'payload'
 import type { File, Payload, PayloadRequest } from 'payload'
 
@@ -14,10 +14,6 @@ import {
   createPlatformTestUser,
   type PayloadRequestUser,
 } from '../../fixtures/testUsers'
-
-vi.mock('@payloadcms/storage-s3', () => ({
-  s3Storage: () => (incomingConfig: unknown) => incomingConfig,
-}))
 
 describe('Import and export access integration', () => {
   let payload: Payload

@@ -11,7 +11,7 @@ import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/
 import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
 import { createMcpPlugin } from './mcp'
-import { shouldUseCloudStorage } from './storageConfig'
+import { resolveS3StorageConfig } from './storageConfig'
 import { importExport } from './importExport'
 import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'
 
@@ -35,9 +35,7 @@ const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
   return doc?.slug ? `${url}/${doc.slug}` : url
 }
 
-// In development, prefer cloud storage when a complete S3 configuration is present.
-// Set USE_S3_IN_DEV=false to force local storage for isolated local work.
-const useCloudStorage = shouldUseCloudStorage(process.env)
+const s3StorageConfig = resolveS3StorageConfig(process.env)
 
 const disableLocalizationForPluginField = (field: Field): Field => {
   const nextField: PluginConfigField = {
@@ -70,7 +68,6 @@ const disableLocalizationForPluginField = (field: Field): Field => {
 }
 
 const s3StoragePlugin = s3Storage({
-  enabled: useCloudStorage,
   collections: {
     platformContentMedia: {
       disableLocalStorage: true,
@@ -93,16 +90,8 @@ const s3StoragePlugin = s3Storage({
       prefix: 'clinics-gallery',
     },
   },
-  bucket: process.env.S3_BUCKET || '',
-  config: {
-    forcePathStyle: true,
-    credentials: {
-      accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
-    },
-    region: process.env.S3_REGION || '',
-    endpoint: process.env.S3_ENDPOINT,
-  },
+  bucket: s3StorageConfig.bucket,
+  config: s3StorageConfig.clientConfig,
 })
 
 export const plugins: Plugin[] = [

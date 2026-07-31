@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { randomUUID } from 'crypto'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
@@ -9,10 +9,7 @@ import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { asStaffPayloadUser } from '../fixtures/clinicUserFixtures'
 import { createTinyPngFile } from '../fixtures/mediaFile'
 import type { ClinicStaff, Patient, PlatformContentMedia, PlatformStaff } from '@/payload-types'
-
-vi.mock('@payloadcms/storage-s3', () => ({
-  s3Storage: () => (incomingConfig: unknown) => incomingConfig,
-}))
+import { resolveS3StorageConfig } from '@/plugins/storageConfig'
 
 describe('PlatformContentMedia integration - lifecycle', () => {
   let payload: Payload
@@ -109,6 +106,55 @@ describe('PlatformContentMedia integration - lifecycle', () => {
     expect(created.createdBy).toBe(platformUser.id)
     expect(created.filename).toMatch(/^[a-f0-9]{10}-.*\.png$/)
     expect(created.storagePath).toMatch(/^platform\/[a-f0-9]{10}-.*\.png$/)
+  })
+
+  it('stores media in S3Mock while keeping the public URL behind Payload access control', async () => {
+    const platformUser = await createPlatformUser('s3-storage')
+    const created = (await payload.create({
+      collection: 'platformContentMedia',
+      data: {
+        alt: 'S3 storage image',
+      } as Partial<PlatformContentMedia>,
+      file: createTinyPngFile(`${slugPrefix}-s3-storage.png`),
+      user: asStaffPayloadUser(platformUser),
+      draft: false,
+      depth: 0,
+      overrideAccess: false,
+    } as Parameters<Payload['create']>[0])) as PlatformContentMedia
+
+    createdMediaIds.push(created.id)
+
+    const storageConfig = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'test' })
+    const objectResponse = await fetch(
+      `${storageConfig.clientConfig.endpoint}/${storageConfig.bucket}/${created.storagePath}`,
+    )
+
+    expect(objectResponse.status).toBe(200)
+    expect(objectResponse.headers.get('content-type')).toContain('image/png')
+    expect((await objectResponse.arrayBuffer()).byteLength).toBeGreaterThan(0)
+
+    const rangeResponse = await fetch(
+      `${storageConfig.clientConfig.endpoint}/${storageConfig.bucket}/${created.storagePath}`,
+      {
+        headers: { range: 'bytes=0-7' },
+      },
+    )
+
+    expect(rangeResponse.status).toBe(206)
+    expect((await rangeResponse.arrayBuffer()).byteLength).toBe(8)
+    expect(created.url).not.toContain('s3mock')
+    expect(created.url).not.toContain('localhost:9091')
+
+    await payload.delete({
+      collection: 'platformContentMedia',
+      id: created.id,
+      overrideAccess: true,
+    })
+    createdMediaIds.splice(createdMediaIds.indexOf(created.id), 1)
+
+    expect(
+      (await fetch(`${storageConfig.clientConfig.endpoint}/${storageConfig.bucket}/${created.storagePath}`)).status,
+    ).toBe(404)
   })
 
   it('updates metadata without changing createdBy', async () => {

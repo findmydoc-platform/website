@@ -9,6 +9,7 @@ const { Client } = pg
 
 const DOCKER_COMPOSE = 'docker compose -p findmydoc-test -f docker-compose.test.yml'
 const DEFAULT_CONN = 'postgresql://postgres:password@localhost:5433/findmydoc-test' // pragma: allowlist secret
+const DEFAULT_TEST_S3_ENDPOINT = 'http://localhost:9091'
 const LOCAL_DATABASE_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 const SAFE_TEST_DATABASE_NAME_PATTERN = /^findmydoc-test(?:[-_][a-z0-9][a-z0-9_-]*)?$/
 const TEMPLATE_METADATA_TABLE = 'codex_test_template_metadata'
@@ -22,8 +23,14 @@ const TEMPLATE_DEPENDENCIES = {
   baseline: ['empty', 'baseline'],
 }
 const TEMPLATE_FINGERPRINT_INPUTS = {
-  empty: ['src/migrations', 'src/payload.config.ts'],
-  baseline: ['src/migrations', 'src/endpoints/seed', 'src/payload.config.ts'],
+  empty: ['docker-compose.test.yml', 'src/migrations', 'src/payload.config.ts', 'src/plugins/storageConfig.ts'],
+  baseline: [
+    'docker-compose.test.yml',
+    'src/migrations',
+    'src/endpoints/seed',
+    'src/payload.config.ts',
+    'src/plugins/storageConfig.ts',
+  ],
 }
 
 export const TEMPLATE_KINDS = ['empty', 'baseline']
@@ -260,6 +267,25 @@ async function waitForDatabase(connectionString, timeoutMs = 60000, intervalMs =
   }
 }
 
+async function waitForTestS3Storage(timeoutMs = 60000, intervalMs = 750) {
+  const endpoint = process.env.S3_TEST_ENDPOINT || DEFAULT_TEST_S3_ENDPOINT
+  const healthUrl = new URL('/favicon.ico', endpoint)
+  const startedAt = Date.now()
+
+  while (true) {
+    try {
+      const response = await fetch(healthUrl)
+      if (response.ok) return
+    } catch {}
+
+    if (Date.now() - startedAt > timeoutMs) {
+      throw new Error(`Test S3 storage not ready after ${timeoutMs}ms at ${endpoint}`)
+    }
+
+    await sleep(intervalMs)
+  }
+}
+
 async function databaseExists(adminClient, databaseName) {
   const result = await adminClient.query('SELECT 1 FROM pg_database WHERE datname = $1', [databaseName])
   return result.rowCount > 0
@@ -401,7 +427,7 @@ async function runPayloadMigrateFresh({ attempts = 3, connectionString, delayMs 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       execSync("printf 'y\\n' | pnpm run payload migrate:fresh", {
-        env: { ...process.env, DATABASE_URI: connectionString, NODE_ENV: 'test' },
+        env: { ...process.env, DATABASE_URI: connectionString, DEPLOYMENT_ENV: 'test', NODE_ENV: 'test' },
         stdio: 'inherit',
       })
       return
@@ -418,7 +444,7 @@ async function runPayloadMigrateFresh({ attempts = 3, connectionString, delayMs 
 
 function runBaselineSeed(connectionString) {
   execSync('pnpm run seed:run -- --type baseline --runtime-env test', {
-    env: { ...process.env, DATABASE_URI: connectionString, NODE_ENV: 'development' },
+    env: { ...process.env, DATABASE_URI: connectionString, DEPLOYMENT_ENV: 'test', NODE_ENV: 'development' },
     stdio: 'inherit',
   })
 }
@@ -544,6 +570,8 @@ export async function setupTestDatabase(options = {}) {
 
   console.log('⏳ Waiting for test database to be ready...')
   await waitForDatabase(adminConnectionString)
+  console.log('⏳ Waiting for test S3 storage to be ready...')
+  await waitForTestS3Storage()
   await sleep(500)
 
   let templateStates = forceTemplateRebuild
@@ -601,8 +629,8 @@ export async function teardownTestDatabase() {
     return
   }
 
-  console.log('🧹 Stopping test database container (templates preserved)...')
+  console.log('🧹 Stopping test services (database templates preserved)...')
   runDockerCompose('stop')
   managesLocalTestDatabaseContainer = false
-  console.log('✅ Test database container stopped and template volume preserved')
+  console.log('✅ Test services stopped and database templates preserved')
 }

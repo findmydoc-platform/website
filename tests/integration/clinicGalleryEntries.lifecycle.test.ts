@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload, File, PayloadRequest } from 'payload'
 import config from '@payload-config'
@@ -9,10 +9,6 @@ import { testSlug } from '../fixtures/testSlug'
 import { runBaselineContract } from './contracts/baselineContract'
 import type { Clinic, ClinicGalleryEntry, ClinicGalleryMedia, ClinicStaff, PlatformStaff } from '@/payload-types'
 import { ClinicGalleryEntries as ClinicGalleryEntriesCollection } from '@/collections/ClinicGalleryEntries'
-
-vi.mock('@payloadcms/storage-s3', () => ({
-  s3Storage: () => (incomingConfig: unknown) => incomingConfig,
-}))
 
 type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
 type PayloadCreateArgs = Parameters<Payload['create']>[0]

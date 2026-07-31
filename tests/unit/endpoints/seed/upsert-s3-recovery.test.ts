@@ -39,7 +39,7 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
     update.mockReset()
     updateOne.mockReset().mockResolvedValue(undefined)
     warn.mockReset()
-    vi.stubEnv('S3_BUCKET', 'portalfiles')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
   })
 
   afterEach(() => {
@@ -53,7 +53,7 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
       .mockRejectedValueOnce({
         name: 'NoSuchKey',
         Code: 'NoSuchKey',
-        Resource: 'portalfiles/platform/rehab-physio.jpg',
+        Resource: 'findmydoc-test/platform/rehab-physio.jpg',
         message: 'Object not found',
       })
       .mockResolvedValueOnce({ id: 'media-1' })

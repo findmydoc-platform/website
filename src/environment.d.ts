@@ -13,6 +13,13 @@ declare global {
       PAYLOAD_DB_PUSH?: string
       NEXT_PUBLIC_HEADER_LOGO_SRC?: string
       NEXT_PUBLIC_FOOTER_LOGO_SRC?: string
+      S3_ACCESS_KEY_ID?: string
+      S3_BUCKET?: string
+      S3_ENDPOINT?: string
+      S3_LOCAL_ENDPOINT?: string
+      S3_REGION?: string
+      S3_SECRET_ACCESS_KEY?: string
+      S3_TEST_ENDPOINT?: string
     }
   }
 }

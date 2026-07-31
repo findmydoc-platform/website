@@ -106,6 +106,7 @@ export interface SeedFinalFlushRevalidationSubject {
   readonly affectedSurfaces: readonly CacheTaggableSurfaceId[]
   readonly affectedSitemaps: readonly CacheSitemapId[]
   readonly affectedDiscovery: readonly CacheDiscoveryId[]
+  readonly affectedPageSlugs: readonly string[]
   readonly affectedPostSlugs: readonly string[]
   readonly completedJobCount: number
   readonly publicJobCount: number

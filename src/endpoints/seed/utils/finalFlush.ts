@@ -34,6 +34,8 @@ type SeedFinalFlushScope = {
 }
 
 type ScopeEntry = {
+  readonly collections?: readonly CacheTaggableCollection[]
+  readonly globals?: readonly CachePolicyGlobal[]
   readonly surfaces?: readonly CacheTaggableSurfaceId[]
   readonly sitemaps?: readonly CacheSitemapId[]
 }
@@ -83,7 +85,10 @@ const COLLECTION_FLUSH_SCOPE: Partial<Record<CacheTaggableCollection, ScopeEntry
   tags: { surfaces: ['listing-comparison'] },
   clinicMedia: {},
   doctorMedia: {},
-  platformContentMedia: {},
+  platformContentMedia: {
+    collections: ['pages', 'posts'],
+    globals: ['landingPages'],
+  },
 }
 
 const isTaggableCollection = (collection: string | undefined): collection is CacheTaggableCollection => {
@@ -114,9 +119,17 @@ const addGlobalScope = (scope: SeedFinalFlushScope, global: CachePolicyGlobal): 
 }
 
 const addCollectionScope = (scope: SeedFinalFlushScope, collection: CacheTaggableCollection): void => {
+  if (scope.collections.has(collection)) return
+
   scope.collections.add(collection)
 
   const entry = COLLECTION_FLUSH_SCOPE[collection]
+  for (const relatedCollection of entry?.collections ?? []) {
+    addCollectionScope(scope, relatedCollection)
+  }
+  for (const global of entry?.globals ?? []) {
+    addGlobalScope(scope, global)
+  }
   for (const surface of entry?.surfaces ?? []) {
     if (isTaggableSurface(surface)) {
       scope.surfaces.add(surface)
@@ -130,6 +143,67 @@ const addCollectionScope = (scope: SeedFinalFlushScope, collection: CacheTaggabl
 const addReviewAppealPublicScope = (scope: SeedFinalFlushScope): void => {
   addCollectionScope(scope, 'reviews')
   addCollectionScope(scope, 'reviewResponses')
+}
+
+const SEED_MEDIA_CONSUMER_PAGE_SIZE = 100
+
+type SlugDocument = {
+  slug?: unknown
+}
+
+const isSlugDocument = (doc: unknown): doc is { slug: string } =>
+  Boolean(doc && typeof doc === 'object' && typeof (doc as SlugDocument).slug === 'string')
+
+const findPublishedSlugs = async (payload: Payload, collection: 'pages' | 'posts'): Promise<string[]> => {
+  const slugs: string[] = []
+  let page = 1
+
+  while (true) {
+    const result = await payload.find({
+      collection,
+      depth: 0,
+      limit: SEED_MEDIA_CONSUMER_PAGE_SIZE,
+      page,
+      pagination: true,
+      overrideAccess: true,
+      select: {
+        slug: true,
+      },
+      where: {
+        _status: {
+          equals: 'published',
+        },
+      },
+    })
+
+    for (const doc of result.docs) {
+      if (isSlugDocument(doc) && doc.slug.trim().length > 0) {
+        slugs.push(doc.slug)
+      }
+    }
+
+    if (!result.hasNextPage) {
+      return [...new Set(slugs)].sort()
+    }
+
+    page += 1
+  }
+}
+
+const findPlatformContentMediaConsumerSlugs = async (
+  payload: Payload,
+  scope: SeedFinalFlushScope,
+): Promise<{ pageSlugs: string[]; postSlugs: string[] }> => {
+  if (!scope.collections.has('platformContentMedia')) {
+    return { pageSlugs: [], postSlugs: [] }
+  }
+
+  const [pageSlugs, postSlugs] = await Promise.all([
+    findPublishedSlugs(payload, 'pages'),
+    findPublishedSlugs(payload, 'posts'),
+  ])
+
+  return { pageSlugs, postSlugs }
 }
 
 const addPlanScope = (scope: SeedFinalFlushScope, seedType: SeedType): void => {
@@ -321,6 +395,9 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
   if (!claim) return
 
   try {
+    const { pageSlugs: affectedPageSlugs, postSlugs: mediaConsumerPostSlugs } =
+      await findPlatformContentMediaConsumerSlugs(payload, scope)
+    const allAffectedPostSlugs = [...new Set([...affectedPostSlugs, ...mediaConsumerPostSlugs])].sort()
     const plan = planRevalidation({
       kind: 'seed-final-flush',
       operation: 'seed-final-flush',
@@ -338,7 +415,8 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
         affectedSurfaces: [...scope.surfaces].sort(),
         affectedSitemaps: [...scope.sitemaps].sort(),
         affectedDiscovery: [],
-        affectedPostSlugs,
+        affectedPageSlugs,
+        affectedPostSlugs: allAffectedPostSlugs,
         completedJobCount,
         publicJobCount: publicJobs.length,
       },

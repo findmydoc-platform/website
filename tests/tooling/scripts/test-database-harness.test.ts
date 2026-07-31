@@ -185,11 +185,18 @@ describe('template dependencies', () => {
   })
 
   it('uses seed inputs only for the baseline template fingerprint', () => {
-    expect(getTemplateFingerprintInputPaths('empty')).toEqual(['src/migrations', 'src/payload.config.ts'])
+    expect(getTemplateFingerprintInputPaths('empty')).toEqual([
+      'docker-compose.test.yml',
+      'src/migrations',
+      'src/payload.config.ts',
+      'src/plugins/storageConfig.ts',
+    ])
     expect(getTemplateFingerprintInputPaths('baseline')).toEqual([
+      'docker-compose.test.yml',
       'src/migrations',
       'src/endpoints/seed',
       'src/payload.config.ts',
+      'src/plugins/storageConfig.ts',
     ])
   })
 })

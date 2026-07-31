@@ -6,6 +6,8 @@ import { createClient } from '@/auth/utilities/supaBaseClient'
 import { resetPostHogBrowserIdentity } from '@/posthog/client-api'
 import { Heading } from '@/components/atoms/Heading'
 
+const EXIT_PREVIEW_PATH = `/next/exit-preview?redirect=${encodeURIComponent('/admin/login')}`
+
 export default function LogoutPage() {
   const router = useRouter()
 
@@ -15,16 +17,20 @@ export default function LogoutPage() {
         const supabase = createClient()
 
         await supabase.auth.signOut()
-        resetPostHogBrowserIdentity()
-
-        // Small delay to show the "logging out" message
-        setTimeout(() => {
-          router.push('/admin/login')
-        }, 1000)
       } catch (error) {
         console.error('Logout error:', error)
-        router.push('/admin/login')
       }
+
+      try {
+        resetPostHogBrowserIdentity()
+      } catch (error) {
+        console.error('Logout identity reset error:', error)
+      }
+
+      // Small delay to show the "logging out" message.
+      setTimeout(() => {
+        router.replace(EXIT_PREVIEW_PATH)
+      }, 1000)
     }
 
     handleLogout()

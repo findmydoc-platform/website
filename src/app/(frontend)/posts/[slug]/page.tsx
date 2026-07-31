@@ -172,28 +172,39 @@ const resolvePost = cache(async (slug: string, locale?: ContentLocale, fallbackL
     ...(locale ? { locale } : {}),
     ...(fallbackLocale !== undefined ? { fallbackLocale } : {}),
   }
-  const draft = await resolveDraftAccess()
+  const draftPayload = await resolveDraftPayload()
 
-  if (!draft) {
+  if (!draftPayload) {
     const post = await getCachedPublishedPostBySlug({ contentLocale, slug })
 
-    return { draft, post }
+    return { draft: false, post }
   }
 
-  const payload = await getPayload({ config: configPromise })
-  const post = await findPostBySlug(payload, slug, true, contentLocale)
+  const post = await findPostBySlug(draftPayload, slug, true, contentLocale)
 
-  return { draft, post }
+  return { draft: true, post }
 })
 
-const resolveDraftAccess = async (): Promise<boolean> => {
+const resolveDraftPayload = async () => {
   const { isEnabled } = await draftMode()
 
   if (!isEnabled) {
-    return false
+    return null
   }
 
   const requestHeaders = await headers()
 
-  return !isTemporaryLandingModeRequest(requestHeaders)
+  if (isTemporaryLandingModeRequest(requestHeaders)) {
+    return null
+  }
+
+  const payload = await getPayload({ config: configPromise })
+
+  try {
+    const { user } = await payload.auth({ headers: requestHeaders })
+
+    return user?.collection === 'platformStaff' ? payload : null
+  } catch {
+    return null
+  }
 }

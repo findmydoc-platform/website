@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => {
     generateMetaMock: vi.fn((args: unknown) => args),
     getCachedPublishedPostBySlugMock: vi.fn(),
     getPayloadMock: vi.fn(),
+    payloadAuthMock: vi.fn(),
     payloadRedirectsComponent: vi.fn(() => null),
     postHeroComponent: vi.fn(() => null),
     postShareActionBarComponent: vi.fn(() => null),
@@ -145,7 +146,8 @@ describe('frontend post detail route', () => {
 
     mocks.draftModeMock.mockResolvedValue({ isEnabled: false })
     mocks.headersMock.mockResolvedValue(new Headers())
-    mocks.getPayloadMock.mockResolvedValue({})
+    mocks.payloadAuthMock.mockResolvedValue({ user: null })
+    mocks.getPayloadMock.mockResolvedValue({ auth: mocks.payloadAuthMock })
     mocks.resolveMediaImageMock.mockReturnValue({
       src: '/api/platformContentMedia/file/post-hero.webp',
       alt: 'Hallo Welt',
@@ -358,11 +360,61 @@ describe('frontend post detail route', () => {
       contentLocale: {},
     })
     expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
+    expect(mocks.payloadAuthMock).not.toHaveBeenCalled()
     expect(findElementByType(result, mocks.jsonLdScriptComponent)?.props.data).toEqual([{ '@type': 'Article' }])
   })
 
-  it('keeps authorized draft access when temporary landing headers are absent', async () => {
+  it('falls back to published data when a stale draft cookie has no current user', async () => {
     mocks.draftModeMock.mockResolvedValue({ isEnabled: true })
+
+    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
+    const result = await pageModule.default({
+      params: Promise.resolve({ slug: 'hello-world' }),
+      searchParams: Promise.resolve({}),
+    })
+
+    expect(mocks.payloadAuthMock).toHaveBeenCalledWith({ headers: expect.any(Headers) })
+    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledWith({
+      slug: 'hello-world',
+      contentLocale: {},
+    })
+    expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
+    expect(findElementByType(result, mocks.jsonLdScriptComponent)?.props.data).toEqual([{ '@type': 'Article' }])
+  })
+
+  it.each(['clinicStaff', 'patients'] as const)('does not authorize %s users for draft reads', async (collection) => {
+    mocks.draftModeMock.mockResolvedValue({ isEnabled: true })
+    mocks.payloadAuthMock.mockResolvedValue({ user: { collection, id: 'non-platform-user' } })
+
+    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
+    await pageModule.default({
+      params: Promise.resolve({ slug: 'hello-world' }),
+      searchParams: Promise.resolve({}),
+    })
+
+    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledOnce()
+    expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
+  })
+
+  it('falls back to published data when current authentication fails', async () => {
+    mocks.draftModeMock.mockResolvedValue({ isEnabled: true })
+    mocks.payloadAuthMock.mockRejectedValue(new Error('stale session'))
+
+    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
+
+    await expect(
+      pageModule.default({
+        params: Promise.resolve({ slug: 'hello-world' }),
+        searchParams: Promise.resolve({}),
+      }),
+    ).resolves.toBeDefined()
+    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledOnce()
+    expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps authorized platform staff draft access when temporary landing headers are absent', async () => {
+    mocks.draftModeMock.mockResolvedValue({ isEnabled: true })
+    mocks.payloadAuthMock.mockResolvedValue({ user: { collection: 'platformStaff', id: 'platform-user' } })
     mocks.findPostBySlugMock.mockResolvedValue({
       slug: 'hello-world',
       title: 'Hallo Welt',
@@ -375,7 +427,12 @@ describe('frontend post detail route', () => {
       searchParams: Promise.resolve({}),
     })
 
-    expect(mocks.findPostBySlugMock).toHaveBeenCalledWith({}, 'hello-world', true, {})
+    expect(mocks.findPostBySlugMock).toHaveBeenCalledWith(
+      expect.objectContaining({ auth: mocks.payloadAuthMock }),
+      'hello-world',
+      true,
+      {},
+    )
     expect(mocks.getCachedPublishedPostBySlugMock).not.toHaveBeenCalled()
     expect(findElementByType(result, mocks.jsonLdScriptComponent)?.props.data).toBeNull()
   })

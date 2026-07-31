@@ -40,8 +40,6 @@ describe('Clinic Creation Integration Tests', () => {
   const createdAccreditationIds: Array<number> = []
   const createdPlatformStaffIds: Array<number> = []
   const createdClinicStaffIds: Array<number> = []
-  const createdCityIds: Array<number> = []
-  const createdCountryIds: Array<number> = []
 
   const buildImageFile = (name: string): File => {
     const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
@@ -124,22 +122,6 @@ describe('Clinic Creation Integration Tests', () => {
   }, 60000)
 
   afterEach(async () => {
-    while (createdCityIds.length) {
-      const id = createdCityIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'cities', id, overrideAccess: true })
-      } catch {}
-    }
-
-    while (createdCountryIds.length) {
-      const id = createdCountryIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'countries', id, overrideAccess: true })
-      } catch {}
-    }
-
     while (createdClinicMediaIds.length) {
       const id = createdClinicMediaIds.pop()
       if (!id) continue
@@ -249,77 +231,6 @@ describe('Clinic Creation Integration Tests', () => {
         }),
       ).rejects.toThrow()
     }
-  })
-
-  it('rejects non-TR countries and cities outside the selected TR country', async () => {
-    const otherCountry = await payload.create({
-      collection: 'countries',
-      data: {
-        name: `${slugPrefix}-Germany`,
-        isoCode: 'DE',
-        language: 'german',
-        currency: 'EUR',
-      },
-      overrideAccess: true,
-      depth: 0,
-    })
-    createdCountryIds.push(otherCountry.id)
-
-    const otherCity = await payload.create({
-      collection: 'cities',
-      data: {
-        name: `${slugPrefix}-Berlin`,
-        coordinates: [13.405, 52.52],
-        country: otherCountry.id,
-      },
-      overrideAccess: true,
-      depth: 0,
-    })
-    createdCityIds.push(otherCity.id)
-
-    await expect(
-      payload.create({
-        collection: 'clinics',
-        data: {
-          name: `${slugPrefix}-non-tr-country`,
-          slug: `${slugPrefix}-non-tr-country`,
-          status: 'draft',
-          address: {
-            country: otherCountry.id,
-            city: otherCity.id,
-          },
-        },
-        overrideAccess: true,
-        depth: 0,
-      }),
-    ).rejects.toMatchObject({
-      data: {
-        errors: [expect.objectContaining({ path: 'address.country' })],
-      },
-      status: 400,
-    })
-
-    await expect(
-      payload.create({
-        collection: 'clinics',
-        data: {
-          name: `${slugPrefix}-mismatched-city`,
-          slug: `${slugPrefix}-mismatched-city`,
-          status: 'draft',
-          address: {
-            country: countryId,
-            city: otherCity.id,
-          },
-        },
-        overrideAccess: true,
-        depth: 0,
-      }),
-    ).rejects.toMatchObject({
-      data: {
-        errors: [expect.objectContaining({ path: 'address.city' })],
-      },
-      status: 400,
-    })
   })
 
   it('stores a complete opening-hours week and clears times for closed days', async () => {
@@ -881,6 +792,9 @@ describe('Clinic Creation Integration Tests', () => {
       collection: 'clinics',
       id: clinic.id,
       data: {
+        address: {
+          country: null,
+        },
         status: 'rejected',
         verification: 'gold',
       },
@@ -891,6 +805,7 @@ describe('Clinic Creation Integration Tests', () => {
 
     expect(updatedClinic.status).toBe('approved')
     expect(updatedClinic.verification).toBe('unverified')
+    expect(updatedClinic.address?.country).toBe(countryId)
   })
 
   it.each([['admin' as const], ['support' as const]])(

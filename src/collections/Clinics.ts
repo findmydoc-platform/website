@@ -13,7 +13,6 @@ import {
   clinicApprovalRequirements,
   clinicApprovalRequirementSet,
   getMissingClinicApprovalRequirements,
-  resolveClinicApprovalData,
 } from './clinics/approvalRequirements'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { disabledClinicGalleryAccess } from '@/access/clinicGallery'
@@ -22,6 +21,7 @@ import {
   computedOnlyFieldAccess,
   platformClinicTrustAccess,
   platformClinicTrustFieldAccess,
+  platformOnlyFieldAccess,
 } from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateClinicChange, revalidateClinicDelete } from '@/hooks/revalidateClinicSurfaces'
@@ -32,11 +32,6 @@ import {
   normalizeClinicPostalCode,
   validateClinicPostalCode,
 } from './clinics/postalCode'
-import {
-  buildTurkiyeCityFilter,
-  buildTurkiyeCountryFilter,
-  validateTurkiyeClinicAddressRelationships,
-} from './clinics/turkiyeAddress'
 
 const GALLERY_ENTRIES_SAME_CLINIC_MESSAGE = 'Gallery entries must belong to this clinic.'
 const CLINIC_APPROVAL_ERROR_COMPONENT =
@@ -64,39 +59,6 @@ const validateApprovedClinicCompleteness: CollectionBeforeChangeHook<Clinic> = (
     throw new ValidationError({
       collection: 'clinics',
       errors: toValidationFieldErrors(missingRequirements),
-      id: originalDoc?.id,
-      req,
-    })
-  }
-
-  return data
-}
-
-const validateTurkiyeClinicAddress: CollectionBeforeValidateHook<Clinic> = async ({ data, originalDoc, req }) => {
-  if (!data) return data
-
-  const address = data.address
-  const hasRelationshipChange =
-    address === null ||
-    Boolean(
-      address &&
-      typeof address === 'object' &&
-      (Object.prototype.hasOwnProperty.call(address, 'country') ||
-        Object.prototype.hasOwnProperty.call(address, 'city')),
-    )
-
-  if (!hasRelationshipChange && data.status !== 'approved') return data
-
-  const resolvedData = resolveClinicApprovalData(data, originalDoc)
-  const issues = await validateTurkiyeClinicAddressRelationships({
-    address: resolvedData.address,
-    req,
-  })
-
-  if (issues.length > 0) {
-    throw new ValidationError({
-      collection: 'clinics',
-      errors: issues,
       id: originalDoc?.id,
       req,
     })
@@ -187,7 +149,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
     delete: isPlatformStaff, // Only Platform can delete clinics
   },
   hooks: {
-    beforeValidate: [validateTurkiyeClinicAddress, validateGalleryEntriesBeforeValidate],
+    beforeValidate: [validateGalleryEntriesBeforeValidate],
     beforeChange: [
       stableIdBeforeChangeHook,
       beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
@@ -316,7 +278,10 @@ export const Clinics: CollectionConfig<'clinics'> = {
                   name: 'country',
                   type: 'relationship',
                   relationTo: 'countries',
-                  filterOptions: () => buildTurkiyeCountryFilter(),
+                  access: {
+                    create: platformOnlyFieldAccess,
+                    update: platformOnlyFieldAccess,
+                  },
                   admin: {
                     components: {
                       Error: CLINIC_APPROVAL_ERROR_COMPONENT,
@@ -393,7 +358,6 @@ export const Clinics: CollectionConfig<'clinics'> = {
                       name: 'city',
                       type: 'relationship',
                       relationTo: 'cities',
-                      filterOptions: ({ req }) => buildTurkiyeCityFilter(req),
                       admin: {
                         components: {
                           Error: CLINIC_APPROVAL_ERROR_COMPONENT,

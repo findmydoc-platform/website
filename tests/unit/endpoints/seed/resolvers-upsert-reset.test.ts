@@ -85,7 +85,6 @@ describe('upsertByStableId', () => {
       collection: 'clinics',
       id: 'existing-id',
       data: { stableId: 's-1', name: 'Clinic' },
-      trash: true,
       overrideAccess: true,
       context: {
         disableRevalidate: true,

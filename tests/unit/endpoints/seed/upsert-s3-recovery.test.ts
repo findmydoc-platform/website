@@ -1,43 +1,27 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createHash } from 'crypto'
-import fs from 'fs'
-import os from 'os'
-import path from 'path'
 import type { Payload } from 'payload'
 import { upsertByStableId } from '@/endpoints/seed/utils/upsert'
-import { prepareUploadFilenameFromFilePathSync } from '@/hooks/media/prepareUploadFilename'
-
-function platformSeedStoragePathFor(filePath: string): string {
-  const baseFilename = prepareUploadFilenameFromFilePathSync(filePath) ?? path.basename(filePath).replace(/[\\/]/g, '_')
-  const size = fs.statSync(filePath).size
-  const hashInput = `platform:${baseFilename}${size ? `:${size}` : ''}`
-  const hash = createHash('sha1').update(hashInput).digest('hex').slice(0, 10)
-
-  return `platform/${hash}-${baseFilename}`
-}
 
 describe('upsertByStableId S3 NoSuchKey recovery', () => {
   const find = vi.fn()
   const create = vi.fn()
+  const remove = vi.fn()
   const update = vi.fn()
-  const updateOne = vi.fn().mockResolvedValue(undefined)
   const warn = vi.fn()
 
   const payload = {
     find,
     create,
+    delete: remove,
     update,
-    db: {
-      updateOne,
-    },
     logger: { warn },
   } as unknown as Payload
 
   beforeEach(() => {
     find.mockReset()
     create.mockReset()
+    remove.mockReset().mockResolvedValue(undefined)
     update.mockReset()
-    updateOne.mockReset().mockResolvedValue(undefined)
     warn.mockReset()
     vi.stubEnv('DEPLOYMENT_ENV', 'test')
   })
@@ -71,21 +55,23 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
     expect(result).toEqual({ created: false, updated: true })
     expect(update).toHaveBeenCalledTimes(1)
     expect(create).toHaveBeenCalledTimes(1)
-    expect(updateOne).toHaveBeenCalledTimes(1)
-    expect(updateOne).toHaveBeenCalledWith({
+    expect(remove).toHaveBeenCalledTimes(1)
+    expect(remove).toHaveBeenCalledWith({
       collection: 'platformContentMedia',
       id: 'media-1',
+      overrideAccess: true,
+      trash: true,
+      context: {
+        disableRevalidate: true,
+        disableSearchSync: true,
+        seedMediaExpectedNoSuchKeyRecovery: true,
+      },
       req: {
         context: {
           disableRevalidate: true,
           disableSearchSync: true,
           seedMediaExpectedNoSuchKeyRecovery: true,
         },
-      },
-      data: {
-        stableId: expect.any(String),
-        deletedAt: expect.any(Date),
-        filename: null,
       },
     })
     expect(warn).toHaveBeenCalledWith(
@@ -130,20 +116,22 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
 
     expect(result).toEqual({ created: false, updated: true })
     expect(update).not.toHaveBeenCalled()
-    expect(updateOne).toHaveBeenCalledWith({
+    expect(remove).toHaveBeenCalledWith({
       collection: 'userProfileMedia',
       id: 'profile-media-1',
+      overrideAccess: true,
+      trash: true,
+      context: {
+        disableRevalidate: true,
+        disableSearchSync: true,
+        seedMediaExpectedNoSuchKeyRecovery: true,
+      },
       req: {
         context: {
           disableRevalidate: true,
           disableSearchSync: true,
           seedMediaExpectedNoSuchKeyRecovery: true,
         },
-      },
-      data: {
-        stableId: expect.any(String),
-        deletedAt: expect.any(Date),
-        filename: null,
       },
     })
     expect(create).toHaveBeenCalledWith({
@@ -199,7 +187,7 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
     )
 
     expect(update).not.toHaveBeenCalled()
-    expect(updateOne).not.toHaveBeenCalled()
+    expect(remove).not.toHaveBeenCalled()
     expect(create).not.toHaveBeenCalled()
   })
 
@@ -216,9 +204,7 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
 
         return { id: 'media-2' }
       },
-      db: {
-        updateOne: vi.fn().mockResolvedValue(undefined),
-      },
+      delete: vi.fn().mockResolvedValue(undefined),
       logger: { warn },
     } as unknown as Payload
 
@@ -234,70 +220,6 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
 
     expect(result).toEqual({ created: false, updated: true })
     expect(updateCalls).toBe(2)
-  })
-
-  it('clears same-target platform upload filenames before updating seed media', async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'seed-media-'))
-    const filePath = path.join(tempDir, 'landing-image.webp')
-    fs.writeFileSync(filePath, 'seed-image')
-
-    try {
-      find.mockResolvedValue({
-        totalDocs: 1,
-        docs: [
-          {
-            id: 'media-3',
-            filename: 'stale-landing-image.webp',
-            sizes: {
-              thumbnail: { filename: 'stale-landing-image-300x200.webp' },
-            },
-            storagePath: platformSeedStoragePathFor(filePath),
-          },
-        ],
-      })
-      update.mockResolvedValue({ id: 'media-3' })
-
-      const result = await upsertByStableId(
-        payload,
-        'platformContentMedia',
-        {
-          stableId: '8c419e7c-8475-49c4-b07f-e8a8f3b92d56',
-          alt: 'Landing image',
-        },
-        { filePath },
-      )
-
-      expect(result).toEqual({ created: false, updated: true })
-      expect(update).toHaveBeenCalledTimes(2)
-      expect(update).toHaveBeenNthCalledWith(1, {
-        collection: 'platformContentMedia',
-        id: 'media-3',
-        overrideAccess: true,
-        context: {
-          disableRevalidate: true,
-          disableSearchSync: true,
-          seedMediaExpectedNoSuchKeyRecovery: true,
-          skipCloudStorage: true,
-        },
-        req: {
-          context: {
-            disableRevalidate: true,
-            disableSearchSync: true,
-            seedMediaExpectedNoSuchKeyRecovery: true,
-          },
-        },
-        data: {
-          filename: null,
-          sizes: expect.objectContaining({
-            medium: { filename: null },
-            thumbnail: { filename: null },
-          }),
-        },
-      })
-      expect(create).not.toHaveBeenCalled()
-    } finally {
-      fs.rmSync(tempDir, { recursive: true, force: true })
-    }
   })
 
   it('retries create after clearing trashed upload filenames when filename is blocked by unique index', async () => {
@@ -326,14 +248,23 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
 
     expect(result).toEqual({ created: true, updated: false })
     expect(create).toHaveBeenCalledTimes(2)
-    expect(updateOne).toHaveBeenCalledWith({
+    expect(update).toHaveBeenCalledWith({
       collection: 'platformContentMedia',
       id: 'trash-1',
+      overrideAccess: true,
+      trash: true,
+      context: {
+        disableRevalidate: true,
+        disableSearchSync: true,
+        seedMediaExpectedNoSuchKeyRecovery: true,
+        skipCloudStorage: true,
+      },
       req: {
         context: {
           disableRevalidate: true,
           disableSearchSync: true,
           seedMediaExpectedNoSuchKeyRecovery: true,
+          skipCloudStorage: true,
         },
       },
       data: {

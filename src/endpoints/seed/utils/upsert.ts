@@ -1,8 +1,4 @@
-import { createHash, randomUUID } from 'crypto'
-import fs from 'fs'
-import path from 'path'
 import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
-import { prepareUploadFilenameFromFilePathSync } from '@/hooks/media/prepareUploadFilename'
 import { resolveS3StorageBucket } from '@/plugins/storageConfig'
 
 export type UpsertResult = {
@@ -29,6 +25,15 @@ function buildOperationReq(
   }
 }
 
+function cloneOperationReq(req: Partial<PayloadRequest>): Partial<PayloadRequest> {
+  return {
+    ...req,
+    context: {
+      ...((req.context as Record<string, unknown> | undefined) ?? {}),
+    },
+  }
+}
+
 function hasStableId<T extends Record<string, unknown>>(data: T): data is T & { stableId: string } {
   const value = (data as { stableId?: unknown }).stableId
   return typeof value === 'string' && value.length > 0
@@ -44,12 +49,6 @@ type S3LikeError = {
 type ValidationErrorLike = {
   path?: unknown
   message?: unknown
-}
-
-const UPLOAD_IMAGE_SIZE_NAMES = ['thumbnail', 'square', 'small', 'medium', 'large', 'xlarge', 'og'] as const
-
-function shortHash(input: string): string {
-  return createHash('sha1').update(input).digest('hex').slice(0, 10)
 }
 
 function parseMissingResourceFromMessage(message: string): string | null {
@@ -219,7 +218,7 @@ async function clearTrashedUploadFilenames(options: {
       limit,
       trash: true,
       overrideAccess: true,
-      req,
+      req: cloneOperationReq(req),
     })
 
     if (result.docs.length === 0) {
@@ -233,69 +232,27 @@ async function clearTrashedUploadFilenames(options: {
     lastBatchKey = batchKey
 
     for (const doc of result.docs as Array<{ id: string | number }>) {
-      await (
-        payload.db as {
-          updateOne: (args: {
-            collection: CollectionSlug
-            id: string | number
-            data: Record<string, unknown>
-            req?: Partial<PayloadRequest>
-          }) => Promise<unknown>
-        }
-      ).updateOne({
+      const recoveryContext = {
+        ...((req.context as Record<string, unknown> | undefined) ?? {}),
+        // This metadata-only repair must not ask the cloud adapter to upload a file.
+        skipCloudStorage: true,
+      }
+      await payload.update({
         collection,
         id: doc.id,
+        overrideAccess: true,
+        trash: true,
+        context: recoveryContext,
         data: {
           filename: null,
         },
-        req,
+        // Payload hooks can extend request context. Keep this one-off cloud
+        // suppression out of the following upload operation.
+        req: buildOperationReq(req, recoveryContext),
       })
       cleared += 1
     }
   }
-}
-
-function derivePlatformSeedStoragePath(filePath: string): string | null {
-  let size: number | null = null
-
-  try {
-    size = fs.statSync(filePath).size
-  } catch {
-    return null
-  }
-
-  const baseFilename = prepareUploadFilenameFromFilePathSync(filePath) ?? path.basename(filePath).replace(/[\\/]/g, '_')
-  if (!baseFilename) return null
-
-  const hashInput = `platform:${baseFilename}${size ? `:${size}` : ''}`
-  return `platform/${shortHash(hashInput)}-${baseFilename}`
-}
-
-function deriveSeedBaseFilename(filePath: string): string | null {
-  const baseFilename = path.basename(filePath).replace(/[\\/]/g, '_')
-  return baseFilename || null
-}
-
-function shouldClearPlatformSeedUploadTargetsBeforeUpdate(options: {
-  collection: CollectionSlug
-  current: Record<string, unknown>
-  filePath?: string
-}): boolean {
-  const { collection, current, filePath } = options
-  if (collection !== 'platformContentMedia' || !filePath) return false
-
-  const currentStoragePath = typeof current.storagePath === 'string' ? current.storagePath : null
-  if (!currentStoragePath) return false
-
-  const expectedStoragePath = derivePlatformSeedStoragePath(filePath)
-  if (expectedStoragePath === currentStoragePath) return true
-
-  const baseFilename = deriveSeedBaseFilename(filePath)
-  const preparedBaseFilename = prepareUploadFilenameFromFilePathSync(filePath)
-  return Boolean(
-    (baseFilename && currentStoragePath.endsWith(`-${baseFilename}`)) ||
-    (preparedBaseFilename && currentStoragePath.endsWith(`-${preparedBaseFilename}`)),
-  )
 }
 
 function extractRelationKey(value: unknown): string | null {
@@ -333,33 +290,6 @@ function hasConfiguredRelationDrift(options: {
   })
 }
 
-async function clearUploadDeletionTargetsBeforeUpdate(options: {
-  payload: Payload
-  collection: CollectionSlug
-  id: string | number
-  context: Record<string, unknown>
-  req: Partial<PayloadRequest>
-}) {
-  const sizeData = Object.fromEntries(
-    UPLOAD_IMAGE_SIZE_NAMES.map((sizeName) => [sizeName, { filename: null }]),
-  ) as Record<(typeof UPLOAD_IMAGE_SIZE_NAMES)[number], { filename: null }>
-
-  await options.payload.update({
-    collection: options.collection,
-    id: options.id,
-    overrideAccess: true,
-    context: {
-      ...options.context,
-      skipCloudStorage: true,
-    },
-    data: {
-      filename: null,
-      sizes: sizeData,
-    },
-    req: options.req,
-  })
-}
-
 async function updateWithNoSuchKeyRecovery(
   payload: Payload,
   params: {
@@ -369,6 +299,7 @@ async function updateWithNoSuchKeyRecovery(
     context: Record<string, unknown>
     req: Partial<PayloadRequest>
     filePath?: string
+    includeTrashed?: boolean
   },
 ) {
   const maxRetries = 3
@@ -381,10 +312,10 @@ async function updateWithNoSuchKeyRecovery(
             collection: params.collection,
             id: params.id,
             data: params.data,
-            trash: true,
+            ...(params.includeTrashed ? { trash: true } : {}),
             overrideAccess: true,
             context: params.context,
-            req: params.req,
+            req: cloneOperationReq(params.req),
             ...(params.filePath ? { filePath: params.filePath } : {}),
           }),
         `update ${params.collection}:${params.id}`,
@@ -417,24 +348,15 @@ async function replaceSeedUploadDocument(
     filePath: string
   },
 ) {
-  await (
-    payload.db as {
-      updateOne: (args: {
-        collection: CollectionSlug
-        id: string | number
-        data: Record<string, unknown>
-        req?: Partial<PayloadRequest>
-      }) => Promise<unknown>
-    }
-  ).updateOne({
+  // Delete through Payload so its lifecycle hooks remove the previous S3 object
+  // before the replacement claims the same stable ID and filename.
+  await payload.delete({
     collection: params.collection,
     id: params.id,
-    data: {
-      stableId: randomUUID(),
-      deletedAt: new Date(),
-      filename: null,
-    },
-    req: params.req,
+    overrideAccess: true,
+    trash: true,
+    context: params.context,
+    req: cloneOperationReq(params.req),
   })
 
   await withTransientUploadRetry(
@@ -444,7 +366,7 @@ async function replaceSeedUploadDocument(
         data: params.data,
         overrideAccess: true,
         context: params.context,
-        req: params.req,
+        req: cloneOperationReq(params.req),
         filePath: params.filePath,
       }),
     `replace ${params.collection}:${params.id}`,
@@ -495,7 +417,7 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
             data,
             overrideAccess: true,
             context: operationContext,
-            req: operationReq,
+            req: cloneOperationReq(operationReq),
             ...(options?.filePath ? { filePath: options.filePath } : {}),
           }),
         `create ${collection}:${stableId}`,
@@ -526,7 +448,7 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
             data,
             overrideAccess: true,
             context: operationContext,
-            req: operationReq,
+            req: cloneOperationReq(operationReq),
             ...(options?.filePath ? { filePath: options.filePath } : {}),
           }),
         `retry create ${collection}:${stableId}`,
@@ -576,22 +498,6 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
     }
   }
 
-  if (
-    shouldClearPlatformSeedUploadTargetsBeforeUpdate({
-      collection,
-      current: current as Record<string, unknown>,
-      filePath: options?.filePath,
-    })
-  ) {
-    await clearUploadDeletionTargetsBeforeUpdate({
-      payload,
-      collection,
-      id: current.id,
-      context: operationContext,
-      req: operationReq,
-    })
-  }
-
   await updateWithNoSuchKeyRecovery(payload, {
     collection,
     id: current.id,
@@ -599,6 +505,7 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
     context: operationContext,
     req: operationReq,
     filePath: options?.filePath,
+    includeTrashed: Boolean(current.deletedAt),
   })
   return {
     created: false,

@@ -8,6 +8,7 @@ import pg from 'pg'
 const { Client } = pg
 
 const DOCKER_COMPOSE = 'docker compose -p findmydoc-test -f docker-compose.test.yml'
+const TEST_S3MOCK_SERVICE = 's3mock'
 const DEFAULT_CONN = 'postgresql://postgres:password@localhost:5433/findmydoc-test' // pragma: allowlist secret
 const DEFAULT_TEST_S3_ENDPOINT = 'http://localhost:9091'
 const LOCAL_DATABASE_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
@@ -449,6 +450,10 @@ function runBaselineSeed(connectionString) {
   })
 }
 
+export function getTestServiceTeardownCommands() {
+  return [`${DOCKER_COMPOSE} stop`, `${DOCKER_COMPOSE} rm --force ${TEST_S3MOCK_SERVICE}`]
+}
+
 function runDockerCompose(command) {
   if (command === 'reset') {
     try {
@@ -458,9 +463,12 @@ function runDockerCompose(command) {
   }
 
   if (command === 'stop') {
-    try {
-      execSync(`${DOCKER_COMPOSE} stop`, { stdio: 'pipe' })
-    } catch {}
+    for (const teardownCommand of getTestServiceTeardownCommands()) {
+      try {
+        // Keep the Postgres template volume, but start each integration run with an empty S3 bucket.
+        execSync(teardownCommand, { stdio: 'pipe' })
+      } catch {}
+    }
     return
   }
 
@@ -629,8 +637,8 @@ export async function teardownTestDatabase() {
     return
   }
 
-  console.log('🧹 Stopping test services (database templates preserved)...')
+  console.log('🧹 Stopping test services (database templates preserved, S3Mock reset)...')
   runDockerCompose('stop')
   managesLocalTestDatabaseContainer = false
-  console.log('✅ Test services stopped and database templates preserved')
+  console.log('✅ Test services stopped; database templates preserved and S3Mock reset')
 }

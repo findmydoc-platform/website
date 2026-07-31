@@ -75,6 +75,16 @@ Media-heavy seed runs can exceed a single request timeout in hosted environments
 
 This keeps the dashboard responsive, makes retries easier, and avoids the 60-second request ceiling for large media batches.
 
+## Upload Recovery
+
+Seed upload recovery uses Payload's Local API and the configured S3 adapter only. It does not patch upload metadata through direct database or adapter access.
+
+- If a previously seeded S3 object is missing, a normal Payload upload update restores it. If the adapter reports a missing key, the seed flow removes the stale upload through Payload and creates the replacement through the normal upload lifecycle.
+- If a trashed upload still blocks a filename, the seed flow clears that filename through a scoped Payload update before retrying the create.
+- If an immutable upload owner relation changes, the obsolete upload is deleted through Payload before a replacement is created.
+
+The recovery calls keep the existing seed, search, and cache contexts. They therefore preserve collection hooks, validation, file proxy behavior, and S3 object cleanup.
+
 
 ## Tiered Error Handling Policy
 Baseline (critical): first failure aborts and returns HTTP 500 (`status: failed`).

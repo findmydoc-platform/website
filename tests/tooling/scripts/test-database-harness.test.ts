@@ -9,6 +9,7 @@ import {
   deriveDatabaseConfig,
   deriveTemplateDatabaseName,
   getTemplateFingerprintInputPaths,
+  getTestServiceTeardownCommands,
   isTemplateMetadataCurrent,
   resolveRequiredTemplateKinds,
   resolveTemplateKind,
@@ -197,6 +198,15 @@ describe('template dependencies', () => {
       'src/endpoints/seed',
       'src/payload.config.ts',
       'src/plugins/storageConfig.ts',
+    ])
+  })
+})
+
+describe('test service teardown', () => {
+  it('keeps the Postgres template volume while replacing S3Mock for every integration run', () => {
+    expect(getTestServiceTeardownCommands()).toEqual([
+      'docker compose -p findmydoc-test -f docker-compose.test.yml stop',
+      'docker compose -p findmydoc-test -f docker-compose.test.yml rm --force s3mock',
     ])
   })
 })

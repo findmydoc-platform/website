@@ -22,7 +22,7 @@ PREVIEW_SECRET=test-preview-secret
 Test mode guidance:
 - Tests default to local Postgres and the isolated `findmydoc-test` S3Mock bucket on port `9091`.
 - No S3 credentials or development storage flag are required for tests.
-- The test S3Mock has no named data volume. Recreating the test Compose project clears its objects together with the test database templates.
+- The test S3Mock has no named data volume. The test harness removes that service at teardown, so every new integration or E2E run starts with an empty bucket while Postgres template volumes remain available.
 - If a test scenario needs Supabase endpoints, use `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - The Playwright admin smoke lane additionally expects `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD` for an already existing Supabase platform admin account.
 - Do not put blank `E2E_ADMIN_*` values into `.env.test`; that file overrides `.env.local` during test startup.

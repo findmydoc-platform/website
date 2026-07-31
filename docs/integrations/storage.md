@@ -81,7 +81,7 @@ The S3 adapter is active in every runtime. There is no local filesystem fallback
 - Preview and production require all `S3_*` variables. Startup fails with the missing variable names if that configuration is incomplete.
 - Development and test use AWS SDK checksum validation only when required because S3Mock cannot validate the SDK's optional response checksum for ranged reads. Online S3 backends retain the SDK default validation.
 
-The test harness starts and stops its isolated S3Mock alongside Postgres. S3Mock has no named test-data volume; recreating the test Compose project also clears its object store and rebuilds cached database templates.
+The test harness starts and stops its isolated S3Mock alongside Postgres. S3Mock has no named test-data volume and the harness removes it at teardown, so every new integration or E2E run starts with an empty bucket while cached Postgres templates remain available.
 
 ## Current Online Storage Constraint
 

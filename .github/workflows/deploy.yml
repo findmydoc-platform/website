@@ -306,6 +306,8 @@ jobs:
       PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
       PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
       DATABASE_URI: postgresql://postgres:password@localhost:5432/findmydoc-portal
+      # This static CI build compiles Payload but never runs a hosted S3 runtime.
+      DEPLOYMENT_ENV: development
     services:
       postgres:
         image: postgis/postgis:15-3.3

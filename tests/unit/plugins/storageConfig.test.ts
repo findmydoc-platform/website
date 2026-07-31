@@ -41,6 +41,13 @@ describe('resolveS3StorageConfig', () => {
     ).toBe('http://s3mock:9090')
   })
 
+  it('uses explicit development storage during a static production-mode build', () => {
+    const config = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'development', NODE_ENV: 'production' })
+
+    expect(config.bucket).toBe('findmydoc-local')
+    expect(config.clientConfig.endpoint).toBe('http://localhost:9090')
+  })
+
   it('uses a separate local S3Mock bucket and endpoint in tests', () => {
     const config = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'test' })
 

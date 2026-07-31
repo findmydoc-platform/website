@@ -37,6 +37,7 @@ const TEMPLATE_FINGERPRINT_INPUTS = {
 export const TEMPLATE_KINDS = ['empty', 'baseline']
 
 let managesLocalTestDatabaseContainer = false
+let managesLocalTestStorageContainer = false
 
 const quoteIdentifier = (value) => `"${value.replaceAll('"', '""')}"`
 
@@ -268,8 +269,24 @@ async function waitForDatabase(connectionString, timeoutMs = 60000, intervalMs =
   }
 }
 
+function resolveTestS3Endpoint() {
+  return process.env.S3_TEST_ENDPOINT || DEFAULT_TEST_S3_ENDPOINT
+}
+
+export function isLocalTestS3Endpoint(endpoint = resolveTestS3Endpoint()) {
+  let parsedEndpoint
+
+  try {
+    parsedEndpoint = new URL(endpoint)
+  } catch {
+    throw new Error('S3_TEST_ENDPOINT must be a valid URL')
+  }
+
+  return LOCAL_DATABASE_HOSTS.has(parsedEndpoint.hostname)
+}
+
 async function waitForTestS3Storage(timeoutMs = 60000, intervalMs = 750) {
-  const endpoint = process.env.S3_TEST_ENDPOINT || DEFAULT_TEST_S3_ENDPOINT
+  const endpoint = resolveTestS3Endpoint()
   const healthUrl = new URL('/favicon.ico', endpoint)
   const startedAt = Date.now()
 
@@ -450,11 +467,23 @@ function runBaselineSeed(connectionString) {
   })
 }
 
-export function getTestServiceTeardownCommands() {
-  return [`${DOCKER_COMPOSE} stop`, `${DOCKER_COMPOSE} rm --force ${TEST_S3MOCK_SERVICE}`]
+function getTestServiceNames({ includeDatabase = true, includeStorage = true } = {}) {
+  return [...(includeDatabase ? ['postgres'] : []), ...(includeStorage ? [TEST_S3MOCK_SERVICE] : [])]
 }
 
-function runDockerCompose(command) {
+export function getTestServiceStartupCommand(options = {}) {
+  const services = getTestServiceNames(options)
+
+  return services.length > 0 ? `${DOCKER_COMPOSE} up -d ${services.join(' ')}` : null
+}
+
+export function getTestServiceTeardownCommands(options = {}) {
+  const services = getTestServiceNames(options)
+
+  return services.length > 0 ? [`${DOCKER_COMPOSE} stop ${services.join(' ')}`] : []
+}
+
+function runDockerCompose(command, options = {}) {
   if (command === 'reset') {
     try {
       execSync(`${DOCKER_COMPOSE} down -v --remove-orphans`, { stdio: 'pipe' })
@@ -463,16 +492,19 @@ function runDockerCompose(command) {
   }
 
   if (command === 'stop') {
-    for (const teardownCommand of getTestServiceTeardownCommands()) {
+    for (const teardownCommand of getTestServiceTeardownCommands(options)) {
       try {
-        // Keep the Postgres template volume, but start each integration run with an empty S3 bucket.
+        // Keep the stopped S3Mock container aligned with the preserved Postgres templates.
         execSync(teardownCommand, { stdio: 'pipe' })
       } catch {}
     }
     return
   }
 
-  execSync(`${DOCKER_COMPOSE} up -d`, { stdio: 'inherit' })
+  const startupCommand = getTestServiceStartupCommand(options)
+  if (startupCommand) {
+    execSync(startupCommand, { stdio: 'inherit' })
+  }
 }
 
 async function ensureEmptyTemplate({
@@ -560,20 +592,37 @@ export async function setupTestDatabase(options = {}) {
   )
   const { adminConnectionString, connectionString, isLocalTarget, targetDatabaseName, templateDatabaseNames } =
     databaseConfig
+  const usesLocalTestStorage = isLocalTestS3Endpoint()
 
   managesLocalTestDatabaseContainer = false
+  managesLocalTestStorageContainer = false
 
   if (forceTemplateRebuild && isLocalTarget) {
     console.log('♻️ TEST_DB_REBUILD_TEMPLATES=1 requested a clean template rebuild for this run.')
     runDockerCompose('reset')
   }
 
-  if (isLocalTarget) {
-    console.log('🚀 Starting test database container...')
-    runDockerCompose('up')
-    managesLocalTestDatabaseContainer = true
+  if (isLocalTarget || usesLocalTestStorage) {
+    const services = {
+      includeDatabase: isLocalTarget,
+      includeStorage: usesLocalTestStorage,
+    }
+
+    if (isLocalTarget && usesLocalTestStorage) {
+      console.log('🚀 Starting test database and S3Mock containers...')
+    } else if (isLocalTarget) {
+      console.log('🚀 Starting test database container...')
+    } else {
+      console.log('🚀 Starting local test S3Mock for the explicitly allowed remote test database...')
+    }
+
+    runDockerCompose('up', services)
+    managesLocalTestDatabaseContainer = isLocalTarget
+    managesLocalTestStorageContainer = usesLocalTestStorage
   } else {
-    console.log('🔐 Using explicitly allowed remote test database target; local Docker lifecycle is disabled.')
+    console.log(
+      '🔐 Using explicitly allowed remote test database and S3 storage targets; local Docker lifecycle is disabled.',
+    )
   }
 
   console.log('⏳ Waiting for test database to be ready...')
@@ -632,13 +681,17 @@ export async function setupTestDatabase(options = {}) {
 }
 
 export async function teardownTestDatabase() {
-  if (!managesLocalTestDatabaseContainer) {
-    console.log('✅ No local test database container was managed for this run')
+  if (!managesLocalTestDatabaseContainer && !managesLocalTestStorageContainer) {
+    console.log('✅ No local test services were managed for this run')
     return
   }
 
-  console.log('🧹 Stopping test services (database templates preserved, S3Mock reset)...')
-  runDockerCompose('stop')
+  console.log('🧹 Stopping test services while preserving matching database and S3Mock template state...')
+  runDockerCompose('stop', {
+    includeDatabase: managesLocalTestDatabaseContainer,
+    includeStorage: managesLocalTestStorageContainer,
+  })
   managesLocalTestDatabaseContainer = false
-  console.log('✅ Test services stopped; database templates preserved and S3Mock reset')
+  managesLocalTestStorageContainer = false
+  console.log('✅ Test services stopped; matching database templates and S3Mock state preserved')
 }

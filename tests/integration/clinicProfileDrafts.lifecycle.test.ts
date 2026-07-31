@@ -267,6 +267,31 @@ describe('clinic profile draft lifecycle', () => {
     expect(recreated.draft?.revision).toBe(1)
     expect(recreated.draft?.name).toBe('Concurrent published name')
 
+    const invalidPostalCodeDraft = await saveClinicProfileDraft(req, clinic.id, {
+      draft: {
+        address: {
+          cityId: String(cityId),
+          houseNumber: '8A',
+          street: 'Draft street',
+          zipCode: '@@@',
+        },
+        descriptionText: 'First paragraph\n\nSecond paragraph',
+        name: 'Published from draft',
+        openingHours,
+        supportedLanguages: ['english', 'turkish'],
+      },
+      expectedDraftRevision: 1,
+      expectedPublishedRevision: 1,
+    })
+    expect(invalidPostalCodeDraft.draft?.revision).toBe(2)
+
+    await expect(
+      publishClinicProfileDraft(req, clinic.id, {
+        expectedDraftRevision: 2,
+        expectedPublishedRevision: 1,
+      }),
+    ).rejects.toMatchObject({ kind: 'invalid-input' } satisfies Partial<ClinicProfileServiceError>)
+
     await saveClinicProfileDraft(req, clinic.id, {
       draft: {
         address: {
@@ -280,20 +305,20 @@ describe('clinic profile draft lifecycle', () => {
         openingHours,
         supportedLanguages: ['english', 'turkish'],
       },
-      expectedDraftRevision: 1,
+      expectedDraftRevision: 2,
       expectedPublishedRevision: 1,
     })
 
     await expect(
       publishClinicProfileDraft(req, clinic.id, {
-        expectedDraftRevision: 2,
+        expectedDraftRevision: 3,
         expectedPublishedRevision: 0,
       }),
     ).rejects.toMatchObject({ kind: 'conflict' } satisfies Partial<ClinicProfileServiceError>)
 
     vi.clearAllMocks()
     const published = await publishClinicProfileDraft(req, clinic.id, {
-      expectedDraftRevision: 2,
+      expectedDraftRevision: 3,
       expectedPublishedRevision: 1,
     })
 

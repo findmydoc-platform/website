@@ -8,6 +8,7 @@ import {
 
 import type { City, Clinic, ClinicProfileDraft, Country } from '@/payload-types'
 import { validateOpeningHours } from '@/collections/clinics/openingHours'
+import { validateClinicPostalCodeValue } from '@/collections/clinics/postalCode'
 import { dispatchClinicChangeRevalidation } from '@/hooks/revalidateClinicSurfaces'
 import {
   clinicProfileCountry,
@@ -443,7 +444,9 @@ const validateDraftForPublication = (draft: ClinicProfileDraft, citiesById: Map<
   if (!draft.name?.trim()) errors.push('name')
   if (!draft.address.street?.trim()) errors.push('address.street')
   if (!draft.address.houseNumber?.trim()) errors.push('address.houseNumber')
-  if (!draft.address.zipCode?.trim()) errors.push('address.zipCode')
+  if (!draft.address.zipCode?.trim() || validateClinicPostalCodeValue(draft.address.zipCode) !== true) {
+    errors.push('address.zipCode')
+  }
   if (!city) errors.push('address.city')
   if (!draft.supportedLanguages?.length) errors.push('supportedLanguages')
 

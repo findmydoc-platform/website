@@ -55,6 +55,7 @@ export const collectionContractRegistry = {
     deep: [
       'tests/integration/clinics.creation.test.ts',
       'tests/integration/access/clinics-access.test.ts',
+      'tests/integration/migrations/clinicCountryRelationship.test.ts',
       'tests/integration/migrations/clinicOpeningHoursActiveTreatments.test.ts',
       'tests/integration/migrations/clinicPostalCodePriceContract.test.ts',
     ],

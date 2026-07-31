@@ -21,10 +21,19 @@ const buildOpeningHours = (): NonNullable<Clinic['openingHours']> => ({
   sunday: { isClosed: true, opensAt: null, closesAt: null },
 })
 
+const getRelationshipId = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isSafeInteger(value)) return value
+  if (value && typeof value === 'object' && 'id' in value) {
+    return getRelationshipId((value as { id?: unknown }).id)
+  }
+  return null
+}
+
 describe('Clinic Creation Integration Tests', () => {
   let payload: Payload
   const slugPrefix = testSlug('clinics.creation.test.ts')
   let cityId: number
+  let countryId: number
   let tagId: number
   let treatmentId: number
   const createdClinicMediaIds: Array<number> = []
@@ -96,6 +105,9 @@ describe('Clinic Creation Integration Tests', () => {
     const cityDoc = cityRes.docs[0]
     if (!cityDoc) throw new Error('Expected baseline city for clinic creation tests')
     cityId = cityDoc.id as number
+    const resolvedCountryId = getRelationshipId(cityDoc.country)
+    if (resolvedCountryId === null) throw new Error('Expected baseline city to reference a country')
+    countryId = resolvedCountryId
 
     // Get baseline tag for clinic tagging
     const tagRes = await payload.find({ collection: 'tags', limit: 1, overrideAccess: true, depth: 0 })
@@ -155,7 +167,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Test Street',
           houseNumber: '123',
           zipCode: '34000',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -175,6 +187,7 @@ describe('Clinic Creation Integration Tests', () => {
 
     expect(clinic.id).toBeDefined()
     expect(clinic.name).toBe(`${slugPrefix}-basic-clinic`)
+    expect(clinic.address?.country).toBe(countryId)
     expect(clinic.address?.city).toBe(cityId)
     expect(clinic.contact?.email).toBe(`${slugPrefix}@test.com`)
     expect(clinic.status).toBe('draft')
@@ -327,7 +340,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Tagged Street',
           houseNumber: '456',
           zipCode: '34100',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -360,7 +373,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Geo Street',
           houseNumber: '789',
           zipCode: '34200',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -387,7 +400,7 @@ describe('Clinic Creation Integration Tests', () => {
       data: {
         name: `${slugPrefix}-accreditation`,
         abbreviation: 'ISO',
-        country: 'Turkey',
+        country: 'Türkiye',
         description: {
           root: {
             type: 'root',
@@ -419,7 +432,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Accredited Street',
           houseNumber: '101',
           zipCode: '34900',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -451,7 +464,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Thumbnail Street',
           houseNumber: '202',
           zipCode: '35000',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -568,7 +581,7 @@ describe('Clinic Creation Integration Tests', () => {
       id: clinic.id,
       data: {
         address: {
-          country: 'Turkey',
+          country: countryId,
           street: 'Approval Street',
           houseNumber: '10',
           zipCode: '34000',
@@ -620,7 +633,7 @@ describe('Clinic Creation Integration Tests', () => {
             street: 'Test Street',
             houseNumber: '123',
             zipCode: '34000',
-            country: 'Turkey',
+            country: countryId,
             city: cityId,
           },
           contact: {
@@ -649,7 +662,7 @@ describe('Clinic Creation Integration Tests', () => {
             street: 'Test Street',
             houseNumber: '123',
             zipCode: '34000',
-            country: 'Turkey',
+            country: countryId,
             city: cityId,
           },
           contact: {
@@ -678,7 +691,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Slug Street',
           houseNumber: '999',
           zipCode: '34300',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -709,7 +722,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Update Street',
           houseNumber: '111',
           zipCode: '34400',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -756,7 +769,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Status Street',
           houseNumber: '505',
           zipCode: '35100',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -779,6 +792,9 @@ describe('Clinic Creation Integration Tests', () => {
       collection: 'clinics',
       id: clinic.id,
       data: {
+        address: {
+          country: null,
+        },
         status: 'rejected',
         verification: 'gold',
       },
@@ -789,6 +805,7 @@ describe('Clinic Creation Integration Tests', () => {
 
     expect(updatedClinic.status).toBe('approved')
     expect(updatedClinic.verification).toBe('unverified')
+    expect(updatedClinic.address?.country).toBe(countryId)
   })
 
   it.each([['admin' as const], ['support' as const]])(
@@ -802,7 +819,7 @@ describe('Clinic Creation Integration Tests', () => {
             street: 'Trust Street',
             houseNumber: '707',
             zipCode: '35170',
-            country: 'Turkey',
+            country: countryId,
             city: cityId,
           },
           contact: {
@@ -855,7 +872,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Content Manager Street',
           houseNumber: '808',
           zipCode: '35180',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -916,7 +933,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Public Contact Street',
           houseNumber: '909',
           zipCode: '35190',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -965,7 +982,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Trash Street',
           houseNumber: '222',
           zipCode: '34500',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -1020,7 +1037,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Multi Lang Street',
           houseNumber: '333',
           zipCode: '34600',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -1054,7 +1071,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Approved Street',
           houseNumber: '444',
           zipCode: '34700',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {
@@ -1084,7 +1101,7 @@ describe('Clinic Creation Integration Tests', () => {
           street: 'Join Street',
           houseNumber: '606',
           zipCode: '35200',
-          country: 'Turkey',
+          country: countryId,
           city: cityId,
         },
         contact: {

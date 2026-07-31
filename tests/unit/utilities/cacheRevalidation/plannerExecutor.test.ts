@@ -439,6 +439,27 @@ describe('cache revalidation planner', () => {
     expect(plan.paths.some((path) => path.startsWith('/clinics/'))).toBe(false)
   })
 
+  it('invalidates country-dependent clinic detail and listing reads without a clinic path blast', () => {
+    const plan = planRevalidation({
+      kind: 'clinic-surface',
+      collection: 'countries',
+      operation: 'related-update',
+      source: { kind: 'payload-hook', id: 'countries:11' },
+      subject: {
+        id: 11,
+      },
+    })
+
+    expect(plan.tags).toEqual([
+      'entity:countries:11',
+      'collection:countries',
+      'surface:clinic-detail',
+      'surface:listing-comparison',
+      'surface:sitemap:pages',
+    ])
+    expect(plan.paths).toEqual([])
+  })
+
   it('keeps non-public review changes as private-live no-op plans', () => {
     expect(
       planRevalidation({

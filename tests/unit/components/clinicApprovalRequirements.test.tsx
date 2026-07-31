@@ -60,7 +60,7 @@ describe('ClinicApprovalRequirements', () => {
   it('shows when every approval requirement is complete', () => {
     formState.fields = {
       'address.city': { value: 1 },
-      'address.country': { value: 'Turkey' },
+      'address.country': { value: 1 },
       'address.houseNumber': { value: '12A' },
       'address.street': { value: 'Clinic Street' },
       'address.zipCode': { value: '34000' },

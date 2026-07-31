@@ -93,7 +93,7 @@ describe('seedGlobalsBaseline', () => {
         data: expect.objectContaining({
           home: expect.objectContaining({
             hero: expect.objectContaining({
-              title: 'Clinic Comparison Turkey for Aesthetic Treatments',
+              title: 'Clinic Comparison Türkiye for Aesthetic Treatments',
               image: 42,
             }),
           }),

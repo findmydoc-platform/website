@@ -51,7 +51,7 @@ const baseData: MockCollectionData = {
       coordinates: [13.405, 52.52],
       address: {
         city: { id: 10, name: 'Berlin' },
-        country: 'Germany',
+        country: { id: 20, name: 'Germany' },
       },
       thumbnail: {
         id: 501,
@@ -71,7 +71,7 @@ const baseData: MockCollectionData = {
       coordinates: [11.575, 48.137],
       address: {
         city: { id: 11, name: 'Munich' },
-        country: 'Germany',
+        country: { id: 20, name: 'Germany' },
       },
       thumbnail: null,
       tags: [{ name: 'Modern' }],
@@ -87,7 +87,7 @@ const baseData: MockCollectionData = {
       coordinates: null,
       address: {
         city: { id: 10, name: 'Berlin' },
-        country: 'Germany',
+        country: { id: 20, name: 'Germany' },
       },
       thumbnail: null,
       tags: [{ name: 'Dental' }],
@@ -103,7 +103,7 @@ const baseData: MockCollectionData = {
       coordinates: null,
       address: {
         city: { id: 10, name: 'Berlin' },
-        country: 'Germany',
+        country: { id: 20, name: 'Germany' },
       },
       thumbnail: null,
       tags: [{ name: 'Draft' }],
@@ -269,6 +269,7 @@ describe('getListingComparisonServerData (contract)', () => {
       'collection:treatments',
       'collection:medical-specialties',
       'collection:cities',
+      'collection:countries',
       'surface:sitemap:pages',
     ])
   })

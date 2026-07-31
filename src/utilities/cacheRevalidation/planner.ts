@@ -380,6 +380,7 @@ const CLINIC_DETAIL_RELATED_COLLECTIONS = [
   'reviews',
   'reviewResponses',
   'accreditation',
+  'countries',
 ] as const satisfies readonly ClinicSurfaceRevalidationCollection[]
 
 const LISTING_COMPARISON_COLLECTIONS = [
@@ -389,6 +390,7 @@ const LISTING_COMPARISON_COLLECTIONS = [
   'treatments',
   'medical-specialties',
   'cities',
+  'countries',
 ] as const satisfies readonly ClinicSurfaceRevalidationCollection[]
 
 const HOME_DEPENDENCY_COLLECTIONS = ['cities', 'medical-specialties'] as const

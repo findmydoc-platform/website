@@ -295,7 +295,15 @@ export const CACHE_POLICY_CATALOG = [
     tagFamilies: ['collection', 'surface'],
     pathRelationship: 'path-second',
     pathFamilies: ['clinic-detail'],
-    collections: ['clinictreatments', 'doctors', 'doctorspecialties', 'reviews', 'reviewResponses', 'accreditation'],
+    collections: [
+      'clinictreatments',
+      'doctors',
+      'doctorspecialties',
+      'reviews',
+      'reviewResponses',
+      'accreditation',
+      'countries',
+    ],
     surfaces: ['clinic-detail'],
   },
   {

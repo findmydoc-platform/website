@@ -3,6 +3,7 @@ import type { ListingCardData } from '@/components/organisms/Listing'
 import type { Clinic } from '@/payload-types'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 import { resolveMediaDescriptorFromLoadedRelation, type MediaDescriptor } from '@/utilities/media/relationMedia'
+import { getRelationshipName } from '@/utilities/relationships'
 import { slugify } from '@/utilities/slugify'
 import { splitUrlQuery } from '@/utilities/urlParts'
 import { resolveScopedPriceFrom } from './pricing'
@@ -82,7 +83,7 @@ export function buildClinicPresentationMeta(
       ? String((cityRelation as { name?: unknown }).name ?? '')
       : ((cityId ? cityMetaById.get(cityId)?.name : undefined) ?? '')
 
-  const country = clinic.address?.country ?? ''
+  const country = getRelationshipName(clinic.address?.country)
   const location = [cityName, country].filter((item) => item && item.trim().length > 0).join(', ')
 
   return {

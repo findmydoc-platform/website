@@ -21,6 +21,7 @@ import {
   computedOnlyFieldAccess,
   platformClinicTrustAccess,
   platformClinicTrustFieldAccess,
+  platformOnlyFieldAccess,
 } from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateClinicChange, revalidateClinicDelete } from '@/hooks/revalidateClinicSurfaces'
@@ -275,7 +276,12 @@ export const Clinics: CollectionConfig<'clinics'> = {
               fields: [
                 {
                   name: 'country',
-                  type: 'text',
+                  type: 'relationship',
+                  relationTo: 'countries',
+                  access: {
+                    create: platformOnlyFieldAccess,
+                    update: platformOnlyFieldAccess,
+                  },
                   admin: {
                     components: {
                       Error: CLINIC_APPROVAL_ERROR_COMPONENT,
@@ -283,7 +289,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
                     description: `Country where the clinic is located. ${CLINIC_APPROVAL_MARKER}.`,
                   },
                   validate: createConditionalRequiredValidator(
-                    validations.text,
+                    validations.relationship,
                     clinicApprovalRequirementSet,
                     clinicApprovalRequirements.country,
                   ),

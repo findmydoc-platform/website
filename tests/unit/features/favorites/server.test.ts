@@ -65,7 +65,7 @@ describe('findPatientFavoriteClinicListItems', () => {
             verification: 'gold',
             address: {
               city: { name: 'Berlin' },
-              country: 'Germany',
+              country: { id: 20, name: 'Germany' },
             },
             thumbnail: 201,
           },

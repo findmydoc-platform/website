@@ -38,7 +38,7 @@ export const clinicApprovalRequirements = {
     'address.country',
     'Country',
     'Country is required before this clinic can be approved.',
-    isNonEmptyString,
+    hasRelation,
   ),
   street: createRequirement(
     'address.street',

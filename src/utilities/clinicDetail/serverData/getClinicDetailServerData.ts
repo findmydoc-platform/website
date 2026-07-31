@@ -45,6 +45,7 @@ const CLINIC_DETAIL_RELATED_COLLECTION_TAGS = [
   buildCollectionTag('reviewResponses'),
   buildCollectionTag('accreditation'),
   buildCollectionTag('cities'),
+  buildCollectionTag('countries'),
 ] as const
 
 export const buildClinicDetailIdentityCacheTags = (slug: string): string[] => [

@@ -6,6 +6,7 @@ import { ensurePatientOnAuth } from '@/hooks/ensurePatientOnAuth'
 import type { Clinic, Favoriteclinic, Patient } from '@/payload-types'
 import { resolveMediaDescriptorFromLoadedRelation, type MediaDescriptor } from '@/utilities/media/relationMedia'
 import { buildClinicThumbnailDescriptorsByClinicId } from '@/utilities/media/clinicThumbnail'
+import { getRelationshipName } from '@/utilities/relationships'
 import { slugify } from '@/utilities/slugify'
 
 const FAVORITES_PAGE_LIMIT = 100
@@ -70,7 +71,7 @@ function resolveClinicLocation(clinic: Clinic): string {
     cityRelation && typeof cityRelation === 'object' && 'name' in cityRelation
       ? String(cityRelation.name ?? '').trim()
       : ''
-  const country = typeof clinic.address?.country === 'string' ? clinic.address.country.trim() : ''
+  const country = getRelationshipName(clinic.address?.country)
 
   return [cityName, country].filter((item) => item.length > 0).join(', ') || 'Location not listed'
 }

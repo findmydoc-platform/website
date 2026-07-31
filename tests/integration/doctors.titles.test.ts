@@ -33,10 +33,10 @@ describe('Doctor title integration', () => {
         const country = await payload.create({
           collection: 'countries',
           data: {
-            name: 'United States',
-            isoCode: 'US',
-            language: 'english',
-            currency: 'USD',
+            name: 'Türkiye',
+            isoCode: 'TR',
+            language: 'turkish',
+            currency: 'TRY',
           },
           overrideAccess: true,
           depth: 0,
@@ -69,7 +69,7 @@ describe('Doctor title integration', () => {
         data: {
           name: 'Test Clinic',
           address: {
-            country: 'Turkey',
+            country: countryId,
             street: 'Main St',
             houseNumber: '1',
             zipCode: '12345',

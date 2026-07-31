@@ -83,6 +83,7 @@ export const buildListingComparisonDataCacheTags = (): string[] => [
   buildCollectionTag('treatments'),
   buildCollectionTag('medical-specialties'),
   buildCollectionTag('cities'),
+  buildCollectionTag('countries'),
   buildSitemapTag('pages'),
 ]
 

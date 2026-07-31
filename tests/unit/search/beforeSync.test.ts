@@ -51,6 +51,33 @@ describe('beforeSyncWithSearch', () => {
     expect('id' in (firstCategory ?? {})).toBe(false)
   })
 
+  it('projects clinic city and country relationships without flattening the country to text', async () => {
+    const result = await beforeSyncWithSearch({
+      collectionSlug: 'clinics',
+      originalDoc: {
+        id: 7,
+        name: 'Istanbul Clinic',
+        slug: 'istanbul-clinic',
+        address: {
+          city: 22,
+          country: 11,
+        },
+      },
+      payload: {} as never,
+      req: {} as never,
+      searchDoc: {
+        doc: { relationTo: 'clinics', value: '7' },
+      } as never,
+    })
+
+    expect(result).toMatchObject({
+      city: 22,
+      country: 11,
+      slug: 'istanbul-clinic',
+      title: 'Istanbul Clinic',
+    })
+  })
+
   it('serializes localized post fields with default-locale strings for search indexing', async () => {
     const result = await beforeSyncWithSearch({
       collectionSlug: 'posts',

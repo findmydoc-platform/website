@@ -588,7 +588,7 @@ export interface Clinic {
     /**
      * Country where the clinic is located. Required for approval.
      */
-    country?: string | null;
+    country?: (number | null) | Country;
     /**
      * Street name. Required for approval.
      */
@@ -2717,7 +2717,7 @@ export interface Search {
       };
   slug?: string | null;
   city?: (number | null) | City;
-  country?: string | null;
+  country?: (number | null) | Country;
   clinic?: (number | null) | Clinic;
   minPrice?: number | null;
   maxPrice?: number | null;

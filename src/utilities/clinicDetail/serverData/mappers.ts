@@ -30,6 +30,7 @@ import {
   LISTING_COMPARISON_PRICE_MIN_DEFAULT,
   buildListingComparisonHref,
 } from '@/utilities/listingComparison/queryState'
+import { getRelationshipName } from '@/utilities/relationships'
 
 import type { ClinicDetailMappingArgs } from './types'
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -178,7 +179,7 @@ function buildFullAddress(clinic: Clinic, cityNameById: Map<number, string>): st
   const zipCode = typeof address.zipCode === 'string' ? address.zipCode.trim() : ''
   const cityLine = normalizeWhitespace(`${zipCode} ${cityName ?? ''}`)
 
-  const country = typeof address.country === 'string' ? address.country.trim() : ''
+  const country = getRelationshipName(address.country)
 
   const fullAddress = [streetLine, cityLine, country].filter((part) => part.length > 0).join(', ')
   return fullAddress.length > 0 ? fullAddress : undefined

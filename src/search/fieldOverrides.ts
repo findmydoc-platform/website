@@ -21,7 +21,8 @@ export const searchFields: Field[] = [
   {
     name: 'country',
     label: 'Country',
-    type: 'text',
+    type: 'relationship',
+    relationTo: 'countries',
     admin: {
       readOnly: true,
     },

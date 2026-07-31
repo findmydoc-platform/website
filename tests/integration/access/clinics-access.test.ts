@@ -28,6 +28,7 @@ const openingHours: NonNullable<Clinic['openingHours']> = {
 const buildClinicData = (
   suffix: string,
   cityId: number,
+  countryId: number,
   status: 'approved' | 'draft' | 'pending',
 ): Pick<
   Clinic,
@@ -39,7 +40,7 @@ const buildClinicData = (
     street: 'Access Street',
     houseNumber: '1',
     zipCode: '12345',
-    country: 'Testland',
+    country: countryId,
     city: cityId,
   },
   contact: {
@@ -60,6 +61,7 @@ const buildClinicData = (
 describe('Clinics access', () => {
   let payload: Payload
   let cityId: number
+  let countryId: number
   const slugPrefix = testSlug('clinics-access.test.ts')
   const createdStaffIds: Array<number | string> = []
   const createdClinicStaffIds: Array<number | string> = []
@@ -73,6 +75,7 @@ describe('Clinics access', () => {
     const cityDoc = cityRes.docs[0]
     if (!cityDoc) throw new Error('Expected baseline city for clinic access tests')
     cityId = cityDoc.id as number
+    countryId = typeof cityDoc.country === 'object' && cityDoc.country !== null ? cityDoc.country.id : cityDoc.country
   }, 60000)
 
   afterEach(async () => {
@@ -95,14 +98,14 @@ describe('Clinics access', () => {
 
     const approved = await payload.create({
       collection: 'clinics',
-      data: buildClinicData(approvedSlug, cityId, 'approved'),
+      data: buildClinicData(approvedSlug, cityId, countryId, 'approved'),
       draft: false,
       overrideAccess: true,
       depth: 0,
     })
     const draft = await payload.create({
       collection: 'clinics',
-      data: buildClinicData(draftSlug, cityId, 'draft'),
+      data: buildClinicData(draftSlug, cityId, countryId, 'draft'),
       draft: false,
       overrideAccess: true,
       depth: 0,
@@ -158,14 +161,14 @@ describe('Clinics access', () => {
   it('allows clinic staff to update their clinic only while platform can manage all', async () => {
     const clinicA = await payload.create({
       collection: 'clinics',
-      data: buildClinicData(`${slugPrefix}-own`, cityId, 'approved'),
+      data: buildClinicData(`${slugPrefix}-own`, cityId, countryId, 'approved'),
       draft: false,
       overrideAccess: true,
       depth: 0,
     })
     const clinicB = await payload.create({
       collection: 'clinics',
-      data: buildClinicData(`${slugPrefix}-other`, cityId, 'approved'),
+      data: buildClinicData(`${slugPrefix}-other`, cityId, countryId, 'approved'),
       draft: false,
       overrideAccess: true,
       depth: 0,
@@ -208,7 +211,7 @@ describe('Clinics access', () => {
     await expect(
       payload.create({
         collection: 'clinics',
-        data: buildClinicData(`${slugPrefix}-blocked-create`, cityId, 'draft'),
+        data: buildClinicData(`${slugPrefix}-blocked-create`, cityId, countryId, 'draft'),
         draft: false,
         user: clinicPayloadUser,
         overrideAccess: false,
@@ -223,7 +226,7 @@ describe('Clinics access', () => {
 
     const platformCreated = await payload.create({
       collection: 'clinics',
-      data: buildClinicData(`${slugPrefix}-platform-create`, cityId, 'draft'),
+      data: buildClinicData(`${slugPrefix}-platform-create`, cityId, countryId, 'draft'),
       draft: false,
       user: asPayloadStaffUser(platformUser),
       overrideAccess: false,

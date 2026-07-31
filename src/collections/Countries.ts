@@ -1,6 +1,7 @@
 import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { revalidateCountryChange, revalidateCountryDelete } from '@/hooks/revalidateClinicSurfaces'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 
 export const Countries: CollectionConfig = {
@@ -19,6 +20,8 @@ export const Countries: CollectionConfig = {
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook],
+    afterChange: [revalidateCountryChange],
+    afterDelete: [revalidateCountryDelete],
   },
   fields: [
     stableIdField(),

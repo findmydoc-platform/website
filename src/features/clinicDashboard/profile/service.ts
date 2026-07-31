@@ -8,7 +8,6 @@ import {
 
 import type { City, Clinic, ClinicProfileDraft, Country } from '@/payload-types'
 import { validateOpeningHours } from '@/collections/clinics/openingHours'
-import { TURKIYE_ISO_CODE } from '@/collections/clinics/turkiyeAddress'
 import { dispatchClinicChangeRevalidation } from '@/hooks/revalidateClinicSurfaces'
 import {
   clinicProfileCountry,
@@ -142,7 +141,7 @@ const readProfileContext = async (req: PayloadRequest, clinicId: RelationId): Pr
     req,
     where: {
       isoCode: {
-        equals: TURKIYE_ISO_CODE,
+        equals: clinicProfileCountry.code,
       },
     },
   })

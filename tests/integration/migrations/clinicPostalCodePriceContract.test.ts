@@ -2,6 +2,10 @@ import { Client } from 'pg'
 import { describe, expect, it, vi } from 'vitest'
 
 import { down, up } from '@/migrations/20260730_121845_clinic_postal_code_price_contract'
+import {
+  down as downRecalculatedPrices,
+  up as upRecalculatedPrices,
+} from '@/migrations/20260730_213353_recalculate_normalized_treatment_prices'
 
 type SqlChunk = {
   queryChunks?: unknown[]
@@ -57,7 +61,7 @@ describe('clinics and clinictreatments postal code and EUR price migration', () 
       await client.query(`INSERT INTO clinics (id, address_zip_code) VALUES (1, 6420), (2, NULL)`)
       await client.query(`
         INSERT INTO treatments (id, average_price)
-        VALUES (10, 99), (11, 99), (12, 0), (13, 12.34), (14, NULL)
+        VALUES (10, 99), (11, 99), (12, 0), (13, 12.34), (14, NULL), (15, 99)
       `)
       await client.query(`
         INSERT INTO clinictreatments (id, price, treatment_id, active)
@@ -67,10 +71,19 @@ describe('clinics and clinictreatments postal code and EUR price migration', () 
           (3, -1.25, 11, true),
           (4, 0, 12, true),
           (5, 12.34, 13, true),
-          (6, NULL, 14, true)
+          (6, NULL, 14, true),
+          (7, 99, 15, false)
       `)
 
       await up({
+        db: {
+          execute: (statement: unknown) => client.query(extractSql(statement)),
+        },
+        payload: {},
+        req: {},
+      } as never)
+
+      await upRecalculatedPrices({
         db: {
           execute: (statement: unknown) => client.query(extractSql(statement)),
         },
@@ -97,6 +110,7 @@ describe('clinics and clinictreatments postal code and EUR price migration', () 
         { id: 4, price: 0 },
         { id: 5, price: 12.34 },
         { id: 6, price: null },
+        { id: 7, price: 99 },
       ])
 
       const averages = await client.query<{ average_price: string | null; id: number }>(
@@ -113,6 +127,7 @@ describe('clinics and clinictreatments postal code and EUR price migration', () 
         { averagePrice: 0, id: 12 },
         { averagePrice: 12.34, id: 13 },
         { averagePrice: null, id: 14 },
+        { averagePrice: null, id: 15 },
       ])
     } finally {
       await client.query('ROLLBACK').catch(() => undefined)
@@ -122,5 +137,6 @@ describe('clinics and clinictreatments postal code and EUR price migration', () 
 
   it('blocks the lossy rollback', async () => {
     await expect(down({} as never)).rejects.toThrow('forward-only')
+    await expect(downRecalculatedPrices({} as never)).rejects.toThrow('forward-only')
   })
 })

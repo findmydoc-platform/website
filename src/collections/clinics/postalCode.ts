@@ -7,7 +7,7 @@ const POSTAL_CODE_CONTENT_PATTERN = /[\p{L}\p{N}]/u
 
 export const normalizeClinicPostalCode = (value: unknown): unknown => (typeof value === 'string' ? value.trim() : value)
 
-export const validateClinicPostalCode: TextFieldValidation = (value) => {
+export const validateClinicPostalCodeValue = (value: unknown): true | string => {
   if (value === null || value === undefined || value === '') return true
   if (typeof value !== 'string') return 'Postal code must be entered as text.'
   if (value.length > CLINIC_POSTAL_CODE_MAX_LENGTH) {
@@ -20,3 +20,5 @@ export const validateClinicPostalCode: TextFieldValidation = (value) => {
 
   return POSTAL_CODE_CONTENT_PATTERN.test(value) ? true : 'Postal code must include at least one letter or number.'
 }
+
+export const validateClinicPostalCode: TextFieldValidation = (value) => validateClinicPostalCodeValue(value)

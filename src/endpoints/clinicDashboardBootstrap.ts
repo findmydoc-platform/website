@@ -7,27 +7,30 @@ export const CLINIC_DASHBOARD_ERROR_CODES = {
   unauthorized: 'CLINIC_DASHBOARD_UNAUTHORIZED',
 } as const
 
-const PRIVATE_LIVE_HEADERS = {
+export const CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS = {
   'Cache-Control': 'private, no-store',
   Expires: '0',
   Pragma: 'no-cache',
   Vary: 'Authorization',
 } as const
 
-const jsonResponse = (body: unknown, status: number): Response =>
-  Response.json(body, { status, headers: PRIVATE_LIVE_HEADERS })
+export const clinicDashboardPrivateJsonResponse = (body: unknown, status: number): Response =>
+  Response.json(body, { status, headers: CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS })
 
 export const clinicDashboardBootstrapGetHandler: PayloadHandler = async (req) => {
   const result = await resolveClinicDashboardBootstrap(req)
 
   switch (result.status) {
     case 'success':
-      return jsonResponse(result.data, 200)
+      return clinicDashboardPrivateJsonResponse(result.data, 200)
     case 'access-denied':
-      return jsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.accessDenied } }, 403)
+      return clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.accessDenied } }, 403)
     case 'unavailable':
-      return jsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.temporarilyUnavailable } }, 503)
+      return clinicDashboardPrivateJsonResponse(
+        { error: { code: CLINIC_DASHBOARD_ERROR_CODES.temporarilyUnavailable } },
+        503,
+      )
     case 'unauthorized':
-      return jsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.unauthorized } }, 401)
+      return clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.unauthorized } }, 401)
   }
 }

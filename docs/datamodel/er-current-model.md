@@ -88,6 +88,7 @@ erDiagram
 
     Clinics {
         text id PK "UUID, auto by Payload"
+        number profileRevision "Published profile OCC revision, default: 0"
         text name "Clinic name, required"
         number averageRating "Readonly: aggregated from Reviews"
         richText description "Long-form clinic description"
@@ -114,6 +115,24 @@ erDiagram
         select verification "enum: unverified, bronze, silver, gold"
         select supportedLanguages "Select[], required (languageOptions)"
         text slug "System: generated from name"
+        date createdAt "System: timestamps: true"
+        date updatedAt "System: timestamps: true"
+    }
+
+    ClinicProfileDrafts {
+        text id PK "UUID, auto by Payload"
+        relationship clinic FK "Relationship to Clinics, required, unique"
+        number basePublishedRevision "Clinic profile revision used as the draft base"
+        number revision "Active draft OCC revision"
+        text name "Unpublished clinic name"
+        richText description "Unpublished clinic description"
+        select supportedLanguages "Unpublished language selection"
+        relationship address_country FK "Required relationship to Countries, fixed to ISO TR"
+        text address_street "Unpublished street"
+        text address_houseNumber "Unpublished house number"
+        text address_zipCode "Unpublished text postal code"
+        relationship address_city FK "Optional relationship to a Türkiye city"
+        group openingHours "Optional structurally valid Monday-Sunday schedule"
         date createdAt "System: timestamps: true"
         date updatedAt "System: timestamps: true"
     }
@@ -444,6 +463,9 @@ erDiagram
     Clinics }o--o{ ClinicGalleryEntries : "owns gallery entries"
     Clinics }o--o{ ClinicGalleryMedia : "owns gallery media"
     Clinics }o--o{ ClinicMedia : "owns media"
+    Clinics ||--o| ClinicProfileDrafts : "has one active profile draft"
+    ClinicProfileDrafts }o--|| Countries : "draft country"
+    ClinicProfileDrafts }o--o| Cities : "draft city"
 
     ClinicGalleryEntries }o--|| ClinicGalleryMedia : "beforeMedia"
     ClinicGalleryEntries }o--|| ClinicGalleryMedia : "afterMedia"

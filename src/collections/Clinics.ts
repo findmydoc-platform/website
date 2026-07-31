@@ -32,6 +32,7 @@ import {
   normalizeClinicPostalCode,
   validateClinicPostalCode,
 } from './clinics/postalCode'
+import { setClinicProfileRevision } from './clinics/profileRevision'
 
 const GALLERY_ENTRIES_SAME_CLINIC_MESSAGE = 'Gallery entries must belong to this clinic.'
 const CLINIC_APPROVAL_ERROR_COMPONENT =
@@ -153,6 +154,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
     beforeChange: [
       stableIdBeforeChangeHook,
       beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
+      setClinicProfileRevision,
       validateApprovedClinicCompleteness,
     ],
     afterChange: [revalidateClinicChange],
@@ -162,6 +164,20 @@ export const Clinics: CollectionConfig<'clinics'> = {
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
     stableIdField(),
+    {
+      name: 'profileRevision',
+      type: 'number',
+      defaultValue: 0,
+      min: 0,
+      access: {
+        create: computedOnlyFieldAccess,
+        update: computedOnlyFieldAccess,
+      },
+      admin: {
+        hidden: true,
+        readOnly: true,
+      },
+    },
     {
       name: 'onboardingKey',
       type: 'text',

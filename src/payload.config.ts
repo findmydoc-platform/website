@@ -6,6 +6,13 @@ import path from 'path'
 import { buildConfig, PayloadHandler, type EmailAdapter } from 'payload'
 import { cacheRevalidationVisibilityGetHandler } from './endpoints/cacheRevalidationVisibility'
 import { clinicDashboardBootstrapGetHandler } from './endpoints/clinicDashboardBootstrap'
+import {
+  clinicDashboardProfileDraftDiscardPostHandler,
+  clinicDashboardProfileDraftPostHandler,
+  clinicDashboardProfileDraftPutHandler,
+  clinicDashboardProfileGetHandler,
+  clinicDashboardProfilePublishPostHandler,
+} from './endpoints/clinicDashboardProfile'
 import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
 import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
@@ -44,6 +51,7 @@ import { DoctorMedia } from './collections/DoctorMedia'
 import { UserProfileMedia } from './collections/UserProfileMedia'
 import { ClinicGalleryMedia } from './collections/ClinicGalleryMedia'
 import { ClinicGalleryEntries } from './collections/ClinicGalleryEntries'
+import { ClinicProfileDrafts } from './collections/ClinicProfileDrafts'
 
 // Import Globals
 import { Footer } from './globals/Footer/config'
@@ -95,6 +103,31 @@ export default buildConfig({
       path: '/clinic-dashboard/bootstrap',
       method: 'get',
       handler: clinicDashboardBootstrapGetHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/profile',
+      method: 'get',
+      handler: clinicDashboardProfileGetHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/profile/draft',
+      method: 'post',
+      handler: clinicDashboardProfileDraftPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/profile/draft',
+      method: 'put',
+      handler: clinicDashboardProfileDraftPutHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/profile/draft/discard',
+      method: 'post',
+      handler: clinicDashboardProfileDraftDiscardPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/profile/publish',
+      method: 'post',
+      handler: clinicDashboardProfilePublishPostHandler as PayloadHandler,
     },
     { path: '/seed', method: 'post', handler: seedPostHandler as PayloadHandler },
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
@@ -186,6 +219,7 @@ export default buildConfig({
     Categories,
     Patients,
     ClinicStaff,
+    ClinicProfileDrafts,
     PlatformStaff,
     ClinicApplications,
     PatientClinicInquiries,

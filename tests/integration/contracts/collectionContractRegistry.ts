@@ -18,6 +18,10 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/clinicApplications.approval.test.ts'],
     deep: ['tests/integration/clinicApplications.approval.test.ts'],
   },
+  clinicProfileDrafts: {
+    baseline: ['tests/integration/clinicProfileDrafts.lifecycle.test.ts'],
+    deep: ['tests/integration/clinicProfileDrafts.lifecycle.test.ts'],
+  },
   patientClinicInquiries: {
     baseline: ['tests/integration/patientClinicInquiries.lifecycle.test.ts'],
     deep: ['tests/integration/patientClinicInquiries.lifecycle.test.ts'],

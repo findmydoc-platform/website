@@ -4,7 +4,13 @@ import configPromise from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 import type { Post, PostsSelect } from '@/payload-types'
-import { buildCollectionTag, buildSitemapTag, buildSurfaceTag } from '@/utilities/cachePolicy'
+import {
+  buildCollectionTag,
+  buildPostPath,
+  buildSitemapTag,
+  buildSlugTag,
+  buildSurfaceTag,
+} from '@/utilities/cachePolicy'
 
 import {
   buildLocalizedQueryOptions,
@@ -53,7 +59,6 @@ export type PostDetailDoc = Omit<
   relatedPosts?: Array<number | PostSummaryDoc> | null
 }
 
-export type PostSlugDoc = Pick<Post, 'id' | 'slug'>
 export type PostSitemapDoc = Pick<Post, 'id' | 'slug' | 'updatedAt'>
 
 export type FindPublishedPostsArgs = {
@@ -71,6 +76,11 @@ export type CachedPublishedPostsPageArgs = {
   contentLocale?: LocalizedDocQuery
   limit?: number
   page?: number
+}
+
+export type CachedPublishedPostBySlugArgs = {
+  contentLocale?: LocalizedDocQuery
+  slug: string
 }
 
 const POST_LIST_SELECT = {
@@ -126,16 +136,13 @@ const POST_DETAIL_SELECT = {
   },
 } satisfies PostsSelect<true>
 
-const POST_SLUG_SELECT = {
-  slug: true,
-} satisfies PostsSelect<true>
-
 const POST_SITEMAP_SELECT = {
   slug: true,
   updatedAt: true,
 } satisfies PostsSelect<true>
 
 const POSTS_LIST_DATA_CACHE_KEY_VERSION = '2026-07-08'
+const POST_DETAIL_DATA_CACHE_KEY_VERSION = '2026-07-31'
 
 export const buildPostListDataCacheTags = (): string[] => [
   buildCollectionTag('posts'),
@@ -157,6 +164,28 @@ export const buildPostListDataCacheKey = ({
     limit,
     page,
   })
+
+export const buildPostDetailDataCacheKey = ({ contentLocale, slug }: CachedPublishedPostBySlugArgs): string =>
+  JSON.stringify({
+    version: POST_DETAIL_DATA_CACHE_KEY_VERSION,
+    slug,
+    locale: contentLocale?.locale ?? null,
+    fallbackLocale: contentLocale?.fallbackLocale ?? null,
+  })
+
+export const buildPostDetailDataCacheTags = (slug: string): string[] => [
+  buildCollectionTag('posts'),
+  buildSlugTag('posts', slug),
+]
+
+const isValidPublicPostSlug = (slug: string): boolean => {
+  try {
+    buildPostPath(slug)
+    return true
+  } catch {
+    return false
+  }
+}
 
 type RelatedPostValue = number | { id?: number | null } | null | undefined
 
@@ -381,15 +410,22 @@ export async function findPostBySlug(
   return hydrateRelatedPostCards(payload, post, draft, contentLocale)
 }
 
-export async function findPostSlugs(payload: Payload): Promise<PostSlugDoc[]> {
-  const result = await queryPosts<PostSlugDoc>(payload, {
-    depth: 0,
-    limit: 1000,
-    pagination: false,
-    select: POST_SLUG_SELECT,
-  })
+export async function getCachedPublishedPostBySlug(args: CachedPublishedPostBySlugArgs): Promise<PostDetailDoc | null> {
+  if (!isValidPublicPostSlug(args.slug)) {
+    return null
+  }
 
-  return result.docs
+  const tags = buildPostDetailDataCacheTags(args.slug)
+
+  return unstable_cache(
+    async () => {
+      const payload = await getPayload({ config: configPromise })
+
+      return findPostBySlug(payload, args.slug, false, args.contentLocale)
+    },
+    ['post-detail', buildPostDetailDataCacheKey(args)],
+    { tags },
+  )()
 }
 
 export async function findPostSitemapDocs(payload: Payload): Promise<PostSitemapDoc[]> {
@@ -413,4 +449,4 @@ export async function countPublishedPosts(payload: Payload, where?: Where): Prom
   return result.totalDocs
 }
 
-export { POST_DETAIL_SELECT, POST_LATEST_SELECT, POST_LIST_SELECT, POST_SITEMAP_SELECT, POST_SLUG_SELECT }
+export { POST_DETAIL_SELECT, POST_LATEST_SELECT, POST_LIST_SELECT, POST_SITEMAP_SELECT }

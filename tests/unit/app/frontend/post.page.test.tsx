@@ -1,24 +1,53 @@
 import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({
-  buildArticlePageJsonLdMock: vi.fn(() => [{ '@type': 'Article' }]),
-  calculateReadTimeMock: vi.fn(() => '5 min read'),
-  draftModeMock: vi.fn(),
-  headersMock: vi.fn(),
-  findPostBySlugMock: vi.fn(),
-  findPostSlugsMock: vi.fn(),
-  generateMetaMock: vi.fn((args: unknown) => args),
-  getPayloadMock: vi.fn(),
-  payloadRedirectsComponent: vi.fn(() => null),
-  postHeroComponent: vi.fn(() => null),
-  postShareActionBarComponent: vi.fn(() => null),
-  relatedPostsComponent: vi.fn(() => null),
-  richTextComponent: vi.fn(() => null),
-  disclaimerNoticeComponent: vi.fn(() => null),
-  jsonLdScriptComponent: vi.fn(() => null),
-  resolveMediaImageMock: vi.fn<() => unknown>(() => undefined),
-}))
+const mocks = vi.hoisted(() => {
+  const reactCacheResolverMock = vi.fn()
+
+  return {
+    buildArticlePageJsonLdMock: vi.fn(() => [{ '@type': 'Article' }]),
+    calculateReadTimeMock: vi.fn(() => '5 min read'),
+    draftModeMock: vi.fn(),
+    headersMock: vi.fn(),
+    findPostBySlugMock: vi.fn(),
+    generateMetaMock: vi.fn((args: unknown) => args),
+    getCachedPublishedPostBySlugMock: vi.fn(),
+    getPayloadMock: vi.fn(),
+    payloadAuthMock: vi.fn(),
+    payloadRedirectsComponent: vi.fn(() => null),
+    postHeroComponent: vi.fn(() => null),
+    postShareActionBarComponent: vi.fn(() => null),
+    reactCacheMock: vi.fn((callback: (...args: unknown[]) => unknown) => {
+      const entries = new Map<string, unknown>()
+      reactCacheResolverMock.mockImplementation((...args: unknown[]) => {
+        const key = JSON.stringify(args)
+
+        if (!entries.has(key)) {
+          entries.set(key, callback(...args))
+        }
+
+        return entries.get(key)
+      })
+
+      return reactCacheResolverMock
+    }),
+    reactCacheResolverMock,
+    relatedPostsComponent: vi.fn(() => null),
+    richTextComponent: vi.fn(() => null),
+    disclaimerNoticeComponent: vi.fn(() => null),
+    jsonLdScriptComponent: vi.fn(() => null),
+    resolveMediaImageMock: vi.fn<() => unknown>(() => undefined),
+  }
+})
+
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+
+  return {
+    ...actual,
+    cache: mocks.reactCacheMock,
+  }
+})
 
 vi.mock('next/headers', () => ({
   draftMode: mocks.draftModeMock,
@@ -75,7 +104,7 @@ vi.mock('@/utilities/generateMeta', () => ({
 
 vi.mock('@/utilities/content/serverData', () => ({
   findPostBySlug: mocks.findPostBySlugMock,
-  findPostSlugs: mocks.findPostSlugsMock,
+  getCachedPublishedPostBySlug: mocks.getCachedPublishedPostBySlugMock,
 }))
 
 vi.mock('@/utilities/structuredData', () => ({
@@ -117,15 +146,15 @@ describe('frontend post detail route', () => {
 
     mocks.draftModeMock.mockResolvedValue({ isEnabled: false })
     mocks.headersMock.mockResolvedValue(new Headers())
-    mocks.getPayloadMock.mockResolvedValue({})
-    mocks.findPostSlugsMock.mockResolvedValue([{ slug: 'hello-world' }])
+    mocks.payloadAuthMock.mockResolvedValue({ user: null })
+    mocks.getPayloadMock.mockResolvedValue({ auth: mocks.payloadAuthMock })
     mocks.resolveMediaImageMock.mockReturnValue({
       src: '/api/platformContentMedia/file/post-hero.webp',
       alt: 'Hallo Welt',
       sizes: '100vw',
       quality: 75,
     })
-    mocks.findPostBySlugMock.mockResolvedValue({
+    mocks.getCachedPublishedPostBySlugMock.mockResolvedValue({
       slug: 'hello-world',
       title: 'Hallo Welt',
       excerpt: 'Deutscher Auszug.',
@@ -157,10 +186,17 @@ describe('frontend post detail route', () => {
       searchParams: Promise.resolve({ locale: 'de' }),
     })
 
-    expect(mocks.findPostBySlugMock).toHaveBeenCalledWith({}, 'hello-world', false, {
-      locale: 'de',
-      fallbackLocale: 'en',
+    expect(pageModule.dynamic).toBe('force-dynamic')
+    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledWith({
+      slug: 'hello-world',
+      contentLocale: {
+        locale: 'de',
+        fallbackLocale: 'en',
+      },
     })
+    expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
+    expect(mocks.getPayloadMock).not.toHaveBeenCalled()
+    expect(mocks.headersMock).not.toHaveBeenCalled()
     expect(mocks.resolveMediaImageMock).toHaveBeenCalledWith(
       {
         url: '/api/platformContentMedia/file/post-hero.webp',
@@ -264,6 +300,49 @@ describe('frontend post detail route', () => {
         path: '/posts/hello-world?locale=de',
       }),
     )
+    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledWith({
+      slug: 'hello-world',
+      contentLocale: {
+        locale: 'de',
+        fallbackLocale: 'en',
+      },
+    })
+  })
+
+  it('routes unknown public slugs through the redirect and not-found boundary', async () => {
+    mocks.getCachedPublishedPostBySlugMock.mockResolvedValueOnce(null)
+
+    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
+    const result = await pageModule.default({
+      params: Promise.resolve({ slug: 'missing-post' }),
+      searchParams: Promise.resolve({}),
+    })
+
+    const redirectElement = findElementByType(result, mocks.payloadRedirectsComponent) as React.ReactElement<{
+      disableNotFound?: boolean
+      url: string
+    }> | null
+
+    expect(redirectElement?.props).toEqual({ url: '/posts/missing-post' })
+    expect(findElementByType(result, mocks.postHeroComponent)).toBeNull()
+  })
+
+  it('shares one primitive-keyed React cache resolver between metadata and page rendering', async () => {
+    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
+
+    await pageModule.generateMetadata({
+      params: Promise.resolve({ slug: 'hello-world' }),
+      searchParams: Promise.resolve({ locale: 'de' }),
+    })
+    await pageModule.default({
+      params: Promise.resolve({ slug: 'hello-world' }),
+      searchParams: Promise.resolve({ locale: 'de' }),
+    })
+
+    expect(mocks.reactCacheResolverMock).toHaveBeenNthCalledWith(1, 'hello-world', 'de', 'en')
+    expect(mocks.reactCacheResolverMock).toHaveBeenNthCalledWith(2, 'hello-world', 'de', 'en')
+    expect(mocks.draftModeMock).toHaveBeenCalledTimes(1)
+    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledTimes(1)
   })
 
   it('disables draft access for anonymous temporary landing requests', async () => {
@@ -276,11 +355,16 @@ describe('frontend post detail route', () => {
       searchParams: Promise.resolve({}),
     })
 
-    expect(mocks.findPostBySlugMock).toHaveBeenCalledWith({}, 'hello-world', false, {})
+    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledWith({
+      slug: 'hello-world',
+      contentLocale: {},
+    })
+    expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
+    expect(mocks.payloadAuthMock).not.toHaveBeenCalled()
     expect(findElementByType(result, mocks.jsonLdScriptComponent)?.props.data).toEqual([{ '@type': 'Article' }])
   })
 
-  it('keeps authorized draft access when temporary landing headers are absent', async () => {
+  it('falls back to published data when a stale draft cookie has no current user', async () => {
     mocks.draftModeMock.mockResolvedValue({ isEnabled: true })
 
     const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
@@ -289,7 +373,67 @@ describe('frontend post detail route', () => {
       searchParams: Promise.resolve({}),
     })
 
-    expect(mocks.findPostBySlugMock).toHaveBeenCalledWith({}, 'hello-world', true, {})
+    expect(mocks.payloadAuthMock).toHaveBeenCalledWith({ headers: expect.any(Headers) })
+    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledWith({
+      slug: 'hello-world',
+      contentLocale: {},
+    })
+    expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
+    expect(findElementByType(result, mocks.jsonLdScriptComponent)?.props.data).toEqual([{ '@type': 'Article' }])
+  })
+
+  it.each(['clinicStaff', 'patients'] as const)('does not authorize %s users for draft reads', async (collection) => {
+    mocks.draftModeMock.mockResolvedValue({ isEnabled: true })
+    mocks.payloadAuthMock.mockResolvedValue({ user: { collection, id: 'non-platform-user' } })
+
+    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
+    await pageModule.default({
+      params: Promise.resolve({ slug: 'hello-world' }),
+      searchParams: Promise.resolve({}),
+    })
+
+    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledOnce()
+    expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
+  })
+
+  it('falls back to published data when current authentication fails', async () => {
+    mocks.draftModeMock.mockResolvedValue({ isEnabled: true })
+    mocks.payloadAuthMock.mockRejectedValue(new Error('stale session'))
+
+    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
+
+    await expect(
+      pageModule.default({
+        params: Promise.resolve({ slug: 'hello-world' }),
+        searchParams: Promise.resolve({}),
+      }),
+    ).resolves.toBeDefined()
+    expect(mocks.getCachedPublishedPostBySlugMock).toHaveBeenCalledOnce()
+    expect(mocks.findPostBySlugMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps authorized platform staff draft access when temporary landing headers are absent', async () => {
+    mocks.draftModeMock.mockResolvedValue({ isEnabled: true })
+    mocks.payloadAuthMock.mockResolvedValue({ user: { collection: 'platformStaff', id: 'platform-user' } })
+    mocks.findPostBySlugMock.mockResolvedValue({
+      slug: 'hello-world',
+      title: 'Hallo Welt',
+      content: { root: { children: [] } },
+    })
+
+    const pageModule = await import('@/app/(frontend)/posts/[slug]/page')
+    const result = await pageModule.default({
+      params: Promise.resolve({ slug: 'hello-world' }),
+      searchParams: Promise.resolve({}),
+    })
+
+    expect(mocks.findPostBySlugMock).toHaveBeenCalledWith(
+      expect.objectContaining({ auth: mocks.payloadAuthMock }),
+      'hello-world',
+      true,
+      {},
+    )
+    expect(mocks.getCachedPublishedPostBySlugMock).not.toHaveBeenCalled()
     expect(findElementByType(result, mocks.jsonLdScriptComponent)?.props.data).toBeNull()
   })
 })

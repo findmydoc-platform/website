@@ -9,7 +9,7 @@ import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeIntern
 
 /**
  * Route handler to enable Next.js draft (preview) mode for a specific document.
- * Validates a shared secret and authenticates the requesting user through Payload.
+ * Validates a shared secret and requires an authenticated Payload platform staff user.
  * Next.js 15 requires the first arg to be a NextRequest for correct typing.
  */
 export async function GET(request: NextRequest): Promise<Response> {
@@ -39,26 +39,25 @@ export async function GET(request: NextRequest): Promise<Response> {
     return new Response('This endpoint can only be used for relative previews', { status: 500 })
   }
 
+  const draft = await draftMode()
   let user
 
   try {
-    user = await payload.auth({
+    const authResult = await payload.auth({
       req: request as unknown as PayloadRequest,
       headers: request.headers,
     })
+    user = authResult.user
   } catch (error) {
     payload.logger.error(error, 'Error verifying token for live preview')
-    return new Response('You are not allowed to preview this page', { status: 403 })
-  }
-
-  const draft = await draftMode()
-
-  if (!user) {
     draft.disable()
     return new Response('You are not allowed to preview this page', { status: 403 })
   }
 
-  // You can add additional checks here to see if the user is allowed to preview this page
+  if (user?.collection !== 'platformStaff') {
+    draft.disable()
+    return new Response('You are not allowed to preview this page', { status: 403 })
+  }
 
   draft.enable()
 

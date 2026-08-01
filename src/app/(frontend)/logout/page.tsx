@@ -7,6 +7,8 @@ import { Heading } from '@/components/atoms/Heading'
 import { createClient } from '@/auth/utilities/supaBaseClient'
 import { resetPostHogBrowserIdentity } from '@/posthog/client-api'
 
+const EXIT_PREVIEW_PATH = `/next/exit-preview?redirect=${encodeURIComponent('/login/patient')}`
+
 export default function PublicLogoutPage() {
   const router = useRouter()
 
@@ -16,15 +18,19 @@ export default function PublicLogoutPage() {
         const supabase = createClient()
 
         await supabase.auth.signOut()
-        resetPostHogBrowserIdentity()
-
-        setTimeout(() => {
-          router.push('/login/patient')
-        }, 1000)
       } catch (error) {
         console.error('Logout error:', error)
-        router.push('/login/patient')
       }
+
+      try {
+        resetPostHogBrowserIdentity()
+      } catch (error) {
+        console.error('Logout identity reset error:', error)
+      }
+
+      setTimeout(() => {
+        router.replace(EXIT_PREVIEW_PATH)
+      }, 1000)
     }
 
     handleLogout()

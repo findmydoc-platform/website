@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { authMock, redirectMock } = vi.hoisted(() => ({
+const { authMock, draftDisableMock, draftEnableMock, draftModeMock, redirectMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
+  draftDisableMock: vi.fn(),
+  draftEnableMock: vi.fn(),
+  draftModeMock: vi.fn(),
   redirectMock: vi.fn(),
 }))
 
@@ -22,10 +25,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('next/headers', () => ({
-  draftMode: vi.fn().mockResolvedValue({
-    disable: vi.fn(),
-    enable: vi.fn(),
-  }),
+  draftMode: draftModeMock,
 }))
 
 import { GET } from '@/app/(frontend)/next/preview/route'
@@ -33,6 +33,11 @@ import { GET } from '@/app/(frontend)/next/preview/route'
 describe('GET /next/preview', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    authMock.mockReset()
+    draftModeMock.mockResolvedValue({
+      disable: draftDisableMock,
+      enable: draftEnableMock,
+    })
     process.env.PREVIEW_SECRET = 'test-secret'
   })
 
@@ -89,7 +94,7 @@ describe('GET /next/preview', () => {
   })
 
   it('redirects with the sanitized relative path after auth succeeds', async () => {
-    authMock.mockResolvedValue({ id: 'user-1' })
+    authMock.mockResolvedValue({ user: { id: 'user-1', collection: 'platformStaff' } })
 
     const request = new NextRequest(
       'http://localhost/next/preview?path=%2Fposts%2Fhello-world%3Fpreview%3D1%23draft&collection=posts&slug=hello-world&previewSecret=test-secret',
@@ -98,6 +103,40 @@ describe('GET /next/preview', () => {
     await GET(request)
 
     expect(authMock).toHaveBeenCalledOnce()
+    expect(draftEnableMock).toHaveBeenCalledOnce()
+    expect(draftDisableMock).not.toHaveBeenCalled()
     expect(redirectMock).toHaveBeenCalledWith('/posts/hello-world?preview=1#draft')
+  })
+
+  it.each([
+    ['unauthenticated', null],
+    ['clinic staff', { id: 'clinic-user', collection: 'clinicStaff' }],
+    ['patient', { id: 'patient-user', collection: 'patients' }],
+  ] as const)('rejects %s users and clears any existing draft cookie', async (_label, user) => {
+    authMock.mockResolvedValue({ user })
+    const request = new NextRequest(
+      'http://localhost/next/preview?path=%2Fposts%2Fhello-world&collection=posts&slug=hello-world&previewSecret=test-secret',
+    )
+
+    const response = await GET(request)
+
+    expect(response.status).toBe(403)
+    expect(draftDisableMock).toHaveBeenCalledOnce()
+    expect(draftEnableMock).not.toHaveBeenCalled()
+    expect(redirectMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects stale authentication without enabling draft mode', async () => {
+    authMock.mockRejectedValue(new Error('stale session'))
+    const request = new NextRequest(
+      'http://localhost/next/preview?path=%2Fposts%2Fhello-world&collection=posts&slug=hello-world&previewSecret=test-secret',
+    )
+
+    const response = await GET(request)
+
+    expect(response.status).toBe(403)
+    expect(draftDisableMock).toHaveBeenCalledOnce()
+    expect(draftEnableMock).not.toHaveBeenCalled()
+    expect(redirectMock).not.toHaveBeenCalled()
   })
 })

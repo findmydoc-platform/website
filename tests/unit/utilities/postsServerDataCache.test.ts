@@ -22,9 +22,12 @@ vi.mock('next/cache', () => ({
 }))
 
 import {
+  buildPostDetailDataCacheKey,
+  buildPostDetailDataCacheTags,
   buildPostListDataCacheKey,
   buildPostListDataCacheTags,
   getCachedLatestPosts,
+  getCachedPublishedPostBySlug,
   getCachedPublishedPostsPage,
 } from '@/utilities/content/serverData/posts'
 
@@ -32,6 +35,62 @@ describe('posts server data cache contract', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
+
+  it('caches published post detail reads by slug and locale with canonical invalidation tags', async () => {
+    const payload = {
+      find: vi.fn().mockResolvedValue({ docs: [{ id: 7, slug: 'hello-world', title: 'Hallo Welt' }] }),
+    }
+    cacheMocks.getPayload.mockResolvedValue(payload)
+    const args = {
+      slug: 'hello-world',
+      contentLocale: { locale: 'de' as const, fallbackLocale: false as const },
+    }
+
+    await expect(getCachedPublishedPostBySlug(args)).resolves.toEqual({
+      id: 7,
+      slug: 'hello-world',
+      title: 'Hallo Welt',
+    })
+
+    expect(buildPostDetailDataCacheKey(args)).toBe(
+      JSON.stringify({
+        version: '2026-07-31',
+        slug: 'hello-world',
+        locale: 'de',
+        fallbackLocale: false,
+      }),
+    )
+    expect(buildPostDetailDataCacheTags('hello-world')).toEqual(['collection:posts', 'slug:posts:hello-world'])
+    expect(cacheMocks.unstableCache).toHaveBeenCalledWith(
+      expect.any(Function),
+      ['post-detail', buildPostDetailDataCacheKey(args)],
+      {
+        tags: ['collection:posts', 'slug:posts:hello-world'],
+      },
+    )
+    expect(payload.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'posts',
+        draft: false,
+        fallbackLocale: false,
+        locale: 'de',
+        overrideAccess: false,
+        where: {
+          and: [{ _status: { equals: 'published' } }, { slug: { equals: 'hello-world' } }],
+        },
+      }),
+    )
+  })
+
+  it.each(['foo:bar', 'foo bar', 'foo/bar', ''])(
+    'treats invalid public route slug %j as a missing post',
+    async (slug) => {
+      await expect(getCachedPublishedPostBySlug({ slug })).resolves.toBeNull()
+
+      expect(cacheMocks.unstableCache).not.toHaveBeenCalled()
+      expect(cacheMocks.getPayload).not.toHaveBeenCalled()
+    },
+  )
 
   it('uses canonical aggregated-public tags for latest post teaser reads', async () => {
     const payload = {

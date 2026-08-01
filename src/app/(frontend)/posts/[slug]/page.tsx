@@ -15,26 +15,22 @@ import { LivePreviewListener } from '@/components/organisms/LivePreviewListener'
 import { Container } from '@/components/molecules/Container'
 import { DisclaimerNotice } from '@/components/molecules/DisclaimerNotice'
 import { calculateReadTime } from '@/utilities/blog/calculateReadTime'
-import { findPostBySlug, findPostSlugs } from '@/utilities/content/serverData'
+import { findPostBySlug, getCachedPublishedPostBySlug } from '@/utilities/content/serverData'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { resolveMediaImage } from '@/utilities/media/resolveMediaImage'
 import { PostShareActionBar } from './PostShareActionBar'
-import { resolveContentLocaleContext, type ContentLocaleContext } from '@/utilities/contentLocalization'
+import {
+  resolveContentLocaleContext,
+  type ContentFallbackLocale,
+  type ContentLocale,
+  type ContentLocaleContext,
+} from '@/utilities/contentLocalization'
 import { buildPostPath, buildPostsIndexPath } from '@/utilities/content/postPaths'
 import { createBlogBreadcrumb, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { JsonLdScript, buildArticlePageJsonLd } from '@/utilities/structuredData'
 import { isTemporaryLandingModeRequest } from '@/features/temporaryLandingMode'
 
-export async function generateStaticParams() {
-  const payload = await getPayload({ config: configPromise })
-  const posts = await findPostSlugs(payload)
-
-  const params = posts.map(({ slug }) => {
-    return { slug }
-  })
-
-  return params
-}
+export const dynamic = 'force-dynamic'
 
 type Args = {
   params: Promise<{
@@ -46,13 +42,12 @@ type Args = {
 }
 
 export default async function Post({ params: paramsPromise, searchParams: searchParamsPromise }: Args) {
-  const draft = await resolveDraftAccess()
   const { slug = '' } = await paramsPromise
   const searchParams = await searchParamsPromise
   const contentLocale = resolveContentLocaleContext(searchParams.locale)
   const canonicalPostPath = buildPostPath(slug)
   const localizedPostPath = buildPostPath(slug, contentLocale)
-  const post = await queryPostBySlug({ contentLocale, draft, slug })
+  const { draft, post } = await resolvePost(slug, contentLocale.locale, contentLocale.fallbackLocale)
 
   if (!post) return <PayloadRedirects url={canonicalPostPath} />
 
@@ -167,24 +162,49 @@ export async function generateMetadata({
   const { slug = '' } = await paramsPromise
   const searchParams = await searchParamsPromise
   const contentLocale = resolveContentLocaleContext(searchParams.locale)
-  const draft = await resolveDraftAccess()
-  const post = await queryPostBySlug({ contentLocale, draft, slug })
+  const { post } = await resolvePost(slug, contentLocale.locale, contentLocale.fallbackLocale)
 
   return generateMeta({ doc: post, path: buildPostPath(slug, contentLocale), sourceCollection: 'posts' })
 }
 
-const queryPostBySlug = cache(
-  async ({ slug, contentLocale, draft }: { contentLocale?: ContentLocaleContext; draft: boolean; slug: string }) => {
-    const normalizedContentLocale = contentLocale ?? {}
+const resolvePost = cache(async (slug: string, locale?: ContentLocale, fallbackLocale?: ContentFallbackLocale) => {
+  const contentLocale: ContentLocaleContext = {
+    ...(locale ? { locale } : {}),
+    ...(fallbackLocale !== undefined ? { fallbackLocale } : {}),
+  }
+  const draftPayload = await resolveDraftPayload()
 
-    const payload = await getPayload({ config: configPromise })
+  if (!draftPayload) {
+    const post = await getCachedPublishedPostBySlug({ contentLocale, slug })
 
-    return findPostBySlug(payload, slug, draft, normalizedContentLocale)
-  },
-)
+    return { draft: false, post }
+  }
 
-const resolveDraftAccess = async (): Promise<boolean> => {
-  const [{ isEnabled }, requestHeaders] = await Promise.all([draftMode(), headers()])
+  const post = await findPostBySlug(draftPayload, slug, true, contentLocale)
 
-  return isEnabled && !isTemporaryLandingModeRequest(requestHeaders)
+  return { draft: true, post }
+})
+
+const resolveDraftPayload = async () => {
+  const { isEnabled } = await draftMode()
+
+  if (!isEnabled) {
+    return null
+  }
+
+  const requestHeaders = await headers()
+
+  if (isTemporaryLandingModeRequest(requestHeaders)) {
+    return null
+  }
+
+  const payload = await getPayload({ config: configPromise })
+
+  try {
+    const { user } = await payload.auth({ headers: requestHeaders })
+
+    return user?.collection === 'platformStaff' ? payload : null
+  } catch {
+    return null
+  }
 }

@@ -9,13 +9,11 @@ import {
   findPageSlugs,
   findPostBySlug,
   findPostSitemapDocs,
-  findPostSlugs,
   findPublishedPostsPage,
   POST_DETAIL_SELECT,
   POST_LATEST_SELECT,
   POST_LIST_SELECT,
   POST_SITEMAP_SELECT,
-  POST_SLUG_SELECT,
   PAGE_DETAIL_SELECT,
   PAGE_SITEMAP_SELECT,
   PAGE_SLUG_SELECT,
@@ -248,18 +246,15 @@ describe('content server data helpers', () => {
     )
   })
 
-  it('exposes dedicated post sitemap and slug queries', async () => {
+  it('exposes the dedicated post sitemap query and published count', async () => {
     const { payload, findMock, countMock } = createPayloadMock()
     findMock.mockResolvedValueOnce({ docs: [{ id: 5, slug: 'sitemap-post', updatedAt: '2026-01-01T00:00:00.000Z' }] })
-    findMock.mockResolvedValueOnce({ docs: [{ id: 6, slug: 'archive-post' }] })
     countMock.mockResolvedValue({ totalDocs: 17 })
 
     const sitemapDocs = await findPostSitemapDocs(payload)
-    const slugs = await findPostSlugs(payload)
     const totalDocs = await countPublishedPosts(payload)
 
     expect(sitemapDocs).toEqual([{ id: 5, slug: 'sitemap-post', updatedAt: '2026-01-01T00:00:00.000Z' }])
-    expect(slugs).toEqual([{ id: 6, slug: 'archive-post' }])
     expect(totalDocs).toBe(17)
     expect(findMock).toHaveBeenNthCalledWith(
       1,
@@ -270,17 +265,6 @@ describe('content server data helpers', () => {
         pagination: false,
         overrideAccess: false,
         select: POST_SITEMAP_SELECT,
-      }),
-    )
-    expect(findMock).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        collection: 'posts',
-        depth: 0,
-        limit: 1000,
-        pagination: false,
-        overrideAccess: false,
-        select: POST_SLUG_SELECT,
       }),
     )
     expect(countMock).toHaveBeenCalledWith({

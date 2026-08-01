@@ -82,6 +82,16 @@ describe('posts server data cache contract', () => {
     )
   })
 
+  it.each(['foo:bar', 'foo bar', 'foo/bar', ''])(
+    'treats invalid public route slug %j as a missing post',
+    async (slug) => {
+      await expect(getCachedPublishedPostBySlug({ slug })).resolves.toBeNull()
+
+      expect(cacheMocks.unstableCache).not.toHaveBeenCalled()
+      expect(cacheMocks.getPayload).not.toHaveBeenCalled()
+    },
+  )
+
   it('uses canonical aggregated-public tags for latest post teaser reads', async () => {
     const payload = {
       find: vi.fn().mockResolvedValue({

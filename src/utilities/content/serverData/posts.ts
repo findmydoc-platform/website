@@ -4,7 +4,13 @@ import configPromise from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 import type { Post, PostsSelect } from '@/payload-types'
-import { buildCollectionTag, buildSitemapTag, buildSlugTag, buildSurfaceTag } from '@/utilities/cachePolicy'
+import {
+  buildCollectionTag,
+  buildPostPath,
+  buildSitemapTag,
+  buildSlugTag,
+  buildSurfaceTag,
+} from '@/utilities/cachePolicy'
 
 import {
   buildLocalizedQueryOptions,
@@ -171,6 +177,15 @@ export const buildPostDetailDataCacheTags = (slug: string): string[] => [
   buildCollectionTag('posts'),
   buildSlugTag('posts', slug),
 ]
+
+const isValidPublicPostSlug = (slug: string): boolean => {
+  try {
+    buildPostPath(slug)
+    return true
+  } catch {
+    return false
+  }
+}
 
 type RelatedPostValue = number | { id?: number | null } | null | undefined
 
@@ -395,21 +410,22 @@ export async function findPostBySlug(
   return hydrateRelatedPostCards(payload, post, draft, contentLocale)
 }
 
-const getCachedPublishedPostBySlugByArgs = (args: CachedPublishedPostBySlugArgs) =>
-  unstable_cache(
+export async function getCachedPublishedPostBySlug(args: CachedPublishedPostBySlugArgs): Promise<PostDetailDoc | null> {
+  if (!isValidPublicPostSlug(args.slug)) {
+    return null
+  }
+
+  const tags = buildPostDetailDataCacheTags(args.slug)
+
+  return unstable_cache(
     async () => {
       const payload = await getPayload({ config: configPromise })
 
       return findPostBySlug(payload, args.slug, false, args.contentLocale)
     },
     ['post-detail', buildPostDetailDataCacheKey(args)],
-    {
-      tags: buildPostDetailDataCacheTags(args.slug),
-    },
-  )
-
-export async function getCachedPublishedPostBySlug(args: CachedPublishedPostBySlugArgs): Promise<PostDetailDoc | null> {
-  return getCachedPublishedPostBySlugByArgs(args)()
+    { tags },
+  )()
 }
 
 export async function findPostSitemapDocs(payload: Payload): Promise<PostSitemapDoc[]> {

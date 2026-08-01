@@ -12,5 +12,17 @@ export function JsonLdScript({ data }: JsonLdScriptProps) {
 
   if (!jsonLd || (Array.isArray(jsonLd) && jsonLd.length === 0)) return null
 
+  if (Array.isArray(jsonLd)) {
+    return (
+      <>
+        {jsonLd.map((node, index) => (
+          <script key={index} type="application/ld+json">
+            {serializeJsonLd(node)}
+          </script>
+        ))}
+      </>
+    )
+  }
+
   return <script type="application/ld+json">{serializeJsonLd(jsonLd)}</script>
 }

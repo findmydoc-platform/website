@@ -16,31 +16,43 @@ describe('JsonLdScript', () => {
     })
   })
 
-  it('renders a list of JSON-LD nodes and removes empty fields', () => {
+  it('renders each JSON-LD node in its own script and removes empty fields', () => {
     const { container } = render(
       <JsonLdScript
         data={[
           {
             '@context': 'https://schema.org',
+            '@id': 'https://findmydoc.eu/#organization',
             '@type': 'Organization',
             name: 'findmydoc',
             description: '',
             image: undefined,
           },
-          { '@context': 'https://schema.org', '@type': 'WebSite', name: 'findmydoc' },
+          {
+            '@context': 'https://schema.org',
+            '@id': 'https://findmydoc.eu/#website',
+            '@type': 'WebSite',
+            name: 'findmydoc',
+          },
         ]}
       />,
     )
 
-    const script = container.querySelector('script[type="application/ld+json"]')
-    expect(JSON.parse(script?.textContent ?? '')).toEqual([
+    const scripts = Array.from(container.querySelectorAll('script[type="application/ld+json"]'))
+    const nodes = scripts.map((script) => JSON.parse(script.textContent ?? ''))
+
+    expect(scripts).toHaveLength(2)
+    expect(nodes.every((node) => !Array.isArray(node))).toBe(true)
+    expect(nodes).toEqual([
       {
         '@context': 'https://schema.org',
+        '@id': 'https://findmydoc.eu/#organization',
         '@type': 'Organization',
         name: 'findmydoc',
       },
       {
         '@context': 'https://schema.org',
+        '@id': 'https://findmydoc.eu/#website',
         '@type': 'WebSite',
         name: 'findmydoc',
       },

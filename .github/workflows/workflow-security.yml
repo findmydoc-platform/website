@@ -68,7 +68,14 @@ jobs:
             fi
           fi
 
-          echo "inputs=${inputs}" >> "$GITHUB_OUTPUT"
+          online_inputs="$(printf '%s\n' "$inputs" | tr ' ' '\n' | grep -v '^\.github/workflows/platform-release-deploy\.yml$' | tr '\n' ' ' | sed -E 's/[[:space:]]+$//' || true)"
+          private_inputs=""
+          if printf '%s\n' "$inputs" | tr ' ' '\n' | grep -qx '^\.github/workflows/platform-release-deploy\.yml$'; then
+            private_inputs=".github/workflows/platform-release-deploy.yml"
+          fi
+
+          echo "online_inputs=${online_inputs}" >> "$GITHUB_OUTPUT"
+          echo "private_inputs=${private_inputs}" >> "$GITHUB_OUTPUT"
 
       - name: GitHub workflow lint (actionlint)
         uses: reviewdog/action-actionlint@0d952c597ef8459f634d7145b0b044a9699e5e43 # v1.71.0
@@ -78,12 +85,26 @@ jobs:
           fail_level: error
 
       - name: GitHub workflow security audit (zizmor)
+        if: steps.zizmor-inputs.outputs.online_inputs != ''
         uses: zizmorcore/zizmor-action@0dce2577a4760a2749d8cfb7a84b7d5585ebcb7d # v0.5.0
         with:
           advanced-security: 'false'
           annotations: 'true'
           config: zizmor.yml
-          inputs: ${{ steps.zizmor-inputs.outputs.inputs }}
+          inputs: ${{ steps.zizmor-inputs.outputs.online_inputs }}
+          persona: regular
+          min-severity: medium
+          min-confidence: medium
+
+      - name: Private internal workflow security audit (zizmor)
+        if: steps.zizmor-inputs.outputs.private_inputs != ''
+        uses: zizmorcore/zizmor-action@0dce2577a4760a2749d8cfb7a84b7d5585ebcb7d # v0.5.0
+        with:
+          advanced-security: 'false'
+          annotations: 'true'
+          config: zizmor.yml
+          inputs: ${{ steps.zizmor-inputs.outputs.private_inputs }}
+          online-audits: 'false'
           persona: regular
           min-severity: medium
           min-confidence: medium

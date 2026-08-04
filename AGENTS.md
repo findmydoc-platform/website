@@ -6,7 +6,7 @@
 
 ## Repo-Local Skills
 
-- Use `.codex/skills/gh-release-publish` when the task is to compute the next semantic release, publish a GitHub release, dispatch the production deploy workflow, or send the release announcement to Google Chat.
+- Joint Website and Clinic Dashboard releases are operated through the private Operations repository's `platform-release` skill. Do not publish an independent Website product release.
 - Use `.codex/skills/gh-ui-screenshots` after creating or updating a UI/frontend PR when existing screenshots should be attached to the PR body; keep screenshot evidence in `UI/mobile QA`, not in a standalone screenshots section.
 
 ## Repo-Local Codex Config

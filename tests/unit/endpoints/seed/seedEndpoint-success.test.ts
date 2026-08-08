@@ -503,7 +503,7 @@ describe('seed endpoints success paths', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/pages-sitemap.xml')
   })
 
-  it('flushes review and response surfaces when an appeal seed job can remove public content', async () => {
+  it('keeps appeal seed jobs private and skips the public cache flush', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-review-appeal-public-transition'
     const queue = `seed:${runId}`
@@ -558,14 +558,12 @@ describe('seed endpoints success paths', () => {
     )
 
     expect(res._status).toBe(200)
-    expect((res._body as { finalFlush?: { status: string } }).finalFlush?.status).toBe('executed')
-    expect(revalidateTag).toHaveBeenCalledWith('collection:reviews', { expire: 0 })
-    expect(revalidateTag).toHaveBeenCalledWith('collection:reviewResponses', { expire: 0 })
-    expect(revalidateTag).toHaveBeenCalledWith('surface:clinic-detail', { expire: 0 })
-    expect(revalidateTag).toHaveBeenCalledWith('surface:listing-comparison', { expire: 0 })
-    expect(revalidateTag).toHaveBeenCalledWith('surface:sitemap:pages', { expire: 0 })
-    expect(revalidatePath).toHaveBeenCalledWith('/listing-comparison')
-    expect(revalidatePath).toHaveBeenCalledWith('/pages-sitemap.xml')
+    expect((res._body as { finalFlush?: { reason?: string; status: string } }).finalFlush).toMatchObject({
+      status: 'skipped',
+      reason: 'no-public-work',
+    })
+    expect(revalidateTag).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
   })
 
   it('does not flush a skipped public seed job that never wrote public work', async () => {

@@ -537,6 +537,6 @@ version history is platform-only; response and appeal histories remain available
 clinic. The current document and every version retain state, action type, and timestamps. Actor relations are
 intentionally nullable: deleting an account removes the personal relation from current and version relation tables
 while the non-personal audit remains. Version restoration is disabled for all three collections, and physical workflow
-deletion remains disabled through normal collection access. Upholding an appeal blocks any related clinic response
-before rejecting the parent review, preserving both decisions in their respective version histories. Public response
-reads additionally require the parent review to remain approved.
+deletion remains disabled through normal collection access. An appeal decision writes only the appeal and its version
+history. Upholding does not change the parent review or its clinic response and therefore creates no versions for
+either. Public response reads continue to require an independently approved review and non-blocked response.

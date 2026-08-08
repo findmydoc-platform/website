@@ -230,7 +230,7 @@ describe('reviewAppeals lifecycle', () => {
     ).rejects.toThrow('immutable audit records')
   }, 60000)
 
-  it('removes an approved review from public output when an appeal is upheld', async () => {
+  it('requires a separate public moderation action before recording an upheld decision', async () => {
     const { clinic, review } = await createApprovedReview('upheld')
     const clinicStaff = await createClinicTestUser(payload, {
       emailPrefix: `${slugPrefix}-upheld-clinic`,
@@ -257,7 +257,6 @@ describe('reviewAppeals lifecycle', () => {
     responseIds.push(response.id)
     expect(response.moderationStatus).toBe('approved')
     expect(response.publishedResponse?.isBlocked).toBe(false)
-
     const appeal = await payload.create({
       collection: 'reviewAppeals',
       data: {
@@ -278,12 +277,65 @@ describe('reviewAppeals lifecycle', () => {
       user: asPayloadStaffUser(moderator),
       overrideAccess: false,
     })
+
+    await expect(
+      payload.update({
+        collection: 'reviewAppeals',
+        id: appeal.id,
+        data: {
+          status: 'upheld',
+          decisionReason: 'The privacy concern was confirmed but still requires a public moderation action.',
+        } as unknown as ReviewAppeal,
+        user: asPayloadStaffUser(moderator),
+        overrideAccess: false,
+      }),
+    ).rejects.toMatchObject({
+      data: {
+        errors: [
+          expect.objectContaining({
+            message: expect.stringContaining('separate public moderation action'),
+            path: 'status',
+          }),
+        ],
+      },
+    })
+
+    const moderatedAt = new Date(Math.max(Date.now(), Date.parse(appeal.createdAt)) + 1000).toISOString()
+    await payload.update({
+      collection: 'reviews',
+      id: review.id,
+      data: {
+        publicMeasure: 'none',
+        moderationReason: 'The appeal was reviewed and no public change is required.',
+        moderatedAt,
+        moderatedBy: moderator.id,
+      } as unknown as Review,
+      user: asPayloadStaffUser(moderator),
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    const reviewVersionsBeforeDecision = await payload.findVersions({
+      collection: 'reviews',
+      where: { parent: { equals: review.id } },
+      overrideAccess: true,
+      depth: 0,
+      pagination: false,
+    })
+    const responseVersionsBeforeDecision = await payload.findVersions({
+      collection: 'reviewResponses',
+      where: { parent: { equals: response.id } },
+      overrideAccess: true,
+      depth: 0,
+      pagination: false,
+    })
+
     await payload.update({
       collection: 'reviewAppeals',
       id: appeal.id,
       data: {
         status: 'upheld',
-        decisionReason: 'The privacy concern was confirmed and the review must be removed from public output.',
+        decisionReason: 'The privacy concern was confirmed and requires a separate moderation decision.',
       } as unknown as ReviewAppeal,
       user: asPayloadStaffUser(moderator),
       overrideAccess: false,
@@ -295,7 +347,11 @@ describe('reviewAppeals lifecycle', () => {
       overrideAccess: true,
       depth: 0,
     })
-    expect(internalReview.status).toBe('rejected')
+    expect(internalReview).toMatchObject({
+      status: 'approved',
+      starRating: 4,
+      comment: 'Approved appeal review for upheld',
+    })
 
     const internalResponse = await payload.findByID({
       collection: 'reviewResponses',
@@ -303,13 +359,34 @@ describe('reviewAppeals lifecycle', () => {
       overrideAccess: true,
       depth: 0,
     })
-    expect(internalResponse.moderationStatus).toBe('blocked')
-    expect(internalResponse.publishedResponse?.isBlocked).toBe(true)
-    expect(internalResponse.moderationReason).toBe(
-      'The privacy concern was confirmed and the review must be removed from public output.',
-    )
-    expect(internalResponse.lastAction).toBe('blocked')
+    expect(internalResponse.moderationStatus).toBe('approved')
+    expect(internalResponse.publishedResponse).toMatchObject({
+      body: 'Thank you for raising this concern. The clinic has documented the reported privacy issue.',
+      isBlocked: false,
+    })
+    expect(internalResponse.moderationReason).toBeNull()
+    expect(internalResponse.lastAction).toBe('approved')
     expect(internalResponse.lastActorType).toBe('platform_staff')
+
+    const clinicAppeal = await payload.findByID({
+      collection: 'reviewAppeals',
+      id: appeal.id,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(clinicAppeal).toMatchObject({
+      status: 'upheld',
+      decisionReason: 'The privacy concern was confirmed and requires a separate moderation decision.',
+    })
+    await expect(
+      payload.find({
+        collection: 'reviewAppeals',
+        where: { id: { equals: appeal.id } },
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
 
     const publicReviews = await payload.find({
       collection: 'reviews',
@@ -317,7 +394,12 @@ describe('reviewAppeals lifecycle', () => {
       overrideAccess: false,
       depth: 0,
     })
-    expect(publicReviews.docs).toHaveLength(0)
+    expect(publicReviews.docs).toHaveLength(1)
+    expect(publicReviews.docs[0]).toMatchObject({
+      status: 'approved',
+      starRating: 4,
+      comment: 'Approved appeal review for upheld',
+    })
 
     const publicResponses = await payload.find({
       collection: 'reviewResponses',
@@ -325,16 +407,27 @@ describe('reviewAppeals lifecycle', () => {
       overrideAccess: false,
       depth: 0,
     })
-    expect(publicResponses.docs).toHaveLength(0)
+    expect(publicResponses.docs).toHaveLength(1)
+    expect(publicResponses.docs[0]?.publishedResponse).toMatchObject({
+      body: 'Thank you for raising this concern. The clinic has documented the reported privacy issue.',
+      isBlocked: false,
+    })
 
-    const responseVersions = await payload.findVersions({
+    const reviewVersionsAfterDecision = await payload.findVersions({
+      collection: 'reviews',
+      where: { parent: { equals: review.id } },
+      overrideAccess: true,
+      depth: 0,
+      pagination: false,
+    })
+    const responseVersionsAfterDecision = await payload.findVersions({
       collection: 'reviewResponses',
       where: { parent: { equals: response.id } },
       overrideAccess: true,
       depth: 0,
       pagination: false,
     })
-    expect(responseVersions.docs.length).toBeGreaterThanOrEqual(2)
-    expect(responseVersions.docs.some((version) => version.version.moderationStatus === 'blocked')).toBe(true)
+    expect(reviewVersionsAfterDecision.docs).toHaveLength(reviewVersionsBeforeDecision.docs.length)
+    expect(responseVersionsAfterDecision.docs).toHaveLength(responseVersionsBeforeDecision.docs.length)
   }, 60000)
 })

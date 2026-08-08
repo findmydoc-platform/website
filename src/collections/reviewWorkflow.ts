@@ -1,5 +1,4 @@
 import type {
-  CollectionAfterChangeHook,
   CollectionAfterReadHook,
   CollectionBeforeChangeHook,
   CollectionBeforeOperationHook,
@@ -16,6 +15,8 @@ type WorkflowDraft = Record<string, unknown>
 
 type ReviewContext = {
   clinicId: RelationId
+  moderatedAt: string | null
+  moderationReason: string | null
   reviewId: RelationId
   status: string
 }
@@ -117,9 +118,11 @@ const resolveReviewContext = async (req: PayloadRequest, value: unknown): Promis
     req,
     select: {
       clinic: true,
+      moderatedAt: true,
+      moderationReason: true,
       status: true,
     },
-  })) as { clinic?: unknown; status?: unknown }
+  })) as { clinic?: unknown; moderatedAt?: unknown; moderationReason?: unknown; status?: unknown }
   const clinicId = relationId(review.clinic)
 
   if (clinicId === null) {
@@ -139,9 +142,24 @@ const resolveReviewContext = async (req: PayloadRequest, value: unknown): Promis
 
   return {
     clinicId,
+    moderatedAt: optionalTrimmedText(review.moderatedAt),
+    moderationReason: optionalTrimmedText(review.moderationReason),
     reviewId,
     status: typeof review.status === 'string' ? review.status : '',
   }
+}
+
+const hasPublicModerationAfterAppealSubmission = (context: ReviewContext, appealCreatedAt: unknown): boolean => {
+  const submittedAt = optionalTrimmedText(appealCreatedAt)
+  if (!submittedAt || !context.moderatedAt || !context.moderationReason) return false
+
+  const submittedTimestamp = Date.parse(submittedAt)
+  const moderatedTimestamp = Date.parse(context.moderatedAt)
+  return (
+    Number.isFinite(submittedTimestamp) &&
+    Number.isFinite(moderatedTimestamp) &&
+    moderatedTimestamp >= submittedTimestamp
+  )
 }
 
 const now = (): string => new Date().toISOString()
@@ -246,33 +264,6 @@ const prepareTrustedResponseSeed = (
   return stampAudit(draft, req, 'seeded')
 }
 
-const prepareAppealDecisionResponseBlock = (
-  draft: WorkflowDraft,
-  original: WorkflowDraft,
-  context: ReviewContext,
-  req: PayloadRequest,
-): WorkflowDraft => {
-  const timestamp = now()
-  const published = record(original.publishedResponse)
-
-  return stampAudit(
-    {
-      ...original,
-      stableId: draft.stableId ?? original.stableId,
-      review: context.reviewId,
-      clinic: context.clinicId,
-      publishedResponse: published.body ? { ...published, isBlocked: true } : emptyResponseGroup('published'),
-      pendingResponse: emptyResponseGroup('pending'),
-      moderationStatus: 'blocked',
-      moderationReason: requiredModerationReason('reviewResponses', draft.moderationReason, req),
-      moderatedAt: timestamp,
-    },
-    req,
-    'blocked',
-    timestamp,
-  )
-}
-
 export const prepareReviewResponseChange: CollectionBeforeChangeHook = async ({
   data,
   operation,
@@ -296,10 +287,6 @@ export const prepareReviewResponseChange: CollectionBeforeChangeHook = async ({
     ...incoming,
     review: context.reviewId,
     clinic: context.clinicId,
-  }
-
-  if (req.context.reviewAppealDecision === true) {
-    return prepareAppealDecisionResponseBlock(draft, original, context, req)
   }
 
   if (isTrustedSeed(req)) {
@@ -525,6 +512,23 @@ export const prepareReviewAppealChange: CollectionBeforeChangeHook = async ({ da
     })
   }
 
+  if (
+    requestedStatus === 'upheld' &&
+    currentStatus !== 'upheld' &&
+    !hasPublicModerationAfterAppealSubmission(context, original.createdAt)
+  ) {
+    throw new ValidationError({
+      collection: 'reviewAppeals',
+      errors: [
+        {
+          message: 'An upheld appeal requires a separate public moderation action recorded after submission.',
+          path: 'status',
+        },
+      ],
+      req,
+    })
+  }
+
   const timestamp = now()
   const result: WorkflowDraft = {
     ...original,
@@ -543,72 +547,6 @@ export const prepareReviewAppealChange: CollectionBeforeChangeHook = async ({ da
   }
 
   return stampAudit(result, req, requestedStatus === currentStatus ? 'reviewed' : requestedStatus, timestamp)
-}
-
-export const applyUpheldAppealDecision: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
-  const current = record(doc)
-  const previous = record(previousDoc)
-  if (current.status !== 'upheld' || previous.status === 'upheld') return doc
-
-  const reviewId = relationId(current.review)
-  if (reviewId === null) return doc
-
-  const decisionReason =
-    optionalTrimmedText(current.decisionReason) ??
-    'The review appeal was upheld and the clinic response was removed from public output.'
-  const responseResult = await req.payload.find({
-    collection: 'reviewResponses',
-    where: {
-      review: {
-        equals: reviewId,
-      },
-    },
-    depth: 0,
-    limit: 1,
-    pagination: false,
-    overrideAccess: true,
-    req,
-    select: {
-      id: true,
-      moderationStatus: true,
-    },
-  })
-  const response = responseResult.docs[0]
-
-  if (response && response.moderationStatus !== 'blocked') {
-    await req.payload.update({
-      collection: 'reviewResponses',
-      id: response.id,
-      data: {
-        moderationStatus: 'blocked',
-        moderationReason: decisionReason,
-      },
-      context: {
-        ...req.context,
-        reviewAppealDecision: true,
-      },
-      depth: 0,
-      overrideAccess: true,
-      req,
-    })
-  }
-
-  await req.payload.update({
-    collection: 'reviews',
-    id: reviewId,
-    data: {
-      status: 'rejected',
-    },
-    context: {
-      ...req.context,
-      reviewAppealDecision: true,
-    },
-    depth: 0,
-    overrideAccess: true,
-    req,
-  })
-
-  return doc
 }
 
 export const hideEmptyReviewResponseGroups: CollectionAfterReadHook = ({ doc }) => {

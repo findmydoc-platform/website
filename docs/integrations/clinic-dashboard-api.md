@@ -197,8 +197,10 @@ purpose-limited same-origin BFF routes and UI DTOs. The Dashboard browser never 
   their assigned clinic. Platform approval copies it to the public projection; rejection leaves an existing public
   response unchanged; blocking removes the public projection from public reads.
 - `reviewAppeals` contains at most one appeal per review. A clinic submission is immutable. Platform staff alone move
-  `submitted -> under_review -> upheld | dismissed`; an upheld appeal blocks the related clinic-response workflow, if
-  present, and then changes the related review to `rejected`. Both changes remain in Payload native version history.
+  `submitted -> under_review -> upheld | dismissed`. The terminal state records only the appeal decision: `upheld`
+  neither changes the review nor blocks or edits its clinic response. Any public review measure is a separate review
+  moderation operation. Before an appeal can enter `upheld`, that operation must record an explicit measure and reason
+  after the appeal was submitted; `none` is the explicit no-change decision.
 - Both collections use unlimited Payload native versions. Platform staff can read all versions, clinic staff can read
   their clinic's versions, and public or patient principals cannot read versions. Restore and normal physical deletion
   are disabled.
@@ -284,10 +286,9 @@ events, tags, and bounded paths. A private BFF response never suppresses public 
 new cache class, tag family, invalidation owner, or event.
 
 An approved or blocked clinic-response change revalidates the existing clinic-detail collection, entity, surface,
-surface-instance, clinic slug, and bounded clinic path. Pending edits, rejected replacements that preserve the current
-public response, and non-terminal or dismissed appeal changes remain private-live. An upheld appeal blocks an existing
-public response and rejects the related review through their existing hooks. Seed runs map this private appeal job to
-the affected `reviews` and `reviewResponses` scopes in the terminal public-cache flush.
+surface-instance, clinic slug, and bounded clinic path. Pending edits and rejected replacements that preserve the
+current public response remain private-live. Every appeal transition, including `upheld`, is private-live because it
+changes neither the public review nor its response. Appeal-only seed jobs therefore have no public-cache flush scope.
 
 ## Verification Contract
 

@@ -13,6 +13,8 @@ overrides:
   '@hono/node-server@<2.0.5': '>=2.0.5'
   hono@<4.12.34: '>=4.12.34'
   postcss@<8.5.23: 8.5.23
+  js-yaml@<4.3.1: 4.3.1
+  nanoid@<3.3.17: 3.3.17
   brace-expansion@<5.0.9: 5.0.9
   sharp@<0.35.0: 0.35.3
   fast-uri@<3.1.5: 3.1.5
@@ -5417,8 +5419,8 @@ packages:
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
-  js-yaml@4.3.0:
-    resolution: {integrity: sha512-1td788aAnnZ5qs7V2QIRl1owjtYpbKt749Y3xauqQgwIIGF/xXWz1wMTEBx5O3LK3lXLVuqXPdPxj2BoFHaW9Q==}
+  js-yaml@4.3.1:
+    resolution: {integrity: sha512-CY6crGq313MX8GkwvB7tzgp99vjQxY1++5y10/BKN/GUfHqWaOGQMNZkBvqSzsZKWk/ijwHlWzzkLulsGHhjWQ==}
     hasBin: true
 
   jsdom@29.1.1:
@@ -5874,8 +5876,8 @@ packages:
     resolution: {integrity: sha512-dkEJPVvun4FryqBmZ5KhDo0K9iDXAwn08tMLDinNdRBNPcYEDiWYysLcc6k3mjTMlbP9KyylvRpd4wFtwrT9rw==}
     engines: {node: ^20.17.0 || >=22.9.0}
 
-  nanoid@3.3.16:
-    resolution: {integrity: sha512-bzlKTyNJ7+LdGIIwy8ijFpIqEQIvafahV7eYykJ8Cvh42EdJeODoJ6gUJXpQJvej1BddH8OqTXZNE/KfbWAu8Q==}
+  nanoid@3.3.17:
+    resolution: {integrity: sha512-xQLf0A3HOMlgHq0n247/LRuAOYmB7dXJ/DvAxGvsSBij45XtBSmQycu+F8ODbHwns/XyFZagyL1+J0Offw1E0g==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
@@ -7673,7 +7675,7 @@ snapshots:
     dependencies:
       '@jsdevtools/ono': 7.1.3
       '@types/json-schema': 7.0.15
-      js-yaml: 4.3.0
+      js-yaml: 4.3.1
 
   '@asamuzakjp/css-color@5.1.11':
     dependencies:
@@ -8440,7 +8442,7 @@ snapshots:
       globals: 14.0.0
       ignore: 5.3.2
       import-fresh: 3.3.1
-      js-yaml: 4.3.0
+      js-yaml: 4.3.1
       minimatch: 3.1.5(patch_hash=6ef6d9ac96f4561731ab793f4fcee212cbf18d27f4da32c5587660780b43d11b)
       strip-json-comments: 3.1.1
     transitivePeerDependencies:
@@ -11556,7 +11558,7 @@ snapshots:
     dependencies:
       env-paths: 2.2.1
       import-fresh: 3.3.1
-      js-yaml: 4.3.0
+      js-yaml: 4.3.1
       parse-json: 5.2.0
     optionalDependencies:
       typescript: 5.9.3
@@ -12977,7 +12979,7 @@ snapshots:
 
   js-tokens@4.0.0: {}
 
-  js-yaml@4.3.0:
+  js-yaml@4.3.1:
     dependencies:
       argparse: 2.0.1
 
@@ -13019,7 +13021,7 @@ snapshots:
       '@types/json-schema': 7.0.15
       '@types/lodash': 4.17.24
       is-glob: 4.0.3
-      js-yaml: 4.3.0
+      js-yaml: 4.3.1
       lodash: 4.18.1
       minimist: 1.2.8
       prettier: 3.9.4
@@ -13542,7 +13544,7 @@ snapshots:
   mute-stream@3.0.0:
     optional: true
 
-  nanoid@3.3.16: {}
+  nanoid@3.3.17: {}
 
   napi-postinstall@0.3.4: {}
 
@@ -14077,7 +14079,7 @@ snapshots:
 
   postcss@8.5.23:
     dependencies:
-      nanoid: 3.3.16
+      nanoid: 3.3.17
       picocolors: 1.1.1
       source-map-js: 1.2.1
 

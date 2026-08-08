@@ -19,7 +19,7 @@
     "reason": "privacy_concern",
     "details": "The clinic reports that the review includes details that could identify another patient.",
     "status": "upheld",
-    "decisionReason": "The review contains information about another patient and must be removed from public output.",
+    "decisionReason": "The review contains information about another patient and requires a separate moderation decision.",
     "decidedAt": "2026-01-24T10:00:00.000Z"
   },
   {

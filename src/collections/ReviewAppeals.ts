@@ -8,11 +8,7 @@ import {
 } from '@/access/scopeFilters'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
-import {
-  applyUpheldAppealDecision,
-  prepareReviewAppealChange,
-  preventReviewWorkflowVersionRestore,
-} from '@/collections/reviewWorkflow'
+import { prepareReviewAppealChange, preventReviewWorkflowVersionRestore } from '@/collections/reviewWorkflow'
 
 const auditFields: Field[] = [
   {
@@ -190,7 +186,6 @@ export const ReviewAppeals: CollectionConfig = {
   hooks: {
     beforeChange: [stableIdBeforeChangeHook, prepareReviewAppealChange],
     beforeOperation: [preventReviewWorkflowVersionRestore],
-    afterChange: [applyUpheldAppealDecision],
   },
   timestamps: true,
 }

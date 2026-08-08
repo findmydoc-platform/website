@@ -2718,19 +2718,19 @@ export interface Review {
    */
   withdrawalState: 'active' | 'withdrawn';
   /**
-   * Who initiated or documented the author withdrawal
+   * Who initiated or documented the latest withdrawal-state change
    */
   withdrawalSource?: ('patient' | 'platform') | null;
   /**
-   * Internal reason recorded for the author withdrawal
+   * Internal reason recorded for the latest withdrawal-state change
    */
   withdrawalReason?: string | null;
   /**
-   * When the author withdrawal was recorded
+   * When the latest withdrawal-state change was recorded
    */
   withdrawnAt?: string | null;
   /**
-   * Patient or platform staff member who recorded the withdrawal
+   * Patient or platform staff member who recorded the latest withdrawal-state change
    */
   withdrawnBy?:
     | ({

@@ -21,16 +21,9 @@ const platformOnlyReviewFields = [
   'lastEditedAt',
   'editedByName',
   'editedBy',
-  'publicMeasure',
-  'publicComment',
-  'publicNotice',
   'moderationReason',
-  'moderatedAt',
   'moderatedBy',
-  'withdrawalState',
-  'withdrawalSource',
   'withdrawalReason',
-  'withdrawnAt',
   'withdrawnBy',
 ] as const
 
@@ -166,7 +159,7 @@ describe('Review versioning foundation', () => {
     ).rejects.toThrow('immutable audit records')
   }, 60000)
 
-  it('keeps the inactive foundation out of non-platform reads and raw version access', async () => {
+  it('keeps removed and withdrawn reviews out of public reads while exposing only sanitized clinic state', async () => {
     const { clinic, doctor } = await createClinicFixture(payload, cityId, {
       slugPrefix: `${slugPrefix}-private`,
     })
@@ -200,8 +193,8 @@ describe('Review versioning foundation', () => {
         editedByName: 'Internal Editor',
         editedBy: moderator.id,
         publicMeasure: 'removed',
-        publicComment: 'Internal public-text candidate',
-        publicNotice: 'Internal public-notice candidate',
+        publicComment: null,
+        publicNotice: null,
         moderationReason: 'Internal moderation evidence',
         moderatedAt: '2026-08-08T09:00:00.000Z',
         moderatedBy: moderator.id,
@@ -216,18 +209,35 @@ describe('Review versioning foundation', () => {
     })
     reviewIds.push(review.id)
 
-    const publicRead = await payload.find({
+    for (const user of [undefined, patientUser]) {
+      const publicRead = await payload.find({
+        collection: 'reviews',
+        where: { id: { equals: review.id } },
+        user,
+        overrideAccess: false,
+        depth: 0,
+      })
+      expect(publicRead.docs).toHaveLength(0)
+    }
+
+    const clinicRead = await payload.find({
       collection: 'reviews',
       where: { id: { equals: review.id } },
+      user: clinicUser,
       overrideAccess: false,
       depth: 0,
     })
-
-    expect(publicRead.docs).toHaveLength(1)
-    expect(publicRead.docs[0]?.comment).toBe('The existing public review contract remains unchanged')
-    for (const field of platformOnlyReviewFields) {
-      expect(publicRead.docs[0]).not.toHaveProperty(field)
-    }
+    expect(clinicRead.docs).toHaveLength(1)
+    expect(clinicRead.docs[0]).toMatchObject({
+      publicMeasure: 'removed',
+      moderatedAt: '2026-08-08T09:00:00.000Z',
+      withdrawalState: 'withdrawn',
+      withdrawalSource: 'patient',
+      withdrawnAt: '2026-08-08T09:00:00.000Z',
+    })
+    expect(clinicRead.docs[0]).not.toHaveProperty('comment')
+    expect(clinicRead.docs[0]).not.toHaveProperty('patient')
+    for (const field of platformOnlyReviewFields) expect(clinicRead.docs[0]).not.toHaveProperty(field)
 
     const platformRead = await payload.findByID({
       collection: 'reviews',

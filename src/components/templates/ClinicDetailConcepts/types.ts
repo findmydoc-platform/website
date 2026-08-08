@@ -54,18 +54,30 @@ export type ClinicDetailTrust = {
   languages: string[]
 }
 
-export type ClinicDetailReview = {
+type ClinicDetailReviewBase = {
   id: string
   reviewDate: string
-  comment: string
   authorName?: string
   ratingValue: number
-  response?: {
-    body: string
-    clinicName: string
-    approvedAt: string
-  }
 }
+
+export type ClinicDetailReview = ClinicDetailReviewBase &
+  (
+    | {
+        kind: 'text'
+        comment: string
+        notice?: string
+        response?: {
+          body: string
+          clinicName: string
+          approvedAt: string
+        }
+      }
+    | {
+        kind: 'placeholder'
+        notice: string
+      }
+  )
 
 export type ClinicDetailReviews = {
   totalCount: number

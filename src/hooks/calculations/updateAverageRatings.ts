@@ -4,8 +4,10 @@ import type {
   Payload,
   PayloadRequest,
   CollectionSlug,
+  Where,
 } from 'payload'
 import type { Review } from '@/payload-types'
+import { buildPublicReviewWhere } from '@/collections/reviews/publicProjection'
 
 // Helper function to extract ID from relationship field (could be ID or full object)
 function getEntityId(entity: unknown): string | number | null {
@@ -29,20 +31,11 @@ async function calculateAverageRating(
   try {
     const reviews = await payload.find({
       collection: 'reviews',
-      where: {
-        and: [
-          {
-            [entityField]: {
-              equals: entityId,
-            },
-          },
-          {
-            status: {
-              equals: 'approved',
-            },
-          },
-        ],
-      },
+      where: buildPublicReviewWhere({
+        [entityField]: {
+          equals: entityId,
+        },
+      } as Where),
       limit: 1000, // Reasonable limit for calculating averages
       req,
     })

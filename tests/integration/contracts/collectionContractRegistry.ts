@@ -126,6 +126,7 @@ export const collectionContractRegistry = {
       'tests/integration/reviews.duplicateGuard.test.ts',
       'tests/integration/reviews.averageRatings.test.ts',
       'tests/integration/reviews.versioning.test.ts',
+      'tests/integration/reviews.publication.test.ts',
       'tests/integration/migrations/reviewVersionedModerationFoundation.test.ts',
     ],
   },

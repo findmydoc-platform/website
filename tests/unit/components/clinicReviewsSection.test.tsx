@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { ClinicReviewsSection } from '@/components/organisms/ClinicDetail/ClinicReviewsSection'
@@ -11,6 +11,7 @@ const reviews: ClinicDetailReviews = {
   items: [
     {
       id: 'review-1',
+      kind: 'text',
       reviewDate: '2026-07-27T10:00:00.000Z',
       ratingValue: 5,
       authorName: 'Maya K.',
@@ -23,24 +24,28 @@ const reviews: ClinicDetailReviews = {
     },
     {
       id: 'review-2',
+      kind: 'text',
       reviewDate: '2026-07-26T10:00:00.000Z',
       ratingValue: 4,
       comment: 'The appointment was well organized and the written plan was helpful.',
     },
     {
       id: 'review-3',
+      kind: 'text',
       reviewDate: '2026-07-25T10:00:00.000Z',
       ratingValue: 5,
       comment: 'The team was attentive throughout the consultation.',
     },
     {
       id: 'review-4',
+      kind: 'text',
       reviewDate: '2026-07-24T10:00:00.000Z',
       ratingValue: 4,
       comment: 'The follow-up communication was clear and timely.',
     },
     {
       id: 'review-5',
+      kind: 'text',
       reviewDate: '2026-07-23T10:00:00.000Z',
       ratingValue: 5,
       comment: 'The clinic prepared us well for the next steps.',
@@ -80,11 +85,14 @@ describe('ClinicReviewsSection clinic responses', () => {
       'The clinic has clarified the preparation checklist and follow-up process so future patients receive the same information before their appointment.',
       'If you need another copy of the written plan, our team can provide it through the usual patient communication channel.',
     ].join(' ')
+    const baseReview = reviews.items[0]
+    if (!baseReview || baseReview.kind !== 'text') throw new Error('Expected a text review fixture')
+
     const longResponseReviews: ClinicDetailReviews = {
       totalCount: 1,
       items: [
         {
-          ...reviews.items[0]!,
+          ...baseReview,
           response: {
             body: longBody,
             clinicName: 'Berlin Health Clinic Center for Pediatric and Adolescent Interdisciplinary Specialist Care',
@@ -110,5 +118,82 @@ describe('ClinicReviewsSection clinic responses', () => {
 
     expect(responseBody).toHaveClass('max-h-[10.5rem]')
     expect(screen.getByRole('button', { name: 'Show more' })).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('shows factual redaction context and a real placeholder without review text or response', () => {
+    const moderatedReviews: ClinicDetailReviews = {
+      totalCount: 2,
+      items: [
+        {
+          id: 'redacted',
+          kind: 'text',
+          reviewDate: '2026-07-27T10:00:00.000Z',
+          ratingValue: 5,
+          comment: 'Readable review after narrow removal.',
+          notice:
+            'Parts of this review were removed to protect legal rights or personal data. The remaining text is unchanged.',
+          response: {
+            body: 'The clinic response remains visible for a readable redacted review.',
+            clinicName: 'Berlin Health Clinic',
+            approvedAt: '2026-07-28T10:00:00.000Z',
+          },
+        },
+        {
+          id: 'placeholder',
+          kind: 'placeholder',
+          reviewDate: '2026-07-26T10:00:00.000Z',
+          ratingValue: 4,
+          notice: 'This review was moderated. Its written content is not publicly available.',
+        },
+      ],
+    }
+
+    render(<ClinicReviewsSection ratingValue={4.5} reviews={moderatedReviews} />)
+
+    expect(screen.getByRole('note', { name: 'Review moderation notice' })).toHaveTextContent(
+      'The remaining text is unchanged.',
+    )
+    expect(screen.getByRole('note', { name: 'Review text unavailable' })).toHaveTextContent(
+      'Its written content is not publicly available.',
+    )
+    expect(
+      screen.getByRole('article', {
+        name: 'Anonymous patient verified moderated review with unavailable text from Jul 26, 2026',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('group', { name: 'Clinic response' })).toHaveLength(1)
+    expect(screen.queryByText(/Original placeholder text/)).not.toBeInTheDocument()
+  })
+
+  it('renders a placeholder as the featured latest review without text or a clinic response', () => {
+    const originalLatestReview = reviews.items[0]
+    if (!originalLatestReview || originalLatestReview.kind !== 'text') {
+      throw new Error('Expected the original latest review fixture to contain text')
+    }
+    const latestPlaceholderReviews: ClinicDetailReviews = {
+      totalCount: 2,
+      items: [
+        {
+          id: 'latest-placeholder',
+          kind: 'placeholder',
+          reviewDate: '2026-07-28T10:00:00.000Z',
+          ratingValue: 4,
+          authorName: 'Maya K.',
+          notice: 'This review was moderated. Its written content is not publicly available.',
+        },
+        originalLatestReview,
+      ],
+    }
+
+    render(<ClinicReviewsSection ratingValue={4.5} reviews={latestPlaceholderReviews} />)
+
+    const latestReview = screen.getByText('Latest review').closest('article')
+    expect(latestReview).not.toBeNull()
+    const latestReviewQueries = within(latestReview as HTMLElement)
+    expect(latestReviewQueries.getByRole('note', { name: 'Review text unavailable' })).toHaveTextContent(
+      'Its written content is not publicly available.',
+    )
+    expect(latestReviewQueries.queryByText(originalLatestReview.comment)).not.toBeInTheDocument()
+    expect(latestReviewQueries.queryByRole('group', { name: 'Clinic response' })).not.toBeInTheDocument()
   })
 })

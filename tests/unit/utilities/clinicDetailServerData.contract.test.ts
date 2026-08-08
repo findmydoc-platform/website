@@ -22,6 +22,7 @@ type MockData = {
 
 type FindCall = {
   collection: string
+  overrideAccess?: boolean
   select?: Record<string, unknown>
 }
 
@@ -229,6 +230,8 @@ const mockData: MockData = {
     {
       id: 1001,
       status: 'approved',
+      publicMeasure: 'none',
+      withdrawalState: 'active',
       clinic: 1,
       doctor: 601,
       reviewDate: '2026-01-12T09:15:00.000Z',
@@ -239,6 +242,8 @@ const mockData: MockData = {
     {
       id: 1002,
       status: 'approved',
+      publicMeasure: 'none',
+      withdrawalState: 'active',
       clinic: 1,
       doctor: 601,
       reviewDate: '2026-01-08T12:30:00.000Z',
@@ -248,6 +253,8 @@ const mockData: MockData = {
     {
       id: 1003,
       status: 'pending',
+      publicMeasure: 'none',
+      withdrawalState: 'active',
       clinic: 1,
       doctor: 601,
       reviewDate: '2026-01-06T12:30:00.000Z',
@@ -257,6 +264,8 @@ const mockData: MockData = {
     {
       id: 1005,
       status: 'rejected',
+      publicMeasure: 'none',
+      withdrawalState: 'active',
       clinic: 1,
       doctor: 601,
       reviewDate: '2026-01-04T12:30:00.000Z',
@@ -266,6 +275,8 @@ const mockData: MockData = {
     {
       id: 1004,
       status: 'approved',
+      publicMeasure: 'none',
+      withdrawalState: 'active',
       clinic: 1,
       doctor: 602,
       reviewDate: '2026-01-05T10:00:00.000Z',
@@ -352,7 +363,7 @@ function createMockPayload(data: MockData, findCalls: FindCall[] = []): Payload 
       overrideAccess?: boolean
       pagination?: boolean
     }) => {
-      findCalls.push({ collection: args.collection, select: args.select })
+      findCalls.push({ collection: args.collection, overrideAccess: args.overrideAccess, select: args.select })
       const source = data[args.collection] ?? []
 
       const accessFiltered =
@@ -439,6 +450,7 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(result?.reviews.totalCount).toBe(3)
     expect(result?.reviews.items).toHaveLength(3)
     expect(result?.reviews.items[0]).toMatchObject({
+      kind: 'text',
       authorName: 'Maya K.',
       comment: 'Clear explanations and careful aftercare.',
       ratingValue: 5,
@@ -450,8 +462,9 @@ describe('getClinicDetailServerData (contract)', () => {
     })
     expect(result?.reviews.items[1]).not.toHaveProperty('authorName')
     expect(result?.reviews.items[1]).not.toHaveProperty('response')
-    expect(result?.reviews.items.map((review) => review.comment)).not.toContain('Pending review should not appear.')
-    expect(result?.reviews.items.map((review) => review.comment)).not.toContain('Rejected review should not appear.')
+    const publicReviewText = result?.reviews.items.flatMap((review) => (review.kind === 'text' ? [review.comment] : []))
+    expect(publicReviewText).not.toContain('Pending review should not appear.')
+    expect(publicReviewText).not.toContain('Rejected review should not appear.')
     expect(result?.trust.accreditations).toContain('ISO 9001')
     expect(result?.trust.languages).toEqual(expect.arrayContaining(['English', 'German']))
     expect(result?.freshness).toMatchObject({
@@ -494,7 +507,134 @@ describe('getClinicDetailServerData (contract)', () => {
     expect(findCalls.find((call) => call.collection === 'clinics')?.select).toMatchObject({
       galleryEntries: false,
     })
+    expect(findCalls.find((call) => call.collection === 'reviews' && call.select?.comment)?.select).toMatchObject({
+      status: true,
+      withdrawalState: true,
+      publicMeasure: true,
+      publicComment: true,
+      publicNotice: true,
+    })
+    expect(findCalls.filter((call) => call.collection === 'reviews').every((call) => call.overrideAccess)).toBe(true)
     expect(result).not.toHaveProperty('beforeAfterEntries')
+  })
+
+  it('maps every public moderation measure and excludes removed or withdrawn reviews', async () => {
+    const moderatedData: MockData = {
+      ...mockData,
+      reviews: [
+        {
+          id: 2001,
+          status: 'approved',
+          publicMeasure: 'none',
+          withdrawalState: 'active',
+          clinic: 1,
+          doctor: 601,
+          reviewDate: '2026-02-06T10:00:00.000Z',
+          starRating: 5,
+          comment: 'Original visible review.',
+        },
+        {
+          id: 2002,
+          status: 'approved',
+          publicMeasure: 'context',
+          publicNotice: 'The clinic supplied additional factual context.',
+          withdrawalState: 'active',
+          clinic: 1,
+          doctor: 601,
+          reviewDate: '2026-02-05T10:00:00.000Z',
+          starRating: 4,
+          comment: 'Context review remains unchanged.',
+        },
+        {
+          id: 2003,
+          status: 'approved',
+          publicMeasure: 'redaction',
+          publicComment: 'Readable review after narrow removal.',
+          publicNotice:
+            'Parts of this review were removed to protect legal rights or personal data. The remaining text is unchanged.',
+          withdrawalState: 'active',
+          clinic: 1,
+          doctor: 601,
+          reviewDate: '2026-02-04T10:00:00.000Z',
+          starRating: 3,
+          comment: 'Original text containing private data must never render.',
+        },
+        {
+          id: 2004,
+          status: 'approved',
+          publicMeasure: 'placeholder',
+          publicNotice: 'Caller-controlled placeholder must be ignored.',
+          withdrawalState: 'active',
+          clinic: 1,
+          doctor: 602,
+          reviewDate: '2026-02-03T10:00:00.000Z',
+          starRating: 2,
+          comment: 'Placeholder original text must never render.',
+        },
+        {
+          id: 2005,
+          status: 'approved',
+          publicMeasure: 'removed',
+          withdrawalState: 'active',
+          clinic: 1,
+          doctor: 602,
+          reviewDate: '2026-02-02T10:00:00.000Z',
+          starRating: 1,
+          comment: 'Removed review must not be counted.',
+        },
+        {
+          id: 2006,
+          status: 'approved',
+          publicMeasure: 'none',
+          withdrawalState: 'withdrawn',
+          clinic: 1,
+          doctor: 602,
+          reviewDate: '2026-02-01T10:00:00.000Z',
+          starRating: 1,
+          comment: 'Withdrawn review must not be counted.',
+        },
+      ],
+      reviewResponses: [2001, 2002, 2003, 2004].map((review, index) => ({
+        id: 2100 + index,
+        review,
+        publishedResponse: {
+          body: `Response ${review}`,
+          approvedAt: '2026-02-07T10:00:00.000Z',
+          isBlocked: false,
+        },
+      })),
+    }
+
+    const result = await getClinicDetailServerData(createMockPayload(moderatedData), 'berlin-health-clinic', {
+      draft: false,
+    })
+
+    expect(result?.reviews.totalCount).toBe(4)
+    expect(result?.reviews.items).toHaveLength(4)
+    expect(result?.reviews.items[0]).toMatchObject({ kind: 'text', comment: 'Original visible review.' })
+    expect(result?.reviews.items[0]).toHaveProperty('response.body', 'Response 2001')
+    expect(result?.reviews.items[1]).toMatchObject({
+      kind: 'text',
+      comment: 'Context review remains unchanged.',
+      notice: 'The clinic supplied additional factual context.',
+    })
+    expect(result?.reviews.items[1]).toHaveProperty('response.body', 'Response 2002')
+    expect(result?.reviews.items[2]).toMatchObject({
+      kind: 'text',
+      comment: 'Readable review after narrow removal.',
+    })
+    expect(result?.reviews.items[2]).toHaveProperty('response.body', 'Response 2003')
+    expect(result?.reviews.items[3]).toEqual(
+      expect.objectContaining({
+        kind: 'placeholder',
+        notice: 'This review was moderated. Its written content is not publicly available.',
+      }),
+    )
+    expect(result?.reviews.items[3]).not.toHaveProperty('comment')
+    expect(result?.reviews.items[3]).not.toHaveProperty('response')
+    expect(JSON.stringify(result?.reviews.items)).not.toContain('Original text containing private data')
+    expect(JSON.stringify(result?.reviews.items)).not.toContain('Removed review')
+    expect(JSON.stringify(result?.reviews.items)).not.toContain('Withdrawn review')
   })
 
   it('rejects approved clinic reviews without an aggregate clinic rating', async () => {

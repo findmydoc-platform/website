@@ -203,6 +203,54 @@ describe('Review average ratings hooks', () => {
     expect(doctorAfterUpdate.averageRating).toBeCloseTo(2, 5)
     expect(treatmentAfterUpdate.averageRating).toBeCloseTo(2, 5)
 
+    await payload.update({
+      collection: 'reviews',
+      id: review.id,
+      data: { publicMeasure: 'placeholder' },
+      overrideAccess: true,
+      depth: 0,
+    })
+    expect(
+      (await payload.findByID({ collection: 'clinics', id: clinic.id, overrideAccess: true })).averageRating,
+    ).toBeCloseTo(2, 5)
+
+    await payload.update({
+      collection: 'reviews',
+      id: review.id,
+      data: { publicMeasure: 'removed' },
+      overrideAccess: true,
+      depth: 0,
+    })
+    expect(
+      (await payload.findByID({ collection: 'clinics', id: clinic.id, overrideAccess: true })).averageRating ?? null,
+    ).toBeNull()
+
+    await payload.update({
+      collection: 'reviews',
+      id: review.id,
+      data: {
+        publicMeasure: 'redaction',
+        publicComment: 'Could improve follow-up.',
+        withdrawalState: 'active',
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+    expect(
+      (await payload.findByID({ collection: 'clinics', id: clinic.id, overrideAccess: true })).averageRating,
+    ).toBeCloseTo(2, 5)
+
+    await payload.update({
+      collection: 'reviews',
+      id: review.id,
+      data: { withdrawalState: 'withdrawn' },
+      overrideAccess: true,
+      depth: 0,
+    })
+    expect(
+      (await payload.findByID({ collection: 'clinics', id: clinic.id, overrideAccess: true })).averageRating ?? null,
+    ).toBeNull()
+
     await payload.delete({ collection: 'reviews', id: review.id, overrideAccess: true })
 
     const clinicAfterDelete = await payload.findByID({ collection: 'clinics', id: clinic.id, overrideAccess: true })

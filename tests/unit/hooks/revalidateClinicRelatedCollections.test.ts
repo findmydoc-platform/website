@@ -116,6 +116,162 @@ describe('clinic related collection revalidation hooks', () => {
     expect(getTagCalls()).toEqual([])
   })
 
+  it.each([
+    {
+      label: 'public measure',
+      doc: { publicMeasure: 'placeholder', withdrawalState: 'active' },
+      previous: { publicMeasure: 'none', withdrawalState: 'active' },
+    },
+    {
+      label: 'author withdrawal',
+      doc: { publicMeasure: 'none', withdrawalState: 'withdrawn' },
+      previous: { publicMeasure: 'none', withdrawalState: 'active' },
+    },
+  ])('revalidates existing clinic and listing tags when $label changes public output', async ({ doc, previous }) => {
+    const req = buildReq()
+    const publicFields = {
+      id: 302,
+      clinic: 12,
+      status: 'approved',
+      reviewDate: '2026-08-08T10:00:00.000Z',
+      starRating: 5,
+      comment: 'Visible review text',
+      publicAuthorName: 'Maya K.',
+    }
+
+    await revalidateReviewChange({
+      collection: { slug: 'reviews' } as unknown as ReviewChangeArgs['collection'],
+      context: req.context,
+      data: {},
+      doc: { ...publicFields, ...doc },
+      operation: 'update',
+      previousDoc: { ...publicFields, ...previous },
+      req,
+    } as ReviewChangeArgs)
+
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getTagCalls()).toEqual(
+      expect.arrayContaining([
+        'entity:reviews:302',
+        'collection:reviews',
+        'surface:clinic-detail:12',
+        'surface:listing-comparison',
+        'surface:sitemap:pages',
+      ]),
+    )
+  })
+
+  it('does not revalidate public caches for internal moderation-reason-only changes', async () => {
+    const req = buildReq()
+    const publicFields = {
+      id: 303,
+      clinic: 12,
+      status: 'approved',
+      publicMeasure: 'context',
+      publicNotice: 'Visible factual context.',
+      withdrawalState: 'active',
+      reviewDate: '2026-08-08T10:00:00.000Z',
+      starRating: 5,
+      comment: 'Visible review text',
+    }
+
+    await revalidateReviewChange({
+      collection: { slug: 'reviews' } as unknown as ReviewChangeArgs['collection'],
+      context: req.context,
+      data: {},
+      doc: { ...publicFields, moderationReason: 'New internal reason' },
+      operation: 'update',
+      previousDoc: { ...publicFields, moderationReason: 'Old internal reason' },
+      req,
+    } as ReviewChangeArgs)
+
+    expect(req.payload.findByID).not.toHaveBeenCalled()
+    expect(getPathCalls()).toEqual([])
+    expect(getTagCalls()).toEqual([])
+  })
+
+  it.each([
+    { field: 'doctor', current: 42, previous: 41 },
+    { field: 'treatment', current: 52, previous: 51 },
+  ])(
+    'revalidates public caches when a visible review changes its $field relation',
+    async ({ field, current, previous }) => {
+      const req = buildReq()
+      const publicFields = {
+        id: 305,
+        clinic: 12,
+        doctor: 41,
+        treatment: 51,
+        status: 'approved',
+        publicMeasure: 'none',
+        withdrawalState: 'active',
+        reviewDate: '2026-08-08T10:00:00.000Z',
+        starRating: 5,
+        comment: 'Visible review text',
+      }
+
+      await revalidateReviewChange({
+        collection: { slug: 'reviews' } as unknown as ReviewChangeArgs['collection'],
+        context: req.context,
+        data: {},
+        doc: { ...publicFields, [field]: current },
+        operation: 'update',
+        previousDoc: { ...publicFields, [field]: previous },
+        req,
+      } as ReviewChangeArgs)
+
+      expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+      expect(getTagCalls()).toEqual(
+        expect.arrayContaining([
+          'entity:reviews:305',
+          'collection:reviews',
+          'surface:clinic-detail:12',
+          'surface:listing-comparison',
+        ]),
+      )
+    },
+  )
+
+  it.each([
+    {
+      label: 'soft-deleted',
+      currentDeletedAt: '2026-08-08T11:00:00.000Z',
+      previousDeletedAt: undefined,
+    },
+    {
+      label: 'restored',
+      currentDeletedAt: undefined,
+      previousDeletedAt: '2026-08-08T11:00:00.000Z',
+    },
+  ])('revalidates public caches when a review is $label', async ({ currentDeletedAt, previousDeletedAt }) => {
+    const req = buildReq()
+    const publicFields = {
+      id: 304,
+      clinic: 12,
+      status: 'approved',
+      publicMeasure: 'none',
+      withdrawalState: 'active',
+      reviewDate: '2026-08-08T10:00:00.000Z',
+      starRating: 5,
+      comment: 'Visible review text',
+    }
+
+    await revalidateReviewChange({
+      collection: { slug: 'reviews' } as unknown as ReviewChangeArgs['collection'],
+      context: req.context,
+      data: {},
+      doc: { ...publicFields, deletedAt: currentDeletedAt },
+      operation: 'update',
+      previousDoc: { ...publicFields, deletedAt: previousDeletedAt },
+      req,
+    } as ReviewChangeArgs)
+
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getTagCalls()).toEqual(
+      expect.arrayContaining(['entity:reviews:304', 'collection:reviews', 'surface:clinic-detail:12']),
+    )
+  })
+
   it('keeps pending and rejected response revisions private when the public response is unchanged', async () => {
     const req = buildReq()
     const publishedResponse = {

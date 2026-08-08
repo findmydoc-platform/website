@@ -1,4 +1,4 @@
-import type { PayloadHandler, PayloadRequest } from 'payload'
+import type { PayloadHandler, PayloadRequest, Where } from 'payload'
 import { z } from 'zod'
 
 import type { Review } from '@/payload-types'
@@ -46,7 +46,7 @@ const withdrawalInputSchema = z.object({ reason: z.string().trim().min(1).max(20
 const correctionInputSchema = z.object({ reason: z.string().trim().min(1).max(2000) }).strict()
 
 type ReviewCommandErrorCode =
-  'FORBIDDEN' | 'INVALID_INPUT' | 'NOT_FOUND' | 'REVIEW_WITHDRAWN' | 'UNAUTHORIZED' | 'UNAVAILABLE'
+  'FORBIDDEN' | 'HISTORY_CHANGED' | 'INVALID_INPUT' | 'NOT_FOUND' | 'REVIEW_WITHDRAWN' | 'UNAUTHORIZED' | 'UNAVAILABLE'
 
 const privateJsonResponse = (body: unknown, status: number): Response =>
   Response.json(body, { status, headers: PRIVATE_HEADERS })
@@ -315,6 +315,73 @@ type ReviewVersionRecord = {
   version?: Review
 }
 
+const PUBLICATION_HISTORY_DEFAULT_LIMIT = 25
+const PUBLICATION_HISTORY_MAX_LIMIT = 100
+const PUBLICATION_HISTORY_CURSOR_VERSION = 1
+const PUBLICATION_HISTORY_MAX_CURSOR_LENGTH = 2048
+
+const publicationHistoryCursorIdSchema = z.union([z.string().min(1), z.number().int().safe()])
+const publicationHistoryCursorSchema = z
+  .object({
+    version: z.literal(PUBLICATION_HISTORY_CURSOR_VERSION),
+    reviewId: publicationHistoryCursorIdSchema,
+    reviewRevision: z.string().datetime({ offset: true }),
+    createdAt: z.string().datetime({ offset: true }),
+    id: publicationHistoryCursorIdSchema,
+  })
+  .strict()
+
+type PublicationHistoryCursor = z.infer<typeof publicationHistoryCursorSchema>
+
+type PublicationHistoryQuery = {
+  cursor: PublicationHistoryCursor | null
+  limit: number
+}
+
+const decodePublicationHistoryCursor = (value: string): PublicationHistoryCursor | null => {
+  if (value.length > PUBLICATION_HISTORY_MAX_CURSOR_LENGTH || !/^[A-Za-z0-9_-]+$/.test(value)) return null
+
+  try {
+    const decoded = Buffer.from(value, 'base64url')
+    if (decoded.toString('base64url') !== value) return null
+
+    const parsed = publicationHistoryCursorSchema.safeParse(JSON.parse(decoded.toString('utf8')))
+    return parsed.success ? parsed.data : null
+  } catch {
+    return null
+  }
+}
+
+const encodePublicationHistoryCursor = (cursor: PublicationHistoryCursor): string =>
+  Buffer.from(JSON.stringify(cursor), 'utf8').toString('base64url')
+
+const parsePublicationHistoryQuery = (req: PayloadRequest): PublicationHistoryQuery | null => {
+  for (const key of req.searchParams.keys()) {
+    if (key !== 'limit' && key !== 'cursor') return null
+  }
+
+  const limitValues = req.searchParams.getAll('limit')
+  const cursorValues = req.searchParams.getAll('cursor')
+  if (limitValues.length > 1 || cursorValues.length > 1) return null
+
+  const rawLimit = limitValues[0]
+  const limit = rawLimit === undefined ? PUBLICATION_HISTORY_DEFAULT_LIMIT : Number(rawLimit)
+  if (
+    (rawLimit !== undefined && !/^(?:[1-9]|[1-9][0-9]|100)$/.test(rawLimit)) ||
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > PUBLICATION_HISTORY_MAX_LIMIT
+  ) {
+    return null
+  }
+
+  const rawCursor = cursorValues[0]
+  const cursor = rawCursor === undefined ? null : decodePublicationHistoryCursor(rawCursor)
+  if (rawCursor !== undefined && cursor === null) return null
+
+  return { cursor, limit }
+}
+
 type PublicationHistoryActorType = 'patient' | 'platform_staff' | 'system'
 
 const publicationHistoryActorType = (version: Review): PublicationHistoryActorType => {
@@ -407,23 +474,75 @@ export const reviewPublicationHistoryGetHandler: PayloadHandler = async (req) =>
       if (clinicId === null || !sameId(review.clinic, clinicId)) return errorResponse('NOT_FOUND', 404)
     }
 
+    const query = parsePublicationHistoryQuery(req)
+    if (!query) return errorResponse('INVALID_INPUT', 400)
+    if (query.cursor && !sameId(query.cursor.reviewId, review.id)) {
+      return errorResponse('INVALID_INPUT', 400)
+    }
+    if (query.cursor && query.cursor.reviewRevision !== review.updatedAt) {
+      return errorResponse('HISTORY_CHANGED', 409)
+    }
+
+    const where: Where = query.cursor
+      ? {
+          and: [
+            { parent: { equals: id } },
+            {
+              or: [
+                { createdAt: { less_than: query.cursor.createdAt } },
+                {
+                  and: [{ createdAt: { equals: query.cursor.createdAt } }, { id: { less_than: query.cursor.id } }],
+                },
+              ],
+            },
+          ],
+        }
+      : { parent: { equals: id } }
+
     const versions = await req.payload.findVersions({
       collection: 'reviews',
-      where: { parent: { equals: id } },
+      where,
       depth: 0,
+      limit: query.limit + 1,
       pagination: false,
-      sort: '-createdAt',
+      sort: ['-createdAt', '-id'],
       overrideAccess: true,
       req,
     })
+
+    const pageRecords = (versions.docs as ReviewVersionRecord[]).slice(0, query.limit)
+    const mappedVersions = pageRecords.map((version) => mapHistoryVersion(version, review))
+    if (mappedVersions.some((version) => version === null)) {
+      throw new Error('Review publication history contains an invalid native version record')
+    }
+
+    const hasNextPage = versions.docs.length > query.limit
+    const lastRecord = pageRecords.at(-1)
+    let nextCursor: string | null = null
+    if (hasNextPage) {
+      const cursor = publicationHistoryCursorSchema.safeParse({
+        version: PUBLICATION_HISTORY_CURSOR_VERSION,
+        reviewId: review.id,
+        reviewRevision: review.updatedAt,
+        createdAt: lastRecord?.createdAt,
+        id: lastRecord?.id,
+      })
+      if (!cursor.success) {
+        throw new Error('Review publication history cannot create a cursor for the native version record')
+      }
+      nextCursor = encodePublicationHistoryCursor(cursor.data)
+    }
 
     return privateJsonResponse(
       {
         data: {
           reviewId: review.id,
-          versions: (versions.docs as ReviewVersionRecord[])
-            .map((version) => mapHistoryVersion(version, review))
-            .filter((version) => version !== null),
+          versions: mappedVersions,
+          pagination: {
+            limit: query.limit,
+            hasNextPage,
+            nextCursor,
+          },
         },
       },
       200,

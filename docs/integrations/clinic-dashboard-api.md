@@ -237,29 +237,50 @@ Payload REST:
 
 Clinic staff must not use the raw version routes because an older version can contain text that a later redaction,
 removal, or withdrawal makes unsafe. The clinic-safe fallback is
-`GET /api/reviews/<reviewId>/publication-history`. It returns platform staff any review, or the currently assigned
-clinic only when the current review remains approved and not physically deleted:
+`GET /api/reviews/<reviewId>/publication-history?limit=25&cursor=<opaque>`. It returns platform staff any available
+review, or the currently assigned clinic only when the current review remains approved and not physically deleted:
 
 ```ts
-type ReviewPublicationHistoryDTO = {
-  reviewId: number | string
-  versions: Array<{
-    id: number | string | null
-    recordedAt: string | null
-    status: "pending" | "approved" | "rejected"
-    starRating: number
-    reviewDate: string
-    publicAuthorName: string | null
-    publicMeasure: "none" | "context" | "redaction" | "placeholder" | "removed"
-    withdrawalState: "active" | "withdrawn"
-    withdrawalSource: "patient" | "platform" | null
-    withdrawnAt: string | null
-    publicText: string | null
-    publicNotice: string | null
-    actorType: "patient" | "platform_staff" | "system"
-  }>
+type ReviewPublicationHistoryResponseDTO = {
+  data: {
+    reviewId: number | string
+    versions: Array<{
+      id: number | string | null
+      recordedAt: string | null
+      status: "pending" | "approved" | "rejected"
+      starRating: number
+      reviewDate: string
+      publicAuthorName: string | null
+      publicMeasure: "none" | "context" | "redaction" | "placeholder" | "removed"
+      withdrawalState: "active" | "withdrawn"
+      withdrawalSource: "patient" | "platform" | null
+      withdrawnAt: string | null
+      publicText: string | null
+      publicNotice: string | null
+      actorType: "patient" | "platform_staff" | "system"
+    }>
+    pagination: {
+      limit: number
+      hasNextPage: boolean
+      nextCursor: string | null
+    }
+  }
 }
 ```
+
+The route uses keyset pagination ordered by native version `createdAt DESC, id DESC`. `limit` defaults to `25` and
+accepts only integers from `1` through `100`. There are no page numbers, offsets, or total counts. When
+`hasNextPage=true`, the caller sends the returned opaque `nextCursor` unchanged with the same review ID; the final page
+returns `nextCursor=null`. The cursor is versioned and bound to both the route review and the current review revision.
+It never supplies or overrides authorization scope.
+
+Authorization and clinic-tenant hiding run before query validation. Missing authentication returns
+`401 UNAUTHORIZED`; authenticated principals other than platform or clinic staff receive `403 FORBIDDEN`; a missing,
+physically deleted, non-approved clinic review, or review from another clinic returns `404 NOT_FOUND`. Unknown query
+parameters, repeated parameters, an invalid `limit`, a malformed cursor, or a cursor from another review return
+`400 INVALID_INPUT`. A review update after a cursor was issued returns `409 HISTORY_CHANGED`; the
+`clinic-dashboard#106` reader must discard that cursor and its accumulated pages, then restart from the first page.
+Infrastructure failures return `503 UNAVAILABLE`.
 
 `publicText`, `publicNotice`, and `publicAuthorName` are gated by the current review state across the entire history. A
 historical value is returned only when it exactly matches the currently safe public projection; superseded text,

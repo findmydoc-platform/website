@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import type { Review } from '@/payload-types'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
+import { runReviewCommandTransaction } from '@/collections/reviews/commandTransaction'
 import {
   getReviewPublicMeasure,
   getReviewWithdrawalState,
@@ -11,6 +12,7 @@ import {
   REVIEW_REDACTION_NOTICE,
   type ReviewPublicMeasure,
 } from '@/collections/reviews/publicProjection'
+import { dispatchReviewChangeRevalidation } from '@/hooks/revalidateClinicSurfaces'
 import { toLoggedError } from '@/utilities/logging/shared'
 
 const PRIVATE_HEADERS = {
@@ -77,17 +79,14 @@ const readRequestBody = async (req: PayloadRequest): Promise<unknown> =>
   typeof req.json === 'function' ? req.json().catch(() => undefined) : undefined
 
 const findReview = async (req: PayloadRequest, id: string | number): Promise<Review | null> => {
-  try {
-    return (await req.payload.findByID({
-      collection: 'reviews',
-      id,
-      depth: 0,
-      overrideAccess: true,
-      req,
-    })) as Review
-  } catch {
-    return null
-  }
+  return (await req.payload.findByID({
+    collection: 'reviews',
+    id,
+    depth: 0,
+    disableErrors: true,
+    overrideAccess: true,
+    req,
+  })) as Review | null
 }
 
 const commandResult = (review: Review) => ({
@@ -100,6 +99,33 @@ const commandResult = (review: Review) => ({
   withdrawalSource: review.withdrawalSource ?? null,
   withdrawnAt: typeof review.withdrawnAt === 'string' ? review.withdrawnAt : null,
 })
+
+type ReviewCommandOutcome =
+  | { readonly response: Response }
+  | {
+      readonly doc: Review
+      readonly previousDoc: Review
+      readonly response: Response
+    }
+
+const finalizeReviewCommandOutcome = async (req: PayloadRequest, outcome: ReviewCommandOutcome): Promise<Response> => {
+  if ('doc' in outcome) {
+    try {
+      await dispatchReviewChangeRevalidation({
+        doc: outcome.doc,
+        previousDoc: outcome.previousDoc,
+        req,
+      })
+    } catch (error: unknown) {
+      req.payload.logger.error(
+        { err: toLoggedError(error), event: 'review_publication.post_commit_revalidation_failed' },
+        'Review publication post-commit revalidation failed',
+      )
+    }
+  }
+
+  return outcome.response
+}
 
 const moderationData = (
   input: z.infer<typeof moderationInputSchema>,
@@ -145,21 +171,32 @@ export const reviewModerationPostHandler: PayloadHandler = async (req) => {
   const parsed = moderationInputSchema.safeParse(await readRequestBody(req))
   if (!parsed.success) return errorResponse('INVALID_INPUT', 400)
 
-  const review = await findReview(req, id)
-  if (!review) return errorResponse('NOT_FOUND', 404)
-  if (getReviewWithdrawalState(review) === 'withdrawn') return errorResponse('REVIEW_WITHDRAWN', 409)
-
   try {
-    const updated = (await req.payload.update({
-      collection: 'reviews',
-      id,
-      data: moderationData(parsed.data, req, new Date().toISOString()),
-      depth: 0,
-      overrideAccess: true,
-      req,
-    })) as Review
+    const outcome = await runReviewCommandTransaction<ReviewCommandOutcome>(req, async () => {
+      const review = await findReview(req, id)
+      if (!review) return { response: errorResponse('NOT_FOUND', 404) }
+      if (getReviewWithdrawalState(review) === 'withdrawn') {
+        return { response: errorResponse('REVIEW_WITHDRAWN', 409) }
+      }
 
-    return privateJsonResponse({ data: commandResult(updated) }, 200)
+      const updated = (await req.payload.update({
+        collection: 'reviews',
+        id,
+        context: { disableRevalidate: true },
+        data: moderationData(parsed.data, req, new Date().toISOString()),
+        depth: 0,
+        overrideAccess: true,
+        req,
+      })) as Review
+
+      return {
+        doc: updated,
+        previousDoc: review,
+        response: privateJsonResponse({ data: commandResult(updated) }, 200),
+      }
+    })
+
+    return await finalizeReviewCommandOutcome(req, outcome)
   } catch (error: unknown) {
     return unexpectedErrorResponse(req, error, 'moderation')
   }
@@ -168,6 +205,7 @@ export const reviewModerationPostHandler: PayloadHandler = async (req) => {
 export const reviewWithdrawPostHandler: PayloadHandler = async (req) => {
   if (!req.user) return errorResponse('UNAUTHORIZED', 401)
   if (!isPatientRequest(req) && !isPlatformStaffRequest(req)) return errorResponse('FORBIDDEN', 403)
+  const user = req.user
 
   const id = routeReviewId(req)
   if (id === null) return errorResponse('NOT_FOUND', 404)
@@ -176,37 +214,47 @@ export const reviewWithdrawPostHandler: PayloadHandler = async (req) => {
   if (!parsed.success) return errorResponse('INVALID_INPUT', 400)
   if (isPlatformStaffRequest(req) && !parsed.data.reason) return errorResponse('INVALID_INPUT', 400)
 
-  const review = await findReview(req, id)
-  if (!review) return errorResponse('NOT_FOUND', 404)
-  if (isPatientRequest(req) && !sameId(review.patient, req.user.id)) return errorResponse('NOT_FOUND', 404)
-
-  if (getReviewWithdrawalState(review) === 'withdrawn') {
-    return privateJsonResponse({ data: commandResult(review) }, 200)
-  }
-
   const patientWithdrawal = isPatientRequest(req)
-  const timestamp = new Date().toISOString()
 
   try {
-    const updated = (await req.payload.update({
-      collection: 'reviews',
-      id,
-      data: {
-        withdrawalState: 'withdrawn',
-        withdrawalSource: patientWithdrawal ? 'patient' : 'platform',
-        withdrawalReason: patientWithdrawal ? 'Withdrawn by the review author.' : parsed.data.reason,
-        withdrawnAt: timestamp,
-        withdrawnBy: {
-          relationTo: patientWithdrawal ? 'patients' : 'platformStaff',
-          value: req.user.id,
-        },
-      },
-      depth: 0,
-      overrideAccess: true,
-      req,
-    })) as Review
+    const outcome = await runReviewCommandTransaction<ReviewCommandOutcome>(req, async () => {
+      const review = await findReview(req, id)
+      if (!review) return { response: errorResponse('NOT_FOUND', 404) }
+      if (isPatientRequest(req) && !sameId(review.patient, user.id)) {
+        return { response: errorResponse('NOT_FOUND', 404) }
+      }
 
-    return privateJsonResponse({ data: commandResult(updated) }, 200)
+      if (getReviewWithdrawalState(review) === 'withdrawn') {
+        return { response: privateJsonResponse({ data: commandResult(review) }, 200) }
+      }
+
+      const updated = (await req.payload.update({
+        collection: 'reviews',
+        id,
+        context: { disableRevalidate: true },
+        data: {
+          withdrawalState: 'withdrawn',
+          withdrawalSource: patientWithdrawal ? 'patient' : 'platform',
+          withdrawalReason: patientWithdrawal ? 'Withdrawn by the review author.' : parsed.data.reason,
+          withdrawnAt: new Date().toISOString(),
+          withdrawnBy: {
+            relationTo: patientWithdrawal ? 'patients' : 'platformStaff',
+            value: user.id,
+          },
+        },
+        depth: 0,
+        overrideAccess: true,
+        req,
+      })) as Review
+
+      return {
+        doc: updated,
+        previousDoc: review,
+        response: privateJsonResponse({ data: commandResult(updated) }, 200),
+      }
+    })
+
+    return await finalizeReviewCommandOutcome(req, outcome)
   } catch (error: unknown) {
     return unexpectedErrorResponse(req, error, 'withdraw')
   }
@@ -215,6 +263,7 @@ export const reviewWithdrawPostHandler: PayloadHandler = async (req) => {
 export const reviewWithdrawalCorrectionPostHandler: PayloadHandler = async (req) => {
   if (!req.user) return errorResponse('UNAUTHORIZED', 401)
   if (!isPlatformStaffRequest(req)) return errorResponse('FORBIDDEN', 403)
+  const user = req.user
 
   const id = routeReviewId(req)
   if (id === null) return errorResponse('NOT_FOUND', 404)
@@ -222,27 +271,38 @@ export const reviewWithdrawalCorrectionPostHandler: PayloadHandler = async (req)
   const parsed = correctionInputSchema.safeParse(await readRequestBody(req))
   if (!parsed.success) return errorResponse('INVALID_INPUT', 400)
 
-  const review = await findReview(req, id)
-  if (!review) return errorResponse('NOT_FOUND', 404)
-  if (getReviewWithdrawalState(review) !== 'withdrawn') return errorResponse('INVALID_INPUT', 409)
-
   try {
-    const updated = (await req.payload.update({
-      collection: 'reviews',
-      id,
-      data: {
-        withdrawalState: 'active',
-        withdrawalSource: 'platform',
-        withdrawalReason: parsed.data.reason,
-        withdrawnAt: new Date().toISOString(),
-        withdrawnBy: { relationTo: 'platformStaff', value: req.user.id },
-      },
-      depth: 0,
-      overrideAccess: true,
-      req,
-    })) as Review
+    const outcome = await runReviewCommandTransaction<ReviewCommandOutcome>(req, async () => {
+      const review = await findReview(req, id)
+      if (!review) return { response: errorResponse('NOT_FOUND', 404) }
+      if (getReviewWithdrawalState(review) !== 'withdrawn') {
+        return { response: errorResponse('INVALID_INPUT', 409) }
+      }
 
-    return privateJsonResponse({ data: commandResult(updated) }, 200)
+      const updated = (await req.payload.update({
+        collection: 'reviews',
+        id,
+        context: { disableRevalidate: true },
+        data: {
+          withdrawalState: 'active',
+          withdrawalSource: 'platform',
+          withdrawalReason: parsed.data.reason,
+          withdrawnAt: new Date().toISOString(),
+          withdrawnBy: { relationTo: 'platformStaff', value: user.id },
+        },
+        depth: 0,
+        overrideAccess: true,
+        req,
+      })) as Review
+
+      return {
+        doc: updated,
+        previousDoc: review,
+        response: privateJsonResponse({ data: commandResult(updated) }, 200),
+      }
+    })
+
+    return await finalizeReviewCommandOutcome(req, outcome)
   } catch (error: unknown) {
     return unexpectedErrorResponse(req, error, 'withdrawal_correction')
   }
@@ -336,16 +396,17 @@ export const reviewPublicationHistoryGetHandler: PayloadHandler = async (req) =>
 
   const id = routeReviewId(req)
   if (id === null) return errorResponse('NOT_FOUND', 404)
-  const review = await findReview(req, id)
-  if (!review) return errorResponse('NOT_FOUND', 404)
-
-  if (isClinicStaffRequest(req)) {
-    if (review.status !== 'approved' || review.deletedAt) return errorResponse('NOT_FOUND', 404)
-    const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-    if (clinicId === null || !sameId(review.clinic, clinicId)) return errorResponse('NOT_FOUND', 404)
-  }
 
   try {
+    const review = await findReview(req, id)
+    if (!review) return errorResponse('NOT_FOUND', 404)
+
+    if (isClinicStaffRequest(req)) {
+      if (review.status !== 'approved' || review.deletedAt) return errorResponse('NOT_FOUND', 404)
+      const clinicId = await getUserAssignedClinicId(req.user, req.payload)
+      if (clinicId === null || !sameId(review.clinic, clinicId)) return errorResponse('NOT_FOUND', 404)
+    }
+
     const versions = await req.payload.findVersions({
       collection: 'reviews',
       where: { parent: { equals: id } },

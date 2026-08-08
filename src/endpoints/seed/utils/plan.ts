@@ -454,6 +454,21 @@ export const demoPlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
+    name: 'review-moderations',
+    collection: 'reviews',
+    fileName: 'reviewModerations',
+    reqUserStableId: 'seed-platform-admin',
+    mapping: [
+      {
+        sourceField: 'moderatedByStableId',
+        targetField: 'moderatedBy',
+        collection: 'platformStaff',
+        required: true,
+      },
+    ],
+  },
+  {
+    kind: 'collection',
     name: 'review-appeals-final-state',
     collection: 'reviewAppeals',
     fileName: 'reviewAppeals',

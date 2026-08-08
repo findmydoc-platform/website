@@ -20,6 +20,19 @@ type RevalidatableDoc = {
   readonly publishedResponse?: unknown
 }
 
+type ReviewRevalidatableDoc = RevalidatableDoc & {
+  readonly comment?: unknown
+  readonly deletedAt?: unknown
+  readonly publicAuthorName?: unknown
+  readonly publicComment?: unknown
+  readonly publicMeasure?: unknown
+  readonly publicNotice?: unknown
+  readonly reviewDate?: unknown
+  readonly starRating?: unknown
+  readonly treatment?: unknown
+  readonly withdrawalState?: unknown
+}
+
 type ClinicIdentity = {
   readonly id: RelationId
   readonly slug: string
@@ -246,16 +259,7 @@ export const revalidateClinicDelete: CollectionAfterDeleteHook = ({ doc, req }) 
   return doc
 }
 
-const revalidateRelatedClinicSurface = async ({
-  collection,
-  currentClinics,
-  doc,
-  operation,
-  previousClinics = [],
-  req,
-  status,
-  previousStatus,
-}: {
+type RelatedClinicSurfaceRevalidationArgs = {
   readonly collection: ClinicSurfaceRevalidationCollection
   readonly currentClinics: readonly ClinicIdentity[]
   readonly doc: RevalidatableDoc
@@ -264,9 +268,18 @@ const revalidateRelatedClinicSurface = async ({
   readonly req: PayloadRequest
   readonly status?: ClinicSurfacePublicStatus
   readonly previousStatus?: ClinicSurfacePublicStatus
-}): Promise<RevalidatableDoc> => {
-  if (isRevalidationDisabled(req)) return doc
+}
 
+const dispatchRelatedClinicSurfaceRevalidation = ({
+  collection,
+  currentClinics,
+  doc,
+  operation,
+  previousClinics = [],
+  req,
+  status,
+  previousStatus,
+}: RelatedClinicSurfaceRevalidationArgs): void => {
   const id = normalizeId(doc.id, `${collection} id`)
   const current = uniqueIdentities(currentClinics)
   const previous = uniqueIdentities(previousClinics)
@@ -289,8 +302,16 @@ const revalidateRelatedClinicSurface = async ({
     },
     req.payload.logger,
   )
+}
 
-  return doc
+const revalidateRelatedClinicSurface = async (
+  args: RelatedClinicSurfaceRevalidationArgs,
+): Promise<RevalidatableDoc> => {
+  if (isRevalidationDisabled(args.req)) return args.doc
+
+  dispatchRelatedClinicSurfaceRevalidation(args)
+
+  return args.doc
 }
 
 export const revalidateClinicTreatmentChange: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
@@ -377,24 +398,41 @@ export const revalidateDoctorSpecialtyDelete: CollectionAfterDeleteHook = async 
   })
 }
 
-export const revalidateReviewChange: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
-  if (isRevalidationDisabled(req)) return doc
+export const dispatchReviewChangeRevalidation = async ({
+  doc,
+  previousDoc,
+  req,
+}: {
+  readonly doc: ReviewRevalidatableDoc
+  readonly previousDoc?: ReviewRevalidatableDoc
+  readonly req: PayloadRequest
+}): Promise<void> => {
+  const current = doc
+  const previous = previousDoc
 
-  const current = doc as RevalidatableDoc
-  const previous = previousDoc as RevalidatableDoc | undefined
+  if (hasSameReviewPublicCacheProjection(current, previous)) return
 
-  if (hasSameReviewPublicCacheProjection(current, previous)) return doc
+  const currentClinics = [await resolveClinicIdentity(req, current.clinic)].filter(isClinicIdentity)
+  const previousClinics = [await resolveClinicIdentity(req, previous?.clinic)].filter(isClinicIdentity)
 
-  return revalidateRelatedClinicSurface({
+  dispatchRelatedClinicSurfaceRevalidation({
     collection: 'reviews',
-    currentClinics: [await resolveClinicIdentity(req, current.clinic)].filter(isClinicIdentity),
-    previousClinics: [await resolveClinicIdentity(req, previous?.clinic)].filter(isClinicIdentity),
+    currentClinics,
+    previousClinics,
     doc: current,
     operation: 'related-update',
     req,
     status: normalizeOptionalStatus(current.status),
     previousStatus: normalizeOptionalStatus(previous?.status),
   })
+}
+
+export const revalidateReviewChange: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
+  if (isRevalidationDisabled(req)) return doc
+
+  await dispatchReviewChangeRevalidation({ doc, previousDoc, req })
+
+  return doc
 }
 
 export const revalidateReviewDelete: CollectionAfterDeleteHook = async ({ doc, req }) => {

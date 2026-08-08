@@ -430,4 +430,149 @@ describe('reviewAppeals lifecycle', () => {
     expect(reviewVersionsAfterDecision.docs).toHaveLength(reviewVersionsBeforeDecision.docs.length)
     expect(responseVersionsAfterDecision.docs).toHaveLength(responseVersionsBeforeDecision.docs.length)
   }, 60000)
+
+  it('requires an audited review moderation before a trusted upheld snapshot', async () => {
+    const appealCreatedAt = '2026-01-24T09:00:00.000Z'
+    const moderatedAt = '2026-01-24T09:30:00.000Z'
+    const decidedAt = '2026-01-24T10:00:00.000Z'
+    const { review } = await createApprovedReview('trusted-upheld')
+    const moderator = await createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-trusted-upheld-platform`,
+      createdStaffIds: staffIds,
+    })
+    const platformUser = asPayloadStaffUser(moderator)
+    const appeal = await payload.create({
+      collection: 'reviewAppeals',
+      data: {
+        review: review.id,
+        reason: 'privacy_concern',
+        details: 'The clinic reports privacy-sensitive details that could identify another patient.',
+        status: 'submitted',
+        createdAt: appealCreatedAt,
+      } as unknown as ReviewAppeal,
+      user: platformUser,
+      overrideAccess: true,
+      context: { trustedReviewWorkflowSeed: true },
+      depth: 0,
+    })
+    appealIds.push(appeal.id)
+    expect(appeal.createdAt).toBe(appealCreatedAt)
+
+    const finalSnapshot = {
+      status: 'upheld',
+      decisionReason: 'The privacy concern was confirmed after the separate public moderation action.',
+      decidedAt,
+    } as unknown as ReviewAppeal
+
+    await expect(
+      payload.update({
+        collection: 'reviewAppeals',
+        id: appeal.id,
+        data: finalSnapshot,
+        user: platformUser,
+        overrideAccess: true,
+        context: { trustedReviewWorkflowSeed: true },
+        depth: 0,
+      }),
+    ).rejects.toMatchObject({
+      data: {
+        errors: [
+          expect.objectContaining({
+            message: expect.stringContaining('separate public moderation action'),
+            path: 'status',
+          }),
+        ],
+      },
+    })
+
+    await payload.update({
+      collection: 'reviews',
+      id: review.id,
+      data: {
+        publicMeasure: 'removed',
+        publicComment: null,
+        publicNotice: null,
+        moderationReason: 'The review contains privacy-sensitive details that could identify another patient.',
+        moderatedAt: appealCreatedAt,
+        moderatedBy: moderator.id,
+      } as unknown as Review,
+      user: platformUser,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    await expect(
+      payload.update({
+        collection: 'reviewAppeals',
+        id: appeal.id,
+        data: finalSnapshot,
+        user: platformUser,
+        overrideAccess: true,
+        context: { trustedReviewWorkflowSeed: true },
+        depth: 0,
+      }),
+    ).rejects.toMatchObject({
+      data: {
+        errors: [
+          expect.objectContaining({
+            message: expect.stringContaining('recorded after submission'),
+            path: 'status',
+          }),
+        ],
+      },
+    })
+
+    await payload.update({
+      collection: 'reviews',
+      id: review.id,
+      data: {
+        publicMeasure: 'removed',
+        publicComment: null,
+        publicNotice: null,
+        moderationReason: 'The review contains privacy-sensitive details that could identify another patient.',
+        moderatedAt,
+        moderatedBy: moderator.id,
+      } as unknown as Review,
+      user: platformUser,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    const reviewVersions = await payload.findVersions({
+      collection: 'reviews',
+      where: { parent: { equals: review.id } },
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+      pagination: false,
+    })
+    expect(reviewVersions.docs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          version: expect.objectContaining({
+            publicMeasure: 'removed',
+            moderatedAt,
+            moderatedBy: moderator.id,
+          }),
+        }),
+      ]),
+    )
+
+    const upheld = await payload.update({
+      collection: 'reviewAppeals',
+      id: appeal.id,
+      data: finalSnapshot,
+      user: platformUser,
+      overrideAccess: true,
+      context: { trustedReviewWorkflowSeed: true },
+      depth: 0,
+    })
+
+    expect(upheld).toMatchObject({
+      status: 'upheld',
+      decidedAt,
+    })
+    expect(Date.parse(appeal.createdAt)).toBeLessThan(Date.parse(moderatedAt))
+    expect(Date.parse(moderatedAt)).toBeLessThan(Date.parse(upheld.decidedAt!))
+  }, 60000)
 })

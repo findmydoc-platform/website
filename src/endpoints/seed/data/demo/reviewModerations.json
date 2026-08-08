@@ -1,0 +1,11 @@
+[
+  {
+    "stableId": "seed-review-06",
+    "publicMeasure": "removed",
+    "publicComment": null,
+    "publicNotice": null,
+    "moderationReason": "The review contains privacy-sensitive details that could identify another patient.",
+    "moderatedAt": "2026-01-24T09:30:00.000Z",
+    "moderatedByStableId": "seed-platform-admin"
+  }
+]

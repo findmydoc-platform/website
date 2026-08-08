@@ -158,8 +158,27 @@ const hasPublicModerationAfterAppealSubmission = (context: ReviewContext, appeal
   return (
     Number.isFinite(submittedTimestamp) &&
     Number.isFinite(moderatedTimestamp) &&
-    moderatedTimestamp >= submittedTimestamp
+    moderatedTimestamp > submittedTimestamp
   )
+}
+
+const requirePublicModerationAfterAppealSubmission = (
+  context: ReviewContext,
+  appealCreatedAt: unknown,
+  req: PayloadRequest,
+): void => {
+  if (hasPublicModerationAfterAppealSubmission(context, appealCreatedAt)) return
+
+  throw new ValidationError({
+    collection: 'reviewAppeals',
+    errors: [
+      {
+        message: 'An upheld appeal requires a separate public moderation action recorded after submission.',
+        path: 'status',
+      },
+    ],
+    req,
+  })
 }
 
 const now = (): string => new Date().toISOString()
@@ -461,6 +480,17 @@ export const prepareReviewAppealChange: CollectionBeforeChangeHook = async ({ da
   }
 
   if (isTrustedSeed(req)) {
+    const requestedStatus =
+      typeof draft.status === 'string'
+        ? draft.status
+        : typeof original.status === 'string'
+          ? original.status
+          : 'submitted'
+
+    if (requestedStatus === 'upheld') {
+      requirePublicModerationAfterAppealSubmission(context, original.createdAt ?? incoming.createdAt, req)
+    }
+
     return prepareTrustedAppealSeed(draft, original, req)
   }
 
@@ -512,21 +542,8 @@ export const prepareReviewAppealChange: CollectionBeforeChangeHook = async ({ da
     })
   }
 
-  if (
-    requestedStatus === 'upheld' &&
-    currentStatus !== 'upheld' &&
-    !hasPublicModerationAfterAppealSubmission(context, original.createdAt)
-  ) {
-    throw new ValidationError({
-      collection: 'reviewAppeals',
-      errors: [
-        {
-          message: 'An upheld appeal requires a separate public moderation action recorded after submission.',
-          path: 'status',
-        },
-      ],
-      req,
-    })
+  if (requestedStatus === 'upheld' && currentStatus !== 'upheld') {
+    requirePublicModerationAfterAppealSubmission(context, original.createdAt, req)
   }
 
   const timestamp = now()

@@ -18,7 +18,8 @@
     "reviewStableId": "seed-review-06",
     "reason": "privacy_concern",
     "details": "The clinic reports that the review includes details that could identify another patient.",
-    "status": "submitted"
+    "status": "submitted",
+    "createdAt": "2026-01-24T09:00:00.000Z"
   },
   {
     "stableId": "seed-review-appeal-04",

@@ -86,10 +86,18 @@ describe('review public moderation and author withdrawal', () => {
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
-  const endpointRequest = async (user: TypedUser | null | undefined, id: number | string, body?: unknown) => {
+  const endpointRequest = async (
+    user: TypedUser | null | undefined,
+    id: number | string,
+    body?: unknown,
+    query = '',
+  ) => {
     const req = await createLocalReq({ ...(user ? { user } : {}) }, payload)
     req.routeParams = { id }
     req.json = async () => body
+    for (const [key, value] of new URLSearchParams(query)) {
+      req.searchParams.append(key, value)
+    }
     return req
   }
 
@@ -332,6 +340,91 @@ describe('review public moderation and author withdrawal', () => {
       expect.arrayContaining(['none', 'context', 'redaction', 'placeholder', 'removed']),
     )
     expect(versions.docs.every((version) => version.version.comment === platformRead.comment)).toBe(true)
+  }, 60000)
+
+  it('paginates native history without overlap or gaps and invalidates cursors after a review change', async () => {
+    const { review, platformUser, ownClinicUser } = await createScenario('history-pagination')
+
+    for (const sequence of [1, 2, 3, 4, 5]) {
+      const response = await reviewModerationPostHandler(
+        await endpointRequest(platformUser, review.id, {
+          measure: 'context',
+          reason: `Audit history pagination fixture ${sequence}.`,
+          publicNotice: `Verified context ${sequence}.`,
+        }),
+      )
+      expect(response.status).toBe(200)
+    }
+
+    const nativeVersions = await payload.findVersions({
+      collection: 'reviews',
+      where: { parent: { equals: review.id } },
+      limit: 100,
+      pagination: false,
+      sort: ['-createdAt', '-id'],
+      overrideAccess: true,
+      depth: 0,
+    })
+    const expectedIds = nativeVersions.docs.map((version) => relationId(version.id))
+    expect(expectedIds.length).toBeGreaterThan(2)
+
+    const deliveredIds: Array<number | string | null> = []
+    let cursor: string | null = null
+    let pageCount = 0
+
+    do {
+      const query = new URLSearchParams({ limit: '2' })
+      if (cursor) query.set('cursor', cursor)
+      const response = await reviewPublicationHistoryGetHandler(
+        await endpointRequest(ownClinicUser, review.id, undefined, query.toString()),
+      )
+      expect(response.status).toBe(200)
+      expect(response.headers.get('cache-control')).toContain('private, no-store')
+
+      const body = (await response.json()) as {
+        data: {
+          pagination: { hasNextPage: boolean; limit: number; nextCursor: string | null }
+          versions: Array<{ id: number | string | null }>
+        }
+      }
+      expect(body.data.pagination.limit).toBe(2)
+      expect(body.data.pagination.hasNextPage).toBe(body.data.pagination.nextCursor !== null)
+      deliveredIds.push(...body.data.versions.map((version) => version.id))
+      cursor = body.data.pagination.nextCursor
+      pageCount += 1
+      expect(pageCount).toBeLessThanOrEqual(expectedIds.length)
+    } while (cursor)
+
+    expect(deliveredIds).toEqual(expectedIds)
+    expect(new Set(deliveredIds).size).toBe(deliveredIds.length)
+
+    const firstPageResponse = await reviewPublicationHistoryGetHandler(
+      await endpointRequest(ownClinicUser, review.id, undefined, 'limit=1'),
+    )
+    const firstPage = (await firstPageResponse.json()) as {
+      data: { pagination: { nextCursor: string | null } }
+    }
+    expect(firstPage.data.pagination.nextCursor).toEqual(expect.any(String))
+
+    const changed = await reviewModerationPostHandler(
+      await endpointRequest(platformUser, review.id, {
+        measure: 'context',
+        reason: 'This creates a newer review revision.',
+        publicNotice: 'Verified context after pagination.',
+      }),
+    )
+    expect(changed.status).toBe(200)
+
+    const staleCursorResponse = await reviewPublicationHistoryGetHandler(
+      await endpointRequest(
+        ownClinicUser,
+        review.id,
+        undefined,
+        new URLSearchParams({ limit: '1', cursor: String(firstPage.data.pagination.nextCursor) }).toString(),
+      ),
+    )
+    expect(staleCursorResponse.status).toBe(409)
+    await expect(staleCursorResponse.json()).resolves.toEqual({ error: { code: 'HISTORY_CHANGED' } })
   }, 60000)
 
   it('withdraws idempotently, enforces ownership and terminal state, and exposes only tenant-safe history', async () => {

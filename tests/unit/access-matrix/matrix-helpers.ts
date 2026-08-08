@@ -721,7 +721,14 @@ function validateConditional(ctx: ValidationContext, value: unknown) {
           and: [{ status: { equals: 'approved' } }, { clinic: { equals: clinicId } }],
         })
       } else {
-        expectFilter(value, 'status', 'approved', ctx)
+        expect(value).toEqual({
+          and: [
+            { status: { equals: 'approved' } },
+            { deletedAt: { exists: false } },
+            { withdrawalState: { equals: 'active' } },
+            { publicMeasure: { in: ['none', 'context', 'redaction', 'placeholder'] } },
+          ],
+        })
       }
       return
     case 'clinic-public-response':
@@ -741,6 +748,16 @@ function validateConditional(ctx: ValidationContext, value: unknown) {
             {
               'review.deletedAt': {
                 exists: false,
+              },
+            },
+            {
+              'review.withdrawalState': {
+                equals: 'active',
+              },
+            },
+            {
+              'review.publicMeasure': {
+                in: ['none', 'context', 'redaction'],
               },
             },
             {

@@ -21,6 +21,8 @@ import {
   platformOnlyOrPublished,
   platformOnlyOrApproved,
   platformOnlyOrApprovedReviews,
+  platformOrApprovedReviewsByClinic,
+  platformClinicOrPublicReviewResponse,
 } from '@/access/scopeFilters'
 
 // Mock the utility function
@@ -366,27 +368,63 @@ describe('Scope Filter Functions', () => {
     it('Clinic Staff gets approved reviews only', () => {
       const result = platformOnlyOrApprovedReviews(createAccessArgs(mockUsers.clinic()))
       expectAccess.scoped(result, {
-        status: {
-          equals: 'approved',
-        },
+        and: [
+          { status: { equals: 'approved' } },
+          { deletedAt: { exists: false } },
+          { withdrawalState: { equals: 'active' } },
+          { publicMeasure: { in: ['none', 'context', 'redaction', 'placeholder'] } },
+        ],
       })
     })
 
     it('Patient gets approved reviews only', () => {
       const result = platformOnlyOrApprovedReviews(createAccessArgs(mockUsers.patient()))
       expectAccess.scoped(result, {
-        status: {
-          equals: 'approved',
-        },
+        and: [
+          { status: { equals: 'approved' } },
+          { deletedAt: { exists: false } },
+          { withdrawalState: { equals: 'active' } },
+          { publicMeasure: { in: ['none', 'context', 'redaction', 'placeholder'] } },
+        ],
       })
     })
 
     it('Anonymous gets approved reviews only', () => {
       const result = platformOnlyOrApprovedReviews(createAccessArgs(mockUsers.anonymous()))
       expectAccess.scoped(result, {
-        status: {
-          equals: 'approved',
-        },
+        and: [
+          { status: { equals: 'approved' } },
+          { deletedAt: { exists: false } },
+          { withdrawalState: { equals: 'active' } },
+          { publicMeasure: { in: ['none', 'context', 'redaction', 'placeholder'] } },
+        ],
+      })
+    })
+  })
+
+  describe('review publication scope', () => {
+    it('keeps own-clinic approved rows visible for read-only moderation status', async () => {
+      mockGetUserAssignedClinicId.mockResolvedValue(123)
+
+      const result = await platformOrApprovedReviewsByClinic(createAccessArgs(mockUsers.clinic()))
+
+      expectAccess.scoped(result, {
+        and: [{ status: { equals: 'approved' } }, { clinic: { equals: 123 } }],
+      })
+    })
+
+    it('limits public review responses to readable review measures', async () => {
+      const result = await platformClinicOrPublicReviewResponse(createAccessArgs(mockUsers.anonymous()))
+
+      expectAccess.scoped(result, {
+        and: [
+          { 'review.status': { equals: 'approved' } },
+          { 'review.deletedAt': { exists: false } },
+          { 'review.withdrawalState': { equals: 'active' } },
+          { 'review.publicMeasure': { in: ['none', 'context', 'redaction'] } },
+          { 'publishedResponse.body': { exists: true } },
+          { 'publishedResponse.isBlocked': { not_equals: true } },
+        ],
       })
     })
   })

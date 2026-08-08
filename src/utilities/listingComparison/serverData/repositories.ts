@@ -4,6 +4,7 @@ import path from 'node:path'
 import type { Payload } from 'payload'
 
 import type { City, Clinic, Clinictreatment, MedicalSpecialty, Review, Treatment } from '@/payload-types'
+import { buildPublicReviewWhere } from '@/collections/reviews/publicProjection'
 import { findLatestIsoTimestampString, normalizeToIsoTimestampString } from '@/utilities/timestamps'
 import { chunkArray, extractRelationId } from './relations'
 
@@ -249,22 +250,10 @@ export async function findLatestApprovedReviewDateForClinics(
       limit: 1,
       page: 1,
       pagination: false,
-      overrideAccess: false,
+      // Trusted server query: only a date from rows matching the complete public predicate leaves this function.
+      overrideAccess: true,
       sort: '-reviewDate',
-      where: {
-        and: [
-          {
-            status: {
-              equals: 'approved',
-            },
-          },
-          {
-            clinic: {
-              in: clinicIdChunk,
-            },
-          },
-        ],
-      },
+      where: buildPublicReviewWhere({ clinic: { in: clinicIdChunk } }),
       select: {
         reviewDate: true,
       },
@@ -296,21 +285,9 @@ export async function countApprovedReviewsByClinic(
         page,
         limit: QUERY_PAGE_SIZE,
         pagination: true,
-        overrideAccess: false,
-        where: {
-          and: [
-            {
-              status: {
-                equals: 'approved',
-              },
-            },
-            {
-              clinic: {
-                in: clinicIdChunk,
-              },
-            },
-          ],
-        },
+        // Trusted server query: only clinic ids from rows matching the complete public predicate leave this function.
+        overrideAccess: true,
+        where: buildPublicReviewWhere({ clinic: { in: clinicIdChunk } }),
         select: {
           clinic: true,
         },

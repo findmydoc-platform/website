@@ -118,11 +118,46 @@ const baseData: MockCollectionData = {
     { id: 305, active: true, clinic: 203, treatment: 103, price: 2000, updatedAt: '2026-01-05T00:00:00.000Z' },
   ],
   reviews: [
-    { id: 401, status: 'approved', clinic: 201, reviewDate: '2026-01-12T00:00:00.000Z' },
-    { id: 402, status: 'approved', clinic: 201, reviewDate: '2026-01-04T00:00:00.000Z' },
-    { id: 403, status: 'pending', clinic: 201, reviewDate: '2026-01-20T00:00:00.000Z' },
-    { id: 404, status: 'approved', clinic: 202, reviewDate: '2026-01-03T00:00:00.000Z' },
-    { id: 405, status: 'approved', clinic: 203, reviewDate: '2026-01-02T00:00:00.000Z' },
+    {
+      id: 401,
+      status: 'approved',
+      publicMeasure: 'none',
+      withdrawalState: 'active',
+      clinic: 201,
+      reviewDate: '2026-01-12T00:00:00.000Z',
+    },
+    {
+      id: 402,
+      status: 'approved',
+      publicMeasure: 'none',
+      withdrawalState: 'active',
+      clinic: 201,
+      reviewDate: '2026-01-04T00:00:00.000Z',
+    },
+    {
+      id: 403,
+      status: 'pending',
+      publicMeasure: 'none',
+      withdrawalState: 'active',
+      clinic: 201,
+      reviewDate: '2026-01-20T00:00:00.000Z',
+    },
+    {
+      id: 404,
+      status: 'approved',
+      publicMeasure: 'none',
+      withdrawalState: 'active',
+      clinic: 202,
+      reviewDate: '2026-01-03T00:00:00.000Z',
+    },
+    {
+      id: 405,
+      status: 'approved',
+      publicMeasure: 'none',
+      withdrawalState: 'active',
+      clinic: 203,
+      reviewDate: '2026-01-02T00:00:00.000Z',
+    },
   ],
 }
 
@@ -295,6 +330,12 @@ describe('getListingComparisonServerData (contract)', () => {
       latestPatientReviewAt: '2026-01-12T00:00:00.000Z',
       sourceCollections: ['cities', 'clinics', 'clinictreatments', 'medical-specialties', 'reviews', 'treatments'],
     })
+    expect(
+      payload.find.mock.calls
+        .map(([args]) => args as { collection?: string; overrideAccess?: boolean })
+        .filter((args) => args.collection === 'reviews')
+        .every((args) => args.overrideAccess === true),
+    ).toBe(true)
     expect(result.queryState.specialties).toEqual(['2'])
     expect(result.results.map((clinic) => clinic.name)).toEqual(['Alpha Clinic', 'Bravo Clinic'])
     expect(result.results[0]?.rating.count).toBe(2)
@@ -374,6 +415,47 @@ describe('getListingComparisonServerData (contract)', () => {
     expect(result.metrics.priceEntries).toBe(5)
     expect(result.metrics.cities).toBe(2)
     expect(result.specialtyContext.breadcrumbs.map((item) => item.label)).toEqual(['Home', 'Clinics'])
+  })
+
+  it('counts placeholders but excludes removed and withdrawn reviews from listing totals and freshness', async () => {
+    const payload = createMockPayload({
+      ...baseData,
+      reviews: [
+        ...baseData.reviews,
+        {
+          id: 406,
+          status: 'approved',
+          publicMeasure: 'placeholder',
+          withdrawalState: 'active',
+          clinic: 201,
+          reviewDate: '2026-01-15T00:00:00.000Z',
+        },
+        {
+          id: 407,
+          status: 'approved',
+          publicMeasure: 'removed',
+          withdrawalState: 'active',
+          clinic: 201,
+          reviewDate: '2026-01-30T00:00:00.000Z',
+        },
+        {
+          id: 408,
+          status: 'approved',
+          publicMeasure: 'none',
+          withdrawalState: 'withdrawn',
+          clinic: 202,
+          reviewDate: '2026-01-31T00:00:00.000Z',
+        },
+      ],
+    })
+
+    const result = await getListingComparisonServerData(payload)
+    const alpha = result.results.find((clinic) => clinic.name === 'Alpha Clinic')
+    const bravo = result.results.find((clinic) => clinic.name === 'Bravo Clinic')
+
+    expect(alpha?.rating.count).toBe(3)
+    expect(bravo?.rating.count).toBe(1)
+    expect(result.freshness.latestPatientReviewAt).toBe('2026-01-15T00:00:00.000Z')
   })
 
   it('keeps direct uncached server data calls free of a separate in-process freshness authority', async () => {

@@ -186,24 +186,116 @@ repository owns only the upstream Payload behavior they require.
 There is no catch-all route that accepts a Payload path, collection slug, query, or arbitrary request body from the
 browser.
 
-### Review response and appeal upstream contract
+### Review publication, response, and appeal upstream contract
 
 The Website provides the Payload persistence and authorization contract; the Dashboard follow-up provides
-purpose-limited same-origin BFF routes and UI DTOs. The Dashboard browser never calls either collection directly.
+purpose-limited same-origin BFF routes and UI DTOs. The Dashboard browser never calls these collections or endpoints
+directly. The read-only integration for `clinic-dashboard#106` uses private, uncached BFF reads and performs no review
+moderation or withdrawal mutation.
 
-- Clinic staff read approved `reviews` only for their assigned clinic. Patients and anonymous readers continue to see
-  approved reviews without clinic-management fields; platform staff retain the full moderation view.
+#### Review states and current reads
+
+Appeal decisions and public review measures are independent. An `upheld` appeal changes neither the review status nor
+its public output. Review publication is controlled by `publicMeasure`, while author withdrawal is controlled by
+`withdrawalState`:
+
+| State | Public text | Stars, count, date, and public author | Public clinic response |
+| --- | --- | --- | --- |
+| `publicMeasure=none`, `withdrawalState=active` | Original `comment` | Included | Included when independently approved and non-blocked |
+| `publicMeasure=context`, `withdrawalState=active` | Original `comment` plus factual `publicNotice` | Included | Included when independently approved and non-blocked |
+| `publicMeasure=redaction`, `withdrawalState=active` | Separate readable `publicComment` plus the fixed factual removal notice | Included | Included when independently approved and non-blocked |
+| `publicMeasure=placeholder`, `withdrawalState=active` | Fixed neutral `publicNotice`; no review text | Included | Hidden |
+| `publicMeasure=removed` | Omitted without a placeholder | Excluded | Hidden |
+| `withdrawalState=withdrawn` | Omitted without a placeholder, regardless of measure | Excluded | Hidden |
+
+There is no public `under_review` display and no black-bar rendering. `status` remains the existing
+`pending | approved | rejected` approval state. Moderation and withdrawal commands never set it automatically.
+
+The standard Payload REST collection routes remain the current-read contract:
+
+- `GET /api/reviews` and `GET /api/reviews/:id` return platform staff all review states and fields.
+- The same routes return clinic staff approved reviews only for their assigned clinic, including logically removed and
+  withdrawn rows. Clinic fields are limited to the public measure/text/notice, moderation time, withdrawal
+  state/source/time, rating/date/public author, and ordinary review relationships. Raw `comment` is returned only for
+  active `none` or `context` rows. Internal reasons, patient relation, named audit actors, and raw redacted, placeholder,
+  removed, or withdrawn text are omitted.
+- Patients and anonymous callers receive only approved, active `none | context | redaction | placeholder` rows.
+  Among moderation fields they receive only `publicMeasure`, `publicComment`, and `publicNotice`; field access removes
+  raw text whenever the selected measure does not permit it. Removed and withdrawn reviews are absent.
+
+`publicComment` is meaningful only for `redaction`. `publicNotice` is caller-authored only for `context`; redaction and
+placeholder use Website-owned fixed notices. Empty fields may be absent or `null` according to standard Payload REST
+serialization, so consumers must discriminate on `publicMeasure` rather than field presence.
+
+#### Version and publication-history reads
+
+Reviews use unlimited, immutable Payload native versions. Raw native history remains platform-only through standard
+Payload REST:
+
+- `GET /api/reviews/versions?where[parent][equals]=<reviewId>`
+- `GET /api/reviews/versions/<versionId>`
+
+Clinic staff must not use the raw version routes because an older version can contain text that a later redaction,
+removal, or withdrawal makes unsafe. The clinic-safe fallback is
+`GET /api/reviews/<reviewId>/publication-history`. It returns platform staff any review, or the currently assigned
+clinic only when the current review remains approved and not physically deleted:
+
+```ts
+type ReviewPublicationHistoryDTO = {
+  reviewId: number | string
+  versions: Array<{
+    id: number | string | null
+    recordedAt: string | null
+    status: "pending" | "approved" | "rejected"
+    starRating: number
+    reviewDate: string
+    publicAuthorName: string | null
+    publicMeasure: "none" | "context" | "redaction" | "placeholder" | "removed"
+    withdrawalState: "active" | "withdrawn"
+    withdrawalSource: "patient" | "platform" | null
+    withdrawnAt: string | null
+    publicText: string | null
+    publicNotice: string | null
+    actorType: "patient" | "platform_staff" | "system"
+  }>
+}
+```
+
+`publicText`, `publicNotice`, and `publicAuthorName` are gated by the current review state across the entire history. A
+historical value is returned only when it exactly matches the currently safe public projection; superseded text,
+notices, and author names stay hidden. A current removal or withdrawal exposes no historical text or notice, and a
+current anonymous author preference exposes no historical author name. The DTO never contains the patient relation,
+original unsafe text, internal reasons, staff identity, or actor relations. A clinic request for another tenant returns
+`404`; public and patient principals receive no history access. Every response is `private, no-store`.
+
+#### Website-owned mutations
+
+The following Website operator/author commands are not part of the read-only Dashboard integration:
+
+| Method and route | Authorization and effect |
+| --- | --- |
+| `POST /api/reviews/<id>/moderation` | Platform only. Accepts a validated `measure` and internal `reason`; context also requires `publicNotice`, redaction also requires `publicComment`. Server records actor/time and fixed notices. A withdrawn review returns `409 REVIEW_WITHDRAWN`. |
+| `POST /api/reviews/<id>/withdraw` | Owning patient, or platform staff documenting a verified author request. Platform requests require `reason`; actor/time/source are server-derived. Repeated withdrawal is idempotent and creates no version. |
+| `POST /api/reviews/<id>/withdrawal-correction` | Platform only with required `reason`. Reactivates an erroneously withdrawn review and records a native version; it does not change the existing public measure. |
+
+Withdrawal is terminal until the audited platform correction. It logically removes the review, star contribution,
+published response, and any future published patient addition without deleting records or versions. No patient-addition
+model exists today; that final clause is a future invariant, not a field or endpoint in this contract.
+
+#### Response and appeal reads
+
 - `reviewResponses` contains exactly one workflow per review. Clinic staff create or edit only the pending response for
   their assigned clinic. Platform approval copies it to the public projection; rejection leaves an existing public
-  response unchanged; blocking removes the public projection from public reads.
+  response unchanged; blocking removes the public projection from public reads. Public response access additionally
+  requires the parent review to be active with measure `none`, `context`, or `redaction`.
 - `reviewAppeals` contains at most one appeal per review. A clinic submission is immutable. Platform staff alone move
   `submitted -> under_review -> upheld | dismissed`. The terminal state records only the appeal decision: `upheld`
   neither changes the review nor blocks or edits its clinic response. Any public review measure is a separate review
   moderation operation. Before an appeal can enter `upheld`, that operation must record an explicit measure and reason
   after the appeal was submitted; `none` is the explicit no-change decision.
-- Both collections use unlimited Payload native versions. Platform staff can read all versions, clinic staff can read
-  their clinic's versions, and public or patient principals cannot read versions. Restore and normal physical deletion
-  are disabled.
+- Both response and appeal collections use unlimited Payload native versions. Platform staff can read all versions,
+  clinic staff can read their clinic's versions, and public or patient principals cannot read versions. Restore and
+  normal physical deletion are disabled.
 - Clinic and actor values are derived from the authenticated principal and related review. DTOs must not accept them as
   authoritative browser input.
 - Actor audit relations are internal and nullable. Account erasure removes the relation from current and version rows;

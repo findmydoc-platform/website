@@ -1,4 +1,5 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadRequest } from 'payload'
+import { hasSameReviewPublicCacheProjection, isReviewPubliclyVisible } from '@/collections/reviews/publicProjection'
 
 import {
   executeRevalidationPlan,
@@ -382,6 +383,8 @@ export const revalidateReviewChange: CollectionAfterChangeHook = async ({ doc, p
   const current = doc as RevalidatableDoc
   const previous = previousDoc as RevalidatableDoc | undefined
 
+  if (hasSameReviewPublicCacheProjection(current, previous)) return doc
+
   return revalidateRelatedClinicSurface({
     collection: 'reviews',
     currentClinics: [await resolveClinicIdentity(req, current.clinic)].filter(isClinicIdentity),
@@ -398,6 +401,7 @@ export const revalidateReviewDelete: CollectionAfterDeleteHook = async ({ doc, r
   if (isRevalidationDisabled(req)) return doc
 
   const current = doc as RevalidatableDoc
+  if (!isReviewPubliclyVisible(current)) return doc
 
   return revalidateRelatedClinicSurface({
     collection: 'reviews',

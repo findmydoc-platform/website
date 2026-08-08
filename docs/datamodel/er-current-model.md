@@ -307,15 +307,15 @@ erDiagram
         number starRating "1-5 rating, required"
         textarea comment "Review text, required"
         select publicMeasure "none, context, redaction, placeholder, removed"
-        textarea publicComment "Separate public text, platform-only"
-        textarea publicNotice "Factual public notice, platform-only"
+        textarea publicComment "Separate redacted public text"
+        textarea publicNotice "Factual public moderation notice"
         textarea moderationReason "Internal moderation reason"
         date moderatedAt "Internal moderation timestamp"
         relationship moderatedBy FK "Internal PlatformStaff actor"
         select withdrawalState "active, withdrawn"
         select withdrawalSource "patient, platform"
         textarea withdrawalReason "Internal withdrawal reason"
-        date withdrawnAt "Internal withdrawal timestamp"
+        date withdrawnAt "Latest withdrawal-state change timestamp"
         relationship withdrawnBy FK "Internal Patients or PlatformStaff actor"
         relationship clinic FK "Relationship to Clinics, required"
         relationship doctor FK "Relationship to Doctors, required"
@@ -533,10 +533,12 @@ erDiagram
 ```
 
 `Reviews`, `ReviewResponses`, and `ReviewAppeals` use Payload native versions with unlimited retention. Raw Review
-version history is platform-only; response and appeal histories remain available to platform staff and the assigned
-clinic. The current document and every version retain state, action type, and timestamps. Actor relations are
+version history is platform-only; an assigned clinic reads only the sanitized Review publication-history DTO. Response
+and appeal histories remain available to platform staff and the assigned clinic. The current document and every
+version retain state, action type, and timestamps. Actor relations are
 intentionally nullable: deleting an account removes the personal relation from current and version relation tables
 while the non-personal audit remains. Version restoration is disabled for all three collections, and physical workflow
 deletion remains disabled through normal collection access. An appeal decision writes only the appeal and its version
 history. Upholding does not change the parent review or its clinic response and therefore creates no versions for
-either. Public response reads continue to require an independently approved review and non-blocked response.
+either. Public response reads continue to require an independently approved, active review with a readable
+`none`, `context`, or `redaction` measure and a non-blocked response.

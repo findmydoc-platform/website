@@ -11,6 +11,10 @@ import { isPlatformStaff } from './isPlatformStaff'
 import { isClinicStaff } from './isClinicStaff'
 import { isPatient } from './isPatient'
 import { getUserAssignedClinicId } from './utils/getClinicAssignment'
+import {
+  buildPublicReviewResponseParentConditions,
+  buildPublicReviewWhere,
+} from '@/collections/reviews/publicProjection'
 
 /**
  * Platform Staff: Full access to all records
@@ -216,7 +220,7 @@ export const platformOnlyOrApproved: Access = ({ req: { user } }) => {
 
 /**
  * Platform Staff: Full access to all reviews (including pending/rejected) for moderation
- * All other users: Only approved reviews
+ * All other users: Only active public review projections
  */
 export const platformOnlyOrApprovedReviews: Access = ({ req: { user } }) => {
   // Platform Staff: Full access to all reviews for moderation
@@ -224,28 +228,18 @@ export const platformOnlyOrApprovedReviews: Access = ({ req: { user } }) => {
     return true
   }
 
-  // All other users (Clinic Staff, Patients, Anonymous): Only approved reviews
-  return {
-    status: {
-      equals: 'approved',
-    },
-  }
+  // All other users (Clinic Staff, Patients, Anonymous): Only active public projections
+  return buildPublicReviewWhere()
 }
 
 /**
  * Platform Staff: All reviews for moderation
  * Clinic Staff: Approved reviews for their assigned clinic
- * Patients and anonymous users: All approved reviews
+ * Patients and anonymous users: Active public review projections
  */
 export const platformOrApprovedReviewsByClinic: Access = async ({ req }) => {
   if (isPlatformStaff({ req })) {
     return true
-  }
-
-  const approvedReviews = {
-    status: {
-      equals: 'approved',
-    },
   }
 
   if (isClinicStaff({ req })) {
@@ -254,7 +248,11 @@ export const platformOrApprovedReviewsByClinic: Access = async ({ req }) => {
 
     return {
       and: [
-        approvedReviews,
+        {
+          status: {
+            equals: 'approved',
+          },
+        },
         {
           clinic: {
             equals: clinicId,
@@ -264,7 +262,7 @@ export const platformOrApprovedReviewsByClinic: Access = async ({ req }) => {
     }
   }
 
-  return approvedReviews
+  return buildPublicReviewWhere()
 }
 
 /**
@@ -290,16 +288,7 @@ export const platformClinicOrPublicReviewResponse: Access = async ({ req }): Pro
 
   return {
     and: [
-      {
-        'review.status': {
-          equals: 'approved',
-        },
-      },
-      {
-        'review.deletedAt': {
-          exists: false,
-        },
-      },
+      ...buildPublicReviewResponseParentConditions(),
       {
         'publishedResponse.body': {
           exists: true,

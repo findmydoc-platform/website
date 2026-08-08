@@ -195,6 +195,7 @@ export const clinicDetailFixture: ClinicDetailData = {
     items: [
       {
         id: 'review-1',
+        kind: 'text',
         reviewDate: '2026-01-12T09:15:00.000Z',
         ratingValue: 5,
         authorName: 'Maya K.',
@@ -208,6 +209,7 @@ export const clinicDetailFixture: ClinicDetailData = {
       },
       {
         id: 'review-2',
+        kind: 'text',
         reviewDate: '2026-01-08T12:30:00.000Z',
         ratingValue: 5,
         authorName: 'Anna L.',
@@ -220,6 +222,7 @@ export const clinicDetailFixture: ClinicDetailData = {
       },
       {
         id: 'review-3',
+        kind: 'text',
         reviewDate: '2026-01-05T10:00:00.000Z',
         ratingValue: 4,
         authorName: 'James D.',
@@ -227,6 +230,7 @@ export const clinicDetailFixture: ClinicDetailData = {
       },
       {
         id: 'review-4',
+        kind: 'text',
         reviewDate: '2025-12-18T10:00:00.000Z',
         ratingValue: 5,
         authorName: 'Sofia L.',
@@ -234,6 +238,7 @@ export const clinicDetailFixture: ClinicDetailData = {
       },
       {
         id: 'review-5',
+        kind: 'text',
         reviewDate: '2025-12-02T10:00:00.000Z',
         ratingValue: 4,
         comment: 'Demo anonymous review text about document preparation and follow-up instructions for the next visit.',
@@ -332,6 +337,55 @@ export const clinicDetailLongResponseFixture: ClinicDetailData = {
           }
         : review,
     ),
+  },
+}
+
+export const clinicDetailModeratedReviewsFixture: ClinicDetailData = {
+  ...clinicDetailFixture,
+  trust: {
+    ...clinicDetailFixture.trust,
+    ratingValue: 4.3,
+    reviewCount: 3,
+  },
+  reviews: {
+    totalCount: 3,
+    hasMore: false,
+    items: [
+      {
+        id: 'review-placeholder',
+        kind: 'placeholder',
+        reviewDate: '2026-01-12T09:15:00.000Z',
+        ratingValue: 4,
+        authorName: 'Maya K.',
+        notice: 'This review was moderated. Its written content is not publicly available.',
+      },
+      {
+        id: 'review-redacted',
+        kind: 'text',
+        reviewDate: '2026-01-08T12:30:00.000Z',
+        ratingValue: 5,
+        comment: 'The appointment preparation and follow-up information were clear.',
+        notice:
+          'Parts of this review were removed to protect legal rights or personal data. The remaining text is unchanged.',
+        response: {
+          body: 'Thank you for sharing your experience. We are pleased that the preparation information was helpful.',
+          clinicName: 'Berlin Health Clinic',
+          approvedAt: '2026-07-28T10:00:00.000Z',
+        },
+      },
+      {
+        id: 'review-context',
+        kind: 'text',
+        reviewDate: '2026-01-05T10:00:00.000Z',
+        ratingValue: 4,
+        comment: 'The consultation itself was clear and professionally organized.',
+        notice: [
+          'This review was checked after the clinic raised a concern about how the treatment timeline was described.',
+          'The factual patient account remains visible because the review did not require removal.',
+          "This notice records that context without changing the patient's remaining words or star rating.",
+        ].join(' '),
+      },
+    ],
   },
 }
 

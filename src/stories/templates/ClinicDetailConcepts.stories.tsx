@@ -5,6 +5,7 @@ import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import {
   clinicDetailFixture,
   clinicDetailLongResponseFixture,
+  clinicDetailModeratedReviewsFixture,
   clinicDetailNoReviewsFixture,
   clinicDetailReviewsPartiallyLoadedFixture,
   clinicDetailReviewsPendingTextFixture,
@@ -172,6 +173,49 @@ export const Edge_ReviewsPartiallyLoaded_CountText: Story = {
   },
 }
 
+export const Main_ModeratedReviews: Story = {
+  args: {
+    data: clinicDetailModeratedReviewsFixture,
+  },
+  render: (args) => <ClinicDetail {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const latestReview = canvas.getByText('Latest review').closest('article')
+    if (!(latestReview instanceof HTMLElement)) throw new Error('Expected the featured latest review article')
+    await expect(within(latestReview).getByRole('note', { name: 'Review text unavailable' })).toHaveTextContent(
+      'This review was moderated. Its written content is not publicly available.',
+    )
+    await expect(
+      within(latestReview).queryByText('The appointment preparation and follow-up information were clear.'),
+    ).not.toBeInTheDocument()
+    await expect(within(latestReview).queryByRole('group', { name: 'Clinic response' })).not.toBeInTheDocument()
+    await expect(
+      canvas.getByText(
+        'Parts of this review were removed to protect legal rights or personal data. The remaining text is unchanged.',
+      ),
+    ).toBeInTheDocument()
+    await expect(
+      canvas.getByText(/This review was checked after the clinic raised a concern about how the treatment timeline/),
+    ).toBeInTheDocument()
+    for (const notice of canvas.getAllByRole('note')) {
+      await expect(notice.scrollWidth).toBeLessThanOrEqual(notice.clientWidth)
+    }
+    await expect(
+      canvas.getByRole('article', {
+        name: 'Anonymous patient verified review from Jan 05, 2026',
+      }),
+    ).toBeInTheDocument()
+    await expect(
+      canvas.queryByRole('article', {
+        name: 'Maya K. verified moderated review with unavailable text from Jan 12, 2026',
+      }),
+    ).not.toBeInTheDocument()
+    await expect(canvas.getByText('3 verified reviews')).toBeInTheDocument()
+    await expect(canvas.queryByText(/Placeholder original text/)).not.toBeInTheDocument()
+    expect(canvas.getAllByRole('group', { name: 'Clinic response' })).toHaveLength(1)
+  },
+}
+
 export const Main_WithGuestFavoriteAction: Story = {
   args: {
     data: clinicDetailFixture,
@@ -266,6 +310,32 @@ export const LongClinicResponse640: Story = withViewportStory(
   LongClinicResponseWide,
   'public640',
   'Long clinic response / 640',
+)
+
+export const ModeratedReviews320: Story = withViewportStory(
+  Main_ModeratedReviews,
+  'public320',
+  'Moderated reviews / 320',
+)
+export const ModeratedReviews375: Story = withViewportStory(
+  Main_ModeratedReviews,
+  'public375',
+  'Moderated reviews / 375',
+)
+export const ModeratedReviews640: Story = withViewportStory(
+  Main_ModeratedReviews,
+  'public640',
+  'Moderated reviews / 640',
+)
+export const ModeratedReviews768: Story = withViewportStory(
+  Main_ModeratedReviews,
+  'public768',
+  'Moderated reviews / 768',
+)
+export const ModeratedReviews1024: Story = withViewportStory(
+  Main_ModeratedReviews,
+  'public1024',
+  'Moderated reviews / 1024',
 )
 
 export const NoReviews320: Story = withViewportStory(Edge_NoReviews_FallbackText, 'public320', 'No reviews / 320')

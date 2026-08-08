@@ -31,6 +31,10 @@ import {
   buildListingComparisonHref,
 } from '@/utilities/listingComparison/queryState'
 import { getRelationshipName } from '@/utilities/relationships'
+import {
+  isVisibleReviewResponsePubliclyReadable,
+  projectVisiblePublicReviewText,
+} from '@/collections/reviews/publicProjection'
 
 import type { ClinicDetailMappingArgs } from './types'
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -358,19 +362,28 @@ function mapReviews({
 
   const items: ClinicDetailReview[] = approvedClinicReviews
     .map((review): ClinicDetailReview | null => {
-      const comment = typeof review.comment === 'string' ? normalizeWhitespace(review.comment) : ''
+      const publicText = projectVisiblePublicReviewText(review)
       const reviewDate = typeof review.reviewDate === 'string' ? review.reviewDate : ''
-      if (!comment || !reviewDate) return null
+      if (!publicText || !reviewDate) return null
       if (typeof review.starRating !== 'number' || !Number.isFinite(review.starRating)) {
         throw new Error(`Review ${review.id} is missing a star rating.`)
       }
 
-      const item: ClinicDetailReview = {
+      const base = {
         id: String(review.id),
         reviewDate,
-        comment,
         ratingValue: review.starRating,
       }
+
+      const item: ClinicDetailReview =
+        publicText.kind === 'placeholder'
+          ? { ...base, kind: 'placeholder', notice: publicText.notice }
+          : {
+              ...base,
+              kind: 'text',
+              comment: normalizeWhitespace(publicText.text),
+              ...(publicText.notice ? { notice: normalizeWhitespace(publicText.notice) } : {}),
+            }
 
       if (typeof review.publicAuthorName === 'string') {
         const authorName = normalizeWhitespace(review.publicAuthorName)
@@ -387,7 +400,13 @@ function mapReviews({
       const approvedAt =
         typeof response?.publishedResponse?.approvedAt === 'string' ? response.publishedResponse.approvedAt : ''
 
-      if (responseBody && approvedAt && response?.publishedResponse?.isBlocked !== true) {
+      if (
+        item.kind === 'text' &&
+        isVisibleReviewResponsePubliclyReadable(review) &&
+        responseBody &&
+        approvedAt &&
+        response?.publishedResponse?.isBlocked !== true
+      ) {
         item.response = {
           body: responseBody,
           clinicName,

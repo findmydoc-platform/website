@@ -432,7 +432,10 @@ export const permissionMatrix: PermissionMatrix = {
       displayName: 'Reviews',
       operations: {
         create: { type: 'conditional', details: 'platform full + patient create only' },
-        read: { type: 'conditional', details: 'platform all + clinic own approved + public approved' },
+        read: {
+          type: 'conditional',
+          details: 'platform all + clinic own approved state + public visible projection',
+        },
         readVersions: { type: 'platform' },
         update: { type: 'platform' },
         delete: { type: 'platform' },
@@ -445,7 +448,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform RWDA moderation and raw version history, patients W create own pending reviews only, clinic staff R own approved reviews, public R approved reviews; unlimited immutable native versions',
+        'Platform RWDA moderation and raw version history, patients W create own pending reviews only, clinic staff R own approved sanitized state, public R active visible projection; unlimited immutable native versions',
     },
     reviewResponses: {
       slug: 'reviewResponses',
@@ -454,8 +457,7 @@ export const permissionMatrix: PermissionMatrix = {
         create: { type: 'conditional', details: 'platform + clinic staff with assigned clinic' },
         read: {
           type: 'conditional',
-          details:
-            'platform all + clinic own workflow + public non-deleted approved-review non-blocked response projection',
+          details: 'platform all + clinic own workflow + public active readable-review non-blocked response projection',
         },
         readVersions: { type: 'conditional', details: 'platform all + clinic own clinic versions' },
         update: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },

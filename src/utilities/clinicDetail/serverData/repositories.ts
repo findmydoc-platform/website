@@ -10,6 +10,7 @@ import type {
   Review,
   ReviewResponse,
 } from '@/payload-types'
+import { buildPublicReviewWhere } from '@/collections/reviews/publicProjection'
 
 const QUERY_PAGE_SIZE = 500
 const QUERY_CHUNK_SIZE = 200
@@ -228,21 +229,10 @@ export async function countApprovedClinicReviews(payload: Payload, clinicId: num
     limit: 1,
     page: 1,
     pagination: true,
-    overrideAccess: false,
-    where: {
-      and: [
-        {
-          status: {
-            equals: 'approved',
-          },
-        },
-        {
-          clinic: {
-            equals: clinicId,
-          },
-        },
-      ],
-    },
+    // Trusted server query: field access intentionally hides withdrawal audit state from public REST,
+    // while this repository applies the complete public predicate before returning a scalar count.
+    overrideAccess: true,
+    where: buildPublicReviewWhere({ clinic: { equals: clinicId } }),
   })
 
   return result.totalDocs
@@ -259,28 +249,21 @@ export async function findApprovedClinicReviewsByClinicId(
     limit,
     page: 1,
     pagination: true,
-    overrideAccess: false,
+    // Trusted server query: the public predicate and downstream mapper are the output boundary.
+    overrideAccess: true,
     sort: '-reviewDate',
-    where: {
-      and: [
-        {
-          status: {
-            equals: 'approved',
-          },
-        },
-        {
-          clinic: {
-            equals: clinicId,
-          },
-        },
-      ],
-    },
+    where: buildPublicReviewWhere({ clinic: { equals: clinicId } }),
     select: {
       id: true,
+      status: true,
       reviewDate: true,
       updatedAt: true,
       starRating: true,
       comment: true,
+      publicMeasure: true,
+      publicComment: true,
+      publicNotice: true,
+      withdrawalState: true,
       publicAuthorName: true,
       clinic: true,
     },
@@ -359,21 +342,9 @@ export async function countApprovedDoctorReviews(payload: Payload, doctorIds: nu
         page,
         limit: QUERY_PAGE_SIZE,
         pagination: true,
-        overrideAccess: false,
-        where: {
-          and: [
-            {
-              status: {
-                equals: 'approved',
-              },
-            },
-            {
-              doctor: {
-                in: doctorIdChunk,
-              },
-            },
-          ],
-        },
+        // Trusted server query: only doctor ids from rows matching the complete public predicate leave this function.
+        overrideAccess: true,
+        where: buildPublicReviewWhere({ doctor: { in: doctorIdChunk } }),
         select: {
           doctor: true,
         },

@@ -21,6 +21,12 @@ import {
   reviewCreationRequirementSet,
 } from '@/collections/reviews/creationRequirements'
 import { preventReviewVersionRestore } from '@/collections/reviews/versioning'
+import { reviewPublicationEndpoints } from '@/collections/reviews/endpoints'
+import {
+  clinicReviewAuditFieldReadAccess,
+  publicReviewProjectionFieldReadAccess,
+  rawReviewCommentFieldReadAccess,
+} from '@/collections/reviews/publicProjection'
 
 type ReviewDraft = Record<string, unknown>
 type RelationId = string | number
@@ -28,6 +34,18 @@ type RelationId = string | number
 const reviewFoundationFieldAccess = {
   create: computedOnlyFieldAccess,
   read: platformOnlyFieldAccess,
+  update: computedOnlyFieldAccess,
+}
+
+const reviewPublicProjectionFieldAccess = {
+  create: computedOnlyFieldAccess,
+  read: publicReviewProjectionFieldReadAccess,
+  update: computedOnlyFieldAccess,
+}
+
+const reviewClinicAuditFieldAccess = {
+  create: computedOnlyFieldAccess,
+  read: clinicReviewAuditFieldReadAccess,
   update: computedOnlyFieldAccess,
 }
 
@@ -177,6 +195,7 @@ export const Reviews: CollectionConfig = {
   versions: {
     maxPerDoc: 0,
   },
+  endpoints: reviewPublicationEndpoints,
   fields: [
     stableIdField(),
     {
@@ -271,6 +290,9 @@ export const Reviews: CollectionConfig = {
               name: 'comment',
               type: 'textarea',
               required: true,
+              access: {
+                read: rawReviewCommentFieldReadAccess,
+              },
               admin: {
                 description: 'Review text',
               },
@@ -391,7 +413,7 @@ export const Reviews: CollectionConfig = {
                 { label: 'Neutral placeholder', value: 'placeholder' },
                 { label: 'Complete removal', value: 'removed' },
               ],
-              access: reviewFoundationFieldAccess,
+              access: reviewPublicProjectionFieldAccess,
               admin: {
                 description: 'Public handling selected by the moderation workflow',
                 readOnly: true,
@@ -401,7 +423,7 @@ export const Reviews: CollectionConfig = {
             {
               name: 'moderatedAt',
               type: 'date',
-              access: reviewFoundationFieldAccess,
+              access: reviewClinicAuditFieldAccess,
               admin: {
                 description: 'When the current public measure was recorded',
                 readOnly: true,
@@ -413,7 +435,7 @@ export const Reviews: CollectionConfig = {
         {
           name: 'publicComment',
           type: 'textarea',
-          access: reviewFoundationFieldAccess,
+          access: reviewPublicProjectionFieldAccess,
           admin: {
             description: 'Public review text selected by the moderation workflow',
             readOnly: true,
@@ -422,7 +444,7 @@ export const Reviews: CollectionConfig = {
         {
           name: 'publicNotice',
           type: 'textarea',
-          access: reviewFoundationFieldAccess,
+          access: reviewPublicProjectionFieldAccess,
           admin: {
             description: 'Factual public notice that accompanies the selected measure',
             readOnly: true,
@@ -470,7 +492,7 @@ export const Reviews: CollectionConfig = {
                 { label: 'Active', value: 'active' },
                 { label: 'Withdrawn', value: 'withdrawn' },
               ],
-              access: reviewFoundationFieldAccess,
+              access: reviewClinicAuditFieldAccess,
               admin: {
                 description: 'Whether the author has withdrawn the review',
                 readOnly: true,
@@ -484,9 +506,9 @@ export const Reviews: CollectionConfig = {
                 { label: 'Patient', value: 'patient' },
                 { label: 'Platform staff', value: 'platform' },
               ],
-              access: reviewFoundationFieldAccess,
+              access: reviewClinicAuditFieldAccess,
               admin: {
-                description: 'Who initiated or documented the author withdrawal',
+                description: 'Who initiated or documented the latest withdrawal-state change',
                 readOnly: true,
                 width: '50%',
               },
@@ -498,7 +520,7 @@ export const Reviews: CollectionConfig = {
           type: 'textarea',
           access: reviewFoundationFieldAccess,
           admin: {
-            description: 'Internal reason recorded for the author withdrawal',
+            description: 'Internal reason recorded for the latest withdrawal-state change',
             readOnly: true,
           },
         },
@@ -508,9 +530,9 @@ export const Reviews: CollectionConfig = {
             {
               name: 'withdrawnAt',
               type: 'date',
-              access: reviewFoundationFieldAccess,
+              access: reviewClinicAuditFieldAccess,
               admin: {
-                description: 'When the author withdrawal was recorded',
+                description: 'When the latest withdrawal-state change was recorded',
                 readOnly: true,
                 width: '50%',
               },
@@ -521,7 +543,7 @@ export const Reviews: CollectionConfig = {
               relationTo: ['patients', 'platformStaff'],
               access: reviewFoundationFieldAccess,
               admin: {
-                description: 'Patient or platform staff member who recorded the withdrawal',
+                description: 'Patient or platform staff member who recorded the latest withdrawal-state change',
                 readOnly: true,
                 width: '50%',
               },

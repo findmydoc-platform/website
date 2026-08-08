@@ -167,7 +167,7 @@ function ReviewerIdentity({ review }: { review: ClinicDetailReview }) {
 function ClinicResponse({ review }: { review: ClinicDetailReview }) {
   const responseBodyId = `${React.useId()}-body`
   const [isExpanded, setIsExpanded] = React.useState(false)
-  const response = review.response
+  const response = review.kind === 'text' ? review.response : undefined
   if (!response) return null
 
   const canCollapse = response.body.length > COLLAPSIBLE_RESPONSE_MIN_LENGTH
@@ -219,6 +219,24 @@ function ClinicResponse({ review }: { review: ClinicDetailReview }) {
   )
 }
 
+function ReviewModerationNotice({ notice, placeholder = false }: { notice: string; placeholder?: boolean }) {
+  return (
+    <div
+      role="note"
+      aria-label={placeholder ? 'Review text unavailable' : 'Review moderation notice'}
+      className={cn(
+        'flex max-w-3xl items-start gap-3 rounded-xl border p-4 text-sm leading-6 [overflow-wrap:anywhere]',
+        placeholder
+          ? 'border-primary/15 bg-primary/5 text-secondary/70'
+          : 'border-amber-200/80 bg-amber-50/70 text-secondary/75',
+      )}
+    >
+      <Info className="mt-0.5 size-4 shrink-0 text-primary/70" aria-hidden={true} />
+      <p>{notice}</p>
+    </div>
+  )
+}
+
 function ReviewListItem({
   review,
   focusRef,
@@ -232,7 +250,10 @@ function ReviewListItem({
 }) {
   const formattedDate = formatReviewDate(review.reviewDate)
   const reviewerLabel = getReviewerLabel(review)
-  const articleLabel = `${reviewerLabel} verified review from ${formattedDate}`
+  const articleLabel =
+    review.kind === 'placeholder'
+      ? `${reviewerLabel} verified moderated review with unavailable text from ${formattedDate}`
+      : `${reviewerLabel} verified review from ${formattedDate}`
 
   return (
     <article
@@ -253,10 +274,17 @@ function ReviewListItem({
         </div>
       </div>
       <div className="min-w-0 space-y-6">
-        <p className="max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/80">
-          {review.comment}
-        </p>
-        <ClinicResponse review={review} />
+        {review.kind === 'text' ? (
+          <>
+            <p className="max-w-3xl text-base leading-7 [overflow-wrap:anywhere] whitespace-pre-line text-secondary/80">
+              {review.comment}
+            </p>
+            {review.notice ? <ReviewModerationNotice notice={review.notice} /> : null}
+            <ClinicResponse review={review} />
+          </>
+        ) : (
+          <ReviewModerationNotice notice={review.notice} placeholder={true} />
+        )}
       </div>
     </article>
   )
@@ -268,9 +296,16 @@ function LatestReview({ review }: { review: ClinicDetailReview }) {
       <div className="space-y-4">
         <p className="text-base font-semibold text-primary">Latest review</p>
         <ReviewRatingStars value={review.ratingValue} size="lg" />
-        <blockquote className="max-w-3xl text-lg leading-8 font-normal [overflow-wrap:anywhere] text-secondary sm:text-xl sm:leading-9">
-          “{review.comment}”
-        </blockquote>
+        {review.kind === 'text' ? (
+          <>
+            <blockquote className="max-w-3xl text-lg leading-8 font-normal [overflow-wrap:anywhere] text-secondary sm:text-xl sm:leading-9">
+              “{review.comment}”
+            </blockquote>
+            {review.notice ? <ReviewModerationNotice notice={review.notice} /> : null}
+          </>
+        ) : (
+          <ReviewModerationNotice notice={review.notice} placeholder={true} />
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-primary/10 pt-4">
         <ReviewerAvatar review={review} />
@@ -285,7 +320,7 @@ function LatestReview({ review }: { review: ClinicDetailReview }) {
           <time dateTime={review.reviewDate}>{formatReviewDate(review.reviewDate)}</time>
         </div>
       </div>
-      <ClinicResponse review={review} />
+      {review.kind === 'text' ? <ClinicResponse review={review} /> : null}
     </article>
   )
 }

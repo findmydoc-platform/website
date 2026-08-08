@@ -110,11 +110,18 @@ type ReviewCommandOutcome =
 
 const finalizeReviewCommandOutcome = async (req: PayloadRequest, outcome: ReviewCommandOutcome): Promise<Response> => {
   if ('doc' in outcome) {
-    await dispatchReviewChangeRevalidation({
-      doc: outcome.doc,
-      previousDoc: outcome.previousDoc,
-      req,
-    })
+    try {
+      await dispatchReviewChangeRevalidation({
+        doc: outcome.doc,
+        previousDoc: outcome.previousDoc,
+        req,
+      })
+    } catch (error: unknown) {
+      req.payload.logger.error(
+        { err: toLoggedError(error), event: 'review_publication.post_commit_revalidation_failed' },
+        'Review publication post-commit revalidation failed',
+      )
+    }
   }
 
   return outcome.response

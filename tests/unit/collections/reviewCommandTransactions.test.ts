@@ -296,6 +296,53 @@ describe('review command endpoint concurrency', () => {
     expect(hookMocks.dispatchReviewChangeRevalidation).not.toHaveBeenCalled()
   })
 
+  it('keeps a committed command successful when post-commit revalidation fails', async () => {
+    const beginTransaction = vi.fn(async () => 'tx-1')
+    const commitTransaction = vi.fn(async () => undefined)
+    const rollbackTransaction = vi.fn(async () => undefined)
+    const logger = { error: vi.fn() }
+    const review = {
+      id: 42,
+      patient: 7,
+      publicComment: null,
+      publicMeasure: 'none',
+      publicNotice: null,
+      withdrawalSource: null,
+      withdrawalState: 'active',
+      withdrawnAt: null,
+    }
+    const update = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...review, ...data }))
+    const req = {
+      json: vi.fn(async () => ({ measure: 'none', reason: 'No public change.' })),
+      payload: {
+        db: { beginTransaction, commitTransaction, rollbackTransaction },
+        findByID: vi.fn(async () => review),
+        logger,
+        update,
+      },
+      routeParams: { id: 42 },
+      user: { collection: 'platformStaff', id: 11 },
+    } as unknown as PayloadRequest
+    const revalidationFailure = new Error('cache unavailable')
+    hookMocks.dispatchReviewChangeRevalidation.mockRejectedValueOnce(revalidationFailure)
+
+    const response = await reviewModerationPostHandler(req)
+
+    expect(response.status).toBe(200)
+    expect(beginTransaction).toHaveBeenCalledOnce()
+    expect(update).toHaveBeenCalledOnce()
+    expect(commitTransaction).toHaveBeenCalledOnce()
+    expect(commitTransaction).toHaveBeenCalledWith('tx-1')
+    expect(rollbackTransaction).not.toHaveBeenCalled()
+    expect(hookMocks.dispatchReviewChangeRevalidation).toHaveBeenCalledOnce()
+    expect(logger.error).toHaveBeenCalledOnce()
+    expect(logger.error).toHaveBeenCalledWith(
+      { err: revalidationFailure, event: 'review_publication.post_commit_revalidation_failed' },
+      'Review publication post-commit revalidation failed',
+    )
+    expect(req.transactionID).toBeUndefined()
+  })
+
   it('maps exhausted serialization retries to unavailable', async () => {
     let transactionSequence = 0
     const beginTransaction = vi.fn(async () => `tx-${++transactionSequence}`)

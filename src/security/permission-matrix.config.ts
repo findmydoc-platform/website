@@ -433,6 +433,7 @@ export const permissionMatrix: PermissionMatrix = {
       operations: {
         create: { type: 'conditional', details: 'platform full + patient create only' },
         read: { type: 'conditional', details: 'platform all + clinic own approved + public approved' },
+        readVersions: { type: 'platform' },
         update: { type: 'platform' },
         delete: { type: 'platform' },
         admin: { type: 'platform' },
@@ -444,7 +445,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform RWDA moderation, patients W create own pending reviews only, clinic staff R own approved reviews, public R approved reviews',
+        'Platform RWDA moderation and raw version history, patients W create own pending reviews only, clinic staff R own approved reviews, public R approved reviews; unlimited immutable native versions',
     },
     reviewResponses: {
       slug: 'reviewResponses',

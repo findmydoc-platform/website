@@ -2689,6 +2689,58 @@ export interface Review {
    * User who last edited this review
    */
   editedBy?: (number | null) | PlatformStaff;
+  /**
+   * Public handling selected by the moderation workflow
+   */
+  publicMeasure: 'none' | 'context' | 'redaction' | 'placeholder' | 'removed';
+  /**
+   * When the current public measure was recorded
+   */
+  moderatedAt?: string | null;
+  /**
+   * Public review text selected by the moderation workflow
+   */
+  publicComment?: string | null;
+  /**
+   * Factual public notice that accompanies the selected measure
+   */
+  publicNotice?: string | null;
+  /**
+   * Internal reason for the current public measure
+   */
+  moderationReason?: string | null;
+  /**
+   * Platform staff member who recorded the current public measure
+   */
+  moderatedBy?: (number | null) | PlatformStaff;
+  /**
+   * Whether the author has withdrawn the review
+   */
+  withdrawalState: 'active' | 'withdrawn';
+  /**
+   * Who initiated or documented the author withdrawal
+   */
+  withdrawalSource?: ('patient' | 'platform') | null;
+  /**
+   * Internal reason recorded for the author withdrawal
+   */
+  withdrawalReason?: string | null;
+  /**
+   * When the author withdrawal was recorded
+   */
+  withdrawnAt?: string | null;
+  /**
+   * Patient or platform staff member who recorded the withdrawal
+   */
+  withdrawnBy?:
+    | ({
+        relationTo: 'patients';
+        value: number | Patient;
+      } | null)
+    | ({
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      } | null);
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -4630,6 +4682,17 @@ export interface ReviewsSelect<T extends boolean = true> {
   lastEditedAt?: T;
   editedByName?: T;
   editedBy?: T;
+  publicMeasure?: T;
+  moderatedAt?: T;
+  publicComment?: T;
+  publicNotice?: T;
+  moderationReason?: T;
+  moderatedBy?: T;
+  withdrawalState?: T;
+  withdrawalSource?: T;
+  withdrawalReason?: T;
+  withdrawnAt?: T;
+  withdrawnBy?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;

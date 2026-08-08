@@ -306,6 +306,17 @@ erDiagram
         select status "enum: pending, approved, rejected"
         number starRating "1-5 rating, required"
         textarea comment "Review text, required"
+        select publicMeasure "none, context, redaction, placeholder, removed"
+        textarea publicComment "Separate public text, platform-only"
+        textarea publicNotice "Factual public notice, platform-only"
+        textarea moderationReason "Internal moderation reason"
+        date moderatedAt "Internal moderation timestamp"
+        relationship moderatedBy FK "Internal PlatformStaff actor"
+        select withdrawalState "active, withdrawn"
+        select withdrawalSource "patient, platform"
+        textarea withdrawalReason "Internal withdrawal reason"
+        date withdrawnAt "Internal withdrawal timestamp"
+        relationship withdrawnBy FK "Internal Patients or PlatformStaff actor"
         relationship clinic FK "Relationship to Clinics, required"
         relationship doctor FK "Relationship to Doctors, required"
         relationship treatment FK "Relationship to Treatments, required"
@@ -513,15 +524,19 @@ erDiagram
     ClinicStaff o|--o{ ReviewResponses : "lastActionBy, nullable"
     PlatformStaff o|--o{ ReviewAppeals : "lastActionBy, nullable"
     ClinicStaff o|--o{ ReviewAppeals : "lastActionBy, nullable"
+    PlatformStaff o|--o{ Reviews : "editedBy, moderatedBy, or withdrawnBy"
+    Patients o|--o{ Reviews : "withdrawnBy, nullable"
 
     FavoriteClinics ||--|| Clinics : "references clinic"
 
     Countries ||--o{ Cities : "has cities"
 ```
 
-`ReviewResponses` and `ReviewAppeals` use Payload native versions with unlimited retention. The current document and
-every version retain state, action type, and timestamps. Actor relations are intentionally nullable: deleting a staff
-account removes the personal relation from current and version relation tables while the non-personal audit remains.
-Version restoration and physical workflow deletion are disabled through normal collection access. Upholding an appeal
-blocks any related clinic response before rejecting the parent review, preserving both decisions in their respective
-version histories. Public response reads additionally require the parent review to remain approved.
+`Reviews`, `ReviewResponses`, and `ReviewAppeals` use Payload native versions with unlimited retention. Raw Review
+version history is platform-only; response and appeal histories remain available to platform staff and the assigned
+clinic. The current document and every version retain state, action type, and timestamps. Actor relations are
+intentionally nullable: deleting an account removes the personal relation from current and version relation tables
+while the non-personal audit remains. Version restoration is disabled for all three collections, and physical workflow
+deletion remains disabled through normal collection access. Upholding an appeal blocks any related clinic response
+before rejecting the parent review, preserving both decisions in their respective version histories. Public response
+reads additionally require the parent review to remain approved.

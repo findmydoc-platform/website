@@ -1,0 +1,39 @@
+name: Platform Release Deploy
+
+run-name: findmydoc ${{ inputs.platform_version }} · ${{ inputs.plan_digest }} · ${{ inputs.target_sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: Frozen website commit SHA
+        required: true
+        type: string
+      platform_version:
+        description: Shared findmydoc platform version
+        required: true
+        type: string
+      plan_digest:
+        description: Frozen platform release plan digest
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: findmydoc-platform/ops/.github/workflows/reusable-deploy-website.yml@cb55e1950ea46bd37ee8ef55dddcca02470c23dc
+    with:
+      target_sha: ${{ inputs.target_sha }}
+      platform_version: ${{ inputs.platform_version }}
+      plan_digest: ${{ inputs.plan_digest }}
+    secrets:
+      PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

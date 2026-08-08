@@ -3,6 +3,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import type { PayloadRequest } from 'payload'
 
 import {
+  dispatchReviewChangeRevalidation,
   revalidateClinicTreatmentChange,
   revalidateMedicalSpecialtyChange,
   revalidateReviewResponseChange,
@@ -98,22 +99,54 @@ describe('clinic related collection revalidation hooks', () => {
     )
   })
 
-  it('skips duplicate review revalidation for hook-triggered average updates before relation reads', async () => {
-    const req = buildReq({ skipHooks: true })
+  it.each([{ disableRevalidate: true }, { skipHooks: true }])(
+    'skips review hook revalidation before relation reads for context %o',
+    async (context) => {
+      const req = buildReq(context)
 
-    await revalidateReviewChange({
-      collection: { slug: 'reviews' } as unknown as ReviewChangeArgs['collection'],
-      context: req.context,
-      data: {},
-      doc: { id: 300, clinic: 12, status: 'approved' },
-      operation: 'update',
-      previousDoc: undefined,
+      await revalidateReviewChange({
+        collection: { slug: 'reviews' } as unknown as ReviewChangeArgs['collection'],
+        context: req.context,
+        data: {},
+        doc: { id: 300, clinic: 12, status: 'approved' },
+        operation: 'update',
+        previousDoc: undefined,
+        req,
+      } as ReviewChangeArgs)
+
+      expect(req.payload.findByID).not.toHaveBeenCalled()
+      expect(getPathCalls()).toEqual([])
+      expect(getTagCalls()).toEqual([])
+    },
+  )
+
+  it('directly dispatches review revalidation even when the hook path is disabled', async () => {
+    const req = buildReq({ disableRevalidate: true })
+    const publicFields = {
+      id: 301,
+      clinic: 12,
+      status: 'approved',
+      publicMeasure: 'none',
+      reviewDate: '2026-08-08T10:00:00.000Z',
+      starRating: 5,
+      comment: 'Visible review text',
+    }
+
+    await dispatchReviewChangeRevalidation({
+      doc: { ...publicFields, withdrawalState: 'withdrawn' },
+      previousDoc: { ...publicFields, withdrawalState: 'active' },
       req,
-    } as ReviewChangeArgs)
+    })
 
-    expect(req.payload.findByID).not.toHaveBeenCalled()
-    expect(getPathCalls()).toEqual([])
-    expect(getTagCalls()).toEqual([])
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getTagCalls()).toEqual(
+      expect.arrayContaining([
+        'entity:reviews:301',
+        'collection:reviews',
+        'surface:clinic-detail:12',
+        'surface:listing-comparison',
+      ]),
+    )
   })
 
   it.each([

@@ -1,11 +1,29 @@
 import type { PayloadRequest } from 'payload'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   ReviewCommandTransactionUnavailableError,
   runReviewCommandTransaction,
 } from '@/collections/reviews/commandTransaction'
 import { reviewModerationPostHandler, reviewWithdrawPostHandler } from '@/collections/reviews/endpoints'
+
+type ReviewRevalidationDispatchArgs = {
+  readonly doc: unknown
+  readonly previousDoc?: unknown
+  readonly req: PayloadRequest
+}
+
+const hookMocks = vi.hoisted(() => ({
+  dispatchReviewChangeRevalidation: vi.fn(async (_args: ReviewRevalidationDispatchArgs) => undefined),
+}))
+
+vi.mock('@/hooks/revalidateClinicSurfaces', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/hooks/revalidateClinicSurfaces')>()
+  return {
+    ...original,
+    dispatchReviewChangeRevalidation: hookMocks.dispatchReviewChangeRevalidation,
+  }
+})
 
 const serializableFailure = (): Error =>
   new Error('transaction failed', {
@@ -34,6 +52,11 @@ const deferred = <Value = void>() => {
   })
   return { promise, resolve }
 }
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  hookMocks.dispatchReviewChangeRevalidation.mockResolvedValue(undefined)
+})
 
 describe('review command transaction control', () => {
   it('retries serialization failures in fresh serializable read-write transactions', async () => {
@@ -121,6 +144,7 @@ describe('review command endpoint concurrency', () => {
     const releaseModeration = deferred()
     const stagedReviews = new Map<string, Record<string, unknown>>()
     const committedWrites: string[] = []
+    const lifecycle: string[] = []
     let transactionSequence = 0
     let committedReview: Record<string, unknown> = {
       id: 42,
@@ -135,6 +159,7 @@ describe('review command endpoint concurrency', () => {
 
     const beginTransaction = vi.fn(async () => `tx-${++transactionSequence}`)
     const commitTransaction = vi.fn(async (transactionID: string) => {
+      lifecycle.push(`commit:${transactionID}`)
       if (transactionID === 'tx-1') throw serializableFailure()
 
       const staged = stagedReviews.get(transactionID)
@@ -159,12 +184,23 @@ describe('review command endpoint concurrency', () => {
 
       return snapshot
     })
-    const update = vi.fn(async ({ data, req }: { data: Record<string, unknown>; req: PayloadRequest }) => {
-      const transactionID = String(req.transactionID)
-      const staged = { ...committedReview, ...data }
-      stagedReviews.set(transactionID, staged)
-      return staged
-    })
+    const update = vi.fn(
+      async ({
+        context,
+        data,
+        req,
+      }: {
+        context?: Record<string, unknown>
+        data: Record<string, unknown>
+        req: PayloadRequest
+      }) => {
+        expect(context).toEqual({ disableRevalidate: true })
+        const transactionID = String(req.transactionID)
+        const staged = { ...committedReview, ...data }
+        stagedReviews.set(transactionID, staged)
+        return staged
+      },
+    )
     const logger = { error: vi.fn() }
     const payload = {
       db: { beginTransaction, commitTransaction, rollbackTransaction },
@@ -180,16 +216,29 @@ describe('review command endpoint concurrency', () => {
         user,
       }) as unknown as PayloadRequest
 
-    const moderation = reviewModerationPostHandler(
-      request(
-        { collection: 'platformStaff', id: 11 },
-        { measure: 'removed', reason: 'Moderation based on the stale active state.' },
-      ),
+    hookMocks.dispatchReviewChangeRevalidation.mockImplementation(async ({ req }) => {
+      expect(req.transactionID).toBeUndefined()
+      lifecycle.push('dispatch')
+    })
+
+    const moderationReq = request(
+      { collection: 'platformStaff', id: 11 },
+      { measure: 'removed', reason: 'Moderation based on the stale active state.' },
     )
+    const withdrawalReq = request({ collection: 'patients', id: 7 }, {})
+
+    const moderation = reviewModerationPostHandler(moderationReq)
     await firstModerationRead.promise
 
-    const withdrawalResponse = await reviewWithdrawPostHandler(request({ collection: 'patients', id: 7 }, {}))
+    const withdrawalResponse = await reviewWithdrawPostHandler(withdrawalReq)
     expect(withdrawalResponse.status).toBe(200)
+    expect(hookMocks.dispatchReviewChangeRevalidation).toHaveBeenCalledOnce()
+    expect(hookMocks.dispatchReviewChangeRevalidation).toHaveBeenCalledWith({
+      doc: expect.objectContaining({ withdrawalState: 'withdrawn' }),
+      previousDoc: expect.objectContaining({ withdrawalState: 'active' }),
+      req: withdrawalReq,
+    })
+    expect(lifecycle.indexOf('commit:tx-2')).toBeLessThan(lifecycle.indexOf('dispatch'))
 
     releaseModeration.resolve()
     const moderationResponse = await moderation
@@ -203,8 +252,14 @@ describe('review command endpoint concurrency', () => {
       withdrawalState: 'withdrawn',
     })
     expect(committedWrites).toEqual(['withdrawal'])
-    expect(beginTransaction).toHaveBeenCalledTimes(3)
-    expect(findByID).toHaveBeenCalledTimes(3)
+    expect(hookMocks.dispatchReviewChangeRevalidation).toHaveBeenCalledOnce()
+
+    const repeatedWithdrawal = await reviewWithdrawPostHandler(request({ collection: 'patients', id: 7 }, {}))
+    expect(repeatedWithdrawal.status).toBe(200)
+    expect(hookMocks.dispatchReviewChangeRevalidation).toHaveBeenCalledOnce()
+
+    expect(beginTransaction).toHaveBeenCalledTimes(4)
+    expect(findByID).toHaveBeenCalledTimes(4)
     expect(update).toHaveBeenCalledTimes(2)
     expect(rollbackTransaction).toHaveBeenCalledWith('tx-1')
     expect(logger.error).not.toHaveBeenCalled()
@@ -238,6 +293,7 @@ describe('review command endpoint concurrency', () => {
     expect(commitTransaction).not.toHaveBeenCalled()
     expect(update).not.toHaveBeenCalled()
     expect(logger.error).toHaveBeenCalledOnce()
+    expect(hookMocks.dispatchReviewChangeRevalidation).not.toHaveBeenCalled()
   })
 
   it('maps exhausted serialization retries to unavailable', async () => {
@@ -271,5 +327,6 @@ describe('review command endpoint concurrency', () => {
     expect(commitTransaction).not.toHaveBeenCalled()
     expect(logger.error).toHaveBeenCalledOnce()
     expect(req.transactionID).toBeUndefined()
+    expect(hookMocks.dispatchReviewChangeRevalidation).not.toHaveBeenCalled()
   })
 })

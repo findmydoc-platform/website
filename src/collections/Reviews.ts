@@ -1,7 +1,7 @@
 import type { CollectionBeforeChangeHook, CollectionConfig, PayloadRequest, Where } from 'payload'
 import { ValidationError, validations } from 'payload'
 import { isPatient } from '@/access/isPatient'
-import { platformOnlyFieldAccess } from '@/access/fieldAccess'
+import { computedOnlyFieldAccess, platformOnlyFieldAccess } from '@/access/fieldAccess'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { platformOrApprovedReviewsByClinic } from '@/access/scopeFilters'
 import {
@@ -20,9 +20,16 @@ import {
   reviewCreationRequirements,
   reviewCreationRequirementSet,
 } from '@/collections/reviews/creationRequirements'
+import { preventReviewVersionRestore } from '@/collections/reviews/versioning'
 
 type ReviewDraft = Record<string, unknown>
 type RelationId = string | number
+
+const reviewFoundationFieldAccess = {
+  create: computedOnlyFieldAccess,
+  read: platformOnlyFieldAccess,
+  update: computedOnlyFieldAccess,
+}
 
 function extractRelationId(value: unknown): RelationId | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value
@@ -164,8 +171,12 @@ export const Reviews: CollectionConfig = {
       return isPlatformStaff({ req })
     },
     delete: ({ req }) => isPlatformStaff({ req }),
+    readVersions: ({ req }) => isPlatformStaff({ req }),
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
+  versions: {
+    maxPerDoc: 0,
+  },
   fields: [
     stableIdField(),
     {
@@ -317,6 +328,7 @@ export const Reviews: CollectionConfig = {
           type: 'date',
           access: {
             create: platformOnlyFieldAccess,
+            read: platformOnlyFieldAccess,
             update: platformOnlyFieldAccess,
           },
           admin: {
@@ -330,6 +342,7 @@ export const Reviews: CollectionConfig = {
           label: 'Editor name',
           access: {
             create: platformOnlyFieldAccess,
+            read: platformOnlyFieldAccess,
             update: platformOnlyFieldAccess,
           },
           admin: {
@@ -344,12 +357,176 @@ export const Reviews: CollectionConfig = {
           label: 'Edited by',
           access: {
             create: platformOnlyFieldAccess,
+            read: platformOnlyFieldAccess,
             update: platformOnlyFieldAccess,
           },
           admin: {
             description: 'User who last edited this review',
             readOnly: true,
           },
+        },
+      ],
+    },
+    {
+      type: 'collapsible',
+      label: 'Public moderation',
+      admin: {
+        initCollapsed: true,
+        description: 'Public review handling and its internal audit record',
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'publicMeasure',
+              type: 'select',
+              required: true,
+              defaultValue: 'none',
+              index: true,
+              options: [
+                { label: 'No change', value: 'none' },
+                { label: 'Add context', value: 'context' },
+                { label: 'Narrow text removal', value: 'redaction' },
+                { label: 'Neutral placeholder', value: 'placeholder' },
+                { label: 'Complete removal', value: 'removed' },
+              ],
+              access: reviewFoundationFieldAccess,
+              admin: {
+                description: 'Public handling selected by the moderation workflow',
+                readOnly: true,
+                width: '50%',
+              },
+            },
+            {
+              name: 'moderatedAt',
+              type: 'date',
+              access: reviewFoundationFieldAccess,
+              admin: {
+                description: 'When the current public measure was recorded',
+                readOnly: true,
+                width: '50%',
+              },
+            },
+          ],
+        },
+        {
+          name: 'publicComment',
+          type: 'textarea',
+          access: reviewFoundationFieldAccess,
+          admin: {
+            description: 'Public review text selected by the moderation workflow',
+            readOnly: true,
+          },
+        },
+        {
+          name: 'publicNotice',
+          type: 'textarea',
+          access: reviewFoundationFieldAccess,
+          admin: {
+            description: 'Factual public notice that accompanies the selected measure',
+            readOnly: true,
+          },
+        },
+        {
+          name: 'moderationReason',
+          type: 'textarea',
+          access: reviewFoundationFieldAccess,
+          admin: {
+            description: 'Internal reason for the current public measure',
+            readOnly: true,
+          },
+        },
+        {
+          name: 'moderatedBy',
+          type: 'relationship',
+          relationTo: 'platformStaff',
+          access: reviewFoundationFieldAccess,
+          admin: {
+            description: 'Platform staff member who recorded the current public measure',
+            readOnly: true,
+          },
+        },
+      ],
+    },
+    {
+      type: 'collapsible',
+      label: 'Author withdrawal',
+      admin: {
+        initCollapsed: true,
+        description: 'Author withdrawal state and its internal audit record',
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'withdrawalState',
+              type: 'select',
+              required: true,
+              defaultValue: 'active',
+              index: true,
+              options: [
+                { label: 'Active', value: 'active' },
+                { label: 'Withdrawn', value: 'withdrawn' },
+              ],
+              access: reviewFoundationFieldAccess,
+              admin: {
+                description: 'Whether the author has withdrawn the review',
+                readOnly: true,
+                width: '50%',
+              },
+            },
+            {
+              name: 'withdrawalSource',
+              type: 'select',
+              options: [
+                { label: 'Patient', value: 'patient' },
+                { label: 'Platform staff', value: 'platform' },
+              ],
+              access: reviewFoundationFieldAccess,
+              admin: {
+                description: 'Who initiated or documented the author withdrawal',
+                readOnly: true,
+                width: '50%',
+              },
+            },
+          ],
+        },
+        {
+          name: 'withdrawalReason',
+          type: 'textarea',
+          access: reviewFoundationFieldAccess,
+          admin: {
+            description: 'Internal reason recorded for the author withdrawal',
+            readOnly: true,
+          },
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'withdrawnAt',
+              type: 'date',
+              access: reviewFoundationFieldAccess,
+              admin: {
+                description: 'When the author withdrawal was recorded',
+                readOnly: true,
+                width: '50%',
+              },
+            },
+            {
+              name: 'withdrawnBy',
+              type: 'relationship',
+              relationTo: ['patients', 'platformStaff'],
+              access: reviewFoundationFieldAccess,
+              admin: {
+                description: 'Patient or platform staff member who recorded the withdrawal',
+                readOnly: true,
+                width: '50%',
+              },
+            },
+          ],
         },
       ],
     },
@@ -457,6 +634,7 @@ export const Reviews: CollectionConfig = {
         return data
       },
     ],
+    beforeOperation: [preventReviewVersionRestore],
     afterChange: [updateAverageRatingsAfterChange, revalidateReviewChange],
     afterDelete: [updateAverageRatingsAfterDelete, revalidateReviewDelete],
   },

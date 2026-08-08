@@ -22,7 +22,7 @@
 | DoctorTreatments `(doctortreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook enforces doctor clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | – |
 | ClinicTreatments `(clinictreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Conditional<br/><sub>platform all + clinic own inactive + everyone active</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | – |
 | FavoriteClinics `(favoriteclinics)` | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> | – |
-| Reviews `(reviews)` | Conditional<br/><sub>platform full + patient create only</sub> | Conditional<br/><sub>platform all + clinic own approved + public approved</sub> | Platform | Platform | Platform | – |
+| Reviews `(reviews)` | Conditional<br/><sub>platform full + patient create only</sub> | Conditional<br/><sub>platform all + clinic own approved + public approved</sub> | Platform | Platform | Platform | Platform |
 | ReviewResponses `(reviewResponses)` | Conditional<br/><sub>platform + clinic staff with assigned clinic</sub> | Conditional<br/><sub>platform all + clinic own workflow + public non-deleted approved-review non-blocked response projection</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Conditional<br/><sub>physical deletion disabled</sub> | Platform | Conditional<br/><sub>platform all + clinic own clinic versions</sub> |
 | ReviewAppeals `(reviewAppeals)` | Conditional<br/><sub>platform + clinic staff with assigned clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Platform | Conditional<br/><sub>physical deletion disabled</sub> | Platform | Conditional<br/><sub>platform all + clinic own clinic versions</sub> |
 | Treatments `(treatments)` | Platform | Anyone | Platform | Platform | Platform | – |
@@ -61,7 +61,7 @@
 - **DoctorTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **ClinicTreatments**: Platform RWDA, clinic RWA own clinic including inactive offerings, patients/anonymous R active offerings
 - **FavoriteClinics**: Platform RWDA, patients RWDA own list only
-- **Reviews**: Platform RWDA moderation, patients W create own pending reviews only, clinic staff R own approved reviews, public R approved reviews
+- **Reviews**: Platform RWDA moderation and raw version history, patients W create own pending reviews only, clinic staff R own approved reviews, public R approved reviews; unlimited immutable native versions
 - **ReviewResponses**: One moderated response workflow per review; public reads require a non-deleted approved parent review and an approved non-blocked response; unlimited immutable native versions
 - **ReviewAppeals**: One immutable clinic appeal per approved review; platform-only lifecycle decisions; no public access; unlimited immutable native versions
 - **Treatments**: Master data - platform write, everyone read; averageRating is computed-only

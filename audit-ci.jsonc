@@ -1,0 +1,19 @@
+{
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  "allowlist": [
+    {
+      "GHSA-5p2g-fcmc-qvqq|@storybook/nextjs-vite>vite-plugin-storybook-nextjs>image-size": {
+        "active": true,
+        "notes": "Temporary risk acceptance. Owner: SebastianSchuetze. Tracked by issue #1666. Expires: 2026-09-08T23:59:59Z. image-size@2.0.2 has no patched upstream release; reviewed upload paths are authenticated and current accepted image formats exclude the vulnerable parser formats.",
+        "expiry": "2026-09-08T23:59:59Z",
+      },
+    },
+    {
+      "GHSA-w3rx-r6r6-pgpr|@storybook/nextjs-vite>vite-plugin-storybook-nextjs>image-size": {
+        "active": true,
+        "notes": "Temporary risk acceptance. Owner: SebastianSchuetze. Tracked by issue #1666. Expires: 2026-09-08T23:59:59Z. image-size@2.0.2 has no patched upstream release; reviewed upload paths are authenticated and current accepted image formats exclude the vulnerable parser formats.",
+        "expiry": "2026-09-08T23:59:59Z",
+      },
+    },
+  ],
+}

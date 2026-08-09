@@ -1,11 +1,11 @@
 [
   {
     "stableId": "seed-review-06",
-    "publicMeasure": "removed",
-    "publicComment": null,
-    "publicNotice": null,
-    "moderationReason": "The review contains privacy-sensitive details that could identify another patient.",
-    "moderatedAt": "2026-01-24T09:30:00.000Z",
+    "publicMeasure": "redaction",
+    "publicComment": "Reliable orthodontic follow-ups.",
+    "publicNotice": "Parts of this review were removed to protect legal rights or personal data. The remaining text is unchanged.",
+    "moderationReason": "Platform Support removed one narrow pricing phrase while keeping the remaining review readable.",
+    "moderatedAt": "2026-02-02T10:00:00.000Z",
     "moderatedByStableId": "seed-platform-admin"
   }
 ]

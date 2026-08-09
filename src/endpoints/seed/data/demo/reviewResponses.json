@@ -15,15 +15,12 @@
     "stableId": "seed-review-response-02",
     "reviewStableId": "seed-review-02",
     "moderationStatus": "pending",
-    "publishedResponse": {
-      "body": "Thank you for describing your experience. We have shared your positive note with the aftercare team.",
-      "approvedAt": "2026-01-09T09:00:00.000Z",
-      "isBlocked": false
-    },
+    "publishedResponse": null,
     "pendingResponse": {
-      "body": "Thank you for your detailed feedback. We are pleased the facility and aftercare process felt reassuring.",
-      "submittedAt": "2026-01-21T13:00:00.000Z"
-    }
+      "body": "Thank you for describing your experience. We are preparing a factual response about the aftercare schedule.",
+      "submittedAt": "2026-01-10T09:00:00.000Z"
+    },
+    "moderatedAt": null
   },
   {
     "stableId": "seed-review-response-03",
@@ -35,7 +32,32 @@
       "isBlocked": false
     },
     "pendingResponse": null,
-    "moderationReason": "The revision assigns blame to an identifiable patient and is not suitable for publication.",
+    "moderationReason": "The proposed revision refers to another patient's schedule and is not suitable for publication.",
     "moderatedAt": "2026-01-22T08:30:00.000Z"
+  },
+  {
+    "stableId": "seed-review-response-04",
+    "reviewStableId": "seed-review-05",
+    "moderationStatus": "blocked",
+    "publishedResponse": {
+      "body": "Thank you for sharing your experience. Our team has reviewed the operation briefing process.",
+      "approvedAt": "2026-01-18T09:00:00.000Z",
+      "isBlocked": true
+    },
+    "pendingResponse": null,
+    "moderationReason": "Platform Support blocked the response because it includes an inappropriate personal attribution.",
+    "moderatedAt": "2026-01-23T09:15:00.000Z"
+  },
+  {
+    "stableId": "seed-review-response-05",
+    "reviewStableId": "seed-review-09",
+    "moderationStatus": "approved",
+    "publishedResponse": {
+      "body": "Thank you for your feedback. We are pleased the recovery guidance was clear and useful.",
+      "approvedAt": "2026-01-24T09:00:00.000Z",
+      "isBlocked": false
+    },
+    "pendingResponse": null,
+    "moderatedAt": "2026-01-24T09:00:00.000Z"
   }
 ]

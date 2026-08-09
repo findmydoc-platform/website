@@ -1,34 +1,46 @@
 [
   {
     "stableId": "seed-review-appeal-01",
-    "reviewStableId": "seed-review-04",
-    "reason": "incorrect_clinic",
-    "details": "The clinic believes this review refers to a different location with a similar name.",
-    "status": "submitted"
+    "reviewStableId": "seed-review-05",
+    "reason": "other",
+    "details": "The clinic asks Platform Support to review the treatment briefing context.",
+    "status": "submitted",
+    "createdAt": "2026-02-01T08:30:00.000Z"
   },
   {
     "stableId": "seed-review-appeal-02",
-    "reviewStableId": "seed-review-05",
+    "reviewStableId": "seed-review-04",
     "reason": "inappropriate_content",
-    "details": "The clinic requests moderation because the review contains language unrelated to the treatment.",
-    "status": "under_review"
+    "details": "The clinic asks Platform Support to review whether the public wording follows the moderation policy.",
+    "status": "under_review",
+    "createdAt": "2026-02-01T09:00:00.000Z"
   },
   {
     "stableId": "seed-review-appeal-03",
     "reviewStableId": "seed-review-06",
-    "reason": "privacy_concern",
-    "details": "The clinic reports that the review includes details that could identify another patient.",
+    "reason": "inappropriate_content",
+    "details": "The clinic asks Platform Support to review the final pricing phrase because it is unrelated to the treatment experience.",
     "status": "upheld",
-    "decisionReason": "The review contains information about another patient and requires a separate moderation decision.",
-    "decidedAt": "2026-01-24T10:00:00.000Z"
+    "decisionReason": "The appeal is upheld for one narrow wording concern; a redacted review remains public.",
+    "decidedAt": "2026-02-02T10:30:00.000Z"
   },
   {
     "stableId": "seed-review-appeal-04",
     "reviewStableId": "seed-review-07",
     "reason": "other",
-    "details": "The clinic asks the moderation team to verify the documented treatment context.",
+    "details": "The clinic asks Platform Support to verify the documented treatment context.",
     "status": "dismissed",
-    "decisionReason": "The treatment context was verified and the approved patient review remains public.",
-    "decidedAt": "2026-01-24T11:30:00.000Z"
+    "decisionReason": "The treatment context is consistent with the review and no moderation action is required.",
+    "decidedAt": "2026-02-01T11:30:00.000Z",
+    "createdAt": "2026-02-01T10:00:00.000Z"
+  },
+  {
+    "stableId": "seed-review-appeal-05",
+    "reviewStableId": "seed-review-08",
+    "reason": "other",
+    "details": "The clinic asks Platform Support to review whether the scheduling statement needs public moderation.",
+    "status": "upheld",
+    "decisionReason": "The appeal concern is upheld operationally, but no public text change is required.",
+    "decidedAt": "2026-02-03T10:00:00.000Z"
   }
 ]

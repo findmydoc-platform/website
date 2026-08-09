@@ -37,7 +37,7 @@ remove, redact, or otherwise change a review or its clinic response.
 | Anonymous caller | Reads only approved, active public review projections and eligible published clinic responses. |
 | Patient | Creates a review that is forced to the authenticated patient and `pending`; reads the same public projection as an anonymous caller; can withdraw only their own review. Patients cannot directly update, delete, or read review versions. |
 | Clinic staff | Reads approved reviews for the currently assigned clinic, including sanitized moderation and withdrawal state; manages only that clinic's response and appeal workflows; reads tenant-scoped response and appeal versions and the sanitized review publication history. Clinic staff cannot moderate or withdraw reviews. |
-| Platform staff | Reads all review states and raw history; performs ordinary Review updates, public moderation, verified author withdrawal recording, withdrawal corrections, response workflow management, and appeal submission or decisions. Review deletion is platform-only and uses Payload soft delete. |
+| Platform staff | Reads all review states and raw history; performs ordinary Review updates, public moderation, records author withdrawal after external support verification, corrects withdrawal state, manages response workflows, and submits or decides appeals. Review deletion is platform-only and uses Payload soft delete. |
 
 For response and appeal writes, the clinic is derived from the related review and checked against the authenticated
 clinic assignment. A clinic or actor supplied by a client is not authoritative. Cross-tenant workflow reads are
@@ -55,17 +55,27 @@ rejected review is not public, regardless of its moderation fields.
 
 ## Verified Author Corrections
 
-Patients do not edit a submitted review directly. A patient requests a correction through support, and platform staff
-must verify that the request came from the review author.
+### Operator Policy
 
-The only permitted process that changes the original `comment` is such a verified author correction. Platform staff
-applies it through the platform-only Review update. Payload records the previous and updated text as native versions,
-and the Review edit hook records `lastEditedAt`, `editedBy`, and `editedByName`.
+Patients do not edit a submitted review directly. A patient requests a correction through support, and platform staff
+verifies outside the Website backend that the request came from the review author. Only that externally verified
+request permits an operator to change the original `comment`.
 
 Platform, legal, or clinic moderation must not overwrite `comment`. The dedicated moderation command writes only the
 public projection and its audit fields. A redaction therefore stores a separate readable `publicComment`; context adds
 a separate notice; placeholder and removal hide text without replacing the original. Withdrawal also leaves
 `comment` unchanged.
+
+### Technical Guarantee
+
+Platform staff applies an author correction through the ordinary platform-only Review update. Payload records the
+previous and updated text as native versions, and the Review edit hook records `lastEditedAt`, `editedBy`, and
+`editedByName`.
+
+The Website backend has no dedicated author-correction command, verification flag, stored verification evidence, or
+purpose field for that update. The edit metadata establishes which platform account made an update and when; it does
+not prove that the author approved the change or that the update was used for an author correction. External support
+verification and correct operator use therefore remain policy obligations.
 
 ## Clinic Response Workflow
 
@@ -123,11 +133,14 @@ moderation until platform staff corrects an erroneous withdrawal.
 Current collection reads apply the same visibility boundary:
 
 - Platform staff can read all states, raw text, internal reasons, and audit actors.
-- Assigned clinic staff can read approved rows for their clinic, including removed and withdrawn rows, but receives
-  only sanitized moderation and withdrawal fields. Raw `comment` is available only for active `none` or `context`
-  reviews; patient identity, internal reasons, named actors, and hidden text are omitted.
+- Assigned clinic staff current reads retain approved rows for their clinic even when `publicMeasure=removed` or
+  `withdrawalState=withdrawn`. They can read the stored `publicMeasure`, `publicComment`, and `publicNotice` when
+  present, plus `moderatedAt`, `withdrawalState`, `withdrawalSource`, and `withdrawnAt`. Those stored fields do
+  not mean that the row or projection is still public. Raw `comment` is available only for active `none` or
+  `context` reviews; it is not readable for redaction, placeholder, removal, or withdrawal. Patient identity,
+  internal reasons, and named audit actors are also omitted.
 - Patients and anonymous callers receive only approved, active `none | context | redaction | placeholder` rows. They
-  receive the public projection only; removed and withdrawn rows are absent.
+  receive the public projection only. Removed and withdrawn rows are absent in full.
 
 ## Author Withdrawal
 
@@ -135,12 +148,14 @@ Withdrawal is a dedicated state change, not review deletion or text editing:
 
 1. The owning patient can invoke the withdrawal command for their own review. An unrelated patient receives no
    confirmation that the review exists.
-2. Platform staff can document a verified author request and must provide an internal reason.
+2. Platform staff may document an author withdrawal only after support has verified the request outside the Website
+   backend. The platform request must include an internal reason, but the backend stores no verification proof.
 3. Repeating an already completed withdrawal is idempotent and creates no additional version.
 4. Withdrawal removes the review, star contribution, clinic response, and any future published patient additions from
    public output without a placeholder.
-5. The command appends the withdrawal state and audit to native history. It does not overwrite the original `comment`,
-   change the existing public measure, or delete the Review record and its versions.
+5. The command appends source, actor, time, reason, and withdrawal state to native history. Those fields establish who
+   recorded the state change and when; they do not prove an externally verified author request. The command does not
+   overwrite the original `comment`, change the existing public measure, or delete the Review record and its versions.
 
 Withdrawal is terminal until platform staff uses the audited withdrawal-correction command. That correction restores
 `withdrawalState=active` and preserves the existing public measure; it does not rewrite the review.
@@ -156,8 +171,9 @@ Withdrawal is terminal until platform staff uses the audited withdrawal-correcti
   and patient principals cannot read them.
 - Response and appeal mutations record action, timestamp, actor type, and an optional actor relation. Account erasure
   can clear the personal actor relation from current and version records while the non-personal action audit remains.
-- Moderation records `moderationReason`, `moderatedAt`, and `moderatedBy`. Withdrawal records state, source, internal
-  reason, time, and actor. These fields are not part of public output.
+- Moderation records `moderationReason`, `moderatedAt`, and `moderatedBy`. A platform Review update records general
+  `lastEdited*` metadata, and withdrawal records state, source, internal reason, time, and actor. These audit fields
+  are not part of public output and do not establish author verification or the operator's purpose.
 - Response and appeal deletion through normal collection access is disabled. Review deletion remains the separate
   platform-only soft-delete path and is not used for author withdrawal.
 

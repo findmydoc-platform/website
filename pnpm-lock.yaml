@@ -7,18 +7,11 @@ settings:
 overrides:
   undici: ^7.28.0
   '@modelcontextprotocol/sdk': 1.26.0
-  esbuild: 0.28.1
   esbuild@<0.28.1: 0.28.1
-  esbuild@<=0.24.2: '>=0.25.0'
   '@hono/node-server@<2.0.5': '>=2.0.5'
-  hono@<4.12.34: '>=4.12.34'
   postcss@<8.5.23: 8.5.23
-  js-yaml@<4.3.1: 4.3.1
-  nanoid@<3.3.17: 3.3.17
   brace-expansion@<5.0.9: 5.0.9
   sharp@<0.35.0: 0.35.3
-  fast-uri@<3.1.5: 3.1.5
-  payload@3.85.1>tsx: 4.21.0
 
 patchedDependencies:
   minimatch@3.1.5:
@@ -1200,7 +1193,7 @@ packages:
     resolution: {integrity: sha512-XovyyCCnBzW+zKu+z/zq8hwNs4KOR5rEMAOxo2f40Q5xoOI37IMm6MIg2COOUtUApo0i6850MTBKH2u4QLGIqg==}
     engines: {node: '>=20'}
     peerDependencies:
-      hono: '>=4.12.34'
+      hono: ^4
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -3074,7 +3067,7 @@ packages:
   '@storybook/csf-plugin@10.5.5':
     resolution: {integrity: sha512-/euibhRFqklYCZqUseokojmfYcQpXshVY2QmA1qCuxMz9SzVFD3iSTw+aFLTxpsJGGdcZJk8fnm/rEthLzZ9jA==}
     peerDependencies:
-      esbuild: '>=0.25.0'
+      esbuild: 0.28.1
       rollup: '*'
       storybook: ^10.5.5
       vite: '*'
@@ -4655,7 +4648,7 @@ packages:
   esbuild-register@3.6.0:
     resolution: {integrity: sha512-H2/S7Pm8a9CL1uhp9OvjwrBh5Pvx0H8qVOxNu8Wed9Y7qv56MPtq+GGM8RJpq6glYJn9Wspr8uw7l55uyinNeg==}
     peerDependencies:
-      esbuild: '>=0.25.0'
+      esbuild: 0.28.1
 
   esbuild@0.28.1:
     resolution: {integrity: sha512-HrJrvZv5ayxBzPfwphOoNzkzOIIlifzk0KJrGK2c8R4+LKpMtpYLQeUdjnwjWv/LZlkH2laZk+4w78pi99D4Vw==}

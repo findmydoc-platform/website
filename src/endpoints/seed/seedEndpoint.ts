@@ -189,6 +189,18 @@ const isRetryableSeedJob = (job: SeedRunRecord['jobs'][number]): boolean => {
   return job.status === 'failed' || job.status === 'cancelled'
 }
 
+const expandAtomicGroupRetryJobs = (
+  sourceRun: SeedRunRecord,
+  retryableJobs: SeedRunRecord['jobs'],
+): SeedRunRecord['jobs'] => {
+  const atomicGroups = new Set(retryableJobs.flatMap((job) => (job.input.atomicGroup ? [job.input.atomicGroup] : [])))
+  const retryableJobIds = new Set(retryableJobs.map((job) => job.id))
+
+  return sourceRun.jobs
+    .filter((job) => retryableJobIds.has(job.id) || (job.input.atomicGroup && atomicGroups.has(job.input.atomicGroup)))
+    .sort((left, right) => left.order - right.order)
+}
+
 const isSeedPolicyError = (message: string): boolean => {
   return message.includes('seeding is disabled') || message.includes('Seed reset is disabled')
 }
@@ -252,28 +264,27 @@ const queueSeedRetryRun = async (req: PayloadRequest): Promise<SeedRunSnapshot> 
     throw new Error('No failed or cancelled jobs to retry')
   }
 
+  const retryJobs = expandAtomicGroupRetryJobs(sourceRun, retryableJobs)
+
   const retryRunId = createSeedRunId()
   const retryQueue = getSeedQueueName(retryRunId)
   const retryRunTitle = formatSeedRetryTitle(sourceRun.title ?? formatSeedRunTitle(sourceRun.type, sourceRun.reset))
 
-  const plannedJobs = retryableJobs
-    .slice()
-    .sort((left, right) => left.order - right.order)
-    .map((job) => {
-      const baseTitle = job.title ?? formatSeedJobTitle(job.stepName, job.chunkIndex, job.chunkTotal)
-      const retryTitle = formatSeedRetryTitle(baseTitle)
-      const input = structuredClone(job.input) as SeedQueueJobInput
+  const plannedJobs = retryJobs.map((job) => {
+    const baseTitle = job.title ?? formatSeedJobTitle(job.stepName, job.chunkIndex, job.chunkTotal)
+    const retryTitle = formatSeedRetryTitle(baseTitle)
+    const input = structuredClone(job.input) as SeedQueueJobInput
 
-      return {
+    return {
+      title: retryTitle,
+      input: {
+        ...input,
+        runId: retryRunId,
+        queue: retryQueue,
         title: retryTitle,
-        input: {
-          ...input,
-          runId: retryRunId,
-          queue: retryQueue,
-          title: retryTitle,
-        },
-      }
-    })
+      },
+    }
+  })
 
   return queueSeedRunFromPlannedJobs({
     req,

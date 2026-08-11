@@ -40,8 +40,9 @@ audited moderation after submission before an upheld appeal is written.
 
 Review workflow writes are version-idempotent: a rerun skips a snapshot already present in Payload's native version
 history, including a completed withdrawal. The staged appeal and moderation jobs share one atomic public history;
-an incomplete chain does not run the terminal public cache flush, while a completed chain keeps the existing
-`disableRevalidate` writes and single `seed-final-flush` behavior.
+an incomplete chain withholds its review-dependent cache scope while independent public seed work still flushes.
+Retrying any failed job in that chain replays the complete idempotent group in dependency order, including queued
+follow-up steps, before the existing `disableRevalidate` writes receive one `seed-final-flush`.
 
 Demo reset collection list (ordered for safe clearing):
 1. reviewAppeals (depends on reviews and clinics)

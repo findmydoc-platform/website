@@ -371,6 +371,142 @@ describe('seed endpoints success paths', () => {
     expect(revalidatePath).not.toHaveBeenCalled()
   })
 
+  it('flushes independent public work while withholding an incomplete review history scope', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-mixed-incomplete-review-history'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 6,
+    }) as SeedRunRecord
+    const makeJob = (args: {
+      id: string
+      order: number
+      status: 'succeeded' | 'failed' | 'queued'
+      stepName: string
+      collection: 'posts' | 'clinics' | 'reviewAppeals' | 'reviews'
+      fileName: string
+      atomicGroup?: string
+      created?: number
+      updated?: number
+    }): SeedRunRecord['jobs'][number] => ({
+      id: args.id,
+      order: args.order,
+      status: args.status,
+      input: {
+        runId,
+        type: 'demo',
+        reset: false,
+        queue,
+        stepName: args.stepName,
+        kind: 'collection',
+        ...(args.atomicGroup ? { atomicGroup: args.atomicGroup } : {}),
+        collection: args.collection,
+        fileName: args.fileName,
+      },
+      queue,
+      stepName: args.stepName,
+      kind: 'collection',
+      collection: args.collection,
+      fileName: args.fileName,
+      createdAt: '2026-08-11T09:00:00.000Z',
+      ...(args.status === 'queued' ? {} : { completedAt: '2026-08-11T10:00:00.000Z' }),
+      created: args.created ?? 0,
+      updated: args.updated ?? 0,
+      warnings: [],
+      failures: args.status === 'failed' ? ['final moderation failed'] : [],
+    })
+
+    record.status = 'partial'
+    record.completedAt = '2026-08-11T10:00:00.000Z'
+    record.completedJobs = 5
+    record.succeededJobs = 4
+    record.failedJobs = 1
+    record.jobs = [
+      makeJob({
+        id: 'job-posts',
+        order: 1,
+        status: 'succeeded',
+        stepName: 'posts',
+        collection: 'posts',
+        fileName: 'posts',
+        created: 1,
+      }),
+      makeJob({
+        id: 'job-clinics',
+        order: 2,
+        status: 'succeeded',
+        stepName: 'clinics',
+        collection: 'clinics',
+        fileName: 'clinics',
+        created: 1,
+      }),
+      makeJob({
+        id: 'job-appeal-initial',
+        order: 3,
+        status: 'succeeded',
+        stepName: 'review-appeals-initial-history',
+        collection: 'reviewAppeals',
+        fileName: 'reviewAppealsInitial',
+        atomicGroup: 'review-moderation-history',
+        updated: 1,
+      }),
+      makeJob({
+        id: 'job-moderation-initial',
+        order: 4,
+        status: 'succeeded',
+        stepName: 'review-moderations-initial-history',
+        collection: 'reviews',
+        fileName: 'reviewModerationsInitial',
+        atomicGroup: 'review-moderation-history',
+        updated: 1,
+      }),
+      makeJob({
+        id: 'job-moderation-final',
+        order: 5,
+        status: 'failed',
+        stepName: 'review-moderations-final-state',
+        collection: 'reviews',
+        fileName: 'reviewModerations',
+        atomicGroup: 'review-moderation-history',
+      }),
+      makeJob({
+        id: 'job-appeal-final',
+        order: 6,
+        status: 'queued',
+        stepName: 'review-appeals-final-state',
+        collection: 'reviewAppeals',
+        fileName: 'reviewAppeals',
+        atomicGroup: 'review-moderation-history',
+      }),
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    const res = makeRes()
+    await seedAdvanceHandler(createMockReq(mockUsers.platform(), payload, { query: { runId } }) as PayloadRequest, res)
+
+    expect(res._status).toBe(200)
+    expect((res._body as { finalFlush?: { reason?: string; status: string } }).finalFlush).toMatchObject({
+      status: 'executed',
+      reason: 'incomplete-atomic-group',
+    })
+    expect(revalidateTag).toHaveBeenCalledWith('collection:posts', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('surface:posts-list', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('surface:sitemap:posts', { expire: 0 })
+    expect(revalidatePath).toHaveBeenCalledWith('/posts')
+    expect(revalidatePath).toHaveBeenCalledWith('/posts-sitemap.xml')
+    expect(revalidateTag).not.toHaveBeenCalledWith('collection:clinics', { expire: 0 })
+    expect(revalidateTag).not.toHaveBeenCalledWith('collection:reviews', { expire: 0 })
+    expect(revalidateTag).not.toHaveBeenCalledWith('surface:clinic-detail', { expire: 0 })
+    expect(revalidateTag).not.toHaveBeenCalledWith('surface:listing-comparison', { expire: 0 })
+    expect(revalidateTag).not.toHaveBeenCalledWith('surface:sitemap:pages', { expire: 0 })
+    expect(revalidatePath).not.toHaveBeenCalledWith('/listing-comparison')
+    expect(revalidatePath).not.toHaveBeenCalledWith('/pages-sitemap.xml')
+  })
+
   it('flushes published platform content media consumers after a seed write', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-platform-content-media'

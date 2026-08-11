@@ -117,7 +117,7 @@ the first-name and last-initial snapshot only when the patient opted into that d
 | --- | --- | --- | --- |
 | `none` | Original `comment` | Included | Visible when independently approved and non-blocked |
 | `context` | Original `comment` plus a factual operator-provided `publicNotice` | Included | Visible when independently approved and non-blocked |
-| `redaction` | Separate readable `publicComment` plus the fixed factual removal notice | Included | Visible when independently approved and non-blocked |
+| `redaction` | Separate readable `publicComment` plus the fixed removal notice | Included | Visible when independently approved and non-blocked |
 | `placeholder` | Fixed neutral notice; no review text | Included | Hidden |
 | `removed` | Review omitted without a placeholder | Excluded | Hidden |
 
@@ -126,9 +126,17 @@ where no coherent text can remain visible while the final measure is completed. 
 state; platform staff must replace it with the final measure. The current command contract does not schedule or expire
 placeholders automatically.
 
-The moderation command records the internal reason, platform actor, and timestamp. It preserves the Review's
-`comment`, star rating, approval status, review date, and author preference. A withdrawn review rejects further
-moderation until platform staff corrects an erroneous withdrawal.
+For `redaction`, platform staff supplies `publicComment`, while the moderation command leaves the stored original
+`comment` unchanged. The backend does not compare `publicComment` with `comment`; it therefore does not guarantee that
+the public text is deletion-only or that it preserves the meaning of the original. Before selecting `redaction`, the
+operator must compare both texts and confirm that only the necessary passages were removed and that the remaining
+content does not distort the original statement.
+
+The moderation process stores no passage selection, text diff, evidence field, or proof for that decision. The fixed
+public removal notice is an operator-responsible statement, not the result of automated text analysis. The moderation
+command records the internal reason, platform actor, and timestamp. It preserves the Review's `comment`, star rating,
+approval status, review date, and author preference. A withdrawn review rejects further moderation until platform
+staff corrects an erroneous withdrawal.
 
 Current collection reads apply the same visibility boundary:
 

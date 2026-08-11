@@ -423,7 +423,7 @@ export const demoPlan: SeedPlanStep[] = [
     fileName: 'reviewResponses',
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
-    upsertPolicy: { skipIfVersionMatches: true },
+    upsertPolicy: { skipIfCurrentMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',
@@ -475,7 +475,7 @@ export const demoPlan: SeedPlanStep[] = [
     fileName: 'reviewModerations',
     reqUserStableId: 'seed-platform-admin',
     atomicGroup: 'review-moderation-history',
-    upsertPolicy: { skipIfVersionMatches: true },
+    upsertPolicy: { skipIfCurrentMatches: true },
     mapping: [
       {
         sourceField: 'moderatedByStableId',
@@ -493,7 +493,7 @@ export const demoPlan: SeedPlanStep[] = [
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
     atomicGroup: 'review-moderation-history',
-    upsertPolicy: { skipIfVersionMatches: true },
+    upsertPolicy: { skipIfCurrentMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',

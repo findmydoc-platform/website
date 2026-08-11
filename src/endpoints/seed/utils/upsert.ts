@@ -10,6 +10,7 @@ export type UpsertResult = {
 
 export type SeedUpsertPolicy = {
   recreateUploadOnRelationDrift?: string[]
+  skipIfCurrentMatches?: boolean
   skipIfVersionMatches?: boolean
 }
 
@@ -454,6 +455,7 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
   const stableId = data.stableId
   const existing = await payload.find({
     collection,
+    ...(options?.policy?.skipIfCurrentMatches ? { depth: 0 } : {}),
     where: { stableId: { equals: stableId } },
     limit: 1,
     // If the document was soft-deleted (Trash), it may still exist and still
@@ -534,8 +536,9 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
 
   if (
     !current.deletedAt &&
-    options?.policy?.skipIfVersionMatches &&
-    (await hasMatchingVersion(payload, collection, current.id, nextData))
+    (options?.policy?.skipIfCurrentMatches
+      ? valuesMatch(nextData, current)
+      : options?.policy?.skipIfVersionMatches && (await hasMatchingVersion(payload, collection, current.id, nextData)))
   ) {
     return {
       created: false,

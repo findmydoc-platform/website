@@ -57,22 +57,26 @@ describe('review workflow seed plan', () => {
     expect(new Set(indices).size).toBe(indices.length)
   })
 
-  it('marks every staged appeal and moderation step as one atomic public history', () => {
-    const historyStepNames = [
-      'review-appeals-initial-history',
-      'review-moderations-initial-history',
-      'review-moderations-final-state',
-      'review-appeals-final-state',
+  it('keeps intermediate snapshots version-idempotent and terminal snapshots current', () => {
+    const historySteps = [
+      { name: 'review-appeals-initial-history', upsertPolicy: { skipIfVersionMatches: true } },
+      { name: 'review-moderations-initial-history', upsertPolicy: { skipIfVersionMatches: true } },
+      { name: 'review-moderations-final-state', upsertPolicy: { skipIfCurrentMatches: true } },
+      { name: 'review-appeals-final-state', upsertPolicy: { skipIfCurrentMatches: true } },
     ]
 
-    expect(historyStepNames.map((name) => demoPlan.find((step) => step.name === name))).toEqual(
-      historyStepNames.map((name) =>
+    expect(historySteps.map(({ name }) => demoPlan.find((step) => step.name === name))).toEqual(
+      historySteps.map(({ name, upsertPolicy }) =>
         expect.objectContaining({
           name,
           atomicGroup: 'review-moderation-history',
-          upsertPolicy: { skipIfVersionMatches: true },
+          upsertPolicy,
         }),
       ),
+    )
+
+    expect(demoPlan.find((step) => step.name === 'review-response-states')).toEqual(
+      expect.objectContaining({ upsertPolicy: { skipIfCurrentMatches: true } }),
     )
   })
 

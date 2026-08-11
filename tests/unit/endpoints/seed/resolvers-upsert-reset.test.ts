@@ -103,7 +103,7 @@ describe('upsertByStableId', () => {
     })
   })
 
-  it('skips a versioned seed snapshot that was already persisted', async () => {
+  it('skips an intermediate seed snapshot that already exists in version history', async () => {
     find.mockResolvedValue({ totalDocs: 1, docs: [{ id: 'existing-id' }] })
     findVersions.mockResolvedValue({
       docs: [
@@ -136,6 +136,86 @@ describe('upsertByStableId', () => {
       pagination: false,
       where: { parent: { equals: 'existing-id' } },
     })
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('updates a terminal seed snapshot when only an older version matches', async () => {
+    find.mockResolvedValue({
+      totalDocs: 1,
+      docs: [
+        {
+          id: 'existing-id',
+          stableId: 'seed-review-06',
+          publicMeasure: 'placeholder',
+          publicComment: null,
+        },
+      ],
+    })
+    findVersions.mockResolvedValue({
+      docs: [
+        {
+          version: {
+            stableId: 'seed-review-06',
+            publicMeasure: 'redaction',
+            publicComment: 'Care was otherwise excellent.',
+          },
+        },
+      ],
+    })
+    update.mockResolvedValue({ id: 'existing-id' })
+
+    const result = await upsertByStableId(
+      payload,
+      'reviews',
+      {
+        stableId: 'seed-review-06',
+        publicMeasure: 'redaction',
+        publicComment: 'Care was otherwise excellent.',
+      },
+      { policy: { skipIfCurrentMatches: true } },
+    )
+
+    expect(result).toEqual({ created: false, updated: true })
+    expect(findVersions).not.toHaveBeenCalled()
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'reviews',
+        id: 'existing-id',
+        data: {
+          stableId: 'seed-review-06',
+          publicMeasure: 'redaction',
+          publicComment: 'Care was otherwise excellent.',
+        },
+      }),
+    )
+  })
+
+  it('skips a terminal seed snapshot when the current document matches', async () => {
+    find.mockResolvedValue({
+      totalDocs: 1,
+      docs: [
+        {
+          id: 'existing-id',
+          stableId: 'seed-review-06',
+          publicMeasure: 'redaction',
+          publicComment: 'Care was otherwise excellent.',
+        },
+      ],
+    })
+
+    const result = await upsertByStableId(
+      payload,
+      'reviews',
+      {
+        stableId: 'seed-review-06',
+        publicMeasure: 'redaction',
+        publicComment: 'Care was otherwise excellent.',
+      },
+      { policy: { skipIfCurrentMatches: true } },
+    )
+
+    expect(result).toEqual({ created: false, updated: false })
+    expect(findVersions).not.toHaveBeenCalled()
     expect(update).not.toHaveBeenCalled()
   })
 })

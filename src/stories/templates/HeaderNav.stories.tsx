@@ -71,7 +71,9 @@ const manyNavItems: HeaderNavItem[] = [
 
 const resetDesktopDropdown = async (trigger: HTMLElement) => {
   await userEvent.unhover(trigger)
-  await userEvent.click(trigger.ownerDocument.body)
+  trigger.focus()
+  await userEvent.keyboard('{Escape}')
+  trigger.blur()
   await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'false'))
 }
 

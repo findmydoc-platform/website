@@ -157,4 +157,21 @@ describe('runTestSenseCheck', () => {
 
     expect(runTestSenseCheck({ rootDir }).ok).toBe(true)
   })
+
+  it('recognizes documentation contracts in the data-integrity suite', () => {
+    const rootDir = createTempRepo({
+      'tests/data-integrity/docs/reviewModificationProcess.test.ts': [
+        "import { readFileSync } from 'node:fs'",
+        "import { describe, expect, it } from 'vitest'",
+        "const processDocument = readFileSync('docs/review-modification-process.md', 'utf8')",
+        "describe('review process contract', () => {",
+        "  it('defines review states', () => {",
+        '    expect(processDocument.match(/publicMeasure/gu)?.length ?? 0).toBeGreaterThan(0)',
+        '  })',
+        '})',
+      ].join('\n'),
+    })
+
+    expect(runTestSenseCheck({ rootDir })).toMatchObject({ failures: [], ok: true })
+  })
 })

@@ -157,4 +157,44 @@ describe('runTestSenseCheck', () => {
 
     expect(runTestSenseCheck({ rootDir }).ok).toBe(true)
   })
+
+  it('recognizes documentation contracts in the data-integrity suite', () => {
+    const rootDir = createTempRepo({
+      'tests/data-integrity/docs/reviewModificationProcess.test.ts': [
+        "import { readFileSync } from 'node:fs'",
+        "import { describe, expect, it } from 'vitest'",
+        "const processDocument = readFileSync('docs/review-modification-process.md', 'utf8')",
+        "describe('review process contract', () => {",
+        "  it('defines review states', () => {",
+        '    expect(processDocument.match(/publicMeasure/gu)?.length ?? 0).toBeGreaterThan(0)',
+        '  })',
+        '})',
+      ].join('\n'),
+    })
+
+    expect(runTestSenseCheck({ rootDir })).toMatchObject({ failures: [], ok: true })
+  })
+
+  it('rejects unrelated reads followed by a documentation path literal', () => {
+    const rootDir = createTempRepo({
+      'tests/data-integrity/docs/unrelatedRead.test.ts': [
+        "import { readFileSync } from 'node:fs'",
+        "import { describe, expect, it } from 'vitest'",
+        "const readme = readFileSync('README.md', 'utf8')",
+        "const unusedContractPath = 'docs/review-modification-process.md'",
+        "describe('unrelated file', () => {",
+        "  it('has content', () => {",
+        '    expect(readme.length + unusedContractPath.length).toBeGreaterThan(0)',
+        '  })',
+        '})',
+      ].join('\n'),
+    })
+
+    expect(runTestSenseCheck({ rootDir })).toMatchObject({
+      failures: [
+        'tests/data-integrity/docs/unrelatedRead.test.ts: Data-integrity tests must exercise seed fixtures or repository data contracts.',
+      ],
+      ok: false,
+    })
+  })
 })

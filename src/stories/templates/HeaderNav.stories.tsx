@@ -69,6 +69,12 @@ const manyNavItems: HeaderNavItem[] = [
   { href: '/faq', label: 'FAQ', newTab: false },
 ]
 
+const resetDesktopDropdown = async (trigger: HTMLElement) => {
+  await userEvent.unhover(trigger)
+  await userEvent.click(trigger.ownerDocument.body)
+  await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'false'))
+}
+
 /** Default flat navigation items without submenus. */
 export const Default: Story = {
   args: {
@@ -109,8 +115,8 @@ export const DesktopNeutralSubmenu: Story = {
     const trigger = canvas.getByRole('button', { name: 'Clinics' })
     const firstLevelLink = canvas.getByRole('link', { name: 'Stories' })
 
-    // Trigger should start in the collapsed state.
-    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    // Storybook can preserve browser pointer or focus state between stories.
+    await resetDesktopDropdown(trigger)
 
     // Focusing the trigger should open the submenu.
     trigger.focus()
@@ -140,7 +146,8 @@ export const DesktopHoverTolerance: Story = {
 
     if (!dropdownContainer) throw new Error('Missing dropdown container')
 
-    trigger.focus()
+    await resetDesktopDropdown(trigger)
+    await userEvent.hover(trigger)
     await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'true'))
     await waitFor(() => expect(canvas.getByRole('link', { name: 'All Clinics' })).toBeInTheDocument())
 
@@ -149,6 +156,8 @@ export const DesktopHoverTolerance: Story = {
     // Menu should not close synchronously on mouseout; it should still be visible immediately after.
     expect(canvas.getByRole('link', { name: 'All Clinics' })).toBeInTheDocument()
 
+    // Move the actual user-event pointer away so a previous hover cannot reopen the dropdown.
+    await userEvent.unhover(dropdownContainer)
     await waitFor(() => expect(canvas.queryByRole('link', { name: 'All Clinics' })).not.toBeInTheDocument())
   },
 }

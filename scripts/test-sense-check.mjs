@@ -98,7 +98,7 @@ function hasDataIntegritySignal(source) {
     /@\/endpoints\/seed\/data\//u,
     /src\/endpoints\/seed\/data\//u,
     /readFileSync\([^)]*seed/u,
-    /readFileSync\([\s\S]{0,240}?['"][^'"]*docs\/[^'"]+\.md['"]/u,
+    /readFileSync\(\s*['"](?:[^'"]*\/)?docs\/[^'"]+\.md['"]\s*(?:,|\))/u,
     /medicalSpecialt(?:y|ies).*\.json/u,
   ].some((pattern) => pattern.test(source))
 }

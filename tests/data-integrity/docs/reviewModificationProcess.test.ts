@@ -9,6 +9,8 @@ type MarkdownSection = {
   title: string
 }
 
+type MarkdownTableRecord = Record<string, string>
+
 const parseSections = (source: string): MarkdownSection[] => {
   const headings = [...source.matchAll(/^## (.+)$/gmu)]
 
@@ -65,6 +67,62 @@ const parseTable = (section: string): string[][] =>
     )
     .filter((row) => !row.every((cell) => /^-+$/u.test(cell)))
 
+const parseTableRecords = (section: string): MarkdownTableRecord[] => {
+  const [headers, ...rows] = parseTable(section)
+  if (!headers) throw new Error('Missing Markdown table')
+
+  return rows.map(
+    (row) =>
+      Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ''])) as MarkdownTableRecord,
+  )
+}
+
+const parseTopLevelBullets = (section: string): string[] => {
+  const bullets: string[] = []
+  let activeIndex: number | undefined
+
+  for (const line of section.split('\n')) {
+    if (line.startsWith('- ')) {
+      bullets.push(line.slice(2))
+      activeIndex = bullets.length - 1
+      continue
+    }
+
+    if (line.trim() === '') {
+      activeIndex = undefined
+      continue
+    }
+
+    if (activeIndex !== undefined) {
+      bullets[activeIndex] = `${bullets[activeIndex]} ${line.trim()}`
+    }
+  }
+
+  return bullets.map(normalizeWhitespace)
+}
+
+const getBullet = (section: string, prefix: string): string => {
+  const bullet = parseTopLevelBullets(section).find((candidate) => candidate.startsWith(prefix))
+  if (!bullet) throw new Error(`Missing documentation bullet: ${prefix}`)
+  return bullet
+}
+
+const getSentence = (source: string, marker: string): string => {
+  const sentence = (source.match(/[^.]+(?:\.|$)/gu) ?? []).find((candidate) =>
+    candidate.toLowerCase().includes(marker.toLowerCase()),
+  )
+  if (!sentence) throw new Error(`Missing documentation sentence: ${marker}`)
+  return normalizeWhitespace(sentence)
+}
+
+const extractCodeTerms = (value: string): string[] =>
+  [...value.matchAll(/`([^`]+)`/gu)].flatMap((match) =>
+    (match[1] ?? '')
+      .split('|')
+      .map((term) => term.trim())
+      .filter(Boolean),
+  )
+
 describe('review modification process documentation contract', () => {
   it('keeps approval, public treatment, and withdrawal as separate state machines', () => {
     const domainContract = getSection('Domain Contract')
@@ -84,32 +142,196 @@ describe('review modification process documentation contract', () => {
     expect(independenceSignals.filter((signal) => normalizedContract.includes(signal))).toEqual(independenceSignals)
   })
 
-  it('defines public behavior for every supported moderation measure', () => {
-    const rows = parseTable(getSection('Public Moderation Measures')).slice(1)
-    const measures = rows.map((row) => row[0]?.match(/^`([^`]+)`$/u)?.[1])
+  it('binds each moderation measure to its public text, rating, and response behavior', () => {
+    const rows = parseTableRecords(getSection('Public Moderation Measures'))
+    const measures = Object.fromEntries(
+      rows.map((row) => {
+        const measure = extractCodeTerms(row.Measure ?? '')[0]
+        if (!measure) throw new Error('Missing public moderation measure')
 
-    expect(measures).toEqual(['none', 'context', 'redaction', 'placeholder', 'removed'])
-    expect(rows.every((row) => row.length === 4 && row.every(Boolean))).toBe(true)
+        const output = normalizeWhitespace(row['Public review output'] ?? '').toLowerCase()
+        const fields = extractCodeTerms(row['Public review output'] ?? '')
+        const outputMode = fields.includes('publicComment')
+          ? 'redacted'
+          : fields.includes('publicNotice')
+            ? 'context'
+            : fields.includes('comment')
+              ? 'original'
+              : output.includes('no review text')
+                ? 'notice-only'
+                : output.includes('omitted')
+                  ? 'omitted'
+                  : 'unknown'
+        const notice = output.includes('fixed removal notice')
+          ? 'removal'
+          : output.includes('fixed neutral notice')
+            ? 'neutral'
+            : output.includes('factual') && fields.includes('publicNotice')
+              ? 'context'
+              : 'none'
+
+        return [
+          measure,
+          {
+            fields,
+            metadata: normalizeWhitespace(row['Stars, count, date, and public author'] ?? '').toLowerCase(),
+            notice,
+            outputMode,
+            response: normalizeWhitespace(row['Published clinic response'] ?? '')
+              .toLowerCase()
+              .startsWith('visible')
+              ? 'visible'
+              : normalizeWhitespace(row['Published clinic response'] ?? '').toLowerCase().startsWith('hidden')
+                ? 'hidden'
+                : 'unknown',
+          },
+        ]
+      }),
+    )
+
+    expect(measures).toEqual({
+      context: {
+        fields: ['comment', 'publicNotice'],
+        metadata: 'included',
+        notice: 'context',
+        outputMode: 'context',
+        response: 'visible',
+      },
+      none: {
+        fields: ['comment'],
+        metadata: 'included',
+        notice: 'none',
+        outputMode: 'original',
+        response: 'visible',
+      },
+      placeholder: {
+        fields: [],
+        metadata: 'included',
+        notice: 'neutral',
+        outputMode: 'notice-only',
+        response: 'hidden',
+      },
+      redaction: {
+        fields: ['publicComment'],
+        metadata: 'included',
+        notice: 'removal',
+        outputMode: 'redacted',
+        response: 'visible',
+      },
+      removed: {
+        fields: [],
+        metadata: 'excluded',
+        notice: 'none',
+        outputMode: 'omitted',
+        response: 'hidden',
+      },
+    })
   })
 
-  it('keeps publication history read-only, private, tenant-scoped, and visibility-filtered', () => {
-    const endpointRows = parseTable(getSection('Endpoint Boundary')).slice(1)
-    const historyRows = endpointRows.filter((row) => row[0]?.includes('/publication-history'))
-    const methods = historyRows.map((row) => row[0]?.match(/`([A-Z]+)\s/u)?.[1])
-    const endpointRole = normalizeWhitespace(historyRows[0]?.[1] ?? '').toLowerCase()
-    const endpointSignals = ['private', 'no-store', 'platform staff', 'currently assigned clinic', 'tenant', 'current-safety']
+  it('keeps dashboard history and current reads private, read-only, and current-safe', () => {
+    const endpointRows = parseTableRecords(getSection('Endpoint Boundary'))
+    const historyEndpoint = endpointRows.find((row) => (row.Endpoint ?? '').includes('/publication-history'))
+    if (!historyEndpoint) throw new Error('Missing publication-history endpoint')
 
-    expect(methods).toEqual(['GET'])
-    expect(endpointSignals.filter((signal) => endpointRole.includes(signal))).toEqual(endpointSignals)
+    const [method, endpointPath] = extractCodeTerms(historyEndpoint.Endpoint ?? '')[0]?.split(/\s+/u) ?? []
+    const endpointRole = normalizeWhitespace(historyEndpoint['Process role'] ?? '').toLowerCase()
+    expect({
+      cache: endpointRole.includes('no-store') ? 'no-store' : 'unspecified',
+      endpointPath,
+      method,
+      principals: ['platform staff', 'currently assigned clinic'].filter((principal) =>
+        endpointRole.includes(principal),
+      ),
+      scope: ['tenant', 'current-safety'].filter((constraint) => endpointRole.includes(constraint)),
+    }).toEqual({
+      cache: 'no-store',
+      endpointPath: '/api/reviews/:id/publication-history',
+      method: 'GET',
+      principals: ['platform staff', 'currently assigned clinic'],
+      scope: ['tenant', 'current-safety'],
+    })
 
-    const versioning = normalizeWhitespace(getSection('Versioning and Audit')).toLowerCase()
-    const visibilitySignals = [
-      'sanitized publication-history endpoint',
+    const moderationSection = getSection('Public Moderation Measures')
+    const clinicCurrentRead = getBullet(moderationSection, 'Assigned clinic staff current reads')
+    const retainedRows = getSentence(clinicCurrentRead, 'retain approved rows')
+    expect(extractCodeTerms(retainedRows)).toEqual(['publicMeasure=removed', 'withdrawalState=withdrawn'])
+
+    const readableProjectionFields = getSentence(clinicCurrentRead, 'They can read')
+    expect(extractCodeTerms(readableProjectionFields)).toEqual([
+      'publicMeasure',
+      'publicComment',
+      'publicNotice',
+      'moderatedAt',
+      'withdrawalState',
+      'withdrawalSource',
+      'withdrawnAt',
+    ])
+
+    const projectionVisibility = getSentence(clinicCurrentRead, 'do not mean')
+    expect(
+      ['stored fields', 'row or projection', 'still public'].filter((signal) =>
+        projectionVisibility.toLowerCase().includes(signal),
+      ),
+    ).toEqual(['stored fields', 'row or projection', 'still public'])
+
+    const rawCommentVisibility = getSentence(clinicCurrentRead, 'available only')
+    expect(extractCodeTerms(rawCommentVisibility)).toEqual(['comment', 'none', 'context'])
+    expect(
+      ['active', 'not readable', 'redaction', 'placeholder', 'removal', 'withdrawal'].filter((signal) =>
+        rawCommentVisibility.toLowerCase().includes(signal),
+      ),
+    ).toEqual(['active', 'not readable', 'redaction', 'placeholder', 'removal', 'withdrawal'])
+
+    const omittedClinicData = getSentence(clinicCurrentRead, 'also omitted')
+    expect(
+      ['patient identity', 'internal reasons', 'named audit actors'].filter((field) =>
+        omittedClinicData.toLowerCase().includes(field),
+      ),
+    ).toEqual(['patient identity', 'internal reasons', 'named audit actors'])
+
+    const publicCurrentRead = getBullet(moderationSection, 'Patients and anonymous callers')
+    const eligiblePublicRows = getSentence(publicCurrentRead, 'receive only approved')
+    expect(extractCodeTerms(eligiblePublicRows)).toEqual(['none', 'context', 'redaction', 'placeholder'])
+    expect(
+      ['approved', 'active'].filter((state) => eligiblePublicRows.toLowerCase().includes(state)),
+    ).toEqual(['approved', 'active'])
+
+    const publicProjection = getSentence(publicCurrentRead, 'public projection only')
+    expect(publicProjection.toLowerCase().includes('public projection only')).toBe(true)
+
+    const absentPublicRows = getSentence(publicCurrentRead, 'absent in full')
+    expect(
+      ['removed', 'withdrawn', 'absent in full'].filter((state) =>
+        absentPublicRows.toLowerCase().includes(state),
+      ),
+    ).toEqual(['removed', 'withdrawn', 'absent in full'])
+
+    const reviewHistory = getBullet(getSection('Versioning and Audit'), 'Raw Review versions')
+    const rawVersionAccess = getSentence(reviewHistory, 'platform-only')
+    expect(
+      ['raw review versions', 'platform-only'].filter((signal) =>
+        rawVersionAccess.toLowerCase().includes(signal),
+      ),
+    ).toEqual(['raw review versions', 'platform-only'])
+
+    const safeClinicHistory = getSentence(reviewHistory, 'currently safe public projection')
+    expect(
+      ['assigned clinic staff', 'sanitized publication-history', 'exactly match', 'currently safe public projection'].filter(
+        (signal) => safeClinicHistory.toLowerCase().includes(signal),
+      ),
+    ).toEqual([
+      'assigned clinic staff',
+      'sanitized publication-history',
+      'exactly match',
       'currently safe public projection',
-      'removed or withdrawn current state',
-      'no historical text',
-    ]
-    expect(visibilitySignals.filter((signal) => versioning.includes(signal))).toEqual(visibilitySignals)
+    ])
+
+    const hiddenHistory = getSentence(reviewHistory, 'no historical text')
+    expect(
+      ['removed', 'withdrawn', 'no historical text'].filter((signal) =>
+        hiddenHistory.toLowerCase().includes(signal),
+      ),
+    ).toEqual(['removed', 'withdrawn', 'no historical text'])
   })
 
   it('references the Trust Core only at the policy boundary and forbids evidence storage', () => {

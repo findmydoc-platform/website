@@ -34,9 +34,15 @@ Demo units (current):
 - Reviews
 - Review responses and appeals, including native-version history fixtures
 
-Review workflow snapshots run in dependency order: reviews, initial and final review responses, initial appeals,
-review moderation updates, and final appeals. The moderation update uses the normal Review lifecycle so the native
-Review version and platform actor audit exist before an upheld appeal snapshot is written.
+Review workflow fixtures run in dependency order: reviews, response end states, initial appeals, interim review
+moderations, final review moderations, and final appeals. This preserves the required Review versions and records an
+audited moderation after submission before an upheld appeal is written.
+
+Review workflow writes are version-idempotent: a rerun skips a snapshot already present in Payload's native version
+history, including a completed withdrawal. The staged appeal and moderation jobs share one atomic public history;
+an incomplete chain withholds its review-dependent cache scope while independent public seed work still flushes.
+Retrying any failed job in that chain replays the complete idempotent group in dependency order, including queued
+follow-up steps, before the existing `disableRevalidate` writes receive one `seed-final-flush`.
 
 Demo reset collection list (ordered for safe clearing):
 1. reviewAppeals (depends on reviews and clinics)
@@ -123,6 +129,10 @@ When `reset=1` the system records per-collection counts before and after seeding
 
 ## Idempotency
 Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless new reference data is added. Demo units skip creating duplicates using slug / unique lookups.
+
+Versioned review workflow fixtures additionally match each intended snapshot against native Payload versions before
+updating. This preserves the same moderation, appeal, response, and withdrawal sequence across repeated full demo
+runs and partial-history retries.
 
 ## Baseline Seed Units
 

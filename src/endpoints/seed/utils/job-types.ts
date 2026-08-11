@@ -13,6 +13,7 @@ export type SeedQueueJobInput = {
   title?: string
   stepName: string
   kind: SeedQueueJobKind
+  atomicGroup?: string
   collection?: CollectionSlug
   fileName?: string
   mapping?: RelationMapping[]

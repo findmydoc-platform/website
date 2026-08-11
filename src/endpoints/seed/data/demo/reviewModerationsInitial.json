@@ -1,0 +1,20 @@
+[
+  {
+    "stableId": "seed-review-06",
+    "publicMeasure": "placeholder",
+    "publicComment": null,
+    "publicNotice": "This review was moderated. Its written content is not publicly available.",
+    "moderationReason": "A temporary placeholder is needed while the narrow final public text is prepared.",
+    "moderatedAt": "2026-02-02T09:30:00.000Z",
+    "moderatedByStableId": "seed-platform-admin"
+  },
+  {
+    "stableId": "seed-review-08",
+    "publicMeasure": "none",
+    "publicComment": null,
+    "publicNotice": null,
+    "moderationReason": "Platform Support reviewed the objection and explicitly found that no public change is required.",
+    "moderatedAt": "2026-02-03T09:30:00.000Z",
+    "moderatedByStableId": "seed-platform-admin"
+  }
+]

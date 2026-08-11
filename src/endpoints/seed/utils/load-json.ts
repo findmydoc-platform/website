@@ -31,8 +31,8 @@ const demoPatients: unknown = loadSeedJson('../data/demo/patients.json')
 const demoPlatformContentMedia: unknown = loadSeedJson('../data/demo/platformContentMedia.json')
 const demoPosts: unknown = loadSeedJson('../data/demo/posts.json')
 const demoReviews: unknown = loadSeedJson('../data/demo/reviews.json')
+const demoReviewModerationsInitial: unknown = loadSeedJson('../data/demo/reviewModerationsInitial.json')
 const demoReviewModerations: unknown = loadSeedJson('../data/demo/reviewModerations.json')
-const demoReviewResponsesInitial: unknown = loadSeedJson('../data/demo/reviewResponsesInitial.json')
 const demoReviewResponses: unknown = loadSeedJson('../data/demo/reviewResponses.json')
 const demoReviewAppealsInitial: unknown = loadSeedJson('../data/demo/reviewAppealsInitial.json')
 const demoReviewAppeals: unknown = loadSeedJson('../data/demo/reviewAppeals.json')
@@ -67,8 +67,8 @@ const seedFileMap: SeedFileMap = {
     platformContentMedia: demoPlatformContentMedia,
     posts: demoPosts,
     reviews: demoReviews,
+    reviewModerationsInitial: demoReviewModerationsInitial,
     reviewModerations: demoReviewModerations,
-    reviewResponsesInitial: demoReviewResponsesInitial,
     reviewResponses: demoReviewResponses,
     reviewAppealsInitial: demoReviewAppealsInitial,
     reviewAppeals: demoReviewAppeals,

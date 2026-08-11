@@ -2,8 +2,10 @@ import { randomUUID } from 'crypto'
 import type { Payload } from 'payload'
 
 import {
+  CACHE_POLICY_CATALOG,
   CACHE_TAGGABLE_COLLECTIONS,
   CACHE_TAGGABLE_SURFACE_IDS,
+  type CachePolicyCatalogEntry,
   type CachePolicyGlobal,
   type CacheSitemapId,
   type CacheTaggableCollection,
@@ -257,6 +259,75 @@ const hasCompletedOrWritten = (job: SeedRunJobRecord): boolean => {
   return job.status === 'succeeded'
 }
 
+const findIncompletePublicAtomicGroups = (record: SeedRunRecord): SeedRunJobRecord[][] => {
+  const groups = new Map<string, SeedRunJobRecord[]>()
+  const seedPlan = record.type === 'baseline' ? baselinePlan : demoPlan
+
+  for (const job of record.jobs) {
+    const group = job.input.atomicGroup
+    if (!group) continue
+    groups.set(group, [...(groups.get(group) ?? []), job])
+  }
+
+  return [...groups.entries()].flatMap(([group, jobs]) => {
+    const publicStateWasWritten = jobs.some((job) => isPublicAffectingJob(job) && hasCompletedOrWritten(job))
+    const expectedStepNames = seedPlan
+      .filter((step) => step.kind === 'collection' && step.atomicGroup === group)
+      .map((step) => step.name)
+    const groupSucceeded =
+      expectedStepNames.length > 0 &&
+      expectedStepNames.every((stepName) =>
+        jobs.some((job) => job.stepName === stepName && (job.status === 'succeeded' || job.status === 'skipped')),
+      ) &&
+      jobs.every((job) => job.status === 'succeeded' || job.status === 'skipped')
+    return publicStateWasWritten && !groupSucceeded ? [jobs] : []
+  })
+}
+
+const buildBlockedScopeForIncompleteAtomicGroups = (
+  record: SeedRunRecord,
+  incompleteGroups: readonly SeedRunJobRecord[][],
+): SeedFinalFlushScope => {
+  const blockedScope = createScope()
+
+  for (const jobs of incompleteGroups) {
+    for (const job of jobs) {
+      if (isPublicAffectingJob(job)) {
+        addJobScope(blockedScope, job, record.type)
+      }
+    }
+  }
+
+  for (const catalogEntry of CACHE_POLICY_CATALOG) {
+    const entry: CachePolicyCatalogEntry = catalogEntry
+    const dependsOnBlockedSurface = entry.surfaces?.some(
+      (surface) => isTaggableSurface(surface) && blockedScope.surfaces.has(surface),
+    )
+    if (!dependsOnBlockedSurface) continue
+
+    for (const collection of entry.collections ?? []) {
+      if (isTaggableCollection(collection)) {
+        blockedScope.collections.add(collection)
+      }
+    }
+    for (const global of entry.globals ?? []) {
+      blockedScope.globals.add(global)
+    }
+  }
+
+  return blockedScope
+}
+
+const removeBlockedScope = (scope: SeedFinalFlushScope, blockedScope: SeedFinalFlushScope): void => {
+  for (const collection of blockedScope.collections) scope.collections.delete(collection)
+  for (const global of blockedScope.globals) scope.globals.delete(global)
+  for (const surface of blockedScope.surfaces) scope.surfaces.delete(surface)
+  for (const sitemap of blockedScope.sitemaps) scope.sitemaps.delete(sitemap)
+}
+
+const hasFlushableScope = (scope: SeedFinalFlushScope): boolean =>
+  scope.collections.size > 0 || scope.globals.size > 0 || scope.surfaces.size > 0 || scope.sitemaps.size > 0
+
 const buildScopeFromCompletedPublicJobs = (
   record: SeedRunRecord,
 ): {
@@ -365,6 +436,22 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
 
   const terminalStatus = snapshot.status as FlushableSeedRunStatus
   const { affectedPostSlugs, completedJobCount, publicJobs, scope } = buildScopeFromCompletedPublicJobs(record)
+  const incompleteAtomicGroups = findIncompletePublicAtomicGroups(record)
+
+  if (incompleteAtomicGroups.length > 0) {
+    removeBlockedScope(scope, buildBlockedScopeForIncompleteAtomicGroups(record, incompleteAtomicGroups))
+  }
+
+  if (incompleteAtomicGroups.length > 0 && !hasFlushableScope(scope)) {
+    await markFinalFlush(payload, snapshot.runId, {
+      status: 'skipped',
+      tagCount: 0,
+      pathCount: 0,
+      failureCount: 0,
+      reason: 'incomplete-atomic-group',
+    })
+    return
+  }
 
   if (publicJobs.length === 0) {
     await markFinalFlush(payload, snapshot.runId, {
@@ -414,7 +501,11 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
       tagCount: result.attempted.tagCount,
       pathCount: result.attempted.pathCount,
       failureCount: result.failures.length,
-      ...(result.failures.length > 0 ? { reason: 'executor-error' } : {}),
+      ...(result.failures.length > 0
+        ? { reason: 'executor-error' as const }
+        : incompleteAtomicGroups.length > 0
+          ? { reason: 'incomplete-atomic-group' as const }
+          : {}),
     })
     await appendFinalFlushLog(
       payload,

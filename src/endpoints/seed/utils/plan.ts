@@ -7,6 +7,7 @@ type CollectionPlanStep = {
   name: string
   collection: CollectionSlug
   fileName: string
+  atomicGroup?: string
   mapping?: RelationMapping[]
   context?: Record<string, unknown>
   localizedFields?: string[]
@@ -402,31 +403,27 @@ export const demoPlan: SeedPlanStep[] = [
         collection: 'patients',
         required: true,
       },
-    ],
-  },
-  {
-    kind: 'collection',
-    name: 'review-responses-initial-history',
-    collection: 'reviewResponses',
-    fileName: 'reviewResponsesInitial',
-    context: { trustedReviewWorkflowSeed: true },
-    reqUserStableId: 'seed-platform-admin',
-    mapping: [
       {
-        sourceField: 'reviewStableId',
-        targetField: 'review',
-        collection: 'reviews',
-        required: true,
+        sourceField: 'moderatedByStableId',
+        targetField: 'moderatedBy',
+        collection: 'platformStaff',
+      },
+      {
+        sourceField: 'withdrawnByStableId',
+        targetField: 'withdrawnBy.value',
+        collection: 'platformStaff',
       },
     ],
+    upsertPolicy: { skipIfVersionMatches: true },
   },
   {
     kind: 'collection',
-    name: 'review-responses-final-state',
+    name: 'review-response-states',
     collection: 'reviewResponses',
     fileName: 'reviewResponses',
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
+    upsertPolicy: { skipIfCurrentMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',
@@ -443,6 +440,8 @@ export const demoPlan: SeedPlanStep[] = [
     fileName: 'reviewAppealsInitial',
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
+    atomicGroup: 'review-moderation-history',
+    upsertPolicy: { skipIfVersionMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',
@@ -454,10 +453,29 @@ export const demoPlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
-    name: 'review-moderations',
+    name: 'review-moderations-initial-history',
+    collection: 'reviews',
+    fileName: 'reviewModerationsInitial',
+    reqUserStableId: 'seed-platform-admin',
+    atomicGroup: 'review-moderation-history',
+    upsertPolicy: { skipIfVersionMatches: true },
+    mapping: [
+      {
+        sourceField: 'moderatedByStableId',
+        targetField: 'moderatedBy',
+        collection: 'platformStaff',
+        required: true,
+      },
+    ],
+  },
+  {
+    kind: 'collection',
+    name: 'review-moderations-final-state',
     collection: 'reviews',
     fileName: 'reviewModerations',
     reqUserStableId: 'seed-platform-admin',
+    atomicGroup: 'review-moderation-history',
+    upsertPolicy: { skipIfCurrentMatches: true },
     mapping: [
       {
         sourceField: 'moderatedByStableId',
@@ -474,6 +492,8 @@ export const demoPlan: SeedPlanStep[] = [
     fileName: 'reviewAppeals',
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
+    atomicGroup: 'review-moderation-history',
+    upsertPolicy: { skipIfCurrentMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',

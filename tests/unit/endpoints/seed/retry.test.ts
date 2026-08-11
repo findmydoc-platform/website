@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Payload, PayloadRequest } from 'payload'
 
 import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
@@ -9,9 +9,16 @@ vi.mock('next/cache', () => ({
   revalidateTag: vi.fn(),
 }))
 
-import { seedRetryHandler } from '@/endpoints/seed/seedEndpoint'
+import { revalidateTag } from 'next/cache'
+import { seedAdvanceHandler, seedRetryHandler } from '@/endpoints/seed/seedEndpoint'
 import { formatSeedJobTitle, formatSeedRetryTitle, formatSeedRunTitle } from '@/endpoints/seed/utils/labels'
-import { createSeedRunRecord, saveSeedRunRecord, type SeedRunRecord } from '@/endpoints/seed/utils/state'
+import {
+  createSeedRunRecord,
+  finishSeedRunJob,
+  loadSeedRunRecord,
+  saveSeedRunRecord,
+  type SeedRunRecord,
+} from '@/endpoints/seed/utils/state'
 
 type MockResponse = {
   _status?: number
@@ -138,6 +145,10 @@ const seedSourceRun = async (payload: ReturnType<typeof createMockPayload>) => {
 }
 
 describe('seed retry endpoint', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('queues all failed and cancelled jobs into a new retry run', async () => {
     const payload = createMockPayload()
     const sourceRun = await seedSourceRun(payload)
@@ -197,5 +208,121 @@ describe('seed retry endpoint', () => {
     expect((payload.jobs.queue.mock.calls[0]?.[0] as { input?: Record<string, unknown> }).input?.title).toBe(
       formatSeedRetryTitle(formatSeedJobTitle('platformContentMedia', 2, 3)),
     )
+  })
+
+  it('replays a complete atomic group in source order and flushes after the retry succeeds', async () => {
+    const payload = createMockPayload()
+    const sourceRunId = 'source-review-history-run'
+    const sourceQueue = `seed:${sourceRunId}`
+    const sourceRun = createSeedRunRecord({
+      runId: sourceRunId,
+      type: 'demo',
+      reset: false,
+      queue: sourceQueue,
+      totalJobs: 4,
+    })
+    const steps = [
+      {
+        collection: 'reviewAppeals',
+        fileName: 'reviewAppealsInitial',
+        status: 'succeeded',
+        stepName: 'review-appeals-initial-history',
+        updated: 1,
+      },
+      {
+        collection: 'reviews',
+        fileName: 'reviewModerationsInitial',
+        status: 'succeeded',
+        stepName: 'review-moderations-initial-history',
+        updated: 1,
+      },
+      {
+        collection: 'reviews',
+        fileName: 'reviewModerations',
+        status: 'failed',
+        stepName: 'review-moderations-final-state',
+        updated: 0,
+      },
+      {
+        collection: 'reviewAppeals',
+        fileName: 'reviewAppeals',
+        status: 'queued',
+        stepName: 'review-appeals-final-state',
+        updated: 0,
+      },
+    ] as const
+
+    sourceRun.status = 'partial'
+    sourceRun.completedAt = '2026-08-11T10:00:00.000Z'
+    sourceRun.completedJobs = 3
+    sourceRun.succeededJobs = 2
+    sourceRun.failedJobs = 1
+    sourceRun.jobs = steps.map((step, index) => ({
+      id: `source-review-job-${index + 1}`,
+      order: index + 1,
+      status: step.status,
+      input: {
+        runId: sourceRunId,
+        type: 'demo',
+        reset: false,
+        queue: sourceQueue,
+        stepName: step.stepName,
+        kind: 'collection',
+        atomicGroup: 'review-moderation-history',
+        collection: step.collection,
+        fileName: step.fileName,
+        upsertPolicy: { skipIfVersionMatches: true },
+      },
+      queue: sourceQueue,
+      stepName: step.stepName,
+      kind: 'collection',
+      collection: step.collection,
+      fileName: step.fileName,
+      createdAt: '2026-08-11T09:00:00.000Z',
+      ...(step.status === 'queued' ? {} : { completedAt: '2026-08-11T10:00:00.000Z' }),
+      created: 0,
+      updated: step.updated,
+      warnings: [],
+      failures: step.status === 'failed' ? ['final moderation failed'] : [],
+    }))
+    await saveSeedRunRecord(payload as unknown as Payload, sourceRun)
+
+    const retryRes = makeRes()
+    await seedRetryHandler(
+      createMockReq(mockUsers.platform(), payload, {
+        query: { runId: sourceRunId, jobId: 'source-review-job-3' },
+      }) as PayloadRequest,
+      retryRes,
+    )
+
+    expect(retryRes._status).toBe(202)
+    expect((retryRes._body.progress as { total: number }).total).toBe(4)
+    const queuedInputs = payload.jobs.queue.mock.calls.map(([call]) => (call as { input: { stepName: string } }).input)
+    expect(queuedInputs.map((input) => input.stepName)).toEqual(steps.map((step) => step.stepName))
+
+    const retryRunId = retryRes._body.runId as string
+    const retryRun = await loadSeedRunRecord(payload as unknown as Payload, retryRunId)
+    expect(retryRun?.jobs).toHaveLength(4)
+
+    for (const job of retryRun?.jobs ?? []) {
+      await finishSeedRunJob(payload as unknown as Payload, retryRunId, {
+        jobId: job.id,
+        status: 'succeeded',
+        created: 0,
+        updated: job.collection === 'reviews' ? 1 : 0,
+      })
+    }
+
+    const advanceRes = makeRes()
+    await seedAdvanceHandler(
+      createMockReq(mockUsers.platform(), payload, { query: { runId: retryRunId } }) as PayloadRequest,
+      advanceRes,
+    )
+
+    expect(advanceRes._status).toBe(200)
+    expect((advanceRes._body.finalFlush as { status: string }).status).toBe('executed')
+    expect(revalidateTag).toHaveBeenCalledWith('collection:reviews', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('surface:clinic-detail', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('surface:listing-comparison', { expire: 0 })
   })
 })

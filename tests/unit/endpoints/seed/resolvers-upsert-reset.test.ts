@@ -52,10 +52,12 @@ describe('stableId resolvers', () => {
 
 describe('upsertByStableId', () => {
   const find = vi.fn()
+  const findVersions = vi.fn()
   const create = vi.fn()
   const update = vi.fn()
   const payload = {
     find,
+    findVersions,
     create,
     update,
   } as unknown as Payload
@@ -99,6 +101,42 @@ describe('upsertByStableId', () => {
         },
       },
     })
+  })
+
+  it('skips a versioned seed snapshot that was already persisted', async () => {
+    find.mockResolvedValue({ totalDocs: 1, docs: [{ id: 'existing-id' }] })
+    findVersions.mockResolvedValue({
+      docs: [
+        {
+          version: {
+            stableId: 'seed-review-06',
+            publicMeasure: 'placeholder',
+            publicComment: null,
+          },
+        },
+      ],
+    })
+
+    const result = await upsertByStableId(
+      payload,
+      'reviews',
+      {
+        stableId: 'seed-review-06',
+        publicMeasure: 'placeholder',
+        publicComment: null,
+      },
+      { policy: { skipIfVersionMatches: true } },
+    )
+
+    expect(result).toEqual({ created: false, updated: false })
+    expect(findVersions).toHaveBeenCalledWith({
+      collection: 'reviews',
+      depth: 0,
+      overrideAccess: true,
+      pagination: false,
+      where: { parent: { equals: 'existing-id' } },
+    })
+    expect(update).not.toHaveBeenCalled()
   })
 })
 

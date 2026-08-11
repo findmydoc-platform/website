@@ -7,6 +7,7 @@ type CollectionPlanStep = {
   name: string
   collection: CollectionSlug
   fileName: string
+  atomicGroup?: string
   mapping?: RelationMapping[]
   context?: Record<string, unknown>
   localizedFields?: string[]
@@ -413,6 +414,7 @@ export const demoPlan: SeedPlanStep[] = [
         collection: 'platformStaff',
       },
     ],
+    upsertPolicy: { skipIfVersionMatches: true },
   },
   {
     kind: 'collection',
@@ -421,6 +423,7 @@ export const demoPlan: SeedPlanStep[] = [
     fileName: 'reviewResponses',
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
+    upsertPolicy: { skipIfVersionMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',
@@ -437,6 +440,8 @@ export const demoPlan: SeedPlanStep[] = [
     fileName: 'reviewAppealsInitial',
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
+    atomicGroup: 'review-moderation-history',
+    upsertPolicy: { skipIfVersionMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',
@@ -452,6 +457,8 @@ export const demoPlan: SeedPlanStep[] = [
     collection: 'reviews',
     fileName: 'reviewModerationsInitial',
     reqUserStableId: 'seed-platform-admin',
+    atomicGroup: 'review-moderation-history',
+    upsertPolicy: { skipIfVersionMatches: true },
     mapping: [
       {
         sourceField: 'moderatedByStableId',
@@ -467,6 +474,8 @@ export const demoPlan: SeedPlanStep[] = [
     collection: 'reviews',
     fileName: 'reviewModerations',
     reqUserStableId: 'seed-platform-admin',
+    atomicGroup: 'review-moderation-history',
+    upsertPolicy: { skipIfVersionMatches: true },
     mapping: [
       {
         sourceField: 'moderatedByStableId',
@@ -483,6 +492,8 @@ export const demoPlan: SeedPlanStep[] = [
     fileName: 'reviewAppeals',
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
+    atomicGroup: 'review-moderation-history',
+    upsertPolicy: { skipIfVersionMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',

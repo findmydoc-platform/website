@@ -56,7 +56,7 @@ export type SeedRunFinalFlushRecord = {
   tagCount: number
   pathCount: number
   failureCount: number
-  reason?: 'no-public-work' | 'planner-error' | 'executor-error'
+  reason?: 'no-public-work' | 'incomplete-atomic-group' | 'planner-error' | 'executor-error'
 }
 
 export type SeedRunRecord = {

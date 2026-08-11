@@ -257,6 +257,31 @@ const hasCompletedOrWritten = (job: SeedRunJobRecord): boolean => {
   return job.status === 'succeeded'
 }
 
+const hasIncompletePublicAtomicGroup = (record: SeedRunRecord): boolean => {
+  const groups = new Map<string, SeedRunJobRecord[]>()
+  const seedPlan = record.type === 'baseline' ? baselinePlan : demoPlan
+
+  for (const job of record.jobs) {
+    const group = job.input.atomicGroup
+    if (!group) continue
+    groups.set(group, [...(groups.get(group) ?? []), job])
+  }
+
+  return [...groups.entries()].some(([group, jobs]) => {
+    const publicStateWasWritten = jobs.some((job) => isPublicAffectingJob(job) && hasCompletedOrWritten(job))
+    const expectedStepNames = seedPlan
+      .filter((step) => step.kind === 'collection' && step.atomicGroup === group)
+      .map((step) => step.name)
+    const groupSucceeded =
+      expectedStepNames.length > 0 &&
+      expectedStepNames.every((stepName) =>
+        jobs.some((job) => job.stepName === stepName && (job.status === 'succeeded' || job.status === 'skipped')),
+      ) &&
+      jobs.every((job) => job.status === 'succeeded' || job.status === 'skipped')
+    return publicStateWasWritten && !groupSucceeded
+  })
+}
+
 const buildScopeFromCompletedPublicJobs = (
   record: SeedRunRecord,
 ): {
@@ -365,6 +390,17 @@ export const finalizeSeedRunPublicCaches = async (payload: Payload, snapshot: Se
 
   const terminalStatus = snapshot.status as FlushableSeedRunStatus
   const { affectedPostSlugs, completedJobCount, publicJobs, scope } = buildScopeFromCompletedPublicJobs(record)
+
+  if (hasIncompletePublicAtomicGroup(record)) {
+    await markFinalFlush(payload, snapshot.runId, {
+      status: 'skipped',
+      tagCount: 0,
+      pathCount: 0,
+      failureCount: 0,
+      reason: 'incomplete-atomic-group',
+    })
+    return
+  }
 
   if (publicJobs.length === 0) {
     await markFinalFlush(payload, snapshot.runId, {

@@ -225,6 +225,152 @@ describe('seed endpoints success paths', () => {
     },
   )
 
+  it('does not flush an interim public snapshot from an incomplete atomic seed group', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-incomplete-review-history'
+    const queue = `seed:${runId}`
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 4,
+    }) as SeedRunRecord
+    record.status = 'partial'
+    record.completedAt = '2026-08-11T10:00:00.000Z'
+    record.completedJobs = 4
+    record.succeededJobs = 2
+    record.failedJobs = 1
+    record.cancelledJobs = 1
+    record.jobs = [
+      {
+        id: 'job-appeal-initial',
+        order: 1,
+        status: 'succeeded',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'review-appeals-initial-history',
+          kind: 'collection',
+          atomicGroup: 'review-moderation-history',
+          collection: 'reviewAppeals',
+          fileName: 'reviewAppealsInitial',
+        },
+        queue,
+        stepName: 'review-appeals-initial-history',
+        kind: 'collection',
+        collection: 'reviewAppeals',
+        fileName: 'reviewAppealsInitial',
+        createdAt: '2026-08-11T09:00:00.000Z',
+        completedAt: '2026-08-11T09:01:00.000Z',
+        created: 2,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      },
+      {
+        id: 'job-moderation-initial',
+        order: 2,
+        status: 'succeeded',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'review-moderations-initial-history',
+          kind: 'collection',
+          atomicGroup: 'review-moderation-history',
+          collection: 'reviews',
+          fileName: 'reviewModerationsInitial',
+        },
+        queue,
+        stepName: 'review-moderations-initial-history',
+        kind: 'collection',
+        collection: 'reviews',
+        fileName: 'reviewModerationsInitial',
+        createdAt: '2026-08-11T09:01:00.000Z',
+        completedAt: '2026-08-11T09:02:00.000Z',
+        created: 0,
+        updated: 2,
+        warnings: [],
+        failures: [],
+      },
+      {
+        id: 'job-moderation-final',
+        order: 3,
+        status: 'failed',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'review-moderations-final-state',
+          kind: 'collection',
+          atomicGroup: 'review-moderation-history',
+          collection: 'reviews',
+          fileName: 'reviewModerations',
+        },
+        queue,
+        stepName: 'review-moderations-final-state',
+        kind: 'collection',
+        collection: 'reviews',
+        fileName: 'reviewModerations',
+        createdAt: '2026-08-11T09:02:00.000Z',
+        completedAt: '2026-08-11T09:03:00.000Z',
+        created: 0,
+        updated: 0,
+        warnings: [],
+        failures: ['final moderation failed'],
+      },
+      {
+        id: 'job-appeal-final',
+        order: 4,
+        status: 'cancelled',
+        input: {
+          runId,
+          type: 'demo',
+          reset: false,
+          queue,
+          stepName: 'review-appeals-final-state',
+          kind: 'collection',
+          atomicGroup: 'review-moderation-history',
+          collection: 'reviewAppeals',
+          fileName: 'reviewAppeals',
+        },
+        queue,
+        stepName: 'review-appeals-final-state',
+        kind: 'collection',
+        collection: 'reviewAppeals',
+        fileName: 'reviewAppeals',
+        createdAt: '2026-08-11T09:03:00.000Z',
+        completedAt: '2026-08-11T09:04:00.000Z',
+        created: 0,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      },
+    ]
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+
+    const res = makeRes()
+    await seedAdvanceHandler(
+      createMockReq(mockUsers.platform(), payload, {
+        query: { runId },
+      }) as PayloadRequest,
+      res,
+    )
+
+    expect(res._status).toBe(200)
+    expect((res._body as { finalFlush?: { reason?: string; status: string } }).finalFlush).toMatchObject({
+      status: 'skipped',
+      reason: 'incomplete-atomic-group',
+    })
+    expect(revalidateTag).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
+  })
+
   it('flushes published platform content media consumers after a seed write', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-platform-content-media'

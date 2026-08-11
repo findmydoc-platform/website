@@ -10,6 +10,69 @@ export type UpsertResult = {
 
 export type SeedUpsertPolicy = {
   recreateUploadOnRelationDrift?: string[]
+  skipIfVersionMatches?: boolean
+}
+
+type SeedVersionRecord = {
+  version?: unknown
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value && typeof value === 'object' && !Array.isArray(value))
+
+const valuesMatch = (expected: unknown, actual: unknown): boolean => {
+  if (expected === null) return actual == null
+  if (typeof expected === 'undefined') return true
+  if (expected === false && actual == null) return true
+
+  if (Array.isArray(expected)) {
+    return (
+      Array.isArray(actual) &&
+      expected.length === actual.length &&
+      expected.every((value, index) => valuesMatch(value, actual[index]))
+    )
+  }
+
+  if (isRecord(expected)) {
+    if (!isRecord(actual)) {
+      return Object.values(expected).every((value) => valuesMatch(value, undefined))
+    }
+
+    return Object.entries(expected).every(([key, value]) => valuesMatch(value, actual[key]))
+  }
+
+  if (
+    (typeof expected === 'string' || typeof expected === 'number') &&
+    (typeof actual === 'string' || typeof actual === 'number')
+  ) {
+    return String(expected) === String(actual)
+  }
+
+  return Object.is(expected, actual)
+}
+
+async function hasMatchingVersion(
+  payload: Payload,
+  collection: CollectionSlug,
+  parentId: string | number,
+  data: Record<string, unknown>,
+): Promise<boolean> {
+  const findVersions = payload.findVersions as unknown as (options: {
+    collection: CollectionSlug
+    depth: number
+    overrideAccess: boolean
+    pagination: false
+    where: { parent: { equals: string | number } }
+  }) => Promise<{ docs: SeedVersionRecord[] }>
+  const versions = await findVersions({
+    collection,
+    depth: 0,
+    overrideAccess: true,
+    pagination: false,
+    where: { parent: { equals: parentId } },
+  })
+
+  return versions.docs.some((entry) => isRecord(entry.version) && valuesMatch(data, entry.version))
 }
 
 function buildOperationReq(
@@ -467,6 +530,17 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
   // If found doc is trashed, restore it by clearing deletedAt.
   if (current.deletedAt) {
     nextData.deletedAt = null
+  }
+
+  if (
+    !current.deletedAt &&
+    options?.policy?.skipIfVersionMatches &&
+    (await hasMatchingVersion(payload, collection, current.id, nextData))
+  ) {
+    return {
+      created: false,
+      updated: false,
+    }
   }
 
   const filePath = options?.filePath

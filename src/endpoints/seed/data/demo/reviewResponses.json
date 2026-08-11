@@ -8,14 +8,21 @@
       "approvedAt": "2026-01-06T10:00:00.000Z",
       "isBlocked": false
     },
-    "pendingResponse": null,
+    "pendingResponse": {
+      "body": null,
+      "submittedAt": null
+    },
     "moderatedAt": "2026-01-06T10:00:00.000Z"
   },
   {
     "stableId": "seed-review-response-02",
     "reviewStableId": "seed-review-02",
     "moderationStatus": "pending",
-    "publishedResponse": null,
+    "publishedResponse": {
+      "body": null,
+      "approvedAt": null,
+      "isBlocked": false
+    },
     "pendingResponse": {
       "body": "Thank you for describing your experience. We are preparing a factual response about the aftercare schedule.",
       "submittedAt": "2026-01-10T09:00:00.000Z"
@@ -31,7 +38,10 @@
       "approvedAt": "2026-01-13T09:00:00.000Z",
       "isBlocked": false
     },
-    "pendingResponse": null,
+    "pendingResponse": {
+      "body": null,
+      "submittedAt": null
+    },
     "moderationReason": "The proposed revision refers to another patient's schedule and is not suitable for publication.",
     "moderatedAt": "2026-01-22T08:30:00.000Z"
   },
@@ -44,7 +54,10 @@
       "approvedAt": "2026-01-18T09:00:00.000Z",
       "isBlocked": true
     },
-    "pendingResponse": null,
+    "pendingResponse": {
+      "body": null,
+      "submittedAt": null
+    },
     "moderationReason": "Platform Support blocked the response because it includes an inappropriate personal attribution.",
     "moderatedAt": "2026-01-23T09:15:00.000Z"
   },
@@ -57,7 +70,10 @@
       "approvedAt": "2026-01-24T09:00:00.000Z",
       "isBlocked": false
     },
-    "pendingResponse": null,
+    "pendingResponse": {
+      "body": null,
+      "submittedAt": null
+    },
     "moderatedAt": "2026-01-24T09:00:00.000Z"
   }
 ]

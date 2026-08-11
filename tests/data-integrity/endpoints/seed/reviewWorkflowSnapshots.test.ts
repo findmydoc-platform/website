@@ -7,6 +7,7 @@ import reviewResponses from '@/endpoints/seed/data/demo/reviewResponses.json'
 import reviews from '@/endpoints/seed/data/demo/reviews.json'
 import { loadSeedFile } from '@/endpoints/seed/utils/load-json'
 import { demoPlan } from '@/endpoints/seed/utils/plan'
+import { buildSeedQueueJobs } from '@/endpoints/seed/utils/planner'
 import { describe, expect, it } from 'vitest'
 
 type SeedRecord = Record<string, unknown> & { stableId: string }
@@ -54,6 +55,42 @@ describe('review workflow seed plan', () => {
     expect(indices.every((index) => index >= 0)).toBe(true)
     expect(indices).toEqual([...indices].sort((left, right) => left - right))
     expect(new Set(indices).size).toBe(indices.length)
+  })
+
+  it('marks every staged appeal and moderation step as one atomic public history', () => {
+    const historyStepNames = [
+      'review-appeals-initial-history',
+      'review-moderations-initial-history',
+      'review-moderations-final-state',
+      'review-appeals-final-state',
+    ]
+
+    expect(historyStepNames.map((name) => demoPlan.find((step) => step.name === name))).toEqual(
+      historyStepNames.map((name) =>
+        expect.objectContaining({
+          name,
+          atomicGroup: 'review-moderation-history',
+          upsertPolicy: { skipIfVersionMatches: true },
+        }),
+      ),
+    )
+  })
+
+  it('propagates the atomic public history to every queued workflow job', async () => {
+    const jobs = await buildSeedQueueJobs({
+      runId: 'review-workflow-plan-test',
+      type: 'demo',
+      reset: false,
+      queue: 'seed:review-workflow-plan-test',
+    })
+    const historyJobs = jobs.filter(({ input }) => input.atomicGroup === 'review-moderation-history')
+
+    expect(historyJobs.map(({ input }) => input.stepName)).toEqual([
+      'review-appeals-initial-history',
+      'review-moderations-initial-history',
+      'review-moderations-final-state',
+      'review-appeals-final-state',
+    ])
   })
 
   it.each([

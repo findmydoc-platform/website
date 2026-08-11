@@ -140,6 +140,7 @@ const createJobInput = (args: {
     title: args.title,
     stepName: args.step.name,
     kind: 'collection',
+    atomicGroup: args.step.atomicGroup,
     collection: args.step.collection,
     fileName: args.step.fileName,
     mapping: args.step.mapping as RelationMapping[] | undefined,

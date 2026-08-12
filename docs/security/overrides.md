@@ -57,6 +57,12 @@ JSON does not support comments, so we keep the rationale and evidence here for r
   - https://registry.npmjs.org/next/16.2.11
   - https://github.com/advisories/GHSA-f88m-g3jw-g9cj
 
+### dompurify (`dompurify@<=3.4.12` -> `3.4.13`)
+- Reason: `posthog-js@1.399.0` resolves `dompurify@3.4.12`, which is vulnerable to detached-subtree XSS when `IN_PLACE` sanitization is combined with a hook that removes an element. The override keeps the transitive runtime dependency on the first patched release.
+- References:
+  - https://github.com/advisories/GHSA-55q2-fjhq-7xh7
+  - https://github.com/cure53/DOMPurify/releases/tag/3.4.13
+
 ## Temporary audit-ci exceptions
 
 The scheduled dependency audit has two temporary, path-specific exceptions for `image-size@2.0.2` because npm has no newer release and the relevant GitHub advisories currently list no patched version:

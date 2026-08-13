@@ -95,6 +95,18 @@ export const platformOrAssignedClinicMutation: Access = async ({ req }) => {
 }
 
 /**
+ * Clinic Staff: Create only when assigned to a clinic.
+ */
+export const assignedClinicMutation: Access = async ({ req }) => {
+  if (!isClinicStaff({ req })) {
+    return false
+  }
+
+  const clinicId = await getUserAssignedClinicId(req.user, req.payload)
+  return clinicId !== null
+}
+
+/**
  * Platform Staff: Full access to all records
  * Patient: Only their own records
  */

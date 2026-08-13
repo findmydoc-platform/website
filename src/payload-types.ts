@@ -2771,7 +2771,7 @@ export interface ReviewResponse {
     isBlocked?: boolean | null;
   };
   /**
-   * Clinic-authored response or revision awaiting platform moderation.
+   * Submitted by the clinic. Use the moderation status to approve or reject it; this text cannot be edited.
    */
   pendingResponse?: {
     /**

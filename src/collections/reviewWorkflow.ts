@@ -312,6 +312,10 @@ export const prepareReviewResponseChange: CollectionBeforeChangeHook = async ({
     return prepareTrustedResponseSeed(draft, original, req)
   }
 
+  if (operation === 'create' && isPlatformStaff({ req })) {
+    throw new APIError('Only clinic staff can create review response workflows.', 403)
+  }
+
   if (isClinicStaff({ req })) {
     const pending = normalizeResponseGroup(incoming.pendingResponse, req, 'pending')
     if (!pending) {
@@ -322,8 +326,8 @@ export const prepareReviewResponseChange: CollectionBeforeChangeHook = async ({
       })
     }
 
-    const hadPublishedResponse = Boolean(original.publishedResponse)
-    const hadPendingResponse = Boolean(original.pendingResponse)
+    const hadPublishedResponse = Boolean(optionalTrimmedText(record(original.publishedResponse).body))
+    const hadPendingResponse = Boolean(optionalTrimmedText(record(original.pendingResponse).body))
 
     return stampAudit(
       {
@@ -337,7 +341,7 @@ export const prepareReviewResponseChange: CollectionBeforeChangeHook = async ({
           submittedAt:
             hadPendingResponse && record(original.pendingResponse).submittedAt
               ? record(original.pendingResponse).submittedAt
-              : pending.submittedAt,
+              : now(),
         },
         moderationStatus: 'pending',
         moderationReason: null,
@@ -364,9 +368,7 @@ export const prepareReviewResponseChange: CollectionBeforeChangeHook = async ({
   }
 
   const pending =
-    requestedStatus === 'blocked'
-      ? null
-      : normalizeResponseGroup(incoming.pendingResponse ?? original.pendingResponse, req, 'pending')
+    requestedStatus === 'blocked' ? null : normalizeResponseGroup(original.pendingResponse, req, 'pending')
   const timestamp = now()
   const base: WorkflowDraft = {
     ...original,

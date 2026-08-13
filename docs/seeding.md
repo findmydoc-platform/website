@@ -34,9 +34,10 @@ Demo units (current):
 - Reviews
 - Review responses and appeals, including native-version history fixtures
 
-Review workflow fixtures run in dependency order: reviews, response end states, initial appeals, interim review
-moderations, final review moderations, and final appeals. This preserves the required Review versions and records an
-audited moderation after submission before an upheld appeal is written.
+Review workflow fixtures run in dependency order: reviews, safe interim review moderations, response end states,
+initial appeals, final review moderations, and final appeals. This keeps private source text non-public before related
+workflow records are created, preserves the required Review versions, and records an audited moderation after
+submission before an upheld appeal is written.
 
 Review workflow writes are version-idempotent: a rerun skips a snapshot already present in Payload's native version
 history, including a completed withdrawal. The staged appeal and moderation jobs share one atomic public history;

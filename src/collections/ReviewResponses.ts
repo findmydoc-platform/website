@@ -1,9 +1,14 @@
 import type { CollectionConfig, Field } from 'payload'
 
-import { computedOnlyFieldAccess, platformOnlyFieldAccess, staffProfileFieldReadAccess } from '@/access/fieldAccess'
 import {
+  clinicOnlyFieldAccess,
+  computedOnlyFieldAccess,
+  platformOnlyFieldAccess,
+  staffProfileFieldReadAccess,
+} from '@/access/fieldAccess'
+import {
+  assignedClinicMutation,
   platformClinicOrPublicReviewResponse,
-  platformOrAssignedClinicMutation,
   platformOrOwnClinicResource,
   platformOrOwnClinicReviewWorkflowVersions,
 } from '@/access/scopeFilters'
@@ -95,7 +100,7 @@ export const ReviewResponses: CollectionConfig = {
     description: 'Moderated clinic responses. The approved response remains public while a replacement is pending.',
   },
   access: {
-    create: platformOrAssignedClinicMutation,
+    create: assignedClinicMutation,
     read: platformClinicOrPublicReviewResponse,
     readVersions: platformOrOwnClinicReviewWorkflowVersions,
     update: platformOrOwnClinicResource,
@@ -167,11 +172,16 @@ export const ReviewResponses: CollectionConfig = {
     {
       name: 'pendingResponse',
       type: 'group',
+      label: 'Current clinic submission',
       access: {
+        create: clinicOnlyFieldAccess,
         read: staffProfileFieldReadAccess,
+        update: clinicOnlyFieldAccess,
       },
       admin: {
-        description: 'Clinic-authored response or revision awaiting platform moderation.',
+        description:
+          'Submitted by the clinic. Use the moderation status to approve or reject it; this text cannot be edited.',
+        readOnly: true,
       },
       fields: [
         {
@@ -186,6 +196,10 @@ export const ReviewResponses: CollectionConfig = {
         {
           name: 'submittedAt',
           type: 'date',
+          access: {
+            create: computedOnlyFieldAccess,
+            update: computedOnlyFieldAccess,
+          },
           admin: {
             readOnly: true,
           },

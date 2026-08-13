@@ -17,6 +17,7 @@ const appealRecords = reviewAppeals as SeedRecord[]
 const initialAppealRecords = reviewAppealsInitial as SeedRecord[]
 const moderationRecords = reviewModerations as SeedRecord[]
 const initialModerationRecords = reviewModerationsInitial as SeedRecord[]
+const responseRecords = reviewResponses as SeedRecord[]
 
 const findRecord = (records: readonly SeedRecord[], stableId: string): SeedRecord => {
   const record = records.find((candidate) => candidate.stableId === stableId)
@@ -44,9 +45,9 @@ describe('review workflow seed plan', () => {
   it('orders the two versioned histories after their dependencies', () => {
     const orderedSteps = [
       'reviews',
+      'review-moderations-initial-history',
       'review-response-states',
       'review-appeals-initial-history',
-      'review-moderations-initial-history',
       'review-moderations-final-state',
       'review-appeals-final-state',
     ]
@@ -90,8 +91,8 @@ describe('review workflow seed plan', () => {
     const historyJobs = jobs.filter(({ input }) => input.atomicGroup === 'review-moderation-history')
 
     expect(historyJobs.map(({ input }) => input.stepName)).toEqual([
-      'review-appeals-initial-history',
       'review-moderations-initial-history',
+      'review-appeals-initial-history',
       'review-moderations-final-state',
       'review-appeals-final-state',
     ])
@@ -145,58 +146,126 @@ describe('review workflow version snapshots', () => {
   it.each([
     {
       appealStableId: 'seed-review-appeal-03',
+      expectedTimeline: [
+        '2026-02-02T09:00:00.000Z',
+        '2026-02-02T09:30:00.000Z',
+        '2026-02-02T10:00:00.000Z',
+        '2026-02-02T10:30:00.000Z',
+      ],
+      initialStatus: 'approved',
       label: 'public review to placeholder to final redaction before upheld',
       moderationSnapshots: [
-        { measure: 'placeholder', records: initialModerationRecords },
-        { measure: 'redaction', records: moderationRecords },
+        { measure: 'placeholder', records: initialModerationRecords, status: undefined },
+        { measure: 'redaction', records: moderationRecords, status: undefined },
       ],
       reviewStableId: 'seed-review-06',
     },
     {
       appealStableId: 'seed-review-appeal-05',
+      expectedTimeline: ['2026-02-03T09:00:00.000Z', '2026-02-03T09:30:00.000Z', '2026-02-03T10:00:00.000Z'],
+      initialStatus: 'approved',
       label: 'submitted appeal to audited none before upheld',
-      moderationSnapshots: [{ measure: 'none', records: initialModerationRecords }],
+      moderationSnapshots: [{ measure: 'none', records: initialModerationRecords, status: undefined }],
       reviewStableId: 'seed-review-08',
     },
-  ])('preserves the $label history', ({ appealStableId, moderationSnapshots, reviewStableId }) => {
-    const review = findRecord(reviewRecords, reviewStableId)
-    const initialAppeal = findRecord(initialAppealRecords, appealStableId)
-    const finalAppeal = findRecord(appealRecords, appealStableId)
-    const snapshots = moderationSnapshots.map(({ measure, records }) => ({
-      measure,
-      record: findRecord(records, reviewStableId),
-    }))
-    const timeline = [
-      timestamp(initialAppeal.createdAt),
-      ...snapshots.map(({ record }) => timestamp(record.moderatedAt)),
-      timestamp(finalAppeal.decidedAt),
-    ]
+    {
+      appealStableId: 'seed-review-appeal-izmir-coast-05',
+      expectedTimeline: [
+        '2026-02-04T09:00:00.000Z',
+        '2026-02-04T09:30:00.000Z',
+        '2026-02-04T10:00:00.000Z',
+        '2026-02-04T10:30:00.000Z',
+      ],
+      initialStatus: 'pending',
+      label: 'central private source to safe placeholder to final redaction before upheld',
+      moderationSnapshots: [
+        { measure: 'placeholder', records: initialModerationRecords, status: 'approved' },
+        { measure: 'redaction', records: moderationRecords, status: 'approved' },
+      ],
+      reviewStableId: 'seed-review-izmir-coast-05',
+    },
+    {
+      appealStableId: 'seed-review-appeal-izmir-coast-09',
+      expectedTimeline: ['2026-02-05T09:00:00.000Z', '2026-02-05T09:30:00.000Z', '2026-02-05T10:00:00.000Z'],
+      initialStatus: 'approved',
+      label: 'central submitted appeal to audited none before upheld',
+      moderationSnapshots: [{ measure: 'none', records: initialModerationRecords, status: undefined }],
+      reviewStableId: 'seed-review-izmir-coast-09',
+    },
+  ])(
+    'preserves the $label history',
+    ({ appealStableId, expectedTimeline, initialStatus, moderationSnapshots, reviewStableId }) => {
+      const review = findRecord(reviewRecords, reviewStableId)
+      const initialAppeal = findRecord(initialAppealRecords, appealStableId)
+      const finalAppeal = findRecord(appealRecords, appealStableId)
+      const snapshots = moderationSnapshots.map(({ measure, records, status }) => ({
+        measure,
+        record: findRecord(records, reviewStableId),
+        status,
+      }))
+      const timeline = [
+        timestamp(initialAppeal.createdAt),
+        ...snapshots.map(({ record }) => timestamp(record.moderatedAt)),
+        timestamp(finalAppeal.decidedAt),
+      ]
+
+      expect(review).toMatchObject({
+        status: initialStatus,
+        publicMeasure: 'none',
+        withdrawalState: 'active',
+      })
+      expect(initialAppeal).toMatchObject({
+        reviewStableId,
+        status: 'submitted',
+      })
+      expect(finalAppeal).toMatchObject({
+        reviewStableId,
+        status: 'upheld',
+      })
+      expect(snapshots.map(({ record }) => record.publicMeasure)).toEqual(snapshots.map(({ measure }) => measure))
+      expect(timeline).toEqual(expectedTimeline.map(timestamp))
+      expect(timeline).toEqual([...timeline].sort((left, right) => left - right))
+      expect(new Set(timeline).size).toBe(timeline.length)
+
+      for (const { record, status } of snapshots) {
+        expect(record).toMatchObject({
+          moderatedByStableId: 'seed-platform-admin',
+          moderationReason: expect.any(String),
+        })
+        expect(record).not.toHaveProperty('comment')
+        expect(record).not.toHaveProperty('starRating')
+        if (status) {
+          expect(record.status).toBe(status)
+        } else {
+          expect(record).not.toHaveProperty('status')
+        }
+      }
+    },
+  )
+
+  it('keeps the central withdrawal content and response as internal audit data', () => {
+    const review = findRecord(reviewRecords, 'seed-review-izmir-coast-08')
+    const response = findRecord(responseRecords, 'seed-review-response-izmir-coast-08')
 
     expect(review).toMatchObject({
       status: 'approved',
       publicMeasure: 'none',
-      withdrawalState: 'active',
+      withdrawalState: 'withdrawn',
+      withdrawalSource: 'platform',
+      withdrawalReason: expect.any(String),
+      withdrawnAt: '2026-02-01T10:00:00.000Z',
+      withdrawnByStableId: 'seed-platform-admin',
+      comment: expect.any(String),
+      starRating: 5,
     })
-    expect(initialAppeal).toMatchObject({
-      reviewStableId,
-      status: 'submitted',
+    expect(response).toMatchObject({
+      reviewStableId: review.stableId,
+      moderationStatus: 'approved',
+      publishedResponse: {
+        body: expect.any(String),
+        approvedAt: '2026-01-20T09:00:00.000Z',
+        isBlocked: false,
+      },
     })
-    expect(finalAppeal).toMatchObject({
-      reviewStableId,
-      status: 'upheld',
-    })
-    expect(snapshots.map(({ record }) => record.publicMeasure)).toEqual(snapshots.map(({ measure }) => measure))
-    expect(timeline).toEqual([...timeline].sort((left, right) => left - right))
-    expect(new Set(timeline).size).toBe(timeline.length)
-
-    for (const { record } of snapshots) {
-      expect(record).toMatchObject({
-        moderatedByStableId: 'seed-platform-admin',
-        moderationReason: expect.any(String),
-      })
-      expect(record).not.toHaveProperty('comment')
-      expect(record).not.toHaveProperty('starRating')
-      expect(record).not.toHaveProperty('status')
-    }
   })
 })

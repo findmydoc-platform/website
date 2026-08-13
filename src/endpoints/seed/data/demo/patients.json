@@ -62,5 +62,21 @@
     "firstName": "Elena",
     "lastName": "Rossi",
     "language": "en"
+  },
+  {
+    "stableId": "seed-patient-lea-martin",
+    "email": "seed.patient.lea.martin@example.com",
+    "supabaseUserId": "seed-supabase-patient-lea-martin",
+    "firstName": "Lea",
+    "lastName": "Martin",
+    "language": "de"
+  },
+  {
+    "stableId": "seed-patient-daniel-costa",
+    "email": "seed.patient.daniel.costa@example.com",
+    "supabaseUserId": "seed-supabase-patient-daniel-costa",
+    "firstName": "Daniel",
+    "lastName": "Costa",
+    "language": "en"
   }
 ]

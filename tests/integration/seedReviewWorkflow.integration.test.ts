@@ -12,6 +12,7 @@ import {
   cleanupTrackedUsers,
   createClinicTestUser,
 } from '../fixtures/testUsers'
+import { cleanupTrackedDocs } from '../fixtures/cleanupTrackedDocs'
 import { testSlug } from '../fixtures/testSlug'
 
 const CENTRAL_CLINIC_STABLE_ID = 'seed-clinic-izmir-coast'
@@ -91,6 +92,24 @@ const relationId = (value: unknown): string | number | null => {
 
 const stableIds = <T extends { stableId?: string | null }>(docs: T[]): string[] =>
   docs.map(({ stableId }) => String(stableId)).sort()
+
+const cleanupSeedReviewWorkflow = async (payload: Payload): Promise<void> => {
+  const tasks = await Promise.all(
+    (['reviewAppeals', 'reviewResponses', 'reviews'] as const).map(async (collection) => {
+      const result = await payload.find({
+        collection,
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { stableId: { like: 'seed-review-' } },
+      })
+
+      return { collection, ids: result.docs.map(({ id }) => id) }
+    }),
+  )
+
+  await cleanupTrackedDocs(payload, tasks)
+}
 
 const findSeedId = async (
   payload: Payload,
@@ -432,8 +451,12 @@ describe.sequential('demo review workflow seed integration', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
-  })
+    try {
+      await cleanupSeedReviewWorkflow(payload)
+    } finally {
+      await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
+    }
+  }, 120_000)
 
   it('runs the complete demo plan and persists the central workflow matrix', async () => {
     const result = await runDemoSeeds(payload)

@@ -71,7 +71,7 @@ type WorkflowHistorySnapshot = {
   centralReviewVersions: Record<string, Review[]>
   centralReviews: Array<Pick<Review, 'stableId' | 'status' | 'publicMeasure' | 'withdrawalState'>>
   coast05Appeal: Array<Pick<ReviewAppeal, 'status' | 'decidedAt'>>
-  coast05Review: Array<Pick<Review, 'publicMeasure' | 'moderatedAt' | 'withdrawalState'>>
+  coast05Review: Array<Pick<Review, 'publicMeasure' | 'moderatedAt' | 'status' | 'withdrawalState'>>
   coast08Review: Array<Pick<Review, 'publicMeasure' | 'withdrawnAt' | 'withdrawalState' | 'comment' | 'starRating'>>
   coast09Appeal: Array<Pick<ReviewAppeal, 'status' | 'decidedAt'>>
   coast09Review: Array<Pick<Review, 'publicMeasure' | 'moderatedAt' | 'status' | 'withdrawalState'>>
@@ -373,6 +373,7 @@ const readWorkflowHistory = async (payload: Payload): Promise<WorkflowHistorySna
     coast05Review: coast05Review.docs.map(({ version }) => ({
       publicMeasure: version.publicMeasure,
       moderatedAt: version.moderatedAt,
+      status: version.status,
       withdrawalState: version.withdrawalState,
     })),
     coast08Review: coast08Review.docs.map(({ version }) => ({
@@ -506,6 +507,7 @@ describe.sequential('demo review workflow seed integration', () => {
       '2026-02-04T09:30:00.000Z',
       null,
     ])
+    expect(firstHistory.coast05Review.map(({ status }) => status)).toEqual(['approved', 'approved', 'pending'])
     expect(firstHistory.coast05Appeal.map(({ status }) => status)).toEqual(['upheld', 'submitted'])
     expect(firstHistory.coast09Review.map(({ publicMeasure }) => publicMeasure)).toEqual(['none', 'none'])
     expect(firstHistory.coast09Review.map(({ moderatedAt }) => moderatedAt)).toEqual(['2026-02-05T09:30:00.000Z', null])

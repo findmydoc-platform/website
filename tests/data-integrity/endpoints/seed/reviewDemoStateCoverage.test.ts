@@ -6,10 +6,16 @@ import reviewModerations from '@/endpoints/seed/data/demo/reviewModerations.json
 import reviewModerationsInitial from '@/endpoints/seed/data/demo/reviewModerationsInitial.json'
 import reviewResponses from '@/endpoints/seed/data/demo/reviewResponses.json'
 import reviews from '@/endpoints/seed/data/demo/reviews.json'
-import { REVIEW_PLACEHOLDER_NOTICE, REVIEW_REDACTION_NOTICE } from '@/collections/reviews/publicProjection'
+import {
+  isRawReviewCommentPubliclyReadable,
+  projectPublicReviewText,
+  REVIEW_PLACEHOLDER_NOTICE,
+  REVIEW_REDACTION_NOTICE,
+} from '@/collections/reviews/publicProjection'
 import { describe, expect, it } from 'vitest'
 
 type SeedRecord = Record<string, unknown> & { stableId: string }
+type ReviewProjectionInput = Parameters<typeof projectPublicReviewText>[0]
 
 const reviewRecords = reviews as SeedRecord[]
 const responseRecords = reviewResponses as SeedRecord[]
@@ -39,6 +45,16 @@ const findRecord = (records: readonly SeedRecord[], stableId: string): SeedRecor
   return record
 }
 
+const asReviewProjection = (record: SeedRecord): ReviewProjectionInput => ({
+  comment: record.comment,
+  deletedAt: record.deletedAt,
+  publicComment: record.publicComment,
+  publicMeasure: record.publicMeasure,
+  publicNotice: record.publicNotice,
+  status: record.status,
+  withdrawalState: record.withdrawalState,
+})
+
 const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
 
@@ -62,7 +78,7 @@ describe('review demo fixture state coverage', () => {
     { stableId: 'seed-review-11', status: 'rejected' },
     { stableId: 'seed-review-izmir-coast-03', status: 'approved', publicMeasure: 'none' },
     { stableId: 'seed-review-izmir-coast-04', status: 'approved', publicMeasure: 'context' },
-    { stableId: 'seed-review-izmir-coast-05', status: 'approved', publicMeasure: 'none' },
+    { stableId: 'seed-review-izmir-coast-05', status: 'pending', publicMeasure: 'none' },
     { stableId: 'seed-review-izmir-coast-06', status: 'approved', publicMeasure: 'placeholder' },
     { stableId: 'seed-review-izmir-coast-07', status: 'approved', publicMeasure: 'removed' },
     {
@@ -152,23 +168,48 @@ describe('review demo fixture state coverage', () => {
     })
   })
 
-  it('uses the canonical central placeholder and redaction projections', () => {
+  it('keeps the central redaction source private until a safe public projection exists', () => {
+    const sourceReview = findRecord(reviewRecords, 'seed-review-izmir-coast-05')
     const currentPlaceholder = findRecord(reviewRecords, 'seed-review-izmir-coast-06')
     const historicalPlaceholder = findRecord(initialModerationRecords, 'seed-review-izmir-coast-05')
     const finalRedaction = findRecord(moderationRecords, 'seed-review-izmir-coast-05')
+    const placeholderState = { ...sourceReview, ...historicalPlaceholder }
+    const redactionState = { ...placeholderState, ...finalRedaction }
 
     expect(currentPlaceholder).toMatchObject({
       publicComment: null,
       publicNotice: REVIEW_PLACEHOLDER_NOTICE,
     })
+    expect(sourceReview).toMatchObject({
+      status: 'pending',
+      publicMeasure: 'none',
+      publicComment: null,
+    })
+    expect(projectPublicReviewText(asReviewProjection(sourceReview))).toBeNull()
+    expect(isRawReviewCommentPubliclyReadable(asReviewProjection(sourceReview))).toBe(false)
     expect(historicalPlaceholder).toMatchObject({
+      status: 'approved',
+      publicMeasure: 'placeholder',
       publicComment: null,
       publicNotice: REVIEW_PLACEHOLDER_NOTICE,
     })
+    expect(projectPublicReviewText(asReviewProjection(placeholderState))).toEqual({
+      kind: 'placeholder',
+      notice: REVIEW_PLACEHOLDER_NOTICE,
+    })
+    expect(isRawReviewCommentPubliclyReadable(asReviewProjection(placeholderState))).toBe(false)
     expect(finalRedaction).toMatchObject({
+      status: 'approved',
+      publicMeasure: 'redaction',
       publicComment: 'The treatment plan was clear, and the follow-ups were reliable.',
       publicNotice: REVIEW_REDACTION_NOTICE,
     })
+    expect(projectPublicReviewText(asReviewProjection(redactionState))).toEqual({
+      kind: 'text',
+      text: 'The treatment plan was clear, and the follow-ups were reliable.',
+      notice: REVIEW_REDACTION_NOTICE,
+    })
+    expect(isRawReviewCommentPubliclyReadable(asReviewProjection(redactionState))).toBe(false)
   })
 
   it.each([

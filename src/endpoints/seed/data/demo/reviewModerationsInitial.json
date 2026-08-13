@@ -19,6 +19,7 @@
   },
   {
     "stableId": "seed-review-izmir-coast-05",
+    "status": "approved",
     "publicMeasure": "placeholder",
     "publicComment": null,
     "publicNotice": "This review was moderated. Its written content is not publicly available.",

@@ -42,5 +42,49 @@
     "status": "upheld",
     "decisionReason": "The appeal concern is upheld operationally, but no public text change is required.",
     "decidedAt": "2026-02-03T10:00:00.000Z"
+  },
+  {
+    "stableId": "seed-review-appeal-izmir-coast-03",
+    "reviewStableId": "seed-review-izmir-coast-03",
+    "reason": "other",
+    "details": "The clinic asks Platform Support to review the written consultation summary.",
+    "status": "submitted",
+    "createdAt": "2026-02-06T08:30:00.000Z"
+  },
+  {
+    "stableId": "seed-review-appeal-izmir-coast-04",
+    "reviewStableId": "seed-review-izmir-coast-04",
+    "reason": "incorrect_clinic",
+    "details": "The clinic asks Platform Support to confirm that the scheduling description belongs to this location.",
+    "status": "under_review",
+    "createdAt": "2026-02-06T09:00:00.000Z"
+  },
+  {
+    "stableId": "seed-review-appeal-izmir-coast-05",
+    "reviewStableId": "seed-review-izmir-coast-05",
+    "reason": "privacy_concern",
+    "details": "The clinic asks Platform Support to review the unrelated package description in the final sentence.",
+    "status": "upheld",
+    "decisionReason": "The appeal is upheld for one narrow wording concern; a redacted review remains public.",
+    "decidedAt": "2026-02-04T10:30:00.000Z"
+  },
+  {
+    "stableId": "seed-review-appeal-izmir-coast-09",
+    "reviewStableId": "seed-review-izmir-coast-09",
+    "reason": "other",
+    "details": "The clinic asks Platform Support to review whether the treatment-plan wording needs public moderation.",
+    "status": "upheld",
+    "decisionReason": "The appeal concern is upheld operationally, but no public text change is required.",
+    "decidedAt": "2026-02-05T10:00:00.000Z"
+  },
+  {
+    "stableId": "seed-review-appeal-izmir-coast-10",
+    "reviewStableId": "seed-review-izmir-coast-10",
+    "reason": "other",
+    "details": "The clinic asks Platform Support to verify the documented treatment-day context.",
+    "status": "dismissed",
+    "decisionReason": "The treatment-day context is consistent with the review and no moderation action is required.",
+    "decidedAt": "2026-02-07T11:30:00.000Z",
+    "createdAt": "2026-02-07T10:00:00.000Z"
   }
 ]

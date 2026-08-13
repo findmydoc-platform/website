@@ -17,6 +17,7 @@ const appealRecords = reviewAppeals as SeedRecord[]
 const initialAppealRecords = reviewAppealsInitial as SeedRecord[]
 const moderationRecords = reviewModerations as SeedRecord[]
 const initialModerationRecords = reviewModerationsInitial as SeedRecord[]
+const responseRecords = reviewResponses as SeedRecord[]
 
 const findRecord = (records: readonly SeedRecord[], stableId: string): SeedRecord => {
   const record = records.find((candidate) => candidate.stableId === stableId)
@@ -145,6 +146,12 @@ describe('review workflow version snapshots', () => {
   it.each([
     {
       appealStableId: 'seed-review-appeal-03',
+      expectedTimeline: [
+        '2026-02-02T09:00:00.000Z',
+        '2026-02-02T09:30:00.000Z',
+        '2026-02-02T10:00:00.000Z',
+        '2026-02-02T10:30:00.000Z',
+      ],
       label: 'public review to placeholder to final redaction before upheld',
       moderationSnapshots: [
         { measure: 'placeholder', records: initialModerationRecords },
@@ -154,11 +161,34 @@ describe('review workflow version snapshots', () => {
     },
     {
       appealStableId: 'seed-review-appeal-05',
+      expectedTimeline: ['2026-02-03T09:00:00.000Z', '2026-02-03T09:30:00.000Z', '2026-02-03T10:00:00.000Z'],
       label: 'submitted appeal to audited none before upheld',
       moderationSnapshots: [{ measure: 'none', records: initialModerationRecords }],
       reviewStableId: 'seed-review-08',
     },
-  ])('preserves the $label history', ({ appealStableId, moderationSnapshots, reviewStableId }) => {
+    {
+      appealStableId: 'seed-review-appeal-izmir-coast-05',
+      expectedTimeline: [
+        '2026-02-04T09:00:00.000Z',
+        '2026-02-04T09:30:00.000Z',
+        '2026-02-04T10:00:00.000Z',
+        '2026-02-04T10:30:00.000Z',
+      ],
+      label: 'central public review to placeholder to final redaction before upheld',
+      moderationSnapshots: [
+        { measure: 'placeholder', records: initialModerationRecords },
+        { measure: 'redaction', records: moderationRecords },
+      ],
+      reviewStableId: 'seed-review-izmir-coast-05',
+    },
+    {
+      appealStableId: 'seed-review-appeal-izmir-coast-09',
+      expectedTimeline: ['2026-02-05T09:00:00.000Z', '2026-02-05T09:30:00.000Z', '2026-02-05T10:00:00.000Z'],
+      label: 'central submitted appeal to audited none before upheld',
+      moderationSnapshots: [{ measure: 'none', records: initialModerationRecords }],
+      reviewStableId: 'seed-review-izmir-coast-09',
+    },
+  ])('preserves the $label history', ({ appealStableId, expectedTimeline, moderationSnapshots, reviewStableId }) => {
     const review = findRecord(reviewRecords, reviewStableId)
     const initialAppeal = findRecord(initialAppealRecords, appealStableId)
     const finalAppeal = findRecord(appealRecords, appealStableId)
@@ -186,6 +216,7 @@ describe('review workflow version snapshots', () => {
       status: 'upheld',
     })
     expect(snapshots.map(({ record }) => record.publicMeasure)).toEqual(snapshots.map(({ measure }) => measure))
+    expect(timeline).toEqual(expectedTimeline.map(timestamp))
     expect(timeline).toEqual([...timeline].sort((left, right) => left - right))
     expect(new Set(timeline).size).toBe(timeline.length)
 
@@ -198,5 +229,31 @@ describe('review workflow version snapshots', () => {
       expect(record).not.toHaveProperty('starRating')
       expect(record).not.toHaveProperty('status')
     }
+  })
+
+  it('keeps the central withdrawal content and response as internal audit data', () => {
+    const review = findRecord(reviewRecords, 'seed-review-izmir-coast-08')
+    const response = findRecord(responseRecords, 'seed-review-response-izmir-coast-08')
+
+    expect(review).toMatchObject({
+      status: 'approved',
+      publicMeasure: 'none',
+      withdrawalState: 'withdrawn',
+      withdrawalSource: 'platform',
+      withdrawalReason: expect.any(String),
+      withdrawnAt: '2026-02-01T10:00:00.000Z',
+      withdrawnByStableId: 'seed-platform-admin',
+      comment: expect.any(String),
+      starRating: 5,
+    })
+    expect(response).toMatchObject({
+      reviewStableId: review.stableId,
+      moderationStatus: 'approved',
+      publishedResponse: {
+        body: expect.any(String),
+        approvedAt: '2026-01-20T09:00:00.000Z',
+        isBlocked: false,
+      },
+    })
   })
 })

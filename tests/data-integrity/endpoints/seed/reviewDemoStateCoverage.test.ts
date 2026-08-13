@@ -18,6 +18,21 @@ const initialAppealRecords = reviewAppealsInitial as SeedRecord[]
 const moderationRecords = reviewModerations as SeedRecord[]
 const initialModerationRecords = reviewModerationsInitial as SeedRecord[]
 
+const CENTRAL_CLINIC_STABLE_ID = 'seed-clinic-izmir-coast'
+const CENTRAL_REVIEW_IDS = [
+  'seed-review-10',
+  'seed-review-11',
+  'seed-review-izmir-coast-03',
+  'seed-review-izmir-coast-04',
+  'seed-review-izmir-coast-05',
+  'seed-review-izmir-coast-06',
+  'seed-review-izmir-coast-07',
+  'seed-review-izmir-coast-08',
+  'seed-review-izmir-coast-09',
+  'seed-review-izmir-coast-10',
+] as const
+const centralReviewIds = new Set<string>(CENTRAL_REVIEW_IDS)
+
 const findRecord = (records: readonly SeedRecord[], stableId: string): SeedRecord => {
   const record = records.find((candidate) => candidate.stableId === stableId)
   if (!record) throw new Error(`Missing seed fixture ${stableId}`)
@@ -35,6 +50,70 @@ const collectKeys = (value: unknown): string[] => {
 }
 
 describe('review demo fixture state coverage', () => {
+  it('binds all ten central workflow cases to Izmir Coast with unique synthetic authors', () => {
+    const centralReviews = reviewRecords.filter((review) => review.clinicStableId === CENTRAL_CLINIC_STABLE_ID)
+
+    expect(centralReviews.map(({ stableId }) => stableId).sort()).toEqual([...CENTRAL_REVIEW_IDS].sort())
+    expect(new Set(centralReviews.map(({ patientStableId }) => patientStableId)).size).toBe(10)
+  })
+
+  it.each([
+    { stableId: 'seed-review-10', status: 'pending' },
+    { stableId: 'seed-review-11', status: 'rejected' },
+    { stableId: 'seed-review-izmir-coast-03', status: 'approved', publicMeasure: 'none' },
+    { stableId: 'seed-review-izmir-coast-04', status: 'approved', publicMeasure: 'context' },
+    { stableId: 'seed-review-izmir-coast-05', status: 'approved', publicMeasure: 'none' },
+    { stableId: 'seed-review-izmir-coast-06', status: 'approved', publicMeasure: 'placeholder' },
+    { stableId: 'seed-review-izmir-coast-07', status: 'approved', publicMeasure: 'removed' },
+    {
+      stableId: 'seed-review-izmir-coast-08',
+      status: 'approved',
+      publicMeasure: 'none',
+      withdrawalState: 'withdrawn',
+    },
+    { stableId: 'seed-review-izmir-coast-09', status: 'approved', publicMeasure: 'none' },
+    { stableId: 'seed-review-izmir-coast-10', status: 'approved', publicMeasure: 'none' },
+  ])('defines the central $stableId state', ({ publicMeasure, stableId, status, withdrawalState }) => {
+    const review = findRecord(reviewRecords, stableId)
+
+    expect(review).toMatchObject({ clinicStableId: CENTRAL_CLINIC_STABLE_ID, status })
+    if (publicMeasure) expect(review.publicMeasure).toBe(publicMeasure)
+    if (withdrawalState) expect(review.withdrawalState).toBe(withdrawalState)
+  })
+
+  it('covers every response and appeal state inside the central clinic', () => {
+    const centralResponses = responseRecords.filter((record) => centralReviewIds.has(String(record.reviewStableId)))
+    const centralAppeals = appealRecords.filter((record) => centralReviewIds.has(String(record.reviewStableId)))
+
+    expect(
+      Object.fromEntries(centralResponses.map((response) => [response.reviewStableId, response.moderationStatus])),
+    ).toEqual({
+      'seed-review-izmir-coast-03': 'approved',
+      'seed-review-izmir-coast-04': 'pending',
+      'seed-review-izmir-coast-05': 'rejected',
+      'seed-review-izmir-coast-06': 'approved',
+      'seed-review-izmir-coast-08': 'approved',
+      'seed-review-izmir-coast-09': 'blocked',
+    })
+    expect(Object.fromEntries(centralAppeals.map((appeal) => [appeal.reviewStableId, appeal.status]))).toEqual({
+      'seed-review-izmir-coast-03': 'submitted',
+      'seed-review-izmir-coast-04': 'under_review',
+      'seed-review-izmir-coast-05': 'upheld',
+      'seed-review-izmir-coast-09': 'upheld',
+      'seed-review-izmir-coast-10': 'dismissed',
+    })
+  })
+
+  it('keeps published response history for pending and rejected central responses', () => {
+    for (const stableId of ['seed-review-response-izmir-coast-04', 'seed-review-response-izmir-coast-05']) {
+      expect(asRecord(findRecord(responseRecords, stableId).publishedResponse)).toMatchObject({
+        body: expect.any(String),
+        approvedAt: expect.any(String),
+        isBlocked: false,
+      })
+    }
+  })
+
   it.each([
     { label: 'pending', stableId: 'seed-review-10' },
     { label: 'approved', stableId: 'seed-review-01' },
@@ -69,6 +148,25 @@ describe('review demo fixture state coverage', () => {
     })
     expect(redaction).toMatchObject({
       publicComment: 'Reliable orthodontic follow-ups.',
+      publicNotice: REVIEW_REDACTION_NOTICE,
+    })
+  })
+
+  it('uses the canonical central placeholder and redaction projections', () => {
+    const currentPlaceholder = findRecord(reviewRecords, 'seed-review-izmir-coast-06')
+    const historicalPlaceholder = findRecord(initialModerationRecords, 'seed-review-izmir-coast-05')
+    const finalRedaction = findRecord(moderationRecords, 'seed-review-izmir-coast-05')
+
+    expect(currentPlaceholder).toMatchObject({
+      publicComment: null,
+      publicNotice: REVIEW_PLACEHOLDER_NOTICE,
+    })
+    expect(historicalPlaceholder).toMatchObject({
+      publicComment: null,
+      publicNotice: REVIEW_PLACEHOLDER_NOTICE,
+    })
+    expect(finalRedaction).toMatchObject({
+      publicComment: 'The treatment plan was clear, and the follow-ups were reliable.',
       publicNotice: REVIEW_REDACTION_NOTICE,
     })
   })
@@ -150,6 +248,27 @@ describe('review demo fixture references and audits', () => {
     expect(asRecord(response.publishedResponse).isBlocked).toBe(false)
   })
 
+  it('documents the central author withdrawal while preserving its internal review and response', () => {
+    const review = findRecord(reviewRecords, 'seed-review-izmir-coast-08')
+    const response = findRecord(responseRecords, 'seed-review-response-izmir-coast-08')
+
+    expect(review).toMatchObject({
+      clinicStableId: CENTRAL_CLINIC_STABLE_ID,
+      status: 'approved',
+      publicMeasure: 'none',
+      withdrawalState: 'withdrawn',
+      withdrawalSource: 'platform',
+      withdrawnByStableId: 'seed-platform-admin',
+      comment: expect.any(String),
+      starRating: expect.any(Number),
+    })
+    expect(asRecord(review.withdrawnBy)).toEqual({ relationTo: 'platformStaff' })
+    expect(response).toMatchObject({
+      reviewStableId: review.stableId,
+      moderationStatus: 'approved',
+    })
+  })
+
   it('spans multiple existing clinics across the canonical workflow cases', () => {
     const clinicIds = new Set((clinics as SeedRecord[]).map((clinic) => clinic.stableId))
     const workflowReviewIds = new Set(
@@ -162,6 +281,8 @@ describe('review demo fixture references and audits', () => {
         .filter((review) => workflowReviewIds.has(review.stableId))
         .map((review) => String(review.clinicStableId)),
     )
+
+    usedClinicIds.delete(CENTRAL_CLINIC_STABLE_ID)
 
     expect(usedClinicIds.size).toBeGreaterThanOrEqual(2)
     for (const clinicId of usedClinicIds) {

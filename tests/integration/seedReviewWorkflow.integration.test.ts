@@ -443,6 +443,7 @@ describe.sequential('demo review workflow seed integration', () => {
   let centralClinicId: number
   let clinicStaffId: number | string
   let clinicUser: Awaited<ReturnType<typeof asClinicScopedPayloadUser>>
+  let reconciledResponseId: number | string | null = null
   const createdStaffIds: Array<number | string> = []
   const slugPrefix = testSlug('seedReviewWorkflow.integration.test.ts')
 
@@ -453,6 +454,14 @@ describe.sequential('demo review workflow seed integration', () => {
 
   afterAll(async () => {
     try {
+      if (reconciledResponseId !== null) {
+        await cleanupTrackedDocs(payload, [
+          {
+            collection: 'reviewResponses',
+            ids: [reconciledResponseId],
+          },
+        ])
+      }
       await cleanupSeedReviewWorkflow(payload)
     } finally {
       await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
@@ -683,5 +692,95 @@ describe.sequential('demo review workflow seed integration', () => {
       overrideAccess: true,
     })
     expect(relationId(persistedClinicStaff.clinic)).toBe(centralClinicId)
+  }, 180_000)
+
+  it('reconciles a pre-existing response for a seed review without replacing its audit identity', async () => {
+    const [reviewResult, responseResult] = await Promise.all([
+      payload.find({
+        collection: 'reviews',
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+        where: { stableId: { equals: 'seed-review-izmir-coast-03' } },
+      }),
+      payload.find({
+        collection: 'reviewResponses',
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+        where: { stableId: { equals: 'seed-review-response-izmir-coast-03' } },
+      }),
+    ])
+    const review = reviewResult.docs[0]
+    const seededResponse = responseResult.docs[0]
+    if (!review || !seededResponse) {
+      throw new Error('Expected the central review and its seeded response')
+    }
+
+    await payload.delete({
+      collection: 'reviewResponses',
+      id: seededResponse.id,
+      context: { disableRevalidate: true },
+      overrideAccess: true,
+    })
+
+    const submittedBody = 'This clinic-authored response existed before the non-destructive demo seed was retried.'
+    const existingResponse = await payload.create({
+      collection: 'reviewResponses',
+      data: {
+        review: review.id,
+        pendingResponse: {
+          body: submittedBody,
+        },
+      } as unknown as ReviewResponse,
+      depth: 0,
+      overrideAccess: false,
+      user: clinicUser,
+    })
+    reconciledResponseId = existingResponse.id
+    const existingStableId = existingResponse.stableId
+
+    const result = await runDemoSeeds(payload)
+    expect(result.failures).toEqual([])
+
+    const reconciledResult = await payload.find({
+      collection: 'reviewResponses',
+      depth: 0,
+      overrideAccess: true,
+      pagination: false,
+      where: { review: { equals: review.id } },
+    })
+    expect(reconciledResult.docs).toHaveLength(1)
+    expect(reconciledResult.docs[0]).toMatchObject({
+      id: existingResponse.id,
+      stableId: existingStableId,
+      moderationStatus: 'approved',
+      publishedResponse: {
+        body: 'Thank you for describing the consultation. We are glad the written plan made the treatment options easier to compare.',
+        approvedAt: '2026-01-24T10:00:00.000Z',
+        isBlocked: false,
+      },
+    })
+
+    const firstVersions = await payload.findVersions({
+      collection: 'reviewResponses',
+      depth: 0,
+      overrideAccess: true,
+      pagination: false,
+      where: { parent: { equals: existingResponse.id } },
+    })
+    expect(firstVersions.docs.some(({ version }) => version.pendingResponse?.body === submittedBody)).toBe(true)
+
+    const repeatedResult = await runDemoSeeds(payload)
+    expect(repeatedResult.failures).toEqual([])
+
+    const repeatedVersions = await payload.findVersions({
+      collection: 'reviewResponses',
+      depth: 0,
+      overrideAccess: true,
+      pagination: false,
+      where: { parent: { equals: existingResponse.id } },
+    })
+    expect(repeatedVersions.docs).toEqual(firstVersions.docs)
   }, 180_000)
 })

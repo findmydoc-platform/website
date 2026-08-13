@@ -62,8 +62,15 @@ const masterDTO = (treatment: Treatment): ClinicTreatmentMasterDTO => ({
   name: treatment.name.trim(),
 })
 
-const offeringDTO = (offering: Clinictreatment, clinicId: RelationId): ClinicTreatmentOfferingDTO => {
-  if (String(relationId(offering.clinic)) !== String(clinicId) || typeof offering.treatment !== 'object') {
+const offeringDTO = (
+  offering: Clinictreatment,
+  clinicId: RelationId,
+  treatment: Treatment,
+): ClinicTreatmentOfferingDTO => {
+  if (
+    String(relationId(offering.clinic)) !== String(clinicId) ||
+    String(relationId(offering.treatment)) !== String(treatment.id)
+  ) {
     throw new ClinicTreatmentServiceError('unavailable', 'Clinic treatment relationships are unavailable.')
   }
 
@@ -72,7 +79,55 @@ const offeringDTO = (offering: Clinictreatment, clinicId: RelationId): ClinicTre
     id: String(offering.id),
     priceEUR: offering.price,
     revision: offering.updatedAt,
-    treatment: masterDTO(offering.treatment),
+    treatment: masterDTO(treatment),
+  }
+}
+
+const SNAPSHOT_PAGE_SIZE = 100
+
+const readAllClinicOfferings = async (req: PayloadRequest, clinicId: RelationId): Promise<Clinictreatment[]> => {
+  const docs: Clinictreatment[] = []
+  let page = 1
+
+  while (true) {
+    const result = await req.payload.find({
+      collection: 'clinictreatments',
+      depth: 0,
+      limit: SNAPSHOT_PAGE_SIZE,
+      overrideAccess: true,
+      page,
+      req,
+      where: { clinic: { equals: clinicId } },
+    })
+    docs.push(...result.docs)
+    if (!result.hasNextPage) return docs
+    if (typeof result.nextPage !== 'number' || result.nextPage <= page) {
+      throw new ClinicTreatmentServiceError('unavailable', 'Clinic treatments could not be loaded completely.')
+    }
+    page = result.nextPage
+  }
+}
+
+const readAllTreatments = async (req: PayloadRequest): Promise<Treatment[]> => {
+  const docs: Treatment[] = []
+  let page = 1
+
+  while (true) {
+    const result = await req.payload.find({
+      collection: 'treatments',
+      depth: 0,
+      limit: SNAPSHOT_PAGE_SIZE,
+      overrideAccess: true,
+      page,
+      req,
+      sort: 'name',
+    })
+    docs.push(...result.docs)
+    if (!result.hasNextPage) return docs
+    if (typeof result.nextPage !== 'number' || result.nextPage <= page) {
+      throw new ClinicTreatmentServiceError('unavailable', 'The treatment catalogue could not be loaded completely.')
+    }
+    page = result.nextPage
   }
 }
 
@@ -136,30 +191,18 @@ export const readClinicTreatmentSnapshot = async (
   req: PayloadRequest,
   clinicId: RelationId,
 ): Promise<ClinicTreatmentSnapshotDTO> => {
-  const [offerings, catalogue] = await Promise.all([
-    req.payload.find({
-      collection: 'clinictreatments',
-      depth: 1,
-      limit: 1_000,
-      overrideAccess: true,
-      pagination: false,
-      req,
-      where: { clinic: { equals: clinicId } },
-    }),
-    req.payload.find({
-      collection: 'treatments',
-      depth: 0,
-      limit: 1_000,
-      overrideAccess: true,
-      pagination: false,
-      req,
-      sort: 'name',
-    }),
-  ])
+  const [offerings, catalogue] = await Promise.all([readAllClinicOfferings(req, clinicId), readAllTreatments(req)])
+  const treatmentsById = new Map(catalogue.map((treatment) => [String(treatment.id), treatment]))
 
   return {
-    catalogue: catalogue.docs.map(masterDTO),
-    offerings: offerings.docs.map((offering) => offeringDTO(offering, clinicId)),
+    catalogue: catalogue.map(masterDTO),
+    offerings: offerings.map((offering) => {
+      const treatment = treatmentsById.get(String(relationId(offering.treatment)))
+      if (!treatment) {
+        throw new ClinicTreatmentServiceError('unavailable', 'Clinic treatment relationships are unavailable.')
+      }
+      return offeringDTO(offering, clinicId, treatment)
+    }),
   }
 }
 
@@ -188,11 +231,11 @@ export const createClinicTreatment = async (
         price: input.priceEUR,
         treatment: treatment.id,
       },
-      depth: 1,
+      depth: 0,
       overrideAccess: true,
       req,
     })
-    return offeringDTO(offering, clinicId)
+    return offeringDTO(offering, clinicId, treatment)
   } catch (error: unknown) {
     if (error instanceof ClinicTreatmentServiceError) throw error
     if (duplicateConstraint(error)) {
@@ -227,12 +270,23 @@ export const updateClinicTreatment = async (
     if (current.updatedAt !== input.expectedRevision) {
       throw new ClinicTreatmentServiceError('conflict', 'The clinic treatment changed.')
     }
+    const treatmentId = relationId(current.treatment)
+    if (treatmentId === null) {
+      throw new ClinicTreatmentServiceError('unavailable', 'Clinic treatment relationships are unavailable.')
+    }
+    const treatment = await req.payload.findByID({
+      collection: 'treatments',
+      depth: 0,
+      id: treatmentId,
+      overrideAccess: true,
+      req,
+    })
 
     const result = await req.payload.update({
       collection: 'clinictreatments',
       context: { disableRevalidate: true },
       data: { active: input.active, price: input.priceEUR },
-      depth: 1,
+      depth: 0,
       overrideAccess: true,
       req,
       where: {
@@ -248,7 +302,7 @@ export const updateClinicTreatment = async (
       throw new ClinicTreatmentServiceError('conflict', 'The clinic treatment changed.')
     }
 
-    return { current, updated }
+    return { current, treatment, updated }
   })
 
   await dispatchClinicTreatmentChangeRevalidation({
@@ -257,5 +311,5 @@ export const updateClinicTreatment = async (
     req,
   })
 
-  return offeringDTO(result.updated, clinicId)
+  return offeringDTO(result.updated, clinicId, result.treatment)
 }

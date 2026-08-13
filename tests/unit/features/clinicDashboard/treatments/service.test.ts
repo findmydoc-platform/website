@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   ClinicTreatmentServiceError,
   createClinicTreatment,
+  readClinicTreatmentSnapshot,
   updateClinicTreatment,
 } from '@/features/clinicDashboard/treatments/service'
+import { canonicalizeDescriptionText } from '@/features/clinicDashboard/profile/richText'
 
 const transactions = vi.hoisted(() => ({
   begin: vi.fn(async () => 'tx-1'),
@@ -69,6 +71,33 @@ describe('Clinic Dashboard treatment service', () => {
         data: { active: false, clinic: 7, price: 100, treatment: 8 },
       }),
     )
+  })
+
+  it('returns complete paginated snapshots with full treatment descriptions', async () => {
+    const describedTreatment = {
+      ...treatment,
+      description: canonicalizeDescriptionText('Complete description'),
+    }
+    const secondTreatment = { ...treatment, id: 10, name: 'Second treatment' }
+    const find = vi.fn(async ({ collection, page }: { collection: string; page: number }) => {
+      if (collection === 'clinictreatments') {
+        return { docs: [{ ...offering, treatment: treatment.id }], hasNextPage: false, nextPage: null }
+      }
+      if (page === 1) {
+        return { docs: [describedTreatment], hasNextPage: true, nextPage: 2 }
+      }
+      return { docs: [secondTreatment], hasNextPage: false, nextPage: null }
+    })
+    const req = request({ find })
+
+    const snapshot = await readClinicTreatmentSnapshot(req, 7)
+
+    expect(snapshot.catalogue).toEqual([
+      { descriptionText: 'Complete description', id: '8', name: 'Treatment' },
+      { descriptionText: '', id: '10', name: 'Second treatment' },
+    ])
+    expect(snapshot.offerings[0]?.treatment.descriptionText).toBe('Complete description')
+    expect(find).toHaveBeenCalledWith(expect.objectContaining({ collection: 'treatments', page: 2 }))
   })
 
   it('does not update an offering outside the server-derived clinic', async () => {

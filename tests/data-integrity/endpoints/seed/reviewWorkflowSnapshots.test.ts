@@ -77,7 +77,9 @@ describe('review workflow seed plan', () => {
     )
 
     expect(demoPlan.find((step) => step.name === 'review-response-states')).toEqual(
-      expect.objectContaining({ upsertPolicy: { skipIfCurrentMatches: true } }),
+      expect.objectContaining({
+        upsertPolicy: { reconcileByUniqueFields: ['review'], skipIfCurrentMatches: true },
+      }),
     )
   })
 

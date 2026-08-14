@@ -294,6 +294,7 @@ const createSilentPostHogFeatureFlagEvaluations = ({
 
     records[key] = {
       enabled: flag !== false,
+      hasExperiment: undefined,
       id: undefined,
       key,
       locallyEvaluated: hasPostHogValue,

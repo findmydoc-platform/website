@@ -5,6 +5,7 @@ import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared
 
 const createMockRouter = (overrides?: Partial<AppRouterInstance>): AppRouterInstance => ({
   back: () => {},
+  bfcacheId: 'storybook',
   forward: () => {},
   refresh: () => {},
   push: () => {},

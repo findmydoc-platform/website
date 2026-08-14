@@ -75,5 +75,97 @@
       "submittedAt": null
     },
     "moderatedAt": "2026-01-24T09:00:00.000Z"
+  },
+  {
+    "stableId": "seed-review-response-izmir-coast-03",
+    "reviewStableId": "seed-review-izmir-coast-03",
+    "moderationStatus": "approved",
+    "publishedResponse": {
+      "body": "Thank you for describing the consultation. We are glad the written plan made the treatment options easier to compare.",
+      "approvedAt": "2026-01-24T10:00:00.000Z",
+      "isBlocked": false
+    },
+    "pendingResponse": {
+      "body": null,
+      "submittedAt": null
+    },
+    "moderatedAt": "2026-01-24T10:00:00.000Z"
+  },
+  {
+    "stableId": "seed-review-response-izmir-coast-04",
+    "reviewStableId": "seed-review-izmir-coast-04",
+    "moderationStatus": "pending",
+    "publishedResponse": {
+      "body": "Thank you for noting how the reception, imaging, and consultation handover worked during your visit.",
+      "approvedAt": "2026-01-23T09:00:00.000Z",
+      "isBlocked": false
+    },
+    "pendingResponse": {
+      "body": "Thank you for your feedback. We are preparing an updated explanation of how separate imaging appointments are scheduled.",
+      "submittedAt": "2026-01-29T09:00:00.000Z"
+    },
+    "moderatedAt": null
+  },
+  {
+    "stableId": "seed-review-response-izmir-coast-05",
+    "reviewStableId": "seed-review-izmir-coast-05",
+    "moderationStatus": "rejected",
+    "publishedResponse": {
+      "body": "Thank you for highlighting the clear treatment plan and reliable follow-up communication.",
+      "approvedAt": "2026-01-22T09:00:00.000Z",
+      "isBlocked": false
+    },
+    "pendingResponse": {
+      "body": null,
+      "submittedAt": null
+    },
+    "moderationReason": "The proposed revision discusses another guest's treatment package and is not suitable for publication.",
+    "moderatedAt": "2026-01-29T09:30:00.000Z"
+  },
+  {
+    "stableId": "seed-review-response-izmir-coast-06",
+    "reviewStableId": "seed-review-izmir-coast-06",
+    "moderationStatus": "approved",
+    "publishedResponse": {
+      "body": "Thank you for describing how the written plan supported your decision after the consultation.",
+      "approvedAt": "2026-01-21T10:00:00.000Z",
+      "isBlocked": false
+    },
+    "pendingResponse": {
+      "body": null,
+      "submittedAt": null
+    },
+    "moderatedAt": "2026-01-21T10:00:00.000Z"
+  },
+  {
+    "stableId": "seed-review-response-izmir-coast-08",
+    "reviewStableId": "seed-review-izmir-coast-08",
+    "moderationStatus": "approved",
+    "publishedResponse": {
+      "body": "Thank you for your feedback about the consultation, written plan, and aftercare coordination.",
+      "approvedAt": "2026-01-20T09:00:00.000Z",
+      "isBlocked": false
+    },
+    "pendingResponse": {
+      "body": null,
+      "submittedAt": null
+    },
+    "moderatedAt": "2026-01-20T09:00:00.000Z"
+  },
+  {
+    "stableId": "seed-review-response-izmir-coast-09",
+    "reviewStableId": "seed-review-izmir-coast-09",
+    "moderationStatus": "blocked",
+    "publishedResponse": {
+      "body": "Thank you for your review. Our team recorded additional details about your treatment history.",
+      "approvedAt": "2026-01-18T10:00:00.000Z",
+      "isBlocked": true
+    },
+    "pendingResponse": {
+      "body": null,
+      "submittedAt": null
+    },
+    "moderationReason": "Platform Support blocked the response because it includes private treatment history beyond the public review.",
+    "moderatedAt": "2026-01-30T10:00:00.000Z"
   }
 ]

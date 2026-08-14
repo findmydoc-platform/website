@@ -37,7 +37,7 @@ remove, redact, or otherwise change a review or its clinic response.
 | Anonymous caller | Reads only approved, active public review projections and eligible published clinic responses. |
 | Patient | Creates a review that is forced to the authenticated patient and `pending`; reads the same public projection as an anonymous caller; can withdraw only their own review. Patients cannot directly update, delete, or read review versions. |
 | Clinic staff | Reads approved reviews for the currently assigned clinic, including sanitized moderation and withdrawal state; manages only that clinic's response and appeal workflows; reads tenant-scoped response and appeal versions and the sanitized review publication history. Clinic staff cannot moderate or withdraw reviews. |
-| Platform staff | Reads all review states and raw history; performs ordinary Review updates, public moderation, records author withdrawal after external support verification, corrects withdrawal state, manages response workflows, and submits or decides appeals. Review deletion is platform-only and uses Payload soft delete. |
+| Platform staff | Reads all review states and raw history; performs ordinary Review updates and public moderation; records author withdrawal after external support verification; corrects withdrawal state; moderates clinic-authored response workflows without editing the pending text; and submits or decides appeals. Review deletion is platform-only and uses Payload soft delete. |
 
 For response and appeal writes, the clinic is derived from the related review and checked against the authenticated
 clinic assignment. A clinic or actor supplied by a client is not authoritative. Cross-tenant workflow reads are
@@ -82,7 +82,7 @@ verification and correct operator use therefore remain policy obligations.
 Each approved review can have one `ReviewResponses` record:
 
 1. Assigned clinic staff submits or edits `pendingResponse`.
-2. Platform staff can also create or manage the workflow when required.
+2. Platform staff reads the current clinic submission and manages only its moderation status and reason.
 3. An already approved response remains public while a revision is pending.
 4. Platform staff sets `moderationStatus` to `approved`, `rejected`, or `blocked`.
 5. Approval publishes the pending response. Rejection discards the pending replacement but retains an existing

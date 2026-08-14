@@ -5,12 +5,13 @@
  * the permission matrix logic for clinic and patient resources.
  */
 
-import { describe, it, beforeEach, vi } from 'vitest'
+import { describe, it, beforeEach, expect, vi } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 
 // Import all scope filter functions
 import {
+  assignedClinicMutation,
   platformOrAssignedClinicMutation,
   platformOrOwnClinicResourceOrActive,
   platformOrOwnClinicResource,
@@ -105,6 +106,32 @@ describe('Scope Filter Functions', () => {
     it('Anonymous gets no access', async () => {
       const result = await platformOrAssignedClinicMutation(createAccessArgs(mockUsers.anonymous()))
       expectAccess.none(result)
+    })
+  })
+
+  describe('assignedClinicMutation', () => {
+    it('denies Platform Staff', async () => {
+      const result = await assignedClinicMutation(createAccessArgs(mockUsers.platform()))
+      expectAccess.none(result)
+    })
+
+    it('allows Clinic Staff with a clinic assignment', async () => {
+      mockGetUserAssignedClinicId.mockResolvedValue(123)
+
+      const result = await assignedClinicMutation(createAccessArgs(mockUsers.clinic()))
+      expectAccess.full(result)
+    })
+
+    it('denies Clinic Staff without a clinic assignment', async () => {
+      mockGetUserAssignedClinicId.mockResolvedValue(null)
+
+      const result = await assignedClinicMutation(createAccessArgs(mockUsers.clinic()))
+      expectAccess.none(result)
+    })
+
+    it('denies patients and anonymous callers', async () => {
+      await expect(assignedClinicMutation(createAccessArgs(mockUsers.patient()))).resolves.toBe(false)
+      await expect(assignedClinicMutation(createAccessArgs(mockUsers.anonymous()))).resolves.toBe(false)
     })
   })
 

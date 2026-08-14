@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import type { PayloadRequest } from 'payload'
 
-import { revalidateClinicChange, revalidateClinicDelete } from '@/hooks/revalidateClinicSurfaces'
+import {
+  dispatchClinicTreatmentChangeRevalidation,
+  revalidateClinicChange,
+  revalidateClinicDelete,
+} from '@/hooks/revalidateClinicSurfaces'
 import { createMockReq } from '../helpers/testHelpers'
 
 type ClinicDoc = {
@@ -88,5 +92,20 @@ describe('clinic surface revalidation hooks', () => {
 
     expect(getPathCalls()).toEqual([])
     expect(getTagCalls()).toEqual([])
+  })
+
+  it('dispatches an explicit post-commit treatment plan despite the hook suppression context', async () => {
+    const clinic = { id: 12, slug: 'berlin-health', status: 'approved' as const }
+    const req = buildReq({ disableRevalidate: true })
+
+    await dispatchClinicTreatmentChangeRevalidation({
+      doc: { clinic, id: 99 },
+      previousDoc: { clinic, id: 99 },
+      req,
+    })
+
+    expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
+    expect(getTagCalls()).toContain('surface:clinic-detail:12')
+    expect(getTagCalls()).toContain('surface:listing-comparison')
   })
 })

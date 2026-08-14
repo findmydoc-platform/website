@@ -418,12 +418,29 @@ export const demoPlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
+    name: 'review-moderations-initial-history',
+    collection: 'reviews',
+    fileName: 'reviewModerationsInitial',
+    reqUserStableId: 'seed-platform-admin',
+    atomicGroup: 'review-moderation-history',
+    upsertPolicy: { skipIfVersionMatches: true },
+    mapping: [
+      {
+        sourceField: 'moderatedByStableId',
+        targetField: 'moderatedBy',
+        collection: 'platformStaff',
+        required: true,
+      },
+    ],
+  },
+  {
+    kind: 'collection',
     name: 'review-response-states',
     collection: 'reviewResponses',
     fileName: 'reviewResponses',
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
-    upsertPolicy: { skipIfCurrentMatches: true },
+    upsertPolicy: { reconcileByUniqueFields: ['review'], skipIfCurrentMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',
@@ -447,23 +464,6 @@ export const demoPlan: SeedPlanStep[] = [
         sourceField: 'reviewStableId',
         targetField: 'review',
         collection: 'reviews',
-        required: true,
-      },
-    ],
-  },
-  {
-    kind: 'collection',
-    name: 'review-moderations-initial-history',
-    collection: 'reviews',
-    fileName: 'reviewModerationsInitial',
-    reqUserStableId: 'seed-platform-admin',
-    atomicGroup: 'review-moderation-history',
-    upsertPolicy: { skipIfVersionMatches: true },
-    mapping: [
-      {
-        sourceField: 'moderatedByStableId',
-        targetField: 'moderatedBy',
-        collection: 'platformStaff',
         required: true,
       },
     ],

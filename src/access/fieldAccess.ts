@@ -13,6 +13,10 @@ const isPlatformUser = (user: PayloadRequest['user']): boolean => {
   return Boolean(user && user.collection === 'platformStaff')
 }
 
+const isClinicUser = (user: PayloadRequest['user']): boolean => {
+  return Boolean(user && user.collection === 'clinicStaff')
+}
+
 const hasClinicTrustManagerRole = async (req: PayloadRequest): Promise<boolean> => {
   if (!isPlatformUser(req.user)) return false
   if (!req.payload || typeof req.payload.find !== 'function') return false
@@ -48,6 +52,13 @@ const hasClinicTrustManagerRole = async (req: PayloadRequest): Promise<boolean> 
  */
 export const platformOnlyFieldAccess: FieldAccess = ({ req }) => {
   return isPlatformUser(req.user)
+}
+
+/**
+ * Only Clinic Staff can access this field operation.
+ */
+export const clinicOnlyFieldAccess: FieldAccess = ({ req }) => {
+  return isClinicUser(req.user)
 }
 
 /**

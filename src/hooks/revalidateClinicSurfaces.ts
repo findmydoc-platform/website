@@ -317,10 +317,24 @@ const revalidateRelatedClinicSurface = async (
 export const revalidateClinicTreatmentChange: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
   if (isRevalidationDisabled(req)) return doc
 
+  await dispatchClinicTreatmentChangeRevalidation({ doc, previousDoc, req })
+
+  return doc
+}
+
+export const dispatchClinicTreatmentChangeRevalidation = async ({
+  doc,
+  previousDoc,
+  req,
+}: {
+  doc: unknown
+  previousDoc?: unknown
+  req: PayloadRequest
+}): Promise<void> => {
   const current = doc as RevalidatableDoc
   const previous = previousDoc as RevalidatableDoc | undefined
 
-  return revalidateRelatedClinicSurface({
+  dispatchRelatedClinicSurfaceRevalidation({
     collection: 'clinictreatments',
     currentClinics: [await resolveClinicIdentity(req, current.clinic)].filter(isClinicIdentity),
     previousClinics: [await resolveClinicIdentity(req, previous?.clinic)].filter(isClinicIdentity),

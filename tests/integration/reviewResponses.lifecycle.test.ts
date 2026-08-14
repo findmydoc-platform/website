@@ -164,6 +164,146 @@ describe('reviewResponses lifecycle', () => {
     expect(initialSnapshot.lastActorType).toBe('platform_staff')
   }, 60000)
 
+  it('preserves clinic authorship while platform staff moderates the latest submission', async () => {
+    const { clinic, review } = await createApprovedReview('clinic-authorship')
+    const clinicStaff = await createClinicTestUser(payload, {
+      emailPrefix: `${slugPrefix}-clinic-authorship-clinic`,
+      createdStaffIds: staffIds,
+    })
+    const clinicUser = await asClinicScopedPayloadUser(payload, clinicStaff, clinic.id)
+    const moderator = await createPlatformTestUser(payload, {
+      emailPrefix: `${slugPrefix}-clinic-authorship-platform`,
+      createdStaffIds: staffIds,
+    })
+    const platformUser = asPayloadStaffUser(moderator)
+    const firstBody = 'Clinic submission A contains the initial response to the patient review.'
+    const revisedBody = 'Clinic submission B contains the clinic-approved revision for publication.'
+    const injectedBody = 'Platform-authored submission C must never replace the clinic text.'
+    const forgedCreatedAt = '2000-01-01T00:00:00.000Z'
+    const forgedUpdatedAt = '2099-12-31T23:59:59.000Z'
+
+    await expect(
+      payload.create({
+        collection: 'reviewResponses',
+        data: {
+          review: review.id,
+          moderationStatus: 'rejected',
+          moderationReason: 'Platform staff must not reserve the workflow before a clinic submission.',
+        } as unknown as ReviewResponse,
+        user: platformUser,
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toThrow()
+
+    await expect(
+      payload.create({
+        collection: 'reviewResponses',
+        data: {
+          review: review.id,
+          moderationStatus: 'blocked',
+          moderationReason: 'Internal access override must not bypass clinic-only workflow creation.',
+        } as unknown as ReviewResponse,
+        user: platformUser,
+        overrideAccess: true,
+        depth: 0,
+      }),
+    ).rejects.toThrow('Only clinic staff can create review response workflows.')
+
+    const submitted = await payload.create({
+      collection: 'reviewResponses',
+      data: {
+        review: review.id,
+        pendingResponse: {
+          body: firstBody,
+          submittedAt: forgedCreatedAt,
+        },
+      } as unknown as ReviewResponse,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    responseIds.push(submitted.id)
+
+    expect(submitted.pendingResponse?.body).toBe(firstBody)
+    expect(submitted.pendingResponse?.submittedAt).toBeTruthy()
+    expect(submitted.pendingResponse?.submittedAt).not.toBe(forgedCreatedAt)
+    const originalSubmittedAt = submitted.pendingResponse?.submittedAt
+
+    const edited = await payload.update({
+      collection: 'reviewResponses',
+      id: submitted.id,
+      data: {
+        pendingResponse: {
+          body: revisedBody,
+          submittedAt: forgedUpdatedAt,
+        },
+      } as unknown as ReviewResponse,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    expect(edited.pendingResponse?.body).toBe(revisedBody)
+    expect(edited.pendingResponse?.submittedAt).toBe(originalSubmittedAt)
+    expect(edited.pendingResponse?.submittedAt).not.toBe(forgedUpdatedAt)
+    expect(edited.lastAction).toBe('pending_edited')
+
+    const versionsBeforeModeration = await payload.findVersions({
+      collection: 'reviewResponses',
+      where: { parent: { equals: edited.id } },
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+      pagination: false,
+    })
+    expect(versionsBeforeModeration.docs.map(({ version }) => version)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          lastAction: 'submitted',
+          pendingResponse: expect.objectContaining({ body: firstBody }),
+        }),
+        expect.objectContaining({
+          lastAction: 'pending_edited',
+          pendingResponse: expect.objectContaining({ body: revisedBody }),
+        }),
+      ]),
+    )
+
+    const visibleToPlatform = await payload.findByID({
+      collection: 'reviewResponses',
+      id: edited.id,
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(visibleToPlatform.pendingResponse?.body).toBe(revisedBody)
+
+    const approved = await payload.update({
+      collection: 'reviewResponses',
+      id: edited.id,
+      data: {
+        moderationStatus: 'approved',
+        moderationReason: 'The clinic submission was reviewed and approved for publication.',
+        pendingResponse: {
+          body: injectedBody,
+          submittedAt: forgedUpdatedAt,
+        },
+      } as unknown as ReviewResponse,
+      user: platformUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    expect(approved.moderationStatus).toBe('approved')
+    expect(approved.moderationReason).toBe('The clinic submission was reviewed and approved for publication.')
+    expect(approved.publishedResponse?.body).toBe(revisedBody)
+    expect(approved.publishedResponse?.body).not.toBe(injectedBody)
+    expect(approved.pendingResponse).toBeFalsy()
+    expect(approved.lastAction).toBe('approved')
+    expect(approved.lastActorType).toBe('platform_staff')
+  }, 60000)
+
   it('keeps the approved response public while a clinic revision is pending or rejected', async () => {
     const { clinic, review } = await createApprovedReview('moderation')
     const clinicStaff = await createClinicTestUser(payload, {
@@ -297,27 +437,40 @@ describe('reviewResponses lifecycle', () => {
   }, 60000)
 
   it('allows platform staff to block an approved response without a pending revision', async () => {
-    const { review } = await createApprovedReview('direct-block')
+    const { clinic, review } = await createApprovedReview('direct-block')
+    const clinicStaff = await createClinicTestUser(payload, {
+      emailPrefix: `${slugPrefix}-direct-block-clinic`,
+      createdStaffIds: staffIds,
+    })
+    const clinicUser = await asClinicScopedPayloadUser(payload, clinicStaff, clinic.id)
     const moderator = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-direct-block-platform`,
       createdStaffIds: staffIds,
     })
     const platformUser = asPayloadStaffUser(moderator)
 
-    const approved = await payload.create({
+    const submitted = await payload.create({
       collection: 'reviewResponses',
       data: {
         review: review.id,
         pendingResponse: {
           body: 'Thank you for the review. We have shared the feedback with the responsible clinic team.',
         },
-        moderationStatus: 'approved',
       } as unknown as ReviewResponse,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    responseIds.push(submitted.id)
+
+    const approved = await payload.update({
+      collection: 'reviewResponses',
+      id: submitted.id,
+      data: { moderationStatus: 'approved' } as unknown as ReviewResponse,
       user: platformUser,
       overrideAccess: false,
       depth: 0,
     })
-    responseIds.push(approved.id)
 
     expect(approved.pendingResponse).toBeFalsy()
     expect(approved.publishedResponse?.isBlocked).toBe(false)
@@ -348,21 +501,33 @@ describe('reviewResponses lifecycle', () => {
   }, 60000)
 
   it('fails closed when a parent review is rejected or trashed even if its response was not blocked', async () => {
-    const { review } = await createApprovedReview('parent-rejected')
+    const { clinic, review } = await createApprovedReview('parent-rejected')
+    const clinicStaff = await createClinicTestUser(payload, {
+      emailPrefix: `${slugPrefix}-parent-rejected-clinic`,
+      createdStaffIds: staffIds,
+    })
+    const clinicUser = await asClinicScopedPayloadUser(payload, clinicStaff, clinic.id)
     const moderator = await createPlatformTestUser(payload, {
       emailPrefix: `${slugPrefix}-parent-rejected-platform`,
       createdStaffIds: staffIds,
     })
     const platformUser = asPayloadStaffUser(moderator)
-    const response = await payload.create({
+    const submitted = await payload.create({
       collection: 'reviewResponses',
       data: {
         review: review.id,
         pendingResponse: {
           body: 'Thank you for the detailed feedback. The clinic has reviewed it with the responsible team.',
         },
-        moderationStatus: 'approved',
       } as unknown as ReviewResponse,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    const response = await payload.update({
+      collection: 'reviewResponses',
+      id: submitted.id,
+      data: { moderationStatus: 'approved' } as unknown as ReviewResponse,
       user: platformUser,
       overrideAccess: false,
       depth: 0,

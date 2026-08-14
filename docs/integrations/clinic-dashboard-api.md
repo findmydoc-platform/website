@@ -21,9 +21,9 @@ durable architecture documentation, not an execution plan. The contract does not
 Payload CORS origins, a Dashboard database, service-role credentials, public cache behavior, or clinic login UI to the
 website.
 
-Payload exposes the private bootstrap contract and the persistent clinic-profile draft workflow. The Clinic Dashboard
-session and BFF runtime are implemented in the Dashboard repository; trusted preview and production rollout evidence
-remain pending.
+Payload exposes the private bootstrap contract, the persistent clinic-profile draft workflow, and the focused clinic
+treatment contract. The Clinic Dashboard session and BFF runtime are implemented in the Dashboard repository; trusted
+preview and production rollout evidence remain pending.
 
 ## Boundary and Ownership
 
@@ -169,6 +169,63 @@ plain text is stored as canonical rich-text paragraphs.
 Draft read, create, update, and discard do not mutate `clinics` and do not trigger public revalidation. Publish checks
 and writes the clinic plus draft deletion in one database transaction. It then dispatches the existing clinic-surface
 revalidation event after commit.
+
+## Clinic Treatment Contract
+
+The treatment capability uses one focused custom Payload endpoint rather than generic collection REST:
+
+| Method and route | Result |
+| --- | --- |
+| `GET /api/clinic-dashboard/treatments` | Returns the assigned clinic's complete treatment snapshot and the central treatment catalogue. |
+| `POST /api/clinic-dashboard/treatments` | Creates one inactive offering for an existing central treatment. |
+| `PATCH /api/clinic-dashboard/treatments` | Updates only EUR price and active state after an optimistic revision check. |
+
+Every request repeats bootstrap authorization, requires `clinic-treatments:view` for reads or
+`clinic-treatments:edit` for writes, and derives the clinic from the approved `clinicStaff` assignment. No request
+accepts a clinic ID. The endpoint returns purpose-specific DTOs and does not expose generic Payload query, depth,
+relationship, or collection response semantics.
+
+```ts
+type ClinicTreatmentMasterDTO = {
+  descriptionText: string
+  id: string
+  name: string
+}
+
+type ClinicTreatmentOfferingDTO = {
+  active: boolean
+  id: string
+  priceEUR: number
+  revision: string
+  treatment: ClinicTreatmentMasterDTO
+}
+
+type ClinicTreatmentSnapshotDTO = {
+  catalogue: ClinicTreatmentMasterDTO[]
+  offerings: ClinicTreatmentOfferingDTO[]
+}
+```
+
+Create accepts only `{ treatmentId, priceEUR }`; Payload assigns the authenticated clinic and stores `active: false`.
+The offering can be activated only by a later update. Update accepts
+`{ offeringId, expectedRevision, priceEUR, active }`. `revision` is the offering's ISO `updatedAt` value. Payload finds
+the offering by both ID and assigned clinic and compares the expected revision inside a serializable transaction.
+Serialization failures are retried; a retry observes the newer revision and returns a conflict instead of overwriting
+it. Treatment name and plain-text description remain projections of the central Treatment record and are never
+writable through this endpoint.
+
+Invalid request structure returns `400 CLINIC_TREATMENT_INVALID_INPUT`; a missing or unavailable master treatment
+returns `422 CLINIC_TREATMENT_INVALID_INPUT`; a foreign or missing clinic offering returns
+`404 CLINIC_TREATMENT_NOT_FOUND`; a duplicate clinic/treatment pair or stale revision returns
+`409 CLINIC_TREATMENT_CONFLICT`. Authentication and temporary-service errors reuse the stable Clinic Dashboard error
+codes. Every response is private-live with `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
+`Vary: Authorization`.
+
+Clinic-treatment writes retain the existing `clinictreatments` hook behavior. Transactional updates suppress the hook's
+in-transaction invalidation and dispatch the same related-clinic plan once after commit, preventing an invalidated
+public cache from refilling against pre-commit data. Public clinic detail and listing comparison reads remain
+`public-cached`; the existing event, cache-policy entries, tags, planner owner, and bounded public paths remain
+authoritative. The private Dashboard endpoint adds no cache class, tag, surface, or invalidation owner.
 
 ## Dashboard-facing Route Semantics
 

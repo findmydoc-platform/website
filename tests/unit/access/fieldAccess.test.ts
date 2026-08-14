@@ -9,6 +9,7 @@ import { describe, test, beforeEach, expect } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks, createMockPayload } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 import {
+  clinicOnlyFieldAccess,
   computedOnlyFieldAccess,
   platformClinicTrustAccess,
   platformClinicTrustFieldAccess,
@@ -57,6 +58,24 @@ describe('Field Access Control', () => {
       },
     ])('$userType field access returns $expected', ({ user, expected }) => {
       const result = platformOnlyFieldAccess(createAccessArgs(user()))
+      if (expected) {
+        expectAccess.full(result)
+      } else {
+        expectAccess.none(result)
+      }
+    })
+  })
+
+  describe('clinicOnlyFieldAccess', () => {
+    test.each([
+      { userType: 'Clinic Staff', user: () => mockUsers.clinic(), expected: true },
+      { userType: 'Platform Staff', user: () => mockUsers.platform(), expected: false },
+      { userType: 'Patient', user: () => mockUsers.patient(), expected: false },
+      { userType: 'Anonymous', user: () => mockUsers.anonymous(), expected: false },
+      { userType: 'Null', user: () => null, expected: false },
+      { userType: 'Undefined', user: () => undefined, expected: false },
+    ])('$userType field access returns $expected', ({ user, expected }) => {
+      const result = clinicOnlyFieldAccess(createAccessArgs(user()))
       if (expected) {
         expectAccess.full(result)
       } else {

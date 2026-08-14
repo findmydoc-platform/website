@@ -60,10 +60,16 @@ describe('review workflow seed plan', () => {
 
   it('keeps intermediate snapshots version-idempotent and terminal snapshots current', () => {
     const historySteps = [
-      { name: 'review-appeals-initial-history', upsertPolicy: { skipIfVersionMatches: true } },
+      {
+        name: 'review-appeals-initial-history',
+        upsertPolicy: { reconcileByUniqueFields: ['review'], skipIfVersionMatches: true },
+      },
       { name: 'review-moderations-initial-history', upsertPolicy: { skipIfVersionMatches: true } },
       { name: 'review-moderations-final-state', upsertPolicy: { skipIfCurrentMatches: true } },
-      { name: 'review-appeals-final-state', upsertPolicy: { skipIfCurrentMatches: true } },
+      {
+        name: 'review-appeals-final-state',
+        upsertPolicy: { reconcileByUniqueFields: ['review'], skipIfCurrentMatches: true },
+      },
     ]
 
     expect(historySteps.map(({ name }) => demoPlan.find((step) => step.name === name))).toEqual(

@@ -458,7 +458,7 @@ export const demoPlan: SeedPlanStep[] = [
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
     atomicGroup: 'review-moderation-history',
-    upsertPolicy: { skipIfVersionMatches: true },
+    upsertPolicy: { reconcileByUniqueFields: ['review'], skipIfVersionMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',
@@ -493,7 +493,7 @@ export const demoPlan: SeedPlanStep[] = [
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
     atomicGroup: 'review-moderation-history',
-    upsertPolicy: { skipIfCurrentMatches: true },
+    upsertPolicy: { reconcileByUniqueFields: ['review'], skipIfCurrentMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',

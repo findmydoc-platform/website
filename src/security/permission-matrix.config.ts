@@ -454,7 +454,7 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'reviewResponses',
       displayName: 'ReviewResponses',
       operations: {
-        create: { type: 'conditional', details: 'platform + clinic staff with assigned clinic' },
+        create: { type: 'conditional', details: 'clinic staff with assigned clinic' },
         read: {
           type: 'conditional',
           details: 'platform all + clinic own workflow + public active readable-review non-blocked response projection',
@@ -466,7 +466,7 @@ export const permissionMatrix: PermissionMatrix = {
       },
       meta: {
         conditional: {
-          create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
+          create: { kind: 'role-allow', allow: ['clinic'] },
           read: { kind: 'clinic-public-response' },
           readVersions: { kind: 'clinic-scope', path: 'version.clinic' },
           update: { kind: 'clinic-scope', path: 'clinic' },

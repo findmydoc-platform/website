@@ -7,5 +7,15 @@
     "moderationReason": "Platform Support removed one narrow pricing phrase while keeping the remaining review readable.",
     "moderatedAt": "2026-02-02T10:00:00.000Z",
     "moderatedByStableId": "seed-platform-admin"
+  },
+  {
+    "stableId": "seed-review-izmir-coast-05",
+    "status": "approved",
+    "publicMeasure": "redaction",
+    "publicComment": "The treatment plan was clear, and the follow-ups were reliable.",
+    "publicNotice": "Parts of this review were removed to protect legal rights or personal data. The remaining text is unchanged.",
+    "moderationReason": "Platform Support removed one narrow package description while keeping the remaining review readable.",
+    "moderatedAt": "2026-02-04T10:00:00.000Z",
+    "moderatedByStableId": "seed-platform-admin"
   }
 ]

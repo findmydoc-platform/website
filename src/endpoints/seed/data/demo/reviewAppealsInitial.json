@@ -14,5 +14,21 @@
     "details": "The clinic asks Platform Support to review whether the scheduling statement needs public moderation.",
     "status": "submitted",
     "createdAt": "2026-02-03T09:00:00.000Z"
+  },
+  {
+    "stableId": "seed-review-appeal-izmir-coast-05",
+    "reviewStableId": "seed-review-izmir-coast-05",
+    "reason": "privacy_concern",
+    "details": "The clinic asks Platform Support to review the unrelated package description in the final sentence.",
+    "status": "submitted",
+    "createdAt": "2026-02-04T09:00:00.000Z"
+  },
+  {
+    "stableId": "seed-review-appeal-izmir-coast-09",
+    "reviewStableId": "seed-review-izmir-coast-09",
+    "reason": "other",
+    "details": "The clinic asks Platform Support to review whether the treatment-plan wording needs public moderation.",
+    "status": "submitted",
+    "createdAt": "2026-02-05T09:00:00.000Z"
   }
 ]

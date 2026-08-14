@@ -241,15 +241,22 @@ describe('reviewAppeals lifecycle', () => {
       emailPrefix: `${slugPrefix}-upheld-platform`,
       createdStaffIds: staffIds,
     })
-    const response = await payload.create({
+    const submittedResponse = await payload.create({
       collection: 'reviewResponses',
       data: {
         review: review.id,
         pendingResponse: {
           body: 'Thank you for raising this concern. The clinic has documented the reported privacy issue.',
         },
-        moderationStatus: 'approved',
       } as unknown as ReviewResponse,
+      user: clinicUser,
+      overrideAccess: false,
+      depth: 0,
+    })
+    const response = await payload.update({
+      collection: 'reviewResponses',
+      id: submittedResponse.id,
+      data: { moderationStatus: 'approved' } as unknown as ReviewResponse,
       user: asPayloadStaffUser(moderator),
       overrideAccess: false,
       depth: 0,

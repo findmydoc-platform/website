@@ -11,6 +11,8 @@ export const CLINIC_DASHBOARD_CAPABILITIES = [
   'clinic-profile:edit',
   'clinic-treatments:view',
   'clinic-treatments:edit',
+  'clinic-gallery:view',
+  'clinic-gallery:edit',
 ] as const
 
 export type ClinicDashboardCapability = (typeof CLINIC_DASHBOARD_CAPABILITIES)[number]
@@ -79,6 +81,7 @@ export async function resolveClinicDashboardBootstrap(req: PayloadRequest): Prom
       if (!principal || !('collection' in principal) || principal.collection !== 'clinicStaff') {
         return { status: 'unauthorized' }
       }
+      req.user = principal
       principalId = principal.id
     } catch (error: unknown) {
       if (isAuthFlowError(error) && error.code === AUTH_FLOW_ERROR_CODES.USER_LOOKUP_FAILED && !error.retryable) {

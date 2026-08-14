@@ -199,6 +199,7 @@ describe('cache policy contract', () => {
       'global:cookieConsent',
       'collection:redirects',
       'collection:listing-support',
+      'collection:clinic-media',
       'collection:media-inherited',
       'collection:private-operational',
       'discovery:sitemap:pages',

@@ -3,7 +3,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { clinicMediaReadAccess } from '@/access/clinicMediaRead'
-import { platformOrAssignedClinicMutation, platformOrOwnClinicResource } from '@/access/scopeFilters'
+import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
@@ -11,6 +11,8 @@ import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
 import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
+import { beforeOperationNormalizeClinicMediaUpload } from '@/hooks/media/normalizeClinicMediaUpload'
+import { computedOnlyFieldAccess } from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import {
   buildMediaAltField,
@@ -19,7 +21,11 @@ import {
   buildMediaPrefixField,
   buildMediaStoragePathField,
   buildMediaUploadConfig,
+  clinicProfileMediaImageMimeTypes,
 } from '@/collections/common/mediaCollection'
+import { beforeChangeValidatePublishedClinicMedia } from './publicationStatus'
+import { beforeDeleteRejectReferencedClinicMedia } from './deletionGuard'
+import { revalidateClinicMediaChange } from '@/hooks/revalidateClinicSurfaces'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -29,7 +35,7 @@ export const ClinicMedia: CollectionConfig = {
   admin: {
     group: 'Clinics',
     description: 'Clinic images and files',
-    defaultColumns: ['clinic', 'alt', 'createdBy'],
+    defaultColumns: ['clinic', 'status', 'alt', 'createdBy'],
     components: {
       edit: {
         Upload: '@/app/(payload)/components/PolicyAwareUpload',
@@ -38,12 +44,13 @@ export const ClinicMedia: CollectionConfig = {
   },
   access: {
     read: clinicMediaReadAccess,
-    create: platformOrAssignedClinicMutation,
-    update: platformOrOwnClinicResource,
-    delete: platformOrOwnClinicResource,
+    create: isPlatformStaff,
+    update: isPlatformStaff,
+    delete: isPlatformStaff,
   },
   trash: true,
   hooks: {
+    afterChange: [revalidateClinicMediaChange],
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [
       stableIdBeforeChangeHook,
@@ -58,9 +65,12 @@ export const ClinicMedia: CollectionConfig = {
         key: { type: 'docId' },
         storagePrefix: 'clinics',
       }),
+      beforeChangeValidatePublishedClinicMedia,
     ],
+    beforeDelete: [beforeDeleteRejectReferencedClinicMedia],
     beforeOperation: [
       beforeOperationValidateMediaUpload,
+      beforeOperationNormalizeClinicMediaUpload,
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({
         ownerField: 'clinic',
@@ -70,8 +80,28 @@ export const ClinicMedia: CollectionConfig = {
   },
   fields: [
     stableIdField(),
-    buildMediaAltField(),
+    buildMediaAltField({ required: false }),
     buildMediaCaptionField(),
+    {
+      name: 'status',
+      type: 'select',
+      defaultValue: 'draft',
+      index: true,
+      required: true,
+      options: [
+        { label: 'Draft', value: 'draft' },
+        { label: 'Published', value: 'published' },
+      ],
+      access: {
+        create: computedOnlyFieldAccess,
+        update: computedOnlyFieldAccess,
+      },
+      admin: {
+        description: 'Technical visibility state managed by the clinic gallery.',
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
     {
       name: 'clinic',
       type: 'relationship',
@@ -90,6 +120,12 @@ export const ClinicMedia: CollectionConfig = {
     buildMediaPrefixField(),
   ],
   upload: buildMediaUploadConfig({
+    mimeTypes: clinicProfileMediaImageMimeTypes,
     staticDir: path.resolve(dirname, '../../public/clinic-media'),
   }),
+  indexes: [
+    {
+      fields: ['clinic', 'status', 'createdAt'],
+    },
+  ],
 }

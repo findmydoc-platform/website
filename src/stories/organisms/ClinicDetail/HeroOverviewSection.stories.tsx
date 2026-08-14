@@ -1,8 +1,9 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 
 import { HeroOverviewSection } from '@/components/organisms/ClinicDetail'
+import { Container } from '@/components/molecules/Container'
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 import { withViewportStory } from '../../utils/viewportMatrix'
 
@@ -16,6 +17,7 @@ const meta = {
     clinicName: clinicDetailFixture.clinicName,
     breadcrumbs: clinicDetailFixture.breadcrumbs,
     description: clinicDetailFixture.description,
+    galleryImages: clinicDetailFixture.galleryImages,
     heroImage: clinicDetailFixture.heroImage,
     trust: clinicDetailFixture.trust,
     doctors: heroDoctors,
@@ -42,8 +44,8 @@ function HeroOverviewSectionStoryHarness() {
   const [activeDoctorId, setActiveDoctorId] = React.useState('')
 
   return (
-    <div className="bg-muted py-14">
-      <div className="container-content space-y-4">
+    <div className="bg-muted py-8">
+      <Container className="space-y-4">
         <p className="text-sm text-secondary/70" data-testid="active-doctor-output">
           Active doctor: {activeDoctorId || 'none'}
         </p>
@@ -51,13 +53,14 @@ function HeroOverviewSectionStoryHarness() {
           clinicName={clinicDetailFixture.clinicName}
           breadcrumbs={clinicDetailFixture.breadcrumbs}
           description={clinicDetailFixture.description}
+          galleryImages={clinicDetailFixture.galleryImages}
           heroImage={clinicDetailFixture.heroImage}
           trust={clinicDetailFixture.trust}
           doctors={heroDoctors}
           activeDoctorId={activeDoctorId}
           onDoctorSelect={setActiveDoctorId}
         />
-      </div>
+      </Container>
     </div>
   )
 }
@@ -76,16 +79,26 @@ export const InteractiveDoctorSelection: Story = {
   },
 }
 
+export const VisualReference: Story = {
+  render: (args) => (
+    <div className="bg-muted py-8">
+      <Container>
+        <HeroOverviewSection {...args} onDoctorSelect={fn()} />
+      </Container>
+    </div>
+  ),
+}
+
 export const SingleDoctorCompactState: Story = {
   args: {
     doctors: singleDoctor,
     activeDoctorId: singleDoctor[0]?.id ?? '',
   },
   render: (args) => (
-    <div className="bg-muted py-14">
-      <div className="container-content">
+    <div className="bg-muted py-8">
+      <Container>
         <HeroOverviewSection {...args} onDoctorSelect={fn()} />
-      </div>
+      </Container>
     </div>
   ),
   play: async ({ canvasElement }) => {
@@ -101,16 +114,86 @@ export const EmptyDoctorsState: Story = {
     activeDoctorId: '',
   },
   render: (args) => (
-    <div className="bg-muted py-14">
-      <div className="container-content">
+    <div className="bg-muted py-8">
+      <Container>
         <HeroOverviewSection {...args} onDoctorSelect={fn()} />
-      </div>
+      </Container>
     </div>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByText('0 listed specialists')).toBeInTheDocument()
     await expect(canvas.getByText(/No doctors are currently listed for this clinic/i)).toBeInTheDocument()
+  },
+}
+
+export const GalleryInteraction: Story = {
+  render: (args) => (
+    <div className="bg-muted py-8">
+      <Container>
+        <HeroOverviewSection {...args} onDoctorSelect={fn()} />
+      </Container>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const openButton = canvas.getByRole('button', { name: 'View all 12 photos for Berlin Health Clinic' })
+
+    await userEvent.click(openButton)
+
+    const body = within(document.body)
+    await expect(await body.findByRole('dialog')).toBeInTheDocument()
+    await expect(body.getByText('Photo 1 of 12')).toBeInTheDocument()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(body.getByText('Photo 2 of 12')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(openButton).toHaveFocus())
+  },
+}
+
+export const SingleGalleryImage: Story = {
+  args: {
+    galleryImages: clinicDetailFixture.galleryImages.slice(0, 1),
+  },
+  render: (args) => (
+    <div className="bg-muted py-8">
+      <Container>
+        <HeroOverviewSection {...args} onDoctorSelect={fn()} />
+      </Container>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const openButton = canvas.getByRole('button', { name: 'View photo for Berlin Health Clinic' })
+    await expect(canvas.getByRole('img', { name: 'Bright clinic reception and patient welcome area' })).toBeVisible()
+
+    await userEvent.click(openButton)
+
+    const body = within(document.body)
+    await expect(await body.findByRole('dialog')).toBeInTheDocument()
+    await expect(body.getByText('Photo 1 of 1')).toBeInTheDocument()
+    await expect(body.queryByRole('button', { name: 'Previous slide' })).toBeNull()
+    await expect(body.queryByRole('button', { name: 'Next slide' })).toBeNull()
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(openButton).toHaveFocus())
+  },
+}
+
+export const EmptyGalleryFallback: Story = {
+  args: {
+    galleryImages: [],
+  },
+  render: (args) => (
+    <div className="bg-muted py-8">
+      <Container>
+        <HeroOverviewSection {...args} onDoctorSelect={fn()} />
+      </Container>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.queryByRole('button', { name: /photos? for Berlin Health Clinic/i })).toBeNull()
+    await expect(canvas.getByRole('img', { name: 'Modern clinic exterior' })).toBeVisible()
   },
 }
 

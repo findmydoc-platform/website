@@ -1,57 +1,69 @@
-# Design QA
+# Clinic Gallery Design QA
 
-## Source of truth
+## Comparison Target
 
-- Selected direction: Variant 1, clinic response continued inside the review card.
-- Reference: Product Design artifact `exec-57b91501-b25f-4e3e-a579-a9867261b630.png` (stored outside the repository).
-- Reference pixels: 1503 × 1046.
-- Implementation story: `domain-clinic-templates-clinicdetail--main-initial-review-summary`.
-- Browser viewport: 1536 × 1024 CSS pixels.
-- Captured implementation pixels: 1521 × 1014 at density 1; the in-app browser reserves the remaining pixels for its scrollbar and frame.
-- Compared state: all five verified reviews visible, with the approved clinic response attached to the latest review.
+- Source visual truth: Product Design artifacts `exec-f09b7b0e-08e5-49e6-abdd-f394f880f3f2.png` for the public page and `exec-1243bc07-2f77-49c4-be85-130f4f604c20.png` for the selected charcoal lightbox direction (stored outside the repository)
+- Implementation screenshots: `output/playwright/clinic-gallery/desktop-reference-review-fixes.png`, `output/playwright/clinic-gallery/lightbox-mobile-375-charcoal-91-pointer.png`, and `output/playwright/clinic-gallery/lightbox-mobile-375-charcoal-91-keyboard.png`
+- Full-view comparisons: `output/playwright/clinic-gallery/reference-comparison-final.png` and `output/playwright/clinic-gallery/lightbox-charcoal-91-comparison.png`
+- Focused comparison: `output/playwright/clinic-gallery/focused-comparison-final.png`
+- Viewport: `1488 x 1058` CSS pixels, device pixel ratio `1`
+- Source pixels: `1487 x 1058`; normalized non-destructively to `1488 x 1058` by adding one white edge pixel
+- Implementation pixels: `1488 x 1058`
+- State: public clinic overview with twelve gallery images, first image selected as the hero, light public page, gallery closed
+- Lightbox viewport: `375 x 812` CSS pixels, device pixel ratio `1`; the generated source was normalized to `375 x 812` and compared with a `375 x 812` browser capture
+- Lightbox states: first gallery image opened by pointer without a focus frame, plus the keyboard-opened state with the carousel focus frame visible
 
-## Comparison evidence
+## Evidence Reviewed
 
-- Full same-state contact sheet: `output/playwright/review-responses/design-contact-sheet-1536-review-fixes-final.jpg`
-- Final desktop implementation:
-  `output/playwright/review-responses/clinic-detail-1536-response-same-state-review-fixes-final.png`
-- Focused mobile clinic response: `output/playwright/review-responses/clinic-detail-320-response-without-clinic-name.png`
-- Long mobile response, collapsed:
-  `output/playwright/review-responses/clinic-detail-320-long-response-collapsed-show-more-final.jpg`
-- Long mobile response, expanded:
-  `output/playwright/review-responses/clinic-detail-320-long-response-expanded-final.png`
-- Tablet/desktop transition: `output/playwright/review-responses/clinic-detail-1024-reviews-final.jpg`
+- The full-view comparison confirms the intended composition: compact title area, description at approximately 55% of the 1080 px content width, one uninterrupted hero image, an external gallery action, and independent 50/50 quality and doctor cards.
+- The focused comparison was required because typography, description width, hero crop, gallery action placement, card alignment, icon treatment, and image quality are too small to judge reliably from the full view alone.
+- Responsive browser evidence covers `320`, `375`, `640`, `768`, `1024`, and `1280` px widths. In every case the document scroll width equals its client width.
+- Mobile lightbox evidence: `output/playwright/clinic-gallery/lightbox-mobile-375-charcoal-91-pointer.png` and `output/playwright/clinic-gallery/lightbox-mobile-375-charcoal-91-keyboard.png`.
+- Mobile page evidence: `output/playwright/clinic-gallery/mobile-375-review-fixes.png`.
+- Primary interactions tested in Playwright: open gallery, ArrowRight navigation, pointer swipe, Escape close, and focus return to the trigger.
+- Browser console: zero errors and zero warnings for the final Storybook gallery states.
 
-The contact sheet places the selected reference and implementation together. The clinic response keeps the selected continuation pattern: divider, clinic avatar, clinic attribution, moderation label, approval date, and response copy remain inside the originating review card. The public review hierarchy, card radius, border treatment, spacing, type scale, and existing findmydoc colors remain aligned with the current Clinic Detail design system.
+## Required Fidelity Surfaces
 
-## Comparison history
+- Fonts and typography: DM Sans, weights, hierarchy, line height, and wrapping match the existing product system and the source direction. The description is intentionally wider than the source mock according to the approved 50-55% amendment.
+- Spacing and layout rhythm: desktop side whitespace is preserved; the gallery does not expand beyond the established content width. Mobile uses the production `Container` gutters, and the hero, action, quality card, and doctor card remain in the approved order.
+- Colors and visual tokens: the implementation uses existing findmydoc public-site tokens for canvas, brand blue, navy, cards, verification, borders, and shadows. The lightbox deliberately leaves the opaque brand-blue surface: it uses `rgba(11, 13, 16, 0.91)` with an `8 px` backdrop blur and a quiet neutral overlay. The underlying page remains perceptible without competing with the photo. The public site has no separate dark-theme contract.
+- Image quality and asset fidelity: the first image is a dedicated 1600 x 900 photorealistic clinic-reception asset with one continuous scene, a trustworthy healthcare context, and no collage, text, logo, or watermark. Object-cover is used only in the public hero; the lightbox uses object-contain.
+- Copy and content: action copy follows the agreed zero, one, and many-image states. Image count, captions, alt text, and doctor/quality content remain realistic and coherent.
+- Accessibility and interaction: controls have at least 44 px touch targets, visible focus, semantic dialog/carousel structure, keyboard navigation, Escape close, swipe support, a live image counter, and trigger focus restoration.
 
-1. The first comparison found a dark clinic avatar and fixture copy that did not match the selected reference. The avatar was changed to the reference's light mint treatment and the approved response fixture was aligned with the selected copy.
-2. The mobile comparison found that retaining the desktop avatar gutter for the response body made the 320 px text column unnecessarily narrow. The response body now uses the full card width on mobile while preserving its desktop alignment with the clinic metadata.
-3. The final comparison used the same expanded five-review state as the reference. No remaining visual difference changes the selected design direction or the response-to-review relationship.
-4. Reviewer follow-up covered unusually long response copy and clinic names. Mobile response copy now starts at a six-line-equivalent height and expands through a 44 px `Show more` / `Show less` control. The clinic name gets the full card width before the avatar and response metadata, avoiding fragmented long words. From 640 px onward, the response remains fully visible and the mobile control is hidden.
+## Comparison History
 
-## Responsive and interaction QA
+1. Initial comparison found two P2 differences: the title stack was too tall, and the available fixture image looked perceptually split because an exterior strip was embedded beside the reception. The implementation reduced desktop heading scale and section gaps, compacted the production top padding, shortened the doctor preview height, and replaced the fixture with a dedicated continuous reception asset. Post-fix evidence: `reference-comparison-final.png` and `focused-comparison-final.png`.
+2. Mobile runtime QA found a P1 lightbox overflow: intrinsic carousel width expanded to approximately 831 px inside a 375 px viewport, clipping the counter, image, and caption. The dialog, inner column, and carousel now explicitly constrain minimum and full widths. Post-fix evidence: `lightbox-mobile-375.png`; the dialog and carousel measure `375 px` and `343 px` respectively.
+3. Mobile comparison found a P2 evidence mismatch because the Storybook frame omitted production side gutters. Stories now use the real `Container` component. Post-fix evidence: `mobile-matrix-320.png` and `mobile-matrix-375.png`.
+4. Reviewer follow-up found that the doctor list still used a nested scroll region on mobile and that the lightbox lacked safe-area offsets. Mobile now exposes all doctors in normal page flow, while the desktop card keeps its compact scroll region. The lightbox uses dynamic viewport units and safe-area-aware controls and content padding. Post-fix evidence: `mobile-375-review-fixes.png` and `lightbox-mobile-375-review-fixes.png`.
+5. The approved lightbox refinement replaced the opaque brand-blue canvas with a 91% charcoal surface and subtle backdrop blur. The first browser capture exposed an overly dominant initial focus ring that touched the counter. Pointer opening is now frame-free, while keyboard opening retains a quiet inset one-pixel focus ring and immediate arrow-key navigation. Mobile uses a wider 4:3 presentation frame so heterogeneous image orientations remain contained while the displayed landscape photo gains width and its caption stays visually grouped below it. Post-fix evidence: `lightbox-charcoal-91-comparison.png`, `lightbox-mobile-375-charcoal-91-pointer.png`, and `lightbox-mobile-375-charcoal-91-keyboard.png`.
 
-| Viewport    | Horizontal overflow | Result                                                                                            |
-| ----------- | ------------------- | ------------------------------------------------------------------------------------------------- |
-| 320 × 812   | No                  | Long clinic names use a full-width line; long responses collapse to 168 px and expand completely. |
-| 375 × 812   | No                  | Long clinic response remains readable, expandable, and visually attached to the review.           |
-| 640 × 900   | No                  | Full response text is visible and the mobile expansion control is hidden.                         |
-| 768 × 900   | No                  | Two-column summary transition is stable.                                                          |
-| 1024 × 1024 | No                  | Desktop response alignment and card boundaries remain intact.                                     |
-| 1280 × 1024 | No                  | Desktop layout remains balanced.                                                                  |
-| 1536 × 1024 | No                  | Same-state source comparison completed.                                                           |
+## Findings
 
-- `Show more reviews` was present before activation and absent afterwards.
-- The summary changed from four to five visible reviews.
-- Focus moved to the newly revealed anonymous review.
-- The control measured at least 44 px high at every checked breakpoint.
-- The long-response control completed collapsed → expanded → collapsed with matching `aria-expanded` state.
-- The collapsed response measured 168 px against a larger scroll height; the expanded response exposed the complete stored text.
-- No browser console errors were recorded.
-- No sticky, fixed-height, safe-area, or virtual-keyboard behavior is introduced by this section.
+No actionable P0, P1, or P2 visual differences remain. The larger gallery button compared with the public-page source is an accepted accessibility constraint. In the lightbox, the thin carousel frame appears only for keyboard entry and is an intentional accessibility deviation from the static mock; the implementation also preserves the source photo's real aspect ratio instead of reproducing ImageGen's altered crop.
 
-## Final result
+## Open Questions
 
-passed
+- None for the selected public gallery. A separate public dark mode is not available in the current product token system; this QA covers the light public page and the gallery's dark full-screen state.
+
+## Implementation Checklist
+
+- [x] Preserve desktop side whitespace and the 1080 px gallery width.
+- [x] Expand description to 50-55% without widening the gallery.
+- [x] Keep one dominant first image and move the gallery action outside it.
+- [x] Keep quality and doctors as non-overlapping 50/50 desktop cards.
+- [x] Stack mobile content in the approved order.
+- [x] Verify zero, one, and twelve-image states.
+- [x] Verify keyboard, swipe, counter, caption, Escape, and focus return.
+- [x] Verify the canonical mobile matrix and horizontal overflow.
+- [x] Replace the opaque blue lightbox canvas with a 91%-opaque neutral charcoal surface.
+- [x] Keep pointer entry frame-free and keyboard entry visibly focused.
+- [x] Group the mobile image and caption while preserving contained image orientations.
+
+## Follow-up Polish
+
+No P3 visual work is required before handoff.
+
+final result: passed

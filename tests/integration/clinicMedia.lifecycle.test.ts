@@ -45,7 +45,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
-  it('creates clinic media for own clinic with createdBy and storage path', async () => {
+  it('creates clinic media through the trusted gallery path with createdBy and storage path', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix })
     const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
@@ -63,7 +63,7 @@ describe('ClinicMedia integration - lifecycle', () => {
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-clinic.png`),
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
 
@@ -73,7 +73,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     expect(created.storagePath).toMatch(new RegExp(`^clinics/${clinic.id}-[a-f0-9]{10}-.+\\.png$`))
   })
 
-  it('auto-assigns clinic on create when clinic users omit the clinic field', async () => {
+  it('auto-assigns clinic during a trusted gallery create when clinic staff omit the clinic field', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-auto-assign` })
     const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
@@ -90,7 +90,7 @@ describe('ClinicMedia integration - lifecycle', () => {
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-auto-assign.png`),
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
 
@@ -124,7 +124,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     }).rejects.toThrow()
   })
 
-  it('prevents changing clinic ownership on update', async () => {
+  it('prevents changing clinic ownership during trusted gallery writes', async () => {
     const { clinic: clinicA } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-freeze-a` })
     const { clinic: clinicB } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-freeze-b` })
 
@@ -143,7 +143,7 @@ describe('ClinicMedia integration - lifecycle', () => {
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-freeze.png`),
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
 
@@ -155,13 +155,13 @@ describe('ClinicMedia integration - lifecycle', () => {
         id: created.id,
         data: { clinic: clinicB.id },
         user: asStaffPayloadUser(staffUser),
-        overrideAccess: false,
+        overrideAccess: true,
         depth: 0,
       } as PayloadUpdateArgs)
     }).rejects.toThrow(/clinic ownership|assign records to another clinic/i)
   })
 
-  it('updates metadata without altering createdBy or storagePath', async () => {
+  it('updates metadata through the trusted gallery path without altering ownership fields', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-update` })
     const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
@@ -179,7 +179,7 @@ describe('ClinicMedia integration - lifecycle', () => {
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-update.png`),
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
 
@@ -192,7 +192,7 @@ describe('ClinicMedia integration - lifecycle', () => {
         alt: 'After alt',
       },
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadUpdateArgs)) as ClinicMedia
 
@@ -200,7 +200,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     expect(updated.storagePath).toMatch(new RegExp(`^clinics/${clinic.id}-(\\d+|[a-f0-9]{10})-.+\\.png$`))
   })
 
-  it('allows clinic users to delete their media', async () => {
+  it('allows trusted gallery cleanup to delete unreferenced clinic media', async () => {
     const { clinic } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-delete` })
     const { staffUser, clinicStaff } = await createClinicStaffFixture(payload, {
       slugPrefix,
@@ -218,7 +218,7 @@ describe('ClinicMedia integration - lifecycle', () => {
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-delete.png`),
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
 
@@ -228,7 +228,7 @@ describe('ClinicMedia integration - lifecycle', () => {
       collection: 'clinicMedia',
       id: created.id,
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
     })
 
     createdMediaIds.splice(createdMediaIds.indexOf(created.id), 1)
@@ -287,9 +287,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     })
 
     expect(staticPatientFilter).toEqual({
-      'clinic.status': {
-        equals: 'approved',
-      },
+      and: [{ status: { equals: 'published' } }, { 'clinic.status': { equals: 'approved' } }],
     })
 
     const { staffUser: unassignedClinicUser } = await createClinicStaffFixture(payload, {
@@ -338,6 +336,7 @@ describe('ClinicMedia integration - lifecycle', () => {
       data: {
         alt: 'Approved clinic media',
         clinic: approvedClinic.id,
+        status: 'published',
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-public-file.png`),
       overrideAccess: true,
@@ -349,6 +348,7 @@ describe('ClinicMedia integration - lifecycle', () => {
       data: {
         alt: 'Pending clinic media',
         clinic: pendingClinic.id,
+        status: 'published',
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-private-file.png`),
       overrideAccess: true,
@@ -363,9 +363,7 @@ describe('ClinicMedia integration - lifecycle', () => {
     })
 
     expect(staticReadFilter).toEqual({
-      'clinic.status': {
-        equals: 'approved',
-      },
+      and: [{ status: { equals: 'published' } }, { 'clinic.status': { equals: 'approved' } }],
     })
 
     if (!staticReadFilter || typeof staticReadFilter !== 'object') {

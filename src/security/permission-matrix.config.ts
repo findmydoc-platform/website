@@ -562,21 +562,22 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'clinicMedia',
       displayName: 'ClinicMedia',
       operations: {
-        create: { type: 'conditional', details: 'platform full + clinic allowed (hook assigns clinic ownership)' },
-        read: { type: 'conditional', details: 'document read scoped; static file read allows approved clinics' },
-        update: { type: 'conditional', details: 'platform full + clinic own clinic' },
-        delete: { type: 'conditional', details: 'platform full + clinic own clinic' },
+        create: { type: 'platform' },
+        read: {
+          type: 'conditional',
+          details: 'document read scoped; public static file read requires published media and approved clinic',
+        },
+        update: { type: 'platform' },
+        delete: { type: 'platform' },
         admin: { type: 'platform' },
       },
       meta: {
         conditional: {
-          create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
           read: { kind: 'clinic-scope', path: 'clinic' },
-          update: { kind: 'clinic-scope', path: 'clinic' },
-          delete: { kind: 'clinic-scope', path: 'clinic' },
         },
       },
-      notes: 'Clinic-owned files - scoped document read, approved static file read for public listing images',
+      notes:
+        'Clinic-owned gallery files - clinic writes use the revision-protected dashboard gallery endpoints; direct collection writes are platform-only',
     },
     clinicGalleryMedia: {
       slug: 'clinicGalleryMedia',

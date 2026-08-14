@@ -33,6 +33,7 @@ import {
   validateClinicPostalCode,
 } from './clinics/postalCode'
 import { setClinicProfileRevision } from './clinics/profileRevision'
+import { beforeChangeSynchronizeClinicProfileGallery, clinicProfileGalleryMaxItems } from './clinics/profileGallery'
 
 const GALLERY_ENTRIES_SAME_CLINIC_MESSAGE = 'Gallery entries must belong to this clinic.'
 const CLINIC_APPROVAL_ERROR_COMPONENT =
@@ -154,6 +155,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
     beforeChange: [
       stableIdBeforeChangeHook,
       beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
+      beforeChangeSynchronizeClinicProfileGallery,
       setClinicProfileRevision,
       validateApprovedClinicCompleteness,
     ],
@@ -252,8 +254,34 @@ export const Clinics: CollectionConfig<'clinics'> = {
               name: 'thumbnail',
               type: 'upload',
               relationTo: 'clinicMedia',
+              access: {
+                create: computedOnlyFieldAccess,
+                update: computedOnlyFieldAccess,
+              },
               admin: {
-                description: 'Main image shown on the clinic profile',
+                description: 'Main image derived from the first profile gallery image',
+                readOnly: true,
+              },
+            },
+            {
+              name: 'profileGallery',
+              type: 'upload',
+              relationTo: 'clinicMedia',
+              hasMany: true,
+              maxRows: clinicProfileGalleryMaxItems,
+              access: {
+                create: platformOnlyFieldAccess,
+                update: platformOnlyFieldAccess,
+              },
+              filterOptions: {
+                status: {
+                  equals: 'published',
+                },
+              },
+              admin: {
+                allowCreate: false,
+                description: 'Public clinic images in display order. The first image is the main image.',
+                isSortable: true,
               },
             },
             {

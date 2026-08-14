@@ -201,6 +201,7 @@ export type CachePolicyOwner =
   | 'admin-dashboard'
   | 'auth-owner'
   | 'media-dependency-follow-up'
+  | 'clinic-media-hook'
 
 export type CachePathRelationship =
   | 'path-second'
@@ -479,6 +480,18 @@ export const CACHE_POLICY_CATALOG = [
     surfaces: ['listing-comparison', 'home', 'partners-clinics'],
   },
   {
+    id: 'collection:clinic-media',
+    kind: 'collection',
+    cacheClass: 'critical-public',
+    boundary: 'public',
+    owner: 'clinic-media-hook',
+    tagFamilies: ['surface', 'slug'],
+    pathRelationship: 'known-paths',
+    pathFamilies: ['clinic-detail'],
+    collections: ['clinicMedia'],
+    surfaces: ['clinic-detail'],
+  },
+  {
     id: 'collection:media-inherited',
     kind: 'collection',
     cacheClass: 'critical-public',
@@ -487,7 +500,7 @@ export const CACHE_POLICY_CATALOG = [
     tagFamilies: ['entity', 'collection'],
     pathRelationship: 'deferred',
     pathFamilies: ['none'],
-    collections: ['clinicMedia', 'doctorMedia', 'platformContentMedia'],
+    collections: ['doctorMedia', 'platformContentMedia'],
   },
   {
     id: 'collection:private-operational',

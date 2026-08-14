@@ -64,7 +64,7 @@
     "countryStableId": "11111111-1111-1111-1111-111111111111",
     "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
     "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
-    "thumbnailStableId": "seed-clinic-media-1"
+    "profileGalleryStableIds": ["seed-clinic-media-1"]
   },
   {
     "stableId": "seed-clinic-istanbul-bosphorus",
@@ -122,7 +122,7 @@
     "countryStableId": "11111111-1111-1111-1111-111111111111",
     "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"],
     "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
-    "thumbnailStableId": "seed-clinic-media-2"
+    "profileGalleryStableIds": ["seed-clinic-media-2"]
   },
   {
     "stableId": "seed-clinic-ankara-harmony",
@@ -180,7 +180,7 @@
     "countryStableId": "11111111-1111-1111-1111-111111111111",
     "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"],
     "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
-    "thumbnailStableId": "seed-clinic-media-3"
+    "profileGalleryStableIds": ["seed-clinic-media-3"]
   },
   {
     "stableId": "seed-clinic-ankara-capital",
@@ -238,7 +238,7 @@
     "countryStableId": "11111111-1111-1111-1111-111111111111",
     "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"],
     "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
-    "thumbnailStableId": "seed-clinic-media-4"
+    "profileGalleryStableIds": ["seed-clinic-media-4"]
   },
   {
     "stableId": "seed-clinic-izmir-coast",
@@ -296,7 +296,7 @@
     "countryStableId": "11111111-1111-1111-1111-111111111111",
     "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
     "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
-    "thumbnailStableId": "seed-clinic-media-5"
+    "profileGalleryStableIds": ["seed-clinic-media-5"]
   },
   {
     "stableId": "seed-clinic-izmir-ege",
@@ -354,7 +354,7 @@
     "countryStableId": "11111111-1111-1111-1111-111111111111",
     "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"],
     "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
-    "thumbnailStableId": "seed-clinic-media-6"
+    "profileGalleryStableIds": ["seed-clinic-media-6"]
   },
   {
     "stableId": "seed-clinic-antalya-medvista",
@@ -412,7 +412,7 @@
     "countryStableId": "11111111-1111-1111-1111-111111111111",
     "tagsStableIds": ["55555555-5555-5555-5555-555555555555", "dddddddd-dddd-dddd-dddd-dddddddddddd"],
     "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
-    "thumbnailStableId": "seed-clinic-media-7"
+    "profileGalleryStableIds": ["seed-clinic-media-7"]
   },
   {
     "stableId": "seed-clinic-antalya-riviera",
@@ -470,7 +470,7 @@
     "countryStableId": "11111111-1111-1111-1111-111111111111",
     "tagsStableIds": ["eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", "dddddddd-dddd-dddd-dddd-dddddddddddd"],
     "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
-    "thumbnailStableId": "seed-clinic-media-8"
+    "profileGalleryStableIds": ["seed-clinic-media-8"]
   },
   {
     "stableId": "seed-clinic-bursa-nova",
@@ -528,7 +528,7 @@
     "countryStableId": "11111111-1111-1111-1111-111111111111",
     "tagsStableIds": ["cccccccc-cccc-cccc-cccc-cccccccccccc", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"],
     "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
-    "thumbnailStableId": "seed-clinic-media-9"
+    "profileGalleryStableIds": ["seed-clinic-media-9"]
   },
   {
     "stableId": "seed-clinic-bursa-green",
@@ -586,6 +586,6 @@
     "countryStableId": "11111111-1111-1111-1111-111111111111",
     "tagsStableIds": ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"],
     "accreditationsStableIds": ["66666666-6666-6666-6666-666666666666"],
-    "thumbnailStableId": "seed-clinic-media-10"
+    "profileGalleryStableIds": ["seed-clinic-media-10"]
   }
 ]

@@ -67,10 +67,10 @@ If you need to change permissions, update `src/security/permission-matrix.config
 * Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
 * Reviews: Patients can create pending reviews and withdraw only their own review through the narrow command. Only Platform can edit, moderate, correct withdrawal state, or delete reviews. Clinic staff read sanitized approved state for their assigned clinic, including removed and withdrawn rows; public readers receive only active visible projections. Raw versions are Platform-only, while own-clinic sanitized publication history uses the dedicated private endpoint.
 * PlatformContentMedia: Publicly readable marketing / page assets. Write restricted to Platform.
-* ClinicMedia: Document reads stay scoped to Platform + own clinic. Static file reads (`/api/clinicMedia/file/:filename`) are allowed for approved clinics so public listing cards can render images without opening broad document listing. Ownership remains immutable after create and files stay in per-clinic storage paths.
+* ClinicMedia: Document reads stay scoped to Platform + own clinic. Clinic Staff writes use only the revision-protected Clinic Dashboard gallery endpoints; direct collection writes are Platform-only. Static file reads (`/api/clinicMedia/file/:filename`) require both `status=published` and an approved owning clinic. Drafts remain private, ownership remains immutable after create, and files stay in per-clinic storage paths.
 * DoctorMedia: Similar scoping to ClinicMedia; ownership derives from doctor -> clinic relationship; `clinic` denormalized for access filtering.
 * UserProfileMedia: Self or Platform management of avatars; owner + createdBy auto-stamped for patients and staff uploads.
-* Global Upload Limit: 5MB per file (configured in root Payload `upload.limits.fileSize`).
+* Global Upload Limit: 4 MiB per file (configured in root Payload `upload.limits.fileSize`).
 * † Provisioning and deletion of PlatformStaff & ClinicStaff principals are performed through the trusted provisioning path (no direct create/delete endpoints or UI forms).
 * ‡ ClinicStaff row: RW shown is conditional; Supabase authentication may exist before approval, but Payload business access remains denied until the staff and clinic are access-ready.
 

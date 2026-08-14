@@ -389,6 +389,54 @@ describe('cache revalidation planner', () => {
     expect(plan.surfaceIds).toEqual(['clinic-detail', 'listing-comparison', 'surface:sitemap:pages'])
   })
 
+  it('keeps gallery metadata-only changes on the clinic detail surface', () => {
+    const plan = planRevalidation({
+      kind: 'clinic-surface',
+      collection: 'clinics',
+      operation: 'update',
+      source: { kind: 'payload-hook', id: 'clinics:12:gallery' },
+      subject: {
+        id: 12,
+        slug: 'clinic',
+        status: 'approved',
+        previousStatus: 'approved',
+        globalDetailImpact: false,
+        listingImpact: false,
+      },
+    })
+
+    expect(plan.tags).toEqual(['entity:clinics:12', 'surface:clinic-detail:12', 'slug:clinics:clinic'])
+    expect(plan.surfaceIds).toEqual(['clinic-detail'])
+    expect(plan.paths).toEqual(['/clinics/clinic'])
+  })
+
+  it('keeps main-image gallery changes targeted while invalidating listing surfaces', () => {
+    const plan = planRevalidation({
+      kind: 'clinic-surface',
+      collection: 'clinics',
+      operation: 'update',
+      source: { kind: 'payload-hook', id: 'clinics:12:gallery' },
+      subject: {
+        id: 12,
+        slug: 'clinic',
+        status: 'approved',
+        previousStatus: 'approved',
+        globalDetailImpact: false,
+        listingImpact: true,
+      },
+    })
+
+    expect(plan.tags).toEqual([
+      'entity:clinics:12',
+      'collection:clinics',
+      'surface:clinic-detail:12',
+      'surface:listing-comparison',
+      'surface:sitemap:pages',
+      'slug:clinics:clinic',
+    ])
+    expect(plan.paths).toEqual(['/clinics/clinic'])
+  })
+
   it('maps related clinic collection changes without listing query path matrices', () => {
     const plan = planRevalidation({
       kind: 'clinic-surface',

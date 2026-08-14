@@ -4,14 +4,16 @@ import { Heading } from '@/components/atoms/Heading'
 import { Card, CardContent } from '@/components/atoms/card'
 import { VerificationBadge } from '@/components/atoms/verification-badge'
 import { RatingSummary } from '@/components/molecules/RatingSummary'
+import { cn } from '@/utilities/ui'
 
 import type { ClinicDetailTrust } from '@/components/templates/ClinicDetailConcepts/types'
 
 type HeroQualitySummaryProps = {
   trust: ClinicDetailTrust
+  className?: string
 }
 
-export function HeroQualitySummary({ trust }: HeroQualitySummaryProps) {
+export function HeroQualitySummary({ trust, className }: HeroQualitySummaryProps) {
   const ratingValue = trust.ratingValue
   const reviewCount = trust.reviewCount
   const hasRating = ratingValue !== null && reviewCount > 0
@@ -19,7 +21,7 @@ export function HeroQualitySummary({ trust }: HeroQualitySummaryProps) {
   const languagesPreview = trust.languages.slice(0, 4)
 
   return (
-    <Card className="w-full max-w-[492px] rounded-[24px] border-0 shadow-brand-soft">
+    <Card className={cn('w-full rounded-[24px] border-0 shadow-brand-soft', className)}>
       <CardContent className="space-y-4 p-5">
         <Heading as="h2" align="left" size="h5" className="text-secondary">
           Quality Snapshot

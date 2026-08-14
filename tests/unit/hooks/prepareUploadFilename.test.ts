@@ -14,6 +14,7 @@ import {
   beforeOperationPrepareUploadFilename,
   prepareUploadFilenameFromFilePathSync,
 } from '@/hooks/media/prepareUploadFilename'
+import { beforeOperationNormalizeClinicMediaUpload } from '@/hooks/media/normalizeClinicMediaUpload'
 import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
 
 const collection = {
@@ -148,18 +149,22 @@ describe('beforeOperationPrepareUploadFilename', () => {
     expect(req.context.mediaPreparedUploadFilename).toBe(expected)
   })
 
-  it.each(sharedMediaCollections)(
-    'wires filename preparation directly after upload validation for $slug',
-    (mediaCollection) => {
-      const beforeOperationHooks = mediaCollection.hooks?.beforeOperation ?? []
+  it.each(sharedMediaCollections)('wires filename preparation after upload validation for $slug', (mediaCollection) => {
+    const beforeOperationHooks = mediaCollection.hooks?.beforeOperation ?? []
 
-      expect(beforeOperationHooks).toContain(beforeOperationValidateMediaUpload)
-      expect(beforeOperationHooks).toContain(beforeOperationPrepareUploadFilename)
-      expect(beforeOperationHooks.indexOf(beforeOperationPrepareUploadFilename)).toBe(
-        beforeOperationHooks.indexOf(beforeOperationValidateMediaUpload) + 1,
-      )
-    },
-  )
+    expect(beforeOperationHooks).toContain(beforeOperationValidateMediaUpload)
+    expect(beforeOperationHooks).toContain(beforeOperationPrepareUploadFilename)
+    const validationIndex = beforeOperationHooks.indexOf(beforeOperationValidateMediaUpload)
+    const filenameIndex = beforeOperationHooks.indexOf(beforeOperationPrepareUploadFilename)
+
+    expect(filenameIndex).toBeGreaterThan(validationIndex)
+
+    if (mediaCollection.slug === 'clinicMedia') {
+      const normalizationIndex = beforeOperationHooks.indexOf(beforeOperationNormalizeClinicMediaUpload)
+      expect(normalizationIndex).toBe(validationIndex + 1)
+      expect(filenameIndex).toBe(normalizationIndex + 1)
+    }
+  })
 
   it('does not hash an upload twice when the hook is invoked repeatedly for one request', async () => {
     const buffer = Buffer.from('repeatable seed image')

@@ -9,6 +9,7 @@ import clinicHospitalExterior from '../assets/clinic-hospital-exterior.jpg'
 import clinicHospitalCorridor from '../assets/clinic-hospital-corridor.jpg'
 import clinicLaboratoryBench from '../assets/clinic-laboratory-bench.jpg'
 import clinicLobbyReception from '../assets/clinic-lobby-reception.jpg'
+import clinicProfileGalleryReception from '../assets/clinic-profile-gallery-reception.jpg'
 import clinicRehabilitationGym from '../assets/clinic-rehabilitation-gym.jpg'
 import clinicSurgicalPrepRoom from '../assets/clinic-surgical-prep-room.jpg'
 import clinicTelemedicineWorkstation from '../assets/clinic-telemedicine-workstation.jpg'
@@ -101,15 +102,25 @@ export const storyClinicMedia = {
   },
   dental: { src: getStoryImageSrc(storyClinicImages.listing.dental), alt: 'Modern dental treatment room' },
   diagnostics: { src: getStoryImageSrc(storyClinicImages.listing.diagnostics), alt: 'Modern diagnostics room' },
+  eyeCare: { src: getStoryImageSrc(storyClinicImages.listing.eyeCare), alt: 'Clinic eye examination room' },
   exterior: { src: getStoryImageSrc(storyClinicImages.listing.exterior), alt: 'Modern clinic exterior' },
-  hero: { src: getStoryImageSrc(storyClinicImages.listing.exterior), alt: 'Modern clinic exterior' },
+  hero: { src: getStoryImageSrc(storyClinicImages.listing.lobby), alt: 'Modern clinic reception lobby' },
+  profileGalleryHero: {
+    src: getStoryImageSrc(clinicProfileGalleryReception),
+    alt: 'Bright clinic reception and patient welcome area',
+  },
   hospitalCorridor: {
     src: getStoryImageSrc(storyClinicImages.listing.hospitalCorridor),
     alt: 'Bright hospital corridor',
   },
   interior: { src: getStoryImageSrc(storyClinicImages.listing.interior), alt: 'Bright clinic interior' },
+  lab: { src: getStoryImageSrc(storyClinicImages.clinicDetail.lab), alt: 'Clinic laboratory workspace' },
   lobby: { src: getStoryImageSrc(storyClinicImages.listing.lobby), alt: 'Modern clinic reception lobby' },
   rehabilitation: { src: getStoryImageSrc(storyClinicImages.listing.rehabilitation), alt: 'Clinic rehabilitation gym' },
+  surgicalPrep: {
+    src: getStoryImageSrc(storyClinicImages.listing.surgicalPrep),
+    alt: 'Clinic surgical preparation room',
+  },
   telemedicine: {
     src: getStoryImageSrc(storyClinicImages.listing.telemedicine),
     alt: 'Clinic telemedicine workstation',

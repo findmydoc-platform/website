@@ -2,10 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import type { PayloadRequest } from 'payload'
 
+const afterMock = vi.hoisted(() => vi.fn())
+vi.mock('next/server', () => ({ after: afterMock }))
+
 import {
   dispatchClinicTreatmentChangeRevalidation,
   revalidateClinicChange,
   revalidateClinicDelete,
+  revalidateClinicMediaChange,
 } from '@/hooks/revalidateClinicSurfaces'
 import { createMockReq } from '../helpers/testHelpers'
 
@@ -25,6 +29,7 @@ const getTagCalls = () => vi.mocked(revalidateTag).mock.calls.map(([tag]) => tag
 
 type AfterChangeArgs = Parameters<typeof revalidateClinicChange>[0]
 type AfterDeleteArgs = Parameters<typeof revalidateClinicDelete>[0]
+type MediaAfterChangeArgs = Parameters<typeof revalidateClinicMediaChange>[0]
 
 const buildAfterChangeArgs = (args: {
   doc: ClinicDoc
@@ -51,6 +56,7 @@ const buildAfterDeleteArgs = (args: { doc: ClinicDoc; req: PayloadRequest }): Af
 describe('clinic surface revalidation hooks', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    afterMock.mockImplementation((callback: () => unknown) => callback())
   })
 
   it('revalidates approved clinic detail paths and listing tags', () => {
@@ -107,5 +113,41 @@ describe('clinic surface revalidation hooks', () => {
     expect(getPathCalls()).toEqual(['/clinics/berlin-health'])
     expect(getTagCalls()).toContain('surface:clinic-detail:12')
     expect(getTagCalls()).toContain('surface:listing-comparison')
+  })
+
+  it('defers direct clinic media revalidation until the post-response callback', async () => {
+    let postCommitCallback: (() => Promise<void>) | undefined
+    afterMock.mockImplementation((callback: () => Promise<void>) => {
+      postCommitCallback = callback
+    })
+    const req = buildReq()
+    req.payload.findByID = vi.fn().mockResolvedValue({
+      id: 12,
+      profileGallery: [99],
+      slug: 'berlin-health',
+      status: 'approved',
+      thumbnail: 99,
+    })
+    const doc = { clinic: 12, id: 99 }
+
+    const result = await revalidateClinicMediaChange({
+      collection: { slug: 'clinicMedia' },
+      context: req.context,
+      data: {},
+      doc,
+      operation: 'update',
+      previousDoc: doc,
+      req,
+    } as unknown as MediaAfterChangeArgs)
+
+    expect(result).toBe(doc)
+    expect(getTagCalls()).toEqual([])
+    expect(postCommitCallback).toBeTypeOf('function')
+
+    await postCommitCallback?.()
+
+    expect(getTagCalls()).toContain('surface:clinic-detail:12')
+    expect(getTagCalls()).toContain('surface:listing-comparison')
+    expect(getTagCalls()).not.toContain('surface:clinic-detail')
   })
 })

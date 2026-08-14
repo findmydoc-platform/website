@@ -218,6 +218,91 @@ describe('upsertByStableId', () => {
     expect(findVersions).not.toHaveBeenCalled()
     expect(update).not.toHaveBeenCalled()
   })
+
+  it('reconciles a review response by its unique review while preserving the existing stable ID', async () => {
+    find.mockResolvedValueOnce({ totalDocs: 0, docs: [] }).mockResolvedValueOnce({
+      totalDocs: 1,
+      docs: [
+        {
+          id: 'existing-response-id',
+          stableId: 'generated-response-id',
+          review: 'review-id',
+          moderationStatus: 'pending',
+        },
+      ],
+    })
+    update.mockResolvedValue({ id: 'existing-response-id' })
+
+    const result = await upsertByStableId(
+      payload,
+      'reviewResponses',
+      {
+        stableId: 'seed-review-response-id',
+        review: 'review-id',
+        moderationStatus: 'approved',
+      },
+      {
+        policy: {
+          reconcileByUniqueFields: ['review'],
+          skipIfCurrentMatches: true,
+        },
+      },
+    )
+
+    expect(result).toEqual({ created: false, updated: true })
+    expect(find).toHaveBeenNthCalledWith(2, {
+      collection: 'reviewResponses',
+      depth: 0,
+      where: { review: { equals: 'review-id' } },
+      limit: 2,
+      trash: true,
+      overrideAccess: true,
+    })
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'reviewResponses',
+        id: 'existing-response-id',
+        data: {
+          stableId: 'generated-response-id',
+          review: 'review-id',
+          moderationStatus: 'approved',
+        },
+      }),
+    )
+  })
+
+  it('skips a reconciled review response when its current workflow snapshot matches', async () => {
+    find.mockResolvedValueOnce({ totalDocs: 0, docs: [] }).mockResolvedValueOnce({
+      totalDocs: 1,
+      docs: [
+        {
+          id: 'existing-response-id',
+          stableId: 'generated-response-id',
+          review: 'review-id',
+          moderationStatus: 'approved',
+        },
+      ],
+    })
+
+    const result = await upsertByStableId(
+      payload,
+      'reviewResponses',
+      {
+        stableId: 'seed-review-response-id',
+        review: 'review-id',
+        moderationStatus: 'approved',
+      },
+      {
+        policy: {
+          reconcileByUniqueFields: ['review'],
+          skipIfCurrentMatches: true,
+        },
+      },
+    )
+
+    expect(result).toEqual({ created: false, updated: false })
+    expect(update).not.toHaveBeenCalled()
+  })
 })
 
 describe('resetCollections', () => {

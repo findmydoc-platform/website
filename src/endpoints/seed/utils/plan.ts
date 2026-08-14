@@ -440,7 +440,7 @@ export const demoPlan: SeedPlanStep[] = [
     fileName: 'reviewResponses',
     context: { trustedReviewWorkflowSeed: true },
     reqUserStableId: 'seed-platform-admin',
-    upsertPolicy: { skipIfCurrentMatches: true },
+    upsertPolicy: { reconcileByUniqueFields: ['review'], skipIfCurrentMatches: true },
     mapping: [
       {
         sourceField: 'reviewStableId',

@@ -1,4 +1,4 @@
-import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
+import type { CollectionSlug, Payload, PayloadRequest, Where } from 'payload'
 import { resolveS3StorageBucket } from '@/plugins/storageConfig'
 
 export type UpsertResult = {
@@ -9,6 +9,7 @@ export type UpsertResult = {
 }
 
 export type SeedUpsertPolicy = {
+  reconcileByUniqueFields?: string[]
   recreateUploadOnRelationDrift?: string[]
   skipIfCurrentMatches?: boolean
   skipIfVersionMatches?: boolean
@@ -453,7 +454,7 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
   }
 
   const stableId = data.stableId
-  const existing = await payload.find({
+  let existing = await payload.find({
     collection,
     ...(options?.policy?.skipIfCurrentMatches ? { depth: 0 } : {}),
     where: { stableId: { equals: stableId } },
@@ -464,6 +465,35 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
     trash: true,
     overrideAccess: true,
   })
+
+  const reconciliationFields = options?.policy?.reconcileByUniqueFields ?? []
+  let reconciledByUniqueFields = false
+
+  if (existing.totalDocs === 0 && reconciliationFields.length > 0) {
+    const clauses = reconciliationFields.map((field): Where => {
+      const value = data[field]
+      if (value === null || typeof value === 'undefined' || value === '') {
+        throw new Error(`Missing ${field} for ${collection} seed reconciliation`)
+      }
+
+      return { [field]: { equals: value } }
+    })
+
+    existing = await payload.find({
+      collection,
+      depth: 0,
+      where: clauses.length === 1 ? clauses[0] : { and: clauses },
+      limit: 2,
+      trash: true,
+      overrideAccess: true,
+    })
+
+    if (existing.totalDocs > 1) {
+      throw new Error(`Multiple ${collection} documents match the configured seed reconciliation fields`)
+    }
+
+    reconciledByUniqueFields = existing.totalDocs === 1
+  }
 
   const operationContext = {
     disableRevalidate: true,
@@ -526,8 +556,21 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
     }
   }
 
-  const current = existing.docs[0] as { id: string | number; deletedAt?: unknown; slug?: unknown }
+  const current = existing.docs[0] as {
+    id: string | number
+    deletedAt?: unknown
+    slug?: unknown
+    stableId?: unknown
+  }
   const nextData: Record<string, unknown> = { ...data }
+
+  if (reconciledByUniqueFields) {
+    if (typeof current.stableId !== 'string' || current.stableId.length === 0) {
+      throw new Error(`Cannot reconcile ${collection} document without its existing stableId`)
+    }
+
+    nextData.stableId = current.stableId
+  }
 
   // If found doc is trashed, restore it by clearing deletedAt.
   if (current.deletedAt) {

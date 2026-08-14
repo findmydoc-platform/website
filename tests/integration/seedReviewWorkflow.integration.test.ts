@@ -443,7 +443,8 @@ describe.sequential('demo review workflow seed integration', () => {
   let centralClinicId: number
   let clinicStaffId: number | string
   let clinicUser: Awaited<ReturnType<typeof asClinicScopedPayloadUser>>
-  let reconciledResponseId: number | string | null = null
+  const reconciledAppealIds: Array<number | string> = []
+  const reconciledResponseIds: Array<number | string> = []
   const createdStaffIds: Array<number | string> = []
   const slugPrefix = testSlug('seedReviewWorkflow.integration.test.ts')
 
@@ -454,14 +455,10 @@ describe.sequential('demo review workflow seed integration', () => {
 
   afterAll(async () => {
     try {
-      if (reconciledResponseId !== null) {
-        await cleanupTrackedDocs(payload, [
-          {
-            collection: 'reviewResponses',
-            ids: [reconciledResponseId],
-          },
-        ])
-      }
+      await cleanupTrackedDocs(payload, [
+        { collection: 'reviewAppeals', ids: reconciledAppealIds },
+        { collection: 'reviewResponses', ids: reconciledResponseIds },
+      ])
       await cleanupSeedReviewWorkflow(payload)
     } finally {
       await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
@@ -694,8 +691,8 @@ describe.sequential('demo review workflow seed integration', () => {
     expect(relationId(persistedClinicStaff.clinic)).toBe(centralClinicId)
   }, 180_000)
 
-  it('reconciles a pre-existing response for a seed review without replacing its audit identity', async () => {
-    const [reviewResult, responseResult] = await Promise.all([
+  it('reconciles pre-existing workflow records without replacing their audit identities', async () => {
+    const [review03Result, review05Result, responseResult, appeal03Result, appeal05Result] = await Promise.all([
       payload.find({
         collection: 'reviews',
         depth: 0,
@@ -704,31 +701,73 @@ describe.sequential('demo review workflow seed integration', () => {
         where: { stableId: { equals: 'seed-review-izmir-coast-03' } },
       }),
       payload.find({
+        collection: 'reviews',
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+        where: { stableId: { equals: 'seed-review-izmir-coast-05' } },
+      }),
+      payload.find({
         collection: 'reviewResponses',
         depth: 0,
         limit: 1,
         overrideAccess: true,
         where: { stableId: { equals: 'seed-review-response-izmir-coast-03' } },
       }),
+      payload.find({
+        collection: 'reviewAppeals',
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+        where: { stableId: { equals: 'seed-review-appeal-izmir-coast-03' } },
+      }),
+      payload.find({
+        collection: 'reviewAppeals',
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+        where: { stableId: { equals: 'seed-review-appeal-izmir-coast-05' } },
+      }),
     ])
-    const review = reviewResult.docs[0]
+    const review03 = review03Result.docs[0]
+    const review05 = review05Result.docs[0]
     const seededResponse = responseResult.docs[0]
-    if (!review || !seededResponse) {
-      throw new Error('Expected the central review and its seeded response')
+    const seededAppeal03 = appeal03Result.docs[0]
+    const seededAppeal05 = appeal05Result.docs[0]
+    if (!review03 || !review05 || !seededResponse || !seededAppeal03 || !seededAppeal05) {
+      throw new Error('Expected the central reviews and their seeded workflow records')
     }
 
-    await payload.delete({
-      collection: 'reviewResponses',
-      id: seededResponse.id,
-      context: { disableRevalidate: true },
-      overrideAccess: true,
-    })
+    await Promise.all([
+      payload.delete({
+        collection: 'reviewResponses',
+        id: seededResponse.id,
+        context: { disableRevalidate: true },
+        overrideAccess: true,
+      }),
+      payload.delete({
+        collection: 'reviewAppeals',
+        id: seededAppeal03.id,
+        context: { disableRevalidate: true },
+        overrideAccess: true,
+      }),
+      payload.delete({
+        collection: 'reviewAppeals',
+        id: seededAppeal05.id,
+        context: { disableRevalidate: true },
+        overrideAccess: true,
+      }),
+    ])
 
     const submittedBody = 'This clinic-authored response existed before the non-destructive demo seed was retried.'
+    const submittedAppeal03Details =
+      'This clinic-authored appeal existed before the non-destructive demo seed was retried.'
+    const submittedAppeal05Details =
+      'This second clinic-authored appeal verifies reconciliation through the versioned history step.'
     const existingResponse = await payload.create({
       collection: 'reviewResponses',
       data: {
-        review: review.id,
+        review: review03.id,
         pendingResponse: {
           body: submittedBody,
         },
@@ -737,23 +776,65 @@ describe.sequential('demo review workflow seed integration', () => {
       overrideAccess: false,
       user: clinicUser,
     })
-    reconciledResponseId = existingResponse.id
-    const existingStableId = existingResponse.stableId
+    reconciledResponseIds.push(existingResponse.id)
+    const existingAppeal03 = await payload.create({
+      collection: 'reviewAppeals',
+      data: {
+        review: review03.id,
+        reason: 'other',
+        details: submittedAppeal03Details,
+      } as unknown as ReviewAppeal,
+      depth: 0,
+      overrideAccess: false,
+      user: clinicUser,
+    })
+    reconciledAppealIds.push(existingAppeal03.id)
+    const existingAppeal05 = await payload.create({
+      collection: 'reviewAppeals',
+      data: {
+        review: review05.id,
+        reason: 'privacy_concern',
+        details: submittedAppeal05Details,
+      } as unknown as ReviewAppeal,
+      depth: 0,
+      overrideAccess: false,
+      user: clinicUser,
+    })
+    reconciledAppealIds.push(existingAppeal05.id)
+    const existingResponseStableId = existingResponse.stableId
+    const existingAppeal03StableId = existingAppeal03.stableId
+    const existingAppeal05StableId = existingAppeal05.stableId
 
     const result = await runDemoSeeds(payload)
     expect(result.failures).toEqual([])
 
-    const reconciledResult = await payload.find({
-      collection: 'reviewResponses',
-      depth: 0,
-      overrideAccess: true,
-      pagination: false,
-      where: { review: { equals: review.id } },
-    })
-    expect(reconciledResult.docs).toHaveLength(1)
-    expect(reconciledResult.docs[0]).toMatchObject({
+    const [reconciledResponseResult, reconciledAppeal03Result, reconciledAppeal05Result] = await Promise.all([
+      payload.find({
+        collection: 'reviewResponses',
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { review: { equals: review03.id } },
+      }),
+      payload.find({
+        collection: 'reviewAppeals',
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { review: { equals: review03.id } },
+      }),
+      payload.find({
+        collection: 'reviewAppeals',
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { review: { equals: review05.id } },
+      }),
+    ])
+    expect(reconciledResponseResult.docs).toHaveLength(1)
+    expect(reconciledResponseResult.docs[0]).toMatchObject({
       id: existingResponse.id,
-      stableId: existingStableId,
+      stableId: existingResponseStableId,
       moderationStatus: 'approved',
       publishedResponse: {
         body: 'Thank you for describing the consultation. We are glad the written plan made the treatment options easier to compare.',
@@ -761,26 +842,78 @@ describe.sequential('demo review workflow seed integration', () => {
         isBlocked: false,
       },
     })
-
-    const firstVersions = await payload.findVersions({
-      collection: 'reviewResponses',
-      depth: 0,
-      overrideAccess: true,
-      pagination: false,
-      where: { parent: { equals: existingResponse.id } },
+    expect(reconciledAppeal03Result.docs).toHaveLength(1)
+    expect(reconciledAppeal03Result.docs[0]).toMatchObject({
+      id: existingAppeal03.id,
+      stableId: existingAppeal03StableId,
+      reason: 'other',
+      details: 'The clinic asks Platform Support to review the written consultation summary.',
+      status: 'submitted',
     })
-    expect(firstVersions.docs.some(({ version }) => version.pendingResponse?.body === submittedBody)).toBe(true)
+    expect(reconciledAppeal05Result.docs).toHaveLength(1)
+    expect(reconciledAppeal05Result.docs[0]).toMatchObject({
+      id: existingAppeal05.id,
+      stableId: existingAppeal05StableId,
+      reason: 'privacy_concern',
+      status: 'upheld',
+      decisionReason: 'The appeal is upheld for one narrow wording concern; a redacted review remains public.',
+    })
+
+    const [firstResponseVersions, firstAppeal03Versions, firstAppeal05Versions] = await Promise.all([
+      payload.findVersions({
+        collection: 'reviewResponses',
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { parent: { equals: existingResponse.id } },
+      }),
+      payload.findVersions({
+        collection: 'reviewAppeals',
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { parent: { equals: existingAppeal03.id } },
+      }),
+      payload.findVersions({
+        collection: 'reviewAppeals',
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { parent: { equals: existingAppeal05.id } },
+      }),
+    ])
+    expect(firstResponseVersions.docs.some(({ version }) => version.pendingResponse?.body === submittedBody)).toBe(true)
+    expect(firstAppeal03Versions.docs.some(({ version }) => version.details === submittedAppeal03Details)).toBe(true)
+    expect(firstAppeal05Versions.docs.some(({ version }) => version.details === submittedAppeal05Details)).toBe(true)
 
     const repeatedResult = await runDemoSeeds(payload)
     expect(repeatedResult.failures).toEqual([])
 
-    const repeatedVersions = await payload.findVersions({
-      collection: 'reviewResponses',
-      depth: 0,
-      overrideAccess: true,
-      pagination: false,
-      where: { parent: { equals: existingResponse.id } },
-    })
-    expect(repeatedVersions.docs).toEqual(firstVersions.docs)
+    const [repeatedResponseVersions, repeatedAppeal03Versions, repeatedAppeal05Versions] = await Promise.all([
+      payload.findVersions({
+        collection: 'reviewResponses',
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { parent: { equals: existingResponse.id } },
+      }),
+      payload.findVersions({
+        collection: 'reviewAppeals',
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { parent: { equals: existingAppeal03.id } },
+      }),
+      payload.findVersions({
+        collection: 'reviewAppeals',
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { parent: { equals: existingAppeal05.id } },
+      }),
+    ])
+    expect(repeatedResponseVersions.docs).toEqual(firstResponseVersions.docs)
+    expect(repeatedAppeal03Versions.docs).toEqual(firstAppeal03Versions.docs)
+    expect(repeatedAppeal05Versions.docs).toEqual(firstAppeal05Versions.docs)
   }, 180_000)
 })

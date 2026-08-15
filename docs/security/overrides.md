@@ -63,6 +63,11 @@ JSON does not support comments, so we keep the rationale and evidence here for r
   - https://github.com/advisories/GHSA-55q2-fjhq-7xh7
   - https://github.com/cure53/DOMPurify/releases/tag/3.4.13
 
+### nanoid (`nanoid@<3.3.18` -> `3.3.18`)
+- Reason: `postcss@8.5.23` resolves `nanoid@3.3.17`, which is vulnerable to an infinite loop when an unvalidated zero size reaches `customAlphabet` or `customRandom`. The override keeps the dependency graph on the first patched 3.x release.
+- References:
+  - https://github.com/advisories/GHSA-2v37-7h3g-55p8
+
 ## Temporary audit-ci exceptions
 
 The scheduled dependency audit has two temporary, path-specific exceptions for `image-size@2.0.2` because npm has no newer release and the relevant GitHub advisories currently list no patched version:

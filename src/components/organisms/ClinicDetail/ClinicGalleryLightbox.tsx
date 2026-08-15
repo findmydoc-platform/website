@@ -54,7 +54,7 @@ export function ClinicGalleryLightbox({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         aria-describedby={descriptionId}
-        className="h-dvh max-h-none min-h-svh w-screen max-w-none min-w-0 gap-0 overflow-hidden border-0 bg-[rgba(11,13,16,0.91)] p-0 text-white shadow-none backdrop-blur-sm sm:rounded-none [&>button]:top-[calc(1rem+env(safe-area-inset-top))] [&>button]:right-[calc(1rem+env(safe-area-inset-right))] [&>button]:z-20 [&>button]:size-11 [&>button]:rounded-full [&>button]:bg-black/45 [&>button]:text-white [&>button]:opacity-100 [&>button]:hover:bg-black/65 sm:[&>button]:top-[calc(1.5rem+env(safe-area-inset-top))] sm:[&>button]:right-[calc(1.5rem+env(safe-area-inset-right))]"
+        className="h-dvh max-h-none min-h-svh w-screen max-w-none min-w-0 gap-0 overflow-hidden border-0 bg-[rgba(11,13,16,0.91)] p-0 text-white shadow-none backdrop-blur-sm sm:rounded-none [&>button]:top-[calc(1rem+env(safe-area-inset-top))] [&>button]:right-[calc(1rem+env(safe-area-inset-right))] [&>button]:z-20 [&>button]:size-11 [&>button]:rounded-full [&>button]:bg-transparent [&>button]:text-white/85 [&>button]:opacity-100 [&>button]:shadow-none [&>button]:hover:bg-white/10 [&>button]:hover:text-white [&>button]:focus-visible:bg-white/10 [&>button]:focus-visible:ring-1 [&>button]:focus-visible:ring-white/60 [&>button]:focus-visible:ring-offset-0 sm:[&>button]:top-[calc(1.5rem+env(safe-area-inset-top))] sm:[&>button]:right-[calc(1.5rem+env(safe-area-inset-right))] [&>button>svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]"
         overlayClassName="bg-black/10"
         onCloseAutoFocus={(event) => {
           event.preventDefault()

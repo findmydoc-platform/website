@@ -3,7 +3,7 @@
 ## Comparison Target
 
 - Source visual truth: Product Design artifacts `exec-f09b7b0e-08e5-49e6-abdd-f394f880f3f2.png` for the public page and `exec-1243bc07-2f77-49c4-be85-130f4f604c20.png` for the selected charcoal lightbox direction (stored outside the repository)
-- Implementation screenshots: `output/playwright/clinic-gallery/desktop-reference-review-fixes.png`, `output/playwright/clinic-gallery/lightbox-mobile-375-charcoal-91-pointer.png`, and `output/playwright/clinic-gallery/lightbox-mobile-375-charcoal-91-keyboard.png`
+- Implementation screenshots: `output/playwright/clinic-gallery/desktop-reference-review-fixes.png`, `output/playwright/clinic-gallery/lightbox-mobile-375-charcoal-91-pointer.png`, `output/playwright/clinic-gallery/lightbox-mobile-375-charcoal-91-keyboard.png`, `output/playwright/clinic-gallery/lightbox-mobile-375-close-transparent-rest.png`, and `output/playwright/clinic-gallery/lightbox-mobile-375-close-transparent-focus.png`
 - Full-view comparisons: `output/playwright/clinic-gallery/reference-comparison-final.png` and `output/playwright/clinic-gallery/lightbox-charcoal-91-comparison.png`
 - Focused comparison: `output/playwright/clinic-gallery/focused-comparison-final.png`
 - Viewport: `1488 x 1058` CSS pixels, device pixel ratio `1`
@@ -19,15 +19,16 @@
 - The focused comparison was required because typography, description width, hero crop, gallery action placement, card alignment, icon treatment, and image quality are too small to judge reliably from the full view alone.
 - Responsive browser evidence covers `320`, `375`, `640`, `768`, `1024`, and `1280` px widths. In every case the document scroll width equals its client width.
 - Mobile lightbox evidence: `output/playwright/clinic-gallery/lightbox-mobile-375-charcoal-91-pointer.png` and `output/playwright/clinic-gallery/lightbox-mobile-375-charcoal-91-keyboard.png`.
+- Close-control refinement evidence: same-input full-view comparison of `output/playwright/clinic-gallery/lightbox-mobile-375-charcoal-91-pointer.png` and `output/playwright/clinic-gallery/lightbox-mobile-375-close-transparent-rest.png`; focused keyboard-state evidence in `output/playwright/clinic-gallery/lightbox-mobile-375-close-transparent-focus.png`.
 - Mobile page evidence: `output/playwright/clinic-gallery/mobile-375-review-fixes.png`.
-- Primary interactions tested in Playwright: open gallery, ArrowRight navigation, pointer swipe, Escape close, and focus return to the trigger.
-- Browser console: zero errors and zero warnings for the final Storybook gallery states.
+- Primary interactions tested in Playwright: open gallery, ArrowRight navigation, pointer swipe, Escape close, focus return to the trigger, keyboard focus on the close control, and Enter close.
+- Browser console: zero errors and zero warnings for the final Storybook visual-reference gallery state.
 
 ## Required Fidelity Surfaces
 
 - Fonts and typography: DM Sans, weights, hierarchy, line height, and wrapping match the existing product system and the source direction. The description is intentionally wider than the source mock according to the approved 50-55% amendment.
 - Spacing and layout rhythm: desktop side whitespace is preserved; the gallery does not expand beyond the established content width. Mobile uses the production `Container` gutters, and the hero, action, quality card, and doctor card remain in the approved order.
-- Colors and visual tokens: the implementation uses existing findmydoc public-site tokens for canvas, brand blue, navy, cards, verification, borders, and shadows. The lightbox deliberately leaves the opaque brand-blue surface: it uses `rgba(11, 13, 16, 0.91)` with an `8 px` backdrop blur and a quiet neutral overlay. The underlying page remains perceptible without competing with the photo. The public site has no separate dark-theme contract.
+- Colors and visual tokens: the implementation uses existing findmydoc public-site tokens for canvas, brand blue, navy, cards, verification, borders, and shadows. The lightbox deliberately leaves the opaque brand-blue surface: it uses `rgba(11, 13, 16, 0.91)` with an `8 px` backdrop blur and a quiet neutral overlay. The close control is transparent at rest and uses a restrained 10% white interaction surface only for hover and keyboard focus. The underlying page remains perceptible without competing with the photo. The public site has no separate dark-theme contract.
 - Image quality and asset fidelity: the first image is a dedicated 1600 x 900 photorealistic clinic-reception asset with one continuous scene, a trustworthy healthcare context, and no collage, text, logo, or watermark. Object-cover is used only in the public hero; the lightbox uses object-contain.
 - Copy and content: action copy follows the agreed zero, one, and many-image states. Image count, captions, alt text, and doctor/quality content remain realistic and coherent.
 - Accessibility and interaction: controls have at least 44 px touch targets, visible focus, semantic dialog/carousel structure, keyboard navigation, Escape close, swipe support, a live image counter, and trigger focus restoration.
@@ -39,6 +40,7 @@
 3. Mobile comparison found a P2 evidence mismatch because the Storybook frame omitted production side gutters. Stories now use the real `Container` component. Post-fix evidence: `mobile-matrix-320.png` and `mobile-matrix-375.png`.
 4. Reviewer follow-up found that the doctor list still used a nested scroll region on mobile and that the lightbox lacked safe-area offsets. Mobile now exposes all doctors in normal page flow, while the desktop card keeps its compact scroll region. The lightbox uses dynamic viewport units and safe-area-aware controls and content padding. Post-fix evidence: `mobile-375-review-fixes.png` and `lightbox-mobile-375-review-fixes.png`.
 5. The approved lightbox refinement replaced the opaque brand-blue canvas with a 91% charcoal surface and subtle backdrop blur. The first browser capture exposed an overly dominant initial focus ring that touched the counter. Pointer opening is now frame-free, while keyboard opening retains a quiet inset one-pixel focus ring and immediate arrow-key navigation. Mobile uses a wider 4:3 presentation frame so heterogeneous image orientations remain contained while the displayed landscape photo gains width and its caption stays visually grouped below it. Post-fix evidence: `lightbox-charcoal-91-comparison.png`, `lightbox-mobile-375-charcoal-91-pointer.png`, and `lightbox-mobile-375-charcoal-91-keyboard.png`.
+6. User review identified the opaque black circular close-button background as visually detached from the 91% charcoal canvas. The resting control now exposes only the white close icon with a subtle shadow while preserving its invisible 44 x 44 px touch target. Hover and keyboard focus use a 10% white surface, and keyboard focus retains a one-pixel white ring. Post-fix evidence: `lightbox-mobile-375-close-transparent-rest.png` and `lightbox-mobile-375-close-transparent-focus.png`.
 
 ## Findings
 
@@ -61,6 +63,7 @@ No actionable P0, P1, or P2 visual differences remain. The larger gallery button
 - [x] Replace the opaque blue lightbox canvas with a 91%-opaque neutral charcoal surface.
 - [x] Keep pointer entry frame-free and keyboard entry visibly focused.
 - [x] Group the mobile image and caption while preserving contained image orientations.
+- [x] Remove the opaque close-button disc while preserving touch size and visible keyboard focus.
 
 ## Follow-up Polish
 

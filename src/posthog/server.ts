@@ -151,6 +151,7 @@ export async function sendExceptionToPostHog(
     method?: string
     userAgent?: string
     timestamp?: string
+    properties?: Record<string, boolean | number | string | null>
   },
 ): Promise<void> {
   try {
@@ -169,9 +170,11 @@ export async function sendExceptionToPostHog(
     }
 
     const distinctId = props?.distinctId ?? 'server'
+    const { properties, ...contextProperties } = props ?? {}
     const payload = {
       error: err instanceof Error ? err.message : String(err),
-      ...props,
+      ...contextProperties,
+      ...properties,
     }
     const { distinctId: _distinctId, ...additionalProperties } = payload
 

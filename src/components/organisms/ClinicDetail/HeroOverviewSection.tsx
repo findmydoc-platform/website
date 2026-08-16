@@ -5,15 +5,19 @@ import { Heading } from '@/components/atoms/Heading'
 import { Card, CardContent } from '@/components/atoms/card'
 import { Breadcrumb, type BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import { DoctorPreviewListItem, HeroQualitySummary } from '@/components/molecules/ClinicDetail'
-import { Media } from '@/components/molecules/Media'
 import { formatRatingSummary } from '@/components/templates/ClinicDetailConcepts/shared'
-import { cn } from '@/utilities/ui'
+import { ClinicGallery } from './ClinicGallery'
 
-import type { ClinicDetailDoctor, ClinicDetailTrust } from '@/components/templates/ClinicDetailConcepts/types'
+import type {
+  ClinicDetailDoctor,
+  ClinicDetailGalleryImage,
+  ClinicDetailTrust,
+} from '@/components/templates/ClinicDetailConcepts/types'
 
 type HeroOverviewSectionProps = {
   clinicName: string
   description: string
+  galleryImages: ClinicDetailGalleryImage[]
   heroImage: { src: string; alt: string }
   trust: ClinicDetailTrust
   breadcrumbs?: BreadcrumbItem[]
@@ -26,6 +30,7 @@ type HeroOverviewSectionProps = {
 export function HeroOverviewSection({
   clinicName,
   description,
+  galleryImages,
   heroImage,
   trust,
   breadcrumbs,
@@ -35,55 +40,40 @@ export function HeroOverviewSection({
   favoriteAction,
 }: HeroOverviewSectionProps) {
   const hasDoctors = doctors.length > 0
-  const isSparseDoctorsList = doctors.length <= 1
   const specialistLabel = doctors.length === 1 ? 'listed specialist' : 'listed specialists'
 
   return (
-    <section className="grid gap-8 lg:grid-cols-12 lg:items-start">
-      <div className="min-w-0 space-y-6 lg:col-span-5 lg:space-y-8 lg:pt-14">
+    <section className="mx-auto max-w-[1080px] space-y-4 sm:space-y-5">
+      <div className="space-y-3 sm:space-y-4">
         <div className="space-y-2">
           {breadcrumbs?.length ? (
             <Breadcrumb items={breadcrumbs} className="text-xs sm:text-sm [&_li]:gap-2 [&_ol]:gap-2" />
           ) : null}
-          <p className="text-2xl leading-[1.15] font-semibold text-primary sm:text-size-40">CLINIC OVERVIEW</p>
+          <p className="text-xl leading-[1.15] font-semibold text-primary sm:text-2xl">CLINIC OVERVIEW</p>
           <Heading
             as="h1"
             align="left"
             size="h1"
-            className="max-w-none text-5xl leading-tight [overflow-wrap:anywhere] break-words text-secondary sm:max-w-[10ch] sm:text-size-72 sm:leading-[1.1389]"
+            className="max-w-[18ch] text-4xl leading-tight [overflow-wrap:anywhere] break-words text-secondary md:text-[44px] lg:text-5xl"
           >
             {clinicName}
           </Heading>
         </div>
 
-        <p className="max-w-[492px] text-base leading-7 text-secondary/70">{description}</p>
+        <p className="max-w-[594px] text-base leading-7 text-secondary/70">{description}</p>
 
-        {favoriteAction ? <div className="max-w-[492px]">{favoriteAction}</div> : null}
-
-        <HeroQualitySummary trust={trust} />
+        {favoriteAction ? <div className="max-w-[594px]">{favoriteAction}</div> : null}
       </div>
 
-      <div className="relative min-w-0 lg:col-span-7 lg:pl-8">
-        <div className="relative ml-auto aspect-[667/649] w-full max-w-[667px] overflow-hidden rounded-[30px]">
-          <Media
-            htmlElement={null}
-            src={heroImage.src}
-            alt={heroImage.alt}
-            fill
-            imgClassName="object-cover"
-            size="(min-width: 1024px) 667px, 100vw"
-          />
-        </div>
+      <ClinicGallery clinicName={clinicName} galleryImages={galleryImages} heroImage={heroImage} />
 
-        <Card
-          className={cn(
-            'relative mt-6 w-full max-w-[530px] rounded-[25px] border-0 shadow-brand-soft sm:mt-8 lg:absolute lg:left-0 lg:mt-0',
-            isSparseDoctorsList ? 'lg:bottom-[-72px]' : 'lg:bottom-[-220px]',
-          )}
-        >
+      <div className="grid items-stretch gap-6 lg:grid-cols-2">
+        <HeroQualitySummary trust={trust} className="h-full" />
+
+        <Card className="h-full w-full rounded-[24px] border-0 shadow-brand-soft">
           <CardContent className="space-y-4 p-6">
             <div>
-              <Heading as="h2" align="left" size="h5" className="text-[32px] leading-[1.3] text-secondary">
+              <Heading as="h2" align="left" size="h5" className="text-secondary">
                 Available Doctors
               </Heading>
               <p className="text-sm text-secondary/60">
@@ -92,7 +82,7 @@ export function HeroOverviewSection({
             </div>
 
             {hasDoctors ? (
-              <div className={isSparseDoctorsList ? 'space-y-1' : 'space-y-1 overflow-y-auto pr-1 lg:h-[272px]'}>
+              <div className="space-y-1 lg:max-h-[232px] lg:overflow-y-auto lg:pr-1">
                 {doctors.map((doctor) => (
                   <DoctorPreviewListItem
                     key={doctor.id}

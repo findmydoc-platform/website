@@ -254,14 +254,15 @@ export const demoPlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
-    name: 'clinic-thumbnails',
+    name: 'clinic-profile-galleries',
     collection: 'clinics',
     fileName: 'clinics',
     mapping: [
       {
-        sourceField: 'thumbnailStableId',
-        targetField: 'thumbnail',
+        sourceField: 'profileGalleryStableIds',
+        targetField: 'profileGallery',
         collection: 'clinicMedia',
+        many: true,
       },
     ],
   },

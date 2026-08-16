@@ -4,7 +4,7 @@ import type {
   ClinicDetailDoctor,
 } from '@/components/templates/ClinicDetailConcepts'
 
-import { getStoryImageSrc, storyClinicImages, storyPortraits } from './assets'
+import { getStoryImageSrc, storyClinicImages, storyClinicMedia, storyPortraits } from './assets'
 
 const clinicSlug = 'berlin-health-clinic'
 const clinicContactHref = `/contact?clinic=${clinicSlug}&source=clinic-detail`
@@ -177,9 +177,26 @@ export const clinicDetailFixture: ClinicDetailData = {
     { label: 'Berlin Health Clinic', href: `/clinics/${clinicSlug}` },
   ],
   heroImage: {
-    src: getStoryImageSrc(storyClinicImages.clinicDetail.exterior),
-    alt: 'Berlin Health Clinic exterior',
+    ...storyClinicMedia.exterior,
   },
+  galleryImages: [
+    {
+      id: 'clinic-gallery-1',
+      ...storyClinicMedia.profileGalleryHero,
+      caption: 'Main reception and patient welcome area',
+    },
+    { id: 'clinic-gallery-2', ...storyClinicMedia.waitingArea, caption: 'Patient waiting area' },
+    { id: 'clinic-gallery-3', ...storyClinicMedia.consultation, caption: 'Private consultation room' },
+    { id: 'clinic-gallery-4', ...storyClinicMedia.diagnostics, caption: 'Diagnostics room' },
+    { id: 'clinic-gallery-5', ...storyClinicMedia.treatmentRoom, caption: 'Treatment room' },
+    { id: 'clinic-gallery-6', ...storyClinicMedia.exterior, caption: 'Clinic entrance' },
+    { id: 'clinic-gallery-7', ...storyClinicMedia.hospitalCorridor, caption: 'Clinic corridor' },
+    { id: 'clinic-gallery-8', ...storyClinicMedia.dental, caption: 'Dental treatment suite' },
+    { id: 'clinic-gallery-9', ...storyClinicMedia.eyeCare, caption: 'Eye examination room' },
+    { id: 'clinic-gallery-10', ...storyClinicMedia.lab, caption: 'Laboratory workspace' },
+    { id: 'clinic-gallery-11', ...storyClinicMedia.rehabilitation, caption: 'Rehabilitation area' },
+    { id: 'clinic-gallery-12', ...storyClinicMedia.telemedicine, caption: 'Telemedicine workstation' },
+  ],
   description:
     'Berlin Health Clinic is a multidisciplinary pediatric center with clinic-provided treatment information, service descriptions, and family-centered care details.',
   trust: {

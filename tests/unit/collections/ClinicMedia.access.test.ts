@@ -44,7 +44,7 @@ describe('ClinicMedia Collection Access Control', () => {
       expect(result).toBe(false)
     })
 
-    test('Patient static file read is limited to approved clinic media', async () => {
+    test('Patient static file read is limited to published media from approved clinics', async () => {
       const result = await ClinicMedia.access!.read!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(mockUsers.patient(), {
           extra: { isReadingStaticFile: true },
@@ -52,13 +52,11 @@ describe('ClinicMedia Collection Access Control', () => {
       )
 
       expect(result).toEqual({
-        'clinic.status': {
-          equals: 'approved',
-        },
+        and: [{ status: { equals: 'published' } }, { 'clinic.status': { equals: 'approved' } }],
       })
     })
 
-    test('Anonymous static file read is limited to approved clinic media', async () => {
+    test('Anonymous static file read is limited to published media from approved clinics', async () => {
       const result = await ClinicMedia.access!.read!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(mockUsers.anonymous(), {
           extra: { isReadingStaticFile: true },
@@ -66,9 +64,7 @@ describe('ClinicMedia Collection Access Control', () => {
       )
 
       expect(result).toEqual({
-        'clinic.status': {
-          equals: 'approved',
-        },
+        and: [{ status: { equals: 'published' } }, { 'clinic.status': { equals: 'approved' } }],
       })
     })
 
@@ -97,7 +93,7 @@ describe('ClinicMedia Collection Access Control', () => {
       expect(can).toBe(true)
     })
 
-    test('Clinic staff can create when they have an assigned clinic', async () => {
+    test('Clinic staff cannot create through direct collection access', async () => {
       const user = mockUsers.clinic(2, mockClinicId)
       const req = createMockReq(user, payload)
       const can = await ClinicMedia.access!.create!(
@@ -106,10 +102,10 @@ describe('ClinicMedia Collection Access Control', () => {
           extra: { data: { clinic: mockClinicId } },
         }),
       )
-      expect(can).toBe(true)
+      expect(can).toBe(false)
     })
 
-    test('Clinic staff create access does not depend on incoming clinic data', async () => {
+    test('Clinic staff cannot create for a different incoming clinic', async () => {
       const user = mockUsers.clinic(2, 999)
       const req = createMockReq(user, payload)
       const can = await ClinicMedia.access!.create!(
@@ -118,7 +114,7 @@ describe('ClinicMedia Collection Access Control', () => {
           extra: { data: { clinic: mockClinicId } },
         }),
       )
-      expect(can).toBe(true)
+      expect(can).toBe(false)
     })
 
     test('Anonymous cannot create', async () => {
@@ -146,7 +142,7 @@ describe('ClinicMedia Collection Access Control', () => {
       expect(can).toBe(false)
     })
 
-    test('Clinic staff can create when data.clinic is missing', async () => {
+    test('Clinic staff cannot create when data.clinic is missing', async () => {
       const user = mockUsers.clinic(2, mockClinicId)
       const req = createMockReq(user, payload)
       const can = await ClinicMedia.access!.create!(
@@ -155,7 +151,7 @@ describe('ClinicMedia Collection Access Control', () => {
           extra: { data: {} },
         }),
       )
-      expect(can).toBe(true)
+      expect(can).toBe(false)
     })
   })
 
@@ -172,7 +168,7 @@ describe('ClinicMedia Collection Access Control', () => {
       expect(deleteScope).toBe(true)
     })
 
-    test('Clinic staff scoped to their clinic', async () => {
+    test('Clinic staff cannot update or delete through direct collection access', async () => {
       const req = createMockReq(mockUsers.clinic(2, mockClinicId), payload)
       const updateScope = await ClinicMedia.access!.update!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, { payload }),
@@ -180,8 +176,8 @@ describe('ClinicMedia Collection Access Control', () => {
       const deleteScope = await ClinicMedia.access!.delete!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, { payload }),
       )
-      expect(updateScope).toEqual({ clinic: { equals: mockClinicId } })
-      expect(deleteScope).toEqual({ clinic: { equals: mockClinicId } })
+      expect(updateScope).toBe(false)
+      expect(deleteScope).toBe(false)
     })
 
     test('Other roles cannot update/delete', async () => {

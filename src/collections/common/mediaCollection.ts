@@ -26,6 +26,8 @@ export const standardMediaImageMimeTypes = [
 
 export const galleryMediaImageMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']
 
+export const clinicProfileMediaImageMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
+
 export const standardMediaImageSizes: MediaUploadImageSize[] = [
   { name: 'thumbnail', width: 300 },
   { name: 'square', width: 500, height: 500 },
@@ -52,12 +54,12 @@ export function buildMediaUploadConfig(options: {
   }
 }
 
-export function buildMediaAltField(options?: { label?: string; description?: string }): Field {
+export function buildMediaAltField(options?: { label?: string; description?: string; required?: boolean }): Field {
   return {
     ...(options?.label ? { label: options.label } : {}),
     name: 'alt',
     type: 'text',
-    required: true,
+    required: options?.required ?? true,
     admin: {
       description: options?.description ?? 'Alt text for screen readers',
     },

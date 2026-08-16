@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload, ValidationError } from 'payload'
-import type { Payload, File } from 'payload'
+import type { Payload } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
+import { createTinyPngFile } from '../fixtures/mediaFile'
 import { testSlug } from '../fixtures/testSlug'
 import type { Clinic, ClinicMedia, Accreditation, PlatformStaff } from '@/payload-types'
 
@@ -36,18 +37,6 @@ describe('Clinic Creation Integration Tests', () => {
   const createdAccreditationIds: Array<number> = []
   const createdPlatformStaffIds: Array<number> = []
   const createdClinicStaffIds: Array<number> = []
-
-  const buildImageFile = (name: string): File => {
-    const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
-    const data = Buffer.from(base64, 'base64')
-
-    return {
-      name,
-      data,
-      mimetype: 'image/png',
-      size: data.length,
-    }
-  }
 
   const createPlatformUser = async (emailPrefix: string, role: NonNullable<PlatformStaff['role']> = 'admin') => {
     const platformStaff = await payload.create({
@@ -118,14 +107,6 @@ describe('Clinic Creation Integration Tests', () => {
   }, 60000)
 
   afterEach(async () => {
-    while (createdClinicMediaIds.length) {
-      const id = createdClinicMediaIds.pop()
-      if (!id) continue
-      try {
-        await payload.delete({ collection: 'clinicMedia', id, overrideAccess: true })
-      } catch {}
-    }
-
     while (createdAccreditationIds.length) {
       const id = createdAccreditationIds.pop()
       if (!id) continue
@@ -152,6 +133,14 @@ describe('Clinic Creation Integration Tests', () => {
 
     await cleanupTestEntities(payload, 'clinictreatments', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
+
+    while (createdClinicMediaIds.length) {
+      const id = createdClinicMediaIds.pop()
+      if (!id) continue
+      try {
+        await payload.delete({ collection: 'clinicMedia', id, overrideAccess: true })
+      } catch {}
+    }
   })
 
   it('creates a clinic with all required fields', async () => {
@@ -483,7 +472,7 @@ describe('Clinic Creation Integration Tests', () => {
         alt: 'Clinic thumbnail image',
         clinic: clinic.id,
       } as Partial<ClinicMedia>,
-      file: buildImageFile(`${slugPrefix}-thumbnail.png`),
+      file: createTinyPngFile(`${slugPrefix}-thumbnail.png`),
       user: platformUser,
       draft: false,
       overrideAccess: false,
@@ -491,11 +480,19 @@ describe('Clinic Creation Integration Tests', () => {
 
     createdClinicMediaIds.push(clinicMedia.id)
 
+    await payload.update({
+      collection: 'clinicMedia',
+      id: clinicMedia.id,
+      data: { status: 'published' },
+      overrideAccess: true,
+      depth: 0,
+    })
+
     const updatedClinic = (await payload.update({
       collection: 'clinics',
       id: clinic.id,
       data: {
-        thumbnail: clinicMedia.id,
+        profileGallery: [clinicMedia.id],
       },
       overrideAccess: true,
       depth: 0,
@@ -505,6 +502,7 @@ describe('Clinic Creation Integration Tests', () => {
       typeof updatedClinic.thumbnail === 'object' ? (updatedClinic.thumbnail?.id ?? null) : updatedClinic.thumbnail
 
     expect(thumbnailId).toBe(clinicMedia.id)
+    expect(updatedClinic.profileGallery).toEqual([clinicMedia.id])
   })
 
   it('allows an incomplete pending clinic during onboarding', async () => {

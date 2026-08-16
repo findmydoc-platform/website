@@ -112,6 +112,7 @@ const baseData = {
     { label: 'Template Test Clinic', href: '/clinics/template-test' },
   ],
   heroImage: { src: '/hero.jpg', alt: 'Hero' },
+  galleryImages: [],
   description: 'Clinic description',
   trust: {
     ratingValue: 4.8,

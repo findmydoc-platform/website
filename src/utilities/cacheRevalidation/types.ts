@@ -74,6 +74,8 @@ export interface ClinicSurfaceRevalidationSubject {
   readonly clinicSlugs?: readonly string[]
   readonly previousClinicIds?: readonly (string | number)[]
   readonly previousClinicSlugs?: readonly string[]
+  readonly listingImpact?: boolean
+  readonly globalDetailImpact?: boolean
 }
 
 export interface PrivateLiveRevalidationSubject {

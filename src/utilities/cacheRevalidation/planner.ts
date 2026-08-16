@@ -333,14 +333,15 @@ const buildClinicDocumentPlan = (event: ClinicSurfaceRevalidationEvent): Revalid
     })
   }
 
-  const tags = [
-    buildEntityTag('clinics', id),
-    buildCollectionTag('clinics'),
-    buildSurfaceTag('clinic-detail'),
-    buildSurfaceInstanceTag('clinic-detail', id),
-    buildSurfaceTag('listing-comparison'),
-    buildSitemapTag('pages'),
-  ]
+  const listingImpact = event.subject.listingImpact !== false
+  const globalDetailImpact = event.subject.globalDetailImpact !== false
+  const tags = [buildEntityTag('clinics', id)]
+  if (listingImpact) {
+    tags.push(buildCollectionTag('clinics'))
+  }
+  if (globalDetailImpact) tags.push(buildSurfaceTag('clinic-detail'))
+  tags.push(buildSurfaceInstanceTag('clinic-detail', id))
+  if (listingImpact) tags.push(buildSurfaceTag('listing-comparison'), buildSitemapTag('pages'))
   const paths: string[] = []
 
   if (publicNow) {
@@ -365,9 +366,13 @@ const buildClinicDocumentPlan = (event: ClinicSurfaceRevalidationEvent): Revalid
       ...(previousSlug ? { previousSlug } : {}),
       status: event.subject.status,
       ...(event.subject.previousStatus ? { previousStatus: event.subject.previousStatus } : {}),
+      ...(typeof event.subject.globalDetailImpact === 'boolean'
+        ? { globalDetailImpact: event.subject.globalDetailImpact }
+        : {}),
+      ...(typeof event.subject.listingImpact === 'boolean' ? { listingImpact: event.subject.listingImpact } : {}),
     },
-    cacheClasses: ['critical-public', 'aggregated-public'],
-    surfaceIds: ['clinic-detail', 'listing-comparison', 'surface:sitemap:pages'],
+    cacheClasses: listingImpact ? ['critical-public', 'aggregated-public'] : ['critical-public'],
+    surfaceIds: listingImpact ? ['clinic-detail', 'listing-comparison', 'surface:sitemap:pages'] : ['clinic-detail'],
     tags,
     paths,
   })

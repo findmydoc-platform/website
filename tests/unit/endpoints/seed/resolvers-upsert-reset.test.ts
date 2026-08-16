@@ -426,6 +426,11 @@ describe('resetCollections', () => {
     })
 
     expect(actualOrder).toEqual(expectedOrder)
+    expect(deleteDocuments).toHaveBeenCalledTimes(expectedOrder.length)
+    for (const [args] of deleteDocuments.mock.calls) {
+      expect(args).toEqual(expect.objectContaining({ disableTransaction: true }))
+    }
+
     const platformContentMediaDelete = deleteDocuments.mock.calls.find((call: unknown[]) => {
       return (call[0] as { collection: string }).collection === 'platformContentMedia'
     })?.[0] as { trash: boolean; where: { stableId: { in: string[] } } } | undefined
@@ -433,6 +438,27 @@ describe('resetCollections', () => {
     expect(platformContentMediaDelete?.trash).toBe(true)
     expect(platformContentMediaDelete?.where.stableId.in.length).toBeGreaterThan(0)
     expect(platformContentMediaDelete?.where.stableId.in).toEqual(expect.arrayContaining([expect.any(String)]))
+  })
+
+  it('publishes the reset cache scope before the first destructive mutation', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('NODE_ENV', 'test')
+    const events: string[] = []
+    deleteDocuments.mockImplementation(async () => {
+      events.push('delete')
+      return { docs: [], errors: [] }
+    })
+
+    await resetCollections(payload, 'demo', {
+      onPrepared: ({ affectedPostSlugs }) => {
+        expect(affectedPostSlugs).toEqual([])
+        events.push('prepared')
+      },
+    })
+
+    expect(events[0]).toBe('prepared')
+    expect(events[1]).toBe('delete')
   })
 
   it('preserves every principal and clears only resettable relations without Supabase synchronization', async () => {

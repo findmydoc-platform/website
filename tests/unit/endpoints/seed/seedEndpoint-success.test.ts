@@ -225,6 +225,74 @@ describe('seed endpoints success paths', () => {
     },
   )
 
+  it.each(['demo', 'baseline'] as const)(
+    'flushes the prepared public scope after a %s reset fails mid-delete',
+    async (seedType) => {
+      const { payload } = makePayloadReq({})
+      payload.find.mockResolvedValue({ docs: [], hasNextPage: false })
+      const runId = `seed-run-failed-${seedType}-reset-with-public-work`
+      const queue = `seed:${runId}`
+      const record = createSeedRunRecord({
+        runId,
+        type: seedType,
+        reset: true,
+        queue,
+        totalJobs: 1,
+      }) as SeedRunRecord
+      record.status = 'failed'
+      record.completedAt = '2026-08-16T10:00:00.000Z'
+      record.completedJobs = 1
+      record.failedJobs = 1
+      record.jobs = [
+        {
+          id: 'job-reset',
+          order: 1,
+          status: 'failed',
+          input: {
+            runId,
+            type: seedType,
+            reset: true,
+            queue,
+            stepName: 'reset',
+            kind: 'reset',
+          },
+          queue,
+          title: 'Reset demo data',
+          stepName: 'reset',
+          kind: 'reset',
+          createdAt: '2026-08-16T09:00:00.000Z',
+          completedAt: '2026-08-16T10:00:00.000Z',
+          created: 0,
+          updated: 0,
+          warnings: [],
+          failures: ['doctor delete failed'],
+          output: {
+            affectedPostSlugs: ['retired-post'],
+            publicWorkStarted: true,
+          },
+        },
+      ]
+      await saveSeedRunRecord(payload as unknown as Payload, record)
+
+      const res = makeRes()
+      await seedAdvanceHandler(
+        createMockReq(mockUsers.platform(), payload, {
+          query: { runId },
+        }) as PayloadRequest,
+        res,
+      )
+
+      expect(res._status).toBe(200)
+      expect((res._body as { finalFlush?: { status: string } }).finalFlush).toMatchObject({ status: 'executed' })
+      expect(revalidateTag).toHaveBeenCalledWith('collection:posts', { expire: 0 })
+      expect(revalidateTag).toHaveBeenCalledWith('collection:doctors', { expire: 0 })
+      expect(revalidatePath).toHaveBeenCalledWith('/posts/retired-post')
+      if (seedType === 'baseline') {
+        expect(revalidateTag).toHaveBeenCalledWith('collection:medical-specialties', { expire: 0 })
+      }
+    },
+  )
+
   it('does not flush an interim public snapshot from an incomplete atomic seed group', async () => {
     const { payload } = makePayloadReq({})
     const runId = 'seed-run-incomplete-review-history'

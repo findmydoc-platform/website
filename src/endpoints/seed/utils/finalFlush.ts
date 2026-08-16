@@ -203,8 +203,8 @@ const findPlatformContentMediaConsumerSlugs = async (
   return { pageSlugs, postSlugs }
 }
 
-const addPlanScope = (scope: SeedFinalFlushScope, seedType: SeedType): void => {
-  const plan = seedType === 'baseline' ? baselinePlan : demoPlan
+const addResetPlanScope = (scope: SeedFinalFlushScope, seedType: SeedType): void => {
+  const plan = seedType === 'baseline' ? [...demoPlan, ...baselinePlan] : demoPlan
 
   for (const step of plan) {
     if (step.kind === 'globals') {
@@ -226,7 +226,7 @@ const addPlanScope = (scope: SeedFinalFlushScope, seedType: SeedType): void => {
 
 const addJobScope = (scope: SeedFinalFlushScope, job: SeedRunJobRecord, seedType: SeedType): void => {
   if (job.kind === 'reset') {
-    addPlanScope(scope, seedType)
+    addResetPlanScope(scope, seedType)
     return
   }
 
@@ -256,6 +256,7 @@ const isPublicAffectingJob = (job: SeedRunJobRecord): boolean => {
 
 const hasCompletedOrWritten = (job: SeedRunJobRecord): boolean => {
   if (job.created > 0 || job.updated > 0) return true
+  if (job.kind === 'reset' && job.output?.publicWorkStarted === true) return true
   return job.status === 'succeeded'
 }
 

@@ -16,6 +16,7 @@ import {
   markSeedRunCancelled,
   type SeedLogEntry,
   setSeedRunActiveJob,
+  updateSeedRunJob,
 } from '../utils/state'
 
 const resolvePlatformSeedActorId = async (
@@ -154,49 +155,129 @@ export const seedChunkTask = {
           throw new Error('Seed reset jobs require an authenticated platform user')
         }
 
-        const resetResult = await resetCollections(payload, input.type, { req })
-        const affectedPostSlugs = resetResult.affectedPostSlugs
+        let affectedPostSlugs: string[] = []
+        let publicWorkStarted = false
 
-        const next = await finishSeedRunJob(payload, runId, {
-          jobId,
-          status: 'succeeded',
-          created: 0,
-          updated: 0,
-          warnings: [],
-          failures: [],
-          output: {
-            runId,
+        try {
+          const resetResult = await resetCollections(payload, input.type, {
+            req,
+            onPrepared: async (preparedResult) => {
+              const preparedPostSlugs = [...preparedResult.affectedPostSlugs]
+              const preparedRun = await updateSeedRunJob(payload, runId, jobId, (jobRecord) => {
+                jobRecord.output = {
+                  runId,
+                  jobId,
+                  stepName: input.stepName,
+                  kind: input.kind,
+                  status: 'running',
+                  created: 0,
+                  updated: 0,
+                  warnings: [],
+                  failures: [],
+                  affectedPostSlugs: preparedPostSlugs,
+                  publicWorkStarted: true,
+                }
+                return jobRecord
+              })
+
+              const preparedJob = preparedRun?.jobs.find((candidate) => candidate.id === jobId)
+              if (preparedJob?.output?.publicWorkStarted !== true) {
+                throw new Error(`Seed run ${runId} disappeared while preparing ${jobTitle}`)
+              }
+
+              affectedPostSlugs = preparedPostSlugs
+              publicWorkStarted = true
+            },
+          })
+          affectedPostSlugs = resetResult.affectedPostSlugs
+
+          const next = await finishSeedRunJob(payload, runId, {
             jobId,
-            stepName: input.stepName,
-            kind: input.kind,
             status: 'succeeded',
             created: 0,
             updated: 0,
             warnings: [],
             failures: [],
-            affectedPostSlugs,
-          },
-        })
+            output: {
+              runId,
+              jobId,
+              stepName: input.stepName,
+              kind: input.kind,
+              status: 'succeeded',
+              created: 0,
+              updated: 0,
+              warnings: [],
+              failures: [],
+              affectedPostSlugs,
+              publicWorkStarted,
+            },
+          })
 
-        if (!next) {
-          throw new Error(`Seed run ${runId} disappeared while finishing ${jobTitle}`)
-        }
+          if (!next) {
+            throw new Error(`Seed run ${runId} disappeared while finishing ${jobTitle}`)
+          }
 
-        await attachSeedRunInfo(payload, runId, 'Completed', getLogContext(input, jobId))
+          await attachSeedRunInfo(payload, runId, 'Completed', getLogContext(input, jobId))
 
-        return {
-          output: {
-            runId,
+          return {
+            output: {
+              runId,
+              jobId,
+              stepName: input.stepName,
+              kind: input.kind,
+              status: 'succeeded',
+              created: 0,
+              updated: 0,
+              warnings: [],
+              failures: [],
+              affectedPostSlugs,
+              publicWorkStarted,
+            },
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          await attachSeedRunError(payload, runId, message, getLogContext(input, jobId))
+
+          const next = await finishSeedRunJob(payload, runId, {
             jobId,
-            stepName: input.stepName,
-            kind: input.kind,
-            status: 'succeeded',
+            status: 'failed',
             created: 0,
             updated: 0,
             warnings: [],
-            failures: [],
-            affectedPostSlugs,
-          },
+            failures: [message],
+            error: message,
+            output: {
+              runId,
+              jobId,
+              stepName: input.stepName,
+              kind: input.kind,
+              status: 'failed',
+              created: 0,
+              updated: 0,
+              warnings: [],
+              failures: [message],
+              affectedPostSlugs,
+              publicWorkStarted,
+            },
+          })
+
+          if (!next) {
+            throw new Error(`Seed run ${runId} disappeared while failing ${jobTitle}`)
+          }
+
+          if (input.type === 'baseline') {
+            await cancelQueuedJobsForBaselineRun({
+              payload,
+              queue: input.queue,
+              req,
+              runId,
+            })
+          }
+
+          return {
+            state: 'failed' as const,
+            errorMessage: message,
+          }
         }
       }
 

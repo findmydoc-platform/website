@@ -17,7 +17,12 @@ vi.mock('@/endpoints/seed/utils/import-collection', () => ({ importCollection })
 vi.mock('@/endpoints/seed/utils/reset', () => ({ resetCollections }))
 
 import { seedChunkTask } from '@/endpoints/seed/tasks/seedChunkTask'
-import { createSeedRunRecord, registerSeedRunJob, saveSeedRunRecord } from '@/endpoints/seed/utils/state'
+import {
+  createSeedRunRecord,
+  loadSeedRunRecord,
+  registerSeedRunJob,
+  saveSeedRunRecord,
+} from '@/endpoints/seed/utils/state'
 
 describe('seedChunkTask', () => {
   beforeEach(() => {
@@ -199,7 +204,11 @@ describe('seedChunkTask', () => {
       failures: [],
     })
 
-    resetCollections.mockResolvedValue({ affectedPostSlugs: ['retired-post'] })
+    resetCollections.mockImplementation(async (_payload, _kind, options) => {
+      const result = { affectedPostSlugs: ['retired-post'] }
+      await options.onPrepared(result)
+      return result
+    })
     const req = createMockReq(mockUsers.platform(42), payload) as PayloadRequest
 
     const result = await seedChunkTask.handler({
@@ -208,7 +217,10 @@ describe('seedChunkTask', () => {
       req,
     })
 
-    expect(resetCollections).toHaveBeenCalledWith(payload, 'demo', { req })
+    expect(resetCollections).toHaveBeenCalledWith(payload, 'demo', {
+      req,
+      onPrepared: expect.any(Function),
+    })
     expect(result).toMatchObject({
       output: {
         runId,
@@ -216,7 +228,71 @@ describe('seedChunkTask', () => {
         kind: 'reset',
         status: 'succeeded',
         affectedPostSlugs: ['retired-post'],
+        publicWorkStarted: true,
       },
+    })
+  })
+
+  it('persists reset scope and fails the job cleanly after a partial reset', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('NODE_ENV', 'test')
+
+    const payload = createMockPayload()
+    const runId = 'seed-run-reset-partial-failure'
+    const queue = `seed:${runId}`
+    const input: SeedQueueJobInput = {
+      runId,
+      type: 'demo',
+      reset: true,
+      queue,
+      title: 'Reset demo data',
+      stepName: 'reset',
+      kind: 'reset',
+    }
+    const record = createSeedRunRecord({ runId, type: 'demo', reset: true, queue, totalJobs: 1 })
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+    await registerSeedRunJob(payload as unknown as Payload, runId, {
+      id: 'job-reset',
+      order: 1,
+      status: 'queued',
+      input,
+      queue,
+      title: 'Reset demo data',
+      stepName: 'reset',
+      kind: 'reset',
+      createdAt: '2026-08-16T10:00:00.000Z',
+      created: 0,
+      updated: 0,
+      warnings: [],
+      failures: [],
+    })
+    resetCollections.mockImplementation(async (_payload, _kind, options) => {
+      await options.onPrepared({ affectedPostSlugs: ['retired-post'] })
+      throw new Error('doctor delete failed')
+    })
+
+    const result = await seedChunkTask.handler({
+      input,
+      job: { id: 'job-reset' },
+      req: createMockReq(mockUsers.platform(42), payload) as PayloadRequest,
+    })
+
+    expect(result).toEqual({ state: 'failed', errorMessage: 'doctor delete failed' })
+    const storedRun = await loadSeedRunRecord(payload as unknown as Payload, runId)
+    expect(storedRun).toMatchObject({
+      status: 'failed',
+      jobs: [
+        {
+          id: 'job-reset',
+          status: 'failed',
+          output: {
+            affectedPostSlugs: ['retired-post'],
+            publicWorkStarted: true,
+            status: 'failed',
+          },
+        },
+      ],
     })
   })
 

@@ -70,6 +70,7 @@ const seedResetContext = {
 }
 
 type ResetCollectionsOptions = {
+  onPrepared?: (result: ResetCollectionsResult) => Promise<void> | void
   req?: Partial<PayloadRequest>
 }
 
@@ -262,6 +263,9 @@ const deleteCollection = async (
   const result = await payload.delete({
     collection,
     where,
+    // Payload bulk deletes run document lifecycle work in parallel. A shared transaction
+    // would make those operations compete for the same PostgreSQL client.
+    disableTransaction: true,
     depth: 0,
     overrideAccess: true,
     trash: true,
@@ -307,6 +311,9 @@ export async function resetCollections(
   const plannedUserUpdates = await planProtectedUserRelationCleanup(payload, kind)
   const affectedPostSlugs = await collectPostSlugsBeforeReset(payload)
   const req = buildResetRequest(payload, options.req)
+  const result = { affectedPostSlugs }
+
+  await options.onPrepared?.(result)
 
   await clearProtectedUserRelations(payload, plannedUserUpdates, req)
 
@@ -315,5 +322,5 @@ export async function resetCollections(
     await deleteCollection(payload, collection, buildResetWhere(collection, kind, inputs), req)
   }
 
-  return { affectedPostSlugs }
+  return result
 }

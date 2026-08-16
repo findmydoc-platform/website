@@ -256,7 +256,7 @@ const isPublicAffectingJob = (job: SeedRunJobRecord): boolean => {
 
 const hasCompletedOrWritten = (job: SeedRunJobRecord): boolean => {
   if (job.created > 0 || job.updated > 0) return true
-  if (job.kind === 'reset' && job.output?.publicWorkStarted === true) return true
+  if (job.output?.publicWorkStarted === true) return true
   return job.status === 'succeeded'
 }
 

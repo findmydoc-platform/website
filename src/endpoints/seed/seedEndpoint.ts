@@ -1,15 +1,18 @@
-import type { PayloadRequest } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 import { assertSeedRunPolicy, isSeedEndpointPostEnabled, resolveSeedRuntimeEnv, type SeedType } from './utils/runtime'
 import { buildSeedQueueJobs, getSeedQueueName } from './utils/planner'
 import { formatSeedRetryTitle, formatSeedRunTitle, formatSeedJobTitle } from './utils/labels'
 import type { SeedQueueJobInput } from './utils/job-types'
 import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
+import type { PayloadJob } from '@/payload-types'
 import { finalizeSeedRunPublicCaches } from './utils/finalFlush'
 import {
   buildSeedRunSnapshot,
+  attachSeedRunError,
   clearActiveSeedRunIfTerminal,
   createSeedRunId,
   createSeedRunRecord,
+  finishSeedRunJob,
   getActiveSeedRunId,
   loadSeedRunRecord,
   markSeedRunCancelled,
@@ -65,6 +68,115 @@ const finalizeRunSnapshot = async (req: PayloadRequest, snapshot: SeedRunSnapsho
   }
 
   return snapshot
+}
+
+const getPayloadJobErrorMessage = (error: unknown): string | null => {
+  if (!error || typeof error !== 'object' || !('message' in error)) return null
+  const message = (error as { message?: unknown }).message
+  return typeof message === 'string' && message.trim().length > 0 ? message.trim() : null
+}
+
+const recoverTerminalActiveSeedRun = async (
+  payload: Payload,
+  req: PayloadRequest,
+  record: SeedRunRecord,
+): Promise<SeedRunRecord> => {
+  if (!record.activeJobId) return record
+
+  const activeJob = record.jobs.find((job) => job.id === record.activeJobId)
+  if (!activeJob) {
+    return (await markSeedRunCancelled(payload, record.runId)) ?? record
+  }
+
+  let payloadJob: PayloadJob | undefined
+  try {
+    const payloadJobs = await payload.find({
+      collection: 'payload-jobs',
+      depth: 0,
+      limit: 1,
+      overrideAccess: true,
+      pagination: false,
+      where: {
+        id: {
+          equals: record.activeJobId,
+        },
+      },
+    })
+    payloadJob = payloadJobs.docs[0]
+  } catch (error) {
+    payload.logger.warn({
+      err: error,
+      msg: `Unable to inspect active Payload job ${record.activeJobId} for seed run ${record.runId}`,
+    })
+    return record
+  }
+  const terminal = !payloadJob || payloadJob.hasError === true || typeof payloadJob.completedAt === 'string'
+  if (!terminal) return record
+
+  const payloadError = payloadJob ? getPayloadJobErrorMessage(payloadJob.error) : null
+  const message = payloadError
+    ? `Recovered failed Payload job ${record.activeJobId}: ${payloadError}`
+    : payloadJob
+      ? `Recovered completed Payload job ${record.activeJobId} from an unfinished seed run`
+      : `Recovered seed run because Payload job ${record.activeJobId} no longer exists`
+
+  try {
+    await (
+      payload.jobs as unknown as {
+        cancel: (options: {
+          queue?: string
+          where: unknown
+          req: PayloadRequest
+          overrideAccess?: boolean
+        }) => Promise<void>
+      }
+    ).cancel({
+      queue: record.queue,
+      where: { status: { equals: 'queued' } },
+      req,
+      overrideAccess: true,
+    })
+  } catch (error) {
+    payload.logger.warn({
+      err: error,
+      msg: `Unable to cancel remaining jobs for recovered seed run ${record.runId}`,
+    })
+  }
+
+  await attachSeedRunError(payload, record.runId, message, {
+    title: activeJob.title,
+    jobId: activeJob.id,
+    stepName: activeJob.stepName,
+    kind: activeJob.kind,
+    collection: activeJob.collection,
+    chunkIndex: activeJob.chunkIndex,
+    chunkTotal: activeJob.chunkTotal,
+  })
+
+  const next = await finishSeedRunJob(payload, record.runId, {
+    jobId: activeJob.id,
+    status: 'failed',
+    created: activeJob.created,
+    updated: activeJob.updated,
+    warnings: [],
+    failures: [message],
+    error: message,
+    output: {
+      ...(activeJob.output ?? {}),
+      runId: record.runId,
+      jobId: activeJob.id,
+      stepName: activeJob.stepName,
+      kind: activeJob.kind,
+      status: 'failed',
+      created: activeJob.created,
+      updated: activeJob.updated,
+      warnings: activeJob.warnings,
+      failures: [...activeJob.failures, message],
+      publicWorkStarted: true,
+    },
+  })
+
+  return next ?? record
 }
 
 type SeedQueuePlanJob = {
@@ -344,7 +456,11 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
 
   const activeRunId = await getActiveSeedRunId(payload)
   if (activeRunId) {
-    const activeRecord = await loadSeedRunRecord(payload, activeRunId)
+    let activeRecord = await loadSeedRunRecord(payload, activeRunId)
+    if (activeRecord) {
+      activeRecord = await recoverTerminalActiveSeedRun(payload, req, activeRecord)
+    }
+
     if (
       activeRecord &&
       activeRecord.status !== 'completed' &&
@@ -359,7 +475,11 @@ export const seedPostHandler = async (req: PayloadRequest, res?: unknown) => {
       })
     }
 
-    await clearActiveSeedRunIfTerminal(payload, activeRunId)
+    if (activeRecord) {
+      await finalizeRunSnapshot(req, buildSeedRunSnapshot(activeRecord))
+    } else {
+      await clearActiveSeedRunIfTerminal(payload, activeRunId)
+    }
   }
 
   try {

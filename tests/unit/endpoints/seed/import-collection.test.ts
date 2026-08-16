@@ -461,14 +461,23 @@ describe('importCollection', () => {
       nextSlug: 'new-editorial-post',
     })
 
+    const onPrepared = vi.fn(async () => {
+      expect(mockUpsertByStableId).not.toHaveBeenCalled()
+    })
     const outcome = await importCollection({
-      payload: makePayload(),
+      payload: makePayload({
+        find: vi.fn(async () => ({ docs: [{ slug: 'old-demo-post' }] })) as unknown as Payload['find'],
+      }),
       kind: 'demo',
       collection: 'posts',
       fileName: 'posts',
       resolvers: makeResolvers(),
+      onPrepared,
     })
 
+    expect(onPrepared).toHaveBeenCalledWith({
+      affectedPostSlugs: ['new-editorial-post', 'old-demo-post'],
+    })
     expect(outcome.affectedPostSlugs).toEqual(['new-editorial-post', 'old-demo-post'])
   })
 })

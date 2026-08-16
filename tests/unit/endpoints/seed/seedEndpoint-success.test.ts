@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Payload, PayloadRequest } from 'payload'
+import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
 import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
 import { mockUsers } from '../../helpers/mockUsers'
 
@@ -11,7 +11,15 @@ vi.mock('next/cache', () => ({
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { seedAdvanceHandler, seedGetHandler, seedPostHandler } from '@/endpoints/seed/seedEndpoint'
 import { finalizeSeedRunPublicCaches } from '@/endpoints/seed/utils/finalFlush'
-import { createSeedRunRecord, saveSeedRunRecord, type SeedRunRecord } from '@/endpoints/seed/utils/state'
+import {
+  createSeedRunRecord,
+  loadSeedRunRecord,
+  registerSeedRunJob,
+  saveSeedRunRecord,
+  setActiveSeedRunId,
+  setSeedRunActiveJob,
+  type SeedRunRecord,
+} from '@/endpoints/seed/utils/state'
 
 type MockResponse = {
   _status?: number
@@ -40,6 +48,67 @@ function makePayloadReq(query: Record<string, unknown>) {
   const payload = createMockPayload()
   const req = createMockReq(mockUsers.platform(), payload, { query }) as PayloadRequest
   return { payload, req }
+}
+
+async function createActiveSeedRun(
+  payload: ReturnType<typeof createMockPayload>,
+  runId: string,
+  jobId: string,
+  job: {
+    kind: SeedRunRecord['jobs'][number]['kind']
+    stepName: string
+    title: string
+    collection?: CollectionSlug
+    fileName?: string
+  } = {
+    kind: 'reset',
+    stepName: 'reset',
+    title: 'Reset collections',
+  },
+) {
+  const queue = `seed:${runId}`
+  const record = createSeedRunRecord({
+    runId,
+    type: 'demo',
+    reset: true,
+    queue,
+    totalJobs: 1,
+  })
+
+  await saveSeedRunRecord(payload as unknown as Payload, record)
+  await registerSeedRunJob(payload as unknown as Payload, runId, {
+    id: jobId,
+    order: 1,
+    status: 'queued',
+    input: {
+      runId,
+      type: 'demo',
+      reset: true,
+      queue,
+      stepName: job.stepName,
+      kind: job.kind,
+      collection: job.collection,
+      fileName: job.fileName,
+    },
+    queue,
+    title: job.title,
+    stepName: job.stepName,
+    kind: job.kind,
+    collection: job.collection,
+    fileName: job.fileName,
+    createdAt: '2026-08-16T09:00:00.000Z',
+    created: 0,
+    updated: 0,
+    warnings: [],
+    failures: [],
+  })
+  await setSeedRunActiveJob(payload as unknown as Payload, runId, {
+    jobId,
+    stepName: job.stepName,
+  })
+  await setActiveSeedRunId(payload as unknown as Payload, runId)
+
+  return { queue }
 }
 
 describe('seed endpoints success paths', () => {
@@ -134,6 +203,132 @@ describe('seed endpoints success paths', () => {
     expect(advanceRes._status).toBe(200)
     expect(advanceBody.runId).toBe(postBody.runId)
     expect(advanceBody.progress.total).toBe(postBody.progress.total)
+  })
+
+  it('recovers a failed Payload job before queueing a new seed run', async () => {
+    const { payload, req } = makePayloadReq({ type: 'demo', reset: '1' })
+    const staleRunId = 'seed-run-stale-reset'
+    const staleJobId = '552'
+    const { queue } = await createActiveSeedRun(payload, staleRunId, staleJobId)
+    payload.find.mockImplementation(async ({ collection }: { collection: string }) => {
+      if (collection === 'payload-jobs') {
+        return {
+          docs: [
+            {
+              id: 552,
+              hasError: true,
+              completedAt: null,
+              error: { message: 'Failed query: delete from payload_preferences' },
+            },
+          ],
+          hasNextPage: false,
+        }
+      }
+
+      return { docs: [], hasNextPage: false }
+    })
+    const res = makeRes()
+
+    await seedPostHandler(req, res)
+
+    expect(res._status).toBe(202)
+    expect((res._body as { runId: string }).runId).not.toBe(staleRunId)
+    expect(payload.jobs.cancel).toHaveBeenCalledWith({
+      queue,
+      where: { status: { equals: 'queued' } },
+      req,
+      overrideAccess: true,
+    })
+
+    const recoveredRun = await loadSeedRunRecord(payload as unknown as Payload, staleRunId)
+    expect(recoveredRun).toMatchObject({
+      status: 'failed',
+      activeJobId: undefined,
+      finalFlush: { status: 'executed' },
+    })
+    expect(recoveredRun?.jobs[0]).toMatchObject({
+      status: 'failed',
+      output: { publicWorkStarted: true },
+    })
+    expect(recoveredRun?.jobs[0]?.failures).toContain(
+      'Recovered failed Payload job 552: Failed query: delete from payload_preferences',
+    )
+    expect(recoveredRun?.logs).toContainEqual(
+      expect.objectContaining({
+        severity: 'ERROR',
+        text: 'Recovered failed Payload job 552: Failed query: delete from payload_preferences',
+      }),
+    )
+  })
+
+  it.each([
+    {
+      label: 'collection',
+      job: {
+        kind: 'collection' as const,
+        stepName: 'posts',
+        title: 'Seed posts',
+        collection: 'posts' as const,
+        fileName: 'posts',
+      },
+      expectedTag: 'collection:posts',
+    },
+    {
+      label: 'globals',
+      job: {
+        kind: 'globals' as const,
+        stepName: 'globals',
+        title: 'Seed globals',
+      },
+      expectedTag: 'global:landingPages',
+    },
+  ])('flushes conservative public scope for a recovered $label job', async ({ job, expectedTag, label }) => {
+    const { payload, req } = makePayloadReq({ type: 'demo', reset: '1' })
+    const staleRunId = `seed-run-stale-${label}`
+    await createActiveSeedRun(payload, staleRunId, '553', job)
+    payload.find.mockImplementation(async ({ collection }: { collection: string }) => {
+      if (collection === 'payload-jobs') {
+        return {
+          docs: [{ id: 553, hasError: true, completedAt: null, error: { message: 'Worker exited' } }],
+          hasNextPage: false,
+        }
+      }
+
+      return { docs: [], hasNextPage: false }
+    })
+    const res = makeRes()
+
+    await seedPostHandler(req, res)
+
+    expect(res._status).toBe(202)
+    const recoveredRun = await loadSeedRunRecord(payload as unknown as Payload, staleRunId)
+    expect(recoveredRun).toMatchObject({
+      status: 'failed',
+      finalFlush: { status: 'executed' },
+    })
+    expect(recoveredRun?.jobs[0]?.output).toMatchObject({ publicWorkStarted: true })
+    expect(revalidateTag).toHaveBeenCalledWith(expectedTag, { expire: 0 })
+  })
+
+  it('keeps a non-terminal Payload job active', async () => {
+    const { payload, req } = makePayloadReq({ type: 'demo', reset: '1' })
+    const staleRunId = 'seed-run-still-active'
+    await createActiveSeedRun(payload, staleRunId, '552')
+    payload.find.mockResolvedValue({
+      docs: [{ id: 552, hasError: false, completedAt: null, processing: true }],
+      hasNextPage: false,
+    })
+    const res = makeRes()
+
+    await seedPostHandler(req, res)
+
+    expect(res._status).toBe(409)
+    expect(res._body).toMatchObject({
+      error: 'A seed run is already active.',
+      runId: staleRunId,
+    })
+    expect(payload.jobs.cancel).not.toHaveBeenCalled()
+    expect(payload.jobs.queue).not.toHaveBeenCalled()
   })
 
   it.each(['completed', 'partial', 'failed', 'cancelled'] as const)(

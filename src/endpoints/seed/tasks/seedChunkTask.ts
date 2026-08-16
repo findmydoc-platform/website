@@ -440,6 +440,33 @@ export const seedChunkTask = {
         stableIds: input.stableIds,
         localizedFields: input.localizedFields,
         upsertPolicy: input.upsertPolicy,
+        ...(input.collection === 'posts'
+          ? {
+              onPrepared: async ({ affectedPostSlugs }: { affectedPostSlugs: string[] }) => {
+                const preparedRun = await updateSeedRunJob(payload, runId, jobId, (jobRecord) => {
+                  jobRecord.output = {
+                    ...(jobRecord.output ?? {}),
+                    runId,
+                    jobId,
+                    stepName: input.stepName,
+                    kind: input.kind,
+                    status: 'running',
+                    created: jobRecord.created,
+                    updated: jobRecord.updated,
+                    warnings: jobRecord.warnings,
+                    failures: jobRecord.failures,
+                    affectedPostSlugs,
+                  }
+                  return jobRecord
+                })
+
+                const preparedJob = preparedRun?.jobs.find((candidate) => candidate.id === jobId)
+                if (!Array.isArray(preparedJob?.output?.affectedPostSlugs)) {
+                  throw new Error(`Seed run ${runId} disappeared while preparing ${jobTitle}`)
+                }
+              },
+            }
+          : {}),
       })
 
       const warnings = [...result.warnings]

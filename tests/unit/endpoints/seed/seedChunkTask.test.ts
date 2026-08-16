@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Payload, PayloadRequest } from 'payload'
-import type { CollectionImportResult } from '@/endpoints/seed/utils/import-collection'
+import type { CollectionImportOptions, CollectionImportResult } from '@/endpoints/seed/utils/import-collection'
 import type { SeedQueueJobInput } from '@/endpoints/seed/utils/job-types'
 import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
 import { mockUsers } from '../../helpers/mockUsers'
 
-const importCollection = vi.hoisted(() => vi.fn<() => Promise<CollectionImportResult>>())
+const importCollection = vi.hoisted(() =>
+  vi.fn<(options: CollectionImportOptions) => Promise<CollectionImportResult>>(),
+)
 const resetCollections = vi.hoisted(() => vi.fn())
 
 vi.mock('next/cache', () => ({
@@ -100,6 +102,71 @@ describe('seedChunkTask', () => {
         localizedFields,
       }),
     )
+  })
+
+  it('persists post slug scope before collection writes', async () => {
+    const payload = createMockPayload()
+    const runId = 'seed-run-prepared-post-scope'
+    const queue = `seed:${runId}`
+    const input: SeedQueueJobInput = {
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      title: 'Posts',
+      stepName: 'posts',
+      kind: 'collection',
+      collection: 'posts',
+      fileName: 'posts',
+    }
+    const record = createSeedRunRecord({
+      runId,
+      type: 'demo',
+      reset: false,
+      queue,
+      totalJobs: 1,
+    })
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+    await registerSeedRunJob(payload as unknown as Payload, runId, {
+      id: 'job-prepared-posts',
+      order: 1,
+      status: 'queued',
+      input,
+      queue,
+      title: 'Posts',
+      stepName: 'posts',
+      kind: 'collection',
+      collection: 'posts',
+      fileName: 'posts',
+      createdAt: '2026-08-16T09:00:00.000Z',
+      created: 0,
+      updated: 0,
+      warnings: [],
+      failures: [],
+    })
+    importCollection.mockImplementationOnce(async (options) => {
+      await options.onPrepared?.({ affectedPostSlugs: ['new-post', 'old-post'] })
+      const preparedRun = await loadSeedRunRecord(payload as unknown as Payload, runId)
+      expect(preparedRun?.jobs[0]?.output).toMatchObject({
+        status: 'running',
+        affectedPostSlugs: ['new-post', 'old-post'],
+      })
+
+      throw new Error('Worker exited after first write')
+    })
+
+    await expect(
+      seedChunkTask.handler({
+        input,
+        job: { id: 'job-prepared-posts' },
+        req: createMockReq(mockUsers.platform(), payload) as PayloadRequest,
+      }),
+    ).rejects.toThrow('Worker exited after first write')
+
+    const failedRun = await loadSeedRunRecord(payload as unknown as Payload, runId)
+    expect(failedRun?.jobs[0]?.output).toMatchObject({
+      affectedPostSlugs: ['new-post', 'old-post'],
+    })
   })
 
   it('passes the configured upsert policy to collection imports', async () => {

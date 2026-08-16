@@ -127,7 +127,6 @@ async function applyLocalizedFieldUpdates(options: {
       overrideAccess: true,
       context: {
         disableRevalidate: true,
-        disableSearchSync: true,
         ...(context ?? {}),
       },
       req,

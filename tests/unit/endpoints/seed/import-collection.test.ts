@@ -442,7 +442,6 @@ describe('importCollection', () => {
       overrideAccess: true,
       context: {
         disableRevalidate: true,
-        disableSearchSync: true,
       },
       req: undefined,
     })

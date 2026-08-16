@@ -63,13 +63,11 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
       trash: true,
       context: {
         disableRevalidate: true,
-        disableSearchSync: true,
         seedMediaExpectedNoSuchKeyRecovery: true,
       },
       req: {
         context: {
           disableRevalidate: true,
-          disableSearchSync: true,
           seedMediaExpectedNoSuchKeyRecovery: true,
         },
       },
@@ -123,13 +121,11 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
       trash: true,
       context: {
         disableRevalidate: true,
-        disableSearchSync: true,
         seedMediaExpectedNoSuchKeyRecovery: true,
       },
       req: {
         context: {
           disableRevalidate: true,
-          disableSearchSync: true,
           seedMediaExpectedNoSuchKeyRecovery: true,
         },
       },
@@ -140,13 +136,11 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
       overrideAccess: true,
       context: {
         disableRevalidate: true,
-        disableSearchSync: true,
         seedMediaExpectedNoSuchKeyRecovery: true,
       },
       req: {
         context: {
           disableRevalidate: true,
-          disableSearchSync: true,
           seedMediaExpectedNoSuchKeyRecovery: true,
         },
       },
@@ -255,14 +249,12 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
       trash: true,
       context: {
         disableRevalidate: true,
-        disableSearchSync: true,
         seedMediaExpectedNoSuchKeyRecovery: true,
         skipCloudStorage: true,
       },
       req: {
         context: {
           disableRevalidate: true,
-          disableSearchSync: true,
           seedMediaExpectedNoSuchKeyRecovery: true,
           skipCloudStorage: true,
         },

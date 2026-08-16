@@ -66,24 +66,6 @@ const resolveSeedReqForJob = async (
   }
 }
 
-const resolveAuthenticatedPlatformUserId = (req: PayloadRequest): string | number | null => {
-  const user = req.user
-  if (!user || typeof user !== 'object') return null
-
-  const candidate = user as { collection?: unknown; id?: unknown; userType?: unknown }
-  if (candidate.collection !== 'platformStaff') return null
-
-  if (typeof candidate.id === 'number' && Number.isFinite(candidate.id)) {
-    return candidate.id
-  }
-
-  if (typeof candidate.id === 'string' && candidate.id.trim().length > 0) {
-    return candidate.id
-  }
-
-  return null
-}
-
 const getLogContext = (
   input: SeedQueueJobInput,
   jobId: string,
@@ -168,12 +150,11 @@ export const seedChunkTask = {
       }
 
       if (input.kind === 'reset') {
-        const preservePlatformUserId = resolveAuthenticatedPlatformUserId(req)
-        if (preservePlatformUserId === null) {
+        if (req.user?.collection !== 'platformStaff') {
           throw new Error('Seed reset jobs require an authenticated platform user')
         }
 
-        const resetResult = await resetCollections(payload, input.type, { preservePlatformUserId })
+        const resetResult = await resetCollections(payload, input.type, { req })
         const affectedPostSlugs = resetResult.affectedPostSlugs
 
         const next = await finishSeedRunJob(payload, runId, {

@@ -157,7 +157,7 @@ describe('seedChunkTask', () => {
     )
   })
 
-  it('preserves the authenticated platform identity during reset jobs', async () => {
+  it('forwards the authenticated request to principal-safe reset jobs', async () => {
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', 'test')
     vi.stubEnv('NODE_ENV', 'test')
@@ -200,14 +200,15 @@ describe('seedChunkTask', () => {
     })
 
     resetCollections.mockResolvedValue({ affectedPostSlugs: ['retired-post'] })
+    const req = createMockReq(mockUsers.platform(42), payload) as PayloadRequest
 
     const result = await seedChunkTask.handler({
       input,
       job: { id: 'job-reset' },
-      req: createMockReq(mockUsers.platform(42), payload) as PayloadRequest,
+      req,
     })
 
-    expect(resetCollections).toHaveBeenCalledWith(payload, 'demo', { preservePlatformUserId: 42 })
+    expect(resetCollections).toHaveBeenCalledWith(payload, 'demo', { req })
     expect(result).toMatchObject({
       output: {
         runId,

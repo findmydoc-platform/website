@@ -30,7 +30,10 @@ interface ExpressResponse {
   json: (body: unknown) => void
 }
 
-const ACTIVE_JOB_STALE_AFTER_MS = 10 * 60 * 1000
+// Vercel terminates Payload API invocations after the explicit 300-second limit in
+// vercel.json. The extra five-minute grace ensures a processing job can only be
+// recovered after its serverless worker is no longer able to mutate data.
+const VERCEL_ACTIVE_JOB_LEASE_MS = 10 * 60 * 1000
 
 const respond = (res: unknown, statusCode: number, body: unknown) => {
   const response = res as ExpressResponse | undefined
@@ -112,15 +115,18 @@ const recoverTerminalActiveSeedRun = async (
     })
     return record
   }
-  const activeJobStartedAt = activeJob.startedAt ? Date.parse(activeJob.startedAt) : Number.NaN
-  const stale =
+  // Payload updates this timestamp when a worker claims the job and as task state advances,
+  // so time spent waiting in the queue does not consume the worker lease.
+  const payloadJobUpdatedAt = payloadJob?.updatedAt ? Date.parse(payloadJob.updatedAt) : Number.NaN
+  const workerLeaseExpired =
+    process.env.VERCEL === '1' &&
     payloadJob?.processing === true &&
-    Number.isFinite(activeJobStartedAt) &&
-    Date.now() - activeJobStartedAt >= ACTIVE_JOB_STALE_AFTER_MS
+    Number.isFinite(payloadJobUpdatedAt) &&
+    Date.now() - payloadJobUpdatedAt >= VERCEL_ACTIVE_JOB_LEASE_MS
   const terminal = !payloadJob || payloadJob.hasError === true || typeof payloadJob.completedAt === 'string'
-  if (!terminal && !stale) return record
+  if (!terminal && !workerLeaseExpired) return record
 
-  if (stale) {
+  if (workerLeaseExpired) {
     try {
       await (
         payload.jobs as unknown as {
@@ -148,8 +154,8 @@ const recoverTerminalActiveSeedRun = async (
   const payloadError = payloadJob ? getPayloadJobErrorMessage(payloadJob.error) : null
   const message = payloadError
     ? `Recovered failed Payload job ${record.activeJobId}: ${payloadError}`
-    : stale
-      ? `Recovered stale Payload job ${record.activeJobId} after its worker stopped responding`
+    : workerLeaseExpired
+      ? `Recovered expired Payload job ${record.activeJobId} after its Vercel worker lease ended`
       : payloadJob
         ? `Recovered completed Payload job ${record.activeJobId} from an unfinished seed run`
         : `Recovered seed run because Payload job ${record.activeJobId} no longer exists`

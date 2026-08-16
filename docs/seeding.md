@@ -159,6 +159,8 @@ failure may leave a partial reset; the operator must fix the reported cause and 
 Demo reset keeps baseline collections and globals. `platformContentMedia` is shared by baseline and demo data, so demo
 reset deletes only the media records listed in the demo seed. A baseline reset remains a separate non-production action
 and clears the demo reset scope plus baseline reference collections while preserving all authentication principals.
+For the shared `platformContentMedia` collection, baseline reset deletes only the union of baseline- and demo-seed
+stable IDs; editor-uploaded records outside that seed-owned scope remain untouched.
 
 ## Idempotency
 Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless new reference data is added. Demo units skip creating duplicates using slug / unique lookups.

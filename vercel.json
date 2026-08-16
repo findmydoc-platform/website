@@ -2,5 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "devCommand": "pnpm dev",
   "installCommand": "pnpm install",
-  "buildCommand": "node scripts/validate-clinic-dashboard-deployment-env.mjs && pnpm run ci"
+  "buildCommand": "node scripts/validate-clinic-dashboard-deployment-env.mjs && pnpm run ci",
+  "functions": {
+    "src/app/(payload)/api/**/route.ts": {
+      "maxDuration": 300
+    }
+  }
 }

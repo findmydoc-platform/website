@@ -238,19 +238,31 @@ const clearProtectedUserRelations = async (
   }
 }
 
-const buildResetWhere = (collection: CollectionSlug, kind: SeedKind, inputs: SeedInputMap): Where => {
-  if (collection !== 'platformContentMedia' || kind === 'baseline') {
-    return allDocumentsWhere
+const collectResettablePlatformContentMediaStableIds = async (
+  kind: SeedKind,
+  inputs: SeedInputMap,
+): Promise<string[]> => {
+  const records = [...(inputs.get('platformContentMedia') ?? [])]
+  if (kind === 'baseline') {
+    records.push(...(await loadSeedFile('demo', 'platformContentMedia')))
   }
 
-  const stableIds = (inputs.get('platformContentMedia') ?? []).map((record) => record.stableId)
+  const stableIds = [...new Set(records.map((record) => record.stableId))].sort()
   if (stableIds.length === 0) {
-    throw new Error('Seed reset preflight failed: demo platform content media ids are unavailable')
+    throw new Error(`Seed reset preflight failed: ${kind} platform content media ids are unavailable`)
+  }
+
+  return stableIds
+}
+
+const buildResetWhere = (collection: CollectionSlug, platformContentMediaStableIds: string[]): Where => {
+  if (collection !== 'platformContentMedia') {
+    return allDocumentsWhere
   }
 
   return {
     stableId: {
-      in: stableIds,
+      in: platformContentMediaStableIds,
     },
   }
 }
@@ -309,6 +321,7 @@ export async function resetCollections(
   }
 
   const inputs = await preflightSeedInputs(kind)
+  const platformContentMediaStableIds = await collectResettablePlatformContentMediaStableIds(kind, inputs)
   const plannedUserUpdates = await planProtectedUserRelationCleanup(payload, kind)
   const affectedPostSlugs = await collectPostSlugsBeforeReset(payload)
   const req = buildResetRequest(payload, options.req)
@@ -320,7 +333,7 @@ export async function resetCollections(
 
   for (const collection of resetOrder) {
     payload.logger.info(`Resetting ${collection} (${kind})`)
-    await deleteCollection(payload, collection, buildResetWhere(collection, kind, inputs), req)
+    await deleteCollection(payload, collection, buildResetWhere(collection, platformContentMediaStableIds), req)
   }
 
   return result

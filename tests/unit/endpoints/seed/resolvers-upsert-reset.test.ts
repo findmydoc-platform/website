@@ -3,6 +3,7 @@ import type { Payload } from 'payload'
 import { createStableIdResolvers } from '@/endpoints/seed/utils/resolvers'
 import { upsertByStableId } from '@/endpoints/seed/utils/upsert'
 import { resetCollections } from '@/endpoints/seed/utils/reset'
+import { loadSeedFile } from '@/endpoints/seed/utils/load-json'
 
 describe('stableId resolvers', () => {
   const find = vi.fn()
@@ -616,8 +617,14 @@ describe('resetCollections', () => {
     })
 
     expect(actualOrder).toEqual(expectedOrder)
+    const baselineMedia = await loadSeedFile('baseline', 'platformContentMedia')
+    const demoMedia = await loadSeedFile('demo', 'platformContentMedia')
+    const expectedStableIds = [...new Set([...baselineMedia, ...demoMedia].map((record) => record.stableId))].sort()
     expect(deleteDocuments).toHaveBeenCalledWith(
-      expect.objectContaining({ collection: 'platformContentMedia', where: { id: { exists: true } } }),
+      expect.objectContaining({
+        collection: 'platformContentMedia',
+        where: { stableId: { in: expectedStableIds } },
+      }),
     )
   })
 })

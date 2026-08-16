@@ -114,6 +114,7 @@ async function createActiveSeedRun(
 describe('seed endpoints success paths', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
     delete (global as Record<string, unknown>).__lastSeedRun
   })
 
@@ -332,6 +333,7 @@ describe('seed endpoints success paths', () => {
   })
 
   it('recovers a stale processing Payload job during status polling', async () => {
+    vi.stubEnv('VERCEL', '1')
     const { payload } = makePayloadReq({})
     const staleRunId = 'seed-run-stale-processing'
     const staleJobId = '607'
@@ -344,7 +346,15 @@ describe('seed endpoints success paths', () => {
     payload.find.mockImplementation(async ({ collection }: { collection: string }) => {
       if (collection === 'payload-jobs') {
         return {
-          docs: [{ id: 607, hasError: false, completedAt: null, processing: true }],
+          docs: [
+            {
+              id: 607,
+              hasError: false,
+              completedAt: null,
+              processing: true,
+              updatedAt: new Date(Date.now() - 11 * 60 * 1000).toISOString(),
+            },
+          ],
           hasNextPage: false,
         }
       }
@@ -374,9 +384,68 @@ describe('seed endpoints success paths', () => {
     expect(res._body.logs).toContainEqual(
       expect.objectContaining({
         severity: 'ERROR',
-        text: 'Recovered stale Payload job 607 after its worker stopped responding',
+        text: 'Recovered expired Payload job 607 after its Vercel worker lease ended',
       }),
     )
+  })
+
+  it('keeps a recently claimed Vercel job active after a long queue wait', async () => {
+    vi.stubEnv('VERCEL', '1')
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-delayed-worker'
+    await createActiveSeedRun(payload, runId, '608')
+    const record = await loadSeedRunRecord(payload as unknown as Payload, runId)
+    if (!record?.jobs[0]) throw new Error('Expected active seed job')
+    record.jobs[0].startedAt = new Date(Date.now() - 20 * 60 * 1000).toISOString()
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+    payload.find.mockResolvedValue({
+      docs: [
+        {
+          id: 608,
+          hasError: false,
+          completedAt: null,
+          processing: true,
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      hasNextPage: false,
+    })
+    const req = createMockReq(mockUsers.platform(), payload, { query: { runId } }) as PayloadRequest
+    const res = makeRes()
+
+    await seedGetHandler(req, res)
+
+    expect(res._body).toMatchObject({ runId, status: 'running', hasActiveJob: true })
+    expect(payload.jobs.cancel).not.toHaveBeenCalled()
+  })
+
+  it('does not time-cancel a processing job outside Vercel', async () => {
+    const { payload } = makePayloadReq({})
+    const runId = 'seed-run-long-worker'
+    await createActiveSeedRun(payload, runId, '608')
+    const record = await loadSeedRunRecord(payload as unknown as Payload, runId)
+    if (!record?.jobs[0]) throw new Error('Expected active seed job')
+    record.jobs[0].startedAt = new Date(Date.now() - 11 * 60 * 1000).toISOString()
+    await saveSeedRunRecord(payload as unknown as Payload, record)
+    payload.find.mockResolvedValue({
+      docs: [
+        {
+          id: 608,
+          hasError: false,
+          completedAt: null,
+          processing: true,
+          updatedAt: new Date(Date.now() - 11 * 60 * 1000).toISOString(),
+        },
+      ],
+      hasNextPage: false,
+    })
+    const req = createMockReq(mockUsers.platform(), payload, { query: { runId } }) as PayloadRequest
+    const res = makeRes()
+
+    await seedGetHandler(req, res)
+
+    expect(res._body).toMatchObject({ runId, status: 'running', hasActiveJob: true })
+    expect(payload.jobs.cancel).not.toHaveBeenCalled()
   })
 
   it.each(['completed', 'partial', 'failed', 'cancelled'] as const)(

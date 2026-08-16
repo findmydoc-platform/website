@@ -97,12 +97,20 @@ export type ClinicDetailContact = {
   website?: string
 }
 
+export type ClinicDetailGalleryImage = {
+  id: string
+  src: string
+  alt: string
+  caption?: string
+}
+
 export type ClinicDetailData = {
   clinicId: number
   clinicSlug: string
   clinicName: string
   breadcrumbs: BreadcrumbItem[]
   heroImage: { src: string; alt: string }
+  galleryImages: ClinicDetailGalleryImage[]
   description: string
   trust: ClinicDetailTrust
   reviews: ClinicDetailReviews

@@ -473,6 +473,7 @@ function mapClinicFreshness({
       'accreditation',
       'cities',
       'clinics',
+      'clinicMedia',
       'clinictreatments',
       'doctors',
       'doctorspecialties',
@@ -485,6 +486,7 @@ function mapClinicFreshness({
 export function mapClinicToClinicDetailData({
   clinic,
   heroImage,
+  galleryImages,
   clinicTreatments,
   doctors,
   doctorSpecialties,
@@ -509,6 +511,7 @@ export function mapClinicToClinicDetailData({
       { label: clinic.name, href: `/clinics/${encodeURIComponent(clinic.slug)}` },
     ],
     heroImage,
+    galleryImages,
     description: extractLexicalPlainText(clinic.description) || 'Clinic profile information currently being updated.',
     trust: mapTrust({
       clinic,

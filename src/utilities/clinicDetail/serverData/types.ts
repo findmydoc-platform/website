@@ -27,6 +27,7 @@ export type ClinicDetailMappingArgs = {
     src: string
     alt: string
   }
+  galleryImages: ClinicDetailData['galleryImages']
   doctorMediaByDoctorId?: ReadonlyMap<number, MediaDescriptor>
   clinicTreatments: Clinictreatment[]
   doctors: Doctor[]

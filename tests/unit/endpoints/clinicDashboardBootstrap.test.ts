@@ -117,6 +117,8 @@ describe('Clinic Dashboard bootstrap endpoint', () => {
           'clinic-profile:edit',
           'clinic-treatments:view',
           'clinic-treatments:edit',
+          'clinic-gallery:view',
+          'clinic-gallery:edit',
         ],
       },
     })

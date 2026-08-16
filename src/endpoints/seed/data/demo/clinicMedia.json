@@ -3,60 +3,70 @@
     "stableId": "seed-clinic-media-1",
     "alt": "Modest Istanbul dental clinic reception with treatment room beyond",
     "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "status": "published",
     "filePath": "src/endpoints/seed/assets/demo/generated/clinics/istanbul-smile-center.webp"
   },
   {
     "stableId": "seed-clinic-media-2",
     "alt": "Polished Istanbul aesthetic hospital consultation room with exam chair",
     "clinicStableId": "seed-clinic-istanbul-bosphorus",
+    "status": "published",
     "filePath": "src/endpoints/seed/assets/demo/generated/clinics/bosphorus-aesthetic-hospital.webp"
   },
   {
     "stableId": "seed-clinic-media-3",
     "alt": "Medium-sized Ankara dental clinic operatory with patient chair",
     "clinicStableId": "seed-clinic-ankara-harmony",
+    "status": "published",
     "filePath": "src/endpoints/seed/assets/demo/generated/clinics/ankara-harmony-dental-clinic.webp"
   },
   {
     "stableId": "seed-clinic-media-4",
     "alt": "Compact Ankara hair and skin consultation room with assessment equipment",
     "clinicStableId": "seed-clinic-ankara-capital",
+    "status": "published",
     "filePath": "src/endpoints/seed/assets/demo/generated/clinics/capital-hair-and-skin-clinic.webp"
   },
   {
     "stableId": "seed-clinic-media-5",
     "alt": "Normal Izmir dental and dermatology clinic room with practical equipment",
     "clinicStableId": "seed-clinic-izmir-coast",
+    "status": "published",
     "filePath": "src/endpoints/seed/assets/demo/generated/clinics/izmir-coast-dental-and-derm.webp"
   },
   {
     "stableId": "seed-clinic-media-6",
     "alt": "Clean Izmir surgical center corridor with pre-op preparation area",
     "clinicStableId": "seed-clinic-izmir-ege",
+    "status": "published",
     "filePath": "src/endpoints/seed/assets/demo/generated/clinics/ege-surgical-center.webp"
   },
   {
     "stableId": "seed-clinic-media-7",
     "alt": "Modern Antalya eye diagnostics room with ophthalmology equipment",
     "clinicStableId": "seed-clinic-antalya-medvista",
+    "status": "published",
     "filePath": "src/endpoints/seed/assets/demo/generated/clinics/antalya-medvista-clinic.webp"
   },
   {
     "stableId": "seed-clinic-media-8",
     "alt": "Polished Antalya body contour consultation suite with exam recliner",
     "clinicStableId": "seed-clinic-antalya-riviera",
+    "status": "published",
     "filePath": "src/endpoints/seed/assets/demo/generated/clinics/riviera-body-contour-clinic.webp"
   },
   {
     "stableId": "seed-clinic-media-9",
     "alt": "Bursa oral implant clinic room with dental chair and implant model",
     "clinicStableId": "seed-clinic-bursa-nova",
+    "status": "published",
     "filePath": "src/endpoints/seed/assets/demo/generated/clinics/bursa-nova-oral-and-implant-clinic.webp"
   },
   {
     "stableId": "seed-clinic-media-10",
     "alt": "Practical Bursa multi-specialty clinic interior with consultation rooms",
     "clinicStableId": "seed-clinic-bursa-green",
+    "status": "published",
     "filePath": "src/endpoints/seed/assets/demo/generated/clinics/green-bursa-reconstructive-center.webp"
   }
 ]

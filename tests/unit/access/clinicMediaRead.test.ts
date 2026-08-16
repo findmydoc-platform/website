@@ -53,9 +53,7 @@ describe('clinicMediaReadAccess', () => {
     )
 
     expect(result).toEqual({
-      'clinic.status': {
-        equals: 'approved',
-      },
+      and: [{ status: { equals: 'published' } }, { 'clinic.status': { equals: 'approved' } }],
     })
   })
 
@@ -69,9 +67,7 @@ describe('clinicMediaReadAccess', () => {
     )
 
     expect(result).toEqual({
-      'clinic.status': {
-        equals: 'approved',
-      },
+      and: [{ status: { equals: 'published' } }, { 'clinic.status': { equals: 'approved' } }],
     })
   })
 

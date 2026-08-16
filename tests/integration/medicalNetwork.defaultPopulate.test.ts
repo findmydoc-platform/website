@@ -61,14 +61,17 @@ describe('Medical network defaultPopulate', () => {
       { collection: 'doctortreatments', ids: createdDoctorTreatmentIds },
       { collection: 'clinictreatments', ids: createdClinicTreatmentIds },
       { collection: 'doctorMedia', ids: createdDoctorMediaIds },
-      { collection: 'clinicMedia', ids: createdClinicMediaIds },
       { collection: 'clinicStaff', ids: createdClinicStaffIds },
-      { collection: 'platformStaff', ids: createdStaffIds },
     ])
 
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'treatments', slugPrefix)
+
+    await cleanupTrackedDocs(payload, [
+      { collection: 'clinicMedia', ids: createdClinicMediaIds },
+      { collection: 'platformStaff', ids: createdStaffIds },
+    ])
   })
 
   it('populates clinic and treatment relations with display defaults', async () => {
@@ -103,11 +106,19 @@ describe('Medical network defaultPopulate', () => {
       } as Partial<ClinicMedia>,
       file: createTinyPngFile(`${slugPrefix}-clinic-card.png`),
       user: asStaffPayloadUser(staffUser),
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
     } as PayloadCreateArgs)) as ClinicMedia
 
     createdClinicMediaIds.push(clinicMedia.id)
+
+    await payload.update({
+      collection: 'clinicMedia',
+      id: clinicMedia.id,
+      data: { status: 'published' },
+      overrideAccess: true,
+      depth: 0,
+    })
 
     await payload.update({
       collection: 'clinics',
@@ -115,7 +126,7 @@ describe('Medical network defaultPopulate', () => {
       data: {
         averageRating: 4.8,
         verification: 'gold',
-        thumbnail: clinicMedia.id,
+        profileGallery: [clinicMedia.id],
       },
       overrideAccess: true,
       depth: 0,

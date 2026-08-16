@@ -18,6 +18,12 @@ import {
   clinicDashboardTreatmentsPatchHandler,
   clinicDashboardTreatmentsPostHandler,
 } from './endpoints/clinicDashboardTreatments'
+import {
+  clinicDashboardGalleryDiscardPostHandler,
+  clinicDashboardGalleryGetHandler,
+  clinicDashboardGalleryMediaPostHandler,
+  clinicDashboardGalleryPutHandler,
+} from './endpoints/clinicDashboardGallery'
 import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
 import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
@@ -148,6 +154,26 @@ export default buildConfig({
       path: '/clinic-dashboard/treatments',
       method: 'patch',
       handler: clinicDashboardTreatmentsPatchHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/gallery',
+      method: 'get',
+      handler: clinicDashboardGalleryGetHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/gallery',
+      method: 'put',
+      handler: clinicDashboardGalleryPutHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/gallery/media',
+      method: 'post',
+      handler: clinicDashboardGalleryMediaPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/gallery/discard',
+      method: 'post',
+      handler: clinicDashboardGalleryDiscardPostHandler as PayloadHandler,
     },
     { path: '/seed', method: 'post', handler: seedPostHandler as PayloadHandler },
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },

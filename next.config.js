@@ -49,6 +49,7 @@ const nextConfig = {
       : []
   },
   images: {
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 2160, 2560, 3840],
     localPatterns: IMAGE_LOCAL_PATTERNS,
     qualities: IMAGE_QUALITIES,
     remotePatterns: [

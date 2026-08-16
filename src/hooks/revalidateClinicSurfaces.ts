@@ -1,5 +1,7 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadRequest } from 'payload'
+import { after } from 'next/server.js'
 import { hasSameReviewPublicCacheProjection, isReviewPubliclyVisible } from '@/collections/reviews/publicProjection'
+import { toLoggedError } from '@/utilities/logging/shared'
 
 import {
   executeRevalidationPlan,
@@ -18,6 +20,8 @@ type RevalidatableDoc = {
   readonly clinic?: unknown
   readonly doctor?: unknown
   readonly publishedResponse?: unknown
+  readonly profileGallery?: unknown
+  readonly thumbnail?: unknown
 }
 
 type ReviewRevalidatableDoc = RevalidatableDoc & {
@@ -218,6 +222,123 @@ export const dispatchClinicChangeRevalidation = ({
     },
     req.payload.logger,
   )
+}
+
+export const dispatchClinicGalleryChangeRevalidation = ({
+  doc,
+  mainImageChanged,
+  previousDoc,
+  req,
+}: {
+  readonly doc: RevalidatableDoc
+  readonly mainImageChanged: boolean
+  readonly previousDoc?: RevalidatableDoc
+  readonly req: PayloadRequest
+}): void => {
+  const current = doc as RevalidatableDoc
+  const previous = previousDoc as RevalidatableDoc | undefined
+  const id = normalizeId(current.id, 'clinic id')
+  const slug = normalizeSlug(current.slug, 'clinic slug')
+  const status = normalizeOptionalStatus(current.status)
+  const previousStatus = normalizeOptionalStatus(previous?.status)
+  const previousSlug = typeof previous?.slug === 'string' && previous.slug.trim() ? previous.slug : undefined
+
+  if (!status) throw new Error('Missing required clinic status')
+
+  executePlan(
+    {
+      kind: 'clinic-surface',
+      collection: 'clinics',
+      operation: 'update',
+      source: { kind: 'payload-hook', id: `clinics:${id}:gallery` },
+      subject: {
+        id,
+        slug,
+        ...(previousSlug ? { previousSlug } : {}),
+        status,
+        ...(previousStatus ? { previousStatus } : {}),
+        globalDetailImpact: false,
+        listingImpact: mainImageChanged,
+      },
+    },
+    req.payload.logger,
+  )
+}
+
+const dispatchClinicMediaChangeAfterCommit = async (
+  req: PayloadRequest,
+  clinicId: RelationId,
+  mediaId: RelationId,
+): Promise<void> => {
+  const clinic = (await req.payload.findByID({
+    collection: 'clinics',
+    depth: 0,
+    id: clinicId,
+    overrideAccess: true,
+    req,
+  })) as RevalidatableDoc
+  const galleryIds = Array.isArray(clinic.profileGallery) ? clinic.profileGallery.map(extractRelationId) : []
+  if (!galleryIds.some((id) => id !== null && String(id) === String(mediaId))) return
+
+  dispatchClinicGalleryChangeRevalidation({
+    doc: clinic,
+    mainImageChanged: String(extractRelationId(clinic.thumbnail) ?? '') === String(mediaId),
+    previousDoc: clinic,
+    req,
+  })
+}
+
+export const revalidateClinicMediaChange: CollectionAfterChangeHook = ({ doc, req }) => {
+  if (isRevalidationDisabled(req)) return doc
+
+  const current = doc as RevalidatableDoc
+  const mediaId = normalizeId(current.id, 'clinic media id')
+  const clinicId = extractRelationId(current.clinic)
+  if (clinicId === null) return doc
+
+  return req.payload
+    .findByID({
+      collection: 'clinics',
+      depth: 0,
+      id: clinicId,
+      overrideAccess: true,
+      req,
+      select: { profileGallery: true },
+    })
+    .then((clinic) => {
+      const galleryIds = Array.isArray(clinic.profileGallery) ? clinic.profileGallery.map(extractRelationId) : []
+      if (!galleryIds.some((id) => id !== null && String(id) === String(mediaId))) return doc
+
+      try {
+        after(async () => {
+          try {
+            await dispatchClinicMediaChangeAfterCommit(req, clinicId, mediaId)
+          } catch (error: unknown) {
+            req.payload.logger.error(
+              {
+                clinicId: String(clinicId),
+                err: toLoggedError(error),
+                event: 'clinic_gallery.media_revalidation_failed',
+                mediaId: String(mediaId),
+              },
+              'Clinic gallery media revalidation failed',
+            )
+          }
+        })
+      } catch (error: unknown) {
+        req.payload.logger.error(
+          {
+            clinicId: String(clinicId),
+            err: toLoggedError(error),
+            event: 'clinic_gallery.media_revalidation_schedule_failed',
+            mediaId: String(mediaId),
+          },
+          'Clinic gallery media revalidation could not be scheduled',
+        )
+      }
+
+      return doc
+    })
 }
 
 export const revalidateClinicChange: CollectionAfterChangeHook = ({ doc, previousDoc, req }) => {

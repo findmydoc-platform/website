@@ -1,6 +1,13 @@
 import type { CollectionBeforeChangeHook } from 'payload'
 
-const PROFILE_FIELDS = ['name', 'description', 'address', 'supportedLanguages', 'openingHours'] as const
+const PROFILE_FIELDS = [
+  'name',
+  'description',
+  'address',
+  'supportedLanguages',
+  'openingHours',
+  'profileGallery',
+] as const
 
 export const setClinicProfileRevision: CollectionBeforeChangeHook = ({ data, operation, originalDoc }) => {
   if (!data) return data

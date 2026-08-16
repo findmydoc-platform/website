@@ -21,9 +21,9 @@ durable architecture documentation, not an execution plan. The contract does not
 Payload CORS origins, a Dashboard database, service-role credentials, public cache behavior, or clinic login UI to the
 website.
 
-Payload exposes the private bootstrap contract, the persistent clinic-profile draft workflow, and the focused clinic
-treatment contract. The Clinic Dashboard session and BFF runtime are implemented in the Dashboard repository; trusted
-preview and production rollout evidence remain pending.
+Payload exposes the private bootstrap contract, the persistent clinic-profile draft workflow, the focused clinic
+treatment contract, and the clinic-gallery contract. The Clinic Dashboard session and BFF runtime are implemented in
+the Dashboard repository; trusted preview and production rollout evidence remain pending.
 
 ## Boundary and Ownership
 
@@ -58,6 +58,8 @@ type ClinicDashboardCapability =
   | 'clinic-profile:edit'
   | 'clinic-treatments:view'
   | 'clinic-treatments:edit'
+  | 'clinic-gallery:view'
+  | 'clinic-gallery:edit'
 
 type ClinicDashboardBootstrapDTO = {
   principal: {
@@ -74,9 +76,9 @@ type ClinicDashboardBootstrapDTO = {
 }
 ```
 
-The four capabilities are returned exactly once in the order shown above for every approved clinic principal with a
-current clinic assignment. Existing profile view and edit access respectively grant treatment view and edit access
-while the treatment workspace is introduced. A successful bootstrap implies Dashboard access, so there is no separate
+The six capabilities are returned exactly once in the order shown above for every approved clinic principal with a
+current clinic assignment. Existing profile view and edit access respectively grant treatment and gallery view and edit
+access while those workspaces are introduced. A successful bootstrap implies Dashboard access, so there is no separate
 `dashboard:access` capability.
 
 `ClinicDashboardCapability` is a closed, version-controlled string union. It describes user-visible operations, not
@@ -226,6 +228,73 @@ in-transaction invalidation and dispatch the same related-clinic plan once after
 public cache from refilling against pre-commit data. Public clinic detail and listing comparison reads remain
 `public-cached`; the existing event, cache-policy entries, tags, planner owner, and bounded public paths remain
 authoritative. The private Dashboard endpoint adds no cache class, tag, surface, or invalidation owner.
+
+## Clinic Gallery Contract
+
+The gallery capability uses four focused custom Payload operations:
+
+| Method and route | Result |
+| --- | --- |
+| `GET /api/clinic-dashboard/gallery` | Returns the saved ordered gallery, its revision, and upload constraints. |
+| `POST /api/clinic-dashboard/gallery/media` | Accepts exactly one multipart image and returns one private draft medium. |
+| `PUT /api/clinic-dashboard/gallery` | Atomically publishes the supplied order and metadata after a revision check. |
+| `POST /api/clinic-dashboard/gallery/discard` | Accepts private draft IDs for post-response permanent cleanup. |
+
+Every request repeats bootstrap authorization, derives the clinic from the approved `clinicStaff` assignment, and
+requires `clinic-gallery:view` for reads or `clinic-gallery:edit` for mutations. No request accepts a clinic ID,
+storage key, bucket name, or direct object-storage credential. Clinic Staff cannot bypass this revision-protected
+contract through the regular `clinicMedia` collection routes; direct collection writes are Platform-only.
+
+```ts
+type ClinicGalleryMediaDTO = {
+  alt: string
+  captionText?: string
+  height?: number
+  id: string
+  status: 'draft' | 'published'
+  thumbnailUrl?: string
+  url: string
+  width?: number
+}
+
+type ClinicGallerySnapshotDTO = {
+  constraints: {
+    acceptedMimeTypes: readonly string[]
+    maxConcurrentUploads: 3
+    maxFileBytes: number
+    maxItems: 12
+    maxPixels: 50_000_000
+  }
+  items: ClinicGalleryMediaDTO[]
+  revision: number
+}
+```
+
+Uploads accept JPEG, PNG, WebP, or AVIF and remain `draft` until included in a successful save. The application limit
+is 4 MiB per request and the Dashboard sends no more than three independent upload requests concurrently. Payload
+normalizes orientation and strips metadata before generating its registered image sizes. Returned media URLs are
+absolute URLs suitable for server-side Dashboard validation and rendering.
+
+Save accepts `{ expectedRevision, items: [{ mediaId, alt, captionText? }] }`; array order is public order and the first
+item is the main image. A serializable transaction verifies the revision, ownership, uniqueness, maximum count, and
+required alt text, publishes selected media, returns removed media to `draft`, and updates the gallery, derived
+thumbnail, and profile revision together. A stale revision returns `409 CLINIC_GALLERY_CONFLICT` without partial
+writes.
+
+Discard accepts `{ mediaIds }` for at most twelve own-clinic, unreferenced drafts. Save, discard, and gallery reads may
+schedule one bounded post-response cleanup batch. Cleanup rechecks ownership, `draft` status, and gallery or thumbnail
+references before each attempt, then permanently deletes through Payload so the storage adapter removes the original
+and every registered size. Cleanup failure is logged and reported without changing the successful user response; a
+later gallery read may retry an abandoned draft. The contract makes no time guarantee and defines no scheduler.
+Gallery reads consider only unreferenced drafts older than 24 hours as abandoned, so a reload cannot delete a fresh
+upload from an active editing session.
+
+Stable gallery errors are `CLINIC_GALLERY_CONFLICT`, `CLINIC_GALLERY_INVALID_INPUT`,
+`CLINIC_GALLERY_MEDIA_NOT_FOUND`, `CLINIC_GALLERY_UPLOAD_TOO_LARGE`,
+`CLINIC_GALLERY_UNSUPPORTED_MEDIA_TYPE`, and `CLINIC_GALLERY_UNAVAILABLE`. Every response is private-live with the
+standard Clinic Dashboard no-store headers. Public cache invalidation remains owned by the Website save path after
+commit; metadata or order changes invalidate clinic detail, while a changed main image also invalidates listing and
+sitemap surfaces.
 
 ## Dashboard-facing Route Semantics
 

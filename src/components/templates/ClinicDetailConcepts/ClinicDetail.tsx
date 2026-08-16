@@ -228,11 +228,11 @@ export function ClinicDetail({
 
   return (
     <main className={cn('overflow-x-clip bg-site-canvas text-foreground', className)}>
-      <Container className="pt-10 pb-14 lg:pt-20 lg:pb-24 xl:pb-48">
-        {/* Figma parity requires fixed card/image dimensions for the hero composition and overlap behavior. */}
+      <Container className="pt-8 pb-14 lg:pt-8 lg:pb-24 xl:pb-32">
         <HeroOverviewSection
           clinicName={data.clinicName}
           description={data.description}
+          galleryImages={data.galleryImages}
           heroImage={data.heroImage}
           trust={data.trust}
           breadcrumbs={data.breadcrumbs}

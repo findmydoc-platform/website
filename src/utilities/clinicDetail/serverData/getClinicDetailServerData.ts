@@ -3,7 +3,7 @@ import type { Payload } from 'payload'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { unstable_cache } from 'next/cache'
-import type { Accreditation, City } from '@/payload-types'
+import type { Accreditation, City, ClinicMedia } from '@/payload-types'
 
 import {
   buildCollectionTag,
@@ -17,6 +17,8 @@ import {
   resolveClinicThumbnailImage,
 } from '@/utilities/media/clinicThumbnail'
 import { buildDoctorProfileDescriptorsByDoctorId } from '@/utilities/media/doctorProfileImage'
+import { resolveMediaDescriptorFromLoadedRelation } from '@/utilities/media/relationMedia'
+import { richTextToPlainText } from '@/features/clinicDashboard/profile/richText'
 import { mapClinicToClinicDetailData } from './mappers'
 import {
   countApprovedClinicReviews,
@@ -181,6 +183,33 @@ function collectCityLookupIds(cityRelation: unknown): number[] {
   return typeof cityId === 'number' ? [cityId] : []
 }
 
+async function buildPublicGalleryImages(payload: Payload, clinic: Awaited<ReturnType<typeof findClinicBySlug>>) {
+  if (!clinic || !Array.isArray(clinic.profileGallery) || clinic.profileGallery.length === 0) return []
+  const ids = clinic.profileGallery.map(extractRelationId).filter((id): id is number => id !== null)
+  if (ids.length === 0) return []
+
+  const result = await payload.find({
+    collection: 'clinicMedia',
+    depth: 0,
+    limit: ids.length,
+    pagination: false,
+    overrideAccess: true,
+    where: {
+      and: [{ id: { in: ids } }, { clinic: { equals: clinic.id } }, { status: { equals: 'published' } }],
+    },
+  })
+  const byId = new Map(result.docs.map((media) => [media.id, media as ClinicMedia]))
+
+  return ids.flatMap((id) => {
+    const media = byId.get(id)
+    if (!media) return []
+    const descriptor = resolveMediaDescriptorFromLoadedRelation(media, 'clinicMedia')
+    if (!descriptor?.url || !descriptor.alt?.trim()) return []
+    const caption = richTextToPlainText(media.caption)
+    return [{ id: String(media.id), src: descriptor.url, alt: descriptor.alt, ...(caption ? { caption } : {}) }]
+  })
+}
+
 export async function getClinicDetailServerData(
   payload: Payload,
   slug: string,
@@ -188,6 +217,7 @@ export async function getClinicDetailServerData(
 ): Promise<ClinicDetailServerDataResult> {
   const clinic = await findClinicBySlug(payload, slug, options.draft)
   if (!clinic) return null
+  const galleryImagesPromise = buildPublicGalleryImages(payload, clinic)
 
   const [clinicTreatments, doctors, clinicReviewCount, approvedClinicReviews] = await Promise.all([
     findClinicTreatmentsByClinicId(payload, clinic.id),
@@ -217,10 +247,10 @@ export async function getClinicDetailServerData(
     findCitiesByIds(payload, cityLookupIds),
   ])
 
-  const clinicThumbnailDescriptorsByClinicId = await buildClinicThumbnailDescriptorsByClinicId({
-    payload,
-    clinics: [clinic],
-  })
+  const [clinicThumbnailDescriptorsByClinicId, galleryImages] = await Promise.all([
+    buildClinicThumbnailDescriptorsByClinicId({ payload, clinics: [clinic] }),
+    galleryImagesPromise,
+  ])
 
   return mapClinicToClinicDetailData({
     clinic,
@@ -228,6 +258,7 @@ export async function getClinicDetailServerData(
       clinic,
       descriptorsByClinicId: clinicThumbnailDescriptorsByClinicId,
     }),
+    galleryImages,
     clinicTreatments,
     doctors,
     doctorSpecialties,

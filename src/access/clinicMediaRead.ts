@@ -16,9 +16,18 @@ export const clinicMediaReadAccess: Access = async ({ req, isReadingStaticFile }
   const isPatientUser = req.user?.collection === 'patients'
   if (isAnonymous || isPatientUser) {
     return {
-      'clinic.status': {
-        equals: 'approved',
-      },
+      and: [
+        {
+          status: {
+            equals: 'published',
+          },
+        },
+        {
+          'clinic.status': {
+            equals: 'approved',
+          },
+        },
+      ],
     }
   }
 

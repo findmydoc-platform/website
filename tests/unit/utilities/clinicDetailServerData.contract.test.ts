@@ -57,6 +57,7 @@ const mockData: MockData = {
       averageRating: 4.8,
       description: lexicalText('Transparent pediatric care for international families.'),
       thumbnail: 100,
+      profileGallery: [100, 101],
       galleryEntries: [901, 902],
       coordinates: [13.4264519, 52.5168332],
       address: {
@@ -108,6 +109,15 @@ const mockData: MockData = {
       id: 100,
       filename: 'clinic-hero.jpg',
       alt: 'Clinic facade',
+      clinic: 1,
+      status: 'published',
+    },
+    {
+      id: 101,
+      filename: 'private-draft.jpg',
+      alt: 'Private draft',
+      clinic: 1,
+      status: 'draft',
     },
   ],
   doctorMedia: [
@@ -444,6 +454,13 @@ describe('getClinicDetailServerData (contract)', () => {
       src: '/api/clinicMedia/file/clinic-hero.jpg',
       alt: 'Clinic facade',
     })
+    expect(result?.galleryImages).toEqual([
+      {
+        id: '100',
+        src: '/api/clinicMedia/file/clinic-hero.jpg',
+        alt: 'Clinic facade',
+      },
+    ])
 
     expect(result?.trust.reviewCount).toBe(3)
     expect(result?.trust.ratingValue).toBe(4.8)
@@ -473,7 +490,7 @@ describe('getClinicDetailServerData (contract)', () => {
       verificationTier: 'gold',
     })
     expect(result?.freshness.sourceCollections).toEqual(
-      expect.arrayContaining(['clinics', 'clinictreatments', 'reviews', 'reviewResponses']),
+      expect.arrayContaining(['clinics', 'clinicMedia', 'clinictreatments', 'reviews', 'reviewResponses']),
     )
 
     expect(result?.location.fullAddress).toBe('Lichtenberger Strasse 24, 10179 Berlin, Germany')

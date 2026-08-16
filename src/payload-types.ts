@@ -570,9 +570,13 @@ export interface Clinic {
     totalDocs?: number;
   };
   /**
-   * Main image shown on the clinic profile
+   * Main image derived from the first profile gallery image
    */
   thumbnail?: (number | null) | ClinicMedia;
+  /**
+   * Public clinic images in display order. The first image is the main image.
+   */
+  profileGallery?: (number | ClinicMedia)[] | null;
   /**
    * Before-and-after stories shown on the clinic profile
    */
@@ -1599,7 +1603,7 @@ export interface ClinicMedia {
   /**
    * Alt text for screen readers
    */
-  alt: string;
+  alt?: string | null;
   /**
    * Optional caption for the media
    */
@@ -1618,6 +1622,10 @@ export interface ClinicMedia {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * Technical visibility state managed by the clinic gallery.
+   */
+  status: 'draft' | 'published';
   /**
    * Clinic that owns this media
    */
@@ -3796,6 +3804,7 @@ export interface ClinicMediaSelect<T extends boolean = true> {
   stableId?: T;
   alt?: T;
   caption?: T;
+  status?: T;
   clinic?: T;
   createdBy?: T;
   storagePath?: T;
@@ -4436,6 +4445,7 @@ export interface ClinicsSelect<T extends boolean = true> {
   tags?: T;
   treatments?: T;
   thumbnail?: T;
+  profileGallery?: T;
   galleryEntries?: T;
   coordinates?: T;
   address?:

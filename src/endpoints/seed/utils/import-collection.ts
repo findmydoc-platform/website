@@ -25,6 +25,26 @@ export type CollectionImportResult = {
   failures: string[]
 }
 
+export type CollectionImportPrepared = {
+  affectedPostSlugs: string[]
+}
+
+export type CollectionImportOptions = {
+  payload: Payload
+  kind: SeedKind
+  collection: CollectionSlug
+  fileName: string
+  mapping?: RelationMapping[]
+  defaults?: Record<string, unknown>
+  resolvers: StableIdResolvers
+  context?: Record<string, unknown>
+  req?: Partial<import('payload').PayloadRequest>
+  stableIds?: string[]
+  localizedFields?: string[]
+  upsertPolicy?: SeedUpsertPolicy
+  onPrepared?: (prepared: CollectionImportPrepared) => Promise<void>
+}
+
 type LocalizedSeedUpdates = Partial<Record<ContentLocale, Record<string, unknown>>>
 
 function setValueAtPath(target: Record<string, unknown>, path: string, value: unknown) {
@@ -127,7 +147,6 @@ async function applyLocalizedFieldUpdates(options: {
       overrideAccess: true,
       context: {
         disableRevalidate: true,
-        disableSearchSync: true,
         ...(context ?? {}),
       },
       req,
@@ -139,20 +158,7 @@ function formatRecordIdentifier(collection: CollectionSlug, record: SeedRecord) 
   return `${collection}:${record.stableId}`
 }
 
-export async function importCollection(options: {
-  payload: Payload
-  kind: SeedKind
-  collection: CollectionSlug
-  fileName: string
-  mapping?: RelationMapping[]
-  defaults?: Record<string, unknown>
-  resolvers: StableIdResolvers
-  context?: Record<string, unknown>
-  req?: Partial<import('payload').PayloadRequest>
-  stableIds?: string[]
-  localizedFields?: string[]
-  upsertPolicy?: SeedUpsertPolicy
-}): Promise<CollectionImportResult> {
+export async function importCollection(options: CollectionImportOptions): Promise<CollectionImportResult> {
   const {
     payload,
     kind,
@@ -166,6 +172,7 @@ export async function importCollection(options: {
     stableIds,
     localizedFields = [],
     upsertPolicy,
+    onPrepared,
   } = options
 
   const allRecords = await loadSeedFile(kind, fileName)
@@ -178,6 +185,38 @@ export async function importCollection(options: {
   const affectedPostSlugs = new Set<string>()
   let created = 0
   let updated = 0
+
+  if (collection === 'posts' && onPrepared) {
+    const existingPosts =
+      records.length > 0
+        ? await payload.find({
+            collection: 'posts',
+            depth: 0,
+            pagination: false,
+            overrideAccess: true,
+            trash: true,
+            select: { slug: true },
+            where: {
+              stableId: {
+                in: records.map((record) => record.stableId),
+              },
+            },
+          })
+        : { docs: [] }
+
+    for (const record of records) {
+      if (typeof record.slug === 'string' && record.slug.trim().length > 0) {
+        affectedPostSlugs.add(record.slug)
+      }
+    }
+    for (const post of existingPosts.docs) {
+      if (typeof post.slug === 'string' && post.slug.trim().length > 0) {
+        affectedPostSlugs.add(post.slug)
+      }
+    }
+
+    await onPrepared({ affectedPostSlugs: [...affectedPostSlugs].sort() })
+  }
 
   for (const record of records) {
     const draft: Record<string, unknown> = { ...(defaults ?? {}), ...record }

@@ -3,6 +3,7 @@ import type { Payload } from 'payload'
 import { createStableIdResolvers } from '@/endpoints/seed/utils/resolvers'
 import { upsertByStableId } from '@/endpoints/seed/utils/upsert'
 import { resetCollections } from '@/endpoints/seed/utils/reset'
+import { loadSeedFile } from '@/endpoints/seed/utils/load-json'
 
 describe('stableId resolvers', () => {
   const find = vi.fn()
@@ -90,13 +91,11 @@ describe('upsertByStableId', () => {
       overrideAccess: true,
       context: {
         disableRevalidate: true,
-        disableSearchSync: true,
         seedMediaExpectedNoSuchKeyRecovery: false,
       },
       req: {
         context: {
           disableRevalidate: true,
-          disableSearchSync: true,
           seedMediaExpectedNoSuchKeyRecovery: false,
         },
       },
@@ -306,29 +305,47 @@ describe('upsertByStableId', () => {
 })
 
 describe('resetCollections', () => {
-  const find = vi.fn().mockResolvedValue({ docs: [] })
-  const deleteMany = vi.fn()
-  const deleteVersions = vi.fn()
-  const tableNameMap = {
-    get: vi.fn((key: string) => (key === '_posts_v' ? '_posts_v' : undefined)),
-  }
+  const find = vi.fn()
+  const update = vi.fn()
+  const deleteDocuments = vi.fn()
+  const collectionConfigs = [
+    {
+      slug: 'platformStaff',
+      fields: [{ name: 'profileImage', type: 'upload', relationTo: 'userProfileMedia' }],
+    },
+    {
+      slug: 'clinicStaff',
+      fields: [
+        { name: 'profileImage', type: 'upload', relationTo: 'userProfileMedia' },
+        { name: 'clinic', type: 'relationship', relationTo: 'clinics' },
+      ],
+    },
+    {
+      slug: 'patients',
+      fields: [
+        { name: 'profileImage', type: 'upload', relationTo: 'userProfileMedia' },
+        { name: 'country', type: 'relationship', relationTo: 'countries' },
+      ],
+    },
+  ]
 
   const payload = {
+    config: {
+      collections: collectionConfigs,
+    },
+    delete: deleteDocuments,
     find,
     logger: {
       info: vi.fn(),
     },
-    db: {
-      deleteMany,
-      deleteVersions,
-      tableNameMap,
-      versionsSuffix: '_v',
-    },
+    update,
   } as unknown as Payload
 
   afterEach(() => {
     vi.clearAllMocks()
     find.mockResolvedValue({ docs: [] })
+    update.mockResolvedValue({ id: 'updated' })
+    deleteDocuments.mockResolvedValue({ docs: [], errors: [] })
     vi.unstubAllEnvs()
   })
 
@@ -338,8 +355,8 @@ describe('resetCollections', () => {
     vi.stubEnv('NODE_ENV', 'production')
 
     await expect(resetCollections(payload, 'baseline')).rejects.toThrow(/seed reset is disabled in this runtime/i)
-    expect(deleteMany).not.toHaveBeenCalled()
-    expect(deleteVersions).not.toHaveBeenCalled()
+    expect(deleteDocuments).not.toHaveBeenCalled()
+    expect(update).not.toHaveBeenCalled()
     expect(find).not.toHaveBeenCalled()
   })
 
@@ -349,8 +366,8 @@ describe('resetCollections', () => {
     vi.stubEnv('NODE_ENV', 'production')
 
     await expect(resetCollections(payload, 'demo')).rejects.toThrow(/demo reset is disabled in production/i)
-    expect(deleteMany).not.toHaveBeenCalled()
-    expect(deleteVersions).not.toHaveBeenCalled()
+    expect(deleteDocuments).not.toHaveBeenCalled()
+    expect(update).not.toHaveBeenCalled()
     expect(find).not.toHaveBeenCalled()
   })
 
@@ -358,11 +375,12 @@ describe('resetCollections', () => {
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')
     vi.stubEnv('NODE_ENV', 'test')
-    find.mockResolvedValue({
-      docs: [{ slug: ' old-post ' }, { slug: 'another-post' }, { slug: 'old-post' }, { slug: null }],
-    })
-    deleteMany.mockResolvedValue(undefined)
-    deleteVersions.mockResolvedValue(undefined)
+    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs:
+        collection === 'posts'
+          ? [{ slug: ' old-post ' }, { slug: 'another-post' }, { slug: 'old-post' }, { slug: null }]
+          : [],
+    }))
 
     const result = await resetCollections(payload, 'demo')
 
@@ -383,13 +401,11 @@ describe('resetCollections', () => {
     vi.stubEnv('NODE_ENV', 'test')
 
     const expectedOrder = [
-      'search',
       'reviewAppeals',
       'reviewResponses',
       'reviews',
       'patientClinicInquiries',
       'favoriteclinics',
-      'patients',
       'doctortreatments',
       'doctorspecialties',
       'clinictreatments',
@@ -400,50 +416,166 @@ describe('resetCollections', () => {
       'clinics',
       'posts',
       'userProfileMedia',
-      'platformStaff',
-      'clinicStaff',
+      'platformContentMedia',
     ]
-
-    deleteMany.mockResolvedValue(undefined)
-    deleteVersions.mockResolvedValue(undefined)
 
     await resetCollections(payload, 'demo')
 
-    const actualOrder = deleteMany.mock.calls.map((call: unknown[]) => {
-      const args = call[0] as { collection: string }
-      return args.collection
-    })
-
-    const versionOrder = deleteVersions.mock.calls.map((call: unknown[]) => {
+    const actualOrder = deleteDocuments.mock.calls.map((call: unknown[]) => {
       const args = call[0] as { collection: string }
       return args.collection
     })
 
     expect(actualOrder).toEqual(expectedOrder)
-    expect(versionOrder).toEqual(['posts'])
+    expect(deleteDocuments).toHaveBeenCalledTimes(expectedOrder.length)
+    for (const [args] of deleteDocuments.mock.calls) {
+      expect(args).toEqual(
+        expect.objectContaining({
+          context: expect.objectContaining({ seedReset: true, skipHooks: true }),
+          disableTransaction: true,
+        }),
+      )
+    }
+
+    const platformContentMediaDelete = deleteDocuments.mock.calls.find((call: unknown[]) => {
+      return (call[0] as { collection: string }).collection === 'platformContentMedia'
+    })?.[0] as { trash: boolean; where: { stableId: { in: string[] } } } | undefined
+
+    expect(platformContentMediaDelete?.trash).toBe(true)
+    expect(platformContentMediaDelete?.where.stableId.in.length).toBeGreaterThan(0)
+    expect(platformContentMediaDelete?.where.stableId.in).toEqual(expect.arrayContaining([expect.any(String)]))
   })
 
-  it('preserves the active platform principal during reset', async () => {
+  it('publishes the reset cache scope before the first destructive mutation', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('NODE_ENV', 'test')
+    const events: string[] = []
+    deleteDocuments.mockImplementation(async () => {
+      events.push('delete')
+      return { docs: [], errors: [] }
+    })
+
+    await resetCollections(payload, 'demo', {
+      onPrepared: ({ affectedPostSlugs }) => {
+        expect(affectedPostSlugs).toEqual([])
+        events.push('prepared')
+      },
+    })
+
+    expect(events[0]).toBe('prepared')
+    expect(events[1]).toBe('delete')
+  })
+
+  it('preserves every principal and clears only resettable relations without Supabase synchronization', async () => {
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', 'test')
     vi.stubEnv('NODE_ENV', 'test')
 
-    deleteMany.mockResolvedValue(undefined)
-    deleteVersions.mockResolvedValue(undefined)
+    find.mockImplementation(async ({ collection, where }: { collection: string; where?: Record<string, unknown> }) => {
+      if (collection === 'posts') return { docs: [] }
+      if (collection === 'platformStaff') return { docs: [{ id: 'platform-1' }] }
+      if (collection === 'clinicStaff') return { docs: [{ id: 'clinic-staff-1' }] }
+      if (collection === 'patients') return { docs: [{ id: 'patient-1' }] }
+      throw new Error(`Unexpected find: ${collection}:${JSON.stringify(where)}`)
+    })
 
-    await resetCollections(payload, 'demo', { preservePlatformUserId: 42 })
+    await resetCollections(payload, 'demo')
 
-    const deleteArgsByCollection = new Map(
-      deleteMany.mock.calls.map((call: unknown[]) => {
-        const args = call[0] as { collection: string; where: unknown }
-        return [args.collection, args] as const
+    expect(update).toHaveBeenCalledTimes(3)
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'platformStaff',
+        id: 'platform-1',
+        data: { profileImage: null },
+        context: expect.objectContaining({ skipClinicStaffAuthSync: true }),
+      }),
+    )
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'clinicStaff',
+        id: 'clinic-staff-1',
+        data: { clinic: null, profileImage: null },
+        context: expect.objectContaining({ skipClinicStaffAuthSync: true }),
+      }),
+    )
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'patients',
+        id: 'patient-1',
+        data: { profileImage: null },
       }),
     )
 
-    expect(deleteArgsByCollection.get('platformStaff')?.where).toEqual({
-      and: [{ id: { exists: true } }, { id: { not_equals: 42 } }],
+    const deletedCollections = deleteDocuments.mock.calls.map((call: unknown[]) => {
+      return (call[0] as { collection: string }).collection
     })
-    expect(deleteArgsByCollection.get('clinics')?.where).toEqual({ id: { exists: true } })
+    expect(deletedCollections).not.toContain('search')
+    expect(deletedCollections).not.toContain('platformStaff')
+    expect(deletedCollections).not.toContain('clinicStaff')
+    expect(deletedCollections).not.toContain('patients')
+  })
+
+  it('clears baseline-only patient country relations before deleting countries', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('NODE_ENV', 'test')
+
+    find.mockImplementation(async ({ collection, where }: { collection: string; where?: Record<string, unknown> }) => {
+      if (collection === 'posts') return { docs: [] }
+      if (collection === 'patients' && where && 'country' in where) return { docs: [{ id: 'patient-1' }] }
+      return { docs: [] }
+    })
+
+    await resetCollections(payload, 'baseline')
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'patients',
+        id: 'patient-1',
+        data: { country: null },
+      }),
+    )
+  })
+
+  it('fails preflight before any mutation when a protected relation becomes required', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('NODE_ENV', 'test')
+
+    const unsafePayload = {
+      ...payload,
+      config: {
+        collections: collectionConfigs.map((collection) =>
+          collection.slug === 'clinicStaff'
+            ? {
+                ...collection,
+                fields: collection.fields.map((field) =>
+                  field.name === 'clinic' ? { ...field, required: true } : field,
+                ),
+              }
+            : collection,
+        ),
+      },
+    } as unknown as Payload
+
+    await expect(resetCollections(unsafePayload, 'demo')).rejects.toThrow(
+      /clinicStaff\.clinic cannot be cleared safely/,
+    )
+    expect(update).not.toHaveBeenCalled()
+    expect(deleteDocuments).not.toHaveBeenCalled()
+  })
+
+  it('surfaces Payload lifecycle delete errors instead of continuing', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('NODE_ENV', 'test')
+    deleteDocuments.mockResolvedValueOnce({ docs: [], errors: [{ id: 'appeal-1', message: 'blocked' }] })
+
+    await expect(resetCollections(payload, 'demo')).rejects.toThrow(
+      /Seed reset failed while deleting reviewAppeals: appeal-1: blocked/,
+    )
+    expect(deleteDocuments).toHaveBeenCalledTimes(1)
   })
 
   it('deletes demo then baseline collections for baseline reset', async () => {
@@ -452,13 +584,11 @@ describe('resetCollections', () => {
     vi.stubEnv('NODE_ENV', 'test')
 
     const expectedOrder = [
-      'search',
       'reviewAppeals',
       'reviewResponses',
       'reviews',
       'patientClinicInquiries',
       'favoriteclinics',
-      'patients',
       'doctortreatments',
       'doctorspecialties',
       'clinictreatments',
@@ -469,8 +599,7 @@ describe('resetCollections', () => {
       'clinics',
       'posts',
       'userProfileMedia',
-      'platformStaff',
-      'clinicStaff',
+      'platformContentMedia',
       'treatments',
       'categories',
       'tags',
@@ -480,18 +609,22 @@ describe('resetCollections', () => {
       'countries',
     ]
 
-    deleteMany.mockResolvedValue(undefined)
-    deleteVersions.mockResolvedValue(undefined)
-
     await resetCollections(payload, 'baseline')
 
-    const actualOrder = deleteMany.mock.calls.map((call: unknown[]) => {
+    const actualOrder = deleteDocuments.mock.calls.map((call: unknown[]) => {
       const args = call[0] as { collection: string }
       return args.collection
     })
 
     expect(actualOrder).toEqual(expectedOrder)
-    expect(deleteVersions).toHaveBeenCalledTimes(1)
-    expect(deleteVersions.mock.calls[0]?.[0]).toMatchObject({ collection: 'posts' })
+    const baselineMedia = await loadSeedFile('baseline', 'platformContentMedia')
+    const demoMedia = await loadSeedFile('demo', 'platformContentMedia')
+    const expectedStableIds = [...new Set([...baselineMedia, ...demoMedia].map((record) => record.stableId))].sort()
+    expect(deleteDocuments).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'platformContentMedia',
+        where: { stableId: { in: expectedStableIds } },
+      }),
+    )
   })
 })

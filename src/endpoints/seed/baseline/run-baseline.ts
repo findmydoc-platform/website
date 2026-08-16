@@ -54,7 +54,7 @@ export async function runBaselineSeeds(
   let platformSeedActorId: string | number | null | undefined
 
   if (reset) {
-    await resetCollections(payload, 'baseline')
+    await resetCollections(payload, 'baseline', { req })
   }
 
   for (const step of baselinePlan) {

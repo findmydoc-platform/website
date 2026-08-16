@@ -497,7 +497,6 @@ export async function upsertByStableId<T extends Record<string, unknown>>(
 
   const operationContext = {
     disableRevalidate: true,
-    disableSearchSync: true,
     ...(options?.context ?? {}),
     seedMediaExpectedNoSuchKeyRecovery: Boolean(options?.filePath),
   }

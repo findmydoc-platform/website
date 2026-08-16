@@ -7,8 +7,8 @@ We separate **baseline** reference data (idempotent, required) from **demo** sam
 
 | Type | Purpose | Idempotent | Destructive | Prod Allowed | Error Policy |
 |------|---------|-----------|-------------|--------------|--------------|
-| Baseline | Core reference taxonomy + globals | Yes | No | Yes | Fail-fast |
-| Demo | Sample marketing / clinical data for local dev & demos | Best-effort | Resettable (demo only) | No (blocked) | Aggregate (tiered) |
+| Baseline | Core reference taxonomy + globals | Yes | Only with explicit non-production reset | Yes | Fail-fast |
+| Demo | Sample marketing / clinical data for local dev & demos | Best-effort | Yes with `reset=1` | No (blocked) | Aggregate (tiered) |
 
 Production invariant:
 - Production may create or update baseline reference data only.
@@ -49,12 +49,31 @@ Demo reset collection list (ordered for safe clearing):
 1. reviewAppeals (depends on reviews and clinics)
 2. reviewResponses (depends on reviews and clinics)
 3. reviews (depends on patients, treatments, doctors, clinics)
-4. favoriteclinics (depends on patients and clinics)
-5. patients
-6. clinictreatments (join records)
-7. doctors (depends on clinics, specialties)
-8. clinics (depends on countries and cities)
-9. posts
+4. patientClinicInquiries (depends on patients and clinics)
+5. favoriteclinics (depends on patients and clinics)
+6. doctortreatments
+7. doctorspecialties
+8. clinictreatments
+9. clinicProfileDrafts
+10. clinicMedia
+11. doctorMedia
+12. doctors
+13. clinics
+14. posts
+15. userProfileMedia
+16. demo-owned platformContentMedia
+
+The direct authentication principals in `platformStaff`, `clinicStaff`, and `patients` are protected from every reset
+entrypoint. Before deletion starts, the reset validates that their resettable relations are optional, then clears profile
+image relations and clinic assignments that point into the reset scope. Baseline reset also clears patient country
+relations before replacing the country reference data. These technical Payload updates suppress clinic staff
+authentication synchronization and never create, update, or delete Supabase identities. The relations remain empty after
+reset unless a later explicit seed step owns that fixture relationship. Preserved clinic staff therefore have no clinic
+tenant access until an operator assigns a new clinic explicitly.
+
+Demo user fixtures remain regular Payload seed units. They may be created or updated by their explicit seed `stableId`,
+but their seed context suppresses Supabase user creation. Non-seed principals are not matched or changed by those seed
+units.
 
 ## Execution Path
 The Developer Dashboard is the primary operator entrypoint.
@@ -124,9 +143,24 @@ Summary JSON shape (demo example):
 ```
 
 ## Reset Semantics & Counts
-`reset=1` triggers `clearCollections` for the demo collection list before seeding. Baseline collections are never cleared.
+`reset=1` runs a preflight before the first mutation. The preflight validates seed files and upload assets, confirms that
+protected principal relations remain safely nullable, and plans every principal relation cleanup before any collection
+is deleted. A failed preflight leaves the stored data unchanged.
 
-When `reset=1` the system records per-collection counts before and after seeding (`beforeCounts`, `afterCounts`) to verify that data was actually cleared and repopulated.
+The reset uses Payload's Local API with permanent-delete semantics. This removes Payload versions and lets upload
+collections run their normal file lifecycle so deleted media objects do not remain in storage. The search collection is
+not deleted directly: normal source-document delete hooks remove stale index entries, and seed upserts keep search
+synchronization enabled to recreate current entries. Per-record public cache revalidation stays disabled; the terminal
+seed run performs one planner-owned `seed-final-flush` for the affected public surfaces.
+
+Once the destructive phase starts, the reset is intentionally not atomic across collections. A lifecycle or storage
+failure may leave a partial reset; the operator must fix the reported cause and rerun the same idempotent reset.
+
+Demo reset keeps baseline collections and globals. `platformContentMedia` is shared by baseline and demo data, so demo
+reset deletes only the media records listed in the demo seed. A baseline reset remains a separate non-production action
+and clears the demo reset scope plus baseline reference collections while preserving all authentication principals.
+For the shared `platformContentMedia` collection, baseline reset deletes only the union of baseline- and demo-seed
+stable IDs; editor-uploaded records outside that seed-owned scope remain untouched.
 
 ## Idempotency
 Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless new reference data is added. Demo units skip creating duplicates using slug / unique lookups.

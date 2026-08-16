@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
 import nextConfig from '../../../next.config.js'
+import vercelConfig from '../../../vercel.json'
 import { getAllowedDevOrigins } from '@/utilities/nextDevOrigins.js'
 
 describe('nextConfig', () => {
   it('includes seed assets in API output tracing', () => {
     expect(nextConfig.outputFileTracingIncludes?.['/api/**/*']).toContain('./src/endpoints/seed/assets/**/*')
+  })
+
+  it('bounds Payload API workers below the abandoned seed recovery lease', () => {
+    expect(vercelConfig.functions['src/app/(payload)/api/**/route.ts'].maxDuration).toBe(300)
   })
 
   it('auto-allows only private IPv4 dev origins', () => {

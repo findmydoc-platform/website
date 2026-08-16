@@ -190,8 +190,8 @@ export const plugins: Plugin[] = [
     collections: ['posts', 'clinics', 'treatments', 'doctors'],
     localize: false,
     beforeSync: beforeSyncWithSearch,
-    // Seed operations write a lot of documents in bulk; disable search sync there
-    // and rely on regular writes / manual reindex afterwards.
+    // Explicit maintenance operations may suppress synchronization. Seed writes
+    // intentionally keep it enabled so reset and upsert flows leave the index current.
     skipSync: ({ req }) => Boolean(req.context?.disableSearchSync),
     searchOverrides: {
       access: searchPluginCollectionAccessOverrides,

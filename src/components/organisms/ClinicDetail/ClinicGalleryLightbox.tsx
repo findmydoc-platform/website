@@ -97,7 +97,7 @@ export function ClinicGalleryLightbox({
                     aria-label={`Photo ${index + 1} of ${imageCount}`}
                   >
                     <figure className="flex h-[calc(100dvh-7.75rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-0 flex-col items-center justify-center gap-3 sm:h-[calc(100dvh-9.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:gap-4">
-                      <div className="relative aspect-[4/3] w-full shrink-0 sm:aspect-auto sm:min-h-0 sm:flex-1">
+                      <div className="relative aspect-[4/3] min-h-0 w-full shrink sm:aspect-auto sm:flex-1">
                         <Media
                           htmlElement={null}
                           src={image.src}
@@ -108,7 +108,10 @@ export function ClinicGalleryLightbox({
                         />
                       </div>
                       {image.caption ? (
-                        <figcaption className="max-w-3xl shrink-0 text-center text-sm leading-6 text-white/85 sm:text-base">
+                        <figcaption
+                          className="max-h-[min(32dvh,12rem)] w-full max-w-3xl shrink-0 overflow-y-auto overscroll-contain px-4 text-center text-sm leading-6 text-white/85 focus-visible:ring-1 focus-visible:ring-white/60 focus-visible:outline-hidden sm:text-base"
+                          tabIndex={0}
+                        >
                           {image.caption}
                         </figcaption>
                       ) : null}

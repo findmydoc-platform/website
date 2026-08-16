@@ -9,6 +9,14 @@ import { withViewportStory } from '../../utils/viewportMatrix'
 
 const heroDoctors = clinicDetailFixture.doctors.slice(0, 6)
 const singleDoctor = clinicDetailFixture.doctors.slice(0, 1)
+const longGalleryCaption = Array.from(
+  { length: 18 },
+  (_, index) =>
+    `Section ${index + 1}: The clinic team explains the reception, accessibility, arrival process, and patient support available before an appointment.`,
+).join(' ')
+const longCaptionGalleryImages = clinicDetailFixture.galleryImages
+  .slice(0, 1)
+  .map((image) => ({ ...image, caption: longGalleryCaption }))
 
 const meta = {
   title: 'Domain/Clinic/Organisms/ClinicDetail/HeroOverviewSection',
@@ -196,6 +204,43 @@ export const EmptyGalleryFallback: Story = {
     await expect(canvas.getByRole('img', { name: 'Modern clinic exterior' })).toBeVisible()
   },
 }
+
+const longGalleryCaptionBase: Story = {
+  args: {
+    galleryImages: longCaptionGalleryImages,
+  },
+  render: (args) => (
+    <div className="bg-muted py-8">
+      <Container>
+        <HeroOverviewSection {...args} onDoctorSelect={fn()} />
+      </Container>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const openButton = canvas.getByRole('button', { name: 'View photo for Berlin Health Clinic' })
+
+    await userEvent.click(openButton)
+
+    const body = within(document.body)
+    const caption = await body.findByText(longGalleryCaption)
+    await expect(caption).toHaveAttribute('tabindex', '0')
+    await waitFor(() => expect(caption.scrollHeight).toBeGreaterThan(caption.clientHeight))
+    await expect(window.getComputedStyle(caption).overflowY).toBe('auto')
+
+    caption.focus()
+    await expect(caption).toHaveFocus()
+
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(openButton).toHaveFocus())
+  },
+}
+
+export const LongGalleryCaption375Short: Story = withViewportStory(
+  longGalleryCaptionBase,
+  'public375Short',
+  'Long gallery caption / 375 short',
+)
 
 export const InteractiveDoctorSelection320: Story = withViewportStory(
   InteractiveDoctorSelection,

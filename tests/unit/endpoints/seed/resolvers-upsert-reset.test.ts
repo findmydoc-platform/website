@@ -428,7 +428,12 @@ describe('resetCollections', () => {
     expect(actualOrder).toEqual(expectedOrder)
     expect(deleteDocuments).toHaveBeenCalledTimes(expectedOrder.length)
     for (const [args] of deleteDocuments.mock.calls) {
-      expect(args).toEqual(expect.objectContaining({ disableTransaction: true }))
+      expect(args).toEqual(
+        expect.objectContaining({
+          context: expect.objectContaining({ seedReset: true, skipHooks: true }),
+          disableTransaction: true,
+        }),
+      )
     }
 
     const platformContentMediaDelete = deleteDocuments.mock.calls.find((call: unknown[]) => {

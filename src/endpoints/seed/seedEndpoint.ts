@@ -30,6 +30,8 @@ interface ExpressResponse {
   json: (body: unknown) => void
 }
 
+const ACTIVE_JOB_STALE_AFTER_MS = 10 * 60 * 1000
+
 const respond = (res: unknown, statusCode: number, body: unknown) => {
   const response = res as ExpressResponse | undefined
 
@@ -110,15 +112,47 @@ const recoverTerminalActiveSeedRun = async (
     })
     return record
   }
+  const activeJobStartedAt = activeJob.startedAt ? Date.parse(activeJob.startedAt) : Number.NaN
+  const stale =
+    payloadJob?.processing === true &&
+    Number.isFinite(activeJobStartedAt) &&
+    Date.now() - activeJobStartedAt >= ACTIVE_JOB_STALE_AFTER_MS
   const terminal = !payloadJob || payloadJob.hasError === true || typeof payloadJob.completedAt === 'string'
-  if (!terminal) return record
+  if (!terminal && !stale) return record
+
+  if (stale) {
+    try {
+      await (
+        payload.jobs as unknown as {
+          cancel: (options: {
+            queue?: string
+            where: unknown
+            req: PayloadRequest
+            overrideAccess?: boolean
+          }) => Promise<void>
+        }
+      ).cancel({
+        queue: record.queue,
+        where: { id: { equals: record.activeJobId } },
+        req,
+        overrideAccess: true,
+      })
+    } catch (error) {
+      payload.logger.warn({
+        err: error,
+        msg: `Unable to cancel stale Payload job ${record.activeJobId} for seed run ${record.runId}`,
+      })
+    }
+  }
 
   const payloadError = payloadJob ? getPayloadJobErrorMessage(payloadJob.error) : null
   const message = payloadError
     ? `Recovered failed Payload job ${record.activeJobId}: ${payloadError}`
-    : payloadJob
-      ? `Recovered completed Payload job ${record.activeJobId} from an unfinished seed run`
-      : `Recovered seed run because Payload job ${record.activeJobId} no longer exists`
+    : stale
+      ? `Recovered stale Payload job ${record.activeJobId} after its worker stopped responding`
+      : payloadJob
+        ? `Recovered completed Payload job ${record.activeJobId} from an unfinished seed run`
+        : `Recovered seed run because Payload job ${record.activeJobId} no longer exists`
 
   try {
     await (
@@ -413,18 +447,14 @@ const loadSeedRunSnapshot = async (
   req: PayloadRequest,
   requestedRunId?: string | null,
 ): Promise<SeedRunSnapshot | null> => {
-  if (requestedRunId) {
-    const requestedRecord = await loadSeedRunRecord(req.payload, requestedRunId)
-    return requestedRecord ? buildSeedRunSnapshot(requestedRecord) : null
-  }
-
-  const resolvedRunId = await resolveSeedRunId(req.payload, undefined)
+  const resolvedRunId = requestedRunId ?? (await resolveSeedRunId(req.payload, undefined))
   if (!resolvedRunId) return null
 
   const record = await loadSeedRunRecord(req.payload, resolvedRunId)
   if (!record) return null
 
-  return buildSeedRunSnapshot(record)
+  const recoveredRecord = await recoverTerminalActiveSeedRun(req.payload, req, record)
+  return buildSeedRunSnapshot(recoveredRecord)
 }
 
 /** POST /seed: start a queued seed run from the Developer Dashboard. */
@@ -537,7 +567,7 @@ export const seedGetHandler = async (req: PayloadRequest, res?: unknown) => {
     })
   }
 
-  return respond(res, 200, snapshot)
+  return respond(res, 200, await finalizeRunSnapshot(req, snapshot))
 }
 
 /** GET /seed/advance: run the next queued job for the active seed run. */

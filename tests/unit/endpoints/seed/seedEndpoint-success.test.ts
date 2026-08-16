@@ -331,6 +331,54 @@ describe('seed endpoints success paths', () => {
     expect(payload.jobs.queue).not.toHaveBeenCalled()
   })
 
+  it('recovers a stale processing Payload job during status polling', async () => {
+    const { payload } = makePayloadReq({})
+    const staleRunId = 'seed-run-stale-processing'
+    const staleJobId = '607'
+    const { queue } = await createActiveSeedRun(payload, staleRunId, staleJobId)
+    const staleRecord = await loadSeedRunRecord(payload as unknown as Payload, staleRunId)
+    if (!staleRecord?.jobs[0]) throw new Error('Expected active seed job')
+    staleRecord.jobs[0].startedAt = new Date(Date.now() - 11 * 60 * 1000).toISOString()
+    await saveSeedRunRecord(payload as unknown as Payload, staleRecord)
+
+    payload.find.mockImplementation(async ({ collection }: { collection: string }) => {
+      if (collection === 'payload-jobs') {
+        return {
+          docs: [{ id: 607, hasError: false, completedAt: null, processing: true }],
+          hasNextPage: false,
+        }
+      }
+
+      return { docs: [], hasNextPage: false }
+    })
+    const req = createMockReq(mockUsers.platform(), payload, {
+      query: { runId: staleRunId },
+    }) as PayloadRequest
+    const res = makeRes()
+
+    await seedGetHandler(req, res)
+
+    expect(res._status).toBe(200)
+    expect(res._body).toMatchObject({
+      runId: staleRunId,
+      status: 'failed',
+      hasActiveJob: false,
+      finalFlush: { status: 'executed' },
+    })
+    expect(payload.jobs.cancel).toHaveBeenCalledWith({
+      queue,
+      where: { id: { equals: staleJobId } },
+      req,
+      overrideAccess: true,
+    })
+    expect(res._body.logs).toContainEqual(
+      expect.objectContaining({
+        severity: 'ERROR',
+        text: 'Recovered stale Payload job 607 after its worker stopped responding',
+      }),
+    )
+  })
+
   it.each(['completed', 'partial', 'failed', 'cancelled'] as const)(
     'runs one terminal seed final flush for %s runs with public work',
     async (status) => {

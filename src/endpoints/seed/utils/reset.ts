@@ -66,6 +66,7 @@ const protectedRelationSpecs: ProtectedRelationSpec[] = [
 const seedResetContext = {
   disableRevalidate: true,
   seedReset: true,
+  skipHooks: true,
   skipClinicStaffAuthSync: true,
 }
 

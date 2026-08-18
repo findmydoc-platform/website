@@ -15,7 +15,6 @@
 - Storybook-only module mocks must be centralized through exact Vite aliases in `.storybook/main.ts` that point to root `__mocks__/` files.
 - Vitest mocks are allowed only in Vitest setup or test files, not in Storybook story files.
 - Keep stories compatible with Vitest Storybook runs.
-- Story metadata must comply with `docs/frontend/story-governance.md`.
 - Use `docs/frontend/mobile-ai-playbook.md` as the canonical source for the mobile matrix, short-height checks, and `Confirmed` versus `Likely` thresholds.
 - For interactive mobile patterns, add `play` assertions for at least one full interaction cycle, not only a single open state.
 - Treat stories as supporting evidence for route-level runtime risks; use composed-route runtime verification to confirm those risks.
@@ -33,7 +32,6 @@
 - `src/components/**` must stay Payload-free.
 - Do not import `@/payload-types` in atoms/molecules/organisms/templates.
 - Normalize Payload unions in `src/blocks/**` or `src/blocks/_shared/**`.
-- Compute CMS-derived routes in adapters, not presentational components.
 
 ## Documentation Location
 

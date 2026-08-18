@@ -142,9 +142,9 @@ The current evidence supports removing them when they are generic, duplicated, u
 
 The evidence does **not** support removing the underlying requirements that matter to the product or operator. Critical constraints, approval boundaries, success criteria, required evidence, and real precedence between safety, correctness, task completion, and style still need to be explicit somewhere effective. They do not need `P0` labels, and they should be stated once.
 
-## Validation implication for issue 1715
+## Validation implication for issues 1715 and 1717
 
-Industry evidence validates the direction of most changes, but it cannot replace repository-specific proof. Before closing issue 1715, the reduced configuration should be compared with the baseline on the same representative tasks. The evaluation should cover at least:
+Industry evidence validates the direction of most changes, but it cannot replace repository-specific proof. The reduced configuration uses the same representative tasks for baseline comparisons and retains executable checks for deterministic contracts. The evidence set covers:
 
 - a read-only diagnosis that must not edit files
 - an implementation task that should proceed through safe local validation without unnecessary approval
@@ -169,3 +169,17 @@ On 18 August 2026, four identical read-only scenarios were run with fresh GPT-5.
 All eight runs completed successfully. No scenario lost a material safety, authorization, evidence, or delivery boundary. The candidate removed forced style boilerplate while retaining concrete uncertainty where evidence was incomplete. This is representative evidence for the changed root contract, not proof for every possible task or future model configuration; specialist reviewers still need their normal task-specific validation.
 
 The candidate `agent_instruction_reviewer` also loaded successfully with inherited model selection and the stable skill-name restrictions during the final review. Baseline-versus-candidate tasks for the other seven reviewer profiles, cross-workstation skill visibility, and token, latency, and cost comparisons remain open; this note does not claim that evidence.
+
+## Cross-repository decision application
+
+The repository-specific follow-up applies the shared Website and Clinic Dashboard decision without introducing a physically shared instruction runtime:
+
+- Root discovery includes hidden tracked instruction paths such as `.github/AGENTS.md`; the earlier command without `--hidden` was not exhaustive.
+- Four exact parent-child duplicates are removed from the component, story, and seed instruction layers while their authoritative parent rules remain in `src/AGENTS.md`.
+- `.github/pull_request_template.md` is the authoritative PR-body contract. Root instructions retain only the title contract, the template pointer, and safe `--body-file` creation and verification.
+- Project command rules cover destructive database or workspace actions and the external `gh pr create` write. The non-destructive local `git commit` prompt is removed, and read-only Git and GitHub commands remain unmatched.
+- Specialist agents retain their existing reasoning efforts and omit stale model pins. Versioned plugin-cache paths remain replaced by stable skill-name selectors.
+
+The rule files use their inline `match` and `not_match` examples plus `codex execpolicy check`, as documented by the [official Codex rules reference](https://learn.chatgpt.com/docs/agent-configuration/rules). Codex configuration loading and all changed agent TOML contracts are checked locally without starting an AI reviewer.
+
+This deterministic evidence does not replace behavioral reviewer evaluation. Baseline comparisons for the other seven specialist profiles, cross-workstation skill availability, and token, latency, and cost measurements remain outside the proven scope. The pull request therefore stays draft, and no reviewer, merge, deployment, or production action is implied.

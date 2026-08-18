@@ -34,6 +34,7 @@ We adopt **AI-Slop v2** with a **pre-commit + pre-push + deep-lane enforcement m
 4. Deep quality lane (main + nightly) runs full-scope AI-slop and Semgrep checks.
 5. Instruction sources remain budget-aware and are checked for cross-file language, tone, and execution conflicts.
 6. Generic model-time style and priority-label policies are not duplicated in root `AGENTS.md`; repository-specific safety, delivery, review, test, and validation boundaries remain in their owning instruction scopes.
+7. Project command rules target destructive or external-write actions with executable examples; read-only Git and GitHub commands remain unprompted.
 
 ## Rationale
 

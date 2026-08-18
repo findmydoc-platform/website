@@ -1,6 +1,5 @@
 name = "cache_architecture_reviewer"
 description = "Read-only reviewer for cache policy, revalidation ownership, and public freshness boundaries in this repository."
-model = "gpt-5.4"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 nickname_candidates = ["Cache Cartographer", "Freshness Auditor", "Invalidation Gate"]

@@ -3,6 +3,7 @@
 ## Canonical Source
 
 - Canonical project instructions for Codex are layered `AGENTS.md` files resolved by repository path.
+- For exhaustive instruction discovery, use `rg --files --hidden -g 'AGENTS.md' -g 'AGENTS.override.md' -g '!.git/**'`; for instruction-surface changes, follow `docs/engineering/agent-instruction-review-playbook.md`.
 
 ## Repo-Local Skills
 
@@ -20,26 +21,21 @@
 - Treat findings with severity `6/10` or higher as fix-before-handoff; treat `5/10` as a documented user decision gate; document skipped or declined reviewers with concrete reasons.
 - When instruction surfaces change, include `agent_instruction_reviewer` after `pnpm ai:slop-check` and before PR/final handoff; for cache/revalidation, collection/global, public route or loader, hook, sitemap/discovery, or seed-flow diffs, also recommend `cache_architecture_reviewer`; skip each for unrelated changes.
 
-## Layered Instruction Map
+### Review Severity Scale
 
-- This map lists the active repository instruction layers; use `rg --files -g 'AGENTS.md' -g 'AGENTS.override.md'` when path-specific discovery must be exhaustive.
-- Repository-wide routing and execution constraints: `AGENTS.md`
-- Documentation defaults: `docs/AGENTS.md`
-- Application-wide engineering defaults and analytics: `src/AGENTS.md`, `src/posthog/AGENTS.md`
-- UI/frontend and CMS boundary mapping: `src/components/AGENTS.md`, `src/app/(frontend)/AGENTS.md`, `src/blocks/AGENTS.md`, `src/app/AGENTS.md`, `src/stories/AGENTS.md`
-- Mobile-first frontend heuristics and prompt scaffolding: `docs/frontend/mobile-ai-playbook.md`
-- AI instruction quality: `docs/engineering/ai-anti-slop-playbook.md`, `docs/engineering/agent-instruction-review-playbook.md`
-- Payload/API/hooks/seeds: `src/collections/AGENTS.md`, `src/hooks/AGENTS.md`, `src/endpoints/seed/AGENTS.md`, `src/app/api/AGENTS.md`
-- Payload admin UI design: `src/app/(payload)/AGENTS.md`, `src/components/organisms/AdminBranding/AGENTS.md`, `src/components/organisms/DeveloperDashboard/AGENTS.md`, `src/dashboard/adminDashboard/AGENTS.md`
-- Tests: `tests/AGENTS.md`, `tests/e2e/AGENTS.md`, `tests/e2e/admin/AGENTS.md`, `tests/e2e/helpers/AGENTS.md`
+Use an absolute `1-10` severity scale across all review tasks:
 
-## Instruction Design Principles (AI-Slop v2)
+- `9-10`: production-critical or trust-critical issue; likely to break primary flows, create security exposure, or cause severe user failure
+- `7-8`: important issue with clear user, business, or reliability impact; should usually be fixed before merge
+- `5-6`: meaningful issue worth fixing soon; real risk exists but the impact is narrower or more conditional
+- `3-4`: quality or maintainability gap; useful to improve but not urgent on its own
+- `1-2`: minor polish, wording, or consistency issue with low standalone impact
 
-1. Prefer hierarchy over volume: prioritize P0/P1/P2 rules.
-2. Keep constraints minimal and precise; avoid overloading prompts. Completeness, consistency, and gap analyses check only the stated scope, acceptance criteria, and existing evidence; they do not add architecture, safeguards, transition paths, hardening, or product behavior.
-3. Remove conflicts across instruction files. Do not assume backward compatibility or legacy support; if a concrete dependency and risk indicate a need, ask the user before adding either.
-4. Use short examples only when they materially reduce ambiguity. Keep optional hardening separate, proportionate to a concrete risk, and subject to the user's decision; mandatory security requirements still apply.
-5. Scope rules through nested `AGENTS.md` files; avoid unnecessary global rules. When removing behavior, find and remove obsolete tests without replacing them with absence-only tests; test the surviving behavior and explicit acceptance criteria.
+For review outputs:
+
+- score findings on this absolute scale, not relative to the other findings in the same review
+- prefer fewer findings with calibrated scores over long lists of weak observations
+- if nothing credibly reaches `5/10`, say that explicitly instead of inflating weaker issues
 
 ## Execution Requirements (Repository-Specific)
 
@@ -86,20 +82,16 @@
 - Run Payload migration commands only when schema or data-model code changes.
 - Create migrations only via `pnpm payload migrate:create <migration_name>`.
 - Never create migration files manually from scratch.
-- If a Payload command prompts for confirmation, use non-interactive execution:
-  - `bash -lc "printf 'y\n' | PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate"`
-  - `bash -lc "printf 'y\n' | PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate:fresh"`
-- Status checks:
-  - `bash -lc "PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate:status"`
+- Use the stable repository helper for Payload migration execution so command rules remain effective across workstation-specific pnpm paths:
+  - Apply: `bash .codex/scripts/payload-migration.sh migrate`
+  - Destructive local/test reset: `bash .codex/scripts/payload-migration.sh migrate:fresh`
+  - Status: `bash .codex/scripts/payload-migration.sh migrate:status`
+  - Full destructive local/test rebuild: `bash .codex/scripts/payload-migration.sh generate-from-scratch`
 
 ## Pull Request Metadata Rules
 
 - Title format: `<type>(optional-scope)?: short summary`; use only the types/scopes accepted by `.github/workflows/pr-gates.yml`; summary starts lowercase, imperative, and <= 72 chars.
-- Use `.github/pull_request_template.md` and start with a bilingual `Management summary`: one non-technical German paragraph followed by the same non-technical English paragraph, release-note quality, focused on visible product, operator, or business value.
-- Keep implementation detail in `## What changed`; include architectural or module-level context, link files only when useful for review, and do not paste code snippets into the PR body.
-- In `## Validation`, check every relevant item and explain every unchecked, skipped, or not-applicable item directly in the section.
-- In `## Development`, use `Closes` for every linked Issue, one line per Issue. Use `Closes #123` for same-repository Issues and `Closes findmydoc-platform/management#123` for trusted cross-repository Issues.
-- Do not require a standalone `Screenshots:` section by default; record UI evidence in the `UI/mobile QA` validation item. For UI PRs with existing screenshots, use `.codex/skills/gh-ui-screenshots` so screenshot attachments are inserted there idempotently.
+- Treat `.github/pull_request_template.md` as the authoritative PR body contract.
 - Build PR descriptions in a temporary markdown file or heredoc, pass them with `gh pr create --body-file` or `gh pr edit --body-file`, never inline multiline bodies through shell quoting, and verify the rendered body with `gh pr view --json body`.
 
 ## Issue Workflow
@@ -122,58 +114,3 @@
 
 - Keep canonical Codex rules in layered `AGENTS.md` files.
 - Resolve duplicates in favor of the closest path-local `AGENTS.md` file.
-
-## AI Anti-Slop Policy v2
-
-Scope exception: Global scope is intentional because this policy defines cross-repository communication quality defaults.
-
-Rule budget:
-
-- Max 8 hard rules in this section.
-- Max 120 lines in this section.
-
-## Priorities
-
-- `P0`: Correctness, factual grounding, and conflict-free guidance.
-- `P1`: Direct completion of the user task with actionable outputs.
-- `P2`: Style, brevity, and readability.
-
-## Required Output Quality
-
-- Rule 1: State concrete facts with references (files, commands, logs, or links).
-- Rule 2: Separate facts from recommendations.
-- Rule 3: Keep responses concise and implementation-oriented.
-
-## Review Severity Scale
-
-Use an absolute `1-10` severity scale for review findings across all agents and review tasks. Do not use relative labels such as `high`, `medium`, or `low` unless the user explicitly asks for them.
-
-- `9-10`: production-critical or trust-critical issue; likely to break primary flows, create security exposure, or cause severe user failure
-- `7-8`: important issue with clear user, business, or reliability impact; should usually be fixed before merge
-- `5-6`: meaningful issue worth fixing soon; real risk exists but the impact is narrower or more conditional
-- `3-4`: quality or maintainability gap; useful to improve but not urgent on its own
-- `1-2`: minor polish, wording, or consistency issue with low standalone impact
-
-For review outputs:
-
-- score findings on this absolute scale, not relative to the other findings in the same review
-- prefer fewer findings with calibrated scores over long lists of weak observations
-- if nothing credibly reaches `5/10`, say that explicitly instead of inflating weaker issues
-
-## Uncertainty & Evidence
-
-- Rule 4: Mark unresolved assumptions explicitly.
-- Rule 5: Add a confidence statement when evidence is incomplete.
-
-`Assumption:` State unknowns or defaults explicitly.
-`Confidence:` Provide a short confidence level tied to available evidence.
-
-## Forbidden Patterns
-
-- Rule 6: Do not use empty reassurance, hype, or social filler.
-- Rule 7: Do not hide uncertainty behind authoritative wording.
-
-## Scope & Brevity
-
-- Rule 8: Use only the constraints needed for this task context; avoid long, repetitive instruction payloads.
-- Keep examples short and only when they reduce ambiguity.

@@ -14,6 +14,20 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["rtk", "git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "Destructive Git resets are not allowed by default in this repo. Use `rtk git status` first and only run this after explicit user approval.",
+    match = [
+        "rtk git reset --hard",
+        "rtk git reset --hard HEAD~1",
+    ],
+    not_match = [
+        "rtk git reset --soft HEAD~1",
+        "rtk git checkout -- path/to/file.ts",
+    ],
+)
+
+prefix_rule(
     pattern = ["git", "checkout", "--"],
     decision = "forbidden",
     justification = "Reverting tracked files via `git checkout --` is destructive in this repo. Prefer `git diff` or `git restore --source` only after explicit user approval.",
@@ -28,58 +42,60 @@ prefix_rule(
 )
 
 prefix_rule(
-    pattern = ["git", "clean", "-fd"],
+    pattern = ["rtk", "git", "checkout", "--"],
     decision = "forbidden",
-    justification = "Destructive workspace cleanup is not allowed by default in this repo. Use `git status --short` first and only clean after explicit user approval.",
+    justification = "Reverting tracked files via `rtk git checkout --` is destructive in this repo. Prefer `rtk git diff` or `rtk git restore --source` only after explicit user approval.",
+    match = [
+        "rtk git checkout -- src/app/page.tsx",
+        "rtk git checkout -- .",
+    ],
+    not_match = [
+        "rtk git checkout main",
+        "rtk git restore src/app/page.tsx",
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "clean", ["-fd", "-fdx", "-xdf", "-ffdx"]],
+    decision = "forbidden",
+    justification = "Destructive workspace cleanup is not allowed by default in this repo. Use the matching `git clean -n` dry run and inspect `git status --short` before requesting explicit user approval.",
     match = [
         "git clean -fd",
         "git clean -fd build",
-    ],
-    not_match = [
-        "git clean -n -fd",
-        "git clean -ffdx",
-    ],
-)
-
-prefix_rule(
-    pattern = ["git", "clean", "-fdx"],
-    decision = "forbidden",
-    justification = "Removing ignored files is destructive in this repo. Use `git clean -n -fdx` to inspect first and only proceed after explicit user approval.",
-    match = [
         "git clean -fdx",
         "git clean -fdx .next",
-    ],
-    not_match = [
-        "git clean -fd",
-        "git clean -n -fdx",
-    ],
-)
-
-prefix_rule(
-    pattern = ["git", "clean", "-xdf"],
-    decision = "forbidden",
-    justification = "Removing ignored files is destructive in this repo. Use `git clean -n -xdf` to inspect first and only proceed after explicit user approval.",
-    match = [
         "git clean -xdf",
         "git clean -xdf .next",
-    ],
-    not_match = [
-        "git clean -df",
-        "git clean -n -xdf",
-    ],
-)
-
-prefix_rule(
-    pattern = ["git", "clean", "-ffdx"],
-    decision = "forbidden",
-    justification = "Forced destructive cleanup is not allowed by default in this repo. Use `git clean -n -ffdx` to inspect first and only proceed after explicit user approval.",
-    match = [
         "git clean -ffdx",
         "git clean -ffdx node_modules",
     ],
     not_match = [
-        "git clean -fdx",
+        "git clean -n -fd",
+        "git clean -n -fdx",
+        "git clean -n -xdf",
         "git clean -n -ffdx",
+    ],
+)
+
+prefix_rule(
+    pattern = ["rtk", "git", "clean", ["-fd", "-fdx", "-xdf", "-ffdx"]],
+    decision = "forbidden",
+    justification = "Destructive workspace cleanup is not allowed by default in this repo. Use the matching `rtk git clean -n` dry run and inspect `rtk git status --short` before requesting explicit user approval.",
+    match = [
+        "rtk git clean -fd",
+        "rtk git clean -fd build",
+        "rtk git clean -fdx",
+        "rtk git clean -fdx .next",
+        "rtk git clean -xdf",
+        "rtk git clean -xdf .next",
+        "rtk git clean -ffdx",
+        "rtk git clean -ffdx node_modules",
+    ],
+    not_match = [
+        "rtk git clean -n -fd",
+        "rtk git clean -n -fdx",
+        "rtk git clean -n -xdf",
+        "rtk git clean -n -ffdx",
     ],
 )
 
@@ -120,5 +136,35 @@ prefix_rule(
     ],
     not_match = [
         "pnpm run generate",
+    ],
+)
+
+# Stable repository entrypoint for destructive database workflows. This keeps
+# policy matching independent of workstation-specific pnpm executable paths.
+prefix_rule(
+    pattern = ["bash", ".codex/scripts/payload-migration.sh", ["migrate:fresh", "generate-from-scratch"]],
+    decision = "prompt",
+    justification = "This repository helper resets disposable local/test database state. Confirm the target is never preview or production.",
+    match = [
+        "bash .codex/scripts/payload-migration.sh migrate:fresh",
+        "bash .codex/scripts/payload-migration.sh generate-from-scratch",
+    ],
+    not_match = [
+        "bash .codex/scripts/payload-migration.sh migrate",
+        "bash .codex/scripts/payload-migration.sh migrate:status",
+    ],
+)
+
+prefix_rule(
+    pattern = ["rtk", "bash", ".codex/scripts/payload-migration.sh", ["migrate:fresh", "generate-from-scratch"]],
+    decision = "prompt",
+    justification = "This repository helper resets disposable local/test database state. Confirm the target is never preview or production.",
+    match = [
+        "rtk bash .codex/scripts/payload-migration.sh migrate:fresh",
+        "rtk bash .codex/scripts/payload-migration.sh generate-from-scratch",
+    ],
+    not_match = [
+        "rtk bash .codex/scripts/payload-migration.sh migrate",
+        "rtk bash .codex/scripts/payload-migration.sh migrate:status",
     ],
 )

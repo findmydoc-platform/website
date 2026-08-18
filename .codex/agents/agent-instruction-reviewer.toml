@@ -1,6 +1,5 @@
 name = "agent_instruction_reviewer"
 description = "Read-only reviewer for AGENTS.md, Codex subagents, local skills, rules, and AI instruction quality in the website repository."
-model = "gpt-5.4"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 nickname_candidates = ["Instruction Auditor", "Prompt Cartographer", "Agent Quality Gate"]
@@ -48,27 +47,27 @@ Working style:
 """
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/build-web-apps/2abb1c44/skills/frontend-app-builder"
+name = "build-web-apps:frontend-app-builder"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/build-web-apps/2abb1c44/skills/frontend-testing-debugging"
+name = "build-web-apps:frontend-testing-debugging"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/build-web-apps/2abb1c44/skills/react-best-practices"
+name = "build-web-apps:react-best-practices"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/2abb1c44/skills/agent-browser"
+name = "vercel:agent-browser"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/2abb1c44/skills/agent-browser-verify"
+name = "vercel:agent-browser-verify"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/2abb1c44/skills/verification"
+name = "vercel:verification"
 enabled = false
 
 [[skills.config]]

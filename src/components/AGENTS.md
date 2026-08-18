@@ -30,7 +30,6 @@
 - `src/components/**` must stay Payload-free.
 - Do not import `@/payload-types` in atoms/molecules/organisms/templates.
 - Normalize Payload unions (links/media/relations) in `src/blocks/**` or `src/blocks/_shared/**`.
-- Compute CMS-derived routes in adapters, not presentational components.
 - If a component needs Payload imports, move mapping to a block adapter and pass normalized props into the UI layer.
 
 ## Storybook Expectations

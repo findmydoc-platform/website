@@ -6,11 +6,13 @@ Use destructive reset commands only on disposable local databases and local test
 
 ```bash
 # Drop and recreate local schema, then apply migrations
-pnpm payload migrate:fresh
+bash .codex/scripts/payload-migration.sh migrate:fresh
 
 # Rebuild local DB/migration files from scratch (destructive)
-pnpm run generateDBFromScratch
+bash .codex/scripts/payload-migration.sh generate-from-scratch
 ```
+
+The helper verifies pnpm 10, supplies the local development `PAYLOAD_SECRET` fallback without exposing it in the command, and keeps the destructive entrypoints stable for repository command rules.
 
 ## Not Allowed in Preview/Production
 

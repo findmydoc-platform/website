@@ -25,13 +25,9 @@ Project-level subagent defaults live in [`/.codex/config.toml`](../../.codex/con
 
 This allows parallel review across a small set of specialists while preventing recursive fan-out.
 
-The specialist files under [`/.codex/agents`](../../.codex/agents) also disable a small set of broad skills per reviewer through `skills.config` so the reviewers stay narrow.
+The specialist files under [`/.codex/agents`](../../.codex/agents) also disable a small set of broad skills per reviewer through stable `skills.config.name` selectors so the reviewers stay narrow without depending on workstation-local plugin cache paths.
 
-Important:
-
-- Some disabled skills live under the Codex plugin cache.
-- Those cache paths are versioned. After a plugin refresh, the hash segment in the path may change.
-- If a reviewer suddenly starts drifting again after a Codex/plugin update, refresh the affected `skills.config.path` entries.
+After a plugin update, verify that each configured skill name still resolves. Do not replace a missing selector with a versioned cache path; update the stable plugin and skill identity instead.
 
 ## Available specialists
 

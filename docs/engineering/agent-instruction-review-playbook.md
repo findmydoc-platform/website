@@ -30,7 +30,7 @@ Use these checks before recommending more prompt text:
 9. Keep completeness and gap reviews inside the stated scope and evidence. Do not add architecture, compatibility, transition, or optional hardening requirements without a concrete dependency or user decision.
 10. When removing behavior, remove obsolete tests and validate the surviving behavior and explicit acceptance criteria instead of adding absence-only tests.
 11. Use stable skill-name selectors for reviewer restrictions; do not bind repository configuration to versioned machine-local plugin cache paths.
-12. Limit command rules to destructive or external-write prefixes that need repository-specific friction; keep read-only Git and GitHub commands unprompted.
+12. Limit command rules to destructive or external-write prefixes that need repository-specific friction. Cover every documented direct or wrapper form with inline examples, route workstation-specific executable paths through stable repository helpers, and keep read-only Git and GitHub commands unprompted.
 
 ## Finding Severity
 

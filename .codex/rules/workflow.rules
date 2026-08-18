@@ -12,3 +12,17 @@ prefix_rule(
         "gh issue create --title \"problem\"",
     ],
 )
+
+prefix_rule(
+    pattern = ["rtk", "gh", "pr", "create"],
+    decision = "prompt",
+    justification = "Before creating a PR in this repo, link or reuse an issue and pass the description via `--body-file`.",
+    match = [
+        "rtk gh pr create --title \"feat: add codex guardrails\" --body-file /tmp/pr.md",
+        "rtk gh pr create --draft --body-file /tmp/pr.md",
+    ],
+    not_match = [
+        "rtk gh pr view 123",
+        "rtk gh issue create --title \"problem\"",
+    ],
+)

@@ -82,11 +82,11 @@ For review outputs:
 - Run Payload migration commands only when schema or data-model code changes.
 - Create migrations only via `pnpm payload migrate:create <migration_name>`.
 - Never create migration files manually from scratch.
-- If a Payload command prompts for confirmation, use non-interactive execution:
-  - `bash -lc "printf 'y\n' | PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate"`
-  - `bash -lc "printf 'y\n' | PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate:fresh"`
-- Status checks:
-  - `bash -lc "PAYLOAD_SECRET=${PAYLOAD_SECRET:-dev-secret} pnpm payload migrate:status"`
+- Use the stable repository helper for Payload migration execution so command rules remain effective across workstation-specific pnpm paths:
+  - Apply: `bash .codex/scripts/payload-migration.sh migrate`
+  - Destructive local/test reset: `bash .codex/scripts/payload-migration.sh migrate:fresh`
+  - Status: `bash .codex/scripts/payload-migration.sh migrate:status`
+  - Full destructive local/test rebuild: `bash .codex/scripts/payload-migration.sh generate-from-scratch`
 
 ## Pull Request Metadata Rules
 

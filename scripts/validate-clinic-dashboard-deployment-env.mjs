@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url'
 
 export const CLINIC_DASHBOARD_ORIGIN_BY_ENVIRONMENT = Object.freeze({
-  preview: 'https://clinic-dashboard-preview-findmydoc.vercel.app',
+  preview: 'https://clinics.preview.findmydoc.eu',
   production: 'https://clinics.findmydoc.eu',
 })
 

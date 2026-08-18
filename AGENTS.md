@@ -3,6 +3,7 @@
 ## Canonical Source
 
 - Canonical project instructions for Codex are layered `AGENTS.md` files resolved by repository path.
+- For exhaustive instruction discovery, use `rg --files -g 'AGENTS.md' -g 'AGENTS.override.md'`; for instruction-surface changes, follow `docs/engineering/agent-instruction-review-playbook.md`.
 
 ## Repo-Local Skills
 
@@ -20,26 +21,21 @@
 - Treat findings with severity `6/10` or higher as fix-before-handoff; treat `5/10` as a documented user decision gate; document skipped or declined reviewers with concrete reasons.
 - When instruction surfaces change, include `agent_instruction_reviewer` after `pnpm ai:slop-check` and before PR/final handoff; for cache/revalidation, collection/global, public route or loader, hook, sitemap/discovery, or seed-flow diffs, also recommend `cache_architecture_reviewer`; skip each for unrelated changes.
 
-## Layered Instruction Map
+### Review Severity Scale
 
-- This map lists the active repository instruction layers; use `rg --files -g 'AGENTS.md' -g 'AGENTS.override.md'` when path-specific discovery must be exhaustive.
-- Repository-wide routing and execution constraints: `AGENTS.md`
-- Documentation defaults: `docs/AGENTS.md`
-- Application-wide engineering defaults and analytics: `src/AGENTS.md`, `src/posthog/AGENTS.md`
-- UI/frontend and CMS boundary mapping: `src/components/AGENTS.md`, `src/app/(frontend)/AGENTS.md`, `src/blocks/AGENTS.md`, `src/app/AGENTS.md`, `src/stories/AGENTS.md`
-- Mobile-first frontend heuristics and prompt scaffolding: `docs/frontend/mobile-ai-playbook.md`
-- AI instruction quality: `docs/engineering/ai-anti-slop-playbook.md`, `docs/engineering/agent-instruction-review-playbook.md`
-- Payload/API/hooks/seeds: `src/collections/AGENTS.md`, `src/hooks/AGENTS.md`, `src/endpoints/seed/AGENTS.md`, `src/app/api/AGENTS.md`
-- Payload admin UI design: `src/app/(payload)/AGENTS.md`, `src/components/organisms/AdminBranding/AGENTS.md`, `src/components/organisms/DeveloperDashboard/AGENTS.md`, `src/dashboard/adminDashboard/AGENTS.md`
-- Tests: `tests/AGENTS.md`, `tests/e2e/AGENTS.md`, `tests/e2e/admin/AGENTS.md`, `tests/e2e/helpers/AGENTS.md`
+Use an absolute `1-10` severity scale across all review tasks:
 
-## Instruction Design Principles (AI-Slop v2)
+- `9-10`: production-critical or trust-critical issue; likely to break primary flows, create security exposure, or cause severe user failure
+- `7-8`: important issue with clear user, business, or reliability impact; should usually be fixed before merge
+- `5-6`: meaningful issue worth fixing soon; real risk exists but the impact is narrower or more conditional
+- `3-4`: quality or maintainability gap; useful to improve but not urgent on its own
+- `1-2`: minor polish, wording, or consistency issue with low standalone impact
 
-1. Prefer hierarchy over volume: prioritize P0/P1/P2 rules.
-2. Keep constraints minimal and precise; avoid overloading prompts. Completeness, consistency, and gap analyses check only the stated scope, acceptance criteria, and existing evidence; they do not add architecture, safeguards, transition paths, hardening, or product behavior.
-3. Remove conflicts across instruction files. Do not assume backward compatibility or legacy support; if a concrete dependency and risk indicate a need, ask the user before adding either.
-4. Use short examples only when they materially reduce ambiguity. Keep optional hardening separate, proportionate to a concrete risk, and subject to the user's decision; mandatory security requirements still apply.
-5. Scope rules through nested `AGENTS.md` files; avoid unnecessary global rules. When removing behavior, find and remove obsolete tests without replacing them with absence-only tests; test the surviving behavior and explicit acceptance criteria.
+For review outputs:
+
+- score findings on this absolute scale, not relative to the other findings in the same review
+- prefer fewer findings with calibrated scores over long lists of weak observations
+- if nothing credibly reaches `5/10`, say that explicitly instead of inflating weaker issues
 
 ## Execution Requirements (Repository-Specific)
 
@@ -122,58 +118,3 @@
 
 - Keep canonical Codex rules in layered `AGENTS.md` files.
 - Resolve duplicates in favor of the closest path-local `AGENTS.md` file.
-
-## AI Anti-Slop Policy v2
-
-Scope exception: Global scope is intentional because this policy defines cross-repository communication quality defaults.
-
-Rule budget:
-
-- Max 8 hard rules in this section.
-- Max 120 lines in this section.
-
-## Priorities
-
-- `P0`: Correctness, factual grounding, and conflict-free guidance.
-- `P1`: Direct completion of the user task with actionable outputs.
-- `P2`: Style, brevity, and readability.
-
-## Required Output Quality
-
-- Rule 1: State concrete facts with references (files, commands, logs, or links).
-- Rule 2: Separate facts from recommendations.
-- Rule 3: Keep responses concise and implementation-oriented.
-
-## Review Severity Scale
-
-Use an absolute `1-10` severity scale for review findings across all agents and review tasks. Do not use relative labels such as `high`, `medium`, or `low` unless the user explicitly asks for them.
-
-- `9-10`: production-critical or trust-critical issue; likely to break primary flows, create security exposure, or cause severe user failure
-- `7-8`: important issue with clear user, business, or reliability impact; should usually be fixed before merge
-- `5-6`: meaningful issue worth fixing soon; real risk exists but the impact is narrower or more conditional
-- `3-4`: quality or maintainability gap; useful to improve but not urgent on its own
-- `1-2`: minor polish, wording, or consistency issue with low standalone impact
-
-For review outputs:
-
-- score findings on this absolute scale, not relative to the other findings in the same review
-- prefer fewer findings with calibrated scores over long lists of weak observations
-- if nothing credibly reaches `5/10`, say that explicitly instead of inflating weaker issues
-
-## Uncertainty & Evidence
-
-- Rule 4: Mark unresolved assumptions explicitly.
-- Rule 5: Add a confidence statement when evidence is incomplete.
-
-`Assumption:` State unknowns or defaults explicitly.
-`Confidence:` Provide a short confidence level tied to available evidence.
-
-## Forbidden Patterns
-
-- Rule 6: Do not use empty reassurance, hype, or social filler.
-- Rule 7: Do not hide uncertainty behind authoritative wording.
-
-## Scope & Brevity
-
-- Rule 8: Use only the constraints needed for this task context; avoid long, repetitive instruction payloads.
-- Keep examples short and only when they reduce ambiguity.

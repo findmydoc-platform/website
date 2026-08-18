@@ -10,7 +10,7 @@ This playbook defines how instruction quality is governed in this repository.
 
 ## Design Principles
 
-1. Priority over volume: keep P0/P1/P2 explicit.
+1. Critical constraints over volume: make real precedence explicit only where rules can conflict; do not require a P0/P1/P2 label scheme.
 2. Minimal constraints: avoid prompt/instruction overload.
 3. Conflict-free instruction graph across global and scoped files.
 4. Short examples only when they remove ambiguity.
@@ -34,6 +34,8 @@ This playbook defines how instruction quality is governed in this repository.
 ## Checker v2 Contract
 
 - Command: `pnpm ai:slop-check`
+- Deterministic signals: per-file line, hard-rule, and example budgets plus cross-file language, tone, and execution conflicts.
+- The checker does not require a root-level model-time style policy or attempt to validate response tone from instruction-source wording.
 - Modes:
   - `--mode strict` (default): exits non-zero on violations.
   - `--mode report`: emits findings but exits zero.
@@ -45,11 +47,7 @@ This playbook defines how instruction quality is governed in this repository.
 
 ## Rule Budgets
 
-Policy section (`## AI Anti-Slop Policy v2` in `AGENTS.md`):
-- max 120 lines
-- max 8 hard rules
-
-Instruction file budgets (scanned instruction sources, including layered `AGENTS.md`, `AGENTS.override.md`, Codex specialist agents, rules, local skill instructions, and scoped AI governance playbooks):
+Instruction file budgets apply to scanned instruction sources, including layered `AGENTS.md`, `AGENTS.override.md`, Codex specialist agents, rules, local skill instructions, and scoped AI governance playbooks:
 - line budget
 - hard-rule density budget
 - example-block budget
@@ -72,7 +70,7 @@ Each exception requires:
 
 ## Review Checklist for New Instructions
 
-1. Does the file declare clear priorities (P0/P1/P2 or equivalent)?
+1. Are critical constraints and any real precedence clear without adding an unnecessary label scheme?
 2. Is the rule scoped to the closest required `AGENTS.md` level (and only global where necessary)?
 3. Is the rule set concise and non-redundant?
 4. Are there conflicts with `AGENTS.md` and nested `AGENTS.md` files?

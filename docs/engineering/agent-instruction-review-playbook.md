@@ -27,6 +27,9 @@ Use these checks before recommending more prompt text:
 6. Do not treat prompt hierarchy as a perfect safety boundary. Use path scoping, deterministic gates, and explicit review handoffs for conflicts.
 7. Prefer short summaries plus links to research. Do not paste long study excerpts into always-loaded prompts.
 8. When a rule exists only because of model behavior, name the source or local evidence that justifies it.
+9. Keep completeness and gap reviews inside the stated scope and evidence. Do not add architecture, compatibility, transition, or optional hardening requirements without a concrete dependency or user decision.
+10. When removing behavior, remove obsolete tests and validate the surviving behavior and explicit acceptance criteria instead of adding absence-only tests.
+11. Use stable skill-name selectors for reviewer restrictions; do not bind repository configuration to versioned machine-local plugin cache paths.
 
 ## Finding Severity
 
@@ -56,12 +59,13 @@ Use the reviewer for semantic issues the checker cannot prove, such as stale res
 
 ## Source Snapshot
 
-Snapshot date: 2026-06-02. Re-check the web when the user asks for latest/current guidance or when a source-sensitive claim would change implementation.
+Vendor guidance refreshed: 2026-08-18. The research-paper set below retains its 2026-06-02 snapshot unless a source is dated separately. Re-check the web when the user asks for latest/current guidance or when a source-sensitive claim would change implementation.
 
 - [AGENTS.md](https://agents.md/): AGENTS.md is standard Markdown for coding-agent context, with no required fields. Nested AGENTS files are expected for large repositories; the nearest file should narrow or override broader guidance.
 - [OpenAI Codex AGENTS.md](https://developers.openai.com/codex/guides/agents-md): Codex loads global and project guidance once per run, walking from project root to current directory and concatenating closer files later. The default project-doc limit makes concise, scoped instructions materially better than one large root file.
 - [Unrolling the Codex agent loop](https://openai.com/index/unrolling-the-codex-agent-loop/): Codex aggregates user instructions, environment context, skills metadata, and the task into the request. This supports separating always-loaded rules from opt-in skills and specialist reviewers.
 - [OpenAI Codex Subagents](https://developers.openai.com/codex/subagents): Subagents are useful for narrow, mostly read-only work that can be delegated and summarized back to the parent thread. Specialist reviewers should therefore have tight scope, no edit authority, and clear output contracts.
+- [OpenAI GPT-5.6 model guidance](https://developers.openai.com/api/docs/guides/latest-model): GPT-5.6 guidance recommends lean prompts, stating each instruction once, and preserving domain context, hard constraints, approval boundaries, and success criteria. Generic style policy should not displace repository-specific delivery or safety boundaries.
 - [OpenAI Codex Skills](https://developers.openai.com/codex/skills): Skills use progressive disclosure: Codex initially sees name, description, and path, then reads `SKILL.md` only after selecting the skill. Skill descriptions must be concise, trigger-focused, and explicit about when the skill should and should not run.
 - [OpenAI Auto-review](https://developers.openai.com/codex/auto-review): Auto-review is a reviewer swap at approval boundaries, not a permission grant. For this repo, blocking should remain deterministic through scripts/hooks/CI while semantic reviewers return findings.
 - [OpenAI Instruction Hierarchy Challenge](https://openai.com/index/instruction-hierarchy-challenge/): OpenAI frames instruction priority as system > developer > user > tool and notes that hierarchy training improves robustness. Repository instructions should still avoid preventable conflicts because the model must resolve them at inference time.
@@ -73,6 +77,12 @@ Snapshot date: 2026-06-02. Re-check the web when the user asks for latest/curren
 - [A Survey of Context Engineering](https://arxiv.org/abs/2507.13334): Context engineering treats retrieval, processing, and context management as a managed system. This supports moving long references into playbooks or skill references instead of always-loaded prompts.
 - [Automatic Prompt Optimization via Heuristic Search](https://aclanthology.org/2025.findings-acl.1140.pdf): Prompt optimization research emphasizes systematic refinement over intuition-only prompt editing. For this repo, stable reviewer criteria and repeatable checks are preferable to ad hoc prompt growth.
 - [NCSC prompt injection guidance](https://www.ncsc.gov.uk/blog-post/prompt-injection-is-not-sql-injection): LLMs do not enforce a native boundary between data and instructions. Instruction governance should reduce impact with deterministic safeguards and least-privilege reviewer scopes.
+
+## Change Evaluation
+
+- Compare the baseline and candidate instruction sets on the same representative tasks when removing model-facing behavior.
+- Judge task success, retained evidence, approval behavior, material caveats, tokens, latency, and cost; lower prompt volume is an improvement only when the quality bar still passes.
+- Use direct repository evidence for deterministic cleanup such as unreachable paths or obsolete schema checks; do not substitute a behavioral eval for an objective reachability check.
 
 ## Reviewer Output Contract
 

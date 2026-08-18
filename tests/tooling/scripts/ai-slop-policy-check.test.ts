@@ -12,45 +12,10 @@ const VALID_AGENTS = `# Codex Instruction Router
 
 - Chat and explanations in German unless requested otherwise.
 - Code and documentation in English.
-
-## AI Anti-Slop Policy v2
-
-Scope exception: Global scope is intentional because this policy defines cross-repository communication quality defaults.
-
-Rule budget:
-
-- Max 8 hard rules in this section.
-- Max 120 lines in this section.
-
-## Priorities
-
-- P0 correctness.
-- P1 task completion.
-- P2 style.
-
-## Required Output Quality
-
-- Rule 1: Use direct and factual wording.
-- Rule 2: Separate facts from recommendations.
-- Rule 3: Keep outputs concise.
-
-## Uncertainty & Evidence
-
-- Rule 4: Mark assumptions explicitly.
-- Rule 5: Add confidence statements when evidence is incomplete.
-
-Assumption:
-Confidence:
-
-## Forbidden Patterns
-
-- Rule 6: Do not use social filler.
-- Rule 7: Do not hide uncertainty.
-
-## Scope & Brevity
-
-- Rule 8: Use only necessary constraints.
 `
+
+const LONG_INSTRUCTION = Array.from({ length: 205 }, (_, index) => `- Line ${index + 1}`).join('\n')
+const MANY_HARD_RULES = Array.from({ length: 25 }, (_, index) => `- Must enforce constraint ${index + 1}.`).join('\n')
 
 const tempDirectories = new Set<string>()
 
@@ -95,10 +60,9 @@ describe('runAiSlopPolicyCheck', () => {
   })
 
   it('fails when an instruction file exceeds the line budget', () => {
-    const longBody = Array.from({ length: 205 }, (_, index) => `- Line ${index + 1}`).join('\n')
     const rootDir = createRepo({
       extraFiles: {
-        'src/components/AGENTS.md': `# Long\n\n${longBody}\n`,
+        'src/components/AGENTS.md': `# Long\n\n${LONG_INSTRUCTION}\n`,
       },
     })
 
@@ -108,28 +72,30 @@ describe('runAiSlopPolicyCheck', () => {
     expect(result.failures.some((failure) => failure.includes('exceeds instruction line budget'))).toBe(true)
   })
 
-  it('fails when the root anti-slop section is missing', () => {
+  it('fails when an instruction file exceeds the hard-rule budget', () => {
     const rootDir = createRepo({
-      agentsContent: '# Router\n\nNo anti-slop section here.\n',
+      extraFiles: {
+        'src/components/AGENTS.md': `# Hard rules\n\n${MANY_HARD_RULES}\n`,
+      },
     })
 
     const result = runAiSlopPolicyCheck({ rootDir })
 
     expect(result.ok).toBe(false)
-    expect(
-      result.failures.some((failure) => failure.includes('missing required heading: "## AI Anti-Slop Policy v2"')),
-    ).toBe(true)
+    expect(result.failures.some((failure) => failure.includes('exceeds hard-rule density budget'))).toBe(true)
   })
 
-  it('fails when policy hard-rule budget is exceeded', () => {
+  it('fails when an instruction file exceeds the example-block budget', () => {
     const rootDir = createRepo({
-      agentsContent: `${VALID_AGENTS}\n- Rule 9: Extra hard rule.\n`,
+      extraFiles: {
+        'src/components/AGENTS.md': '# Examples\n\n```text\none\n```\n\n```text\ntwo\n```\n',
+      },
     })
 
     const result = runAiSlopPolicyCheck({ rootDir })
 
     expect(result.ok).toBe(false)
-    expect(result.failures.some((failure) => failure.includes('exceeds policy hard-rule budget'))).toBe(true)
+    expect(result.failures.some((failure) => failure.includes('exceeds example block budget'))).toBe(true)
   })
 
   it('fails on conflicting language policies', () => {
@@ -148,6 +114,7 @@ describe('runAiSlopPolicyCheck', () => {
   it('fails on conflicting tone policies', () => {
     const rootDir = createRepo({
       extraFiles: {
+        'src/AGENTS.md': 'Avoid social filler.',
         'src/components/AGENTS.md': 'Allow social filler when the user is unsure.',
       },
     })
@@ -243,7 +210,7 @@ describe('runAiSlopPolicyCheck', () => {
   it('treats nested AGENTS files as relevant in changed-files mode', () => {
     const rootDir = createRepo({
       extraFiles: {
-        'src/components/AGENTS.md': '# Local\nGreat question\n',
+        'src/components/AGENTS.md': `# Local\n${LONG_INSTRUCTION}\n`,
       },
     })
 
@@ -253,13 +220,13 @@ describe('runAiSlopPolicyCheck', () => {
     })
 
     expect(result.ok).toBe(false)
-    expect(result.failures.some((failure) => failure.includes('banned filler phrase found'))).toBe(true)
+    expect(result.failures.some((failure) => failure.includes('exceeds instruction line budget'))).toBe(true)
   })
 
   it('treats the mobile playbook as relevant in changed-files mode', () => {
     const rootDir = createRepo({
       extraFiles: {
-        'docs/frontend/mobile-ai-playbook.md': 'Great question\n',
+        'docs/frontend/mobile-ai-playbook.md': `${LONG_INSTRUCTION}\n`,
       },
     })
 
@@ -269,7 +236,7 @@ describe('runAiSlopPolicyCheck', () => {
     })
 
     expect(result.ok).toBe(false)
-    expect(result.failures.some((failure) => failure.includes('banned filler phrase found'))).toBe(true)
+    expect(result.failures.some((failure) => failure.includes('exceeds instruction line budget'))).toBe(true)
     expect(result.scannedPaths).toContain('docs/frontend/mobile-ai-playbook.md')
   })
 
@@ -278,12 +245,13 @@ describe('runAiSlopPolicyCheck', () => {
     ['Codex rule file', '.codex/rules/example.rules'],
     ['Codex skill markdown', '.codex/skills/example/SKILL.md'],
     ['Codex skill agent metadata', '.codex/skills/example/agents/openai.yaml'],
+    ['Nested Codex skill agent metadata', '.codex/skills/productivity/example/agents/openai.yaml'],
     ['AI engineering playbook', 'docs/engineering/new-ai-review-playbook.md'],
     ['instruction engineering playbook', 'docs/engineering/new-instruction-review-playbook.md'],
   ])('treats %s as relevant in changed-files mode', (_label, relativePath) => {
     const rootDir = createRepo({
       extraFiles: {
-        [relativePath]: 'Great question\n',
+        [relativePath]: `${LONG_INSTRUCTION}\n`,
       },
     })
 
@@ -293,7 +261,7 @@ describe('runAiSlopPolicyCheck', () => {
     })
 
     expect(result.ok).toBe(false)
-    expect(result.failures.some((failure) => failure.includes('banned filler phrase found'))).toBe(true)
+    expect(result.failures.some((failure) => failure.includes('exceeds instruction line budget'))).toBe(true)
     expect(result.scannedPaths).toContain(relativePath)
   })
 
@@ -304,6 +272,7 @@ describe('runAiSlopPolicyCheck', () => {
         '.codex/rules/example.rules': 'prefix_rule(pattern = ["git"], decision = "prompt")\n',
         '.codex/skills/example/SKILL.md': '# Example\n',
         '.codex/skills/example/agents/openai.yaml': "interface:\n  display_name: 'Example'\n",
+        '.codex/skills/productivity/example/agents/openai.yaml': "interface:\n  display_name: 'Nested example'\n",
         'docs/engineering/new-ai-review-playbook.md': '# Future AI Playbook\n',
         'docs/engineering/new-instruction-review-playbook.md': '# Future Instruction Playbook\n',
         'README.md': '# Not in scope\n',
@@ -315,6 +284,7 @@ describe('runAiSlopPolicyCheck', () => {
       '.codex/rules/example.rules',
       '.codex/skills/example/SKILL.md',
       '.codex/skills/example/agents/openai.yaml',
+      '.codex/skills/productivity/example/agents/openai.yaml',
       'docs/engineering/new-ai-review-playbook.md',
       'docs/engineering/new-instruction-review-playbook.md',
     ]
@@ -329,7 +299,7 @@ describe('runAiSlopPolicyCheck', () => {
   it('keeps changed-files mode scoped to relevant files', () => {
     const rootDir = createRepo({
       extraFiles: {
-        'src/components/AGENTS.md': 'Great question, this exists but was not changed.',
+        'src/components/AGENTS.md': LONG_INSTRUCTION,
       },
     })
 

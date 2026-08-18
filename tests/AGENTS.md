@@ -27,4 +27,5 @@
 - Prefer behavior contracts over implementation mirrors. If a test only repeats constants, classes, or markup fragments, move it to an explicit config/visual/data contract or remove it.
 - Keep product coverage honest: tooling and data-integrity tests must not inflate app unit coverage.
 - For AI-generated tests, reject green tests that define their own subject under test, assert values assigned in the test body, or verify mocked child props without a product-facing behavior.
+- When behavior is removed, delete obsolete tests without replacing them with absence-only tests; cover the surviving behavior and explicit acceptance criteria.
 - Use `pnpm tests:sense-check` after adding or moving tests; hard failures are structure problems, warnings need reviewer judgment.

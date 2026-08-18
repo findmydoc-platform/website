@@ -5,8 +5,8 @@
 | Name    | Content |
 | ---     | --- |
 | Author  | Sebastian Schütze |
-| Version | 1.2 |
-| Date    | 14.04.2026 |
+| Version | 1.3 |
+| Date    | 18.08.2026 |
 | Status  | accepted |
 
 ## Background
@@ -32,8 +32,8 @@ We adopt **AI-Slop v2** with a **pre-commit + pre-push + deep-lane enforcement m
 2. Local `pre-push` gate remains mandatory for instruction-source changes.
 3. Main PR CI remains focused on runtime and security quality gates; AI-slop is not a blocking step there.
 4. Deep quality lane (main + nightly) runs full-scope AI-slop and Semgrep checks.
-5. Instruction sources must follow priority-first and budget-aware design.
-6. Root-level global policy in `AGENTS.md` requires explicit `Scope exception:` rationale.
+5. Instruction sources remain budget-aware and are checked for cross-file language, tone, and execution conflicts.
+6. Generic model-time style and priority-label policies are not duplicated in root `AGENTS.md`; repository-specific safety, delivery, review, test, and validation boundaries remain in their owning instruction scopes.
 
 ## Rationale
 
@@ -63,6 +63,7 @@ It also aligns with research findings that shorter, clearer, non-conflicting ins
 
 - Update `docs/engineering/ai-anti-slop-playbook.md` whenever checker contracts or lane policies change.
 - Keep instruction changes reviewable with explicit reasoning when adding global scope.
+- Compare model-facing instruction removals against the same representative baseline tasks before treating reduced prompt volume as an improvement.
 
 ## Study Basis
 

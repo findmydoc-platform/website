@@ -4,10 +4,7 @@
  * AI Slop Policy Check (v2)
  *
  * Validates instruction quality using deterministic checks:
- * - required anti-slop policy structure
- * - banned filler language and contextual anti-patterns
  * - instruction budget checks (lines / hard rules / examples)
- * - policy-specific budget checks
  * - cross-file conflict checks
  */
 import fs from 'node:fs'
@@ -29,37 +26,10 @@ const AGENT_SCAN_IGNORED_DIRS = new Set([
   'tmp',
 ])
 
-const POLICY_SECTION_HEADING = '## AI Anti-Slop Policy v2'
-
-const REQUIRED_POLICY_HEADINGS = [
-  '## Priorities',
-  '## Required Output Quality',
-  '## Uncertainty & Evidence',
-  '## Forbidden Patterns',
-  '## Scope & Brevity',
-]
-
-const REQUIRED_POLICY_TOKENS = ['Assumption:', 'Confidence:']
-
-const POLICY_LINE_LIMIT = 120
-const POLICY_HARD_RULE_LIMIT = 8
-
 const INSTRUCTION_LINE_LIMIT = 180
 const INSTRUCTION_HARD_RULE_LIMIT = 24
 const INSTRUCTION_EXAMPLE_BLOCK_LIMIT = 1
 const SKILL_REFERENCE_EXAMPLE_BLOCK_LIMIT = 3
-
-const BANNED_PHRASES = [
-  'great question',
-  'awesome question',
-  'happy to help',
-  'i hope this helps',
-  'let me know if you need anything else',
-  'you got this',
-  'no worries',
-]
-
-const CONTEXTUAL_BANNED_PATTERNS = [/as an ai language model/i, /i cannot guarantee/i, /i am just an ai/i]
 
 const CONFLICT_RULES = [
   {
@@ -156,10 +126,6 @@ function loadFile(filePath) {
   return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : null
 }
 
-function getRouterPath(rootDir) {
-  return path.join(rootDir, ROUTER_RELATIVE_PATH)
-}
-
 function collectFilesToScan(rootDir) {
   return [
     ...new Set([
@@ -193,7 +159,7 @@ function isCodexInstructionFile(rootDir, filePath) {
   if (/^\.codex\/agents\/[^/]+\.toml$/u.test(normalizedRelativePath)) return true
   if (/^\.codex\/rules\/[^/]+\.rules$/u.test(normalizedRelativePath)) return true
   if (/^\.codex\/skills\/.+\.md$/u.test(normalizedRelativePath)) return true
-  if (/^\.codex\/skills\/[^/]+\/agents\/openai\.ya?ml$/u.test(normalizedRelativePath)) return true
+  if (/^\.codex\/skills\/.+\/agents\/openai\.ya?ml$/u.test(normalizedRelativePath)) return true
 
   return false
 }
@@ -262,90 +228,6 @@ function getExampleBlockLimit(rootDir, filePath) {
   }
 
   return INSTRUCTION_EXAMPLE_BLOCK_LIMIT
-}
-
-function countPolicyHardRules(content) {
-  const lines = content.split(/\r?\n/u)
-  return lines.filter((line) => /^\s*-\s*Rule\s+\d+:/i.test(line)).length
-}
-
-function extractPolicySection(content) {
-  const startIndex = content.indexOf(POLICY_SECTION_HEADING)
-  if (startIndex === -1) return null
-
-  const sectionFromStart = content.slice(startIndex)
-  const followingTopLevelHeading = sectionFromStart.slice(POLICY_SECTION_HEADING.length).match(/\n#\s+/u)
-  if (!followingTopLevelHeading) return sectionFromStart
-
-  const nextTopLevelIndex = followingTopLevelHeading.index + POLICY_SECTION_HEADING.length
-  if (nextTopLevelIndex <= 0) return sectionFromStart
-
-  return sectionFromStart.slice(0, nextTopLevelIndex)
-}
-
-function checkPolicySection(rootDir, failures) {
-  const routerPath = getRouterPath(rootDir)
-  const content = loadFile(routerPath)
-  if (content === null) {
-    failures.push(`Missing required router file: ${toRelative(rootDir, routerPath)}`)
-    return
-  }
-
-  const section = extractPolicySection(content)
-  if (section === null) {
-    failures.push(`${toRelative(rootDir, routerPath)} -> missing required heading: "${POLICY_SECTION_HEADING}"`)
-    return
-  }
-
-  for (const heading of REQUIRED_POLICY_HEADINGS) {
-    if (!section.includes(heading)) {
-      failures.push(`${toRelative(rootDir, routerPath)} -> missing required heading: "${heading}"`)
-    }
-  }
-
-  for (const token of REQUIRED_POLICY_TOKENS) {
-    if (!section.includes(token)) {
-      failures.push(`${toRelative(rootDir, routerPath)} -> missing required token: "${token}"`)
-    }
-  }
-
-  if (!/direct/i.test(section) || !/factual/i.test(section)) {
-    failures.push(`${toRelative(rootDir, routerPath)} -> policy must require direct and factual wording.`)
-  }
-
-  const lineCount = countLines(section)
-  if (lineCount > POLICY_LINE_LIMIT) {
-    failures.push(
-      `${toRelative(rootDir, routerPath)} -> exceeds policy line budget (${lineCount} > ${POLICY_LINE_LIMIT}).`,
-    )
-  }
-
-  const hardRuleCount = countPolicyHardRules(section)
-  if (hardRuleCount > POLICY_HARD_RULE_LIMIT) {
-    failures.push(
-      `${toRelative(rootDir, routerPath)} -> exceeds policy hard-rule budget (${hardRuleCount} > ${POLICY_HARD_RULE_LIMIT}).`,
-    )
-  }
-}
-
-function checkBannedPhrases(rootDir, files, failures) {
-  for (const filePath of files) {
-    const content = loadFile(filePath)
-    if (content === null) continue
-
-    const lower = content.toLowerCase()
-    for (const phrase of BANNED_PHRASES) {
-      if (lower.includes(phrase)) {
-        failures.push(`${toRelative(rootDir, filePath)} -> banned filler phrase found: "${phrase}"`)
-      }
-    }
-
-    for (const pattern of CONTEXTUAL_BANNED_PATTERNS) {
-      if (pattern.test(content)) {
-        failures.push(`${toRelative(rootDir, filePath)} -> contextual banned pattern found: "${pattern}"`)
-      }
-    }
-  }
 }
 
 function checkInstructionBudgets(rootDir, files, failures) {
@@ -480,8 +362,6 @@ export function runAiSlopPolicyCheck(options = {}) {
   /** @type {string[]} */
   const failures = []
 
-  checkPolicySection(rootDir, failures)
-  checkBannedPhrases(rootDir, filesToScan, failures)
   checkInstructionBudgets(rootDir, filesToScan, failures)
   checkConflicts(rootDir, filesToScan, failures)
 

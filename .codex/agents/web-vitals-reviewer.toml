@@ -1,6 +1,5 @@
 name = "web_vitals_reviewer"
 description = "Read-only reviewer for Core Web Vitals and frontend performance regressions in this repository."
-model = "gpt-5.4-mini"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 nickname_candidates = ["Lighthouse", "Pulse", "Render Watch"]
@@ -34,15 +33,15 @@ Working style:
 
 # Keep the reviewer narrow: allow React performance guidance, avoid broad design and end-to-end verification drift.
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/build-web-apps/2abb1c44/skills/frontend-app-builder"
+name = "build-web-apps:frontend-app-builder"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/2abb1c44/skills/agent-browser-verify"
+name = "vercel:agent-browser-verify"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/plugins/cache/openai-curated/vercel/2abb1c44/skills/verification"
+name = "vercel:verification"
 enabled = false
 
 [[skills.config]]

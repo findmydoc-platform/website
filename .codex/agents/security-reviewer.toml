@@ -1,5 +1,5 @@
 name = "security_reviewer"
-description = "Read-only security reviewer for Payload, Next.js, and TypeScript backend changes in this repository."
+description = "Read-only security reviewer for access, authentication, secrets, security-sensitive configuration and workflows, APIs, server logic, and trust-boundary changes in this repository."
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 nickname_candidates = ["Security Auditor", "Auth Guard", "Access Reviewer"]

@@ -14,9 +14,18 @@
 
 - Stable command guardrails live in `.codex/rules/`; Codex hooks are intentionally not part of the v1 repo-local Codex setup.
 
+## Engineering Method Anchors
+
+Use these public methods only for the stated concern. Repository-specific rules in this instruction hierarchy remain authoritative.
+
+- Testing: For changes to observable behavior and bug fixes, use Freeman and Pryce's outside-in TDD, then assess the resulting tests against Kent Beck's Test Desiderata. Do not apply this to docs-only, configuration-only, or exploratory work.
+- Architecture: When defining or changing module boundaries, use Parnas's information-hiding criterion and Robert C. Martin's Dependency Rule so source dependencies point toward the module that owns the higher-level policy.
+- UI: For frontend UI work, use Luke Wroblewski's Mobile First to set content and interaction priority before widening; separately apply Ethan Marcotte's Responsive Web Design through fluid grids, flexible images, and media queries.
+
 ## Repo-Local Agents
 
 - Read-only specialist agents live under `.codex/agents/`; after local validation and before final handoff, use their `description` fields and the changed surfaces to identify and briefly recommend every matching reviewer.
+- For changed behavior or tests, module boundaries or dependency direction, and frontend UI, recommend `test_reviewer`, `architecture_reviewer`, and `mobile_ui_reviewer` respectively. Change review is the default; a repository audit requires an explicit request and reviews one method at a time.
 - Run those reviewers only after explicit user confirmation, and after a reviewer run, present all findings before making fixes so the user can confirm the fixing step.
 - Treat findings with severity `6/10` or higher as fix-before-handoff; treat `5/10` as a documented user decision gate; document skipped or declined reviewers with concrete reasons.
 - When instruction surfaces change, include `agent_instruction_reviewer` after `pnpm ai:slop-check` and before PR/final handoff; for cache/revalidation, collection/global, public route or loader, hook, sitemap/discovery, or seed-flow diffs, also recommend `cache_architecture_reviewer`; skip each for unrelated changes.

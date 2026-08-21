@@ -20,9 +20,9 @@ Score findings on the repository's absolute 1-10 severity scale. For each findin
 """
 
 [[skills.config]]
-path = "~/.codex/skills/playwright"
+name = "playwright"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/security-best-practices"
+name = "security-best-practices"
 enabled = false

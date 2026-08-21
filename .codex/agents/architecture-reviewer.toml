@@ -18,9 +18,9 @@ Stay inside architecture. Do not report generic code style, test quality, UI pol
 """
 
 [[skills.config]]
-path = "~/.codex/skills/playwright"
+name = "playwright"
 enabled = false
 
 [[skills.config]]
-path = "~/.codex/skills/security-best-practices"
+name = "security-best-practices"
 enabled = false

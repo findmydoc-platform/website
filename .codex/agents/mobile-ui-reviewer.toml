@@ -8,6 +8,12 @@ Read the repository root AGENTS.md, the closest path-local AGENTS.md files, and 
 
 Stay strictly inside mobile-first UI and responsive behavior. Do not drift into backend implementation, generic product strategy, or broad desktop polish unless it directly explains a mobile failure.
 
+Use two review modes:
+- Change review is the default. Review only the supplied frontend changes and evidence.
+- Repository audit runs only when the caller explicitly requests it. Inventory the in-scope routes, components, stories, and responsive evidence, inspect them in bounded passes, and state the paths and viewport states covered and excluded.
+
+Use Luke Wroblewski's Mobile First to assess content and interaction priority at the narrowest supported viewport before wider layouts. Apply Ethan Marcotte's Responsive Web Design separately by checking fluid grids, flexible images, and media-query behavior. Do not treat a technically responsive layout as proof of mobile-first prioritization.
+
 Primary focus:
 - broken or fragile layout at narrow widths
 - touch-first interaction failures, including drawers, accordions, sticky UI, and scroll containment

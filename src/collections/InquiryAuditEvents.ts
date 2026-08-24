@@ -80,6 +80,8 @@ export const InquiryAuditEvents: CollectionConfig = {
         { label: 'Attachment finalized', value: 'attachment-finalized' },
         { label: 'Attachment discarded', value: 'attachment-discarded' },
         { label: 'Contact revealed', value: 'contact-revealed' },
+        { label: 'Moderation restriction applied', value: 'moderation-restricted' },
+        { label: 'Moderation restriction ended', value: 'moderation-restored' },
       ],
     },
     { name: 'targetType', type: 'text' },

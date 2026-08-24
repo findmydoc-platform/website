@@ -47,6 +47,7 @@ import {
   type InquiryAttachmentMimeType,
   type InquiryAttachmentStorageGateway,
 } from './storage'
+import { readInquiryModerationState, type InquiryModerationState } from '@/features/inquiryModeration/service'
 
 export type InquiryCommunicationServiceErrorKind =
   | 'access-denied'
@@ -593,24 +594,34 @@ const readTimeline = async (
   req: PayloadRequest,
   inquiry: StoredRecord,
   actor: InquiryActor,
+  moderationState: InquiryModerationState,
 ): Promise<InquiryDetailDTO['timeline']> => {
   const [messages, notes, auditEvents] = await Promise.all([
     findMany(req, 'inquiryMessages', { inquiry: { equals: inquiry.id } }),
     actor.kind === 'clinic'
       ? findMany(req, 'inquiryInternalNotes', { inquiry: { equals: inquiry.id } })
       : Promise.resolve([]),
-    actor.kind === 'clinic'
-      ? findMany(req, 'inquiryAuditEvents', {
-          and: [
-            { inquiry: { equals: inquiry.id } },
-            {
-              eventType: {
-                in: ['handling-status-changed', 'closed', 'reopened', 'marked-spam', 'spam-removed'],
-              },
-            },
-          ],
-        })
-      : Promise.resolve([]),
+    findMany(req, 'inquiryAuditEvents', {
+      and: [
+        { inquiry: { equals: inquiry.id } },
+        {
+          eventType: {
+            in:
+              actor.kind === 'clinic'
+                ? [
+                    'handling-status-changed',
+                    'closed',
+                    'reopened',
+                    'marked-spam',
+                    'spam-removed',
+                    'moderation-restricted',
+                    'moderation-restored',
+                  ]
+                : ['moderation-restricted', 'moderation-restored'],
+          },
+        },
+      ],
+    }),
   ])
 
   const items: Array<InquiryDetailDTO['timeline'][number] & { internalRank: number; internalSequence: number }> = []
@@ -629,19 +640,32 @@ const readTimeline = async (
         [text(staff?.firstName), text(staff?.lastName)].filter(Boolean).join(' ') || text(staff?.email) || 'Clinic'
     }
 
+    const messageRestricted = moderationState.restrictedMessageIds.has(String(message.id))
+    const attachmentRestricted =
+      attachment !== null && moderationState.restrictedAttachmentIds.has(String(attachment.id))
+    const messageModeration = moderationState.restrictedMessages.get(String(message.id))
+    const attachmentModeration =
+      attachment === null ? undefined : moderationState.restrictedAttachments.get(String(attachment.id))
     items.push({
       actor: {
         displayName,
         isCurrentActor: message.actorKey === actor.key,
         kind: message.authorKind === 'patient' ? 'patient' : 'clinic',
       },
-      ...(attachmentDTO(attachment) ? { attachment: attachmentDTO(attachment) } : {}),
+      ...(!messageRestricted && !attachmentRestricted && attachmentDTO(attachment)
+        ? { attachment: attachmentDTO(attachment), attachmentState: 'available' as const }
+        : attachmentRestricted
+          ? { attachmentState: 'restricted' as const }
+          : {}),
       createdAt: text(message.createdAt),
+      contentState: messageRestricted ? 'restricted' : 'available',
+      ...(messageModeration ? { moderation: messageModeration } : {}),
+      ...(attachmentModeration ? { attachmentModeration } : {}),
       id: activityId('message', message.id),
       internalRank: 2,
       internalSequence: numberValue(message.sequence),
       kind: 'external-message',
-      ...(text(message.text) ? { text: text(message.text) } : {}),
+      ...(!messageRestricted && text(message.text) ? { text: text(message.text) } : {}),
     })
   }
 
@@ -719,6 +743,8 @@ const latestActivity = (
     reopened: 'Inquiry reopened',
     'marked-spam': 'Marked as spam',
     'spam-removed': 'Spam removed',
+    'moderation-restricted': 'Communication restricted',
+    'moderation-restored': 'Communication restored',
   } as const
   return { kind: latest.kind, preview: labels[latest.event] }
 }
@@ -796,10 +822,11 @@ const buildPatientDetail = async (req: PayloadRequest, inquiry: StoredRecord): P
     throw new InquiryCommunicationServiceError('not-found', 'The inquiry does not exist.')
   }
   assertOperationalInquiry(inquiry)
+  const moderationState = await readInquiryModerationState(req, inquiry.id, actor)
   const [clinic, interest, timeline] = await Promise.all([
     buildClinicDescriptor(req, inquiry),
     buildInterest(req, inquiry),
-    readTimeline(req, inquiry, actor),
+    readTimeline(req, inquiry, actor, moderationState),
   ])
   const displayName =
     [text(patient.firstName), text(patient.lastName)].filter(Boolean).join(' ') || text(inquiry.fullName)
@@ -813,6 +840,11 @@ const buildPatientDetail = async (req: PayloadRequest, inquiry: StoredRecord): P
   const actualHandlingStatus = text(inquiry.handlingStatus) || 'submitted'
   const patientHandlingStatus =
     actualHandlingStatus === 'spam' ? text(inquiry.previousHandlingStatus) || 'submitted' : actualHandlingStatus
+  const canReply =
+    text(inquiry.lifecycle) === 'open' &&
+    actualHandlingStatus !== 'spam' &&
+    moderationState.moderation.conversation.state === 'available' &&
+    moderationState.moderation.identity.state === 'available'
 
   return {
     actions: {
@@ -821,7 +853,7 @@ const buildPatientDetail = async (req: PayloadRequest, inquiry: StoredRecord): P
       canChangeLifecycle: false,
       canMarkRead: patientIsUnread,
       canMarkUnread: false,
-      canReply: text(inquiry.lifecycle) === 'open' && actualHandlingStatus !== 'spam',
+      canReply,
       canRevealContact: false,
       canView: true,
     },
@@ -831,7 +863,7 @@ const buildPatientDetail = async (req: PayloadRequest, inquiry: StoredRecord): P
       maxFilesPerMessage: 1,
     },
     binding: {
-      canReply: text(inquiry.lifecycle) === 'open' && actualHandlingStatus !== 'spam',
+      canReply,
       conversationId: String(conversation.id),
       kind: 'patient',
       patient: { displayName, id: String(ownerId) },
@@ -849,6 +881,7 @@ const buildPatientDetail = async (req: PayloadRequest, inquiry: StoredRecord): P
     lastActivityAt,
     latestActivityKind: latest.kind,
     lifecycle: (text(inquiry.lifecycle) || 'open') as InquiryDetailDTO['lifecycle'],
+    moderation: moderationState.moderation,
     originalRequest: {
       message: text(inquiry.message),
       ...(text(inquiry.preferredContactWindow) ? { preferredContactWindow: text(inquiry.preferredContactWindow) } : {}),
@@ -873,11 +906,12 @@ const buildClinicDetail = async (
 ): Promise<InquiryDetailDTO> => {
   const ownerId = relationId(inquiry.patient)
   const operational = isOperationalInquiry(inquiry)
+  const moderationState = await readInquiryModerationState(req, inquiry.id, actor)
   const [clinic, conversation, interest, timeline, position] = await Promise.all([
     buildClinicDescriptor(req, inquiry),
     ownerId === null ? Promise.resolve(null) : readConversation(req, inquiry.id),
     buildInterest(req, inquiry),
-    readTimeline(req, inquiry, actor),
+    readTimeline(req, inquiry, actor, moderationState),
     operational ? readPosition(req, inquiry, actor) : Promise.resolve(null),
   ])
   const createdAt = text(inquiry.createdAt)
@@ -886,7 +920,13 @@ const buildClinicDetail = async (
   const handlingStatus = projectedHandlingStatus(inquiry)
   const lifecycle = projectedLifecycle(inquiry)
   const canReply =
-    operational && ownerId !== null && Boolean(conversation) && lifecycle === 'open' && handlingStatus !== 'spam'
+    operational &&
+    ownerId !== null &&
+    Boolean(conversation) &&
+    lifecycle === 'open' &&
+    handlingStatus !== 'spam' &&
+    moderationState.moderation.conversation.state === 'available' &&
+    moderationState.moderation.identity.state === 'available'
   const binding: InquiryDetailDTO['binding'] =
     ownerId !== null && conversation
       ? {
@@ -934,6 +974,7 @@ const buildClinicDetail = async (
     lastActivityAt,
     latestActivityKind: latest.kind,
     lifecycle,
+    moderation: moderationState.moderation,
     originalRequest: {
       message: text(inquiry.message),
       ...(text(inquiry.preferredContactWindow) ? { preferredContactWindow: text(inquiry.preferredContactWindow) } : {}),
@@ -957,6 +998,9 @@ const toListItem = (detail: InquiryDetailDTO): InquiryListItemDTO => ({
   lastActivityAt: detail.lastActivityAt,
   latestActivityKind: detail.latestActivityKind,
   lifecycle: detail.lifecycle,
+  ...(detail.moderation?.conversation.state === 'restricted'
+    ? { moderationBadge: { conversationRestricted: true } }
+    : {}),
   patientName: detail.patientName,
   preview: detail.preview,
   revision: detail.revision,
@@ -1414,6 +1458,17 @@ const assertExternalCommunicationOpen = async (
     throw new InquiryCommunicationServiceError(
       'invalid-state',
       'The inquiry conversation is unavailable.',
+      await buildDetailForActor(req, inquiry, actor),
+    )
+  }
+  const moderationState = await readInquiryModerationState(req, inquiry.id, actor)
+  if (
+    moderationState.moderation.conversation.state === 'restricted' ||
+    moderationState.moderation.identity.state === 'messaging-suspended'
+  ) {
+    throw new InquiryCommunicationServiceError(
+      'invalid-state',
+      'External communication is restricted.',
       await buildDetailForActor(req, inquiry, actor),
     )
   }
@@ -2543,6 +2598,14 @@ export const readAttachmentAccess = async (
   const inquiryId = relationId(attachment.inquiry)
   if (inquiryId === null) throw new InquiryCommunicationServiceError('not-found', 'The attachment does not exist.')
   await readAuthorizedInquiry(req, String(inquiryId), actor)
+  const moderationState = await readInquiryModerationState(req, inquiryId, actor)
+  const boundMessageId = relationId(attachment.boundMessage)
+  if (
+    moderationState.restrictedAttachmentIds.has(String(attachment.id)) ||
+    (boundMessageId !== null && moderationState.restrictedMessageIds.has(String(boundMessageId)))
+  ) {
+    throw new InquiryCommunicationServiceError('not-found', 'The attachment does not exist.')
+  }
   const sealed = sealedAttachmentArgs(attachment)
   try {
     await storage.verifySealed(sealed)

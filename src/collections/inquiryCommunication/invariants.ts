@@ -357,6 +357,12 @@ export const validateInquiryAuditEvent: CollectionBeforeValidateHook = async ({ 
     await validateClinicActor(req, 'inquiryAuditEvents', record.clinic, record.actorId, 'actorId')
   } else if (record.actorKind === 'system') {
     if (record.actorId !== 'system') fail(req, 'inquiryAuditEvents', 'actorId', 'The system actor is invalid.')
+  } else if (record.actorKind === 'platform') {
+    const platformActor = await findRecord(req, 'platformStaff', record.actorId)
+    const capabilities = Array.isArray(platformActor?.capabilities) ? platformActor.capabilities : []
+    if (!platformActor || !capabilities.includes('conversation-moderation')) {
+      fail(req, 'inquiryAuditEvents', 'actorId', 'The moderation platform actor is invalid.')
+    }
   } else {
     fail(req, 'inquiryAuditEvents', 'actorKind', 'The audit actor kind is not available for this domain.')
   }

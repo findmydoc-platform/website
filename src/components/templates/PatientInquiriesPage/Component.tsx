@@ -9,6 +9,7 @@ import { PatientInquiryConversation } from '@/components/organisms/PatientInquir
 import { PatientInquiryQueue } from '@/components/organisms/PatientInquiryQueue/Component'
 import type { PatientInquiriesState } from '@/features/patientInquiries/model'
 import type { PatientInquiryDetailView } from '@/features/patientInquiries/viewModel'
+import type { InquiryModerationAppealInput, InquiryModerationReportInput } from '@/features/inquiryModeration/contracts'
 import { cn } from '@/utilities/ui'
 
 export type PatientInquiriesPageActions = {
@@ -22,6 +23,8 @@ export type PatientInquiriesPageActions = {
   selectInquiry: PatientInquiryQueueProps['onSelect']
   selectFile: (file?: File) => void
   sendMessage: () => void
+  submitAppeal: (input: InquiryModerationAppealInput) => Promise<{ error?: string; ok: boolean }>
+  submitReport: (input: InquiryModerationReportInput) => Promise<{ error?: string; ok: boolean }>
   updateMessage: (text: string) => void
 }
 
@@ -110,6 +113,8 @@ export function PatientInquiriesPage({ actions, detailView, loginHref, mode, now
                 onRetry={actions.retryDetail}
                 onRetrySend={actions.retrySend}
                 onSend={actions.sendMessage}
+                onSubmitAppeal={actions.submitAppeal}
+                onSubmitReport={actions.submitReport}
                 onTextChange={actions.updateMessage}
                 now={now}
                 status={state.detail.status}

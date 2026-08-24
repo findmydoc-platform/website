@@ -296,13 +296,24 @@ export type InquiryAttachmentDTO = {
   sizeBytes: number
 }
 
+export type InquiryContentModerationDTO = {
+  appeal?: { caseId: string; state: 'available' | 'submitted' | 'unavailable' }
+  category?: string
+  effectiveUntil?: string
+  isCurrentActorAffected: boolean
+}
+
 export type InquiryTimelineItemDTO =
   | {
       actor: { displayName: string; kind: 'patient' | 'clinic'; isCurrentActor: boolean }
       attachment?: InquiryAttachmentDTO
+      attachmentState?: 'available' | 'hard-deleted' | 'restricted'
       createdAt: string
+      contentState?: 'available' | 'hard-deleted' | 'restricted'
       id: string
       kind: 'external-message'
+      moderation?: InquiryContentModerationDTO
+      attachmentModeration?: InquiryContentModerationDTO
       text?: string
     }
   | {
@@ -315,7 +326,14 @@ export type InquiryTimelineItemDTO =
   | {
       actor: { displayName: string; kind: 'clinic' | 'system'; isCurrentActor: boolean }
       createdAt: string
-      event: 'handling-status-changed' | 'closed' | 'reopened' | 'marked-spam' | 'spam-removed'
+      event:
+        | 'handling-status-changed'
+        | 'closed'
+        | 'reopened'
+        | 'marked-spam'
+        | 'spam-removed'
+        | 'moderation-restricted'
+        | 'moderation-restored'
       id: string
       kind: 'system-event'
     }
@@ -336,6 +354,7 @@ export type InquiryListItemDTO = {
   latestActivityKind: 'inquiry' | 'external-message' | 'internal-note' | 'system-event'
   lastActivityAt: string
   lifecycle: InquiryLifecycle
+  moderationBadge?: { conversationRestricted: boolean }
   patientName: string
   preview: string
   revision: number
@@ -366,6 +385,26 @@ export type InquiryDetailDTO = InquiryListItemDTO & {
     message: string
     preferredContactWindow?: string
     treatmentTimeline?: string
+  }
+  moderation?: {
+    conversation:
+      | { state: 'available' }
+      | {
+          appeal?: { caseId: string; state: 'available' | 'submitted' | 'unavailable' }
+          category?: string
+          effectiveUntil?: string
+          isCurrentActorAffected: boolean
+          state: 'restricted'
+        }
+    identity:
+      | { state: 'available' }
+      | {
+          appeal: { caseId: string; state: 'available' | 'submitted' | 'unavailable' }
+          category?: string
+          effectiveUntil?: string
+          isCurrentActorAffected: true
+          state: 'messaging-suspended'
+        }
   }
   timeline: InquiryTimelineItemDTO[]
 }

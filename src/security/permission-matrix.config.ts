@@ -872,5 +872,48 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Immutable private audit facts without copied message or note content',
     },
+    inquiryModerationCases: {
+      slug: 'inquiryModerationCases',
+      displayName: 'InquiryModerationCases',
+      operations: {
+        create: { type: 'conditional', details: 'dedicated participant report commands only' },
+        read: { type: 'conditional', details: 'capability-checked and audited moderation projection only' },
+        update: { type: 'conditional', details: 'dedicated moderation and appeal commands only' },
+        delete: { type: 'conditional', details: 'retention workflow only' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes:
+        'Private moderation cases; participant reports, additive moderation capability, audited scope expansion, and one appeal use dedicated commands',
+    },
+    inquiryModerationEvents: {
+      slug: 'inquiryModerationEvents',
+      displayName: 'InquiryModerationEvents',
+      operations: {
+        create: { type: 'conditional', details: 'dedicated moderation commands only' },
+        read: { type: 'conditional', details: 'audited moderation service only' },
+        update: { type: 'conditional', details: 'immutable after command creation' },
+        delete: { type: 'conditional', details: 'retention workflow only' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes: 'Immutable private moderation audit facts without copied message, attachment, or note content',
+    },
   },
 }

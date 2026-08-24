@@ -11,9 +11,11 @@ import {
   finalizeAttachmentDraft,
   InquiryCommunicationServiceError,
   readAttachmentAccess,
+  readPatientInquiryDetail,
   sendPatientInquiryMessage,
   sweepExpiredAttachmentDrafts,
 } from '@/features/inquiryCommunication/service'
+import { createInquiryModerationReport, decideInquiryModerationCase } from '@/features/inquiryModeration/service'
 import {
   createS3InquiryAttachmentStorage,
   type InquiryAttachmentMimeType,
@@ -31,6 +33,7 @@ import {
   cleanupTrackedUsers,
   createClinicTestUser,
   createPatientTestUser,
+  createPlatformTestUser,
 } from '../fixtures/testUsers'
 
 const storageConfig = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'test' })
@@ -70,6 +73,7 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
   let patientReq: PayloadRequest
   let foreignPatientReq: PayloadRequest
   let clinicReq: PayloadRequest
+  let moderatorReq: PayloadRequest
   const createdInquiryIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
   const createdStaffIds: Array<number | string> = []
@@ -155,6 +159,22 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
     foreignPatientReq.user = asPayloadPatientUser(foreignPatient)
     clinicReq = await createLocalReq({}, payload)
     clinicReq.user = await asClinicScopedPayloadUser(payload, clinicStaff, clinicId)
+    const moderator = await createPlatformTestUser(payload, {
+      createdStaffIds,
+      emailPrefix: `${slugPrefix}-moderator`,
+      firstName: 'Synthetic',
+      lastName: 'Storage Moderator',
+    })
+    const moderatorWithCapability = await payload.update({
+      collection: 'platformStaff',
+      context: { trustedPlatformStaffOps: true },
+      data: { capabilities: ['conversation-moderation'] },
+      depth: 0,
+      id: moderator.id,
+      overrideAccess: true,
+    })
+    moderatorReq = await createLocalReq({}, payload)
+    moderatorReq.user = { ...moderatorWithCapability, collection: 'platformStaff' } as never
   }, 60_000)
 
   afterAll(async () => {
@@ -175,6 +195,8 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
     await createS3InquiryAttachmentStorage().deleteObjects(remainingObjectKeys)
 
     for (const collection of [
+      'inquiryModerationEvents',
+      'inquiryModerationCases',
       'inquiryAuditEvents',
       'inquiryReadPositions',
       'inquiryMessages',
@@ -260,6 +282,10 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
       attachment: { fileName: 'Synthetic result.png' },
       kind: 'external-message',
     })
+    const attachmentMessage = sent.inquiry.timeline.at(-1)
+    if (!attachmentMessage || attachmentMessage.kind !== 'external-message') {
+      throw new Error('Expected the bound attachment message.')
+    }
     await expect(readAttachment(finalized.attachment.id)).resolves.toMatchObject({ state: 'bound' })
 
     const patientAccess = await readAttachmentAccess(patientReq, {
@@ -281,6 +307,36 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
     await expect(
       readAttachmentAccess(foreignPatientReq, { attachmentId: finalized.attachment.id, mode: 'download' }),
     ).rejects.toMatchObject({ kind: 'not-found' } satisfies Partial<InquiryCommunicationServiceError>)
+
+    const report = await createInquiryModerationReport(clinicReq, {
+      category: 'privacy-concern',
+      description: 'Synthetic attachment report against the opposite-party upload.',
+      idempotencyKey: `${slugPrefix}-attachment-report`,
+      inquiryId: inquiry.id,
+      targetId: finalized.attachment.id,
+      targetType: 'attachment',
+    })
+    await decideInquiryModerationCase(moderatorReq, {
+      caseId: report.reportId,
+      category: 'privacy-concern',
+      outcome: 'content-restricted',
+      reason: 'Synthetic attachment restriction decision.',
+    })
+
+    await expect(
+      readAttachmentAccess(patientReq, { attachmentId: finalized.attachment.id, mode: 'download' }),
+    ).rejects.toMatchObject({ kind: 'not-found' } satisfies Partial<InquiryCommunicationServiceError>)
+    await expect(
+      readAttachmentAccess(clinicReq, { attachmentId: finalized.attachment.id, mode: 'preview' }),
+    ).rejects.toMatchObject({ kind: 'not-found' } satisfies Partial<InquiryCommunicationServiceError>)
+
+    const restrictedPatientDetail = await readPatientInquiryDetail(patientReq, { inquiryId: inquiry.id })
+    const restrictedAttachmentMessage = restrictedPatientDetail.timeline.find(
+      (item) => item.id === attachmentMessage.id,
+    )
+    expect(restrictedAttachmentMessage).toMatchObject({ attachmentState: 'restricted', kind: 'external-message' })
+    expect(restrictedAttachmentMessage).not.toHaveProperty('attachment')
+    expect(JSON.stringify(restrictedPatientDetail)).not.toContain('Synthetic result.png')
   })
 
   it('rejects HEAD size, metadata type, and magic-byte drift before reusing the reserved ready key', async () => {

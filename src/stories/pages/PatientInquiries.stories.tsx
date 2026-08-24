@@ -14,8 +14,14 @@ import type { PatientInquiriesApi } from '@/features/patientInquiries/browserGat
 import {
   activePatientInquiryDetail,
   activePatientInquiryState,
+  appealSubmittedPatientInquiryDetail,
   closedPatientInquiryDetail,
+  identitySuspendedPatientInquiryDetail,
+  otherParticipantRestrictedPatientInquiryDetail,
   patientInquiryQueue,
+  restoredPatientInquiryDetail,
+  restrictedAttachmentPatientInquiryDetail,
+  restrictedPatientInquiryDetail,
 } from '@/stories/fixtures/patientInquiries'
 import { normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 import { headerDataWithSubmenus } from '../templates/fixtures'
@@ -48,6 +54,8 @@ const actions: PatientInquiriesPageActions = {
   selectFilter: fn(),
   selectInquiry: fn(),
   sendMessage: fn(),
+  submitAppeal: fn(async () => ({ ok: true })),
+  submitReport: fn(async () => ({ ok: true })),
   updateMessage: fn(),
 }
 
@@ -136,6 +144,12 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+const stateWithDetail = (detail: typeof activePatientInquiryDetail) => ({
+  ...activePatientInquiryState(),
+  detail: { changeCursor: `detail-${detail.id}`, data: detail, status: 'ready' as const },
+  selectedInquiryId: detail.id,
+})
 
 export const Active: Story = {
   play: async ({ canvasElement }) => {
@@ -308,6 +322,137 @@ export const ControllerFlow: Story = {
   },
 }
 
+export const Restricted: Story = {
+  args: {
+    detailView: restrictedPatientInquiryDetail,
+    state: {
+      ...activePatientInquiryState(),
+      detail: { changeCursor: 'detail-restricted', data: restrictedPatientInquiryDetail, status: 'ready' },
+      queue: {
+        data: {
+          ...patientInquiryQueue,
+          items: patientInquiryQueue.items.map((item) =>
+            item.id === restrictedPatientInquiryDetail.id
+              ? { ...item, moderationBadge: { conversationRestricted: true } }
+              : item,
+          ),
+        },
+        status: 'ready',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('Messaging in this conversation is restricted')).toBeInTheDocument()
+    await expect(canvas.getByText('Message unavailable')).toBeInTheDocument()
+    await expect(canvas.queryByRole('textbox', { name: 'Message' })).not.toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Appeal decision' })).toBeInTheDocument()
+  },
+}
+
+export const RestrictedAttachment: Story = {
+  args: {
+    detailView: restrictedAttachmentPatientInquiryDetail,
+    state: stateWithDetail(restrictedAttachmentPatientInquiryDetail),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('Attachment unavailable')).toBeInTheDocument()
+    await expect(canvas.queryByText('treatment-plan.pdf')).not.toBeInTheDocument()
+    await expect(canvas.queryByRole('link', { name: 'Download treatment-plan.pdf' })).not.toBeInTheDocument()
+  },
+}
+
+export const IdentitySuspended: Story = {
+  args: {
+    detailView: identitySuspendedPatientInquiryDetail,
+    state: stateWithDetail(identitySuspendedPatientInquiryDetail),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('Messaging is suspended for this account')).toBeInTheDocument()
+    await expect(canvas.queryByRole('textbox', { name: 'Message' })).not.toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Appeal decision' })).toBeInTheDocument()
+  },
+}
+
+export const OtherParticipantRestricted: Story = {
+  args: {
+    detailView: otherParticipantRestrictedPatientInquiryDetail,
+    state: stateWithDetail(otherParticipantRestrictedPatientInquiryDetail),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText(/restricted the other participant/u)).toBeInTheDocument()
+    await expect(canvas.queryByRole('button', { name: 'Appeal decision' })).not.toBeInTheDocument()
+  },
+}
+
+export const AppealSubmitted: Story = {
+  args: {
+    detailView: appealSubmittedPatientInquiryDetail,
+    state: stateWithDetail(appealSubmittedPatientInquiryDetail),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getAllByText('Appeal submitted').length).toBeGreaterThan(0)
+  },
+}
+
+export const RestrictionRestored: Story = {
+  args: {
+    detailView: restoredPatientInquiryDetail,
+    state: stateWithDetail(restoredPatientInquiryDetail),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('findmydoc restored communication in this inquiry.')).toBeInTheDocument()
+    await expect(canvas.getByRole('textbox', { name: 'Message' })).toBeInTheDocument()
+  },
+}
+
+export const ReportForm: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await canvas.getByRole('button', { name: 'Report conversation' }).click()
+    const dialog = within(within(document.body).getByRole('dialog'))
+    await expect(dialog.getByRole('heading', { name: 'Report conversation' })).toBeInTheDocument()
+    await expect(dialog.getByText('Conversation with Izmir Coast Dental')).toBeInTheDocument()
+    await expect(dialog.getByText(/not an emergency channel/u)).toBeInTheDocument()
+  },
+}
+
+export const ReportMessageForm: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await canvas.getAllByRole('button', { name: 'Report message' })[0]?.click()
+    const dialog = within(within(document.body).getByRole('dialog'))
+    await expect(dialog.getByRole('heading', { name: 'Report message' })).toBeInTheDocument()
+    await expect(dialog.getByText(/Dr\. Demir can review your scans/u)).toBeInTheDocument()
+  },
+}
+
+export const ReportAttachmentForm: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await canvas.getByRole('button', { name: 'Report attachment' }).click()
+    const dialog = within(within(document.body).getByRole('dialog'))
+    await expect(dialog.getByRole('heading', { name: 'Report attachment' })).toBeInTheDocument()
+    await expect(dialog.getByText('treatment-plan.pdf')).toBeInTheDocument()
+  },
+}
+
+export const ReportConfirmation: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await canvas.getByRole('button', { name: 'Report conversation' }).click()
+    const dialog = within(within(document.body).getByRole('dialog'))
+    await userEvent.selectOptions(dialog.getByLabelText('Reason'), 'privacy-concern')
+    await userEvent.click(dialog.getByRole('button', { name: 'Submit report' }))
+    await expect(dialog.findByRole('heading', { name: 'Report received' })).resolves.toBeInTheDocument()
+  },
+}
+
 export const Active375: Story = withViewportStory(Active, 'public375', 'Active / 375')
 export const Active320: Story = withViewportStory(Active, 'public320', 'Active / 320')
 export const Active320Short: Story = withViewportStory(Active, 'public320Short', 'Active / 320 short')
@@ -326,3 +471,5 @@ export const InvalidAttachment1280: Story = withViewportStory(
   'public1280',
   'Invalid attachment / 1280',
 )
+export const Restricted375: Story = withViewportStory(Restricted, 'public375', 'Restricted / 375')
+export const Restricted1280: Story = withViewportStory(Restricted, 'public1280', 'Restricted / 1280')

@@ -154,6 +154,110 @@ export const closedPatientInquiryDetail: PatientInquiryDetailView = {
   ],
 }
 
+export const restrictedPatientInquiryDetail: PatientInquiryDetailView = {
+  ...detailBase,
+  actions: { ...detailBase.actions, canReply: false },
+  binding: { ...detailBase.binding, canReply: false },
+  moderation: {
+    conversation: {
+      appeal: { caseId: 'moderation-case-synthetic', state: 'available' },
+      category: 'privacy-concern',
+      effectiveUntil: '2026-08-28T12:00:00.000Z',
+      isCurrentActorAffected: true,
+      state: 'restricted',
+    },
+    identity: { state: 'available' },
+  },
+  timeline: [
+    activePatientInquiryDetail.timeline[0]!,
+    {
+      actor: { displayName: 'Aylin Synthetic', isCurrentActor: true, kind: 'patient' },
+      contentState: 'restricted',
+      createdAt: '2026-08-24T07:42:00.000Z',
+      id: 'message-patient-restricted',
+      kind: 'external-message',
+      moderation: {
+        appeal: { caseId: 'moderation-case-content', state: 'submitted' },
+        category: 'privacy-concern',
+        isCurrentActorAffected: true,
+      },
+    },
+    {
+      actor: { displayName: 'System', isCurrentActor: false, kind: 'system' },
+      createdAt: '2026-08-24T08:10:00.000Z',
+      event: 'moderation-restricted',
+      id: 'event-moderation-restricted',
+      kind: 'system-event',
+    },
+  ],
+}
+
+export const restrictedAttachmentPatientInquiryDetail: PatientInquiryDetailView = {
+  ...activePatientInquiryDetail,
+  timeline: activePatientInquiryDetail.timeline.map((item, index) =>
+    index === 0 && item.kind === 'external-message'
+      ? {
+          ...item,
+          attachment: undefined,
+          attachmentDownloadHref: undefined,
+          attachmentModeration: { isCurrentActorAffected: false },
+          attachmentState: 'restricted',
+        }
+      : item,
+  ),
+}
+
+export const identitySuspendedPatientInquiryDetail: PatientInquiryDetailView = {
+  ...activePatientInquiryDetail,
+  actions: { ...activePatientInquiryDetail.actions, canReply: false },
+  binding: { ...activePatientInquiryDetail.binding, canReply: false },
+  moderation: {
+    conversation: { state: 'available' },
+    identity: {
+      appeal: { caseId: 'moderation-case-identity', state: 'available' },
+      category: 'harassment-threats',
+      effectiveUntil: '2026-08-30T12:00:00.000Z',
+      isCurrentActorAffected: true,
+      state: 'messaging-suspended',
+    },
+  },
+}
+
+export const otherParticipantRestrictedPatientInquiryDetail: PatientInquiryDetailView = {
+  ...restrictedPatientInquiryDetail,
+  moderation: {
+    conversation: { isCurrentActorAffected: false, state: 'restricted' },
+    identity: { state: 'available' },
+  },
+}
+
+export const appealSubmittedPatientInquiryDetail: PatientInquiryDetailView = {
+  ...restrictedPatientInquiryDetail,
+  moderation: {
+    conversation: {
+      ...restrictedPatientInquiryDetail.moderation?.conversation,
+      appeal: { caseId: 'moderation-case-synthetic', state: 'submitted' },
+      isCurrentActorAffected: true,
+      state: 'restricted',
+    },
+    identity: { state: 'available' },
+  },
+}
+
+export const restoredPatientInquiryDetail: PatientInquiryDetailView = {
+  ...activePatientInquiryDetail,
+  timeline: [
+    ...activePatientInquiryDetail.timeline,
+    {
+      actor: { displayName: 'System', isCurrentActor: false, kind: 'system' },
+      createdAt: '2026-08-24T09:12:00.000Z',
+      event: 'moderation-restored',
+      id: 'event-moderation-restored',
+      kind: 'system-event',
+    },
+  ],
+}
+
 export const activePatientInquiryState = (): PatientInquiriesState => ({
   ...createInitialPatientInquiriesState('inquiry-izmir'),
   detail: { changeCursor: 'detail-synthetic-1', data: activePatientInquiryDetail, status: 'ready' },

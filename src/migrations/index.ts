@@ -61,6 +61,9 @@ import * as migration_20260808_125901_review_schema_snapshot_alignment from './2
 import * as migration_20260808_130742_review_versioned_moderation_foundation from './20260808_130742_review_versioned_moderation_foundation'
 import * as migration_20260814_102337_clinic_profile_gallery from './20260814_102337_clinic_profile_gallery'
 import * as migration_20260824_135226_inquiry_communication_foundation from './20260824_135226_inquiry_communication_foundation'
+import * as migration_20260824_191853_inquiry_moderation_foundation from './20260824_191853_inquiry_moderation_foundation'
+import * as migration_20260824_193039_inquiry_moderation_audit_events from './20260824_193039_inquiry_moderation_audit_events'
+import * as migration_20260824_201842_inquiry_moderation_measure_end from './20260824_201842_inquiry_moderation_measure_end'
 
 export const migrations = [
   {
@@ -377,5 +380,20 @@ export const migrations = [
     up: migration_20260824_135226_inquiry_communication_foundation.up,
     down: migration_20260824_135226_inquiry_communication_foundation.down,
     name: '20260824_135226_inquiry_communication_foundation',
+  },
+  {
+    up: migration_20260824_191853_inquiry_moderation_foundation.up,
+    down: migration_20260824_191853_inquiry_moderation_foundation.down,
+    name: '20260824_191853_inquiry_moderation_foundation',
+  },
+  {
+    up: migration_20260824_193039_inquiry_moderation_audit_events.up,
+    down: migration_20260824_193039_inquiry_moderation_audit_events.down,
+    name: '20260824_193039_inquiry_moderation_audit_events',
+  },
+  {
+    up: migration_20260824_201842_inquiry_moderation_measure_end.up,
+    down: migration_20260824_201842_inquiry_moderation_measure_end.down,
+    name: '20260824_201842_inquiry_moderation_measure_end',
   },
 ]

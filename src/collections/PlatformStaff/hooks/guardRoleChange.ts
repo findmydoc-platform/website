@@ -12,6 +12,13 @@ const isTrustedPlatformStaffOps = (context: unknown): boolean =>
     (context as { trustedPlatformStaffOps?: unknown }).trustedPlatformStaffOps === true,
   )
 
+const normalizedCapabilities = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value
+        .filter((entry): entry is string => typeof entry === 'string')
+        .sort((left, right) => left.localeCompare(right))
+    : []
+
 export const guardPlatformStaffRoleChange: CollectionBeforeChangeHook = async ({
   data,
   operation,
@@ -20,8 +27,12 @@ export const guardPlatformStaffRoleChange: CollectionBeforeChangeHook = async ({
 }) => {
   const requestedRole = data.role
   const previousRole = originalDoc?.role
+  const capabilitiesChanged =
+    JSON.stringify(normalizedCapabilities(data.capabilities)) !==
+    JSON.stringify(normalizedCapabilities(originalDoc?.capabilities))
+  const roleChanged = isPlatformStaffRole(requestedRole) && requestedRole !== previousRole
 
-  if (!isPlatformStaffRole(requestedRole) || requestedRole === previousRole) return data
+  if (!roleChanged && !capabilitiesChanged) return data
   if (isTrustedPlatformStaffOps(req.context)) return data
 
   if (operation === 'create') {
@@ -29,11 +40,11 @@ export const guardPlatformStaffRoleChange: CollectionBeforeChangeHook = async ({
   }
 
   if (!req.user || req.user.collection !== 'platformStaff') {
-    throw new Error('Only an administrator may change a platform staff role')
+    throw new Error('Only an administrator may change platform staff privileges')
   }
 
   if (String(req.user.id) === String(originalDoc?.id)) {
-    throw new Error('Platform staff may not change their own role')
+    throw new Error('Platform staff may not change their own privileges')
   }
 
   const actor = await req.payload.findByID({
@@ -46,7 +57,7 @@ export const guardPlatformStaffRoleChange: CollectionBeforeChangeHook = async ({
   })
 
   if (actor.role !== 'admin') {
-    throw new Error('Only an administrator may change a platform staff role')
+    throw new Error('Only an administrator may change platform staff privileges')
   }
 
   return data

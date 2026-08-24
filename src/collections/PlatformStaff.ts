@@ -128,6 +128,16 @@ export const PlatformStaff: CollectionConfig = {
         description: 'Choose the access level for this staff member',
       },
     },
+    {
+      name: 'capabilities',
+      type: 'select',
+      hasMany: true,
+      defaultValue: [],
+      options: [{ label: 'Conversation moderation', value: 'conversation-moderation' }],
+      admin: {
+        description: 'Grant additive access to focused platform operations',
+      },
+    },
   ],
   timestamps: true,
 }

@@ -310,7 +310,8 @@ sitemap surfaces.
 ## Inquiry communication contract
 
 The inquiry capability uses focused custom Payload endpoints. Generic REST and GraphQL access to the inquiry
-aggregate, conversations, messages, internal notes, attachments, read positions, and audit events stays disabled.
+aggregate, conversations, messages, internal notes, attachments, read positions, audit events, moderation cases, and
+moderation events stays disabled.
 Every route in this section requires exactly one negotiated inquiry contract value before it performs authorization or
 domain work. Version 1 excludes the version 2-only `moderation-restricted`, `moderation-restored`, and
 `legacy-closed-migrated` system events. Current Dashboard clients use version 2.
@@ -329,13 +330,16 @@ domain work. Version 1 excludes the version 2-only `moderation-restricted`, `mod
 | `POST /api/clinic-dashboard/inquiries/attachments/drafts/discard` | Marks one own unused draft discarded and schedules non-blocking object cleanup. |
 | `GET /api/clinic-dashboard/inquiries/attachments/preview` | Reauthorizes and proxies allowlisted attachment bytes for preview. |
 | `GET /api/clinic-dashboard/inquiries/attachments/download` | Reauthorizes and proxies allowlisted attachment bytes for download. |
+| `POST /api/clinic-dashboard/inquiries/report` | Reports one opposite-party message, attachment, or conversation without changing visibility. |
+| `POST /api/clinic-dashboard/inquiries/appeal` | Submits the affected clinic's single text-only appeal against an active measure. |
 
 Every operation requires an explicit Supabase Bearer token. Payload verifies that token even when request middleware
 already populated `req.user`, then requires the verified Supabase subject to equal the current `clinicStaff` identity.
 A cookie-resolved principal, an invalid token, or a token for a different staff identity cannot authorize these
 endpoints. Reads require `clinic-inquiries:view`; messages, notes, state changes, and attachment draft mutations require
-`clinic-inquiries:edit`. The endpoint and domain service both resolve the current clinic and actor. Request bodies and
-queries reject actor, clinic, patient, Payload collection, depth, and generic filter inputs.
+`clinic-inquiries:edit`. Reports and appeals require `clinic-inquiries:view` and a current participant binding. The
+endpoint and domain service both resolve the current clinic and actor. Request bodies and queries reject actor,
+clinic, patient, Payload collection, depth, and generic filter inputs.
 
 Contact reveal adds user-presence verification. The same Bearer token must contain a verified object-form first-factor
 AMR entry no older than five minutes, and its subject must still match the current staff identity. A silent refresh and
@@ -381,6 +385,45 @@ Supabase, database, and storage errors never cross this boundary.
 
 The Dashboard BFF remains responsible for its same-origin session-bound CSRF guard on mutations. These server-to-server
 Payload endpoints do not add browser CORS access or a second CSRF scheme.
+
+### Inquiry moderation contract
+
+A clinic or patient participant may report one immutable opposite-party external message, private attachment, or the
+whole conversation. The report accepts an actor-bound idempotency key and exactly one category:
+`harassment-threats`, `spam-fraud-impersonation`, `suspected-illegal-content`, `privacy-concern`, or `other`.
+`other` requires a description. Internal notes cannot be reported. Reporter identity, report text, and moderation
+audit data never enter participant projections. Creating a report opens a case but never restricts content or an
+identity automatically.
+
+Platform access is additive. Only a platform staff identity with `conversation-moderation` may use the focused
+moderation service. The initial read returns the reported object and the minimum necessary metadata and context. A
+reasoned, audited expansion is required before reading more external conversation content; a whole-conversation report
+starts with that external scope. Generic collection, REST, GraphQL, and admin browsing remains disabled. The platform
+routes are `POST /api/platform/inquiry-moderation/cases/read`,
+`POST /api/platform/inquiry-moderation/cases/expand-access`,
+`POST /api/platform/inquiry-moderation/cases/decision`, and
+`POST /api/platform/inquiry-moderation/cases/appeal-decision`.
+
+A decision may record no action, restrict one reported content item, restrict the conversation, or suspend the
+affected participant from external inquiry messaging. Sent text and attachment records remain immutable. A content
+restriction preserves actor and time but replaces text with an unavailable state; an attachment restriction also
+hides file name, MIME type, size, preview, and download. A conversation restriction blocks external messages from both
+participants while clinic internal notes remain available. An identity suspension blocks the affected actor from
+writing across all conversations but retains login, history reads, and the appeal path. The service enforces every
+restriction inside the write transaction and returns `canReply: false` in current projections.
+
+Moderation and inquiry lifecycle are independent. A moderation decision neither closes nor reopens an inquiry.
+Restriction and restoration append neutral system events and may change ordering, but never create personal unread
+activity. The affected participant receives only the safe category, optional measure end, and one text-only appeal;
+the other participant receives only the minimum restriction state needed to explain unavailable content or disabled
+messaging. An upheld appeal leaves the measure unchanged. An overturned appeal restores the original unchanged content
+and appends a neutral restoration event. A later hard-delete remains terminal and is outside this contract.
+
+Patient reporting and appeal use `POST /api/patient/inquiries/report` and
+`POST /api/patient/inquiries/appeal`. Participant routes use the stable moderation errors
+`MODERATION_INVALID_INPUT`, `MODERATION_UNAUTHORIZED`, `MODERATION_ACCESS_DENIED`, `MODERATION_NOT_FOUND`,
+`MODERATION_CONFLICT`, `MODERATION_INVALID_STATE`, and `MODERATION_SERVICE_UNAVAILABLE`. Raw case data and internal
+errors never cross the boundary.
 
 The cache decision is `no-public-impact`. All inquiry communication collections are cataloged as `private-live`; there
 are no public reads, tags, paths, planner events, or public revalidation owners. This contract does not suppress a

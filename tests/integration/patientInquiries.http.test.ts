@@ -60,6 +60,12 @@ vi.mock('@/auth/utilities/supaBaseServer', async (importOriginal) => {
   }
 })
 
+vi.mock('next/server.js', () => ({
+  after: (task: () => Promise<unknown> | unknown) => {
+    void task()
+  },
+}))
+
 const requestPatientEndpoint = (
   path: string,
   token: string,
@@ -83,6 +89,7 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
   let doctorId: number | string
   let clinicStaffUser: PayloadRequestUser
   let inquiryId: string
+  let inquiryConversationId: string
   let foreignInquiryId: string
   let guestInquiryId: string
   let initialRevision: number
@@ -183,6 +190,17 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     inquiryId = created.inquiry.id
     initialRevision = created.inquiry.revision
     createdInquiryIds.push(inquiryId)
+    const conversation = (
+      await payload.find({
+        collection: 'inquiryConversations',
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+        where: { inquiry: { equals: inquiryId } },
+      })
+    ).docs[0]
+    if (!conversation) throw new Error('Expected a patient inquiry conversation.')
+    inquiryConversationId = String(conversation.id)
 
     const foreignReq: PayloadRequest = await createLocalReq({}, payload)
     foreignReq.user = asPayloadPatientUser(foreignPatient)
@@ -217,6 +235,8 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     syntheticBearerUsers.clear()
     if (!payload) return
     for (const collection of [
+      'inquiryModerationEvents',
+      'inquiryModerationCases',
       'inquiryAuditEvents',
       'inquiryReadPositions',
       'inquiryMessages',
@@ -434,6 +454,43 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
       where: { inquiry: { equals: inquiryId } },
     })
     expect(messages.docs).toHaveLength(1)
+  })
+
+  it('registers patient moderation reporting without automatically restricting the conversation', async () => {
+    const response = await requestPatientEndpoint('/api/patient/inquiries/report', patientToken, {
+      body: {
+        category: 'privacy-concern',
+        description: 'Synthetic report through the registered patient boundary.',
+        idempotencyKey: `${slugPrefix}-http-moderation-report`,
+        inquiryId,
+        targetId: inquiryConversationId,
+        targetType: 'conversation',
+      },
+      method: 'POST',
+    })
+
+    expect(response.status).toBe(201)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    await expect(response.json()).resolves.toMatchObject({ received: true, reportId: expect.any(String) })
+
+    const detailResponse = await requestPatientEndpoint(
+      `/api/patient/inquiries/detail?inquiryId=${encodeURIComponent(inquiryId)}`,
+      patientToken,
+    )
+    await expect(detailResponse.json()).resolves.toMatchObject({ inquiry: { actions: { canReply: true } } })
+
+    const foreignResponse = await requestPatientEndpoint('/api/patient/inquiries/report', foreignPatientToken, {
+      body: {
+        category: 'privacy-concern',
+        idempotencyKey: `${slugPrefix}-foreign-http-moderation-report`,
+        inquiryId,
+        targetId: inquiryConversationId,
+        targetType: 'conversation',
+      },
+      method: 'POST',
+    })
+    expect(foreignResponse.status).toBe(404)
+    await expect(foreignResponse.json()).resolves.toEqual({ error: { code: 'MODERATION_NOT_FOUND' } })
   })
 
   it('keeps foreign and missing detail indistinguishable and rejects an invalid session', async () => {

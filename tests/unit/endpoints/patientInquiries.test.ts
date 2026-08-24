@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   readAttachmentAccess: vi.fn(),
   readDetail: vi.fn(),
   readQueue: vi.fn(),
+  reconcileModeration: vi.fn(),
   sendMessage: vi.fn(),
   sweep: vi.fn(),
   updateReadPosition: vi.fn(),
@@ -45,6 +46,10 @@ vi.mock('@/features/inquiryCommunication/service', async (importOriginal) => ({
   sendPatientInquiryMessage: mocks.sendMessage,
   sweepExpiredAttachmentDrafts: mocks.sweep,
   updatePatientInquiryReadPosition: mocks.updateReadPosition,
+}))
+
+vi.mock('@/features/inquiryModeration/service', () => ({
+  reconcileExpiredInquiryModerationMeasures: mocks.reconcileModeration,
 }))
 
 vi.mock('@/plugins/storageConfig', () => ({
@@ -121,6 +126,7 @@ describe('patient inquiry endpoints', () => {
       inquiry,
       unchanged: false,
     })
+    mocks.reconcileModeration.mockResolvedValue({ reconciled: 0 })
     mocks.sendMessage.mockResolvedValue({ inquiry, replayed: false })
     mocks.updateReadPosition.mockResolvedValue({ inquiry: { ...inquiry, unread: { count: 0, isUnread: false } } })
     mocks.createDraft.mockResolvedValue({
@@ -260,6 +266,9 @@ describe('patient inquiry endpoints', () => {
       changeCursor: 'detail-change-1',
       inquiry,
       unchanged: false,
+    })
+    await vi.waitFor(() => {
+      expect(mocks.reconcileModeration).toHaveBeenCalledWith(req, { inquiryId: inquiry.id })
     })
   })
 

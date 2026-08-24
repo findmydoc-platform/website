@@ -4,6 +4,7 @@ import * as React from 'react'
 
 import { PatientInquiriesPage } from '@/components/templates/PatientInquiriesPage/Component'
 import type { InquiryDetailDTO, PatientInquiryQueueInput } from '@/features/inquiryCommunication/contracts'
+import type { InquiryModerationAppealInput, InquiryModerationReportInput } from '@/features/inquiryModeration/contracts'
 
 import { PatientInquiriesApiError, createPatientInquiriesBrowserApi, type PatientInquiriesApi } from './browserGateway'
 import {
@@ -27,7 +28,9 @@ const isSessionError = (error: unknown): error is PatientInquiriesApiError =>
   error instanceof PatientInquiriesApiError &&
   (error.code === 'INQUIRY_UNAUTHORIZED' ||
     error.code === 'INQUIRY_REAUTHENTICATION_REQUIRED' ||
-    error.code === 'INQUIRY_ACCESS_DENIED')
+    error.code === 'INQUIRY_ACCESS_DENIED' ||
+    error.code === 'MODERATION_UNAUTHORIZED' ||
+    error.code === 'MODERATION_ACCESS_DENIED')
 
 const messageForError = (error: unknown, fallback: string): string => {
   if (!(error instanceof PatientInquiriesApiError)) return fallback
@@ -359,6 +362,40 @@ export function PatientInquiriesController({
     dispatch({ type: 'composer-cleared' })
   }, [api])
 
+  const submitReport = React.useCallback(
+    async (input: InquiryModerationReportInput): Promise<{ error?: string; ok: boolean }> => {
+      try {
+        await api.report(input)
+        return { ok: true }
+      } catch (error: unknown) {
+        if (isSessionError(error)) {
+          endSession()
+          return { error: 'Your session has ended.', ok: false }
+        }
+        return { error: messageForError(error, 'The report could not be submitted. Try again.'), ok: false }
+      }
+    },
+    [api, endSession],
+  )
+
+  const submitAppeal = React.useCallback(
+    async (input: InquiryModerationAppealInput): Promise<{ error?: string; ok: boolean }> => {
+      try {
+        await api.appeal(input)
+        const inquiryId = stateRef.current.selectedInquiryId
+        if (inquiryId) await loadDetail(inquiryId)
+        return { ok: true }
+      } catch (error: unknown) {
+        if (isSessionError(error)) {
+          endSession()
+          return { error: 'Your session has ended.', ok: false }
+        }
+        return { error: messageForError(error, 'The appeal could not be submitted. Try again.'), ok: false }
+      }
+    },
+    [api, endSession, loadDetail],
+  )
+
   const resolvedMode = state.selectedInquiryId ? 'detail' : mode
 
   return (
@@ -386,6 +423,8 @@ export function PatientInquiriesController({
         selectFilter,
         selectInquiry,
         sendMessage: () => void send(false),
+        submitAppeal,
+        submitReport,
         updateMessage: (text) => dispatch({ text, type: 'composer-text-changed' }),
       }}
       detailView={detailView}

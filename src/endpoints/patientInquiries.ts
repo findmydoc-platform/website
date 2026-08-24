@@ -25,6 +25,7 @@ import {
   sweepExpiredAttachmentDrafts,
   updatePatientInquiryReadPosition,
 } from '@/features/inquiryCommunication/service'
+import { reconcileExpiredInquiryModerationMeasures } from '@/features/inquiryModeration/service'
 import { toLoggedError } from '@/utilities/logging/shared'
 import { proxyInquiryAttachment } from './inquiryAttachmentProxy'
 
@@ -199,6 +200,19 @@ const scheduleAttachmentSweep = (req: PayloadRequest): void => {
   after(() => sweepAttachments(req))
 }
 
+const scheduleModerationReconciliation = (req: PayloadRequest, inquiryId: string): void => {
+  after(async () => {
+    try {
+      await reconcileExpiredInquiryModerationMeasures(req, { inquiryId })
+    } catch (error: unknown) {
+      req.payload.logger.error(
+        { err: toLoggedError(error), event: 'patient.inquiries.moderation_reconciliation_failed' },
+        'Expired patient inquiry moderation reconciliation failed',
+      )
+    }
+  })
+}
+
 const scheduleDiscardCleanup = (req: PayloadRequest, attachmentId: string): void => {
   after(async () => {
     try {
@@ -239,7 +253,11 @@ export const patientInquiryDetailGetHandler: PayloadHandler = async (req) => {
   if (!authorization.ok) return authorization.response
   const input = readDetailInput(req)
   if (input instanceof Response) return input
-  return execute(req, 'detail_read', () => readPatientInquiryDetailResult(req, input))
+  return execute(req, 'detail_read', async () => {
+    const result = await readPatientInquiryDetailResult(req, input)
+    scheduleModerationReconciliation(req, input.inquiryId)
+    return result
+  })
 }
 
 export const patientInquiryMessagesPostHandler: PayloadHandler = async (req) => {

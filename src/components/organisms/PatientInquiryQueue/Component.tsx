@@ -1,4 +1,4 @@
-import { AlertCircle, ChevronRight, Inbox } from 'lucide-react'
+import { AlertCircle, ChevronRight, Inbox, LockKeyhole } from 'lucide-react'
 import Link from 'next/link'
 import * as React from 'react'
 
@@ -102,7 +102,14 @@ const InquiryRow = ({
         <span className="block truncate font-semibold text-foreground">{item.clinic.displayName}</span>
         <span className="block truncate text-sm text-muted-foreground">{item.interest.label}</span>
         <span className="line-clamp-2 text-sm leading-6 text-foreground lg:hidden">{item.preview}</span>
-        <StatusBadge lifecycle={item.lifecycle} />
+        <span className="flex flex-wrap items-center gap-2">
+          <StatusBadge lifecycle={item.lifecycle} />
+          {item.moderationBadge?.conversationRestricted ? (
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-warning/15 px-2.5 py-1 text-xs font-semibold text-foreground">
+              <LockKeyhole className="size-3.5" aria-hidden="true" /> Restricted
+            </span>
+          ) : null}
+        </span>
       </span>
       <span className="flex min-h-full flex-col items-end justify-between gap-2 text-sm text-muted-foreground">
         <span>{formatActivityTime(item.lastActivityAt, now)}</span>

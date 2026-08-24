@@ -91,6 +91,8 @@ export interface Config {
     inquiryAttachments: InquiryAttachment;
     inquiryReadPositions: InquiryReadPosition;
     inquiryAuditEvents: InquiryAuditEvent;
+    inquiryModerationCases: InquiryModerationCase;
+    inquiryModerationEvents: InquiryModerationEvent;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -162,6 +164,8 @@ export interface Config {
     inquiryAttachments: InquiryAttachmentsSelect<false> | InquiryAttachmentsSelect<true>;
     inquiryReadPositions: InquiryReadPositionsSelect<false> | InquiryReadPositionsSelect<true>;
     inquiryAuditEvents: InquiryAuditEventsSelect<false> | InquiryAuditEventsSelect<true>;
+    inquiryModerationCases: InquiryModerationCasesSelect<false> | InquiryModerationCasesSelect<true>;
+    inquiryModerationEvents: InquiryModerationEventsSelect<false> | InquiryModerationEventsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -1082,6 +1086,10 @@ export interface PlatformStaff {
    * Choose the access level for this staff member
    */
   role: 'admin' | 'support' | 'content-manager';
+  /**
+   * Grant additive access to focused platform operations
+   */
+  capabilities?: 'conversation-moderation'[] | null;
   updatedAt: string;
   createdAt: string;
   collection: 'platformStaff';
@@ -2793,7 +2801,9 @@ export interface InquiryAuditEvent {
     | 'attachment-draft-created'
     | 'attachment-finalized'
     | 'attachment-discarded'
-    | 'contact-revealed';
+    | 'contact-revealed'
+    | 'moderation-restricted'
+    | 'moderation-restored';
   targetType?: string | null;
   targetId?: string | null;
   fromValue?: string | null;
@@ -2801,6 +2811,95 @@ export interface InquiryAuditEvent {
   reason?: string | null;
   sequence: number;
   clinicNotificationSequence: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Private moderation cases for inquiry communication
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryModerationCases".
+ */
+export interface InquiryModerationCase {
+  id: number;
+  inquiry: number | PatientClinicInquiry;
+  clinic: number | Clinic;
+  patient: number | Patient;
+  conversation: number | InquiryConversation;
+  targetType: 'message' | 'attachment' | 'conversation';
+  targetId: string;
+  targetMessage?: (number | null) | InquiryMessage;
+  targetAttachment?: (number | null) | InquiryAttachment;
+  reporterKind: 'patient' | 'clinic';
+  reporterPatient?: (number | null) | Patient;
+  reporterClinicStaff?: (number | null) | ClinicStaff;
+  reporterKey: string;
+  category:
+    'harassment-threats' | 'spam-fraud-impersonation' | 'suspected-illegal-content' | 'privacy-concern' | 'other';
+  description?: string | null;
+  idempotencyKey: string;
+  requestHash: string;
+  status: 'open' | 'decided' | 'appealed' | 'resolved';
+  accessExpandedAt?: string | null;
+  accessExpandedBy?: (number | null) | PlatformStaff;
+  accessExpansionReason?: string | null;
+  decisionOutcome?:
+    ('no-action' | 'content-restricted' | 'conversation-restricted' | 'identity-messaging-suspended') | null;
+  decisionCategory?:
+    | ('harassment-threats' | 'spam-fraud-impersonation' | 'suspected-illegal-content' | 'privacy-concern' | 'other')
+    | null;
+  decisionReason?: string | null;
+  decisionBy?: (number | null) | PlatformStaff;
+  decisionAt?: string | null;
+  effectiveUntil?: string | null;
+  measureEndedAt?: string | null;
+  affectedActorKind?: ('patient' | 'clinic') | null;
+  affectedPatient?: (number | null) | Patient;
+  affectedClinicStaff?: (number | null) | ClinicStaff;
+  appealText?: string | null;
+  appealActorKind?: ('patient' | 'clinic') | null;
+  appealPatient?: (number | null) | Patient;
+  appealClinicStaff?: (number | null) | ClinicStaff;
+  appealedAt?: string | null;
+  appealOutcome?: ('pending' | 'upheld' | 'overturned') | null;
+  appealDecisionReason?: string | null;
+  appealDecidedBy?: (number | null) | PlatformStaff;
+  appealDecidedAt?: string | null;
+  finalOutcomeAt?: string | null;
+  eventSequence: number;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+}
+/**
+ * Content-free audit events for inquiry moderation
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryModerationEvents".
+ */
+export interface InquiryModerationEvent {
+  id: number;
+  moderationCase: number | InquiryModerationCase;
+  inquiry: number | PatientClinicInquiry;
+  clinic: number | Clinic;
+  patient: number | Patient;
+  conversation: number | InquiryConversation;
+  actorKind: 'patient' | 'clinic' | 'platform' | 'system';
+  actorId: string;
+  eventType:
+    | 'report-received'
+    | 'case-accessed'
+    | 'access-expanded'
+    | 'decision-recorded'
+    | 'appeal-submitted'
+    | 'appeal-decided'
+    | 'measure-ended';
+  reason?: string | null;
+  fromValue?: string | null;
+  toValue?: string | null;
+  targetType?: string | null;
+  targetId?: string | null;
+  sequence: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -3587,6 +3686,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'inquiryAuditEvents';
         value: number | InquiryAuditEvent;
+      } | null)
+    | ({
+        relationTo: 'inquiryModerationCases';
+        value: number | InquiryModerationCase;
+      } | null)
+    | ({
+        relationTo: 'inquiryModerationEvents';
+        value: number | InquiryModerationEvent;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -4576,6 +4683,7 @@ export interface PlatformStaffSelect<T extends boolean = true> {
   lastName?: T;
   profileImage?: T;
   role?: T;
+  capabilities?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -4777,6 +4885,78 @@ export interface InquiryAuditEventsSelect<T extends boolean = true> {
   reason?: T;
   sequence?: T;
   clinicNotificationSequence?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryModerationCases_select".
+ */
+export interface InquiryModerationCasesSelect<T extends boolean = true> {
+  inquiry?: T;
+  clinic?: T;
+  patient?: T;
+  conversation?: T;
+  targetType?: T;
+  targetId?: T;
+  targetMessage?: T;
+  targetAttachment?: T;
+  reporterKind?: T;
+  reporterPatient?: T;
+  reporterClinicStaff?: T;
+  reporterKey?: T;
+  category?: T;
+  description?: T;
+  idempotencyKey?: T;
+  requestHash?: T;
+  status?: T;
+  accessExpandedAt?: T;
+  accessExpandedBy?: T;
+  accessExpansionReason?: T;
+  decisionOutcome?: T;
+  decisionCategory?: T;
+  decisionReason?: T;
+  decisionBy?: T;
+  decisionAt?: T;
+  effectiveUntil?: T;
+  measureEndedAt?: T;
+  affectedActorKind?: T;
+  affectedPatient?: T;
+  affectedClinicStaff?: T;
+  appealText?: T;
+  appealActorKind?: T;
+  appealPatient?: T;
+  appealClinicStaff?: T;
+  appealedAt?: T;
+  appealOutcome?: T;
+  appealDecisionReason?: T;
+  appealDecidedBy?: T;
+  appealDecidedAt?: T;
+  finalOutcomeAt?: T;
+  eventSequence?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryModerationEvents_select".
+ */
+export interface InquiryModerationEventsSelect<T extends boolean = true> {
+  moderationCase?: T;
+  inquiry?: T;
+  clinic?: T;
+  patient?: T;
+  conversation?: T;
+  actorKind?: T;
+  actorId?: T;
+  eventType?: T;
+  reason?: T;
+  fromValue?: T;
+  toValue?: T;
+  targetType?: T;
+  targetId?: T;
+  sequence?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -6717,6 +6897,8 @@ export interface TaskCreateCollectionExport {
       | 'inquiryAttachments'
       | 'inquiryReadPositions'
       | 'inquiryAuditEvents'
+      | 'inquiryModerationCases'
+      | 'inquiryModerationEvents'
       | 'clinics'
       | 'doctors'
       | 'accreditation'

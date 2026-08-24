@@ -40,7 +40,15 @@
 | Accreditation `(accreditation)` | Platform | Anyone | Platform | Platform | Platform | – |
 | ClinicApplications `(clinicApplications)` | Platform | Platform | Platform | Platform | Platform | – |
 | ClinicProfileDrafts `(clinicProfileDrafts)` | Platform | Platform | Platform | Platform | Platform | – |
-| PatientClinicInquiries `(patientClinicInquiries)` | Platform | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform full + clinic own clinic status transitions only</sub> | Platform | Platform | – |
+| PatientClinicInquiries `(patientClinicInquiries)` | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryConversations `(inquiryConversations)` | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryMessages `(inquiryMessages)` | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>immutable after command creation</sub> | Conditional<br/><sub>retention workflow only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryInternalNotes `(inquiryInternalNotes)` | Conditional<br/><sub>dedicated clinic inquiry commands only</sub> | Conditional<br/><sub>dedicated clinic inquiry commands only</sub> | Conditional<br/><sub>immutable after command creation</sub> | Conditional<br/><sub>retention workflow only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryAttachments `(inquiryAttachments)` | Conditional<br/><sub>dedicated actor-bound attachment commands only</sub> | Conditional<br/><sub>reauthorized download and preview commands only</sub> | Conditional<br/><sub>dedicated attachment lifecycle commands only</sub> | Conditional<br/><sub>cleanup and retention workflows only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryReadPositions `(inquiryReadPositions)` | Conditional<br/><sub>dedicated actor-bound read-position commands only</sub> | Conditional<br/><sub>projected through inquiry reads only</sub> | Conditional<br/><sub>dedicated actor-bound read-position commands only</sub> | Conditional<br/><sub>retention workflow only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryAuditEvents `(inquiryAuditEvents)` | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>safe clinic timeline projection only</sub> | Conditional<br/><sub>immutable after command creation</sub> | Conditional<br/><sub>retention workflow only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryModerationCases `(inquiryModerationCases)` | Conditional<br/><sub>dedicated participant report commands only</sub> | Conditional<br/><sub>capability-checked and audited moderation projection only</sub> | Conditional<br/><sub>dedicated moderation and appeal commands only</sub> | Conditional<br/><sub>retention workflow only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryModerationEvents `(inquiryModerationEvents)` | Conditional<br/><sub>dedicated moderation commands only</sub> | Conditional<br/><sub>audited moderation service only</sub> | Conditional<br/><sub>immutable after command creation</sub> | Conditional<br/><sub>retention workflow only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 
 ## Notes
 
@@ -79,4 +87,12 @@
 - **Accreditation**: Supporting data - platform write, everyone read
 - **ClinicApplications**: Public submissions use the controlled API route; platform approval creates a pending clinic and initial clinic staff principal with duplicate-write observability
 - **ClinicProfileDrafts**: Private active clinic profile drafts; Clinic Dashboard access is authorized and tenant-scoped through dedicated API endpoints
-- **PatientClinicInquiries**: Patient-to-clinic inquiry queue - public submissions use the controlled API route; clinic staff read own-clinic inquiries and update controlled statuses only
+- **PatientClinicInquiries**: Inquiry aggregate; patient and clinic access uses actor-bound, tenant-checked commands instead of generic collection routes
+- **InquiryConversations**: Private inquiry grouping; all access uses checked inquiry communication commands
+- **InquiryMessages**: Immutable private external messages; patient and clinic projections use checked commands
+- **InquiryInternalNotes**: Clinic-only immutable notes; patient projections never include this collection
+- **InquiryAttachments**: Private files with actor, inquiry, tenant, state, and current authorization checks on every operation
+- **InquiryReadPositions**: Personal unread state; callers cannot choose another reader or clinic
+- **InquiryAuditEvents**: Immutable private audit facts without copied message or note content
+- **InquiryModerationCases**: Private moderation cases; participant reports, additive moderation capability, audited scope expansion, and one appeal use dedicated commands
+- **InquiryModerationEvents**: Immutable private moderation audit facts without copied message, attachment, or note content

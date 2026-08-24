@@ -521,6 +521,17 @@ const legacyEnumValue = <Value extends string>(value: unknown, allowed: readonly
   return allowed.includes(candidate as Value) ? (candidate as Value) : null
 }
 
+const maskEmail = (email: string): string => {
+  const [localPart, domain] = email.split('@')
+  if (!domain) return '••••••'
+  return `${localPart?.slice(0, 1) || '•'}•••@${domain}`
+}
+
+const maskPhone = (phone: string): string => {
+  const suffix = phone.replace(/\D/gu, '').slice(-4)
+  return suffix ? `••••••${suffix}` : '••••••'
+}
+
 const buildLegacyInquiryDTO = async (
   req: PayloadRequest,
   inquiry: StoredRecord,
@@ -528,13 +539,20 @@ const buildLegacyInquiryDTO = async (
   const treatmentId = relationId(inquiry.treatment)
   const treatment = treatmentId === null ? null : await findOne(req, 'treatments', { id: { equals: treatmentId } })
   const treatmentName = text(treatment?.name)
+  const status = legacyStatus(inquiry)
+  const contact =
+    status === 'spam'
+      ? { email: maskEmail(text(inquiry.email)), phoneNumber: maskPhone(text(inquiry.phoneNumber)) }
+      : status === 'closed'
+        ? { email: '', phoneNumber: '' }
+        : { email: text(inquiry.email), phoneNumber: text(inquiry.phoneNumber) }
   return {
     createdAt: text(inquiry.createdAt),
-    email: text(inquiry.email),
+    email: contact.email,
     fullName: text(inquiry.fullName),
     id: String(inquiry.id),
     message: text(inquiry.message),
-    phoneNumber: text(inquiry.phoneNumber),
+    phoneNumber: contact.phoneNumber,
     preferredContactWindow: legacyEnumValue(inquiry.preferredContactWindow, [
       'as_soon_as_possible',
       'morning',
@@ -542,7 +560,7 @@ const buildLegacyInquiryDTO = async (
       'evening',
       'no_preference',
     ] as const),
-    status: legacyStatus(inquiry),
+    status,
     treatment:
       treatmentId === null
         ? null
@@ -702,17 +720,6 @@ const latestActivity = (
     'spam-removed': 'Spam removed',
   } as const
   return { kind: latest.kind, preview: labels[latest.event] }
-}
-
-const maskEmail = (email: string): string => {
-  const [localPart, domain] = email.split('@')
-  if (!domain) return '••••••'
-  return `${localPart?.slice(0, 1) || '•'}•••@${domain}`
-}
-
-const maskPhone = (phone: string): string => {
-  const suffix = phone.replace(/\D/gu, '').slice(-4)
-  return suffix ? `••••••${suffix}` : '••••••'
 }
 
 const operationalInquiryHandlingStatuses = new Set(['submitted', 'in_review', 'contacted', 'spam'])

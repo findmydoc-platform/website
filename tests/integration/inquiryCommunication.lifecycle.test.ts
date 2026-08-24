@@ -11,6 +11,8 @@ import {
   readAttachmentAccess,
   readClinicInquiryDetail,
   readClinicInquiryQueue,
+  readLegacyClinicInquiryDetail,
+  readLegacyClinicInquiryQueue,
   readPatientInquiryQueue,
   readPatientInquiryDetail,
   sendClinicInquiryMessage,
@@ -273,6 +275,20 @@ describe('inquiry communication lifecycle', () => {
       lifecycle: 'closed',
       unread: { count: 0, isUnread: false },
     })
+    const legacyClosedDetail = await readLegacyClinicInquiryDetail(clinicReqA, {
+      inquiryId: String(legacy.id),
+    })
+    expect(legacyClosedDetail).toMatchObject({
+      email: '',
+      phoneNumber: '',
+      status: 'closed',
+    })
+    const legacyClosedQueue = await readLegacyClinicInquiryQueue(clinicReqA)
+    expect(legacyClosedQueue.docs.find(({ id }) => id === String(legacy.id))).toMatchObject({
+      email: '',
+      phoneNumber: '',
+      status: 'closed',
+    })
     const unreadQueue = await readClinicInquiryQueue(clinicReqA, {
       lifecycle: 'all',
       limit: 50,
@@ -342,6 +358,49 @@ describe('inquiry communication lifecycle', () => {
       revision: null,
       status: 'closed',
     })
+  })
+
+  it('masks spam contact details consistently in the legacy queue and detail bridge', async () => {
+    const spam = await payload.create({
+      collection: 'patientClinicInquiries',
+      context: { inquiryCommunicationCommand: true },
+      data: {
+        clinic: clinicId,
+        consent: {
+          accepted: true,
+          acceptedAt: '2026-08-24T10:00:00.000Z',
+          text: 'Synthetic legacy consent.',
+        },
+        doctor: doctorId,
+        email: `${slugPrefix}-spam@example.com`,
+        fullName: 'Synthetic Spam Patient',
+        message: 'Synthetic legacy spam inquiry.',
+        phoneNumber: '+493000000098',
+        status: 'spam',
+      },
+      depth: 0,
+      overrideAccess: true,
+    })
+    createdInquiryIds.push(spam.id)
+
+    const [detail, queue] = await Promise.all([
+      readLegacyClinicInquiryDetail(clinicReqA, { inquiryId: String(spam.id) }),
+      readLegacyClinicInquiryQueue(clinicReqA),
+    ])
+    const queueItem = queue.docs.find(({ id }) => id === String(spam.id))
+
+    expect(detail).toMatchObject({
+      email: `${slugPrefix.charAt(0)}•••@example.com`,
+      phoneNumber: '••••••0098',
+      status: 'spam',
+    })
+    expect(queueItem).toMatchObject({
+      email: detail.email,
+      phoneNumber: detail.phoneNumber,
+      status: 'spam',
+    })
+    expect(JSON.stringify({ detail, queueItem })).not.toContain(`${slugPrefix}-spam@example.com`)
+    expect(JSON.stringify({ detail, queueItem })).not.toContain('+493000000098')
   })
 
   it('keeps queue, detail, commands, read positions, and attachments isolated by clinic', async () => {

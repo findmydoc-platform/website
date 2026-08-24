@@ -26,6 +26,7 @@ type ClinicContactRequestPayload = {
   fullName: string
   phoneNumber: string
   email: string
+  idempotencyKey: string
   treatmentTimeline?: string
   preferredContactWindow?: string
   message: string
@@ -59,6 +60,11 @@ type UseClinicDetailInteractionStateResult = {
   handleRelatedDoctorIndexChange: (nextIndex: number) => void
   handleDoctorSelectionChange: (doctorId: string) => void
   handleTreatmentSelectionChange: (treatmentId: string) => void
+}
+
+function createContactRequestKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  return `contact-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
 async function submitClinicContactRequest(payload: ClinicContactRequestPayload): Promise<void> {
@@ -109,6 +115,7 @@ export function useClinicDetailInteractionState({
   const contactFormRef = React.useRef<HTMLElement | null>(null)
   const contactFormFeedbackRef = React.useRef<HTMLDivElement | null>(null)
   const contactSubmitLockedRef = React.useRef(false)
+  const contactIdempotencyKeyRef = React.useRef<string | null>(null)
 
   React.useEffect(() => {
     setActiveHeroDoctorId('')
@@ -123,6 +130,7 @@ export function useClinicDetailInteractionState({
     setIsSubmittingContact(false)
     setHasSubmittedContact(false)
     contactSubmitLockedRef.current = false
+    contactIdempotencyKeyRef.current = null
   }, [clinicSlug, furtherTreatmentPageSize, initialContactFormFields])
 
   React.useEffect(() => {
@@ -177,6 +185,7 @@ export function useClinicDetailInteractionState({
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
+      contactIdempotencyKeyRef.current = null
       scrollToContactForm()
     },
     [scrollToContactForm],
@@ -197,6 +206,7 @@ export function useClinicDetailInteractionState({
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
+      contactIdempotencyKeyRef.current = null
 
       if (result.shouldScrollToOurDoctors) {
         scrollToOurDoctors()
@@ -217,6 +227,7 @@ export function useClinicDetailInteractionState({
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
+      contactIdempotencyKeyRef.current = null
       scrollToContactForm()
     },
     [heroDoctors, scrollToContactForm],
@@ -233,6 +244,7 @@ export function useClinicDetailInteractionState({
       )
       setHasSubmittedContact(false)
       contactSubmitLockedRef.current = false
+      contactIdempotencyKeyRef.current = null
       if (!contactFormSelectionError) {
         setContactFormMessage(null)
         setContactFormMessageTone('success')
@@ -263,6 +275,8 @@ export function useClinicDetailInteractionState({
       setContactFormSelectionError(null)
 
       try {
+        const idempotencyKey = contactIdempotencyKeyRef.current ?? createContactRequestKey()
+        contactIdempotencyKeyRef.current = idempotencyKey
         await submitClinicContactRequest({
           clinicId,
           doctorId: selectedDoctorId || undefined,
@@ -270,6 +284,7 @@ export function useClinicDetailInteractionState({
           fullName: contactFormFields.fullName,
           phoneNumber: contactFormFields.phoneNumber,
           email: contactFormFields.email,
+          idempotencyKey,
           treatmentTimeline: contactFormFields.treatmentTimeline || undefined,
           preferredContactWindow: contactFormFields.preferredContactWindow || undefined,
           message: contactFormFields.note,
@@ -305,6 +320,7 @@ export function useClinicDetailInteractionState({
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
+      contactIdempotencyKeyRef.current = null
     },
     [doctors, heroDoctors],
   )
@@ -318,6 +334,7 @@ export function useClinicDetailInteractionState({
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
+      contactIdempotencyKeyRef.current = null
     },
     [heroDoctors],
   )
@@ -329,6 +346,7 @@ export function useClinicDetailInteractionState({
     setContactFormMessage(null)
     setContactFormMessageTone('success')
     setContactFormSelectionError(null)
+    contactIdempotencyKeyRef.current = null
   }, [])
 
   return {

@@ -50,6 +50,14 @@ const replacePath = (path: string): void => {
   window.history.pushState(null, '', path)
 }
 
+const latestVisibleClinicActivityId = (inquiry: InquiryDetailDTO): string | undefined => {
+  for (let index = inquiry.timeline.length - 1; index >= 0; index -= 1) {
+    const item = inquiry.timeline[index]
+    if (item?.kind === 'external-message' && !item.actor.isCurrentActor) return item.id
+  }
+  return undefined
+}
+
 export function PatientInquiriesController({
   api: providedApi,
   initialInquiryId,
@@ -100,7 +108,7 @@ export function PatientInquiriesController({
   )
 
   const loadDetail = React.useCallback(
-    async (inquiryId: string): Promise<boolean> => {
+    async (inquiryId: string): Promise<InquiryDetailDTO | null> => {
       const current = stateRef.current
       const requestId = ++detailRequestIdRef.current
       const currentDetail = current.detail.data?.id === inquiryId ? current.detail : undefined
@@ -111,21 +119,36 @@ export function PatientInquiriesController({
           ...(currentDetail?.changeCursor ? { knownChangeCursor: currentDetail.changeCursor } : {}),
           ...(typeof currentDetail?.data?.revision === 'number' ? { knownRevision: currentDetail.data.revision } : {}),
         })
-        if (requestId !== detailRequestIdRef.current) return true
+        if (requestId !== detailRequestIdRef.current) return null
         dispatch({ changeCursor: result.changeCursor, inquiry: result.inquiry, type: 'detail-loaded' })
-        return true
+        return result.inquiry
       } catch (error: unknown) {
         if (isSessionError(error)) {
           endSession()
-          return false
+          return null
         }
-        if (requestId !== detailRequestIdRef.current) return false
+        if (requestId !== detailRequestIdRef.current) return null
         if (error instanceof PatientInquiriesApiError && error.code === 'INQUIRY_NOT_FOUND') {
           dispatch({ message: 'This inquiry is no longer available.', type: 'detail-unavailable' })
-          return false
+          return null
         }
         dispatch({ message: messageForError(error, 'Check your connection and try again.'), type: 'detail-failed' })
-        return false
+        return null
+      }
+    },
+    [api, endSession],
+  )
+
+  const markVisibleDetailRead = React.useCallback(
+    async (inquiry: InquiryDetailDTO): Promise<void> => {
+      if (!inquiry.unread.isUnread) return
+      const activityId = latestVisibleClinicActivityId(inquiry)
+      if (!activityId) return
+      try {
+        const result = await api.updateReadPosition({ activityId, inquiryId: inquiry.id, mode: 'read' })
+        dispatch({ inquiryId: inquiry.id, type: 'read-position-updated', unread: result.unread })
+      } catch (error: unknown) {
+        if (isSessionError(error)) endSession()
       }
     },
     [api, endSession],
@@ -133,8 +156,12 @@ export function PatientInquiriesController({
 
   React.useEffect(() => {
     void loadQueue()
-    if (initialInquiryId) void loadDetail(initialInquiryId)
-  }, [initialInquiryId, loadDetail, loadQueue])
+    if (initialInquiryId) {
+      void loadDetail(initialInquiryId).then((inquiry) => {
+        if (inquiry) void markVisibleDetailRead(inquiry)
+      })
+    }
+  }, [initialInquiryId, loadDetail, loadQueue, markVisibleDetailRead])
 
   React.useEffect(() => {
     if (state.sessionEnded) return
@@ -175,17 +202,11 @@ export function PatientInquiriesController({
       dispatch({ inquiryId, type: 'inquiry-selected' })
       replacePath(`/patient/inquiries/${encodeURIComponent(inquiryId)}`)
       void (async () => {
-        const loaded = await loadDetail(inquiryId)
-        if (!loaded) return
-        try {
-          const result = await api.updateReadPosition({ inquiryId, mode: 'read' })
-          dispatch({ inquiryId, type: 'read-position-updated', unread: result.unread })
-        } catch (error: unknown) {
-          if (isSessionError(error)) endSession()
-        }
+        const inquiry = await loadDetail(inquiryId)
+        if (inquiry) await markVisibleDetailRead(inquiry)
       })()
     },
-    [api, endSession, loadDetail],
+    [loadDetail, markVisibleDetailRead],
   )
 
   const goBack = React.useCallback(() => {

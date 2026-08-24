@@ -23,7 +23,11 @@ vi.mock('@/features/inquiryModeration/service', () => ({
   decideInquiryModerationCase: mocks.decideCase,
   readInquiryModerationCase: mocks.readCase,
   submitInquiryModerationAppeal: mocks.submitAppeal,
-  InquiryModerationServiceError: class InquiryModerationServiceError extends Error {},
+  InquiryModerationServiceError: class InquiryModerationServiceError extends Error {
+    constructor(readonly kind: string) {
+      super(kind)
+    }
+  },
 }))
 
 vi.mock('@/features/clinicDashboard/authorization', () => ({
@@ -119,6 +123,26 @@ describe('inquiry moderation endpoints', () => {
 
     expect(response.status).toBe(401)
     expect(mocks.createReport).not.toHaveBeenCalled()
+  })
+
+  it('maps a persistent report rate limit to 429 without leaking service detail', async () => {
+    const { InquiryModerationServiceError } = await import('@/features/inquiryModeration/service')
+    mocks.createReport.mockRejectedValueOnce(new InquiryModerationServiceError('rate-limited', 'private detail'))
+
+    const response = await patientInquiryReportPostHandler(
+      request({
+        body: {
+          category: 'privacy-concern',
+          idempotencyKey: 'report-key-rate-limit',
+          inquiryId: 'inquiry-1',
+          targetId: 'message-1',
+          targetType: 'message',
+        },
+      }),
+    )
+
+    expect(response.status).toBe(429)
+    await expect(response.json()).resolves.toEqual({ error: { code: 'MODERATION_RATE_LIMITED' } })
   })
 
   it('accepts the same strict report contract for an authorized clinic participant', async () => {

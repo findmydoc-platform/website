@@ -117,6 +117,7 @@ const meta = {
     state: activePatientInquiryState(),
   },
   parameters: {
+    a11y: { test: 'error' },
     layout: 'fullscreen',
     docs: {
       description: {
@@ -414,11 +415,42 @@ export const RestrictionRestored: Story = {
 export const ReportForm: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await canvas.getByRole('button', { name: 'Report conversation' }).click()
-    const dialog = within(within(document.body).getByRole('dialog'))
+    const trigger = canvas.getByRole('button', { name: 'Report conversation' })
+    trigger.focus()
+    await userEvent.keyboard('{Enter}')
+    const dialogElement = within(document.body).getByRole('dialog')
+    const dialog = within(dialogElement)
     await expect(dialog.getByRole('heading', { name: 'Report conversation' })).toBeInTheDocument()
     await expect(dialog.getByText('Conversation with Izmir Coast Dental')).toBeInTheDocument()
     await expect(dialog.getByText(/not an emergency channel/u)).toBeInTheDocument()
+    await expect(dialog.getByLabelText('Reason')).toHaveFocus()
+    await userEvent.tab()
+    await expect(dialog.getByLabelText('Additional details')).toHaveFocus()
+    await userEvent.tab()
+    await expect(dialogElement.contains(document.activeElement)).toBe(true)
+    await userEvent.keyboard('{Escape}')
+    await expect(trigger).toHaveFocus()
+  },
+}
+
+export const AppealForm: Story = {
+  args: {
+    detailView: restrictedPatientInquiryDetail,
+    state: stateWithDetail(restrictedPatientInquiryDetail),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const trigger = canvas.getByRole('button', { name: 'Appeal decision' })
+    trigger.focus()
+    await userEvent.keyboard('{Enter}')
+    const dialogElement = within(document.body).getByRole('dialog')
+    const dialog = within(dialogElement)
+    await expect(dialog.getByRole('heading', { name: 'Appeal this restriction' })).toBeInTheDocument()
+    await expect(dialog.getByLabelText('Appeal')).toHaveFocus()
+    await userEvent.tab()
+    await expect(dialogElement.contains(document.activeElement)).toBe(true)
+    await userEvent.keyboard('{Escape}')
+    await expect(trigger).toHaveFocus()
   },
 }
 

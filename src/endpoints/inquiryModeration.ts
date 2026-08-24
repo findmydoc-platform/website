@@ -60,6 +60,7 @@ const serviceErrorResponse = (
     'invalid-input': ['MODERATION_INVALID_INPUT', 400],
     'invalid-state': ['MODERATION_INVALID_STATE', 409],
     'not-found': ['MODERATION_NOT_FOUND', 404],
+    'rate-limited': ['MODERATION_RATE_LIMITED', 429],
     unauthorized: ['MODERATION_UNAUTHORIZED', 401],
     unavailable: ['MODERATION_SERVICE_UNAVAILABLE', 503],
   } as const

@@ -293,6 +293,40 @@ describe('PatientInquiriesController', () => {
     expect(await screen.findByText('Report received')).toBeTruthy()
   })
 
+  it('reuses a failed report key only while the report content is unchanged', async () => {
+    const report = vi.fn().mockRejectedValue(new Error('synthetic report failure'))
+    const api = createApi({ report })
+
+    render(
+      <PatientInquiriesController
+        api={api}
+        initialInquiryId="inquiry-1"
+        loginHref="/login/patient?next=%2Fpatient%2Finquiries%2Finquiry-1"
+        mode="detail"
+      />,
+    )
+
+    await screen.findAllByText('Would Tuesday work?')
+    fireEvent.click(screen.getByRole('button', { name: 'Report conversation' }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Reason' }), {
+      target: { value: 'privacy-concern' },
+    })
+    const details = screen.getByRole('textbox', { name: 'Additional details' })
+    fireEvent.change(details, { target: { value: 'Synthetic retry report.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
+    await waitFor(() => expect(report).toHaveBeenCalledTimes(1))
+    const firstKey = report.mock.calls[0]?.[0].idempotencyKey
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
+    await waitFor(() => expect(report).toHaveBeenCalledTimes(2))
+    expect(report.mock.calls[1]?.[0].idempotencyKey).toBe(firstKey)
+
+    fireEvent.change(details, { target: { value: 'Synthetic edited retry report.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
+    await waitFor(() => expect(report).toHaveBeenCalledTimes(3))
+    expect(report.mock.calls[2]?.[0].idempotencyKey).not.toBe(firstKey)
+  })
+
   it('submits the one available appeal and refreshes the server projection', async () => {
     const restrictedDetail: InquiryDetailDTO = {
       ...detail,

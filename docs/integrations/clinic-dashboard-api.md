@@ -422,8 +422,8 @@ and appends a neutral restoration event. A later hard-delete remains terminal an
 Patient reporting and appeal use `POST /api/patient/inquiries/report` and
 `POST /api/patient/inquiries/appeal`. Participant routes use the stable moderation errors
 `MODERATION_INVALID_INPUT`, `MODERATION_UNAUTHORIZED`, `MODERATION_ACCESS_DENIED`, `MODERATION_NOT_FOUND`,
-`MODERATION_CONFLICT`, `MODERATION_INVALID_STATE`, and `MODERATION_SERVICE_UNAVAILABLE`. Raw case data and internal
-errors never cross the boundary.
+`MODERATION_CONFLICT`, `MODERATION_INVALID_STATE`, `MODERATION_RATE_LIMITED`, and
+`MODERATION_SERVICE_UNAVAILABLE`. Raw case data and internal errors never cross the boundary.
 
 The cache decision is `no-public-impact`. All inquiry communication collections are cataloged as `private-live`; there
 are no public reads, tags, paths, planner events, or public revalidation owners. This contract does not suppress a

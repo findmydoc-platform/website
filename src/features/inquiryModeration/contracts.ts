@@ -1,6 +1,32 @@
 import { z } from 'zod'
 
-import { inquiryIdempotencyKeySchema, inquiryIdSchema } from '@/features/inquiryCommunication/contracts'
+import { inquiryIdempotencyKeySchema, inquiryIdSchema } from '@/features/inquiryAggregate/contracts'
+
+export type InquiryModerationAppealDTO = { caseId: string; state: 'available' | 'submitted' | 'unavailable' }
+
+export type InquiryContentModerationDTO = {
+  appeal?: InquiryModerationAppealDTO
+  category?: string
+  effectiveUntil?: string
+  isCurrentActorAffected: boolean
+}
+
+export type InquiryModerationDTO = {
+  conversation:
+    | { state: 'available' }
+    | (InquiryContentModerationDTO & {
+        state: 'restricted'
+      })
+  identity:
+    | { state: 'available' }
+    | {
+        appeal: InquiryModerationAppealDTO
+        category?: string
+        effectiveUntil?: string
+        isCurrentActorAffected: true
+        state: 'messaging-suspended'
+      }
+}
 
 export const inquiryModerationReportCategorySchema = z.enum([
   'harassment-threats',

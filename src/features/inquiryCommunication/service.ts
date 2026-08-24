@@ -731,6 +731,10 @@ const latestActivity = (
   const latest = timeline.at(-1)
   if (!latest) return { kind: 'inquiry', preview: text(inquiry.message).slice(0, 160) }
   if (latest.kind === 'external-message') {
+    if (latest.contentState === 'restricted') return { kind: latest.kind, preview: 'Message unavailable' }
+    if (latest.attachmentState === 'restricted' && !latest.text) {
+      return { kind: latest.kind, preview: 'Attachment unavailable' }
+    }
     return {
       kind: latest.kind,
       preview: (latest.text || latest.attachment?.fileName || 'Attachment').slice(0, 160),

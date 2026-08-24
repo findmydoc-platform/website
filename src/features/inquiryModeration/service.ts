@@ -8,8 +8,10 @@ import type {
   InquiryModerationCaseDTO,
   InquiryModerationCaseReadInput,
   InquiryModerationDecisionInput,
+  InquiryModerationDTO,
   InquiryModerationReportInput,
   InquiryModerationReportReceiptDTO,
+  InquiryContentModerationDTO,
 } from './contracts'
 import {
   inquiryModerationAppealDecisionInputSchema,
@@ -21,7 +23,14 @@ import {
 } from './contracts'
 
 export type InquiryModerationServiceErrorKind =
-  'access-denied' | 'conflict' | 'invalid-input' | 'invalid-state' | 'not-found' | 'unauthorized' | 'unavailable'
+  | 'access-denied'
+  | 'conflict'
+  | 'invalid-input'
+  | 'invalid-state'
+  | 'not-found'
+  | 'rate-limited'
+  | 'unauthorized'
+  | 'unavailable'
 
 export class InquiryModerationServiceError extends Error {
   constructor(
@@ -79,18 +88,29 @@ const findMany = async (
   where: Record<string, unknown>,
   sort = 'createdAt',
 ): Promise<StoredRecord[]> => {
-  const result = await req.payload.find({
-    collection: collection as never,
-    depth: 0,
-    limit: 100,
-    overrideAccess: true,
-    pagination: false,
-    req,
-    sort,
-    where,
-  } as never)
-  return result.docs.map(asRecord)
+  const records: StoredRecord[] = []
+  let page = 1
+  while (true) {
+    const result = await req.payload.find({
+      collection: collection as never,
+      depth: 0,
+      limit: 100,
+      overrideAccess: true,
+      page,
+      pagination: true,
+      req,
+      sort,
+      where,
+    } as never)
+    records.push(...result.docs.map(asRecord))
+    if (!result.hasNextPage) break
+    page = result.nextPage ?? page + 1
+  }
+  return records
 }
+
+const REPORT_WINDOW_MS = 15 * 60 * 1_000
+const REPORT_WINDOW_LIMIT = 10
 
 const resolveReporter = async (req: PayloadRequest): Promise<Reporter> => {
   if (!req.user) throw new InquiryModerationServiceError('unauthorized', 'Authentication is required.')
@@ -274,6 +294,26 @@ export const createInquiryModerationReport = async (
 
     const scope = await readInquiryScope(req, reporter, input.inquiryId)
     const target = await resolveReportTarget(req, reporter, scope, input)
+    const activeDuplicate = await findOne(req, 'inquiryModerationCases', {
+      and: [
+        { reporterKey: { equals: reporter.key } },
+        { targetType: { equals: input.targetType } },
+        { targetId: { equals: String(target.targetId) } },
+        { status: { in: ['open', 'decided', 'appealed'] } },
+      ],
+    })
+    if (activeDuplicate) {
+      throw new InquiryModerationServiceError('invalid-state', 'An active report already covers this target.')
+    }
+    const recentReports = await findMany(req, 'inquiryModerationCases', {
+      and: [
+        { reporterKey: { equals: reporter.key } },
+        { createdAt: { greater_than_equal: new Date(Date.now() - REPORT_WINDOW_MS).toISOString() } },
+      ],
+    })
+    if (recentReports.length >= REPORT_WINDOW_LIMIT) {
+      throw new InquiryModerationServiceError('rate-limited', 'Too many reports were submitted in this window.')
+    }
     const moderationCase = asRecord(
       await req.payload.create({
         collection: 'inquiryModerationCases' as never,
@@ -638,7 +678,6 @@ const updateInquiryModerationActivity = async (
       data: {
         activitySequence: nextSequence,
         lastActivityAt: now,
-        lastExternalActivityAt: now,
         revision: Number(scope.inquiry.revision ?? 0) + 1,
       },
       depth: 0,
@@ -807,6 +846,7 @@ export const decideInquiryModerationAppeal = async (
         appealDecisionReason: input.reason,
         appealOutcome: input.outcome,
         finalOutcomeAt: now,
+        ...(input.outcome === 'overturned' ? { measureEndedAt: now } : {}),
         status: 'resolved',
       },
       { reason: input.reason, toValue: input.outcome },
@@ -838,6 +878,7 @@ export const reconcileExpiredInquiryModerationMeasures = async (
       const effectiveUntil = text(moderationCase.effectiveUntil)
       if (
         moderationCase.measureEndedAt ||
+        moderationCase.appealOutcome === 'overturned' ||
         !effectiveUntil ||
         Date.parse(effectiveUntil) >= now.getTime() ||
         !['content-restricted', 'conversation-restricted', 'identity-messaging-suspended'].includes(
@@ -872,11 +913,11 @@ export const reconcileExpiredInquiryModerationMeasures = async (
 }
 
 export type InquiryModerationState = {
-  moderation: NonNullable<import('@/features/inquiryCommunication/contracts').InquiryDetailDTO['moderation']>
+  moderation: InquiryModerationDTO
   restrictedAttachmentIds: Set<string>
-  restrictedAttachments: Map<string, import('@/features/inquiryCommunication/contracts').InquiryContentModerationDTO>
+  restrictedAttachments: Map<string, InquiryContentModerationDTO>
   restrictedMessageIds: Set<string>
-  restrictedMessages: Map<string, import('@/features/inquiryCommunication/contracts').InquiryContentModerationDTO>
+  restrictedMessages: Map<string, InquiryContentModerationDTO>
 }
 
 const appealProjection = (moderationCase: StoredRecord) => ({
@@ -899,7 +940,7 @@ const affectedCurrentActor = (
 const contentProjection = (
   moderationCase: StoredRecord,
   actor: { id: RelationId; kind: 'clinic' | 'patient' },
-): import('@/features/inquiryCommunication/contracts').InquiryContentModerationDTO => {
+): InquiryContentModerationDTO => {
   const affected = affectedCurrentActor(moderationCase, actor)
   return {
     ...(affected ? { appeal: appealProjection(moderationCase) } : {}),
@@ -931,14 +972,8 @@ export const readInquiryModerationState = async (
   const identityCases = actorIdentityCases.filter((moderationCase) => activeMeasure(moderationCase, now))
   const restrictedMessageIds = new Set<string>()
   const restrictedAttachmentIds = new Set<string>()
-  const restrictedMessages = new Map<
-    string,
-    import('@/features/inquiryCommunication/contracts').InquiryContentModerationDTO
-  >()
-  const restrictedAttachments = new Map<
-    string,
-    import('@/features/inquiryCommunication/contracts').InquiryContentModerationDTO
-  >()
+  const restrictedMessages = new Map<string, InquiryContentModerationDTO>()
+  const restrictedAttachments = new Map<string, InquiryContentModerationDTO>()
   for (const moderationCase of cases) {
     if (moderationCase.decisionOutcome !== 'content-restricted') continue
     if (moderationCase.targetType === 'message') {

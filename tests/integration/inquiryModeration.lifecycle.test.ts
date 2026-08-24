@@ -7,6 +7,7 @@ import {
   createVerifiedPatientInquiry,
   readClinicInquiryDetail,
   readPatientInquiryDetail,
+  readPatientInquiryQueue,
   sendClinicInquiryMessage,
   sendPatientInquiryMessage,
 } from '@/features/inquiryCommunication/service'
@@ -166,6 +167,65 @@ describe('inquiry moderation lifecycle', () => {
       targetType: 'message',
     })
 
+    await expect(
+      createInquiryModerationReport(patientReq, {
+        category: 'privacy-concern',
+        description: 'Synthetic wrong-recipient report.',
+        idempotencyKey: `${slugPrefix}-report-0001`,
+        inquiryId: created.inquiry.id,
+        targetId: message.id,
+        targetType: 'message',
+      }),
+    ).resolves.toEqual(receipt)
+    await expect(
+      createInquiryModerationReport(patientReq, {
+        category: 'privacy-concern',
+        idempotencyKey: `${slugPrefix}-report-duplicate-target`,
+        inquiryId: created.inquiry.id,
+        targetId: message.id,
+        targetType: 'message',
+      }),
+    ).rejects.toMatchObject({ kind: 'invalid-state' } satisfies Partial<InquiryModerationServiceError>)
+
+    const secondSent = await sendClinicInquiryMessage(clinicReq, {
+      expectedRevision: sent.inquiry.revision,
+      idempotencyKey: `${slugPrefix}-clinic-message-concurrent-report`,
+      inquiryId: created.inquiry.id,
+      text: 'Synthetic clinic reply for a concurrent duplicate report.',
+    })
+    const secondMessage = secondSent.inquiry.timeline.find(
+      (item) =>
+        item.kind === 'external-message' &&
+        item.actor.kind === 'clinic' &&
+        item.text === 'Synthetic clinic reply for a concurrent duplicate report.',
+    )
+    if (!secondMessage) throw new Error('Expected concurrent report target message')
+    const secondPatientReq = await createLocalReq({}, payload)
+    secondPatientReq.user = patientReq.user
+    const concurrent = await Promise.allSettled([
+      createInquiryModerationReport(patientReq, {
+        category: 'privacy-concern',
+        idempotencyKey: `${slugPrefix}-concurrent-report-one`,
+        inquiryId: created.inquiry.id,
+        targetId: secondMessage.id,
+        targetType: 'message',
+      }),
+      createInquiryModerationReport(secondPatientReq, {
+        category: 'privacy-concern',
+        idempotencyKey: `${slugPrefix}-concurrent-report-two`,
+        inquiryId: created.inquiry.id,
+        targetId: secondMessage.id,
+        targetType: 'message',
+      }),
+    ])
+    expect(concurrent.filter(({ status }) => status === 'fulfilled')).toHaveLength(1)
+    expect(concurrent.filter(({ status }) => status === 'rejected')).toHaveLength(1)
+    const rejected = concurrent.find(({ status }) => status === 'rejected')
+    expect(rejected).toMatchObject({
+      reason: expect.objectContaining({ kind: expect.stringMatching(/conflict|invalid-state/u) }),
+      status: 'rejected',
+    })
+
     expect(receipt).toMatchObject({ received: true, reportId: expect.any(String) })
     const cases = await payload.find({
       collection: 'inquiryModerationCases' as never,
@@ -174,8 +234,8 @@ describe('inquiry moderation lifecycle', () => {
       overrideAccess: true,
       where: { inquiry: { equals: created.inquiry.id } },
     })
-    expect(cases.docs).toHaveLength(1)
-    expect(cases.docs[0]).toMatchObject({
+    expect(cases.docs).toHaveLength(2)
+    expect(cases.docs.find(({ id }) => String(id) === receipt.reportId)).toMatchObject({
       category: 'privacy-concern',
       reporterKind: 'patient',
       status: 'open',
@@ -264,12 +324,29 @@ describe('inquiry moderation lifecycle', () => {
     })
     expect(expanded.conversation?.some((item) => item.id === message.id)).toBe(true)
 
+    const inquiryBeforeDecision = await payload.findByID({
+      collection: 'patientClinicInquiries',
+      depth: 0,
+      id: created.inquiry.id,
+      overrideAccess: true,
+    })
+    const effectiveUntil = new Date(Date.now() + 60_000).toISOString()
+
     await decideInquiryModerationCase(moderatorReq, {
       caseId: report.reportId,
       category: 'harassment-threats',
+      effectiveUntil,
       outcome: 'content-restricted',
       reason: 'Synthetic decision rationale.',
     })
+
+    const inquiryAfterDecision = await payload.findByID({
+      collection: 'patientClinicInquiries',
+      depth: 0,
+      id: created.inquiry.id,
+      overrideAccess: true,
+    })
+    expect(inquiryAfterDecision.lastExternalActivityAt).toBe(inquiryBeforeDecision.lastExternalActivityAt)
 
     const patientDetail = await readPatientInquiryDetail(patientReq, { inquiryId: created.inquiry.id })
     expect(patientDetail.actions.canReply).toBe(true)
@@ -281,6 +358,11 @@ describe('inquiry moderation lifecycle', () => {
       }),
     )
     expect(JSON.stringify(patientDetail)).not.toContain('Synthetic message selected for restriction.')
+    const patientQueue = await readPatientInquiryQueue(patientReq, { lifecycle: 'all', limit: 50 })
+    expect(patientQueue.items.find(({ id }) => id === created.inquiry.id)).toMatchObject({
+      latestActivityKind: 'system-event',
+      preview: 'Communication restricted',
+    })
     const affectedClinicDetail = await readClinicInquiryDetail(clinicReq, { inquiryId: created.inquiry.id })
     expect(affectedClinicDetail.inquiry.timeline).toContainEqual(
       expect.objectContaining({
@@ -330,6 +412,25 @@ describe('inquiry moderation lifecycle', () => {
       outcome: 'overturned',
       reason: 'Synthetic appeal review restored the original content.',
     })
+
+    const overturnedCase = await payload.findByID({
+      collection: 'inquiryModerationCases',
+      depth: 0,
+      id: report.reportId,
+      overrideAccess: true,
+    })
+    expect(overturnedCase).toMatchObject({
+      appealOutcome: 'overturned',
+      finalOutcomeAt: expect.any(String),
+      measureEndedAt: expect.any(String),
+      status: 'resolved',
+    })
+    await expect(
+      reconcileExpiredInquiryModerationMeasures(moderatorReq, {
+        inquiryId: created.inquiry.id,
+        now: new Date(Date.parse(effectiveUntil) + 1_000),
+      }),
+    ).resolves.toEqual({ reconciled: 0 })
 
     const restoredDetail = await readPatientInquiryDetail(patientReq, { inquiryId: created.inquiry.id })
     expect(restoredDetail.actions.canReply).toBe(true)
@@ -515,6 +616,200 @@ describe('inquiry moderation lifecycle', () => {
         text: 'Synthetic clinic-only note remains available during restriction.',
       }),
     )
+  })
+
+  it('resolves no-action without changing inquiry activity or unread state', async () => {
+    const created = await createVerifiedPatientInquiry(patientReq, {
+      clinicId: String(clinicId),
+      consent: true,
+      doctorId: String(doctorId),
+      email: `${slugPrefix}-no-action@example.com`,
+      fullName: 'No Action Synthetic Patient',
+      idempotencyKey: `${slugPrefix}-no-action-inquiry`,
+      message: 'Synthetic inquiry for a no-action decision.',
+      phoneNumber: '+493000000006',
+    })
+    createdInquiryIds.push(created.inquiry.id)
+    const sent = await sendClinicInquiryMessage(clinicReq, {
+      expectedRevision: created.inquiry.revision,
+      idempotencyKey: `${slugPrefix}-no-action-message`,
+      inquiryId: created.inquiry.id,
+      text: 'Synthetic message that does not require action.',
+    })
+    const message = sent.inquiry.timeline.find(
+      (item) => item.kind === 'external-message' && item.actor.kind === 'clinic',
+    )
+    if (!message) throw new Error('Expected no-action target message')
+    const report = await createInquiryModerationReport(patientReq, {
+      category: 'other',
+      description: 'Synthetic report resolved without action.',
+      idempotencyKey: `${slugPrefix}-no-action-report`,
+      inquiryId: created.inquiry.id,
+      targetId: message.id,
+      targetType: 'message',
+    })
+    const before = await payload.findByID({
+      collection: 'patientClinicInquiries',
+      depth: 0,
+      id: created.inquiry.id,
+      overrideAccess: true,
+    })
+    const patientBefore = await readPatientInquiryDetail(patientReq, { inquiryId: created.inquiry.id })
+
+    await decideInquiryModerationCase(moderatorReq, {
+      caseId: report.reportId,
+      category: 'other',
+      outcome: 'no-action',
+      reason: 'Synthetic review found no policy violation.',
+    })
+
+    const after = await payload.findByID({
+      collection: 'patientClinicInquiries',
+      depth: 0,
+      id: created.inquiry.id,
+      overrideAccess: true,
+    })
+    const patientAfter = await readPatientInquiryDetail(patientReq, { inquiryId: created.inquiry.id })
+    expect(after).toMatchObject({
+      activitySequence: before.activitySequence,
+      lastActivityAt: before.lastActivityAt,
+      lastExternalActivityAt: before.lastExternalActivityAt,
+      revision: before.revision,
+    })
+    expect(patientAfter.unread).toEqual(patientBefore.unread)
+    expect(patientAfter.timeline).toEqual(patientBefore.timeline)
+    await expect(
+      payload.findByID({
+        collection: 'inquiryModerationCases',
+        depth: 0,
+        id: report.reportId,
+        overrideAccess: true,
+      }),
+    ).resolves.toMatchObject({
+      decisionOutcome: 'no-action',
+      finalOutcomeAt: expect.any(String),
+      status: 'resolved',
+    })
+  })
+
+  it('keeps an upheld appeal restricted and terminal', async () => {
+    const created = await createVerifiedPatientInquiry(patientReq, {
+      clinicId: String(clinicId),
+      consent: true,
+      doctorId: String(doctorId),
+      email: `${slugPrefix}-upheld@example.com`,
+      fullName: 'Upheld Synthetic Patient',
+      idempotencyKey: `${slugPrefix}-upheld-inquiry`,
+      message: 'Synthetic inquiry for an upheld appeal.',
+      phoneNumber: '+493000000007',
+    })
+    createdInquiryIds.push(created.inquiry.id)
+    const sent = await sendClinicInquiryMessage(clinicReq, {
+      expectedRevision: created.inquiry.revision,
+      idempotencyKey: `${slugPrefix}-upheld-message`,
+      inquiryId: created.inquiry.id,
+      text: 'Synthetic message whose restriction remains upheld.',
+    })
+    const message = sent.inquiry.timeline.find(
+      (item) => item.kind === 'external-message' && item.actor.kind === 'clinic',
+    )
+    if (!message) throw new Error('Expected upheld target message')
+    const report = await createInquiryModerationReport(patientReq, {
+      category: 'harassment-threats',
+      idempotencyKey: `${slugPrefix}-upheld-report`,
+      inquiryId: created.inquiry.id,
+      targetId: message.id,
+      targetType: 'message',
+    })
+    await decideInquiryModerationCase(moderatorReq, {
+      caseId: report.reportId,
+      category: 'harassment-threats',
+      effectiveUntil: new Date(Date.now() + 24 * 60 * 60 * 1_000).toISOString(),
+      outcome: 'content-restricted',
+      reason: 'Synthetic restriction before appeal.',
+    })
+    await submitInquiryModerationAppeal(clinicReq, {
+      caseId: report.reportId,
+      text: 'Synthetic appeal that will be upheld.',
+    })
+    await decideInquiryModerationAppeal(moderatorReq, {
+      caseId: report.reportId,
+      outcome: 'upheld',
+      reason: 'Synthetic appeal review upheld the restriction.',
+    })
+
+    const detail = await readPatientInquiryDetail(patientReq, { inquiryId: created.inquiry.id })
+    expect(detail.timeline).toContainEqual(
+      expect.objectContaining({ contentState: 'restricted', id: message.id, kind: 'external-message' }),
+    )
+    await expect(
+      payload.findByID({
+        collection: 'inquiryModerationCases',
+        depth: 0,
+        id: report.reportId,
+        overrideAccess: true,
+      }),
+    ).resolves.toMatchObject({
+      appealOutcome: 'upheld',
+      finalOutcomeAt: expect.any(String),
+      measureEndedAt: null,
+      status: 'resolved',
+    })
+  })
+
+  it('rate-limits persistent report bursts per participant', async () => {
+    const ratePatient = await createPatientTestUser(payload, {
+      createdPatientIds,
+      emailPrefix: `${slugPrefix}-rate-patient`,
+      firstName: 'Rate',
+      lastName: 'Patient',
+    })
+    const ratePatientReq = await createLocalReq({}, payload)
+    ratePatientReq.user = asPayloadPatientUser(ratePatient)
+    let current = (
+      await createVerifiedPatientInquiry(ratePatientReq, {
+        clinicId: String(clinicId),
+        consent: true,
+        doctorId: String(doctorId),
+        email: `${slugPrefix}-rate-patient@example.com`,
+        fullName: 'Rate Synthetic Patient',
+        idempotencyKey: `${slugPrefix}-rate-inquiry`,
+        message: 'Synthetic inquiry for report rate limiting.',
+        phoneNumber: '+493000000008',
+      })
+    ).inquiry
+    createdInquiryIds.push(current.id)
+
+    for (let index = 0; index <= 10; index += 1) {
+      current = (
+        await sendClinicInquiryMessage(clinicReq, {
+          expectedRevision: current.revision,
+          idempotencyKey: `${slugPrefix}-rate-message-${index}`,
+          inquiryId: current.id,
+          text: `Synthetic distinct report target ${index}.`,
+        })
+      ).inquiry
+      const target = current.timeline.find(
+        (item) => item.kind === 'external-message' && item.text === `Synthetic distinct report target ${index}.`,
+      )
+      if (!target) throw new Error('Expected report rate target')
+      const reportInput = {
+        category: 'privacy-concern' as const,
+        idempotencyKey: `${slugPrefix}-rate-report-${index}`,
+        inquiryId: current.id,
+        targetId: target.id,
+        targetType: 'message' as const,
+      }
+      if (index < 10) {
+        await expect(createInquiryModerationReport(ratePatientReq, reportInput)).resolves.toMatchObject({
+          received: true,
+        })
+      } else {
+        await expect(createInquiryModerationReport(ratePatientReq, reportInput)).rejects.toMatchObject({
+          kind: 'rate-limited',
+        } satisfies Partial<InquiryModerationServiceError>)
+      }
+    }
   })
 
   it('ends a timed restriction once, restores the composer, and appends neutral activity without unread', async () => {

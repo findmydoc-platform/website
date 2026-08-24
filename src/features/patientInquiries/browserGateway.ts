@@ -27,6 +27,7 @@ export type PatientInquiriesErrorCode =
       | 'INVALID_INPUT'
       | 'INVALID_STATE'
       | 'NOT_FOUND'
+      | 'RATE_LIMITED'
       | 'SERVICE_UNAVAILABLE'
       | 'UNAUTHORIZED'}`
 

@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+import { inquiryIdempotencyKeySchema, inquiryIdSchema } from '@/features/inquiryAggregate/contracts'
+import type { InquiryContentModerationDTO, InquiryModerationDTO } from '@/features/inquiryModeration/contracts'
+
+export { inquiryIdempotencyKeySchema, inquiryIdSchema } from '@/features/inquiryAggregate/contracts'
+
 export const INQUIRY_TEXT_MAX_LENGTH = 3_000
 export const INQUIRY_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024
 export const INQUIRY_ATTACHMENT_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'] as const
@@ -18,8 +23,6 @@ export const isAllowedClinicHandlingStatusTransition = (
   from: z.infer<typeof inquiryHandlingStatusSchema>,
   to: 'contacted' | 'in_review' | 'submitted',
 ): boolean => clinicHandlingStatusTransitions[from].includes(to as never)
-export const inquiryIdSchema = z.string().trim().min(1).max(100)
-export const inquiryIdempotencyKeySchema = z.string().trim().min(8).max(200)
 export const inquiryRevisionSchema = z.number().int().nonnegative()
 export const inquiryTextSchema = z.string().max(INQUIRY_TEXT_MAX_LENGTH)
 const nonBlankInquiryTextSchema = inquiryTextSchema.superRefine((value, context) => {
@@ -296,12 +299,7 @@ export type InquiryAttachmentDTO = {
   sizeBytes: number
 }
 
-export type InquiryContentModerationDTO = {
-  appeal?: { caseId: string; state: 'available' | 'submitted' | 'unavailable' }
-  category?: string
-  effectiveUntil?: string
-  isCurrentActorAffected: boolean
-}
+export type { InquiryContentModerationDTO } from '@/features/inquiryModeration/contracts'
 
 export type InquiryTimelineItemDTO =
   | {
@@ -386,26 +384,7 @@ export type InquiryDetailDTO = InquiryListItemDTO & {
     preferredContactWindow?: string
     treatmentTimeline?: string
   }
-  moderation?: {
-    conversation:
-      | { state: 'available' }
-      | {
-          appeal?: { caseId: string; state: 'available' | 'submitted' | 'unavailable' }
-          category?: string
-          effectiveUntil?: string
-          isCurrentActorAffected: boolean
-          state: 'restricted'
-        }
-    identity:
-      | { state: 'available' }
-      | {
-          appeal: { caseId: string; state: 'available' | 'submitted' | 'unavailable' }
-          category?: string
-          effectiveUntil?: string
-          isCurrentActorAffected: true
-          state: 'messaging-suspended'
-        }
-  }
+  moderation?: InquiryModerationDTO
   timeline: InquiryTimelineItemDTO[]
 }
 

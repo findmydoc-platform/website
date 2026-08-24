@@ -2,9 +2,13 @@
 
 import * as React from 'react'
 
+import type {
+  InquiryAppealFormValues,
+  InquiryReportFormValues,
+  InquiryReportTarget,
+} from '@/components/molecules/InquiryModerationDialog/Component'
 import { PatientInquiriesPage } from '@/components/templates/PatientInquiriesPage/Component'
 import type { InquiryDetailDTO, PatientInquiryQueueInput } from '@/features/inquiryCommunication/contracts'
-import type { InquiryModerationAppealInput, InquiryModerationReportInput } from '@/features/inquiryModeration/contracts'
 
 import { PatientInquiriesApiError, createPatientInquiriesBrowserApi, type PatientInquiriesApi } from './browserGateway'
 import {
@@ -37,7 +41,9 @@ const messageForError = (error: unknown, fallback: string): string => {
   if (error.code === 'INQUIRY_NOT_FOUND') return 'This inquiry is no longer available.'
   if (error.code === 'INQUIRY_ACCESS_DENIED') return 'This inquiry is no longer available.'
   if (error.code === 'INQUIRY_INVALID_STATE') return 'The inquiry changed. Refresh and try again.'
-  if (error.code === 'INQUIRY_RATE_LIMITED') return 'Too many attempts. Wait a moment and try again.'
+  if (error.code === 'INQUIRY_RATE_LIMITED' || error.code === 'MODERATION_RATE_LIMITED') {
+    return 'Too many attempts. Wait a moment and try again.'
+  }
   if (error.code === 'INQUIRY_PAYLOAD_TOO_LARGE' || error.code === 'INQUIRY_UNSUPPORTED_MEDIA_TYPE') {
     return 'Choose a PNG, JPEG, WebP or PDF file up to 5 MB.'
   }
@@ -81,6 +87,7 @@ export function PatientInquiriesController({
   const stateRef = React.useRef(state)
   const detailRequestIdRef = React.useRef(0)
   const queueRequestIdRef = React.useRef(0)
+  const reportAttemptRef = React.useRef<{ idempotencyKey: string; signature: string } | undefined>(undefined)
   stateRef.current = state
 
   const endSession = React.useCallback(() => {
@@ -363,9 +370,21 @@ export function PatientInquiriesController({
   }, [api])
 
   const submitReport = React.useCallback(
-    async (input: InquiryModerationReportInput): Promise<{ error?: string; ok: boolean }> => {
+    async (target: InquiryReportTarget, values: InquiryReportFormValues): Promise<{ error?: string; ok: boolean }> => {
+      const signature = JSON.stringify({ target, values })
+      const previousAttempt = reportAttemptRef.current
+      const idempotencyKey =
+        previousAttempt?.signature === signature ? previousAttempt.idempotencyKey : createMessageKey()
+      reportAttemptRef.current = { idempotencyKey, signature }
       try {
-        await api.report(input)
+        await api.report({
+          ...values,
+          idempotencyKey,
+          inquiryId: target.inquiryId,
+          targetId: target.targetId,
+          targetType: target.targetType,
+        })
+        reportAttemptRef.current = undefined
         return { ok: true }
       } catch (error: unknown) {
         if (isSessionError(error)) {
@@ -379,9 +398,9 @@ export function PatientInquiriesController({
   )
 
   const submitAppeal = React.useCallback(
-    async (input: InquiryModerationAppealInput): Promise<{ error?: string; ok: boolean }> => {
+    async (caseId: string, values: InquiryAppealFormValues): Promise<{ error?: string; ok: boolean }> => {
       try {
-        await api.appeal(input)
+        await api.appeal({ caseId, ...values })
         const inquiryId = stateRef.current.selectedInquiryId
         if (inquiryId) await loadDetail(inquiryId)
         return { ok: true }

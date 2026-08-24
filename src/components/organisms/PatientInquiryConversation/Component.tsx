@@ -22,9 +22,10 @@ import { Textarea } from '@/components/atoms/textarea'
 import {
   InquiryAppealDialog,
   InquiryReportDialog,
+  type InquiryAppealFormValues,
+  type InquiryReportFormValues,
   type InquiryReportTarget,
 } from '@/components/molecules/InquiryModerationDialog/Component'
-import type { InquiryModerationAppealInput, InquiryModerationReportInput } from '@/features/inquiryModeration/contracts'
 import type { PatientInquiryComposerState } from '@/features/patientInquiries/model'
 import type { PatientInquiryDetailView, PatientInquiryTimelineItemView } from '@/features/patientInquiries/viewModel'
 import { cn } from '@/utilities/ui'
@@ -40,8 +41,11 @@ type PatientInquiryConversationProps = {
   onRetry: () => void
   onRetrySend: () => void
   onSend: () => void
-  onSubmitAppeal: (input: InquiryModerationAppealInput) => Promise<{ error?: string; ok: boolean }>
-  onSubmitReport: (input: InquiryModerationReportInput) => Promise<{ error?: string; ok: boolean }>
+  onSubmitAppeal: (caseId: string, values: InquiryAppealFormValues) => Promise<{ error?: string; ok: boolean }>
+  onSubmitReport: (
+    target: InquiryReportTarget,
+    values: InquiryReportFormValues,
+  ) => Promise<{ error?: string; ok: boolean }>
   onTextChange: (text: string) => void
   status: 'error' | 'idle' | 'loading' | 'ready'
 }
@@ -684,6 +688,7 @@ export function PatientInquiryConversation({
             <input
               ref={fileInputRef}
               type="file"
+              aria-label="Attachment"
               className="sr-only"
               accept="image/png,image/jpeg,image/webp,application/pdf"
               aria-describedby={composer.fileError ? 'patient-inquiry-file-error' : undefined}
@@ -726,7 +731,11 @@ export function PatientInquiryConversation({
         onOpenChange={(open) => {
           if (!open) setReportTarget(undefined)
         }}
-        onSubmit={onSubmitReport}
+        onSubmit={(values) =>
+          reportTarget
+            ? onSubmitReport(reportTarget, values)
+            : Promise.resolve({ error: 'No report target.', ok: false })
+        }
       />
       <InquiryAppealDialog
         caseId={appealCaseId}
@@ -738,7 +747,9 @@ export function PatientInquiryConversation({
         onOpenChange={(open) => {
           if (!open) setAppealCaseId(undefined)
         }}
-        onSubmit={onSubmitAppeal}
+        onSubmit={(values) =>
+          appealCaseId ? onSubmitAppeal(appealCaseId, values) : Promise.resolve({ error: 'No appeal case.', ok: false })
+        }
       />
     </section>
   )

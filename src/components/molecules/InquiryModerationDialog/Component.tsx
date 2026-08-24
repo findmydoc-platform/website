@@ -14,7 +14,6 @@ import {
 import { Label } from '@/components/atoms/label'
 import { Textarea } from '@/components/atoms/textarea'
 import type {
-  InquiryModerationAppealInput,
   InquiryModerationReportCategory,
   InquiryModerationReportInput,
 } from '@/features/inquiryModeration/contracts'
@@ -26,6 +25,13 @@ export type InquiryReportTarget = Pick<InquiryModerationReportInput, 'inquiryId'
 
 type MutationResult = { error?: string; ok: boolean }
 
+export type InquiryReportFormValues = {
+  category: InquiryModerationReportCategory
+  description?: string
+}
+
+export type InquiryAppealFormValues = { text: string }
+
 const categories: Array<{ label: string; value: InquiryModerationReportCategory }> = [
   { label: 'Harassment or threats', value: 'harassment-threats' },
   { label: 'Spam, fraud or impersonation', value: 'spam-fraud-impersonation' },
@@ -34,11 +40,6 @@ const categories: Array<{ label: string; value: InquiryModerationReportCategory 
   { label: 'Other', value: 'other' },
 ]
 
-const createKey = (): string => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
-  return `report-${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
-
 export function InquiryReportDialog({
   onOpenChange,
   onSubmit,
@@ -46,15 +47,16 @@ export function InquiryReportDialog({
   target,
 }: {
   onOpenChange: (open: boolean) => void
-  onSubmit: (input: InquiryModerationReportInput) => Promise<MutationResult>
+  onSubmit: (values: InquiryReportFormValues) => Promise<MutationResult>
   open: boolean
   target?: InquiryReportTarget
 }) {
   const [category, setCategory] = React.useState<InquiryModerationReportCategory | ''>('')
   const [description, setDescription] = React.useState('')
   const [error, setError] = React.useState<string>()
-  const [idempotencyKey, setIdempotencyKey] = React.useState(createKey)
   const [status, setStatus] = React.useState<'editing' | 'submitting' | 'submitted'>('editing')
+  const reasonRef = React.useRef<HTMLSelectElement>(null)
+  const returnFocusRef = React.useRef<HTMLElement>(null)
 
   const handleOpenChange = (nextOpen: boolean) => {
     onOpenChange(nextOpen)
@@ -62,7 +64,6 @@ export function InquiryReportDialog({
       setCategory('')
       setDescription('')
       setError(undefined)
-      setIdempotencyKey(createKey())
       setStatus('editing')
     }
   }
@@ -75,10 +76,6 @@ export function InquiryReportDialog({
     const result = await onSubmit({
       category,
       ...(description ? { description } : {}),
-      idempotencyKey,
-      inquiryId: target.inquiryId,
-      targetId: target.targetId,
-      targetType: target.targetType,
     })
     if (result.ok) setStatus('submitted')
     else {
@@ -89,7 +86,18 @@ export function InquiryReportDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto rounded-xl">
+      <DialogContent
+        className="max-h-[90svh] overflow-y-auto rounded-xl"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+          reasonRef.current?.focus()
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault()
+          returnFocusRef.current?.focus()
+        }}
+      >
         {status === 'submitted' ? (
           <>
             <DialogHeader>
@@ -122,6 +130,7 @@ export function InquiryReportDialog({
               <div className="space-y-2">
                 <Label htmlFor="inquiry-report-reason">Reason</Label>
                 <select
+                  ref={reasonRef}
                   id="inquiry-report-reason"
                   aria-label="Reason"
                   className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
@@ -182,12 +191,14 @@ export function InquiryAppealDialog({
 }: {
   caseId?: string
   onOpenChange: (open: boolean) => void
-  onSubmit: (input: InquiryModerationAppealInput) => Promise<MutationResult>
+  onSubmit: (values: InquiryAppealFormValues) => Promise<MutationResult>
   open: boolean
 }) {
   const [text, setText] = React.useState('')
   const [error, setError] = React.useState<string>()
   const [status, setStatus] = React.useState<'editing' | 'submitting' | 'submitted'>('editing')
+  const appealRef = React.useRef<HTMLTextAreaElement>(null)
+  const returnFocusRef = React.useRef<HTMLElement>(null)
 
   const handleOpenChange = (nextOpen: boolean) => {
     onOpenChange(nextOpen)
@@ -202,7 +213,7 @@ export function InquiryAppealDialog({
     event.preventDefault()
     if (!caseId || !text.trim()) return
     setStatus('submitting')
-    const result = await onSubmit({ caseId, text })
+    const result = await onSubmit({ text })
     if (result.ok) setStatus('submitted')
     else {
       setError(result.error ?? 'The appeal could not be submitted. Try again.')
@@ -212,7 +223,18 @@ export function InquiryAppealDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="rounded-xl">
+      <DialogContent
+        className="rounded-xl"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+          appealRef.current?.focus()
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault()
+          returnFocusRef.current?.focus()
+        }}
+      >
         {status === 'submitted' ? (
           <>
             <DialogHeader>
@@ -234,6 +256,7 @@ export function InquiryAppealDialog({
             <div className="mt-6 space-y-2">
               <Label htmlFor="inquiry-appeal-text">Appeal</Label>
               <Textarea
+                ref={appealRef}
                 id="inquiry-appeal-text"
                 aria-label="Appeal"
                 maxLength={1000}

@@ -55,6 +55,7 @@ export const guestInquiryCreateInputSchema = z
       .max(254)
       .transform((value) => value.toLowerCase()),
     fullName: z.string().trim().min(1, 'Full name is required.').max(200),
+    idempotencyKey: inquiryIdempotencyKeySchema.optional(),
     message: guestMessageSchema,
     phoneNumber: z.string().trim().min(1, 'Phone number is required.').max(80),
     preferredContactWindow: z

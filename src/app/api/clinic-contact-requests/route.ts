@@ -4,7 +4,11 @@ import { createLocalReq, getPayload } from 'payload'
 import type { z } from 'zod'
 
 import { guestInquiryCreateInputSchema } from '@/features/inquiryCommunication/contracts'
-import { InquiryCommunicationServiceError, submitGuestClinicInquiry } from '@/features/inquiryCommunication/service'
+import {
+  createVerifiedPatientInquiry,
+  InquiryCommunicationServiceError,
+  submitGuestClinicInquiry,
+} from '@/features/inquiryCommunication/service'
 
 const publicValidationMessages = new Set([
   'Consent is required.',
@@ -50,6 +54,30 @@ export async function POST(request: NextRequest) {
   const payload = await getPayload({ config: configPromise })
   try {
     const req = await createLocalReq({ req: { headers: request.headers } }, payload)
+    if (req.user?.collection === 'patients') {
+      if (!parsed.data.idempotencyKey) {
+        return NextResponse.json({ error: 'Invalid request payload.' }, { status: 400 })
+      }
+      const result = await createVerifiedPatientInquiry(req, {
+        clinicId: String(parsed.data.clinicId),
+        consent: true,
+        ...(parsed.data.doctorId ? { doctorId: String(parsed.data.doctorId) } : {}),
+        email: parsed.data.email,
+        fullName: parsed.data.fullName,
+        idempotencyKey: parsed.data.idempotencyKey,
+        message: parsed.data.message,
+        phoneNumber: parsed.data.phoneNumber,
+        ...(parsed.data.preferredContactWindow ? { preferredContactWindow: parsed.data.preferredContactWindow } : {}),
+        ...(parsed.data.treatmentId ? { treatmentId: String(parsed.data.treatmentId) } : {}),
+        ...(parsed.data.treatmentTimeline ? { treatmentTimeline: parsed.data.treatmentTimeline } : {}),
+      })
+      return NextResponse.json({
+        success: true,
+        id: result.inquiry.id,
+        status: 'submitted',
+        ...(result.replayed ? { deduped: true } : {}),
+      })
+    }
     const result = await submitGuestClinicInquiry(req, parsed.data)
     return NextResponse.json({
       success: true,

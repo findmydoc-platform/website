@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  createVerifiedInquiry: vi.fn(),
   createLocalReq: vi.fn(),
   getPayload: vi.fn(),
   submitGuestInquiry: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('payload', async (importOriginal) => ({
 
 vi.mock('@/features/inquiryCommunication/service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/inquiryCommunication/service')>()),
+  createVerifiedPatientInquiry: mocks.createVerifiedInquiry,
   submitGuestClinicInquiry: mocks.submitGuestInquiry,
 }))
 
@@ -33,6 +35,7 @@ const validBody = {
   doctorId: 601,
   email: 'Jane.Patient@Example.com',
   fullName: ' Jane Patient ',
+  idempotencyKey: 'contact-request-key-1',
   message: 'First line\nSecond line',
   phoneNumber: '+49 30 123456',
   preferredContactWindow: 'morning',
@@ -52,6 +55,10 @@ describe('POST /api/clinic-contact-requests', () => {
     vi.clearAllMocks()
     mocks.getPayload.mockResolvedValue(payload)
     mocks.createLocalReq.mockResolvedValue(localReq)
+    mocks.createVerifiedInquiry.mockResolvedValue({
+      inquiry: { handlingStatus: 'submitted', id: '43' },
+      replayed: false,
+    })
     mocks.submitGuestInquiry.mockResolvedValue({ deduped: false, id: '42', status: 'submitted' })
   })
 
@@ -71,6 +78,26 @@ describe('POST /api/clinic-contact-requests', () => {
       email: 'jane.patient@example.com',
       fullName: 'Jane Patient',
     })
+    expect(mocks.createVerifiedInquiry).not.toHaveBeenCalled()
+  })
+
+  it('binds an authenticated patient submission through the verified inquiry command', async () => {
+    const patientReq = { ...localReq, user: { collection: 'patients', id: 17 } }
+    mocks.createLocalReq.mockResolvedValueOnce(patientReq)
+
+    const response = await POST(makeRequest(validBody))
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ success: true, id: '43', status: 'submitted' })
+    expect(mocks.createVerifiedInquiry).toHaveBeenCalledWith(patientReq, {
+      ...validBody,
+      clinicId: '1',
+      doctorId: '601',
+      email: 'jane.patient@example.com',
+      fullName: 'Jane Patient',
+      treatmentId: '301',
+    })
+    expect(mocks.submitGuestInquiry).not.toHaveBeenCalled()
   })
 
   it('preserves a recent duplicate as the historical successful response', async () => {
@@ -104,6 +131,7 @@ describe('POST /api/clinic-contact-requests', () => {
     await expect(response.json()).resolves.toEqual({ error })
     expect(mocks.createLocalReq).not.toHaveBeenCalled()
     expect(mocks.submitGuestInquiry).not.toHaveBeenCalled()
+    expect(mocks.createVerifiedInquiry).not.toHaveBeenCalled()
   })
 
   it.each([

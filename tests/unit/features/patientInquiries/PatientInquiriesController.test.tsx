@@ -36,7 +36,7 @@ const item: InquiryListItemDTO = {
 const clinicReply: Extract<InquiryTimelineItemDTO, { kind: 'external-message' }> = {
   actor: { displayName: 'Izmir Coast Dental', isCurrentActor: false, kind: 'clinic' },
   createdAt: '2026-08-24T10:06:00.000Z',
-  id: 'message-1',
+  id: 'message:1',
   kind: 'external-message',
   text: 'Would Tuesday work?',
 }
@@ -101,7 +101,7 @@ describe('PatientInquiriesController', () => {
     cleanup()
   })
 
-  it('loads and polls private data without ever marking the inquiry read automatically', async () => {
+  it('marks an explicit deep link read once and never repeats the write during polling', async () => {
     const api = createApi()
 
     render(
@@ -118,7 +118,12 @@ describe('PatientInquiriesController', () => {
     await waitFor(() => expect(vi.mocked(api.readQueue).mock.calls.length).toBeGreaterThanOrEqual(2))
 
     expect(vi.mocked(api.readDetail).mock.calls.length).toBeGreaterThanOrEqual(2)
-    expect(api.updateReadPosition).not.toHaveBeenCalled()
+    expect(api.updateReadPosition).toHaveBeenCalledTimes(1)
+    expect(api.updateReadPosition).toHaveBeenCalledWith({
+      activityId: 'message:1',
+      inquiryId: 'inquiry-1',
+      mode: 'read',
+    })
   })
 
   it('does not let a late queue poll overwrite a newer queue snapshot', async () => {
@@ -278,7 +283,38 @@ describe('PatientInquiriesController', () => {
     expect(api.updateReadPosition).not.toHaveBeenCalled()
     fireEvent.click(inquiryButton)
 
-    await waitFor(() => expect(api.updateReadPosition).toHaveBeenCalledWith({ inquiryId: 'inquiry-1', mode: 'read' }))
+    await waitFor(() =>
+      expect(api.updateReadPosition).toHaveBeenCalledWith({
+        activityId: 'message:1',
+        inquiryId: 'inquiry-1',
+        mode: 'read',
+      }),
+    )
+  })
+
+  it('does not write a patient read position without a visible clinic message', async () => {
+    const api = createApi({
+      readDetail: vi.fn().mockResolvedValue({
+        changeCursor: 'detail-patient-only',
+        inquiry: {
+          ...detail,
+          timeline: [{ ...clinicReply, actor: { ...clinicReply.actor, isCurrentActor: true, kind: 'patient' } }],
+        },
+        unchanged: false,
+      }),
+    })
+
+    render(
+      <PatientInquiriesController
+        api={api}
+        initialInquiryId="inquiry-1"
+        loginHref="/login/patient?next=%2Fpatient%2Finquiries%2Finquiry-1"
+        mode="detail"
+      />,
+    )
+
+    await screen.findAllByText('Would Tuesday work?')
+    expect(api.updateReadPosition).not.toHaveBeenCalled()
   })
 
   it('reserves, uploads, finalizes, and binds one attachment before confirming the message', async () => {

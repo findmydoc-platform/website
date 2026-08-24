@@ -77,6 +77,9 @@ describe('useClinicDetailInteractionState', () => {
     expect(result.current.hasSubmittedContact).toBe(true)
     expect(result.current.contactFormMessage).toBe('Your clinic request has been sent successfully.')
     expect(fetch).toHaveBeenCalledTimes(1)
+    const firstRequest = vi.mocked(fetch).mock.calls[0]?.[1]
+    const firstBody = JSON.parse(String(firstRequest?.body)) as { idempotencyKey?: string }
+    expect(firstBody.idempotencyKey).toMatch(/\S{8,}/u)
 
     await act(async () => {
       await result.current.handleContactSubmit(submitEvent())
@@ -124,5 +127,29 @@ describe('useClinicDetailInteractionState', () => {
     })
 
     expect(fetch).toHaveBeenCalledTimes(2)
+    const firstBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body)) as { idempotencyKey: string }
+    const secondBody = JSON.parse(String(vi.mocked(fetch).mock.calls[1]?.[1]?.body)) as { idempotencyKey: string }
+    expect(secondBody.idempotencyKey).not.toBe(firstBody.idempotencyKey)
+  })
+
+  it('reuses the same request key when an unchanged failed submission is retried', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'Temporary failure.' }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+    const { result } = renderInteractionState()
+
+    act(() => {
+      result.current.handleDoctorSelectionChange('601')
+    })
+    await act(async () => {
+      await result.current.handleContactSubmit(submitEvent())
+    })
+    await act(async () => {
+      await result.current.handleContactSubmit(submitEvent())
+    })
+
+    const firstBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body)) as { idempotencyKey: string }
+    const secondBody = JSON.parse(String(vi.mocked(fetch).mock.calls[1]?.[1]?.body)) as { idempotencyKey: string }
+    expect(secondBody.idempotencyKey).toBe(firstBody.idempotencyKey)
   })
 })

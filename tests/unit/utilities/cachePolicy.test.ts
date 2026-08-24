@@ -106,6 +106,12 @@ describe('cache policy contract', () => {
       'platformStaff',
       'clinicApplications',
       'patientClinicInquiries',
+      'inquiryConversations',
+      'inquiryMessages',
+      'inquiryInternalNotes',
+      'inquiryAttachments',
+      'inquiryReadPositions',
+      'inquiryAuditEvents',
       'userProfileMedia',
     ]
 
@@ -274,6 +280,22 @@ describe('cache policy contract', () => {
       boundary: 'private',
       tagFamilies: [],
       pathRelationship: 'private-live',
+    })
+
+    expect(getCachePolicyEntry('collection:private-operational')).toMatchObject({
+      kind: 'collection',
+      cacheClass: 'private-live',
+      boundary: 'private',
+      tagFamilies: [],
+      pathRelationship: 'private-live',
+      collections: expect.arrayContaining([
+        'inquiryConversations',
+        'inquiryMessages',
+        'inquiryInternalNotes',
+        'inquiryAttachments',
+        'inquiryReadPositions',
+        'inquiryAuditEvents',
+      ]),
     })
 
     expect(getCachePolicyEntry('seed:queued-runs')).toMatchObject({

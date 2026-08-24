@@ -1,0 +1,128 @@
+import type { CollectionConfig } from 'payload'
+
+import { hiddenSystemTextField, immutableInquiryFields } from './inquiryCommunication/common'
+import { validateInquiryAttachment } from './inquiryCommunication/invariants'
+
+export const InquiryAttachments: CollectionConfig = {
+  slug: 'inquiryAttachments',
+  labels: { singular: 'Inquiry Attachment', plural: 'Inquiry Attachments' },
+  admin: {
+    hidden: true,
+    group: 'Platform Management',
+    useAsTitle: 'fileName',
+    defaultColumns: ['fileName', 'state', 'inquiry', 'createdAt'],
+    description: 'Private draft and message-bound inquiry attachment metadata',
+  },
+  access: {
+    create: () => false,
+    read: () => false,
+    update: () => false,
+    delete: () => false,
+    admin: () => false,
+  },
+  endpoints: false,
+  graphQL: false,
+  hooks: {
+    beforeValidate: [validateInquiryAttachment],
+    beforeChange: [
+      immutableInquiryFields([
+        'inquiry',
+        'clinic',
+        'patient',
+        'ownerKind',
+        'ownerPatient',
+        'ownerClinicStaff',
+        'actorKey',
+        'fileName',
+        'declaredMimeType',
+        'declaredSizeBytes',
+        'draftObjectKey',
+        'expiresAt',
+        'objectCreatedAt',
+      ]),
+    ],
+  },
+  fields: [
+    {
+      name: 'inquiry',
+      type: 'relationship',
+      relationTo: 'patientClinicInquiries',
+      required: true,
+      index: true,
+    },
+    { name: 'clinic', type: 'relationship', relationTo: 'clinics', required: true, index: true },
+    { name: 'patient', type: 'relationship', relationTo: 'patients', required: true, index: true },
+    {
+      name: 'ownerKind',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Patient', value: 'patient' },
+        { label: 'Clinic', value: 'clinic' },
+      ],
+    },
+    { name: 'ownerPatient', type: 'relationship', relationTo: 'patients', index: true },
+    { name: 'ownerClinicStaff', type: 'relationship', relationTo: 'clinicStaff', index: true },
+    { name: 'fileName', type: 'text', required: true },
+    {
+      name: 'declaredMimeType',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'PNG', value: 'image/png' },
+        { label: 'JPEG', value: 'image/jpeg' },
+        { label: 'WebP', value: 'image/webp' },
+        { label: 'PDF', value: 'application/pdf' },
+      ],
+    },
+    { name: 'declaredSizeBytes', type: 'number', required: true, min: 1, max: 5 * 1024 * 1024 },
+    {
+      name: 'verifiedMimeType',
+      type: 'select',
+      options: [
+        { label: 'PNG', value: 'image/png' },
+        { label: 'JPEG', value: 'image/jpeg' },
+        { label: 'WebP', value: 'image/webp' },
+        { label: 'PDF', value: 'application/pdf' },
+      ],
+    },
+    { name: 'verifiedSizeBytes', type: 'number', min: 1, max: 5 * 1024 * 1024 },
+    {
+      name: 'state',
+      type: 'select',
+      required: true,
+      defaultValue: 'draft',
+      options: [
+        { label: 'Draft', value: 'draft' },
+        { label: 'Verified', value: 'verified' },
+        { label: 'Bound', value: 'bound' },
+        { label: 'Discarded', value: 'discarded' },
+      ],
+      index: true,
+    },
+    { name: 'expiresAt', type: 'date', required: true, index: true },
+    { name: 'objectCreatedAt', type: 'date', required: true, index: true },
+    {
+      name: 'draftCleanupCompletedAt',
+      type: 'date',
+      index: true,
+      admin: { hidden: true, readOnly: true },
+    },
+    { name: 'cleanupCompletedAt', type: 'date', index: true, admin: { hidden: true, readOnly: true } },
+    { name: 'boundMessage', type: 'relationship', relationTo: 'inquiryMessages', index: true, unique: true },
+    hiddenSystemTextField('actorKey', { index: true }),
+    hiddenSystemTextField('draftObjectKey', { index: true }),
+    {
+      name: 'readyObjectKey',
+      type: 'text',
+      index: true,
+      access: {
+        create: () => false,
+        read: () => false,
+        update: () => false,
+      },
+      admin: { hidden: true, readOnly: true },
+    },
+  ],
+  timestamps: true,
+}

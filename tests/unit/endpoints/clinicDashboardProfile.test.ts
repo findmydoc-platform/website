@@ -75,7 +75,7 @@ describe('Clinic Dashboard profile endpoints', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
-    expect(response.headers.get('vary')).toBe('Authorization')
+    expect(response.headers.get('vary')).toBe('Authorization, X-Findmydoc-Clinic-Dashboard-Contract')
     expect(mocks.read).toHaveBeenCalledWith(expect.anything(), '42')
   })
 

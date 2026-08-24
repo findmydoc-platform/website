@@ -1,0 +1,94 @@
+import type { CollectionConfig } from 'payload'
+
+import { hiddenSystemTextField, immutableInquiryFields } from './inquiryCommunication/common'
+import { validateInquiryAuditEvent } from './inquiryCommunication/invariants'
+
+export const InquiryAuditEvents: CollectionConfig = {
+  slug: 'inquiryAuditEvents',
+  labels: { singular: 'Inquiry Audit Event', plural: 'Inquiry Audit Events' },
+  admin: {
+    hidden: true,
+    group: 'Platform Management',
+    useAsTitle: 'eventType',
+    defaultColumns: ['inquiry', 'eventType', 'actorKind', 'createdAt'],
+    description: 'Content-free audit trail for inquiry communication changes',
+  },
+  access: {
+    create: () => false,
+    read: () => false,
+    update: () => false,
+    delete: () => false,
+    admin: () => false,
+  },
+  endpoints: false,
+  graphQL: false,
+  hooks: {
+    beforeValidate: [validateInquiryAuditEvent],
+    beforeChange: [
+      immutableInquiryFields([
+        'inquiry',
+        'clinic',
+        'actorKind',
+        'actorId',
+        'eventType',
+        'targetType',
+        'targetId',
+        'fromValue',
+        'toValue',
+        'reason',
+        'sequence',
+        'clinicNotificationSequence',
+      ]),
+    ],
+  },
+  fields: [
+    {
+      name: 'inquiry',
+      type: 'relationship',
+      relationTo: 'patientClinicInquiries',
+      required: true,
+      index: true,
+    },
+    { name: 'clinic', type: 'relationship', relationTo: 'clinics', required: true, index: true },
+    {
+      name: 'actorKind',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Patient', value: 'patient' },
+        { label: 'Clinic', value: 'clinic' },
+        { label: 'System', value: 'system' },
+        { label: 'Platform', value: 'platform' },
+      ],
+    },
+    hiddenSystemTextField('actorId', { index: true }),
+    {
+      name: 'eventType',
+      type: 'select',
+      required: true,
+      index: true,
+      options: [
+        { label: 'Inquiry created', value: 'inquiry-created' },
+        { label: 'Message sent', value: 'message-sent' },
+        { label: 'Internal note added', value: 'internal-note-added' },
+        { label: 'Handling status changed', value: 'handling-status-changed' },
+        { label: 'Closed', value: 'closed' },
+        { label: 'Reopened', value: 'reopened' },
+        { label: 'Marked spam', value: 'marked-spam' },
+        { label: 'Spam removed', value: 'spam-removed' },
+        { label: 'Attachment draft created', value: 'attachment-draft-created' },
+        { label: 'Attachment finalized', value: 'attachment-finalized' },
+        { label: 'Attachment discarded', value: 'attachment-discarded' },
+        { label: 'Contact revealed', value: 'contact-revealed' },
+      ],
+    },
+    { name: 'targetType', type: 'text' },
+    { name: 'targetId', type: 'text' },
+    { name: 'fromValue', type: 'text' },
+    { name: 'toValue', type: 'text' },
+    { name: 'reason', type: 'textarea', maxLength: 500 },
+    { name: 'sequence', type: 'number', required: true, min: 0, index: true },
+    { name: 'clinicNotificationSequence', type: 'number', required: true, min: 0, index: true },
+  ],
+  timestamps: true,
+}

@@ -26,6 +26,30 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/patientClinicInquiries.lifecycle.test.ts'],
     deep: ['tests/integration/patientClinicInquiries.lifecycle.test.ts'],
   },
+  inquiryAttachments: {
+    baseline: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+    deep: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+  },
+  inquiryAuditEvents: {
+    baseline: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+    deep: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+  },
+  inquiryConversations: {
+    baseline: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+    deep: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+  },
+  inquiryInternalNotes: {
+    baseline: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+    deep: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+  },
+  inquiryMessages: {
+    baseline: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+    deep: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+  },
+  inquiryReadPositions: {
+    baseline: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+    deep: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+  },
   clinicGalleryEntries: {
     baseline: ['tests/integration/clinicGalleryEntries.lifecycle.test.ts'],
     deep: [
@@ -180,6 +204,15 @@ export const deepContractDomains = {
     'clinicMedia',
     'doctorMedia',
     'userProfileMedia',
+  ],
+  inquiryCommunication: [
+    'patientClinicInquiries',
+    'inquiryConversations',
+    'inquiryMessages',
+    'inquiryInternalNotes',
+    'inquiryAttachments',
+    'inquiryReadPositions',
+    'inquiryAuditEvents',
   ],
   trustWorkflow: [
     'reviews',

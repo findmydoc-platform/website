@@ -1,10 +1,8 @@
 import { ValidationError } from 'payload'
-import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
+import type { CollectionBeforeChangeHook, CollectionConfig, FieldAccess } from 'payload'
 
 import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 import { isClinicStaff } from '@/access/isClinicStaff'
-import { isPlatformStaff } from '@/access/isPlatformStaff'
-import { platformOrOwnClinicResource } from '@/access/scopeFilters'
 import type { PatientClinicInquiry } from '@/payload-types'
 
 export const patientClinicInquiryStatusOptions = [
@@ -15,7 +13,38 @@ export const patientClinicInquiryStatusOptions = [
   { label: 'Spam', value: 'spam' },
 ] as const
 
+export const patientClinicInquiryHandlingStatusOptions = [
+  { label: 'Submitted', value: 'submitted' },
+  { label: 'In Review', value: 'in_review' },
+  { label: 'Contacted', value: 'contacted' },
+  { label: 'Spam', value: 'spam' },
+] as const
+
+export const patientClinicInquiryLifecycleOptions = [
+  { label: 'Open', value: 'open' },
+  { label: 'Closed', value: 'closed' },
+] as const
+
 type PatientClinicInquiryStatus = (typeof patientClinicInquiryStatusOptions)[number]['value']
+
+const privateInquiryDomainFieldAccess: FieldAccess = () => false
+const inquiryDomainFields = [
+  'patient',
+  'handlingStatus',
+  'lifecycle',
+  'previousHandlingStatus',
+  'revision',
+  'activitySequence',
+  'externalSequence',
+  'clinicNotificationSequence',
+  'clinicUnreadFloor',
+  'clinicUnreadEpoch',
+  'lastActivityAt',
+  'lastExternalActivityAt',
+  'creationActorKey',
+  'creationIdempotencyKey',
+  'creationRequestHash',
+] as const
 
 export const patientClinicInquiryStatusTransitions = {
   submitted: ['in_review', 'contacted', 'closed', 'spam'],
@@ -56,6 +85,20 @@ export const patientClinicInquiryContactWindowOptions = [
 ] as const
 
 const submissionEvidenceFields = ['consent'] as const
+const immutableSubmissionFields = [
+  'patient',
+  'clinic',
+  'fullName',
+  'email',
+  'phoneNumber',
+  'treatmentTimeline',
+  'preferredContactWindow',
+  'doctor',
+  'treatment',
+  'message',
+  'consent',
+  'status',
+] as const
 
 function normalizeEvidenceValue(value: unknown): unknown {
   if (value instanceof Date) return value.toISOString()
@@ -90,6 +133,16 @@ const freezeSubmissionEvidence: CollectionBeforeChangeHook = ({ data, operation,
   return data
 }
 
+const freezeOriginalSubmission: CollectionBeforeChangeHook = ({ data, operation, originalDoc }) => {
+  if (operation !== 'update' || !data || !originalDoc) return data
+  for (const field of immutableSubmissionFields) {
+    if (!Object.prototype.hasOwnProperty.call(data, field)) continue
+    if (evidenceValuesMatch(data[field], originalDoc[field])) continue
+    throw new Error(`${field} cannot be changed after inquiry submission.`)
+  }
+  return data
+}
+
 const validateClinicStaffStatusTransition: CollectionBeforeChangeHook<PatientClinicInquiry> = ({
   data,
   operation,
@@ -120,6 +173,33 @@ const validateClinicStaffStatusTransition: CollectionBeforeChangeHook<PatientCli
   return data
 }
 
+const protectInquiryDomainFields: CollectionBeforeChangeHook = ({ data, operation, originalDoc, req }) => {
+  if (!data) return data
+  const touchesDomain = inquiryDomainFields.some((field) => {
+    if (!Object.prototype.hasOwnProperty.call(data, field)) return false
+    if (operation !== 'update' || !originalDoc) return true
+    return !evidenceValuesMatch(data[field], originalDoc[field])
+  })
+  if (!touchesDomain) return data
+  if (req.context?.inquiryCommunicationCommand === true) return data
+
+  throw new ValidationError({
+    collection: 'patientClinicInquiries',
+    errors: [
+      {
+        message: `Inquiry communication domain fields cannot be changed through a direct ${operation} operation.`,
+        path:
+          inquiryDomainFields.find(
+            (field) =>
+              Object.prototype.hasOwnProperty.call(data, field) &&
+              (operation !== 'update' || !originalDoc || !evidenceValuesMatch(data[field], originalDoc[field])),
+          ) ?? 'id',
+      },
+    ],
+    req,
+  })
+}
+
 export const PatientClinicInquiries: CollectionConfig = {
   slug: 'patientClinicInquiries',
   labels: {
@@ -127,32 +207,58 @@ export const PatientClinicInquiries: CollectionConfig = {
     plural: 'Clinic Contact Requests',
   },
   admin: {
+    hidden: true,
     group: 'Platform Management',
     useAsTitle: 'fullName',
     defaultColumns: ['fullName', 'clinic', 'status', 'email', 'createdAt'],
     description: 'Contact requests submitted from clinic profile pages',
   },
   access: {
-    create: isPlatformStaff,
-    read: platformOrOwnClinicResource,
-    update: platformOrOwnClinicResource,
-    delete: isPlatformStaff,
+    create: () => false,
+    read: () => false,
+    update: () => false,
+    delete: () => false,
+    admin: () => false,
   },
+  endpoints: false,
+  graphQL: false,
   hooks: {
-    beforeChange: [freezeSubmissionEvidence, validateClinicStaffStatusTransition],
+    beforeChange: [
+      protectInquiryDomainFields,
+      freezeOriginalSubmission,
+      freezeSubmissionEvidence,
+      validateClinicStaffStatusTransition,
+    ],
   },
   fields: [
+    {
+      name: 'patient',
+      type: 'relationship',
+      relationTo: 'patients',
+      index: true,
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+      admin: {
+        description: 'Verified patient identity bound by an authenticated server request',
+        readOnly: true,
+      },
+    },
     {
       name: 'clinic',
       type: 'relationship',
       relationTo: 'clinics',
       required: true,
       index: true,
-      access: {
-        update: platformOnlyFieldAccess,
-      },
       admin: {
         description: 'Clinic profile the request was sent from',
+      },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
       },
     },
     {
@@ -189,11 +295,13 @@ export const PatientClinicInquiries: CollectionConfig = {
       name: 'phoneNumber',
       type: 'text',
       required: true,
-      access: {
-        update: platformOnlyFieldAccess,
-      },
       admin: {
         description: 'Phone number for follow-up',
+      },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
       },
     },
     {
@@ -229,11 +337,13 @@ export const PatientClinicInquiries: CollectionConfig = {
       name: 'doctor',
       type: 'relationship',
       relationTo: 'doctors',
-      access: {
-        update: platformOnlyFieldAccess,
-      },
       admin: {
         description: 'Doctor selected on the clinic profile',
+      },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
       },
     },
     {
@@ -241,7 +351,9 @@ export const PatientClinicInquiries: CollectionConfig = {
       type: 'relationship',
       relationTo: 'treatments',
       access: {
-        update: platformOnlyFieldAccess,
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
       },
       admin: {
         description: 'Treatment selected on the clinic profile',
@@ -252,7 +364,9 @@ export const PatientClinicInquiries: CollectionConfig = {
       type: 'textarea',
       required: true,
       access: {
-        update: platformOnlyFieldAccess,
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
       },
       admin: {
         description: 'Message entered by the requester',
@@ -262,8 +376,9 @@ export const PatientClinicInquiries: CollectionConfig = {
       name: 'consent',
       type: 'group',
       access: {
-        read: platformOnlyFieldAccess,
-        update: platformOnlyFieldAccess,
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
       },
       admin: {
         description: 'Consent captured at submission time',
@@ -293,8 +408,182 @@ export const PatientClinicInquiries: CollectionConfig = {
       defaultValue: 'submitted',
       options: [...patientClinicInquiryStatusOptions],
       admin: {
-        description: 'Current handling status',
+        description: 'Legacy combined state retained until the additive cutover is complete',
+        hidden: true,
+        readOnly: true,
       },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'handlingStatus',
+      type: 'select',
+      options: [...patientClinicInquiryHandlingStatusOptions],
+      index: true,
+      admin: {
+        description: 'Current inquiry handling status',
+        readOnly: true,
+      },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'lifecycle',
+      type: 'select',
+      options: [...patientClinicInquiryLifecycleOptions],
+      index: true,
+      admin: {
+        description: 'Whether external communication is open or closed',
+        readOnly: true,
+      },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'previousHandlingStatus',
+      type: 'select',
+      options: patientClinicInquiryHandlingStatusOptions.filter((option) => option.value !== 'spam'),
+      admin: {
+        hidden: true,
+        readOnly: true,
+      },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'revision',
+      type: 'number',
+      min: 0,
+      index: true,
+      admin: {
+        readOnly: true,
+      },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'activitySequence',
+      type: 'number',
+      min: 0,
+      admin: { hidden: true, readOnly: true },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'externalSequence',
+      type: 'number',
+      min: 0,
+      admin: { hidden: true, readOnly: true },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'clinicNotificationSequence',
+      type: 'number',
+      min: 0,
+      admin: { hidden: true, readOnly: true },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'clinicUnreadFloor',
+      type: 'number',
+      min: 0,
+      admin: { hidden: true, readOnly: true },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'clinicUnreadEpoch',
+      type: 'number',
+      min: 0,
+      admin: { hidden: true, readOnly: true },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'lastActivityAt',
+      type: 'date',
+      index: true,
+      admin: { hidden: true, readOnly: true },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'lastExternalActivityAt',
+      type: 'date',
+      index: true,
+      admin: { hidden: true, readOnly: true },
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+    },
+    {
+      name: 'creationActorKey',
+      type: 'text',
+      index: true,
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+      admin: { hidden: true, readOnly: true },
+    },
+    {
+      name: 'creationIdempotencyKey',
+      type: 'text',
+      index: true,
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+      admin: { hidden: true, readOnly: true },
+    },
+    {
+      name: 'creationRequestHash',
+      type: 'text',
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+      admin: { hidden: true, readOnly: true },
     },
     {
       name: 'assignedTo',
@@ -309,5 +598,7 @@ export const PatientClinicInquiries: CollectionConfig = {
       },
     },
   ],
+  indexes: [{ fields: ['patient', 'creationIdempotencyKey'], unique: true }],
   timestamps: true,
+  trash: true,
 }

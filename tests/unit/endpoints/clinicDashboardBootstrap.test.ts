@@ -24,6 +24,10 @@ vi.mock('@/auth/utilities/clinicAccessState', () => ({
 }))
 
 const bearerHeaders = new Headers({ Authorization: 'Bearer clinic-token' })
+const inquiryContractHeaders = new Headers({
+  Authorization: 'Bearer clinic-token',
+  'X-Findmydoc-Clinic-Dashboard-Contract': 'inquiry-communication-v1',
+})
 
 const staffDocument = {
   id: 22,
@@ -82,7 +86,7 @@ const expectPrivateLiveHeaders = (response: Response) => {
   expect(response.headers.get('cache-control')).toBe('private, no-store')
   expect(response.headers.get('pragma')).toBe('no-cache')
   expect(response.headers.get('expires')).toBe('0')
-  expect(response.headers.get('vary')).toBe('Authorization')
+  expect(response.headers.get('vary')).toBe('Authorization, X-Findmydoc-Clinic-Dashboard-Contract')
 }
 
 describe('Clinic Dashboard bootstrap endpoint', () => {
@@ -93,7 +97,7 @@ describe('Clinic Dashboard bootstrap endpoint', () => {
     mocks.readClinicAccessState.mockResolvedValue(null)
   })
 
-  it('returns only the safe, stable DTO for an approved clinic principal', async () => {
+  it('keeps the historical six capabilities when the contract header is absent', async () => {
     const payload = createMockPayload()
     arrangeCurrentDocuments()
 
@@ -125,6 +129,51 @@ describe('Clinic Dashboard bootstrap endpoint', () => {
     expectPrivateLiveHeaders(response)
     expect(mocks.validateSupabaseBearerToken).not.toHaveBeenCalled()
     expect(payload.create).not.toHaveBeenCalled()
+  })
+
+  it('adds the two inquiry capabilities for the single known contract value', async () => {
+    const payload = createMockPayload()
+    arrangeCurrentDocuments()
+
+    const response = await clinicDashboardBootstrapGetHandler(
+      request(payload, mockUsers.clinic(22, 8), { headers: inquiryContractHeaders }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      capabilities: [
+        'clinic-profile:view',
+        'clinic-profile:edit',
+        'clinic-treatments:view',
+        'clinic-treatments:edit',
+        'clinic-gallery:view',
+        'clinic-gallery:edit',
+        'clinic-inquiries:view',
+        'clinic-inquiries:edit',
+      ],
+    })
+    expectPrivateLiveHeaders(response)
+  })
+
+  it.each([
+    ['unknown', 'future-contract'],
+    ['coalesced duplicate', 'inquiry-communication-v1, inquiry-communication-v1'],
+  ])('fails closed for an %s contract header', async (_case, value) => {
+    const payload = createMockPayload()
+    arrangeCurrentDocuments()
+    const headers = new Headers({
+      Authorization: 'Bearer clinic-token',
+      'X-Findmydoc-Clinic-Dashboard-Contract': value,
+    })
+
+    const response = await clinicDashboardBootstrapGetHandler(request(payload, mockUsers.clinic(22, 8), { headers }))
+
+    expect(await readResponse(response)).toEqual({
+      status: 400,
+      body: { error: { code: 'CLINIC_DASHBOARD_INVALID_CONTRACT' } },
+    })
+    expect(mocks.readClinicAccessState).not.toHaveBeenCalled()
+    expectPrivateLiveHeaders(response)
   })
 
   it('rejects cookie-only authentication before trusting the resolved principal', async () => {

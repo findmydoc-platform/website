@@ -85,6 +85,12 @@ export interface Config {
     platformStaff: PlatformStaff;
     clinicApplications: ClinicApplication;
     patientClinicInquiries: PatientClinicInquiry;
+    inquiryConversations: InquiryConversation;
+    inquiryMessages: InquiryMessage;
+    inquiryInternalNotes: InquiryInternalNote;
+    inquiryAttachments: InquiryAttachment;
+    inquiryReadPositions: InquiryReadPosition;
+    inquiryAuditEvents: InquiryAuditEvent;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -150,6 +156,12 @@ export interface Config {
     platformStaff: PlatformStaffSelect<false> | PlatformStaffSelect<true>;
     clinicApplications: ClinicApplicationsSelect<false> | ClinicApplicationsSelect<true>;
     patientClinicInquiries: PatientClinicInquiriesSelect<false> | PatientClinicInquiriesSelect<true>;
+    inquiryConversations: InquiryConversationsSelect<false> | InquiryConversationsSelect<true>;
+    inquiryMessages: InquiryMessagesSelect<false> | InquiryMessagesSelect<true>;
+    inquiryInternalNotes: InquiryInternalNotesSelect<false> | InquiryInternalNotesSelect<true>;
+    inquiryAttachments: InquiryAttachmentsSelect<false> | InquiryAttachmentsSelect<true>;
+    inquiryReadPositions: InquiryReadPositionsSelect<false> | InquiryReadPositionsSelect<true>;
+    inquiryAuditEvents: InquiryAuditEventsSelect<false> | InquiryAuditEventsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -2562,6 +2574,10 @@ export interface ClinicApplication {
 export interface PatientClinicInquiry {
   id: number;
   /**
+   * Verified patient identity bound by an authenticated server request
+   */
+  patient?: (number | null) | Patient;
+  /**
    * Clinic profile the request was sent from
    */
   clinic: number | Clinic;
@@ -2606,13 +2622,185 @@ export interface PatientClinicInquiry {
     text?: string | null;
   };
   /**
-   * Current handling status
+   * Legacy combined state retained until the additive cutover is complete
    */
   status: 'submitted' | 'in_review' | 'contacted' | 'closed' | 'spam';
+  /**
+   * Current inquiry handling status
+   */
+  handlingStatus?: ('submitted' | 'in_review' | 'contacted' | 'spam') | null;
+  /**
+   * Whether external communication is open or closed
+   */
+  lifecycle?: ('open' | 'closed') | null;
+  previousHandlingStatus?: ('submitted' | 'in_review' | 'contacted') | null;
+  revision?: number | null;
+  activitySequence?: number | null;
+  externalSequence?: number | null;
+  clinicNotificationSequence?: number | null;
+  clinicUnreadFloor?: number | null;
+  clinicUnreadEpoch?: number | null;
+  lastActivityAt?: string | null;
+  lastExternalActivityAt?: string | null;
+  creationActorKey?: string | null;
+  creationIdempotencyKey?: string | null;
+  creationRequestHash?: string | null;
   /**
    * Platform user handling this request
    */
   assignedTo?: (number | null) | PlatformStaff;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+}
+/**
+ * Private patient-clinic conversation bound to one inquiry
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryConversations".
+ */
+export interface InquiryConversation {
+  id: number;
+  inquiry: number | PatientClinicInquiry;
+  clinic: number | Clinic;
+  patient: number | Patient;
+  actorKey: string;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+}
+/**
+ * Immutable external patient-clinic messages
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryMessages".
+ */
+export interface InquiryMessage {
+  id: number;
+  conversation: number | InquiryConversation;
+  inquiry: number | PatientClinicInquiry;
+  clinic: number | Clinic;
+  patient: number | Patient;
+  authorKind: 'patient' | 'clinic';
+  authorPatient?: (number | null) | Patient;
+  authorClinicStaff?: (number | null) | ClinicStaff;
+  text?: string | null;
+  attachment?: (number | null) | InquiryAttachment;
+  sequence: number;
+  externalSequence: number;
+  clinicNotificationSequence: number;
+  actorKey: string;
+  idempotencyKey: string;
+  requestHash: string;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+}
+/**
+ * Private draft and message-bound inquiry attachment metadata
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryAttachments".
+ */
+export interface InquiryAttachment {
+  id: number;
+  inquiry: number | PatientClinicInquiry;
+  clinic: number | Clinic;
+  patient: number | Patient;
+  ownerKind: 'patient' | 'clinic';
+  ownerPatient?: (number | null) | Patient;
+  ownerClinicStaff?: (number | null) | ClinicStaff;
+  fileName: string;
+  declaredMimeType: 'image/png' | 'image/jpeg' | 'image/webp' | 'application/pdf';
+  declaredSizeBytes: number;
+  verifiedMimeType?: ('image/png' | 'image/jpeg' | 'image/webp' | 'application/pdf') | null;
+  verifiedSizeBytes?: number | null;
+  state: 'draft' | 'verified' | 'bound' | 'discarded';
+  expiresAt: string;
+  objectCreatedAt: string;
+  draftCleanupCompletedAt?: string | null;
+  cleanupCompletedAt?: string | null;
+  boundMessage?: (number | null) | InquiryMessage;
+  actorKey: string;
+  draftObjectKey: string;
+  readyObjectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Immutable clinic-only notes for an inquiry
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryInternalNotes".
+ */
+export interface InquiryInternalNote {
+  id: number;
+  inquiry: number | PatientClinicInquiry;
+  clinic: number | Clinic;
+  authorClinicStaff: number | ClinicStaff;
+  text: string;
+  sequence: number;
+  clinicNotificationSequence: number;
+  actorKey: string;
+  idempotencyKey: string;
+  requestHash: string;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+}
+/**
+ * Personal unread positions for inquiry participants
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryReadPositions".
+ */
+export interface InquiryReadPosition {
+  id: number;
+  inquiry: number | PatientClinicInquiry;
+  clinic: number | Clinic;
+  readerKind: 'patient' | 'clinic';
+  readerPatient?: (number | null) | Patient;
+  readerClinicStaff?: (number | null) | ClinicStaff;
+  lastReadSequence: number;
+  lastReadActivityId?: string | null;
+  forcedUnread: boolean;
+  forcedUnreadEpoch: number;
+  readerKey: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Content-free audit trail for inquiry communication changes
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryAuditEvents".
+ */
+export interface InquiryAuditEvent {
+  id: number;
+  inquiry: number | PatientClinicInquiry;
+  clinic: number | Clinic;
+  actorKind: 'patient' | 'clinic' | 'system' | 'platform';
+  actorId: string;
+  eventType:
+    | 'inquiry-created'
+    | 'message-sent'
+    | 'internal-note-added'
+    | 'handling-status-changed'
+    | 'closed'
+    | 'reopened'
+    | 'marked-spam'
+    | 'spam-removed'
+    | 'attachment-draft-created'
+    | 'attachment-finalized'
+    | 'attachment-discarded'
+    | 'contact-revealed';
+  targetType?: string | null;
+  targetId?: string | null;
+  fromValue?: string | null;
+  toValue?: string | null;
+  reason?: string | null;
+  sequence: number;
+  clinicNotificationSequence: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -3375,6 +3563,30 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'patientClinicInquiries';
         value: number | PatientClinicInquiry;
+      } | null)
+    | ({
+        relationTo: 'inquiryConversations';
+        value: number | InquiryConversation;
+      } | null)
+    | ({
+        relationTo: 'inquiryMessages';
+        value: number | InquiryMessage;
+      } | null)
+    | ({
+        relationTo: 'inquiryInternalNotes';
+        value: number | InquiryInternalNote;
+      } | null)
+    | ({
+        relationTo: 'inquiryAttachments';
+        value: number | InquiryAttachment;
+      } | null)
+    | ({
+        relationTo: 'inquiryReadPositions';
+        value: number | InquiryReadPosition;
+      } | null)
+    | ({
+        relationTo: 'inquiryAuditEvents';
+        value: number | InquiryAuditEvent;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -4410,6 +4622,7 @@ export interface ClinicApplicationsSelect<T extends boolean = true> {
  * via the `definition` "patientClinicInquiries_select".
  */
 export interface PatientClinicInquiriesSelect<T extends boolean = true> {
+  patient?: T;
   clinic?: T;
   fullName?: T;
   email?: T;
@@ -4427,7 +4640,143 @@ export interface PatientClinicInquiriesSelect<T extends boolean = true> {
         text?: T;
       };
   status?: T;
+  handlingStatus?: T;
+  lifecycle?: T;
+  previousHandlingStatus?: T;
+  revision?: T;
+  activitySequence?: T;
+  externalSequence?: T;
+  clinicNotificationSequence?: T;
+  clinicUnreadFloor?: T;
+  clinicUnreadEpoch?: T;
+  lastActivityAt?: T;
+  lastExternalActivityAt?: T;
+  creationActorKey?: T;
+  creationIdempotencyKey?: T;
+  creationRequestHash?: T;
   assignedTo?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryConversations_select".
+ */
+export interface InquiryConversationsSelect<T extends boolean = true> {
+  inquiry?: T;
+  clinic?: T;
+  patient?: T;
+  actorKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryMessages_select".
+ */
+export interface InquiryMessagesSelect<T extends boolean = true> {
+  conversation?: T;
+  inquiry?: T;
+  clinic?: T;
+  patient?: T;
+  authorKind?: T;
+  authorPatient?: T;
+  authorClinicStaff?: T;
+  text?: T;
+  attachment?: T;
+  sequence?: T;
+  externalSequence?: T;
+  clinicNotificationSequence?: T;
+  actorKey?: T;
+  idempotencyKey?: T;
+  requestHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryInternalNotes_select".
+ */
+export interface InquiryInternalNotesSelect<T extends boolean = true> {
+  inquiry?: T;
+  clinic?: T;
+  authorClinicStaff?: T;
+  text?: T;
+  sequence?: T;
+  clinicNotificationSequence?: T;
+  actorKey?: T;
+  idempotencyKey?: T;
+  requestHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryAttachments_select".
+ */
+export interface InquiryAttachmentsSelect<T extends boolean = true> {
+  inquiry?: T;
+  clinic?: T;
+  patient?: T;
+  ownerKind?: T;
+  ownerPatient?: T;
+  ownerClinicStaff?: T;
+  fileName?: T;
+  declaredMimeType?: T;
+  declaredSizeBytes?: T;
+  verifiedMimeType?: T;
+  verifiedSizeBytes?: T;
+  state?: T;
+  expiresAt?: T;
+  objectCreatedAt?: T;
+  draftCleanupCompletedAt?: T;
+  cleanupCompletedAt?: T;
+  boundMessage?: T;
+  actorKey?: T;
+  draftObjectKey?: T;
+  readyObjectKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryReadPositions_select".
+ */
+export interface InquiryReadPositionsSelect<T extends boolean = true> {
+  inquiry?: T;
+  clinic?: T;
+  readerKind?: T;
+  readerPatient?: T;
+  readerClinicStaff?: T;
+  lastReadSequence?: T;
+  lastReadActivityId?: T;
+  forcedUnread?: T;
+  forcedUnreadEpoch?: T;
+  readerKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryAuditEvents_select".
+ */
+export interface InquiryAuditEventsSelect<T extends boolean = true> {
+  inquiry?: T;
+  clinic?: T;
+  actorKind?: T;
+  actorId?: T;
+  eventType?: T;
+  targetType?: T;
+  targetId?: T;
+  fromValue?: T;
+  toValue?: T;
+  reason?: T;
+  sequence?: T;
+  clinicNotificationSequence?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -6362,6 +6711,12 @@ export interface TaskCreateCollectionExport {
       | 'platformStaff'
       | 'clinicApplications'
       | 'patientClinicInquiries'
+      | 'inquiryConversations'
+      | 'inquiryMessages'
+      | 'inquiryInternalNotes'
+      | 'inquiryAttachments'
+      | 'inquiryReadPositions'
+      | 'inquiryAuditEvents'
       | 'clinics'
       | 'doctors'
       | 'accreditation'

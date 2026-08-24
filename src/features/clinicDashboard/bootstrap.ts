@@ -5,14 +5,22 @@ import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import type { PayloadRequest } from 'payload'
 import { toLoggedError } from '@/utilities/logging/shared'
+import type { ClinicDashboardContract } from './contractNegotiation'
 
-export const CLINIC_DASHBOARD_CAPABILITIES = [
+export const CLINIC_DASHBOARD_LEGACY_CAPABILITIES = [
   'clinic-profile:view',
   'clinic-profile:edit',
   'clinic-treatments:view',
   'clinic-treatments:edit',
   'clinic-gallery:view',
   'clinic-gallery:edit',
+] as const
+
+export const CLINIC_DASHBOARD_INQUIRY_CAPABILITIES = ['clinic-inquiries:view', 'clinic-inquiries:edit'] as const
+
+export const CLINIC_DASHBOARD_CAPABILITIES = [
+  ...CLINIC_DASHBOARD_LEGACY_CAPABILITIES,
+  ...CLINIC_DASHBOARD_INQUIRY_CAPABILITIES,
 ] as const
 
 export type ClinicDashboardCapability = (typeof CLINIC_DASHBOARD_CAPABILITIES)[number]
@@ -60,7 +68,10 @@ const readCurrentClinicStaff = async (req: PayloadRequest, id: number | string):
   return (result.docs[0] as ClinicStaff | undefined) ?? null
 }
 
-export async function resolveClinicDashboardBootstrap(req: PayloadRequest): Promise<ClinicDashboardBootstrapResult> {
+export async function resolveClinicDashboardBootstrap(
+  req: PayloadRequest,
+  contract: ClinicDashboardContract = 'legacy',
+): Promise<ClinicDashboardBootstrapResult> {
   const token = extractTokenFromHeader(req.headers)
   if (!token) return { status: 'unauthorized' }
 
@@ -115,7 +126,8 @@ export async function resolveClinicDashboardBootstrap(req: PayloadRequest): Prom
           name: clinic.name,
         },
         status: 'approved',
-        capabilities: [...CLINIC_DASHBOARD_CAPABILITIES],
+        capabilities:
+          contract === 'inquiry' ? [...CLINIC_DASHBOARD_CAPABILITIES] : [...CLINIC_DASHBOARD_LEGACY_CAPABILITIES],
       },
     }
   } catch (error: unknown) {

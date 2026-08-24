@@ -2615,6 +2615,22 @@ export const readPatientInquiryDetail = async (
   return buildPatientDetail(req, inquiry)
 }
 
+export const readPatientInquiryDetailResult = async (
+  req: PayloadRequest,
+  rawInput: InquiryDetailInput,
+): Promise<InquiryDetailResultDTO> => {
+  const parsed = inquiryDetailInputSchema.safeParse(rawInput)
+  if (!parsed.success) throw new InquiryCommunicationServiceError('invalid-input', 'The detail input is invalid.')
+  const input = parsed.data
+  const inquiry = await readPatientInquiryDetail(req, { inquiryId: input.inquiryId })
+  const changeCursor = detailChangeCursor(inquiry)
+  return {
+    changeCursor,
+    inquiry,
+    unchanged: input.knownChangeCursor === changeCursor,
+  }
+}
+
 export const createVerifiedPatientInquiry = async (
   req: PayloadRequest,
   rawInput: VerifiedInquiryCreateInput,

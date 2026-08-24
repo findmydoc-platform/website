@@ -128,7 +128,7 @@ const verifyGuestMenuItems = async () => {
 const verifyPatientMenuItems = async () => {
   await expect(screen.getByRole('menuitem', { name: 'Patient dashboard' })).toHaveAttribute(
     'href',
-    '/patient/dashboard',
+    '/patient/inquiries',
   )
   await expect(screen.getByRole('menuitem', { name: 'Profile' })).toHaveAttribute('href', '/patient/profile')
   await expect(screen.getByRole('menuitem', { name: 'Favorites' })).toHaveAttribute('href', '/patient/favorites')

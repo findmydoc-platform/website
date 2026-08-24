@@ -115,7 +115,7 @@ describe('cache policy contract', () => {
       'userProfileMedia',
     ]
 
-    const privateSurfaces = ['patient-favorites', 'auth', 'admin', 'preview', 'cache-visibility']
+    const privateSurfaces = ['patient-favorites', 'patient-inquiries', 'auth', 'admin', 'preview', 'cache-visibility']
 
     for (const collection of privateCollections) {
       expect(CACHE_POLICY_COLLECTIONS).toContain(collection)

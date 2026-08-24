@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine redirect URL based on user type
-    const redirectUrl = tokenUserType === 'patient' ? '/patient/dashboard' : '/admin'
+    const redirectUrl = tokenUserType === 'patient' ? '/patient/inquiries' : '/admin'
 
     return NextResponse.json({
       success: true,

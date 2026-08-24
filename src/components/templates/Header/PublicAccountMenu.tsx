@@ -53,7 +53,7 @@ export type PublicAccountMenuLinks = {
 
 export const DEFAULT_PUBLIC_ACCOUNT_MENU_LINKS: PublicAccountMenuLinks = {
   clinicPartner: '/partners/clinics',
-  dashboard: '/patient/dashboard',
+  dashboard: '/patient/inquiries',
   favorites: '/patient/favorites',
   help: '/contact',
   login: '/login/patient',

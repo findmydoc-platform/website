@@ -23,7 +23,7 @@ import { deriveDatabaseConfig } from '../../../scripts/test-database-harness.mjs
 const { Client } = pg
 
 type IsolatedAdapter = ReturnType<ReturnType<typeof postgresAdapter>['init']>
-type RetainedPoolClient = { release: () => void }
+type RetainedPoolClient = { release: (destroy?: boolean) => void }
 
 const quotedTestDatabaseIdentifier = (value: string): string => {
   if (!/^findmydoc-test(?:[-_][a-z0-9][a-z0-9_-]*)+$/u.test(value) || value.length > 63) {
@@ -66,13 +66,11 @@ describe('inquiry moderation foundation rollback', () => {
   }, 60_000)
 
   afterAll(async () => {
-    retainedAdapterClient?.release()
+    retainedAdapterClient?.release(true)
+    retainedAdapterClient = undefined
     await isolatedAdapter?.pool.end().catch(() => undefined)
     if (isolatedAdapter?.destroy) await isolatedAdapter.destroy().catch(() => undefined)
     if (adminClient && isolatedDatabaseName) {
-      await adminClient.query('SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1', [
-        isolatedDatabaseName,
-      ])
       await adminClient.query(`DROP DATABASE IF EXISTS ${quotedTestDatabaseIdentifier(isolatedDatabaseName)}`)
     }
     await adminClient?.end().catch(() => undefined)

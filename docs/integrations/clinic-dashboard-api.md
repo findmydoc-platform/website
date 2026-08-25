@@ -429,20 +429,6 @@ The cache decision is `no-public-impact`. All inquiry communication collections 
 are no public reads, tags, paths, planner events, or public revalidation owners. This contract does not suppress a
 separate public invalidation event if a future inquiry mutation gains an explicitly approved public effect.
 
-### Narrow legacy inquiry bridge
-
-The three custom compatibility routes `GET /api/patientClinicInquiries`,
-`GET /api/patientClinicInquiries/:id`, and `PATCH /api/patientClinicInquiries/:id` preserve the previously deployed
-Dashboard wire shape without reopening the Payload collection. The list accepts exactly
-`depth=1&limit=100&sort=-createdAt`; item reads accept no query, and PATCH accepts only `{ status }`. Every request
-revalidates its Bearer subject, resolves the clinic server-side, and returns only that clinic's legacy DTO. Foreign and
-missing records are indistinguishable.
-
-The bridge delegates to the same inquiry aggregate and is not a second state authority. Pre-cutover legacy rows are
-read-only and return `409` on PATCH. Operational rows accept only currently valid representable forward transitions;
-unsupported spam commands, stale transitions, no-ops, and serialization conflicts return `409`. Spam remains available
-only through the focused reason-bearing inquiry state command.
-
 The public `POST /api/clinic-contact-requests` route is likewise an HTTP adapter around one guest inquiry command. That
 command validates the clinic and optional doctor or treatment inside its serializable transaction, deduplicates the
 submission, initializes the root aggregate, and appends a content-free `inquiry-created` audit event atomically. Guest

@@ -3,7 +3,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadHandler, type CollectionConfig, type EmailAdapter } from 'payload'
+import { buildConfig, PayloadHandler, type EmailAdapter } from 'payload'
 import { cacheRevalidationVisibilityGetHandler } from './endpoints/cacheRevalidationVisibility'
 import { clinicDashboardBootstrapGetHandler } from './endpoints/clinicDashboardBootstrap'
 import {
@@ -38,11 +38,6 @@ import {
   clinicDashboardInquiryReadPositionPutHandler,
   clinicDashboardInquiryStatePatchHandler,
 } from './endpoints/clinicDashboardInquiries'
-import {
-  legacyPatientClinicInquiryGetHandler,
-  legacyPatientClinicInquiryPatchHandler,
-  legacyPatientClinicInquiriesGetHandler,
-} from './endpoints/legacyPatientClinicInquiries'
 import {
   patientInquiriesGetHandler,
   patientInquiryCreatePostHandler,
@@ -145,27 +140,6 @@ const silentEmailAdapter: EmailAdapter<void> = () => ({
   name: 'silent-ci-email',
   sendEmail: async () => undefined,
 })
-
-const PatientClinicInquiriesWithLegacyBridge = {
-  ...PatientClinicInquiries,
-  endpoints: [
-    {
-      path: '/',
-      method: 'get',
-      handler: legacyPatientClinicInquiriesGetHandler as PayloadHandler,
-    },
-    {
-      path: '/:id',
-      method: 'get',
-      handler: legacyPatientClinicInquiryGetHandler as PayloadHandler,
-    },
-    {
-      path: '/:id',
-      method: 'patch',
-      handler: legacyPatientClinicInquiryPatchHandler as PayloadHandler,
-    },
-  ],
-} satisfies CollectionConfig
 
 export default buildConfig({
   // Keep the complete multipart request below Vercel's 4.5 MB request limit.
@@ -482,7 +456,7 @@ export default buildConfig({
     ClinicProfileDrafts,
     PlatformStaff,
     ClinicApplications,
-    PatientClinicInquiriesWithLegacyBridge,
+    PatientClinicInquiries,
     InquiryConversations,
     InquiryMessages,
     InquiryInternalNotes,

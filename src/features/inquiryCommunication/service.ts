@@ -2652,6 +2652,32 @@ export const createVerifiedPatientInquiry = async (
       if (replay) return replay
       await validateInquiryTarget(req, input)
 
+      const patient = await readPatient(req, ownerId)
+      const firstName = text(patient.firstName).trim()
+      const lastName = text(patient.lastName).trim()
+      const email = text(patient.email).trim().toLowerCase()
+      if (!firstName || !lastName || !email) {
+        throw new InquiryCommunicationServiceError('invalid-state', 'The patient account identity is incomplete.')
+      }
+
+      let phoneNumber = text(patient.phoneNumber).trim()
+      if (!phoneNumber) {
+        if (!input.phoneNumber) {
+          throw new InquiryCommunicationServiceError('invalid-input', 'A patient account phone number is required.')
+        }
+        const updatedPatient = asRecord(
+          await req.payload.update({
+            collection: 'patients',
+            data: { phoneNumber: input.phoneNumber },
+            depth: 0,
+            id: ownerId,
+            overrideAccess: true,
+            req,
+          } as never),
+        )
+        phoneNumber = text(updatedPatient.phoneNumber).trim()
+      }
+
       const created = asRecord(
         await req.payload.create({
           collection: 'patientClinicInquiries',
@@ -2671,15 +2697,15 @@ export const createVerifiedPatientInquiry = async (
             creationIdempotencyKey: input.idempotencyKey,
             creationRequestHash: requestHash(input),
             doctor: input.doctorId ? payloadId(input.doctorId) : null,
-            email: input.email,
+            email,
             externalSequence: 0,
-            fullName: input.fullName,
+            fullName: `${firstName} ${lastName}`,
             handlingStatus: 'submitted',
             lastActivityAt: now,
             lifecycle: 'open',
             message: input.message,
             patient: ownerId,
-            phoneNumber: input.phoneNumber,
+            phoneNumber,
             preferredContactWindow: input.preferredContactWindow ?? null,
             revision: 0,
             status: 'submitted',

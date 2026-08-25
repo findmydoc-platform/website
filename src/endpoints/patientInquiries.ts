@@ -9,10 +9,12 @@ import {
   inquiryDetailInputSchema,
   inquiryReadPositionInputSchema,
   patientInquiryQueueInputSchema,
+  verifiedInquiryCreateInputSchema,
   type InquiryCommunicationErrorCode,
 } from '@/features/inquiryCommunication/contracts'
 import {
   cleanupDiscardedAttachment,
+  createVerifiedPatientInquiry,
   createAttachmentDraft,
   discardAttachmentDraft,
   finalizeAttachmentDraft,
@@ -217,6 +219,19 @@ export const patientInquiriesGetHandler: PayloadHandler = async (req) => {
   const input = readQueueInput(req)
   if (input instanceof Response) return input
   return execute(req, 'queue_read', () => readPatientInquiryQueue(req, input))
+}
+
+export const patientInquiryCreatePostHandler: PayloadHandler = async (req) => {
+  const authorization = authorizePatient(req)
+  if (!authorization.ok) return authorization.response
+  const input = await readBody(req, verifiedInquiryCreateInputSchema)
+  if (input instanceof Response) return input
+  return execute(
+    req,
+    'create',
+    () => createVerifiedPatientInquiry(req, input),
+    (value) => patientPrivateJsonResponse(value, value.replayed ? 200 : 201),
+  )
 }
 
 export const patientInquiryDetailGetHandler: PayloadHandler = async (req) => {

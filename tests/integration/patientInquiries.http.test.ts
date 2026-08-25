@@ -2,11 +2,22 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, handleEndpoints, type Payload, type PayloadRequest } from 'payload'
 
 import config from '@payload-config'
-import { createVerifiedPatientInquiry, submitGuestClinicInquiry } from '@/features/inquiryCommunication/service'
+import {
+  createVerifiedPatientInquiry,
+  readClinicInquiryQueue,
+  submitGuestClinicInquiry,
+} from '@/features/inquiryCommunication/service'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
-import { asPayloadPatientUser, cleanupTrackedUsers, createPatientTestUser } from '../fixtures/testUsers'
+import {
+  asClinicScopedPayloadUser,
+  asPayloadPatientUser,
+  cleanupTrackedUsers,
+  createClinicTestUser,
+  createPatientTestUser,
+  type PayloadRequestUser,
+} from '../fixtures/testUsers'
 
 type SyntheticBearerUser = {
   email: string
@@ -69,14 +80,18 @@ const requestPatientEndpoint = (
 describe('patient inquiry registered Payload HTTP boundary', () => {
   let payload: Payload
   let clinicId: number
+  let doctorId: number | string
+  let clinicStaffUser: PayloadRequestUser
   let inquiryId: string
   let foreignInquiryId: string
   let guestInquiryId: string
   let initialRevision: number
   const patientToken = 'synthetic-patient-http-token'
   const foreignPatientToken = 'synthetic-foreign-patient-http-token'
+  const creationPatientToken = 'synthetic-creation-patient-http-token'
   const createdInquiryIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
+  const createdStaffIds: Array<number | string> = []
   const slugPrefix = testSlug('patientInquiries.http.test.ts')
 
   beforeAll(async () => {
@@ -87,6 +102,7 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
 
     const fixture = await createClinicFixture(payload, city.id, { slugPrefix })
     clinicId = fixture.clinic.id
+    doctorId = fixture.doctor.id
     await payload.update({
       collection: 'clinics',
       data: { status: 'approved' },
@@ -109,7 +125,29 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
       lastName: 'Patient',
       supabaseUserId: `${slugPrefix}-foreign-patient-subject`,
     })
-    if (!patient.email || !patient.supabaseUserId || !foreignPatient.email || !foreignPatient.supabaseUserId) {
+    const creationPatient = await createPatientTestUser(payload, {
+      createdPatientIds,
+      emailPrefix: `${slugPrefix}-creation-patient`,
+      firstName: 'Account',
+      lastName: 'Bound',
+      supabaseUserId: `${slugPrefix}-creation-patient-subject`,
+    })
+    const clinicStaff = await createClinicTestUser(payload, {
+      createdStaffIds,
+      emailPrefix: `${slugPrefix}-clinic-staff`,
+      firstName: 'Synthetic',
+      lastName: 'Clinic Staff',
+      supabaseUserId: `${slugPrefix}-clinic-staff-subject`,
+    })
+    clinicStaffUser = await asClinicScopedPayloadUser(payload, clinicStaff, clinicId)
+    if (
+      !patient.email ||
+      !patient.supabaseUserId ||
+      !foreignPatient.email ||
+      !foreignPatient.supabaseUserId ||
+      !creationPatient.email ||
+      !creationPatient.supabaseUserId
+    ) {
       throw new Error('Expected synthetic patient bearer identity fields.')
     }
     syntheticBearerUsers.set(patientToken, {
@@ -124,15 +162,19 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
       lastName: 'Patient',
       subject: foreignPatient.supabaseUserId,
     })
+    syntheticBearerUsers.set(creationPatientToken, {
+      email: creationPatient.email,
+      firstName: 'Account',
+      lastName: 'Bound',
+      subject: creationPatient.supabaseUserId,
+    })
 
     const patientReq: PayloadRequest = await createLocalReq({}, payload)
     patientReq.user = asPayloadPatientUser(patient)
     const created = await createVerifiedPatientInquiry(patientReq, {
       clinicId: String(clinicId),
       consent: true,
-      doctorId: String(fixture.doctor.id),
-      email: patient.email,
-      fullName: 'Synthetic Patient',
+      doctorId: String(doctorId),
       idempotencyKey: `${slugPrefix}-create`,
       message: 'Synthetic patient inquiry for the registered HTTP boundary.',
       phoneNumber: '+493000000081',
@@ -147,9 +189,7 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     const foreignCreated = await createVerifiedPatientInquiry(foreignReq, {
       clinicId: String(clinicId),
       consent: true,
-      doctorId: String(fixture.doctor.id),
-      email: foreignPatient.email,
-      fullName: 'Foreign Synthetic Patient',
+      doctorId: String(doctorId),
       idempotencyKey: `${slugPrefix}-foreign-create`,
       message: 'Synthetic inquiry owned by another patient.',
       phoneNumber: '+493000000082',
@@ -162,7 +202,7 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     const guest = await submitGuestClinicInquiry(guestReq, {
       clinicId,
       consent: true,
-      doctorId: fixture.doctor.id,
+      doctorId,
       email: `${slugPrefix}-guest@example.com`,
       fullName: 'Synthetic Guest',
       message: 'Synthetic guest inquiry without a patient conversation.',
@@ -194,7 +234,7 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     for (const id of createdInquiryIds) {
       await payload.delete({ collection: 'patientClinicInquiries', id, overrideAccess: true, trash: true })
     }
-    await cleanupTrackedUsers(payload, { patientIds: createdPatientIds })
+    await cleanupTrackedUsers(payload, { patientIds: createdPatientIds, staffIds: createdStaffIds })
     await payload.delete({
       collection: 'doctors',
       overrideAccess: true,
@@ -223,6 +263,138 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     )
     expect(detailResponse.status).toBe(200)
     await expect(detailResponse.json()).resolves.toMatchObject({ inquiry: { id: inquiryId } })
+  })
+
+  it('creates an account-bound inquiry through the real Supabase auth seam and exposes it to both participants', async () => {
+    const body = {
+      clinicId: String(clinicId),
+      consent: true,
+      doctorId: String(doctorId),
+      idempotencyKey: `${slugPrefix}-authenticated-create`,
+      message: 'Synthetic inquiry submitted through the clinic form contract.',
+      phoneNumber: '+493000000091',
+      treatmentTimeline: 'within_two_weeks',
+    }
+
+    const response = await requestPatientEndpoint('/api/patient/inquiries', creationPatientToken, {
+      body,
+      method: 'POST',
+    })
+
+    expect(response.status).toBe(201)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    const result = (await response.json()) as { inquiry: { id: string }; replayed: boolean }
+    expect(result).toMatchObject({ inquiry: { id: expect.any(String) }, replayed: false })
+    createdInquiryIds.push(result.inquiry.id)
+
+    const stored = await payload.findByID({
+      collection: 'patientClinicInquiries',
+      id: result.inquiry.id,
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(stored).toMatchObject({
+      email: `${slugPrefix}-creation-patient@example.com`,
+      fullName: 'Account Bound',
+      phoneNumber: '+493000000091',
+      patient: expect.anything(),
+    })
+
+    const storedPatientId = typeof stored.patient === 'object' && stored.patient ? stored.patient.id : stored.patient
+    if (typeof storedPatientId !== 'string' && typeof storedPatientId !== 'number') {
+      throw new Error('Expected the authenticated inquiry to retain its patient binding.')
+    }
+    const patient = await payload.findByID({
+      collection: 'patients',
+      id: storedPatientId,
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(patient).toMatchObject({
+      email: `${slugPrefix}-creation-patient@example.com`,
+      firstName: 'Account',
+      lastName: 'Bound',
+      phoneNumber: '+493000000091',
+    })
+
+    for (const collection of ['inquiryConversations', 'inquiryReadPositions'] as const) {
+      const related = await payload.find({
+        collection,
+        depth: 0,
+        overrideAccess: true,
+        pagination: false,
+        where: { inquiry: { equals: result.inquiry.id } },
+      })
+      expect(related.docs).toHaveLength(1)
+    }
+
+    const patientQueue = await requestPatientEndpoint(
+      '/api/patient/inquiries?lifecycle=all&limit=50',
+      creationPatientToken,
+    )
+    expect(patientQueue.status).toBe(200)
+    await expect(patientQueue.json()).resolves.toMatchObject({
+      items: expect.arrayContaining([expect.objectContaining({ id: result.inquiry.id })]),
+    })
+
+    const clinicReq: PayloadRequest = await createLocalReq({}, payload)
+    clinicReq.user = clinicStaffUser
+    const clinicQueue = await readClinicInquiryQueue(clinicReq, { lifecycle: 'all', limit: 50, unreadOnly: false })
+    expect(clinicQueue.items).toEqual(expect.arrayContaining([expect.objectContaining({ id: result.inquiry.id })]))
+
+    const attemptedPhoneOverride = await requestPatientEndpoint('/api/patient/inquiries', creationPatientToken, {
+      body: {
+        ...body,
+        idempotencyKey: `${slugPrefix}-authenticated-create-phone-override`,
+        phoneNumber: '+493099999999',
+      },
+      method: 'POST',
+    })
+    expect(attemptedPhoneOverride.status).toBe(201)
+    const overrideResult = (await attemptedPhoneOverride.json()) as { inquiry: { id: string } }
+    createdInquiryIds.push(overrideResult.inquiry.id)
+    const overrideInquiry = await payload.findByID({
+      collection: 'patientClinicInquiries',
+      id: overrideResult.inquiry.id,
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(overrideInquiry.phoneNumber).toBe('+493000000091')
+  })
+
+  it('rejects browser-controlled identity and an expired Supabase session without persisting an inquiry', async () => {
+    const baseBody = {
+      clinicId: String(clinicId),
+      consent: true,
+      doctorId: String(doctorId),
+      idempotencyKey: `${slugPrefix}-rejected-create`,
+      message: 'Synthetic rejected inquiry.',
+      phoneNumber: '+493000000092',
+    }
+    const countBefore = await payload.count({ collection: 'patientClinicInquiries', overrideAccess: true })
+
+    for (const injectedIdentity of [
+      { actorId: 'attacker' },
+      { patientId: 'attacker' },
+      { email: 'attacker@example.com' },
+      { fullName: 'Browser Controlled' },
+    ]) {
+      const response = await requestPatientEndpoint('/api/patient/inquiries', creationPatientToken, {
+        body: { ...baseBody, ...injectedIdentity },
+        method: 'POST',
+      })
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toEqual({ error: { code: 'INQUIRY_INVALID_INPUT' } })
+    }
+
+    const expired = await requestPatientEndpoint('/api/patient/inquiries', 'expired-patient-token', {
+      body: baseBody,
+      method: 'POST',
+    })
+    expect(expired.status).toBe(401)
+    await expect(expired.json()).resolves.toEqual({ error: { code: 'INQUIRY_UNAUTHORIZED' } })
+    const countAfter = await payload.count({ collection: 'patientClinicInquiries', overrideAccess: true })
+    expect(countAfter.totalDocs).toBe(countBefore.totalDocs)
   })
 
   it('persists a patient reply through the registered message route', async () => {
@@ -277,14 +449,5 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     await expect(missing.json()).resolves.toEqual({ error: { code: 'INQUIRY_NOT_FOUND' } })
     expect(invalidSession.status).toBe(401)
     await expect(invalidSession.json()).resolves.toEqual({ error: { code: 'INQUIRY_UNAUTHORIZED' } })
-  })
-
-  it('does not route an unregistered method to the patient queue handler', async () => {
-    const response = await requestPatientEndpoint('/api/patient/inquiries', patientToken, {
-      body: {},
-      method: 'POST',
-    })
-
-    expect(response.status).toBe(404)
   })
 })

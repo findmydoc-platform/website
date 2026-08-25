@@ -17,6 +17,7 @@ import { RelatedDoctorSection, type RelatedDoctorItem } from '@/components/organ
 import { TreatmentsStrip, type TreatmentsStripItem } from '@/components/organisms/TreatmentsStrip'
 import { useCookieConsentToolAllowed } from '@/features/cookieConsent/useCookieConsentToolAllowed'
 import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
+import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 import { postHogBrowserEvents, type ClinicCtaClickedProperties } from '@/posthog/client-api'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { cn } from '@/utilities/ui'
@@ -37,7 +38,8 @@ const CONTACT_SECTION_IMAGE = {
 const TREATMENT_ICONS = [Syringe, Stethoscope, HeartPulse, Activity] as const
 
 const initialContactFormFields: ContactFormFields = {
-  fullName: '',
+  firstName: '',
+  lastName: '',
   phoneNumber: '',
   email: '',
   treatmentTimeline: '',
@@ -45,6 +47,18 @@ const initialContactFormFields: ContactFormFields = {
   note: '',
   consentAccepted: false,
 }
+
+const contactFormFieldsFor = (context: PatientInquiryCreationContext): ContactFormFields => ({
+  ...initialContactFormFields,
+  ...(context.kind === 'authenticated'
+    ? {
+        email: context.account.email,
+        firstName: context.account.firstName,
+        lastName: context.account.lastName,
+        phoneNumber: context.account.phoneNumber,
+      }
+    : {}),
+})
 
 function buildTreatmentDescription({ category, priceFrom }: { category?: string; priceFrom?: number }): string {
   const priceText = typeof priceFrom === 'number' ? `From ${formatEur(priceFrom)}` : 'Price on request'
@@ -56,6 +70,7 @@ export function ClinicDetail({
   data,
   className,
   favorite,
+  inquiryCreation = { kind: 'guest' },
   cookieConsentConfig = null,
   cookieConsentInitialConsent = null,
 }: ClinicDetailConceptProps) {
@@ -78,6 +93,7 @@ export function ClinicDetail({
   )
   const appointmentImage = CONTACT_SECTION_IMAGE
   const clinicId = String(data.clinicId)
+  const contactFormInitialFields = React.useMemo(() => contactFormFieldsFor(inquiryCreation), [inquiryCreation])
   const pagePath = React.useMemo(() => `/clinics/${encodeURIComponent(data.clinicSlug)}`, [data.clinicSlug])
   const trackedProfileViewKeyRef = React.useRef<string | null>(null)
 
@@ -87,7 +103,8 @@ export function ClinicDetail({
     doctors: data.doctors,
     heroDoctors,
     sortedTreatments,
-    initialContactFormFields,
+    initialContactFormFields: contactFormInitialFields,
+    inquiryCreation,
     furtherTreatmentPageSize: FURTHER_TREATMENT_PAGE_SIZE,
   })
   const { chooseTreatmentAndScroll, handleContactDoctor, scrollToContactForm } = interaction
@@ -321,6 +338,10 @@ export function ClinicDetail({
           sectionRef={interaction.contactFormRef}
           feedbackRef={interaction.contactFormFeedbackRef}
           fields={interaction.contactFormFields}
+          inquiryCreation={inquiryCreation}
+          isPhoneLocked={interaction.isPhoneLocked}
+          requiresReauthentication={interaction.requiresReauthentication}
+          submittedInquiryHref={interaction.submittedInquiryHref}
           selectedDoctorId={interaction.selectedDoctorId}
           selectedTreatmentId={interaction.selectedTreatmentId}
           doctors={data.doctors}

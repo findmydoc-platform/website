@@ -53,6 +53,24 @@ export async function cleanupTestEntities(payload: Payload, collection: TestColl
       depth: 0,
     })
 
+    const inquiryIds = inquiries.docs.map((doc) => doc.id)
+    if (inquiryIds.length) {
+      for (const [childCollection, where] of [
+        ['inquiryAuditEvents', { inquiry: { in: inquiryIds } }],
+        ['inquiryReadPositions', { inquiry: { in: inquiryIds } }],
+        ['inquiryInternalNotes', { inquiry: { in: inquiryIds } }],
+        ['inquiryAttachments', { inquiry: { in: inquiryIds } }],
+        ['inquiryMessages', { inquiry: { in: inquiryIds } }],
+        ['inquiryConversations', { inquiry: { in: inquiryIds } }],
+      ] as const) {
+        await payload.delete({
+          collection: childCollection as never,
+          overrideAccess: true,
+          where,
+        } as never)
+      }
+    }
+
     for (const doc of inquiries.docs) {
       await payload.delete({ collection: 'patientClinicInquiries', id: doc.id, overrideAccess: true })
     }

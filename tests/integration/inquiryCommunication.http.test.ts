@@ -22,6 +22,9 @@ type SyntheticBearerUser = {
 }
 
 const syntheticBearerUsers = vi.hoisted(() => new Map<string, SyntheticBearerUser>())
+const afterMock = vi.hoisted(() => vi.fn())
+
+vi.mock('next/server.js', () => ({ after: afterMock }))
 
 vi.mock('@/auth/utilities/supaBaseServer', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/auth/utilities/supaBaseServer')>()

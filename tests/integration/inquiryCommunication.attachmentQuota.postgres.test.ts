@@ -18,7 +18,13 @@ import { deriveDatabaseConfig } from '../../scripts/test-database-harness.mjs'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
-import { asPayloadPatientUser, cleanupTrackedUsers, createPatientTestUser } from '../fixtures/testUsers'
+import {
+  asClinicScopedPayloadUser,
+  asPayloadPatientUser,
+  cleanupTrackedUsers,
+  createClinicTestUser,
+  createPatientTestUser,
+} from '../fixtures/testUsers'
 
 const { Client } = pg
 
@@ -66,6 +72,7 @@ describe.sequential('inquiry attachment quotas with PostgreSQL', () => {
   const createdDoctorIds: number[] = []
   const createdInquiryIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
+  const createdStaffIds: Array<number | string> = []
   const slugPrefix = testSlug('inquiryCommunication.attachmentQuota.postgres.test.ts')
 
   const createActorFixture = async (clinicId: number, doctorId: number, suffix: string): Promise<ActorFixture> => {
@@ -175,6 +182,13 @@ describe.sequential('inquiry attachment quotas with PostgreSQL', () => {
         id: fixture.clinic.id,
         overrideAccess: true,
       })
+      const clinicStaff = await createClinicTestUser(payload, {
+        createdStaffIds,
+        emailPrefix: `${slugPrefix}-${index + 1}-staff`,
+        firstName: 'Synthetic',
+        lastName: `Quota Staff ${index + 1}`,
+      })
+      await asClinicScopedPayloadUser(payload, clinicStaff, fixture.clinic.id)
       createdClinicIds.push(fixture.clinic.id)
       createdDoctorIds.push(fixture.doctor.id)
       clinicFixtures.push(fixture)
@@ -232,7 +246,7 @@ describe.sequential('inquiry attachment quotas with PostgreSQL', () => {
       for (const id of createdInquiryIds) {
         await payload.delete({ collection: 'patientClinicInquiries', id, overrideAccess: true, trash: true })
       }
-      await cleanupTrackedUsers(payload, { patientIds: createdPatientIds })
+      await cleanupTrackedUsers(payload, { patientIds: createdPatientIds, staffIds: createdStaffIds })
       for (const id of createdDoctorIds) {
         await payload.delete({ collection: 'doctors', id, overrideAccess: true, trash: true })
       }

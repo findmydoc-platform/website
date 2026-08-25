@@ -83,7 +83,7 @@ const REQUIRED_INDEXES = [
 ] as const
 
 type IsolatedAdapter = ReturnType<ReturnType<typeof postgresAdapter>['init']>
-type RetainedPoolClient = { release: () => void }
+type RetainedPoolClient = { release: (destroy?: boolean) => void }
 
 const isLowercaseAlphaNumeric = (value: string): boolean =>
   (value >= 'a' && value <= 'z') || (value >= '0' && value <= '9')
@@ -191,13 +191,11 @@ describe('inquiry communication foundation upgrade migration', () => {
   }, 60_000)
 
   afterAll(async () => {
-    retainedAdapterClient?.release()
+    retainedAdapterClient?.release(true)
+    retainedAdapterClient = undefined
     await isolatedAdapter?.pool.end().catch(() => undefined)
     if (isolatedAdapter?.destroy) await isolatedAdapter.destroy().catch(() => undefined)
     if (adminClient && isolatedDatabaseName) {
-      await adminClient.query('SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1', [
-        isolatedDatabaseName,
-      ])
       await adminClient.query(`DROP DATABASE IF EXISTS ${quotedTestDatabaseIdentifier(isolatedDatabaseName)}`)
     }
     await adminClient?.end().catch(() => undefined)

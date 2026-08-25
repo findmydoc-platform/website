@@ -24,10 +24,11 @@ vi.mock('@/auth/utilities/clinicAccessState', () => ({
 }))
 
 const bearerHeaders = new Headers({ Authorization: 'Bearer clinic-token' })
-const inquiryContractHeaders = new Headers({
-  Authorization: 'Bearer clinic-token',
-  'X-Findmydoc-Clinic-Dashboard-Contract': 'inquiry-communication-v1',
-})
+const inquiryContractHeaders = (version: 'v1' | 'v2') =>
+  new Headers({
+    Authorization: 'Bearer clinic-token',
+    'X-Findmydoc-Clinic-Dashboard-Contract': `inquiry-communication-${version}`,
+  })
 
 const staffDocument = {
   id: 22,
@@ -131,12 +132,12 @@ describe('Clinic Dashboard bootstrap endpoint', () => {
     expect(payload.create).not.toHaveBeenCalled()
   })
 
-  it('adds the two inquiry capabilities for the single known contract value', async () => {
+  it.each(['v1', 'v2'] as const)('adds the two inquiry capabilities for the known %s contract', async (version) => {
     const payload = createMockPayload()
     arrangeCurrentDocuments()
 
     const response = await clinicDashboardBootstrapGetHandler(
-      request(payload, mockUsers.clinic(22, 8), { headers: inquiryContractHeaders }),
+      request(payload, mockUsers.clinic(22, 8), { headers: inquiryContractHeaders(version) }),
     )
 
     expect(response.status).toBe(200)
@@ -158,6 +159,7 @@ describe('Clinic Dashboard bootstrap endpoint', () => {
   it.each([
     ['unknown', 'future-contract'],
     ['coalesced duplicate', 'inquiry-communication-v1, inquiry-communication-v1'],
+    ['mixed contract values', 'inquiry-communication-v1, inquiry-communication-v2'],
   ])('fails closed for an %s contract header', async (_case, value) => {
     const payload = createMockPayload()
     arrangeCurrentDocuments()

@@ -41,10 +41,11 @@ are implemented in the Dashboard repository; trusted preview and production roll
 The initial focused endpoint is `GET /api/clinic-dashboard/bootstrap`. Payload registers it through its standard custom
 endpoint conventions; its stable semantic contract is fixed here.
 
-Inquiry capabilities are negotiated additively through
-`X-Findmydoc-Clinic-Dashboard-Contract: inquiry-communication-v1`. A request without that header receives the
-historical six-capability bootstrap. Exactly one known value adds the two inquiry capabilities and enables the focused
-inquiry routes. Empty, unknown, or coalesced duplicate values fail closed with
+Inquiry capabilities are negotiated additively through `X-Findmydoc-Clinic-Dashboard-Contract`. The supported values
+are `inquiry-communication-v1` for the compatibility projection and `inquiry-communication-v2` for moderation and
+retention system events. A request without that header receives the historical six-capability bootstrap. Exactly one
+known value adds the two inquiry capabilities and enables the focused inquiry routes. Empty, unknown, mixed, or
+coalesced duplicate values fail closed with
 `CLINIC_DASHBOARD_INVALID_CONTRACT`. Bootstrap and inquiry responses include both `Authorization` and the contract
 header in `Vary`; the Dashboard BFF, never the browser, owns the fixed opt-in value.
 
@@ -310,8 +311,9 @@ sitemap surfaces.
 
 The inquiry capability uses focused custom Payload endpoints. Generic REST and GraphQL access to the inquiry
 aggregate, conversations, messages, internal notes, attachments, read positions, and audit events stays disabled.
-Every route in this section requires exactly the negotiated `inquiry-communication-v1` contract value before it
-performs authorization or domain work.
+Every route in this section requires exactly one negotiated inquiry contract value before it performs authorization or
+domain work. Version 1 excludes the version 2-only `moderation-restricted`, `moderation-restored`, and
+`legacy-closed-migrated` system events. Current Dashboard clients use version 2.
 
 | Method and route | Result |
 | --- | --- |

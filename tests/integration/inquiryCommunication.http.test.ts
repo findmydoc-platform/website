@@ -59,7 +59,7 @@ vi.mock('@/auth/utilities/supaBaseServer', async (importOriginal) => {
 })
 
 const CONTRACT_HEADER = 'X-Findmydoc-Clinic-Dashboard-Contract'
-const CONTRACT_VERSION = 'inquiry-communication-v1'
+const CONTRACT_VERSION = 'inquiry-communication-v2'
 
 const requestRegisteredPayloadEndpoint = (
   path: string,

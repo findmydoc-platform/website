@@ -157,6 +157,7 @@ describe('legacy PatientClinicInquiries bridge', () => {
 
   it.each([
     ['inquiry contract', 'inquiry-communication-v1'],
+    ['current inquiry contract', 'inquiry-communication-v2'],
     ['unknown contract', 'unknown-contract'],
     ['duplicate contract', ['inquiry-communication-v1', 'inquiry-communication-v1']],
   ] as const)('rejects the %s before auth or domain work', async (_case, contract) => {

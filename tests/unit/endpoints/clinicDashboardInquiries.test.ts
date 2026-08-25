@@ -94,10 +94,12 @@ const successfulBootstrap = {
 
 const request = ({
   body,
+  contract = 'inquiry-communication-v2',
   search = '',
   subject = 'supabase-staff-1',
 }: {
   body?: unknown
+  contract?: 'inquiry-communication-v1' | 'inquiry-communication-v2'
   search?: string
   subject?: string
 } = {}): PayloadRequest =>
@@ -105,7 +107,7 @@ const request = ({
     context: {},
     headers: new Headers({
       authorization: 'Bearer clinic-token',
-      'X-Findmydoc-Clinic-Dashboard-Contract': 'inquiry-communication-v1',
+      'X-Findmydoc-Clinic-Dashboard-Contract': contract,
     }),
     json: vi.fn(async () => body),
     payload: {
@@ -181,7 +183,7 @@ describe('Clinic Dashboard inquiry endpoints', () => {
   it.each([
     ['missing', undefined],
     ['unknown', 'future-contract'],
-    ['coalesced duplicate', 'inquiry-communication-v1, inquiry-communication-v1'],
+    ['coalesced duplicate', 'inquiry-communication-v2, inquiry-communication-v2'],
   ])('fails closed before authentication when the contract header is %s', async (_case, value) => {
     const req = request()
     const headers = new Headers({ authorization: 'Bearer clinic-token' })
@@ -252,6 +254,28 @@ describe('Clinic Dashboard inquiry endpoints', () => {
       inquiryId: inquiry.id,
       knownChangeCursor: 'detail-change-1',
       knownRevision: inquiry.revision,
+    })
+  })
+
+  it('keeps the v1 detail projection free of v2-only system events', async () => {
+    mocks.readDetail.mockResolvedValueOnce({
+      changeCursor: 'detail-change-2',
+      inquiry: {
+        ...inquiry,
+        timeline: [
+          { id: 'event-closed', kind: 'system-event', event: 'closed' },
+          { id: 'event-restricted', kind: 'system-event', event: 'moderation-restricted' },
+        ],
+      },
+      unchanged: false,
+    })
+
+    const response = await clinicDashboardInquiryDetailGetHandler(
+      request({ contract: 'inquiry-communication-v1', search: `inquiryId=${inquiry.id}` }),
+    )
+
+    await expect(response.json()).resolves.toMatchObject({
+      inquiry: { timeline: [{ event: 'closed', id: 'event-closed', kind: 'system-event' }] },
     })
   })
 

@@ -5,7 +5,10 @@ import type { ZodType } from 'zod'
 import { extractTokenFromHeader, validateSupabaseFreshFirstFactor } from '@/auth/utilities/jwtValidation'
 import type { ClinicDashboardCapability } from '@/features/clinicDashboard/bootstrap'
 import { revalidateClinicDashboardRequest } from '@/features/clinicDashboard/authorization'
-import { resolveClinicDashboardContract } from '@/features/clinicDashboard/contractNegotiation'
+import {
+  resolveClinicDashboardContract,
+  resolveClinicDashboardInquiryContractVersion,
+} from '@/features/clinicDashboard/contractNegotiation'
 import {
   attachmentDraftCreateInputSchema,
   attachmentDraftMutationInputSchema,
@@ -61,7 +64,35 @@ const ERROR_DESCRIPTIONS = {
   unauthorized: { code: 'INQUIRY_UNAUTHORIZED', status: 401 },
 } as const satisfies Record<string, ErrorDescription>
 
+const V1_SYSTEM_EVENTS = new Set(['closed', 'handling-status-changed', 'marked-spam', 'reopened', 'spam-removed'])
+
+const projectV1InquiryValue = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(projectV1InquiryValue)
+  if (!value || typeof value !== 'object') return value
+  const record = value as Record<string, unknown>
+  return Object.fromEntries(
+    Object.entries(record).map(([key, item]) => [
+      key,
+      key === 'timeline' && Array.isArray(item)
+        ? item
+            .filter(
+              (entry) =>
+                !entry ||
+                typeof entry !== 'object' ||
+                (entry as { kind?: unknown }).kind !== 'system-event' ||
+                V1_SYSTEM_EVENTS.has(String((entry as { event?: unknown }).event)),
+            )
+            .map(projectV1InquiryValue)
+        : projectV1InquiryValue(item),
+    ]),
+  )
+}
+
+const projectInquiryContractValue = (req: PayloadRequest, value: unknown): unknown =>
+  resolveClinicDashboardInquiryContractVersion(req.headers) === 'v1' ? projectV1InquiryValue(value) : value
+
 const inquiryErrorResponse = (
+  req: PayloadRequest | null,
   description: ErrorDescription,
   current?: InquiryCommunicationServiceError['current'],
 ): Response =>
@@ -69,7 +100,7 @@ const inquiryErrorResponse = (
     {
       error: {
         code: description.code,
-        ...(current ? { current } : {}),
+        ...(current ? { current: req ? projectInquiryContractValue(req, current) : current } : {}),
       },
     },
     description.status,
@@ -80,7 +111,7 @@ const authorizeClinic = async (
   capability: ClinicDashboardCapability,
 ): Promise<AuthorizationResult> => {
   if (resolveClinicDashboardContract(req.headers) !== 'inquiry') {
-    return { ok: false, response: inquiryErrorResponse(ERROR_DESCRIPTIONS['invalid-input']) }
+    return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS['invalid-input']) }
   }
   const result = await revalidateClinicDashboardRequest(req, 'inquiry')
 
@@ -88,14 +119,14 @@ const authorizeClinic = async (
     case 'authorized': {
       return result.data.capabilities.includes(capability)
         ? { ok: true }
-        : { ok: false, response: inquiryErrorResponse(ERROR_DESCRIPTIONS['access-denied']) }
+        : { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS['access-denied']) }
     }
     case 'access-denied':
-      return { ok: false, response: inquiryErrorResponse(ERROR_DESCRIPTIONS['access-denied']) }
+      return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS['access-denied']) }
     case 'unavailable':
-      return { ok: false, response: inquiryErrorResponse(ERROR_DESCRIPTIONS.unavailable) }
+      return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS.unavailable) }
     case 'unauthorized':
-      return { ok: false, response: inquiryErrorResponse(ERROR_DESCRIPTIONS.unauthorized) }
+      return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS.unauthorized) }
   }
 }
 
@@ -107,7 +138,7 @@ const requireFreshClinicAuthentication = async (req: PayloadRequest): Promise<Au
       ? principal.supabaseUserId.trim()
       : ''
   if (!token || !expectedSubject) {
-    return { ok: false, response: inquiryErrorResponse(ERROR_DESCRIPTIONS.unauthorized) }
+    return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS.unauthorized) }
   }
 
   const result = await validateSupabaseFreshFirstFactor({
@@ -121,15 +152,15 @@ const requireFreshClinicAuthentication = async (req: PayloadRequest): Promise<Au
     case 'authenticated':
       return { ok: true }
     case 'invalid':
-      return { ok: false, response: inquiryErrorResponse(ERROR_DESCRIPTIONS.unauthorized) }
+      return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS.unauthorized) }
     case 'reauthentication-required':
-      return { ok: false, response: inquiryErrorResponse(ERROR_DESCRIPTIONS['reauthentication-required']) }
+      return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS['reauthentication-required']) }
     case 'unavailable':
-      return { ok: false, response: inquiryErrorResponse(ERROR_DESCRIPTIONS.unavailable) }
+      return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS.unavailable) }
   }
 }
 
-const invalidInputResponse = (): Response => inquiryErrorResponse(ERROR_DESCRIPTIONS['invalid-input'])
+const invalidInputResponse = (): Response => inquiryErrorResponse(null, ERROR_DESCRIPTIONS['invalid-input'])
 
 const readBody = async <Value>(req: PayloadRequest, schema: ZodType<Value>): Promise<Response | Value> => {
   const body = typeof req.json === 'function' ? await req.json().catch(() => undefined) : undefined
@@ -228,11 +259,6 @@ const readAttachmentId = (req: PayloadRequest): Response | string => {
   return parsed.success ? parsed.data : invalidInputResponse()
 }
 
-const serviceErrorResponse = (error: InquiryCommunicationServiceError): Response => {
-  const description = ERROR_DESCRIPTIONS[error.kind as keyof typeof ERROR_DESCRIPTIONS]
-  return inquiryErrorResponse(description ?? ERROR_DESCRIPTIONS.unavailable, error.current)
-}
-
 const unexpectedErrorResponse = (req: PayloadRequest, error: unknown, operation: string): Response => {
   req.payload.logger.error(
     {
@@ -241,7 +267,7 @@ const unexpectedErrorResponse = (req: PayloadRequest, error: unknown, operation:
     },
     'Clinic Dashboard inquiry operation failed',
   )
-  return inquiryErrorResponse(ERROR_DESCRIPTIONS.unavailable)
+  return inquiryErrorResponse(req, ERROR_DESCRIPTIONS.unavailable)
 }
 
 const sweepAttachments = async (req: PayloadRequest): Promise<void> => {
@@ -284,12 +310,16 @@ const execute = async <Value>(
   req: PayloadRequest,
   operation: string,
   command: () => Promise<Value>,
-  success: (value: Value) => Response = (value) => clinicDashboardPrivateJsonResponse(value, 200),
+  success: (value: Value) => Response = (value) =>
+    clinicDashboardPrivateJsonResponse(projectInquiryContractValue(req, value), 200),
 ): Promise<Response> => {
   try {
     return success(await command())
   } catch (error: unknown) {
-    if (error instanceof InquiryCommunicationServiceError) return serviceErrorResponse(error)
+    if (error instanceof InquiryCommunicationServiceError) {
+      const description = ERROR_DESCRIPTIONS[error.kind as keyof typeof ERROR_DESCRIPTIONS]
+      return inquiryErrorResponse(req, description ?? ERROR_DESCRIPTIONS.unavailable, error.current)
+    }
     return unexpectedErrorResponse(req, error, operation)
   }
 }

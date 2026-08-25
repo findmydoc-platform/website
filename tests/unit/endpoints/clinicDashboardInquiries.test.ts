@@ -288,6 +288,28 @@ describe('Clinic Dashboard inquiry endpoints', () => {
     })
   })
 
+  it('keeps the v1 detail projection free of v2-only system events', async () => {
+    mocks.readDetail.mockResolvedValueOnce({
+      changeCursor: 'detail-change-2',
+      inquiry: {
+        ...inquiry,
+        timeline: [
+          { id: 'event-closed', kind: 'system-event', event: 'closed' },
+          { id: 'event-restricted', kind: 'system-event', event: 'moderation-restricted' },
+        ],
+      },
+      unchanged: false,
+    })
+
+    const response = await clinicDashboardInquiryDetailGetHandler(
+      request({ contract: 'inquiry-communication-v1', search: `inquiryId=${inquiry.id}` }),
+    )
+
+    await expect(response.json()).resolves.toMatchObject({
+      inquiry: { timeline: [{ event: 'closed', id: 'event-closed', kind: 'system-event' }] },
+    })
+  })
+
   it('requires a valid explicit Bearer token even when a cookie principal is present', async () => {
     mocks.bearer.mockResolvedValueOnce({ status: 'invalid' })
 

@@ -85,8 +85,19 @@ const REQUIRED_INDEXES = [
 type IsolatedAdapter = ReturnType<ReturnType<typeof postgresAdapter>['init']>
 type RetainedPoolClient = { release: () => void }
 
+const isLowercaseAlphaNumeric = (value: string): boolean =>
+  (value >= 'a' && value <= 'z') || (value >= '0' && value <= '9')
+
 const quotedTestDatabaseIdentifier = (value: string): string => {
-  if (!/^findmydoc-test(?:[-_][a-z0-9][a-z0-9_-]*)+$/u.test(value) || value.length > 63) {
+  const suffix = value.slice('findmydoc-test'.length)
+  const hasSafePrefix = value.startsWith('findmydoc-test')
+  const hasSafeSuffixStart =
+    suffix.length >= 2 && (suffix[0] === '-' || suffix[0] === '_') && isLowercaseAlphaNumeric(suffix[1] ?? '')
+  const hasOnlySafeSuffixCharacters = [...suffix.slice(2)].every(
+    (character) => isLowercaseAlphaNumeric(character) || character === '-' || character === '_',
+  )
+
+  if (!hasSafePrefix || !hasSafeSuffixStart || !hasOnlySafeSuffixCharacters || value.length > 63) {
     throw new Error(`Unsafe isolated migration database name: ${value}`)
   }
   return `"${value}"`

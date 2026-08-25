@@ -89,8 +89,6 @@ describe.sequential('inquiry attachment quotas with PostgreSQL', () => {
       clinicId: String(clinicId),
       consent: true,
       doctorId: String(doctorId),
-      email: `${slugPrefix}-${suffix}@example.com`,
-      fullName: `Synthetic Quota ${suffix}`,
       idempotencyKey: `${slugPrefix}-${suffix}-create`,
       message: `Synthetic attachment quota inquiry for ${suffix}.`,
       phoneNumber: '+493000000071',

@@ -1,5 +1,6 @@
 export type ContactFormFields = {
-  fullName: string
+  firstName: string
+  lastName: string
   phoneNumber: string
   email: string
   treatmentTimeline: string

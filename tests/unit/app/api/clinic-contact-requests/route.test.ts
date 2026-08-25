@@ -43,10 +43,10 @@ const validBody = {
   treatmentTimeline: 'within_two_weeks',
 }
 
-const makeRequest = (body: unknown): NextRequest =>
+const makeRequest = (body: unknown, headers?: Record<string, string>): NextRequest =>
   new NextRequest('http://localhost/api/clinic-contact-requests', {
     body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
     method: 'POST',
   })
 
@@ -81,22 +81,18 @@ describe('POST /api/clinic-contact-requests', () => {
     expect(mocks.createVerifiedInquiry).not.toHaveBeenCalled()
   })
 
-  it('binds an authenticated patient submission through the verified inquiry command', async () => {
-    const patientReq = { ...localReq, user: { collection: 'patients', id: 17 } }
-    mocks.createLocalReq.mockResolvedValueOnce(patientReq)
+  it.each([
+    ['bearer token', { Authorization: 'Bearer expired-patient-token' }],
+    ['Supabase session cookie', { Cookie: 'sb-synthetic-auth-token=expired-session' }],
+  ])('rejects a %s instead of silently creating a guest inquiry', async (_case, headers) => {
+    const response = await POST(makeRequest(validBody, headers))
 
-    const response = await POST(makeRequest(validBody))
-
-    expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({ success: true, id: '43', status: 'submitted' })
-    expect(mocks.createVerifiedInquiry).toHaveBeenCalledWith(patientReq, {
-      ...validBody,
-      clinicId: '1',
-      doctorId: '601',
-      email: 'jane.patient@example.com',
-      fullName: 'Jane Patient',
-      treatmentId: '301',
+    expect(response.status).toBe(401)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Your session has ended. Sign in again before sending this request.',
     })
+    expect(mocks.createLocalReq).not.toHaveBeenCalled()
+    expect(mocks.createVerifiedInquiry).not.toHaveBeenCalled()
     expect(mocks.submitGuestInquiry).not.toHaveBeenCalled()
   })
 

@@ -89,8 +89,6 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
       clinicId: String(clinicId),
       consent: true,
       doctorId: String(doctorId),
-      email: `${slugPrefix}-patient@example.com`,
-      fullName: 'Synthetic Storage Patient',
       idempotencyKey: `${slugPrefix}-${suffix}-${inquiryCounter}-create`,
       message: `Synthetic storage inquiry ${suffix}.`,
       phoneNumber: '+493000000003',

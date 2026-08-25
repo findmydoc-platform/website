@@ -45,6 +45,7 @@ import {
 } from './endpoints/legacyPatientClinicInquiries'
 import {
   patientInquiriesGetHandler,
+  patientInquiryCreatePostHandler,
   patientInquiryAttachmentDiscardPostHandler,
   patientInquiryAttachmentDownloadGetHandler,
   patientInquiryAttachmentDraftPostHandler,
@@ -295,6 +296,11 @@ export default buildConfig({
       path: '/patient/inquiries',
       method: 'get',
       handler: patientInquiriesGetHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries',
+      method: 'post',
+      handler: patientInquiryCreatePostHandler as PayloadHandler,
     },
     {
       path: '/patient/inquiries/detail',

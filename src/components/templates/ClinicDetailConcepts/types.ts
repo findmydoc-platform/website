@@ -1,5 +1,6 @@
 import type { BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import type { CookieConsentConfig, CookieConsentState } from '@/features/cookieConsent'
+import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 import type { FreshnessSignals } from '@/utilities/freshness'
 
 export type ClinicVerificationTier = 'unverified' | 'bronze' | 'silver' | 'gold'
@@ -130,6 +131,7 @@ export type ClinicDetailConceptProps = {
     favoriteId?: number | null
     loginHref: string
   }
+  inquiryCreation?: PatientInquiryCreationContext
   cookieConsentConfig?: CookieConsentConfig | null
   cookieConsentInitialConsent?: CookieConsentState | null
 }

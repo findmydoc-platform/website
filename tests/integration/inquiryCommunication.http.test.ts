@@ -173,8 +173,6 @@ describe('inquiry communication registered Payload HTTP boundary', () => {
       clinicId: String(clinicId),
       consent: true,
       doctorId: String(localFixture.doctor.id),
-      email: `${slugPrefix}-patient@example.com`,
-      fullName: 'Synthetic Patient',
       idempotencyKey: `${slugPrefix}-create`,
       message: 'Synthetic registered HTTP boundary inquiry.',
       phoneNumber: '+493000000011',

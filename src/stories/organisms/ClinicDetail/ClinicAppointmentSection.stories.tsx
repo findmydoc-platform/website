@@ -13,7 +13,8 @@ const treatments: ClinicDetailTreatment[] = clinicDetailFixture.treatments.slice
 type ClinicAppointmentSectionArgs = React.ComponentProps<typeof ClinicAppointmentSection>
 
 const initialFields: ContactFormFields = {
-  fullName: '',
+  firstName: '',
+  lastName: '',
   phoneNumber: '',
   email: '',
   treatmentTimeline: '',
@@ -23,7 +24,8 @@ const initialFields: ContactFormFields = {
 }
 
 const submittedFields: ContactFormFields = {
-  fullName: 'Jane Doe',
+  firstName: 'Jane',
+  lastName: 'Doe',
   phoneNumber: '+49 30 1234',
   email: 'jane@example.com',
   treatmentTimeline: 'within_two_weeks',
@@ -39,6 +41,10 @@ const meta = {
     sectionId: 'clinic-contact-form-story',
     sectionRef: React.createRef<HTMLElement>(),
     fields: initialFields,
+    inquiryCreation: { kind: 'guest' },
+    isPhoneLocked: false,
+    requiresReauthentication: false,
+    submittedInquiryHref: null,
     selectedDoctorId: '',
     selectedTreatmentId: '',
     doctors,
@@ -109,6 +115,10 @@ function ClinicAppointmentSectionStoryHarness(args: Partial<ClinicAppointmentSec
           sectionRef={sectionRef}
           feedbackRef={feedbackRef}
           fields={fields}
+          inquiryCreation={resolvedArgs.inquiryCreation}
+          isPhoneLocked={resolvedArgs.isPhoneLocked}
+          requiresReauthentication={resolvedArgs.requiresReauthentication}
+          submittedInquiryHref={resolvedArgs.submittedInquiryHref}
           selectedDoctorId={selectedDoctorId}
           selectedTreatmentId={selectedTreatmentId}
           doctors={resolvedArgs.doctors}
@@ -174,7 +184,8 @@ export const InteractiveSubmit: Story = {
 
     await expect(messageInput).toHaveAttribute('maxlength', '3000')
 
-    await userEvent.type(canvas.getByRole('textbox', { name: 'Full Name' }), 'Jane Doe')
+    await userEvent.type(canvas.getByRole('textbox', { name: 'First Name' }), 'Jane')
+    await userEvent.type(canvas.getByRole('textbox', { name: 'Last Name' }), 'Doe')
     await userEvent.type(canvas.getByRole('textbox', { name: 'Phone Number' }), '+49 30 1234')
     await userEvent.type(canvas.getByRole('textbox', { name: 'Email' }), 'jane@example.com')
     await userEvent.selectOptions(
@@ -231,7 +242,7 @@ export const DoctorUnavailableErrorState: Story = {
     await expect(treatmentSelect).not.toHaveAttribute('aria-invalid', 'true')
     await waitFor(() => expect(doctorSelect).toHaveFocus())
 
-    await userEvent.type(canvas.getByRole('textbox', { name: 'Full Name' }), 'Jane Doe')
+    await userEvent.type(canvas.getByRole('textbox', { name: 'First Name' }), 'Jane')
     await expect(canvas.getByRole('alert')).toHaveTextContent('Doctor is not available for this clinic.')
     await expect(doctorSelect).toHaveAttribute('aria-invalid', 'true')
   },
@@ -298,10 +309,11 @@ export const ValidationAndSubmit: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Submit Contact Request' }))
 
     await waitFor(() => {
-      expect(canvas.getByText('Enter your full name.')).toBeInTheDocument()
+      expect(canvas.getByText('Enter your first name.')).toBeInTheDocument()
     })
 
-    await userEvent.type(canvas.getByRole('textbox', { name: 'Full Name' }), 'Jane Doe')
+    await userEvent.type(canvas.getByRole('textbox', { name: 'First Name' }), 'Jane')
+    await userEvent.type(canvas.getByRole('textbox', { name: 'Last Name' }), 'Doe')
     await userEvent.type(canvas.getByRole('textbox', { name: 'Phone Number' }), '+49 30 1234')
     await userEvent.type(canvas.getByRole('textbox', { name: 'Email' }), 'jane@example.com')
     await userEvent.type(canvas.getByRole('textbox', { name: 'Message' }), 'I would like to discuss treatment options.')
@@ -339,3 +351,68 @@ export const ValidationAndSubmit375: Story = withViewportStory(
   'public375',
   'Validation and submit / 375',
 )
+
+export const AuthenticatedAccountFields: Story = {
+  args: {
+    fields: submittedFields,
+    inquiryCreation: {
+      kind: 'authenticated',
+      loginHref: '/login/patient?next=%2Fclinics%2Fsynthetic',
+      account: {
+        email: submittedFields.email,
+        firstName: submittedFields.firstName,
+        lastName: submittedFields.lastName,
+        phoneNumber: submittedFields.phoneNumber,
+      },
+    },
+    isPhoneLocked: true,
+  },
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText(/account details are used/i)).toBeInTheDocument()
+    for (const name of ['First Name', 'Last Name', 'Phone Number', 'Email']) {
+      await expect(canvas.getByRole('textbox', { name })).toHaveAttribute('readonly')
+    }
+  },
+}
+
+export const AuthenticatedMissingPhone: Story = {
+  args: {
+    fields: { ...submittedFields, phoneNumber: '' },
+    inquiryCreation: {
+      kind: 'authenticated',
+      loginHref: '/login/patient?next=%2Fclinics%2Fsynthetic',
+      account: {
+        email: submittedFields.email,
+        firstName: submittedFields.firstName,
+        lastName: submittedFields.lastName,
+        phoneNumber: '',
+      },
+    },
+    isPhoneLocked: false,
+  },
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('textbox', { name: 'First Name' })).toHaveAttribute('readonly')
+    await expect(canvas.getByRole('textbox', { name: 'Last Name' })).toHaveAttribute('readonly')
+    await expect(canvas.getByRole('textbox', { name: 'Email' })).toHaveAttribute('readonly')
+    await expect(canvas.getByRole('textbox', { name: 'Phone Number' })).not.toHaveAttribute('readonly')
+    await expect(canvas.getByText(/saved to your patient account/i)).toBeInTheDocument()
+  },
+}
+
+export const ReauthenticationRequired: Story = {
+  args: {
+    inquiryCreation: { kind: 'reauthentication-required', loginHref: '/login/patient?next=%2Fclinics%2Fsynthetic' },
+    requiresReauthentication: true,
+  },
+  render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Your session has ended.')
+    await expect(canvas.getByRole('link', { name: 'Sign in again' })).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Submit Contact Request' })).toBeDisabled()
+  },
+}

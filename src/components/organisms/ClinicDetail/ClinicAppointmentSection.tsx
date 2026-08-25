@@ -10,7 +10,9 @@ import { Input } from '@/components/atoms/input'
 import { Label } from '@/components/atoms/label'
 import { Textarea } from '@/components/atoms/textarea'
 import { Media } from '@/components/molecules/Media'
+import { UiLink } from '@/components/molecules/Link'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
+import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
 
@@ -20,6 +22,10 @@ type ClinicAppointmentSectionProps = {
   sectionId: string
   sectionRef: React.RefObject<HTMLElement | null>
   fields: ContactFormFields
+  inquiryCreation: PatientInquiryCreationContext
+  isPhoneLocked: boolean
+  requiresReauthentication: boolean
+  submittedInquiryHref: string | null
   selectedDoctorId: string
   selectedTreatmentId: string
   doctors: ClinicDetailDoctor[]
@@ -38,7 +44,7 @@ type ClinicAppointmentSectionProps = {
 }
 
 const inputClassName =
-  'h-14 w-full rounded-[28px] border border-primary/45 bg-background px-4 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
+  'h-14 w-full rounded-[28px] border border-primary/45 bg-background px-4 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 read-only:cursor-not-allowed read-only:border-border read-only:bg-muted read-only:text-secondary/75 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
 const textAreaClassName =
   'min-h-32 w-full rounded-[24px] border border-primary/45 bg-background px-4 py-3 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
 
@@ -61,6 +67,10 @@ export function ClinicAppointmentSection({
   sectionId,
   sectionRef,
   fields,
+  inquiryCreation,
+  isPhoneLocked,
+  requiresReauthentication,
+  submittedInquiryHref,
   selectedDoctorId,
   selectedTreatmentId,
   doctors,
@@ -84,6 +94,8 @@ export function ClinicAppointmentSection({
   const treatmentHasError = selectionError === 'selection' || selectionError === 'treatment'
   const doctorDescribedBy = doctorHasError ? `${selectionInstructionId} ${feedbackId}` : selectionInstructionId
   const treatmentDescribedBy = treatmentHasError ? `${selectionInstructionId} ${feedbackId}` : selectionInstructionId
+  const identityLocked = inquiryCreation.kind === 'authenticated'
+  const formBlocked = requiresReauthentication || inquiryCreation.kind === 'reauthentication-required'
   const doctorSelectRef = React.useRef<HTMLSelectElement | null>(null)
   const treatmentSelectRef = React.useRef<HTMLSelectElement | null>(null)
   const formValidation = usePublicFormValidation({
@@ -93,7 +105,8 @@ export function ClinicAppointmentSection({
         typeMismatch: 'Enter a valid email address.',
         valueMissing: 'Enter your email address.',
       },
-      fullName: { valueMissing: 'Enter your full name.' },
+      firstName: { valueMissing: 'Enter your first name.' },
+      lastName: { valueMissing: 'Enter your last name.' },
       message: { valueMissing: 'Enter a message.' },
       phoneNumber: { valueMissing: 'Enter your phone number.' },
     },
@@ -177,28 +190,75 @@ export function ClinicAppointmentSection({
           aria-label="Clinic appointment request"
           noValidate
         >
+          {formBlocked ? (
+            <Alert variant="error" role="alert" className="text-left">
+              <p>Your session has ended. Sign in again before sending this request.</p>
+              {inquiryCreation.kind !== 'guest' ? (
+                <UiLink
+                  href={inquiryCreation.loginHref}
+                  label="Sign in again"
+                  appearance="inline"
+                  className="mt-2 inline-flex"
+                />
+              ) : null}
+            </Alert>
+          ) : null}
+
+          {identityLocked ? (
+            <p className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm leading-6 text-secondary">
+              Your account details are used for this request and cannot be changed here.
+            </p>
+          ) : null}
+
           <div className="grid gap-5 md:grid-cols-2">
-            <Field data-invalid={formValidation.getFieldError('fullName') ? true : undefined}>
-              <Label htmlFor={`${sectionId}-fullName`} className="text-sm font-medium text-secondary">
-                Full Name
+            <Field data-invalid={formValidation.getFieldError('firstName') ? true : undefined}>
+              <Label htmlFor={`${sectionId}-firstName`} className="text-sm font-medium text-secondary">
+                First Name
               </Label>
               <Input
-                id={`${sectionId}-fullName`}
+                id={`${sectionId}-firstName`}
                 type="text"
-                name="fullName"
-                autoComplete="name"
+                name="firstName"
+                autoComplete="given-name"
                 className={inputClassName}
-                value={fields.fullName}
-                onChange={(event) => handleFieldChange('fullName', event)}
-                maxLength={200}
+                value={fields.firstName}
+                onChange={(event) => handleFieldChange('firstName', event)}
+                maxLength={100}
+                readOnly={identityLocked}
+                disabled={formBlocked}
                 required
-                {...formValidation.getFieldProps('fullName')}
+                {...formValidation.getFieldProps('firstName')}
               />
-              <FieldError id={formValidation.getFieldErrorId('fullName')}>
-                {formValidation.getFieldError('fullName')}
+              <FieldError id={formValidation.getFieldErrorId('firstName')}>
+                {formValidation.getFieldError('firstName')}
               </FieldError>
             </Field>
 
+            <Field data-invalid={formValidation.getFieldError('lastName') ? true : undefined}>
+              <Label htmlFor={`${sectionId}-lastName`} className="text-sm font-medium text-secondary">
+                Last Name
+              </Label>
+              <Input
+                id={`${sectionId}-lastName`}
+                type="text"
+                name="lastName"
+                autoComplete="family-name"
+                className={inputClassName}
+                value={fields.lastName}
+                onChange={(event) => handleFieldChange('lastName', event)}
+                maxLength={100}
+                readOnly={identityLocked}
+                disabled={formBlocked}
+                required
+                {...formValidation.getFieldProps('lastName')}
+              />
+              <FieldError id={formValidation.getFieldErrorId('lastName')}>
+                {formValidation.getFieldError('lastName')}
+              </FieldError>
+            </Field>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
             <Field data-invalid={formValidation.getFieldError('phoneNumber') ? true : undefined}>
               <Label htmlFor={`${sectionId}-phoneNumber`} className="text-sm font-medium text-secondary">
                 Phone Number
@@ -212,6 +272,8 @@ export function ClinicAppointmentSection({
                 value={fields.phoneNumber}
                 onChange={(event) => handleFieldChange('phoneNumber', event)}
                 maxLength={80}
+                readOnly={identityLocked && isPhoneLocked}
+                disabled={formBlocked}
                 required
                 {...formValidation.getFieldProps('phoneNumber')}
               />
@@ -219,28 +281,36 @@ export function ClinicAppointmentSection({
                 {formValidation.getFieldError('phoneNumber')}
               </FieldError>
             </Field>
+
+            <Field data-invalid={formValidation.getFieldError('email') ? true : undefined}>
+              <Label htmlFor={`${sectionId}-email`} className="text-sm font-medium text-secondary">
+                Email
+              </Label>
+              <Input
+                id={`${sectionId}-email`}
+                type="email"
+                name="email"
+                autoComplete="email"
+                className={inputClassName}
+                value={fields.email}
+                onChange={(event) => handleFieldChange('email', event)}
+                maxLength={254}
+                readOnly={identityLocked}
+                disabled={formBlocked}
+                required
+                {...formValidation.getFieldProps('email')}
+              />
+              <FieldError id={formValidation.getFieldErrorId('email')}>
+                {formValidation.getFieldError('email')}
+              </FieldError>
+            </Field>
           </div>
 
-          <Field data-invalid={formValidation.getFieldError('email') ? true : undefined}>
-            <Label htmlFor={`${sectionId}-email`} className="text-sm font-medium text-secondary">
-              Email
-            </Label>
-            <Input
-              id={`${sectionId}-email`}
-              type="email"
-              name="email"
-              autoComplete="email"
-              className={inputClassName}
-              value={fields.email}
-              onChange={(event) => handleFieldChange('email', event)}
-              maxLength={254}
-              required
-              {...formValidation.getFieldProps('email')}
-            />
-            <FieldError id={formValidation.getFieldErrorId('email')}>
-              {formValidation.getFieldError('email')}
-            </FieldError>
-          </Field>
+          {identityLocked && !isPhoneLocked ? (
+            <p className="text-sm leading-6 text-secondary/75">
+              Add your phone number once. It will be saved to your patient account before this request is created.
+            </p>
+          ) : null}
 
           <div className="grid gap-5 md:grid-cols-2">
             <Field>
@@ -386,9 +456,21 @@ export function ClinicAppointmentSection({
             className={message ? 'text-left break-words' : 'sr-only'}
           >
             {message ?? ''}
+            {message && submittedInquiryHref ? (
+              <UiLink
+                href={submittedInquiryHref}
+                label="View in My inquiries"
+                appearance="inline"
+                className="mt-2 inline-flex"
+              />
+            ) : null}
           </Alert>
 
-          <Button type="submit" className="w-full rounded-full px-8 sm:w-auto" disabled={isSubmitting || isSubmitted}>
+          <Button
+            type="submit"
+            className="w-full rounded-full px-8 sm:w-auto"
+            disabled={formBlocked || isSubmitting || isSubmitted}
+          >
             {isSubmitting ? 'Sending Request...' : isSubmitted ? 'Request sent' : 'Submit Contact Request'}
           </Button>
         </form>

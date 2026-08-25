@@ -8,7 +8,8 @@ import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/tem
 import { useClinicDetailInteractionState } from '@/components/templates/ClinicDetailConcepts/hooks/useClinicDetailInteractionState'
 
 const initialContactFormFields: ContactFormFields = {
-  fullName: 'Jane Patient',
+  firstName: 'Jane',
+  lastName: 'Patient',
   phoneNumber: '+49 30 123456',
   email: 'jane.patient@example.com',
   treatmentTimeline: 'within_two_weeks',
@@ -34,7 +35,9 @@ const treatments: ClinicDetailTreatment[] = [
   },
 ]
 
-function renderInteractionState() {
+function renderInteractionState(
+  inquiryCreation: Parameters<typeof useClinicDetailInteractionState>[0]['inquiryCreation'] = { kind: 'guest' },
+) {
   return renderHook(() =>
     useClinicDetailInteractionState({
       clinicId: 1,
@@ -43,6 +46,7 @@ function renderInteractionState() {
       heroDoctors: doctors,
       sortedTreatments: treatments,
       initialContactFormFields,
+      inquiryCreation,
       furtherTreatmentPageSize: 4,
     }),
   )
@@ -151,5 +155,65 @@ describe('useClinicDetailInteractionState', () => {
     const firstBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body)) as { idempotencyKey: string }
     const secondBody = JSON.parse(String(vi.mocked(fetch).mock.calls[1]?.[1]?.body)) as { idempotencyKey: string }
     expect(secondBody.idempotencyKey).toBe(firstBody.idempotencyKey)
+  })
+
+  it('uses the authenticated patient endpoint without sending browser identity fields', async () => {
+    const { result } = renderInteractionState({
+      kind: 'authenticated',
+      loginHref: '/login/patient?next=%2Fclinics%2Fberlin-health',
+      account: {
+        email: 'account.patient@example.com',
+        firstName: 'Account',
+        lastName: 'Patient',
+        phoneNumber: '+49 30 999999',
+      },
+    })
+
+    act(() => {
+      result.current.handleDoctorSelectionChange('601')
+    })
+    await act(async () => {
+      await result.current.handleContactSubmit(submitEvent())
+    })
+
+    expect(fetch).toHaveBeenCalledWith('/api/patient/inquiries', expect.anything())
+    const requestBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body)) as Record<string, unknown>
+    expect(requestBody).not.toHaveProperty('actorId')
+    expect(requestBody).not.toHaveProperty('patientId')
+    expect(requestBody).not.toHaveProperty('email')
+    expect(requestBody).not.toHaveProperty('fullName')
+    expect(requestBody).not.toHaveProperty('phoneNumber')
+    expect(result.current.submittedInquiryHref).toBe('/patient/inquiries/42')
+    expect(result.current.isPhoneLocked).toBe(true)
+  })
+
+  it('stops after a 401 and exposes reauthentication state', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: { code: 'INQUIRY_UNAUTHORIZED' } }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    const { result } = renderInteractionState({
+      kind: 'authenticated',
+      loginHref: '/login/patient?next=%2Fclinics%2Fberlin-health',
+      account: {
+        email: 'account.patient@example.com',
+        firstName: 'Account',
+        lastName: 'Patient',
+        phoneNumber: '+49 30 999999',
+      },
+    })
+    act(() => {
+      result.current.handleDoctorSelectionChange('601')
+    })
+
+    await act(async () => {
+      await result.current.handleContactSubmit(submitEvent())
+    })
+
+    expect(result.current.requiresReauthentication).toBe(true)
+    expect(result.current.hasSubmittedContact).toBe(false)
+    expect(result.current.contactFormMessage).toBe('Your session has ended. Sign in again before sending this request.')
   })
 })

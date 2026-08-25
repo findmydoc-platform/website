@@ -72,8 +72,6 @@ describe('inquiry communication native trash and restore', () => {
       clinicId: String(clinicId),
       consent: true,
       doctorId: String(fixture.doctor.id),
-      email: `${slugPrefix}-patient@example.com`,
-      fullName: 'Trash Patient',
       idempotencyKey: `${slugPrefix}-create`,
       message: 'Synthetic inquiry for native trash and restore evidence.',
       phoneNumber: '+493000000033',

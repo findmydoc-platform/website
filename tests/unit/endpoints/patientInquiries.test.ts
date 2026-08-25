@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   patientInquiriesGetHandler,
+  patientInquiryCreatePostHandler,
   patientInquiryAttachmentDiscardPostHandler,
   patientInquiryAttachmentDownloadGetHandler,
   patientInquiryAttachmentDraftPostHandler,
@@ -17,6 +18,7 @@ import { InquiryCommunicationServiceError } from '@/features/inquiryCommunicatio
 const mocks = vi.hoisted(() => ({
   after: vi.fn(),
   cleanup: vi.fn(),
+  createInquiry: vi.fn(),
   createDraft: vi.fn(),
   discardDraft: vi.fn(),
   finalizeDraft: vi.fn(),
@@ -34,6 +36,7 @@ vi.mock('@/features/inquiryCommunication/service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/inquiryCommunication/service')>()),
   createAttachmentDraft: mocks.createDraft,
   cleanupDiscardedAttachment: mocks.cleanup,
+  createVerifiedPatientInquiry: mocks.createInquiry,
   discardAttachmentDraft: mocks.discardDraft,
   finalizeAttachmentDraft: mocks.finalizeDraft,
   readAttachmentAccess: mocks.readAttachmentAccess,
@@ -112,6 +115,7 @@ describe('patient inquiry endpoints', () => {
       unchanged: false,
       unreadCount: 1,
     })
+    mocks.createInquiry.mockResolvedValue({ inquiry, replayed: false })
     mocks.readDetail.mockResolvedValue({
       changeCursor: 'detail-change-1',
       inquiry,
@@ -183,11 +187,50 @@ describe('patient inquiry endpoints', () => {
     const invalidBody = await patientInquiryMessagesPostHandler(
       request({ collection: null, body: { patientId: 'patient-2' } }),
     )
+    const invalidCreate = await patientInquiryCreatePostHandler(
+      request({ collection: null, body: { actorId: 'patient-2' } }),
+    )
 
     expect(invalidQueue.status).toBe(401)
     expect(invalidBody.status).toBe(401)
+    expect(invalidCreate.status).toBe(401)
     expect(mocks.readQueue).not.toHaveBeenCalled()
     expect(mocks.sendMessage).not.toHaveBeenCalled()
+    expect(mocks.createInquiry).not.toHaveBeenCalled()
+  })
+
+  it('creates an account-bound inquiry without accepting browser identity fields', async () => {
+    const input = {
+      clinicId: '42',
+      consent: true,
+      doctorId: '601',
+      idempotencyKey: 'patient-create-key-1',
+      message: 'Synthetic account-bound inquiry.',
+      phoneNumber: '+49 30 123456',
+      treatmentTimeline: 'within_two_weeks',
+    }
+    const req = request({ body: input })
+
+    const response = await patientInquiryCreatePostHandler(req)
+
+    expect(response.status).toBe(201)
+    expect(mocks.createInquiry).toHaveBeenCalledWith(req, input)
+    await expect(response.json()).resolves.toEqual({ inquiry, replayed: false })
+    expectPrivateLive(response)
+
+    for (const injectedIdentity of [
+      { actorId: 'patient-2' },
+      { patientId: 'patient-2' },
+      { email: 'attacker@example.com' },
+      { fullName: 'Browser Controlled' },
+    ]) {
+      const rejected = await patientInquiryCreatePostHandler(request({ body: { ...input, ...injectedIdentity } }))
+      expect(await json(rejected)).toEqual({
+        status: 400,
+        body: { error: { code: 'INQUIRY_INVALID_INPUT' } },
+      })
+    }
+    expect(mocks.createInquiry).toHaveBeenCalledOnce()
   })
 
   it('keeps missing and foreign patient inquiries indistinguishable', async () => {

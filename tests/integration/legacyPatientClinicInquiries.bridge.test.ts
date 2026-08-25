@@ -164,8 +164,6 @@ describe('legacy PatientClinicInquiries compatibility bridge', () => {
       clinicId: String(localClinicId),
       consent: true,
       doctorId: String(localFixture.doctor.id),
-      email: `${slugPrefix}-operational@example.com`,
-      fullName: 'Synthetic Operational Patient',
       idempotencyKey: `${slugPrefix}-operational-create`,
       message: 'Synthetic operational inquiry for the legacy bridge.',
       phoneNumber: '+493000000061',
@@ -179,8 +177,6 @@ describe('legacy PatientClinicInquiries compatibility bridge', () => {
       clinicId: String(foreignClinicId),
       consent: true,
       doctorId: String(foreignFixture.doctor.id),
-      email: `${slugPrefix}-foreign@example.com`,
-      fullName: 'Synthetic Foreign Patient',
       idempotencyKey: `${slugPrefix}-foreign-create`,
       message: 'Synthetic inquiry owned by the foreign clinic.',
       phoneNumber: '+493000000062',
@@ -274,8 +270,8 @@ describe('legacy PatientClinicInquiries compatibility bridge', () => {
       ].sort(),
     )
     expect(operationalProjection).toMatchObject({
-      email: `${slugPrefix}-operational@example.com`,
-      fullName: 'Synthetic Operational Patient',
+      email: `${slugPrefix}-patient@example.com`,
+      fullName: 'Synthetic Bridge Patient',
       id: operationalInquiryId,
       status: 'submitted',
     })

@@ -86,30 +86,47 @@ describe('patient inquiries browser gateway', () => {
   })
 
   it('uploads a draft directly without forwarding patient cookies', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }))
-    vi.stubGlobal('fetch', fetchMock)
+    const progress: Array<number | undefined> = []
+    const xhr = {
+      open: vi.fn(),
+      send: vi.fn(),
+      setRequestHeader: vi.fn(),
+      status: 200,
+      upload: {},
+      withCredentials: true,
+    } as unknown as XMLHttpRequest
+    vi.stubGlobal(
+      'XMLHttpRequest',
+      vi.fn(function XMLHttpRequestMock() {
+        return xhr
+      }),
+    )
     const file = new File(['scan'], 'scan.pdf', { type: 'application/pdf' })
 
     const api = createPatientInquiriesBrowserApi()
-    await api.uploadDraft({
+    const uploaded = api.uploadDraft({
       file,
+      onProgress: (value) => progress.push(value),
       upload: {
         headers: { 'Content-Type': 'application/pdf', 'x-amz-meta-token': 'synthetic' },
         method: 'PUT',
         url: 'https://storage.example.test/drafts/signed',
       },
     })
+    xhr.upload.onprogress?.call(xhr, {
+      lengthComputable: true,
+      loaded: 5,
+      total: 10,
+    } as ProgressEvent<XMLHttpRequestEventTarget>)
+    xhr.onload?.({} as ProgressEvent<XMLHttpRequestEventTarget>)
+    await uploaded
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://storage.example.test/drafts/signed',
-      expect.objectContaining({
-        body: file,
-        credentials: 'omit',
-        headers: { 'Content-Type': 'application/pdf', 'x-amz-meta-token': 'synthetic' },
-        method: 'PUT',
-        redirect: 'error',
-      }),
-    )
+    expect(xhr.open).toHaveBeenCalledWith('PUT', 'https://storage.example.test/drafts/signed', true)
+    expect(xhr.withCredentials).toBe(false)
+    expect(xhr.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf')
+    expect(xhr.setRequestHeader).toHaveBeenCalledWith('x-amz-meta-token', 'synthetic')
+    expect(xhr.send).toHaveBeenCalledWith(file)
+    expect(progress).toEqual([50, 100])
   })
 
   it('builds attachment downloads as encoded same-origin hrefs', () => {

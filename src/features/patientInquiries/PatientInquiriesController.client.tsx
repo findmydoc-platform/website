@@ -11,6 +11,7 @@ import {
   patientInquiriesReducer,
   validatePatientInquiryFile,
   type PatientInquiryFilter,
+  type PatientInquiryQueueScope,
 } from './model'
 import type { PatientInquiryDetailView } from './viewModel'
 
@@ -45,10 +46,13 @@ const createMessageKey = (): string => {
   return `message-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
-const replacePath = (path: string): void => {
-  if (typeof window === 'undefined') return
-  window.history.pushState(null, '', path)
-}
+const QUEUE_LIMIT = 25
+const FOCUS_RETURN_KEY = 'patient-inquiries:focus-return'
+
+const findInquiryRow = (inquiryId: string): HTMLElement | undefined =>
+  [...document.querySelectorAll<HTMLElement>('[data-inquiry-id]')].find(
+    (element) => element.dataset.inquiryId === inquiryId,
+  )
 
 const latestVisibleClinicActivityId = (inquiry: InquiryDetailDTO): string | undefined => {
   for (let index = inquiry.timeline.length - 1; index >= 0; index -= 1) {
@@ -83,16 +87,24 @@ export function PatientInquiriesController({
   }, [])
 
   const loadQueue = React.useCallback(
-    async (filterOverride?: PatientInquiryFilter): Promise<boolean> => {
+    async (
+      filterOverride?: PatientInquiryFilter,
+      options: { append?: boolean; cursor?: string } = {},
+    ): Promise<boolean> => {
       const current = stateRef.current
       const requestId = ++queueRequestIdRef.current
-      dispatch({ type: 'queue-loading' })
+      const filter = filterOverride ?? current.filter
+      const scope: PatientInquiryQueueScope = { filter, limit: QUEUE_LIMIT }
+      dispatch({ scope, type: options.append ? 'queue-load-more-started' : 'queue-loading' })
       try {
-        const filter = filterOverride ?? current.filter
-        const input: PatientInquiryQueueInput = { lifecycle: filter, limit: 25 }
+        const input: PatientInquiryQueueInput = {
+          ...(options.cursor ? { cursor: options.cursor } : {}),
+          lifecycle: filter,
+          limit: QUEUE_LIMIT,
+        }
         const queue = await api.readQueue(input)
         if (requestId !== queueRequestIdRef.current) return true
-        dispatch({ queue, type: 'queue-loaded' })
+        dispatch({ queue, scope, type: options.append ? 'queue-page-loaded' : 'queue-loaded' })
         return true
       } catch (error: unknown) {
         if (isSessionError(error)) {
@@ -100,7 +112,10 @@ export function PatientInquiriesController({
           return false
         }
         if (requestId !== queueRequestIdRef.current) return false
-        dispatch({ message: messageForError(error, 'Check your connection and try again.'), type: 'queue-failed' })
+        dispatch({
+          message: messageForError(error, 'Check your connection and try again.'),
+          type: options.append ? 'queue-page-failed' : 'queue-failed',
+        })
         return false
       }
     },
@@ -164,6 +179,21 @@ export function PatientInquiriesController({
   }, [initialInquiryId, loadDetail, loadQueue, markVisibleDetailRead])
 
   React.useEffect(() => {
+    if (mode !== 'index' || state.queue.status !== 'ready') return
+    let inquiryId: string | null = null
+    try {
+      inquiryId = window.sessionStorage.getItem(FOCUS_RETURN_KEY)
+      if (inquiryId) window.sessionStorage.removeItem(FOCUS_RETURN_KEY)
+    } catch {
+      return
+    }
+    if (!inquiryId) return
+    window.requestAnimationFrame(() => {
+      findInquiryRow(inquiryId)?.focus()
+    })
+  }, [mode, state.queue.data, state.queue.status])
+
+  React.useEffect(() => {
     if (state.sessionEnded) return
     const refreshVisibleData = () => {
       if (document.visibilityState !== 'visible' || navigator.onLine === false) return
@@ -197,28 +227,18 @@ export function PatientInquiriesController({
     }
   }, [api, state.detail.data])
 
-  const selectInquiry = React.useCallback(
-    (inquiryId: string) => {
-      dispatch({ inquiryId, type: 'inquiry-selected' })
-      replacePath(`/patient/inquiries/${encodeURIComponent(inquiryId)}`)
-      void (async () => {
-        const inquiry = await loadDetail(inquiryId)
-        if (inquiry) await markVisibleDetailRead(inquiry)
-      })()
-    },
-    [loadDetail, markVisibleDetailRead],
-  )
+  const selectInquiry = React.useCallback((inquiryId: string) => {
+    try {
+      window.sessionStorage.setItem(FOCUS_RETURN_KEY, inquiryId)
+    } catch {
+      // Navigation still works when session storage is unavailable.
+    }
+    // The route owns selection and read-position changes after navigation completes.
+  }, [])
 
   const goBack = React.useCallback(() => {
-    const inquiryId = stateRef.current.selectedInquiryId
     detailRequestIdRef.current += 1
     dispatch({ type: 'inquiry-cleared' })
-    replacePath('/patient/inquiries')
-    if (inquiryId) {
-      window.requestAnimationFrame(() => {
-        document.querySelector<HTMLElement>(`[data-inquiry-id="${CSS.escape(inquiryId)}"]`)?.focus()
-      })
-    }
   }, [])
 
   const selectFilter = React.useCallback(
@@ -277,7 +297,11 @@ export function PatientInquiriesController({
           })
           draftId = draft.draftId
           try {
-            await api.uploadDraft({ file: current.composer.file, upload: draft.upload })
+            await api.uploadDraft({
+              file: current.composer.file,
+              onProgress: (progress) => dispatch({ progress, type: 'upload-progressed' }),
+              upload: draft.upload,
+            })
             await api.finalizeDraft({ draftId, inquiryId })
           } catch (error: unknown) {
             void api.discardDraft({ draftId, inquiryId }).catch(() => undefined)
@@ -342,6 +366,13 @@ export function PatientInquiriesController({
       actions={{
         clearFailedMessage,
         goBack,
+        loadMore: () => {
+          const current = stateRef.current
+          const cursor = current.queue.data?.nextCursor
+          if (cursor && !current.queue.loadingMore) {
+            void loadQueue(current.filter, { append: true, cursor })
+          }
+        },
         retryDetail: () => {
           const inquiryId = stateRef.current.selectedInquiryId
           if (inquiryId) void loadDetail(inquiryId)

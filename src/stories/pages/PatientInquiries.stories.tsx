@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import * as React from 'react'
+import { expect, fn, userEvent, within } from 'storybook/test'
 
 import { Header } from '@/components/templates/Header/Component'
 import {
@@ -8,6 +9,8 @@ import {
 } from '@/components/templates/PatientInquiriesPage/Component'
 import { PublicAccountMenu } from '@/components/templates/Header/PublicAccountMenu'
 import { createInitialPatientInquiriesState } from '@/features/patientInquiries/model'
+import { PatientInquiriesController } from '@/features/patientInquiries/PatientInquiriesController.client'
+import type { PatientInquiriesApi } from '@/features/patientInquiries/browserGateway'
 import {
   activePatientInquiryDetail,
   activePatientInquiryState,
@@ -20,9 +23,24 @@ import { withViewportStory } from '../utils/viewportMatrix'
 
 const navItems = normalizeHeaderNavItems(headerDataWithSubmenus)
 
+const reopenedPatientInquiryDetail = {
+  ...activePatientInquiryDetail,
+  timeline: [
+    ...activePatientInquiryDetail.timeline,
+    {
+      actor: { displayName: 'Izmir Coast Dental', isCurrentActor: false, kind: 'clinic' as const },
+      createdAt: '2026-08-24T11:55:00.000Z',
+      event: 'reopened' as const,
+      id: 'event-reopened',
+      kind: 'system-event' as const,
+    },
+  ],
+}
+
 const actions: PatientInquiriesPageActions = {
   clearFailedMessage: fn(),
   goBack: fn(),
+  loadMore: fn(),
   retryDetail: fn(),
   retryQueue: fn(),
   retrySend: fn(),
@@ -33,6 +51,52 @@ const actions: PatientInquiriesPageActions = {
   updateMessage: fn(),
 }
 
+function ControllerFlowHarness() {
+  const api = React.useMemo<PatientInquiriesApi>(() => {
+    let current = activePatientInquiryDetail
+    return {
+      attachmentDownloadHref: (attachmentId) =>
+        `/api/patient/inquiries/attachments/download?attachmentId=${attachmentId}`,
+      createDraft: async () => {
+        throw new Error('Attachment upload is not used in this story.')
+      },
+      discardDraft: async () => ({ discarded: true }),
+      finalizeDraft: async () => ({ finalized: true }),
+      readDetail: async () => ({ changeCursor: `detail-${current.revision}`, inquiry: current, unchanged: false }),
+      readQueue: async () => patientInquiryQueue,
+      sendMessage: async (input) => {
+        current = {
+          ...current,
+          lastActivityAt: '2026-08-24T12:05:00.000Z',
+          revision: current.revision + 1,
+          timeline: [
+            ...current.timeline,
+            {
+              actor: { displayName: 'Aylin Synthetic', isCurrentActor: true, kind: 'patient' },
+              createdAt: '2026-08-24T12:05:00.000Z',
+              id: 'message-story-confirmed',
+              kind: 'external-message',
+              text: input.text,
+            },
+          ],
+        }
+        return { inquiry: current }
+      },
+      updateReadPosition: async () => ({ unread: { count: 0, isUnread: false } }),
+      uploadDraft: async () => undefined,
+    }
+  }, [])
+  return (
+    <PatientInquiriesController
+      api={api}
+      initialInquiryId="inquiry-izmir"
+      loginHref="/login/patient?next=%2Fpatient%2Finquiries%2Finquiry-izmir"
+      mode="detail"
+      pollIntervalMs={60_000}
+    />
+  )
+}
+
 const meta = {
   title: 'Domain/Patient/Pages/PatientInquiries',
   component: PatientInquiriesPage,
@@ -41,6 +105,7 @@ const meta = {
     detailView: activePatientInquiryDetail,
     loginHref: '/login/patient?next=%2Fpatient%2Finquiries',
     mode: 'detail',
+    now: new Date('2026-08-24T12:00:00.000Z'),
     state: activePatientInquiryState(),
   },
   parameters: {
@@ -164,6 +229,7 @@ export const Uploading: Story = {
         file: new File(['synthetic xray'], 'dental-xray.jpg', { type: 'image/jpeg' }),
         sendStatus: 'uploading',
         text: 'Tuesday at 15:00 CET works for me.',
+        uploadProgress: 50,
       },
     },
   },
@@ -193,11 +259,16 @@ export const SessionLost: Story = {
 
 export const Reopened: Story = {
   args: {
+    detailView: reopenedPatientInquiryDetail,
     state: {
       ...activePatientInquiryState(),
       composer: { sendStatus: 'idle', text: 'My saved draft is still here.' },
+      detail: { changeCursor: 'detail-reopened', data: reopenedPatientInquiryDetail, status: 'ready' },
       queue: { data: { ...patientInquiryQueue, changeCursor: 'queue-reopened' }, status: 'ready' },
     },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('The clinic reopened this inquiry.')).toBeInTheDocument()
   },
 }
 
@@ -216,8 +287,34 @@ export const Conflict: Story = {
   },
 }
 
+export const DetailError: Story = {
+  args: {
+    detailView: undefined,
+    state: {
+      ...activePatientInquiryState(),
+      detail: { error: 'Check your connection and try again.', status: 'error' },
+    },
+  },
+}
+
+export const ControllerFlow: Story = {
+  render: () => <ControllerFlowHarness />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const message = await canvas.findByRole('textbox', { name: 'Message' })
+    await userEvent.type(message, 'Tuesday at 15:00 works.')
+    await userEvent.click(canvas.getByRole('button', { name: 'Send' }))
+    await expect(canvas.findByText('Tuesday at 15:00 works.')).resolves.toBeInTheDocument()
+  },
+}
+
 export const Active375: Story = withViewportStory(Active, 'public375', 'Active / 375')
+export const Active320: Story = withViewportStory(Active, 'public320', 'Active / 320')
+export const Active320Short: Story = withViewportStory(Active, 'public320Short', 'Active / 320 short')
+export const Active375Short: Story = withViewportStory(Active, 'public375Short', 'Active / 375 short')
+export const Active640: Story = withViewportStory(Active, 'public640', 'Active / 640')
 export const Active768: Story = withViewportStory(Active, 'public768', 'Active / 768')
+export const Active1024: Story = withViewportStory(Active, 'public1024', 'Active / 1024')
 export const Active1280: Story = withViewportStory(Active, 'public1280', 'Active / 1280')
 export const Closed375: Story = withViewportStory(Closed, 'public375', 'Closed / 375')
 export const Closed1280: Story = withViewportStory(Closed, 'public1280', 'Closed / 1280')

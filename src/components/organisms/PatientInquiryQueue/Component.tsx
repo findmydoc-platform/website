@@ -1,6 +1,8 @@
 import { AlertCircle, ChevronRight, Inbox } from 'lucide-react'
+import Link from 'next/link'
 import * as React from 'react'
 
+import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import type { InquiryListItemDTO, PatientInquiryQueueDTO } from '@/features/inquiryCommunication/contracts'
 import type { PatientInquiryFilter } from '@/features/patientInquiries/model'
@@ -11,8 +13,12 @@ type PatientInquiryQueueProps = {
   error?: string
   filter: PatientInquiryFilter
   onFilterChange: (filter: PatientInquiryFilter) => void
+  onLoadMore: () => void
   onRetry: () => void
   onSelect: (inquiryId: string) => void
+  loadMoreError?: string
+  loadingMore: boolean
+  now?: Date
   refreshError?: string
   selectedInquiryId?: string
   status: 'error' | 'idle' | 'loading' | 'ready'
@@ -26,10 +32,9 @@ const getInitials = (name: string): string =>
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'CL'
 
-const formatActivityTime = (value: string): string => {
+const formatActivityTime = (value: string, now: Date): string => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
-  const now = new Date()
   const day = new Intl.DateTimeFormat('en-CA', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date)
   const today = new Intl.DateTimeFormat('en-CA', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(now)
   if (day === today) return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(date)
@@ -56,23 +61,36 @@ const StatusBadge = ({ lifecycle }: Pick<InquiryListItemDTO, 'lifecycle'>) => (
 
 const InquiryRow = ({
   item,
+  now,
   onSelect,
   selected,
 }: {
   item: InquiryListItemDTO
+  now: Date
   onSelect: (inquiryId: string) => void
   selected: boolean
 }) => (
   <li>
-    <button
-      type="button"
+    <Link
+      href={`/patient/inquiries/${encodeURIComponent(item.id)}`}
       aria-current={selected ? 'page' : undefined}
       data-inquiry-id={item.id}
       className={cn(
         'grid w-full grid-cols-[3.75rem_minmax(0,1fr)_auto] gap-3 border-b border-border/70 px-4 py-5 text-left transition-colors last:border-b-0 hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden sm:grid-cols-[4.25rem_minmax(0,1fr)_auto]',
         selected && 'bg-primary/5 shadow-[inset_3px_0_0_hsl(var(--primary))]',
       )}
-      onClick={() => onSelect(item.id)}
+      onClick={(event) => {
+        if (
+          event.button === 0 &&
+          !event.defaultPrevented &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.shiftKey &&
+          !event.altKey
+        ) {
+          onSelect(item.id)
+        }
+      }}
     >
       <span
         className="flex size-15 items-center justify-center rounded-full border border-border bg-card text-sm font-bold text-secondary sm:size-17"
@@ -87,15 +105,18 @@ const InquiryRow = ({
         <StatusBadge lifecycle={item.lifecycle} />
       </span>
       <span className="flex min-h-full flex-col items-end justify-between gap-2 text-sm text-muted-foreground">
-        <span>{formatActivityTime(item.lastActivityAt)}</span>
+        <span>{formatActivityTime(item.lastActivityAt, now)}</span>
         {item.unread.count > 0 ? (
-          <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-primary px-2 py-1 text-xs font-bold text-primary-foreground">
+          <span
+            aria-label={`${item.unread.count} unread ${item.unread.count === 1 ? 'message' : 'messages'}`}
+            className="inline-flex min-w-7 items-center justify-center rounded-full bg-primary px-2 py-1 text-xs font-bold text-primary-foreground"
+          >
             {item.unread.count}
           </span>
         ) : null}
         <ChevronRight className="size-5" aria-hidden="true" />
       </span>
-    </button>
+    </Link>
   </li>
 )
 
@@ -118,14 +139,17 @@ export function PatientInquiryQueue({
   data,
   error,
   filter,
+  loadMoreError,
+  loadingMore,
+  now = new Date(),
   onFilterChange,
+  onLoadMore,
   onRetry,
   onSelect,
   refreshError,
   selectedInquiryId,
   status,
 }: PatientInquiryQueueProps) {
-  const tabRefs = React.useRef<Array<HTMLButtonElement | null>>([])
   const tabs: Array<{ count: number; label: string; value: PatientInquiryFilter }> = [
     { count: data?.counts.all ?? 0, label: 'All', value: 'all' },
     { count: data?.counts.open ?? 0, label: 'Open', value: 'open' },
@@ -145,40 +169,18 @@ export function PatientInquiryQueue({
 
   return (
     <section aria-label="Patient inquiry list" className="min-w-0">
-      <div className="grid grid-cols-3 border-b border-border" role="tablist" aria-label="Filter inquiries">
+      <div className="grid grid-cols-3 border-b border-border" aria-label="Filter inquiries">
         {tabs.map((tab) => (
           <button
             key={tab.value}
             type="button"
-            role="tab"
-            aria-selected={filter === tab.value}
-            ref={(element) => {
-              tabRefs.current[tabs.indexOf(tab)] = element
-            }}
+            aria-pressed={filter === tab.value}
             className={cn(
               'relative flex min-h-12 items-center justify-center gap-2 px-2 text-sm font-semibold text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden',
               filter === tab.value &&
                 'text-primary after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-primary',
             )}
             onClick={() => onFilterChange(tab.value)}
-            onKeyDown={(event) => {
-              const index = tabs.indexOf(tab)
-              const nextIndex =
-                event.key === 'ArrowRight'
-                  ? (index + 1) % tabs.length
-                  : event.key === 'ArrowLeft'
-                    ? (index - 1 + tabs.length) % tabs.length
-                    : event.key === 'Home'
-                      ? 0
-                      : event.key === 'End'
-                        ? tabs.length - 1
-                        : null
-              if (nextIndex === null) return
-              event.preventDefault()
-              const next = tabs[nextIndex]
-              if (next) onFilterChange(next.value)
-              tabRefs.current[nextIndex]?.focus()
-            }}
           >
             {tab.label}
             <span
@@ -210,7 +212,9 @@ export function PatientInquiryQueue({
       {status === 'error' ? (
         <div className="flex min-h-80 flex-col items-center justify-center px-6 py-12 text-center">
           <AlertCircle className="mb-5 size-12 text-destructive" aria-hidden="true" />
-          <h2 className="text-xl font-bold text-secondary">We couldn’t load your inquiries</h2>
+          <Heading as="h2" align="center" size="h5" className="text-xl text-secondary" tabIndex={-1}>
+            We couldn’t load your inquiries
+          </Heading>
           <p className="mt-2 text-muted-foreground">{error ?? 'Check your connection and try again.'}</p>
           <Button className="mt-6 min-w-52" onClick={onRetry}>
             Try again
@@ -223,7 +227,9 @@ export function PatientInquiryQueue({
           <span className="mb-5 flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Inbox className="size-9" aria-hidden="true" />
           </span>
-          <h2 className="text-xl font-bold text-secondary">No inquiries here</h2>
+          <Heading as="h2" align="center" size="h5" className="text-xl text-secondary">
+            No inquiries here
+          </Heading>
           <p className="mt-2 max-w-sm text-muted-foreground">
             {filter === 'all' ? 'Your clinic inquiries will appear here.' : `You have no ${filter} inquiries.`}
           </p>
@@ -235,12 +241,17 @@ export function PatientInquiryQueue({
           {groups.map(([label, group]) =>
             group.length > 0 ? (
               <div key={label ?? 'filtered'}>
-                {label ? <h2 className="px-1 pt-6 pb-3 text-lg font-semibold lg:hidden">{label}</h2> : null}
+                {label ? (
+                  <Heading as="h2" align="left" size="h6" className="px-1 pt-6 pb-3 text-lg lg:hidden">
+                    {label}
+                  </Heading>
+                ) : null}
                 <ul aria-label={label ? `${label} inquiries` : 'Inquiries'}>
                   {group.map((entry) => (
                     <InquiryRow
                       key={entry.id}
                       item={entry}
+                      now={now}
                       onSelect={onSelect}
                       selected={entry.id === selectedInquiryId}
                     />
@@ -249,6 +260,24 @@ export function PatientInquiryQueue({
               </div>
             ) : null,
           )}
+          {data?.nextCursor ? (
+            <div className="space-y-2 border-t border-border p-4 text-center">
+              {loadMoreError ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {loadMoreError}
+                </p>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 min-w-52"
+                disabled={loadingMore}
+                onClick={onLoadMore}
+              >
+                {loadingMore ? 'Loading more…' : 'Load more inquiries'}
+              </Button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

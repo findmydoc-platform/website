@@ -23,6 +23,7 @@ type ApiErrorBody = {
 
 type UploadDraftInput = {
   file: File
+  onProgress?: (percent?: number) => void
   upload: AttachmentDraftDTO['upload']
 }
 
@@ -199,19 +200,30 @@ export const createPatientInquiriesBrowserApi = (): PatientInquiriesApi => ({
   updateReadPosition: (input) =>
     requestJson('/api/patient/inquiries/read-position', sameOriginJsonInit('PUT', input), isUnreadResult, true),
 
-  uploadDraft: async ({ file, upload }) => {
-    let response: Response
-    try {
-      response = await fetch(upload.url, {
-        body: file,
-        credentials: 'omit',
-        headers: upload.headers,
-        method: upload.method,
-        redirect: 'error',
-      })
-    } catch {
-      throw new PatientInquiriesApiError({ ambiguous: true, code: SERVICE_UNAVAILABLE_CODE, status: 0 })
-    }
-    if (!response.ok) throw new PatientInquiriesApiError({ code: SERVICE_UNAVAILABLE_CODE, status: response.status })
-  },
+  uploadDraft: ({ file, onProgress, upload }) =>
+    new Promise<void>((resolve, reject) => {
+      const request = new XMLHttpRequest()
+      request.open(upload.method, upload.url, true)
+      request.withCredentials = false
+      for (const [name, value] of Object.entries(upload.headers)) request.setRequestHeader(name, value)
+      request.upload.onprogress = (event) => {
+        onProgress?.(
+          event.lengthComputable && event.total > 0 ? Math.round((event.loaded / event.total) * 100) : undefined,
+        )
+      }
+      request.onload = () => {
+        if (request.status >= 200 && request.status < 300) {
+          onProgress?.(100)
+          resolve()
+          return
+        }
+        reject(new PatientInquiriesApiError({ code: SERVICE_UNAVAILABLE_CODE, status: request.status }))
+      }
+      const rejectAmbiguous = () =>
+        reject(new PatientInquiriesApiError({ ambiguous: true, code: SERVICE_UNAVAILABLE_CODE, status: 0 }))
+      request.onerror = rejectAmbiguous
+      request.onabort = rejectAmbiguous
+      request.ontimeout = rejectAmbiguous
+      request.send(file)
+    }),
 })

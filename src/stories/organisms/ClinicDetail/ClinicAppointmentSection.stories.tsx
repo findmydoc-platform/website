@@ -371,9 +371,12 @@ export const AuthenticatedAccountFields: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByText(/account details are used/i)).toBeInTheDocument()
-    for (const name of ['First Name', 'Last Name', 'Phone Number', 'Email']) {
-      await expect(canvas.getByRole('textbox', { name })).toHaveAttribute('readonly')
-    }
+    await expect(canvas.getByRole('group', { name: 'Patient account details' })).toHaveTextContent(
+      'First nameJaneLast nameDoeEmailjane@example.comPhone number+49 30 1234',
+    )
+    await expect(
+      canvas.queryByRole('textbox', { name: /first name|last name|email|phone number/i }),
+    ).not.toBeInTheDocument()
   },
 }
 
@@ -395,10 +398,13 @@ export const AuthenticatedMissingPhone: Story = {
   render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('textbox', { name: 'First Name' })).toHaveAttribute('readonly')
-    await expect(canvas.getByRole('textbox', { name: 'Last Name' })).toHaveAttribute('readonly')
-    await expect(canvas.getByRole('textbox', { name: 'Email' })).toHaveAttribute('readonly')
+    await expect(canvas.getByRole('group', { name: 'Patient account details' })).toHaveTextContent(
+      'First nameJaneLast nameDoeEmailjane@example.com',
+    )
     await expect(canvas.getByRole('textbox', { name: 'Phone Number' })).not.toHaveAttribute('readonly')
+    await expect(canvas.getByRole('textbox', { name: 'Phone Number' })).toHaveAccessibleDescription(
+      /saved to your patient account/i,
+    )
     await expect(canvas.getByText(/saved to your patient account/i)).toBeInTheDocument()
   },
 }

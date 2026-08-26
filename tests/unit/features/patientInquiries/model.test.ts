@@ -66,13 +66,65 @@ const queue = (overrides: Partial<PatientInquiryQueueDTO> = {}): PatientInquiryQ
 })
 
 describe('patient inquiries model', () => {
+  it('never reuses a queue snapshot across different filter scopes', () => {
+    const ready = patientInquiriesReducer(createInitialPatientInquiriesState(), {
+      queue: queue({ changeCursor: 'shared-cursor' }),
+      scope: { filter: 'all', limit: 25 },
+      type: 'queue-loaded',
+    })
+
+    const filtering = patientInquiriesReducer(ready, { filter: 'closed', type: 'filter-changed' })
+    expect(filtering.queue.data).toBeUndefined()
+    expect(filtering.queue.status).toBe('loading')
+
+    const closed = patientInquiriesReducer(filtering, {
+      queue: queue({
+        changeCursor: 'shared-cursor',
+        counts: { all: 1, closed: 1, open: 0 },
+        items: [item({ id: 'inquiry-closed', lifecycle: 'closed' })],
+      }),
+      scope: { filter: 'closed', limit: 25 },
+      type: 'queue-loaded',
+    })
+
+    expect(closed.queue.data?.items).toHaveLength(1)
+    expect(closed.queue.data?.items[0]?.lifecycle).toBe('closed')
+  })
+
+  it('appends a cursor page without duplicating inquiries', () => {
+    const ready = patientInquiriesReducer(createInitialPatientInquiriesState(), {
+      queue: queue({ nextCursor: 'page-2' }),
+      scope: { filter: 'all', limit: 25 },
+      type: 'queue-loaded',
+    })
+    const loadingMore = patientInquiriesReducer(ready, {
+      scope: { filter: 'all', limit: 25 },
+      type: 'queue-load-more-started',
+    })
+    const appended = patientInquiriesReducer(loadingMore, {
+      queue: queue({
+        changeCursor: 'queue-2',
+        items: [item(), item({ id: 'inquiry-2', preview: 'Older inquiry' })],
+        nextCursor: undefined,
+      }),
+      scope: { filter: 'all', limit: 25 },
+      type: 'queue-page-loaded',
+    })
+
+    expect(appended.queue.data?.items.map((entry) => entry.id)).toEqual(['inquiry-1', 'inquiry-2'])
+    expect(appended.queue.loadingMore).toBe(false)
+    expect(appended.queue.data?.nextCursor).toBeUndefined()
+  })
+
   it('skips visible queue churn when a refetch returns the same change cursor', () => {
     const ready = patientInquiriesReducer(createInitialPatientInquiriesState(), {
       queue: queue(),
+      scope: { filter: 'all', limit: 25 },
       type: 'queue-loaded',
     })
     const unchanged = patientInquiriesReducer(ready, {
       queue: queue({ items: [item({ preview: 'stale duplicate response' })] }),
+      scope: { filter: 'all', limit: 25 },
       type: 'queue-loaded',
     })
 
@@ -83,6 +135,7 @@ describe('patient inquiries model', () => {
   it('retains loaded data when a background refresh fails', () => {
     const ready = patientInquiriesReducer(createInitialPatientInquiriesState(), {
       queue: queue(),
+      scope: { filter: 'all', limit: 25 },
       type: 'queue-loaded',
     })
     const failed = patientInquiriesReducer(ready, { message: 'Refresh failed.', type: 'queue-failed' })
@@ -95,12 +148,14 @@ describe('patient inquiries model', () => {
   it('replaces queue data and clears refresh errors when the change cursor advances', () => {
     let state = patientInquiriesReducer(createInitialPatientInquiriesState(), {
       queue: queue(),
+      scope: { filter: 'all', limit: 25 },
       type: 'queue-loaded',
     })
     state = patientInquiriesReducer(state, { message: 'Refresh failed.', type: 'queue-failed' })
 
     const refreshed = patientInquiriesReducer(state, {
       queue: queue({ changeCursor: 'queue-2', items: [item({ preview: 'New clinic reply' })] }),
+      scope: { filter: 'all', limit: 25 },
       type: 'queue-loaded',
     })
 
@@ -111,6 +166,7 @@ describe('patient inquiries model', () => {
   it('purges queue, detail, files, and drafts when the patient session ends', () => {
     let state = patientInquiriesReducer(createInitialPatientInquiriesState('inquiry-1'), {
       queue: queue(),
+      scope: { filter: 'all', limit: 25 },
       type: 'queue-loaded',
     })
     state = patientInquiriesReducer(state, {
@@ -224,6 +280,7 @@ describe('patient inquiries model', () => {
   it('updates personal unread state only after an explicit read-position result', () => {
     const ready = patientInquiriesReducer(createInitialPatientInquiriesState('inquiry-1'), {
       queue: queue(),
+      scope: { filter: 'all', limit: 25 },
       type: 'queue-loaded',
     })
     const read = patientInquiriesReducer(ready, {

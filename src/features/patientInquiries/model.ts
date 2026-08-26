@@ -7,6 +7,7 @@ import { INQUIRY_ATTACHMENT_MAX_BYTES, INQUIRY_ATTACHMENT_MIME_TYPES } from '@/f
 
 export type PatientInquiryFilter = 'all' | 'open' | 'closed'
 export type PatientInquirySendStatus = 'ambiguous' | 'error' | 'idle' | 'sending' | 'uploading'
+export type PatientInquiryQueueScope = { filter: PatientInquiryFilter; limit: number }
 
 export type PatientInquiryComposerState = {
   attachmentDraftId?: string
@@ -17,12 +18,16 @@ export type PatientInquiryComposerState = {
   retryReady?: boolean
   sendStatus: PatientInquirySendStatus
   text: string
+  uploadProgress?: number
 }
 
 type QueueState = {
   data?: PatientInquiryQueueDTO
   error?: string
+  loadMoreError?: string
+  loadingMore?: boolean
   refreshError?: string
+  scope?: PatientInquiryQueueScope
   status: 'error' | 'idle' | 'loading' | 'ready'
 }
 
@@ -43,9 +48,12 @@ export type PatientInquiriesState = {
 }
 
 export type PatientInquiriesAction =
-  | { type: 'queue-loading' }
-  | { queue: PatientInquiryQueueDTO; type: 'queue-loaded' }
+  | { scope: PatientInquiryQueueScope; type: 'queue-loading' }
+  | { queue: PatientInquiryQueueDTO; scope: PatientInquiryQueueScope; type: 'queue-loaded' }
   | { message: string; type: 'queue-failed' }
+  | { scope: PatientInquiryQueueScope; type: 'queue-load-more-started' }
+  | { queue: PatientInquiryQueueDTO; scope: PatientInquiryQueueScope; type: 'queue-page-loaded' }
+  | { message: string; type: 'queue-page-failed' }
   | { filter: PatientInquiryFilter; type: 'filter-changed' }
   | { inquiryId: string; type: 'inquiry-selected' }
   | { type: 'inquiry-cleared' }
@@ -58,6 +66,7 @@ export type PatientInquiriesAction =
   | { file?: File; fileError?: string; type: 'composer-file-changed' }
   | { idempotencyKey: string; type: 'send-started' }
   | { type: 'upload-started' }
+  | { progress?: number; type: 'upload-progressed' }
   | { draftId: string; type: 'attachment-draft-ready' }
   | { draftId?: string; idempotencyKey: string; type: 'send-ambiguous' }
   | { message: string; resetIdentity?: boolean; retryReady?: boolean; type: 'send-failed' }
@@ -73,7 +82,7 @@ export const createInitialPatientInquiriesState = (selectedInquiryId?: string): 
   composer: createComposerState(),
   detail: { status: 'idle' },
   filter: 'all',
-  queue: { status: 'idle' },
+  queue: { loadingMore: false, status: 'idle' },
   ...(selectedInquiryId ? { selectedInquiryId } : {}),
   sessionEnded: false,
 })
@@ -85,30 +94,76 @@ const resetRecovery = (composer: PatientInquiryComposerState): PatientInquiryCom
   sendStatus: 'idle',
 })
 
+const sameQueueScope = (left?: PatientInquiryQueueScope, right?: PatientInquiryQueueScope): boolean =>
+  left?.filter === right?.filter && left?.limit === right?.limit
+
+const appendQueuePage = (current: PatientInquiryQueueDTO, page: PatientInquiryQueueDTO): PatientInquiryQueueDTO => {
+  const seen = new Set<string>()
+  return {
+    ...page,
+    items: [...current.items, ...page.items].filter((entry) => {
+      if (seen.has(entry.id)) return false
+      seen.add(entry.id)
+      return true
+    }),
+  }
+}
+
 export const patientInquiriesReducer = (
   state: PatientInquiriesState,
   action: PatientInquiriesAction,
 ): PatientInquiriesState => {
   switch (action.type) {
     case 'queue-loading':
-      return state.queue.data
-        ? { ...state, queue: { ...state.queue, refreshError: undefined } }
-        : { ...state, queue: { status: 'loading' } }
+      return state.queue.data && sameQueueScope(state.queue.scope, action.scope)
+        ? { ...state, queue: { ...state.queue, loadMoreError: undefined, refreshError: undefined } }
+        : { ...state, queue: { loadingMore: false, scope: action.scope, status: 'loading' } }
     case 'queue-loaded':
+      if (action.scope.filter !== state.filter) return state
       if (
         state.queue.status === 'ready' &&
         !state.queue.refreshError &&
+        sameQueueScope(state.queue.scope, action.scope) &&
         state.queue.data?.changeCursor === action.queue.changeCursor
       ) {
         return state
       }
-      return { ...state, queue: { data: action.queue, status: 'ready' } }
+      return {
+        ...state,
+        queue: { data: action.queue, loadingMore: false, scope: action.scope, status: 'ready' },
+      }
     case 'queue-failed':
       return state.queue.data
         ? { ...state, queue: { ...state.queue, refreshError: action.message, status: 'ready' } }
-        : { ...state, queue: { error: action.message, status: 'error' } }
+        : { ...state, queue: { ...state.queue, error: action.message, loadingMore: false, status: 'error' } }
+    case 'queue-load-more-started':
+      return sameQueueScope(state.queue.scope, action.scope) && state.queue.data
+        ? { ...state, queue: { ...state.queue, loadMoreError: undefined, loadingMore: true } }
+        : state
+    case 'queue-page-loaded':
+      return sameQueueScope(state.queue.scope, action.scope) && state.queue.data
+        ? {
+            ...state,
+            queue: {
+              ...state.queue,
+              data: appendQueuePage(state.queue.data, action.queue),
+              loadMoreError: undefined,
+              loadingMore: false,
+            },
+          }
+        : state
+    case 'queue-page-failed':
+      return state.queue.data
+        ? { ...state, queue: { ...state.queue, loadMoreError: action.message, loadingMore: false } }
+        : state
     case 'filter-changed':
-      return { ...state, filter: action.filter }
+      return action.filter === state.filter
+        ? state
+        : {
+            ...state,
+            filter: action.filter,
+            queue: { loadingMore: false, scope: { filter: action.filter, limit: 25 }, status: 'loading' },
+          }
     case 'inquiry-selected':
       if (state.selectedInquiryId === action.inquiryId) return state
       return {
@@ -170,7 +225,7 @@ export const patientInquiriesReducer = (
           state.detail.data?.id === action.inquiryId
             ? { ...state.detail, data: { ...state.detail.data, unread: action.unread } }
             : state.detail,
-        queue: nextQueue ? { data: nextQueue, status: 'ready' } : state.queue,
+        queue: nextQueue ? { ...state.queue, data: nextQueue, loadingMore: false, status: 'ready' } : state.queue,
       }
     }
     case 'composer-text-changed':
@@ -194,7 +249,14 @@ export const patientInquiriesReducer = (
         composer: { ...state.composer, error: undefined, idempotencyKey: action.idempotencyKey, sendStatus: 'sending' },
       }
     case 'upload-started':
-      return { ...state, composer: { ...state.composer, error: undefined, sendStatus: 'uploading' } }
+      return {
+        ...state,
+        composer: { ...state.composer, error: undefined, sendStatus: 'uploading', uploadProgress: undefined },
+      }
+    case 'upload-progressed':
+      return state.composer.sendStatus === 'uploading'
+        ? { ...state, composer: { ...state.composer, uploadProgress: action.progress } }
+        : state
     case 'attachment-draft-ready':
       return { ...state, composer: { ...state.composer, attachmentDraftId: action.draftId } }
     case 'send-ambiguous':
@@ -257,7 +319,7 @@ export const patientInquiriesReducer = (
           data: action.inquiry,
           status: 'ready',
         },
-        queue: nextQueue ? { data: nextQueue, status: 'ready' } : state.queue,
+        queue: nextQueue ? { ...state.queue, data: nextQueue, loadingMore: false, status: 'ready' } : state.queue,
       }
     }
     case 'composer-cleared':

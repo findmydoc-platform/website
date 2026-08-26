@@ -152,6 +152,28 @@ describe('PatientInquiriesController', () => {
     expect(screen.getByText('Newer Synthetic Clinic')).toBeTruthy()
   })
 
+  it('treats the filter as part of the queue snapshot identity', async () => {
+    const closedItem = { ...item, id: 'inquiry-closed', lifecycle: 'closed' as const, preview: 'Closed inquiry.' }
+    const readQueue = vi
+      .fn()
+      .mockResolvedValueOnce(queue)
+      .mockResolvedValueOnce({
+        ...queue,
+        changeCursor: queue.changeCursor,
+        counts: { all: 2, closed: 1, open: 1 },
+        items: [closedItem],
+      })
+    const api = createApi({ readQueue })
+
+    render(<PatientInquiriesController api={api} loginHref="/login" mode="index" />)
+    await screen.findByText('Would Tuesday work?')
+    fireEvent.click(screen.getByRole('button', { name: /Closed/u }))
+
+    expect(await screen.findByText('Closed inquiry.')).toBeTruthy()
+    expect(screen.queryByText('Would Tuesday work?')).toBeNull()
+    expect(readQueue).toHaveBeenLastCalledWith({ lifecycle: 'closed', limit: 25 })
+  })
+
   it('does not let a late detail poll overwrite a newer conversation snapshot', async () => {
     const firstDetail =
       deferred<ReturnType<PatientInquiriesApi['readDetail']> extends Promise<infer Value> ? Value : never>()
@@ -198,6 +220,7 @@ describe('PatientInquiriesController', () => {
     render(<PatientInquiriesController api={api} loginHref="/login/patient?next=%2Fpatient%2Finquiries" mode="index" />)
 
     expect(await screen.findByRole('heading', { name: 'Your session has ended' })).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Your session has ended' }))
     expect(screen.getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe(
       '/login/patient?next=%2Fpatient%2Finquiries',
     )
@@ -274,22 +297,14 @@ describe('PatientInquiriesController', () => {
     expect(firstKey).toMatch(/\S{8,}/u)
   })
 
-  it('marks an unread inquiry read only after the patient explicitly selects it', async () => {
+  it('uses a real inquiry link and waits for the detail route before marking it read', async () => {
     const api = createApi()
 
     render(<PatientInquiriesController api={api} loginHref="/login/patient?next=%2Fpatient%2Finquiries" mode="index" />)
 
-    const inquiryButton = await screen.findByRole('button', { name: /Izmir Coast Dental/u })
+    const inquiryLink = await screen.findByRole('link', { name: /Izmir Coast Dental/u })
     expect(api.updateReadPosition).not.toHaveBeenCalled()
-    fireEvent.click(inquiryButton)
-
-    await waitFor(() =>
-      expect(api.updateReadPosition).toHaveBeenCalledWith({
-        activityId: 'message:1',
-        inquiryId: 'inquiry-1',
-        mode: 'read',
-      }),
-    )
+    expect(inquiryLink.getAttribute('href')).toBe('/patient/inquiries/inquiry-1')
   })
 
   it('does not write a patient read position without a visible clinic message', async () => {
@@ -327,8 +342,10 @@ describe('PatientInquiriesController', () => {
         upload: { headers: { 'Content-Type': 'application/pdf' }, method: 'PUT' as const, url: 'https://storage.test' },
       }
     })
-    const uploadDraft = vi.fn(async () => {
+    const uploadDraft = vi.fn(async ({ onProgress }) => {
       operations.push('upload')
+      onProgress?.(50)
+      onProgress?.(100)
     })
     const finalizeDraft = vi.fn(async () => {
       operations.push('finalize')
@@ -361,5 +378,52 @@ describe('PatientInquiriesController', () => {
     expect(sendMessage).toHaveBeenCalledWith(
       expect.objectContaining({ attachmentDraftId: 'draft-1', inquiryId: 'inquiry-1', text: 'Attached report.' }),
     )
+    expect((fileInput as HTMLInputElement).value).toBe('')
+  })
+
+  it('loads older inquiries through the queue cursor and appends them', async () => {
+    const olderItem = { ...item, id: 'inquiry-2', preview: 'Older synthetic inquiry.' }
+    const readQueue = vi
+      .fn()
+      .mockResolvedValueOnce({ ...queue, nextCursor: 'page-2' })
+      .mockResolvedValueOnce({ ...queue, changeCursor: 'queue-2', items: [olderItem], nextCursor: undefined })
+    const api = createApi({ readQueue })
+
+    render(<PatientInquiriesController api={api} loginHref="/login" mode="index" />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Load more inquiries' }))
+    expect(await screen.findByText('Older synthetic inquiry.')).toBeTruthy()
+    expect(readQueue).toHaveBeenLastCalledWith({ cursor: 'page-2', lifecycle: 'all', limit: 25 })
+    expect(
+      screen
+        .getAllByRole('link')
+        .filter((link) => link.getAttribute('href')?.startsWith('/patient/inquiries/inquiry-')),
+    ).toHaveLength(2)
+  })
+
+  it('keeps attachment removal disabled while the upload is in flight', async () => {
+    const upload = deferred<void>()
+    const api = createApi({
+      createDraft: vi.fn().mockResolvedValue({
+        draftId: 'draft-1',
+        expiresAt: '2026-08-25T12:00:00.000Z',
+        upload: { headers: {}, method: 'PUT', url: 'https://storage.test' },
+      }),
+      uploadDraft: vi.fn(() => upload.promise),
+    })
+    const { container } = render(
+      <PatientInquiriesController api={api} initialInquiryId="inquiry-1" loginHref="/login" mode="detail" />,
+    )
+    await screen.findAllByText('Would Tuesday work?')
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')
+    fireEvent.change(input as HTMLInputElement, {
+      target: { files: [new File(['scan'], 'scan.pdf', { type: 'application/pdf' })] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    const remove = await screen.findByRole('button', { name: 'Remove attachment' })
+    await waitFor(() => expect((remove as HTMLButtonElement).disabled).toBe(true))
+    expect(screen.getByRole('progressbar', { name: 'Attachment upload progress' })).toBeTruthy()
+    upload.resolve()
   })
 })

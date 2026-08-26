@@ -29,37 +29,42 @@ makePermissionSuite('patientClinicInquiries', PatientClinicInquiries)
 describe('patientClinicInquiries field access', () => {
   const fields = PatientClinicInquiries.fields as FieldNode[]
 
-  it('keeps submitted inquiry data platform-controlled while clinic staff may update status', async () => {
+  it('keeps inquiry domain fields unavailable through generic collection access', async () => {
     for (const name of [
+      'patient',
       'clinic',
-      'fullName',
-      'email',
       'phoneNumber',
-      'treatmentTimeline',
-      'preferredContactWindow',
       'doctor',
       'treatment',
       'message',
       'consent',
-      'assignedTo',
+      'status',
+      'handlingStatus',
+      'lifecycle',
+      'revision',
+      'activitySequence',
+      'externalSequence',
+      'clinicUnreadFloor',
+      'creationActorKey',
+      'creationIdempotencyKey',
+      'creationRequestHash',
     ]) {
-      const update = findField(fields, name)?.access?.update
+      const field = findField(fields, name)
 
-      expect(update).toBeTypeOf('function')
-      expect(await update?.(createAccessArgs(mockUsers.platform()))).toBe(true)
-      expect(await update?.(createAccessArgs(mockUsers.clinic()))).toBe(false)
+      expect(field?.access?.read).toBeTypeOf('function')
+      expect(field?.access?.update).toBeTypeOf('function')
+      expect(await field?.access?.read?.(createAccessArgs(mockUsers.platform()))).toBe(false)
+      expect(await field?.access?.read?.(createAccessArgs(mockUsers.clinic()))).toBe(false)
+      expect(await field?.access?.update?.(createAccessArgs(mockUsers.platform()))).toBe(false)
+      expect(await field?.access?.update?.(createAccessArgs(mockUsers.clinic()))).toBe(false)
     }
-
-    expect(findField(fields, 'status')?.access?.update).toBeUndefined()
   })
 
-  it('keeps consent evidence and platform assignment private from clinic staff', async () => {
-    for (const name of ['consent', 'assignedTo']) {
-      const read = findField(fields, name)?.access?.read
+  it('keeps the optional platform assignment private from clinic staff', async () => {
+    const read = findField(fields, 'assignedTo')?.access?.read
 
-      expect(read).toBeTypeOf('function')
-      expect(await read?.(createAccessArgs(mockUsers.platform()))).toBe(true)
-      expect(await read?.(createAccessArgs(mockUsers.clinic()))).toBe(false)
-    }
+    expect(read).toBeTypeOf('function')
+    expect(await read?.(createAccessArgs(mockUsers.platform()))).toBe(true)
+    expect(await read?.(createAccessArgs(mockUsers.clinic()))).toBe(false)
   })
 })

@@ -21,6 +21,16 @@ type SupabaseAuthErrorLike = {
 export type SupabaseBearerValidationResult =
   { status: 'authenticated'; authData: AuthData } | { status: 'invalid' } | { status: 'unavailable' }
 
+export type SupabaseFreshAuthenticationResult =
+  | { status: 'authenticated' }
+  | { status: 'reauthentication-required' }
+  | { status: 'invalid' }
+  | { status: 'unavailable' }
+
+const FIRST_FACTOR_AMR_METHODS = new Set(['email/signup', 'magiclink', 'oauth', 'otp', 'password', 'sso/saml'])
+
+const FRESH_AUTH_CLOCK_SKEW_SECONDS = 30
+
 const isTemporarySupabaseError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false
 
@@ -155,6 +165,80 @@ export async function validateSupabaseBearerToken({
         event: 'auth.supabase.token.unavailable',
       },
       'Supabase bearer validation is temporarily unavailable',
+    )
+    return { status: 'unavailable' }
+  }
+}
+
+/**
+ * Verifies the explicit Bearer token again and requires a recent first-factor
+ * authentication event. Token issue time is deliberately ignored because a
+ * silent refresh creates a new token without proving recent user presence.
+ */
+export async function validateSupabaseFreshFirstFactor({
+  token,
+  expectedSubject,
+  maxAgeSeconds,
+  headers,
+  logger,
+  nowSeconds = Math.floor(Date.now() / 1_000),
+}: {
+  token: string
+  expectedSubject: string
+  maxAgeSeconds: number
+  headers?: Headers
+  logger?: ServerLogger
+  nowSeconds?: number
+}): Promise<SupabaseFreshAuthenticationResult> {
+  const activeLogger = await getSupabaseLogger({ headers, logger })
+
+  try {
+    const supabaseClient = await createClient()
+    const { data, error } = await supabaseClient.auth.getClaims(token)
+
+    if (error) {
+      const unavailable = isTemporarySupabaseError(error)
+      activeLogger[unavailable ? 'error' : 'warn'](
+        {
+          event: unavailable ? 'auth.supabase.claims.unavailable' : 'auth.supabase.claims.invalid',
+          err: error,
+        },
+        unavailable ? 'Supabase bearer claims are temporarily unavailable' : 'Supabase bearer claims are invalid',
+      )
+      return { status: unavailable ? 'unavailable' : 'invalid' }
+    }
+
+    if (!data?.claims || data.claims.sub !== expectedSubject) {
+      activeLogger.warn(
+        {
+          event: 'auth.supabase.claims.subject_mismatch',
+          expectedSubjectHash: hashLogValue(expectedSubject),
+          subjectHash: data?.claims.sub ? hashLogValue(data.claims.sub) : undefined,
+        },
+        'Supabase bearer claims do not match the current principal',
+      )
+      return { status: 'invalid' }
+    }
+
+    const recentFirstFactor = Array.isArray(data.claims.amr)
+      ? data.claims.amr.some((entry) => {
+          if (!entry || typeof entry !== 'object') return false
+          const method = 'method' in entry && typeof entry.method === 'string' ? entry.method : ''
+          const timestamp = 'timestamp' in entry && typeof entry.timestamp === 'number' ? entry.timestamp : NaN
+          if (!FIRST_FACTOR_AMR_METHODS.has(method) || !Number.isSafeInteger(timestamp) || timestamp <= 0) return false
+          const ageSeconds = nowSeconds - timestamp
+          return ageSeconds >= -FRESH_AUTH_CLOCK_SKEW_SECONDS && ageSeconds <= maxAgeSeconds
+        })
+      : false
+
+    return { status: recentFirstFactor ? 'authenticated' : 'reauthentication-required' }
+  } catch (error: unknown) {
+    activeLogger.error(
+      {
+        err: toLoggedError(error),
+        event: 'auth.supabase.claims.unavailable',
+      },
+      'Supabase bearer claims are temporarily unavailable',
     )
     return { status: 'unavailable' }
   }

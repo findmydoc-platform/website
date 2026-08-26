@@ -152,8 +152,11 @@ export const GalleryInteraction: Story = {
     const body = within(document.body)
     await expect(await body.findByRole('dialog')).toBeInTheDocument()
     await expect(body.getByText('Photo 1 of 12')).toBeInTheDocument()
+    const carousel = body.getByRole('region', { name: 'Berlin Health Clinic photos' })
+    carousel.focus()
+    await expect(carousel).toHaveFocus()
     await userEvent.keyboard('{ArrowRight}')
-    await expect(body.getByText('Photo 2 of 12')).toBeInTheDocument()
+    await waitFor(() => expect(body.getByText('Photo 2 of 12')).toBeInTheDocument())
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(openButton).toHaveFocus())
   },

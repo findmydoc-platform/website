@@ -22,8 +22,8 @@ Payload CORS origins, a Dashboard database, service-role credentials, public cac
 website.
 
 Payload exposes the private bootstrap contract, the persistent clinic-profile draft workflow, the focused clinic
-treatment contract, and the clinic-gallery contract. The Clinic Dashboard session and BFF runtime are implemented in
-the Dashboard repository; trusted preview and production rollout evidence remain pending.
+treatment and gallery contracts, and the inquiry communication contract. The Clinic Dashboard session and BFF runtime
+are implemented in the Dashboard repository; trusted preview and production rollout evidence remain pending.
 
 ## Boundary and Ownership
 
@@ -40,6 +40,14 @@ the Dashboard repository; trusted preview and production rollout evidence remain
 
 The initial focused endpoint is `GET /api/clinic-dashboard/bootstrap`. Payload registers it through its standard custom
 endpoint conventions; its stable semantic contract is fixed here.
+
+Inquiry capabilities are negotiated additively through `X-Findmydoc-Clinic-Dashboard-Contract`. The supported values
+are `inquiry-communication-v1` for the compatibility projection and `inquiry-communication-v2` for moderation and
+retention system events. A request without that header receives the historical six-capability bootstrap. Exactly one
+known value adds the two inquiry capabilities and enables the focused inquiry routes. Empty, unknown, mixed, or
+coalesced duplicate values fail closed with
+`CLINIC_DASHBOARD_INVALID_CONTRACT`. Bootstrap and inquiry responses include both `Authorization` and the contract
+header in `Vary`; the Dashboard BFF, never the browser, owns the fixed opt-in value.
 
 The endpoint:
 
@@ -60,6 +68,8 @@ type ClinicDashboardCapability =
   | 'clinic-treatments:edit'
   | 'clinic-gallery:view'
   | 'clinic-gallery:edit'
+  | 'clinic-inquiries:view'
+  | 'clinic-inquiries:edit'
 
 type ClinicDashboardBootstrapDTO = {
   principal: {
@@ -76,10 +86,11 @@ type ClinicDashboardBootstrapDTO = {
 }
 ```
 
-The six capabilities are returned exactly once in the order shown above for every approved clinic principal with a
-current clinic assignment. Existing profile view and edit access respectively grant treatment and gallery view and edit
-access while those workspaces are introduced. A successful bootstrap implies Dashboard access, so there is no separate
-`dashboard:access` capability.
+The historical six capabilities are returned exactly once in the order shown above for every approved clinic principal
+with a current clinic assignment. The negotiated inquiry contract appends inquiry view and edit in that order. Existing
+profile view and edit access respectively grant treatment and gallery view and edit access while those workspaces are
+introduced. Inquiry view and edit remain explicit because each inquiry endpoint checks the current capability again. A
+successful bootstrap implies Dashboard access, so there is no separate `dashboard:access` capability.
 
 `ClinicDashboardCapability` is a closed, version-controlled string union. It describes user-visible operations, not
 Payload collection names or field-level access details. It is a UI projection and never replaces Payload authorization:
@@ -295,6 +306,104 @@ Stable gallery errors are `CLINIC_GALLERY_CONFLICT`, `CLINIC_GALLERY_INVALID_INP
 standard Clinic Dashboard no-store headers. Public cache invalidation remains owned by the Website save path after
 commit; metadata or order changes invalidate clinic detail, while a changed main image also invalidates listing and
 sitemap surfaces.
+
+## Inquiry communication contract
+
+The inquiry capability uses focused custom Payload endpoints. Generic REST and GraphQL access to the inquiry
+aggregate, conversations, messages, internal notes, attachments, read positions, and audit events stays disabled.
+Every route in this section requires exactly one negotiated inquiry contract value before it performs authorization or
+domain work. Version 1 excludes the version 2-only `moderation-restricted`, `moderation-restored`, and
+`legacy-closed-migrated` system events. Current Dashboard clients use version 2.
+
+| Method and route | Result |
+| --- | --- |
+| `GET /api/clinic-dashboard/inquiries` | Returns one cursor-paginated, filtered queue for the current clinic and an opaque change cursor. |
+| `GET /api/clinic-dashboard/inquiries/detail` | Returns one current-clinic detail projection and an opaque change cursor. |
+| `POST /api/clinic-dashboard/inquiries/messages` | Stores one idempotent external clinic message and any automatic `contacted` transition atomically. |
+| `POST /api/clinic-dashboard/inquiries/notes` | Stores one idempotent, immutable clinic-only note. |
+| `PATCH /api/clinic-dashboard/inquiries/state` | Applies one revision-checked handling or lifecycle command. |
+| `PUT /api/clinic-dashboard/inquiries/read-position` | Changes only the current staff member's personal read position. |
+| `POST /api/clinic-dashboard/inquiries/contact/reveal` | Reauthorizes and reveals raw contact values for a current-clinic spam inquiry. |
+| `POST /api/clinic-dashboard/inquiries/attachments/drafts` | Creates one actor- and inquiry-bound private upload draft. |
+| `POST /api/clinic-dashboard/inquiries/attachments/drafts/finalize` | Verifies and seals one own unused draft. |
+| `POST /api/clinic-dashboard/inquiries/attachments/drafts/discard` | Marks one own unused draft discarded and schedules non-blocking object cleanup. |
+| `GET /api/clinic-dashboard/inquiries/attachments/preview` | Reauthorizes and proxies allowlisted attachment bytes for preview. |
+| `GET /api/clinic-dashboard/inquiries/attachments/download` | Reauthorizes and proxies allowlisted attachment bytes for download. |
+
+Every operation requires an explicit Supabase Bearer token. Payload verifies that token even when request middleware
+already populated `req.user`, then requires the verified Supabase subject to equal the current `clinicStaff` identity.
+A cookie-resolved principal, an invalid token, or a token for a different staff identity cannot authorize these
+endpoints. Reads require `clinic-inquiries:view`; messages, notes, state changes, and attachment draft mutations require
+`clinic-inquiries:edit`. The endpoint and domain service both resolve the current clinic and actor. Request bodies and
+queries reject actor, clinic, patient, Payload collection, depth, and generic filter inputs.
+
+Contact reveal adds user-presence verification. The same Bearer token must contain a verified object-form first-factor
+AMR entry no older than five minutes, and its subject must still match the current staff identity. A silent refresh and
+its new `iat` value do not satisfy this check. Missing, string-only, or stale AMR returns
+`INQUIRY_REAUTHENTICATION_REQUIRED`; an invalid or different-subject token returns `INQUIRY_UNAUTHORIZED`.
+
+Queue queries accept only lifecycle, unread, handling-status, search, limit, pagination cursor, and
+`knownChangeCursor` values. Search covers the inquiry ID, patient name, original request, external messages, internal
+notes, and attachment file names. It does not cover contact values, file contents, or OCR output. A foreign, missing,
+or no-longer-visible inquiry or attachment returns the same `INQUIRY_NOT_FOUND` response.
+
+Queue and detail reads return an opaque `changeCursor`. Repeating the exact same query or detail read with that value
+as `knownChangeCursor` may return `unchanged: true`; callers then keep their existing projection. The queue marker is
+bound to the complete response-shaping query, page, projected metadata, activity, and personal read state. The detail
+marker covers the complete safe detail projection, including timeline changes that do not increment the inquiry
+revision. `knownRevision` remains a compatibility input for detail reads but never determines `unchanged`.
+
+External messages and internal notes are immutable plain text up to 3,000 characters. Message and note inputs carry
+actor-bound idempotency keys. State commands carry an expected revision; conflicts return `INQUIRY_CONFLICT` with a
+safe current detail projection when available. Read-position responses contain only the updated unread projection.
+Contact reveal is read-only and does not change the stored contact state.
+
+Attachment draft upload instructions are short-lived and limited to PNG, JPEG, WebP, or PDF up to 5 MiB. Preview and
+download never return a public or signed storage URL. Payload fetches the internally signed object only from the exact
+configured storage origin and bucket path, bounds the response to 5 MiB, allowlists the MIME type, and returns the
+bytes with safe disposition, `nosniff`, sandbox, and private no-store headers. The Dashboard BFF proxies those bytes
+through its same-origin route. Successful authorized attachment activity schedules a bounded best-effort sweep of up
+to 50 unbound `draft`, `verified`, or `discarded` records created at least 24 hours earlier. Bound attachments are
+always excluded; storage deletion failures remain retryable and never change the endpoint response.
+
+Before creating a storage reservation or issuing a presigned upload, one serializable command transaction enforces at
+most 10 active `draft` or `verified` attachments per actor and 100 per clinic. The same transaction limits new
+reservations to 20 per actor and 200 per clinic in 15 minutes. Serialization conflicts receive up to three transaction
+attempts; an exhausted capacity race returns `INQUIRY_RATE_LIMITED` without issuing an upload URL.
+
+All JSON success and error responses use `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
+`Vary: Authorization, X-Findmydoc-Clinic-Dashboard-Contract`. The stable inquiry error codes are
+`INQUIRY_INVALID_INPUT`, `INQUIRY_UNAUTHORIZED`,
+`INQUIRY_ACCESS_DENIED`, `INQUIRY_NOT_FOUND`, `INQUIRY_CONFLICT`, `INQUIRY_INVALID_STATE`,
+`INQUIRY_PAYLOAD_TOO_LARGE`, `INQUIRY_UNSUPPORTED_MEDIA_TYPE`, `INQUIRY_RATE_LIMITED`,
+`INQUIRY_SERVICE_UNAVAILABLE`, `INQUIRY_SERVICE_TIMEOUT`, and `INQUIRY_REAUTHENTICATION_REQUIRED`. Raw Payload,
+Supabase, database, and storage errors never cross this boundary.
+
+The Dashboard BFF remains responsible for its same-origin session-bound CSRF guard on mutations. These server-to-server
+Payload endpoints do not add browser CORS access or a second CSRF scheme.
+
+The cache decision is `no-public-impact`. All inquiry communication collections are cataloged as `private-live`; there
+are no public reads, tags, paths, planner events, or public revalidation owners. This contract does not suppress a
+separate public invalidation event if a future inquiry mutation gains an explicitly approved public effect.
+
+### Narrow legacy inquiry bridge
+
+The three custom compatibility routes `GET /api/patientClinicInquiries`,
+`GET /api/patientClinicInquiries/:id`, and `PATCH /api/patientClinicInquiries/:id` preserve the previously deployed
+Dashboard wire shape without reopening the Payload collection. The list accepts exactly
+`depth=1&limit=100&sort=-createdAt`; item reads accept no query, and PATCH accepts only `{ status }`. Every request
+revalidates its Bearer subject, resolves the clinic server-side, and returns only that clinic's legacy DTO. Foreign and
+missing records are indistinguishable.
+
+The bridge delegates to the same inquiry aggregate and is not a second state authority. Pre-cutover legacy rows are
+read-only and return `409` on PATCH. Operational rows accept only currently valid representable forward transitions;
+unsupported spam commands, stale transitions, no-ops, and serialization conflicts return `409`. Spam remains available
+only through the focused reason-bearing inquiry state command.
+
+The public `POST /api/clinic-contact-requests` route is likewise an HTTP adapter around one guest inquiry command. That
+command validates the clinic and optional doctor or treatment inside its serializable transaction, deduplicates the
+submission, initializes the root aggregate, and appends a content-free `inquiry-created` audit event atomically. Guest
+submission creates neither a conversation nor a read position.
 
 ## Dashboard-facing Route Semantics
 

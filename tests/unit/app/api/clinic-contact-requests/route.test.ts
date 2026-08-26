@@ -1,431 +1,129 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const findMock = vi.fn()
-const findByIDMock = vi.fn()
-const createMock = vi.fn()
-const loggerMock = { error: vi.fn(), info: vi.fn() }
-const databaseAdapterAccessMock = vi.fn(() => {
-  throw new Error('Payload database adapter must not be accessed')
-})
+const mocks = vi.hoisted(() => ({
+  createLocalReq: vi.fn(),
+  getPayload: vi.fn(),
+  submitGuestInquiry: vi.fn(),
+}))
 
-vi.mock('payload', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('payload')>()
+vi.mock('payload', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('payload')>()),
+  buildConfig: (config: unknown) => config,
+  createLocalReq: mocks.createLocalReq,
+  getPayload: mocks.getPayload,
+}))
 
-  return {
-    ...actual,
-    buildConfig: (cfg: unknown) => cfg,
-    getPayload: async () => ({
-      find: findMock,
-      findByID: findByIDMock,
-      create: createMock,
-      logger: loggerMock,
-      get db() {
-        return databaseAdapterAccessMock()
-      },
-    }),
-  }
-})
+vi.mock('@/features/inquiryCommunication/service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/inquiryCommunication/service')>()),
+  submitGuestClinicInquiry: mocks.submitGuestInquiry,
+}))
 
+import { InquiryCommunicationServiceError } from '@/features/inquiryCommunication/service'
 import { POST } from '@/app/api/clinic-contact-requests/route'
 
-function makeRequest(body: unknown) {
-  return new NextRequest('http://localhost/api/clinic-contact-requests', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: {
-      'Content-Type': 'application/json',
-      referer: 'https://preview.findmydoc.eu/clinics/berlin-health',
-      'user-agent': 'vitest',
-      'x-forwarded-for': '203.0.113.1',
-    },
-  })
+const payload = {
+  logger: { error: vi.fn(), info: vi.fn() },
 }
+const localReq = { context: {}, payload }
 
 const validBody = {
   clinicId: 1,
-  doctorId: 601,
-  treatmentId: 301,
-  fullName: 'Jane Patient',
-  email: 'Jane.Patient@Example.com',
-  phoneNumber: '+49 30 123456',
-  treatmentTimeline: 'within_two_weeks',
-  preferredContactWindow: 'morning',
-  message: 'I would like to discuss treatment options.',
   consent: true,
+  doctorId: 601,
+  email: 'Jane.Patient@Example.com',
+  fullName: ' Jane Patient ',
+  message: 'First line\nSecond line',
+  phoneNumber: '+49 30 123456',
+  preferredContactWindow: 'morning',
+  treatmentId: 301,
+  treatmentTimeline: 'within_two_weeks',
 }
 
-function mockSuccessfulLookups() {
-  findMock.mockImplementation(async (args: { collection: string }) => {
-    if (args.collection === 'clinics') {
-      return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
-    }
-
-    if (args.collection === 'doctors') {
-      return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
-    }
-
-    if (args.collection === 'clinictreatments') {
-      return {
-        docs: [
-          {
-            id: 201,
-            active: true,
-            clinic: 1,
-            treatment: { id: 301, name: 'Routine Checkup' },
-          },
-        ],
-      }
-    }
-
-    return { docs: [] }
+const makeRequest = (body: unknown): NextRequest =>
+  new NextRequest('http://localhost/api/clinic-contact-requests', {
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
   })
-}
-
-function makeExistingInquiry(overrides: Record<string, unknown> = {}) {
-  return {
-    id: 99,
-    clinic: 1,
-    doctor: 601,
-    treatment: 301,
-    fullName: 'Jane Patient',
-    email: 'jane.patient@example.com',
-    phoneNumber: '+49 30 123456',
-    treatmentTimeline: 'within_two_weeks',
-    preferredContactWindow: 'morning',
-    message: 'I would like to discuss treatment options.',
-    status: 'submitted',
-    createdAt: new Date().toISOString(),
-    ...overrides,
-  }
-}
-
-function mockSuccessfulLookupsWithInquiries(inquiries: Array<Record<string, unknown>>) {
-  findMock.mockImplementation(async (args: { collection: string }) => {
-    if (args.collection === 'clinics') {
-      return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
-    }
-
-    if (args.collection === 'doctors') {
-      return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
-    }
-
-    if (args.collection === 'clinictreatments') {
-      return { docs: [{ id: 201, clinic: 1, treatment: { id: 301, name: 'Routine Checkup' } }] }
-    }
-
-    if (args.collection === 'patientClinicInquiries') {
-      return { docs: inquiries }
-    }
-
-    return { docs: [] }
-  })
-}
 
 describe('POST /api/clinic-contact-requests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    createMock.mockResolvedValue({ id: 42, status: 'submitted' })
+    mocks.getPayload.mockResolvedValue(payload)
+    mocks.createLocalReq.mockResolvedValue(localReq)
+    mocks.submitGuestInquiry.mockResolvedValue({ deduped: false, id: '42', status: 'submitted' })
   })
 
-  it('rejects requests without consent', async () => {
-    const response = await POST(makeRequest({ ...validBody, consent: false }))
-    const json = await response.json()
+  it('parses the public request and delegates one normalized guest command', async () => {
+    const request = makeRequest(validBody)
 
-    expect(response.status).toBe(400)
-    expect(json.error).toBe('Consent is required.')
-    expect(createMock).not.toHaveBeenCalled()
-  })
-
-  it('requires a doctor or treatment selection', async () => {
-    const response = await POST(makeRequest({ ...validBody, doctorId: undefined, treatmentId: undefined }))
-    const json = await response.json()
-
-    expect(response.status).toBe(400)
-    expect(json.error).toBe('Select a doctor or treatment.')
-    expect(createMock).not.toHaveBeenCalled()
-  })
-
-  it('rejects non-approved or missing clinics', async () => {
-    findMock.mockResolvedValueOnce({ docs: [] })
-
-    const response = await POST(makeRequest(validBody))
-    const json = await response.json()
-
-    expect(response.status).toBe(404)
-    expect(json.error).toBe('Clinic not found.')
-    expect(createMock).not.toHaveBeenCalled()
-  })
-
-  it('rejects a doctor that is not attached to the clinic', async () => {
-    findMock.mockImplementation(async (args: { collection: string }) => {
-      if (args.collection === 'clinics') {
-        return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
-      }
-
-      if (args.collection === 'doctors') return { docs: [] }
-
-      if (args.collection === 'clinictreatments') {
-        return { docs: [{ id: 201, clinic: 1, treatment: { id: 301, name: 'Routine Checkup' } }] }
-      }
-
-      return { docs: [] }
-    })
-
-    const response = await POST(makeRequest(validBody))
-    const json = await response.json()
-
-    expect(response.status).toBe(400)
-    expect(json.error).toBe('Doctor is not available for this clinic.')
-    expect(createMock).not.toHaveBeenCalled()
-  })
-
-  it('rejects a treatment that is not offered by the clinic', async () => {
-    findMock.mockImplementation(async (args: { collection: string }) => {
-      if (args.collection === 'clinics') {
-        return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
-      }
-
-      if (args.collection === 'doctors') {
-        return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
-      }
-
-      if (args.collection === 'clinictreatments') return { docs: [] }
-
-      return { docs: [] }
-    })
-
-    const response = await POST(makeRequest(validBody))
-    const json = await response.json()
-
-    expect(response.status).toBe(400)
-    expect(json.error).toBe('Treatment is not available for this clinic.')
-    expect(createMock).not.toHaveBeenCalled()
-  })
-
-  it('creates an inquiry with clinic context and submitted contact details', async () => {
-    mockSuccessfulLookups()
-
-    const response = await POST(makeRequest(validBody))
-    const json = await response.json()
+    const response = await POST(request)
 
     expect(response.status).toBe(200)
-    expect(json).toEqual({ success: true, id: 42, status: 'submitted' })
-    expect(createMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        collection: 'patientClinicInquiries',
-        overrideAccess: true,
-        data: expect.objectContaining({
-          clinic: 1,
-          doctor: 601,
-          treatment: 301,
-          fullName: 'Jane Patient',
-          email: 'jane.patient@example.com',
-          phoneNumber: '+49 30 123456',
-          treatmentTimeline: 'within_two_weeks',
-          preferredContactWindow: 'morning',
-          message: 'I would like to discuss treatment options.',
-          status: 'submitted',
-          consent: expect.objectContaining({ accepted: true }),
-        }),
-      }),
+    await expect(response.json()).resolves.toEqual({ success: true, id: '42', status: 'submitted' })
+    expect(mocks.createLocalReq).toHaveBeenCalledWith(
+      expect.objectContaining({ req: expect.objectContaining({ headers: request.headers }) }),
+      payload,
     )
-
-    const createArgs = createMock.mock.calls[0]?.[0]
-    expect(createArgs?.data).not.toHaveProperty('preferredDate')
-    expect(createArgs?.data).not.toHaveProperty('preferredTime')
-    expect(createArgs?.data).not.toHaveProperty('formUrl')
-    expect(createArgs?.data).not.toHaveProperty('sourceMeta')
-
-    const doctorLookup = findMock.mock.calls
-      .map(([args]) => args as { collection?: string; select?: unknown; where?: unknown })
-      .find((args) => args.collection === 'doctors')
-    expect(doctorLookup).toEqual(
-      expect.objectContaining({
-        select: expect.objectContaining({ active: true }),
-        where: {
-          and: expect.arrayContaining([
-            { id: { equals: 601 } },
-            { clinic: { equals: 1 } },
-            { active: { equals: true } },
-          ]),
-        },
-      }),
-    )
-
-    const treatmentLookup = findMock.mock.calls
-      .map(([args]) => args as { collection?: string; select?: unknown; where?: unknown })
-      .find((args) => args.collection === 'clinictreatments')
-    expect(treatmentLookup).toEqual(
-      expect.objectContaining({
-        select: expect.objectContaining({ active: true }),
-        where: {
-          and: expect.arrayContaining([
-            { clinic: { equals: 1 } },
-            { treatment: { equals: 301 } },
-            { active: { equals: true } },
-          ]),
-        },
-      }),
-    )
+    expect(mocks.submitGuestInquiry).toHaveBeenCalledWith(localReq, {
+      ...validBody,
+      email: 'jane.patient@example.com',
+      fullName: 'Jane Patient',
+    })
   })
 
-  it('returns an existing inquiry for an identical recent duplicate request', async () => {
-    findMock.mockImplementation(async (args: { collection: string }) => {
-      if (args.collection === 'clinics') {
-        return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
-      }
-
-      if (args.collection === 'doctors') {
-        return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
-      }
-
-      if (args.collection === 'clinictreatments') {
-        return { docs: [{ id: 201, clinic: 1, treatment: { id: 301, name: 'Routine Checkup' } }] }
-      }
-
-      if (args.collection === 'patientClinicInquiries') {
-        return { docs: [makeExistingInquiry()] }
-      }
-
-      return { docs: [] }
-    })
+  it('preserves a recent duplicate as the historical successful response', async () => {
+    mocks.submitGuestInquiry.mockResolvedValueOnce({ deduped: true, id: '41', status: 'submitted' })
 
     const response = await POST(makeRequest(validBody))
-    const json = await response.json()
 
     expect(response.status).toBe(200)
-    expect(json).toEqual({ success: true, id: 99, status: 'submitted', deduped: true })
-    expect(createMock).not.toHaveBeenCalled()
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      deduped: true,
+      id: '41',
+      status: 'submitted',
+    })
   })
 
-  it('creates a new inquiry when an identical candidate is outside the duplicate window', async () => {
-    mockSuccessfulLookupsWithInquiries([
-      makeExistingInquiry({
-        createdAt: new Date(Date.now() - 16 * 60 * 1000).toISOString(),
-      }),
-    ])
+  it.each([
+    ['missing consent', { ...validBody, consent: false }, 'Consent is required.'],
+    [
+      'missing interest',
+      { ...validBody, doctorId: undefined, treatmentId: undefined },
+      'Select a doctor or treatment.',
+    ],
+    ['blank message', { ...validBody, message: '  \n ' }, 'Message is required.'],
+    ['oversized message', { ...validBody, message: 'x'.repeat(3_001) }, 'Invalid request payload.'],
+    ['unknown field', { ...validBody, actorId: 'patient-1' }, 'Invalid request payload.'],
+  ])('rejects %s before constructing a domain request', async (_case, body, error) => {
+    const response = await POST(makeRequest(body))
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error })
+    expect(mocks.createLocalReq).not.toHaveBeenCalled()
+    expect(mocks.submitGuestInquiry).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['not-found', 'Clinic not found.', 404],
+    ['invalid-input', 'Doctor is not available for this clinic.', 400],
+  ] as const)('maps a safe domain %s without exposing internals', async (kind, message, status) => {
+    mocks.submitGuestInquiry.mockRejectedValueOnce(new InquiryCommunicationServiceError(kind, message))
 
     const response = await POST(makeRequest(validBody))
-    const json = await response.json()
 
-    expect(response.status).toBe(200)
-    expect(json).toEqual({ success: true, id: 42, status: 'submitted' })
-    expect(createMock).toHaveBeenCalledTimes(1)
+    expect(response.status).toBe(status)
+    await expect(response.json()).resolves.toEqual({ error: message })
   })
 
-  it('creates a new inquiry when an identical candidate has an invalid timestamp', async () => {
-    mockSuccessfulLookupsWithInquiries([makeExistingInquiry({ createdAt: 'not-a-date' })])
+  it('maps unexpected command failure to the existing safe response', async () => {
+    mocks.submitGuestInquiry.mockRejectedValueOnce(new Error('private database detail'))
 
     const response = await POST(makeRequest(validBody))
-    const json = await response.json()
 
-    expect(response.status).toBe(200)
-    expect(json).toEqual({ success: true, id: 42, status: 'submitted' })
-    expect(createMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('creates a new inquiry when the recent candidate has a different message', async () => {
-    findMock.mockImplementation(async (args: { collection: string }) => {
-      if (args.collection === 'clinics') {
-        return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
-      }
-
-      if (args.collection === 'doctors') {
-        return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
-      }
-
-      if (args.collection === 'clinictreatments') {
-        return { docs: [{ id: 201, clinic: 1, treatment: { id: 301, name: 'Routine Checkup' } }] }
-      }
-
-      if (args.collection === 'patientClinicInquiries') {
-        return { docs: [makeExistingInquiry({ message: 'Different request details.' })] }
-      }
-
-      return { docs: [] }
-    })
-
-    const response = await POST(makeRequest(validBody))
-    const json = await response.json()
-
-    expect(response.status).toBe(200)
-    expect(json).toEqual({ success: true, id: 42, status: 'submitted' })
-    expect(createMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('creates a new inquiry when the recent candidate has a different full name', async () => {
-    findMock.mockImplementation(async (args: { collection: string }) => {
-      if (args.collection === 'clinics') {
-        return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
-      }
-
-      if (args.collection === 'doctors') {
-        return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
-      }
-
-      if (args.collection === 'clinictreatments') {
-        return { docs: [{ id: 201, clinic: 1, treatment: { id: 301, name: 'Routine Checkup' } }] }
-      }
-
-      if (args.collection === 'patientClinicInquiries') {
-        return { docs: [makeExistingInquiry({ fullName: 'Different Patient' })] }
-      }
-
-      return { docs: [] }
-    })
-
-    const response = await POST(makeRequest(validBody))
-    const json = await response.json()
-
-    expect(response.status).toBe(200)
-    expect(json).toEqual({ success: true, id: 42, status: 'submitted' })
-    expect(createMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('serializes concurrent identical requests within the current runtime without database access', async () => {
-    let createdInquiry: Record<string, unknown> | null = null
-
-    findMock.mockImplementation(async (args: { collection: string }) => {
-      if (args.collection === 'clinics') {
-        return { docs: [{ id: 1, name: 'Berlin Health Clinic', slug: 'berlin-health', status: 'approved' }] }
-      }
-
-      if (args.collection === 'doctors') {
-        return { docs: [{ id: 601, fullName: 'Dr. Ada Care', clinic: 1 }] }
-      }
-
-      if (args.collection === 'clinictreatments') {
-        return { docs: [{ id: 201, clinic: 1, treatment: { id: 301, name: 'Routine Checkup' } }] }
-      }
-
-      if (args.collection === 'patientClinicInquiries') {
-        return { docs: createdInquiry ? [createdInquiry] : [] }
-      }
-
-      return { docs: [] }
-    })
-    createMock.mockImplementation(async (args: { data: Record<string, unknown> }) => {
-      createdInquiry = makeExistingInquiry({
-        ...args.data,
-        id: 42,
-        createdAt: new Date().toISOString(),
-      })
-
-      return { id: 42, status: 'submitted' }
-    })
-
-    const [firstResponse, secondResponse] = await Promise.all([
-      POST(makeRequest(validBody)),
-      POST(makeRequest(validBody)),
-    ])
-    const [firstJson, secondJson] = await Promise.all([firstResponse.json(), secondResponse.json()])
-
-    expect(firstResponse.status).toBe(200)
-    expect(secondResponse.status).toBe(200)
-    expect(createMock).toHaveBeenCalledTimes(1)
-    expect([firstJson, secondJson]).toContainEqual({ success: true, id: 42, status: 'submitted' })
-    expect([firstJson, secondJson]).toContainEqual({ success: true, id: 42, status: 'submitted', deduped: true })
-    expect(databaseAdapterAccessMock).not.toHaveBeenCalled()
+    expect(response.status).toBe(500)
+    await expect(response.json()).resolves.toEqual({ error: 'Could not submit clinic request.' })
   })
 })

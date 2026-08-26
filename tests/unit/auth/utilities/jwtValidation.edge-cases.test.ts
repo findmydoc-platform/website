@@ -3,7 +3,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { extractSupabaseUserData, validateSupabaseBearerToken } from '@/auth/utilities/jwtValidation'
+import {
+  extractSupabaseUserData,
+  validateSupabaseBearerToken,
+  validateSupabaseFreshFirstFactor,
+} from '@/auth/utilities/jwtValidation'
 import type { User } from '@supabase/supabase-js'
 
 // Mock the supabase client
@@ -42,6 +46,7 @@ const logger = {
 describe('jwtValidation edge cases', () => {
   const mockSupabaseClient = {
     auth: {
+      getClaims: vi.fn(),
       getUser: vi.fn(),
     },
   }
@@ -99,6 +104,92 @@ describe('jwtValidation edge cases', () => {
       await expect(validateSupabaseBearerToken({ token: 'valid-token', logger })).resolves.toEqual({
         status: 'unavailable',
       })
+    })
+  })
+
+  describe('validateSupabaseFreshFirstFactor', () => {
+    const verify = (overrides: Record<string, unknown> = {}) =>
+      validateSupabaseFreshFirstFactor({
+        token: 'explicit-token',
+        expectedSubject: 'supabase-user-1',
+        maxAgeSeconds: 300,
+        nowSeconds: 10_000,
+        logger,
+        ...overrides,
+      })
+
+    it('accepts a verified token with a recent timestamped first factor', async () => {
+      mockSupabaseClient.auth.getClaims.mockResolvedValue({
+        data: {
+          claims: {
+            sub: 'supabase-user-1',
+            iat: 10_000,
+            amr: [{ method: 'password', timestamp: 9_900 }],
+          },
+        },
+        error: null,
+      })
+
+      await expect(verify()).resolves.toEqual({ status: 'authenticated' })
+      expect(mockSupabaseClient.auth.getClaims).toHaveBeenCalledWith('explicit-token')
+    })
+
+    it('requires reauthentication for stale, refresh-only, or string-only AMR even when token iat is recent', async () => {
+      mockSupabaseClient.auth.getClaims
+        .mockResolvedValueOnce({
+          data: {
+            claims: {
+              sub: 'supabase-user-1',
+              iat: 10_000,
+              amr: [{ method: 'password', timestamp: 9_000 }],
+            },
+          },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: {
+            claims: {
+              sub: 'supabase-user-1',
+              iat: 10_000,
+              amr: [{ method: 'token_refresh', timestamp: 9_990 }],
+            },
+          },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: { claims: { sub: 'supabase-user-1', iat: 10_000, amr: ['password'] } },
+          error: null,
+        })
+
+      await expect(verify()).resolves.toEqual({ status: 'reauthentication-required' })
+      await expect(verify()).resolves.toEqual({ status: 'reauthentication-required' })
+      await expect(verify()).resolves.toEqual({ status: 'reauthentication-required' })
+    })
+
+    it('rejects verified claims for a different subject', async () => {
+      mockSupabaseClient.auth.getClaims.mockResolvedValue({
+        data: {
+          claims: {
+            sub: 'different-user',
+            amr: [{ method: 'password', timestamp: 9_990 }],
+          },
+        },
+        error: null,
+      })
+
+      await expect(verify()).resolves.toEqual({ status: 'invalid' })
+    })
+
+    it.each([
+      [401, 'invalid'],
+      [503, 'unavailable'],
+    ] as const)('maps claims verification status %s to %s', async (status, expected) => {
+      mockSupabaseClient.auth.getClaims.mockResolvedValue({
+        data: null,
+        error: { message: 'Claims verification failed', name: 'AuthApiError', status },
+      })
+
+      await expect(verify()).resolves.toEqual({ status: expected })
     })
   })
 

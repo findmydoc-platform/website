@@ -60,6 +60,7 @@ import * as migration_20260730_213353_recalculate_normalized_treatment_prices fr
 import * as migration_20260808_125901_review_schema_snapshot_alignment from './20260808_125901_review_schema_snapshot_alignment'
 import * as migration_20260808_130742_review_versioned_moderation_foundation from './20260808_130742_review_versioned_moderation_foundation'
 import * as migration_20260814_102337_clinic_profile_gallery from './20260814_102337_clinic_profile_gallery'
+import * as migration_20260824_135226_inquiry_communication_foundation from './20260824_135226_inquiry_communication_foundation'
 
 export const migrations = [
   {
@@ -371,5 +372,10 @@ export const migrations = [
     up: migration_20260814_102337_clinic_profile_gallery.up,
     down: migration_20260814_102337_clinic_profile_gallery.down,
     name: '20260814_102337_clinic_profile_gallery',
+  },
+  {
+    up: migration_20260824_135226_inquiry_communication_foundation.up,
+    down: migration_20260824_135226_inquiry_communication_foundation.down,
+    name: '20260824_135226_inquiry_communication_foundation',
   },
 ]

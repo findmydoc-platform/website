@@ -1,42 +1,34 @@
-import { describe, it, expect, beforeAll, afterEach } from 'vitest'
-import { getPayload } from 'payload'
-import type { Payload } from 'payload'
-import config from '@payload-config'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { getPayload, type Payload } from 'payload'
 
-import { ensureBaseline } from '../fixtures/ensureBaseline'
+import config from '@payload-config'
+import type { PatientClinicInquiry } from '@/payload-types'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
+import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import {
   asClinicScopedPayloadUser,
+  asPayloadStaffUser,
   cleanupTrackedUsers,
   createClinicTestUser,
   createPlatformTestUser,
-  asPayloadStaffUser,
 } from '../fixtures/testUsers'
-import { runBaselineContract } from './contracts/baselineContract'
-import type { ClinicStaff, PatientClinicInquiry, PlatformStaff } from '@/payload-types'
-
-type PayloadCreateArgs = Parameters<Payload['create']>[0]
-type PayloadUpdateArgs = Parameters<Payload['update']>[0]
-type PayloadFindArgs = Parameters<Payload['find']>[0]
 
 describe('PatientClinicInquiries lifecycle integration', () => {
   let payload: Payload
   let cityId: number
   const slugPrefix = testSlug('patientClinicInquiries.lifecycle.test.ts')
-  const createdInquiryIds: Array<number> = []
+  const createdInquiryIds: Array<number | string> = []
   const createdStaffIds: Array<number | string> = []
 
   beforeAll(async () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
-
-    const cityRes = await payload.find({ collection: 'cities', limit: 1, overrideAccess: true, depth: 0 })
-    const cityDoc = cityRes.docs[0]
-    if (!cityDoc) throw new Error('Expected baseline city for patient clinic inquiry tests')
-    cityId = cityDoc.id as number
-  }, 60000)
+    const city = (await payload.find({ collection: 'cities', depth: 0, limit: 1, overrideAccess: true })).docs[0]
+    if (!city) throw new Error('Expected baseline city for patient clinic inquiry tests')
+    cityId = city.id as number
+  }, 60_000)
 
   afterEach(async () => {
     while (createdInquiryIds.length) {
@@ -46,454 +38,172 @@ describe('PatientClinicInquiries lifecycle integration', () => {
         await payload.delete({ collection: 'patientClinicInquiries', id, overrideAccess: true })
       } catch {}
     }
-
     await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
-    await cleanupTestEntities(payload, 'patientClinicInquiries', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
-  const createPlatformUser = async (suffix: string): Promise<PlatformStaff> =>
-    createPlatformTestUser(payload, {
-      emailPrefix: `${slugPrefix}-platform-${suffix}`,
-      createdStaffIds,
-    })
+  const createTarget = async (suffix: string) =>
+    createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-${suffix}` })
 
-  const createClinicUser = async (suffix: string): Promise<ClinicStaff> =>
-    createClinicTestUser(payload, {
-      emailPrefix: `${slugPrefix}-clinic-${suffix}`,
-      createdStaffIds,
-    })
+  const originalData = (clinicId: number, doctorId: number, suffix: string) => ({
+    clinic: clinicId,
+    consent: {
+      accepted: true,
+      acceptedAt: '2026-08-24T10:00:00.000Z',
+      text: 'Synthetic consent.',
+    },
+    doctor: doctorId,
+    email: `${slugPrefix}-${suffix}@example.com`,
+    fullName: `Synthetic ${suffix}`,
+    message: 'Synthetic original inquiry text.',
+    phoneNumber: '+49301234567',
+    preferredContactWindow: 'morning' as const,
+    status: 'submitted' as const,
+    treatmentTimeline: 'within_two_weeks' as const,
+  })
 
-  const buildInquiryData = async (suffix: string) => {
-    const { clinic, doctor } = await createClinicFixture(payload, cityId, { slugPrefix: `${slugPrefix}-${suffix}` })
-
-    return {
-      clinicId: clinic.id,
-      doctorId: doctor.id,
-      data: {
-        clinic: clinic.id,
-        doctor: doctor.id,
-        fullName: `${slugPrefix}-${suffix} Patient`,
-        email: `${slugPrefix}-${suffix}@example.com`,
-        phoneNumber: '+49301234567',
-        treatmentTimeline: 'within_two_weeks',
-        preferredContactWindow: 'morning',
-        message: 'Please contact me about this clinic.',
-        consent: {
-          accepted: true,
-          acceptedAt: '2026-05-20T10:00:00.000Z',
-          text: 'Consent captured in integration test.',
-        },
-        status: 'submitted',
-      },
-    }
+  const createLegacyInquiry = async (suffix: string, status: 'closed' | 'submitted' = 'submitted') => {
+    const { clinic, doctor } = await createTarget(suffix)
+    const inquiry = (await payload.create({
+      collection: 'patientClinicInquiries',
+      context: { inquiryCommunicationCommand: true },
+      data: { ...originalData(clinic.id, doctor.id, suffix), status },
+      depth: 0,
+      overrideAccess: true,
+    })) as PatientClinicInquiry
+    createdInquiryIds.push(inquiry.id)
+    return { clinic, doctor, inquiry }
   }
 
-  it('stores clinic context, contact details, and contact preferences', async () => {
-    const { data, clinicId, doctorId } = await buildInquiryData('store')
+  it('keeps legacy state lossless and nullable until the dedicated cutover', async () => {
+    const { inquiry } = await createLegacyInquiry('legacy-closed', 'closed')
 
-    const inquiry = (await payload.create({
-      collection: 'patientClinicInquiries',
-      data,
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as PatientClinicInquiry
-
-    createdInquiryIds.push(inquiry.id)
-
-    expect(inquiry.clinic).toBe(clinicId)
-    expect(inquiry.doctor).toBe(doctorId)
-    expect(inquiry.status).toBe('submitted')
-    expect(inquiry.fullName).toContain(slugPrefix)
-    expect(inquiry.phoneNumber).toBe('+49301234567')
-    expect(inquiry.treatmentTimeline).toBe('within_two_weeks')
-    expect(inquiry.preferredContactWindow).toBe('morning')
-    expect(inquiry.consent?.accepted).toBe(true)
+    expect(inquiry.status).toBe('closed')
+    expect(inquiry.handlingStatus).toBeNull()
+    expect(inquiry.lifecycle).toBeNull()
+    expect(inquiry.revision).toBeNull()
+    expect(inquiry.activitySequence).toBeNull()
+    expect(inquiry.clinicNotificationSequence).toBeNull()
   })
 
-  it('keeps creation and deletion platform-only while platform handling remains unrestricted', async () => {
-    const { data, clinicId } = await buildInquiryData('platform-access')
-
+  it('initializes every new guest aggregate explicitly without creating a patient binding', async () => {
+    const { clinic, doctor } = await createTarget('new-guest')
+    const now = '2026-08-24T10:00:00.000Z'
     const inquiry = (await payload.create({
       collection: 'patientClinicInquiries',
-      data,
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as PatientClinicInquiry
-
-    createdInquiryIds.push(inquiry.id)
-
-    const platformUser = await createPlatformUser('handler')
-    const updated = (await payload.update({
-      collection: 'patientClinicInquiries',
-      id: inquiry.id,
+      context: { inquiryCommunicationCommand: true },
       data: {
-        status: 'contacted',
-        assignedTo: platformUser.id,
+        ...originalData(clinic.id, doctor.id, 'new-guest'),
+        activitySequence: 1,
+        clinicNotificationSequence: 1,
+        clinicUnreadEpoch: 0,
+        clinicUnreadFloor: 0,
+        externalSequence: 0,
+        handlingStatus: 'submitted',
+        lastActivityAt: now,
+        lifecycle: 'open',
+        revision: 0,
       },
-      user: asPayloadStaffUser(platformUser),
-      overrideAccess: false,
       depth: 0,
-    } as PayloadUpdateArgs)) as PatientClinicInquiry
-
-    expect(updated.status).toBe('contacted')
-    expect(updated.assignedTo).toBe(platformUser.id)
-
-    await expect(
-      payload.update({
-        collection: 'patientClinicInquiries',
-        id: inquiry.id,
-        data: { status: 'submitted' },
-        user: asPayloadStaffUser(platformUser),
-        overrideAccess: false,
-        depth: 0,
-      } as PayloadUpdateArgs),
-    ).resolves.toMatchObject({ status: 'submitted' })
-
-    const clinicUser = await createClinicUser('write-boundaries')
-    const clinicPayloadUser = await asClinicScopedPayloadUser(payload, clinicUser, clinicId)
-
-    await expect(
-      payload.create({
-        collection: 'patientClinicInquiries',
-        data,
-        user: clinicPayloadUser,
-        overrideAccess: false,
-        depth: 0,
-      } as PayloadCreateArgs),
-    ).rejects.toThrow(/not allowed|perform this action/i)
-
-    await expect(
-      payload.delete({
-        collection: 'patientClinicInquiries',
-        id: inquiry.id,
-        user: clinicPayloadUser,
-        overrideAccess: false,
-        depth: 0,
-      }),
-    ).rejects.toThrow(/not allowed|perform this action/i)
-  })
-
-  it('scopes clinic staff reads to their access-ready clinic and hides internal fields', async () => {
-    const own = await buildInquiryData('own-read')
-    const foreign = await buildInquiryData('foreign-read')
-
-    const ownInquiry = (await payload.create({
-      collection: 'patientClinicInquiries',
-      data: own.data,
       overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as PatientClinicInquiry
-    const foreignInquiry = (await payload.create({
-      collection: 'patientClinicInquiries',
-      data: foreign.data,
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as PatientClinicInquiry
+    })) as PatientClinicInquiry
+    createdInquiryIds.push(inquiry.id)
 
-    createdInquiryIds.push(ownInquiry.id, foreignInquiry.id)
-
-    const clinicUser = await createClinicUser('own-reader')
-    const clinicPayloadUser = await asClinicScopedPayloadUser(payload, clinicUser, own.clinicId)
-
-    const visible = await payload.find({
-      collection: 'patientClinicInquiries',
-      where: {
-        id: {
-          in: [ownInquiry.id, foreignInquiry.id],
-        },
-      },
-      user: clinicPayloadUser,
-      overrideAccess: false,
-      depth: 0,
-    } as PayloadFindArgs)
-
-    expect(visible.docs).toHaveLength(1)
-    expect(visible.docs[0]).toMatchObject({
-      id: ownInquiry.id,
-      clinic: own.clinicId,
-      email: own.data.email,
-      message: own.data.message,
+    expect(inquiry).toMatchObject({
+      activitySequence: 1,
+      clinicNotificationSequence: 1,
+      clinicUnreadEpoch: 0,
+      clinicUnreadFloor: 0,
+      externalSequence: 0,
+      handlingStatus: 'submitted',
+      lifecycle: 'open',
+      patient: null,
+      revision: 0,
       status: 'submitted',
     })
-    expect(visible.docs[0]).not.toHaveProperty('consent')
-    expect(visible.docs[0]).not.toHaveProperty('assignedTo')
-
-    const foreignFilter = await payload.find({
-      collection: 'patientClinicInquiries',
-      where: {
-        clinic: {
-          equals: foreign.clinicId,
-        },
-      },
-      user: clinicPayloadUser,
-      overrideAccess: false,
-      depth: 0,
-    } as PayloadFindArgs)
-
-    expect(foreignFilter.docs).toHaveLength(0)
-
-    const pendingUser = await createClinicUser('pending-reader')
-    await expect(
-      payload.find({
-        collection: 'patientClinicInquiries',
-        user: asPayloadStaffUser(pendingUser),
-        overrideAccess: false,
-        depth: 0,
-      } as PayloadFindArgs),
-    ).rejects.toThrow(/not allowed|perform this action/i)
-
-    await payload.update({
-      collection: 'clinics',
-      id: own.clinicId,
-      data: { status: 'pending' },
-      overrideAccess: true,
-      depth: 0,
-    })
-
-    await expect(
-      payload.find({
-        collection: 'patientClinicInquiries',
-        user: clinicPayloadUser,
-        overrideAccess: false,
-        depth: 0,
-      } as PayloadFindArgs),
-    ).rejects.toThrow(/not allowed|perform this action/i)
   })
 
-  it('allows clinic staff to update status without changing submitted or internal fields', async () => {
-    const own = await buildInquiryData('field-access-own')
-    const foreign = await buildInquiryData('field-access-foreign')
-
-    const inquiry = (await payload.create({
-      collection: 'patientClinicInquiries',
-      data: own.data,
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as PatientClinicInquiry
-    createdInquiryIds.push(inquiry.id)
-
-    const platformUser = await createPlatformUser('field-assignee')
-    const clinicUser = await createClinicUser('field-editor')
-    const clinicPayloadUser = await asClinicScopedPayloadUser(payload, clinicUser, own.clinicId)
-
-    const updated = (await payload.update({
-      collection: 'patientClinicInquiries',
-      id: inquiry.id,
-      data: {
-        assignedTo: platformUser.id,
-        clinic: foreign.clinicId,
-        email: `${slugPrefix}-tampered@example.com`,
-        message: 'Tampered inquiry message.',
-        status: 'in_review',
-      },
-      user: clinicPayloadUser,
-      overrideAccess: false,
-      depth: 0,
-    } as PayloadUpdateArgs)) as PatientClinicInquiry
-
-    expect(updated.status).toBe('in_review')
-    expect(updated.email).toBe(own.data.email)
-    expect(updated.message).toBe(own.data.message)
-    expect(updated.clinic).toBe(own.clinicId)
-    expect(updated).not.toHaveProperty('assignedTo')
-    expect(updated).not.toHaveProperty('consent')
-
-    const stored = (await payload.findByID({
-      collection: 'patientClinicInquiries',
-      id: inquiry.id,
-      overrideAccess: true,
-      depth: 0,
-    })) as PatientClinicInquiry
-
-    expect(stored).toMatchObject({
-      assignedTo: null,
-      clinic: own.clinicId,
-      email: own.data.email,
-      message: own.data.message,
-      status: 'in_review',
+  it('denies generic CRUD to platform and clinic roles', async () => {
+    const { clinic, doctor, inquiry } = await createLegacyInquiry('closed-access')
+    const platform = await createPlatformTestUser(payload, {
+      createdStaffIds,
+      emailPrefix: `${slugPrefix}-platform`,
     })
-  })
+    const clinicStaff = await createClinicTestUser(payload, {
+      createdStaffIds,
+      emailPrefix: `${slugPrefix}-clinic`,
+    })
+    const clinicUser = await asClinicScopedPayloadUser(payload, clinicStaff, clinic.id)
 
-  it('enforces every clinic staff status transition through the collection', async () => {
-    const { data, clinicId } = await buildInquiryData('status-matrix')
-    const clinicUser = await createClinicUser('status-editor')
-    const clinicPayloadUser = await asClinicScopedPayloadUser(payload, clinicUser, clinicId)
-    const statuses = ['submitted', 'in_review', 'contacted', 'closed', 'spam'] as const
-    const allowedTransitions = {
-      submitted: ['in_review', 'contacted', 'closed', 'spam'],
-      in_review: ['contacted', 'closed', 'spam'],
-      contacted: ['closed'],
-      closed: [],
-      spam: [],
-    } as const
-
-    for (const previousStatus of statuses) {
-      for (const nextStatus of statuses) {
-        if (previousStatus === nextStatus) continue
-
-        const inquiry = (await payload.create({
+    for (const user of [asPayloadStaffUser(platform), clinicUser]) {
+      await expect(
+        payload.find({ collection: 'patientClinicInquiries', depth: 0, overrideAccess: false, user }),
+      ).rejects.toThrow(/not allowed|perform this action/i)
+      await expect(
+        payload.create({
           collection: 'patientClinicInquiries',
-          data: {
-            ...data,
-            email: `${slugPrefix}-${previousStatus}-${nextStatus}@example.com`,
-            fullName: `${previousStatus}-${nextStatus} Patient`,
-            status: previousStatus,
-          },
-          overrideAccess: true,
+          data: originalData(clinic.id, doctor.id, `denied-${String(user.id)}`),
           depth: 0,
-        } as PayloadCreateArgs)) as PatientClinicInquiry
-        createdInquiryIds.push(inquiry.id)
-
-        const update = payload.update({
+          overrideAccess: false,
+          user,
+        }),
+      ).rejects.toThrow(/not allowed|perform this action/i)
+      await expect(
+        payload.update({
           collection: 'patientClinicInquiries',
+          data: { revision: 1 },
+          depth: 0,
           id: inquiry.id,
-          data: { status: nextStatus },
-          user: clinicPayloadUser,
           overrideAccess: false,
+          user,
+        }),
+      ).rejects.toThrow(/not allowed|perform this action/i)
+      await expect(
+        payload.delete({
+          collection: 'patientClinicInquiries',
           depth: 0,
-        } as PayloadUpdateArgs)
-
-        if (allowedTransitions[previousStatus].includes(nextStatus as never)) {
-          await expect(update).resolves.toMatchObject({ status: nextStatus })
-        } else {
-          await expect(update).rejects.toMatchObject({
-            data: {
-              errors: [expect.objectContaining({ path: 'status' })],
-            },
-            status: 400,
-          })
-          await expect(
-            payload.findByID({
-              collection: 'patientClinicInquiries',
-              id: inquiry.id,
-              overrideAccess: true,
-              depth: 0,
-            }),
-          ).resolves.toMatchObject({ status: previousStatus })
-        }
-      }
+          id: inquiry.id,
+          overrideAccess: false,
+          user,
+        }),
+      ).rejects.toThrow(/not allowed|perform this action/i)
     }
-  }, 45000)
-
-  it('prevents platform users from changing consent evidence', async () => {
-    const { data } = await buildInquiryData('evidence')
-
-    const inquiry = (await payload.create({
-      collection: 'patientClinicInquiries',
-      data,
-      overrideAccess: true,
-      depth: 0,
-    } as PayloadCreateArgs)) as PatientClinicInquiry
-
-    createdInquiryIds.push(inquiry.id)
-
-    const platformUser = await createPlatformUser('evidence')
-
-    await expect(
-      payload.update({
-        collection: 'patientClinicInquiries',
-        id: inquiry.id,
-        data: {
-          consent: {
-            accepted: false,
-            acceptedAt: '2026-05-21T10:00:00.000Z',
-            text: 'Tampered consent.',
-          },
-        },
-        user: asPayloadStaffUser(platformUser),
-        overrideAccess: false,
-        depth: 0,
-      } as PayloadUpdateArgs),
-    ).rejects.toThrow(/submission evidence cannot be changed/i)
-
-    await expect(
-      payload.update({
-        collection: 'patientClinicInquiries',
-        id: inquiry.id,
-        data: { treatmentTimeline: 'flexible' },
-        user: asPayloadStaffUser(platformUser),
-        overrideAccess: false,
-        depth: 0,
-      } as PayloadUpdateArgs),
-    ).resolves.toMatchObject({ treatmentTimeline: 'flexible' })
-
-    const unchanged = (await payload.findByID({
-      collection: 'patientClinicInquiries',
-      id: inquiry.id,
-      overrideAccess: true,
-      depth: 0,
-    })) as PatientClinicInquiry
-
-    expect(unchanged.consent?.accepted).toBe(true)
-    expect(unchanged.treatmentTimeline).toBe('flexible')
   })
 
-  it('matches the baseline collection contract', async () => {
-    const { data } = await buildInquiryData('baseline')
+  it('freezes the original submission and requires the server-only command marker for domain state', async () => {
+    const { inquiry } = await createLegacyInquiry('immutable')
 
-    await runBaselineContract<PatientClinicInquiry>({
-      collection: 'patientClinicInquiries',
-      createPrivileged: async () => {
-        const created = (await payload.create({
-          collection: 'patientClinicInquiries',
-          data,
-          overrideAccess: true,
-          depth: 0,
-        } as PayloadCreateArgs)) as PatientClinicInquiry
+    await expect(
+      payload.update({
+        collection: 'patientClinicInquiries',
+        context: { inquiryCommunicationCommand: true },
+        data: { email: 'changed@example.com' },
+        depth: 0,
+        id: inquiry.id,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/email cannot be changed after inquiry submission/i)
 
-        createdInquiryIds.push(created.id)
-        return created
-      },
-      getId: (doc) => doc.id,
-      readPrivileged: async (id) =>
-        (await payload.findByID({
-          collection: 'patientClinicInquiries',
-          id,
-          overrideAccess: true,
-          depth: 0,
-        })) as PatientClinicInquiry,
-      updatePrivileged: async (id) =>
-        (await payload.update({
-          collection: 'patientClinicInquiries',
-          id,
-          data: { status: 'in_review' },
-          overrideAccess: true,
-          depth: 0,
-        } as PayloadUpdateArgs)) as PatientClinicInquiry,
-      assertUpdated: (doc) => {
-        expect(doc.status).toBe('in_review')
-      },
-      assertDeniedWrite: async (id) => {
-        const clinicUser = await createClinicUser('baseline-denied')
+    await expect(
+      payload.update({
+        collection: 'patientClinicInquiries',
+        data: { revision: 1 },
+        depth: 0,
+        id: inquiry.id,
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow(/invalid.*revision|domain fields cannot be changed/i)
 
-        await expect(
-          payload.update({
-            collection: 'patientClinicInquiries',
-            id,
-            data: { status: 'closed' },
-            user: asPayloadStaffUser(clinicUser),
-            overrideAccess: false,
-            depth: 0,
-          } as PayloadUpdateArgs),
-        ).rejects.toThrow(/not allowed|perform this action/i)
-      },
-      deletePrivileged: async (id) => {
-        const platformUser = await createPlatformUser('baseline-delete')
-
-        const deleted = await payload.delete({
-          collection: 'patientClinicInquiries',
-          id,
-          user: asPayloadStaffUser(platformUser),
-          overrideAccess: false,
-          depth: 0,
-        })
-
-        const index = createdInquiryIds.indexOf(Number(id))
-        if (index >= 0) createdInquiryIds.splice(index, 1)
-        return deleted
-      },
-    })
+    await expect(
+      payload.update({
+        collection: 'patientClinicInquiries',
+        context: { inquiryCommunicationCommand: true },
+        data: { revision: 1 },
+        depth: 0,
+        id: inquiry.id,
+        overrideAccess: true,
+      }),
+    ).resolves.toMatchObject({ revision: 1, status: 'submitted' })
   })
 })

@@ -3,7 +3,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadHandler, type EmailAdapter } from 'payload'
+import { buildConfig, PayloadHandler, type CollectionConfig, type EmailAdapter } from 'payload'
 import { cacheRevalidationVisibilityGetHandler } from './endpoints/cacheRevalidationVisibility'
 import { clinicDashboardBootstrapGetHandler } from './endpoints/clinicDashboardBootstrap'
 import {
@@ -24,6 +24,25 @@ import {
   clinicDashboardGalleryMediaPostHandler,
   clinicDashboardGalleryPutHandler,
 } from './endpoints/clinicDashboardGallery'
+import {
+  clinicDashboardInquiriesGetHandler,
+  clinicDashboardInquiryAttachmentDiscardPostHandler,
+  clinicDashboardInquiryAttachmentDownloadGetHandler,
+  clinicDashboardInquiryAttachmentDraftPostHandler,
+  clinicDashboardInquiryAttachmentFinalizePostHandler,
+  clinicDashboardInquiryAttachmentPreviewGetHandler,
+  clinicDashboardInquiryContactRevealPostHandler,
+  clinicDashboardInquiryDetailGetHandler,
+  clinicDashboardInquiryMessagesPostHandler,
+  clinicDashboardInquiryNotesPostHandler,
+  clinicDashboardInquiryReadPositionPutHandler,
+  clinicDashboardInquiryStatePatchHandler,
+} from './endpoints/clinicDashboardInquiries'
+import {
+  legacyPatientClinicInquiryGetHandler,
+  legacyPatientClinicInquiryPatchHandler,
+  legacyPatientClinicInquiriesGetHandler,
+} from './endpoints/legacyPatientClinicInquiries'
 import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
 import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
@@ -41,6 +60,12 @@ import { PlatformStaff } from './collections/PlatformStaff'
 import { Clinics } from './collections/Clinics'
 import { ClinicApplications } from './collections/ClinicApplications'
 import { PatientClinicInquiries } from './collections/PatientClinicInquiries'
+import { InquiryConversations } from './collections/InquiryConversations'
+import { InquiryMessages } from './collections/InquiryMessages'
+import { InquiryInternalNotes } from './collections/InquiryInternalNotes'
+import { InquiryAttachments } from './collections/InquiryAttachments'
+import { InquiryReadPositions } from './collections/InquiryReadPositions'
+import { InquiryAuditEvents } from './collections/InquiryAuditEvents'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accreditation'
 import { MedicalSpecialties } from './collections/MedicalSpecialties'
@@ -97,6 +122,27 @@ const silentEmailAdapter: EmailAdapter<void> = () => ({
   name: 'silent-ci-email',
   sendEmail: async () => undefined,
 })
+
+const PatientClinicInquiriesWithLegacyBridge = {
+  ...PatientClinicInquiries,
+  endpoints: [
+    {
+      path: '/',
+      method: 'get',
+      handler: legacyPatientClinicInquiriesGetHandler as PayloadHandler,
+    },
+    {
+      path: '/:id',
+      method: 'get',
+      handler: legacyPatientClinicInquiryGetHandler as PayloadHandler,
+    },
+    {
+      path: '/:id',
+      method: 'patch',
+      handler: legacyPatientClinicInquiryPatchHandler as PayloadHandler,
+    },
+  ],
+} satisfies CollectionConfig
 
 export default buildConfig({
   // Keep the complete multipart request below Vercel's 4.5 MB request limit.
@@ -174,6 +220,66 @@ export default buildConfig({
       path: '/clinic-dashboard/gallery/discard',
       method: 'post',
       handler: clinicDashboardGalleryDiscardPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries',
+      method: 'get',
+      handler: clinicDashboardInquiriesGetHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/detail',
+      method: 'get',
+      handler: clinicDashboardInquiryDetailGetHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/messages',
+      method: 'post',
+      handler: clinicDashboardInquiryMessagesPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/notes',
+      method: 'post',
+      handler: clinicDashboardInquiryNotesPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/state',
+      method: 'patch',
+      handler: clinicDashboardInquiryStatePatchHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/read-position',
+      method: 'put',
+      handler: clinicDashboardInquiryReadPositionPutHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/contact/reveal',
+      method: 'post',
+      handler: clinicDashboardInquiryContactRevealPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/attachments/drafts',
+      method: 'post',
+      handler: clinicDashboardInquiryAttachmentDraftPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/attachments/drafts/finalize',
+      method: 'post',
+      handler: clinicDashboardInquiryAttachmentFinalizePostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/attachments/drafts/discard',
+      method: 'post',
+      handler: clinicDashboardInquiryAttachmentDiscardPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/attachments/preview',
+      method: 'get',
+      handler: clinicDashboardInquiryAttachmentPreviewGetHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/attachments/download',
+      method: 'get',
+      handler: clinicDashboardInquiryAttachmentDownloadGetHandler as PayloadHandler,
     },
     { path: '/seed', method: 'post', handler: seedPostHandler as PayloadHandler },
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
@@ -268,7 +374,13 @@ export default buildConfig({
     ClinicProfileDrafts,
     PlatformStaff,
     ClinicApplications,
-    PatientClinicInquiries,
+    PatientClinicInquiriesWithLegacyBridge,
+    InquiryConversations,
+    InquiryMessages,
+    InquiryInternalNotes,
+    InquiryAttachments,
+    InquiryReadPositions,
+    InquiryAuditEvents,
     Clinics,
     Doctors,
     Accreditation,

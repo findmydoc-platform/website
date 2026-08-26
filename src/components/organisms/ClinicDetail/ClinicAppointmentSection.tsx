@@ -348,7 +348,7 @@ export function ClinicAppointmentSection({
               placeholder="Tell us about your request and what you want to clarify."
               value={fields.note}
               onChange={(event) => handleFieldChange('note', event)}
-              maxLength={5000}
+              maxLength={3000}
               required
               {...formValidation.getFieldProps('message')}
             />

@@ -22,7 +22,7 @@ type UseClinicDetailInteractionStateArgs = {
 
 type ContactFormMessageTone = 'success' | 'error'
 type ClinicContactRequestPayload = {
-  clinicId: number
+  clinicId: string
   doctorId?: string
   treatmentId?: string
   idempotencyKey: string
@@ -329,7 +329,7 @@ export function useClinicDetailInteractionState({
         const authenticated = inquiryCreation.kind === 'authenticated'
         const result = await submitClinicContactRequest(
           {
-            clinicId,
+            clinicId: String(clinicId),
             doctorId: selectedDoctorId || undefined,
             treatmentId: selectedTreatmentId || undefined,
             ...(authenticated

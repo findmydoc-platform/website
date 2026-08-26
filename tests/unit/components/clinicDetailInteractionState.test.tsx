@@ -183,6 +183,7 @@ describe('useClinicDetailInteractionState', () => {
     expect(requestBody).not.toHaveProperty('email')
     expect(requestBody).not.toHaveProperty('fullName')
     expect(requestBody).not.toHaveProperty('phoneNumber')
+    expect(requestBody.clinicId).toBe('1')
     expect(result.current.submittedInquiryHref).toBe('/patient/inquiries/42')
     expect(result.current.isPhoneLocked).toBe(true)
   })

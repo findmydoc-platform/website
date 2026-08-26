@@ -290,7 +290,8 @@ describe('PatientInquiriesController', () => {
         targetType: 'conversation',
       }),
     )
-    expect(await screen.findByText('Report received')).toBeTruthy()
+    const confirmation = await screen.findByRole('heading', { name: 'Report received' })
+    await waitFor(() => expect(document.activeElement).toBe(confirmation))
   })
 
   it('reuses a failed report key only while the report content is unchanged', async () => {
@@ -327,6 +328,63 @@ describe('PatientInquiriesController', () => {
     expect(report.mock.calls[2]?.[0].idempotencyKey).not.toBe(firstKey)
   })
 
+  it('reports message and attachment targets with their exact identifiers', async () => {
+    const report = vi.fn().mockResolvedValue({ received: true, reportId: 'report-1' })
+    const detailWithAttachment: InquiryDetailDTO = {
+      ...detail,
+      timeline: [
+        {
+          ...clinicReply,
+          attachment: {
+            fileName: 'synthetic-plan.pdf',
+            id: 'attachment-1',
+            mimeType: 'application/pdf',
+            sizeBytes: 2048,
+          },
+        },
+      ],
+    }
+    const api = createApi({
+      readDetail: vi.fn().mockResolvedValue({
+        changeCursor: 'detail-with-attachment',
+        inquiry: detailWithAttachment,
+        unchanged: false,
+      }),
+      report,
+    })
+
+    render(
+      <PatientInquiriesController
+        api={api}
+        initialInquiryId="inquiry-1"
+        loginHref="/login/patient?next=%2Fpatient%2Finquiries%2Finquiry-1"
+        mode="detail"
+      />,
+    )
+
+    await screen.findByText('synthetic-plan.pdf')
+    fireEvent.click(screen.getByRole('button', { name: 'Report message' }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Reason' }), { target: { value: 'privacy-concern' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
+
+    await waitFor(() =>
+      expect(report).toHaveBeenLastCalledWith(
+        expect.objectContaining({ inquiryId: 'inquiry-1', targetId: 'message:1', targetType: 'message' }),
+      ),
+    )
+    fireEvent.click(await screen.findByRole('button', { name: 'Done' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Report attachment' }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Reason' }), { target: { value: 'privacy-concern' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
+
+    await waitFor(() =>
+      expect(report).toHaveBeenLastCalledWith(
+        expect.objectContaining({ inquiryId: 'inquiry-1', targetId: 'attachment-1', targetType: 'attachment' }),
+      ),
+    )
+  })
+
   it('submits the one available appeal and refreshes the server projection', async () => {
     const restrictedDetail: InquiryDetailDTO = {
       ...detail,
@@ -343,11 +401,30 @@ describe('PatientInquiriesController', () => {
       },
     }
     const appeal = vi.fn().mockResolvedValue({ submitted: true })
-    const readDetail = vi.fn().mockResolvedValue({
-      changeCursor: 'detail-restricted',
-      inquiry: restrictedDetail,
-      unchanged: false,
-    })
+    const appealSubmittedDetail: InquiryDetailDTO = {
+      ...restrictedDetail,
+      moderation: {
+        conversation: {
+          appeal: { caseId: 'case-1', state: 'submitted' },
+          category: 'privacy-concern',
+          isCurrentActorAffected: true,
+          state: 'restricted',
+        },
+        identity: { state: 'available' },
+      },
+    }
+    const readDetail = vi
+      .fn()
+      .mockResolvedValueOnce({
+        changeCursor: 'detail-restricted',
+        inquiry: restrictedDetail,
+        unchanged: false,
+      })
+      .mockResolvedValue({
+        changeCursor: 'detail-appeal-submitted',
+        inquiry: appealSubmittedDetail,
+        unchanged: false,
+      })
     const api = createApi({ appeal, readDetail })
 
     render(
@@ -368,7 +445,14 @@ describe('PatientInquiriesController', () => {
 
     await waitFor(() => expect(appeal).toHaveBeenCalledWith({ caseId: 'case-1', text: 'Synthetic appeal for review.' }))
     expect(readDetail.mock.calls.length).toBeGreaterThanOrEqual(2)
-    expect(await screen.findByText('Appeal submitted')).toBeTruthy()
+    const confirmation = await screen.findByRole('heading', { name: 'Appeal submitted' })
+    await waitFor(() => expect(document.activeElement).toBe(confirmation))
+    expect(screen.queryByRole('button', { name: 'Appeal decision' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    const restrictionHeading = screen.getByRole('heading', {
+      name: 'Messaging in this conversation is restricted',
+    })
+    await waitFor(() => expect(document.activeElement).toBe(restrictionHeading))
   })
 
   it('refreshes first after an ambiguous send and retries only explicitly with the same key', async () => {

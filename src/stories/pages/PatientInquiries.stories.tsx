@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import * as React from 'react'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 
 import { Header } from '@/components/templates/Header/Component'
 import {
@@ -63,6 +63,7 @@ function ControllerFlowHarness() {
   const api = React.useMemo<PatientInquiriesApi>(() => {
     let current = activePatientInquiryDetail
     return {
+      appeal: async () => ({ submitted: true }),
       attachmentDownloadHref: (attachmentId) =>
         `/api/patient/inquiries/attachments/download?attachmentId=${attachmentId}`,
       createDraft: async () => {
@@ -72,6 +73,7 @@ function ControllerFlowHarness() {
       finalizeDraft: async () => ({ finalized: true }),
       readDetail: async () => ({ changeCursor: `detail-${current.revision}`, inquiry: current, unchanged: false }),
       readQueue: async () => patientInquiryQueue,
+      report: async () => ({ received: true, reportId: 'report-story' }),
       sendMessage: async (input) => {
         current = {
           ...current,
@@ -99,6 +101,40 @@ function ControllerFlowHarness() {
       api={api}
       initialInquiryId="inquiry-izmir"
       loginHref="/login/patient?next=%2Fpatient%2Finquiries%2Finquiry-izmir"
+      mode="detail"
+      pollIntervalMs={60_000}
+    />
+  )
+}
+
+function AppealSuccessHarness() {
+  const api = React.useMemo<PatientInquiriesApi>(() => {
+    let current = restrictedPatientInquiryDetail
+    return {
+      appeal: async () => {
+        current = appealSubmittedPatientInquiryDetail
+        return { submitted: true }
+      },
+      attachmentDownloadHref: (attachmentId) =>
+        `/api/patient/inquiries/attachments/download?attachmentId=${attachmentId}`,
+      createDraft: async () => {
+        throw new Error('Attachment upload is not used in this story.')
+      },
+      discardDraft: async () => ({ discarded: true }),
+      finalizeDraft: async () => ({ finalized: true }),
+      readDetail: async () => ({ changeCursor: `detail-${current.revision}`, inquiry: current, unchanged: false }),
+      readQueue: async () => patientInquiryQueue,
+      report: async () => ({ received: true, reportId: 'report-story' }),
+      sendMessage: async () => ({ inquiry: current }),
+      updateReadPosition: async () => ({ unread: { count: 0, isUnread: false } }),
+      uploadDraft: async () => undefined,
+    }
+  }, [])
+  return (
+    <PatientInquiriesController
+      api={api}
+      initialInquiryId={restrictedPatientInquiryDetail.id}
+      loginHref={`/login/patient?next=%2Fpatient%2Finquiries%2F${restrictedPatientInquiryDetail.id}`}
       mode="detail"
       pollIntervalMs={60_000}
     />
@@ -474,14 +510,53 @@ export const ReportAttachmentForm: Story = {
   },
 }
 
-export const ReportConfirmation: Story = {
+export const ReportSuccess: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await canvas.getByRole('button', { name: 'Report conversation' }).click()
     const dialog = within(within(document.body).getByRole('dialog'))
     await userEvent.selectOptions(dialog.getByLabelText('Reason'), 'privacy-concern')
     await userEvent.click(dialog.getByRole('button', { name: 'Submit report' }))
-    await expect(dialog.findByRole('heading', { name: 'Report received' })).resolves.toBeInTheDocument()
+    const confirmation = await dialog.findByRole('heading', { name: 'Report received' })
+    await expect(confirmation).toHaveFocus()
+  },
+}
+
+export const AppealSuccess: Story = {
+  render: () => <AppealSuccessHarness />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: 'Appeal decision' }))
+    const dialog = within(within(document.body).getByRole('dialog'))
+    await userEvent.type(dialog.getByRole('textbox', { name: 'Appeal' }), 'Synthetic appeal for review.')
+    await userEvent.click(dialog.getByRole('button', { name: 'Submit appeal' }))
+    const confirmation = await dialog.findByRole('heading', { name: 'Appeal submitted' })
+    await expect(confirmation).toHaveFocus()
+    await expect(canvas.queryByRole('button', { name: 'Appeal decision' })).not.toBeInTheDocument()
+    await userEvent.click(dialog.getByRole('button', { name: 'Done' }))
+    const restrictionHeading = canvas.getByRole('heading', { name: 'Messaging in this conversation is restricted' })
+    await waitFor(() => expect(restrictionHeading).toHaveFocus())
+  },
+}
+
+export const DetailError: Story = {
+  args: {
+    detailView: undefined,
+    state: {
+      ...activePatientInquiryState(),
+      detail: { error: 'Check your connection and try again.', status: 'error' },
+    },
+  },
+}
+
+export const ControllerFlow: Story = {
+  render: () => <ControllerFlowHarness />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const message = await canvas.findByRole('textbox', { name: 'Message' })
+    await userEvent.type(message, 'Tuesday at 15:00 works.')
+    await userEvent.click(canvas.getByRole('button', { name: 'Send' }))
+    await expect(canvas.findByText('Tuesday at 15:00 works.')).resolves.toBeInTheDocument()
   },
 }
 

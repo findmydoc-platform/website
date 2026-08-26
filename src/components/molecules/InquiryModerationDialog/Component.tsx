@@ -41,11 +41,13 @@ const categories: Array<{ label: string; value: InquiryModerationReportCategory 
 ]
 
 export function InquiryReportDialog({
+  onFallbackFocus,
   onOpenChange,
   onSubmit,
   open,
   target,
 }: {
+  onFallbackFocus?: () => void
   onOpenChange: (open: boolean) => void
   onSubmit: (values: InquiryReportFormValues) => Promise<MutationResult>
   open: boolean
@@ -57,6 +59,11 @@ export function InquiryReportDialog({
   const [status, setStatus] = React.useState<'editing' | 'submitting' | 'submitted'>('editing')
   const reasonRef = React.useRef<HTMLSelectElement>(null)
   const returnFocusRef = React.useRef<HTMLElement>(null)
+  const submittedHeadingRef = React.useRef<HTMLHeadingElement>(null)
+
+  React.useEffect(() => {
+    if (status === 'submitted') submittedHeadingRef.current?.focus()
+  }, [status])
 
   const handleOpenChange = (nextOpen: boolean) => {
     onOpenChange(nextOpen)
@@ -95,13 +102,16 @@ export function InquiryReportDialog({
         }}
         onCloseAutoFocus={(event) => {
           event.preventDefault()
-          returnFocusRef.current?.focus()
+          if (returnFocusRef.current?.isConnected) returnFocusRef.current.focus()
+          else onFallbackFocus?.()
         }}
       >
         {status === 'submitted' ? (
           <>
             <DialogHeader>
-              <DialogTitle>Report received</DialogTitle>
+              <DialogTitle ref={submittedHeadingRef} tabIndex={-1}>
+                Report received
+              </DialogTitle>
               <DialogDescription>
                 findmydoc will review the report. Reporting does not automatically restrict the conversation.
               </DialogDescription>
@@ -185,11 +195,13 @@ export function InquiryReportDialog({
 
 export function InquiryAppealDialog({
   caseId,
+  onFallbackFocus,
   onOpenChange,
   onSubmit,
   open,
 }: {
   caseId?: string
+  onFallbackFocus?: () => void
   onOpenChange: (open: boolean) => void
   onSubmit: (values: InquiryAppealFormValues) => Promise<MutationResult>
   open: boolean
@@ -199,8 +211,15 @@ export function InquiryAppealDialog({
   const [status, setStatus] = React.useState<'editing' | 'submitting' | 'submitted'>('editing')
   const appealRef = React.useRef<HTMLTextAreaElement>(null)
   const returnFocusRef = React.useRef<HTMLElement>(null)
+  const submittedHeadingRef = React.useRef<HTMLHeadingElement>(null)
+  const submittedOnCloseRef = React.useRef(false)
+
+  React.useEffect(() => {
+    if (status === 'submitted') submittedHeadingRef.current?.focus()
+  }, [status])
 
   const handleOpenChange = (nextOpen: boolean) => {
+    submittedOnCloseRef.current = !nextOpen && status === 'submitted'
     onOpenChange(nextOpen)
     if (!nextOpen) {
       setText('')
@@ -232,13 +251,18 @@ export function InquiryAppealDialog({
         }}
         onCloseAutoFocus={(event) => {
           event.preventDefault()
-          returnFocusRef.current?.focus()
+          if (submittedOnCloseRef.current) onFallbackFocus?.()
+          else if (returnFocusRef.current?.isConnected) returnFocusRef.current.focus()
+          else onFallbackFocus?.()
+          submittedOnCloseRef.current = false
         }}
       >
         {status === 'submitted' ? (
           <>
             <DialogHeader>
-              <DialogTitle>Appeal submitted</DialogTitle>
+              <DialogTitle ref={submittedHeadingRef} tabIndex={-1}>
+                Appeal submitted
+              </DialogTitle>
               <DialogDescription>findmydoc will review this one appeal.</DialogDescription>
             </DialogHeader>
             <DialogFooter>

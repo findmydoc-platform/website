@@ -170,6 +170,9 @@ export const InteractiveSubmit: Story = {
   render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
+    const messageInput = canvas.getByRole('textbox', { name: 'Message' })
+
+    await expect(messageInput).toHaveAttribute('maxlength', '3000')
 
     await userEvent.type(canvas.getByRole('textbox', { name: 'Full Name' }), 'Jane Doe')
     await userEvent.type(canvas.getByRole('textbox', { name: 'Phone Number' }), '+49 30 1234')
@@ -179,7 +182,7 @@ export const InteractiveSubmit: Story = {
       'within_two_weeks',
     )
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'When Should We Contact You?' }), 'morning')
-    await userEvent.type(canvas.getByRole('textbox', { name: 'Message' }), 'I would like to discuss treatment options.')
+    await userEvent.type(messageInput, 'I would like to discuss treatment options.')
 
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Doctor' }), doctors[0]?.id ?? '')
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Treatment' }), treatments[1]?.id ?? '')

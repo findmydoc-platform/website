@@ -4,11 +4,13 @@ import {
   AlertCircle,
   ArrowLeft,
   Download,
+  Flag,
   File,
   FileImage,
   LoaderCircle,
   LockKeyhole,
   Paperclip,
+  ShieldAlert,
   X,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -17,6 +19,13 @@ import * as React from 'react'
 import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import { Textarea } from '@/components/atoms/textarea'
+import {
+  InquiryAppealDialog,
+  InquiryReportDialog,
+  type InquiryAppealFormValues,
+  type InquiryReportFormValues,
+  type InquiryReportTarget,
+} from '@/components/molecules/InquiryModerationDialog/Component'
 import type { PatientInquiryComposerState } from '@/features/patientInquiries/model'
 import type { PatientInquiryDetailView, PatientInquiryTimelineItemView } from '@/features/patientInquiries/viewModel'
 import { cn } from '@/utilities/ui'
@@ -32,6 +41,11 @@ type PatientInquiryConversationProps = {
   onRetry: () => void
   onRetrySend: () => void
   onSend: () => void
+  onSubmitAppeal: (caseId: string, values: InquiryAppealFormValues) => Promise<{ error?: string; ok: boolean }>
+  onSubmitReport: (
+    target: InquiryReportTarget,
+    values: InquiryReportFormValues,
+  ) => Promise<{ error?: string; ok: boolean }>
   onTextChange: (text: string) => void
   status: 'error' | 'idle' | 'loading' | 'ready'
 }
@@ -56,7 +70,54 @@ const formatDay = (value: string, now: Date): string => {
 const formatBytes = (bytes: number): string =>
   bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
 
-const Attachment = ({ item }: { item: PatientInquiryTimelineItemView }) => {
+const categoryLabel = (category?: string): string =>
+  ({
+    'harassment-threats': 'Harassment or threats',
+    other: 'Other',
+    'privacy-concern': 'Privacy concern or wrong recipient',
+    'spam-fraud-impersonation': 'Spam, fraud or impersonation',
+    'suspected-illegal-content': 'Suspected illegal content',
+  })[category ?? ''] ?? 'Policy concern'
+
+const Attachment = ({
+  item,
+  onAppeal,
+  onReport,
+  reportTarget,
+}: {
+  item: PatientInquiryTimelineItemView
+  onAppeal: (caseId: string) => void
+  onReport: (target: InquiryReportTarget) => void
+  reportTarget?: InquiryReportTarget
+}) => {
+  if (item.kind !== 'external-message') return null
+  if (item.attachmentState === 'restricted') {
+    return (
+      <div className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-3 text-sm">
+        <p className="inline-flex items-center gap-2 font-medium text-muted-foreground">
+          <LockKeyhole className="size-4" aria-hidden="true" /> Attachment unavailable
+        </p>
+        {item.attachmentModeration?.isCurrentActorAffected ? (
+          <div className="mt-2 text-xs leading-5 text-muted-foreground">
+            <p>findmydoc restricted this attachment · {categoryLabel(item.attachmentModeration.category)}</p>
+            {item.attachmentModeration.appeal?.state === 'available' ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="link"
+                className="min-h-11 px-0"
+                onClick={() => onAppeal(item.attachmentModeration?.appeal?.caseId ?? '')}
+              >
+                Appeal decision
+              </Button>
+            ) : item.attachmentModeration.appeal?.state === 'submitted' ? (
+              <p>Appeal submitted</p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    )
+  }
   if (item.kind !== 'external-message' || !item.attachment) return null
   const Icon = item.attachment.mimeType === 'application/pdf' ? File : FileImage
   return (
@@ -75,6 +136,18 @@ const Attachment = ({ item }: { item: PatientInquiryTimelineItemView }) => {
           <Download className="size-5" aria-hidden="true" />
         </a>
       ) : null}
+      {reportTarget ? (
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="size-11"
+          aria-label="Report attachment"
+          onClick={() => onReport(reportTarget)}
+        >
+          <Flag className="size-4" aria-hidden="true" />
+        </Button>
+      ) : null}
     </div>
   )
 }
@@ -83,10 +156,14 @@ const Timeline = ({
   detail,
   firstUnreadId,
   now,
+  onAppeal,
+  onReport,
 }: {
   detail: PatientInquiryDetailView
   firstUnreadId?: string
   now: Date
+  onAppeal: (caseId: string) => void
+  onReport: (target: InquiryReportTarget) => void
 }) => {
   const visibleTimeline = detail.timeline.filter((item) => item.kind !== 'internal-note')
   let lastDay = ''
@@ -107,7 +184,13 @@ const Timeline = ({
                 </div>
               ) : null}
               <p className="text-center text-sm text-muted-foreground" role="status">
-                {item.event === 'reopened' ? 'The clinic reopened this inquiry.' : 'The inquiry status changed.'}
+                {item.event === 'reopened'
+                  ? 'The clinic reopened this inquiry.'
+                  : item.event === 'moderation-restricted'
+                    ? 'findmydoc restricted communication in this inquiry.'
+                    : item.event === 'moderation-restored'
+                      ? 'findmydoc restored communication in this inquiry.'
+                      : 'The inquiry status changed.'}
               </p>
             </li>
           )
@@ -143,9 +226,31 @@ const Timeline = ({
               >
                 <div className="mb-2 flex items-center justify-between gap-6 text-sm">
                   <strong>{current ? 'You' : 'Clinic'}</strong>
-                  <time className="text-muted-foreground" dateTime={item.createdAt}>
-                    {formatTime(item.createdAt)}
-                  </time>
+                  <span className="inline-flex items-center gap-2">
+                    <time className="text-muted-foreground" dateTime={item.createdAt}>
+                      {formatTime(item.createdAt)}
+                    </time>
+                    {!current && item.contentState !== 'restricted' ? (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="size-11"
+                        aria-label="Report message"
+                        onClick={() =>
+                          onReport({
+                            inquiryId: detail.id,
+                            label: 'message',
+                            preview: item.text ?? 'Message',
+                            targetId: item.id,
+                            targetType: 'message',
+                          })
+                        }
+                      >
+                        <Flag className="size-4" aria-hidden="true" />
+                      </Button>
+                    ) : null}
+                  </span>
                 </div>
                 <div
                   className={cn(
@@ -153,8 +258,49 @@ const Timeline = ({
                     current ? 'border-primary/25 bg-primary/5' : 'border-border bg-muted/35',
                   )}
                 >
-                  {item.text ? <p className="whitespace-pre-wrap">{item.text}</p> : null}
-                  <Attachment item={item} />
+                  {item.contentState === 'restricted' ? (
+                    <div className="text-sm text-muted-foreground">
+                      <p className="inline-flex items-center gap-2 font-medium">
+                        <LockKeyhole className="size-4" aria-hidden="true" /> Message unavailable
+                      </p>
+                      {item.moderation?.isCurrentActorAffected ? (
+                        <div className="mt-2 text-xs leading-5">
+                          <p>findmydoc restricted this message · {categoryLabel(item.moderation.category)}</p>
+                          {item.moderation.appeal?.state === 'available' ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="link"
+                              className="min-h-11 px-0"
+                              onClick={() => onAppeal(item.moderation?.appeal?.caseId ?? '')}
+                            >
+                              Appeal decision
+                            </Button>
+                          ) : item.moderation.appeal?.state === 'submitted' ? (
+                            <p>Appeal submitted</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : item.text ? (
+                    <p className="whitespace-pre-wrap">{item.text}</p>
+                  ) : null}
+                  <Attachment
+                    item={item}
+                    onAppeal={onAppeal}
+                    onReport={onReport}
+                    reportTarget={
+                      !current && item.attachment
+                        ? {
+                            inquiryId: detail.id,
+                            label: 'attachment',
+                            preview: item.attachment.fileName,
+                            targetId: item.attachment.id,
+                            targetType: 'attachment',
+                          }
+                        : undefined
+                    }
+                  />
                 </div>
               </div>
             </article>
@@ -176,11 +322,17 @@ export function PatientInquiryConversation({
   onRetry,
   onRetrySend,
   onSend,
+  onSubmitAppeal,
+  onSubmitReport,
   onTextChange,
   status,
 }: PatientInquiryConversationProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [reportTarget, setReportTarget] = React.useState<InquiryReportTarget>()
+  const [appealCaseId, setAppealCaseId] = React.useState<string>()
   const errorHeadingRef = React.useRef<HTMLHeadingElement>(null)
+  const conversationHeadingRef = React.useRef<HTMLHeadingElement>(null)
+  const restrictionHeadingRef = React.useRef<HTMLHeadingElement>(null)
   const timelineRef = React.useRef<HTMLDivElement>(null)
   const previousDetailRef = React.useRef<{ id?: string; length: number }>({ length: 0 })
   const previousSendStatusRef = React.useRef(composer.sendStatus)
@@ -288,6 +440,12 @@ export function PatientInquiryConversation({
   const replyAllowed = !closed && detail.actions.canReply
   const busy = composer.sendStatus === 'sending' || composer.sendStatus === 'uploading'
   const canSend = !busy && !composer.fileError && Boolean(composer.text.trim() || composer.file)
+  const restriction =
+    detail.moderation?.identity.state === 'messaging-suspended'
+      ? detail.moderation.identity
+      : detail.moderation?.conversation.state === 'restricted'
+        ? detail.moderation.conversation
+        : undefined
 
   return (
     <section
@@ -313,20 +471,97 @@ export function PatientInquiryConversation({
           {getInitials(detail.clinic.displayName)}
         </span>
         <div className="min-w-0 flex-1">
-          <Heading as="h2" align="left" size="h6" className="truncate text-lg text-foreground">
+          <Heading
+            ref={conversationHeadingRef}
+            as="h2"
+            align="left"
+            size="h6"
+            className="truncate text-lg text-foreground"
+            tabIndex={-1}
+          >
             {detail.clinic.displayName}
           </Heading>
           <p className="truncate text-sm text-muted-foreground">{detail.interest.label}</p>
-          <span
-            className={cn(
-              'mt-2 inline-flex rounded-md px-2 py-1 text-xs font-semibold',
-              closed ? 'bg-muted text-muted-foreground' : 'bg-success/10 text-success',
-            )}
-          >
-            {closed ? 'Closed' : 'Open'}
+          <span className="mt-2 flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                'inline-flex rounded-md px-2 py-1 text-xs font-semibold',
+                closed ? 'bg-muted text-muted-foreground' : 'bg-success/10 text-success',
+              )}
+            >
+              {closed ? 'Closed' : 'Open'}
+            </span>
+            {detail.moderation?.conversation.state === 'restricted' ? (
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-warning/15 px-2 py-1 text-xs font-semibold text-foreground">
+                <LockKeyhole className="size-3.5" aria-hidden="true" /> Restricted
+              </span>
+            ) : null}
           </span>
         </div>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="size-11"
+          aria-label="Report conversation"
+          onClick={() =>
+            setReportTarget({
+              inquiryId: detail.id,
+              label: 'conversation',
+              preview: `Conversation with ${detail.clinic.displayName}`,
+              targetId: detail.binding.kind === 'patient' ? detail.binding.conversationId : detail.id,
+              targetType: 'conversation',
+            })
+          }
+        >
+          <Flag className="size-5" aria-hidden="true" />
+        </Button>
       </header>
+
+      {restriction ? (
+        <div className="shrink-0 border-b border-warning/30 bg-warning/10 px-5 py-4 sm:px-7" role="status">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden="true" />
+            <div className="text-sm leading-6">
+              <Heading
+                ref={restrictionHeadingRef}
+                as="h3"
+                align="left"
+                size="h6"
+                className="text-sm font-semibold text-foreground"
+                tabIndex={-1}
+              >
+                {detail.moderation?.identity.state === 'messaging-suspended'
+                  ? 'Messaging is suspended for this account'
+                  : 'Messaging in this conversation is restricted'}
+              </Heading>
+              <p className="text-muted-foreground">
+                {restriction.isCurrentActorAffected
+                  ? `findmydoc applied this restriction · ${categoryLabel(restriction.category)}`
+                  : 'findmydoc restricted the other participant. You can still read the conversation.'}
+              </p>
+              {restriction.isCurrentActorAffected && restriction.effectiveUntil ? (
+                <p className="text-muted-foreground">
+                  Until {new Date(restriction.effectiveUntil).toLocaleString('en-GB')}
+                </p>
+              ) : null}
+              {restriction.isCurrentActorAffected && restriction.appeal?.state === 'available' ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="link"
+                  className="min-h-11 px-0"
+                  onClick={() => setAppealCaseId(restriction.appeal?.caseId)}
+                >
+                  Appeal decision
+                </Button>
+              ) : restriction.isCurrentActorAffected && restriction.appeal?.state === 'submitted' ? (
+                <p className="font-medium text-foreground">Appeal submitted</p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div
         ref={timelineRef}
@@ -336,7 +571,13 @@ export function PatientInquiryConversation({
           if (target.scrollHeight - target.scrollTop - target.clientHeight < 72) setHasNewMessages(false)
         }}
       >
-        <Timeline detail={detail} firstUnreadId={firstUnreadId} now={now} />
+        <Timeline
+          detail={detail}
+          firstUnreadId={firstUnreadId}
+          now={now}
+          onAppeal={setAppealCaseId}
+          onReport={setReportTarget}
+        />
         {hasNewMessages ? (
           <Button
             type="button"
@@ -447,6 +688,7 @@ export function PatientInquiryConversation({
             <input
               ref={fileInputRef}
               type="file"
+              aria-label="Attachment"
               className="sr-only"
               accept="image/png,image/jpeg,image/webp,application/pdf"
               aria-describedby={composer.fileError ? 'patient-inquiry-file-error' : undefined}
@@ -482,6 +724,33 @@ export function PatientInquiryConversation({
           </div>
         </div>
       )}
+      <InquiryReportDialog
+        open={Boolean(reportTarget)}
+        target={reportTarget}
+        onFallbackFocus={() => conversationHeadingRef.current?.focus()}
+        onOpenChange={(open) => {
+          if (!open) setReportTarget(undefined)
+        }}
+        onSubmit={(values) =>
+          reportTarget
+            ? onSubmitReport(reportTarget, values)
+            : Promise.resolve({ error: 'No report target.', ok: false })
+        }
+      />
+      <InquiryAppealDialog
+        caseId={appealCaseId}
+        open={Boolean(appealCaseId)}
+        onFallbackFocus={() => {
+          if (restrictionHeadingRef.current?.isConnected) restrictionHeadingRef.current.focus()
+          else conversationHeadingRef.current?.focus()
+        }}
+        onOpenChange={(open) => {
+          if (!open) setAppealCaseId(undefined)
+        }}
+        onSubmit={(values) =>
+          appealCaseId ? onSubmitAppeal(appealCaseId, values) : Promise.resolve({ error: 'No appeal case.', ok: false })
+        }
+      />
     </section>
   )
 }

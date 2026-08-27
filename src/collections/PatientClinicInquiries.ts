@@ -175,13 +175,21 @@ const validateClinicStaffStatusTransition: CollectionBeforeChangeHook<PatientCli
 
 const protectInquiryDomainFields: CollectionBeforeChangeHook = ({ data, operation, originalDoc, req }) => {
   if (!data) return data
-  const touchesDomain = inquiryDomainFields.some((field) => {
+  const changedDomainFields = inquiryDomainFields.filter((field) => {
     if (!Object.prototype.hasOwnProperty.call(data, field)) return false
     if (operation !== 'update' || !originalDoc) return true
     return !evidenceValuesMatch(data[field], originalDoc[field])
   })
-  if (!touchesDomain) return data
+  if (changedDomainFields.length === 0) return data
   if (req.context?.inquiryCommunicationCommand === true) return data
+  if (
+    req.context?.inquiryModerationCommand === true &&
+    changedDomainFields.every((field) =>
+      ['activitySequence', 'lastActivityAt', 'lastExternalActivityAt', 'revision'].includes(field),
+    )
+  ) {
+    return data
+  }
 
   throw new ValidationError({
     collection: 'patientClinicInquiries',
@@ -189,7 +197,7 @@ const protectInquiryDomainFields: CollectionBeforeChangeHook = ({ data, operatio
       {
         message: `Inquiry communication domain fields cannot be changed through a direct ${operation} operation.`,
         path:
-          inquiryDomainFields.find(
+          changedDomainFields.find(
             (field) =>
               Object.prototype.hasOwnProperty.call(data, field) &&
               (operation !== 'update' || !originalDoc || !evidenceValuesMatch(data[field], originalDoc[field])),

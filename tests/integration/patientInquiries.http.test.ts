@@ -4,7 +4,11 @@ import { createLocalReq, getPayload, handleEndpoints, type Payload, type Payload
 import config from '@payload-config'
 import {
   createVerifiedPatientInquiry,
+  readClinicInquiryDetail,
   readClinicInquiryQueue,
+  readPatientInquiryDetail,
+  sendClinicInquiryMessage,
+  sendPatientInquiryMessage,
   submitGuestClinicInquiry,
 } from '@/features/inquiryCommunication/service'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
@@ -16,6 +20,7 @@ import {
   cleanupTrackedUsers,
   createClinicTestUser,
   createPatientTestUser,
+  createPlatformTestUser,
   type PayloadRequestUser,
 } from '../fixtures/testUsers'
 
@@ -24,6 +29,7 @@ type SyntheticBearerUser = {
   firstName: string
   lastName: string
   subject: string
+  userType: 'clinic' | 'patient' | 'platform'
 }
 
 const syntheticBearerUsers = vi.hoisted(() => new Map<string, SyntheticBearerUser>())
@@ -46,7 +52,7 @@ vi.mock('@/auth/utilities/supaBaseServer', async (importOriginal) => {
           return {
             data: {
               user: {
-                app_metadata: { user_type: 'patient' },
+                app_metadata: { user_type: user.userType },
                 email: user.email,
                 id: user.subject,
                 user_metadata: { first_name: user.firstName, last_name: user.lastName },
@@ -60,10 +66,16 @@ vi.mock('@/auth/utilities/supaBaseServer', async (importOriginal) => {
   }
 })
 
+vi.mock('next/server.js', () => ({
+  after: (task: () => Promise<unknown> | unknown) => {
+    void task()
+  },
+}))
+
 const requestPatientEndpoint = (
   path: string,
   token: string,
-  options?: { body?: unknown; method?: 'GET' | 'PATCH' | 'POST' | 'PUT' },
+  options?: { body?: unknown; contract?: boolean; method?: 'GET' | 'PATCH' | 'POST' | 'PUT' },
 ): Promise<Response> =>
   handleEndpoints({
     config,
@@ -71,6 +83,7 @@ const requestPatientEndpoint = (
       body: typeof options?.body === 'undefined' ? undefined : JSON.stringify(options.body),
       headers: {
         Authorization: `Bearer ${token}`,
+        ...(options?.contract ? { 'X-Findmydoc-Clinic-Dashboard-Contract': 'inquiry-communication-v1' } : {}),
         ...(typeof options?.body === 'undefined' ? {} : { 'Content-Type': 'application/json' }),
       },
       method: options?.method ?? 'GET',
@@ -83,11 +96,16 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
   let doctorId: number | string
   let clinicStaffUser: PayloadRequestUser
   let inquiryId: string
+  let inquiryConversationId: string
   let foreignInquiryId: string
   let guestInquiryId: string
   let initialRevision: number
+  let clinicReq: PayloadRequest
   const patientToken = 'synthetic-patient-http-token'
   const foreignPatientToken = 'synthetic-foreign-patient-http-token'
+  const clinicToken = 'synthetic-clinic-http-token'
+  const moderatorToken = 'synthetic-moderator-http-token'
+  const platformWithoutCapabilityToken = 'synthetic-platform-without-capability-http-token'
   const creationPatientToken = 'synthetic-creation-patient-http-token'
   const createdInquiryIds: Array<number | string> = []
   const createdPatientIds: Array<number | string> = []
@@ -132,14 +150,6 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
       lastName: 'Bound',
       supabaseUserId: `${slugPrefix}-creation-patient-subject`,
     })
-    const clinicStaff = await createClinicTestUser(payload, {
-      createdStaffIds,
-      emailPrefix: `${slugPrefix}-clinic-staff`,
-      firstName: 'Synthetic',
-      lastName: 'Clinic Staff',
-      supabaseUserId: `${slugPrefix}-clinic-staff-subject`,
-    })
-    clinicStaffUser = await asClinicScopedPayloadUser(payload, clinicStaff, clinicId)
     if (
       !patient.email ||
       !patient.supabaseUserId ||
@@ -155,18 +165,79 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
       firstName: 'Synthetic',
       lastName: 'Patient',
       subject: patient.supabaseUserId,
+      userType: 'patient',
     })
     syntheticBearerUsers.set(foreignPatientToken, {
       email: foreignPatient.email,
       firstName: 'Foreign',
       lastName: 'Patient',
       subject: foreignPatient.supabaseUserId,
+      userType: 'patient',
+    })
+
+    const clinicStaff = await createClinicTestUser(payload, {
+      createdStaffIds,
+      emailPrefix: `${slugPrefix}-clinic-staff`,
+      firstName: 'Synthetic',
+      lastName: 'Clinic',
+      supabaseUserId: `${slugPrefix}-clinic-subject`,
+    })
+    clinicReq = await createLocalReq({}, payload)
+    clinicStaffUser = await asClinicScopedPayloadUser(payload, clinicStaff, clinicId)
+    clinicReq.user = clinicStaffUser
+    if (!clinicStaff.email || !clinicStaff.supabaseUserId) throw new Error('Expected synthetic clinic identity fields.')
+    syntheticBearerUsers.set(clinicToken, {
+      email: clinicStaff.email,
+      firstName: 'Synthetic',
+      lastName: 'Clinic',
+      subject: clinicStaff.supabaseUserId,
+      userType: 'clinic',
+    })
+
+    const moderator = await createPlatformTestUser(payload, {
+      createdStaffIds,
+      emailPrefix: `${slugPrefix}-moderator`,
+      firstName: 'Synthetic',
+      lastName: 'Moderator',
+      supabaseUserId: `${slugPrefix}-moderator-subject`,
+    })
+    await payload.update({
+      collection: 'platformStaff',
+      context: { trustedPlatformStaffOps: true },
+      data: { capabilities: ['conversation-moderation'] },
+      depth: 0,
+      id: moderator.id,
+      overrideAccess: true,
+    })
+    if (!moderator.email || !moderator.supabaseUserId) throw new Error('Expected synthetic moderator identity fields.')
+    syntheticBearerUsers.set(moderatorToken, {
+      email: moderator.email,
+      firstName: 'Synthetic',
+      lastName: 'Moderator',
+      subject: moderator.supabaseUserId,
+      userType: 'platform',
+    })
+    const platformWithoutCapability = await createPlatformTestUser(payload, {
+      createdStaffIds,
+      emailPrefix: `${slugPrefix}-platform-without-capability`,
+      supabaseUserId: `${slugPrefix}-platform-without-capability-subject`,
+    })
+    if (!platformWithoutCapability.email || !platformWithoutCapability.supabaseUserId) {
+      throw new Error('Expected synthetic platform identity fields.')
+    }
+    syntheticBearerUsers.set(platformWithoutCapabilityToken, {
+      email: platformWithoutCapability.email,
+      firstName: 'Platform',
+      lastName: 'Tester',
+      subject: platformWithoutCapability.supabaseUserId,
+      userType: 'platform',
     })
     syntheticBearerUsers.set(creationPatientToken, {
       email: creationPatient.email,
       firstName: 'Account',
       lastName: 'Bound',
       subject: creationPatient.supabaseUserId,
+      userType: 'patient',
     })
 
     const patientReq: PayloadRequest = await createLocalReq({}, payload)
@@ -183,6 +254,17 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     inquiryId = created.inquiry.id
     initialRevision = created.inquiry.revision
     createdInquiryIds.push(inquiryId)
+    const conversation = (
+      await payload.find({
+        collection: 'inquiryConversations',
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+        where: { inquiry: { equals: inquiryId } },
+      })
+    ).docs[0]
+    if (!conversation) throw new Error('Expected a patient inquiry conversation.')
+    inquiryConversationId = String(conversation.id)
 
     const foreignReq: PayloadRequest = await createLocalReq({}, payload)
     foreignReq.user = asPayloadPatientUser(foreignPatient)
@@ -217,6 +299,8 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     syntheticBearerUsers.clear()
     if (!payload) return
     for (const collection of [
+      'inquiryModerationEvents',
+      'inquiryModerationCases',
       'inquiryAuditEvents',
       'inquiryReadPositions',
       'inquiryMessages',
@@ -434,6 +518,195 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
       where: { inquiry: { equals: inquiryId } },
     })
     expect(messages.docs).toHaveLength(1)
+  })
+
+  it('registers patient moderation reporting without automatically restricting the conversation', async () => {
+    const response = await requestPatientEndpoint('/api/patient/inquiries/report', patientToken, {
+      body: {
+        category: 'privacy-concern',
+        description: 'Synthetic report through the registered patient boundary.',
+        idempotencyKey: `${slugPrefix}-http-moderation-report`,
+        inquiryId,
+        targetId: inquiryConversationId,
+        targetType: 'conversation',
+      },
+      method: 'POST',
+    })
+
+    expect(response.status).toBe(201)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    await expect(response.json()).resolves.toMatchObject({ received: true, reportId: expect.any(String) })
+
+    const detailResponse = await requestPatientEndpoint(
+      `/api/patient/inquiries/detail?inquiryId=${encodeURIComponent(inquiryId)}`,
+      patientToken,
+    )
+    await expect(detailResponse.json()).resolves.toMatchObject({ inquiry: { actions: { canReply: true } } })
+
+    const foreignResponse = await requestPatientEndpoint('/api/patient/inquiries/report', foreignPatientToken, {
+      body: {
+        category: 'privacy-concern',
+        idempotencyKey: `${slugPrefix}-foreign-http-moderation-report`,
+        inquiryId,
+        targetId: inquiryConversationId,
+        targetType: 'conversation',
+      },
+      method: 'POST',
+    })
+    expect(foreignResponse.status).toBe(404)
+    await expect(foreignResponse.json()).resolves.toEqual({ error: { code: 'MODERATION_NOT_FOUND' } })
+  })
+
+  it('registers clinic and platform moderation commands with capability and projection boundaries', async () => {
+    const patientRecord = (
+      await payload.find({
+        collection: 'patients',
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+        where: { supabaseUserId: { equals: syntheticBearerUsers.get(patientToken)?.subject } },
+      })
+    ).docs[0]
+    if (!patientRecord) throw new Error('Expected synthetic patient principal')
+    const patientReq = await createLocalReq({}, payload)
+    patientReq.user = asPayloadPatientUser(patientRecord)
+    const currentPatientDetail = await readPatientInquiryDetail(patientReq, { inquiryId })
+    const patientMessageResult = await sendPatientInquiryMessage(patientReq, {
+      expectedRevision: currentPatientDetail.revision,
+      idempotencyKey: `${slugPrefix}-clinic-http-report-target-message`,
+      inquiryId,
+      text: 'Synthetic patient message reported through the clinic HTTP boundary.',
+    })
+    const patientMessage = patientMessageResult.inquiry.timeline.find(
+      (item) => item.kind === 'external-message' && item.text?.includes('clinic HTTP boundary'),
+    )
+    if (!patientMessage) throw new Error('Expected clinic report target')
+
+    const clinicReport = await requestPatientEndpoint('/api/clinic-dashboard/inquiries/report', clinicToken, {
+      body: {
+        category: 'privacy-concern',
+        idempotencyKey: `${slugPrefix}-clinic-http-report`,
+        inquiryId,
+        targetId: patientMessage.id,
+        targetType: 'message',
+      },
+      contract: true,
+      method: 'POST',
+    })
+    expect(clinicReport.status).toBe(201)
+    const clinicReportBody = (await clinicReport.json()) as { reportId: string }
+
+    const deniedRead = await requestPatientEndpoint(
+      '/api/platform/inquiry-moderation/cases/read',
+      platformWithoutCapabilityToken,
+      {
+        body: { caseId: clinicReportBody.reportId, scope: 'reported-object' },
+        method: 'POST',
+      },
+    )
+    expect(deniedRead.status).toBe(403)
+    const caseRead = await requestPatientEndpoint('/api/platform/inquiry-moderation/cases/read', moderatorToken, {
+      body: { caseId: clinicReportBody.reportId, scope: 'reported-object' },
+      method: 'POST',
+    })
+    expect(caseRead.status).toBe(200)
+    const caseReadBody = (await caseRead.json()) as Record<string, unknown>
+    expect(Object.keys(caseReadBody).sort()).toEqual(['caseId', 'category', 'context', 'target'])
+    expect(JSON.stringify(caseReadBody)).not.toMatch(/reporter|decisionReason|accessExpansionReason/u)
+
+    const expanded = await requestPatientEndpoint(
+      '/api/platform/inquiry-moderation/cases/expand-access',
+      moderatorToken,
+      {
+        body: { caseId: clinicReportBody.reportId, reason: 'Synthetic justified full-conversation review.' },
+        method: 'POST',
+      },
+    )
+    expect(expanded.status).toBe(200)
+    const decided = await requestPatientEndpoint('/api/platform/inquiry-moderation/cases/decision', moderatorToken, {
+      body: {
+        caseId: clinicReportBody.reportId,
+        category: 'privacy-concern',
+        outcome: 'content-restricted',
+        reason: 'Synthetic platform decision must remain private.',
+      },
+      method: 'POST',
+    })
+    expect(decided.status).toBe(200)
+
+    const clinicDetailAfterPatientRestriction = await readClinicInquiryDetail(clinicReq, { inquiryId })
+    const clinicMessageResult = await sendClinicInquiryMessage(clinicReq, {
+      expectedRevision: clinicDetailAfterPatientRestriction.inquiry.revision,
+      idempotencyKey: `${slugPrefix}-patient-http-report-target-message`,
+      inquiryId,
+      text: 'Synthetic clinic message reported before an appeal.',
+    })
+    const clinicMessage = clinicMessageResult.inquiry.timeline.find(
+      (item) => item.kind === 'external-message' && item.text === 'Synthetic clinic message reported before an appeal.',
+    )
+    if (!clinicMessage) throw new Error('Expected patient report target')
+    const patientReport = await requestPatientEndpoint('/api/patient/inquiries/report', patientToken, {
+      body: {
+        category: 'harassment-threats',
+        idempotencyKey: `${slugPrefix}-patient-http-report-for-appeal`,
+        inquiryId,
+        targetId: clinicMessage.id,
+        targetType: 'message',
+      },
+      method: 'POST',
+    })
+    const patientReportBody = (await patientReport.json()) as { reportId: string }
+    const appealCaseDecision = await requestPatientEndpoint(
+      '/api/platform/inquiry-moderation/cases/decision',
+      moderatorToken,
+      {
+        body: {
+          caseId: patientReportBody.reportId,
+          category: 'harassment-threats',
+          outcome: 'content-restricted',
+          reason: 'Synthetic private decision before clinic appeal.',
+        },
+        method: 'POST',
+      },
+    )
+    expect(appealCaseDecision.status).toBe(200)
+    const appeal = await requestPatientEndpoint('/api/clinic-dashboard/inquiries/appeal', clinicToken, {
+      body: { caseId: patientReportBody.reportId, text: 'Synthetic clinic appeal through HTTP.' },
+      contract: true,
+      method: 'POST',
+    })
+    expect(appeal.status).toBe(201)
+    const appealDecision = await requestPatientEndpoint(
+      '/api/platform/inquiry-moderation/cases/appeal-decision',
+      moderatorToken,
+      {
+        body: {
+          caseId: patientReportBody.reportId,
+          outcome: 'upheld',
+          reason: 'Synthetic appeal decision remains private.',
+        },
+        method: 'POST',
+      },
+    )
+    expect(appealDecision.status).toBe(200)
+
+    const [patientProjectionResponse, clinicProjectionResponse] = await Promise.all([
+      requestPatientEndpoint(`/api/patient/inquiries/detail?inquiryId=${encodeURIComponent(inquiryId)}`, patientToken),
+      requestPatientEndpoint(
+        `/api/clinic-dashboard/inquiries/detail?inquiryId=${encodeURIComponent(inquiryId)}`,
+        clinicToken,
+        { contract: true },
+      ),
+    ])
+    const participantProjection = JSON.stringify({
+      clinic: await clinicProjectionResponse.json(),
+      patient: await patientProjectionResponse.json(),
+    })
+    expect(participantProjection).not.toMatch(
+      /reporterKey|decisionBy|decisionReason|accessExpandedBy|accessExpansionReason/u,
+    )
+    expect(participantProjection).not.toContain('Synthetic platform decision must remain private.')
+    expect(participantProjection).not.toContain('Synthetic private decision before clinic appeal.')
   })
 
   it('keeps foreign and missing detail indistinguishable and rejects an invalid session', async () => {

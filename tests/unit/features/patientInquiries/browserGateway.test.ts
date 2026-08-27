@@ -138,6 +138,36 @@ describe('patient inquiries browser gateway', () => {
     )
   })
 
+  it('submits strict report and appeal commands through same-origin endpoints', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(response({ received: true, reportId: 'case-1' }, 201))
+      .mockResolvedValueOnce(response({ submitted: true }, 201))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const api = createPatientInquiriesBrowserApi()
+    await api.report({
+      category: 'privacy-concern',
+      description: 'Synthetic wrong-recipient report.',
+      idempotencyKey: 'report-key-1234',
+      inquiryId: 'inquiry-1',
+      targetId: 'message:1',
+      targetType: 'message',
+    })
+    await api.appeal({ caseId: 'case-1', text: 'Synthetic appeal text.' })
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      '/api/patient/inquiries/report',
+      expect.objectContaining({ credentials: 'same-origin', method: 'POST' }),
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/api/patient/inquiries/appeal',
+      expect.objectContaining({ credentials: 'same-origin', method: 'POST' }),
+    )
+  })
+
   it('uses a typed error for malformed success responses', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ nope: true })))
 

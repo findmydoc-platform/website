@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+import { inquiryIdempotencyKeySchema, inquiryIdSchema } from '@/features/inquiryAggregate/contracts'
+import type { InquiryContentModerationDTO, InquiryModerationDTO } from '@/features/inquiryModeration/contracts'
+
+export { inquiryIdempotencyKeySchema, inquiryIdSchema } from '@/features/inquiryAggregate/contracts'
+
 export const INQUIRY_TEXT_MAX_LENGTH = 3_000
 export const INQUIRY_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024
 export const INQUIRY_ATTACHMENT_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'] as const
@@ -18,8 +23,6 @@ export const isAllowedClinicHandlingStatusTransition = (
   from: z.infer<typeof inquiryHandlingStatusSchema>,
   to: 'contacted' | 'in_review' | 'submitted',
 ): boolean => clinicHandlingStatusTransitions[from].includes(to as never)
-export const inquiryIdSchema = z.string().trim().min(1).max(100)
-export const inquiryIdempotencyKeySchema = z.string().trim().min(8).max(200)
 export const inquiryRevisionSchema = z.number().int().nonnegative()
 export const inquiryTextSchema = z.string().max(INQUIRY_TEXT_MAX_LENGTH)
 const nonBlankInquiryTextSchema = inquiryTextSchema.superRefine((value, context) => {
@@ -296,13 +299,19 @@ export type InquiryAttachmentDTO = {
   sizeBytes: number
 }
 
+export type { InquiryContentModerationDTO } from '@/features/inquiryModeration/contracts'
+
 export type InquiryTimelineItemDTO =
   | {
       actor: { displayName: string; kind: 'patient' | 'clinic'; isCurrentActor: boolean }
       attachment?: InquiryAttachmentDTO
+      attachmentState?: 'available' | 'hard-deleted' | 'restricted'
       createdAt: string
+      contentState?: 'available' | 'hard-deleted' | 'restricted'
       id: string
       kind: 'external-message'
+      moderation?: InquiryContentModerationDTO
+      attachmentModeration?: InquiryContentModerationDTO
       text?: string
     }
   | {
@@ -315,7 +324,14 @@ export type InquiryTimelineItemDTO =
   | {
       actor: { displayName: string; kind: 'clinic' | 'system'; isCurrentActor: boolean }
       createdAt: string
-      event: 'handling-status-changed' | 'closed' | 'reopened' | 'marked-spam' | 'spam-removed'
+      event:
+        | 'handling-status-changed'
+        | 'closed'
+        | 'reopened'
+        | 'marked-spam'
+        | 'spam-removed'
+        | 'moderation-restricted'
+        | 'moderation-restored'
       id: string
       kind: 'system-event'
     }
@@ -336,6 +352,7 @@ export type InquiryListItemDTO = {
   latestActivityKind: 'inquiry' | 'external-message' | 'internal-note' | 'system-event'
   lastActivityAt: string
   lifecycle: InquiryLifecycle
+  moderationBadge?: { conversationRestricted: boolean }
   patientName: string
   preview: string
   revision: number
@@ -367,6 +384,7 @@ export type InquiryDetailDTO = InquiryListItemDTO & {
     preferredContactWindow?: string
     treatmentTimeline?: string
   }
+  moderation?: InquiryModerationDTO
   timeline: InquiryTimelineItemDTO[]
 }
 

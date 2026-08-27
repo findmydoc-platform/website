@@ -13,6 +13,23 @@ import type {
   PatientInquiryQueueDTO,
   PatientInquiryQueueInput,
 } from '@/features/inquiryCommunication/contracts'
+import type {
+  InquiryModerationAppealInput,
+  InquiryModerationReportInput,
+  InquiryModerationReportReceiptDTO,
+} from '@/features/inquiryModeration/contracts'
+
+export type PatientInquiriesErrorCode =
+  | InquiryCommunicationErrorCode
+  | `MODERATION_${
+      | 'ACCESS_DENIED'
+      | 'CONFLICT'
+      | 'INVALID_INPUT'
+      | 'INVALID_STATE'
+      | 'NOT_FOUND'
+      | 'RATE_LIMITED'
+      | 'SERVICE_UNAVAILABLE'
+      | 'UNAUTHORIZED'}`
 
 export const PATIENT_INQUIRY_UPLOAD_TIMEOUT_MS = 120_000
 
@@ -34,8 +51,8 @@ const SERVICE_UNAVAILABLE_CODE: InquiryCommunicationErrorCode = 'INQUIRY_SERVICE
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
-const isErrorCode = (value: unknown): value is InquiryCommunicationErrorCode =>
-  typeof value === 'string' && value.startsWith('INQUIRY_')
+const isErrorCode = (value: unknown): value is PatientInquiriesErrorCode =>
+  typeof value === 'string' && (value.startsWith('INQUIRY_') || value.startsWith('MODERATION_'))
 
 const isQueue = (value: unknown): value is PatientInquiryQueueDTO =>
   isRecord(value) &&
@@ -64,6 +81,9 @@ const isBooleanResult =
   (value: unknown): value is Record<Key, true> =>
     isRecord(value) && value[key] === true
 
+const isReportReceipt = (value: unknown): value is InquiryModerationReportReceiptDTO =>
+  isRecord(value) && value.received === true && typeof value.reportId === 'string'
+
 const safeJson = async (response: Response): Promise<unknown> => {
   try {
     return await response.json()
@@ -74,7 +94,7 @@ const safeJson = async (response: Response): Promise<unknown> => {
 
 export class PatientInquiriesApiError extends Error {
   ambiguous: boolean
-  code: InquiryCommunicationErrorCode
+  code: PatientInquiriesErrorCode
   current?: InquiryDetailDTO
   status: number
 
@@ -85,7 +105,7 @@ export class PatientInquiriesApiError extends Error {
     status,
   }: {
     ambiguous?: boolean
-    code: InquiryCommunicationErrorCode
+    code: PatientInquiriesErrorCode
     current?: InquiryDetailDTO
     status: number
   }) {
@@ -139,18 +159,23 @@ const sameOriginJsonInit = (method: 'POST' | 'PUT', body: unknown): RequestInit 
 })
 
 export type PatientInquiriesApi = {
+  appeal: (input: InquiryModerationAppealInput) => Promise<{ submitted: true }>
   attachmentDownloadHref: (attachmentId: string) => string
   createDraft: (input: AttachmentDraftCreateInput) => Promise<AttachmentDraftDTO>
   discardDraft: (input: AttachmentDraftMutationInput) => Promise<{ discarded: true }>
   finalizeDraft: (input: AttachmentDraftMutationInput) => Promise<{ finalized: true }>
   readDetail: (input: InquiryDetailInput) => Promise<InquiryDetailResultDTO>
   readQueue: (input?: PatientInquiryQueueInput) => Promise<PatientInquiryQueueDTO>
+  report: (input: InquiryModerationReportInput) => Promise<InquiryModerationReportReceiptDTO>
   sendMessage: (input: ExternalMessageInput) => Promise<InquiryMutationResultDTO>
   updateReadPosition: (input: InquiryReadPositionInput) => Promise<{ unread: InquiryUnreadDTO }>
   uploadDraft: (input: UploadDraftInput) => Promise<void>
 }
 
 export const createPatientInquiriesBrowserApi = (): PatientInquiriesApi => ({
+  appeal: (input) =>
+    requestJson('/api/patient/inquiries/appeal', sameOriginJsonInit('POST', input), isBooleanResult('submitted'), true),
+
   attachmentDownloadHref: (attachmentId) =>
     `/api/patient/inquiries/attachments/download?attachmentId=${encodeURIComponent(attachmentId)}`,
 
@@ -195,6 +220,9 @@ export const createPatientInquiriesBrowserApi = (): PatientInquiriesApi => ({
       isQueue,
     )
   },
+
+  report: (input) =>
+    requestJson('/api/patient/inquiries/report', sameOriginJsonInit('POST', input), isReportReceipt, true),
 
   sendMessage: (input) =>
     requestJson('/api/patient/inquiries/messages', sameOriginJsonInit('POST', input), isMutationResult, true),

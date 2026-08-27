@@ -3,7 +3,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadHandler, type CollectionConfig, type EmailAdapter } from 'payload'
+import { buildConfig, PayloadHandler, type EmailAdapter } from 'payload'
 import { cacheRevalidationVisibilityGetHandler } from './endpoints/cacheRevalidationVisibility'
 import { clinicDashboardBootstrapGetHandler } from './endpoints/clinicDashboardBootstrap'
 import {
@@ -39,11 +39,6 @@ import {
   clinicDashboardInquiryStatePatchHandler,
 } from './endpoints/clinicDashboardInquiries'
 import {
-  legacyPatientClinicInquiryGetHandler,
-  legacyPatientClinicInquiryPatchHandler,
-  legacyPatientClinicInquiriesGetHandler,
-} from './endpoints/legacyPatientClinicInquiries'
-import {
   patientInquiriesGetHandler,
   patientInquiryCreatePostHandler,
   patientInquiryAttachmentDiscardPostHandler,
@@ -54,6 +49,16 @@ import {
   patientInquiryMessagesPostHandler,
   patientInquiryReadPositionPutHandler,
 } from './endpoints/patientInquiries'
+import {
+  clinicInquiryAppealPostHandler,
+  clinicInquiryReportPostHandler,
+  patientInquiryAppealPostHandler,
+  patientInquiryReportPostHandler,
+  platformInquiryModerationAccessExpandPostHandler,
+  platformInquiryModerationAppealDecisionPostHandler,
+  platformInquiryModerationCaseReadPostHandler,
+  platformInquiryModerationDecisionPostHandler,
+} from './endpoints/inquiryModeration'
 import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
 import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
@@ -77,6 +82,8 @@ import { InquiryInternalNotes } from './collections/InquiryInternalNotes'
 import { InquiryAttachments } from './collections/InquiryAttachments'
 import { InquiryReadPositions } from './collections/InquiryReadPositions'
 import { InquiryAuditEvents } from './collections/InquiryAuditEvents'
+import { InquiryModerationCases } from './collections/InquiryModerationCases'
+import { InquiryModerationEvents } from './collections/InquiryModerationEvents'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accreditation'
 import { MedicalSpecialties } from './collections/MedicalSpecialties'
@@ -133,27 +140,6 @@ const silentEmailAdapter: EmailAdapter<void> = () => ({
   name: 'silent-ci-email',
   sendEmail: async () => undefined,
 })
-
-const PatientClinicInquiriesWithLegacyBridge = {
-  ...PatientClinicInquiries,
-  endpoints: [
-    {
-      path: '/',
-      method: 'get',
-      handler: legacyPatientClinicInquiriesGetHandler as PayloadHandler,
-    },
-    {
-      path: '/:id',
-      method: 'get',
-      handler: legacyPatientClinicInquiryGetHandler as PayloadHandler,
-    },
-    {
-      path: '/:id',
-      method: 'patch',
-      handler: legacyPatientClinicInquiryPatchHandler as PayloadHandler,
-    },
-  ],
-} satisfies CollectionConfig
 
 export default buildConfig({
   // Keep the complete multipart request below Vercel's 4.5 MB request limit.
@@ -293,6 +279,16 @@ export default buildConfig({
       handler: clinicDashboardInquiryAttachmentDownloadGetHandler as PayloadHandler,
     },
     {
+      path: '/clinic-dashboard/inquiries/report',
+      method: 'post',
+      handler: clinicInquiryReportPostHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/inquiries/appeal',
+      method: 'post',
+      handler: clinicInquiryAppealPostHandler as PayloadHandler,
+    },
+    {
       path: '/patient/inquiries',
       method: 'get',
       handler: patientInquiriesGetHandler as PayloadHandler,
@@ -336,6 +332,36 @@ export default buildConfig({
       path: '/patient/inquiries/attachments/download',
       method: 'get',
       handler: patientInquiryAttachmentDownloadGetHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries/report',
+      method: 'post',
+      handler: patientInquiryReportPostHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries/appeal',
+      method: 'post',
+      handler: patientInquiryAppealPostHandler as PayloadHandler,
+    },
+    {
+      path: '/platform/inquiry-moderation/cases/read',
+      method: 'post',
+      handler: platformInquiryModerationCaseReadPostHandler as PayloadHandler,
+    },
+    {
+      path: '/platform/inquiry-moderation/cases/expand-access',
+      method: 'post',
+      handler: platformInquiryModerationAccessExpandPostHandler as PayloadHandler,
+    },
+    {
+      path: '/platform/inquiry-moderation/cases/decision',
+      method: 'post',
+      handler: platformInquiryModerationDecisionPostHandler as PayloadHandler,
+    },
+    {
+      path: '/platform/inquiry-moderation/cases/appeal-decision',
+      method: 'post',
+      handler: platformInquiryModerationAppealDecisionPostHandler as PayloadHandler,
     },
     { path: '/seed', method: 'post', handler: seedPostHandler as PayloadHandler },
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
@@ -430,13 +456,15 @@ export default buildConfig({
     ClinicProfileDrafts,
     PlatformStaff,
     ClinicApplications,
-    PatientClinicInquiriesWithLegacyBridge,
+    PatientClinicInquiries,
     InquiryConversations,
     InquiryMessages,
     InquiryInternalNotes,
     InquiryAttachments,
     InquiryReadPositions,
     InquiryAuditEvents,
+    InquiryModerationCases,
+    InquiryModerationEvents,
     Clinics,
     Doctors,
     Accreditation,

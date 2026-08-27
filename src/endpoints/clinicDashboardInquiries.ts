@@ -36,6 +36,7 @@ import {
   updateClinicInquiryReadPosition,
   updateClinicInquiryState,
 } from '@/features/inquiryCommunication/service'
+import { reconcileExpiredInquiryModerationMeasures } from '@/features/inquiryModeration/service'
 import { toLoggedError } from '@/utilities/logging/shared'
 import { CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS, clinicDashboardPrivateJsonResponse } from './clinicDashboardBootstrap'
 import { proxyInquiryAttachment } from './inquiryAttachmentProxy'
@@ -288,6 +289,22 @@ const scheduleAttachmentSweep = (req: PayloadRequest): void => {
   after(() => sweepAttachments(req))
 }
 
+const scheduleModerationReconciliation = (req: PayloadRequest, inquiryId: string): void => {
+  after(async () => {
+    try {
+      await reconcileExpiredInquiryModerationMeasures(req, { inquiryId })
+    } catch (error: unknown) {
+      req.payload.logger.error(
+        {
+          err: toLoggedError(error),
+          event: 'clinic_dashboard.inquiries.moderation_reconciliation_failed',
+        },
+        'Expired inquiry moderation reconciliation failed',
+      )
+    }
+  })
+}
+
 const scheduleDiscardCleanup = (req: PayloadRequest, attachmentId: string): void => {
   after(async () => {
     try {
@@ -337,7 +354,11 @@ export const clinicDashboardInquiryDetailGetHandler: PayloadHandler = async (req
   if (!authorization.ok) return authorization.response
   const input = readDetailInput(req)
   if (input instanceof Response) return input
-  return execute(req, 'detail_read', () => readClinicInquiryDetail(req, input))
+  return execute(req, 'detail_read', async () => {
+    const result = await readClinicInquiryDetail(req, input)
+    scheduleModerationReconciliation(req, input.inquiryId)
+    return result
+  })
 }
 
 export const clinicDashboardInquiryMessagesPostHandler: PayloadHandler = async (req) => {

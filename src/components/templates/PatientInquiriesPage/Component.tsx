@@ -7,6 +7,11 @@ import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import { PatientInquiryConversation } from '@/components/organisms/PatientInquiryConversation/Component'
 import { PatientInquiryQueue } from '@/components/organisms/PatientInquiryQueue/Component'
+import type {
+  InquiryAppealFormValues,
+  InquiryReportFormValues,
+  InquiryReportTarget,
+} from '@/components/molecules/InquiryModerationDialog/Component'
 import type { PatientInquiriesState } from '@/features/patientInquiries/model'
 import type { PatientInquiryDetailView } from '@/features/patientInquiries/viewModel'
 import { cn } from '@/utilities/ui'
@@ -22,6 +27,11 @@ export type PatientInquiriesPageActions = {
   selectInquiry: PatientInquiryQueueProps['onSelect']
   selectFile: (file?: File) => void
   sendMessage: () => void
+  submitAppeal: (caseId: string, values: InquiryAppealFormValues) => Promise<{ error?: string; ok: boolean }>
+  submitReport: (
+    target: InquiryReportTarget,
+    values: InquiryReportFormValues,
+  ) => Promise<{ error?: string; ok: boolean }>
   updateMessage: (text: string) => void
 }
 
@@ -37,6 +47,7 @@ type PatientInquiriesPageProps = {
 }
 
 export function PatientInquiriesPage({ actions, detailView, loginHref, mode, now, state }: PatientInquiriesPageProps) {
+  const accessibleFeatureColors = '[--destructive:#b91c1c] [--muted-foreground:#666666] [--success:196_70%_28%]'
   const sessionHeadingRef = React.useRef<HTMLHeadingElement>(null)
 
   React.useEffect(() => {
@@ -45,7 +56,7 @@ export function PatientInquiriesPage({ actions, detailView, loginHref, mode, now
 
   if (state.sessionEnded) {
     return (
-      <div className="bg-site-section px-4 py-10 sm:px-6 lg:py-14">
+      <div className={cn(accessibleFeatureColors, 'bg-site-section px-4 py-10 sm:px-6 lg:py-14')}>
         <section
           aria-live="assertive"
           className="mx-auto flex min-h-[32rem] max-w-2xl flex-col items-center justify-center rounded-xl border border-border bg-card px-6 text-center shadow-xs"
@@ -70,14 +81,14 @@ export function PatientInquiriesPage({ actions, detailView, loginHref, mode, now
   }
 
   return (
-    <div className="bg-site-section px-4 py-8 sm:px-6 lg:py-10">
+    <div className={cn(accessibleFeatureColors, 'bg-site-section px-4 py-8 sm:px-6 lg:py-10')}>
       <div className="mx-auto max-w-[90rem]">
-        <header className={cn('mb-6', mode === 'detail' && 'hidden lg:block')}>
+        <div className={cn('mb-6', mode === 'detail' && 'hidden lg:block')}>
           <p className="text-sm font-semibold text-primary sm:text-base">Patient account</p>
           <Heading as="h1" align="left" size="h2" className="mt-2 text-3xl text-secondary sm:text-4xl">
             My inquiries
           </Heading>
-        </header>
+        </div>
 
         <div className="lg:grid lg:grid-cols-[28rem_minmax(0,1fr)] lg:items-start lg:gap-7">
           <div className={cn(mode === 'detail' && 'hidden lg:block')}>
@@ -110,6 +121,8 @@ export function PatientInquiriesPage({ actions, detailView, loginHref, mode, now
                 onRetry={actions.retryDetail}
                 onRetrySend={actions.retrySend}
                 onSend={actions.sendMessage}
+                onSubmitAppeal={actions.submitAppeal}
+                onSubmitReport={actions.submitReport}
                 onTextChange={actions.updateMessage}
                 now={now}
                 status={state.detail.status}

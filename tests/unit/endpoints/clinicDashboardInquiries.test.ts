@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   readAttachmentAccess: vi.fn(),
   readDetail: vi.fn(),
   readQueue: vi.fn(),
+  reconcileModeration: vi.fn(),
   revealContact: vi.fn(),
   sendMessage: vi.fn(),
   sweep: vi.fn(),
@@ -67,6 +68,10 @@ vi.mock('@/features/inquiryCommunication/service', async (importOriginal) => ({
   sweepExpiredAttachmentDrafts: mocks.sweep,
   updateClinicInquiryReadPosition: mocks.updateReadPosition,
   updateClinicInquiryState: mocks.updateState,
+}))
+
+vi.mock('@/features/inquiryModeration/service', () => ({
+  reconcileExpiredInquiryModerationMeasures: mocks.reconcileModeration,
 }))
 
 vi.mock('@/plugins/storageConfig', () => ({
@@ -156,6 +161,7 @@ describe('Clinic Dashboard inquiry endpoints', () => {
     mocks.bootstrap.mockResolvedValue(successfulBootstrap)
     mocks.readQueue.mockResolvedValue({ changeCursor: 'change-1', items: [], unchanged: false, unreadCount: 0 })
     mocks.readDetail.mockResolvedValue({ changeCursor: 'change-1', inquiry, unchanged: false })
+    mocks.reconcileModeration.mockResolvedValue({ reconciled: 0 })
     mocks.sendMessage.mockResolvedValue({ inquiry, replayed: false })
     mocks.addNote.mockResolvedValue({ inquiry, replayed: false })
     mocks.updateState.mockResolvedValue({ inquiry })
@@ -254,6 +260,31 @@ describe('Clinic Dashboard inquiry endpoints', () => {
       inquiryId: inquiry.id,
       knownChangeCursor: 'detail-change-1',
       knownRevision: inquiry.revision,
+    })
+    await vi.waitFor(() => {
+      expect(mocks.reconcileModeration).toHaveBeenCalledWith(req, { inquiryId: inquiry.id })
+    })
+  })
+
+  it('keeps the v1 detail projection free of v2-only system events', async () => {
+    mocks.readDetail.mockResolvedValueOnce({
+      changeCursor: 'detail-change-2',
+      inquiry: {
+        ...inquiry,
+        timeline: [
+          { id: 'event-closed', kind: 'system-event', event: 'closed' },
+          { id: 'event-restricted', kind: 'system-event', event: 'moderation-restricted' },
+        ],
+      },
+      unchanged: false,
+    })
+
+    const response = await clinicDashboardInquiryDetailGetHandler(
+      request({ contract: 'inquiry-communication-v1', search: `inquiryId=${inquiry.id}` }),
+    )
+
+    await expect(response.json()).resolves.toMatchObject({
+      inquiry: { timeline: [{ event: 'closed', id: 'event-closed', kind: 'system-event' }] },
     })
   })
 

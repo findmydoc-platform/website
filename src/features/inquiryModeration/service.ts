@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 
+import { acquireInquiryCommandLock } from '@/features/inquiryAggregate/commandLock'
 import type {
   InquiryModerationAppealDecisionInput,
   InquiryModerationAppealInput,
@@ -21,6 +22,16 @@ import {
   inquiryModerationDecisionInputSchema,
   inquiryModerationReportInputSchema,
 } from './contracts'
+import {
+  resolveActiveInquiryRetentionPolicy,
+  resolveInquiryRetentionPolicyVersion,
+} from '@/features/inquiryRetention/service'
+import { moderationReviewDueAt } from '@/features/inquiryRetention/policy'
+import {
+  hasInquiryPackageHardDeleteBarrier,
+  isInquiryContentHardDeleted,
+  readInquiryHardDeleteTombstones,
+} from '@/features/inquiryAggregate/tombstones'
 
 export type InquiryModerationServiceErrorKind =
   | 'access-denied'
@@ -144,7 +155,12 @@ const readInquiryScope = async (
   req: PayloadRequest,
   reporter: Reporter,
   inquiryId: string,
-): Promise<{ conversation: StoredRecord; inquiry: StoredRecord; patientId: RelationId; clinicId: RelationId }> => {
+): Promise<{
+  conversation: StoredRecord
+  inquiry: StoredRecord
+  patientId: RelationId | null
+  clinicId: RelationId
+}> => {
   const actorScope =
     reporter.kind === 'patient' ? { patient: { equals: reporter.id } } : { clinic: { equals: reporter.clinicId } }
   const inquiry = await findOne(req, 'patientClinicInquiries', {
@@ -152,11 +168,18 @@ const readInquiryScope = async (
   })
   const clinicId = relationId(inquiry?.clinic)
   const patientId = relationId(inquiry?.patient)
-  if (!inquiry || clinicId === null || patientId === null) {
+  if (!inquiry || clinicId === null || (reporter.kind === 'patient' && patientId === null)) {
     throw new InquiryModerationServiceError('not-found', 'The inquiry does not exist.')
   }
+  if (inquiry.retentionState === 'hard-deleted' || (await hasInquiryPackageHardDeleteBarrier(req, inquiry.id))) {
+    throw new InquiryModerationServiceError('invalid-state', 'The inquiry package has been hard deleted.')
+  }
   const conversation = await findOne(req, 'inquiryConversations', {
-    and: [{ inquiry: { equals: inquiry.id } }, { clinic: { equals: clinicId } }, { patient: { equals: patientId } }],
+    and: [
+      { inquiry: { equals: inquiry.id } },
+      { clinic: { equals: clinicId } },
+      ...(patientId === null ? [] : [{ patient: { equals: patientId } }]),
+    ],
   })
   if (!conversation) throw new InquiryModerationServiceError('not-found', 'The inquiry does not exist.')
   return { clinicId, conversation, inquiry, patientId }
@@ -244,7 +267,11 @@ const isSerializationFailure = (error: unknown): boolean =>
     ((error as { code?: unknown }).code === '40001' || isSerializationFailure((error as { cause?: unknown }).cause)),
   )
 
-const runCommandTransaction = async <Result>(req: PayloadRequest, command: () => Promise<Result>): Promise<Result> => {
+const runCommandTransaction = async <Result>(
+  req: PayloadRequest,
+  command: () => Promise<Result>,
+  lockKey?: string,
+): Promise<Result> => {
   if (typeof req.transactionID !== 'undefined') {
     throw new InquiryModerationServiceError('unavailable', 'Moderation commands cannot join another transaction.')
   }
@@ -257,7 +284,9 @@ const runCommandTransaction = async <Result>(req: PayloadRequest, command: () =>
       throw new InquiryModerationServiceError('unavailable', 'A moderation transaction could not be started.')
     }
     req.transactionID = transactionID
+    const releaseLock = lockKey ? await acquireInquiryCommandLock(req, lockKey) : undefined
     const result = await command()
+    if (releaseLock) await releaseLock()
     await req.payload.db.commitTransaction(transactionID)
     return result
   } catch (error: unknown) {
@@ -283,88 +312,95 @@ export const createInquiryModerationReport = async (
   const initialReporter = await resolveReporter(req)
   const initialReplay = await readReportReplay(req, initialReporter, input)
   if (initialReplay) return { received: true, reportId: String(initialReplay.id) }
+  const canonicalTargetKey = String(payloadId(normalizedTargetId(input.targetType, input.targetId)))
 
-  return runCommandTransaction(req, async () => {
-    const reporter = await resolveReporter(req)
-    if (reporter.key !== initialReporter.key) {
-      throw new InquiryModerationServiceError('access-denied', 'The report actor changed.')
-    }
-    const replay = await readReportReplay(req, reporter, input)
-    if (replay) return { received: true, reportId: String(replay.id) }
+  return runCommandTransaction(
+    req,
+    async () => {
+      const reporter = await resolveReporter(req)
+      if (reporter.key !== initialReporter.key) {
+        throw new InquiryModerationServiceError('access-denied', 'The report actor changed.')
+      }
+      const replay = await readReportReplay(req, reporter, input)
+      if (replay) return { received: true, reportId: String(replay.id) }
 
-    const scope = await readInquiryScope(req, reporter, input.inquiryId)
-    const target = await resolveReportTarget(req, reporter, scope, input)
-    const activeDuplicate = await findOne(req, 'inquiryModerationCases', {
-      and: [
-        { reporterKey: { equals: reporter.key } },
-        { targetType: { equals: input.targetType } },
-        { targetId: { equals: String(target.targetId) } },
-        { status: { in: ['open', 'decided', 'appealed'] } },
-      ],
-    })
-    if (activeDuplicate) {
-      throw new InquiryModerationServiceError('invalid-state', 'An active report already covers this target.')
-    }
-    const recentReports = await findMany(req, 'inquiryModerationCases', {
-      and: [
-        { reporterKey: { equals: reporter.key } },
-        { createdAt: { greater_than_equal: new Date(Date.now() - REPORT_WINDOW_MS).toISOString() } },
-      ],
-    })
-    if (recentReports.length >= REPORT_WINDOW_LIMIT) {
-      throw new InquiryModerationServiceError('rate-limited', 'Too many reports were submitted in this window.')
-    }
-    const moderationCase = asRecord(
+      const scope = await readInquiryScope(req, reporter, input.inquiryId)
+      const target = await resolveReportTarget(req, reporter, scope, input)
+      const activeDuplicate = await findOne(req, 'inquiryModerationCases', {
+        and: [
+          { reporterKey: { equals: reporter.key } },
+          { targetType: { equals: input.targetType } },
+          { targetId: { equals: String(target.targetId) } },
+          { status: { in: ['open', 'decided', 'appealed'] } },
+        ],
+      })
+      if (activeDuplicate) {
+        throw new InquiryModerationServiceError('invalid-state', 'An active report already covers this target.')
+      }
+      const recentReports = await findMany(req, 'inquiryModerationCases', {
+        and: [
+          { reporterKey: { equals: reporter.key } },
+          { createdAt: { greater_than_equal: new Date(Date.now() - REPORT_WINDOW_MS).toISOString() } },
+        ],
+      })
+      if (recentReports.length >= REPORT_WINDOW_LIMIT) {
+        throw new InquiryModerationServiceError('rate-limited', 'Too many reports were submitted in this window.')
+      }
+      const retentionPolicy = await resolveActiveInquiryRetentionPolicy(req)
+      const moderationCase = asRecord(
+        await req.payload.create({
+          collection: 'inquiryModerationCases' as never,
+          context: { inquiryModerationCommand: true },
+          data: {
+            category: input.category,
+            clinic: scope.clinicId,
+            conversation: scope.conversation.id,
+            ...(typeof input.description === 'string' ? { description: input.description } : {}),
+            eventSequence: 1,
+            idempotencyKey: input.idempotencyKey,
+            inquiry: scope.inquiry.id,
+            ...(scope.patientId === null ? {} : { patient: scope.patientId }),
+            reporterClinicStaff: reporter.kind === 'clinic' ? reporter.id : null,
+            reporterKey: reporter.key,
+            reporterKind: reporter.kind,
+            reporterPatient: reporter.kind === 'patient' ? reporter.id : null,
+            requestHash: reportRequestHash(input),
+            retentionPolicyVersion: retentionPolicy.version,
+            status: 'open',
+            ...(target.targetAttachment ? { targetAttachment: target.targetAttachment } : {}),
+            targetId: String(target.targetId),
+            ...(target.targetMessage ? { targetMessage: target.targetMessage } : {}),
+            targetType: input.targetType,
+          },
+          depth: 0,
+          overrideAccess: true,
+          req,
+        } as never),
+      )
       await req.payload.create({
-        collection: 'inquiryModerationCases' as never,
+        collection: 'inquiryModerationEvents' as never,
         context: { inquiryModerationCommand: true },
         data: {
-          category: input.category,
+          actorId: String(reporter.id),
+          actorKind: reporter.kind,
           clinic: scope.clinicId,
           conversation: scope.conversation.id,
-          ...(typeof input.description === 'string' ? { description: input.description } : {}),
-          eventSequence: 1,
-          idempotencyKey: input.idempotencyKey,
+          eventType: 'report-received',
           inquiry: scope.inquiry.id,
-          patient: scope.patientId,
-          reporterClinicStaff: reporter.kind === 'clinic' ? reporter.id : null,
-          reporterKey: reporter.key,
-          reporterKind: reporter.kind,
-          reporterPatient: reporter.kind === 'patient' ? reporter.id : null,
-          requestHash: reportRequestHash(input),
-          status: 'open',
-          ...(target.targetAttachment ? { targetAttachment: target.targetAttachment } : {}),
+          moderationCase: moderationCase.id,
+          ...(scope.patientId === null ? {} : { patient: scope.patientId }),
+          sequence: 1,
           targetId: String(target.targetId),
-          ...(target.targetMessage ? { targetMessage: target.targetMessage } : {}),
           targetType: input.targetType,
         },
         depth: 0,
         overrideAccess: true,
         req,
-      } as never),
-    )
-    await req.payload.create({
-      collection: 'inquiryModerationEvents' as never,
-      context: { inquiryModerationCommand: true },
-      data: {
-        actorId: String(reporter.id),
-        actorKind: reporter.kind,
-        clinic: scope.clinicId,
-        conversation: scope.conversation.id,
-        eventType: 'report-received',
-        inquiry: scope.inquiry.id,
-        moderationCase: moderationCase.id,
-        patient: scope.patientId,
-        sequence: 1,
-        targetId: String(target.targetId),
-        targetType: input.targetType,
-      },
-      depth: 0,
-      overrideAccess: true,
-      req,
-    } as never)
-    return { received: true, reportId: String(moderationCase.id) }
-  })
+      } as never)
+      return { received: true, reportId: String(moderationCase.id) }
+    },
+    `moderation-report:${initialReporter.key}:${input.targetType}:${canonicalTargetKey}`,
+  )
 }
 
 type Moderator = { id: RelationId; key: string }
@@ -395,7 +431,7 @@ const caseScope = async (req: PayloadRequest, moderationCase: StoredRecord) => {
   })
   const clinicId = relationId(moderationCase.clinic)
   const patientId = relationId(moderationCase.patient)
-  if (!inquiry || !conversation || clinicId === null || patientId === null) {
+  if (!inquiry || !conversation || clinicId === null) {
     throw new InquiryModerationServiceError('invalid-state', 'The moderation case scope is unavailable.')
   }
   return { clinicId, conversation, inquiry, patientId }
@@ -434,7 +470,7 @@ const updateCaseAndCreateEvent = async (
       ...(event?.fromValue ? { fromValue: event.fromValue } : {}),
       inquiry: scope.inquiry.id,
       moderationCase: moderationCase.id,
-      patient: scope.patientId,
+      ...(scope.patientId === null ? {} : { patient: scope.patientId }),
       ...(event?.reason ? { reason: event.reason } : {}),
       sequence: nextSequence,
       targetId: text(moderationCase.targetId),
@@ -448,13 +484,30 @@ const updateCaseAndCreateEvent = async (
   return updated
 }
 
-const moderationMessageDTO = async (req: PayloadRequest, message: StoredRecord) => {
+const moderationMessageDTO = async (req: PayloadRequest, message: StoredRecord, tombstones: ReadonlySet<string>) => {
   const attachmentId = relationId(message.attachment)
   const attachment =
     attachmentId === null ? null : await findOne(req, 'inquiryAttachments', { id: { equals: attachmentId } })
+  const inquiryId = relationId(message.inquiry)
+  if (inquiryId === null)
+    throw new InquiryModerationServiceError('invalid-state', 'The reported object is unavailable.')
+  const messageHardDeleted = isInquiryContentHardDeleted(tombstones, {
+    contentState: message.contentState,
+    inquiryId,
+    targetId: message.id,
+    targetType: 'message',
+  })
+  const attachmentHardDeleted =
+    attachment !== null &&
+    isInquiryContentHardDeleted(tombstones, {
+      contentState: attachment.contentState,
+      inquiryId,
+      targetId: attachment.id,
+      targetType: 'attachment',
+    })
   return {
     actorKind: message.authorKind === 'patient' ? ('patient' as const) : ('clinic' as const),
-    ...(attachment
+    ...(attachment && !attachmentHardDeleted
       ? {
           attachment: {
             fileName: text(attachment.fileName),
@@ -464,9 +517,13 @@ const moderationMessageDTO = async (req: PayloadRequest, message: StoredRecord) 
           },
         }
       : {}),
+    ...(attachment
+      ? { attachmentState: attachmentHardDeleted ? ('hard-deleted' as const) : ('available' as const) }
+      : {}),
+    contentState: messageHardDeleted ? ('hard-deleted' as const) : ('available' as const),
     createdAt: text(message.createdAt),
     id: `message:${String(message.id)}`,
-    ...(text(message.text) ? { text: text(message.text) } : {}),
+    ...(!messageHardDeleted && text(message.text) ? { text: text(message.text) } : {}),
   }
 }
 
@@ -475,6 +532,10 @@ const moderationCaseDTO = async (
   moderationCase: StoredRecord,
   scope: InquiryModerationCaseReadInput['scope'],
 ): Promise<InquiryModerationCaseDTO> => {
+  const inquiryId = relationId(moderationCase.inquiry)
+  if (inquiryId === null)
+    throw new InquiryModerationServiceError('invalid-state', 'The reported object is unavailable.')
+  const tombstones = await readInquiryHardDeleteTombstones(req, inquiryId)
   const messages = await findMany(
     req,
     'inquiryMessages',
@@ -502,27 +563,42 @@ const moderationCaseDTO = async (
     targetType === 'attachment'
       ? await findOne(req, 'inquiryAttachments', { id: { equals: relationId(moderationCase.targetAttachment) } })
       : null
+  const targetAttachmentHardDeleted =
+    targetAttachment !== null &&
+    isInquiryContentHardDeleted(tombstones, {
+      contentState: targetAttachment.contentState,
+      inquiryId,
+      targetId: targetAttachment.id,
+      targetType: 'attachment',
+    })
   const target =
     targetType === 'conversation'
       ? {
+          contentState: 'available' as const,
           createdAt: text(moderationCase.createdAt),
           id: String(relationId(moderationCase.conversation)),
           type: targetType,
         }
       : targetType === 'attachment' && targetAttachment && targetMessage
         ? {
-            attachment: {
-              fileName: text(targetAttachment.fileName),
-              id: String(targetAttachment.id),
-              mimeType: text(targetAttachment.verifiedMimeType),
-              sizeBytes: Number(targetAttachment.verifiedSizeBytes ?? 0),
-            },
+            ...(!targetAttachmentHardDeleted
+              ? {
+                  attachment: {
+                    fileName: text(targetAttachment.fileName),
+                    id: String(targetAttachment.id),
+                    mimeType: text(targetAttachment.verifiedMimeType),
+                    sizeBytes: Number(targetAttachment.verifiedSizeBytes ?? 0),
+                  },
+                }
+              : {}),
+            attachmentState: targetAttachmentHardDeleted ? ('hard-deleted' as const) : ('available' as const),
+            contentState: targetAttachmentHardDeleted ? ('hard-deleted' as const) : ('available' as const),
             createdAt: text(targetMessage.createdAt),
             id: String(targetAttachment.id),
             type: targetType,
           }
         : targetMessage
-          ? { ...(await moderationMessageDTO(req, targetMessage)), type: targetType }
+          ? { ...(await moderationMessageDTO(req, targetMessage, tombstones)), type: targetType }
           : null
   if (!target) throw new InquiryModerationServiceError('invalid-state', 'The reported object is unavailable.')
 
@@ -535,7 +611,7 @@ const moderationCaseDTO = async (
       id: `message:${String(message.id)}`,
     })),
     ...(scope === 'full-conversation' || targetType === 'conversation'
-      ? { conversation: await Promise.all(messages.map((message) => moderationMessageDTO(req, message))) }
+      ? { conversation: await Promise.all(messages.map((message) => moderationMessageDTO(req, message, tombstones))) }
       : {}),
     ...(text(moderationCase.description) ? { description: text(moderationCase.description) } : {}),
     target,
@@ -621,7 +697,7 @@ const affectedActorForDecision = async (
   req: PayloadRequest,
   moderationCase: StoredRecord,
   input: InquiryModerationDecisionInput,
-): Promise<{ id: RelationId; kind: 'clinic' | 'patient' } | null> => {
+): Promise<{ id: RelationId | null; kind: 'clinic' | 'patient' } | null> => {
   if (input.outcome === 'no-action') return null
   if (input.outcome === 'content-restricted') {
     const message =
@@ -642,7 +718,7 @@ const affectedActorForDecision = async (
           : null
     const id =
       message?.authorKind === 'patient' ? relationId(message.authorPatient) : relationId(message?.authorClinicStaff)
-    if (!message || id === null) {
+    if (!message || (id === null && message.authorKind !== 'patient')) {
       throw new InquiryModerationServiceError('invalid-state', 'The reported content author is unavailable.')
     }
     return { id, kind: message.authorKind === 'patient' ? 'patient' : 'clinic' }
@@ -731,6 +807,13 @@ export const decideInquiryModerationCase = async (
     }
     const affected = await affectedActorForDecision(req, moderationCase, input)
     const now = new Date().toISOString()
+    const retentionPolicy = await resolveInquiryRetentionPolicyVersion(req, text(moderationCase.retentionPolicyVersion))
+    const scheduledMeasureEnd = input.effectiveUntil ?? null
+    const reviewDueAt = moderationReviewDueAt({
+      finalOutcomeAt: input.outcome === 'no-action' ? now : scheduledMeasureEnd,
+      measureEndedAt: input.outcome === 'no-action' ? now : scheduledMeasureEnd,
+      reviewMonths: retentionPolicy.moderationReviewMonths,
+    })
     const updatedCase = await updateCaseAndCreateEvent(
       req,
       moderationCase,
@@ -747,6 +830,8 @@ export const decideInquiryModerationCase = async (
         decisionReason: input.reason,
         effectiveUntil: input.effectiveUntil ?? null,
         finalOutcomeAt: input.outcome === 'no-action' ? now : null,
+        measureEndedAt: input.outcome === 'no-action' ? now : null,
+        retentionReviewDueAt: reviewDueAt,
         status: input.outcome === 'no-action' ? 'resolved' : 'decided',
       },
       { reason: input.reason, toValue: input.outcome },
@@ -810,6 +895,7 @@ export const submitInquiryModerationAppeal = async (
         appealPatient: participant.kind === 'patient' ? participant.id : null,
         appealText: input.text,
         appealedAt: new Date().toISOString(),
+        retentionReviewDueAt: null,
         status: 'appealed',
       },
     )
@@ -835,7 +921,19 @@ export const decideInquiryModerationAppeal = async (
       throw new InquiryModerationServiceError('invalid-state', 'The appeal is not pending.')
     }
     const now = new Date().toISOString()
-    const existingMeasureEndedAt = text(moderationCase.measureEndedAt)
+    const retentionPolicy = await resolveInquiryRetentionPolicyVersion(req, text(moderationCase.retentionPolicyVersion))
+    const effectiveUntil = text(moderationCase.effectiveUntil) || null
+    const measureEndedAt =
+      input.outcome === 'overturned'
+        ? text(moderationCase.measureEndedAt) || now
+        : text(moderationCase.measureEndedAt) ||
+          (effectiveUntil && Date.parse(effectiveUntil) <= Date.parse(now) ? effectiveUntil : null)
+    const measureEndBasis = measureEndedAt || effectiveUntil
+    const reviewDueAt = moderationReviewDueAt({
+      finalOutcomeAt: now,
+      measureEndedAt: measureEndBasis,
+      reviewMonths: retentionPolicy.moderationReviewMonths,
+    })
     const updatedCase = await updateCaseAndCreateEvent(
       req,
       moderationCase,
@@ -847,12 +945,16 @@ export const decideInquiryModerationAppeal = async (
         appealDecisionReason: input.reason,
         appealOutcome: input.outcome,
         finalOutcomeAt: now,
-        ...(input.outcome === 'overturned' ? { measureEndedAt: existingMeasureEndedAt || now } : {}),
+        ...(measureEndedAt ? { measureEndedAt } : {}),
+        retentionReviewDueAt: reviewDueAt,
         status: 'resolved',
       },
       { reason: input.reason, toValue: input.outcome },
     )
-    if (input.outcome === 'overturned' && !existingMeasureEndedAt) {
+    if (
+      (input.outcome === 'overturned' || (input.outcome === 'upheld' && measureEndedAt)) &&
+      !moderationCase.measureEndedAt
+    ) {
       await updateInquiryModerationActivity(req, updatedCase, moderator, 'moderation-restored', 'available')
     }
   })
@@ -889,14 +991,24 @@ export const reconcileExpiredInquiryModerationMeasures = async (
         return
       }
       const appealPending = moderationCase.status === 'appealed' && moderationCase.appealOutcome === 'pending'
+      const retentionPolicy = await resolveInquiryRetentionPolicyVersion(
+        req,
+        text(moderationCase.retentionPolicyVersion),
+      )
+      const finalOutcomeAt = text(moderationCase.finalOutcomeAt) || (!appealPending ? effectiveUntil : null)
+      const reviewDueAt = moderationReviewDueAt({
+        finalOutcomeAt,
+        measureEndedAt: effectiveUntil,
+        reviewMonths: retentionPolicy.moderationReviewMonths,
+      })
       const ended = await updateCaseAndCreateEvent(
         req,
         moderationCase,
         { id: 'system', kind: 'system' },
         'measure-ended',
         {
-          ...(!appealPending ? { finalOutcomeAt: now.toISOString(), status: 'resolved' } : {}),
-          measureEndedAt: now.toISOString(),
+          ...(!appealPending ? { finalOutcomeAt, retentionReviewDueAt: reviewDueAt, status: 'resolved' } : {}),
+          measureEndedAt: effectiveUntil,
         },
         { toValue: 'available' },
       )

@@ -310,6 +310,62 @@ describe('Clinic Dashboard inquiry endpoints', () => {
     })
   })
 
+  it('keeps terminal retention variants outside the v1 queue and detail contract', async () => {
+    const terminalInquiry = {
+      ...inquiry,
+      binding: { canReply: false, conversationId: 'conversation-deleted', kind: 'deleted-patient' },
+      contact: { mode: 'unavailable' },
+      originalRequest: { contentState: 'hard-deleted' },
+    }
+    mocks.readQueue.mockResolvedValueOnce({
+      changeCursor: 'queue-terminal',
+      items: [inquiry, terminalInquiry],
+      unreadCount: 0,
+    })
+
+    const queueResponse = await clinicDashboardInquiriesGetHandler(request({ contract: 'inquiry-communication-v1' }))
+    await expect(queueResponse.json()).resolves.toMatchObject({ items: [{ id: inquiry.id }] })
+    expect(mocks.readQueue).toHaveBeenCalledWith(
+      expect.anything(),
+      { lifecycle: 'open', limit: 25, unreadOnly: false },
+      { excludeIdentityDeleted: true },
+    )
+
+    mocks.readDetail.mockResolvedValueOnce({
+      changeCursor: 'detail-terminal',
+      inquiry: terminalInquiry,
+      unchanged: false,
+    })
+    const detailResponse = await clinicDashboardInquiryDetailGetHandler(
+      request({ contract: 'inquiry-communication-v1', search: `inquiryId=${inquiry.id}` }),
+    )
+    await expect(json(detailResponse)).resolves.toEqual({
+      status: 404,
+      body: { error: { code: 'INQUIRY_NOT_FOUND' } },
+    })
+
+    mocks.readDetail.mockResolvedValueOnce({
+      changeCursor: 'detail-terminal',
+      inquiry: terminalInquiry,
+      unchanged: false,
+    })
+    const mutationResponse = await clinicDashboardInquiryNotesPostHandler(
+      request({
+        body: {
+          idempotencyKey: 'terminal-note-key',
+          inquiryId: inquiry.id,
+          text: 'This v1 mutation must never be stored.',
+        },
+        contract: 'inquiry-communication-v1',
+      }),
+    )
+    await expect(json(mutationResponse)).resolves.toEqual({
+      status: 404,
+      body: { error: { code: 'INQUIRY_NOT_FOUND' } },
+    })
+    expect(mocks.addNote).not.toHaveBeenCalled()
+  })
+
   it('requires a valid explicit Bearer token even when a cookie principal is present', async () => {
     mocks.bearer.mockResolvedValueOnce({ status: 'invalid' })
 
@@ -374,6 +430,28 @@ describe('Clinic Dashboard inquiry endpoints', () => {
 
     expect(await json(response)).toEqual({ status: 200, body: { unread: inquiry.unread } })
     expect(mocks.updateReadPosition).toHaveBeenCalledWith(req, { inquiryId: inquiry.id, mode: 'read' })
+  })
+
+  it('carries the v1 terminal policy into the command and restores request context afterwards', async () => {
+    const req = request({
+      body: {
+        idempotencyKey: 'v1-note-key',
+        inquiryId: inquiry.id,
+        text: 'Synthetic v1 note',
+      },
+      contract: 'inquiry-communication-v1',
+    })
+    let policyDuringCommand: unknown
+    mocks.addNote.mockImplementationOnce(async (serviceReq: PayloadRequest) => {
+      policyDuringCommand = serviceReq.context?.inquiryContractMutationPolicy
+      return { inquiry, replayed: false }
+    })
+
+    const response = await clinicDashboardInquiryNotesPostHandler(req)
+
+    expect(response.status).toBe(200)
+    expect(policyDuringCommand).toBe('exclude-identity-deleted')
+    expect(req.context?.inquiryContractMutationPolicy).toBeUndefined()
   })
 
   it('maps conflicts, timeouts, and rate limits to the stable error union', async () => {

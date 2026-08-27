@@ -3,6 +3,10 @@ import type { CollectionBeforeChangeHook, CollectionConfig, FieldAccess } from '
 
 import { platformOnlyFieldAccess } from '@/access/fieldAccess'
 import { isClinicStaff } from '@/access/isClinicStaff'
+import {
+  inquiryPreferredContactWindowOptions,
+  inquiryTreatmentTimelineOptions,
+} from '@/features/inquiryRequest/options'
 import type { PatientClinicInquiry } from '@/payload-types'
 
 export const patientClinicInquiryStatusOptions = [
@@ -44,6 +48,11 @@ const inquiryDomainFields = [
   'creationActorKey',
   'creationIdempotencyKey',
   'creationRequestHash',
+  'retentionPolicyVersion',
+  'retentionReviewBasisAt',
+  'retentionReviewDueAt',
+  'retentionState',
+  'deletionTombstoneKey',
 ] as const
 
 export const patientClinicInquiryStatusTransitions = {
@@ -53,36 +62,6 @@ export const patientClinicInquiryStatusTransitions = {
   closed: [],
   spam: [],
 } as const satisfies Record<PatientClinicInquiryStatus, readonly PatientClinicInquiryStatus[]>
-
-export const patientClinicInquiryTreatmentTimelineValues = [
-  'as_soon_as_possible',
-  'within_two_weeks',
-  'within_one_month',
-  'flexible',
-] as const
-
-export const patientClinicInquiryTreatmentTimelineOptions = [
-  { label: 'As soon as possible', value: 'as_soon_as_possible' },
-  { label: 'Within two weeks', value: 'within_two_weeks' },
-  { label: 'Within one month', value: 'within_one_month' },
-  { label: 'Flexible', value: 'flexible' },
-] as const
-
-export const patientClinicInquiryContactWindowValues = [
-  'as_soon_as_possible',
-  'morning',
-  'afternoon',
-  'evening',
-  'no_preference',
-] as const
-
-export const patientClinicInquiryContactWindowOptions = [
-  { label: 'As soon as possible', value: 'as_soon_as_possible' },
-  { label: 'Morning', value: 'morning' },
-  { label: 'Afternoon', value: 'afternoon' },
-  { label: 'Evening', value: 'evening' },
-  { label: 'No preference', value: 'no_preference' },
-] as const
 
 const submissionEvidenceFields = ['consent'] as const
 const immutableSubmissionFields = [
@@ -133,8 +112,9 @@ const freezeSubmissionEvidence: CollectionBeforeChangeHook = ({ data, operation,
   return data
 }
 
-const freezeOriginalSubmission: CollectionBeforeChangeHook = ({ data, operation, originalDoc }) => {
+const freezeOriginalSubmission: CollectionBeforeChangeHook = ({ data, operation, originalDoc, req }) => {
   if (operation !== 'update' || !data || !originalDoc) return data
+  if (req.context?.inquiryRetentionScrub === true) return data
   for (const field of immutableSubmissionFields) {
     if (!Object.prototype.hasOwnProperty.call(data, field)) continue
     if (evidenceValuesMatch(data[field], originalDoc[field])) continue
@@ -182,6 +162,7 @@ const protectInquiryDomainFields: CollectionBeforeChangeHook = ({ data, operatio
   })
   if (changedDomainFields.length === 0) return data
   if (req.context?.inquiryCommunicationCommand === true) return data
+  if (req.context?.inquiryRetentionCommand === true) return data
   if (
     req.context?.inquiryModerationCommand === true &&
     changedDomainFields.every((field) =>
@@ -275,7 +256,6 @@ export const PatientClinicInquiries: CollectionConfig = {
         {
           name: 'fullName',
           type: 'text',
-          required: true,
           access: {
             update: platformOnlyFieldAccess,
           },
@@ -287,7 +267,6 @@ export const PatientClinicInquiries: CollectionConfig = {
         {
           name: 'email',
           type: 'email',
-          required: true,
           index: true,
           access: {
             update: platformOnlyFieldAccess,
@@ -302,7 +281,6 @@ export const PatientClinicInquiries: CollectionConfig = {
     {
       name: 'phoneNumber',
       type: 'text',
-      required: true,
       admin: {
         description: 'Phone number for follow-up',
       },
@@ -318,7 +296,7 @@ export const PatientClinicInquiries: CollectionConfig = {
         {
           name: 'treatmentTimeline',
           type: 'select',
-          options: [...patientClinicInquiryTreatmentTimelineOptions],
+          options: [...inquiryTreatmentTimelineOptions],
           access: {
             update: platformOnlyFieldAccess,
           },
@@ -330,7 +308,7 @@ export const PatientClinicInquiries: CollectionConfig = {
         {
           name: 'preferredContactWindow',
           type: 'select',
-          options: [...patientClinicInquiryContactWindowOptions],
+          options: [...inquiryPreferredContactWindowOptions],
           access: {
             update: platformOnlyFieldAccess,
           },
@@ -370,7 +348,6 @@ export const PatientClinicInquiries: CollectionConfig = {
     {
       name: 'message',
       type: 'textarea',
-      required: true,
       access: {
         create: privateInquiryDomainFieldAccess,
         read: privateInquiryDomainFieldAccess,
@@ -586,6 +563,68 @@ export const PatientClinicInquiries: CollectionConfig = {
     {
       name: 'creationRequestHash',
       type: 'text',
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+      admin: { hidden: true, readOnly: true },
+    },
+    {
+      name: 'retentionPolicyVersion',
+      type: 'text',
+      index: true,
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+      admin: { hidden: true, readOnly: true },
+    },
+    {
+      name: 'retentionReviewBasisAt',
+      type: 'date',
+      index: true,
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+      admin: { hidden: true, readOnly: true },
+    },
+    {
+      name: 'retentionReviewDueAt',
+      type: 'date',
+      index: true,
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+      admin: { hidden: true, readOnly: true },
+    },
+    {
+      name: 'retentionState',
+      type: 'select',
+      defaultValue: 'available',
+      options: [
+        { label: 'Available', value: 'available' },
+        { label: 'Anonymized', value: 'anonymized' },
+        { label: 'Hard deleted', value: 'hard-deleted' },
+      ],
+      index: true,
+      access: {
+        create: privateInquiryDomainFieldAccess,
+        read: privateInquiryDomainFieldAccess,
+        update: privateInquiryDomainFieldAccess,
+      },
+      admin: { hidden: true, readOnly: true },
+    },
+    {
+      name: 'deletionTombstoneKey',
+      type: 'text',
+      unique: true,
+      index: true,
       access: {
         create: privateInquiryDomainFieldAccess,
         read: privateInquiryDomainFieldAccess,

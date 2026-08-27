@@ -49,6 +49,10 @@
 | InquiryAuditEvents `(inquiryAuditEvents)` | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>safe clinic timeline projection only</sub> | Conditional<br/><sub>immutable after command creation</sub> | Conditional<br/><sub>retention workflow only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 | InquiryModerationCases `(inquiryModerationCases)` | Conditional<br/><sub>dedicated participant report commands only</sub> | Conditional<br/><sub>capability-checked and audited moderation projection only</sub> | Conditional<br/><sub>dedicated moderation and appeal commands only</sub> | Conditional<br/><sub>retention workflow only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 | InquiryModerationEvents `(inquiryModerationEvents)` | Conditional<br/><sub>dedicated moderation commands only</sub> | Conditional<br/><sub>audited moderation service only</sub> | Conditional<br/><sub>immutable after command creation</sub> | Conditional<br/><sub>retention workflow only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryRetentionPolicies `(inquiryRetentionPolicies)` | Conditional<br/><sub>dedicated retention policy commands only</sub> | Conditional<br/><sub>server-side retention services only</sub> | Conditional<br/><sub>new policy versions replace mutation of prior rules</sub> | Conditional<br/><sub>retention governance only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryLegalHolds `(inquiryLegalHolds)` | Conditional<br/><sub>capability-checked retention commands only</sub> | Conditional<br/><sub>capability-checked retention projection only</sub> | Conditional<br/><sub>dedicated hold release command only</sub> | Conditional<br/><sub>legal hold records remain auditable</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryDeletionProofs `(inquiryDeletionProofs)` | Conditional<br/><sub>authorized deletion commands only</sub> | Conditional<br/><sub>retention service and restore barrier only</sub> | Conditional<br/><sub>immutable after command creation</sub> | Conditional<br/><sub>deletion proof cannot be removed generically</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| InquiryCommandLocks `(inquiryCommandLocks)` | Conditional<br/><sub>active inquiry domain transactions only</sub> | Conditional<br/><sub>not exposed through generic access</sub> | Conditional<br/><sub>locks are never updated</sub> | Conditional<br/><sub>owning inquiry transaction release only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 
 ## Notes
 
@@ -96,3 +100,7 @@
 - **InquiryAuditEvents**: Immutable private audit facts without copied message or note content
 - **InquiryModerationCases**: Private moderation cases; participant reports, additive moderation capability, audited scope expansion, and one appeal use dedicated commands
 - **InquiryModerationEvents**: Immutable private moderation audit facts without copied message, attachment, or note content
+- **InquiryRetentionPolicies**: Versioned private rules; existing records retain their assigned policy version
+- **InquiryLegalHolds**: Case-specific private holds with reason category, responsible function, review date, and release proof
+- **InquiryDeletionProofs**: Minimal content-free proof and terminal restore barrier for authorized deletion operations
+- **InquiryCommandLocks**: Ephemeral private lock records created and released inside one serializable domain transaction

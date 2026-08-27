@@ -13,6 +13,10 @@ import { Media } from '@/components/molecules/Media'
 import { UiLink } from '@/components/molecules/Link'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 import { INQUIRY_SUBMISSION_CONSENT_TEXT } from '@/features/inquiryCommunication/consent'
+import {
+  inquiryPreferredContactWindowOptions,
+  inquiryTreatmentTimelineOptions,
+} from '@/features/inquiryRequest/options'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
@@ -48,21 +52,6 @@ const inputClassName =
   'h-14 w-full rounded-[28px] border border-primary/45 bg-background px-4 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 read-only:cursor-not-allowed read-only:border-border read-only:bg-muted read-only:text-secondary/75 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
 const textAreaClassName =
   'min-h-32 w-full rounded-[24px] border border-primary/45 bg-background px-4 py-3 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
-
-const treatmentTimelineOptions = [
-  { label: 'As soon as possible', value: 'as_soon_as_possible' },
-  { label: 'Within two weeks', value: 'within_two_weeks' },
-  { label: 'Within one month', value: 'within_one_month' },
-  { label: 'Flexible', value: 'flexible' },
-] as const
-
-const preferredContactWindowOptions = [
-  { label: 'As soon as possible', value: 'as_soon_as_possible' },
-  { label: 'Morning', value: 'morning' },
-  { label: 'Afternoon', value: 'afternoon' },
-  { label: 'Evening', value: 'evening' },
-  { label: 'No preference', value: 'no_preference' },
-] as const
 
 export function ClinicAppointmentSection({
   sectionId,
@@ -362,7 +351,7 @@ export function ClinicAppointmentSection({
                 onChange={(event) => handleFieldChange('treatmentTimeline', event)}
               >
                 <option value="">Select timeline</option>
-                {treatmentTimelineOptions.map((option) => (
+                {inquiryTreatmentTimelineOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -382,7 +371,7 @@ export function ClinicAppointmentSection({
                 onChange={(event) => handleFieldChange('preferredContactWindow', event)}
               >
                 <option value="">Select contact window</option>
-                {preferredContactWindowOptions.map((option) => (
+                {inquiryPreferredContactWindowOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>

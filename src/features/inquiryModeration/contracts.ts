@@ -136,6 +136,8 @@ export type InquiryModerationCaseDTO = {
   conversation?: Array<{
     actorKind: 'clinic' | 'patient'
     attachment?: { fileName: string; id: string; mimeType: string; sizeBytes: number }
+    attachmentState?: 'available' | 'hard-deleted'
+    contentState: 'available' | 'hard-deleted'
     createdAt: string
     id: string
     text?: string
@@ -143,6 +145,8 @@ export type InquiryModerationCaseDTO = {
   description?: string
   target: {
     attachment?: { fileName: string; id: string; mimeType: string; sizeBytes: number }
+    attachmentState?: 'available' | 'hard-deleted'
+    contentState: 'available' | 'hard-deleted'
     createdAt: string
     id: string
     text?: string

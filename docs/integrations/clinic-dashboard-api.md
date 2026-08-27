@@ -425,9 +425,70 @@ Patient reporting and appeal use `POST /api/patient/inquiries/report` and
 `MODERATION_CONFLICT`, `MODERATION_INVALID_STATE`, `MODERATION_RATE_LIMITED`, and
 `MODERATION_SERVICE_UNAVAILABLE`. Raw case data and internal errors never cross the boundary.
 
-The cache decision is `no-public-impact`. All inquiry communication collections are cataloged as `private-live`; there
+The cache decision is `no-public-impact`. All inquiry communication collections, including the ephemeral transaction
+lock collection, are cataloged as `private-live`; there
 are no public reads, tags, paths, planner events, or public revalidation owners. This contract does not suppress a
 separate public invalidation event if a future inquiry mutation gains an explicitly approved public effect.
+
+### Inquiry retention, holds, and cutover
+
+Inquiry retention is a separate private platform capability. Generic collection, REST, GraphQL, and admin browsing of
+retention policies, legal holds, and deletion proofs remains disabled. Only a platform staff principal with the
+additive `inquiry-retention` capability may use these focused routes:
+
+| Method and route | Result |
+| --- | --- |
+| `POST /api/platform/inquiry-retention/review-queue` | Returns a bounded, cursor-paginated page of records whose review deadline has passed, excluding records under an active scoped legal hold. |
+| `POST /api/platform/inquiry-retention/cutover` | Migrates a bounded batch of pre-communication inquiries deterministically. |
+| `POST /api/platform/inquiry-retention/legal-holds/place` | Places one case-specific hold with a reason category, responsible function, and review date. |
+| `POST /api/platform/inquiry-retention/legal-holds/release` | Releases one active hold without changing the record's original review deadline. |
+| `POST /api/platform/inquiry-retention/content/hard-delete` | Irreversibly removes one explicitly named message or attachment after hold checks and leaves a content-free tombstone. |
+| `POST /api/platform/inquiry-retention/anonymize` | Removes direct patient identifiers and identity bindings from one inquiry package while preserving separately retained communication. |
+| `POST /api/platform/inquiry-retention/hard-delete` | Irreversibly removes all communication-package content and direct identity bindings after hold checks. |
+| `POST /api/platform/inquiry-retention/pending-deletes/recover` | Continues a bounded, cursor-paginated batch of attachment deletes whose database intent was committed before storage cleanup finished. |
+
+The initial policy is version `2026-08-24`. An inquiry becomes review-due 12 calendar months after its latest external
+patient-clinic message, or after inquiry creation when no external message exists. Only a later external message moves
+that basis. A moderation case becomes review-due 24 calendar months after its final decision or appeal and after every
+effective measure has ended. Policy versions are stamped on records when they enter the domain; later policy versions
+apply only to future records selected by their effective date.
+
+A passed deadline marks a record for human review. It never deletes, anonymizes, or hides data automatically. An
+active legal hold removes only the matching inquiry or moderation case from the review queue. Releasing the hold
+reveals the same stored deadline again. Hold placement and release are audited, actor-derived operations; clients
+cannot supply an authoritative actor or capability.
+
+Cutover does not infer a patient from email, create a conversation, or copy the original inquiry into a second message.
+Legacy `closed` maps to handling `submitted` plus lifecycle `closed` and receives exactly one clinic-only
+`legacy-closed-migrated` system event. That event uses the system actor, does not affect activity ordering, and does not
+change unread state. Repeating cutover is idempotent.
+
+Clinic offboarding does not rewrite or remove patient history. When a clinic no longer has an approved, synchronized
+staff principal, the patient projection remains readable but reports `messagingAvailable: false` and disables replies.
+The record's timestamps, retention basis, restrictions, and policy version remain unchanged.
+
+The focused content hard-delete route accepts only an inquiry, a message or attachment target, and an authorized reason
+category. It rejects active legal holds, removes attachment objects through the private storage gateway, replaces
+visible content at its original timeline position, and writes a minimal content-free proof. The proof's deterministic
+opaque tombstone keeps the item deleted in projections even if a stale database restore reintroduces earlier fields.
+A hard-deleted content state takes precedence over any later moderation appeal. Attachment deletion first persists a
+terminal pending tombstone, then removes private storage objects, and only then finalizes the proof. An authorized
+operator can resume abandoned or failed storage work through the recovery route. Its opaque cursor advances past a
+fully failing batch, so later pending deletes remain reachable; a later pass from the beginning retries failures.
+
+Patient identity anonymization nulls the patient relation, contact fields, creation actor binding, patient-authored
+actor bindings, patient read position, and patient relations in moderation evidence. The clinic projection becomes
+`Deleted patient`, exposes no contact action, and retains only the allowed conversation and internal-note history.
+Patient account deletion is rejected until every linked inquiry has reached that terminal identity state.
+
+Whole-package hard delete additionally removes the original request, external messages, internal notes, attachment
+metadata, and private attachment objects. It retains only content-free placeholders at their original timestamps plus
+the minimal technical deletion proof. Package proofs take precedence over restored application rows, and an explicit
+replay re-applies the scrub. Active inquiry or moderation-case holds block both first-time operations.
+
+All retention collections and routes are `private-live`. Responses use private no-store headers, and the cache decision
+is `no-public-impact`: there are no public reads, tags, paths, planner events, revalidation owners, or public cache
+flushes for review, hold, cutover, or offboarding operations.
 
 The public `POST /api/clinic-contact-requests` route is likewise an HTTP adapter around one guest inquiry command. That
 command validates the clinic and optional doctor or treatment inside its serializable transaction, deduplicates the

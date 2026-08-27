@@ -133,7 +133,10 @@ export const PlatformStaff: CollectionConfig = {
       type: 'select',
       hasMany: true,
       defaultValue: [],
-      options: [{ label: 'Conversation moderation', value: 'conversation-moderation' }],
+      options: [
+        { label: 'Conversation moderation', value: 'conversation-moderation' },
+        { label: 'Inquiry retention operations', value: 'inquiry-retention' },
+      ],
       admin: {
         description: 'Grant additive access to focused platform operations',
       },

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { patientSupabaseCreateHook } from '@/collections/Patients/hooks/patientSupabaseCreate'
 import { patientSupabaseDeleteHook } from '@/collections/Patients/hooks/patientSupabaseDelete'
+import { requireInquiryIdentityScrubBeforePatientDeleteHook } from '@/collections/Patients/hooks/requireInquiryIdentityScrub'
 import { inviteSupabaseAccount, deleteSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 import type { Payload, PayloadRequest, RequestContext, SanitizedCollectionConfig } from 'payload'
 import type { Patient } from '@/payload-types'
@@ -8,6 +9,7 @@ import type { Patient } from '@/payload-types'
 const getMocks = () => {
   const payload = {
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    find: vi.fn(),
     findByID: vi.fn(),
   } as unknown as Payload
   const req = { payload, context: {} } as unknown as PayloadRequest
@@ -220,5 +222,47 @@ describe('patientSupabaseDeleteHook', () => {
     ).rejects.toThrow('Failed to delete the external account for Patient 1')
 
     expect(payload.logger.error).toHaveBeenCalled()
+  })
+})
+
+describe('requireInquiryIdentityScrubBeforePatientDeleteHook', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('blocks account deletion while an available inquiry still carries the patient identity', async () => {
+    const { req, payload } = getMocks()
+    vi.mocked(payload.find).mockResolvedValue({ docs: [{ id: 9 }], totalDocs: 1 } as never)
+
+    await expect(
+      requireInquiryIdentityScrubBeforePatientDeleteHook({
+        collection: mockCollection,
+        context: emptyContext,
+        id: 'patient-1',
+        req,
+      }),
+    ).rejects.toThrow('Patient inquiry identity must be anonymized')
+    expect(payload.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'patientClinicInquiries',
+        where: {
+          and: [{ patient: { equals: 'patient-1' } }, { retentionState: { equals: 'available' } }],
+        },
+      }),
+    )
+  })
+
+  it('allows account deletion after every linked inquiry identity is terminally scrubbed', async () => {
+    const { req, payload } = getMocks()
+    vi.mocked(payload.find).mockResolvedValue({ docs: [], totalDocs: 0 } as never)
+
+    await expect(
+      requireInquiryIdentityScrubBeforePatientDeleteHook({
+        collection: mockCollection,
+        context: emptyContext,
+        id: 'patient-1',
+        req,
+      }),
+    ).resolves.toBeUndefined()
   })
 })

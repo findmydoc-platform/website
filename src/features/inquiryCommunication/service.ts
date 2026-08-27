@@ -48,6 +48,17 @@ import {
   type InquiryAttachmentStorageGateway,
 } from './storage'
 import { readInquiryModerationState, type InquiryModerationState } from '@/features/inquiryModeration/service'
+import {
+  hasInquiryPackageHardDeleteBarrier,
+  inquiryPackageTombstoneKey,
+  isInquiryContentHardDeleted,
+  readInquiryHardDeleteTombstones,
+} from '@/features/inquiryAggregate/tombstones'
+import {
+  resolveActiveInquiryRetentionPolicy,
+  resolveInquiryRetentionPolicyVersion,
+} from '@/features/inquiryRetention/service'
+import { communicationReviewDueAt } from '@/features/inquiryRetention/policy'
 
 export type InquiryCommunicationServiceErrorKind =
   | 'access-denied'
@@ -228,11 +239,24 @@ const findOne = async (
   return result.docs[0] ? asRecord(result.docs[0]) : null
 }
 
+const effectiveInquiryRetentionState = async (
+  req: PayloadRequest,
+  inquiry: StoredRecord,
+): Promise<'available' | 'anonymized' | 'hard-deleted'> => {
+  if (await hasInquiryPackageHardDeleteBarrier(req, inquiry.id)) return 'hard-deleted'
+  const anonymizationProof = await findOne(req, 'inquiryDeletionProofs', {
+    tombstoneKey: { equals: inquiryPackageTombstoneKey(inquiry.id, 'anonymized') },
+  })
+  if (anonymizationProof) return 'anonymized'
+  const stored = text(inquiry.retentionState)
+  return stored === 'anonymized' || stored === 'hard-deleted' ? stored : 'available'
+}
+
 const findMany = async (
   req: PayloadRequest,
   collection: string,
   where: Record<string, unknown>,
-  options?: { limit?: number; sort?: string },
+  options?: { limit?: number; sort?: string | string[] },
 ): Promise<StoredRecord[]> => {
   const docs: StoredRecord[] = []
   let page = 1
@@ -246,7 +270,7 @@ const findMany = async (
       page,
       pagination: true,
       req,
-      sort: options?.sort ?? 'createdAt',
+      sort: options?.sort ?? ['createdAt', 'id'],
       where,
     } as never)
     docs.push(...result.docs.map(asRecord))
@@ -334,23 +358,23 @@ const writeReadPosition = async (
     readerKind: actor.kind,
     readerPatient: actor.kind === 'patient' ? actor.id : null,
   }
-  if (existing) {
+  if (existing === null) {
     return asRecord(
-      await req.payload.update({
+      await req.payload.create({
         collection: 'inquiryReadPositions' as never,
         data,
         depth: 0,
-        id: existing.id,
         overrideAccess: true,
         req,
       } as never),
     )
   }
   return asRecord(
-    await req.payload.create({
+    await req.payload.update({
       collection: 'inquiryReadPositions' as never,
       data,
       depth: 0,
+      id: existing.id,
       overrideAccess: true,
       req,
     } as never),
@@ -401,11 +425,17 @@ const readAuthorizedInquiry = async (
   inquiryId: string,
   actor: InquiryActor,
 ): Promise<StoredRecord> => {
-  const scope = actor.kind === 'patient' ? { patient: { equals: actor.id } } : { clinic: { equals: actor.clinicId } }
+  const scope =
+    actor.kind === 'patient'
+      ? { and: [{ patient: { equals: actor.id } }, { retentionState: { equals: 'available' } }] }
+      : { clinic: { equals: actor.clinicId } }
   const inquiry = await findOne(req, 'patientClinicInquiries', {
     and: [{ id: { equals: payloadId(inquiryId) } }, scope],
   })
   if (!inquiry) throw new InquiryCommunicationServiceError('not-found', 'The inquiry does not exist.')
+  if (actor.kind === 'patient' && (await effectiveInquiryRetentionState(req, inquiry)) !== 'available') {
+    throw new InquiryCommunicationServiceError('not-found', 'The inquiry does not exist.')
+  }
   return inquiry
 }
 
@@ -502,7 +532,18 @@ const buildClinicDescriptor = async (
   if (!clinic || !displayName) {
     throw new InquiryCommunicationServiceError('invalid-state', 'The clinic is unavailable.')
   }
-  return { displayName, id: String(clinic.id) }
+  const availableStaff = await findOne(req, 'clinicStaff', {
+    and: [
+      { clinic: { equals: clinicId } },
+      { status: { equals: 'approved' } },
+      { 'authSync.status': { equals: 'synced' } },
+    ],
+  })
+  return {
+    displayName,
+    id: String(clinic.id),
+    messagingAvailable: clinic.status === 'approved' && Boolean(availableStaff),
+  }
 }
 
 const legacyStatus = (inquiry: StoredRecord): LegacyInquiryStatus => {
@@ -596,33 +637,39 @@ const readTimeline = async (
   actor: InquiryActor,
   moderationState: InquiryModerationState,
 ): Promise<InquiryDetailDTO['timeline']> => {
-  const [messages, notes, auditEvents] = await Promise.all([
+  const packageHardDeleted = (await effectiveInquiryRetentionState(req, inquiry)) === 'hard-deleted'
+  const [messages, notes, auditEvents, deletionProofs] = await Promise.all([
     findMany(req, 'inquiryMessages', { inquiry: { equals: inquiry.id } }),
     actor.kind === 'clinic'
       ? findMany(req, 'inquiryInternalNotes', { inquiry: { equals: inquiry.id } })
       : Promise.resolve([]),
-    findMany(req, 'inquiryAuditEvents', {
-      and: [
-        { inquiry: { equals: inquiry.id } },
-        {
-          eventType: {
-            in:
-              actor.kind === 'clinic'
-                ? [
-                    'handling-status-changed',
-                    'closed',
-                    'reopened',
-                    'marked-spam',
-                    'spam-removed',
-                    'moderation-restricted',
-                    'moderation-restored',
-                  ]
-                : ['moderation-restricted', 'moderation-restored'],
-          },
-        },
-      ],
-    }),
+    packageHardDeleted
+      ? Promise.resolve([])
+      : findMany(req, 'inquiryAuditEvents', {
+          and: [
+            { inquiry: { equals: inquiry.id } },
+            {
+              eventType: {
+                in:
+                  actor.kind === 'clinic'
+                    ? [
+                        'handling-status-changed',
+                        'closed',
+                        'reopened',
+                        'marked-spam',
+                        'spam-removed',
+                        'moderation-restricted',
+                        'moderation-restored',
+                        'legacy-closed-migrated',
+                      ]
+                    : ['moderation-restricted', 'moderation-restored'],
+              },
+            },
+          ],
+        }),
+    readInquiryHardDeleteTombstones(req, inquiry.id),
   ])
+  const hardDeletedTombstones = deletionProofs
 
   const items: Array<InquiryDetailDTO['timeline'][number] & { internalRank: number; internalSequence: number }> = []
   for (const message of messages) {
@@ -646,41 +693,66 @@ const readTimeline = async (
     const messageModeration = moderationState.restrictedMessages.get(String(message.id))
     const attachmentModeration =
       attachment === null ? undefined : moderationState.restrictedAttachments.get(String(attachment.id))
+    const messageHardDeleted =
+      packageHardDeleted ||
+      isInquiryContentHardDeleted(hardDeletedTombstones, {
+        contentState: message.contentState,
+        inquiryId: inquiry.id,
+        targetId: message.id,
+        targetType: 'message',
+      })
+    const attachmentHardDeleted =
+      attachment !== null &&
+      (packageHardDeleted ||
+        isInquiryContentHardDeleted(hardDeletedTombstones, {
+          contentState: attachment.contentState,
+          inquiryId: inquiry.id,
+          targetId: attachment.id,
+          targetType: 'attachment',
+        }))
     items.push({
       actor: {
-        displayName,
-        isCurrentActor: message.actorKey === actor.key,
+        displayName: messageHardDeleted ? '' : displayName,
+        isCurrentActor: !messageHardDeleted && message.actorKey === actor.key,
         kind: message.authorKind === 'patient' ? 'patient' : 'clinic',
       },
-      ...(!messageRestricted && !attachmentRestricted && attachmentDTO(attachment)
+      ...(!attachmentRestricted && !attachmentHardDeleted && attachmentDTO(attachment)
         ? { attachment: attachmentDTO(attachment), attachmentState: 'available' as const }
-        : attachmentRestricted
-          ? { attachmentState: 'restricted' as const }
-          : {}),
+        : attachmentHardDeleted
+          ? { attachmentState: 'hard-deleted' as const }
+          : attachmentRestricted
+            ? { attachmentState: 'restricted' as const }
+            : {}),
       createdAt: text(message.createdAt),
-      contentState: messageRestricted ? 'restricted' : 'available',
+      contentState: messageHardDeleted ? 'hard-deleted' : messageRestricted ? 'restricted' : 'available',
       ...(messageModeration ? { moderation: messageModeration } : {}),
       ...(attachmentModeration ? { attachmentModeration } : {}),
       id: activityId('message', message.id),
       internalRank: 2,
       internalSequence: numberValue(message.sequence),
       kind: 'external-message',
-      ...(!messageRestricted && text(message.text) ? { text: text(message.text) } : {}),
+      ...(!messageHardDeleted && !messageRestricted && text(message.text) ? { text: text(message.text) } : {}),
     })
   }
 
   for (const note of notes) {
+    const noteHardDeleted = packageHardDeleted || note.contentState === 'hard-deleted'
     const staff = await findOne(req, 'clinicStaff', { id: { equals: relationId(note.authorClinicStaff) } })
     const displayName =
       [text(staff?.firstName), text(staff?.lastName)].filter(Boolean).join(' ') || text(staff?.email) || 'Clinic'
     items.push({
-      actor: { displayName, isCurrentActor: note.actorKey === actor.key, kind: 'clinic' },
+      actor: {
+        displayName: noteHardDeleted ? '' : displayName,
+        isCurrentActor: !noteHardDeleted && note.actorKey === actor.key,
+        kind: 'clinic',
+      },
+      contentState: noteHardDeleted ? 'hard-deleted' : 'available',
       createdAt: text(note.createdAt),
       id: activityId('note', note.id),
       internalRank: 2,
       internalSequence: numberValue(note.sequence),
       kind: 'internal-note',
-      text: text(note.text),
+      ...(!noteHardDeleted && text(note.text) ? { text: text(note.text) } : {}),
     })
   }
 
@@ -728,10 +800,21 @@ const latestActivity = (
   inquiry: StoredRecord,
   timeline: InquiryDetailDTO['timeline'],
 ): { kind: InquiryDetailDTO['latestActivityKind']; preview: string } => {
-  const latest = timeline.at(-1)
+  let latest: InquiryDetailDTO['timeline'][number] | undefined
+  for (let index = timeline.length - 1; index >= 0; index -= 1) {
+    const candidate = timeline[index]
+    if (candidate && (candidate.kind !== 'system-event' || candidate.event !== 'legacy-closed-migrated')) {
+      latest = candidate
+      break
+    }
+  }
   if (!latest) return { kind: 'inquiry', preview: text(inquiry.message).slice(0, 160) }
   if (latest.kind === 'external-message') {
+    if (latest.contentState === 'hard-deleted') return { kind: latest.kind, preview: 'Message deleted' }
     if (latest.contentState === 'restricted') return { kind: latest.kind, preview: 'Message unavailable' }
+    if (latest.attachmentState === 'hard-deleted' && !latest.text) {
+      return { kind: latest.kind, preview: 'Attachment deleted' }
+    }
     if (latest.attachmentState === 'restricted' && !latest.text) {
       return { kind: latest.kind, preview: 'Attachment unavailable' }
     }
@@ -740,7 +823,12 @@ const latestActivity = (
       preview: (latest.text || latest.attachment?.fileName || 'Attachment').slice(0, 160),
     }
   }
-  if (latest.kind === 'internal-note') return { kind: latest.kind, preview: latest.text.slice(0, 160) }
+  if (latest.kind === 'internal-note') {
+    return {
+      kind: latest.kind,
+      preview: latest.contentState === 'hard-deleted' ? 'Internal note deleted' : (latest.text ?? '').slice(0, 160),
+    }
+  }
   const labels = {
     'handling-status-changed': 'Handling status changed',
     closed: 'Inquiry closed',
@@ -749,6 +837,7 @@ const latestActivity = (
     'spam-removed': 'Spam removed',
     'moderation-restricted': 'Communication restricted',
     'moderation-restored': 'Communication restored',
+    'legacy-closed-migrated': 'Legacy closed inquiry migrated',
   } as const
   return { kind: latest.kind, preview: labels[latest.event] }
 }
@@ -769,12 +858,19 @@ const isOperationalInquiry = (inquiry: StoredRecord): boolean =>
   nonNegativeIntegerField(inquiry.clinicUnreadEpoch) &&
   Boolean(text(inquiry.lastActivityAt))
 
-const assertOperationalInquiry = (inquiry: StoredRecord): void => {
+const assertOperationalInquiry = async (req: PayloadRequest, inquiry: StoredRecord): Promise<void> => {
   if (!isOperationalInquiry(inquiry)) {
     throw new InquiryCommunicationServiceError(
       'invalid-state',
       'This legacy inquiry is awaiting the communication cutover.',
     )
+  }
+  const retentionState = await effectiveInquiryRetentionState(req, inquiry)
+  if (req.context?.inquiryContractMutationPolicy === 'exclude-identity-deleted' && retentionState !== 'available') {
+    throw new InquiryCommunicationServiceError('not-found', 'The inquiry is unavailable under this API contract.')
+  }
+  if (retentionState === 'hard-deleted') {
+    throw new InquiryCommunicationServiceError('invalid-state', 'This inquiry package has been hard deleted.')
   }
 }
 
@@ -816,6 +912,9 @@ const clinicUnreadProjection = (
 }
 
 const buildPatientDetail = async (req: PayloadRequest, inquiry: StoredRecord): Promise<InquiryDetailDTO> => {
+  if ((await effectiveInquiryRetentionState(req, inquiry)) !== 'available') {
+    throw new InquiryCommunicationServiceError('not-found', 'The inquiry does not exist.')
+  }
   const ownerId = relationId(inquiry.patient)
   if (ownerId === null) throw new InquiryCommunicationServiceError('not-found', 'The inquiry does not exist.')
   const conversation = await readConversation(req, inquiry.id)
@@ -825,7 +924,7 @@ const buildPatientDetail = async (req: PayloadRequest, inquiry: StoredRecord): P
   if (actor.kind !== 'patient' || String(actor.id) !== String(ownerId)) {
     throw new InquiryCommunicationServiceError('not-found', 'The inquiry does not exist.')
   }
-  assertOperationalInquiry(inquiry)
+  await assertOperationalInquiry(req, inquiry)
   const moderationState = await readInquiryModerationState(req, inquiry.id, actor)
   const [clinic, interest, timeline] = await Promise.all([
     buildClinicDescriptor(req, inquiry),
@@ -848,7 +947,8 @@ const buildPatientDetail = async (req: PayloadRequest, inquiry: StoredRecord): P
     text(inquiry.lifecycle) === 'open' &&
     actualHandlingStatus !== 'spam' &&
     moderationState.moderation.conversation.state === 'available' &&
-    moderationState.moderation.identity.state === 'available'
+    moderationState.moderation.identity.state === 'available' &&
+    clinic.messagingAvailable
 
   return {
     actions: {
@@ -909,11 +1009,14 @@ const buildClinicDetail = async (
   actor: Extract<InquiryActor, { kind: 'clinic' }>,
 ): Promise<InquiryDetailDTO> => {
   const ownerId = relationId(inquiry.patient)
-  const operational = isOperationalInquiry(inquiry)
+  const retentionState = await effectiveInquiryRetentionState(req, inquiry)
+  const identityDeleted = retentionState === 'anonymized' || retentionState === 'hard-deleted'
+  const packageDeleted = retentionState === 'hard-deleted'
+  const operational = isOperationalInquiry(inquiry) && !packageDeleted
   const moderationState = await readInquiryModerationState(req, inquiry.id, actor)
   const [clinic, conversation, interest, timeline, position] = await Promise.all([
     buildClinicDescriptor(req, inquiry),
-    ownerId === null ? Promise.resolve(null) : readConversation(req, inquiry.id),
+    ownerId === null && !identityDeleted ? Promise.resolve(null) : readConversation(req, inquiry.id),
     buildInterest(req, inquiry),
     readTimeline(req, inquiry, actor, moderationState),
     operational ? readPosition(req, inquiry, actor) : Promise.resolve(null),
@@ -932,17 +1035,20 @@ const buildClinicDetail = async (
     moderationState.moderation.conversation.state === 'available' &&
     moderationState.moderation.identity.state === 'available'
   const binding: InquiryDetailDTO['binding'] =
-    ownerId !== null && conversation
-      ? {
-          canReply,
-          conversationId: String(conversation.id),
-          kind: 'patient',
-          patient: { displayName: text(inquiry.fullName), id: String(ownerId) },
-        }
-      : { canReply: false, kind: 'guest' }
+    identityDeleted && conversation
+      ? { canReply: false, conversationId: String(conversation.id), kind: 'deleted-patient' }
+      : ownerId !== null && conversation
+        ? {
+            canReply,
+            conversationId: String(conversation.id),
+            kind: 'patient',
+            patient: { displayName: text(inquiry.fullName), id: String(ownerId) },
+          }
+        : { canReply: false, kind: 'guest' }
   const latest = latestActivity(inquiry, timeline)
-  const contact: InquiryDetailDTO['contact'] =
-    handlingStatus === 'spam'
+  const contact: InquiryDetailDTO['contact'] = identityDeleted
+    ? { mode: 'unavailable' }
+    : handlingStatus === 'spam'
       ? {
           email: maskEmail(text(inquiry.email)),
           mode: 'masked',
@@ -960,7 +1066,7 @@ const buildClinicDetail = async (
       canMarkRead: operational && unread.isUnread,
       canMarkUnread: operational && !unread.isUnread,
       canReply,
-      canRevealContact: operational && handlingStatus === 'spam',
+      canRevealContact: operational && !identityDeleted && handlingStatus === 'spam',
       canView: true,
     },
     attachmentConstraints: {
@@ -974,17 +1080,22 @@ const buildClinicDetail = async (
     createdAt,
     handlingStatus,
     id: String(inquiry.id),
-    interest,
+    interest: packageDeleted ? { label: 'Deleted inquiry' } : interest,
     lastActivityAt,
     latestActivityKind: latest.kind,
     lifecycle,
     moderation: moderationState.moderation,
-    originalRequest: {
-      message: text(inquiry.message),
-      ...(text(inquiry.preferredContactWindow) ? { preferredContactWindow: text(inquiry.preferredContactWindow) } : {}),
-      ...(text(inquiry.treatmentTimeline) ? { treatmentTimeline: text(inquiry.treatmentTimeline) } : {}),
-    },
-    patientName: text(inquiry.fullName),
+    originalRequest: packageDeleted
+      ? { contentState: 'hard-deleted' }
+      : {
+          contentState: 'available',
+          message: text(inquiry.message),
+          ...(text(inquiry.preferredContactWindow)
+            ? { preferredContactWindow: text(inquiry.preferredContactWindow) }
+            : {}),
+          ...(text(inquiry.treatmentTimeline) ? { treatmentTimeline: text(inquiry.treatmentTimeline) } : {}),
+        },
+    patientName: identityDeleted ? 'Deleted patient' : text(inquiry.fullName),
     preview: latest.preview,
     revision: numberValue(inquiry.revision),
     timeline,
@@ -1045,6 +1156,7 @@ const queueChangeCursor = (items: readonly InquiryListItemDTO[]): string =>
 
 type ClinicQueueProbeMetadata = {
   conversationIdsByInquiry: ReadonlyMap<string, string>
+  deletionProofVersionsByInquiry: ReadonlyMap<string, readonly string[]>
   interestLabelsByInquiry: ReadonlyMap<string, string>
 }
 
@@ -1059,10 +1171,13 @@ const loadClinicQueueProbeMetadata = async (
     ...new Set(inquiries.map((inquiry) => relationId(inquiry.treatment)).filter((id): id is RelationId => id !== null)),
   ]
   const inquiryIds = inquiries.map((inquiry) => inquiry.id)
-  const [doctors, treatments, conversations] = await Promise.all([
+  const [doctors, treatments, conversations, deletionProofs] = await Promise.all([
     doctorIds.length ? findMany(req, 'doctors', { id: { in: doctorIds } }) : Promise.resolve([]),
     treatmentIds.length ? findMany(req, 'treatments', { id: { in: treatmentIds } }) : Promise.resolve([]),
     inquiryIds.length ? findMany(req, 'inquiryConversations', { inquiry: { in: inquiryIds } }) : Promise.resolve([]),
+    inquiryIds.length
+      ? findMany(req, 'inquiryDeletionProofs', { inquiryId: { in: inquiryIds.map(String) } })
+      : Promise.resolve([]),
   ])
   const doctorNames = new Map(
     doctors.map((doctor) => [
@@ -1089,7 +1204,18 @@ const loadClinicQueueProbeMetadata = async (
       return inquiryId === null ? [] : [[String(inquiryId), String(conversation.id)] as const]
     }),
   )
-  return { conversationIdsByInquiry, interestLabelsByInquiry }
+  const deletionProofVersionsByInquiry = new Map<string, string[]>()
+  for (const proof of deletionProofs) {
+    const inquiryId = text(proof.inquiryId)
+    if (!inquiryId) continue
+    const versions = deletionProofVersionsByInquiry.get(inquiryId) ?? []
+    versions.push(
+      [text(proof.tombstoneKey), text(proof.operation), text(proof.performedAt), text(proof.updatedAt)].join(':'),
+    )
+    deletionProofVersionsByInquiry.set(inquiryId, versions)
+  }
+  for (const versions of deletionProofVersionsByInquiry.values()) versions.sort()
+  return { conversationIdsByInquiry, deletionProofVersionsByInquiry, interestLabelsByInquiry }
 }
 
 const clinicQueueProbeCursor = (
@@ -1131,6 +1257,7 @@ const clinicQueueProbeCursor = (
         text(inquiry.treatmentTimeline),
         metadata.interestLabelsByInquiry.get(String(inquiry.id)) ?? 'General clinic inquiry',
         metadata.conversationIdsByInquiry.get(String(inquiry.id)) ?? null,
+        metadata.deletionProofVersionsByInquiry.get(String(inquiry.id)) ?? [],
         clinicUnreadProjection(inquiry, positionsByInquiry.get(String(inquiry.id))),
       ])
       .sort((left, right) => String(left[0]).localeCompare(String(right[0]), undefined, { numeric: true })),
@@ -1160,6 +1287,7 @@ export const readClinicInquiryDetail = async (
 export const readClinicInquiryQueue = async (
   req: PayloadRequest,
   rawInput: ClinicInquiryQueueInput,
+  options: { excludeIdentityDeleted?: boolean } = {},
 ): Promise<InquiryQueueDTO> => {
   const parsed = clinicInquiryQueueInputSchema.safeParse(rawInput)
   if (!parsed.success) throw new InquiryCommunicationServiceError('invalid-input', 'The queue input is invalid.')
@@ -1170,12 +1298,21 @@ export const readClinicInquiryQueue = async (
   const actor = await resolveCurrentActor(req)
   if (actor.kind !== 'clinic') throw new InquiryCommunicationServiceError('access-denied', 'Clinic access is required.')
 
-  const inquiries = await findMany(
+  const matchingInquiries = await findMany(
     req,
     'patientClinicInquiries',
     { clinic: { equals: actor.clinicId } },
     { sort: '-lastActivityAt' },
   )
+  const inquiries = options.excludeIdentityDeleted
+    ? (
+        await Promise.all(
+          matchingInquiries.map(async (inquiry) =>
+            (await effectiveInquiryRetentionState(req, inquiry)) === 'available' ? inquiry : null,
+          ),
+        )
+      ).filter((inquiry): inquiry is StoredRecord => inquiry !== null)
+    : matchingInquiries
   const positions = await findMany(req, 'inquiryReadPositions', {
     and: [{ clinic: { equals: actor.clinicId } }, { readerKey: { equals: actor.key } }],
   })
@@ -1288,7 +1425,7 @@ export const changeLegacyClinicInquiryStatus = async (
       throw new InquiryCommunicationServiceError('access-denied', 'The clinic participant changed.')
     }
     const inquiry = await readAuthorizedInquiry(req, input.inquiryId, actor)
-    assertOperationalInquiry(inquiry)
+    await assertOperationalInquiry(req, inquiry)
     const currentStatus = legacyStatus(inquiry)
     if (!legacyForwardTransitions[currentStatus].includes(input.status as never)) {
       throw new InquiryCommunicationServiceError('conflict', 'The legacy status transition is no longer available.')
@@ -1330,10 +1467,14 @@ export const readPatientInquiryQueue = async (
   const inquiries = await findMany(
     req,
     'patientClinicInquiries',
-    { patient: { equals: actor.id } },
+    { and: [{ patient: { equals: actor.id } }, { retentionState: { equals: 'available' } }] },
     { sort: '-lastActivityAt' },
   )
-  const allItems = (await Promise.all(inquiries.map((inquiry) => buildPatientDetail(req, inquiry))))
+  const visibleInquiries: StoredRecord[] = []
+  for (const inquiry of inquiries) {
+    if ((await effectiveInquiryRetentionState(req, inquiry)) === 'available') visibleInquiries.push(inquiry)
+  }
+  const allItems = (await Promise.all(visibleInquiries.map((inquiry) => buildPatientDetail(req, inquiry))))
     .map(toListItem)
     .sort(compareQueueItems)
   const counts = {
@@ -1443,6 +1584,7 @@ const assertExternalCommunicationOpen = async (
       await buildDetailForActor(req, inquiry, actor),
     )
   }
+  await assertOperationalInquiry(req, inquiry)
   if (text(inquiry.lifecycle) !== 'open' || text(inquiry.handlingStatus) === 'spam') {
     throw new InquiryCommunicationServiceError(
       'invalid-state',
@@ -1454,6 +1596,14 @@ const assertExternalCommunicationOpen = async (
     throw new InquiryCommunicationServiceError(
       'invalid-state',
       'Guest inquiries do not support external replies.',
+      await buildDetailForActor(req, inquiry, actor),
+    )
+  }
+  const clinic = await buildClinicDescriptor(req, inquiry)
+  if (!clinic.messagingAvailable) {
+    throw new InquiryCommunicationServiceError(
+      'invalid-state',
+      'External communication is not available after clinic offboarding.',
       await buildDetailForActor(req, inquiry, actor),
     )
   }
@@ -1646,6 +1796,7 @@ const sendInquiryMessage = async (
       }
 
       const now = new Date().toISOString()
+      const policy = await resolveInquiryRetentionPolicyVersion(req, text(inquiry.retentionPolicyVersion))
       const nextSequence = numberValue(inquiry.activitySequence, 1) + 1
       const nextExternalSequence = numberValue(inquiry.externalSequence) + 1
       const nextClinicNotificationSequence =
@@ -1689,6 +1840,8 @@ const sendInquiryMessage = async (
         handlingStatus: nextHandlingStatus,
         lastActivityAt: now,
         lastExternalActivityAt: now,
+        retentionReviewBasisAt: now,
+        retentionReviewDueAt: communicationReviewDueAt(now, policy.communicationReviewMonths),
         revision: numberValue(inquiry.revision) + 1,
       })
       if (attachment) {
@@ -1782,7 +1935,7 @@ export const addClinicInquiryNote = async (
       const replay = await readNoteReplay(req, actor, input)
       if (replay) return readAuthorizedInquiry(req, input.inquiryId, actor)
       const inquiry = await readAuthorizedInquiry(req, input.inquiryId, actor)
-      assertOperationalInquiry(inquiry)
+      await assertOperationalInquiry(req, inquiry)
       const clinicId = relationId(inquiry.clinic)
       if (clinicId === null) throw new InquiryCommunicationServiceError('invalid-state', 'The clinic is unavailable.')
       const now = new Date().toISOString()
@@ -1866,7 +2019,7 @@ export const updateClinicInquiryState = async (
         throw new InquiryCommunicationServiceError('access-denied', 'The clinic participant changed.')
       }
       const inquiry = await readAuthorizedInquiry(req, input.inquiryId, actor)
-      assertOperationalInquiry(inquiry)
+      await assertOperationalInquiry(req, inquiry)
       await assertExpectedRevision(req, inquiry, actor, input.expectedRevision)
       const previousHandlingStatus = text(inquiry.handlingStatus) || 'submitted'
       const previousLifecycle = text(inquiry.lifecycle) || 'open'
@@ -2041,7 +2194,7 @@ const updateInquiryReadPosition = async (
       throw new InquiryCommunicationServiceError('access-denied', 'The inquiry participant changed.')
     }
     const current = await readAuthorizedInquiry(req, input.inquiryId, actor)
-    assertOperationalInquiry(current)
+    await assertOperationalInquiry(req, current)
     const existing = await readPosition(req, current, actor)
     if (input.mode === 'unread') {
       await writeReadPosition(req, current, actor, {
@@ -2458,7 +2611,7 @@ export const discardAttachmentDraft = async (
       throw new InquiryCommunicationServiceError('access-denied', 'The inquiry participant changed.')
     }
     const current = await readOwnedAttachment(req, input, actor)
-    assertOperationalInquiry(current.inquiry)
+    await assertOperationalInquiry(req, current.inquiry)
     if (current.attachment.state === 'discarded') return current.attachment
     if (current.attachment.state === 'bound') {
       throw new InquiryCommunicationServiceError('invalid-state', 'A message attachment cannot be discarded.')
@@ -2602,6 +2755,17 @@ export const readAttachmentAccess = async (
   const inquiryId = relationId(attachment.inquiry)
   if (inquiryId === null) throw new InquiryCommunicationServiceError('not-found', 'The attachment does not exist.')
   await readAuthorizedInquiry(req, String(inquiryId), actor)
+  const tombstones = await readInquiryHardDeleteTombstones(req, inquiryId)
+  if (
+    isInquiryContentHardDeleted(tombstones, {
+      contentState: attachment.contentState,
+      inquiryId,
+      targetId: attachment.id,
+      targetType: 'attachment',
+    })
+  ) {
+    throw new InquiryCommunicationServiceError('not-found', 'The attachment does not exist.')
+  }
   const moderationState = await readInquiryModerationState(req, inquiryId, actor)
   const boundMessageId = relationId(attachment.boundMessage)
   if (
@@ -2653,7 +2817,7 @@ export const revealClinicInquiryContact = async (
       throw new InquiryCommunicationServiceError('access-denied', 'The clinic participant changed.')
     }
     const current = await readAuthorizedInquiry(req, input.inquiryId, currentActor)
-    assertOperationalInquiry(current)
+    await assertOperationalInquiry(req, current)
     if (text(current.handlingStatus) !== 'spam') {
       throw new InquiryCommunicationServiceError(
         'invalid-state',
@@ -2677,7 +2841,11 @@ export const readPatientInquiryDetail = async (
 ): Promise<InquiryDetailDTO> => {
   const ownerId = patientId(req)
   const inquiry = await findOne(req, 'patientClinicInquiries', {
-    and: [{ id: { equals: payloadId(input.inquiryId) } }, { patient: { equals: ownerId } }],
+    and: [
+      { id: { equals: payloadId(input.inquiryId) } },
+      { patient: { equals: ownerId } },
+      { retentionState: { equals: 'available' } },
+    ],
   })
   if (!inquiry) throw new InquiryCommunicationServiceError('not-found', 'The inquiry does not exist.')
   return buildPatientDetail(req, inquiry)
@@ -2713,6 +2881,7 @@ export const createVerifiedPatientInquiry = async (
   if (existing) return { inquiry: await buildPatientDetail(req, existing), replayed: true }
 
   const now = new Date().toISOString()
+  const policy = await resolveActiveInquiryRetentionPolicy(req, new Date(now))
 
   try {
     const inquiry = await runCommandTransaction(req, async () => {
@@ -2775,6 +2944,10 @@ export const createVerifiedPatientInquiry = async (
             patient: ownerId,
             phoneNumber,
             preferredContactWindow: input.preferredContactWindow ?? null,
+            retentionPolicyVersion: policy.version,
+            retentionReviewBasisAt: now,
+            retentionReviewDueAt: communicationReviewDueAt(now, policy.communicationReviewMonths),
+            retentionState: 'available',
             revision: 0,
             status: 'submitted',
             treatment: input.treatmentId ? payloadId(input.treatmentId) : null,
@@ -2925,6 +3098,7 @@ export const submitGuestClinicInquiry = async (
     await validateInquiryTarget(req, input)
 
     const now = new Date(nowMs).toISOString()
+    const policy = await resolveActiveInquiryRetentionPolicy(req, new Date(now))
     const inquiry = asRecord(
       await req.payload.create({
         collection: 'patientClinicInquiries',
@@ -2948,6 +3122,10 @@ export const submitGuestClinicInquiry = async (
           message: input.message,
           phoneNumber: input.phoneNumber,
           preferredContactWindow: input.preferredContactWindow ?? null,
+          retentionPolicyVersion: policy.version,
+          retentionReviewBasisAt: now,
+          retentionReviewDueAt: communicationReviewDueAt(now, policy.communicationReviewMonths),
+          retentionState: 'available',
           revision: 0,
           status: 'submitted',
           treatment: input.treatmentId ?? null,

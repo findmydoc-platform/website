@@ -20,6 +20,13 @@ import {
   reconcileExpiredInquiryModerationMeasures,
   submitInquiryModerationAppeal,
 } from '@/features/inquiryModeration/service'
+import {
+  hardDeleteInquiryContent,
+  placeInquiryLegalHold,
+  readInquiryRetentionReviewQueue,
+  releaseInquiryLegalHold,
+} from '@/features/inquiryRetention/service'
+import { moderationReviewDueAt } from '@/features/inquiryRetention/policy'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
@@ -94,7 +101,7 @@ describe('inquiry moderation lifecycle', () => {
     const moderatorWithCapability = await payload.update({
       collection: 'platformStaff',
       context: { trustedPlatformStaffOps: true },
-      data: { capabilities: ['conversation-moderation'] },
+      data: { capabilities: ['conversation-moderation', 'inquiry-retention'] },
       depth: 0,
       id: moderator.id,
       overrideAccess: true,
@@ -112,6 +119,8 @@ describe('inquiry moderation lifecycle', () => {
 
   afterAll(async () => {
     for (const collection of [
+      'inquiryLegalHolds',
+      'inquiryDeletionProofs',
       'inquiryModerationEvents',
       'inquiryModerationCases',
       'inquiryAuditEvents',
@@ -124,7 +133,12 @@ describe('inquiry moderation lifecycle', () => {
       await payload.delete({
         collection: collection as never,
         overrideAccess: true,
-        where: { inquiry: { in: createdInquiryIds } },
+        where:
+          collection === 'inquiryLegalHolds'
+            ? { placedBy: { equals: moderatorReq.user?.id } }
+            : collection === 'inquiryDeletionProofs'
+              ? { inquiryId: { in: createdInquiryIds.map(String) } }
+              : { inquiry: { in: createdInquiryIds } },
       } as never)
     }
     for (const id of createdInquiryIds) {
@@ -164,6 +178,22 @@ describe('inquiry moderation lifecycle', () => {
       targetId: message.id,
       targetType: 'message',
     })
+    const hold = await placeInquiryLegalHold(moderatorReq, {
+      reasonCategory: 'regulatory-review',
+      responsibleFunction: 'data-protection',
+      reviewAt: '2027-08-24T00:00:00.000Z',
+      targetId: receipt.reportId,
+      targetType: 'moderation-case',
+    })
+    await expect(
+      hardDeleteInquiryContent(moderatorReq, {
+        inquiryId: created.inquiry.id,
+        reasonCategory: 'authorized-erasure',
+        targetId: message.id.replace(/^message:/u, ''),
+        targetType: 'message',
+      }),
+    ).rejects.toMatchObject({ kind: 'invalid-state' })
+    await releaseInquiryLegalHold(moderatorReq, { holdId: hold.holdId })
 
     await expect(
       createInquiryModerationReport(patientReq, {
@@ -212,7 +242,7 @@ describe('inquiry moderation lifecycle', () => {
         category: 'privacy-concern',
         idempotencyKey: `${slugPrefix}-concurrent-report-two`,
         inquiryId: created.inquiry.id,
-        targetId: secondMessage.id,
+        targetId: secondMessage.id.replace(/^message:/u, ''),
         targetType: 'message',
       }),
     ])
@@ -223,6 +253,13 @@ describe('inquiry moderation lifecycle', () => {
       reason: expect.objectContaining({ kind: expect.stringMatching(/conflict|invalid-state/u) }),
       status: 'rejected',
     })
+    const moderationLocks = await payload.find({
+      collection: 'inquiryCommandLocks',
+      depth: 0,
+      limit: 1,
+      overrideAccess: true,
+    })
+    expect(moderationLocks.totalDocs).toBe(0)
 
     expect(receipt).toMatchObject({ received: true, reportId: expect.any(String) })
     const cases = await payload.find({
@@ -327,7 +364,6 @@ describe('inquiry moderation lifecycle', () => {
       overrideAccess: true,
     })
     const effectiveUntil = new Date(Date.now() + 60_000).toISOString()
-
     await decideInquiryModerationCase(moderatorReq, {
       caseId: report.reportId,
       category: 'harassment-threats',
@@ -427,6 +463,13 @@ describe('inquiry moderation lifecycle', () => {
       measureEndedAt: expect.any(String),
       status: 'resolved',
     })
+    expect(overturnedCase.retentionReviewDueAt).toBe(
+      moderationReviewDueAt({
+        finalOutcomeAt: String(overturnedCase.finalOutcomeAt),
+        measureEndedAt: String(overturnedCase.measureEndedAt),
+        reviewMonths: 24,
+      }),
+    )
     await expect(
       reconcileExpiredInquiryModerationMeasures(moderatorReq, {
         inquiryId: created.inquiry.id,
@@ -469,6 +512,28 @@ describe('inquiry moderation lifecycle', () => {
       'appeal-submitted',
       'appeal-decided',
     ])
+
+    await hardDeleteInquiryContent(moderatorReq, {
+      inquiryId: created.inquiry.id,
+      reasonCategory: 'authorized-erasure',
+      targetId: message.id.replace(/^message:/u, ''),
+      targetType: 'message',
+    })
+    await (
+      payload.db as unknown as {
+        pool: { query: (query: string, values: unknown[]) => Promise<unknown> }
+      }
+    ).pool.query('UPDATE inquiry_messages SET content_state = $1, text = $2 WHERE id = $3', [
+      'available',
+      'Synthetic message selected for restriction.',
+      Number(message.id.replace(/^message:/u, '')),
+    ])
+    const afterRestore = await readInquiryModerationCase(moderatorReq, {
+      caseId: report.reportId,
+      scope: 'reported-object',
+    })
+    expect(afterRestore.target).toMatchObject({ contentState: 'hard-deleted', id: message.id })
+    expect(afterRestore.target).not.toHaveProperty('text')
   })
 
   it('blocks a suspended patient from writing across conversations while preserving read access', async () => {
@@ -681,18 +746,54 @@ describe('inquiry moderation lifecycle', () => {
     })
     expect(patientAfter.unread).toEqual(patientBefore.unread)
     expect(patientAfter.timeline).toEqual(patientBefore.timeline)
-    await expect(
-      payload.findByID({
-        collection: 'inquiryModerationCases',
-        depth: 0,
-        id: report.reportId,
-        overrideAccess: true,
-      }),
-    ).resolves.toMatchObject({
+    const noActionCase = await payload.findByID({
+      collection: 'inquiryModerationCases',
+      depth: 0,
+      id: report.reportId,
+      overrideAccess: true,
+    })
+    expect(noActionCase).toMatchObject({
       decisionOutcome: 'no-action',
       finalOutcomeAt: expect.any(String),
+      measureEndedAt: expect.any(String),
       status: 'resolved',
     })
+    expect(noActionCase.retentionReviewDueAt).toBe(
+      moderationReviewDueAt({
+        finalOutcomeAt: String(noActionCase.finalOutcomeAt),
+        measureEndedAt: String(noActionCase.measureEndedAt),
+        reviewMonths: 24,
+      }),
+    )
+    const afterDue = new Date(Date.parse(String(noActionCase.retentionReviewDueAt)) + 1_000).toISOString()
+    const dueQueue = await readInquiryRetentionReviewQueue(moderatorReq, { limit: 100, now: afterDue })
+    expect(dueQueue.items).toContainEqual(
+      expect.objectContaining({
+        id: String(report.reportId),
+        reviewDueAt: noActionCase.retentionReviewDueAt,
+        targetType: 'moderation-case',
+      }),
+    )
+    const hold = await placeInquiryLegalHold(moderatorReq, {
+      reasonCategory: 'regulatory-review',
+      responsibleFunction: 'data-protection',
+      reviewAt: new Date(Date.parse(afterDue) + 24 * 60 * 60 * 1_000).toISOString(),
+      targetId: report.reportId,
+      targetType: 'moderation-case',
+    })
+    const heldQueue = await readInquiryRetentionReviewQueue(moderatorReq, { limit: 100, now: afterDue })
+    expect(heldQueue.items).not.toContainEqual(
+      expect.objectContaining({ id: String(report.reportId), targetType: 'moderation-case' }),
+    )
+    await releaseInquiryLegalHold(moderatorReq, { holdId: hold.holdId })
+    const releasedQueue = await readInquiryRetentionReviewQueue(moderatorReq, { limit: 100, now: afterDue })
+    expect(releasedQueue.items).toContainEqual(
+      expect.objectContaining({
+        id: String(report.reportId),
+        reviewDueAt: noActionCase.retentionReviewDueAt,
+        targetType: 'moderation-case',
+      }),
+    )
   })
 
   it('keeps an upheld appeal restricted and terminal', async () => {
@@ -722,10 +823,11 @@ describe('inquiry moderation lifecycle', () => {
       targetId: message.id,
       targetType: 'message',
     })
+    const effectiveUntil = new Date(Date.now() + 24 * 60 * 60 * 1_000).toISOString()
     await decideInquiryModerationCase(moderatorReq, {
       caseId: report.reportId,
       category: 'harassment-threats',
-      effectiveUntil: new Date(Date.now() + 24 * 60 * 60 * 1_000).toISOString(),
+      effectiveUntil,
       outcome: 'content-restricted',
       reason: 'Synthetic restriction before appeal.',
     })
@@ -743,18 +845,45 @@ describe('inquiry moderation lifecycle', () => {
     expect(detail.timeline).toContainEqual(
       expect.objectContaining({ contentState: 'restricted', id: message.id, kind: 'external-message' }),
     )
-    await expect(
-      payload.findByID({
-        collection: 'inquiryModerationCases',
-        depth: 0,
-        id: report.reportId,
-        overrideAccess: true,
-      }),
-    ).resolves.toMatchObject({
+    const upheldCase = await payload.findByID({
+      collection: 'inquiryModerationCases',
+      depth: 0,
+      id: report.reportId,
+      overrideAccess: true,
+    })
+    expect(upheldCase).toMatchObject({
       appealOutcome: 'upheld',
       finalOutcomeAt: expect.any(String),
       measureEndedAt: null,
       status: 'resolved',
+    })
+    expect(upheldCase.retentionReviewDueAt).toBe(
+      moderationReviewDueAt({
+        finalOutcomeAt: String(upheldCase.finalOutcomeAt),
+        measureEndedAt: effectiveUntil,
+        reviewMonths: 24,
+      }),
+    )
+    await expect(
+      reconcileExpiredInquiryModerationMeasures(moderatorReq, {
+        inquiryId: created.inquiry.id,
+        now: new Date(Date.parse(effectiveUntil) + 1_000),
+      }),
+    ).resolves.toEqual({ reconciled: 1 })
+    const restored = await readPatientInquiryDetail(patientReq, { inquiryId: created.inquiry.id })
+    expect(restored.timeline).toContainEqual(
+      expect.objectContaining({ event: 'moderation-restored', kind: 'system-event' }),
+    )
+    const endedCase = await payload.findByID({
+      collection: 'inquiryModerationCases',
+      depth: 0,
+      id: report.reportId,
+      overrideAccess: true,
+    })
+    expect(endedCase).toMatchObject({
+      finalOutcomeAt: upheldCase.finalOutcomeAt,
+      measureEndedAt: effectiveUntil,
+      retentionReviewDueAt: upheldCase.retentionReviewDueAt,
     })
   })
 
@@ -833,6 +962,17 @@ describe('inquiry moderation lifecycle', () => {
       })
     ).docs[0]
     if (!conversation) throw new Error('Expected timed inquiry conversation')
+    const heldMessageResult = await sendClinicInquiryMessage(clinicReq, {
+      expectedRevision: created.inquiry.revision,
+      idempotencyKey: `${slugPrefix}-timed-held-message`,
+      inquiryId: created.inquiry.id,
+      text: 'Synthetic message protected by a conversation-case hold.',
+    })
+    const heldMessage = heldMessageResult.inquiry.timeline.find(
+      (item) =>
+        item.kind === 'external-message' && item.text === 'Synthetic message protected by a conversation-case hold.',
+    )
+    if (!heldMessage) throw new Error('Expected held conversation message')
     const report = await createInquiryModerationReport(foreignPatientReq, {
       category: 'privacy-concern',
       idempotencyKey: `${slugPrefix}-timed-report`,
@@ -840,6 +980,22 @@ describe('inquiry moderation lifecycle', () => {
       targetId: String(conversation.id),
       targetType: 'conversation',
     })
+    const conversationHold = await placeInquiryLegalHold(moderatorReq, {
+      reasonCategory: 'regulatory-review',
+      responsibleFunction: 'data-protection',
+      reviewAt: '2027-08-24T00:00:00.000Z',
+      targetId: report.reportId,
+      targetType: 'moderation-case',
+    })
+    await expect(
+      hardDeleteInquiryContent(moderatorReq, {
+        inquiryId: created.inquiry.id,
+        reasonCategory: 'authorized-erasure',
+        targetId: heldMessage.id.replace(/^message:/u, ''),
+        targetType: 'message',
+      }),
+    ).rejects.toMatchObject({ kind: 'invalid-state' })
+    await releaseInquiryLegalHold(moderatorReq, { holdId: conversationHold.holdId })
     await decideInquiryModerationCase(moderatorReq, {
       affectedActor: { id: String(foreignPatientReq.user?.id), kind: 'patient' },
       caseId: report.reportId,
@@ -879,9 +1035,16 @@ describe('inquiry moderation lifecycle', () => {
       overrideAccess: true,
     })
     expect(moderationCase).toMatchObject({
-      finalOutcomeAt: reconciledAt.toISOString(),
-      measureEndedAt: reconciledAt.toISOString(),
+      finalOutcomeAt: effectiveUntil.toISOString(),
+      measureEndedAt: effectiveUntil.toISOString(),
       status: 'resolved',
     })
+    expect(moderationCase.retentionReviewDueAt).toBe(
+      moderationReviewDueAt({
+        finalOutcomeAt: effectiveUntil.toISOString(),
+        measureEndedAt: effectiveUntil.toISOString(),
+        reviewMonths: 24,
+      }),
+    )
   })
 })

@@ -3,7 +3,9 @@
 import {
   AlertCircle,
   ArrowLeft,
+  Building2,
   Download,
+  Ellipsis,
   Flag,
   File,
   FileImage,
@@ -11,6 +13,7 @@ import {
   LockKeyhole,
   Paperclip,
   ShieldAlert,
+  Trash2,
   X,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -18,6 +21,12 @@ import * as React from 'react'
 
 import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/atoms/dropdown-menu'
 import { Textarea } from '@/components/atoms/textarea'
 import {
   InquiryAppealDialog,
@@ -26,6 +35,7 @@ import {
   type InquiryReportFormValues,
   type InquiryReportTarget,
 } from '@/components/molecules/InquiryModerationDialog/Component'
+import { formatInquiryRequestOption } from '@/features/inquiryRequest/options'
 import type { PatientInquiryComposerState } from '@/features/patientInquiries/model'
 import type { PatientInquiryDetailView, PatientInquiryTimelineItemView } from '@/features/patientInquiries/viewModel'
 import { cn } from '@/utilities/ui'
@@ -79,6 +89,28 @@ const categoryLabel = (category?: string): string =>
     'suspected-illegal-content': 'Suspected illegal content',
   })[category ?? ''] ?? 'Policy concern'
 
+const plainTextWithLinks = (text: string): React.ReactNode[] =>
+  text.split(/(https?:\/\/[^\s]+)/gu).map((part, index) => {
+    if (!part.startsWith('http://') && !part.startsWith('https://')) return part
+    try {
+      const url = new URL(part)
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') return part
+      return (
+        <a
+          key={`${part}-${index}`}
+          className="font-medium text-primary underline decoration-primary/40 underline-offset-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden"
+          href={url.href}
+          rel="noreferrer noopener"
+          target="_blank"
+        >
+          {part}
+        </a>
+      )
+    } catch {
+      return part
+    }
+  })
+
 const Attachment = ({
   item,
   onAppeal,
@@ -87,10 +119,20 @@ const Attachment = ({
 }: {
   item: PatientInquiryTimelineItemView
   onAppeal: (caseId: string) => void
-  onReport: (target: InquiryReportTarget) => void
+  onReport: (target: InquiryReportTarget, returnFocusElement?: HTMLElement | null) => void
   reportTarget?: InquiryReportTarget
 }) => {
+  const reportTriggerRef = React.useRef<HTMLButtonElement>(null)
   if (item.kind !== 'external-message') return null
+  if (item.attachmentState === 'hard-deleted') {
+    return (
+      <div className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-3 text-sm text-muted-foreground">
+        <p className="inline-flex items-center gap-2 font-medium">
+          <Trash2 className="size-4" aria-hidden="true" /> Attachment deleted
+        </p>
+      </div>
+    )
+  }
   if (item.attachmentState === 'restricted') {
     return (
       <div className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-3 text-sm">
@@ -137,18 +179,60 @@ const Attachment = ({
         </a>
       ) : null}
       {reportTarget ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              ref={reportTriggerRef}
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="size-11"
+              aria-label={`Attachment actions for ${item.attachment.fileName}`}
+            >
+              <Ellipsis className="size-4" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => onReport(reportTarget, reportTriggerRef.current)}>
+              <Flag aria-hidden="true" /> Report attachment
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+    </div>
+  )
+}
+
+const MessageActions = ({
+  item,
+  onReport,
+  target,
+}: {
+  item: PatientInquiryTimelineItemView
+  onReport: (target: InquiryReportTarget, returnFocusElement?: HTMLElement | null) => void
+  target: InquiryReportTarget
+}) => {
+  const triggerRef = React.useRef<HTMLButtonElement>(null)
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <Button
+          ref={triggerRef}
           type="button"
           size="icon"
           variant="ghost"
           className="size-11"
-          aria-label="Report attachment"
-          onClick={() => onReport(reportTarget)}
+          aria-label={`Message actions for Clinic message at ${formatTime(item.createdAt)}`}
         >
-          <Flag className="size-4" aria-hidden="true" />
+          <Ellipsis className="size-4" aria-hidden="true" />
         </Button>
-      ) : null}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => onReport(target, triggerRef.current)}>
+          <Flag aria-hidden="true" /> Report message
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -163,7 +247,7 @@ const Timeline = ({
   firstUnreadId?: string
   now: Date
   onAppeal: (caseId: string) => void
-  onReport: (target: InquiryReportTarget) => void
+  onReport: (target: InquiryReportTarget, returnFocusElement?: HTMLElement | null) => void
 }) => {
   const visibleTimeline = detail.timeline.filter((item) => item.kind !== 'internal-note')
   let lastDay = ''
@@ -196,7 +280,8 @@ const Timeline = ({
           )
         }
         if (item.kind !== 'external-message') return null
-        const current = item.actor.isCurrentActor
+        const hardDeleted = item.contentState === 'hard-deleted'
+        const current = !hardDeleted && item.actor.isCurrentActor
         return (
           <li key={item.id} data-first-unread={item.id === firstUnreadId ? 'true' : undefined}>
             {showDay ? (
@@ -207,10 +292,10 @@ const Timeline = ({
               </div>
             ) : null}
             <article
-              aria-label={`${current ? 'You' : 'Clinic'} message at ${formatTime(item.createdAt)}`}
-              className={cn('flex gap-3', current && 'justify-end')}
+              aria-label={`${hardDeleted ? 'Deleted' : current ? 'You' : 'Clinic'} message at ${formatTime(item.createdAt)}`}
+              className={cn('flex gap-3', (current || hardDeleted) && 'justify-end')}
             >
-              {!current ? (
+              {!current && !hardDeleted ? (
                 <span
                   aria-hidden="true"
                   className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-card text-xs font-bold"
@@ -221,34 +306,34 @@ const Timeline = ({
               <div
                 className={cn(
                   'min-w-0',
-                  current ? 'ml-auto max-w-[88%] sm:max-w-[75%]' : 'max-w-[calc(100%-3.25rem)] flex-1 sm:max-w-[75%]',
+                  current || hardDeleted
+                    ? 'ml-auto max-w-[88%] sm:max-w-[75%]'
+                    : 'max-w-[calc(100%-3.25rem)] flex-1 sm:max-w-[75%]',
                 )}
               >
-                <div className="mb-2 flex items-center justify-between gap-6 text-sm">
-                  <strong>{current ? 'You' : 'Clinic'}</strong>
+                <div
+                  className={cn(
+                    'mb-2 flex items-center gap-6 text-sm',
+                    hardDeleted ? 'justify-end' : 'justify-between',
+                  )}
+                >
+                  {!hardDeleted ? <strong>{current ? 'You' : 'Clinic'}</strong> : null}
                   <span className="inline-flex items-center gap-2">
                     <time className="text-muted-foreground" dateTime={item.createdAt}>
                       {formatTime(item.createdAt)}
                     </time>
-                    {!current && item.contentState !== 'restricted' ? (
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="size-11"
-                        aria-label="Report message"
-                        onClick={() =>
-                          onReport({
-                            inquiryId: detail.id,
-                            label: 'message',
-                            preview: item.text ?? 'Message',
-                            targetId: item.id,
-                            targetType: 'message',
-                          })
-                        }
-                      >
-                        <Flag className="size-4" aria-hidden="true" />
-                      </Button>
+                    {!current && item.contentState !== 'restricted' && item.contentState !== 'hard-deleted' ? (
+                      <MessageActions
+                        item={item}
+                        onReport={onReport}
+                        target={{
+                          inquiryId: detail.id,
+                          label: 'message',
+                          preview: item.text ?? 'Message',
+                          targetId: item.id,
+                          targetType: 'message',
+                        }}
+                      />
                     ) : null}
                   </span>
                 </div>
@@ -258,7 +343,11 @@ const Timeline = ({
                     current ? 'border-primary/25 bg-primary/5' : 'border-border bg-muted/35',
                   )}
                 >
-                  {item.contentState === 'restricted' ? (
+                  {item.contentState === 'hard-deleted' ? (
+                    <p className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <Trash2 className="size-4" aria-hidden="true" /> Message deleted
+                    </p>
+                  ) : item.contentState === 'restricted' ? (
                     <div className="text-sm text-muted-foreground">
                       <p className="inline-flex items-center gap-2 font-medium">
                         <LockKeyhole className="size-4" aria-hidden="true" /> Message unavailable
@@ -283,7 +372,7 @@ const Timeline = ({
                       ) : null}
                     </div>
                   ) : item.text ? (
-                    <p className="whitespace-pre-wrap">{item.text}</p>
+                    <p className="whitespace-pre-wrap">{plainTextWithLinks(item.text)}</p>
                   ) : null}
                   <Attachment
                     item={item}
@@ -328,8 +417,13 @@ export function PatientInquiryConversation({
   status,
 }: PatientInquiryConversationProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const reportReturnFocusRef = React.useRef<HTMLElement>(null)
   const [reportTarget, setReportTarget] = React.useState<InquiryReportTarget>()
   const [appealCaseId, setAppealCaseId] = React.useState<string>()
+  const openReport = React.useCallback((target: InquiryReportTarget, returnFocusElement?: HTMLElement | null) => {
+    reportReturnFocusRef.current = returnFocusElement ?? null
+    setReportTarget(target)
+  }, [])
   const errorHeadingRef = React.useRef<HTMLHeadingElement>(null)
   const conversationHeadingRef = React.useRef<HTMLHeadingElement>(null)
   const restrictionHeadingRef = React.useRef<HTMLHeadingElement>(null)
@@ -475,13 +569,16 @@ export function PatientInquiryConversation({
             ref={conversationHeadingRef}
             as="h2"
             align="left"
-            size="h6"
             className="truncate text-lg text-foreground"
+            data-patient-inquiry-detail-focus
+            size="h5"
             tabIndex={-1}
           >
             {detail.clinic.displayName}
           </Heading>
-          <p className="truncate text-sm text-muted-foreground">{detail.interest.label}</p>
+          {detail.originalRequest.contentState !== 'hard-deleted' ? (
+            <p className="truncate text-sm text-muted-foreground">{detail.interest.label}</p>
+          ) : null}
           <span className="mt-2 flex flex-wrap items-center gap-2">
             <span
               className={cn(
@@ -504,14 +601,17 @@ export function PatientInquiryConversation({
           variant="ghost"
           className="size-11"
           aria-label="Report conversation"
-          onClick={() =>
-            setReportTarget({
-              inquiryId: detail.id,
-              label: 'conversation',
-              preview: `Conversation with ${detail.clinic.displayName}`,
-              targetId: detail.binding.kind === 'patient' ? detail.binding.conversationId : detail.id,
-              targetType: 'conversation',
-            })
+          onClick={(event) =>
+            openReport(
+              {
+                inquiryId: detail.id,
+                label: 'conversation',
+                preview: `Conversation with ${detail.clinic.displayName}`,
+                targetId: detail.binding.kind === 'patient' ? detail.binding.conversationId : detail.id,
+                targetType: 'conversation',
+              },
+              event.currentTarget,
+            )
           }
         >
           <Flag className="size-5" aria-hidden="true" />
@@ -563,6 +663,52 @@ export function PatientInquiryConversation({
         </div>
       ) : null}
 
+      {!detail.clinic.messagingAvailable ? (
+        <div className="shrink-0 border-b border-border bg-muted/35 px-5 py-4 sm:px-7" role="status">
+          <div className="flex items-start gap-3">
+            <Building2 className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <div className="text-sm leading-6">
+              <p className="font-semibold text-foreground">This clinic is no longer available for messages</p>
+              <p className="text-muted-foreground">Your previous inquiry and messages remain available to read.</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <details className="group shrink-0 border-b border-border bg-muted/20 px-5 py-4 sm:px-7">
+        <summary className="cursor-pointer text-sm font-semibold text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-hidden">
+          Original request
+        </summary>
+        <div className="pt-3">
+          {detail.originalRequest.contentState === 'hard-deleted' ? (
+            <p className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+              <ShieldAlert className="size-4" aria-hidden="true" /> Inquiry deleted
+            </p>
+          ) : detail.originalRequest.message ? (
+            <p className="text-sm leading-6 whitespace-pre-wrap text-foreground">
+              {plainTextWithLinks(detail.originalRequest.message)}
+            </p>
+          ) : null}
+          {detail.originalRequest.contentState !== 'hard-deleted' &&
+          (detail.originalRequest.preferredContactWindow || detail.originalRequest.treatmentTimeline) ? (
+            <dl className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+              {detail.originalRequest.preferredContactWindow ? (
+                <div>
+                  <dt className="font-medium text-foreground">Preferred contact window</dt>
+                  <dd>{formatInquiryRequestOption(detail.originalRequest.preferredContactWindow)}</dd>
+                </div>
+              ) : null}
+              {detail.originalRequest.treatmentTimeline ? (
+                <div>
+                  <dt className="font-medium text-foreground">Treatment timeline</dt>
+                  <dd>{formatInquiryRequestOption(detail.originalRequest.treatmentTimeline)}</dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
+        </div>
+      </details>
+
       <div
         ref={timelineRef}
         className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain"
@@ -576,7 +722,7 @@ export function PatientInquiryConversation({
           firstUnreadId={firstUnreadId}
           now={now}
           onAppeal={setAppealCaseId}
-          onReport={setReportTarget}
+          onReport={openReport}
         />
         {hasNewMessages ? (
           <Button
@@ -606,7 +752,9 @@ export function PatientInquiryConversation({
         </div>
       ) : !replyAllowed ? (
         <div className="shrink-0 border-t border-border px-5 py-6 text-sm text-muted-foreground sm:px-7">
-          Replies are unavailable for this inquiry.
+          {detail.clinic.messagingAvailable
+            ? 'Replies are unavailable for this inquiry.'
+            : 'This conversation is read-only because the clinic is no longer available.'}
         </div>
       ) : (
         <div className="shrink-0 border-t border-border bg-card px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
@@ -726,6 +874,7 @@ export function PatientInquiryConversation({
       )}
       <InquiryReportDialog
         open={Boolean(reportTarget)}
+        returnFocusElement={reportReturnFocusRef.current}
         target={reportTarget}
         onFallbackFocus={() => conversationHeadingRef.current?.focus()}
         onOpenChange={(open) => {

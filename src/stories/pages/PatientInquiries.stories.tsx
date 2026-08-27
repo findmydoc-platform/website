@@ -16,7 +16,9 @@ import {
   activePatientInquiryState,
   appealSubmittedPatientInquiryDetail,
   closedPatientInquiryDetail,
+  hardDeletedContentPatientInquiryDetail,
   identitySuspendedPatientInquiryDetail,
+  offboardedClinicPatientInquiryDetail,
   otherParticipantRestrictedPatientInquiryDetail,
   patientInquiryQueue,
   restoredPatientInquiryDetail,
@@ -195,6 +197,15 @@ export const Active: Story = {
     await expect(canvas.getAllByText('Clinic')).toHaveLength(2)
     await expect(canvas.getByText('You')).toBeInTheDocument()
     await expect(canvas.getByRole('button', { name: 'Send' })).toBeDisabled()
+    const originalRequest = canvas.getByText('Original request')
+    await expect(originalRequest).toBeInTheDocument()
+    await userEvent.click(originalRequest)
+    await expect(canvas.getByText('No preference')).toBeInTheDocument()
+    await expect(canvas.getByText('Within one month')).toBeInTheDocument()
+    await expect(canvas.getByRole('link', { name: 'https://example.test/treatment-notes' })).toHaveAttribute(
+      'href',
+      'https://example.test/treatment-notes',
+    )
     await expect(canvas.getByRole('link', { name: 'Download treatment-plan.pdf' })).toHaveAttribute(
       'href',
       '/api/patient/inquiries/attachments/download?attachmentId=attachment-plan',
@@ -215,6 +226,53 @@ export const Closed: Story = {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('heading', { name: 'This inquiry is closed' })).toBeInTheDocument()
     await expect(canvas.queryByRole('textbox', { name: 'Message' })).not.toBeInTheDocument()
+  },
+}
+
+export const ClinicOffboarded: Story = {
+  args: {
+    detailView: offboardedClinicPatientInquiryDetail,
+    state: stateWithDetail(offboardedClinicPatientInquiryDetail),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('This clinic is no longer available for messages')).toBeInTheDocument()
+    await expect(canvas.getByText(/previous inquiry and messages remain available/u)).toBeInTheDocument()
+    await expect(canvas.queryByRole('textbox', { name: 'Message' })).not.toBeInTheDocument()
+  },
+}
+
+export const HardDeletedContent: Story = {
+  args: {
+    detailView: hardDeletedContentPatientInquiryDetail,
+    state: {
+      ...stateWithDetail(hardDeletedContentPatientInquiryDetail),
+      queue: {
+        data: {
+          ...patientInquiryQueue,
+          items: patientInquiryQueue.items.map((item) =>
+            item.id === hardDeletedContentPatientInquiryDetail.id
+              ? { ...item, interest: { label: 'Deleted inquiry' } }
+              : item,
+          ),
+        },
+        status: 'ready',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('Message deleted')).toBeInTheDocument()
+    await expect(canvas.getByText('Attachment deleted')).toBeInTheDocument()
+    await expect(canvas.getByText('Inquiry deleted')).toBeInTheDocument()
+    await expect(canvas.queryByText('treatment-plan.pdf')).not.toBeInTheDocument()
+    await expect(canvas.queryByText('Dental implants')).not.toBeInTheDocument()
+    await expect(canvas.queryByText('No preference')).not.toBeInTheDocument()
+    await expect(canvas.queryByText('Within one month')).not.toBeInTheDocument()
+    await expect(canvas.queryByText('I would like to discuss dental implants.')).not.toBeInTheDocument()
+    const deletedMessage = canvas.getByText('Message deleted').closest('article')
+    if (!deletedMessage) throw new Error('Expected the hard-deleted message placeholder.')
+    await expect(within(deletedMessage).queryByRole('button', { name: /Message actions/u })).not.toBeInTheDocument()
   },
 }
 
@@ -480,20 +538,91 @@ export const AppealForm: Story = {
 export const ReportMessageForm: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await canvas.getAllByRole('button', { name: 'Report message' })[0]?.click()
+    const trigger = canvas.getAllByRole('button', { name: /Message actions for Clinic message at/u })[0]
+    if (!trigger) throw new Error('Expected message actions trigger.')
+    await userEvent.click(trigger)
+    await userEvent.click(await within(document.body).findByRole('menuitem', { name: 'Report message' }))
     const dialog = within(within(document.body).getByRole('dialog'))
     await expect(dialog.getByRole('heading', { name: 'Report message' })).toBeInTheDocument()
     await expect(dialog.getByText(/Dr\. Demir can review your scans/u)).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    await expect(trigger).toHaveFocus()
   },
 }
 
 export const ReportAttachmentForm: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await canvas.getByRole('button', { name: 'Report attachment' }).click()
+    const trigger = canvas.getByRole('button', { name: 'Attachment actions for treatment-plan.pdf' })
+    await userEvent.click(trigger)
+    await userEvent.click(await within(document.body).findByRole('menuitem', { name: 'Report attachment' }))
     const dialog = within(within(document.body).getByRole('dialog'))
     await expect(dialog.getByRole('heading', { name: 'Report attachment' })).toBeInTheDocument()
     await expect(dialog.getByText('treatment-plan.pdf')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    await expect(trigger).toHaveFocus()
+  },
+}
+
+export const LongOriginalRequest: Story = {
+  args: {
+    detailView: {
+      ...activePatientInquiryDetail,
+      originalRequest: {
+        ...activePatientInquiryDetail.originalRequest,
+        message: 'Synthetic long request. '.repeat(140),
+      },
+    },
+    state: stateWithDetail({
+      ...activePatientInquiryDetail,
+      originalRequest: {
+        ...activePatientInquiryDetail.originalRequest,
+        message: 'Synthetic long request. '.repeat(140),
+      },
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const disclosure = canvas.getByText('Original request').closest('details')
+    if (!(disclosure instanceof HTMLDetailsElement)) throw new Error('Expected original request disclosure.')
+    await expect(disclosure.open).toBe(false)
+    await expect(canvas.getByRole('button', { name: 'Send' })).toBeInTheDocument()
+  },
+}
+
+export const ReportErrorAnnouncement: Story = {
+  args: {
+    actions: {
+      ...actions,
+      submitReport: fn(async () => ({ error: 'The report could not be submitted.', ok: false })),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Report conversation' }))
+    const dialog = within(within(document.body).getByRole('dialog'))
+    await userEvent.selectOptions(dialog.getByLabelText('Reason'), 'privacy-concern')
+    await userEvent.click(dialog.getByRole('button', { name: 'Submit report' }))
+    await expect(dialog.findByRole('alert')).resolves.toHaveTextContent('The report could not be submitted.')
+  },
+}
+
+export const AppealErrorAnnouncement: Story = {
+  args: {
+    actions: {
+      ...actions,
+      submitAppeal: fn(async () => ({ error: 'The appeal could not be submitted.', ok: false })),
+    },
+    detailView: restrictedPatientInquiryDetail,
+    state: stateWithDetail(restrictedPatientInquiryDetail),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: 'Appeal decision' }))
+    const dialog = within(within(document.body).getByRole('dialog'))
+    await userEvent.type(dialog.getByLabelText('Appeal'), 'Synthetic appeal evidence.')
+    await userEvent.click(dialog.getByRole('button', { name: 'Submit appeal' }))
+    await expect(dialog.findByRole('alert')).resolves.toHaveTextContent('The appeal could not be submitted.')
   },
 }
 

@@ -13,7 +13,7 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
      IF EXISTS (
        SELECT 1
        FROM "inquiry_audit_events"
-       WHERE "event_type"::text IN ('moderation-restricted', 'moderation-restored')
+       WHERE "event_type"::text ~ '^moderation-(restricted|restored)$'
      ) THEN
        RAISE EXCEPTION 'Cannot remove inquiry moderation audit event types while moderation audit records exist';
      END IF;

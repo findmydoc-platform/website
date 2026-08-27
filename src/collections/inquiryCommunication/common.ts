@@ -14,8 +14,9 @@ const normalize = (value: unknown): unknown => {
 }
 
 export const immutableInquiryFields = (fields: readonly string[]): CollectionBeforeChangeHook => {
-  return ({ data, operation, originalDoc }) => {
+  return ({ data, operation, originalDoc, req }) => {
     if (operation !== 'update' || !data || !originalDoc) return data
+    if (req.context?.inquiryRetentionScrub === true) return data
 
     for (const field of fields) {
       if (!Object.prototype.hasOwnProperty.call(data, field)) continue
@@ -27,10 +28,10 @@ export const immutableInquiryFields = (fields: readonly string[]): CollectionBef
   }
 }
 
-export const hiddenSystemTextField = (name: string, options?: { index?: boolean }): Field => ({
+export const hiddenSystemTextField = (name: string, options?: { index?: boolean; required?: boolean }): Field => ({
   name,
   type: 'text',
-  required: true,
+  required: options?.required ?? true,
   index: options?.index,
   access: {
     create: () => false,

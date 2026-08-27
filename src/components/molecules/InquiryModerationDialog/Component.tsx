@@ -47,12 +47,14 @@ export function InquiryReportDialog({
   onOpenChange,
   onSubmit,
   open,
+  returnFocusElement,
   target,
 }: {
   onFallbackFocus?: () => void
   onOpenChange: (open: boolean) => void
   onSubmit: (values: InquiryReportFormValues) => Promise<MutationResult>
   open: boolean
+  returnFocusElement?: HTMLElement | null
   target?: InquiryReportTarget
 }) {
   const [category, setCategory] = React.useState<InquiryModerationReportCategory | ''>('')
@@ -99,10 +101,15 @@ export function InquiryReportDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="max-h-[90svh] overflow-y-auto rounded-xl"
+        className="max-h-[90svh] overflow-y-auto rounded-xl [--destructive:#b91c1c] [--muted-foreground:#666666]"
         onOpenAutoFocus={(event) => {
           event.preventDefault()
-          returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+          returnFocusRef.current =
+            returnFocusElement?.isConnected === true
+              ? returnFocusElement
+              : document.activeElement instanceof HTMLElement
+                ? document.activeElement
+                : null
           reasonRef.current?.focus()
         }}
         onCloseAutoFocus={(event) => {
@@ -197,7 +204,11 @@ export function InquiryReportDialog({
                 This report is not an emergency channel. Contact local emergency services if someone is in immediate
                 danger.
               </p>
-              {error ? <p className="text-sm text-destructive">{error}</p> : null}
+              {error ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              ) : null}
             </div>
             <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
@@ -267,7 +278,7 @@ export function InquiryAppealDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="rounded-xl"
+        className="rounded-xl [--destructive:#b91c1c] [--muted-foreground:#666666]"
         onOpenAutoFocus={(event) => {
           event.preventDefault()
           returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -320,7 +331,11 @@ export function InquiryAppealDialog({
               <FieldError id={formValidation.getFieldErrorId('appeal')}>
                 {formValidation.getFieldError('appeal')}
               </FieldError>
-              {error ? <p className="text-sm text-destructive">{error}</p> : null}
+              {error ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              ) : null}
             </Field>
             <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>

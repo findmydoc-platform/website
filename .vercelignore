@@ -1,0 +1,9 @@
+.env
+.env.*
+.next
+/coverage
+node_modules
+output
+src/public
+storybook-static
+tmp

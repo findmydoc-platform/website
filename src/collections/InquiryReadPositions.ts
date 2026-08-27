@@ -52,7 +52,7 @@ export const InquiryReadPositions: CollectionConfig = {
     { name: 'lastReadActivityId', type: 'text' },
     { name: 'forcedUnread', type: 'checkbox', required: true, defaultValue: false },
     { name: 'forcedUnreadEpoch', type: 'number', required: true, defaultValue: 0, min: 0 },
-    hiddenSystemTextField('readerKey', { index: true }),
+    hiddenSystemTextField('readerKey', { index: true, required: false }),
   ],
   indexes: [{ fields: ['inquiry', 'readerKey'], unique: true }],
   timestamps: true,

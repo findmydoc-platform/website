@@ -39,6 +39,7 @@ export const InquiryAttachments: CollectionConfig = {
         'draftObjectKey',
         'expiresAt',
         'objectCreatedAt',
+        'contentState',
       ]),
     ],
   },
@@ -51,7 +52,7 @@ export const InquiryAttachments: CollectionConfig = {
       index: true,
     },
     { name: 'clinic', type: 'relationship', relationTo: 'clinics', required: true, index: true },
-    { name: 'patient', type: 'relationship', relationTo: 'patients', required: true, index: true },
+    { name: 'patient', type: 'relationship', relationTo: 'patients', index: true },
     {
       name: 'ownerKind',
       type: 'select',
@@ -64,6 +65,17 @@ export const InquiryAttachments: CollectionConfig = {
     { name: 'ownerPatient', type: 'relationship', relationTo: 'patients', index: true },
     { name: 'ownerClinicStaff', type: 'relationship', relationTo: 'clinicStaff', index: true },
     { name: 'fileName', type: 'text', required: true },
+    {
+      name: 'contentState',
+      type: 'select',
+      required: true,
+      defaultValue: 'available',
+      options: [
+        { label: 'Available', value: 'available' },
+        { label: 'Hard deleted', value: 'hard-deleted' },
+      ],
+      index: true,
+    },
     {
       name: 'declaredMimeType',
       type: 'select',
@@ -110,7 +122,7 @@ export const InquiryAttachments: CollectionConfig = {
     },
     { name: 'cleanupCompletedAt', type: 'date', index: true, admin: { hidden: true, readOnly: true } },
     { name: 'boundMessage', type: 'relationship', relationTo: 'inquiryMessages', index: true, unique: true },
-    hiddenSystemTextField('actorKey', { index: true }),
+    hiddenSystemTextField('actorKey', { index: true, required: false }),
     hiddenSystemTextField('draftObjectKey', { index: true }),
     {
       name: 'readyObjectKey',

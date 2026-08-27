@@ -52,7 +52,7 @@ export const InquiryModerationCases: CollectionConfig = {
   fields: [
     { name: 'inquiry', type: 'relationship', relationTo: 'patientClinicInquiries', required: true, index: true },
     { name: 'clinic', type: 'relationship', relationTo: 'clinics', required: true, index: true },
-    { name: 'patient', type: 'relationship', relationTo: 'patients', required: true, index: true },
+    { name: 'patient', type: 'relationship', relationTo: 'patients', index: true },
     { name: 'conversation', type: 'relationship', relationTo: 'inquiryConversations', required: true, index: true },
     {
       name: 'targetType',
@@ -79,7 +79,7 @@ export const InquiryModerationCases: CollectionConfig = {
     },
     { name: 'reporterPatient', type: 'relationship', relationTo: 'patients', index: true },
     { name: 'reporterClinicStaff', type: 'relationship', relationTo: 'clinicStaff', index: true },
-    hiddenSystemTextField('reporterKey', { index: true }),
+    hiddenSystemTextField('reporterKey', { index: true, required: false }),
     { name: 'category', type: 'select', required: true, options: categoryOptions },
     { name: 'description', type: 'textarea', maxLength: 1_000 },
     hiddenSystemTextField('idempotencyKey', { index: true }),
@@ -152,6 +152,8 @@ export const InquiryModerationCases: CollectionConfig = {
     { name: 'appealDecidedBy', type: 'relationship', relationTo: 'platformStaff' },
     { name: 'appealDecidedAt', type: 'date', index: true },
     { name: 'finalOutcomeAt', type: 'date', index: true },
+    { name: 'retentionPolicyVersion', type: 'text', index: true, admin: { hidden: true, readOnly: true } },
+    { name: 'retentionReviewDueAt', type: 'date', index: true, admin: { hidden: true, readOnly: true } },
     { name: 'eventSequence', type: 'number', required: true, min: 1, defaultValue: 1 },
   ],
   indexes: [{ fields: ['reporterKey', 'idempotencyKey'], unique: true }],

@@ -83,9 +83,14 @@ export function PatientInquiriesPage({ actions, detailView, loginHref, mode, now
   return (
     <div className={cn(accessibleFeatureColors, 'bg-site-section px-4 py-8 sm:px-6 lg:py-10')}>
       <div className="mx-auto max-w-[90rem]">
+        {mode === 'detail' ? (
+          <Heading as="h1" align="left" className="sr-only lg:hidden" size="h1">
+            My inquiries
+          </Heading>
+        ) : null}
         <div className={cn('mb-6', mode === 'detail' && 'hidden lg:block')}>
           <p className="text-sm font-semibold text-primary sm:text-base">Patient account</p>
-          <Heading as="h1" align="left" size="h2" className="mt-2 text-3xl text-secondary sm:text-4xl">
+          <Heading as="h1" align="left" className="mt-2 text-3xl text-secondary sm:text-4xl" size="h1">
             My inquiries
           </Heading>
         </div>

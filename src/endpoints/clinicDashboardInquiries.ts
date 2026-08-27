@@ -67,25 +67,51 @@ const ERROR_DESCRIPTIONS = {
 
 const V1_SYSTEM_EVENTS = new Set(['closed', 'handling-status-changed', 'marked-spam', 'reopened', 'spam-removed'])
 
+const isTerminalRetentionProjection = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false
+  const record = value as Record<string, unknown>
+  const inquiry =
+    record.inquiry && typeof record.inquiry === 'object' ? (record.inquiry as Record<string, unknown>) : record
+  const binding =
+    inquiry.binding && typeof inquiry.binding === 'object' ? (inquiry.binding as Record<string, unknown>) : null
+  const contact =
+    inquiry.contact && typeof inquiry.contact === 'object' ? (inquiry.contact as Record<string, unknown>) : null
+  const originalRequest =
+    inquiry.originalRequest && typeof inquiry.originalRequest === 'object'
+      ? (inquiry.originalRequest as Record<string, unknown>)
+      : null
+  return (
+    binding?.kind === 'deleted-patient' ||
+    contact?.mode === 'unavailable' ||
+    originalRequest?.contentState === 'hard-deleted'
+  )
+}
+
 const projectV1InquiryValue = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(projectV1InquiryValue)
   if (!value || typeof value !== 'object') return value
   const record = value as Record<string, unknown>
   return Object.fromEntries(
-    Object.entries(record).map(([key, item]) => [
-      key,
-      key === 'timeline' && Array.isArray(item)
-        ? item
-            .filter(
-              (entry) =>
-                !entry ||
-                typeof entry !== 'object' ||
-                (entry as { kind?: unknown }).kind !== 'system-event' ||
-                V1_SYSTEM_EVENTS.has(String((entry as { event?: unknown }).event)),
-            )
-            .map(projectV1InquiryValue)
-        : projectV1InquiryValue(item),
-    ]),
+    Object.entries(record)
+      .filter(([key]) => key !== 'moderation' && key !== 'moderationBadge')
+      .map(([key, item]) => [
+        key,
+        key === 'items' && Array.isArray(item)
+          ? item.filter((entry) => !isTerminalRetentionProjection(entry)).map(projectV1InquiryValue)
+          : key === 'timeline' && Array.isArray(item)
+            ? item
+                .filter((entry) => {
+                  if (!entry || typeof entry !== 'object') return true
+                  const timelineEntry = entry as Record<string, unknown>
+                  if (timelineEntry.contentState === 'hard-deleted' || timelineEntry.contentState === 'restricted') {
+                    return false
+                  }
+                  if (timelineEntry.attachmentState === 'hard-deleted') return false
+                  return timelineEntry.kind !== 'system-event' || V1_SYSTEM_EVENTS.has(String(timelineEntry.event))
+                })
+                .map(projectV1InquiryValue)
+            : projectV1InquiryValue(item),
+      ]),
   )
 }
 
@@ -101,7 +127,14 @@ const inquiryErrorResponse = (
     {
       error: {
         code: description.code,
-        ...(current ? { current: req ? projectInquiryContractValue(req, current) : current } : {}),
+        ...(current &&
+        !(
+          req &&
+          resolveClinicDashboardInquiryContractVersion(req.headers) === 'v1' &&
+          isTerminalRetentionProjection(current)
+        )
+          ? { current: req ? projectInquiryContractValue(req, current) : current }
+          : {}),
       },
     },
     description.status,
@@ -331,7 +364,11 @@ const execute = async <Value>(
     clinicDashboardPrivateJsonResponse(projectInquiryContractValue(req, value), 200),
 ): Promise<Response> => {
   try {
-    return success(await command())
+    const value = await command()
+    if (resolveClinicDashboardInquiryContractVersion(req.headers) === 'v1' && isTerminalRetentionProjection(value)) {
+      return inquiryErrorResponse(req, ERROR_DESCRIPTIONS['not-found'])
+    }
+    return success(value)
   } catch (error: unknown) {
     if (error instanceof InquiryCommunicationServiceError) {
       const description = ERROR_DESCRIPTIONS[error.kind as keyof typeof ERROR_DESCRIPTIONS]
@@ -341,12 +378,44 @@ const execute = async <Value>(
   }
 }
 
+const executeInquiryMutation = async <Value>(
+  req: PayloadRequest,
+  operation: string,
+  inquiryId: string,
+  command: () => Promise<Value>,
+  success?: (value: Value) => Response,
+): Promise<Response> =>
+  execute(
+    req,
+    operation,
+    async () => {
+      const v1 = resolveClinicDashboardInquiryContractVersion(req.headers) === 'v1'
+      if (!v1) return command()
+      const previousContext = { ...(req.context ?? {}) }
+      req.context = { ...previousContext, inquiryContractMutationPolicy: 'exclude-identity-deleted' }
+      try {
+        const current = await readClinicInquiryDetail(req, { inquiryId })
+        if (isTerminalRetentionProjection(current)) {
+          throw new InquiryCommunicationServiceError('not-found', 'The inquiry is unavailable.')
+        }
+        return await command()
+      } finally {
+        req.context = previousContext
+      }
+    },
+    success,
+  )
+
 export const clinicDashboardInquiriesGetHandler: PayloadHandler = async (req) => {
   const authorization = await authorizeClinic(req, 'clinic-inquiries:view')
   if (!authorization.ok) return authorization.response
   const input = readQueueInput(req)
   if (input instanceof Response) return input
-  return execute(req, 'queue_read', () => readClinicInquiryQueue(req, input))
+  return execute(req, 'queue_read', () =>
+    resolveClinicDashboardInquiryContractVersion(req.headers) === 'v1'
+      ? readClinicInquiryQueue(req, input, { excludeIdentityDeleted: true })
+      : readClinicInquiryQueue(req, input),
+  )
 }
 
 export const clinicDashboardInquiryDetailGetHandler: PayloadHandler = async (req) => {
@@ -366,7 +435,7 @@ export const clinicDashboardInquiryMessagesPostHandler: PayloadHandler = async (
   if (!authorization.ok) return authorization.response
   const input = await readBody(req, externalMessageInputSchema)
   if (input instanceof Response) return input
-  return execute(req, 'message_send', () => sendClinicInquiryMessage(req, input))
+  return executeInquiryMutation(req, 'message_send', input.inquiryId, () => sendClinicInquiryMessage(req, input))
 }
 
 export const clinicDashboardInquiryNotesPostHandler: PayloadHandler = async (req) => {
@@ -374,7 +443,7 @@ export const clinicDashboardInquiryNotesPostHandler: PayloadHandler = async (req
   if (!authorization.ok) return authorization.response
   const input = await readBody(req, internalNoteInputSchema)
   if (input instanceof Response) return input
-  return execute(req, 'note_add', () => addClinicInquiryNote(req, input))
+  return executeInquiryMutation(req, 'note_add', input.inquiryId, () => addClinicInquiryNote(req, input))
 }
 
 export const clinicDashboardInquiryStatePatchHandler: PayloadHandler = async (req) => {
@@ -382,7 +451,7 @@ export const clinicDashboardInquiryStatePatchHandler: PayloadHandler = async (re
   if (!authorization.ok) return authorization.response
   const input = await readBody(req, inquiryStateInputSchema)
   if (input instanceof Response) return input
-  return execute(req, 'state_update', () => updateClinicInquiryState(req, input))
+  return executeInquiryMutation(req, 'state_update', input.inquiryId, () => updateClinicInquiryState(req, input))
 }
 
 export const clinicDashboardInquiryReadPositionPutHandler: PayloadHandler = async (req) => {
@@ -390,9 +459,10 @@ export const clinicDashboardInquiryReadPositionPutHandler: PayloadHandler = asyn
   if (!authorization.ok) return authorization.response
   const input = await readBody(req, inquiryReadPositionInputSchema)
   if (input instanceof Response) return input
-  return execute(
+  return executeInquiryMutation(
     req,
     'read_position_update',
+    input.inquiryId,
     () => updateClinicInquiryReadPosition(req, input),
     (value) => clinicDashboardPrivateJsonResponse({ unread: value.inquiry.unread }, 200),
   )
@@ -408,7 +478,9 @@ export const clinicDashboardInquiryContactRevealPostHandler: PayloadHandler = as
   const previousReauthorization = req.context?.inquiryContactReauthorized
   req.context = { ...(req.context ?? {}), inquiryContactReauthorized: true }
   try {
-    return await execute(req, 'contact_reveal', () => revealClinicInquiryContact(req, input))
+    return await executeInquiryMutation(req, 'contact_reveal', input.inquiryId, () =>
+      revealClinicInquiryContact(req, input),
+    )
   } finally {
     if (typeof previousReauthorization === 'undefined') {
       delete req.context?.inquiryContactReauthorized
@@ -423,9 +495,10 @@ export const clinicDashboardInquiryAttachmentDraftPostHandler: PayloadHandler = 
   if (!authorization.ok) return authorization.response
   const input = await readBody(req, attachmentDraftCreateInputSchema)
   if (input instanceof Response) return input
-  return execute(
+  return executeInquiryMutation(
     req,
     'attachment_draft_create',
+    input.inquiryId,
     () => createAttachmentDraft(req, input),
     (value) => {
       scheduleAttachmentSweep(req)
@@ -439,9 +512,10 @@ export const clinicDashboardInquiryAttachmentFinalizePostHandler: PayloadHandler
   if (!authorization.ok) return authorization.response
   const input = await readBody(req, attachmentDraftMutationInputSchema)
   if (input instanceof Response) return input
-  return execute(
+  return executeInquiryMutation(
     req,
     'attachment_draft_finalize',
+    input.inquiryId,
     () => finalizeAttachmentDraft(req, input),
     () => {
       scheduleAttachmentSweep(req)
@@ -455,9 +529,10 @@ export const clinicDashboardInquiryAttachmentDiscardPostHandler: PayloadHandler 
   if (!authorization.ok) return authorization.response
   const input = await readBody(req, attachmentDraftMutationInputSchema)
   if (input instanceof Response) return input
-  return execute(
+  return executeInquiryMutation(
     req,
     'attachment_draft_discard',
+    input.inquiryId,
     () => discardAttachmentDraft(req, input),
     (value) => {
       scheduleDiscardCleanup(req, value.attachmentId)

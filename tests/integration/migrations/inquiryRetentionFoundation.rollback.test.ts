@@ -265,6 +265,79 @@ describe('inquiry retention foundation rollback', () => {
     await isolatedAdapter.pool.query('DELETE FROM inquiry_deletion_proofs')
     await revertInquiryRetentionFoundation(migrationArgs)
 
+    await isolatedAdapter.pool.query('ALTER TABLE patient_clinic_inquiries DISABLE TRIGGER ALL')
+    const legacyInquiry = await isolatedAdapter.pool.query<{ id: number }>(
+      `INSERT INTO patient_clinic_inquiries (
+         clinic_id,
+         full_name,
+         email,
+         phone_number,
+         message,
+         consent_accepted,
+         status,
+         handling_status,
+         lifecycle,
+         last_external_activity_at,
+         created_at
+       ) VALUES (
+         -1,
+         'Synthetic retained patient',
+         'synthetic-retention-upgrade@example.com',
+         '+493000000010',
+         'Synthetic retained inquiry.',
+         true,
+         'submitted',
+         'submitted',
+         'open',
+         '2024-02-29T12:00:00.000Z',
+         '2024-01-31T12:00:00.000Z'
+       )
+       RETURNING id`,
+    )
+    await isolatedAdapter.pool.query('ALTER TABLE patient_clinic_inquiries ENABLE TRIGGER ALL')
+    const legacyInquiryId = legacyInquiry.rows[0]?.id
+    if (!legacyInquiryId) throw new Error('Expected a legacy inquiry for retention backfill.')
+
+    await isolatedAdapter.pool.query('ALTER TABLE inquiry_moderation_cases DISABLE TRIGGER ALL')
+    const legacyModerationCase = await isolatedAdapter.pool.query<{ id: number }>(
+      `INSERT INTO inquiry_moderation_cases (
+         inquiry_id,
+         clinic_id,
+         patient_id,
+         conversation_id,
+         target_type,
+         target_id,
+         reporter_kind,
+         reporter_key,
+         category,
+         idempotency_key,
+         request_hash,
+         status,
+         final_outcome_at,
+         measure_ended_at
+       ) VALUES (
+         $1,
+         -1,
+         -1,
+         -1,
+         'conversation',
+         'synthetic-retention-upgrade-conversation',
+         'patient',
+         'synthetic-retention-upgrade-reporter',
+         'other',
+         'synthetic-retention-upgrade-key',
+         'synthetic-retention-upgrade-hash',
+         'resolved',
+         '2024-03-15T12:00:00.000Z',
+         '2024-04-01T12:00:00.000Z'
+       )
+       RETURNING id`,
+      [legacyInquiryId],
+    )
+    await isolatedAdapter.pool.query('ALTER TABLE inquiry_moderation_cases ENABLE TRIGGER ALL')
+    const legacyModerationCaseId = legacyModerationCase.rows[0]?.id
+    if (!legacyModerationCaseId) throw new Error('Expected a legacy moderation case for retention backfill.')
+
     const afterDown = await isolatedAdapter.pool.query<{
       communication_table: string | null
       content_state_column: string | null
@@ -321,6 +394,32 @@ describe('inquiry retention foundation rollback', () => {
         version: '2026-08-24',
       },
     ])
+
+    const inquiryBackfill = await isolatedAdapter.pool.query<{
+      retention_policy_version: string | null
+      retention_review_basis_at: Date | null
+      retention_review_due_at: Date | null
+    }>(
+      `SELECT retention_policy_version, retention_review_basis_at, retention_review_due_at
+       FROM patient_clinic_inquiries
+       WHERE id = $1`,
+      [legacyInquiryId],
+    )
+    expect(inquiryBackfill.rows[0]).toMatchObject({ retention_policy_version: '2026-08-24' })
+    expect(inquiryBackfill.rows[0]?.retention_review_basis_at?.toISOString()).toBe('2024-02-29T12:00:00.000Z')
+    expect(inquiryBackfill.rows[0]?.retention_review_due_at?.toISOString()).toBe('2025-02-28T12:00:00.000Z')
+
+    const moderationBackfill = await isolatedAdapter.pool.query<{
+      retention_policy_version: string | null
+      retention_review_due_at: Date | null
+    }>(
+      `SELECT retention_policy_version, retention_review_due_at
+       FROM inquiry_moderation_cases
+       WHERE id = $1`,
+      [legacyModerationCaseId],
+    )
+    expect(moderationBackfill.rows[0]).toMatchObject({ retention_policy_version: '2026-08-24' })
+    expect(moderationBackfill.rows[0]?.retention_review_due_at?.toISOString()).toBe('2026-04-01T12:00:00.000Z')
 
     const restoredColumns = await isolatedAdapter.pool.query<{ column_name: string }>(
       `SELECT column_name

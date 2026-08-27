@@ -1138,13 +1138,20 @@ export const resumePendingInquiryAttachmentHardDeletes = async (
 
 type InquiryRetentionReviewCursor = Pick<InquiryRetentionReviewItemDTO, 'id' | 'reviewDueAt' | 'targetType'>
 
+const compareInquiryRetentionReviewIds = (left: string, right: string): number => {
+  const leftNumber = Number(left)
+  const rightNumber = Number(right)
+  if (Number.isSafeInteger(leftNumber) && Number.isSafeInteger(rightNumber)) return leftNumber - rightNumber
+  return left.localeCompare(right)
+}
+
 const compareInquiryRetentionReviewItems = (
   left: InquiryRetentionReviewCursor,
   right: InquiryRetentionReviewCursor,
 ): number =>
   left.reviewDueAt.localeCompare(right.reviewDueAt) ||
   left.targetType.localeCompare(right.targetType) ||
-  left.id.localeCompare(right.id)
+  compareInquiryRetentionReviewIds(left.id, right.id)
 
 const encodeInquiryRetentionReviewCursor = (item: InquiryRetentionReviewCursor): string =>
   Buffer.from(JSON.stringify(item), 'utf8').toString('base64url')
@@ -1172,6 +1179,63 @@ const decodeInquiryRetentionReviewCursor = (cursor: string | undefined): Inquiry
   }
 }
 
+const inquiryRetentionReviewCursorWhere = (
+  cursor: InquiryRetentionReviewCursor | null,
+  targetType: InquiryRetentionReviewCursor['targetType'],
+): Record<string, unknown> | null => {
+  if (!cursor) return null
+  const targetOrder = targetType.localeCompare(cursor.targetType)
+  if (targetOrder > 0) return { retentionReviewDueAt: { greater_than_equal: cursor.reviewDueAt } }
+  if (targetOrder < 0) return { retentionReviewDueAt: { greater_than: cursor.reviewDueAt } }
+  return {
+    or: [
+      { retentionReviewDueAt: { greater_than: cursor.reviewDueAt } },
+      {
+        and: [{ retentionReviewDueAt: { equals: cursor.reviewDueAt } }, { id: { greater_than: cursor.id } }],
+      },
+    ],
+  }
+}
+
+const readInquiryRetentionReviewCandidates = async (
+  req: PayloadRequest,
+  input: {
+    cursor: InquiryRetentionReviewCursor | null
+    heldIds: ReadonlySet<string>
+    limit: number
+    now: string
+    targetType: InquiryRetentionReviewCursor['targetType']
+  },
+): Promise<InquiryRetentionReviewItemDTO[]> => {
+  const collection = input.targetType === 'inquiry' ? 'patientClinicInquiries' : 'inquiryModerationCases'
+  const cursorWhere = inquiryRetentionReviewCursorWhere(input.cursor, input.targetType)
+  const records = await findMany(
+    req,
+    collection,
+    {
+      and: [
+        { retentionReviewDueAt: { less_than_equal: input.now } },
+        ...(input.heldIds.size > 0 ? [{ id: { not_in: [...input.heldIds] } }] : []),
+        ...(cursorWhere ? [cursorWhere] : []),
+      ],
+    },
+    { limit: input.limit + 1, sort: ['retentionReviewDueAt', 'id'] },
+  )
+
+  return records.flatMap((record) => {
+    const reviewDueAt = text(record.retentionReviewDueAt)
+    if (!isRetentionReviewDue({ activeLegalHold: false, now: input.now, reviewDueAt })) return []
+    return [
+      {
+        id: String(record.id),
+        policyVersion: text(record.retentionPolicyVersion),
+        reviewDueAt,
+        targetType: input.targetType,
+      },
+    ]
+  })
+}
+
 export const readInquiryRetentionReviewQueue = async (
   req: PayloadRequest,
   rawInput: unknown,
@@ -1182,44 +1246,29 @@ export const readInquiryRetentionReviewQueue = async (
   const now = parsed.data.now ?? new Date().toISOString()
   const cursor = decodeInquiryRetentionReviewCursor(parsed.data.cursor)
   const activeHolds = await findAll(req, 'inquiryLegalHolds', { status: { equals: 'active' } })
-  const heldInquiryIds = activeHolds.filter((hold) => hold.targetType === 'inquiry').map((hold) => text(hold.targetId))
-  const heldModerationCaseIds = activeHolds
-    .filter((hold) => hold.targetType === 'moderation-case')
-    .map((hold) => text(hold.targetId))
+  const heldInquiryIds = new Set(
+    activeHolds.filter((hold) => hold.targetType === 'inquiry').map((hold) => text(hold.targetId)),
+  )
+  const heldModerationCaseIds = new Set(
+    activeHolds.filter((hold) => hold.targetType === 'moderation-case').map((hold) => text(hold.targetId)),
+  )
   const [inquiries, moderationCases] = await Promise.all([
-    findAll(req, 'patientClinicInquiries', {
-      and: [
-        { retentionReviewDueAt: { less_than_equal: now } },
-        ...(heldInquiryIds.length > 0 ? [{ id: { not_in: heldInquiryIds } }] : []),
-      ],
+    readInquiryRetentionReviewCandidates(req, {
+      cursor,
+      heldIds: heldInquiryIds,
+      limit: parsed.data.limit,
+      now,
+      targetType: 'inquiry',
     }),
-    findAll(req, 'inquiryModerationCases', {
-      and: [
-        { retentionReviewDueAt: { less_than_equal: now } },
-        ...(heldModerationCaseIds.length > 0 ? [{ id: { not_in: heldModerationCaseIds } }] : []),
-      ],
+    readInquiryRetentionReviewCandidates(req, {
+      cursor,
+      heldIds: heldModerationCaseIds,
+      limit: parsed.data.limit,
+      now,
+      targetType: 'moderation-case',
     }),
   ])
-  const items: InquiryRetentionReviewItemDTO[] = []
-  for (const [targetType, records] of [
-    ['inquiry', inquiries],
-    ['moderation-case', moderationCases],
-  ] as const) {
-    for (const record of records) {
-      const reviewDueAt = text(record.retentionReviewDueAt)
-      const activeLegalHold = await activeHoldExists(req, targetType, record.id)
-      if (!isRetentionReviewDue({ activeLegalHold, now, reviewDueAt })) continue
-      items.push({
-        id: String(record.id),
-        policyVersion: text(record.retentionPolicyVersion),
-        reviewDueAt,
-        targetType,
-      })
-    }
-  }
-  const remaining = items
-    .sort(compareInquiryRetentionReviewItems)
-    .filter((item) => cursor === null || compareInquiryRetentionReviewItems(item, cursor) > 0)
+  const remaining = [...inquiries, ...moderationCases].sort(compareInquiryRetentionReviewItems)
   const page = remaining.slice(0, parsed.data.limit)
   const lastItem = page.at(-1)
   return {

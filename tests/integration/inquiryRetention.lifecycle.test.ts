@@ -246,10 +246,36 @@ describe('inquiry retention lifecycle', () => {
     expect(held.items).toContainEqual(expect.objectContaining({ id: String(laterInquiry.id), reviewDueAt: laterDueAt }))
 
     await releaseInquiryLegalHold(operatorReq, { holdId: placed.holdId })
+    const queueFindSpy = vi.spyOn(payload, 'find')
     const released = await readInquiryRetentionReviewQueue(operatorReq, {
       limit: 1,
       now: '2026-08-24T12:00:00.000Z',
     })
+    const queueFindCalls = queueFindSpy.mock.calls as unknown as Array<[Record<string, unknown>]>
+    const targetQueries = queueFindCalls
+      .map(([options]) => options)
+      .filter(({ collection }) => ['inquiryModerationCases', 'patientClinicInquiries'].includes(String(collection)))
+    expect(targetQueries).toHaveLength(2)
+    expect(targetQueries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          collection: 'patientClinicInquiries',
+          limit: 2,
+          pagination: false,
+          sort: ['retentionReviewDueAt', 'id'],
+        }),
+        expect.objectContaining({
+          collection: 'inquiryModerationCases',
+          limit: 2,
+          pagination: false,
+          sort: ['retentionReviewDueAt', 'id'],
+        }),
+      ]),
+    )
+    expect(
+      queueFindCalls.map(([options]) => options).filter(({ collection }) => collection === 'inquiryLegalHolds'),
+    ).toHaveLength(1)
+    queueFindSpy.mockRestore()
     expect(released.items).toContainEqual({
       id: String(inquiryId),
       policyVersion: '2026-08-24',

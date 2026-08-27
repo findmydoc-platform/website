@@ -80,6 +80,42 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "inquiry_audit_events" ADD COLUMN "affects_activity" boolean DEFAULT true NOT NULL;
   ALTER TABLE "inquiry_moderation_cases" ADD COLUMN "retention_policy_version" varchar;
   ALTER TABLE "inquiry_moderation_cases" ADD COLUMN "retention_review_due_at" timestamp(3) with time zone;
+  UPDATE "patient_clinic_inquiries"
+  SET
+    "retention_policy_version" = COALESCE("retention_policy_version", '2026-08-24'),
+    "retention_review_basis_at" = COALESCE(
+      "retention_review_basis_at",
+      "last_external_activity_at",
+      "created_at"
+    ),
+    "retention_review_due_at" = COALESCE(
+      "retention_review_due_at",
+      COALESCE("retention_review_basis_at", "last_external_activity_at", "created_at") + INTERVAL '12 months'
+    ),
+    "retention_state" = COALESCE("retention_state", 'available')
+  WHERE
+    "retention_policy_version" IS NULL
+    OR "retention_review_basis_at" IS NULL
+    OR "retention_review_due_at" IS NULL
+    OR "retention_state" IS NULL;
+  UPDATE "inquiry_moderation_cases"
+  SET
+    "retention_policy_version" = COALESCE("retention_policy_version", '2026-08-24'),
+    "retention_review_due_at" = COALESCE(
+      "retention_review_due_at",
+      CASE
+        WHEN "final_outcome_at" IS NOT NULL AND "measure_ended_at" IS NOT NULL
+          THEN GREATEST("final_outcome_at", "measure_ended_at") + INTERVAL '24 months'
+        ELSE NULL
+      END
+    )
+  WHERE
+    "retention_policy_version" IS NULL
+    OR (
+      "retention_review_due_at" IS NULL
+      AND "final_outcome_at" IS NOT NULL
+      AND "measure_ended_at" IS NOT NULL
+    );
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "inquiry_retention_policies_id" integer;
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "inquiry_legal_holds_id" integer;
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "inquiry_deletion_proofs_id" integer;

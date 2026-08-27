@@ -198,7 +198,7 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          vite-config-path: .github/coverage/vitest.thresholds.unit.js
+          vite-config-path: config/coverage/vitest.thresholds.unit.js
           name: Unit Tests
           file-coverage-mode: all
           json-summary-path: coverage/unit/coverage-summary.json
@@ -267,7 +267,7 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          vite-config-path: .github/coverage/vitest.thresholds.storybook.js
+          vite-config-path: config/coverage/vitest.thresholds.storybook.js
           name: Storybook Tests
           file-coverage-mode: all
           json-summary-path: coverage/storybook/coverage-summary.json
@@ -411,7 +411,7 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          vite-config-path: .github/coverage/vitest.thresholds.integration.js
+          vite-config-path: config/coverage/vitest.thresholds.integration.js
           name: Integration Tests
           file-coverage-mode: all
           json-summary-path: coverage/integration/coverage-summary.json

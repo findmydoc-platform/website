@@ -93,6 +93,10 @@ export interface Config {
     inquiryAuditEvents: InquiryAuditEvent;
     inquiryModerationCases: InquiryModerationCase;
     inquiryModerationEvents: InquiryModerationEvent;
+    inquiryRetentionPolicies: InquiryRetentionPolicy;
+    inquiryLegalHolds: InquiryLegalHold;
+    inquiryDeletionProofs: InquiryDeletionProof;
+    inquiryCommandLocks: InquiryCommandLock;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -166,6 +170,10 @@ export interface Config {
     inquiryAuditEvents: InquiryAuditEventsSelect<false> | InquiryAuditEventsSelect<true>;
     inquiryModerationCases: InquiryModerationCasesSelect<false> | InquiryModerationCasesSelect<true>;
     inquiryModerationEvents: InquiryModerationEventsSelect<false> | InquiryModerationEventsSelect<true>;
+    inquiryRetentionPolicies: InquiryRetentionPoliciesSelect<false> | InquiryRetentionPoliciesSelect<true>;
+    inquiryLegalHolds: InquiryLegalHoldsSelect<false> | InquiryLegalHoldsSelect<true>;
+    inquiryDeletionProofs: InquiryDeletionProofsSelect<false> | InquiryDeletionProofsSelect<true>;
+    inquiryCommandLocks: InquiryCommandLocksSelect<false> | InquiryCommandLocksSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -1089,7 +1097,7 @@ export interface PlatformStaff {
   /**
    * Grant additive access to focused platform operations
    */
-  capabilities?: 'conversation-moderation'[] | null;
+  capabilities?: ('conversation-moderation' | 'inquiry-retention')[] | null;
   updatedAt: string;
   createdAt: string;
   collection: 'platformStaff';
@@ -2592,15 +2600,15 @@ export interface PatientClinicInquiry {
   /**
    * Name entered by the requester
    */
-  fullName: string;
+  fullName?: string | null;
   /**
    * Email address for follow-up
    */
-  email: string;
+  email?: string | null;
   /**
    * Phone number for follow-up
    */
-  phoneNumber: string;
+  phoneNumber?: string | null;
   /**
    * How soon the requester is considering treatment
    */
@@ -2620,7 +2628,7 @@ export interface PatientClinicInquiry {
   /**
    * Message entered by the requester
    */
-  message: string;
+  message?: string | null;
   /**
    * Consent captured at submission time
    */
@@ -2653,6 +2661,11 @@ export interface PatientClinicInquiry {
   creationActorKey?: string | null;
   creationIdempotencyKey?: string | null;
   creationRequestHash?: string | null;
+  retentionPolicyVersion?: string | null;
+  retentionReviewBasisAt?: string | null;
+  retentionReviewDueAt?: string | null;
+  retentionState?: ('available' | 'anonymized' | 'hard-deleted') | null;
+  deletionTombstoneKey?: string | null;
   /**
    * Platform user handling this request
    */
@@ -2671,8 +2684,8 @@ export interface InquiryConversation {
   id: number;
   inquiry: number | PatientClinicInquiry;
   clinic: number | Clinic;
-  patient: number | Patient;
-  actorKey: string;
+  patient?: (number | null) | Patient;
+  actorKey?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -2688,16 +2701,17 @@ export interface InquiryMessage {
   conversation: number | InquiryConversation;
   inquiry: number | PatientClinicInquiry;
   clinic: number | Clinic;
-  patient: number | Patient;
+  patient?: (number | null) | Patient;
   authorKind: 'patient' | 'clinic';
   authorPatient?: (number | null) | Patient;
   authorClinicStaff?: (number | null) | ClinicStaff;
   text?: string | null;
+  contentState: 'available' | 'hard-deleted';
   attachment?: (number | null) | InquiryAttachment;
   sequence: number;
   externalSequence: number;
   clinicNotificationSequence: number;
-  actorKey: string;
+  actorKey?: string | null;
   idempotencyKey: string;
   requestHash: string;
   updatedAt: string;
@@ -2714,11 +2728,12 @@ export interface InquiryAttachment {
   id: number;
   inquiry: number | PatientClinicInquiry;
   clinic: number | Clinic;
-  patient: number | Patient;
+  patient?: (number | null) | Patient;
   ownerKind: 'patient' | 'clinic';
   ownerPatient?: (number | null) | Patient;
   ownerClinicStaff?: (number | null) | ClinicStaff;
   fileName: string;
+  contentState: 'available' | 'hard-deleted';
   declaredMimeType: 'image/png' | 'image/jpeg' | 'image/webp' | 'application/pdf';
   declaredSizeBytes: number;
   verifiedMimeType?: ('image/png' | 'image/jpeg' | 'image/webp' | 'application/pdf') | null;
@@ -2729,7 +2744,7 @@ export interface InquiryAttachment {
   draftCleanupCompletedAt?: string | null;
   cleanupCompletedAt?: string | null;
   boundMessage?: (number | null) | InquiryMessage;
-  actorKey: string;
+  actorKey?: string | null;
   draftObjectKey: string;
   readyObjectKey?: string | null;
   updatedAt: string;
@@ -2745,11 +2760,12 @@ export interface InquiryInternalNote {
   id: number;
   inquiry: number | PatientClinicInquiry;
   clinic: number | Clinic;
-  authorClinicStaff: number | ClinicStaff;
-  text: string;
+  authorClinicStaff?: (number | null) | ClinicStaff;
+  text?: string | null;
+  contentState: 'available' | 'hard-deleted';
   sequence: number;
   clinicNotificationSequence: number;
-  actorKey: string;
+  actorKey?: string | null;
   idempotencyKey: string;
   requestHash: string;
   updatedAt: string;
@@ -2773,7 +2789,7 @@ export interface InquiryReadPosition {
   lastReadActivityId?: string | null;
   forcedUnread: boolean;
   forcedUnreadEpoch: number;
-  readerKey: string;
+  readerKey?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2803,7 +2819,11 @@ export interface InquiryAuditEvent {
     | 'attachment-discarded'
     | 'contact-revealed'
     | 'moderation-restricted'
-    | 'moderation-restored';
+    | 'moderation-restored'
+    | 'legacy-closed-migrated'
+    | 'inquiry-package-anonymized'
+    | 'inquiry-package-hard-deleted';
+  affectsActivity: boolean;
   targetType?: string | null;
   targetId?: string | null;
   fromValue?: string | null;
@@ -2824,7 +2844,7 @@ export interface InquiryModerationCase {
   id: number;
   inquiry: number | PatientClinicInquiry;
   clinic: number | Clinic;
-  patient: number | Patient;
+  patient?: (number | null) | Patient;
   conversation: number | InquiryConversation;
   targetType: 'message' | 'attachment' | 'conversation';
   targetId: string;
@@ -2833,7 +2853,7 @@ export interface InquiryModerationCase {
   reporterKind: 'patient' | 'clinic';
   reporterPatient?: (number | null) | Patient;
   reporterClinicStaff?: (number | null) | ClinicStaff;
-  reporterKey: string;
+  reporterKey?: string | null;
   category:
     'harassment-threats' | 'spam-fraud-impersonation' | 'suspected-illegal-content' | 'privacy-concern' | 'other';
   description?: string | null;
@@ -2866,6 +2886,8 @@ export interface InquiryModerationCase {
   appealDecidedBy?: (number | null) | PlatformStaff;
   appealDecidedAt?: string | null;
   finalOutcomeAt?: string | null;
+  retentionPolicyVersion?: string | null;
+  retentionReviewDueAt?: string | null;
   eventSequence: number;
   updatedAt: string;
   createdAt: string;
@@ -2882,7 +2904,7 @@ export interface InquiryModerationEvent {
   moderationCase: number | InquiryModerationCase;
   inquiry: number | PatientClinicInquiry;
   clinic: number | Clinic;
-  patient: number | Patient;
+  patient?: (number | null) | Patient;
   conversation: number | InquiryConversation;
   actorKind: 'patient' | 'clinic' | 'platform' | 'system';
   actorId: string;
@@ -2902,6 +2924,76 @@ export interface InquiryModerationEvent {
   sequence: number;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Versioned retention rules for inquiry communication and moderation
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryRetentionPolicies".
+ */
+export interface InquiryRetentionPolicy {
+  id: number;
+  policyKey: string;
+  version: string;
+  effectiveFrom: string;
+  communicationReviewMonths: number;
+  moderationReviewMonths: number;
+  status: 'active' | 'retired';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Private case-specific legal holds for inquiry records
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryLegalHolds".
+ */
+export interface InquiryLegalHold {
+  id: number;
+  targetType: 'inquiry' | 'moderation-case';
+  targetId: string;
+  activeKey?: string | null;
+  targetInquiry?: (number | null) | PatientClinicInquiry;
+  targetModerationCase?: (number | null) | InquiryModerationCase;
+  reasonCategory: 'legal-request' | 'regulatory-review' | 'litigation' | 'other-authorized';
+  responsibleFunction: 'legal' | 'data-protection';
+  reviewAt: string;
+  placedBy: number | PlatformStaff;
+  placedAt: string;
+  releasedBy?: (number | null) | PlatformStaff;
+  releasedAt?: string | null;
+  status: 'active' | 'released';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Minimal content-free lifecycle record for irreversible inquiry deletion operations
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryDeletionProofs".
+ */
+export interface InquiryDeletionProof {
+  id: number;
+  inquiryId: string;
+  tombstoneKey: string;
+  operation: 'anonymized' | 'hard-delete-pending' | 'hard-deleted';
+  reasonCategory: 'authorized-erasure' | 'retention-review';
+  performedBy: number | PlatformStaff;
+  performedAt: string;
+  policyVersion: string;
+  deletedObjectCount: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Ephemeral transaction locks for private inquiry commands
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryCommandLocks".
+ */
+export interface InquiryCommandLock {
+  id: number;
+  key: string;
 }
 /**
  * Saved clinics for patients
@@ -3694,6 +3786,22 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'inquiryModerationEvents';
         value: number | InquiryModerationEvent;
+      } | null)
+    | ({
+        relationTo: 'inquiryRetentionPolicies';
+        value: number | InquiryRetentionPolicy;
+      } | null)
+    | ({
+        relationTo: 'inquiryLegalHolds';
+        value: number | InquiryLegalHold;
+      } | null)
+    | ({
+        relationTo: 'inquiryDeletionProofs';
+        value: number | InquiryDeletionProof;
+      } | null)
+    | ({
+        relationTo: 'inquiryCommandLocks';
+        value: number | InquiryCommandLock;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -4762,6 +4870,11 @@ export interface PatientClinicInquiriesSelect<T extends boolean = true> {
   creationActorKey?: T;
   creationIdempotencyKey?: T;
   creationRequestHash?: T;
+  retentionPolicyVersion?: T;
+  retentionReviewBasisAt?: T;
+  retentionReviewDueAt?: T;
+  retentionState?: T;
+  deletionTombstoneKey?: T;
   assignedTo?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -4793,6 +4906,7 @@ export interface InquiryMessagesSelect<T extends boolean = true> {
   authorPatient?: T;
   authorClinicStaff?: T;
   text?: T;
+  contentState?: T;
   attachment?: T;
   sequence?: T;
   externalSequence?: T;
@@ -4813,6 +4927,7 @@ export interface InquiryInternalNotesSelect<T extends boolean = true> {
   clinic?: T;
   authorClinicStaff?: T;
   text?: T;
+  contentState?: T;
   sequence?: T;
   clinicNotificationSequence?: T;
   actorKey?: T;
@@ -4834,6 +4949,7 @@ export interface InquiryAttachmentsSelect<T extends boolean = true> {
   ownerPatient?: T;
   ownerClinicStaff?: T;
   fileName?: T;
+  contentState?: T;
   declaredMimeType?: T;
   declaredSizeBytes?: T;
   verifiedMimeType?: T;
@@ -4878,6 +4994,7 @@ export interface InquiryAuditEventsSelect<T extends boolean = true> {
   actorKind?: T;
   actorId?: T;
   eventType?: T;
+  affectsActivity?: T;
   targetType?: T;
   targetId?: T;
   fromValue?: T;
@@ -4933,6 +5050,8 @@ export interface InquiryModerationCasesSelect<T extends boolean = true> {
   appealDecidedBy?: T;
   appealDecidedAt?: T;
   finalOutcomeAt?: T;
+  retentionPolicyVersion?: T;
+  retentionReviewDueAt?: T;
   eventSequence?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -4959,6 +5078,64 @@ export interface InquiryModerationEventsSelect<T extends boolean = true> {
   sequence?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryRetentionPolicies_select".
+ */
+export interface InquiryRetentionPoliciesSelect<T extends boolean = true> {
+  policyKey?: T;
+  version?: T;
+  effectiveFrom?: T;
+  communicationReviewMonths?: T;
+  moderationReviewMonths?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryLegalHolds_select".
+ */
+export interface InquiryLegalHoldsSelect<T extends boolean = true> {
+  targetType?: T;
+  targetId?: T;
+  activeKey?: T;
+  targetInquiry?: T;
+  targetModerationCase?: T;
+  reasonCategory?: T;
+  responsibleFunction?: T;
+  reviewAt?: T;
+  placedBy?: T;
+  placedAt?: T;
+  releasedBy?: T;
+  releasedAt?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryDeletionProofs_select".
+ */
+export interface InquiryDeletionProofsSelect<T extends boolean = true> {
+  inquiryId?: T;
+  tombstoneKey?: T;
+  operation?: T;
+  reasonCategory?: T;
+  performedBy?: T;
+  performedAt?: T;
+  policyVersion?: T;
+  deletedObjectCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryCommandLocks_select".
+ */
+export interface InquiryCommandLocksSelect<T extends boolean = true> {
+  key?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -6899,6 +7076,10 @@ export interface TaskCreateCollectionExport {
       | 'inquiryAuditEvents'
       | 'inquiryModerationCases'
       | 'inquiryModerationEvents'
+      | 'inquiryRetentionPolicies'
+      | 'inquiryLegalHolds'
+      | 'inquiryDeletionProofs'
+      | 'inquiryCommandLocks'
       | 'clinics'
       | 'doctors'
       | 'accreditation'

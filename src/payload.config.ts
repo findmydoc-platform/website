@@ -59,6 +59,16 @@ import {
   platformInquiryModerationCaseReadPostHandler,
   platformInquiryModerationDecisionPostHandler,
 } from './endpoints/inquiryModeration'
+import {
+  platformInquiryLegalHoldPlacePostHandler,
+  platformInquiryLegalHoldReleasePostHandler,
+  platformInquiryRetentionAnonymizePostHandler,
+  platformInquiryRetentionContentHardDeletePostHandler,
+  platformInquiryRetentionCutoverPostHandler,
+  platformInquiryRetentionPendingDeletesRecoverPostHandler,
+  platformInquiryRetentionPackageHardDeletePostHandler,
+  platformInquiryRetentionReviewQueuePostHandler,
+} from './endpoints/inquiryRetention'
 import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
 import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
@@ -84,6 +94,10 @@ import { InquiryReadPositions } from './collections/InquiryReadPositions'
 import { InquiryAuditEvents } from './collections/InquiryAuditEvents'
 import { InquiryModerationCases } from './collections/InquiryModerationCases'
 import { InquiryModerationEvents } from './collections/InquiryModerationEvents'
+import { InquiryRetentionPolicies } from './collections/InquiryRetentionPolicies'
+import { InquiryLegalHolds } from './collections/InquiryLegalHolds'
+import { InquiryDeletionProofs } from './collections/InquiryDeletionProofs'
+import { InquiryCommandLocks } from './collections/InquiryCommandLocks'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accreditation'
 import { MedicalSpecialties } from './collections/MedicalSpecialties'
@@ -363,6 +377,46 @@ export default buildConfig({
       method: 'post',
       handler: platformInquiryModerationAppealDecisionPostHandler as PayloadHandler,
     },
+    {
+      path: '/platform/inquiry-retention/review-queue',
+      method: 'post',
+      handler: platformInquiryRetentionReviewQueuePostHandler as PayloadHandler,
+    },
+    {
+      path: '/platform/inquiry-retention/cutover',
+      method: 'post',
+      handler: platformInquiryRetentionCutoverPostHandler as PayloadHandler,
+    },
+    {
+      path: '/platform/inquiry-retention/content/hard-delete',
+      method: 'post',
+      handler: platformInquiryRetentionContentHardDeletePostHandler as PayloadHandler,
+    },
+    {
+      path: '/platform/inquiry-retention/anonymize',
+      method: 'post',
+      handler: platformInquiryRetentionAnonymizePostHandler as PayloadHandler,
+    },
+    {
+      path: '/platform/inquiry-retention/hard-delete',
+      method: 'post',
+      handler: platformInquiryRetentionPackageHardDeletePostHandler as PayloadHandler,
+    },
+    {
+      path: '/platform/inquiry-retention/pending-deletes/recover',
+      method: 'post',
+      handler: platformInquiryRetentionPendingDeletesRecoverPostHandler as PayloadHandler,
+    },
+    {
+      path: '/platform/inquiry-retention/legal-holds/place',
+      method: 'post',
+      handler: platformInquiryLegalHoldPlacePostHandler as PayloadHandler,
+    },
+    {
+      path: '/platform/inquiry-retention/legal-holds/release',
+      method: 'post',
+      handler: platformInquiryLegalHoldReleasePostHandler as PayloadHandler,
+    },
     { path: '/seed', method: 'post', handler: seedPostHandler as PayloadHandler },
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },
     { path: '/seed/retry', method: 'post', handler: seedRetryHandler as PayloadHandler },
@@ -465,6 +519,10 @@ export default buildConfig({
     InquiryAuditEvents,
     InquiryModerationCases,
     InquiryModerationEvents,
+    InquiryRetentionPolicies,
+    InquiryLegalHolds,
+    InquiryDeletionProofs,
+    InquiryCommandLocks,
     Clinics,
     Doctors,
     Accreditation,

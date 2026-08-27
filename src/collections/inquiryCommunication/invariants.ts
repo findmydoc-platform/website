@@ -1,5 +1,7 @@
 import { ValidationError, type CollectionBeforeValidateHook, type PayloadRequest } from 'payload'
 
+import { hasInquiryPackageHardDeleteBarrier } from '@/features/inquiryAggregate/tombstones'
+
 type RecordValue = Record<string, unknown>
 type RelationId = number | string
 
@@ -29,6 +31,16 @@ const fail = (req: PayloadRequest, collection: string, path: string, message: st
   })
 }
 
+const isInquiryIdentityScrub = (req: PayloadRequest): boolean =>
+  req.context?.inquiryRetentionCommand === true &&
+  req.context?.inquiryRetentionScrub === true &&
+  req.context?.inquiryIdentityScrub === true
+
+const isInquiryRetentionAudit = (req: PayloadRequest, record: RecordValue): boolean =>
+  req.context?.inquiryRetentionCommand === true &&
+  req.context?.inquiryRetentionAudit === true &&
+  ['inquiry-package-anonymized', 'inquiry-package-hard-deleted'].includes(String(record.eventType))
+
 const findRecord = async (req: PayloadRequest, collection: string, id: unknown): Promise<RecordValue | null> => {
   const resolvedId = relationId(id)
   if (resolvedId === null) return null
@@ -48,9 +60,17 @@ const validateInquiryScope = async (
   req: PayloadRequest,
   collection: string,
   record: RecordValue,
+  options: { allowTerminalRetentionAudit?: boolean } = {},
 ): Promise<RecordValue> => {
   const inquiry = await findRecord(req, 'patientClinicInquiries', record.inquiry)
   if (!inquiry) return fail(req, collection, 'inquiry', 'The inquiry does not exist.')
+  if (
+    !options.allowTerminalRetentionAudit &&
+    (inquiry.retentionState === 'hard-deleted' ||
+      (await hasInquiryPackageHardDeleteBarrier(req, inquiry.id as RelationId)))
+  ) {
+    fail(req, collection, 'inquiry', 'The inquiry package has been hard deleted.')
+  }
   if (!sameId(record.clinic, inquiry.clinic)) {
     fail(req, collection, 'clinic', 'The clinic must match the inquiry.')
   }
@@ -71,6 +91,7 @@ const validateClinicActor = async (
 }
 
 export const validateInquiryConversation: CollectionBeforeValidateHook = async ({ data, originalDoc, req }) => {
+  if (isInquiryIdentityScrub(req)) return data
   const record = candidate(data, originalDoc)
   const inquiry = await validateInquiryScope(req, 'inquiryConversations', record)
   if (!inquiry.patient || !sameId(record.patient, inquiry.patient)) {
@@ -84,6 +105,37 @@ export const validateInquiryConversation: CollectionBeforeValidateHook = async (
 }
 
 export const validateInquiryMessage: CollectionBeforeValidateHook = async ({ data, originalDoc, req, operation }) => {
+  if (isInquiryIdentityScrub(req)) return data
+  if (req.context?.inquiryRetentionScrub === true) {
+    const record = candidate(data, originalDoc)
+    const immutableBindings = [
+      'conversation',
+      'inquiry',
+      'clinic',
+      'patient',
+      'authorKind',
+      'authorPatient',
+      'authorClinicStaff',
+      'attachment',
+      'actorKey',
+      'idempotencyKey',
+      'requestHash',
+      'sequence',
+      'externalSequence',
+      'clinicNotificationSequence',
+    ]
+    if (
+      operation !== 'update' ||
+      !originalDoc ||
+      req.context?.inquiryRetentionCommand !== true ||
+      record.contentState !== 'hard-deleted' ||
+      record.text !== null ||
+      immutableBindings.some((field) => JSON.stringify(record[field]) !== JSON.stringify(originalDoc[field]))
+    ) {
+      fail(req, 'inquiryMessages', 'contentState', 'The retention scrub transition is invalid.')
+    }
+    return data
+  }
   const record = candidate(data, originalDoc)
   const inquiry = await validateInquiryScope(req, 'inquiryMessages', record)
   if (!inquiry.patient || !sameId(record.patient, inquiry.patient)) {
@@ -155,6 +207,17 @@ export const validateInquiryInternalNote: CollectionBeforeValidateHook = async (
   operation,
   req,
 }) => {
+  if (
+    req.context?.inquiryRetentionCommand === true &&
+    req.context?.inquiryRetentionScrub === true &&
+    req.context?.inquiryPackageContentScrub === true
+  ) {
+    const record = candidate(data, originalDoc)
+    if (operation !== 'update' || !originalDoc || record.contentState !== 'hard-deleted' || record.text !== null) {
+      fail(req, 'inquiryInternalNotes', 'contentState', 'The package retention scrub transition is invalid.')
+    }
+    return data
+  }
   const record = candidate(data, originalDoc)
   const inquiry = await validateInquiryScope(req, 'inquiryInternalNotes', record)
   const noteText = typeof record.text === 'string' ? record.text : ''
@@ -186,6 +249,49 @@ export const validateInquiryAttachment: CollectionBeforeValidateHook = async ({
   operation,
   req,
 }) => {
+  if (isInquiryIdentityScrub(req)) return data
+  if (req.context?.inquiryRetentionScrub === true) {
+    const record = candidate(data, originalDoc)
+    const immutableBindings = [
+      'inquiry',
+      'clinic',
+      'patient',
+      'ownerKind',
+      'ownerPatient',
+      'ownerClinicStaff',
+      'actorKey',
+      'state',
+      'boundMessage',
+      'expiresAt',
+      'objectCreatedAt',
+    ]
+    const bindingsUnchanged =
+      Boolean(originalDoc) &&
+      immutableBindings.every((field) => JSON.stringify(record[field]) === JSON.stringify(originalDoc?.[field]))
+    const metadataScrub =
+      operation === 'update' &&
+      req.context?.inquiryRetentionCommand === true &&
+      bindingsUnchanged &&
+      record.contentState === 'hard-deleted' &&
+      record.declaredMimeType === 'application/pdf' &&
+      record.declaredSizeBytes === 1 &&
+      record.fileName === 'deleted' &&
+      record.verifiedMimeType === null &&
+      record.verifiedSizeBytes === null
+    const storageScrub =
+      operation === 'update' &&
+      req.context?.inquiryRetentionCommand === true &&
+      bindingsUnchanged &&
+      originalDoc?.contentState === 'hard-deleted' &&
+      typeof record.draftObjectKey === 'string' &&
+      /^deleted\/[a-f0-9]{64}$/u.test(record.draftObjectKey) &&
+      record.readyObjectKey === null &&
+      typeof record.cleanupCompletedAt === 'string'
+    if (!metadataScrub && !storageScrub) {
+      fail(req, 'inquiryAttachments', 'contentState', 'The retention scrub transition is invalid.')
+    }
+    return data
+  }
   const record = candidate(data, originalDoc)
   const inquiry = await validateInquiryScope(req, 'inquiryAttachments', record)
   if (!inquiry.patient || !sameId(record.patient, inquiry.patient)) {
@@ -272,6 +378,7 @@ export const validateInquiryAttachment: CollectionBeforeValidateHook = async ({
 }
 
 export const validateInquiryReadPosition: CollectionBeforeValidateHook = async ({ data, originalDoc, req }) => {
+  if (isInquiryIdentityScrub(req)) return data
   const record = candidate(data, originalDoc)
   const inquiry = await validateInquiryScope(req, 'inquiryReadPositions', record)
   if (record.readerKind === 'patient') {
@@ -344,8 +451,11 @@ export const validateInquiryReadPosition: CollectionBeforeValidateHook = async (
 }
 
 export const validateInquiryAuditEvent: CollectionBeforeValidateHook = async ({ data, originalDoc, req }) => {
+  if (isInquiryIdentityScrub(req)) return data
   const record = candidate(data, originalDoc)
-  const inquiry = await validateInquiryScope(req, 'inquiryAuditEvents', record)
+  const inquiry = await validateInquiryScope(req, 'inquiryAuditEvents', record, {
+    allowTerminalRetentionAudit: isInquiryRetentionAudit(req, record),
+  })
   if (typeof record.actorId !== 'string' || !record.actorId.trim()) {
     fail(req, 'inquiryAuditEvents', 'actorId', 'The audit actor is required.')
   }
@@ -360,7 +470,12 @@ export const validateInquiryAuditEvent: CollectionBeforeValidateHook = async ({ 
   } else if (record.actorKind === 'platform') {
     const platformActor = await findRecord(req, 'platformStaff', record.actorId)
     const capabilities = Array.isArray(platformActor?.capabilities) ? platformActor.capabilities : []
-    if (!platformActor || !capabilities.includes('conversation-moderation')) {
+    const requiredCapability = ['inquiry-package-anonymized', 'inquiry-package-hard-deleted'].includes(
+      String(record.eventType),
+    )
+      ? 'inquiry-retention'
+      : 'conversation-moderation'
+    if (!platformActor || !capabilities.includes(requiredCapability)) {
       fail(req, 'inquiryAuditEvents', 'actorId', 'The moderation platform actor is invalid.')
     }
   } else {

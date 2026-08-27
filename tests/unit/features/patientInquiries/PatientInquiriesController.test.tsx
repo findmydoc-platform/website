@@ -19,7 +19,7 @@ const item: InquiryListItemDTO = {
     kind: 'patient',
     patient: { displayName: 'Synthetic Patient', id: 'patient-1' },
   },
-  clinic: { displayName: 'Izmir Coast Dental', id: 'clinic-1' },
+  clinic: { displayName: 'Izmir Coast Dental', id: 'clinic-1', messagingAvailable: true },
   createdAt: '2026-08-24T08:00:00.000Z',
   handlingStatus: 'in_review',
   id: 'inquiry-1',
@@ -97,10 +97,19 @@ const deferred = <Value,>() => {
 describe('PatientInquiriesController', () => {
   beforeEach(() => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' })
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockReturnValue({ matches: true }),
+    })
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      window.setTimeout(() => callback(0), 0)
+      return 1
+    })
   })
 
   afterEach(() => {
     cleanup()
+    vi.restoreAllMocks()
   })
 
   it('marks an explicit deep link read once and never repeats the write during polling', async () => {
@@ -363,7 +372,8 @@ describe('PatientInquiriesController', () => {
     )
 
     await screen.findByText('synthetic-plan.pdf')
-    fireEvent.click(screen.getByRole('button', { name: 'Report message' }))
+    fireEvent.pointerDown(screen.getByRole('button', { name: /Message actions for Clinic message at/u }), { button: 0 })
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Report message' }))
     fireEvent.change(screen.getByRole('combobox', { name: 'Reason' }), { target: { value: 'privacy-concern' } })
     fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
 
@@ -374,7 +384,10 @@ describe('PatientInquiriesController', () => {
     )
     fireEvent.click(await screen.findByRole('button', { name: 'Done' }))
 
-    fireEvent.click(screen.getByRole('button', { name: 'Report attachment' }))
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Attachment actions for synthetic-plan.pdf' }), {
+      button: 0,
+    })
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Report attachment' }))
     fireEvent.change(screen.getByRole('combobox', { name: 'Reason' }), { target: { value: 'privacy-concern' } })
     fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
 

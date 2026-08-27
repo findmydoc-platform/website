@@ -64,6 +64,13 @@ import * as migration_20260824_135226_inquiry_communication_foundation from './2
 import * as migration_20260824_191853_inquiry_moderation_foundation from './20260824_191853_inquiry_moderation_foundation'
 import * as migration_20260824_193039_inquiry_moderation_audit_events from './20260824_193039_inquiry_moderation_audit_events'
 import * as migration_20260824_201842_inquiry_moderation_measure_end from './20260824_201842_inquiry_moderation_measure_end'
+import * as migration_20260824_205617_inquiry_retention_deletion_foundation from './20260824_205617_inquiry_retention_deletion_foundation'
+import * as migration_20260824_205919_inquiry_retention_content_state from './20260824_205919_inquiry_retention_content_state'
+import * as migration_20260824_230756_inquiry_retention_active_hold_key from './20260824_230756_inquiry_retention_active_hold_key'
+import * as migration_20260824_233016_inquiry_retention_policy_effective_date from './20260824_233016_inquiry_retention_policy_effective_date'
+import * as migration_20260824_235512_inquiry_retention_delete_intent_operation from './20260824_235512_inquiry_retention_delete_intent_operation'
+import * as migration_20260825_015705_inquiry_command_locks from './20260825_015705_inquiry_command_locks'
+import * as migration_20260825_054030_inquiry_identity_package_deletion from './20260825_054030_inquiry_identity_package_deletion'
 
 export const migrations = [
   {
@@ -395,5 +402,40 @@ export const migrations = [
     up: migration_20260824_201842_inquiry_moderation_measure_end.up,
     down: migration_20260824_201842_inquiry_moderation_measure_end.down,
     name: '20260824_201842_inquiry_moderation_measure_end',
+  },
+  {
+    up: migration_20260824_205617_inquiry_retention_deletion_foundation.up,
+    down: migration_20260824_205617_inquiry_retention_deletion_foundation.down,
+    name: '20260824_205617_inquiry_retention_deletion_foundation',
+  },
+  {
+    up: migration_20260824_205919_inquiry_retention_content_state.up,
+    down: migration_20260824_205919_inquiry_retention_content_state.down,
+    name: '20260824_205919_inquiry_retention_content_state',
+  },
+  {
+    up: migration_20260824_230756_inquiry_retention_active_hold_key.up,
+    down: migration_20260824_230756_inquiry_retention_active_hold_key.down,
+    name: '20260824_230756_inquiry_retention_active_hold_key',
+  },
+  {
+    up: migration_20260824_233016_inquiry_retention_policy_effective_date.up,
+    down: migration_20260824_233016_inquiry_retention_policy_effective_date.down,
+    name: '20260824_233016_inquiry_retention_policy_effective_date',
+  },
+  {
+    up: migration_20260824_235512_inquiry_retention_delete_intent_operation.up,
+    down: migration_20260824_235512_inquiry_retention_delete_intent_operation.down,
+    name: '20260824_235512_inquiry_retention_delete_intent_operation',
+  },
+  {
+    up: migration_20260825_015705_inquiry_command_locks.up,
+    down: migration_20260825_015705_inquiry_command_locks.down,
+    name: '20260825_015705_inquiry_command_locks',
+  },
+  {
+    up: migration_20260825_054030_inquiry_identity_package_deletion.up,
+    down: migration_20260825_054030_inquiry_identity_package_deletion.down,
+    name: '20260825_054030_inquiry_identity_package_deletion',
   },
 ]

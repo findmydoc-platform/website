@@ -915,5 +915,89 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Immutable private moderation audit facts without copied message, attachment, or note content',
     },
+    inquiryRetentionPolicies: {
+      slug: 'inquiryRetentionPolicies',
+      displayName: 'InquiryRetentionPolicies',
+      operations: {
+        create: { type: 'conditional', details: 'dedicated retention policy commands only' },
+        read: { type: 'conditional', details: 'server-side retention services only' },
+        update: { type: 'conditional', details: 'new policy versions replace mutation of prior rules' },
+        delete: { type: 'conditional', details: 'retention governance only' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes: 'Versioned private rules; existing records retain their assigned policy version',
+    },
+    inquiryLegalHolds: {
+      slug: 'inquiryLegalHolds',
+      displayName: 'InquiryLegalHolds',
+      operations: {
+        create: { type: 'conditional', details: 'capability-checked retention commands only' },
+        read: { type: 'conditional', details: 'capability-checked retention projection only' },
+        update: { type: 'conditional', details: 'dedicated hold release command only' },
+        delete: { type: 'conditional', details: 'legal hold records remain auditable' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes: 'Case-specific private holds with reason category, responsible function, review date, and release proof',
+    },
+    inquiryDeletionProofs: {
+      slug: 'inquiryDeletionProofs',
+      displayName: 'InquiryDeletionProofs',
+      operations: {
+        create: { type: 'conditional', details: 'authorized deletion commands only' },
+        read: { type: 'conditional', details: 'retention service and restore barrier only' },
+        update: { type: 'conditional', details: 'immutable after command creation' },
+        delete: { type: 'conditional', details: 'deletion proof cannot be removed generically' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes: 'Minimal content-free proof and terminal restore barrier for authorized deletion operations',
+    },
+    inquiryCommandLocks: {
+      slug: 'inquiryCommandLocks',
+      displayName: 'InquiryCommandLocks',
+      operations: {
+        create: { type: 'conditional', details: 'active inquiry domain transactions only' },
+        read: { type: 'conditional', details: 'not exposed through generic access' },
+        update: { type: 'conditional', details: 'locks are never updated' },
+        delete: { type: 'conditional', details: 'owning inquiry transaction release only' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes: 'Ephemeral private lock records created and released inside one serializable domain transaction',
+    },
   },
 }

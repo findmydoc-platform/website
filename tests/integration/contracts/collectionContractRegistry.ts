@@ -42,6 +42,21 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
     deep: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
   },
+  inquiryCommandLocks: {
+    baseline: ['tests/integration/inquiryRetention.lifecycle.test.ts'],
+    deep: [
+      'tests/integration/inquiryModeration.lifecycle.test.ts',
+      'tests/integration/inquiryRetention.lifecycle.test.ts',
+    ],
+  },
+  inquiryDeletionProofs: {
+    baseline: ['tests/integration/inquiryRetention.lifecycle.test.ts'],
+    deep: ['tests/integration/inquiryRetention.lifecycle.test.ts'],
+  },
+  inquiryLegalHolds: {
+    baseline: ['tests/integration/inquiryRetention.lifecycle.test.ts'],
+    deep: ['tests/integration/inquiryRetention.lifecycle.test.ts'],
+  },
   inquiryMessages: {
     baseline: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
     deep: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
@@ -49,6 +64,18 @@ export const collectionContractRegistry = {
   inquiryReadPositions: {
     baseline: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
     deep: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
+  },
+  inquiryModerationCases: {
+    baseline: ['tests/integration/inquiryModeration.lifecycle.test.ts'],
+    deep: ['tests/integration/inquiryModeration.lifecycle.test.ts'],
+  },
+  inquiryModerationEvents: {
+    baseline: ['tests/integration/inquiryModeration.lifecycle.test.ts'],
+    deep: ['tests/integration/inquiryModeration.lifecycle.test.ts'],
+  },
+  inquiryRetentionPolicies: {
+    baseline: ['tests/integration/inquiryRetention.lifecycle.test.ts'],
+    deep: ['tests/integration/inquiryRetention.lifecycle.test.ts'],
   },
   clinicGalleryEntries: {
     baseline: ['tests/integration/clinicGalleryEntries.lifecycle.test.ts'],
@@ -213,6 +240,14 @@ export const deepContractDomains = {
     'inquiryAttachments',
     'inquiryReadPositions',
     'inquiryAuditEvents',
+  ],
+  inquiryTrustAndRetention: [
+    'inquiryModerationCases',
+    'inquiryModerationEvents',
+    'inquiryRetentionPolicies',
+    'inquiryLegalHolds',
+    'inquiryDeletionProofs',
+    'inquiryCommandLocks',
   ],
   trustWorkflow: [
     'reviews',

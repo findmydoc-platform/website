@@ -285,6 +285,7 @@ export type InquiryUnreadDTO = {
 
 export type InquiryBindingDTO =
   | { kind: 'guest'; canReply: false }
+  | { kind: 'deleted-patient'; canReply: false; conversationId: string }
   | {
       kind: 'patient'
       canReply: boolean
@@ -316,10 +317,11 @@ export type InquiryTimelineItemDTO =
     }
   | {
       actor: { displayName: string; kind: 'clinic'; isCurrentActor: boolean }
+      contentState?: 'available' | 'hard-deleted'
       createdAt: string
       id: string
       kind: 'internal-note'
-      text: string
+      text?: string
     }
   | {
       actor: { displayName: string; kind: 'clinic' | 'system'; isCurrentActor: boolean }
@@ -332,13 +334,14 @@ export type InquiryTimelineItemDTO =
         | 'spam-removed'
         | 'moderation-restricted'
         | 'moderation-restored'
+        | 'legacy-closed-migrated'
       id: string
       kind: 'system-event'
     }
 
 export type InquiryListItemDTO = {
   binding: InquiryBindingDTO
-  clinic: { displayName: string; id: string }
+  clinic: { displayName: string; id: string; messagingAvailable: boolean }
   createdAt: string
   handlingStatus: InquiryHandlingStatus
   id: string
@@ -378,9 +381,11 @@ export type InquiryDetailDTO = InquiryListItemDTO & {
   contact:
     | { email: string; mode: 'full'; phoneNumber: string }
     | { mode: 'collapsed' }
+    | { mode: 'unavailable' }
     | { email: string; mode: 'masked'; phoneNumber: string }
   originalRequest: {
-    message: string
+    contentState?: 'available' | 'hard-deleted'
+    message?: string
     preferredContactWindow?: string
     treatmentTimeline?: string
   }

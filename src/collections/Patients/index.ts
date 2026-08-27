@@ -6,6 +6,7 @@ import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/st
 import { anonymizePatientReviewAuthorsBeforeDeleteHook } from './hooks/anonymizePatientReviewAuthors'
 import { patientSupabaseCreateHook } from './hooks/patientSupabaseCreate'
 import { patientSupabaseDeleteHook } from './hooks/patientSupabaseDelete'
+import { requireInquiryIdentityScrubBeforePatientDeleteHook } from './hooks/requireInquiryIdentityScrub'
 
 // Authentication-enabled collection for Patients (API access only)
 export const Patients: CollectionConfig = {
@@ -44,7 +45,11 @@ export const Patients: CollectionConfig = {
   },
   hooks: {
     beforeChange: [stableIdBeforeChangeHook, patientSupabaseCreateHook, enforceSupabaseIdentityInvariant],
-    beforeDelete: [anonymizePatientReviewAuthorsBeforeDeleteHook, patientSupabaseDeleteHook],
+    beforeDelete: [
+      requireInquiryIdentityScrubBeforePatientDeleteHook,
+      anonymizePatientReviewAuthorsBeforeDeleteHook,
+      patientSupabaseDeleteHook,
+    ],
   },
   fields: [
     stableIdField(),

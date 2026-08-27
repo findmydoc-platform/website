@@ -43,7 +43,7 @@ export const InquiryModerationEvents: CollectionConfig = {
     { name: 'moderationCase', type: 'relationship', relationTo: 'inquiryModerationCases', required: true, index: true },
     { name: 'inquiry', type: 'relationship', relationTo: 'patientClinicInquiries', required: true, index: true },
     { name: 'clinic', type: 'relationship', relationTo: 'clinics', required: true, index: true },
-    { name: 'patient', type: 'relationship', relationTo: 'patients', required: true, index: true },
+    { name: 'patient', type: 'relationship', relationTo: 'patients', index: true },
     { name: 'conversation', type: 'relationship', relationTo: 'inquiryConversations', required: true, index: true },
     {
       name: 'actorKind',

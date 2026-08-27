@@ -13,7 +13,7 @@ const listItem = (overrides: Partial<InquiryListItemDTO>): InquiryListItemDTO =>
     kind: 'patient',
     patient: { displayName: 'Aylin Synthetic', id: 'patient-synthetic' },
   },
-  clinic: { displayName: 'Izmir Coast Dental', id: 'clinic-izmir' },
+  clinic: { displayName: 'Izmir Coast Dental', id: 'clinic-izmir', messagingAvailable: true },
   createdAt: '2026-08-24T08:00:00.000Z',
   handlingStatus: 'contacted',
   id: 'inquiry-izmir',
@@ -31,7 +31,7 @@ const listItem = (overrides: Partial<InquiryListItemDTO>): InquiryListItemDTO =>
 export const patientInquiryItems: InquiryListItemDTO[] = [
   listItem({}),
   listItem({
-    clinic: { displayName: 'Antalya MedVista Clinic', id: 'clinic-antalya' },
+    clinic: { displayName: 'Antalya MedVista Clinic', id: 'clinic-antalya', messagingAvailable: true },
     id: 'inquiry-antalya',
     interest: { label: 'Laser eye surgery' },
     lastActivityAt: '2026-08-23T14:24:00.000Z',
@@ -45,7 +45,7 @@ export const patientInquiryItems: InquiryListItemDTO[] = [
       kind: 'patient',
       patient: { displayName: 'Aylin Synthetic', id: 'patient-synthetic' },
     },
-    clinic: { displayName: 'Ankara Harmony Dental', id: 'clinic-ankara' },
+    clinic: { displayName: 'Ankara Harmony Dental', id: 'clinic-ankara', messagingAvailable: true },
     id: 'inquiry-ankara',
     interest: { label: 'Dental crowns' },
     lastActivityAt: '2026-08-12T15:02:00.000Z',
@@ -81,7 +81,11 @@ const detailBase: Omit<InquiryDetailDTO, 'timeline'> = {
     maxFilesPerMessage: 1,
   },
   contact: { mode: 'collapsed' },
-  originalRequest: { message: 'I would like to discuss dental implants.' },
+  originalRequest: {
+    message: 'I would like to discuss dental implants. My treatment notes are at https://example.test/treatment-notes',
+    preferredContactWindow: 'no_preference',
+    treatmentTimeline: 'within_one_month',
+  },
 }
 
 export const activePatientInquiryDetail: PatientInquiryDetailView = {
@@ -151,6 +155,36 @@ export const closedPatientInquiryDetail: PatientInquiryDetailView = {
       kind: 'external-message',
       text: 'Of course. You can continue here if the inquiry is reopened.',
     },
+  ],
+}
+
+export const offboardedClinicPatientInquiryDetail: PatientInquiryDetailView = {
+  ...activePatientInquiryDetail,
+  actions: { ...activePatientInquiryDetail.actions, canReply: false },
+  binding: { ...activePatientInquiryDetail.binding, canReply: false },
+  clinic: { ...activePatientInquiryDetail.clinic, messagingAvailable: false },
+}
+
+export const hardDeletedContentPatientInquiryDetail: PatientInquiryDetailView = {
+  ...activePatientInquiryDetail,
+  interest: { label: 'Deleted inquiry' },
+  originalRequest: { contentState: 'hard-deleted' },
+  timeline: [
+    {
+      actor: { displayName: 'Izmir Coast Dental', isCurrentActor: false, kind: 'clinic' },
+      contentState: 'hard-deleted',
+      createdAt: '2026-08-24T07:18:00.000Z',
+      id: 'message-hard-deleted',
+      kind: 'external-message',
+    },
+    {
+      actor: { displayName: 'Aylin Synthetic', isCurrentActor: true, kind: 'patient' },
+      attachmentState: 'hard-deleted',
+      createdAt: '2026-08-24T07:42:00.000Z',
+      id: 'attachment-hard-deleted',
+      kind: 'external-message',
+    },
+    activePatientInquiryDetail.timeline[2]!,
   ],
 }
 

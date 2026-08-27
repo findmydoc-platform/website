@@ -18,6 +18,26 @@ import {
   down as revertInquiryModerationMeasureEnd,
   up as applyInquiryModerationMeasureEnd,
 } from '@/migrations/20260824_201842_inquiry_moderation_measure_end'
+import {
+  down as revertInquiryRetentionDeletionFoundation,
+  up as applyInquiryRetentionDeletionFoundation,
+} from '@/migrations/20260824_205617_inquiry_retention_deletion_foundation'
+import {
+  down as revertInquiryRetentionContentState,
+  up as applyInquiryRetentionContentState,
+} from '@/migrations/20260824_205919_inquiry_retention_content_state'
+import {
+  down as revertInquiryRetentionActiveHoldKey,
+  up as applyInquiryRetentionActiveHoldKey,
+} from '@/migrations/20260824_230756_inquiry_retention_active_hold_key'
+import {
+  down as revertInquiryRetentionPolicyEffectiveDate,
+  up as applyInquiryRetentionPolicyEffectiveDate,
+} from '@/migrations/20260824_233016_inquiry_retention_policy_effective_date'
+import {
+  down as revertInquiryRetentionDeleteIntentOperation,
+  up as applyInquiryRetentionDeleteIntentOperation,
+} from '@/migrations/20260824_235512_inquiry_retention_delete_intent_operation'
 import { deriveDatabaseConfig } from '../../../scripts/test-database-harness.mjs'
 
 const { Client } = pg
@@ -78,7 +98,7 @@ describe('inquiry moderation foundation rollback', () => {
     await adminClient?.end().catch(() => undefined)
   })
 
-  it('removes and reapplies only the additive moderation schema in dependency order', async () => {
+  it('removes and reapplies the additive moderation schema with its dependent retention schema', async () => {
     const req = await createLocalReq({}, payload)
     const migrationArgs = { db: isolatedAdapter.drizzle, payload, req } as never
 
@@ -94,6 +114,11 @@ describe('inquiry moderation foundation rollback', () => {
       'inquiry_moderation_events',
     ])
 
+    await revertInquiryRetentionDeleteIntentOperation(migrationArgs)
+    await revertInquiryRetentionPolicyEffectiveDate(migrationArgs)
+    await revertInquiryRetentionActiveHoldKey(migrationArgs)
+    await revertInquiryRetentionContentState(migrationArgs)
+    await revertInquiryRetentionDeletionFoundation(migrationArgs)
     await revertInquiryModerationMeasureEnd(migrationArgs)
     await revertInquiryModerationAuditEvents(migrationArgs)
     await revertInquiryModerationFoundation(migrationArgs)
@@ -117,6 +142,11 @@ describe('inquiry moderation foundation rollback', () => {
     await applyInquiryModerationFoundation(migrationArgs)
     await applyInquiryModerationAuditEvents(migrationArgs)
     await applyInquiryModerationMeasureEnd(migrationArgs)
+    await applyInquiryRetentionDeletionFoundation(migrationArgs)
+    await applyInquiryRetentionContentState(migrationArgs)
+    await applyInquiryRetentionActiveHoldKey(migrationArgs)
+    await applyInquiryRetentionPolicyEffectiveDate(migrationArgs)
+    await applyInquiryRetentionDeleteIntentOperation(migrationArgs)
 
     const afterUp = await isolatedAdapter.pool.query<{ column_name: string }>(
       `SELECT column_name

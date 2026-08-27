@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 
 import config from '@payload-config'
@@ -16,6 +16,12 @@ import {
   sweepExpiredAttachmentDrafts,
 } from '@/features/inquiryCommunication/service'
 import { createInquiryModerationReport, decideInquiryModerationCase } from '@/features/inquiryModeration/service'
+import {
+  hardDeleteInquiryContent,
+  hardDeleteInquiryPackage,
+  readInquiryRetentionReviewQueue,
+  resumePendingInquiryAttachmentHardDeletes,
+} from '@/features/inquiryRetention/service'
 import {
   createS3InquiryAttachmentStorage,
   type InquiryAttachmentMimeType,
@@ -63,7 +69,16 @@ const fetchStorageObject = (objectKey: string, method: 'GET' | 'HEAD' = 'GET'): 
 
 type StoredAttachment = Pick<
   InquiryAttachment,
-  'cleanupCompletedAt' | 'draftCleanupCompletedAt' | 'draftObjectKey' | 'id' | 'readyObjectKey' | 'state'
+  | 'cleanupCompletedAt'
+  | 'contentState'
+  | 'declaredMimeType'
+  | 'declaredSizeBytes'
+  | 'draftCleanupCompletedAt'
+  | 'draftObjectKey'
+  | 'fileName'
+  | 'id'
+  | 'readyObjectKey'
+  | 'state'
 >
 
 describe('inquiry communication storage with Payload and S3Mock', () => {
@@ -168,7 +183,7 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
     const moderatorWithCapability = await payload.update({
       collection: 'platformStaff',
       context: { trustedPlatformStaffOps: true },
-      data: { capabilities: ['conversation-moderation'] },
+      data: { capabilities: ['conversation-moderation', 'inquiry-retention'] },
       depth: 0,
       id: moderator.id,
       overrideAccess: true,
@@ -195,6 +210,7 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
     await createS3InquiryAttachmentStorage().deleteObjects(remainingObjectKeys)
 
     for (const collection of [
+      'inquiryDeletionProofs',
       'inquiryModerationEvents',
       'inquiryModerationCases',
       'inquiryAuditEvents',
@@ -207,7 +223,10 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
       await payload.delete({
         collection,
         overrideAccess: true,
-        where: { inquiry: { in: createdInquiryIds } },
+        where:
+          collection === 'inquiryDeletionProofs'
+            ? { inquiryId: { in: createdInquiryIds.map(String) } }
+            : { inquiry: { in: createdInquiryIds } },
       })
     }
     for (const id of createdInquiryIds) {
@@ -337,6 +356,367 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
     expect(restrictedAttachmentMessage).toMatchObject({ attachmentState: 'restricted', kind: 'external-message' })
     expect(restrictedAttachmentMessage).not.toHaveProperty('attachment')
     expect(JSON.stringify(restrictedPatientDetail)).not.toContain('Synthetic result.png')
+
+    await expect(
+      hardDeleteInquiryContent(
+        moderatorReq,
+        {
+          inquiryId: inquiry.id,
+          reasonCategory: 'authorized-erasure',
+          targetId: finalized.attachment.id,
+          targetType: 'attachment',
+        },
+        createS3InquiryAttachmentStorage(),
+      ),
+    ).resolves.toEqual({ deleted: true, replayed: false })
+    expect((await fetchStorageObject(readyObjectKey, 'HEAD')).status).toBe(404)
+    await expect(readAttachment(finalized.attachment.id)).resolves.toMatchObject({
+      cleanupCompletedAt: expect.any(String),
+      contentState: 'hard-deleted',
+      declaredMimeType: 'application/pdf',
+      declaredSizeBytes: 1,
+      draftObjectKey: expect.stringMatching(/^deleted\/[a-f0-9]{64}$/u),
+      fileName: 'deleted',
+      readyObjectKey: null,
+    })
+    const deletedPatientDetail = await readPatientInquiryDetail(patientReq, { inquiryId: inquiry.id })
+    expect(deletedPatientDetail.timeline.find((item) => item.id === attachmentMessage.id)).toMatchObject({
+      attachmentState: 'hard-deleted',
+      kind: 'external-message',
+    })
+    expect(JSON.stringify(deletedPatientDetail)).not.toContain('Synthetic result.png')
+
+    await putStorageObject(readyObjectKey, file.data, 'image/png')
+    await (
+      payload.db as unknown as {
+        pool: { query: (query: string, values: unknown[]) => Promise<unknown> }
+      }
+    ).pool.query(
+      `UPDATE inquiry_attachments
+       SET content_state = $1,
+           declared_mime_type = $2,
+           declared_size_bytes = $3,
+           file_name = $4,
+           ready_object_key = $5,
+           verified_mime_type = $6,
+           verified_size_bytes = $3
+       WHERE id = $7`,
+      [
+        'available',
+        'image/png',
+        file.data.byteLength,
+        'Synthetic result.png',
+        readyObjectKey,
+        'image/png',
+        finalized.attachment.id,
+      ],
+    )
+    await expect(
+      readAttachmentAccess(patientReq, { attachmentId: finalized.attachment.id, mode: 'download' }),
+    ).rejects.toMatchObject({ kind: 'not-found' } satisfies Partial<InquiryCommunicationServiceError>)
+    await createS3InquiryAttachmentStorage().deleteObjects([readyObjectKey])
+  })
+
+  it('persists a terminal delete intent when object deletion fails and converges on an explicit retry', async () => {
+    const inquiry = await createInquiry('hard-delete-retry')
+    const file = createTinyPngFile(`${slugPrefix}-hard-delete-retry.png`)
+    const uploaded = await uploadDraft(inquiry.id, file.name, file.data)
+    const finalized = await finalizeAttachmentDraft(patientReq, {
+      draftId: uploaded.draftId,
+      inquiryId: inquiry.id,
+    })
+    const verified = await readAttachment(finalized.attachment.id)
+    const readyObjectKey = String(verified.readyObjectKey)
+    await sendPatientInquiryMessage(patientReq, {
+      attachmentDraftId: finalized.attachment.id,
+      expectedRevision: inquiry.revision,
+      idempotencyKey: `${slugPrefix}-hard-delete-retry-bind`,
+      inquiryId: inquiry.id,
+    })
+
+    const realStorage = createS3InquiryAttachmentStorage()
+    const failingStorage: InquiryAttachmentStorageGateway = {
+      ...realStorage,
+      deleteObjects: async () => {
+        throw new Error('Synthetic S3 deletion outage.')
+      },
+    }
+    const input = {
+      inquiryId: inquiry.id,
+      reasonCategory: 'authorized-erasure' as const,
+      targetId: finalized.attachment.id,
+      targetType: 'attachment' as const,
+    }
+    await expect(hardDeleteInquiryContent(moderatorReq, input, failingStorage)).rejects.toMatchObject({
+      kind: 'unavailable',
+    })
+    await expect(readAttachment(finalized.attachment.id)).resolves.toMatchObject({
+      cleanupCompletedAt: null,
+      contentState: 'hard-deleted',
+      fileName: 'deleted',
+      readyObjectKey,
+    })
+    expect((await fetchStorageObject(readyObjectKey, 'HEAD')).status).toBe(200)
+    const pendingProofs = await payload.find({
+      collection: 'inquiryDeletionProofs',
+      depth: 0,
+      overrideAccess: true,
+      where: { inquiryId: { equals: String(inquiry.id) } },
+    })
+    expect(pendingProofs.docs).toContainEqual(
+      expect.objectContaining({ deletedObjectCount: 0, operation: 'hard-delete-pending' }),
+    )
+    await expect(
+      readInquiryRetentionReviewQueue(moderatorReq, { limit: 1, now: '2026-08-24T12:00:00.000Z' }),
+    ).resolves.toMatchObject({ items: expect.any(Array) })
+    await (
+      payload.db as unknown as {
+        pool: { query: (query: string, values: unknown[]) => Promise<unknown> }
+      }
+    ).pool.query(
+      `UPDATE inquiry_attachments
+       SET content_state = $1,
+           declared_mime_type = $2,
+           declared_size_bytes = $3,
+           file_name = $4,
+           verified_mime_type = $5,
+           verified_size_bytes = $6
+       WHERE id = $7`,
+      [
+        'available',
+        'image/png',
+        file.data.byteLength,
+        file.name,
+        'image/png',
+        file.data.byteLength,
+        finalized.attachment.id,
+      ],
+    )
+    const pendingDetail = await readPatientInquiryDetail(patientReq, { inquiryId: inquiry.id })
+    expect(JSON.stringify(pendingDetail)).not.toContain(file.name)
+    await expect(
+      readAttachmentAccess(patientReq, { attachmentId: finalized.attachment.id, mode: 'download' }),
+    ).rejects.toMatchObject({ kind: 'not-found' } satisfies Partial<InquiryCommunicationServiceError>)
+
+    await expect(hardDeleteInquiryContent(moderatorReq, input, realStorage)).resolves.toEqual({
+      deleted: true,
+      replayed: false,
+    })
+    expect((await fetchStorageObject(readyObjectKey, 'HEAD')).status).toBe(404)
+    const completedProofs = await payload.find({
+      collection: 'inquiryDeletionProofs',
+      depth: 0,
+      overrideAccess: true,
+      where: { inquiryId: { equals: String(inquiry.id) } },
+    })
+    expect(completedProofs.docs).toContainEqual(
+      expect.objectContaining({ deletedObjectCount: 2, operation: 'hard-deleted' }),
+    )
+  })
+
+  it('hard deletes every attachment object when the whole inquiry package is deleted', async () => {
+    const inquiry = await createInquiry('package-hard-delete')
+    const file = createTinyPngFile(`${slugPrefix}-package-hard-delete.png`)
+    const uploaded = await uploadDraft(inquiry.id, file.name, file.data)
+    const finalized = await finalizeAttachmentDraft(patientReq, {
+      draftId: uploaded.draftId,
+      inquiryId: inquiry.id,
+    })
+    const verified = await readAttachment(finalized.attachment.id)
+    const readyObjectKey = String(verified.readyObjectKey)
+    await sendPatientInquiryMessage(patientReq, {
+      attachmentDraftId: finalized.attachment.id,
+      expectedRevision: inquiry.revision,
+      idempotencyKey: `${slugPrefix}-package-hard-delete-bind`,
+      inquiryId: inquiry.id,
+    })
+
+    await expect(
+      hardDeleteInquiryPackage(
+        moderatorReq,
+        { inquiryId: inquiry.id, reasonCategory: 'authorized-erasure' },
+        createS3InquiryAttachmentStorage(),
+      ),
+    ).resolves.toEqual({ deleted: true, replayed: false })
+
+    expect((await fetchStorageObject(readyObjectKey, 'HEAD')).status).toBe(404)
+    await expect(readAttachment(finalized.attachment.id)).resolves.toMatchObject({
+      cleanupCompletedAt: expect.any(String),
+      contentState: 'hard-deleted',
+      readyObjectKey: null,
+    })
+    await expect(readPatientInquiryDetail(patientReq, { inquiryId: inquiry.id })).rejects.toMatchObject({
+      kind: 'not-found',
+    })
+  })
+
+  it('recovers a committed delete intent after S3 succeeds but final metadata cleanup fails', async () => {
+    const inquiry = await createInquiry('hard-delete-finalize-recovery')
+    const file = createTinyPngFile(`${slugPrefix}-hard-delete-finalize-recovery.png`)
+    const uploaded = await uploadDraft(inquiry.id, file.name, file.data)
+    const finalized = await finalizeAttachmentDraft(patientReq, {
+      draftId: uploaded.draftId,
+      inquiryId: inquiry.id,
+    })
+    const verified = await readAttachment(finalized.attachment.id)
+    const readyObjectKey = String(verified.readyObjectKey)
+    await sendPatientInquiryMessage(patientReq, {
+      attachmentDraftId: finalized.attachment.id,
+      expectedRevision: inquiry.revision,
+      idempotencyKey: `${slugPrefix}-hard-delete-finalize-recovery-bind`,
+      inquiryId: inquiry.id,
+    })
+
+    const originalUpdate = payload.update.bind(payload)
+    let retentionAttachmentUpdates = 0
+    const updateSpy = vi.spyOn(payload, 'update')
+    updateSpy.mockImplementation((async (rawArgs: unknown) => {
+      const args = rawArgs as { collection?: string; context?: Record<string, unknown> }
+      if (args.collection === 'inquiryAttachments' && args.context?.inquiryRetentionScrub === true) {
+        retentionAttachmentUpdates += 1
+        if (retentionAttachmentUpdates === 2) throw new Error('Synthetic final metadata cleanup failure.')
+      }
+      return originalUpdate(rawArgs as never)
+    }) as never)
+    const input = {
+      inquiryId: inquiry.id,
+      reasonCategory: 'authorized-erasure' as const,
+      targetId: finalized.attachment.id,
+      targetType: 'attachment' as const,
+    }
+    await expect(hardDeleteInquiryContent(moderatorReq, input, createS3InquiryAttachmentStorage())).rejects.toThrow(
+      'Synthetic final metadata cleanup failure.',
+    )
+    updateSpy.mockRestore()
+
+    expect((await fetchStorageObject(readyObjectKey, 'HEAD')).status).toBe(404)
+    await expect(readAttachment(finalized.attachment.id)).resolves.toMatchObject({
+      cleanupCompletedAt: null,
+      contentState: 'hard-deleted',
+      readyObjectKey,
+    })
+    const proofs = await payload.find({
+      collection: 'inquiryDeletionProofs',
+      depth: 0,
+      overrideAccess: true,
+      where: { inquiryId: { equals: inquiry.id } },
+    })
+    expect(proofs.docs).toHaveLength(1)
+    expect(proofs.docs[0]).toMatchObject({ operation: 'hard-delete-pending' })
+    const pendingProof = proofs.docs[0]
+    if (!pendingProof) throw new Error('Expected the pending attachment delete intent.')
+
+    await expect(
+      resumePendingInquiryAttachmentHardDeletes(moderatorReq, {}, createS3InquiryAttachmentStorage()),
+    ).resolves.toEqual({
+      examined: 1,
+      failed: 0,
+      finalized: 1,
+    })
+    await expect(readAttachment(finalized.attachment.id)).resolves.toMatchObject({
+      cleanupCompletedAt: expect.any(String),
+      draftObjectKey: expect.stringMatching(/^deleted\/[a-f0-9]{64}$/u),
+      readyObjectKey: null,
+    })
+    await expect(
+      payload.findByID({
+        collection: 'inquiryDeletionProofs',
+        depth: 0,
+        id: pendingProof.id,
+        overrideAccess: true,
+      }),
+    ).resolves.toMatchObject({ operation: 'hard-deleted' })
+  })
+
+  it('continues a pending delete batch after one storage failure', async () => {
+    const realStorage = createS3InquiryAttachmentStorage()
+    const alwaysFailingStorage: InquiryAttachmentStorageGateway = {
+      ...realStorage,
+      deleteObjects: async () => {
+        throw new Error('Synthetic persistent object failure.')
+      },
+    }
+    const preparePending = async (label: string) => {
+      const inquiry = await createInquiry(`pending-batch-${label}`)
+      const file = createTinyPngFile(`${slugPrefix}-pending-batch-${label}.png`)
+      const uploaded = await uploadDraft(inquiry.id, file.name, file.data)
+      const finalized = await finalizeAttachmentDraft(patientReq, {
+        draftId: uploaded.draftId,
+        inquiryId: inquiry.id,
+      })
+      const attachment = await readAttachment(finalized.attachment.id)
+      await sendPatientInquiryMessage(patientReq, {
+        attachmentDraftId: finalized.attachment.id,
+        expectedRevision: inquiry.revision,
+        idempotencyKey: `${slugPrefix}-pending-batch-${label}-bind`,
+        inquiryId: inquiry.id,
+      })
+      await expect(
+        hardDeleteInquiryContent(
+          moderatorReq,
+          {
+            inquiryId: inquiry.id,
+            reasonCategory: 'authorized-erasure',
+            targetId: finalized.attachment.id,
+            targetType: 'attachment',
+          },
+          alwaysFailingStorage,
+        ),
+      ).rejects.toMatchObject({ kind: 'unavailable' })
+      return {
+        attachmentId: finalized.attachment.id,
+        inquiryId: inquiry.id,
+        objectKeys: [String(attachment.draftObjectKey), String(attachment.readyObjectKey)],
+      }
+    }
+
+    const blocked = await preparePending('blocked')
+    const recoverable = await preparePending('recoverable')
+    const selectivelyFailingStorage: InquiryAttachmentStorageGateway = {
+      ...realStorage,
+      deleteObjects: async (keys) => {
+        if (keys.some((key) => blocked.objectKeys.includes(key))) {
+          throw new Error('Synthetic first candidate remains unavailable.')
+        }
+        await realStorage.deleteObjects(keys)
+      },
+    }
+
+    const firstPage = await resumePendingInquiryAttachmentHardDeletes(
+      moderatorReq,
+      { limit: 1 },
+      selectivelyFailingStorage,
+    )
+    expect(firstPage).toEqual({
+      examined: 1,
+      failed: 1,
+      finalized: 0,
+      nextCursor: expect.any(String),
+    })
+    await expect(
+      resumePendingInquiryAttachmentHardDeletes(
+        moderatorReq,
+        { cursor: firstPage.nextCursor, limit: 1 },
+        selectivelyFailingStorage,
+      ),
+    ).resolves.toEqual({ examined: 1, failed: 0, finalized: 1 })
+    const proofs = await payload.find({
+      collection: 'inquiryDeletionProofs',
+      depth: 0,
+      overrideAccess: true,
+      where: { inquiryId: { in: [String(blocked.inquiryId), String(recoverable.inquiryId)] } },
+    })
+    expect(proofs.docs).toContainEqual(
+      expect.objectContaining({ inquiryId: String(blocked.inquiryId), operation: 'hard-delete-pending' }),
+    )
+    expect(proofs.docs).toContainEqual(
+      expect.objectContaining({ inquiryId: String(recoverable.inquiryId), operation: 'hard-deleted' }),
+    )
+    await expect(readAttachment(blocked.attachmentId)).resolves.toMatchObject({ cleanupCompletedAt: null })
+    await expect(readAttachment(recoverable.attachmentId)).resolves.toMatchObject({
+      cleanupCompletedAt: expect.any(String),
+    })
+    await realStorage.deleteObjects(blocked.objectKeys)
   })
 
   it('rejects HEAD size, metadata type, and magic-byte drift before reusing the reserved ready key', async () => {
@@ -496,6 +876,7 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
           ownerPatient: patientId,
           patient: patientId,
           state: 'draft',
+          contentState: 'available',
         },
         depth: 0,
         overrideAccess: true,
@@ -521,6 +902,7 @@ describe('inquiry communication storage with Payload and S3Mock', () => {
         ownerPatient: patientId,
         patient: patientId,
         state: 'draft',
+        contentState: 'available',
       },
       depth: 0,
       overrideAccess: true,

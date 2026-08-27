@@ -18,7 +18,7 @@ const item = (overrides: Partial<InquiryListItemDTO> = {}): InquiryListItemDTO =
     kind: 'patient',
     patient: { displayName: 'Synthetic Patient', id: 'patient-1' },
   },
-  clinic: { displayName: 'Izmir Coast Dental', id: 'clinic-1' },
+  clinic: { displayName: 'Izmir Coast Dental', id: 'clinic-1', messagingAvailable: true },
   createdAt: '2026-08-24T08:00:00.000Z',
   handlingStatus: 'in_review',
   id: 'inquiry-1',

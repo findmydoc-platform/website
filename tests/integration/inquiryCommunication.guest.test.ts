@@ -4,6 +4,7 @@ import { getPayload, type Payload } from 'payload'
 
 import config from '@payload-config'
 import { POST as submitGuestClinicInquiry } from '@/app/api/clinic-contact-requests/route'
+import { communicationReviewDueAt } from '@/features/inquiryRetention/policy'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
@@ -132,8 +133,14 @@ describe('guest inquiry HTTP persistence', () => {
       lifecycle: 'open',
       patient: null,
       revision: 0,
+      retentionPolicyVersion: '2026-08-24',
+      retentionReviewBasisAt: expect.any(String),
+      retentionReviewDueAt: expect.any(String),
       status: 'submitted',
     })
+    expect(inquiries.docs[0]?.retentionReviewDueAt).toBe(
+      communicationReviewDueAt(String(inquiries.docs[0]?.retentionReviewBasisAt), 12),
+    )
 
     const audit = await payload.find({
       collection: 'inquiryAuditEvents' as never,

@@ -1,5 +1,7 @@
 import { ValidationError, type CollectionBeforeValidateHook, type PayloadRequest } from 'payload'
 
+import { hasInquiryPackageHardDeleteBarrier } from '@/features/inquiryAggregate/tombstones'
+
 type RecordValue = Record<string, unknown>
 type RelationId = number | string
 
@@ -16,6 +18,9 @@ const sameId = (left: unknown, right: unknown): boolean => {
   return leftId !== null && rightId !== null && String(leftId) === String(rightId)
 }
 
+const bothRelationsMissing = (left: unknown, right: unknown): boolean =>
+  relationId(left) === null && relationId(right) === null
+
 const candidate = (data: unknown, originalDoc: unknown): RecordValue => ({
   ...((originalDoc && typeof originalDoc === 'object' ? originalDoc : {}) as RecordValue),
   ...((data && typeof data === 'object' ? data : {}) as RecordValue),
@@ -24,6 +29,11 @@ const candidate = (data: unknown, originalDoc: unknown): RecordValue => ({
 const fail = (req: PayloadRequest, collection: string, path: string, message: string): never => {
   throw new ValidationError({ collection, errors: [{ message, path }], req })
 }
+
+const isInquiryIdentityScrub = (req: PayloadRequest): boolean =>
+  req.context?.inquiryRetentionCommand === true &&
+  req.context?.inquiryRetentionScrub === true &&
+  req.context?.inquiryIdentityScrub === true
 
 const findRecord = async (req: PayloadRequest, collection: string, id: unknown): Promise<RecordValue | null> => {
   const resolvedId = relationId(id)
@@ -44,7 +54,17 @@ const validateScope = async (req: PayloadRequest, collection: string, record: Re
   const inquiry =
     (await findRecord(req, 'patientClinicInquiries', record.inquiry)) ??
     fail(req, collection, 'inquiry', 'The inquiry does not exist.')
-  if (!sameId(record.clinic, inquiry.clinic) || !sameId(record.patient, inquiry.patient)) {
+  const identityDeleted = inquiry.retentionState === 'anonymized' || inquiry.retentionState === 'hard-deleted'
+  if (
+    inquiry.retentionState === 'hard-deleted' ||
+    (await hasInquiryPackageHardDeleteBarrier(req, inquiry.id as RelationId))
+  ) {
+    fail(req, collection, 'inquiry', 'The inquiry package has been hard deleted.')
+  }
+  const patientScopeMatches = identityDeleted
+    ? bothRelationsMissing(record.patient, inquiry.patient)
+    : sameId(record.patient, inquiry.patient)
+  if (!sameId(record.clinic, inquiry.clinic) || !patientScopeMatches) {
     fail(req, collection, 'inquiry', 'The moderation scope must match the inquiry participants.')
   }
   const conversation =
@@ -53,11 +73,13 @@ const validateScope = async (req: PayloadRequest, collection: string, record: Re
   if (
     !sameId(conversation.inquiry, inquiry.id) ||
     !sameId(conversation.clinic, record.clinic) ||
-    !sameId(conversation.patient, record.patient)
+    !(identityDeleted
+      ? bothRelationsMissing(conversation.patient, record.patient)
+      : sameId(conversation.patient, record.patient))
   ) {
     fail(req, collection, 'conversation', 'The moderation conversation does not match the inquiry.')
   }
-  return { conversation, inquiry }
+  return { conversation, identityDeleted, inquiry }
 }
 
 const validateClinicActor = async (
@@ -79,8 +101,9 @@ export const validateInquiryModerationCase: CollectionBeforeValidateHook = async
   originalDoc,
   req,
 }) => {
+  if (isInquiryIdentityScrub(req)) return data
   const record = candidate(data, originalDoc)
-  const { conversation } = await validateScope(req, 'inquiryModerationCases', record)
+  const { conversation, identityDeleted } = await validateScope(req, 'inquiryModerationCases', record)
   if (
     operation === 'update' &&
     Number(record.eventSequence) !== Number((originalDoc as RecordValue).eventSequence) + 1
@@ -94,10 +117,18 @@ export const validateInquiryModerationCase: CollectionBeforeValidateHook = async
   }
 
   if (record.reporterKind === 'patient') {
-    if (!sameId(record.reporterPatient, record.patient) || record.reporterClinicStaff) {
+    if (
+      identityDeleted
+        ? relationId(record.reporterPatient) !== null || relationId(record.reporterClinicStaff) !== null
+        : !sameId(record.reporterPatient, record.patient) || relationId(record.reporterClinicStaff) !== null
+    ) {
       fail(req, 'inquiryModerationCases', 'reporterPatient', 'The patient reporter binding is invalid.')
     }
-    if (record.reporterKey !== `patients:${String(relationId(record.patient))}`) {
+    if (
+      identityDeleted
+        ? record.reporterKey !== null && record.reporterKey !== undefined
+        : record.reporterKey !== `patients:${String(relationId(record.patient))}`
+    ) {
       fail(req, 'inquiryModerationCases', 'reporterKey', 'The patient reporter key is invalid.')
     }
   } else if (record.reporterKind === 'clinic') {
@@ -165,6 +196,7 @@ export const validateInquiryModerationEvent: CollectionBeforeValidateHook = asyn
   originalDoc,
   req,
 }) => {
+  if (isInquiryIdentityScrub(req)) return data
   const record = candidate(data, originalDoc)
   await validateScope(req, 'inquiryModerationEvents', record)
   const moderationCase =

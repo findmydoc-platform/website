@@ -155,7 +155,7 @@ describe('inquiry moderation endpoints', () => {
         targetType: 'message',
       },
       collection: 'clinicStaff',
-      contract: 'inquiry-communication-v1',
+      contract: 'inquiry-communication-v2',
     })
 
     const response = await clinicInquiryReportPostHandler(req)
@@ -175,7 +175,7 @@ describe('inquiry moderation endpoints', () => {
 
   it.each([
     ['patient', patientInquiryAppealPostHandler, undefined],
-    ['clinic', clinicInquiryAppealPostHandler, 'inquiry-communication-v1'],
+    ['clinic', clinicInquiryAppealPostHandler, 'inquiry-communication-v2'],
   ])('accepts one strict %s appeal', async (_name, handler, contract) => {
     const req = request({
       body: { caseId: 'case-1', text: 'Synthetic appeal text.' },

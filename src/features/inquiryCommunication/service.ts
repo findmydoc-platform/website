@@ -41,6 +41,7 @@ import {
   patientInquiryQueueInputSchema,
   verifiedInquiryCreateInputSchema,
 } from './contracts'
+import { INQUIRY_SUBMISSION_CONSENT_TEXT } from './consent'
 import {
   createS3InquiryAttachmentStorage,
   type InquiryAttachmentMimeType,
@@ -2691,7 +2692,7 @@ export const createVerifiedPatientInquiry = async (
             consent: {
               accepted: true,
               acceptedAt: now,
-              text: 'Consent captured for a verified synthetic inquiry.',
+              text: INQUIRY_SUBMISSION_CONSENT_TEXT,
             },
             creationActorKey: ownerActorKey,
             creationIdempotencyKey: input.idempotencyKey,
@@ -2776,9 +2777,6 @@ export const createVerifiedPatientInquiry = async (
 }
 
 const GUEST_INQUIRY_DUPLICATE_WINDOW_MS = 15 * 60 * 1_000
-const GUEST_INQUIRY_CONSENT_TEXT =
-  'By submitting this request, you agree that findmydoc may process your contact details to coordinate follow-up about this clinic inquiry.'
-
 const guestInquiryRequestHash = (input: GuestInquiryCreateInput): string =>
   requestHash({
     clinicId: input.clinicId,
@@ -2870,7 +2868,7 @@ export const submitGuestClinicInquiry = async (
           clinicNotificationSequence: 1,
           clinicUnreadEpoch: 0,
           clinicUnreadFloor: 0,
-          consent: { accepted: true, acceptedAt: now, text: GUEST_INQUIRY_CONSENT_TEXT },
+          consent: { accepted: true, acceptedAt: now, text: INQUIRY_SUBMISSION_CONSENT_TEXT },
           creationActorKey: guestActorKey,
           creationRequestHash: hash,
           doctor: input.doctorId ?? null,

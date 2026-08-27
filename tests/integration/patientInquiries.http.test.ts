@@ -294,6 +294,10 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
       overrideAccess: true,
     })
     expect(stored).toMatchObject({
+      consent: {
+        accepted: true,
+        text: 'I agree that findmydoc may process my contact details and request context to coordinate follow-up.',
+      },
       email: `${slugPrefix}-creation-patient@example.com`,
       fullName: 'Account Bound',
       phoneNumber: '+493000000091',

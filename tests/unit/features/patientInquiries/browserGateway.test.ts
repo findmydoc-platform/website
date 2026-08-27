@@ -122,6 +122,7 @@ describe('patient inquiries browser gateway', () => {
     await uploaded
 
     expect(xhr.open).toHaveBeenCalledWith('PUT', 'https://storage.example.test/drafts/signed', true)
+    expect(xhr.timeout).toBe(120_000)
     expect(xhr.withCredentials).toBe(false)
     expect(xhr.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf')
     expect(xhr.setRequestHeader).toHaveBeenCalledWith('x-amz-meta-token', 'synthetic')

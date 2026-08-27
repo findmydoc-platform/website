@@ -14,6 +14,8 @@ import type {
   PatientInquiryQueueInput,
 } from '@/features/inquiryCommunication/contracts'
 
+export const PATIENT_INQUIRY_UPLOAD_TIMEOUT_MS = 120_000
+
 type ApiErrorBody = {
   error?: {
     code?: unknown
@@ -204,6 +206,7 @@ export const createPatientInquiriesBrowserApi = (): PatientInquiriesApi => ({
     new Promise<void>((resolve, reject) => {
       const request = new XMLHttpRequest()
       request.open(upload.method, upload.url, true)
+      request.timeout = PATIENT_INQUIRY_UPLOAD_TIMEOUT_MS
       request.withCredentials = false
       for (const [name, value] of Object.entries(upload.headers)) request.setRequestHeader(name, value)
       request.upload.onprogress = (event) => {

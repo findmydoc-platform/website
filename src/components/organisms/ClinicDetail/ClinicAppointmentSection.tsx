@@ -12,6 +12,7 @@ import { Textarea } from '@/components/atoms/textarea'
 import { Media } from '@/components/molecules/Media'
 import { UiLink } from '@/components/molecules/Link'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
+import { INQUIRY_SUBMISSION_CONSENT_TEXT } from '@/features/inquiryCommunication/consent'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
@@ -474,9 +475,7 @@ export function ClinicAppointmentSection({
                 required
                 {...formValidation.getFieldProps('consent')}
               />
-              <span>
-                I agree that findmydoc may process my contact details and request context to coordinate follow-up.
-              </span>
+              <span>{INQUIRY_SUBMISSION_CONSENT_TEXT}</span>
             </label>
             <FieldError id={formValidation.getFieldErrorId('consent')}>
               {formValidation.getFieldError('consent')}

@@ -788,15 +788,15 @@ export const submitInquiryModerationAppeal = async (
       throw new InquiryModerationServiceError('access-denied', 'The appeal actor changed.')
     }
     const moderationCase = await readModerationCase(req, input.caseId)
+    if (!participantAffectedByCase(moderationCase, participant)) {
+      throw new InquiryModerationServiceError('not-found', 'The moderation case does not exist.')
+    }
     if (
       moderationCase.status !== 'decided' ||
       moderationCase.appealedAt ||
       !activeMeasure(moderationCase, Date.now())
     ) {
       throw new InquiryModerationServiceError('invalid-state', 'An appeal is not available for this case.')
-    }
-    if (!participantAffectedByCase(moderationCase, participant)) {
-      throw new InquiryModerationServiceError('not-found', 'The moderation case does not exist.')
     }
     await updateCaseAndCreateEvent(
       req,
@@ -835,6 +835,7 @@ export const decideInquiryModerationAppeal = async (
       throw new InquiryModerationServiceError('invalid-state', 'The appeal is not pending.')
     }
     const now = new Date().toISOString()
+    const existingMeasureEndedAt = text(moderationCase.measureEndedAt)
     const updatedCase = await updateCaseAndCreateEvent(
       req,
       moderationCase,
@@ -846,12 +847,12 @@ export const decideInquiryModerationAppeal = async (
         appealDecisionReason: input.reason,
         appealOutcome: input.outcome,
         finalOutcomeAt: now,
-        ...(input.outcome === 'overturned' ? { measureEndedAt: now } : {}),
+        ...(input.outcome === 'overturned' ? { measureEndedAt: existingMeasureEndedAt || now } : {}),
         status: 'resolved',
       },
       { reason: input.reason, toValue: input.outcome },
     )
-    if (input.outcome === 'overturned' && !updatedCase.measureEndedAt) {
+    if (input.outcome === 'overturned' && !existingMeasureEndedAt) {
       await updateInquiryModerationActivity(req, updatedCase, moderator, 'moderation-restored', 'available')
     }
   })

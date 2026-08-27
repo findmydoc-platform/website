@@ -11,8 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/atoms/dialog'
+import { Field, FieldError } from '@/components/atoms/field'
 import { Label } from '@/components/atoms/label'
 import { Textarea } from '@/components/atoms/textarea'
+import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 import type {
   InquiryModerationReportCategory,
   InquiryModerationReportInput,
@@ -60,6 +62,7 @@ export function InquiryReportDialog({
   const reasonRef = React.useRef<HTMLSelectElement>(null)
   const returnFocusRef = React.useRef<HTMLElement>(null)
   const submittedHeadingRef = React.useRef<HTMLHeadingElement>(null)
+  const formValidation = usePublicFormValidation()
 
   React.useEffect(() => {
     if (status === 'submitted') submittedHeadingRef.current?.focus()
@@ -72,12 +75,14 @@ export function InquiryReportDialog({
       setDescription('')
       setError(undefined)
       setStatus('editing')
+      formValidation.clearAllFieldErrors()
     }
   }
 
-  const submit = async (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!target || !category || (category === 'other' && !description.trim())) return
+    if (!formValidation.validateForm(event.currentTarget)) return
+    if (!target || !category) return
     setError(undefined)
     setStatus('submitting')
     const result = await onSubmit({
@@ -123,7 +128,7 @@ export function InquiryReportDialog({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={submit}>
+          <form onSubmit={submit} onInvalid={formValidation.handleInvalid} noValidate>
             <DialogHeader>
               <DialogTitle>Report {target?.label ?? 'content'}</DialogTitle>
               <DialogDescription>
@@ -137,15 +142,20 @@ export function InquiryReportDialog({
                 </p>
                 <p className="mt-1 line-clamp-3 text-sm leading-6 text-foreground">{target?.preview}</p>
               </div>
-              <div className="space-y-2">
+              <Field className="space-y-2" data-invalid={formValidation.getFieldError('category') ? true : undefined}>
                 <Label htmlFor="inquiry-report-reason">Reason</Label>
                 <select
                   ref={reasonRef}
                   id="inquiry-report-reason"
                   aria-label="Reason"
+                  {...formValidation.getFieldProps('category')}
                   className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                  name="category"
                   value={category}
-                  onChange={(event) => setCategory(event.target.value as InquiryModerationReportCategory)}
+                  onChange={(event) => {
+                    setCategory(event.target.value as InquiryModerationReportCategory)
+                    formValidation.handleFieldChange(event)
+                  }}
                   required
                 >
                   <option value="">Select a reason</option>
@@ -155,20 +165,34 @@ export function InquiryReportDialog({
                     </option>
                   ))}
                 </select>
-              </div>
-              <div className="space-y-2">
+                <FieldError id={formValidation.getFieldErrorId('category')}>
+                  {formValidation.getFieldError('category')}
+                </FieldError>
+              </Field>
+              <Field
+                className="space-y-2"
+                data-invalid={formValidation.getFieldError('description') ? true : undefined}
+              >
                 <Label htmlFor="inquiry-report-description">
                   Additional details {category === 'other' ? '(required)' : '(optional)'}
                 </Label>
                 <Textarea
                   id="inquiry-report-description"
                   aria-label="Additional details"
+                  {...formValidation.getFieldProps('description')}
                   maxLength={1000}
+                  name="description"
                   required={category === 'other'}
                   value={description}
-                  onChange={(event) => setDescription(event.target.value)}
+                  onChange={(event) => {
+                    setDescription(event.target.value)
+                    formValidation.handleFieldChange(event)
+                  }}
                 />
-              </div>
+                <FieldError id={formValidation.getFieldErrorId('description')}>
+                  {formValidation.getFieldError('description')}
+                </FieldError>
+              </Field>
               <p className="rounded-lg border border-warning/35 bg-warning/10 px-3 py-3 text-sm leading-6 text-foreground">
                 This report is not an emergency channel. Contact local emergency services if someone is in immediate
                 danger.
@@ -179,10 +203,7 @@ export function InquiryReportDialog({
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={status === 'submitting' || !category || (category === 'other' && !description.trim())}
-              >
+              <Button type="submit" disabled={status === 'submitting' || !target}>
                 {status === 'submitting' ? 'Submitting…' : 'Submit report'}
               </Button>
             </DialogFooter>
@@ -213,6 +234,7 @@ export function InquiryAppealDialog({
   const returnFocusRef = React.useRef<HTMLElement>(null)
   const submittedHeadingRef = React.useRef<HTMLHeadingElement>(null)
   const submittedOnCloseRef = React.useRef(false)
+  const formValidation = usePublicFormValidation()
 
   React.useEffect(() => {
     if (status === 'submitted') submittedHeadingRef.current?.focus()
@@ -225,12 +247,14 @@ export function InquiryAppealDialog({
       setText('')
       setError(undefined)
       setStatus('editing')
+      formValidation.clearAllFieldErrors()
     }
   }
 
-  const submit = async (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!caseId || !text.trim()) return
+    if (!formValidation.validateForm(event.currentTarget)) return
+    if (!caseId) return
     setStatus('submitting')
     const result = await onSubmit({ text })
     if (result.ok) setStatus('submitted')
@@ -272,29 +296,37 @@ export function InquiryAppealDialog({
             </DialogFooter>
           </>
         ) : (
-          <form onSubmit={submit}>
+          <form onSubmit={submit} onInvalid={formValidation.handleInvalid} noValidate>
             <DialogHeader>
               <DialogTitle>Appeal this restriction</DialogTitle>
               <DialogDescription>Explain briefly why the decision should be reviewed.</DialogDescription>
             </DialogHeader>
-            <div className="mt-6 space-y-2">
+            <Field className="mt-6 space-y-2" data-invalid={formValidation.getFieldError('appeal') ? true : undefined}>
               <Label htmlFor="inquiry-appeal-text">Appeal</Label>
               <Textarea
                 ref={appealRef}
                 id="inquiry-appeal-text"
                 aria-label="Appeal"
+                {...formValidation.getFieldProps('appeal')}
                 maxLength={1000}
+                name="appeal"
                 required
                 value={text}
-                onChange={(event) => setText(event.target.value)}
+                onChange={(event) => {
+                  setText(event.target.value)
+                  formValidation.handleFieldChange(event)
+                }}
               />
+              <FieldError id={formValidation.getFieldErrorId('appeal')}>
+                {formValidation.getFieldError('appeal')}
+              </FieldError>
               {error ? <p className="text-sm text-destructive">{error}</p> : null}
-            </div>
+            </Field>
             <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={status === 'submitting' || !text.trim()}>
+              <Button type="submit" disabled={status === 'submitting' || !caseId}>
                 {status === 'submitting' ? 'Submitting…' : 'Submit appeal'}
               </Button>
             </DialogFooter>

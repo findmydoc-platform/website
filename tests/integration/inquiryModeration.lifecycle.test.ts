@@ -393,6 +393,12 @@ describe('inquiry moderation lifecycle', () => {
       text: 'Synthetic appeal asking for a second review.',
     })
     await expect(
+      submitInquiryModerationAppeal(foreignPatientReq, {
+        caseId: report.reportId,
+        text: 'A foreign participant must not learn that this appeal is already pending.',
+      }),
+    ).rejects.toMatchObject({ kind: 'not-found' } satisfies Partial<InquiryModerationServiceError>)
+    await expect(
       submitInquiryModerationAppeal(clinicReq, {
         caseId: report.reportId,
         text: 'A second appeal must not be accepted.',
@@ -437,6 +443,15 @@ describe('inquiry moderation lifecycle', () => {
         text: 'Synthetic message selected for restriction.',
       }),
     )
+    expect(restoredDetail.timeline).toContainEqual(
+      expect.objectContaining({ event: 'moderation-restored', kind: 'system-event' }),
+    )
+    const restoredQueue = await readPatientInquiryQueue(patientReq, { lifecycle: 'all', limit: 50 })
+    expect(restoredQueue.changeCursor).not.toBe(patientQueue.changeCursor)
+    expect(restoredQueue.items.find(({ id }) => id === created.inquiry.id)).toMatchObject({
+      latestActivityKind: 'system-event',
+      preview: 'Communication restored',
+    })
     const finalEvents = await payload.find({
       collection: 'inquiryModerationEvents' as never,
       depth: 0,

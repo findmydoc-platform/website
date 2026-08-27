@@ -47,6 +47,7 @@ import {
   type InquiryAttachmentMimeType,
   type InquiryAttachmentStorageGateway,
 } from './storage'
+import { acquireInquiryCommandLock } from '@/features/inquiryAggregate/commandLock'
 import { readInquiryModerationState, type InquiryModerationState } from '@/features/inquiryModeration/service'
 import {
   hasInquiryPackageHardDeleteBarrier,
@@ -2332,6 +2333,7 @@ export const createAttachmentDraft = async (
       if (clinicId === null || ownerId === null) {
         throw new InquiryCommunicationServiceError('invalid-state', 'The inquiry participants are unavailable.')
       }
+      const releaseCapacityLock = await acquireInquiryCommandLock(req, 'inquiry-attachment-draft-capacity')
       await assertAttachmentDraftCapacity(req, actor, clinicId, nowMs)
       const created = asRecord(
         await req.payload.create({
@@ -2368,6 +2370,7 @@ export const createAttachmentDraft = async (
           targetType: 'attachment',
         },
       )
+      await releaseCapacityLock()
       return created
     })
   } catch (error: unknown) {

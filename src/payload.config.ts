@@ -43,6 +43,17 @@ import {
   legacyPatientClinicInquiryPatchHandler,
   legacyPatientClinicInquiriesGetHandler,
 } from './endpoints/legacyPatientClinicInquiries'
+import {
+  patientInquiriesGetHandler,
+  patientInquiryCreatePostHandler,
+  patientInquiryAttachmentDiscardPostHandler,
+  patientInquiryAttachmentDownloadGetHandler,
+  patientInquiryAttachmentDraftPostHandler,
+  patientInquiryAttachmentFinalizePostHandler,
+  patientInquiryDetailGetHandler,
+  patientInquiryMessagesPostHandler,
+  patientInquiryReadPositionPutHandler,
+} from './endpoints/patientInquiries'
 import { seedPostHandler, seedGetHandler, seedAdvanceHandler, seedRetryHandler } from './endpoints/seed/seedEndpoint'
 import { seedChunkTask } from './endpoints/seed/tasks/seedChunkTask'
 import { fileURLToPath } from 'url'
@@ -280,6 +291,51 @@ export default buildConfig({
       path: '/clinic-dashboard/inquiries/attachments/download',
       method: 'get',
       handler: clinicDashboardInquiryAttachmentDownloadGetHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries',
+      method: 'get',
+      handler: patientInquiriesGetHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries',
+      method: 'post',
+      handler: patientInquiryCreatePostHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries/detail',
+      method: 'get',
+      handler: patientInquiryDetailGetHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries/messages',
+      method: 'post',
+      handler: patientInquiryMessagesPostHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries/read-position',
+      method: 'put',
+      handler: patientInquiryReadPositionPutHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries/attachments/drafts',
+      method: 'post',
+      handler: patientInquiryAttachmentDraftPostHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries/attachments/drafts/finalize',
+      method: 'post',
+      handler: patientInquiryAttachmentFinalizePostHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries/attachments/drafts/discard',
+      method: 'post',
+      handler: patientInquiryAttachmentDiscardPostHandler as PayloadHandler,
+    },
+    {
+      path: '/patient/inquiries/attachments/download',
+      method: 'get',
+      handler: patientInquiryAttachmentDownloadGetHandler as PayloadHandler,
     },
     { path: '/seed', method: 'post', handler: seedPostHandler as PayloadHandler },
     { path: '/seed', method: 'get', handler: seedGetHandler as PayloadHandler },

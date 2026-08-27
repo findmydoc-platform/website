@@ -8,6 +8,7 @@ import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
+import { hasSupabaseAuthenticationAttempt } from '@/features/patientInquiries/creationContext'
 import { getCachedPublicClinicDetailServerData, getClinicDetailServerData } from '@/utilities/clinicDetail/serverData'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getGlobal } from '@/utilities/getGlobals'
@@ -53,6 +54,24 @@ export default async function ClinicDetailPage({ params: paramsPromise }: Clinic
       })
     : {}
   const clinicPath = `/clinics/${encodeURIComponent(slug)}`
+  const loginHref = buildPatientLoginHref(clinicPath)
+  const inquiryCreation = favoriteAuthContext.patient
+    ? {
+        account: {
+          email: favoriteAuthContext.patient.email,
+          firstName: favoriteAuthContext.patient.firstName,
+          lastName: favoriteAuthContext.patient.lastName,
+          phoneNumber: favoriteAuthContext.patient.phoneNumber ?? '',
+        },
+        kind: 'authenticated' as const,
+        loginHref,
+      }
+    : hasSupabaseAuthenticationAttempt({
+          cookieNames: requestCookies.getAll().map(({ name }) => name),
+          headers: requestHeaders,
+        })
+      ? { kind: 'reauthentication-required' as const, loginHref }
+      : { kind: 'guest' as const }
 
   return (
     <>
@@ -64,6 +83,7 @@ export default async function ClinicDetailPage({ params: paramsPromise }: Clinic
           favoriteId: favoriteStateByClinicId[String(clinicDetailData.clinicId)] ?? null,
           loginHref: buildPatientLoginHref(clinicPath),
         }}
+        inquiryCreation={inquiryCreation}
         cookieConsentConfig={cookieConsentContext.config}
         cookieConsentInitialConsent={cookieConsentContext.initialConsent}
       />

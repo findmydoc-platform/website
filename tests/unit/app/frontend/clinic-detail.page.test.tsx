@@ -131,7 +131,7 @@ describe('frontend clinic detail route', () => {
     vi.resetModules()
     vi.clearAllMocks()
 
-    routeMocks.cookies.mockResolvedValue({ get: vi.fn(() => null) })
+    routeMocks.cookies.mockResolvedValue({ get: vi.fn(() => null), getAll: vi.fn(() => []) })
     routeMocks.draftMode.mockResolvedValue({ isEnabled: false })
     routeMocks.getCachedPublicClinicDetailServerData.mockResolvedValue(clinicDetailData)
     routeMocks.getClinicDetailServerData.mockResolvedValue(clinicDetailData)
@@ -178,5 +178,48 @@ describe('frontend clinic detail route', () => {
 
     expect(routeMocks.getClinicDetailServerData).toHaveBeenCalledWith({}, 'berlin-health', { draft: true })
     expect(routeMocks.getCachedPublicClinicDetailServerData).not.toHaveBeenCalled()
+  })
+
+  it('passes server-resolved patient account data to the private clinic form context', async () => {
+    routeMocks.resolveFavoriteClinicAuthContext.mockResolvedValue({
+      isPatient: true,
+      patient: {
+        id: 17,
+        email: 'account.patient@example.com',
+        firstName: 'Account',
+        lastName: 'Patient',
+        phoneNumber: '+49 30 123456',
+      },
+    })
+    routeMocks.findFavoriteClinicStateRecord.mockResolvedValue({})
+    const pageModule = await import('@/app/(frontend)/clinics/[slug]/page')
+    const result = await pageModule.default({ params: Promise.resolve({ slug: 'berlin-health' }) })
+
+    const clinicDetailElement = findElementByType(result, routeMocks.clinicDetailComponent)
+    expect(clinicDetailElement?.props.inquiryCreation).toEqual({
+      kind: 'authenticated',
+      loginHref: '/login/patient?next=%2Fclinics%2Fberlin-health',
+      account: {
+        email: 'account.patient@example.com',
+        firstName: 'Account',
+        lastName: 'Patient',
+        phoneNumber: '+49 30 123456',
+      },
+    })
+  })
+
+  it('marks an unresolved Supabase session for reauthentication instead of guest submission', async () => {
+    routeMocks.cookies.mockResolvedValue({
+      get: vi.fn(() => null),
+      getAll: vi.fn(() => [{ name: 'sb-synthetic-auth-token', value: 'expired' }]),
+    })
+    const pageModule = await import('@/app/(frontend)/clinics/[slug]/page')
+    const result = await pageModule.default({ params: Promise.resolve({ slug: 'berlin-health' }) })
+
+    const clinicDetailElement = findElementByType(result, routeMocks.clinicDetailComponent)
+    expect(clinicDetailElement?.props.inquiryCreation).toEqual({
+      kind: 'reauthentication-required',
+      loginHref: '/login/patient?next=%2Fclinics%2Fberlin-health',
+    })
   })
 })

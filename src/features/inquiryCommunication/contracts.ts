@@ -55,6 +55,7 @@ export const guestInquiryCreateInputSchema = z
       .max(254)
       .transform((value) => value.toLowerCase()),
     fullName: z.string().trim().min(1, 'Full name is required.').max(200),
+    idempotencyKey: inquiryIdempotencyKeySchema.optional(),
     message: guestMessageSchema,
     phoneNumber: z.string().trim().min(1, 'Phone number is required.').max(80),
     preferredContactWindow: z
@@ -83,16 +84,9 @@ export const verifiedInquiryCreateInputSchema = z
     clinicId: inquiryIdSchema,
     consent: z.literal(true),
     doctorId: optionalIdentifierSchema,
-    email: z
-      .string()
-      .trim()
-      .email()
-      .max(254)
-      .transform((value) => value.toLowerCase()),
-    fullName: z.string().trim().min(1).max(200),
     idempotencyKey: inquiryIdempotencyKeySchema,
     message: nonBlankInquiryTextSchema,
-    phoneNumber: z.string().trim().min(1).max(80),
+    phoneNumber: z.string().trim().min(1).max(80).optional(),
     preferredContactWindow: z.string().trim().min(1).max(80).optional(),
     treatmentId: optionalIdentifierSchema,
     treatmentTimeline: z.string().trim().min(1).max(80).optional(),

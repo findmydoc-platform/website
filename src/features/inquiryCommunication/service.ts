@@ -41,6 +41,7 @@ import {
   patientInquiryQueueInputSchema,
   verifiedInquiryCreateInputSchema,
 } from './contracts'
+import { INQUIRY_SUBMISSION_CONSENT_TEXT } from './consent'
 import {
   createS3InquiryAttachmentStorage,
   type InquiryAttachmentMimeType,
@@ -2615,6 +2616,22 @@ export const readPatientInquiryDetail = async (
   return buildPatientDetail(req, inquiry)
 }
 
+export const readPatientInquiryDetailResult = async (
+  req: PayloadRequest,
+  rawInput: InquiryDetailInput,
+): Promise<InquiryDetailResultDTO> => {
+  const parsed = inquiryDetailInputSchema.safeParse(rawInput)
+  if (!parsed.success) throw new InquiryCommunicationServiceError('invalid-input', 'The detail input is invalid.')
+  const input = parsed.data
+  const inquiry = await readPatientInquiryDetail(req, { inquiryId: input.inquiryId })
+  const changeCursor = detailChangeCursor(inquiry)
+  return {
+    changeCursor,
+    inquiry,
+    unchanged: input.knownChangeCursor === changeCursor,
+  }
+}
+
 export const createVerifiedPatientInquiry = async (
   req: PayloadRequest,
   rawInput: VerifiedInquiryCreateInput,
@@ -2636,6 +2653,32 @@ export const createVerifiedPatientInquiry = async (
       if (replay) return replay
       await validateInquiryTarget(req, input)
 
+      const patient = await readPatient(req, ownerId)
+      const firstName = text(patient.firstName).trim()
+      const lastName = text(patient.lastName).trim()
+      const email = text(patient.email).trim().toLowerCase()
+      if (!firstName || !lastName || !email) {
+        throw new InquiryCommunicationServiceError('invalid-state', 'The patient account identity is incomplete.')
+      }
+
+      let phoneNumber = text(patient.phoneNumber).trim()
+      if (!phoneNumber) {
+        if (!input.phoneNumber) {
+          throw new InquiryCommunicationServiceError('invalid-input', 'A patient account phone number is required.')
+        }
+        const updatedPatient = asRecord(
+          await req.payload.update({
+            collection: 'patients',
+            data: { phoneNumber: input.phoneNumber },
+            depth: 0,
+            id: ownerId,
+            overrideAccess: true,
+            req,
+          } as never),
+        )
+        phoneNumber = text(updatedPatient.phoneNumber).trim()
+      }
+
       const created = asRecord(
         await req.payload.create({
           collection: 'patientClinicInquiries',
@@ -2649,21 +2692,21 @@ export const createVerifiedPatientInquiry = async (
             consent: {
               accepted: true,
               acceptedAt: now,
-              text: 'Consent captured for a verified synthetic inquiry.',
+              text: INQUIRY_SUBMISSION_CONSENT_TEXT,
             },
             creationActorKey: ownerActorKey,
             creationIdempotencyKey: input.idempotencyKey,
             creationRequestHash: requestHash(input),
             doctor: input.doctorId ? payloadId(input.doctorId) : null,
-            email: input.email,
+            email,
             externalSequence: 0,
-            fullName: input.fullName,
+            fullName: `${firstName} ${lastName}`,
             handlingStatus: 'submitted',
             lastActivityAt: now,
             lifecycle: 'open',
             message: input.message,
             patient: ownerId,
-            phoneNumber: input.phoneNumber,
+            phoneNumber,
             preferredContactWindow: input.preferredContactWindow ?? null,
             revision: 0,
             status: 'submitted',
@@ -2734,9 +2777,6 @@ export const createVerifiedPatientInquiry = async (
 }
 
 const GUEST_INQUIRY_DUPLICATE_WINDOW_MS = 15 * 60 * 1_000
-const GUEST_INQUIRY_CONSENT_TEXT =
-  'By submitting this request, you agree that findmydoc may process your contact details to coordinate follow-up about this clinic inquiry.'
-
 const guestInquiryRequestHash = (input: GuestInquiryCreateInput): string =>
   requestHash({
     clinicId: input.clinicId,
@@ -2828,7 +2868,7 @@ export const submitGuestClinicInquiry = async (
           clinicNotificationSequence: 1,
           clinicUnreadEpoch: 0,
           clinicUnreadFloor: 0,
-          consent: { accepted: true, acceptedAt: now, text: GUEST_INQUIRY_CONSENT_TEXT },
+          consent: { accepted: true, acceptedAt: now, text: INQUIRY_SUBMISSION_CONSENT_TEXT },
           creationActorKey: guestActorKey,
           creationRequestHash: hash,
           doctor: input.doctorId ?? null,

@@ -2,6 +2,7 @@ import * as React from 'react'
 
 import type { ContactFormFields, ContactFormSelectionError } from '@/components/organisms/ClinicDetail'
 import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
+import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 import {
   computeNextVisibleFurtherTreatmentCount,
   resolveDoctorSelectionToggle,
@@ -15,21 +16,23 @@ type UseClinicDetailInteractionStateArgs = {
   heroDoctors: ClinicDetailDoctor[]
   sortedTreatments: ClinicDetailTreatment[]
   initialContactFormFields: ContactFormFields
+  inquiryCreation: PatientInquiryCreationContext
   furtherTreatmentPageSize: number
 }
 
 type ContactFormMessageTone = 'success' | 'error'
 type ClinicContactRequestPayload = {
-  clinicId: number
+  clinicId: string
   doctorId?: string
   treatmentId?: string
-  fullName: string
-  phoneNumber: string
-  email: string
+  idempotencyKey: string
   treatmentTimeline?: string
   preferredContactWindow?: string
   message: string
   consent: boolean
+  email?: string
+  fullName?: string
+  phoneNumber?: string
 }
 
 type UseClinicDetailInteractionStateResult = {
@@ -47,6 +50,9 @@ type UseClinicDetailInteractionStateResult = {
   contactFormSelectionError: ContactFormSelectionError
   isSubmittingContact: boolean
   hasSubmittedContact: boolean
+  isPhoneLocked: boolean
+  requiresReauthentication: boolean
+  submittedInquiryHref: string | null
   relatedActiveIndex: number | undefined
   setActiveCuratedIndex: React.Dispatch<React.SetStateAction<number>>
   scrollToContactForm: () => void
@@ -61,8 +67,26 @@ type UseClinicDetailInteractionStateResult = {
   handleTreatmentSelectionChange: (treatmentId: string) => void
 }
 
-async function submitClinicContactRequest(payload: ClinicContactRequestPayload): Promise<void> {
-  const response = await fetch('/api/clinic-contact-requests', {
+function createContactRequestKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  return `contact-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+class ClinicContactRequestError extends Error {
+  constructor(
+    message: string,
+    readonly requiresReauthentication: boolean,
+  ) {
+    super(message)
+    this.name = 'ClinicContactRequestError'
+  }
+}
+
+async function submitClinicContactRequest(
+  payload: ClinicContactRequestPayload,
+  authenticated: boolean,
+): Promise<{ id: string }> {
+  const response = await fetch(authenticated ? '/api/patient/inquiries' : '/api/clinic-contact-requests', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -70,12 +94,26 @@ async function submitClinicContactRequest(payload: ClinicContactRequestPayload):
 
   if (!response.ok) {
     const errorPayload = await response.json().catch(() => ({}))
-    const errorMessage =
-      typeof (errorPayload as { error?: unknown }).error === 'string'
-        ? (errorPayload as { error: string }).error
+    const error = (errorPayload as { error?: unknown }).error
+    const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : ''
+    const requiresReauthentication = response.status === 401
+    const errorMessage = requiresReauthentication
+      ? 'Your session has ended. Sign in again before sending this request.'
+      : typeof error === 'string'
+        ? error
         : 'Could not send your clinic request right now.'
-    throw new Error(errorMessage)
+    throw new ClinicContactRequestError(errorMessage, requiresReauthentication || code === 'INQUIRY_UNAUTHORIZED')
   }
+
+  const responseBody = (await response.json().catch(() => ({}))) as {
+    id?: unknown
+    inquiry?: { id?: unknown }
+  }
+  const id = responseBody.inquiry?.id ?? responseBody.id
+  if (typeof id !== 'string' && typeof id !== 'number') {
+    throw new ClinicContactRequestError('Could not confirm your clinic request.', false)
+  }
+  return { id: String(id) }
 }
 
 function getSelectionErrorFromSubmitMessage(message: string): ContactFormSelectionError {
@@ -91,6 +129,7 @@ export function useClinicDetailInteractionState({
   heroDoctors,
   sortedTreatments,
   initialContactFormFields,
+  inquiryCreation,
   furtherTreatmentPageSize,
 }: UseClinicDetailInteractionStateArgs): UseClinicDetailInteractionStateResult {
   const [activeHeroDoctorId, setActiveHeroDoctorId] = React.useState('')
@@ -104,11 +143,19 @@ export function useClinicDetailInteractionState({
   const [contactFormSelectionError, setContactFormSelectionError] = React.useState<ContactFormSelectionError>(null)
   const [isSubmittingContact, setIsSubmittingContact] = React.useState(false)
   const [hasSubmittedContact, setHasSubmittedContact] = React.useState(false)
+  const [isPhoneLocked, setIsPhoneLocked] = React.useState(
+    inquiryCreation.kind === 'authenticated' && Boolean(inquiryCreation.account.phoneNumber),
+  )
+  const [requiresReauthentication, setRequiresReauthentication] = React.useState(
+    inquiryCreation.kind === 'reauthentication-required',
+  )
+  const [submittedInquiryHref, setSubmittedInquiryHref] = React.useState<string | null>(null)
 
   const ourDoctorsRef = React.useRef<HTMLElement | null>(null)
   const contactFormRef = React.useRef<HTMLElement | null>(null)
   const contactFormFeedbackRef = React.useRef<HTMLDivElement | null>(null)
   const contactSubmitLockedRef = React.useRef(false)
+  const contactIdempotencyKeyRef = React.useRef<string | null>(null)
 
   React.useEffect(() => {
     setActiveHeroDoctorId('')
@@ -122,8 +169,12 @@ export function useClinicDetailInteractionState({
     setContactFormSelectionError(null)
     setIsSubmittingContact(false)
     setHasSubmittedContact(false)
+    setIsPhoneLocked(inquiryCreation.kind === 'authenticated' && Boolean(inquiryCreation.account.phoneNumber))
+    setRequiresReauthentication(inquiryCreation.kind === 'reauthentication-required')
+    setSubmittedInquiryHref(null)
     contactSubmitLockedRef.current = false
-  }, [clinicSlug, furtherTreatmentPageSize, initialContactFormFields])
+    contactIdempotencyKeyRef.current = null
+  }, [clinicSlug, furtherTreatmentPageSize, initialContactFormFields, inquiryCreation])
 
   React.useEffect(() => {
     const availableDoctorIds = doctors.map((doctor) => doctor.id)
@@ -177,6 +228,7 @@ export function useClinicDetailInteractionState({
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
+      contactIdempotencyKeyRef.current = null
       scrollToContactForm()
     },
     [scrollToContactForm],
@@ -197,6 +249,7 @@ export function useClinicDetailInteractionState({
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
+      contactIdempotencyKeyRef.current = null
 
       if (result.shouldScrollToOurDoctors) {
         scrollToOurDoctors()
@@ -217,6 +270,7 @@ export function useClinicDetailInteractionState({
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
+      contactIdempotencyKeyRef.current = null
       scrollToContactForm()
     },
     [heroDoctors, scrollToContactForm],
@@ -233,6 +287,7 @@ export function useClinicDetailInteractionState({
       )
       setHasSubmittedContact(false)
       contactSubmitLockedRef.current = false
+      contactIdempotencyKeyRef.current = null
       if (!contactFormSelectionError) {
         setContactFormMessage(null)
         setContactFormMessageTone('success')
@@ -246,6 +301,12 @@ export function useClinicDetailInteractionState({
       event.preventDefault()
 
       if (contactSubmitLockedRef.current || isSubmittingContact || hasSubmittedContact) {
+        return
+      }
+
+      if (requiresReauthentication || inquiryCreation.kind === 'reauthentication-required') {
+        setContactFormMessageTone('error')
+        setContactFormMessage('Your session has ended. Sign in again before sending this request.')
         return
       }
 
@@ -263,34 +324,61 @@ export function useClinicDetailInteractionState({
       setContactFormSelectionError(null)
 
       try {
-        await submitClinicContactRequest({
-          clinicId,
-          doctorId: selectedDoctorId || undefined,
-          treatmentId: selectedTreatmentId || undefined,
-          fullName: contactFormFields.fullName,
-          phoneNumber: contactFormFields.phoneNumber,
-          email: contactFormFields.email,
-          treatmentTimeline: contactFormFields.treatmentTimeline || undefined,
-          preferredContactWindow: contactFormFields.preferredContactWindow || undefined,
-          message: contactFormFields.note,
-          consent: contactFormFields.consentAccepted,
-        })
+        const idempotencyKey = contactIdempotencyKeyRef.current ?? createContactRequestKey()
+        contactIdempotencyKeyRef.current = idempotencyKey
+        const authenticated = inquiryCreation.kind === 'authenticated'
+        const result = await submitClinicContactRequest(
+          {
+            clinicId: String(clinicId),
+            doctorId: selectedDoctorId || undefined,
+            treatmentId: selectedTreatmentId || undefined,
+            ...(authenticated
+              ? inquiryCreation.account.phoneNumber
+                ? {}
+                : { phoneNumber: contactFormFields.phoneNumber }
+              : {
+                  email: contactFormFields.email,
+                  fullName: `${contactFormFields.firstName} ${contactFormFields.lastName}`.trim(),
+                  phoneNumber: contactFormFields.phoneNumber,
+                }),
+            idempotencyKey,
+            treatmentTimeline: contactFormFields.treatmentTimeline || undefined,
+            preferredContactWindow: contactFormFields.preferredContactWindow || undefined,
+            message: contactFormFields.note,
+            consent: contactFormFields.consentAccepted,
+          },
+          authenticated,
+        )
 
         setContactFormMessageTone('success')
         setContactFormMessage('Your clinic request has been sent successfully.')
         setHasSubmittedContact(true)
+        setIsPhoneLocked(authenticated)
+        setSubmittedInquiryHref(authenticated ? `/patient/inquiries/${encodeURIComponent(result.id)}` : null)
       } catch (error: unknown) {
         setContactFormMessageTone('error')
         setHasSubmittedContact(false)
         contactSubmitLockedRef.current = false
         const errorMessage = error instanceof Error ? error.message : 'Could not send your clinic request right now.'
+        if (error instanceof ClinicContactRequestError && error.requiresReauthentication) {
+          setRequiresReauthentication(true)
+        }
         setContactFormSelectionError(getSelectionErrorFromSubmitMessage(errorMessage))
         setContactFormMessage(errorMessage)
       } finally {
         setIsSubmittingContact(false)
       }
     },
-    [clinicId, contactFormFields, hasSubmittedContact, isSubmittingContact, selectedDoctorId, selectedTreatmentId],
+    [
+      clinicId,
+      contactFormFields,
+      hasSubmittedContact,
+      inquiryCreation,
+      isSubmittingContact,
+      requiresReauthentication,
+      selectedDoctorId,
+      selectedTreatmentId,
+    ],
   )
 
   const handleRelatedDoctorIndexChange = React.useCallback(
@@ -305,6 +393,7 @@ export function useClinicDetailInteractionState({
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
+      contactIdempotencyKeyRef.current = null
     },
     [doctors, heroDoctors],
   )
@@ -318,6 +407,7 @@ export function useClinicDetailInteractionState({
       setContactFormMessage(null)
       setContactFormMessageTone('success')
       setContactFormSelectionError(null)
+      contactIdempotencyKeyRef.current = null
     },
     [heroDoctors],
   )
@@ -329,6 +419,7 @@ export function useClinicDetailInteractionState({
     setContactFormMessage(null)
     setContactFormMessageTone('success')
     setContactFormSelectionError(null)
+    contactIdempotencyKeyRef.current = null
   }, [])
 
   return {
@@ -346,6 +437,9 @@ export function useClinicDetailInteractionState({
     contactFormSelectionError,
     isSubmittingContact,
     hasSubmittedContact,
+    isPhoneLocked,
+    requiresReauthentication,
+    submittedInquiryHref,
     relatedActiveIndex,
     setActiveCuratedIndex,
     scrollToContactForm,

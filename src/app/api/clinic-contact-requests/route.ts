@@ -5,6 +5,7 @@ import type { z } from 'zod'
 
 import { guestInquiryCreateInputSchema } from '@/features/inquiryCommunication/contracts'
 import { InquiryCommunicationServiceError, submitGuestClinicInquiry } from '@/features/inquiryCommunication/service'
+import { hasSupabaseAuthenticationAttempt } from '@/features/patientInquiries/creationContext'
 
 const publicValidationMessages = new Set([
   'Consent is required.',
@@ -41,6 +42,17 @@ const domainErrorResponse = (error: InquiryCommunicationServiceError): Response 
 }
 
 export async function POST(request: NextRequest) {
+  if (
+    hasSupabaseAuthenticationAttempt({
+      cookieNames: request.cookies.getAll().map(({ name }) => name),
+      headers: request.headers,
+    })
+  ) {
+    return NextResponse.json(
+      { error: 'Your session has ended. Sign in again before sending this request.' },
+      { status: 401 },
+    )
+  }
   const body = await request.json().catch(() => undefined)
   const parsed = guestInquiryCreateInputSchema.safeParse(body)
   if (!parsed.success) {

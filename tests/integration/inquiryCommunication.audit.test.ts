@@ -93,8 +93,6 @@ describe('inquiry communication audit persistence', () => {
       clinicId: String(clinicId),
       consent: true,
       doctorId: String(fixture.doctor.id),
-      email: patientEmail,
-      fullName: 'Audit Patient',
       idempotencyKey: `${slugPrefix}-create`,
       message: 'Synthetic original inquiry content that must never enter an audit event.',
       phoneNumber: patientPhone,

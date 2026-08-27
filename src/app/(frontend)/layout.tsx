@@ -34,7 +34,7 @@ import type { Footer as FooterType, Header as HeaderType } from '@/payload-types
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
 
 const LIVE_PATIENT_ACCOUNT_MENU_LINKS: Partial<PublicAccountMenuLinks> = {
-  dashboard: null,
+  dashboard: '/patient/inquiries',
   favorites: '/patient/favorites',
   profile: null,
   signOut: '/logout',

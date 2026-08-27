@@ -147,7 +147,8 @@ test.describe('clinic detail map dialog', () => {
 
     const [selectedDoctorId] = await page.locator('select[name="doctor"]').selectOption({ index: 1 })
     expect(selectedDoctorId).toBeTruthy()
-    await page.getByLabel('Full Name').fill(`${slugPrefix} Patient`)
+    await page.getByLabel('First Name').fill(slugPrefix)
+    await page.getByLabel('Last Name').fill('Patient')
     await page.getByLabel('Phone Number').fill('+49 30 123456')
     await page.getByLabel('Email').fill(email)
     await page.getByLabel('How Soon Are You Considering Treatment?').selectOption('within_two_weeks')

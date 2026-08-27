@@ -15,6 +15,16 @@ const makeGuestRequest = (body: unknown) =>
     method: 'POST',
   })
 
+const makeExpiredSessionRequest = (body: unknown) =>
+  new NextRequest('http://localhost/api/clinic-contact-requests', {
+    body: JSON.stringify(body),
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: 'sb-synthetic-auth-token=expired-session',
+    },
+    method: 'POST',
+  })
+
 describe('guest inquiry HTTP persistence', () => {
   let payload: Payload
   let clinicId: number
@@ -180,6 +190,32 @@ describe('guest inquiry HTTP persistence', () => {
 
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toEqual({ error: message })
+    const persisted = await payload.count({
+      collection: 'patientClinicInquiries',
+      overrideAccess: true,
+      where: { email: { equals: email } },
+    })
+    expect(persisted.totalDocs).toBe(0)
+  })
+
+  it('rejects an expired session before guest persistence', async () => {
+    const email = `${slugPrefix}-expired-session@example.com`
+    const response = await submitGuestClinicInquiry(
+      makeExpiredSessionRequest({
+        clinicId,
+        consent: true,
+        doctorId,
+        email,
+        fullName: 'Expired Session Patient',
+        message: 'This request must not fall back to guest persistence.',
+        phoneNumber: '+493000000014',
+      }),
+    )
+
+    expect(response.status).toBe(401)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Your session has ended. Sign in again before sending this request.',
+    })
     const persisted = await payload.count({
       collection: 'patientClinicInquiries',
       overrideAccess: true,

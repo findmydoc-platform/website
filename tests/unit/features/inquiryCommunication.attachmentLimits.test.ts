@@ -162,6 +162,16 @@ describe('inquiry attachment draft limits', () => {
     }
   })
 
+  it('serializes only attachment quotas that share the actor or clinic scope', async () => {
+    const { create, req } = createRequest([0, 0, 0, 0])
+
+    await expect(createAttachmentDraft(req, input, storage())).resolves.toMatchObject({ draftId: '91' })
+
+    expect(
+      create.mock.calls.filter(([args]) => args.collection === 'inquiryCommandLocks').map(([args]) => args.data.key),
+    ).toEqual(['inquiry-attachment-draft-capacity:actor:clinicStaff:5', 'inquiry-attachment-draft-capacity:clinic:8'])
+  })
+
   it('returns rate-limited after bounded serialization retries without issuing a presign', async () => {
     const { commitTransaction, req, rollbackTransaction } = createRequest(Array(12).fill(0))
     const gateway = storage()

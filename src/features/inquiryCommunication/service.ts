@@ -2333,7 +2333,14 @@ export const createAttachmentDraft = async (
       if (clinicId === null || ownerId === null) {
         throw new InquiryCommunicationServiceError('invalid-state', 'The inquiry participants are unavailable.')
       }
-      const releaseCapacityLock = await acquireInquiryCommandLock(req, 'inquiry-attachment-draft-capacity')
+      const releaseActorCapacityLock = await acquireInquiryCommandLock(
+        req,
+        `inquiry-attachment-draft-capacity:actor:${actor.key}`,
+      )
+      const releaseClinicCapacityLock = await acquireInquiryCommandLock(
+        req,
+        `inquiry-attachment-draft-capacity:clinic:${clinicId}`,
+      )
       await assertAttachmentDraftCapacity(req, actor, clinicId, nowMs)
       const created = asRecord(
         await req.payload.create({
@@ -2370,7 +2377,8 @@ export const createAttachmentDraft = async (
           targetType: 'attachment',
         },
       )
-      await releaseCapacityLock()
+      await releaseClinicCapacityLock()
+      await releaseActorCapacityLock()
       return created
     })
   } catch (error: unknown) {

@@ -31,6 +31,10 @@ const createRequest = (counts: number[], events: string[] = []) => {
     events.push(`create:${args.collection}`)
     return { id: args.collection === 'inquiryAttachments' ? 91 : 92, ...args.data }
   })
+  const remove = vi.fn(async (args: { collection: string }) => {
+    events.push(`delete:${args.collection}`)
+    return { id: 92 }
+  })
   const find = vi.fn(async (args: { collection: string }) => {
     if (args.collection === 'clinicStaff') {
       return {
@@ -58,6 +62,7 @@ const createRequest = (counts: number[], events: string[] = []) => {
     payload: {
       count,
       create,
+      delete: remove,
       db: {
         beginTransaction: vi.fn(async () => 'tx-1'),
         commitTransaction,

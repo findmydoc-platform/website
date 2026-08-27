@@ -31,6 +31,10 @@ const createRequest = (counts: number[], events: string[] = []) => {
     events.push(`create:${args.collection}`)
     return { id: args.collection === 'inquiryAttachments' ? 91 : 92, ...args.data }
   })
+  const remove = vi.fn(async (args: { collection: string }) => {
+    events.push(`delete:${args.collection}`)
+    return { id: 92 }
+  })
   const find = vi.fn(async (args: { collection: string }) => {
     if (args.collection === 'clinicStaff') {
       return {
@@ -58,6 +62,7 @@ const createRequest = (counts: number[], events: string[] = []) => {
     payload: {
       count,
       create,
+      delete: remove,
       db: {
         beginTransaction: vi.fn(async () => 'tx-1'),
         commitTransaction,
@@ -155,6 +160,16 @@ describe('inquiry attachment draft limits', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('serializes only attachment quotas that share the actor or clinic scope', async () => {
+    const { create, req } = createRequest([0, 0, 0, 0])
+
+    await expect(createAttachmentDraft(req, input, storage())).resolves.toMatchObject({ draftId: '91' })
+
+    expect(
+      create.mock.calls.filter(([args]) => args.collection === 'inquiryCommandLocks').map(([args]) => args.data.key),
+    ).toEqual(['inquiry-attachment-draft-capacity:actor:clinicStaff:5', 'inquiry-attachment-draft-capacity:clinic:8'])
   })
 
   it('returns rate-limited after bounded serialization retries without issuing a presign', async () => {

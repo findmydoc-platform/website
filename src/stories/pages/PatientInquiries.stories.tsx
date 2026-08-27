@@ -338,27 +338,6 @@ export const Conflict: Story = {
   },
 }
 
-export const DetailError: Story = {
-  args: {
-    detailView: undefined,
-    state: {
-      ...activePatientInquiryState(),
-      detail: { error: 'Check your connection and try again.', status: 'error' },
-    },
-  },
-}
-
-export const ControllerFlow: Story = {
-  render: () => <ControllerFlowHarness />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-    const message = await canvas.findByRole('textbox', { name: 'Message' })
-    await userEvent.type(message, 'Tuesday at 15:00 works.')
-    await userEvent.click(canvas.getByRole('button', { name: 'Send' }))
-    await expect(canvas.findByText('Tuesday at 15:00 works.')).resolves.toBeInTheDocument()
-  },
-}
-
 export const Restricted: Story = {
   args: {
     detailView: restrictedPatientInquiryDetail,

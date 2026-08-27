@@ -38,7 +38,9 @@ type IsolatedAdapter = ReturnType<ReturnType<typeof postgresAdapter>['init']>
 type RetainedPoolClient = { release: (destroy?: boolean) => void }
 
 const quotedTestDatabaseIdentifier = (value: string): string => {
-  if (!/^findmydoc-test(?:[-_][a-z0-9][a-z0-9_-]*)+$/u.test(value) || value.length > 63) {
+  const prefix = 'findmydoc-test'
+  const suffix = value.slice(prefix.length)
+  if (!value.startsWith(prefix) || !/^[-_][a-z0-9][a-z0-9_-]*$/u.test(suffix) || value.length > 63) {
     throw new Error(`Unsafe isolated migration database name: ${value}`)
   }
   return `"${value}"`

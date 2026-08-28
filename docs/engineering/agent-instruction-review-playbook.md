@@ -31,6 +31,8 @@ Use these checks before recommending more prompt text:
 10. When removing behavior, remove obsolete tests and validate the surviving behavior and explicit acceptance criteria instead of adding absence-only tests.
 11. Use stable skill-name selectors for reviewer restrictions; do not bind repository configuration to versioned machine-local plugin cache paths.
 12. Limit command rules to destructive or external-write prefixes that need repository-specific friction. Cover every documented direct or wrapper form with inline examples, route workstation-specific executable paths through stable repository helpers, and keep read-only Git and GitHub commands unprompted.
+13. Use the Semantic Anchors catalog and primary sources to verify established method names. Name valid anchors without redefining them in always-loaded instructions.
+14. Keep repository contracts explicit when an anchor does not determine a local path, ownership rule, validation matrix, exception, or evidence threshold. Use [Semantic Anchor Coverage](./semantic-anchor-coverage.md) for the current decisions.
 
 ## Finding Severity
 
@@ -60,8 +62,11 @@ Use the reviewer for semantic issues the checker cannot prove, such as stale res
 
 ## Source Snapshot
 
-Vendor guidance refreshed: 2026-08-18. The research-paper set below retains its 2026-06-02 snapshot unless a source is dated separately. Re-check the web when the user asks for latest/current guidance or when a source-sensitive claim would change implementation.
+Vendor guidance refreshed: 2026-08-28. The research-paper set below retains its 2026-06-02 snapshot unless a source is dated separately. Re-check the web when the user asks for latest/current guidance or when a source-sensitive claim would change implementation.
 
+- [Semantic Anchors catalog](https://llm-coding.github.io/Semantic-Anchors/llms.txt): Use established names as learned references, not as replacements for repository-specific contracts.
+- [Semantic Anchors evaluations](https://llm-coding.github.io/Semantic-Anchors/evaluations/): Recognition and consistency can vary by model and prompt. Compare an anchor against the replaced instruction when behavior is uncertain.
+- [Website Semantic Anchor Coverage](./semantic-anchor-coverage.md): Records the primary source, safe coverage boundary, remaining doubt, and retained local contracts for each adopted anchor.
 - [AGENTS.md](https://agents.md/): AGENTS.md is standard Markdown for coding-agent context, with no required fields. Nested AGENTS files are expected for large repositories; the nearest file should narrow or override broader guidance.
 - [OpenAI Codex AGENTS.md](https://developers.openai.com/codex/guides/agents-md): Codex loads global and project guidance once per run, walking from project root to current directory and concatenating closer files later. The default project-doc limit makes concise, scoped instructions materially better than one large root file.
 - [Unrolling the Codex agent loop](https://openai.com/index/unrolling-the-codex-agent-loop/): Codex aggregates user instructions, environment context, skills metadata, and the task into the request. This supports separating always-loaded rules from opt-in skills and specialist reviewers.

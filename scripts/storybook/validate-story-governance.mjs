@@ -1,7 +1,9 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
+import { execFileSync } from 'node:child_process'
 
-const STORIES_ROOT = path.resolve(process.cwd(), 'src/stories')
+const STORIES_ROOT = path.resolve(process.cwd(), 'src')
+const CENTRAL_STORIES_ROOT = path.resolve(STORIES_ROOT, 'stories')
 const ALLOWED_LAYER_TAGS = new Set(['atom', 'molecule', 'organism', 'template', 'page'])
 const ALLOWED_STATUS_TAGS = new Set(['stable', 'experimental', 'deprecated'])
 
@@ -16,6 +18,49 @@ const MDX_DOC_FILE_PATTERN = /\.mdx$/
 
 const toPosix = (value) => value.split(path.sep).join('/')
 
+const parseArgs = (args) => {
+  let baseRef = null
+
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index]
+    if (argument === '--') continue
+    if (argument === '--base-ref') {
+      const value = args[index + 1]
+      if (!value || value.startsWith('--')) {
+        throw new Error('--base-ref requires a Git reference.')
+      }
+      baseRef = value
+      index += 1
+    }
+  }
+
+  return { baseRef }
+}
+
+const collectChangedFiles = (baseRef) => {
+  if (!baseRef) return []
+
+  const output = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMR', `${baseRef}...HEAD`], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  }).trim()
+
+  return output ? output.split('\n').map(toPosix) : []
+}
+
+const validateChangedStoryLocations = (changedFiles) =>
+  changedFiles
+    .filter(
+      (relativePath) =>
+        relativePath.startsWith('src/stories/') &&
+        STORY_FILE_PATTERN.test(relativePath) &&
+        !relativePath.includes('/prototypes/'),
+    )
+    .map(
+      (relativePath) =>
+        `${relativePath}: Move new or changed component stories beside their documented source component under src/**.`,
+    )
+
 const walk = async (dir) => {
   const entries = await fs.readdir(dir, { withFileTypes: true })
   const files = []
@@ -27,7 +72,12 @@ const walk = async (dir) => {
       continue
     }
 
-    if (STORY_FILE_PATTERN.test(entry.name) || MDX_DOC_FILE_PATTERN.test(entry.name)) files.push(fullPath)
+    if (
+      STORY_FILE_PATTERN.test(entry.name) ||
+      (MDX_DOC_FILE_PATTERN.test(entry.name) && fullPath.startsWith(`${CENTRAL_STORIES_ROOT}${path.sep}`))
+    ) {
+      files.push(fullPath)
+    }
   }
 
   return files
@@ -223,7 +273,8 @@ const validateMdxDoc = (filePath, content) => {
 
 const main = async () => {
   const files = await walk(STORIES_ROOT)
-  const errors = []
+  const { baseRef } = parseArgs(process.argv.slice(2))
+  const errors = validateChangedStoryLocations(collectChangedFiles(baseRef))
   let storyCount = 0
   let mdxCount = 0
 

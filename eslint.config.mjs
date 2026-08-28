@@ -52,7 +52,11 @@ const eslintConfig = [
   },
   {
     files: ['src/**/*.{ts,tsx,js,jsx}'],
-    ignores: ['src/stories/**/*.{ts,tsx,js,jsx}', 'src/posthog/**/*.{ts,tsx,js,jsx}'],
+    ignores: [
+      'src/**/*.stories.{ts,tsx,js,jsx}',
+      'src/stories/**/*.{ts,tsx,js,jsx}',
+      'src/posthog/**/*.{ts,tsx,js,jsx}',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -106,7 +110,7 @@ const eslintConfig = [
     },
   },
   {
-    files: ['src/stories/**/*.{ts,tsx}'],
+    files: ['src/**/*.stories.{ts,tsx}'],
     ignores: ['src/stories/fixtures/assets.ts'],
     // Enforce correct Storybook framework imports to avoid mixing Next.js/React renderers
     rules: {

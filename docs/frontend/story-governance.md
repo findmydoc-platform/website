@@ -6,6 +6,14 @@ This document defines the canonical metadata contract for Storybook stories in t
 
 Story metadata must stay searchable by domain and lifecycle stage while keeping Atomic Design layering explicit.
 
+## Location Contract
+
+- New or changed component stories live beside their documented source component under `src/**`.
+- Shared fixtures, shared assets, global MDX guidance, and explicitly story-only prototypes remain under `src/stories/**`.
+- Story-only prototypes live under a `prototypes/` directory.
+- Untouched legacy component stories under `src/stories/**` remain valid until the component-story colocation refactor is complete.
+- An `Internal/...` title does not grant a central-location exception by itself.
+
 ## Title Contract
 
 Every story title must use one of these formats:
@@ -57,7 +65,9 @@ For `layer:organism`, `layer:template`, and `layer:page`, add at least one usage
 
 ## Validation
 
-Use `pnpm stories:governance:check` to validate story titles and tags, MDX documentation page titles, and forbidden Storybook test or mock imports.
+Use `pnpm stories:governance:check` to validate every story under `src/**`, central MDX documentation page titles, and forbidden Storybook test or mock imports.
+
+Use `pnpm stories:governance:check -- --base-ref origin/main` to apply the migration-on-touch rule to the commits after a Git base reference. Pull request CI passes its target branch as the base reference. A new or changed story under `src/stories/**` fails unless its path contains `prototypes/`.
 
 ## Canonical References
 

@@ -2,6 +2,8 @@
 
 This document is the single source of truth for findmydoc's shared UI Atomic Design structure, component placement, and naming.
 
+Use Atomic Design.
+
 ## Directory Layout
 
 ```
@@ -9,7 +11,7 @@ src/components/
   atoms/        # shadcn/ui primitives and other presentational leaf components
   molecules/    # small compositions of atoms (buttons + icons, pagination controls, etc.)
   organisms/    # feature blocks composed of molecules/atoms (forms, cards, nav, hero blocks)
-  templates/    # layout wrappers that orchestrate organisms and data-loading
+  templates/    # layout wrappers that orchestrate organisms through normalized inputs
   pages/        # reusable page-level assemblies (rarer – App Router pages still live under src/app)
 ```
 
@@ -17,20 +19,21 @@ Every file under these folders uses the alias `@/components/<layer>/<Component>`
 
 ## Layer Definitions
 
-| Layer     | Responsibilities                                                                                                                                             | Examples                                                           |
-|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| atoms     | Styling + accessibility only. No Payload types, business logic, or routing knowledge. All shadcn/ui components live here.                                    | `button`, `input`, `dialog`, icons, minimal display components     |
-| molecules | Combine multiple atoms for a focused pattern. Light mapping/props logic allowed; no side effects.                                                            | `Pagination`, layout helpers (`Container`, `PageRange`)            |
-| organisms | Feature or block-level UI. May accept Payload types and orchestrate local state. No cross-block business rules; delegate data fetching upward when possible. | `Auth` forms, `Card`, `CollectionArchive`, block renderers         |
-| templates | Page chrome/layout wrappers or sections that fetch data and pass it to organisms. Often server components.                                                   | Site `Header`, `Footer`, dashboard shells                          |
-| pages     | Shared page assemblies that multiple App Router routes can reuse. Use sparingly.                                                                             | marketing landing composition, repeated list/detail pattern        |
+| Layer     | Responsibilities                                                                                                                                          | Examples                                                    |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| atoms     | Styling and accessibility only. No Payload types, business logic, or routing knowledge. All shadcn/ui components live here.                              | `button`, `input`, `dialog`, icons, display primitives      |
+| molecules | Combine atoms for one focused pattern. Light prop mapping is allowed; side effects are not.                                                               | `Pagination`, layout helpers such as `Container`            |
+| organisms | Feature or block-level UI with normalized props, callback ports, and local interaction state. No Payload types or API transport.                           | `Auth` forms, `Card`, `CollectionArchive`, block renderers  |
+| templates | Reusable page chrome, sections, and layout composition. They receive normalized props and callback ports and do not fetch Payload or application API data. | Site `Header`, `Footer`, dashboard shells                   |
+| pages     | Shared page assemblies that multiple App Router routes can reuse. Use sparingly and keep external access in route or block adapters.                       | Marketing compositions and repeated list or detail patterns |
 
-### Templates: Server Wrapper + Presentational UI
+### Route and block adapters with presentational UI
 
-- Templates will often be split into:
-  - A **server wrapper** (`Component.tsx`) that fetches Payload globals or other data and passes props down.
-  - A **presentational UI** sibling (for example `Component.client.tsx` or `FooterContent.tsx`) that renders the actual layout and is safe to use in Storybook.
-- Layouts and routes should import the server wrapper; Storybook and other purely UI contexts should import the presentational component directly.
+- Routes and block adapters own Payload and application API access, then normalize data and UI actions into props and callback ports.
+- Reusable templates render those inputs and remain safe to use in Storybook.
+- Shared server mapping belongs in route utilities, `src/blocks/**`, or `src/blocks/_shared/**`, not in `src/components/**`.
+- Path-local Payload Admin UI follows the exceptions in its closest `AGENTS.md`.
+- `ClinicDetailConcepts` has one transitional contact-request fetch until the dedicated port-refactor issue is complete.
 
 ## Payload Blocks ↔ Organisms
 
@@ -75,7 +78,7 @@ Work in small slices (one feature area per PR) to keep diffs reviewable.
 - [ ] Create the component under that folder using PascalCase filenames.
 - [ ] **Strictly follow the Compound Component pattern** for multi-part UIs (see `src/components/AGENTS.md`).
 - [ ] Import lower layers only (no cycles up the hierarchy).
-- [ ] Keep business logic in Payload or hooks; UI files focus on presentation and light mapping.
+- [ ] Keep Payload and application API transport in route or block adapters; UI files use normalized props, callback ports, and local interaction state.
 - [ ] Update or add tests as needed.
 - [ ] Mention the change in release notes/docs if it affects block availability or templates.
 

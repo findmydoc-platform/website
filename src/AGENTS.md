@@ -16,12 +16,19 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 - Server truth lives in Payload; frontend should stay thin and presentation-oriented.
 - Core domains: auth, clinic network, content, geo entities, and role-based access.
 
+### Frontend Method Anchors
+
+- Use Component-Driven Development (CDD) through Storybook.
+- Use Component Story Format (CSF).
+- Use Hexagonal Architecture (Ports & Adapters).
+
 ### Payload and UI Boundary
 
 - Payload is the source of truth for CMS-backed data across `src/**`.
 - Presentational UI under `src/components/**` must stay Payload-free and must not import `@/payload-types`.
 - Normalize Payload unions such as links, media, and relations in adapter layers before passing props into reusable UI.
 - Shared UI contracts: links use `{ href: string; label?: string | null; newTab?: boolean }`; rich text uses `ReactNode`; media uses `{ src?: string; width?: number; height?: number; alt?: string }`.
+- Route-level and block adapters own Payload and API access; reusable templates receive normalized props and callback ports.
 - Reusable styling and variants belong in `src/components/**`; Payload-aware mapping belongs in `src/blocks/**` or route-level adapters; shared CMS adapters belong in `src/blocks/_shared/**`.
 - Compute CMS-derived routes in adapters, not presentational components.
 - If a component needs Payload imports, move the mapping to an adapter and pass normalized props into the UI layer.
@@ -64,12 +71,15 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 
 ### Frontend Baseline
 
-- Frontend UI development follows Tom Coleman's Component-Driven Development through Storybook.
 - Prefer RSC by default; use client components only at interaction leaves.
 - Keep UI components Payload-free; map CMS shapes in block adapters.
 - Use Tailwind + shadcn atoms in `src/components/atoms`.
+- New or changed component stories must live beside their documented source component under `src/**`.
+- Shared fixtures, shared assets, global MDX guidance, and explicitly story-only prototypes remain under `src/stories/**`.
+- Story-only prototypes must live under a `prototypes/` directory so the exception is machine-checkable.
+- Untouched legacy component stories under `src/stories/**` remain valid until the dedicated component-story colocation refactor is complete.
 - Story metadata must comply with `docs/frontend/story-governance.md`.
-- Treat mobile-first layout and interaction behavior as the default frontend design mode; see `docs/frontend/mobile-ai-playbook.md` for the canonical viewport matrix, review checklist, and prompt scaffolding.
+- Use `docs/frontend/mobile-ai-playbook.md` for the canonical viewport matrix, interaction checks, runtime evidence, and QA note.
 
 ### Domain Routing
 

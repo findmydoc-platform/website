@@ -5,8 +5,8 @@
 | Name | Content |
 | --- | --- |
 | Author | Sebastian Schütze |
-| Version | 1.0 |
-| Date | 02.02.2026 |
+| Version | 1.1 |
+| Date | 28.08.2026 |
 | Status | approved |
 
 ## Background
@@ -33,7 +33,9 @@ Keeping component documentation in repository markdown files makes it harder to 
 
 ## Decision with Rationale
 
-We will treat **Storybook story files as the primary source of component documentation**. Autodocs (and short component descriptions inside story metadata) should cover the majority of documentation needs and remain colocated with stories for maintainability and discoverability.
+We treat **Storybook story files as the primary source of component documentation**. Component stories live beside the source component they document. Autodocs and short component descriptions inside story metadata cover most component documentation needs.
+
+Shared fixtures, shared assets, global MDX guidance, and explicitly story-only prototypes remain under `src/stories/**`. Story-only prototypes use a `prototypes/` directory. Untouched legacy component stories remain central during the migration tracked in [#1759](https://github.com/findmydoc-platform/website/issues/1759); new or changed component stories use the colocated structure immediately.
 
 Additional documentation is required only when:
 
@@ -41,11 +43,12 @@ Additional documentation is required only when:
 - The documentation needs narrative structure beyond what Autodocs can provide.
 - The topic is about design guidelines or complex workflows rather than a single component API.
 
-In those cases, use **Storybook MDX docs pages** that live alongside stories, and keep repository-level markdown documents reserved for system-wide decisions and infrastructure guidance (like this ADR).
+In those cases, use **Storybook MDX docs pages** under `src/stories/pages/storybook/**`, and keep repository-level markdown documents reserved for system-wide decisions and infrastructure guidance such as this ADR.
 
 ## Technical Debt
 
 - Existing stories may lack short descriptive metadata. Update descriptions incrementally when touching stories, but do not backfill all stories in one sweep.
+- The central component-story backlog is tracked in [#1759](https://github.com/findmydoc-platform/website/issues/1759).
 
 ## Risks (Optional)
 

@@ -64,6 +64,7 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 
 ### Frontend Baseline
 
+- Frontend UI development follows Tom Coleman's Component-Driven Development through Storybook.
 - Prefer RSC by default; use client components only at interaction leaves.
 - Keep UI components Payload-free; map CMS shapes in block adapters.
 - Use Tailwind + shadcn atoms in `src/components/atoms`.

@@ -29,7 +29,6 @@
 
 ## Storybook Expectations
 
-- New or changed reusable UI components should include or update stories in `src/stories/**`.
 - Keep stories isolated and deterministic.
 - Use `docs/frontend/mobile-ai-playbook.md` when defining mobile states, viewport expectations, and responsive QA notes for route-level UI work.
 - For route-level mobile work, verify the composed route directly; use Playwright or equivalent route-level runtime evidence for runtime-sensitive risks such as sticky overlap, drawers, sheets, filters, forms, or scroll containment, and use screenshots or route-level stories only as supporting evidence or for static layout checks.

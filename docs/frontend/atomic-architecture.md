@@ -1,6 +1,6 @@
 # Frontend Atomic Architecture
 
-This document explains how findmydoc structures shared UI according to atomic design. It is the single source of truth for where components live, how they are named, and how new UI should be introduced.
+This document is the single source of truth for findmydoc's shared UI Atomic Design structure, component placement, and naming.
 
 ## Directory Layout
 
@@ -69,7 +69,7 @@ Use them instead of deep relative paths. If you add a new layer directory, updat
 
 Work in small slices (one feature area per PR) to keep diffs reviewable.
 
-## Checklist for New UI
+## Component Placement Checklist
 
 - [ ] Decide the correct layer.
 - [ ] Create the component under that folder using PascalCase filenames.

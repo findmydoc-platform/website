@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { capturePageDraftSaveIntent } from '@/collections/Pages/hooks/pageDraftIntent'
 import { revalidatePage, revalidateDelete } from '@/collections/Pages/hooks/revalidatePage'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import type { PayloadRequest } from 'payload'
@@ -78,6 +79,30 @@ describe('Pages revalidation hooks', () => {
 
     expect(getPathCalls()).toEqual(['/'])
     expect(getTagCalls()).toEqual(['entity:pages:1', 'collection:pages', 'slug:pages:home', 'surface:sitemap:pages'])
+  })
+
+  it('does not invalidate public caches when a page draft is autosaved', () => {
+    const req = buildReq(false)
+    const previousDoc: PageDoc = { id: 1, _status: 'published', slug: 'about' }
+    const doc: PageDoc = { id: 1, _status: 'draft', slug: 'about' }
+
+    capturePageDraftSaveIntent({
+      args: { draft: true },
+      operation: 'update',
+      req,
+    } as Parameters<typeof capturePageDraftSaveIntent>[0])
+
+    const result = revalidatePage(
+      buildAfterChangeArgs({
+        doc,
+        previousDoc,
+        req,
+      }),
+    ) as PageDoc
+
+    expect(result).toBe(doc)
+    expect(getPathCalls()).toEqual([])
+    expect(getTagCalls()).toEqual([])
   })
 
   it('revalidates old and new paths when a published page slug changes', () => {

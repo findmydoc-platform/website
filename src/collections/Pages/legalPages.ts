@@ -14,6 +14,7 @@ import {
   getManagedLegalPageSpec,
   isManagedLegalPageSlug,
 } from '@/utilities/legalPages'
+import { isPageDraftSaveIntent } from './hooks/pageDraftIntent'
 
 type ManagedPageDoc = Pick<Page, 'id' | 'slug' | '_status' | 'deletedAt'>
 type RedirectDoc = Pick<Redirect, 'id' | 'from' | 'to'>
@@ -299,10 +300,11 @@ function resolveManagedLegalSpec(data: Record<string, unknown>, originalDoc?: Pa
   return getManagedLegalPageSpec(existingSlug ?? incomingSlug)
 }
 
-export const enforceManagedLegalPagesBeforeChange: CollectionBeforeChangeHook<Page> = async ({
+const enforceManagedLegalPagesBeforeChange: CollectionBeforeChangeHook<Page> = async ({
   data,
   operation,
   originalDoc,
+  req,
 }) => {
   const draft = { ...(data || {}) } as Record<string, unknown>
   const spec = resolveManagedLegalSpec(draft, originalDoc)
@@ -316,7 +318,7 @@ export const enforceManagedLegalPagesBeforeChange: CollectionBeforeChangeHook<Pa
       throw new Error(`${spec.title} must keep the slug "${spec.slug}"`)
     }
 
-    if (draft._status === 'draft') {
+    if (draft._status === 'draft' && !isPageDraftSaveIntent(req.context)) {
       throw new Error(`${spec.title} must remain published`)
     }
 
@@ -342,7 +344,7 @@ async function findPageForDeletion(req: PayloadRequest, id: number | string) {
   return doc as Pick<Page, 'slug' | 'title'> | null
 }
 
-export const preventManagedLegalPageDeletion: CollectionBeforeDeleteHook = async ({ id, req }) => {
+const preventManagedLegalPageDeletion: CollectionBeforeDeleteHook = async ({ id, req }) => {
   const page = await findPageForDeletion(req, id)
 
   if (!isManagedLegalPageSlug(page?.slug)) {
@@ -352,3 +354,8 @@ export const preventManagedLegalPageDeletion: CollectionBeforeDeleteHook = async
   const label = typeof page?.title === 'string' && page.title.length > 0 ? page.title : page.slug
   throw new Error(`${label} is a required legal page and cannot be deleted`)
 }
+
+export const managedLegalPageHooks = {
+  beforeChange: [enforceManagedLegalPagesBeforeChange],
+  beforeDelete: [preventManagedLegalPageDeletion],
+} as const

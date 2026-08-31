@@ -25,6 +25,11 @@ describe('Payload database configuration', () => {
     vi.resetModules()
     configMocks.postgresAdapter.mockClear()
     vi.stubEnv('DATABASE_URI', 'postgresql://runtime.example.test:6543/postgres')
+    vi.stubEnv('S3_ACCESS_KEY_ID', 'online-access-key')
+    vi.stubEnv('S3_BUCKET', 'findmydoc-preview-test')
+    vi.stubEnv('S3_ENDPOINT', 'https://s3.example.test')
+    vi.stubEnv('S3_REGION', 'eu-central-1')
+    vi.stubEnv('S3_SECRET_ACCESS_KEY', 'online-secret-key') // pragma: allowlist secret
     vi.stubEnv('VERCEL', '1')
     vi.stubEnv('VERCEL_ENV', 'preview')
   })

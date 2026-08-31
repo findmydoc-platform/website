@@ -38,6 +38,7 @@ const runHelper = (overrides: Partial<NodeJS.ProcessEnv>) => {
   const stubDirectory = createPnpmStub()
   const env: NodeJS.ProcessEnv = {
     ...process.env,
+    CI: '',
     DATABASE_DIRECT_URI: '',
     DATABASE_URI: '',
     DEPLOYMENT_ENV: '',

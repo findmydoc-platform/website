@@ -5,7 +5,7 @@
 | Name | Content |
 | --- | --- |
 | Author | Sebastian Schütze |
-| Version | 1.1 |
+| Version | 1.2 |
 | Date | 31.08.2026 |
 | Status | Approved |
 
@@ -17,7 +17,7 @@ therefore multiply database clients beyond the capacity of the Supabase Postgres
 performs little database work.
 
 Operational database work has a different shape. Payload migrations, backups, `pg_dump`, and focused database tools
-run as controlled processes and need a direct Postgres session rather than a serverless transaction pool.
+run as controlled processes and need a session-capable Postgres connection rather than a serverless transaction pool.
 
 ## Problem Description
 
@@ -25,7 +25,7 @@ A single connection mode for both workloads creates two failure modes:
 
 - Direct runtime pools multiply persistent database clients across Vercel instances and can exhaust the database
   connection limit.
-- Transaction pooling is unsuitable for operational tools that rely on session state or a stable direct connection.
+- Transaction pooling is unsuitable for operational tools that rely on session state or a stable connection.
 
 The runtime also needs a bounded failure contract. A database connection limit or acquisition timeout must not look
 like an authentication failure, must not trigger an automatic request replay, and must leave mutation input available
@@ -54,11 +54,12 @@ The Supabase session pooler reduces IPv4 and direct-connect constraints, but it 
 to each client session. It does not address the short-lived, horizontally scaled runtime workload as efficiently as
 transaction mode. Rejected for the runtime.
 
-### Transaction pooler for the runtime and direct connections for operations
+### Transaction pooler for the runtime and session-capable connections for operations
 
 The Vercel runtime uses the Supabase transaction pooler. Migrations, backups, and focused database tools use a separate
-direct connection. Chosen because it matches the connection lifetime of each workload and keeps operational sessions
-out of the runtime pool.
+session-capable connection. A direct connection is preferred when the operator network can reach it. The Supabase
+session pooler on port `5432` is the supported alternative for IPv4-only runners. Chosen because both options preserve
+the operational session while keeping it out of the runtime transaction pool.
 
 ### Replace Payload's Postgres adapter
 
@@ -76,8 +77,9 @@ not justified by this incident.
   `idleTimeoutMillis: 10000`. This pool policy applies to every Payload consumer, including REST, GraphQL, Local API,
   and the Admin UI.
 - `DATABASE_DIRECT_URI` is reserved for migrations, backups, and focused database tools. The guarded migration helper
-  maps it to `DATABASE_URI` only inside the child migration process and removes the direct variable from that child's
-  environment.
+  maps it to `DATABASE_URI` only inside the child migration process and removes the operations variable from that
+  child's environment. GitHub-hosted Preview releases use the Supabase session pooler on port `5432` because that
+  boundary cannot depend on direct IPv6 connectivity.
 - The helper marks that child with `PAYLOAD_DATABASE_OPERATION=migration`. This process-local marker is the only path
   that bypasses the Vercel transaction-pooler port guard; it is not a persistent deployment variable.
 - Local and local-Postgres CI commands may use `DATABASE_URI` when `DATABASE_DIRECT_URI` is absent. Hosted migration
@@ -123,19 +125,16 @@ credentials, SQL, request bodies, authorization data, or the original database e
 
 ### Release gate
 
-The repository now requires `DATABASE_DIRECT_URI` for hosted migration commands. The existing Vercel build invokes
-`pnpm run ci`, so preview and production deployments fail closed until approved release automation supplies the direct
-connection only to the migration process.
-
-The direct URL must not be added to the Vercel runtime environment or forwarded as a Vercel build variable. The
-smallest safe follow-up is an explicitly approved, environment-scoped GitHub migration step before deployment, followed
-by a build-only Vercel command. Preview validates that release wiring first; production remains a separate gate.
+The repository requires `DATABASE_DIRECT_URI` for hosted migration commands. Preview supplies it from the GitHub
+`Preview` environment while `vercel build --target preview` runs on the GitHub runner. The resulting artifact is
+deployed with `vercel deploy --prebuilt`, so the operations URL is not added to Vercel runtime variables, build
+variables, or command arguments. Production remains a separate operator gate.
 
 ## Consequences
 
 - **Positive:** Runtime connection pressure is bounded per Vercel instance and absorbed through the transaction
   pooler.
-- **Positive:** Operational tools keep direct-session behavior without exposing the direct URL to application runtime
+- **Positive:** Operational tools keep session behavior without exposing the operations URL to application runtime
   code.
 - **Positive:** Database overload is distinguishable from auth and application errors in API responses and telemetry.
 - **Negative:** `max: 4` is per function instance, not a global cap. Vercel concurrency can still multiply the total
@@ -143,7 +142,8 @@ by a build-only Vercel command. Preview validates that release wiring first; pro
 - **Negative:** Payload currently reserves a pool client for adapter connection monitoring, leaving fewer clients for
   concurrent queries within an instance.
 - **Negative:** Transaction mode prohibits named prepared statements and other session-dependent behavior.
-- **Negative:** Hosted releases remain blocked until the separately approved migration-before-deploy wiring exists.
+- **Negative:** Preview builds now consume GitHub runner time because the build must complete before Vercel receives the
+  prebuilt artifact.
 - **Neutral:** The three pool values are intentionally fixed in code for the first rollout and can be revisited with
   production evidence.
 

@@ -11,7 +11,8 @@ flowchart LR
     Dashboard["Clinic Dashboard BFF"] -->|"Bearer API request"| Runtime
     Runtime -->|"DATABASE_URI<br/>transaction pooler :6543<br/>pool max 4"| Pooler["Supabase transaction pooler"]
     Pooler --> Database[("Supabase Postgres")]
-    Operations["Migrations, backups,<br/>and database tools"] -->|"DATABASE_DIRECT_URI<br/>one controlled process"| Database
+    Operations["Migrations, backups,<br/>and database tools"] -->|"DATABASE_DIRECT_URI<br/>session-capable :5432"| SessionPooler["Supabase session pooler"]
+    SessionPooler --> Database
 ```
 
 The Website runtime is the only database boundary for Clinic Dashboard business data. The Dashboard has no database
@@ -22,7 +23,7 @@ connection of its own.
 | Variable | Owner | Allowed consumers | Hosted value shape | Prohibited use |
 | --- | --- | --- | --- | --- |
 | `DATABASE_URI` | Website runtime | Payload and Website runtime code | Supabase transaction pooler URL on port `6543` | Direct database URL in Vercel preview or production |
-| `DATABASE_DIRECT_URI` | Release and database operations | Guarded migrations, backups, and focused database tools | Direct Supabase Postgres URL | Website runtime, Vercel runtime variables, browser code, logs, or command arguments |
+| `DATABASE_DIRECT_URI` | Release and database operations | Guarded migrations, backups, and focused database tools | Session-capable Supabase URL, using the session pooler on port `5432` for GitHub-hosted runners | Website runtime, Vercel runtime variables, browser code, logs, or command arguments |
 
 Local development normally points `DATABASE_URI` at the Docker Postgres service. Local and local-Postgres CI migration
 commands may fall back to that value when `DATABASE_DIRECT_URI` is not set. The Vercel runtime guard rejects a
@@ -99,27 +100,25 @@ bash .codex/scripts/payload-migration.sh migrate:status
 
 The helper selects `DATABASE_DIRECT_URI` when present, maps it to `DATABASE_URI` only for the Payload child process, and
 removes `DATABASE_DIRECT_URI` from that child's environment. It also sets the process-local
-`PAYLOAD_DATABASE_OPERATION=migration` marker so Payload config accepts the direct port for that child. Never persist
+`PAYLOAD_DATABASE_OPERATION=migration` marker so Payload config accepts the operational connection for that child. Never persist
 this internal marker in Vercel or GitHub environment configuration. Without it, the Vercel runtime still rejects any
 `DATABASE_URI` that does not use port `6543`.
 
-Hosted commands fail before Payload starts if the direct variable is missing. Local and local-Postgres CI commands may
+Hosted commands fail before Payload starts if the operations variable is missing. Local and local-Postgres CI commands may
 use `DATABASE_URI` as a documented fallback.
 
 Backups and other native database tools must read `DATABASE_DIRECT_URI` through their approved secret boundary. Do not
 copy the value into files, shell arguments, logs, screenshots, tickets, or documentation.
 
-## Current Release Gate
+## Preview Release Flow
 
-The current Vercel build still runs `pnpm run ci`, which includes the guarded migration. The repository contains no
-approved mechanism that passes the direct connection to that isolated migration process. Preview deployment therefore
-remains intentionally blocked by the missing `DATABASE_DIRECT_URI` until the release workflow is approved and wired.
+The Preview workflow reads `DATABASE_DIRECT_URI` from the GitHub `Preview` environment. It runs
+`vercel build --target preview` on the GitHub runner, where `pnpm run ci` applies the guarded migration before building
+the application. The workflow then uploads only the prebuilt Vercel artifact.
 
-The smallest safe follow-up is:
+The Vercel Preview project supplies the transaction-pooled `DATABASE_URI` to the deployed runtime. The prebuilt deploy
+command receives neither database URL nor `PAYLOAD_SECRET` as a command argument. Production keeps its separate operator
+gate until the same release boundary is approved and configured there.
 
-1. Store `DATABASE_DIRECT_URI` as an environment-scoped GitHub Actions secret.
-2. Run the guarded migration on the GitHub runner before `vercel deploy`.
-3. Make the Vercel build command build-only and keep only the transaction-pooled `DATABASE_URI` in Vercel runtime.
-4. Validate the change in Preview; treat Production as a separate operator gate.
-
-Do not pass `DATABASE_DIRECT_URI` to Vercel as a runtime or build environment variable.
+The Preview operations secret uses the Supabase session pooler on port `5432`. Supabase recommends session mode when a
+runner needs an operational Postgres session but cannot rely on direct IPv6 connectivity.

@@ -9,7 +9,7 @@ Keep schema changes safe and repeatable across local development, preview, and p
 - All shared schema changes must be committed as Payload migrations in `src/migrations/**`.
 - `migrate:fresh` is allowed only for local disposable/test databases.
 - Preview and production move forward only through the guarded migration helper with `DATABASE_DIRECT_URI`.
-- Vercel runtime uses only the transaction-pooled `DATABASE_URI`; the direct URL must not enter Vercel runtime or build
+- Vercel runtime uses only the transaction-pooled `DATABASE_URI`; the operations URL must not enter Vercel runtime or build
   environments.
 - Long-running seed operations should run through the Developer Dashboard job queue, not request-bound runtime execution.
 
@@ -21,11 +21,10 @@ Keep schema changes safe and repeatable across local development, preview, and p
 2. **Pull Request build job (GitHub Actions)**
    The build job starts a local Postgres service and prepares a disposable build database before `pnpm build`. Migration status and schema/migration enforcement live in DB Quality.
 
-3. **Preview deployment (Vercel)**
-   `vercel.json` currently executes the deployment environment preflight and then `pnpm run ci`. The guarded migration
-   now fails closed when `DATABASE_DIRECT_URI` is absent. Preview remains blocked until an explicitly approved GitHub
-   migration-before-deploy step supplies the direct connection only to the migration process and Vercel becomes
-   build-only.
+3. **Preview deployment (GitHub Actions and Vercel)**
+   The GitHub `Preview` environment supplies `DATABASE_DIRECT_URI` while `vercel build --target preview` runs on the
+   GitHub runner. The build command applies the guarded migration and builds the application. GitHub then deploys only
+   the prebuilt artifact to Vercel. The operations URL is not forwarded as a Vercel runtime or build variable.
 
 4. **Production deployment (Vercel)**
    Production uses the same target architecture, but its release wiring and environment secret remain a separate
@@ -81,14 +80,14 @@ Application runtime and operational database work use separate connection modes:
   `6543`.
 - `DATABASE_DIRECT_URI` is available only to migrations, backups, and focused database tools.
 - The guarded helper sets `PAYLOAD_DATABASE_OPERATION=migration` only in its child process so Payload config accepts
-  the direct port. Do not persist this internal marker in GitHub or Vercel environment configuration.
-- Hosted migration commands stop before Payload starts when the direct variable is missing. Local and local-Postgres CI
+  the operations connection. Do not persist this internal marker in GitHub or Vercel environment configuration.
+- Hosted migration commands stop before Payload starts when the operations variable is missing. Local and local-Postgres CI
   commands may use `DATABASE_URI` as a documented fallback.
 - Never copy either URL into logs, command arguments, tickets, screenshots, or documentation.
 
 See [Database Runtime Connections](./engineering/database-runtime-connections.md) and
-[ADR 027](./adrs/027-adr-database-runtime-connection-modes.md) for the topology, failure contract, and pending Preview
-release gate.
+[ADR 027](./adrs/027-adr-database-runtime-connection-modes.md) for the topology, failure contract, and Preview release
+boundary.
 
 ## Incident/Emergency Rules
 

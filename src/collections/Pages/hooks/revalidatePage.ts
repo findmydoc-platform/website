@@ -4,9 +4,10 @@ import {
   executeCollectionChangeRevalidation,
   executeCollectionDeleteRevalidation,
 } from '@/hooks/cacheRevalidationAdapters'
+import { isPageDraftSaveIntent } from './pageDraftIntent'
 
 export const revalidatePage: CollectionAfterChangeHook = ({ doc, previousDoc, req: { payload, context } }) => {
-  if (!context.disableRevalidate) {
+  if (!context.disableRevalidate && !isPageDraftSaveIntent(context)) {
     executeCollectionChangeRevalidation({
       collection: 'pages',
       doc,

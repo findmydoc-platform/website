@@ -263,6 +263,62 @@ describe('Pages integration - lifecycle and access', () => {
     ).rejects.toThrow()
   })
 
+  it('keeps a managed legal page public while its draft is available for preview', async () => {
+    const slug = 'privacy-policy'
+    const publishedBefore = await findPageBySlug(payload, slug)
+
+    if (!publishedBefore) {
+      throw new Error('Expected the managed privacy policy page to be published')
+    }
+
+    const draftMarker = 'Managed legal page draft preview content.'
+
+    try {
+      await payload.update({
+        collection: 'pages',
+        id: publishedBefore.id,
+        data: {
+          layout: buildPageLayout(draftMarker),
+          _status: 'draft',
+        },
+        autosave: true,
+        draft: true,
+        overrideAccess: true,
+      })
+
+      const [publicPage, previewPage] = await Promise.all([
+        findPageBySlug(payload, slug),
+        findPageBySlug(payload, slug, true),
+      ])
+
+      expect(publicPage?.layout).toEqual(publishedBefore.layout)
+      expect(JSON.stringify(previewPage?.layout)).toContain(draftMarker)
+
+      await expect(
+        payload.update({
+          collection: 'pages',
+          id: publishedBefore.id,
+          data: { _status: 'draft' },
+          unpublishAllLocales: true,
+          overrideAccess: true,
+          context: { disableRevalidate: true },
+        }),
+      ).rejects.toThrow('Privacy Policy must remain published')
+    } finally {
+      await payload.update({
+        collection: 'pages',
+        id: publishedBefore.id,
+        data: {
+          layout: publishedBefore.layout,
+          _status: 'published',
+        },
+        draft: false,
+        overrideAccess: true,
+        context: { disableRevalidate: true },
+      })
+    }
+  })
+
   it('rejects missing title', async () => {
     await expect(
       payload.create({

@@ -11,8 +11,9 @@ import { slugField } from 'payload'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
+import { capturePageDraftSaveIntent } from './hooks/pageDraftIntent'
 import { revalidateDelete, revalidatePage } from './hooks/revalidatePage'
-import { enforceManagedLegalPagesBeforeChange, preventManagedLegalPageDeletion } from './legalPages'
+import { managedLegalPageHooks } from './legalPages'
 import {
   MetaDescriptionField,
   MetaImageField,
@@ -135,15 +136,16 @@ export const Pages: CollectionConfig<'pages'> = {
   ],
   hooks: {
     afterChange: [revalidatePage],
+    beforeOperation: [capturePageDraftSaveIntent],
     beforeChange: [
-      enforceManagedLegalPagesBeforeChange,
+      ...managedLegalPageHooks.beforeChange,
       beforeChangePublishedAt({
         statusKey: '_status',
         publishedAtKey: 'publishedAt',
         publishedValue: 'published',
       }),
     ],
-    beforeDelete: [preventManagedLegalPageDeletion],
+    beforeDelete: [...managedLegalPageHooks.beforeDelete],
     afterDelete: [revalidateDelete],
   },
   versions: {

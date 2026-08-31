@@ -30,7 +30,14 @@ fi
 
 case "${target}" in
   preview)
-    deploy_command=(pnpm dlx vercel@canary deploy --target preview)
+    if [[ -z "${DATABASE_DIRECT_URI:-}" ]]; then
+      echo "DATABASE_DIRECT_URI is required to build a Preview deployment." >&2
+      exit 1
+    fi
+
+    echo "Building Preview deployment in the GitHub runner..."
+    pnpm dlx vercel@canary build --target preview --yes
+    deploy_command=(pnpm dlx vercel@canary deploy --prebuilt --target preview --yes)
     label="Preview"
     ;;
   production)
@@ -43,11 +50,11 @@ case "${target}" in
     ;;
 esac
 
-if [[ -n "${PAYLOAD_SECRET:-}" ]]; then
+if [[ "${target}" == "production" && -n "${PAYLOAD_SECRET:-}" ]]; then
   deploy_command+=(--build-env "PAYLOAD_SECRET=${PAYLOAD_SECRET}" --env "PAYLOAD_SECRET=${PAYLOAD_SECRET}")
 fi
 
-if [[ -n "${DATABASE_URI:-}" ]]; then
+if [[ "${target}" == "production" && -n "${DATABASE_URI:-}" ]]; then
   deploy_command+=(--build-env "DATABASE_URI=${DATABASE_URI}" --env "DATABASE_URI=${DATABASE_URI}")
 fi
 

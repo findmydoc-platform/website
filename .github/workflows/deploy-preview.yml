@@ -33,6 +33,7 @@ concurrency:
 env:
   NODE_VERSION: 24.14.0
   PNPM_VERSION: 10.28.2
+  CLINIC_DASHBOARD_URL: https://clinics.preview.findmydoc.eu
   EXPECTED_VERCEL_PROJECT_ID: prj_J8dOCr0Ft97TlCAUnbpdHG29Vtgx
   PREVIEW_ALIAS_DOMAIN: preview.findmydoc.eu
   NEXT_TELEMETRY_DISABLED: 1
@@ -81,6 +82,7 @@ jobs:
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
         env:
+          DATABASE_DIRECT_URI: ${{ secrets.DATABASE_DIRECT_URI }}
           DATABASE_URI: ${{ secrets.DATABASE_URI }}
           EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}

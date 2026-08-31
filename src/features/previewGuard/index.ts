@@ -10,6 +10,7 @@ export const PREVIEW_GUARD_LOGIN_PATH = '/admin/login'
 export const PREVIEW_GUARD_FALLBACK_REDIRECT = '/admin'
 export const PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH = '/api/auth/register/patient'
 
+// Guest inquiry submission is intentionally unavailable in Preview; only authentication entry and recovery stay anonymous.
 const PREVIEW_GUARD_ANONYMOUS_API_PATHS = new Set(['/api/auth/callback', '/api/auth/login', '/api/auth/password/reset'])
 
 const PREVIEW_GUARD_EXEMPT_PATHS = new Set([

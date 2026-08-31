@@ -8,7 +8,9 @@ Keep schema changes safe and repeatable across local development, preview, and p
 
 - All shared schema changes must be committed as Payload migrations in `src/migrations/**`.
 - `migrate:fresh` is allowed only for local disposable/test databases.
-- Preview and production move forward only with `pnpm payload migrate`.
+- Preview and production move forward only through the guarded migration helper with `DATABASE_DIRECT_URI`.
+- Vercel runtime uses only the transaction-pooled `DATABASE_URI`; the direct URL must not enter Vercel runtime or build
+  environments.
 - Long-running seed operations should run through the Developer Dashboard job queue, not request-bound runtime execution.
 
 ## When Migrations Run
@@ -20,18 +22,21 @@ Keep schema changes safe and repeatable across local development, preview, and p
    The build job starts a local Postgres service and prepares a disposable build database before `pnpm build`. Migration status and schema/migration enforcement live in DB Quality.
 
 3. **Preview deployment (Vercel)**
-   Vercel executes the deployment environment preflight and then `pnpm run ci` via `vercel.json`.
-   The preflight validates `CLINIC_DASHBOARD_URL` before `pnpm run ci` runs migrations and the Next.js build.
+   `vercel.json` currently executes the deployment environment preflight and then `pnpm run ci`. The guarded migration
+   now fails closed when `DATABASE_DIRECT_URI` is absent. Preview remains blocked until an explicitly approved GitHub
+   migration-before-deploy step supplies the direct connection only to the migration process and Vercel becomes
+   build-only.
 
 4. **Production deployment (Vercel)**
-   Same as preview: the deployment environment preflight runs before migrations and the build.
+   Production uses the same target architecture, but its release wiring and environment secret remain a separate
+   operator gate after Preview validation.
 
 ## Developer Workflow for Schema Changes
 
 1. Change schema-related code (`src/collections/**`, `src/globals/**`, etc.).
 2. Generate migration: `pnpm payload migrate:create <name>`.
-3. Apply locally: `pnpm payload migrate`.
-4. Verify: `pnpm payload migrate:status`.
+3. Apply locally: `bash .codex/scripts/payload-migration.sh migrate`.
+4. Verify: `bash .codex/scripts/payload-migration.sh migrate:status`.
 5. Commit schema and migration files together.
 6. Open PR and wait for CI gates.
 
@@ -67,6 +72,23 @@ Production data checks:
 - The **DB Quality** workflow always runs a required gate job, while heavy migration checks run only for DB-relevant changes.
 - DB Quality applies migrations to a local CI Postgres instance and runs `pnpm payload migrate:status`.
 - The advisory migration risk scan warns on destructive or compatibility-sensitive SQL patterns; warnings do not block merges until the policy is intentionally tightened.
+
+## Database Connection Boundary
+
+Application runtime and operational database work use separate connection modes:
+
+- `DATABASE_URI` is the Website runtime connection. On Vercel it must use the Supabase transaction pooler on port
+  `6543`.
+- `DATABASE_DIRECT_URI` is available only to migrations, backups, and focused database tools.
+- The guarded helper sets `PAYLOAD_DATABASE_OPERATION=migration` only in its child process so Payload config accepts
+  the direct port. Do not persist this internal marker in GitHub or Vercel environment configuration.
+- Hosted migration commands stop before Payload starts when the direct variable is missing. Local and local-Postgres CI
+  commands may use `DATABASE_URI` as a documented fallback.
+- Never copy either URL into logs, command arguments, tickets, screenshots, or documentation.
+
+See [Database Runtime Connections](./engineering/database-runtime-connections.md) and
+[ADR 027](./adrs/027-adr-database-runtime-connection-modes.md) for the topology, failure contract, and pending Preview
+release gate.
 
 ## Incident/Emergency Rules
 

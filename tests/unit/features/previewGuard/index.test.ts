@@ -4,6 +4,7 @@ import { type User } from '@supabase/supabase-js'
 import {
   buildPreviewGuardLoginRedirect,
   buildPreviewGuardPatientLoginRedirect,
+  classifyPreviewGuardPagePath,
   isAllowedPreviewPatient,
   isAllowedPreviewUser,
   isNonProductionDeployment,
@@ -19,6 +20,34 @@ import {
 } from '@/features/previewGuard'
 
 describe('previewGuard feature', () => {
+  it('classifies known, dynamic, and invalid page paths before routing', () => {
+    const cases = [
+      ['/', 'platform'],
+      ['/about', 'platform'],
+      ['/admin/collections/clinics', 'platform'],
+      ['/posts/page/2', 'platform'],
+      ['/login/patient', 'exempt'],
+      ['/auth/password/reset/complete', 'exempt'],
+      ['/patient/favorites', 'patient'],
+      ['/patient/inquiries/inquiry-1', 'patient'],
+      ['/clinics', 'dynamic-content'],
+      ['/clinics/clinic-slug', 'dynamic-content'],
+      ['/posts/article-slug', 'dynamic-content'],
+      ['/nested/cms-page', 'dynamic-content'],
+      ['/.env.local', 'not-found'],
+      ['/.git/config', 'not-found'],
+      ['/dump.sql', 'not-found'],
+      ['/actuator/env', 'not-found'],
+      ['/api/exec', 'not-found'],
+      ['/auth/not-a-route', 'not-found'],
+      ['/patient/not-a-route', 'not-found'],
+    ] as const
+
+    for (const [pathname, expected] of cases) {
+      expect(classifyPreviewGuardPagePath(pathname), pathname).toBe(expected)
+    }
+  })
+
   it('uses VERCEL_ENV with highest priority', () => {
     const resolved = resolveDeploymentEnvironment({
       VERCEL_ENV: 'production',
@@ -68,6 +97,7 @@ describe('previewGuard feature', () => {
   it('recognizes preview guard exempt paths', () => {
     const exemptPaths = [
       '/admin/login',
+      '/admin/logout',
       '/auth/callback',
       '/auth/confirm',
       '/auth/invite/complete',
@@ -118,10 +148,12 @@ describe('previewGuard feature', () => {
     expect(isAllowedPreviewPatient(malformedUser)).toBe(false)
   })
 
-  it('recognizes only the patient route family', () => {
-    expect(isPreviewGuardPatientPath('/patient')).toBe(true)
-    expect(isPreviewGuardPatientPath('/patient/')).toBe(true)
+  it('recognizes only implemented patient pages', () => {
+    expect(isPreviewGuardPatientPath('/patient')).toBe(false)
     expect(isPreviewGuardPatientPath('/patient/favorites')).toBe(true)
+    expect(isPreviewGuardPatientPath('/patient/inquiries')).toBe(true)
+    expect(isPreviewGuardPatientPath('/patient/inquiries/inquiry-1')).toBe(true)
+    expect(isPreviewGuardPatientPath('/patient/not-a-route')).toBe(false)
     expect(isPreviewGuardPatientPath('/patients')).toBe(false)
     expect(isPreviewGuardPatientPath('/patient-support')).toBe(false)
   })

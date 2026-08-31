@@ -64,6 +64,39 @@ describe('submitFormData', () => {
     })
   })
 
+  it('uses the incoming origin and forwards only request authentication to the internal API', async () => {
+    process.env.NEXT_PUBLIC_SERVER_URL = 'https://configured.example.com'
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ id: 'submission-preview' }),
+    })
+
+    await submitFormData({
+      formId: 'contact-form-id',
+      requestContext: {
+        origin: 'https://generated-preview.vercel.app',
+        headers: {
+          authorization: 'Bearer verified-token',
+          cookie: 'sb-project-auth-token=verified-session',
+        },
+      },
+      values: { name: 'Jane Doe' },
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith('https://generated-preview.vercel.app/api/form-submissions', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer verified-token',
+        'Content-Type': 'application/json',
+        Cookie: 'sb-project-auth-token=verified-session',
+      },
+      body: JSON.stringify({
+        form: 'contact-form-id',
+        submissionData: [{ field: 'name', value: 'Jane Doe' }],
+      }),
+    })
+  })
+
   it('should transform values to string format and collapse nullish values', async () => {
     const mockResponse = {
       ok: true,

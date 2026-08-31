@@ -80,6 +80,7 @@ Logger-level redaction is configured centrally in [src/utilities/logging/payload
 - `storage.media.upload_failed`
 - `telemetry.posthog.*`
 - `api.formBridge.submit.failed`
+- `database.runtime.connection_unavailable`
 
 ## Reading Logs on Vercel
 
@@ -91,8 +92,13 @@ Recommended filters:
 - `event:auth.supabase.admin.client_init_failed`
 - `event:storage.media.upload_failed`
 - `event:api.formBridge.submit.failed`
+- `event:database.runtime.connection_unavailable`
 
 If an upload is rejected by Vercel before the app receives the request, Payload cannot log that failure. Those cases must be diagnosed from Vercel request/runtime logs instead of application logs.
+
+Database availability events include only a sanitized error plus `databaseFailureKind`, `databaseMode`, and `phase`.
+They must never include the original database message or connection URL. See
+[Database Runtime Connections](./engineering/database-runtime-connections.md) for the HTTP and telemetry contract.
 
 For the flow-level operating map, escalation rules, and privacy boundaries, see [Monitoring and Error Logic](./monitoring-and-error-logic.md).
 

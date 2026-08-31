@@ -142,23 +142,27 @@ PostHog can enable a temporary public landing mode through the server-side featu
 - Platform sessions (`app_metadata.user_type === "platform"`) keep normal access
 
 Priority behavior:
-- Temporary Landing Mode takes precedence over normal preview access behavior for non-platform sessions.
-- Preview Guard is evaluated through the separate PostHog flag `preview-guard-enabled`.
-- When both flags are active, public legal/contact exemptions stay reachable while admin/auth/login/register exemptions remain subject to Preview Guard unless they are exact Preview Guard login, recovery, or invitation routes.
-- While Preview Guard is enabled, patient creation is staff-managed through Payload Admin. Patient login, reset, invitation completion, and `/patient/**` remain available for patient-side QA.
+- Preview Guard takes precedence when both controls are active. Its closed anonymous allowlist remains unchanged.
+- Temporary Landing Mode keeps the behavior above when Preview Guard is inactive.
+- While Preview Guard is enabled, patient creation is staff-managed through Payload Admin. Patient login, reset, invitation completion, favorites, inquiries, and inquiry details remain available for patient-side QA.
 
 ## Preview Access Policy
 
-Preview deployments use runtime policy for auth recovery and search-index protection, and PostHog for the optional preview access guard.
+Preview deployments use runtime policy for auth recovery, search-index protection, and the application access guard.
 
 - Runtime resolves to the boolean preview signal from `VERCEL_ENV` first, then `DEPLOYMENT_ENV`; request hostnames are not preview or production signals
 - `NODE_ENV` is not used as a preview or production deployment signal
 - Non-Vercel preview/production runtimes must set `DEPLOYMENT_ENV` explicitly
-- Preview Guard login redirects are controlled by the server-side PostHog feature flag `preview-guard-enabled`
-- PostHog is the only activation source; the code does not special-case production, preview, or local runtime for this flag
-- Missing PostHog configuration or unavailable local evaluation keeps the flag at the code default `false`
+- Every runtime that resolves to Preview activates Preview Guard, independent of hostname and PostHog evaluation
+- This includes Vercel-generated branch, deployment, and alias hosts with `VERCEL_ENV=preview`
+- Local development remains open even if PostHog returns `preview-guard-enabled`
+- The PostHog flag can additionally activate Preview Guard in a non-local, non-Preview runtime
 - Guard flag checks use a server-side site actor, not the visitor's PostHog cookie identity
-- Preview runtime still enables preview-specific admin recovery and search-index blocking
+- Exact login paths, both logout paths (`/logout` and `/admin/logout`), auth callbacks, invitation and password-reset paths, and required static assets remain reachable without a session
+- Known platform pages redirect to `/admin/login`; known patient pages redirect to `/login/patient`
+- Anonymous dynamic CMS paths and obvious scanner paths return `404` without a Payload lookup
+- Preview APIs use a closed anonymous allowlist for login, callback, and password reset; other APIs require a server-validated Supabase session or Bearer token and return JSON `401` or `503` without an HTML redirect
+- `/api/mcp` and `/api/clinic-dashboard/**` retain their endpoint-owned machine authentication, while Form Bridge forwards request credentials only to validated same-origin Payload calls
 
 Implementation and usage:
 - [Setup: Run Local Dev in Preview Runtime](./setup.md#run-local-dev-in-preview-runtime)

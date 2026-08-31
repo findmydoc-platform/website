@@ -24,7 +24,23 @@ export class FormSubmissionError extends Error {
   }
 }
 
-export async function submitFormData({ formId, values }: { formId: string; values: Record<string, unknown> }) {
+type SameOriginRequestContext = {
+  headers: {
+    authorization?: string
+    cookie?: string
+  }
+  origin: string
+}
+
+export async function submitFormData({
+  formId,
+  requestContext,
+  values,
+}: {
+  formId: string
+  requestContext?: SameOriginRequestContext
+  values: Record<string, unknown>
+}) {
   // Transform the flat key-value pairs into Payload's expected format
   const submissionData = Object.entries(values).map(([field, value]) => ({
     field,
@@ -32,10 +48,16 @@ export async function submitFormData({ formId, values }: { formId: string; value
   }))
 
   const serverUrl = (process.env.NEXT_PUBLIC_SERVER_URL || '').replace(/\/+$/, '')
+  const requestUrl = requestContext
+    ? new URL('/api/form-submissions', requestContext.origin).toString()
+    : `${serverUrl}/api/form-submissions`
+  const requestHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (requestContext?.headers.authorization) requestHeaders.Authorization = requestContext.headers.authorization
+  if (requestContext?.headers.cookie) requestHeaders.Cookie = requestContext.headers.cookie
 
-  const res = await fetch(`${serverUrl}/api/form-submissions`, {
+  const res = await fetch(requestUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: requestHeaders,
     body: JSON.stringify({
       form: formId,
       submissionData,

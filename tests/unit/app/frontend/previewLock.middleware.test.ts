@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server'
 import { NextRequest } from 'next/server'
 
 import {
@@ -92,23 +93,28 @@ describe('preview lock proxy', () => {
   })
 
   afterEach(() => {
+    vi.unstubAllEnvs()
     process.env = originalEnv
   })
 
-  it('allows unauthenticated preview users when PostHog guard flags are disabled', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
-    const request = new NextRequest('https://preview.findmydoc.eu/posts/example?foo=bar')
+  it('guards generated Vercel Preview hosts without relying on the PostHog flag', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    const request = new NextRequest('https://findmydoc-portal-git-feature-example.vercel.app/about?foo=bar')
 
     const response = await proxy(request)
+    const location = response.headers.get('location')
 
-    expect(response.status).toBe(200)
-    expect(response.headers.get('location')).toBeNull()
-    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBeNull()
-    expect(mocks.createServerClient).not.toHaveBeenCalled()
+    expect(response.status).toBe(307)
+    expect(location).toContain('/admin/login')
+    expect(location).toContain('message=preview-login-required')
+    expect(location).toContain('next=%2Fabout%3Ffoo%3Dbar')
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    expect(mocks.getUser).toHaveBeenCalledOnce()
+    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
   })
 
   it('passes host and path context into PostHog flag evaluation', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.VERCEL_ENV = 'production'
     const request = new NextRequest('https://preview.findmydoc.eu/posts/example/?foo=bar')
 
     await proxy(request)
@@ -129,7 +135,7 @@ describe('preview lock proxy', () => {
     )
   })
 
-  it('logs public discovery crawler requests before guard decisions', async () => {
+  it('logs public discovery crawlers before leaving access to the route contract', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
     const request = new NextRequest('https://preview.findmydoc.eu/llms.txt', {
@@ -138,15 +144,18 @@ describe('preview lock proxy', () => {
       },
     })
 
-    await proxy(request)
+    const response = await proxy(request)
 
+    expect(response.status).toBe(404)
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     expect(mocks.logCrawlerRequest).toHaveBeenCalledWith(request)
-    expect(mocks.evaluatePostHogFlags).toHaveBeenCalled()
+    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 
-  it('does not set preview lock headers on exempt routes while guard flags are disabled', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
-    const request = new NextRequest('https://preview.findmydoc.eu/admin/login')
+  it('does not set preview lock headers on exempt routes in local development when flags are disabled', async () => {
+    const request = new NextRequest('http://localhost:3000/admin/login')
 
     const response = await proxy(request)
 
@@ -155,22 +164,20 @@ describe('preview lock proxy', () => {
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBeNull()
   })
 
-  it('does not consult Supabase while guard flags are disabled', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+  it('does not consult Supabase in local development while guard flags are disabled', async () => {
     mocks.getUser.mockResolvedValue({
       data: { user: { id: 'user-1', app_metadata: { user_type: 'clinic' } } },
       error: null,
     })
 
-    const request = new NextRequest('https://preview.findmydoc.eu/posts/example')
+    const request = new NextRequest('http://localhost:3000/posts/example')
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
     expect(mocks.getUser).not.toHaveBeenCalled()
   })
 
-  it('leaves guards inactive when PostHog evaluation falls back to code defaults', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+  it('leaves guards inactive in local development when PostHog evaluation falls back to code defaults', async () => {
     mocks.evaluatePostHogFlags.mockResolvedValue({
       getPayload: vi.fn((_key: GuardFlagKey, fallback: unknown) => fallback),
       getVariant: vi.fn((_key: GuardFlagKey, fallback: string) => fallback),
@@ -178,7 +185,7 @@ describe('preview lock proxy', () => {
       keys: ['temporary-landing-mode', 'preview-guard-enabled'],
     })
 
-    const request = new NextRequest('https://preview.findmydoc.eu/posts/example')
+    const request = new NextRequest('http://localhost:3000/posts/example')
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
@@ -191,7 +198,7 @@ describe('preview lock proxy', () => {
     process.env.VERCEL_ENV = 'production'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
-    const request = new NextRequest('https://findmydoc.eu/posts/example')
+    const request = new NextRequest('https://findmydoc.eu/about')
     const response = await proxy(request)
     const location = response.headers.get('location')
 
@@ -201,18 +208,29 @@ describe('preview lock proxy', () => {
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
+  it('keeps local development open even when PostHog returns the guard flag', async () => {
+    mockGuardFlags({ 'preview-guard-enabled': true })
+
+    const response = await proxy(new NextRequest('http://localhost:3000/about'))
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBeNull()
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
   it('redirects unauthenticated users when preview guard flag is enabled in preview runtime', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
-    const request = new NextRequest('https://preview.findmydoc.eu/posts/example?foo=bar')
+    const request = new NextRequest('https://preview.findmydoc.eu/about?foo=bar')
     const response = await proxy(request)
     const location = response.headers.get('location')
 
     expect(response.status).toBe(307)
     expect(location).toContain('/admin/login')
     expect(location).toContain('message=preview-login-required')
-    expect(location).toContain('next=%2Fposts%2Fexample%3Ffoo%3Dbar')
+    expect(location).toContain('next=%2Fabout%3Ffoo%3Dbar')
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
@@ -239,6 +257,7 @@ describe('preview lock proxy', () => {
       '/auth/confirm?type=recovery',
       '/auth/password/reset/complete',
       '/auth/invite/complete',
+      '/admin/logout',
       '/logout',
     ]
 
@@ -266,6 +285,7 @@ describe('preview lock proxy', () => {
   })
 
   it('forwards the active guard state to staff opening patient registration', async () => {
+    process.env.VERCEL_ENV = 'production'
     mockGuardFlags({ 'preview-guard-enabled': true })
     mocks.getUser.mockResolvedValue({
       data: { user: { id: 'platform-1', app_metadata: { user_type: 'platform' } } },
@@ -344,6 +364,79 @@ describe('preview lock proxy', () => {
     expect(createFirstUserResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
+  it('returns 404 for scanner paths before flag evaluation or authentication', async () => {
+    process.env.VERCEL_ENV = 'preview'
+
+    for (const path of ['/.env.local', '/.git/config', '/dump.sql', '/actuator/env']) {
+      const response = await proxy(new NextRequest(`https://preview-deployment.vercel.app${path}`))
+
+      expect(response.status, path).toBe(404)
+      expect(response.headers.get('location'), path).toBeNull()
+      expect(response.headers.get(SEARCH_ROBOTS_HEADER), path).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    }
+
+    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 for anonymous dynamic CMS paths without starting authentication', async () => {
+    process.env.VERCEL_ENV = 'preview'
+
+    for (const path of ['/not-a-real-page', '/clinics/not-known', '/posts/not-known']) {
+      const response = await proxy(new NextRequest(`https://preview-deployment.vercel.app${path}`))
+
+      expect(response.status, path).toBe(404)
+      expect(response.headers.get('location'), path).toBeNull()
+      expect(response.headers.get(SEARCH_ROBOTS_HEADER), path).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    }
+
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
+  it('does not let CMS paths that share an internal prefix bypass the guard', async () => {
+    process.env.VERCEL_ENV = 'preview'
+
+    for (const path of ['/apiary', '/_nextish']) {
+      const response = await proxy(new NextRequest(`https://preview-deployment.vercel.app${path}`))
+
+      expect(response.status, path).toBe(404)
+      expect(response.headers.get('location'), path).toBeNull()
+    }
+  })
+
+  it('allows an authenticated platform user to open a valid dynamic CMS deep link', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValue({
+      data: { user: { id: 'platform-2', app_metadata: { user_type: 'platform' } } },
+      error: null,
+    })
+
+    const response = await proxy(
+      new NextRequest('https://preview-deployment.vercel.app/nested/cms-page', {
+        headers: { cookie: 'sb-synthetic-auth-token=platform-session' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
+    expect(mocks.getUser).toHaveBeenCalledOnce()
+  })
+
+  it('keeps dynamic content open outside guarded runtimes', async () => {
+    const localResponse = await proxy(new NextRequest('http://localhost:3000/nested/cms-page'))
+
+    vi.stubEnv('NODE_ENV', 'production')
+    process.env.VERCEL_ENV = 'production'
+    const productionResponse = await proxy(new NextRequest('https://findmydoc.eu/nested/cms-page'))
+
+    expect(localResponse.status).toBe(200)
+    expect(localResponse.headers.get('location')).toBeNull()
+    expect(productionResponse.status).toBe(200)
+    expect(productionResponse.headers.get('location')).toBeNull()
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
   it('marks root requests for temporary landing mode', async () => {
     mockGuardFlags({ 'temporary-landing-mode': true })
     const request = new NextRequest('https://findmydoc.eu/')
@@ -371,14 +464,7 @@ describe('preview lock proxy', () => {
     mockGuardFlags({ 'temporary-landing-mode': true })
 
     const allowedPaths = ['/posts', '/posts/', '/posts/example', '/posts/page/2']
-    const blockedPaths = [
-      '/posts-admin',
-      '/postscript',
-      '/posts-sitemap.xml',
-      '/posts/foo/bar',
-      '/posts/page/0',
-      '/posts/page/2/extra',
-    ]
+    const blockedPaths = ['/posts-admin', '/postscript', '/posts/foo/bar', '/posts/page/0', '/posts/page/2/extra']
 
     for (const path of allowedPaths) {
       const response = await proxy(new NextRequest(`https://findmydoc.eu${path}`))
@@ -477,7 +563,7 @@ describe('preview lock proxy', () => {
     expect(contactResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
-  it('keeps public temporary landing exempt pages reachable when preview guard is also active', async () => {
+  it('keeps the Preview Guard closed allowlist when temporary landing mode is also active', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true, 'temporary-landing-mode': true })
 
@@ -489,17 +575,17 @@ describe('preview lock proxy', () => {
     const imprintResponse = await proxy(imprintRequest)
     const contactResponse = await proxy(contactRequest)
 
-    expect(privacyResponse.status).toBe(200)
-    expect(imprintResponse.status).toBe(200)
-    expect(contactResponse.status).toBe(200)
+    expect(privacyResponse.status).toBe(404)
+    expect(imprintResponse.status).toBe(404)
+    expect(contactResponse.status).toBe(307)
 
     expect(privacyResponse.headers.get('location')).toBeNull()
     expect(imprintResponse.headers.get('location')).toBeNull()
-    expect(contactResponse.headers.get('location')).toBeNull()
+    expect(contactResponse.headers.get('location')).toContain('/admin/login')
 
-    expect(privacyResponse.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
-    expect(imprintResponse.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
-    expect(contactResponse.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
+    expect(privacyResponse.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBeNull()
+    expect(imprintResponse.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBeNull()
+    expect(contactResponse.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBeNull()
 
     expect(privacyResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     expect(imprintResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
@@ -520,18 +606,18 @@ describe('preview lock proxy', () => {
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
-  it('prioritizes temporary landing mode over preview guard redirects for public pages', async () => {
+  it('keeps anonymous dynamic content hidden when both guards are active', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true, 'temporary-landing-mode': true })
 
     const request = new NextRequest('https://preview.findmydoc.eu/posts/example')
     const response = await proxy(request)
 
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(404)
     expect(response.headers.get('location')).toBeNull()
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
-    expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
-    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+    expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBeNull()
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBeNull()
   })
 
   it('keeps preview guard restrictions on temporary landing exempt admin routes', async () => {
@@ -571,18 +657,253 @@ describe('preview lock proxy', () => {
     expect(authenticatedPatientResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
-  it('bypasses API routes before evaluating PostHog flags', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
-    const request = new NextRequest('https://preview.findmydoc.eu/api/forms/contact')
+  it('returns JSON 401 for anonymous public Payload APIs in Preview', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    const request = new NextRequest('https://preview.findmydoc.eu/api/forms?limit=1')
     const response = await proxy(request)
 
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(401)
+    await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' })
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(response.headers.get('vary')).toBe('Authorization, Cookie')
     expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
     expect(mocks.createServerClient).not.toHaveBeenCalled()
     expect(mocks.logCrawlerRequest).not.toHaveBeenCalled()
   })
 
+  it('rejects a forged Supabase Bearer token before Payload can handle the API request', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: { name: 'AuthApiError', status: 401 },
+    })
+
+    const response = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/api/pages', {
+        headers: { authorization: 'Bearer forged-token' },
+      }),
+    )
+
+    expect(response.status).toBe(401)
+    await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' })
+    expect(response.headers.get('location')).toBeNull()
+    expect(mocks.getUser).toHaveBeenCalledWith('forged-token')
+  })
+
+  it('passes a Supabase-authenticated Bearer request to endpoint authorization', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValueOnce({
+      data: {
+        user: { id: 'platform-api-1', email: 'platform@example.com', app_metadata: { user_type: 'platform' } },
+      },
+      error: null,
+    })
+
+    const response = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/api/pages', {
+        headers: { authorization: 'Bearer verified-supabase-token' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
+    expect(mocks.getUser).toHaveBeenCalledWith('verified-supabase-token')
+  })
+
+  it('passes a Supabase-authenticated platform cookie to endpoint authorization', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValueOnce({
+      data: {
+        user: { id: 'platform-api-2', email: 'platform2@example.com', app_metadata: { user_type: 'platform' } },
+      },
+      error: null,
+    })
+
+    const response = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/api/graphql', {
+        headers: { cookie: 'sb-synthetic-auth-token=platform-session' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
+    expect(mocks.getUser).toHaveBeenCalledWith()
+  })
+
+  it('rejects an authenticated Supabase principal outside known application user types', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValueOnce({
+      data: {
+        user: { id: 'unknown-api-user', email: 'unknown@example.com', app_metadata: { user_type: 'external' } },
+      },
+      error: null,
+    })
+
+    const response = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/api/pages', {
+        headers: { authorization: 'Bearer valid-but-unknown-user-token' },
+      }),
+    )
+
+    expect(response.status).toBe(401)
+    await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' })
+  })
+
+  it('returns JSON 503 when Supabase identifies a retryable authentication outage', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: { name: 'AuthRetryableFetchError', status: 503 },
+    })
+
+    const response = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/api/pages', {
+        headers: { authorization: 'Bearer temporarily-unverifiable-token' },
+      }),
+    )
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({ error: 'Authentication service unavailable' })
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(response.headers.get('vary')).toBe('Authorization, Cookie')
+  })
+
+  it('treats rate limits and network-shaped Supabase failures as temporary', async () => {
+    process.env.VERCEL_ENV = 'preview'
+
+    for (const error of [{ status: 0 }, { status: 429 }, { message: 'Network error while validating session' }]) {
+      mocks.getUser.mockResolvedValueOnce({ data: { user: null }, error })
+      const response = await proxy(
+        new NextRequest('https://preview.findmydoc.eu/api/pages', {
+          headers: { authorization: 'Bearer temporarily-unverifiable-token' },
+        }),
+      )
+
+      expect(response.status, JSON.stringify(error)).toBe(503)
+    }
+  })
+
+  it('keeps the exact anonymous API allowlist reachable in Preview', async () => {
+    process.env.VERCEL_ENV = 'preview'
+
+    for (const path of ['/api/auth/login', '/api/auth/callback', '/api/auth/password/reset']) {
+      const response = await proxy(new NextRequest(`https://preview.findmydoc.eu${path}`))
+
+      expect(response.status, path).toBe(200)
+      expect(response.headers.get('location'), path).toBeNull()
+    }
+
+    const nearMatch = await proxy(new NextRequest('https://preview.findmydoc.eu/api/auth/login/help'))
+    expect(nearMatch.status).toBe(401)
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
+  it('delegates explicit machine APIs to their own authentication contracts', async () => {
+    process.env.VERCEL_ENV = 'preview'
+
+    for (const path of ['/api/mcp', '/api/clinic-dashboard/reviews']) {
+      const response = await proxy(
+        new NextRequest(`https://preview.findmydoc.eu${path}`, {
+          headers: { authorization: 'Bearer endpoint-owned-machine-token' },
+        }),
+      )
+
+      expect(response.status, path).toBe(200)
+      expect(response.headers.get('location'), path).toBeNull()
+      expect(response.headers.get('x-middleware-request-authorization'), path).toBe(
+        'Bearer endpoint-owned-machine-token',
+      )
+    }
+
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
+  it('passes API preflight requests through without authentication', async () => {
+    process.env.VERCEL_ENV = 'preview'
+
+    const response = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/api/forms', {
+        method: 'OPTIONS',
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
+  it('leaves APIs unchanged outside Vercel Preview deployments', async () => {
+    const localResponse = await proxy(new NextRequest('http://localhost:3000/api/forms'))
+
+    process.env.VERCEL_ENV = 'production'
+    mockGuardFlags({ 'preview-guard-enabled': true })
+    const productionResponse = await proxy(new NextRequest('https://findmydoc.eu/api/forms'))
+
+    expect(localResponse.status).toBe(200)
+    expect(productionResponse.status).toBe(200)
+    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
+  it('keeps PostHog-controlled patient registration locking outside Vercel Preview', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    process.env.VERCEL_ENV = 'production'
+    mockGuardFlags({ 'preview-guard-enabled': true })
+
+    const response = await proxy(
+      new NextRequest(`https://findmydoc.eu${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}`, {
+        method: 'POST',
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
+    expect(mocks.evaluatePostHogFlags).toHaveBeenCalledOnce()
+  })
+
+  it('rejects scanner API paths before forwarding authenticated APIs to endpoint authorization', async () => {
+    process.env.VERCEL_ENV = 'preview'
+
+    const scannerResponse = await proxy(
+      new NextRequest('https://preview-deployment.vercel.app/api/exec', { method: 'OPTIONS' }),
+    )
+    const clinicDashboardResponse = await proxy(
+      new NextRequest('https://preview-deployment.vercel.app/api/clinic-dashboard/reviews', {
+        headers: { authorization: 'Bearer clinic-dashboard-token' },
+      }),
+    )
+
+    expect(scannerResponse.status).toBe(404)
+    expect(scannerResponse.headers.get('location')).toBeNull()
+    expect(clinicDashboardResponse.status).toBe(200)
+    expect(clinicDashboardResponse.headers.get('location')).toBeNull()
+    expect(config.matcher.join(' ')).toContain('/api/:path*')
+    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
+  it('forwards non-page route handlers without an HTML login redirect', async () => {
+    process.env.VERCEL_ENV = 'preview'
+
+    const paths = ['/next/preview?previewSecret=invalid', '/next/exit-preview']
+
+    for (const path of paths) {
+      const response = await proxy(new NextRequest(`https://preview-deployment.vercel.app${path}`))
+
+      expect(response.status, path).toBe(200)
+      expect(response.headers.get('location'), path).toBeNull()
+    }
+
+    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
   it('forwards the active Preview Guard state to the patient registration API', async () => {
+    process.env.VERCEL_ENV = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
     const request = new NextRequest(`https://preview.findmydoc.eu${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}`, {
       method: 'POST',
@@ -592,7 +913,7 @@ describe('preview lock proxy', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
-    expect(mocks.evaluatePostHogFlags).toHaveBeenCalledTimes(1)
+    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 
@@ -621,42 +942,61 @@ describe('preview lock proxy', () => {
 
     const faviconResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/favicon.ico'))
     const imageResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/images/holding-page/E105NVPR.jpg'))
+    const cssBackgroundResponse = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/images/blog-header-clinic-reception.webp'),
+    )
+    const clinicMapResponse = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/images/clinic-detail/clinic-location-placeholder-map.webp'),
+    )
+    const registrationPanelResponse = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/images/clinic-registration-funnel-panel.webp'),
+    )
 
     expect(faviconResponse.status).toBe(200)
     expect(imageResponse.status).toBe(200)
+    expect(cssBackgroundResponse.status).toBe(200)
+    expect(clinicMapResponse.status).toBe(200)
+    expect(registrationPanelResponse.status).toBe(200)
     expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 
-  it('protects CMS-like image and story paths instead of treating whole prefixes as public assets', async () => {
+  it('returns 404 for anonymous CMS-like image and story paths instead of treating prefixes as assets', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
     const imagePageResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/images/clinic-page'))
     const storyPageResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/stories/case-study'))
 
-    expect(imagePageResponse.status).toBe(307)
-    expect(storyPageResponse.status).toBe(307)
-    expect(mocks.evaluatePostHogFlags).toHaveBeenCalledTimes(2)
+    expect(imagePageResponse.status).toBe(404)
+    expect(storyPageResponse.status).toBe(404)
+    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
   })
 
-  it('protects dotted CMS page paths instead of treating every dot path as a public file', async () => {
+  it('returns 404 for anonymous dotted CMS page paths instead of treating them as files', async () => {
     process.env.DEPLOYMENT_ENV = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
     const request = new NextRequest('https://preview.findmydoc.eu/about.v2')
     const response = await proxy(request)
-    const location = response.headers.get('location')
-
-    expect(response.status).toBe(307)
-    expect(location).toContain('/admin/login')
-    expect(location).toContain('message=preview-login-required')
-    expect(mocks.evaluatePostHogFlags).toHaveBeenCalled()
+    expect(response.status).toBe(404)
+    expect(response.headers.get('location')).toBeNull()
+    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
   })
 
-  it('matcher excludes API and Next internals without excluding all dotted content paths', () => {
-    expect(config.matcher).toContain(PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH)
-    expect(config.matcher).toContain('/((?!api|_next/static|_next/image|_next/data).*)')
+  it('matcher includes API inspection while excluding Next internals and dotted content paths', () => {
+    expect(config.matcher).toContain('/api/:path*')
+    expect(config.matcher).toContain('/((?!api(?:/|$)|_next/static|_next/image|_next/data).*)')
     expect(config.matcher.join(' ')).not.toContain('.*\\..*')
+  })
+
+  it('matches API routes and CMS slugs that only share an internal route prefix', () => {
+    for (const url of ['/api', '/api/clinics', '/apiary', '/apiary/clinic', '/_nextish']) {
+      expect(unstable_doesMiddlewareMatch({ config, url }), url).toBe(true)
+    }
+
+    for (const url of ['/_next/static/chunks/app.js', '/_next/image']) {
+      expect(unstable_doesMiddlewareMatch({ config, url }), url).toBe(false)
+    }
   })
 })

@@ -38,6 +38,34 @@ describe('getForm', () => {
     expect(result).toEqual(form)
   })
 
+  it('uses the incoming origin and forwards only request authentication to the internal API', async () => {
+    process.env.NEXT_PUBLIC_SERVER_URL = 'https://configured.example.com'
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({ docs: [] }),
+    })
+
+    await getForm('public-contact', {
+      origin: 'https://generated-preview.vercel.app',
+      headers: {
+        authorization: 'Bearer verified-token',
+        cookie: 'sb-project-auth-token=verified-session',
+      },
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://generated-preview.vercel.app/api/forms?where%5Bslug%5D%5Bequals%5D=public-contact&limit=1&depth=0',
+      {
+        cache: 'no-store',
+        headers: {
+          Authorization: 'Bearer verified-token',
+          Cookie: 'sb-project-auth-token=verified-session',
+        },
+      },
+    )
+  })
+
   it('uses localhost fallback when NEXT_PUBLIC_SERVER_URL is empty', async () => {
     process.env.NEXT_PUBLIC_SERVER_URL = ''
 

@@ -94,6 +94,40 @@ const hasExpectedRefererPath = (request: NextRequest, expectedPath: string): boo
 const stripInternalFormBridgeFields = (values: FormBridgePayload): FormBridgePayload =>
   Object.fromEntries(Object.entries(values).filter(([field]) => !internalFormBridgeFieldSet.has(field)))
 
+const readConfiguredHostname = (value: string | undefined): string | undefined => {
+  if (!value) return undefined
+
+  try {
+    const url = new URL(value.includes('://') ? value : `https://${value}`)
+    return url.hostname.toLowerCase()
+  } catch {
+    return undefined
+  }
+}
+
+const isTrustedInternalRequestOrigin = (url: URL): boolean => {
+  const hostname = url.hostname.toLowerCase()
+  if (hostname === 'localhost' || hostname === 'findmydoc.eu' || hostname.endsWith('.findmydoc.eu')) return true
+
+  return [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]
+    .map(readConfiguredHostname)
+    .some((configuredHostname) => configuredHostname === hostname)
+}
+
+const getInternalRequestContext = (request: NextRequest) => {
+  if (!isTrustedInternalRequestOrigin(request.nextUrl)) return null
+
+  const authorization = request.headers.get('authorization')
+  const cookie = request.headers.get('cookie')
+  return {
+    headers: {
+      ...(authorization ? { authorization } : {}),
+      ...(cookie ? { cookie } : {}),
+    },
+    origin: request.nextUrl.origin,
+  }
+}
+
 const captureFormBridgePostHogEvent = async ({
   request,
   result,
@@ -184,6 +218,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   })
 
   try {
+    const requestContext = getInternalRequestContext(request)
+    if (!requestContext) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 400 })
+    }
+
     const { slug } = await params
     const formData: unknown = await request.json()
     const isObjectPayload = typeof formData === 'object' && formData !== null && !Array.isArray(formData)
@@ -192,7 +231,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 })
     }
 
-    const form = await getForm(slug)
+    const form = await getForm(slug, requestContext)
 
     if (!form) {
       return NextResponse.json({ error: 'Form not found' }, { status: 404 })
@@ -200,6 +239,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const result = await submitFormData({
       formId: String(form.id),
+      requestContext,
       values: stripInternalFormBridgeFields(formData as FormBridgePayload),
     })
 

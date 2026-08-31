@@ -39,7 +39,7 @@
     "ci": "cross-env NODE_OPTIONS=--no-deprecation bash -c 'pnpm run migrate && pnpm build'",
     "reinstall": "cross-env NODE_OPTIONS=--no-deprecation rm -rf node_modules && rm pnpm-lock.yaml && pnpm --ignore-workspace install",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
-    "migrate": "pnpm run payload migrate",
+    "migrate": "bash .codex/scripts/payload-migration.sh migrate",
     "generateDBFromScratch": "cross-env NODE_OPTIONS=--no-deprecation find src/migrations -type f -delete && pnpm run generate && payload migrate:create --skip-empty && pnpm run payload migrate:fresh",
     "vercel:preview": "vercel build --target=preview",
     "seed:run": "pnpm dlx tsx scripts/seed-run.ts",

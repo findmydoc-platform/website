@@ -5,14 +5,14 @@ import { LandingHero } from '@/components/organisms/Heroes/LandingHero'
 import { LandingTestimonials } from '@/components/organisms/Landing/LandingTestimonials'
 import { LandingCategories, LandingProcessRing } from '@/components/organisms/Landing'
 import { LandingFeatures } from '@/components/organisms/Landing/LandingFeatures'
-import { PublicContactSection } from '@/components/organisms/Contact'
 import { BlogCardCollection } from '@/components/organisms/Blog/BlogCardCollection'
 import { FAQSection } from '@/components/organisms/FAQ'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
 import { normalizePost } from '@/utilities/blog/normalizePost'
 import { getLandingMedicalSpecialtyCategories } from '@/utilities/landing/medicalSpecialtyCategories'
 import { getHomeLandingContent } from '@/utilities/landing/landingPageContent'
-import { TemporaryLandingPage } from '@/components/templates/TemporaryLandingPage'
+import { FormBridgePublicContactSectionAdapter } from '@/features/contactRequests/FormBridgePublicContactSectionAdapter.client'
+import { FormBridgeTemporaryLandingPageAdapter } from '@/features/contactRequests/FormBridgeTemporaryLandingPageAdapter'
 import {
   buildTemporaryLandingLanguageOptions,
   getTemporaryLandingPageContent,
@@ -43,7 +43,7 @@ export default async function Home({
     const normalizedPosts = posts.map((post) => normalizePost(post, { contentLocale }))
 
     return (
-      <TemporaryLandingPage
+      <FormBridgeTemporaryLandingPageAdapter
         contentLocale={contentLocale}
         locale={locale}
         languageOptions={languageOptions}
@@ -175,7 +175,10 @@ export default async function Home({
       ) : null}
 
       <ScrollReveal>
-        <PublicContactSection title={landingContent.contact.title} description={landingContent.contact.description} />
+        <FormBridgePublicContactSectionAdapter
+          title={landingContent.contact.title}
+          description={landingContent.contact.description}
+        />
       </ScrollReveal>
     </main>
   )

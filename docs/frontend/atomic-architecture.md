@@ -25,15 +25,16 @@ Every file under these folders uses the alias `@/components/<layer>/<Component>`
 | molecules | Combine atoms for one focused pattern. Light prop mapping is allowed; side effects are not.                                                               | `Pagination`, layout helpers such as `Container`            |
 | organisms | Feature or block-level UI with normalized props, callback ports, and local interaction state. No Payload types or API transport.                           | `Auth` forms, `Card`, `CollectionArchive`, block renderers  |
 | templates | Reusable page chrome, sections, and layout composition. They receive normalized props and callback ports and do not fetch Payload or application API data. | Site `Header`, `Footer`, dashboard shells                   |
-| pages     | Shared page assemblies that multiple App Router routes can reuse. Use sparingly and keep external access in route or block adapters.                       | Marketing compositions and repeated list or detail patterns |
+| pages     | Shared page assemblies that multiple App Router routes can reuse. Use sparingly and keep Payload access in route or block adapters and application API access in route, block, or feature-boundary adapters. | Marketing compositions and repeated list or detail patterns |
 
 ### Route and block adapters with presentational UI
 
-- Routes and block adapters own Payload and application API access, then normalize data and UI actions into props and callback ports.
+- `src/AGENTS.md` defines the canonical adapter ownership for Payload and application API access.
+- Feature-boundary adapters live under `src/features/<feature>/**` and pass normalized props and callback ports to reusable UI.
+- Across the Server–Client boundary, pass serializable data or Server Actions. Create browser callback ports in the owning client adapter at the interaction leaf; reusable UI remains transport-free.
 - Reusable templates render those inputs and remain safe to use in Storybook.
 - Shared server mapping belongs in route utilities, `src/blocks/**`, or `src/blocks/_shared/**`, not in `src/components/**`.
 - Path-local Payload Admin UI follows the exceptions in its closest `AGENTS.md`.
-- `ClinicDetailConcepts` has one transitional contact-request fetch until the dedicated port-refactor issue is complete.
 
 ## Payload Blocks ↔ Organisms
 
@@ -78,7 +79,7 @@ Work in small slices (one feature area per PR) to keep diffs reviewable.
 - [ ] Create the component under that folder using PascalCase filenames.
 - [ ] **Strictly follow the Compound Component pattern** for multi-part UIs (see `src/components/AGENTS.md`).
 - [ ] Import lower layers only (no cycles up the hierarchy).
-- [ ] Keep Payload and application API transport in route or block adapters; UI files use normalized props, callback ports, and local interaction state.
+- [ ] Apply the canonical adapter ownership from `src/AGENTS.md`; UI files use normalized props, callback ports, and local interaction state.
 - [ ] Update or add tests as needed.
 - [ ] Mention the change in release notes/docs if it affects block availability or templates.
 

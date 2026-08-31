@@ -23,7 +23,7 @@ Primary focus:
 
 Repository-specific focus areas:
 - `.storybook/**`
-- `src/**/*.stories.tsx` and `src/**/*.stories.ts`
+- `src/**/*.stories.@(js|jsx|mjs|ts|tsx)`
 - shared fixtures, shared assets, global MDX guidance, prototypes, and untouched legacy stories under `src/stories/**`
 - `scripts/storybook/**`
 - `vitest.config.ts` Storybook project configuration

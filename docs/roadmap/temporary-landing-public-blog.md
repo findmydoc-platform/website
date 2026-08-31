@@ -4,7 +4,7 @@
 
 ## Decision Evidence
 
-- Visual truth: the versioned Storybook scenarios in `src/stories/templates/HoldingPageConcept.stories.tsx`, `src/stories/templates/BlogListing.stories.tsx`, and `src/stories/organisms/BlogCardCollection.stories.tsx`.
+- Visual truth: the versioned Storybook scenarios in `src/components/templates/HoldingPageConcept/HoldingPageConcept.stories.tsx`, `src/stories/templates/BlogListing.stories.tsx`, and `src/stories/organisms/BlogCardCollection.stories.tsx`.
 - Selected direction: insert a compact three-card blog section after the temporary landing signals and before the footer, using the existing `BlogCard.Simple` card from the public blog listing.
 - Decision status: implemented and locally verified on `feature/public-blog-holding-page`.
 - Current implementation evidence:

@@ -11,13 +11,13 @@ import eslintConfigPrettier from 'eslint-config-prettier/flat'
 const eslintConfig = [
   {
     ...nextPlugin.configs['core-web-vitals'],
-    files: ['**/*.{ts,tsx,js,jsx}'],
+    files: ['**/*.{ts,tsx,js,jsx,mjs}'],
     // TODO: Next.js still warns that the plugin is missing (vercel/next.js#73389)
     // even though this config loads it. Remove this comment when the warning disappears.
   },
   ...tseslint.configs.recommended,
   {
-    files: ['**/*.{ts,tsx,js,jsx}'],
+    files: ['**/*.{ts,tsx,js,jsx,mjs}'],
     plugins: {
       'react-hooks': reactHooks,
     },
@@ -51,11 +51,11 @@ const eslintConfig = [
     },
   },
   {
-    files: ['src/**/*.{ts,tsx,js,jsx}'],
+    files: ['src/**/*.{ts,tsx,js,jsx,mjs}'],
     ignores: [
-      'src/**/*.stories.{ts,tsx,js,jsx}',
-      'src/stories/**/*.{ts,tsx,js,jsx}',
-      'src/posthog/**/*.{ts,tsx,js,jsx}',
+      'src/**/*.stories.{ts,tsx,js,jsx,mjs}',
+      'src/stories/**/*.{ts,tsx,js,jsx,mjs}',
+      'src/posthog/**/*.{ts,tsx,js,jsx,mjs}',
     ],
     rules: {
       'no-restricted-imports': [
@@ -110,7 +110,7 @@ const eslintConfig = [
     },
   },
   {
-    files: ['src/**/*.stories.{ts,tsx}'],
+    files: ['src/**/*.stories.{ts,tsx,js,jsx,mjs}'],
     ignores: ['src/stories/fixtures/assets.ts'],
     // Enforce correct Storybook framework imports to avoid mixing Next.js/React renderers
     rules: {

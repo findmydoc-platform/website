@@ -5,8 +5,8 @@ const mocks = vi.hoisted(() => ({
   publicContactSectionComponent: vi.fn(() => null),
 }))
 
-vi.mock('@/components/organisms/Contact', () => ({
-  PublicContactSection: mocks.publicContactSectionComponent,
+vi.mock('@/features/contactRequests/FormBridgePublicContactSectionAdapter.client', () => ({
+  FormBridgePublicContactSectionAdapter: mocks.publicContactSectionComponent,
 }))
 
 vi.mock('@/utilities/generateMeta', () => ({

@@ -4,7 +4,7 @@ import '@testing-library/jest-dom'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { CacheRevalidationVisibilitySnapshot } from '@/utilities/cacheRevalidation/visibility'
+import type { CacheRevalidationVisibilityViewModel } from '@/features/adminDashboard/cacheRevalidationViewModel'
 
 type MockPayloadButtonProps = React.ComponentPropsWithoutRef<'button'> & {
   icon?: React.ReactNode
@@ -32,8 +32,8 @@ vi.mock('@payloadcms/ui/elements/Button', () => ({
   ),
 }))
 
-import { CacheRevalidationVisibilityCard } from '@/components/organisms/CacheRevalidationVisibility'
 import { CacheRevalidationVisibilityCardView } from '@/components/organisms/CacheRevalidationVisibility/CacheRevalidationVisibilityCardView'
+import { CacheRevalidationVisibilityWidget } from '@/dashboard/adminDashboard/CacheRevalidationVisibilityWidget.client'
 
 const originalFetch = global.fetch
 
@@ -46,8 +46,8 @@ const createJsonResponse = (body: unknown, status = 200): Response =>
   })
 
 const createSnapshot = (
-  overrides: Partial<CacheRevalidationVisibilitySnapshot> = {},
-): CacheRevalidationVisibilitySnapshot => ({
+  overrides: Partial<CacheRevalidationVisibilityViewModel> = {},
+): CacheRevalidationVisibilityViewModel => ({
   limit: overrides.limit ?? 200,
   count: overrides.count ?? 1,
   totalRecorded: overrides.totalRecorded ?? 1,
@@ -193,7 +193,7 @@ describe('CacheRevalidationVisibilityCardView', () => {
   })
 })
 
-describe('CacheRevalidationVisibilityCard', () => {
+describe('CacheRevalidationVisibilityWidget', () => {
   afterEach(() => {
     global.fetch = originalFetch
   })
@@ -202,7 +202,7 @@ describe('CacheRevalidationVisibilityCard', () => {
     const fetchMock = vi.fn(async () => createJsonResponse(createSnapshot({ count: 0, events: [] })))
     global.fetch = fetchMock
 
-    render(<CacheRevalidationVisibilityCard />)
+    render(<CacheRevalidationVisibilityWidget />)
 
     expect(await screen.findByText('No cache revalidation events recorded yet.')).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith('/api/cache-revalidation/visibility', { credentials: 'include' })
@@ -215,9 +215,23 @@ describe('CacheRevalidationVisibilityCard', () => {
   it('shows denied state without exposing event data', async () => {
     global.fetch = vi.fn(async () => createJsonResponse({ error: 'Access denied' }, 403))
 
-    render(<CacheRevalidationVisibilityCard />)
+    render(<CacheRevalidationVisibilityWidget />)
 
     expect(await screen.findByText('Access denied.')).toBeInTheDocument()
+    expect(screen.queryByText('cache.revalidation.failed')).not.toBeInTheDocument()
+  })
+
+  it('rejects malformed nested endpoint data at the dashboard adapter boundary', async () => {
+    global.fetch = vi.fn(async () =>
+      createJsonResponse({
+        ...createSnapshot(),
+        events: [{ ...createSnapshot().events[0], source: null }],
+      }),
+    )
+
+    render(<CacheRevalidationVisibilityWidget />)
+
+    expect(await screen.findByText('Error: Unexpected response')).toBeInTheDocument()
     expect(screen.queryByText('cache.revalidation.failed')).not.toBeInTheDocument()
   })
 })

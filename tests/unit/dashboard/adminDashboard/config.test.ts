@@ -10,9 +10,9 @@ describe('createAdminDashboardConfig', () => {
 
     expect(config.widgets).toHaveLength(2)
     expect(config.widgets[0]?.slug).toBe('developer-seeding')
-    expect(config.widgets[0]?.Component).toBe('@/components/organisms/DeveloperDashboard')
+    expect(config.widgets[0]?.Component).toBe('@/dashboard/adminDashboard/DeveloperSeedingWidget')
     expect(config.widgets[1]?.slug).toBe('cache-revalidation-visibility')
-    expect(config.widgets[1]?.Component).toBe('@/components/organisms/CacheRevalidationVisibility')
+    expect(config.widgets[1]?.Component).toBe('@/dashboard/adminDashboard/CacheRevalidationVisibilityWidget.client')
     expect(config.defaultLayout).toContainEqual({ widgetSlug: 'developer-seeding', width: 'full' })
     expect(config.defaultLayout).toContainEqual({ widgetSlug: 'cache-revalidation-visibility', width: 'full' })
   })

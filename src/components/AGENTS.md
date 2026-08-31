@@ -35,7 +35,6 @@
 - Normalize Payload unions (links/media/relations) in `src/blocks/**` or `src/blocks/_shared/**`.
 - If a component needs Payload imports, move mapping to a block adapter and pass normalized props into the UI layer.
 - Reusable templates receive normalized props and callback ports; they do not own Payload or API transport.
-- Transitional exception: `ClinicDetailConcepts` may keep its existing contact-request fetch until the dedicated port-refactor issue is complete.
 
 ## Storybook Expectations
 

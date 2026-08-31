@@ -21,7 +21,7 @@
 ## Boundary Reminder
 
 - UI components stay Payload-free.
-- Follow `src/app/AGENTS.md` for route-owned Payload and API access, normalized props, and callback ports.
+- Follow `src/AGENTS.md` for canonical Payload and application API ownership, normalized props, and callback ports.
 
 ## Storybook Expectations
 

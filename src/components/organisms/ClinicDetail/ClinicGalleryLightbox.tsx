@@ -13,7 +13,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/atoms/dialog'
 import { Media } from '@/components/molecules/Media'
 
-import type { ClinicDetailGalleryImage } from '@/components/templates/ClinicDetailConcepts/types'
+import type { ClinicDetailGalleryImage } from '@/features/clinicDetail/contracts'
 
 type ClinicGalleryLightboxProps = {
   clinicName: string

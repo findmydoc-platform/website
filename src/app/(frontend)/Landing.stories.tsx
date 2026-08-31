@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { fn } from 'storybook/test'
 import { SiInstagram, SiMeta, SiX } from 'react-icons/si'
 
 import { Heading } from '@/components/atoms/Heading'
@@ -30,7 +31,9 @@ import {
   landingProcessPlaceholderSubtitle,
   landingProcessPlaceholderTitle,
 } from '@/stories/fixtures/landingProcess'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
+
+const submitContact = fn(async () => undefined)
 
 const meta: Meta = {
   title: 'Domain/Landing/Templates/Landing',
@@ -128,6 +131,7 @@ export const FullPage: StoryObj = {
       <PublicContactSection
         title="Contact"
         description="Reach out to discuss partnerships, integrations, or international patient programs."
+        onSubmitContact={submitContact}
       />
     </div>
   ),
@@ -262,6 +266,7 @@ export const Contact: StoryObj<typeof PublicContactSection> = {
     <PublicContactSection
       title="Contact"
       description="Reach out to discuss partnerships, integrations, or international patient programs."
+      onSubmitContact={submitContact}
     />
   ),
 }

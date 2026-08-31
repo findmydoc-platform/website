@@ -8,8 +8,6 @@ import { ImmersiveVideoHero } from '@/components/molecules/ImmersiveVideoHero'
 import { Container } from '@/components/molecules/Container'
 import { UiLink, type UiLinkProps } from '@/components/molecules/Link'
 import { ScrollReveal } from '@/components/molecules/ScrollReveal'
-import { ContactRequestForm } from '@/components/organisms/Contact/ContactRequestForm.client'
-import type { ContactRequestFormLabels, ContactRequestSubmitter } from '@/components/organisms/Contact'
 import { cn } from '@/utilities/ui'
 
 export type HoldingPageConceptSignal = {
@@ -69,9 +67,8 @@ export type HoldingPageConceptProps = {
   contactConsentCompact?: string
   contactConsentFull?: string
   contactEyebrow?: string
-  contactFormLabels?: ContactRequestFormLabels
-  contactFormSlug?: string
   contactDescription: string
+  contactForm: ReactNode
   contactMode?: 'compact' | 'full'
   contactTitle: string
   description: string
@@ -82,7 +79,6 @@ export type HoldingPageConceptProps = {
   layoutMode?: 'balanced' | 'video'
   mediaNote: HoldingPageConceptMediaNote
   narrative: string
-  onSubmitContact?: ContactRequestSubmitter
   overlayClassName?: string
   primaryCtaLabel: string
   searchSnapshot: HoldingPageConceptSearchSnapshot
@@ -356,27 +352,21 @@ function ContactPanel({
   contactConsentCompact,
   contactConsentFull,
   contactEyebrow,
-  contactFormLabels,
-  contactFormSlug,
   contactDescription,
+  contactForm,
   contactMode,
   contactTitle,
-  onSubmitContact,
-  primaryCtaLabel,
   layout = 'card',
 }: {
   className?: string
   contactConsentCompact?: string
   contactConsentFull?: string
   contactEyebrow?: string
-  contactFormLabels?: ContactRequestFormLabels
-  contactFormSlug?: string
   contactDescription: string
+  contactForm: ReactNode
   contactMode: 'compact' | 'full'
   contactTitle: string
   layout?: 'card' | 'strip'
-  onSubmitContact?: ContactRequestSubmitter
-  primaryCtaLabel: string
 }) {
   const isCompactContact = contactMode === 'compact'
 
@@ -409,13 +399,7 @@ function ContactPanel({
         </div>
 
         <div className={cn('mt-5 sm:mt-6', layout === 'strip' && 'lg:mt-0 lg:min-w-[320px] lg:flex-1')}>
-          <ContactRequestForm
-            contactMode={contactMode}
-            contactFormSlug={contactFormSlug}
-            labels={contactFormLabels}
-            onSubmitContact={onSubmitContact}
-            primaryCtaLabel={primaryCtaLabel}
-          />
+          {contactForm}
         </div>
       </div>
 
@@ -559,9 +543,8 @@ function renderVariantLayout(
     contactConsentCompact,
     contactConsentFull,
     contactEyebrow,
-    contactFormLabels,
-    contactFormSlug,
     contactDescription,
+    contactForm,
     contactMode = 'full',
     contactTitle,
     description,
@@ -571,7 +554,6 @@ function renderVariantLayout(
     heroVideo,
     mediaNote,
     narrative,
-    onSubmitContact,
     primaryCtaLabel,
     searchSnapshot,
     signals,
@@ -613,10 +595,9 @@ function renderVariantLayout(
               />
               <ContactPanel
                 contactDescription={contactDescription}
+                contactForm={contactForm}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
-                onSubmitContact={onSubmitContact}
-                primaryCtaLabel={primaryCtaLabel}
               />
             </div>
           </div>
@@ -663,10 +644,9 @@ function renderVariantLayout(
                 <SignalCards signals={signals} orientation="stack" cardClassName="rounded-[22px] bg-white/92" />
                 <ContactPanel
                   contactDescription={contactDescription}
+                  contactForm={contactForm}
                   contactMode={contactMode}
                   contactTitle={contactTitle}
-                  onSubmitContact={onSubmitContact}
-                  primaryCtaLabel={primaryCtaLabel}
                   className="rounded-[42px_18px_42px_18px]"
                 />
               </div>
@@ -724,10 +704,9 @@ function renderVariantLayout(
                 <SearchPanel searchSnapshot={searchSnapshot} className="rounded-[34px_18px_34px_18px]" />
                 <ContactPanel
                   contactDescription={contactDescription}
+                  contactForm={contactForm}
                   contactMode={contactMode}
                   contactTitle={contactTitle}
-                  onSubmitContact={onSubmitContact}
-                  primaryCtaLabel={primaryCtaLabel}
                   className="rounded-[18px_34px_18px_34px]"
                 />
               </div>
@@ -799,10 +778,9 @@ function renderVariantLayout(
             <SignalCards signals={signals} className="mt-8" cardClassName="rounded-[24px] bg-white/90" />
             <ContactPanel
               contactDescription={contactDescription}
+              contactForm={contactForm}
               contactMode={contactMode}
               contactTitle={contactTitle}
-              onSubmitContact={onSubmitContact}
-              primaryCtaLabel={primaryCtaLabel}
               layout="strip"
               className="mt-8 rounded-[40px]"
             />
@@ -857,10 +835,9 @@ function renderVariantLayout(
 
               <ContactPanel
                 contactDescription={contactDescription}
+                contactForm={contactForm}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
-                onSubmitContact={onSubmitContact}
-                primaryCtaLabel={primaryCtaLabel}
                 className="rounded-[40px]"
               />
             </div>
@@ -904,10 +881,9 @@ function renderVariantLayout(
               <SearchPanel searchSnapshot={searchSnapshot} className="rounded-[40px_18px_40px_18px]" />
               <ContactPanel
                 contactDescription={contactDescription}
+                contactForm={contactForm}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
-                onSubmitContact={onSubmitContact}
-                primaryCtaLabel={primaryCtaLabel}
                 className="rounded-[18px_40px_18px_40px]"
               />
             </div>
@@ -966,10 +942,9 @@ function renderVariantLayout(
 
               <ContactPanel
                 contactDescription={contactDescription}
+                contactForm={contactForm}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
-                onSubmitContact={onSubmitContact}
-                primaryCtaLabel={primaryCtaLabel}
                 layout="strip"
                 className="mt-8 rounded-[28px]"
               />
@@ -1027,10 +1002,9 @@ function renderVariantLayout(
 
               <ContactPanel
                 contactDescription={contactDescription}
+                contactForm={contactForm}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
-                onSubmitContact={onSubmitContact}
-                primaryCtaLabel={primaryCtaLabel}
                 layout="strip"
                 className="rounded-[40px_18px_40px_18px]"
               />
@@ -1072,10 +1046,9 @@ function renderVariantLayout(
             <NarrativePanel narrative={narrative} className="rounded-[18px] lg:col-span-4" />
             <ContactPanel
               contactDescription={contactDescription}
+              contactForm={contactForm}
               contactMode={contactMode}
               contactTitle={contactTitle}
-              onSubmitContact={onSubmitContact}
-              primaryCtaLabel={primaryCtaLabel}
               className="rounded-[18px] lg:col-span-8"
             />
 
@@ -1141,10 +1114,9 @@ function renderVariantLayout(
 
             <ContactPanel
               contactDescription={contactDescription}
+              contactForm={contactForm}
               contactMode={contactMode}
               contactTitle={contactTitle}
-              onSubmitContact={onSubmitContact}
-              primaryCtaLabel={primaryCtaLabel}
               className="rounded-[22px_42px_22px_22px] lg:col-span-5"
             />
           </div>
@@ -1194,12 +1166,10 @@ function renderVariantLayout(
               <NarrativePanel narrative={narrative} className="rounded-[28px]" />
               <SearchPanel searchSnapshot={searchSnapshot} className="rounded-[28px]" />
               <ContactPanel
-                contactFormSlug={contactFormSlug}
                 contactDescription={contactDescription}
+                contactForm={contactForm}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
-                onSubmitContact={onSubmitContact}
-                primaryCtaLabel={primaryCtaLabel}
                 className="rounded-[28px]"
               />
             </div>
@@ -1236,10 +1206,9 @@ function renderVariantLayout(
                 <NarrativePanel narrative={narrative} className="rounded-[22px] bg-white/92" />
                 <ContactPanel
                   contactDescription={contactDescription}
+                  contactForm={contactForm}
                   contactMode={contactMode}
                   contactTitle={contactTitle}
-                  onSubmitContact={onSubmitContact}
-                  primaryCtaLabel={primaryCtaLabel}
                   className="rounded-[22px] bg-white/92"
                 />
               </div>
@@ -1307,10 +1276,9 @@ function renderVariantLayout(
               <SearchPanel searchSnapshot={searchSnapshot} className="rounded-[28px]" />
               <ContactPanel
                 contactDescription={contactDescription}
+                contactForm={contactForm}
                 contactMode={contactMode}
                 contactTitle={contactTitle}
-                onSubmitContact={onSubmitContact}
-                primaryCtaLabel={primaryCtaLabel}
                 className="rounded-[28px]"
               />
             </div>
@@ -1402,13 +1370,10 @@ function renderVariantLayout(
                   contactConsentCompact={contactConsentCompact}
                   contactConsentFull={contactConsentFull}
                   contactEyebrow={contactEyebrow}
-                  contactFormLabels={contactFormLabels}
-                  contactFormSlug={contactFormSlug}
                   contactDescription={contactDescription}
+                  contactForm={contactForm}
                   contactMode={contactMode}
                   contactTitle={contactTitle}
-                  onSubmitContact={onSubmitContact}
-                  primaryCtaLabel={primaryCtaLabel}
                   className="rounded-[28px]"
                 />
               </div>
@@ -1471,9 +1436,8 @@ export function HoldingPageConcept({
   contactConsentCompact,
   contactConsentFull,
   contactEyebrow,
-  contactFormLabels,
-  contactFormSlug,
   contactDescription,
+  contactForm,
   contactMode = 'full',
   contactTitle,
   description,
@@ -1484,7 +1448,6 @@ export function HoldingPageConcept({
   layoutMode = 'balanced',
   mediaNote,
   narrative,
-  onSubmitContact,
   overlayClassName,
   primaryCtaLabel,
   searchSnapshot,
@@ -1510,9 +1473,8 @@ export function HoldingPageConcept({
     contactConsentCompact,
     contactConsentFull,
     contactEyebrow,
-    contactFormLabels,
-    contactFormSlug,
     contactDescription,
+    contactForm,
     contactMode,
     contactTitle,
     description,
@@ -1523,7 +1485,6 @@ export function HoldingPageConcept({
     layoutMode,
     mediaNote,
     narrative,
-    onSubmitContact,
     overlayClassName,
     primaryCtaLabel,
     searchSnapshot,

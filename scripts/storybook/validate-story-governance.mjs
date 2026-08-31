@@ -13,7 +13,7 @@ const TITLE_PATTERNS = [
   /^Internal\/[A-Za-z][A-Za-z0-9-]*\/(Atoms|Molecules|Organisms|Templates|Pages)\/.+$/,
 ]
 
-const STORY_FILE_PATTERN = /\.stories\.(ts|tsx|js|jsx)$/
+const STORY_FILE_PATTERN = /\.stories\.(ts|tsx|js|jsx|mjs)$/
 const MDX_DOC_FILE_PATTERN = /\.mdx$/
 
 const toPosix = (value) => value.split(path.sep).join('/')
@@ -40,12 +40,23 @@ const parseArgs = (args) => {
 const collectChangedFiles = (baseRef) => {
   if (!baseRef) return []
 
-  const output = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMR', `${baseRef}...HEAD`], {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-  }).trim()
+  const collectGitPaths = (args) => {
+    const output = execFileSync('git', args, {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    })
 
-  return output ? output.split('\n').map(toPosix) : []
+    return output.split('\0').filter(Boolean).map(toPosix)
+  }
+
+  return Array.from(
+    new Set([
+      ...collectGitPaths(['diff', '--name-only', '--diff-filter=ACMR', '-z', `${baseRef}...HEAD`]),
+      ...collectGitPaths(['diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z']),
+      ...collectGitPaths(['diff', '--name-only', '--diff-filter=ACMR', '-z']),
+      ...collectGitPaths(['ls-files', '--others', '--exclude-standard', '-z']),
+    ]),
+  )
 }
 
 const validateChangedStoryLocations = (changedFiles) =>

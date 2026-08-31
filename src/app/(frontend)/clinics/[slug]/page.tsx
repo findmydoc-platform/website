@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 
-import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
 import { findFavoriteClinicStateRecord, resolveFavoriteClinicAuthContext } from '@/features/favorites/server'
@@ -14,6 +13,8 @@ import { createSiteMetadata } from '@/utilities/generateMeta'
 import { getGlobal } from '@/utilities/getGlobals'
 import { JsonLdScript, buildClinicDetailPageJsonLd } from '@/utilities/structuredData'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
+
+import { ClinicDetailClientAdapter } from './ClinicDetailClientAdapter.client'
 
 type ClinicDetailPageArgs = {
   params: Promise<{
@@ -76,7 +77,7 @@ export default async function ClinicDetailPage({ params: paramsPromise }: Clinic
   return (
     <>
       <JsonLdScript data={draft ? null : buildClinicDetailPageJsonLd(clinicDetailData)} />
-      <ClinicDetail
+      <ClinicDetailClientAdapter
         data={clinicDetailData}
         favorite={{
           isPatient: favoriteAuthContext.isPatient,

@@ -24,7 +24,7 @@ The [evaluation guidance](https://llm-coding.github.io/Semantic-Anchors/evaluati
 | WAI-ARIA Modal Dialog Pattern | [Modal Dialog Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) | Modal dialog semantics, keyboard behavior, and focus behavior | Non-modal UI, viewport containment, or the local dialog wrapper | Keep short-height, interaction-cycle, and runtime checks. |
 | Component-Driven Development through Storybook | [Storybook tutorial](https://storybook.js.org/tutorials/intro-to-storybook/react/en/simple-component/) | Developing and composing UI in isolated component states | File location, metadata, mocks, or colocation | Keep Storybook isolation, governance, and runtime evidence rules. |
 | Component Story Format | [CSF documentation](https://storybook.js.org/docs/api/csf/) | The portable story module format | Colocation or repository title and lifecycle tags | Keep Autodocs, title, tag, and usage metadata contracts. |
-| Hexagonal Architecture | [Alistair Cockburn's Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture) | Keeping outside dependencies behind ports and adapters | Payload directories, prop shapes, or existing exceptions | Keep Payload as source of truth, route and block adapters, normalized props, callback ports, import bans, and the ClinicDetail transition exception. |
+| Hexagonal Architecture | [Alistair Cockburn's Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture) | Keeping outside dependencies behind ports and adapters | Payload directories, prop shapes, or Next.js Server–Client transfer rules | Keep Payload as source of truth, route and block adapters for Payload, route, block, and feature-boundary adapters for application APIs, normalized props, callback ports, import bans, and the local Server–Client boundary contract. |
 | Atomic Design | [Atomic Design Methodology](https://atomicdesign.bradfrost.com/chapter-2/) | Hierarchical component composition | Repository directories, aliases, Payload boundaries, or story tags | Keep the local layer folders, responsibilities, aliases, and metadata mapping. |
 
 ## Local Contracts That Remain Explicit
@@ -32,7 +32,7 @@ The [evaluation guidance](https://llm-coding.github.io/Semantic-Anchors/evaluati
 - Mobile viewports `320`, `375`, `640`, `768`, and `1024`, with conditional `1280` coverage.
 - Short-height, browser-engine, real-route, worst-case content, and complete interaction-cycle evidence.
 - Vitest, Playwright, test-first chronology, behavior-risk, and test sense-check rules.
-- Payload and application API ownership in route and block adapters, with normalized props and callback ports for reusable UI.
+- Payload ownership in route and block adapters, application API ownership in route, block, and feature-boundary adapters, and normalized props and callback ports for reusable UI.
 - Atomic Design directories, aliases, layer responsibilities, and Payload-free components.
 - Storybook colocation, central fixture and MDX ownership, story-only prototype paths, metadata, mocks, and play-function expectations.
 - Button, UiLink, Heading, public form validation, accessibility evidence, and severity contracts.

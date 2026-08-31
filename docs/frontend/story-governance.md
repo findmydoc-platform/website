@@ -67,7 +67,7 @@ For `layer:organism`, `layer:template`, and `layer:page`, add at least one usage
 
 Use `pnpm stories:governance:check` to validate every story under `src/**`, central MDX documentation page titles, and forbidden Storybook test or mock imports.
 
-Use `pnpm stories:governance:check -- --base-ref origin/main` to apply the migration-on-touch rule to the commits after a Git base reference. Pull request CI passes its target branch as the base reference. A new or changed story under `src/stories/**` fails unless its path contains `prototypes/`.
+Use `pnpm stories:governance:check -- --base-ref origin/main` to apply the migration-on-touch rule to commits after a Git base reference and to staged, unstaged, or untracked files in the local working tree. Pull request CI passes its target branch as the base reference. A new or changed story under `src/stories/**` fails unless its path contains `prototypes/`.
 
 ## Canonical References
 

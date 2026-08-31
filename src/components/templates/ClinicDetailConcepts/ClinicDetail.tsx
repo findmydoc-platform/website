@@ -17,14 +17,13 @@ import { RelatedDoctorSection, type RelatedDoctorItem } from '@/components/organ
 import { TreatmentsStrip, type TreatmentsStripItem } from '@/components/organisms/TreatmentsStrip'
 import { useCookieConsentToolAllowed } from '@/features/cookieConsent/useCookieConsentToolAllowed'
 import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
+import type { ClinicDetailConceptProps, ClinicDetailCtaClickedEvent } from '@/features/clinicDetail/contracts'
+import { buildOpenStreetMapHref, formatEur, sortTreatmentsByPrice } from '@/features/clinicDetail/presentation'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
-import { postHogBrowserEvents, type ClinicCtaClickedProperties } from '@/posthog/client-api'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
 import { cn } from '@/utilities/ui'
 
 import { useClinicDetailInteractionState } from './hooks/useClinicDetailInteractionState'
-import { buildOpenStreetMapHref, formatEur, sortTreatmentsByPrice } from './shared'
-import type { ClinicDetailConceptProps } from './types'
 
 const CURATED_TREATMENT_COUNT = 4
 const FURTHER_TREATMENT_PAGE_SIZE = 6
@@ -34,6 +33,7 @@ const CONTACT_SECTION_IMAGE = {
   src: '/images/clinic-detail/contact-fallback-home-image30.jpg',
   alt: 'Doctor preparing a clinic consultation',
 }
+const GUEST_INQUIRY_CREATION: PatientInquiryCreationContext = { kind: 'guest' }
 
 const TREATMENT_ICONS = [Syringe, Stethoscope, HeartPulse, Activity] as const
 
@@ -70,7 +70,9 @@ export function ClinicDetail({
   data,
   className,
   favorite,
-  inquiryCreation = { kind: 'guest' },
+  inquiryCreation = GUEST_INQUIRY_CREATION,
+  analytics,
+  onSubmitContactRequest,
   cookieConsentConfig = null,
   cookieConsentInitialConsent = null,
 }: ClinicDetailConceptProps) {
@@ -106,6 +108,7 @@ export function ClinicDetail({
     initialContactFormFields: contactFormInitialFields,
     inquiryCreation,
     furtherTreatmentPageSize: FURTHER_TREATMENT_PAGE_SIZE,
+    onSubmitContactRequest,
   })
   const { chooseTreatmentAndScroll, handleContactDoctor, scrollToContactForm } = interaction
 
@@ -114,42 +117,45 @@ export function ClinicDetail({
     if (trackedProfileViewKeyRef.current === trackingKey) return
 
     trackedProfileViewKeyRef.current = trackingKey
-    postHogBrowserEvents.clinicProfileViewed({
-      clinic_id: clinicId,
-      clinic_slug: data.clinicSlug,
-      has_doctors: data.doctors.length > 0,
-      has_treatments: data.treatments.length > 0,
-      page_path: pagePath,
-      source_route: 'clinic_detail',
-      verification_tier: data.trust.verification,
+    analytics.onProfileViewed({
+      clinicId,
+      clinicSlug: data.clinicSlug,
+      hasDoctors: data.doctors.length > 0,
+      hasTreatments: data.treatments.length > 0,
+      pagePath,
+      verificationTier: data.trust.verification,
     })
-  }, [clinicId, data.clinicSlug, data.doctors.length, data.treatments.length, data.trust.verification, pagePath])
+  }, [
+    analytics,
+    clinicId,
+    data.clinicSlug,
+    data.doctors.length,
+    data.treatments.length,
+    data.trust.verification,
+    pagePath,
+  ])
 
   const captureClinicCtaClick = React.useCallback(
     (
-      properties: Pick<
-        ClinicCtaClickedProperties,
-        'cta_id' | 'cta_label' | 'cta_location' | 'doctor_id' | 'treatment_id'
-      >,
+      properties: Pick<ClinicDetailCtaClickedEvent, 'ctaId' | 'ctaLabel' | 'ctaLocation' | 'doctorId' | 'treatmentId'>,
     ) => {
-      postHogBrowserEvents.clinicCtaClicked({
-        clinic_id: clinicId,
-        clinic_slug: data.clinicSlug,
-        page_path: pagePath,
-        source_route: 'clinic_detail',
+      analytics.onCtaClicked({
+        clinicId,
+        clinicSlug: data.clinicSlug,
+        pagePath,
         ...properties,
       })
     },
-    [clinicId, data.clinicSlug, pagePath],
+    [analytics, clinicId, data.clinicSlug, pagePath],
   )
 
   const handleCuratedTreatmentClick = React.useCallback(
     (treatmentId: string) => {
       captureClinicCtaClick({
-        cta_id: 'choose_treatment',
-        cta_label: 'Choose Treatment',
-        cta_location: 'treatment_strip',
-        treatment_id: treatmentId,
+        ctaId: 'choose_treatment',
+        ctaLabel: 'Choose Treatment',
+        ctaLocation: 'treatment_strip',
+        treatmentId,
       })
       chooseTreatmentAndScroll(treatmentId)
     },
@@ -159,10 +165,10 @@ export function ClinicDetail({
   const handleFurtherTreatmentClick = React.useCallback(
     (treatmentId: string) => {
       captureClinicCtaClick({
-        cta_id: 'choose_treatment',
-        cta_label: 'Choose Treatment',
-        cta_location: 'further_treatments',
-        treatment_id: treatmentId,
+        ctaId: 'choose_treatment',
+        ctaLabel: 'Choose Treatment',
+        ctaLocation: 'further_treatments',
+        treatmentId,
       })
       chooseTreatmentAndScroll(treatmentId)
     },
@@ -172,9 +178,9 @@ export function ClinicDetail({
   const handleLocationContactClick = React.useCallback(
     (origin: 'location_card' | 'map_overlay') => {
       captureClinicCtaClick({
-        cta_id: 'contact',
-        cta_label: 'Contact',
-        cta_location: origin,
+        ctaId: 'contact',
+        ctaLabel: 'Contact',
+        ctaLocation: origin,
       })
       scrollToContactForm()
     },
@@ -230,10 +236,10 @@ export function ClinicDetail({
             label: 'Contact Doctor',
             onClick: () => {
               captureClinicCtaClick({
-                cta_id: 'contact_doctor',
-                cta_label: 'Contact Doctor',
-                cta_location: 'doctor_card',
-                doctor_id: doctor.id,
+                ctaId: 'contact_doctor',
+                ctaLabel: 'Contact Doctor',
+                ctaLocation: 'doctor_card',
+                doctorId: doctor.id,
               })
               handleContactDoctor(doctor.id)
             },

@@ -6,15 +6,15 @@ import { RefreshCw } from 'lucide-react'
 
 import { Heading } from '@/components/atoms/Heading'
 import type {
-  CacheRevalidationVisibilityEvent,
-  CacheRevalidationVisibilitySnapshot,
-} from '@/utilities/cacheRevalidation/visibility'
+  CacheRevalidationEventViewModel,
+  CacheRevalidationVisibilityViewModel,
+} from '@/features/adminDashboard/cacheRevalidationViewModel'
 
 export type CacheRevalidationVisibilityCardViewProps = {
   loading: boolean
   accessDenied: boolean
   error: string | null
-  snapshot: CacheRevalidationVisibilitySnapshot | null
+  snapshot: CacheRevalidationVisibilityViewModel | null
   onRefresh: () => void
 }
 
@@ -93,11 +93,11 @@ const formatList = (values: readonly string[], fallback = 'none'): string => {
   return values.length > 0 ? values.join(', ') : fallback
 }
 
-const formatSource = (event: CacheRevalidationVisibilityEvent): string => {
+const formatSource = (event: CacheRevalidationEventViewModel): string => {
   return event.source.id ? `${event.source.kind}:${event.source.id}` : event.source.kind
 }
 
-const formatSubject = (event: CacheRevalidationVisibilityEvent): string => {
+const formatSubject = (event: CacheRevalidationEventViewModel): string => {
   const parts = [event.subject.kind]
   if (event.subject.collection) parts.push(event.subject.collection)
   if (event.subject.global) parts.push(event.subject.global)
@@ -105,7 +105,7 @@ const formatSubject = (event: CacheRevalidationVisibilityEvent): string => {
   return parts.join(':')
 }
 
-const EventRow: React.FC<{ event: CacheRevalidationVisibilityEvent }> = ({ event }) => {
+const EventRow: React.FC<{ event: CacheRevalidationEventViewModel }> = ({ event }) => {
   const hasFailures = event.failureCount > 0
 
   return (

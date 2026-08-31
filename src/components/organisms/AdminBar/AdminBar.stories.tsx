@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 
 import { AdminBar } from '@/components/organisms/AdminBar'
 
 const meta = {
   title: 'Domain/Platform/Organisms/AdminBar',
   component: AdminBar,
+  args: {
+    onPreviewExit: fn(),
+  },
   parameters: {
     layout: 'fullscreen',
   },
@@ -17,7 +20,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
 
     await waitFor(() => {
@@ -29,6 +32,11 @@ export const Default: Story = {
     expect(adminBar).toBeInTheDocument()
     await waitFor(() => {
       expect(adminBar).toBeVisible()
+    })
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Exit preview' }))
+    await waitFor(() => {
+      expect(args.onPreviewExit).toHaveBeenCalledTimes(1)
     })
 
     await userEvent.click(canvas.getByRole('button', { name: /log out/i }))

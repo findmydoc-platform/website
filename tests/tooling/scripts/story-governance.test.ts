@@ -107,6 +107,66 @@ describe('story governance CLI', () => {
     expect(result.stderr).toContain('Move new or changed component stories beside their documented source component')
   })
 
+  it('rejects an unstaged central story change when a base ref is supplied', () => {
+    const storyPath = 'src/stories/atoms/Legacy.stories.tsx'
+    const rootDir = createRepo({
+      [storyPath]: validStory('Shared/Atoms/Legacy'),
+    })
+    const baseRef = initializeGitRepo(rootDir)
+    fs.appendFileSync(path.join(rootDir, storyPath), '\n// unstaged change\n', 'utf8')
+
+    const result = runGovernanceCheck(rootDir, ['--base-ref', baseRef])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Move new or changed component stories beside their documented source component')
+  })
+
+  it('rejects a staged central story change when a base ref is supplied', () => {
+    const storyPath = 'src/stories/atoms/Legacy.stories.tsx'
+    const rootDir = createRepo({
+      [storyPath]: validStory('Shared/Atoms/Legacy'),
+    })
+    const baseRef = initializeGitRepo(rootDir)
+    fs.appendFileSync(path.join(rootDir, storyPath), '\n// staged change\n', 'utf8')
+    runGit(rootDir, ['add', storyPath])
+
+    const result = runGovernanceCheck(rootDir, ['--base-ref', baseRef])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Move new or changed component stories beside their documented source component')
+  })
+
+  it('rejects a new untracked central story when a base ref is supplied', () => {
+    const rootDir = createRepo({
+      'README.md': '# Story governance fixture\n',
+    })
+    const baseRef = initializeGitRepo(rootDir)
+    const storyPath = 'src/stories/atoms/NewLegacy.stories.tsx'
+    const absoluteStoryPath = path.join(rootDir, storyPath)
+    fs.mkdirSync(path.dirname(absoluteStoryPath), { recursive: true })
+    fs.writeFileSync(absoluteStoryPath, validStory('Shared/Atoms/NewLegacy'), 'utf8')
+
+    const result = runGovernanceCheck(rootDir, ['--base-ref', baseRef])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Move new or changed component stories beside their documented source component')
+  })
+
+  it('rejects a changed central mjs story when a base ref is supplied', () => {
+    const storyPath = 'src/stories/atoms/Legacy.stories.mjs'
+    const rootDir = createRepo({
+      [storyPath]: validStory('Shared/Atoms/Legacy'),
+    })
+    const baseRef = initializeGitRepo(rootDir)
+    fs.appendFileSync(path.join(rootDir, storyPath), '\n// changed\n', 'utf8')
+    commitAll(rootDir, 'change legacy mjs story')
+
+    const result = runGovernanceCheck(rootDir, ['--base-ref', baseRef])
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Move new or changed component stories beside their documented source component')
+  })
+
   it('rejects a base-ref option without a value', () => {
     const rootDir = createRepo({
       'src/components/atoms/Button/Button.stories.tsx': validStory('Shared/Atoms/Button'),
@@ -150,6 +210,26 @@ describe('story governance CLI', () => {
   it('reports invalid story metadata from a colocated story', () => {
     const rootDir = createRepo({
       'src/components/atoms/Button/Button.stories.tsx': `
+const meta = {
+  title: 'Shared/Atoms/Button',
+  tags: ['autodocs'],
+}
+
+export default meta
+`,
+    })
+
+    const result = runGovernanceCheck(rootDir)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('Missing required tag prefix "domain:"')
+    expect(result.stderr).toContain('Missing required tag prefix "layer:"')
+    expect(result.stderr).toContain('Missing required tag prefix "status:"')
+  })
+
+  it('reports invalid story metadata from a colocated mjs story', () => {
+    const rootDir = createRepo({
+      'src/components/atoms/Button/Button.stories.mjs': `
 const meta = {
   title: 'Shared/Atoms/Button',
   tags: ['autodocs'],

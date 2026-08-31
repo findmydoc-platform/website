@@ -6,7 +6,6 @@ import { cn } from '@/utilities/ui'
 import { useSelectedLayoutSegments } from 'next/navigation'
 import { PayloadAdminBar } from 'payload-admin-bar'
 import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { getClientSideURL } from '@/utilities/getURL'
 import { Container } from '@/components/molecules/Container'
@@ -28,14 +27,14 @@ const Title: React.FC = () => <span>Dashboard</span>
 
 export const AdminBar: React.FC<{
   adminBarProps?: PayloadAdminBarProps
+  onPreviewExit: () => void | Promise<void>
 }> = (props) => {
-  const { adminBarProps } = props || {}
+  const { adminBarProps, onPreviewExit } = props
   const segments = useSelectedLayoutSegments()
   const [show, setShow] = useState(false)
   const collection = (
     collectionLabels[segments?.[1] as keyof typeof collectionLabels] ? segments[1] : 'pages'
   ) as keyof typeof collectionLabels
-  const router = useRouter()
 
   const onAuthChange = React.useCallback((user: PayloadMeUser) => {
     setShow(Boolean(user?.id))
@@ -66,12 +65,7 @@ export const AdminBar: React.FC<{
           }}
           logo={<Title />}
           onAuthChange={onAuthChange}
-          onPreviewExit={() => {
-            fetch('/next/exit-preview').then(() => {
-              router.push('/')
-              router.refresh()
-            })
-          }}
+          onPreviewExit={onPreviewExit}
           style={{
             backgroundColor: 'transparent',
             padding: 0,

@@ -12,7 +12,7 @@ import {
   parseCookieConsentState,
   type CookieConsentConfig,
 } from '@/features/cookieConsent'
-import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
+import { CookieConsentClientAdapter } from '@/features/cookieConsent/CookieConsentClientAdapter.client'
 
 const posthogClientMocks = vi.hoisted(() => ({
   setPostHogAnalyticsConsent: vi.fn(),
@@ -39,7 +39,7 @@ describe('CookieConsentManager', () => {
   })
 
   it('stores acceptance and enables analytics', async () => {
-    render(<CookieConsentManager config={config} initialConsent={null} />)
+    render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
 
     expect(screen.queryByRole('link', { name: 'Privacy Policy' })).not.toBeInTheDocument()
 
@@ -69,7 +69,7 @@ describe('CookieConsentManager', () => {
   })
 
   it('shows the privacy policy link in the settings dialog', async () => {
-    render(<CookieConsentManager config={config} initialConsent={null} />)
+    render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Customize' }))
 
@@ -78,7 +78,7 @@ describe('CookieConsentManager', () => {
   })
 
   it('can switch from accepted to rejected and disables analytics again', async () => {
-    render(<CookieConsentManager config={config} initialConsent={null} />)
+    render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
 
@@ -114,7 +114,7 @@ describe('CookieConsentManager', () => {
   })
 
   it('opens settings, stores a customized preference, and disables analytics', async () => {
-    render(<CookieConsentManager config={config} initialConsent={null} />)
+    render(<CookieConsentClientAdapter config={config} initialConsent={null} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Customize' }))
 
@@ -192,7 +192,7 @@ describe('CookieConsentManager', () => {
       decidedAt: '2026-03-31T10:00:00.000Z',
     })
 
-    render(<CookieConsentManager config={disabledAnalyticsConfig} initialConsent={initialConsent} />)
+    render(<CookieConsentClientAdapter config={disabledAnalyticsConfig} initialConsent={initialConsent} />)
 
     await waitFor(() => {
       expect(posthogClientMocks.setPostHogAnalyticsConsent).toHaveBeenLastCalledWith(false)

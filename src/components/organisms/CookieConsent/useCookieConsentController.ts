@@ -9,9 +9,7 @@ import {
   type CookieConsentCategoryMap,
   type CookieConsentConfig,
   type CookieConsentState,
-  writeCookieConsentToDocument,
 } from '@/features/cookieConsent'
-import { setPostHogAnalyticsConsent } from '@/posthog/client-api'
 
 function buildCategoryDraft(
   categories: CookieConsentConfig['categories'],
@@ -38,11 +36,15 @@ export type CookieConsentController = {
 type UseCookieConsentControllerOptions = {
   config: CookieConsentConfig | null
   initialConsent: CookieConsentState | null
+  onAnalyticsConsentChange: (enabled: boolean) => void
+  onPersistConsent: (consent: CookieConsentState) => void
 }
 
 export function useCookieConsentController({
   config,
   initialConsent,
+  onAnalyticsConsentChange,
+  onPersistConsent,
 }: UseCookieConsentControllerOptions): CookieConsentController {
   const [consent, setConsent] = React.useState<CookieConsentState | null>(initialConsent)
   const [categoryDrafts, setCategoryDrafts] = React.useState<CookieConsentCategoryMap>(() =>
@@ -56,8 +58,8 @@ export function useCookieConsentController({
   }, [config?.categories, initialConsent])
 
   React.useEffect(() => {
-    setPostHogAnalyticsConsent(isCookieConsentToolAllowed('posthog', config, consent?.categories))
-  }, [config, consent])
+    onAnalyticsConsentChange(isCookieConsentToolAllowed('posthog', config, consent?.categories))
+  }, [config, consent, onAnalyticsConsentChange])
 
   const persistConsent = React.useCallback(
     (choice: CookieConsentState['choice'], categories: CookieConsentCategoryMap) => {
@@ -71,12 +73,12 @@ export function useCookieConsentController({
         version: config.consentVersion,
       })
 
-      writeCookieConsentToDocument(nextConsent)
+      onPersistConsent(nextConsent)
       setConsent(nextConsent)
       setCategoryDrafts(buildCategoryDraft(config.categories, nextConsent.categories))
       setSettingsOpen(false)
     },
-    [config],
+    [config, onPersistConsent],
   )
 
   const openSettings = React.useCallback(() => {

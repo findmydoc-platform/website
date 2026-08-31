@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import {
@@ -10,13 +10,18 @@ import {
   clinicDetailReviewsPartiallyLoadedFixture,
   clinicDetailReviewsPendingTextFixture,
 } from '@/stories/fixtures/clinicDetail'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const meta = {
   title: 'Domain/Clinic/Templates/ClinicDetail',
   component: ClinicDetail,
   args: {
+    analytics: {
+      onCtaClicked: fn(),
+      onProfileViewed: fn(),
+    },
     data: clinicDetailFixture,
+    onSubmitContactRequest: fn(async () => ({ id: 'story-inquiry' })),
   },
   parameters: {
     layout: 'fullscreen',
@@ -128,6 +133,45 @@ export const Main_InitialReviewSummary: Story = {
     ).not.toBeInTheDocument()
     await expect(canvas.getByRole('button', { name: 'Show more reviews' })).toBeInTheDocument()
     await expect(canvas.getByText('Loads the next 1 review inline.')).toBeInTheDocument()
+  },
+}
+
+export const Behavior_GuestContactSubmission: Story = {
+  args: {
+    onSubmitContactRequest: fn(async () => ({ id: 'story-inquiry' })),
+  },
+  render: (args) => <ClinicDetail {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+    const form = canvas.getByRole('form', { name: 'Clinic appointment request' })
+    const contactForm = within(form)
+
+    await userEvent.type(contactForm.getByRole('textbox', { name: 'First Name' }), 'Ada')
+    await userEvent.type(contactForm.getByRole('textbox', { name: 'Last Name' }), 'Lovelace')
+    await userEvent.type(contactForm.getByRole('textbox', { name: 'Phone Number' }), '+49 30 123456')
+    await userEvent.type(contactForm.getByRole('textbox', { name: 'Email' }), 'ada@example.com')
+    await userEvent.selectOptions(contactForm.getByRole('combobox', { name: 'Doctor' }), 'doctor-1')
+    await userEvent.type(
+      contactForm.getByRole('textbox', { name: 'Message' }),
+      'Please contact me about an appointment.',
+    )
+    await userEvent.click(contactForm.getByRole('checkbox'))
+    await userEvent.click(contactForm.getByRole('button', { name: 'Submit Contact Request' }))
+
+    await expect(args.onSubmitContactRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clinicId: '1001',
+        consent: true,
+        doctorId: 'doctor-1',
+        email: 'ada@example.com',
+        fullName: 'Ada Lovelace',
+        message: 'Please contact me about an appointment.',
+        phoneNumber: '+49 30 123456',
+      }),
+      false,
+    )
+    await expect(contactForm.getByRole('status')).toHaveTextContent('Your clinic request has been sent successfully.')
+    await expect(contactForm.getByRole('button', { name: 'Request sent' })).toBeDisabled()
   },
 }
 

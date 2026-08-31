@@ -26,9 +26,14 @@ The repository supports `local`, `hybrid`, and `cloud` operation with the same c
 | --- | --- | --- | --- |
 | `local` | Local Postgres (Docker) | Local S3Mock | `DATABASE_URI` points to local DB; Docker Compose runs S3Mock |
 | `hybrid` | Remote Postgres (often Supabase) | Local S3Mock | `DATABASE_URI` points to remote DB; development media remains local |
-| `cloud` | Managed Postgres (often Supabase) | S3-compatible | Production env with managed DB and complete S3 env variables |
+| `cloud` | Supabase transaction pooler for runtime; direct Postgres for operations | S3-compatible | `DATABASE_URI` uses port `6543`; `DATABASE_DIRECT_URI` is available only to approved database operations |
 
 The S3 adapter is active in every runtime. Preview and production fail fast if their required S3 variables are missing.
+
+Runtime code reads only `DATABASE_URI`. Vercel preview and production require it to use the Supabase transaction pooler
+on port `6543`. Migrations, backups, and focused database tools use `DATABASE_DIRECT_URI`; do not add that variable to
+Vercel runtime or build environments. See
+[Database Runtime Connections](./engineering/database-runtime-connections.md) for the complete contract.
 
 ### Clinic Dashboard Redirect Origin
 
@@ -106,15 +111,18 @@ This repository uses an explicit migration-first workflow in every environment.
 - **Required developer flow**:
 
   1. Create a new migration: `pnpm payload migrate:create <name>`
-  2. Apply pending migrations locally: `pnpm payload migrate`
-  3. Verify migration status: `pnpm payload migrate:status`
+  2. Apply pending migrations locally: `bash .codex/scripts/payload-migration.sh migrate`
+  3. Verify migration status: `bash .codex/scripts/payload-migration.sh migrate:status`
   4. Commit the generated files in `src/migrations/**`
 
 - **CI/CD enforcement**:
 
   - DB Quality fails if Payload can generate a migration but no migration files were committed.
   - DB Quality runs `pnpm payload migrate:status` after applying migrations for DB-relevant changes.
-  - Preview and Production deployments run migrations as part of `pnpm run ci` during Vercel builds.
+  - `pnpm run ci` routes migrations through the guarded helper and fails closed in a hosted environment without
+    `DATABASE_DIRECT_URI`.
+  - Preview release automation still needs an approved migration-before-deploy step that supplies the direct
+    connection only to the migration process. Production remains a separate release gate.
 
 - **Optional local experimentation only**:
 

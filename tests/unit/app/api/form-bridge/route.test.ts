@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const postHogMocks = vi.hoisted(() => ({
@@ -61,12 +61,18 @@ import { FormSubmissionError, submitFormData } from '@/utilities/submitForm'
 const mockedGetForm = vi.mocked(getForm)
 const mockedSubmitFormData = vi.mocked(submitFormData)
 
-const makeRequest = (body: unknown, refererPath?: string) =>
-  new NextRequest('http://localhost/api/form-bridge/contact', {
+const makeRequest = (
+  body: unknown,
+  refererPath?: string,
+  requestHeaders: Record<string, string> = {},
+  requestUrl = 'http://localhost/api/form-bridge/contact',
+) =>
+  new NextRequest(requestUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(refererPath ? { referer: `http://localhost${refererPath}` } : {}),
+      ...(refererPath ? { referer: `${new URL(requestUrl).origin}${refererPath}` } : {}),
+      ...requestHeaders,
     },
     body: JSON.stringify(body),
   })
@@ -76,6 +82,10 @@ describe('POST /api/form-bridge/[slug]', () => {
     vi.clearAllMocks()
     postHogMocks.resolveAnonymousPostHogActor.mockReturnValue(postHogMocks.actor)
     postHogMocks.resolveAnalyticsConsent.mockResolvedValue(postHogMocks.analyticsConsent)
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('returns 400 for invalid request payload', async () => {
@@ -129,6 +139,61 @@ describe('POST /api/form-bridge/[slug]', () => {
     })
     expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
+  })
+
+  it('passes only same-origin request authentication to internal Payload calls', async () => {
+    vi.stubEnv('VERCEL_URL', 'generated-preview.vercel.app')
+    mockedGetForm.mockResolvedValueOnce({ id: 'form-123' } as unknown as Awaited<ReturnType<typeof getForm>>)
+    mockedSubmitFormData.mockResolvedValueOnce({ id: 'submission-auth' })
+
+    const response = await POST(
+      makeRequest(
+        { email: 'jane@example.com' },
+        undefined,
+        {
+          Authorization: 'Bearer verified-token',
+          Cookie: 'sb-project-auth-token=verified-session',
+          'X-Do-Not-Forward': 'private-context',
+        },
+        'https://generated-preview.vercel.app/api/form-bridge/contact',
+      ),
+      { params: Promise.resolve({ slug: 'contact' }) },
+    )
+
+    const requestContext = {
+      origin: 'https://generated-preview.vercel.app',
+      headers: {
+        authorization: 'Bearer verified-token',
+        cookie: 'sb-project-auth-token=verified-session',
+      },
+    }
+    expect(response.status).toBe(200)
+    expect(mockedGetForm).toHaveBeenCalledWith('contact', requestContext)
+    expect(mockedSubmitFormData).toHaveBeenCalledWith({
+      formId: 'form-123',
+      requestContext,
+      values: { email: 'jane@example.com' },
+    })
+  })
+
+  it('rejects credential forwarding from an untrusted request origin', async () => {
+    const response = await POST(
+      makeRequest(
+        { email: 'jane@example.com' },
+        undefined,
+        {
+          Authorization: 'Bearer verified-token',
+          Cookie: 'sb-project-auth-token=verified-session',
+        },
+        'https://untrusted.example/api/form-bridge/contact',
+      ),
+      { params: Promise.resolve({ slug: 'contact' }) },
+    )
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error: 'Invalid request origin' })
+    expect(mockedGetForm).not.toHaveBeenCalled()
+    expect(mockedSubmitFormData).not.toHaveBeenCalled()
   })
 
   it('tracks a privacy-safe patient inquiry event after a clinic detail form submission succeeds', async () => {
@@ -209,6 +274,10 @@ describe('POST /api/form-bridge/[slug]', () => {
     expect(response.status).toBe(200)
     expect(mockedSubmitFormData).toHaveBeenCalledWith({
       formId: 'form-123',
+      requestContext: {
+        origin: 'http://localhost',
+        headers: {},
+      },
       values: {
         email: 'clinic@example.com',
         message: 'We want to list our clinic.',

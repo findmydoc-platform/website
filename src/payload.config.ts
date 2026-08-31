@@ -75,6 +75,7 @@ import { fileURLToPath } from 'url'
 import { config as dotenvConfig } from 'dotenv'
 import { canRunPayloadJobs } from '@/access/payloadJobs'
 import { createPayloadLoggerConfig } from '@/utilities/logging/payloadLogger'
+import { createPayloadRuntimePoolConfig, payloadDatabaseAvailabilityAfterError } from '@/features/databaseAvailability'
 import { createAdminDashboardConfig } from './dashboard/adminDashboard'
 
 // Import Collections
@@ -491,10 +492,11 @@ export default buildConfig({
     // Keep schema push disabled by default so all shared schema changes flow through migrations.
     // Opt in only for throwaway local experiments with PAYLOAD_DB_PUSH=true.
     push: isDbPushEnabled,
-    pool: {
-      connectionString: process.env.DATABASE_URI || '',
-    },
+    pool: createPayloadRuntimePoolConfig(),
   }),
+  hooks: {
+    afterError: [payloadDatabaseAvailabilityAfterError],
+  },
   collections: [
     Pages,
     Posts,

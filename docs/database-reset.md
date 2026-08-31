@@ -12,7 +12,9 @@ bash .codex/scripts/payload-migration.sh migrate:fresh
 bash .codex/scripts/payload-migration.sh generate-from-scratch
 ```
 
-The helper verifies pnpm 10, supplies the local development `PAYLOAD_SECRET` fallback without exposing it in the command, and keeps the destructive entrypoints stable for repository command rules.
+The helper verifies pnpm 10, selects `DATABASE_DIRECT_URI` when present, supplies the local development
+`PAYLOAD_SECRET` fallback without exposing it in the command, and keeps the destructive entrypoints stable for
+repository command rules. It may fall back to `DATABASE_URI` only for local or local-Postgres CI commands.
 
 ## Not Allowed in Preview/Production
 
@@ -34,8 +36,9 @@ The workflow is intentionally blocked for production.
 
 ```bash
 pnpm payload migrate:create <name>
-pnpm payload migrate
-pnpm payload migrate:status
+bash .codex/scripts/payload-migration.sh migrate
+bash .codex/scripts/payload-migration.sh migrate:status
 ```
 
-For deploy order and environment behavior, see [Deployment & Migration Runbook](./deployment-runbook.md).
+Hosted migration commands require `DATABASE_DIRECT_URI` and fail before Payload starts when it is absent. For deploy
+order and environment behavior, see [Deployment & Migration Runbook](./deployment-runbook.md).

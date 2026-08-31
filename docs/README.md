@@ -14,6 +14,7 @@ Use this index as the main entry point for project documentation.
 - [Monitoring and Error Logic](./monitoring-and-error-logic.md)
 - [Public Discovery Strategy](./public-discovery-strategy.md)
 - [Cache Revalidation Runtime Architecture](./engineering/cache-revalidation-runtime.md)
+- [Database Runtime Connections](./engineering/database-runtime-connections.md)
 - [Clinic Dashboard Application and API Architecture](./integrations/clinic-dashboard-api.md)
 - [Codex Specialist Subagents](./integrations/codex-specialists.md)
 - [Deployment & Migration Runbook](./deployment-runbook.md)

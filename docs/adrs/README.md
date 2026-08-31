@@ -75,3 +75,4 @@ When adding a new ADR:
 - [024 — Production build webpack fallback](./024-adr-production-build-webpack-fallback.md)
 - [025 — Direct staff authentication collections](./025-adr-direct-staff-auth-collections.md)
 - [026 — Standalone Clinic Dashboard BFF architecture](./026-adr-standalone-clinic-dashboard-bff-architecture.md)
+- [027 — Database runtime connection modes](./027-adr-database-runtime-connection-modes.md)

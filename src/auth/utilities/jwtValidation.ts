@@ -5,18 +5,18 @@
 
 import { createClient } from '@/auth/utilities/supaBaseServer'
 import type { AuthData } from '@/auth/types/authTypes'
-import { VALID_USER_TYPES } from '@/auth/config/authConfig'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
+import {
+  extractTokenFromHeader,
+  isTemporarySupabaseAuthError,
+  type SupabaseAuthErrorLike,
+  validateSupabaseUser,
+} from '@/auth/utilities/supabaseAuthPolicy'
 import { getSupabaseLogger } from './supabaseLogger'
 import type { User } from '@supabase/supabase-js'
 import { hashLogValue, toLoggedError, type ServerLogger } from '@/utilities/logging/shared'
 
-type SupabaseAuthErrorLike = {
-  code?: string
-  message?: string
-  name?: string
-  status?: number
-}
+export { extractTokenFromHeader, validateSupabaseUser } from '@/auth/utilities/supabaseAuthPolicy'
 
 export type SupabaseBearerValidationResult =
   { status: 'authenticated'; authData: AuthData } | { status: 'invalid' } | { status: 'unavailable' }
@@ -30,23 +30,6 @@ export type SupabaseFreshAuthenticationResult =
 const FIRST_FACTOR_AMR_METHODS = new Set(['email/signup', 'magiclink', 'oauth', 'otp', 'password', 'sso/saml'])
 
 const FRESH_AUTH_CLOCK_SKEW_SECONDS = 30
-
-const isTemporarySupabaseError = (error: unknown): boolean => {
-  if (!error || typeof error !== 'object') return false
-
-  const authError = error as SupabaseAuthErrorLike
-  const normalizedMessage = authError.message?.toLowerCase() ?? ''
-
-  return (
-    authError.name === 'AuthRetryableFetchError' ||
-    authError.status === 0 ||
-    authError.status === 429 ||
-    (typeof authError.status === 'number' && authError.status >= 500) ||
-    normalizedMessage.includes('fetch failed') ||
-    normalizedMessage.includes('network error') ||
-    normalizedMessage.includes('timed out')
-  )
-}
 
 const isExpectedMissingSessionError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false
@@ -67,36 +50,6 @@ const isExpectedMissingSessionError = (error: unknown): boolean => {
  * @param headers - Request headers
  * @returns The token string or undefined if not found
  */
-export function extractTokenFromHeader(headers?: Headers): string | undefined {
-  if (!headers) return undefined
-
-  const authHeader = headers.get('authorization') || headers.get('Authorization')
-  if (!authHeader) return undefined
-
-  const [scheme, ...rest] = authHeader.trim().split(/\s+/)
-  if (scheme?.toLowerCase() !== 'bearer' || rest.length !== 1) return undefined
-
-  return rest[0]
-}
-
-/**
- * Validates user data from Supabase response.
- * @param user - The user object from Supabase
- * @returns true if user data is valid, false otherwise
- */
-export function validateSupabaseUser(user: User | null): boolean {
-  if (!user?.id || !user?.email) {
-    return false
-  }
-
-  const userType = user.app_metadata?.user_type
-  if (!userType || !VALID_USER_TYPES.includes(userType)) {
-    return false
-  }
-
-  return true
-}
-
 /**
  * Transforms Supabase user data into AuthData format.
  * @param user - The user object from Supabase
@@ -134,7 +87,7 @@ export async function validateSupabaseBearerToken({
     } = await supabaseClient.auth.getUser(token)
 
     if (error) {
-      const unavailable = isTemporarySupabaseError(error)
+      const unavailable = isTemporarySupabaseAuthError(error)
       activeLogger[unavailable ? 'error' : 'warn'](
         {
           event: unavailable ? 'auth.supabase.token.unavailable' : 'auth.supabase.token.invalid',
@@ -197,7 +150,7 @@ export async function validateSupabaseFreshFirstFactor({
     const { data, error } = await supabaseClient.auth.getClaims(token)
 
     if (error) {
-      const unavailable = isTemporarySupabaseError(error)
+      const unavailable = isTemporarySupabaseAuthError(error)
       activeLogger[unavailable ? 'error' : 'warn'](
         {
           event: unavailable ? 'auth.supabase.claims.unavailable' : 'auth.supabase.claims.invalid',

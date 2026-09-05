@@ -25,6 +25,7 @@ export const PlatformStaff: CollectionConfig = {
     },
   },
   access: {
+    unlock: () => false,
     read: isPlatformStaff,
     create: () => false,
     update: isPlatformStaff,

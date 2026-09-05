@@ -1,7 +1,13 @@
 import type { HoldingPageConceptProps } from '@/components/templates/HoldingPageConcept'
+import type { ContactRequestFormLabels } from '@/components/organisms/Contact'
 import { ArrowLeftRight, ShieldCheck, UserRoundSearch } from 'lucide-react'
 
 import { TEMPORARY_LANDING_DEFAULT_LOCALE, type TemporaryLandingLocale } from './i18n'
+
+export type TemporaryLandingPageContent = Omit<HoldingPageConceptProps, 'contactForm'> & {
+  contactFormLabels?: ContactRequestFormLabels
+  contactFormSlug?: string
+}
 
 type TemporaryLandingCopy = {
   blogCtaLabel: string
@@ -10,7 +16,7 @@ type TemporaryLandingCopy = {
   contactConsent: string
   contactDescription: string
   contactEyebrow: string
-  contactFormLabels: HoldingPageConceptProps['contactFormLabels']
+  contactFormLabels: ContactRequestFormLabels
   contactTitle: string
   description: string
   eyebrow: string
@@ -209,7 +215,7 @@ const copyByLocale: Record<TemporaryLandingLocale, TemporaryLandingCopy> = {
   },
 }
 
-const buildTemporaryLandingPageContent = (locale: TemporaryLandingLocale): HoldingPageConceptProps => {
+const buildTemporaryLandingPageContent = (locale: TemporaryLandingLocale): TemporaryLandingPageContent => {
   const copy = copyByLocale[locale]
 
   return {
@@ -289,13 +295,13 @@ const buildTemporaryLandingPageContent = (locale: TemporaryLandingLocale): Holdi
   }
 }
 
-export const temporaryLandingPageContentByLocale: Record<TemporaryLandingLocale, HoldingPageConceptProps> = {
+export const temporaryLandingPageContentByLocale: Record<TemporaryLandingLocale, TemporaryLandingPageContent> = {
   en: buildTemporaryLandingPageContent('en'),
   de: buildTemporaryLandingPageContent('de'),
   tr: buildTemporaryLandingPageContent('tr'),
 }
 
-export const getTemporaryLandingPageContent = (locale: TemporaryLandingLocale): HoldingPageConceptProps =>
+export const getTemporaryLandingPageContent = (locale: TemporaryLandingLocale): TemporaryLandingPageContent =>
   temporaryLandingPageContentByLocale[locale] ?? temporaryLandingPageContentByLocale[TEMPORARY_LANDING_DEFAULT_LOCALE]
 
 export type TemporaryLandingBlogCopy = {

@@ -10,6 +10,22 @@ export type ContactRequestFormLabels = {
   successMessage: string
 }
 
+export type ContactFormContext = 'clinic_partner_landing' | 'clinic_profile_inquiry'
+export type ContactSubmissionMetadata = Partial<Record<'clinic' | 'source', string>>
+
+type ContactRequestContextPayload = ContactSubmissionMetadata & {
+  form_context?: ContactFormContext
+}
+
+export type ContactRequestPayload = ContactRequestContextPayload &
+  ({ email: string } | { name: string; email: string; message: string })
+
+export type ContactRequestSubmitter = (
+  targetSlug: string,
+  payload: ContactRequestPayload,
+  genericErrorMessage?: string,
+) => Promise<void>
+
 export const DEFAULT_CONTACT_FORM_SLUG = 'public-contact'
 
 export const DEFAULT_CONTACT_FORM_LABELS: ContactRequestFormLabels = {

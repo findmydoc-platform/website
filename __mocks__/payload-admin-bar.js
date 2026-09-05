@@ -1,7 +1,7 @@
 import * as React from 'react'
 
 export function PayloadAdminBar(props) {
-  const { onAuthChange, logo } = props
+  const { onAuthChange, onPreviewExit, logo } = props
 
   React.useEffect(() => {
     onAuthChange?.({ id: 'user-1', email: 'test@example.com' })
@@ -26,6 +26,14 @@ export function PayloadAdminBar(props) {
         onClick: () => onAuthChange?.(null),
       },
       'Log out',
+    ),
+    React.createElement(
+      'button',
+      {
+        type: 'button',
+        onClick: () => onPreviewExit?.(),
+      },
+      'Exit preview',
     ),
   )
 }

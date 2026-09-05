@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react'
 import '@testing-library/jest-dom'
-import { render } from '@testing-library/react'
+import { render, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -55,10 +55,6 @@ const mocks = vi.hoisted(() => ({
     handleContactDoctor: vi.fn(),
     scrollToContactForm: vi.fn(),
   })),
-  postHogBrowserEvents: {
-    clinicProfileViewed: vi.fn(),
-    clinicCtaClicked: vi.fn(),
-  },
 }))
 
 vi.mock('@/components/molecules/DisclaimerNotice', () => ({
@@ -89,15 +85,11 @@ vi.mock('@/features/favorites/FavoriteClinicButton', () => ({
   FavoriteClinicButton: mocks.favoriteClinicButton,
 }))
 
-vi.mock('@/posthog/client-api', () => ({
-  postHogBrowserEvents: mocks.postHogBrowserEvents,
-}))
-
 vi.mock('@/components/templates/ClinicDetailConcepts/hooks/useClinicDetailInteractionState', () => ({
   useClinicDetailInteractionState: mocks.interactionStateMock,
 }))
 
-vi.mock('@/components/templates/ClinicDetailConcepts/shared', () => ({
+vi.mock('@/features/clinicDetail/presentation', () => ({
   buildOpenStreetMapHref: vi.fn(() => null),
   formatEur: vi.fn((value: number) => `€${value}`),
   sortTreatmentsByPrice: vi.fn((treatments: Array<{ id: string }>) => treatments),
@@ -158,8 +150,24 @@ const baseData = {
 }
 
 describe('ClinicDetail concept', () => {
-  it('renders the clinic disclaimer in the hero-to-review flow', () => {
-    render(<ClinicDetail data={baseData} />)
+  it('renders the clinic disclaimer in the hero-to-review flow', async () => {
+    const analytics = {
+      onCtaClicked: vi.fn(),
+      onProfileViewed: vi.fn(),
+    }
+
+    render(<ClinicDetail analytics={analytics} data={baseData} onSubmitContactRequest={vi.fn()} />)
+
+    await waitFor(() => {
+      expect(analytics.onProfileViewed).toHaveBeenCalledWith({
+        clinicId: '1',
+        clinicSlug: 'template-test',
+        hasDoctors: true,
+        hasTreatments: true,
+        pagePath: '/clinics/template-test',
+        verificationTier: 'gold',
+      })
+    })
 
     expect(mocks.disclaimerNoticeComponent).toHaveBeenCalled()
     const disclaimerCall = mocks.disclaimerNoticeComponent.mock.calls.at(0) as unknown as Array<unknown> | undefined

@@ -18,9 +18,16 @@
 
 Use these public methods only for the stated concern. Repository-specific rules in this instruction hierarchy remain authoritative.
 
-- Testing: For changes to observable behavior and bug fixes, use Freeman and Pryce's outside-in TDD, then assess the resulting tests against Kent Beck's Test Desiderata. Do not apply this to docs-only, configuration-only, or exploratory work.
-- Architecture: When defining or changing module boundaries, use Parnas's information-hiding criterion and Robert C. Martin's Dependency Rule so source dependencies point toward the module that owns the higher-level policy.
-- UI: For frontend UI work, use Luke Wroblewski's Mobile First to set content and interaction priority before widening; separately apply Ethan Marcotte's Responsive Web Design through fluid grids, flexible images, and media queries.
+- Semantic Anchors: Use [https://llm-coding.github.io/Semantic-Anchors/llms.txt](https://llm-coding.github.io/Semantic-Anchors/llms.txt) to identify established methods; name them without redefining them locally.
+- Use Freeman and Pryce's Outside-In TDD.
+- Use Kent Beck's Test Desiderata.
+- Use Parnas's Information-Hiding Criterion.
+- Use Robert C. Martin's Dependency Rule.
+- Use Luke Wroblewski's Mobile First.
+- Use Ethan Marcotte's Responsive Web Design.
+- Use WCAG 2.2 AA.
+- Use the WAI-ARIA Modal Dialog Pattern.
+- Apply Outside-In TDD only to observable behavior changes and bug fixes, not to docs-only, configuration-only, or exploratory work.
 
 ## Repo-Local Agents
 

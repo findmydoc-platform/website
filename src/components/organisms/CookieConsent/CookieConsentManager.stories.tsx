@@ -1,13 +1,18 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 
 import { CookieConsentBanner } from '@/components/organisms/CookieConsent/CookieConsentBanner.client'
 import { CookieConsentDialog } from '@/components/organisms/CookieConsent/CookieConsentDialog.client'
 import { CookieConsentLauncher } from '@/components/organisms/CookieConsent/CookieConsentLauncher.client'
 import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
 import { DEFAULT_COOKIE_CONSENT_CONFIG } from '@/features/cookieConsent'
-import { withViewportStory } from '../../utils/viewportMatrix'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
+
+const managerPorts = {
+  onAnalyticsConsentChange: fn(),
+  onPersistConsent: fn(),
+}
 
 const denseCookieConsentConfig = {
   ...DEFAULT_COOKIE_CONSENT_CONFIG,
@@ -53,6 +58,11 @@ const authRouteCookieConsentConfig = {
 const meta = {
   title: 'Domain/Shared/Organisms/CookieConsent',
   component: CookieConsentManager,
+  args: {
+    config: DEFAULT_COOKIE_CONSENT_CONFIG,
+    initialConsent: null,
+    ...managerPorts,
+  },
   tags: ['autodocs', 'domain:shared', 'layer:organism', 'status:stable', 'used-in:shared'],
   parameters: {
     layout: 'fullscreen',
@@ -165,7 +175,7 @@ const authCompactBannerBase: Story = {
   render: () => {
     return (
       <div className="min-h-screen bg-background pb-28">
-        <CookieConsentManager config={authRouteCookieConsentConfig} initialConsent={null} />
+        <CookieConsentManager config={authRouteCookieConsentConfig} initialConsent={null} {...managerPorts} />
       </div>
     )
   },
@@ -197,7 +207,7 @@ const authDialogBase: Story = {
   render: () => {
     return (
       <div className="min-h-screen bg-background">
-        <CookieConsentManager config={authRouteCookieConsentConfig} initialConsent={null} />
+        <CookieConsentManager config={authRouteCookieConsentConfig} initialConsent={null} {...managerPorts} />
       </div>
     )
   },

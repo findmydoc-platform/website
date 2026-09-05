@@ -16,12 +16,24 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 - Server truth lives in Payload; frontend should stay thin and presentation-oriented.
 - Core domains: auth, clinic network, content, geo entities, and role-based access.
 
+### Frontend Method Anchors
+
+- Use Component-Driven Development (CDD) through Storybook.
+- Use Component Story Format (CSF).
+- Use Hexagonal Architecture (Ports & Adapters).
+- Route-level and block adapters own Payload access.
+- Route-level, block, and feature-boundary adapters own application API access.
+- Feature-boundary adapters live under `src/features/<feature>/**` and pass normalized props and callback ports to reusable UI.
+- Reusable UI remains transport-free.
+
 ### Payload and UI Boundary
 
 - Payload is the source of truth for CMS-backed data across `src/**`.
 - Presentational UI under `src/components/**` must stay Payload-free and must not import `@/payload-types`.
 - Normalize Payload unions such as links, media, and relations in adapter layers before passing props into reusable UI.
 - Shared UI contracts: links use `{ href: string; label?: string | null; newTab?: boolean }`; rich text uses `ReactNode`; media uses `{ src?: string; width?: number; height?: number; alt?: string }`.
+- Across the Server–Client boundary, pass serializable data or Server Actions. Create browser callback ports in the owning client adapter at the interaction leaf; reusable UI remains transport-free.
+- Prefer native HTML semantics when they provide the required behavior; use ARIA to supplement, not replace, native semantics.
 - Reusable styling and variants belong in `src/components/**`; Payload-aware mapping belongs in `src/blocks/**` or route-level adapters; shared CMS adapters belong in `src/blocks/_shared/**`.
 - Compute CMS-derived routes in adapters, not presentational components.
 - If a component needs Payload imports, move the mapping to an adapter and pass normalized props into the UI layer.
@@ -29,7 +41,7 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 ### Global Engineering Rules (Critical First)
 
 1. Use Payload-native APIs and migrations for Payload-managed data; never use direct SQL or database-adapter access, and stop for an explicit architecture decision if Payload has no suitable mechanism.
-2. Business logic and side effects belong in hooks (`src/hooks/**` or collection hooks), not UI components.
+2. Payload business logic and collection or global lifecycle side effects belong in hooks (`src/hooks/**` or collection hooks), not UI components.
 3. Access rules must reuse helpers in `src/access/**`; avoid duplicate role logic.
 4. Collections should remain minimal, indexed where needed, and documented via `admin.description`.
 5. Respect soft delete (`trash: true`) patterns unless destructive behavior is explicitly required.
@@ -64,18 +76,22 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 
 ### Frontend Baseline
 
-- Frontend UI development follows Tom Coleman's Component-Driven Development through Storybook.
 - Prefer RSC by default; use client components only at interaction leaves.
 - Keep UI components Payload-free; map CMS shapes in block adapters.
 - Use Tailwind + shadcn atoms in `src/components/atoms`.
+- New or changed component stories must live beside their documented source component under `src/**`.
+- Shared fixtures, shared assets, global MDX guidance, and explicitly story-only prototypes remain under `src/stories/**`.
+- Story-only prototypes must live under a `prototypes/` directory so the exception is machine-checkable.
+- Untouched legacy component stories under `src/stories/**` remain valid until the dedicated component-story colocation refactor is complete.
 - Story metadata must comply with `docs/frontend/story-governance.md`.
-- Treat mobile-first layout and interaction behavior as the default frontend design mode; see `docs/frontend/mobile-ai-playbook.md` for the canonical viewport matrix, review checklist, and prompt scaffolding.
+- Use `docs/frontend/mobile-ai-playbook.md` for the canonical viewport matrix, interaction checks, runtime evidence, and QA note.
 
 ### Domain Routing
 
 - UI components: `src/components/AGENTS.md`
 - Frontend routes and UI assembly: `src/app/(frontend)/AGENTS.md`
 - UI and Payload boundary adapters: `src/blocks/AGENTS.md` and `src/app/AGENTS.md`
+- Application API feature-boundary adapters: `src/features/<feature>/**`
 - Payload/API/hooks/seeds: `src/collections/AGENTS.md`, `src/hooks/AGENTS.md`, `src/endpoints/seed/AGENTS.md`, `src/app/api/AGENTS.md`
 - Payload admin UI design: `src/app/(payload)/AGENTS.md`, `src/components/organisms/AdminBranding/AGENTS.md`, `src/components/organisms/DeveloperDashboard/AGENTS.md`, `src/dashboard/adminDashboard/AGENTS.md`
 - Storybook and UI test fixtures: `src/stories/AGENTS.md`

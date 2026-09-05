@@ -8,9 +8,9 @@ import {
   formatSeedJobTitle,
   formatSeedRunTitle,
   formatSeedStepTitle,
-} from '@/endpoints/seed/utils/labels'
+} from '@/features/seeding/labels'
+import type { SeedRunViewModel } from '@/features/adminDashboard/seedingViewModel'
 import { resolveClientRuntimeClass, resolveClientRuntimeEnvironment } from '@/features/runtimePolicy'
-import type { SeedRunSnapshot } from '@/endpoints/seed/utils/state'
 import { buildSeedJobSummaries, formatRetryBatchLabel } from './seedJobSummaries'
 
 export type SeedingCardMode = 'development' | 'preview' | 'test' | 'production'
@@ -58,7 +58,7 @@ export const normalizeSeedingWidgetControls = (value: unknown): SeedingWidgetCon
   }
 }
 
-export type SeedRunSummary = SeedRunSnapshot
+export type SeedRunSummary = SeedRunViewModel
 
 export const modeFromNodeEnv = (nodeEnv: string | undefined): SeedingCardMode => {
   if (nodeEnv === 'production') return 'production'
@@ -117,11 +117,11 @@ export type SeedingCardViewProps = {
   onExportJSONFile: () => void
 }
 
-const isTerminalRunStatus = (status: SeedRunSnapshot['status']): boolean => {
+const isTerminalRunStatus = (status: SeedRunSummary['status']): boolean => {
   return status === 'completed' || status === 'partial' || status === 'failed' || status === 'cancelled'
 }
 
-const formatRunStatus = (status: SeedRunSnapshot['status']): string => {
+const formatRunStatus = (status: SeedRunSummary['status']): string => {
   if (status === 'completed') return 'completed'
   if (status === 'partial') return 'partial'
   if (status === 'failed') return 'failed'
@@ -130,7 +130,7 @@ const formatRunStatus = (status: SeedRunSnapshot['status']): string => {
   return 'queued'
 }
 
-const formatFinalFlushStatus = (finalFlush: SeedRunSnapshot['finalFlush']): string | null => {
+const formatFinalFlushStatus = (finalFlush: SeedRunSummary['finalFlush']): string | null => {
   if (!finalFlush) return null
 
   const parts = [
@@ -147,7 +147,7 @@ const formatFinalFlushStatus = (finalFlush: SeedRunSnapshot['finalFlush']): stri
   return parts.join(' · ')
 }
 
-const formatJobStatus = (status: SeedRunSnapshot['jobs'][number]['status']): string => {
+const formatJobStatus = (status: SeedRunSummary['jobs'][number]['status']): string => {
   if (status === 'succeeded') return 'succeeded'
   if (status === 'failed') return 'failed'
   if (status === 'cancelled') return 'cancelled'
@@ -169,7 +169,7 @@ const formatDateTime = (isoDate: string | undefined): string => {
   return parsed.toLocaleString()
 }
 
-const getProgressColor = (status: SeedRunSnapshot['status']): string => {
+const getProgressColor = (status: SeedRunSummary['status']): string => {
   if (status === 'failed' || status === 'cancelled') return SEED_FAILURE_COLOR
   if (status === 'partial') return 'var(--theme-warning-500)'
   if (status === 'completed') return SEED_SUCCESS_COLOR
@@ -177,7 +177,7 @@ const getProgressColor = (status: SeedRunSnapshot['status']): string => {
   return 'var(--theme-elevation-500)'
 }
 
-const getJobStatusColor = (status: SeedRunSnapshot['jobs'][number]['status']): string => {
+const getJobStatusColor = (status: SeedRunSummary['jobs'][number]['status']): string => {
   if (status === 'failed') return SEED_FAILURE_COLOR
   if (status === 'cancelled') return SEED_FAILURE_COLOR
   if (status === 'skipped') return 'var(--theme-warning-500)'
@@ -350,7 +350,7 @@ export const SeedingCardView: React.FC<SeedingCardViewProps> = (props) => {
     gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
   }
 
-  const jobCardStyle = (status: SeedRunSnapshot['jobs'][number]['status']): React.CSSProperties => ({
+  const jobCardStyle = (status: SeedRunSummary['jobs'][number]['status']): React.CSSProperties => ({
     border: '1px solid var(--theme-border-color)',
     borderRadius: 'var(--style-radius-s)',
     backgroundColor: status === 'running' ? 'var(--theme-elevation-100)' : 'var(--theme-elevation-0)',

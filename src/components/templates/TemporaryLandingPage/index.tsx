@@ -1,30 +1,41 @@
+import type { ReactNode } from 'react'
+
 import { LanguageSwitcher } from '@/components/molecules/LanguageSwitcher'
 import { HoldingPageConcept } from '@/components/templates/HoldingPageConcept'
 import {
   getTemporaryLandingBlogCopy,
-  getTemporaryLandingPageContent,
   type TemporaryLandingLanguageOption,
   type TemporaryLandingLocale,
+  type TemporaryLandingPageContent,
 } from '@/features/temporaryLandingMode'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
 import { buildPostsIndexPath } from '@/utilities/content/postPaths'
 import type { ContentLocaleContext } from '@/utilities/contentLocalization'
 import { TemporaryLandingBlogSection } from './TemporaryLandingBlogSection'
 
-type TemporaryLandingPageProps = {
+export type TemporaryLandingPageProps = {
+  contactForm: ReactNode
+  content: TemporaryLandingPageContent
   contentLocale: ContentLocaleContext
   languageOptions: TemporaryLandingLanguageOption[]
   locale: TemporaryLandingLocale
   posts: BlogCardBaseProps[]
 }
 
-export function TemporaryLandingPage({ contentLocale, languageOptions, locale, posts }: TemporaryLandingPageProps) {
-  const content = getTemporaryLandingPageContent(locale)
+export function TemporaryLandingPage({
+  contactForm,
+  content,
+  contentLocale,
+  languageOptions,
+  locale,
+  posts,
+}: TemporaryLandingPageProps) {
   const blogCopy = getTemporaryLandingBlogCopy(locale)
 
   return (
     <HoldingPageConcept
       {...content}
+      contactForm={contactForm}
       afterSignals={
         <TemporaryLandingBlogSection
           ctaHref={buildPostsIndexPath(contentLocale)}

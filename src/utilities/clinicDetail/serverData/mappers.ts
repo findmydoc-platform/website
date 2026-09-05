@@ -19,7 +19,7 @@ import type {
   ClinicDetailTreatment,
   ClinicDetailTrust,
   ClinicVerificationTier,
-} from '@/components/templates/ClinicDetailConcepts/types'
+} from '@/features/clinicDetail/contracts'
 import { CLINICS_BREADCRUMB, HOME_BREADCRUMB } from '@/utilities/breadcrumbs'
 import { resolveDoctorProfileImage } from '@/utilities/media/doctorProfileImage'
 import type { MediaDescriptor } from '@/utilities/media/relationMedia'

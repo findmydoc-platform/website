@@ -1,7 +1,12 @@
 import * as React from 'react'
 
 import type { ContactFormFields, ContactFormSelectionError } from '@/components/organisms/ClinicDetail'
-import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
+import {
+  ClinicContactRequestError,
+  type ClinicContactRequestSubmitter,
+  type ClinicDetailDoctor,
+  type ClinicDetailTreatment,
+} from '@/features/clinicDetail/contracts'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 import {
   computeNextVisibleFurtherTreatmentCount,
@@ -18,23 +23,10 @@ type UseClinicDetailInteractionStateArgs = {
   initialContactFormFields: ContactFormFields
   inquiryCreation: PatientInquiryCreationContext
   furtherTreatmentPageSize: number
+  onSubmitContactRequest: ClinicContactRequestSubmitter
 }
 
 type ContactFormMessageTone = 'success' | 'error'
-type ClinicContactRequestPayload = {
-  clinicId: string
-  doctorId?: string
-  treatmentId?: string
-  idempotencyKey: string
-  treatmentTimeline?: string
-  preferredContactWindow?: string
-  message: string
-  consent: boolean
-  email?: string
-  fullName?: string
-  phoneNumber?: string
-}
-
 type UseClinicDetailInteractionStateResult = {
   ourDoctorsRef: React.RefObject<HTMLElement | null>
   contactFormRef: React.RefObject<HTMLElement | null>
@@ -72,50 +64,6 @@ function createContactRequestKey(): string {
   return `contact-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
-class ClinicContactRequestError extends Error {
-  constructor(
-    message: string,
-    readonly requiresReauthentication: boolean,
-  ) {
-    super(message)
-    this.name = 'ClinicContactRequestError'
-  }
-}
-
-async function submitClinicContactRequest(
-  payload: ClinicContactRequestPayload,
-  authenticated: boolean,
-): Promise<{ id: string }> {
-  const response = await fetch(authenticated ? '/api/patient/inquiries' : '/api/clinic-contact-requests', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    const errorPayload = await response.json().catch(() => ({}))
-    const error = (errorPayload as { error?: unknown }).error
-    const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : ''
-    const requiresReauthentication = response.status === 401
-    const errorMessage = requiresReauthentication
-      ? 'Your session has ended. Sign in again before sending this request.'
-      : typeof error === 'string'
-        ? error
-        : 'Could not send your clinic request right now.'
-    throw new ClinicContactRequestError(errorMessage, requiresReauthentication || code === 'INQUIRY_UNAUTHORIZED')
-  }
-
-  const responseBody = (await response.json().catch(() => ({}))) as {
-    id?: unknown
-    inquiry?: { id?: unknown }
-  }
-  const id = responseBody.inquiry?.id ?? responseBody.id
-  if (typeof id !== 'string' && typeof id !== 'number') {
-    throw new ClinicContactRequestError('Could not confirm your clinic request.', false)
-  }
-  return { id: String(id) }
-}
-
 function getSelectionErrorFromSubmitMessage(message: string): ContactFormSelectionError {
   if (message === 'Doctor is not available for this clinic.') return 'doctor'
   if (message === 'Treatment is not available for this clinic.') return 'treatment'
@@ -131,6 +79,7 @@ export function useClinicDetailInteractionState({
   initialContactFormFields,
   inquiryCreation,
   furtherTreatmentPageSize,
+  onSubmitContactRequest,
 }: UseClinicDetailInteractionStateArgs): UseClinicDetailInteractionStateResult {
   const [activeHeroDoctorId, setActiveHeroDoctorId] = React.useState('')
   const [selectedDoctorId, setSelectedDoctorId] = React.useState('')
@@ -327,7 +276,7 @@ export function useClinicDetailInteractionState({
         const idempotencyKey = contactIdempotencyKeyRef.current ?? createContactRequestKey()
         contactIdempotencyKeyRef.current = idempotencyKey
         const authenticated = inquiryCreation.kind === 'authenticated'
-        const result = await submitClinicContactRequest(
+        const result = await onSubmitContactRequest(
           {
             clinicId: String(clinicId),
             doctorId: selectedDoctorId || undefined,
@@ -375,6 +324,7 @@ export function useClinicDetailInteractionState({
       hasSubmittedContact,
       inquiryCreation,
       isSubmittingContact,
+      onSubmitContactRequest,
       requiresReauthentication,
       selectedDoctorId,
       selectedTreatmentId,

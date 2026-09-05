@@ -4,8 +4,13 @@ import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ContactFormFields } from '@/components/organisms/ClinicDetail/types'
-import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
 import { useClinicDetailInteractionState } from '@/components/templates/ClinicDetailConcepts/hooks/useClinicDetailInteractionState'
+import {
+  ClinicContactRequestError,
+  type ClinicContactRequestSubmitter,
+  type ClinicDetailDoctor,
+  type ClinicDetailTreatment,
+} from '@/features/clinicDetail/contracts'
 
 const initialContactFormFields: ContactFormFields = {
   firstName: 'Jane',
@@ -35,6 +40,8 @@ const treatments: ClinicDetailTreatment[] = [
   },
 ]
 
+const submitClinicContactRequest = vi.fn<ClinicContactRequestSubmitter>()
+
 function renderInteractionState(
   inquiryCreation: Parameters<typeof useClinicDetailInteractionState>[0]['inquiryCreation'] = { kind: 'guest' },
 ) {
@@ -48,6 +55,7 @@ function renderInteractionState(
       initialContactFormFields,
       inquiryCreation,
       furtherTreatmentPageSize: 4,
+      onSubmitContactRequest: submitClinicContactRequest,
     }),
   )
 }
@@ -58,13 +66,8 @@ function submitEvent() {
 
 describe('useClinicDetailInteractionState', () => {
   beforeEach(() => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ success: true, id: 42, status: 'submitted' }),
-      }),
-    )
+    vi.clearAllMocks()
+    submitClinicContactRequest.mockResolvedValue({ id: '42' })
   })
 
   it('keeps a successful contact request in sent state and ignores a repeated submit', async () => {
@@ -80,16 +83,15 @@ describe('useClinicDetailInteractionState', () => {
 
     expect(result.current.hasSubmittedContact).toBe(true)
     expect(result.current.contactFormMessage).toBe('Your clinic request has been sent successfully.')
-    expect(fetch).toHaveBeenCalledTimes(1)
-    const firstRequest = vi.mocked(fetch).mock.calls[0]?.[1]
-    const firstBody = JSON.parse(String(firstRequest?.body)) as { idempotencyKey?: string }
-    expect(firstBody.idempotencyKey).toMatch(/\S{8,}/u)
+    expect(submitClinicContactRequest).toHaveBeenCalledTimes(1)
+    const firstPayload = submitClinicContactRequest.mock.calls[0]?.[0]
+    expect(firstPayload?.idempotencyKey).toMatch(/\S{8,}/u)
 
     await act(async () => {
       await result.current.handleContactSubmit(submitEvent())
     })
 
-    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(submitClinicContactRequest).toHaveBeenCalledTimes(1)
   })
 
   it('ignores two immediate submit events before React rerenders the submitting state', async () => {
@@ -105,7 +107,7 @@ describe('useClinicDetailInteractionState', () => {
       await Promise.all([firstSubmit, secondSubmit])
     })
 
-    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(submitClinicContactRequest).toHaveBeenCalledTimes(1)
     expect(result.current.hasSubmittedContact).toBe(true)
   })
 
@@ -130,16 +132,16 @@ describe('useClinicDetailInteractionState', () => {
       await result.current.handleContactSubmit(submitEvent())
     })
 
-    expect(fetch).toHaveBeenCalledTimes(2)
-    const firstBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body)) as { idempotencyKey: string }
-    const secondBody = JSON.parse(String(vi.mocked(fetch).mock.calls[1]?.[1]?.body)) as { idempotencyKey: string }
-    expect(secondBody.idempotencyKey).not.toBe(firstBody.idempotencyKey)
+    expect(submitClinicContactRequest).toHaveBeenCalledTimes(2)
+    const firstPayload = submitClinicContactRequest.mock.calls[0]?.[0]
+    const secondPayload = submitClinicContactRequest.mock.calls[1]?.[0]
+    expect(secondPayload?.idempotencyKey).not.toBe(firstPayload?.idempotencyKey)
   })
 
   it('reuses the same request key when an unchanged failed submission is retried', async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'Temporary failure.' }) } as Response)
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+    submitClinicContactRequest
+      .mockRejectedValueOnce(new Error('Temporary failure.'))
+      .mockResolvedValueOnce({ id: '42' })
     const { result } = renderInteractionState()
 
     act(() => {
@@ -152,9 +154,9 @@ describe('useClinicDetailInteractionState', () => {
       await result.current.handleContactSubmit(submitEvent())
     })
 
-    const firstBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body)) as { idempotencyKey: string }
-    const secondBody = JSON.parse(String(vi.mocked(fetch).mock.calls[1]?.[1]?.body)) as { idempotencyKey: string }
-    expect(secondBody.idempotencyKey).toBe(firstBody.idempotencyKey)
+    const firstPayload = submitClinicContactRequest.mock.calls[0]?.[0]
+    const secondPayload = submitClinicContactRequest.mock.calls[1]?.[0]
+    expect(secondPayload?.idempotencyKey).toBe(firstPayload?.idempotencyKey)
   })
 
   it('uses the authenticated patient endpoint without sending browser identity fields', async () => {
@@ -176,24 +178,21 @@ describe('useClinicDetailInteractionState', () => {
       await result.current.handleContactSubmit(submitEvent())
     })
 
-    expect(fetch).toHaveBeenCalledWith('/api/patient/inquiries', expect.anything())
-    const requestBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body)) as Record<string, unknown>
-    expect(requestBody).not.toHaveProperty('actorId')
-    expect(requestBody).not.toHaveProperty('patientId')
-    expect(requestBody).not.toHaveProperty('email')
-    expect(requestBody).not.toHaveProperty('fullName')
-    expect(requestBody).not.toHaveProperty('phoneNumber')
-    expect(requestBody.clinicId).toBe('1')
+    expect(submitClinicContactRequest).toHaveBeenCalledWith(expect.any(Object), true)
+    const requestPayload = submitClinicContactRequest.mock.calls[0]?.[0]
+    expect(requestPayload).not.toHaveProperty('actorId')
+    expect(requestPayload).not.toHaveProperty('patientId')
+    expect(requestPayload).not.toHaveProperty('email')
+    expect(requestPayload).not.toHaveProperty('fullName')
+    expect(requestPayload).not.toHaveProperty('phoneNumber')
+    expect(requestPayload?.clinicId).toBe('1')
     expect(result.current.submittedInquiryHref).toBe('/patient/inquiries/42')
     expect(result.current.isPhoneLocked).toBe(true)
   })
 
   it('stops after a 401 and exposes reauthentication state', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
-      new Response(JSON.stringify({ error: { code: 'INQUIRY_UNAUTHORIZED' } }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+    submitClinicContactRequest.mockRejectedValueOnce(
+      new ClinicContactRequestError('Your session has ended. Sign in again before sending this request.', true),
     )
     const { result } = renderInteractionState({
       kind: 'authenticated',

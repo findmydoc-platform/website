@@ -1,8 +1,4 @@
-import type {
-  ClinicBeforeAfterEntry,
-  ClinicDetailData,
-  ClinicDetailDoctor,
-} from '@/components/templates/ClinicDetailConcepts'
+import type { ClinicBeforeAfterEntry, ClinicDetailData, ClinicDetailDoctor } from '@/features/clinicDetail/contracts'
 
 import { getStoryImageSrc, storyClinicImages, storyClinicMedia, storyPortraits } from './assets'
 

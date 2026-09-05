@@ -12,12 +12,13 @@ import {
   type SeedingCardMode,
   type SeedingWidgetControls,
   type SeedRunSummary,
-} from './SeedingCardView'
-import { formatSeedRetryTitle, formatSeedRunTitle, formatSeedStepTitle } from '@/endpoints/seed/utils/labels'
+} from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView'
+import type { SeedRunSnapshot } from '@/endpoints/seed/utils/state'
+import { formatSeedRetryTitle, formatSeedRunTitle, formatSeedStepTitle } from '@/features/seeding/labels'
 
 type SeedRunType = SeedRunSummary['type']
 
-type SeedingCardProps = {
+type SeedingCardAdapterProps = {
   mode?: SeedingCardMode
   controls?: unknown
   forcedUserType?: DashboardUserType
@@ -51,7 +52,7 @@ const isTerminalRunStatus = (status: SeedRunSummary['status']): boolean => {
   return status === 'completed' || status === 'partial' || status === 'failed' || status === 'cancelled'
 }
 
-const isSeedJobStatus = (value: unknown): value is SeedRunSummary['jobs'][number]['status'] => {
+const isSeedJobStatus = (value: unknown): value is SeedRunSnapshot['jobs'][number]['status'] => {
   return (
     value === 'queued' ||
     value === 'running' ||
@@ -62,7 +63,19 @@ const isSeedJobStatus = (value: unknown): value is SeedRunSummary['jobs'][number
   )
 }
 
-const isSeedRunSnapshot = (value: unknown): value is SeedRunSummary => {
+const isStringArray = (value: unknown): value is string[] => {
+  return Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+}
+
+const isOptionalString = (value: unknown): value is string | undefined => {
+  return typeof value === 'undefined' || typeof value === 'string'
+}
+
+const isOptionalNumber = (value: unknown): value is number | undefined => {
+  return typeof value === 'undefined' || typeof value === 'number'
+}
+
+const isSeedRunSnapshot = (value: unknown): value is SeedRunSnapshot => {
   if (typeof value !== 'object' || value === null) return false
 
   const maybe = value as Partial<Record<string, unknown>>
@@ -87,6 +100,7 @@ const isSeedRunSnapshot = (value: unknown): value is SeedRunSummary => {
     typeof progress.completed === 'number' &&
     typeof progress.total === 'number' &&
     typeof progress.percent === 'number' &&
+    typeof maybe.hasActiveJob === 'boolean' &&
     maybe.jobs.every((job) => {
       if (typeof job !== 'object' || job === null) return false
       const candidate = job as Partial<Record<string, unknown>>
@@ -94,7 +108,17 @@ const isSeedRunSnapshot = (value: unknown): value is SeedRunSummary => {
         typeof candidate.id === 'string' &&
         typeof candidate.stepName === 'string' &&
         typeof candidate.order === 'number' &&
-        isSeedJobStatus(candidate.status)
+        isSeedJobStatus(candidate.status) &&
+        typeof candidate.kind === 'string' &&
+        typeof candidate.created === 'number' &&
+        typeof candidate.updated === 'number' &&
+        isStringArray(candidate.warnings) &&
+        isStringArray(candidate.failures) &&
+        isOptionalString(candidate.title) &&
+        isOptionalString(candidate.collection) &&
+        isOptionalString(candidate.fileName) &&
+        isOptionalNumber(candidate.chunkIndex) &&
+        isOptionalNumber(candidate.chunkTotal)
       )
     }) &&
     maybe.logs.every((entry) => {
@@ -103,10 +127,86 @@ const isSeedRunSnapshot = (value: unknown): value is SeedRunSummary => {
       return (
         typeof candidate.id === 'string' &&
         (candidate.severity === 'INFO' || candidate.severity === 'WARN' || candidate.severity === 'ERROR') &&
-        typeof candidate.text === 'string'
+        typeof candidate.text === 'string' &&
+        isOptionalString(candidate.title) &&
+        isOptionalString(candidate.jobId) &&
+        isOptionalString(candidate.stepName) &&
+        isOptionalNumber(candidate.chunkIndex) &&
+        isOptionalNumber(candidate.chunkTotal)
       )
-    })
+    }) &&
+    (typeof maybe.finalFlush === 'undefined' ||
+      (typeof maybe.finalFlush === 'object' &&
+        maybe.finalFlush !== null &&
+        'status' in maybe.finalFlush &&
+        (maybe.finalFlush.status === 'executed' ||
+          maybe.finalFlush.status === 'failed' ||
+          maybe.finalFlush.status === 'skipped') &&
+        'tagCount' in maybe.finalFlush &&
+        typeof maybe.finalFlush.tagCount === 'number' &&
+        'pathCount' in maybe.finalFlush &&
+        typeof maybe.finalFlush.pathCount === 'number' &&
+        'failureCount' in maybe.finalFlush &&
+        typeof maybe.finalFlush.failureCount === 'number'))
   )
+}
+
+const toSeedRunViewModel = (snapshot: SeedRunSnapshot): SeedRunSummary => ({
+  runId: snapshot.runId,
+  type: snapshot.type,
+  reset: snapshot.reset,
+  queue: snapshot.queue,
+  ...(snapshot.title ? { title: snapshot.title } : {}),
+  status: snapshot.status,
+  ...(snapshot.completedAt ? { completedAt: snapshot.completedAt } : {}),
+  ...(snapshot.activeStepName ? { activeStepName: snapshot.activeStepName } : {}),
+  jobs: snapshot.jobs.map((job) => ({
+    id: job.id,
+    order: job.order,
+    status: job.status,
+    ...(job.title ? { title: job.title } : {}),
+    stepName: job.stepName,
+    kind: job.kind,
+    ...(job.collection ? { collection: job.collection } : {}),
+    ...(job.fileName ? { fileName: job.fileName } : {}),
+    ...(typeof job.chunkIndex === 'number' ? { chunkIndex: job.chunkIndex } : {}),
+    ...(typeof job.chunkTotal === 'number' ? { chunkTotal: job.chunkTotal } : {}),
+    created: job.created,
+    updated: job.updated,
+    warnings: [...job.warnings],
+    failures: [...job.failures],
+  })),
+  logs: snapshot.logs.map((entry) => ({
+    id: entry.id,
+    severity: entry.severity,
+    text: entry.text,
+    ...(entry.title ? { title: entry.title } : {}),
+    ...(entry.jobId ? { jobId: entry.jobId } : {}),
+    ...(entry.stepName ? { stepName: entry.stepName } : {}),
+    ...(typeof entry.chunkIndex === 'number' ? { chunkIndex: entry.chunkIndex } : {}),
+    ...(typeof entry.chunkTotal === 'number' ? { chunkTotal: entry.chunkTotal } : {}),
+  })),
+  progress: {
+    completed: snapshot.progress.completed,
+    total: snapshot.progress.total,
+    percent: snapshot.progress.percent,
+  },
+  hasActiveJob: snapshot.hasActiveJob,
+  ...(snapshot.finalFlush
+    ? {
+        finalFlush: {
+          status: snapshot.finalFlush.status,
+          tagCount: snapshot.finalFlush.tagCount,
+          pathCount: snapshot.finalFlush.pathCount,
+          failureCount: snapshot.finalFlush.failureCount,
+          ...(snapshot.finalFlush.reason ? { reason: snapshot.finalFlush.reason } : {}),
+        },
+      }
+    : {}),
+})
+
+const parseSeedRunViewModel = (value: unknown): SeedRunSummary | null => {
+  return isSeedRunSnapshot(value) ? toSeedRunViewModel(value) : null
 }
 
 const clipLogLines = (lines: SeedLogLine[], maxLines: number): SeedLogLine[] => {
@@ -203,7 +303,7 @@ const writeStoredRunId = (runId: string | null): void => {
   }
 }
 
-export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
+export const SeedingCardAdapter: React.FC<SeedingCardAdapterProps> = (props) => {
   const [loading, setLoading] = useState(false)
   const [run, setRun] = useState<SeedRunSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -263,14 +363,15 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
 
         const query = params.toString()
         const data = await fetchJSON(query.length > 0 ? `/api/seed?${query}` : '/api/seed')
-        if (isSeedRunSnapshot(data)) {
-          if (options?.restoreTerminal === false && isTerminalRunStatus(data.status)) {
+        const snapshot = parseSeedRunViewModel(data)
+        if (snapshot) {
+          if (options?.restoreTerminal === false && isTerminalRunStatus(snapshot.status)) {
             applyRunSnapshot(null)
             return null
           }
 
-          applyRunSnapshot(data)
-          return data
+          applyRunSnapshot(snapshot)
+          return snapshot
         }
 
         if (typeof data === 'object' && data !== null && 'message' in data) {
@@ -304,9 +405,10 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
 
           const query = params.toString()
           const data = await fetchJSON(query.length > 0 ? `/api/seed/advance?${query}` : '/api/seed/advance')
-          if (isSeedRunSnapshot(data)) {
-            applyRunSnapshot(data)
-            return data
+          const snapshot = parseSeedRunViewModel(data)
+          if (snapshot) {
+            applyRunSnapshot(snapshot)
+            return snapshot
           }
 
           if (typeof data === 'object' && data !== null && 'message' in data) {
@@ -397,25 +499,26 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
 
         try {
           const data = await fetchJSON(`/api/seed?${params.toString()}`, { method: 'POST' })
-          if (!isSeedRunSnapshot(data)) {
+          const snapshot = parseSeedRunViewModel(data)
+          if (!snapshot) {
             throw new Error('Unexpected response')
           }
 
-          applyRunSnapshot(data)
+          applyRunSnapshot(snapshot)
           if (type === 'baseline') setBaselineSeededThisSession(true)
           if (type === 'demo') setDemoSeededThisSession(true)
 
           toast.success(
-            `Seed run queued: ${formatSeedRunTitle(type, opts?.reset ?? false)} · ${data.progress.total} job(s)`,
+            `Seed run queued: ${formatSeedRunTitle(type, opts?.reset ?? false)} · ${snapshot.progress.total} job(s)`,
           )
 
-          if (!isTerminalRunStatus(data.status)) {
+          if (!isTerminalRunStatus(snapshot.status)) {
             setTimeout(() => {
-              void advanceSeedRunIfIdle(data)
+              void advanceSeedRunIfIdle(snapshot)
             }, 0)
           }
 
-          return data
+          return snapshot
         } catch (seedError: unknown) {
           const message = seedError instanceof Error ? seedError.message : String(seedError)
           setError(message)
@@ -446,22 +549,23 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
           }
 
           const data = await fetchJSON(`/api/seed/retry?${params.toString()}`, { method: 'POST' })
-          if (!isSeedRunSnapshot(data)) {
+          const snapshot = parseSeedRunViewModel(data)
+          if (!snapshot) {
             throw new Error('Unexpected response')
           }
 
-          applyRunSnapshot(data)
+          applyRunSnapshot(snapshot)
           toast.success(
-            `Retry queued: ${data.title ?? formatSeedRetryTitle(formatSeedRunTitle(data.type, data.reset))} · ${data.progress.total} job(s)`,
+            `Retry queued: ${snapshot.title ?? formatSeedRetryTitle(formatSeedRunTitle(snapshot.type, snapshot.reset))} · ${snapshot.progress.total} job(s)`,
           )
 
-          if (!isTerminalRunStatus(data.status)) {
+          if (!isTerminalRunStatus(snapshot.status)) {
             setTimeout(() => {
-              void advanceSeedRunIfIdle(data)
+              void advanceSeedRunIfIdle(snapshot)
             }, 0)
           }
 
-          return data
+          return snapshot
         } catch (retryError: unknown) {
           const message = retryError instanceof Error ? retryError.message : String(retryError)
           setError(message)
@@ -602,5 +706,9 @@ export const SeedingCard: React.FC<SeedingCardProps> = (props) => {
   )
 }
 
-export type { SeedRunSummary, SeedingCardMode, DashboardUserType, SeedingWidgetControls } from './SeedingCardView'
-export { SeedingCardView, getDemoSeedPolicy, modeFromNodeEnv, modeFromRuntimeEnv } from './SeedingCardView'
+export type {
+  SeedRunSummary,
+  SeedingCardMode,
+  DashboardUserType,
+  SeedingWidgetControls,
+} from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView'

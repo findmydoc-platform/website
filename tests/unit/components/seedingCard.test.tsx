@@ -173,9 +173,9 @@ vi.mock('@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView', asy
   }
 })
 
-import { SeedingCard } from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCard'
+import { SeedingCardAdapter } from '@/dashboard/adminDashboard/SeedingCardAdapter.client'
 
-describe('SeedingCard', () => {
+describe('SeedingCardAdapter', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
@@ -216,11 +216,14 @@ describe('SeedingCard', () => {
 
     window.localStorage.setItem('developer-dashboard:seed-run-id', 'run-1')
 
-    render(<SeedingCard forcedUserType="platform" />)
+    render(<SeedingCardAdapter forcedUserType="platform" />)
 
     await flushMicrotasks()
     expect(screen.getByTestId('seed-view')).toHaveTextContent('queued')
     expect(lastSeedingCardViewProps).not.toBeNull()
+    const renderedRun = lastSeedingCardViewProps?.run as SeedRunSummary | undefined
+    expect(renderedRun?.jobs[0]).not.toHaveProperty('input')
+    expect(renderedRun).not.toHaveProperty('warnings')
     expect(fetchMock.mock.calls.some(([url]) => String(url) === '/api/seed/advance?runId=run-1')).toBe(true)
 
     await act(async () => {
@@ -254,7 +257,7 @@ describe('SeedingCard', () => {
       throw new Error(`Unexpected request: ${method} ${url}`)
     })
 
-    render(<SeedingCard mode="production" forcedUserType="platform" />)
+    render(<SeedingCardAdapter mode="production" forcedUserType="platform" />)
 
     await flushMicrotasks()
     expect(lastSeedingCardViewProps?.baselineButtonLabel).toBe('Seed Baseline')
@@ -292,7 +295,7 @@ describe('SeedingCard', () => {
 
     window.localStorage.setItem('developer-dashboard:seed-run-id', 'run-1')
 
-    const { unmount } = render(<SeedingCard forcedUserType="platform" />)
+    const { unmount } = render(<SeedingCardAdapter forcedUserType="platform" />)
 
     await flushMicrotasks()
     expect(screen.getByTestId('seed-view')).toHaveTextContent('none')
@@ -302,7 +305,7 @@ describe('SeedingCard', () => {
     unmount()
     fetchMock.mockClear()
 
-    render(<SeedingCard forcedUserType="platform" />)
+    render(<SeedingCardAdapter forcedUserType="platform" />)
 
     await flushMicrotasks()
     expect(screen.getByTestId('seed-view')).toHaveTextContent('none')

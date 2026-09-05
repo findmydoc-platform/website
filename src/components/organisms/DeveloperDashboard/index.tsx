@@ -1,10 +1,7 @@
 import React from 'react'
-import type { WidgetServerProps } from 'payload'
 import { Banner } from '@payloadcms/ui/elements/Banner'
 
 import { Heading } from '@/components/atoms/Heading'
-import { SeedingCard } from './Seeding/SeedingCard'
-import { resolveDashboardUserType } from './userType'
 
 type DeveloperDashboardProps = {
   seedingSlot?: React.ReactNode
@@ -19,7 +16,7 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardProps> = (props)
         </Heading>
       </Banner>
       <div className="flex flex-col gap-4">
-        {props.seedingSlot ?? <SeedingCard forcedUserType="platform" />}
+        {props.seedingSlot}
         <ul className="mb-2 list-decimal pl-6">
           <li className="w-full">
             Data model reference + error policy:{' '}
@@ -48,12 +45,3 @@ export const DeveloperDashboardView: React.FC<DeveloperDashboardProps> = (props)
     </div>
   )
 }
-
-const DeveloperDashboardWidget: React.FC<WidgetServerProps> = (props) => {
-  const user = props.req?.user ?? null
-  const forcedUserType = resolveDashboardUserType(user)
-
-  return <SeedingCard controls={props.widgetData} forcedUserType={forcedUserType} />
-}
-
-export default DeveloperDashboardWidget

@@ -10,7 +10,6 @@
 
 - Next.js App Router + RSC by default.
 - Use `'use client'` only at interaction leaves.
-- Keep atomic layering clear: atoms -> molecules -> organisms -> templates.
 
 ## Critical Rules
 
@@ -18,14 +17,11 @@
 - Do not place business logic or data fetching inside reusable UI components.
 - Favor parent-controlled inputs (`value/onValueChange`, `checked/onCheckedChange`).
 - Keep molecules router-agnostic; pass navigation callbacks as props.
-- Start route and page composition from the narrow viewport first, then widen to tablet and desktop once hierarchy, spacing, and primary actions are stable.
-- Prefer vertical flow, clear content priority, and compact CTA grouping over early multi-column density.
-- Do not rely on hover-only disclosure, pointer-precision affordances, or side-by-side layouts that collapse into ambiguous mobile order.
 
 ## Boundary Reminder
 
 - UI components stay Payload-free.
-- Payload mapping belongs in `src/blocks/**` adapters.
+- Follow `src/AGENTS.md` for canonical Payload and application API ownership, normalized props, and callback ports.
 
 ## Storybook Expectations
 

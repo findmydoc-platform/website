@@ -159,6 +159,33 @@ describe('resolveMediaImage', () => {
     })
   })
 
+  it('keeps the original upload as a fallback when a generated hero size is selected', () => {
+    const image = resolveMediaImage(
+      {
+        alt: 'Blog hero',
+        updatedAt: '2026-09-06T12:00:00.000Z',
+        url: '/api/platformContentMedia/file/blog-hero.webp',
+        width: 1672,
+        height: 941,
+        sizes: {
+          xlarge: {
+            url: '/api/platformContentMedia/file/blog-hero-1600x900.webp',
+            width: 1600,
+            height: 900,
+          },
+        },
+      },
+      {
+        usage: 'hero',
+      },
+    )
+
+    expect(image).toMatchObject({
+      src: '/api/platformContentMedia/file/blog-hero-1600x900.webp?v=2026-09-06T12%3A00%3A00.000Z',
+      fallbackSrc: '/api/platformContentMedia/file/blog-hero.webp?v=2026-09-06T12%3A00%3A00.000Z',
+    })
+  })
+
   it('maps Payload focal point coordinates to CSS object position', () => {
     const image = resolveMediaImage(
       {

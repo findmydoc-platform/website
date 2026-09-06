@@ -9,6 +9,8 @@ import { FallbackImage } from '@/components/atoms/FallbackImage'
 import { resolveAvatarPlaceholder } from '@/utilities/placeholders/avatar'
 import type { StaticImageData } from 'next/image'
 
+const BLOG_PLACEHOLDER_SRC = '/images/blog-placeholder-1600-900.svg'
+
 export type PostHeroProps = {
   title: string
   excerpt?: string
@@ -25,6 +27,7 @@ export type PostHeroProps = {
   breadcrumbs?: BreadcrumbItem[]
   image?: {
     src: string | StaticImageData
+    fallbackSrc?: string | StaticImageData
     alt: string
     width?: number
     height?: number
@@ -55,7 +58,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
   })
   const authorAvatar = displayAuthor?.avatar || avatarFallback
   const authorRole = displayAuthor?.role || (author ? 'Author' : 'Editorial Team')
-  const resolvedImage = image ?? { src: '/images/blog-placeholder-1600-900.svg', alt: 'Blog placeholder' }
+  const resolvedImage = image ?? { src: BLOG_PLACEHOLDER_SRC, alt: 'Blog placeholder' }
   const clampedOverlayOpacity = Math.max(0, Math.min(100, overlayOpacity))
   const strongOverlay = clampedOverlayOpacity / 100
   const softOverlay = Math.max(strongOverlay * 0.55, 0)
@@ -70,7 +73,9 @@ export const PostHero: React.FC<PostHeroProps> = ({
           priority
           className="object-cover"
           src={resolvedImage.src}
-          fallbackSrc="/images/blog-placeholder-1600-900.svg"
+          fallbackSrc={
+            resolvedImage.fallbackSrc ? [resolvedImage.fallbackSrc, BLOG_PLACEHOLDER_SRC] : BLOG_PLACEHOLDER_SRC
+          }
           alt={resolvedImage.alt}
           width={resolvedImage.width}
           height={resolvedImage.height}

@@ -19,8 +19,13 @@ const normalizeEnvValue = (value) => {
   return normalized.length > 0 ? normalized : null
 }
 
-const isPreviewRuntime =
-  (normalizeEnvValue(process.env.VERCEL_ENV) ?? normalizeEnvValue(process.env.DEPLOYMENT_ENV)) === 'preview'
+export const isPreviewDeployment = ({ deploymentEnvironment, vercelEnvironment }) =>
+  (normalizeEnvValue(vercelEnvironment) ?? normalizeEnvValue(deploymentEnvironment)) === 'preview'
+
+const isPreviewRuntime = isPreviewDeployment({
+  deploymentEnvironment: process.env.DEPLOYMENT_ENV,
+  vercelEnvironment: process.env.VERCEL_ENV,
+})
 const blockSearchIndexing = isPreviewRuntime
 const isDevelopmentRuntime = process.env.NODE_ENV === 'development'
 
@@ -52,6 +57,7 @@ const nextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 2160, 2560, 3840],
     localPatterns: IMAGE_LOCAL_PATTERNS,
     qualities: IMAGE_QUALITIES,
+    unoptimized: isPreviewRuntime,
     remotePatterns: [
       ...[NEXT_PUBLIC_SERVER_URL /* 'https://example.com' */].map((item) => {
         const url = new URL(item)

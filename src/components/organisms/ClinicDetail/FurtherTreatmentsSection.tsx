@@ -5,9 +5,9 @@ import { Heading } from '@/components/atoms/Heading'
 import { Button } from '@/components/atoms/button'
 import { Card, CardContent } from '@/components/atoms/card'
 import { UiLink } from '@/components/molecules/Link'
-import { formatEur } from '@/components/templates/ClinicDetailConcepts/shared'
+import { formatEur } from '@/features/clinicDetail/presentation'
 
-import type { ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
+import type { ClinicDetailTreatment } from '@/features/clinicDetail/contracts'
 
 type FurtherTreatmentsSectionProps = {
   treatments: ClinicDetailTreatment[]

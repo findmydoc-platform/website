@@ -22,12 +22,11 @@ const internalLinks: UiLinkProps[] = [
   { href: '/partners/clinics', label: 'For clinics', appearance: 'inline' },
 ]
 
-export const holdingPageConcept: HoldingPageConceptProps = {
+export const holdingPageConcept: Omit<HoldingPageConceptProps, 'contactForm'> = {
   backgroundImage: storyClinicImages.landing.hero,
   backgroundImageClassName: 'object-center',
   bestFor:
     'A launch direction that feels cinematic and calm at once: the video creates immediate presence, then the page steps back and lets trust, clarity, and intent breathe.',
-  contactFormSlug: 'public-contact',
   contactDescription:
     'Use this contact form to send us a direct request. Include a short title, your message, and your email so we can reply.',
   contactMode: 'full',

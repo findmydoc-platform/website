@@ -10,7 +10,9 @@ Use two review modes:
 - Change review is the default. Review only module boundaries and dependency directions introduced or changed by the supplied diff.
 - Repository audit runs only when the caller explicitly requests it. Inventory the in-scope modules and source dependencies, inspect them in bounded passes, and state the paths covered and excluded.
 
-Use Parnas's information-hiding criterion to assess whether each module hides the design decisions most likely to change behind a stable interface. Use Robert C. Martin's Dependency Rule to assess whether source dependencies point toward the module that owns the higher-level policy.
+Use Parnas's Information-Hiding Criterion.
+
+Use Robert C. Martin's Dependency Rule.
 
 Report concrete information leaks, misplaced ownership, dependency inversions, cycles, or boundary bypasses. Do not turn local findings into speculative repository-wide rewrites. A recommendation must identify the smallest boundary or dependency change that resolves the evidenced problem.
 

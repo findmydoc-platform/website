@@ -56,8 +56,8 @@ import { default as default_d6ee11f9ad7a50c505ba150d9d479b01 } from '@/component
 import { default as default_a49897c860926b80d84ead771e47d9e1 } from '@/components/organisms/AdminBranding/AdminThemeProvider'
 import { ImportExportProvider as ImportExportProvider_cdf7e044479f899a31f804427d568b36 } from '@payloadcms/plugin-import-export/rsc'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
-import { default as default_ab46816a001b0b96177fe198da5e9467 } from '@/components/organisms/DeveloperDashboard'
-import { default as default_16db527229d8cecba7c6cbf008b381be } from '@/components/organisms/CacheRevalidationVisibility'
+import { default as default_4c79979e00948b3c47f079ea257e3121 } from '@/dashboard/adminDashboard/DeveloperSeedingWidget'
+import { default as default_77d8214b1ed575306b7701df1e02fa71 } from '@/dashboard/adminDashboard/CacheRevalidationVisibilityWidget.client'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
@@ -120,7 +120,7 @@ export const importMap = {
   "@/components/organisms/AdminBranding/AdminThemeProvider#default": default_a49897c860926b80d84ead771e47d9e1,
   "@payloadcms/plugin-import-export/rsc#ImportExportProvider": ImportExportProvider_cdf7e044479f899a31f804427d568b36,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
-  "@/components/organisms/DeveloperDashboard#default": default_ab46816a001b0b96177fe198da5e9467,
-  "@/components/organisms/CacheRevalidationVisibility#default": default_16db527229d8cecba7c6cbf008b381be,
+  "@/dashboard/adminDashboard/DeveloperSeedingWidget#default": default_4c79979e00948b3c47f079ea257e3121,
+  "@/dashboard/adminDashboard/CacheRevalidationVisibilityWidget.client#default": default_77d8214b1ed575306b7701df1e02fa71,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

@@ -6,11 +6,14 @@
 - `P1`: Reliable, testable UI behavior.
 - `P2`: Visual consistency and maintainable styling.
 
+## Method Anchor
+
+- Use Atomic Design.
+
 ## Architecture Defaults
 
 - Next.js App Router + RSC by default.
 - Use `'use client'` only at interaction leaves.
-- Keep atomic layering clear: atoms -> molecules -> organisms -> templates.
 
 ## Critical Component Rules
 
@@ -31,12 +34,13 @@
 - Do not import `@/payload-types` in atoms/molecules/organisms/templates.
 - Normalize Payload unions (links/media/relations) in `src/blocks/**` or `src/blocks/_shared/**`.
 - If a component needs Payload imports, move mapping to a block adapter and pass normalized props into the UI layer.
+- Reusable templates receive normalized props and callback ports; they do not own Payload or API transport.
 
 ## Storybook Expectations
 
-- New or changed UI components must include or update stories in `src/stories/**`.
+- Follow the component story location contract in `src/AGENTS.md`.
 - Keep stories isolated and deterministic.
-- Follow detailed story rules in `.github/instructions/stories.instructions.md`.
+- Follow detailed story rules in `src/stories/AGENTS.md`.
 - Story metadata must follow `docs/frontend/story-governance.md`.
 - For responsive components, use the canonical mobile matrix from `docs/frontend/mobile-ai-playbook.md`; include the additional `1280px` check only when the playbook marks it as required.
 - If a shared mobile component such as header, navigation, drawer, or sticky bar can affect multiple route types, pair component-level verification with composed-route checks on at least two representative routes or content densities.
@@ -48,7 +52,6 @@
 - Keep component variants in code (CVA), not semantic global CSS classes.
 - Avoid inline styles unless no other option exists.
 - Use design tokens and utility composition before arbitrary values.
-- Prefer mobile-first utilities and widen deliberately instead of patching desktop layouts downward.
 
 ## Heading Rule
 

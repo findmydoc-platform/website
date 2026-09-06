@@ -10,7 +10,7 @@ import { RatingStars } from '@/components/molecules/RatingSummary'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/atoms/popover'
 import { cn } from '@/utilities/ui'
 
-import type { ClinicDetailReview, ClinicDetailReviews } from '@/components/templates/ClinicDetailConcepts/types'
+import type { ClinicDetailReview, ClinicDetailReviews } from '@/features/clinicDetail/contracts'
 
 type ClinicReviewsSectionProps = {
   ratingValue: number | null

@@ -52,8 +52,12 @@ vi.mock('@/utilities/media/resolveMediaImage', () => ({
   }),
 }))
 
-vi.mock('@/components/templates/TemporaryLandingPage', () => ({
-  TemporaryLandingPage: mocks.temporaryLandingPageComponent,
+vi.mock('@/features/contactRequests/FormBridgePublicContactSectionAdapter.client', () => ({
+  FormBridgePublicContactSectionAdapter: vi.fn(() => null),
+}))
+
+vi.mock('@/features/contactRequests/FormBridgeTemporaryLandingPageAdapter', () => ({
+  FormBridgeTemporaryLandingPageAdapter: mocks.temporaryLandingPageComponent,
 }))
 
 describe('frontend home page route', () => {

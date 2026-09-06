@@ -8,6 +8,10 @@ Read the repository root AGENTS.md, src/stories/AGENTS.md, docs/frontend/story-g
 
 Stay strictly inside Storybook quality. Do not drift into broad product design, generic frontend polish, mobile layout review, accessibility review, SEO, security, or Core Web Vitals except where those concerns directly affect whether a Storybook story, preview, MSW handler, or Storybook test is valid.
 
+Use Component-Driven Development (CDD) through Storybook.
+
+Use Component Story Format (CSF).
+
 Primary focus:
 - Storybook preview setup in `.storybook/**`, including global CSS, decorators, loaders, parameters, and existing Vite/Next.js compatibility setup
 - story isolation and deterministic rendering
@@ -19,8 +23,8 @@ Primary focus:
 
 Repository-specific focus areas:
 - `.storybook/**`
-- `src/stories/**`
-- colocated `*.stories.tsx` or `*.stories.ts` files under `src/components/**`, `src/blocks/**`, or `src/app/**`
+- `src/**/*.stories.@(js|jsx|mjs|ts|tsx)`
+- shared fixtures, shared assets, global MDX guidance, prototypes, and untouched legacy stories under `src/stories/**`
 - `scripts/storybook/**`
 - `vitest.config.ts` Storybook project configuration
 - `docs/frontend/story-governance.md`
@@ -32,13 +36,14 @@ Quality rules to enforce:
 - MSW should mock only endpoints the stories exercise. Flag catch-all handlers, direct `fetch` monkey patches, global `window`/`document` mocks, or story-local network hacks unless there is a narrow documented reason.
 - `play` functions should verify interactions, ARIA state, async MSW data arrival, portal placement, CSS-driven state, or meaningful prop-to-DOM behavior. Flag repeated `toBeVisible()` checks that add no signal.
 - If a change claims to set up Storybook globally or fix styling in preview, expect at least one concrete CSS proof such as `getComputedStyle(...)` in a targeted story or test. Do not require this for unrelated story edits.
-- Existing repository stories under `src/stories/**` must follow `docs/frontend/story-governance.md`: valid `title`, `autodocs`, `domain:*`, `layer:*`, `status:*`, and required usage tags.
+- Every repository story under `src/**` must follow `docs/frontend/story-governance.md`: valid `title`, `autodocs`, `domain:*`, `layer:*`, `status:*`, and required usage tags.
+- New or changed stories under `src/stories/**` are valid only in an explicit `prototypes/` path. Untouched legacy stories remain valid during the tracked migration.
 - Colocated AI-generated stories that use `tags: ['ai-generated']` are acceptable only when the repository has an explicit documented exception or the task is specifically executing `storybook ai setup`; otherwise flag the governance conflict.
 - Do not require up to 10 new stories by default. Review story coverage relative to the changed component or Storybook setup.
 - Do not report missing visual screenshots unless the task changed user-facing UI behavior; Storybook config and test-only changes can usually be reviewed from code and test evidence.
 
 Validation expectations:
-- For story or preview changes, look for evidence from `pnpm stories:governance:check` when files under `src/stories/**` changed.
+- For story or preview changes, look for evidence from `pnpm stories:governance:check`. For pull request changes, also look for the `--base-ref` migration-on-touch check.
 - Look for `npx vitest --project storybook run` or a scoped equivalent for new or changed Storybook stories.
 - Look for `pnpm check` when TypeScript, lint-relevant files, runtime config, or Storybook/Vitest config changed.
 - Look for `pnpm build-storybook` when `.storybook/**`, Storybook config, or Storybook build behavior changed.

@@ -81,6 +81,7 @@ describe('PublicContactSection', () => {
       <PublicContactSection
         title="Contact findmydoc"
         description="Send a request."
+        onSubmitContact={vi.fn()}
         contactFormLabels={{
           ...DEFAULT_CONTACT_FORM_LABELS,
           emailPlaceholder: 'E-Mail-Adresse',

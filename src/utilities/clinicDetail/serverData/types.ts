@@ -10,7 +10,7 @@ import type {
   Review,
   ReviewResponse,
 } from '@/payload-types'
-import type { ClinicDetailData } from '@/components/templates/ClinicDetailConcepts/types'
+import type { ClinicDetailData } from '@/features/clinicDetail/contracts'
 import type { MediaDescriptor } from '@/utilities/media/relationMedia'
 
 export type ClinicDetailServerDataOptions = {

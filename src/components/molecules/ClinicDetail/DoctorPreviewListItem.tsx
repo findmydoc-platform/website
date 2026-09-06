@@ -3,7 +3,7 @@ import * as React from 'react'
 import { Media } from '@/components/molecules/Media'
 import { cn } from '@/utilities/ui'
 
-import type { ClinicDetailDoctor } from '@/components/templates/ClinicDetailConcepts/types'
+import type { ClinicDetailDoctor } from '@/features/clinicDetail/contracts'
 
 type DoctorPreviewListItemProps = {
   doctor: ClinicDetailDoctor

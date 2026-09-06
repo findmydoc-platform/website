@@ -151,7 +151,14 @@ jobs:
             await run({ github, context, core, env: process.env });
 
       - name: Story governance check
-        run: pnpm stories:governance:check
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [[ -n "${BASE_REF}" ]]; then
+            pnpm stories:governance:check -- --base-ref "origin/${BASE_REF}"
+          else
+            pnpm stories:governance:check
+          fi
 
       - name: Lint
         id: lint

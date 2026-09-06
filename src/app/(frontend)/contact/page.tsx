@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { PublicContactSection } from '@/components/organisms/Contact'
+import { FormBridgePublicContactSectionAdapter } from '@/features/contactRequests/FormBridgePublicContactSectionAdapter.client'
 import { createSiteMetadata } from '@/utilities/generateMeta'
 
 const CONTACT_TITLE = 'Contact findmydoc'
@@ -55,7 +55,7 @@ export default async function ContactPage({
 
   return (
     <main>
-      <PublicContactSection
+      <FormBridgePublicContactSectionAdapter
         title={CONTACT_TITLE}
         description={CONTACT_DESCRIPTION}
         headingAs="h1"

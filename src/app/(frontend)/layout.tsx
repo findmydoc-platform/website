@@ -3,9 +3,8 @@ import type { Metadata } from 'next'
 import React from 'react'
 import '@fontsource/dm-sans'
 
-import { AdminBar } from '@/components/organisms/AdminBar'
+import { AdminBarClientAdapter } from '@/app/(frontend)/AdminBarClientAdapter.client'
 import { SupabaseAuthHashUrlScrubber } from '@/app/(frontend)/_components/SupabaseAuthHashUrlScrubber.client'
-import { CookieConsentManager } from '@/components/organisms/CookieConsent/CookieConsentManager.client'
 import { Footer } from '@/components/templates/Footer/Component'
 import { Header } from '@/components/templates/Header/Component'
 import { PreviewDataNotice } from '@/components/templates/PreviewDataNotice/Component'
@@ -24,6 +23,7 @@ import { getCachedGlobal, getGlobal } from '@/utilities/getGlobals'
 import { normalizeFooterNavGroups, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
 import { isNonProductionDeployment, PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
+import { CookieConsentClientAdapter } from '@/features/cookieConsent/CookieConsentClientAdapter.client'
 import {
   SEARCH_ROBOTS_HEADER_VALUE,
   shouldBlockSearchIndexing,
@@ -106,7 +106,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SupabaseAuthHashUrlScrubber />
         {!blockSearchIndexing ? <JsonLdScript data={buildSiteBaseJsonLd()} /> : null}
         <div className="flex min-h-screen min-h-svh flex-col">
-          <AdminBar adminBarProps={{ preview: isEnabled }} />
+          <AdminBarClientAdapter preview={isEnabled} />
 
           {showSiteChrome ? (
             <div className="full-width">
@@ -134,7 +134,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
           ) : null}
         </div>
-        <CookieConsentManager
+        <CookieConsentClientAdapter
           config={cookieConsentContext.config}
           initialConsent={cookieConsentContext.initialConsent}
         />

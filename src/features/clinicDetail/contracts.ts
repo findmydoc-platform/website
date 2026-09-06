@@ -1,9 +1,14 @@
-import type { BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import type { CookieConsentConfig, CookieConsentState } from '@/features/cookieConsent'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 import type { FreshnessSignals } from '@/utilities/freshness'
 
 export type ClinicVerificationTier = 'unverified' | 'bronze' | 'silver' | 'gold'
+
+export type ClinicDetailBreadcrumbItem = {
+  label: string
+  href: string
+  current?: boolean
+}
 
 export type ClinicDetailDoctorSocialLink = {
   kind: 'facebook' | 'linkedin' | 'meta' | 'twitter' | 'x'
@@ -109,7 +114,7 @@ export type ClinicDetailData = {
   clinicId: number
   clinicSlug: string
   clinicName: string
-  breadcrumbs: BreadcrumbItem[]
+  breadcrumbs: ClinicDetailBreadcrumbItem[]
   heroImage: { src: string; alt: string }
   galleryImages: ClinicDetailGalleryImage[]
   description: string
@@ -123,6 +128,60 @@ export type ClinicDetailData = {
   contactHref: string
 }
 
+export type ClinicContactRequestPayload = {
+  clinicId: string
+  doctorId?: string
+  treatmentId?: string
+  idempotencyKey: string
+  treatmentTimeline?: string
+  preferredContactWindow?: string
+  message: string
+  consent: boolean
+  email?: string
+  fullName?: string
+  phoneNumber?: string
+}
+
+export type ClinicContactRequestSubmitter = (
+  payload: ClinicContactRequestPayload,
+  authenticated: boolean,
+) => Promise<{ id: string }>
+
+export type ClinicDetailProfileViewedEvent = {
+  clinicId: string
+  clinicSlug: string
+  hasDoctors: boolean
+  hasTreatments: boolean
+  pagePath: string
+  verificationTier: ClinicVerificationTier
+}
+
+export type ClinicDetailCtaClickedEvent = {
+  clinicId: string
+  clinicSlug: string
+  ctaId: 'choose_treatment' | 'contact' | 'contact_doctor'
+  ctaLabel: string
+  ctaLocation: 'doctor_card' | 'further_treatments' | 'location_card' | 'map_overlay' | 'treatment_strip'
+  doctorId?: string
+  pagePath: string
+  treatmentId?: string
+}
+
+export type ClinicDetailAnalyticsPort = {
+  onCtaClicked: (event: ClinicDetailCtaClickedEvent) => void
+  onProfileViewed: (event: ClinicDetailProfileViewedEvent) => void
+}
+
+export class ClinicContactRequestError extends Error {
+  constructor(
+    message: string,
+    readonly requiresReauthentication: boolean,
+  ) {
+    super(message)
+    this.name = 'ClinicContactRequestError'
+  }
+}
+
 export type ClinicDetailConceptProps = {
   data: ClinicDetailData
   className?: string
@@ -132,6 +191,8 @@ export type ClinicDetailConceptProps = {
     loginHref: string
   }
   inquiryCreation?: PatientInquiryCreationContext
+  analytics: ClinicDetailAnalyticsPort
+  onSubmitContactRequest: ClinicContactRequestSubmitter
   cookieConsentConfig?: CookieConsentConfig | null
   cookieConsentInitialConsent?: CookieConsentState | null
 }

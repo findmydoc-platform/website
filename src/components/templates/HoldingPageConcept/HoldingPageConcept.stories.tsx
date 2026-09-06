@@ -1,12 +1,22 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 
+import { ContactRequestForm } from '@/components/organisms/Contact/ContactRequestForm.client'
 import { HoldingPageConcept } from '@/components/templates/HoldingPageConcept'
 import { TemporaryLandingBlogSection } from '@/components/templates/TemporaryLandingPage/TemporaryLandingBlogSection'
 import { holdingPageConcept } from '@/stories/fixtures/holdingPageConcepts'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const submitContact = () => new Promise<void>((resolve) => setTimeout(resolve, 120))
+
+const contactForm = (
+  <ContactRequestForm
+    contactMode="full"
+    contactFormSlug="public-contact"
+    onSubmitContact={submitContact}
+    primaryCtaLabel="Send message"
+  />
+)
 
 const holdingBlogSection = (
   <TemporaryLandingBlogSection
@@ -40,6 +50,19 @@ const holdingBlogSection = (
 const meta = {
   title: 'Internal/Landing/Templates/HoldingPageConcept',
   component: HoldingPageConcept,
+  render: (args) => (
+    <HoldingPageConcept
+      {...args}
+      contactForm={
+        <ContactRequestForm
+          contactMode={args.contactMode ?? 'full'}
+          contactFormSlug="public-contact"
+          onSubmitContact={submitContact}
+          primaryCtaLabel={args.primaryCtaLabel}
+        />
+      }
+    />
+  ),
   parameters: {
     layout: 'fullscreen',
     docs: {
@@ -77,7 +100,7 @@ const meta = {
   args: {
     ...holdingPageConcept,
     afterSignals: holdingBlogSection,
-    onSubmitContact: submitContact,
+    contactForm,
   },
 } satisfies Meta<typeof HoldingPageConcept>
 
@@ -88,7 +111,7 @@ type Story = StoryObj<typeof meta>
 const mobileStressArgs = {
   ...holdingPageConcept,
   afterSignals: holdingBlogSection,
-  onSubmitContact: submitContact,
+  contactForm,
   contactDescription:
     'Use this contact form to send us a direct request. Include a short title, your message, and your email so we can reply with launch timing and first-access details.',
   footerLinks: holdingPageConcept.footerLinks.map((link, index) =>
@@ -162,7 +185,7 @@ export const HoldingPage: Story = {
   args: {
     ...holdingPageConcept,
     afterSignals: holdingBlogSection,
-    onSubmitContact: submitContact,
+    contactForm,
   },
   play: assertConceptFrame,
 }

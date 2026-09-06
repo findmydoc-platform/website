@@ -5,14 +5,10 @@ import { Heading } from '@/components/atoms/Heading'
 import { Card, CardContent } from '@/components/atoms/card'
 import { Breadcrumb, type BreadcrumbItem } from '@/components/molecules/Breadcrumb'
 import { DoctorPreviewListItem, HeroQualitySummary } from '@/components/molecules/ClinicDetail'
-import { formatRatingSummary } from '@/components/templates/ClinicDetailConcepts/shared'
+import { formatRatingSummary } from '@/features/clinicDetail/presentation'
 import { ClinicGallery } from './ClinicGallery'
 
-import type {
-  ClinicDetailDoctor,
-  ClinicDetailGalleryImage,
-  ClinicDetailTrust,
-} from '@/components/templates/ClinicDetailConcepts/types'
+import type { ClinicDetailDoctor, ClinicDetailGalleryImage, ClinicDetailTrust } from '@/features/clinicDetail/contracts'
 
 type HeroOverviewSectionProps = {
   clinicName: string

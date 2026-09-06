@@ -10,50 +10,20 @@ import { usePublicFormValidation } from '@/components/molecules/PublicFormValida
 import {
   DEFAULT_CONTACT_FORM_LABELS,
   DEFAULT_CONTACT_FORM_SLUG,
+  type ContactFormContext,
   type ContactRequestFormLabels,
+  type ContactRequestSubmitter,
+  type ContactSubmissionMetadata,
 } from './contactRequestForm.shared'
-
-export type ContactFormContext = 'clinic_partner_landing' | 'clinic_profile_inquiry'
-export type ContactSubmissionMetadata = Partial<Record<'clinic' | 'source', string>>
-
-type ContactRequestContextPayload = ContactSubmissionMetadata & {
-  form_context?: ContactFormContext
-}
-
-type ContactRequestPayload = ContactRequestContextPayload &
-  ({ email: string } | { name: string; email: string; message: string })
-
-export type ContactRequestSubmitter = (
-  targetSlug: string,
-  payload: ContactRequestPayload,
-  genericErrorMessage?: string,
-) => Promise<void>
 
 type ContactRequestFormProps = {
   contactMode: 'compact' | 'full'
   contactFormSlug?: string
   formContext?: ContactFormContext
   labels?: ContactRequestFormLabels
-  onSubmitContact?: ContactRequestSubmitter
+  onSubmitContact: ContactRequestSubmitter
   primaryCtaLabel: string
   submissionMetadata?: ContactSubmissionMetadata
-}
-
-const submitContactRequest: ContactRequestSubmitter = async (targetSlug, payload, genericErrorMessage) => {
-  const response = await fetch(`/api/form-bridge/${encodeURIComponent(targetSlug)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    const errorPayload = await response.json().catch(() => ({}))
-    const errorMessage =
-      typeof (errorPayload as { error?: unknown }).error === 'string'
-        ? (errorPayload as { error: string }).error
-        : (genericErrorMessage ?? DEFAULT_CONTACT_FORM_LABELS.genericErrorMessage)
-    throw new Error(errorMessage)
-  }
 }
 
 const normalizeSubmissionMetadata = (submissionMetadata?: ContactSubmissionMetadata): ContactSubmissionMetadata => {
@@ -78,7 +48,7 @@ export function ContactRequestForm({
   contactFormSlug,
   formContext,
   labels,
-  onSubmitContact = submitContactRequest,
+  onSubmitContact,
   primaryCtaLabel,
   submissionMetadata,
 }: ContactRequestFormProps) {
@@ -123,7 +93,7 @@ export function ContactRequestForm({
     if (!formValidation.validateForm(event.currentTarget)) return
 
     const metadataPayload = normalizeSubmissionMetadata(submissionMetadata)
-    const contextPayload: ContactRequestContextPayload = formContext ? { form_context: formContext } : {}
+    const contextPayload = formContext ? { form_context: formContext } : {}
     const payload = isCompactContact
       ? { ...metadataPayload, ...contextPayload, email: email.trim() }
       : { ...metadataPayload, ...contextPayload, name: name.trim(), email: email.trim(), message: message.trim() }

@@ -3,8 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 
 import { FurtherTreatmentsSection } from '@/components/organisms/ClinicDetail'
-import type { ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
-import { withViewportStory } from '../../utils/viewportMatrix'
+import type { ClinicDetailTreatment } from '@/features/clinicDetail/contracts'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const treatments: ClinicDetailTreatment[] = [
   {

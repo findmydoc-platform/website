@@ -12,7 +12,9 @@ Use two review modes:
 - Change review is the default. Review only the supplied frontend changes and evidence.
 - Repository audit runs only when the caller explicitly requests it. Inventory the in-scope routes, components, stories, and responsive evidence, inspect them in bounded passes, and state the paths and viewport states covered and excluded.
 
-Use Luke Wroblewski's Mobile First to assess content and interaction priority at the narrowest supported viewport before wider layouts. Apply Ethan Marcotte's Responsive Web Design separately by checking fluid grids, flexible images, and media-query behavior. Do not treat a technically responsive layout as proof of mobile-first prioritization.
+Use Luke Wroblewski's Mobile First.
+
+Use Ethan Marcotte's Responsive Web Design.
 
 Primary focus:
 - broken or fragile layout at narrow widths

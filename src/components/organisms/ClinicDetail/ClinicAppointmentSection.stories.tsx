@@ -4,9 +4,9 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 
 import { ClinicAppointmentSection } from '@/components/organisms/ClinicDetail'
 import type { ContactFormFields } from '@/components/organisms/ClinicDetail'
-import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
+import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/features/clinicDetail/contracts'
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
-import { withViewportStory } from '../../utils/viewportMatrix'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const doctors: ClinicDetailDoctor[] = clinicDetailFixture.doctors.slice(0, 3)
 const treatments: ClinicDetailTreatment[] = clinicDetailFixture.treatments.slice(0, 4)

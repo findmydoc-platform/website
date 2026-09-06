@@ -2,19 +2,17 @@ import React from 'react'
 
 import { Container } from '@/components/molecules/Container'
 import { SectionHeading } from '@/components/molecules/SectionHeading'
-import {
-  ContactRequestForm,
-  type ContactFormContext,
-  type ContactRequestSubmitter,
-  type ContactSubmissionMetadata,
-} from './ContactRequestForm.client'
+import { ContactRequestForm } from './ContactRequestForm.client'
 import {
   DEFAULT_CONTACT_FORM_LABELS,
   DEFAULT_CONTACT_FORM_SLUG,
+  type ContactFormContext,
   type ContactRequestFormLabels,
+  type ContactRequestSubmitter,
+  type ContactSubmissionMetadata,
 } from './contactRequestForm.shared'
 
-type PublicContactSectionProps = {
+export type PublicContactSectionProps = {
   contactConsent?: string
   contactEyebrow?: string
   contactFormLabels?: ContactRequestFormLabels
@@ -24,7 +22,7 @@ type PublicContactSectionProps = {
   formContext?: ContactFormContext
   headingAs?: 'h1' | 'h2' | 'h3'
   id?: string
-  onSubmitContact?: ContactRequestSubmitter
+  onSubmitContact: ContactRequestSubmitter
   primaryCtaLabel?: string
   submissionMetadata?: ContactSubmissionMetadata
   title: string

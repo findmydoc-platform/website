@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 const config: StorybookConfig = {
-  stories: ['../src/stories/**/*.stories.@(js|jsx|mjs|ts|tsx)', '../src/stories/**/*.mdx'],
+  stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)', '../src/stories/**/*.mdx'],
   addons: [
     '@chromatic-com/storybook',
     '@storybook/addon-vitest',

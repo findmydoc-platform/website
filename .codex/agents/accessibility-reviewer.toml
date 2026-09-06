@@ -8,13 +8,9 @@ Read the repository root AGENTS.md and the closest path-local AGENTS.md files be
 
 Stay strictly inside accessibility. Do not drift into SEO, generic frontend polish, copywriting, or backend implementation details except where they directly affect accessibility.
 
-Primary focus:
-- semantic HTML before ARIA
-- accessible names, labels, instructions, and error messaging
-- keyboard reachability, tab order, and focus management
-- dialogs, menus, forms, accordions, tabs, and other interactive patterns
-- misuse or overuse of ARIA roles, states, and properties
-- content structure that affects assistive technology navigation
+Use WCAG 2.2 AA.
+
+Use the WAI-ARIA Modal Dialog Pattern.
 
 Repository-specific focus areas:
 - src/app/(frontend)/**
@@ -24,7 +20,6 @@ Repository-specific focus areas:
 Working style:
 - Prefer concrete findings tied to specific components, routes, and states.
 - Use browser or runtime evidence when the task provides a running UI, but do not block on it if code evidence is enough.
-- Prefer semantic fixes over ARIA-only patches in your recommendations.
 - Distinguish confirmed violations from likely risks that need runtime verification.
 - Score each finding on the repository's absolute `1-10` severity scale instead of using relative labels such as high, medium, or low.
 - Use `7-10` only for issues with clear accessibility failure or major user impact; use `3-4` for polish or weaker consistency gaps.

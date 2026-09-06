@@ -40,8 +40,8 @@ vi.mock('next/navigation', () => ({
   notFound: routeMocks.notFound,
 }))
 
-vi.mock('@/components/templates/ClinicDetailConcepts', () => ({
-  ClinicDetail: routeMocks.clinicDetailComponent,
+vi.mock('@/app/(frontend)/clinics/[slug]/ClinicDetailClientAdapter.client', () => ({
+  ClinicDetailClientAdapter: routeMocks.clinicDetailComponent,
 }))
 
 vi.mock('@/features/cookieConsent', () => ({

@@ -1,7 +1,7 @@
-import { formatSeedJobTitle, formatSeedStepTitle } from '@/endpoints/seed/utils/labels'
-import type { SeedRunSnapshot } from '@/endpoints/seed/utils/state'
+import type { SeedJobViewModel } from '@/features/adminDashboard/seedingViewModel'
+import { formatSeedJobTitle, formatSeedStepTitle } from '@/features/seeding/labels'
 
-export type SeedJob = SeedRunSnapshot['jobs'][number]
+export type SeedJob = SeedJobViewModel
 
 export type SeedJobSummary = {
   id: string

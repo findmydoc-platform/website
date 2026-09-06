@@ -4,7 +4,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { ClinicReviewsSection } from '@/components/organisms/ClinicDetail/ClinicReviewsSection'
-import type { ClinicDetailReviews } from '@/components/templates/ClinicDetailConcepts/types'
+import type { ClinicDetailReviews } from '@/features/clinicDetail/contracts'
 
 const reviews: ClinicDetailReviews = {
   totalCount: 5,

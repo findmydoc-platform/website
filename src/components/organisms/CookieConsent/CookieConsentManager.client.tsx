@@ -8,18 +8,27 @@ import { CookieConsentDialog } from './CookieConsentDialog.client'
 import { CookieConsentLauncher } from './CookieConsentLauncher.client'
 import { useCookieConsentController } from './useCookieConsentController'
 
-type CookieConsentManagerProps = {
+export type CookieConsentManagerProps = {
   config: CookieConsentConfig | null
   initialConsent: CookieConsentState | null
+  onAnalyticsConsentChange: (enabled: boolean) => void
+  onPersistConsent: (consent: CookieConsentState) => void
 }
 
 const compactBannerRoutes = new Set(['/login/patient', '/register/patient', '/register/clinic', '/admin/login'])
 
-export function CookieConsentManager({ config, initialConsent }: CookieConsentManagerProps) {
+export function CookieConsentManager({
+  config,
+  initialConsent,
+  onAnalyticsConsentChange,
+  onPersistConsent,
+}: CookieConsentManagerProps) {
   const pathname = usePathname()
   const controller = useCookieConsentController({
     config,
     initialConsent,
+    onAnalyticsConsentChange,
+    onPersistConsent,
   })
   const useCompactBanner = pathname ? compactBannerRoutes.has(pathname) : false
 

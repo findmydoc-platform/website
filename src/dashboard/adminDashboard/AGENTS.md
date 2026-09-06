@@ -11,7 +11,9 @@
 - Dashboard widgets and their subcomponents must remain resilient with default Payload spacing, typography, and elevations.
 - Widget styling should continue to rely on Payload admin theme variables (`--theme-*`) to avoid regressions when tokens evolve.
 - New widget controls should be typed and normalized at component boundaries.
-- Keep custom admin components lightweight and presentational; avoid business logic there.
+- Dashboard widgets under `src/dashboard/adminDashboard/**` may own client state and application API adapters.
+- Pass stable view models and callback ports from dashboard widgets into reusable admin views under `src/components/**`.
+- Keep reusable admin views lightweight and presentational; avoid business logic there.
 
 ## Validation Expectations
 

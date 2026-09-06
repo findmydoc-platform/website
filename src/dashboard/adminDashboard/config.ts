@@ -19,7 +19,7 @@ type SeedingWidgetField = {
 type DeveloperSeedingWidgetConfig = {
   slug: 'developer-seeding'
   label: string
-  Component: '@/components/organisms/DeveloperDashboard'
+  Component: '@/dashboard/adminDashboard/DeveloperSeedingWidget'
   minWidth: 'medium'
   maxWidth: 'full'
   fields: SeedingWidgetField[]
@@ -28,7 +28,7 @@ type DeveloperSeedingWidgetConfig = {
 type CacheRevalidationVisibilityWidgetConfig = {
   slug: 'cache-revalidation-visibility'
   label: string
-  Component: '@/components/organisms/CacheRevalidationVisibility'
+  Component: '@/dashboard/adminDashboard/CacheRevalidationVisibilityWidget.client'
   minWidth: 'medium'
   maxWidth: 'full'
   fields: []
@@ -49,7 +49,7 @@ const DEFAULT_COLLECTIONS_LAYOUT: DashboardWidgetLayout = {
 const DEVELOPER_SEEDING_WIDGET: DashboardWidgetConfig = {
   slug: 'developer-seeding',
   label: 'Developer seeding',
-  Component: '@/components/organisms/DeveloperDashboard',
+  Component: '@/dashboard/adminDashboard/DeveloperSeedingWidget',
   minWidth: 'medium',
   maxWidth: 'full',
   fields: [
@@ -89,7 +89,7 @@ const DEVELOPER_SEEDING_WIDGET: DashboardWidgetConfig = {
 const CACHE_REVALIDATION_VISIBILITY_WIDGET: DashboardWidgetConfig = {
   slug: 'cache-revalidation-visibility',
   label: 'Cache revalidation visibility',
-  Component: '@/components/organisms/CacheRevalidationVisibility',
+  Component: '@/dashboard/adminDashboard/CacheRevalidationVisibilityWidget.client',
   minWidth: 'medium',
   maxWidth: 'full',
   fields: [],

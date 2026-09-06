@@ -1,4 +1,4 @@
-import type { DashboardUserType } from './Seeding/SeedingCardView'
+import type { DashboardUserType } from '@/components/organisms/DeveloperDashboard/Seeding/SeedingCardView'
 
 type DashboardUserLike = {
   collection?: unknown

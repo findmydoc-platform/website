@@ -19,7 +19,7 @@ import {
 } from '@/features/inquiryRequest/options'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 
-import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/components/templates/ClinicDetailConcepts/types'
+import type { ClinicDetailDoctor, ClinicDetailTreatment } from '@/features/clinicDetail/contracts'
 
 import type { ContactFormFields, ContactFormSelectionError } from './types'
 

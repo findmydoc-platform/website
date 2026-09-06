@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 
 import { ClinicLocationSection } from '@/components/organisms/ClinicDetail'
-import { buildOpenStreetMapHref } from '@/components/templates/ClinicDetailConcepts'
+import { buildOpenStreetMapHref } from '@/features/clinicDetail/presentation'
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 
 const mapHref = buildOpenStreetMapHref(clinicDetailFixture.location)

@@ -6,7 +6,7 @@ import { Images } from 'lucide-react'
 import { Button } from '@/components/atoms/button'
 import { Media } from '@/components/molecules/Media'
 
-import type { ClinicDetailGalleryImage } from '@/components/templates/ClinicDetailConcepts/types'
+import type { ClinicDetailGalleryImage } from '@/features/clinicDetail/contracts'
 
 const ClinicGalleryLightbox = React.lazy(() =>
   import('./ClinicGalleryLightbox').then((module) => ({ default: module.ClinicGalleryLightbox })),

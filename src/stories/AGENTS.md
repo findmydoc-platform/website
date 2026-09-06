@@ -8,6 +8,9 @@
 
 ## Critical Story Rules
 
+- Component stories normally live beside their documented source component under `src/**`.
+- `src/stories/**` is reserved for shared fixtures, shared assets, global MDX guidance, explicitly story-only prototypes, and untouched legacy component stories awaiting migration.
+- New or changed story-only prototypes must live under a `prototypes/` directory.
 - Stories must not depend on live app state, real APIs, or navigation side effects.
 - Use story-level props or decorators for local dependency injection.
 - Story files must import test helpers from `storybook/test`, never from `@storybook/test`.
@@ -53,7 +56,8 @@
 
 ## Contributor Checklist
 
-- Story path mirrors atomic structure.
+- Story metadata identifies the documented component's Atomic Design layer.
+- Story location follows `src/AGENTS.md`; only explicit central exceptions and untouched legacy stories remain under `src/stories/**`.
 - Autodocs tag present.
 - Story metadata complies with `docs/frontend/story-governance.md`.
 - Local dependency injection is explicit; imported module mocks are centralized in Storybook Vite aliases.

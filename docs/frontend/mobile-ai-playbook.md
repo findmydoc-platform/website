@@ -2,14 +2,6 @@
 
 This document is the canonical mobile-first reference for Codex tasks that touch frontend UI in this repository. Keep hard rules in the relevant `AGENTS.md` files and use this playbook for heuristics, viewport matrix, prompt scaffolding, and review checklists. Path-local `AGENTS.md` files should reference it instead of restating the full matrix or `Confirmed` versus `Likely` thresholds unless they need a narrow local exception.
 
-## Mobile-First Default
-
-- Design and verify the narrow viewport first.
-- Expand to tablet and desktop only after the mobile hierarchy and interaction model are coherent.
-- Prioritize content order, CTA clarity, text wrapping, and touch reachability before decorative density.
-- Prefer vertical flow before introducing multi-column layouts.
-- Prefer touch-first interactions before hover enhancements.
-
 ## Standard Viewport Matrix
 
 Use this matrix unless the task explicitly defines a different one:

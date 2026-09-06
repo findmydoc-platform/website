@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveDashboardUserType } from '@/components/organisms/DeveloperDashboard/userType'
+import { resolveDashboardUserType } from '@/dashboard/adminDashboard/userType'
 
 describe('Developer dashboard principal mapping', () => {
   it('maps direct auth collections to dashboard user types', () => {

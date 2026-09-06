@@ -6,7 +6,7 @@ import { VerificationBadge } from '@/components/atoms/verification-badge'
 import { RatingSummary } from '@/components/molecules/RatingSummary'
 import { cn } from '@/utilities/ui'
 
-import type { ClinicDetailTrust } from '@/components/templates/ClinicDetailConcepts/types'
+import type { ClinicDetailTrust } from '@/features/clinicDetail/contracts'
 
 type HeroQualitySummaryProps = {
   trust: ClinicDetailTrust

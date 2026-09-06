@@ -19,6 +19,7 @@ type MediaLike = {
 
 export type ResolvedMediaImage = {
   src: string
+  fallbackSrc?: string
   alt: string
   width?: number
   height?: number
@@ -166,6 +167,7 @@ export function resolveMediaImage(
     if (size?.url) {
       return {
         src: versionPayloadMediaFileUrl(size.url, media.updatedAt),
+        ...(media.url ? { fallbackSrc: versionPayloadMediaFileUrl(media.url, media.updatedAt) } : {}),
         alt,
         width: size.width ?? undefined,
         height: size.height ?? undefined,

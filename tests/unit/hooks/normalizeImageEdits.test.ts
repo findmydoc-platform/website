@@ -107,6 +107,18 @@ describe('media edit normalization', () => {
     })
   })
 
+  it('retains an unchanged zero focus when a real resize remains', async () => {
+    const { req } = await run(
+      { widthInPixels: '50', heightInPixels: '40', focalPoint: { x: '0', y: '0' } },
+      { saved: { ...saved, focalX: 0, focalY: 0 } },
+    )
+    expect(req.query.uploadEdits).toEqual({
+      widthInPixels: 50,
+      heightInPixels: 40,
+      focalPoint: { x: 0, y: 0 },
+    })
+  })
+
   it.each([{ operation: 'create' as const }, { file: { name: 'replacement.png' } }])(
     'leaves new uploads untouched: %j',
     async (options) => {

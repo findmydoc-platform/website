@@ -1,6 +1,6 @@
 # Media image editing
 
-The five media collections normalize unchanged admin image edits before Payload processes files. Confirming the existing dimensions, a full-frame crop, and the current focal point does not request a reupload. New files and actual edits retain the existing upload validation, ownership, and storage pipeline. Reads used for normalization enforce collection access through the Payload Local API.
+The five media collections normalize unchanged admin image edits before Payload processes files. Confirming the existing dimensions, a full-frame crop, and the current focal point does not request a reupload. New files and actual edits retain the existing upload validation, ownership, and storage pipeline. Real crops and resizes retain the current focal point for generated sizes, including zero coordinates. Reads used for normalization enforce collection access through the Payload Local API.
 
 ## Internal storage updates
 
@@ -8,7 +8,7 @@ The shared `beforeOperationNormalizeImageEdits` hook consumes `uploadEdits` when
 
 Without this boundary, the metadata update can fetch the new filename through a separate HTTP request before its database transaction commits. Prefix-based file access correctly rejects that uncommitted filename. Do not work around this by weakening file access or removing the prefix.
 
-No cloud-storage dependency patch is required. `tests/integration/mediaImageEdits.test.ts` exercises the unmodified Payload/cloud-storage packages against the integration database and S3Mock. Its HTTP transport routes file requests through the actual Payload REST handler. The regression covers a crop, unchanged Apply, metadata failure, and storage failure.
+No cloud-storage dependency patch is required. `tests/integration/mediaImageEdits.test.ts` exercises the unmodified Payload/cloud-storage packages against the integration database and S3Mock. Its HTTP transport routes file requests through the actual Payload REST handler. The regression covers a crop, repeated cropping with a zero focal point verified in the generated image pixels, unchanged Apply, metadata failure, and storage failure.
 
 ## Boundaries
 

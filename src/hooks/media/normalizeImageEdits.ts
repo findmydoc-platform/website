@@ -65,7 +65,12 @@ export const beforeOperationNormalizeImageEdits: CollectionBeforeOperationHook =
   if (focal) {
     const x = number(focal.x)
     const y = number(focal.y)
-    if (x === (number(saved.focalX) ?? 50) && y === (number(saved.focalY) ?? 50)) {
+    // Real edits still need the focus for generated sizes, including zero coordinates.
+    if (
+      x === (number(saved.focalX) ?? 50) &&
+      y === (number(saved.focalY) ?? 50) &&
+      Object.keys(normalized).every((key) => key === 'focalPoint')
+    ) {
       delete normalized.focalPoint
     } else if (x !== undefined && y !== undefined) {
       normalized.focalPoint = { ...focal, x, y }

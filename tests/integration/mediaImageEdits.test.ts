@@ -65,8 +65,21 @@ describe('media image editing through Payload and cloud storage', () => {
     }
   })
 
-  const createImage = async () => {
-    const data = await sharp({ create: { width: 100, height: 80, channels: 3, background: '#6688aa' } })
+  const createImage = async (width = 100, height = 80, marker = false) => {
+    const data = await sharp({ create: { width, height, channels: 3, background: '#6688aa' } })
+      .composite(
+        marker
+          ? [
+              {
+                input: await sharp({ create: { width: 60, height, channels: 3, background: '#ff0000' } })
+                  .png()
+                  .toBuffer(),
+                left: 0,
+                top: 0,
+              },
+            ]
+          : [],
+      )
       .png()
       .toBuffer()
     const doc = await payload.create({
@@ -137,6 +150,60 @@ describe('media image editing through Payload and cloud storage', () => {
       overrideAccess: false,
     })
     expect(stored.filename).toBe(updated.filename)
+  })
+
+  it('retains an existing zero focal point when cropping again', async () => {
+    const original = await createImage(4000, 3200, true)
+    const edit = (doc: typeof original, width: number, height: number) =>
+      payload.update({
+        collection: 'platformContentMedia',
+        id: doc.id,
+        user,
+        overrideAccess: false,
+        depth: 0,
+        data: { ...doc, url: new URL(doc.url!, 'https://media-edit.example').toString() },
+        req: {
+          headers: new Headers({ origin: 'https://media-edit.example' }),
+          query: {
+            uploadEdits: {
+              crop: { unit: '%', x: 0, y: 0, width: 50, height: 50 },
+              widthInPixels: width,
+              heightInPixels: height,
+              focalPoint: { x: 0, y: 0 },
+            },
+          },
+        },
+      })
+    const first = await edit(original, 2000, 1600)
+    fileReads.length = 0
+    const second = await edit(first, 1000, 800)
+    expect(second.width).toBe(1000)
+    expect(second.height).toBe(800)
+    expect(second.sizes?.thumbnail?.width).toBe(300)
+    expect(second.sizes?.thumbnail?.height).toBe(240)
+    expect(second.focalX).toBe(0)
+    expect(second.focalY).toBe(0)
+    expect(fileReads).toHaveLength(1)
+    const stored = await payload.findByID({
+      collection: 'platformContentMedia',
+      id: original.id,
+      user,
+      overrideAccess: false,
+    })
+    expect(stored.focalX).toBe(0)
+    expect(stored.focalY).toBe(0)
+    const image = await handleEndpoints({
+      config,
+      request: new Request(new URL(second.sizes!.square!.url!, 'https://media-edit.example')),
+    })
+    expect(image.status).toBe(200)
+    const { data: pixels } = await sharp(Buffer.from(await image.arrayBuffer()))
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+    // A left-edge marker survives only when the existing zero focus drives the square crop.
+    expect(pixels[0]).toBeGreaterThan(240)
+    expect(pixels[1]).toBeLessThan(20)
   })
 
   it('keeps image edits consumed when internal metadata persistence fails', async () => {

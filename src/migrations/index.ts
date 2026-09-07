@@ -73,6 +73,7 @@ import * as migration_20260825_015705_inquiry_command_locks from './20260825_015
 import * as migration_20260825_054030_inquiry_identity_package_deletion from './20260825_054030_inquiry_identity_package_deletion'
 import * as migration_20260905_135339_landing_subscription_pricing_contract from './20260905_135339_landing_subscription_pricing_contract'
 import * as migration_20260907_091852_remove_search_compatibility from './20260907_091852_remove_search_compatibility'
+import * as migration_20260907_092854_remove_search_contract from './20260907_092854_remove_search_contract'
 
 export const migrations = [
   {
@@ -449,5 +450,10 @@ export const migrations = [
     up: migration_20260907_091852_remove_search_compatibility.up,
     down: migration_20260907_091852_remove_search_compatibility.down,
     name: '20260907_091852_remove_search_compatibility',
+  },
+  {
+    up: migration_20260907_092854_remove_search_contract.up,
+    down: migration_20260907_092854_remove_search_contract.down,
+    name: '20260907_092854_remove_search_contract',
   },
 ]

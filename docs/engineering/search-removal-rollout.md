@@ -12,6 +12,8 @@ Run the focused integration lifecycle, plugin access, cache policy and migration
 
 ## Contract stage
 
+`20260907_092854_remove_search_contract` implements the destructive step. Its PostgreSQL integration tests cover each target's unexpected dependencies, retained source rows, shared locks, preference-key boundaries and fail-closed rollback.
+
 Ship the destructive migration in a separate PR and platform release after the application stage has been verified. Do not deploy an older Search-enabled application after this migration.
 
 Before approval:

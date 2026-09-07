@@ -1,6 +1,7 @@
 import { loadSeedFile, loadSeedGlobals } from '@/endpoints/seed/utils/load-json'
 import { prepareLandingPagesSeedData } from '@/endpoints/seed/utils/landing-pages'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { posix } from 'node:path'
 import sharp from 'sharp'
 import {
   commitTransaction,
@@ -403,12 +404,15 @@ describe('complete seed reset with PostgreSQL and test storage', () => {
         mimetype: 'image/png',
         size: outdatedImage.length,
       },
-      data: { alt: 'Outdated hero' },
+      // Existing media may omit the optional document prefix; S3 uses the collection prefix.
+      data: { alt: 'Outdated hero', prefix: null },
     })
+    expect(changedMedia.prefix).toBeNull()
+    const storagePrefix = posix.dirname(changedMedia.storagePath)
     const obsoleteKeys = [
       changedMedia.storagePath,
       ...Object.values(changedMedia.sizes ?? {}).flatMap((size) =>
-        size?.filename ? [`${changedMedia.prefix}/${size.filename}`] : [],
+        size?.filename ? [`${storagePrefix}/${size.filename}`] : [],
       ),
     ]
     expect(obsoleteKeys.length).toBeGreaterThan(1)

@@ -5,24 +5,37 @@ import { resolveSeedRuntimeEnv } from './runtime'
 import { resolveSeedRuntimePolicy } from '@/features/runtimePolicy'
 import { baselinePlan, demoPlan } from './plan'
 import { loadSeedFile, loadSeedGlobals, type SeedKind, type SeedRecord } from './load-json'
+import { resetInquiryAttachmentFiles } from './resetInquiryAttachments'
 
 const demoResetOrder: CollectionSlug[] = [
   'reviewAppeals',
   'reviewResponses',
   'reviews',
+  'inquiryLegalHolds',
+  'inquiryDeletionProofs',
+  'inquiryModerationEvents',
+  'inquiryModerationCases',
+  'inquiryAuditEvents',
+  'inquiryReadPositions',
+  'inquiryInternalNotes',
+  'inquiryMessages',
+  'inquiryAttachments',
+  'inquiryConversations',
   'patientClinicInquiries',
   'favoriteclinics',
   'doctortreatments',
   'doctorspecialties',
   'clinictreatments',
   'clinicProfileDrafts',
-  'clinicMedia',
+  'clinicApplications',
+  'clinicGalleryEntries',
+  'clinicGalleryMedia',
   'doctorMedia',
   'doctors',
   'clinics',
+  'clinicMedia',
   'posts',
   'userProfileMedia',
-  'platformContentMedia',
 ]
 
 const baselineResetOrder: CollectionSlug[] = [
@@ -238,21 +251,14 @@ const clearProtectedUserRelations = async (
   }
 }
 
-const collectResettablePlatformContentMediaStableIds = async (
-  kind: SeedKind,
-  inputs: SeedInputMap,
-): Promise<string[]> => {
-  const records = [...(inputs.get('platformContentMedia') ?? [])]
-  if (kind === 'baseline') {
-    records.push(...(await loadSeedFile('demo', 'platformContentMedia')))
-  }
-
-  const stableIds = [...new Set(records.map((record) => record.stableId))].sort()
-  if (stableIds.length === 0) {
-    throw new Error(`Seed reset preflight failed: ${kind} platform content media ids are unavailable`)
-  }
-
-  return stableIds
+const collectResettablePlatformContentMediaStableIds = async (): Promise<string[]> => {
+  const baselineMedia = await loadSeedFile('baseline', 'platformContentMedia')
+  const demoMedia = await loadSeedFile('demo', 'platformContentMedia')
+  const baselineIds = new Set(baselineMedia.map((record) => record.stableId))
+  return demoMedia
+    .map((record) => record.stableId)
+    .filter((id) => !baselineIds.has(id))
+    .sort()
 }
 
 const buildResetWhere = (collection: CollectionSlug, platformContentMediaStableIds: string[]): Where => {
@@ -273,22 +279,26 @@ const deleteCollection = async (
   where: Where,
   req: Partial<PayloadRequest>,
 ): Promise<void> => {
-  const result = await payload.delete({
-    collection,
-    where,
-    // Payload bulk deletes run document lifecycle work in parallel. A shared transaction
-    // would make those operations compete for the same PostgreSQL client.
-    disableTransaction: true,
-    depth: 0,
-    overrideAccess: true,
-    trash: true,
-    context: req.context,
-    req,
-  })
+  const result = await payload
+    .delete({
+      collection,
+      where,
+      // Payload bulk deletes run document lifecycle work in parallel. A shared transaction
+      // would make those operations compete for the same PostgreSQL client.
+      disableTransaction: true,
+      depth: 0,
+      overrideAccess: true,
+      trash: true,
+      context: req.context,
+      req,
+    })
+    .catch(() => {
+      throw new Error(`Seed reset failed while deleting ${collection}`)
+    })
 
   if (result.errors.length > 0) {
-    const messages = result.errors.map((error) => `${String(error.id)}: ${error.message}`).join('; ')
-    throw new Error(`Seed reset failed while deleting ${collection}: ${messages}`)
+    const ids = result.errors.map((error) => String(error.id)).join(', ')
+    throw new Error(`Seed reset failed while deleting ${collection}: document IDs ${ids}`)
   }
 }
 
@@ -312,7 +322,11 @@ export async function resetCollections(
     throw new Error('Seed reset is disabled in this runtime')
   }
 
-  const resetOrder = kind === 'demo' ? demoResetOrder : [...demoResetOrder, ...baselineResetOrder]
+  const resetOrder: CollectionSlug[] = [
+    ...demoResetOrder,
+    ...(kind === 'baseline' ? baselineResetOrder : []),
+    'platformContentMedia',
+  ]
   const protectedCollectionsInReset = resetOrder.filter((collection) =>
     protectedPrincipalCollections.includes(collection as ProtectedPrincipalCollection),
   )
@@ -320,8 +334,8 @@ export async function resetCollections(
     throw new Error(`Seed reset preflight failed: protected principal collection scheduled for deletion`)
   }
 
-  const inputs = await preflightSeedInputs(kind)
-  const platformContentMediaStableIds = await collectResettablePlatformContentMediaStableIds(kind, inputs)
+  await preflightSeedInputs(kind)
+  const platformContentMediaStableIds = await collectResettablePlatformContentMediaStableIds()
   const plannedUserUpdates = await planProtectedUserRelationCleanup(payload, kind)
   const affectedPostSlugs = await collectPostSlugsBeforeReset(payload)
   const req = buildResetRequest(payload, options.req)
@@ -329,9 +343,11 @@ export async function resetCollections(
 
   await options.onPrepared?.(result)
 
+  await resetInquiryAttachmentFiles(payload, req)
   await clearProtectedUserRelations(payload, plannedUserUpdates, req)
 
   for (const collection of resetOrder) {
+    if (collection === 'platformContentMedia' && platformContentMediaStableIds.length === 0) continue
     payload.logger.info(`Resetting ${collection} (${kind})`)
     await deleteCollection(payload, collection, buildResetWhere(collection, platformContentMediaStableIds), req)
   }

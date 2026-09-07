@@ -45,23 +45,23 @@ an incomplete chain withholds its review-dependent cache scope while independent
 Retrying any failed job in that chain replays the complete idempotent group in dependency order, including queued
 follow-up steps, before the existing `disableRevalidate` writes receive one `seed-final-flush`.
 
-Demo reset collection list (ordered for safe clearing):
-1. reviewAppeals (depends on reviews and clinics)
-2. reviewResponses (depends on reviews and clinics)
-3. reviews (depends on patients, treatments, doctors, clinics)
-4. patientClinicInquiries (depends on patients and clinics)
-5. favoriteclinics (depends on patients and clinics)
-6. doctortreatments
-7. doctorspecialties
-8. clinictreatments
-9. clinicProfileDrafts
-10. clinicMedia
-11. doctorMedia
-12. doctors
-13. clinics
-14. posts
-15. userProfileMedia
-16. demo-owned platformContentMedia
+Demo reset deletes collections in this order. Every phase runs sequentially and stops on failure.
+
+| Phase | Collection order |
+| --- | --- |
+| Reviews | `reviewAppeals` → `reviewResponses` → `reviews` |
+| Inquiry administration | `inquiryLegalHolds` → `inquiryDeletionProofs` → `inquiryModerationEvents` → `inquiryModerationCases` |
+| Inquiry communication | `inquiryAuditEvents` → `inquiryReadPositions` → `inquiryInternalNotes` → `inquiryMessages` → `inquiryAttachments` → `inquiryConversations` → `patientClinicInquiries` |
+| Clinic dependencies | `favoriteclinics` → `doctortreatments` → `doctorspecialties` → `clinictreatments` → `clinicProfileDrafts` → `clinicApplications` |
+| Galleries | `clinicGalleryEntries` → `clinicGalleryMedia` |
+| Doctors and clinics | `doctorMedia` → `doctors` → `clinics` → `clinicMedia` |
+| Other demo content | `posts` → `userProfileMedia` |
+| Baseline reset only | `treatments` → `categories` → `tags` → `accreditation` → `medical-specialties` → `cities` → `countries` |
+| Shared media, last | Demo-only `platformContentMedia`; baseline seed IDs are excluded |
+
+Clinic media follows clinics because the media deletion guard rejects images still used by a clinic thumbnail or profile
+gallery. Doctor media precedes doctors because its owner relationship is required. Gallery entries precede gallery media.
+Inquiry command locks, retention policies, pages, and other system collections remain outside the reset scope.
 
 The direct authentication principals in `platformStaff`, `clinicStaff`, and `patients` are protected from every reset
 entrypoint. Before deletion starts, the reset validates that their resettable relations are optional, then clears profile
@@ -145,7 +145,20 @@ Summary JSON shape (demo example):
 ## Reset Semantics & Counts
 `reset=1` runs a preflight before the first mutation. The preflight validates seed files and upload assets, confirms that
 protected principal relations remain safely nullable, and plans every principal relation cleanup before any collection
-is deleted. A failed preflight leaves the stored data unchanged.
+is deleted. Both reset types validate the baseline and demo platform media lists before deleting files or changing
+relations. Missing or invalid lists fail preflight; a valid empty deletion set does not. A failed preflight leaves the
+stored data unchanged.
+
+After preflight and the queued job's preparation callback, the reset reads inquiry attachments in pages and deletes
+both stored draft and ready objects before changing principal relations or deleting any collection. It skips empty keys
+and `deleted/` placeholders. This cleanup uses the existing attachment storage gateway, without scanning or clearing the
+bucket. Already missing objects allow retries. If storage fails, the reset stops and keeps attachment metadata for a
+retry, including keys whose objects were already removed. Error messages identify the phase and document ID without
+including object keys or storage URLs. Payload upload collections, including clinic gallery media, retain their native
+file deletion lifecycle.
+
+Legal holds and deletion proofs are removed as non-production data. Application deletion does not delete the linked
+clinic staff account. Run the reset without concurrent application writes; the reset does not introduce a global write lock.
 
 The reset uses Payload's Local API with permanent-delete semantics. This removes Payload versions and lets upload
 collections run their normal file lifecycle so deleted media objects do not remain in storage. The search collection is
@@ -154,13 +167,18 @@ synchronization enabled to recreate current entries. Per-record public cache rev
 seed run performs one planner-owned `seed-final-flush` for the affected public surfaces.
 
 Once the destructive phase starts, the reset is intentionally not atomic across collections. A lifecycle or storage
-failure may leave a partial reset; the operator must fix the reported cause and rerun the same idempotent reset.
+failure may leave a partial reset; the operator must fix the reported cause and rerun the same idempotent reset. The
+terminal cache flush also runs after partial public changes; its success does not change a failed reset into a successful one.
 
-Demo reset keeps baseline collections and globals. `platformContentMedia` is shared by baseline and demo data, so demo
-reset deletes only the media records listed in the demo seed. A baseline reset remains a separate non-production action
-and clears the demo reset scope plus baseline reference collections while preserving all authentication principals.
-For the shared `platformContentMedia` collection, baseline reset deletes only the union of baseline- and demo-seed
-stable IDs; editor-uploaded records outside that seed-owned scope remain untouched.
+Demo reset keeps baseline collections and globals. Both reset types delete only `platformContentMedia` records listed
+in the demo seed whose stable IDs are absent from the baseline media seed. An empty difference skips media deletion.
+Baseline media and editor-uploaded records outside that scope remain untouched during deletion.
+
+Baseline reset clears the demo scope and baseline reference collections while preserving authentication principals.
+The following baseline seed replaces baseline media files and metadata through Payload's upload lifecycle, retaining
+existing document IDs. It then updates the configured globals, including home, about, and clinic partner content and
+image references. Global documents are not deleted. Keeping baseline media IDs prevents required global image
+references from becoming invalid between reset and seeding.
 
 ## Idempotency
 Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless new reference data is added. Demo units skip creating duplicates using slug / unique lookups.
@@ -255,6 +273,11 @@ Seed assets stay under the same root and are separated by dataset:
 - `src/endpoints/seed/assets/demo/**` for demo media
 
 This keeps assets side-by-side while making baseline and demo ownership explicit.
+
+When removing an image from a seed dataset, also account for its existing Payload record and storage files.
+Removing the code entry does not delete previously uploaded objects. Check remaining references before retiring the
+record, and arrange targeted removal of obsolete originals and generated variants through the media lifecycle.
+The reset does not automatically discover or clean up images removed from seed datasets.
 
 ## Adding a New Seed Unit
 1. Create function `seed<Domain>` (or `seed<Domain>Demo`) returning `{ created, updated }`.

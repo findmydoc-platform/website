@@ -300,68 +300,71 @@ describe('seedChunkTask', () => {
     })
   })
 
-  it('persists reset scope and fails the job cleanly after a partial reset', async () => {
-    vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
-    vi.stubEnv('NODE_ENV', 'test')
+  it.each(['doctor delete failed', 'Seed reset failed during file cleanup of inquiryAttachments:42'])(
+    'persists reset scope and fails the job cleanly after %s',
+    async (message) => {
+      vi.stubEnv('VERCEL_ENV', '')
+      vi.stubEnv('DEPLOYMENT_ENV', 'test')
+      vi.stubEnv('NODE_ENV', 'test')
 
-    const payload = createMockPayload()
-    const runId = 'seed-run-reset-partial-failure'
-    const queue = `seed:${runId}`
-    const input: SeedQueueJobInput = {
-      runId,
-      type: 'demo',
-      reset: true,
-      queue,
-      title: 'Reset demo data',
-      stepName: 'reset',
-      kind: 'reset',
-    }
-    const record = createSeedRunRecord({ runId, type: 'demo', reset: true, queue, totalJobs: 1 })
-    await saveSeedRunRecord(payload as unknown as Payload, record)
-    await registerSeedRunJob(payload as unknown as Payload, runId, {
-      id: 'job-reset',
-      order: 1,
-      status: 'queued',
-      input,
-      queue,
-      title: 'Reset demo data',
-      stepName: 'reset',
-      kind: 'reset',
-      createdAt: '2026-08-16T10:00:00.000Z',
-      created: 0,
-      updated: 0,
-      warnings: [],
-      failures: [],
-    })
-    resetCollections.mockImplementation(async (_payload, _kind, options) => {
-      await options.onPrepared({ affectedPostSlugs: ['retired-post'] })
-      throw new Error('doctor delete failed')
-    })
+      const payload = createMockPayload()
+      const runId = 'seed-run-reset-partial-failure'
+      const queue = `seed:${runId}`
+      const input: SeedQueueJobInput = {
+        runId,
+        type: 'demo',
+        reset: true,
+        queue,
+        title: 'Reset demo data',
+        stepName: 'reset',
+        kind: 'reset',
+      }
+      const record = createSeedRunRecord({ runId, type: 'demo', reset: true, queue, totalJobs: 1 })
+      await saveSeedRunRecord(payload as unknown as Payload, record)
+      await registerSeedRunJob(payload as unknown as Payload, runId, {
+        id: 'job-reset',
+        order: 1,
+        status: 'queued',
+        input,
+        queue,
+        title: 'Reset demo data',
+        stepName: 'reset',
+        kind: 'reset',
+        createdAt: '2026-08-16T10:00:00.000Z',
+        created: 0,
+        updated: 0,
+        warnings: [],
+        failures: [],
+      })
+      resetCollections.mockImplementation(async (_payload, _kind, options) => {
+        await options.onPrepared({ affectedPostSlugs: ['retired-post'] })
+        throw new Error(message)
+      })
 
-    const result = await seedChunkTask.handler({
-      input,
-      job: { id: 'job-reset' },
-      req: createMockReq(mockUsers.platform(42), payload) as PayloadRequest,
-    })
+      const result = await seedChunkTask.handler({
+        input,
+        job: { id: 'job-reset' },
+        req: createMockReq(mockUsers.platform(42), payload) as PayloadRequest,
+      })
 
-    expect(result).toEqual({ state: 'failed', errorMessage: 'doctor delete failed' })
-    const storedRun = await loadSeedRunRecord(payload as unknown as Payload, runId)
-    expect(storedRun).toMatchObject({
-      status: 'failed',
-      jobs: [
-        {
-          id: 'job-reset',
-          status: 'failed',
-          output: {
-            affectedPostSlugs: ['retired-post'],
-            publicWorkStarted: true,
+      expect(result).toEqual({ state: 'failed', errorMessage: message })
+      const storedRun = await loadSeedRunRecord(payload as unknown as Payload, runId)
+      expect(storedRun).toMatchObject({
+        status: 'failed',
+        jobs: [
+          {
+            id: 'job-reset',
             status: 'failed',
+            output: {
+              affectedPostSlugs: ['retired-post'],
+              publicWorkStarted: true,
+              status: 'failed',
+            },
           },
-        },
-      ],
-    })
-  })
+        ],
+      })
+    },
+  )
 
   it('blocks demo chunk execution in production before importing records', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')

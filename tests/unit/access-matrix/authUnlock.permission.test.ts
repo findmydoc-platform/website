@@ -13,15 +13,17 @@ const authCollections = [
 ] as const
 
 describe('authentication collection unlock access', () => {
-  test.each(authCollections)('%s fails closed for authenticated callers', (_slug, collection) => {
+  test.each(authCollections)('%s fails closed for authenticated callers', async (_slug, collection) => {
     const unlock = collection.access?.unlock
 
     expect(typeof unlock).toBe('function')
-    expect(
-      unlock?.({
-        req: { user: { collection: 'platformStaff', id: 1 } },
-      } as never),
-    ).toBe(false)
+    await expect(
+      Promise.resolve(
+        unlock?.({
+          req: { user: { collection: 'platformStaff', id: 1 } },
+        } as never),
+      ),
+    ).resolves.toBe(false)
   })
 
   test('fails closed for the plugin-generated MCP API key collection', async () => {
@@ -33,10 +35,12 @@ describe('authentication collection unlock access', () => {
     const unlock = collection?.access?.unlock
 
     expect(typeof unlock).toBe('function')
-    expect(
-      unlock?.({
-        req: { user: { collection: 'platformStaff', id: 1 } },
-      } as never),
-    ).toBe(false)
+    await expect(
+      Promise.resolve(
+        unlock?.({
+          req: { user: { collection: 'platformStaff', id: 1 } },
+        } as never),
+      ),
+    ).resolves.toBe(false)
   })
 })

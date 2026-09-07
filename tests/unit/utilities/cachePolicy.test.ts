@@ -215,7 +215,6 @@ describe('cache policy contract', () => {
       'seed:queued-runs',
       'seed:baseline',
       'seed:demo',
-      'operational:search-sync-suppression',
       'operational:cache-visibility',
     ]
 

@@ -67,7 +67,6 @@ export const importExport = importExportPlugin(importExportPluginConfig)
 
 const pluginIndexWithoutManagedAccess = `import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
 import { redirectsPlugin } from '@payloadcms/plugin-redirects'
-import { searchPlugin } from '@payloadcms/plugin-search'
 
 export const plugins = [
   redirectsPlugin({
@@ -83,18 +82,12 @@ export const plugins = [
       admin: { group: 'Platform Management' },
     },
   }),
-  searchPlugin({
-    searchOverrides: {
-      admin: { group: 'Settings' },
-    },
-  }),
 ]
 `
 
 const pluginIndexWithManagedAccess = `import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
 import { redirectsPlugin } from '@payloadcms/plugin-redirects'
-import { searchPlugin } from '@payloadcms/plugin-search'
-import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'
+import { generatedCollectionAccess } from '@/security/generatedCollectionAccess'
 
 export const plugins = [
   redirectsPlugin({
@@ -111,12 +104,6 @@ export const plugins = [
     formSubmissionOverrides: {
       access: generatedCollectionAccess['form-submissions'],
       admin: { group: 'Platform Management' },
-    },
-  }),
-  searchPlugin({
-    searchOverrides: {
-      access: searchPluginCollectionAccessOverrides,
-      admin: { group: 'Settings' },
     },
   }),
 ]

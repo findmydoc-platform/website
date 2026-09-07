@@ -51,7 +51,6 @@ const unitInclude = [
   'src/plugins/**/*.{js,jsx,ts,tsx}',
   'src/posthog/**/*.{js,jsx,ts,tsx}',
   'src/proxy.ts',
-  'src/search/**/*.{js,jsx,ts,tsx}',
   'src/utilities/**/*.{js,jsx,ts,tsx}',
 ]
 

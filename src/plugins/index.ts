@@ -2,18 +2,15 @@ import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
 import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { redirectsPlugin } from '@payloadcms/plugin-redirects'
 import { seoPlugin } from '@payloadcms/plugin-seo'
-import { searchPlugin } from '@payloadcms/plugin-search'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { Plugin, slugField, type Field } from 'payload'
 import { revalidateRedirects } from '@/hooks/revalidateRedirects'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
-import { searchFields } from '@/search/fieldOverrides'
-import { beforeSyncWithSearch } from '@/search/beforeSync'
 import { createMcpPlugin } from './mcp'
 import { resolveS3StorageConfig } from './storageConfig'
 import { importExport } from './importExport'
-import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'
+import { generatedCollectionAccess } from '@/security/generatedCollectionAccess'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -183,23 +180,6 @@ export const plugins: Plugin[] = [
       access: generatedCollectionAccess['form-submissions'],
       admin: {
         group: 'Platform Management',
-      },
-    },
-  }),
-  searchPlugin({
-    collections: ['posts', 'clinics', 'treatments', 'doctors'],
-    localize: false,
-    beforeSync: beforeSyncWithSearch,
-    // Explicit maintenance operations may suppress synchronization. Seed writes
-    // intentionally keep it enabled so reset and upsert flows leave the index current.
-    skipSync: ({ req }) => Boolean(req.context?.disableSearchSync),
-    searchOverrides: {
-      access: searchPluginCollectionAccessOverrides,
-      admin: {
-        group: 'Settings',
-      },
-      fields: ({ defaultFields }) => {
-        return [...defaultFields, ...searchFields]
       },
     },
   }),

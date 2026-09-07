@@ -198,23 +198,6 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Public redirect rules with platform-only management',
     },
-    search: {
-      slug: 'search',
-      displayName: 'Search',
-      operations: {
-        create: { type: 'conditional', details: 'disabled for direct writes; internal search sync only' },
-        read: { type: 'anyone' },
-        update: { type: 'platform' },
-        delete: { type: 'platform' },
-        admin: { type: 'platform' },
-      },
-      meta: {
-        conditional: {
-          create: { kind: 'always-false' },
-        },
-      },
-      notes: 'Public search index with platform management and internal-only document creation',
-    },
     platformStaff: {
       slug: 'platformStaff',
       displayName: 'PlatformStaff',

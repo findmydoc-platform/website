@@ -72,6 +72,7 @@ import * as migration_20260824_235512_inquiry_retention_delete_intent_operation 
 import * as migration_20260825_015705_inquiry_command_locks from './20260825_015705_inquiry_command_locks'
 import * as migration_20260825_054030_inquiry_identity_package_deletion from './20260825_054030_inquiry_identity_package_deletion'
 import * as migration_20260905_135339_landing_subscription_pricing_contract from './20260905_135339_landing_subscription_pricing_contract'
+import * as migration_20260907_091852_remove_search_compatibility from './20260907_091852_remove_search_compatibility'
 
 export const migrations = [
   {
@@ -443,5 +444,10 @@ export const migrations = [
     up: migration_20260905_135339_landing_subscription_pricing_contract.up,
     down: migration_20260905_135339_landing_subscription_pricing_contract.down,
     name: '20260905_135339_landing_subscription_pricing_contract',
+  },
+  {
+    up: migration_20260907_091852_remove_search_compatibility.up,
+    down: migration_20260907_091852_remove_search_compatibility.down,
+    name: '20260907_091852_remove_search_compatibility',
   },
 ]

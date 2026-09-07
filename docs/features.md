@@ -15,7 +15,6 @@ A production-ready Next.js front-end with:
 - Vercel deployment / hosting
 - Website Plugins & Integrations:
   - [SEO](#seo)
-  - [Search](#search)
   - [Redirects](#redirects)
   - [PostHog Analytics](#posthog-analytics)
   - [Monitoring and Error Logic](#monitoring-and-error-logic)
@@ -123,7 +122,6 @@ Preview behavior is locale-aware without changing public routing:
 - default-locale preview keeps the existing public path
 - non-default preview appends `?locale=de`
 
-Search indexing for posts remains default-locale-oriented so localized field objects do not leak into the search collection.
 
 Architecture reference:
 - [ADR 018 — Native Payload CMS localization strategy](./adrs/018-adr-native-payload-localization-strategy.md)
@@ -260,9 +258,6 @@ Future indexable facets should use dedicated readable slug routes instead of que
 
 `src/features/searchIndexing/` is the small route-policy foundation for this behavior. It currently provides reusable policy result types, metadata helpers, and the Listing Comparison policy; it is not a full SEO framework or registry.
 
-## Search
-Implement SSR search features with Payload Search Plugin.
-[Payload Search Plugin Docs](https://payloadcms.com/docs/plugins/search)
 
 ## Redirects
 Create URL redirects to manage content migrations.

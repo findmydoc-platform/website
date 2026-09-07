@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, afterAll } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
@@ -104,6 +104,10 @@ describe('Posts integration - lifecycle and access', () => {
     await ensureBaseline(payload)
   })
 
+  afterAll(async () => {
+    await payload?.destroy()
+  })
+
   afterEach(async () => {
     await cleanupTestEntities(payload, 'posts', slugPrefix)
 
@@ -115,6 +119,43 @@ describe('Posts integration - lifecycle and access', () => {
       } catch {
         // ignore cleanup errors
       }
+    }
+  })
+
+  it('persists published versions of two posts sharing a category after fresh reads', async () => {
+    const categoryId = await ensureCategory()
+
+    for (const suffix of ['first', 'second']) {
+      const title = `${slugPrefix} durable publication ${suffix}`
+      const draft = await payload.create({
+        collection: 'posts',
+        data: buildPostData({ title, categoryId, includeMeta: true }),
+        draft: true,
+        context: { disableRevalidate: true },
+      })
+
+      await payload.update({
+        collection: 'posts',
+        id: draft.id,
+        data: { _status: 'published' },
+        draft: false,
+        context: { disableRevalidate: true },
+      })
+
+      const published = await payload.findByID({ collection: 'posts', id: draft.id, depth: 0, draft: false })
+      expect(published).toMatchObject({
+        _status: 'published',
+        title,
+        categories: [categoryId],
+        meta: { title: `${title} SEO title` },
+      })
+      const versions = await payload.findVersions({
+        collection: 'posts',
+        where: { and: [{ parent: { equals: draft.id } }, { 'version._status': { equals: 'published' } }] },
+      })
+      expect(versions.totalDocs).toBeGreaterThan(0)
+      const publicPost = await findPostBySlug(payload, String(draft.slug), false)
+      expect(publicPost?.id).toBe(draft.id)
     }
   })
 
@@ -355,7 +396,7 @@ describe('Posts integration - lifecycle and access', () => {
         },
       },
       overrideAccess: true,
-      context: { disableRevalidate: true, disableSearchSync: true },
+      context: { disableRevalidate: true },
     })
 
     await payload.update({
@@ -372,7 +413,7 @@ describe('Posts integration - lifecycle and access', () => {
         },
       },
       overrideAccess: true,
-      context: { disableRevalidate: true, disableSearchSync: true },
+      context: { disableRevalidate: true },
     })
 
     const localizedPost = await findPostBySlug(payload, slug, false, {

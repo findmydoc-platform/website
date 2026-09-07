@@ -1,3 +1,4 @@
+import { beforeOperationNormalizeImageEdits } from '@/hooks/media/normalizeImageEdits'
 import type { CollectionConfig } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -69,6 +70,7 @@ export const ClinicMedia: CollectionConfig = {
     ],
     beforeDelete: [beforeDeleteRejectReferencedClinicMedia],
     beforeOperation: [
+      beforeOperationNormalizeImageEdits,
       beforeOperationValidateMediaUpload,
       beforeOperationNormalizeClinicMediaUpload,
       beforeOperationPrepareUploadFilename,

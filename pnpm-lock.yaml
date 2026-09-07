@@ -16,9 +16,6 @@ overrides:
   nanoid@<3.3.18: 3.3.18
 
 patchedDependencies:
-  '@payloadcms/plugin-cloud-storage@3.88.0':
-    hash: cb240e24a378ae6a9e5438da7e3c9528e32bb6ec9175e67687aafc52fd07ca48
-    path: patches/@payloadcms__plugin-cloud-storage@3.88.0.patch
   minimatch@3.1.5:
     hash: 6ef6d9ac96f4561731ab793f4fcee212cbf18d27f4da32c5587660780b43d11b
     path: patches/minimatch@3.1.5.patch
@@ -9489,7 +9486,7 @@ snapshots:
       - supports-color
       - typescript
 
-  '@payloadcms/plugin-cloud-storage@3.88.0(patch_hash=cb240e24a378ae6a9e5438da7e3c9528e32bb6ec9175e67687aafc52fd07ca48)(@types/react@19.2.18)(monaco-editor@0.52.2)(next@16.3.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(@types/node@24.13.3)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4))(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)':
+  '@payloadcms/plugin-cloud-storage@3.88.0(@types/react@19.2.18)(monaco-editor@0.52.2)(next@16.3.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(@types/node@24.13.3)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4))(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)':
     dependencies:
       '@payloadcms/ui': 3.88.0(@types/react@19.2.18)(monaco-editor@0.52.2)(next@16.3.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(@types/node@24.13.3)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4))(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
       find-node-modules: 2.1.3
@@ -9633,7 +9630,7 @@ snapshots:
       '@aws-sdk/client-s3': 3.1116.0
       '@aws-sdk/lib-storage': 3.1121.0(@aws-sdk/client-s3@3.1116.0)
       '@aws-sdk/s3-request-presigner': 3.1116.0
-      '@payloadcms/plugin-cloud-storage': 3.88.0(patch_hash=cb240e24a378ae6a9e5438da7e3c9528e32bb6ec9175e67687aafc52fd07ca48)(@types/react@19.2.18)(monaco-editor@0.52.2)(next@16.3.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(@types/node@24.13.3)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4))(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
+      '@payloadcms/plugin-cloud-storage': 3.88.0(@types/react@19.2.18)(monaco-editor@0.52.2)(next@16.3.2(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(@types/node@24.13.3)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.77.4))(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
       payload: 3.88.0(graphql@16.14.2)(typescript@5.9.3)
     transitivePeerDependencies:
       - '@types/react'

@@ -8,6 +8,31 @@ import { UserProfileMedia } from '@/collections/UserProfileMedia'
 import { ClinicGalleryMedia } from '@/collections/ClinicGalleryMedia'
 
 describe('media edit normalization', () => {
+  it('consumes completed edits for storage metadata without changing other request state', async () => {
+    const query = { locale: 'en', uploadEdits: { widthInPixels: 50 } }
+    const context = { skipCloudStorage: true }
+    const headers = new Headers()
+    const findByID = vi.fn()
+    const req = {
+      query,
+      context,
+      headers,
+      transactionID: 'transaction',
+      payload: { findByID },
+    } as unknown as PayloadRequest
+    const args = { id: 150, req }
+    const result = await beforeOperationNormalizeImageEdits({ args, operation: 'update', req } as unknown as Parameters<
+      typeof beforeOperationNormalizeImageEdits
+    >[0])
+    expect(result).toBe(args)
+    expect(req.query).toEqual({ locale: 'en' })
+    expect(query.uploadEdits).toEqual({ widthInPixels: 50 })
+    expect(req.context).toBe(context)
+    expect(req.headers).toBe(headers)
+    expect(req.transactionID).toBe('transaction')
+    expect(findByID).not.toHaveBeenCalled()
+  })
+
   it.each([PlatformContentMedia, ClinicMedia, DoctorMedia, UserProfileMedia, ClinicGalleryMedia])(
     'normalizes before the upload pipeline in $slug',
     async (collection) => {

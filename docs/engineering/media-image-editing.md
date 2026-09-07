@@ -2,13 +2,13 @@
 
 The five media collections normalize unchanged admin image edits before Payload processes files. Confirming the existing dimensions, a full-frame crop, and the current focal point does not request a reupload. New files and actual edits retain the existing upload validation, ownership, and storage pipeline. Reads used for normalization enforce collection access through the Payload Local API.
 
-## Cloud storage compatibility
+## Internal storage updates
 
-The pnpm patch for `@payloadcms/plugin-cloud-storage@3.88.0` removes `uploadEdits` from the query during the plugin's internal metadata update and restores the original query in `finally`. The same authenticated request and transaction remain in use. `skipCloudStorage` only prevents recursion into the storage hook; it does not prevent Payload's earlier image-processing step.
+The shared `beforeOperationNormalizeImageEdits` hook consumes `uploadEdits` when `skipCloudStorage` identifies an internal metadata update. At that point the file has already been processed. The hook replaces the query object without modifying the original query object or other parameters; authentication and transaction context remain intact. Consumed image edits are not restored onto the request, including on failure. A retry is a new user operation with its own edit parameters.
 
-Without the patch, a crop can upload successfully and then fail when the metadata update fetches the new filename through a separate HTTP request before its database transaction commits. Prefix-based file access correctly rejects that uncommitted filename. Do not work around this by weakening file access or removing the prefix.
+Without this boundary, the metadata update can fetch the new filename through a separate HTTP request before its database transaction commits. Prefix-based file access correctly rejects that uncommitted filename. Do not work around this by weakening file access or removing the prefix.
 
-`tests/integration/mediaImageEdits.test.ts` exercises real Payload operations and cloud storage against the integration database and S3Mock. Its HTTP transport routes file requests through the actual Payload REST handler. Keep this regression when upgrading Payload. Remove the version-specific patch only after an upstream version passes the same edit and error-restoration cases without it.
+No cloud-storage dependency patch is required. `tests/integration/mediaImageEdits.test.ts` exercises the unmodified Payload/cloud-storage packages against the integration database and S3Mock. Its HTTP transport routes file requests through the actual Payload REST handler. The regression covers a crop, unchanged Apply, metadata failure, and storage failure.
 
 ## Boundaries
 

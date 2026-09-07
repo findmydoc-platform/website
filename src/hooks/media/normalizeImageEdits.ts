@@ -17,8 +17,16 @@ export const beforeOperationNormalizeImageEdits: CollectionBeforeOperationHook =
   req,
   collection,
 }) => {
+  if (operation !== 'update') return args
+  // Cloud storage has already processed the file. Its nested update only persists metadata.
+  // Replace the query object so callers retaining the original query are not mutated.
+  if (req.context?.skipCloudStorage === true) {
+    req.query = { ...req.query }
+    delete req.query.uploadEdits
+    return args
+  }
   const edits = record(req.query?.uploadEdits)
-  if (operation !== 'update' || !edits) return args
+  if (!edits) return args
   const input = args as unknown as Record<string, unknown>
   if (getIncomingUploadFilename(input) || getIncomingUploadFilename(req as unknown as Record<string, unknown>))
     return args

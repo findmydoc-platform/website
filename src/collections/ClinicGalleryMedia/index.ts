@@ -1,3 +1,4 @@
+import { beforeOperationNormalizeImageEdits } from '@/hooks/media/normalizeImageEdits'
 import type { CollectionConfig } from 'payload'
 import { randomUUID } from 'crypto'
 import path from 'path'
@@ -81,6 +82,7 @@ export const ClinicGalleryMedia: CollectionConfig = {
       }),
     ],
     beforeOperation: [
+      beforeOperationNormalizeImageEdits,
       beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({

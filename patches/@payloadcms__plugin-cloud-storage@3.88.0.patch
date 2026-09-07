@@ -1,0 +1,22 @@
+diff --git a/dist/hooks/afterChange.js b/dist/hooks/afterChange.js
+index 27b0f76fc0c68da1a98826a06405e524df9959ad..5c04c41f21f55ca8f8874d45dbe5a0ddd7d987ea 100644
+--- a/dist/hooks/afterChange.js
++++ b/dist/hooks/afterChange.js
+@@ -32,6 +32,9 @@ export const getAfterChangeHook = ({ adapter, collection })=>async ({ doc, opera
+                     // Clear to prevent re-processing
+                     req.file = undefined;
+                     req.payloadUploadSizes = undefined;
++                    const originalQuery = req.query;
++                    req.query = { ...originalQuery };
++                    delete req.query.uploadEdits;
+                     try {
+                         await req.payload.update({
+                             id: doc.id,
+@@ -42,6 +45,7 @@ export const getAfterChangeHook = ({ adapter, collection })=>async ({ doc, opera
+                             req
+                         });
+                     } finally{
++                        req.query = originalQuery;
+                         delete req.context.skipCloudStorage;
+                     }
+                     docWithMetadata = {

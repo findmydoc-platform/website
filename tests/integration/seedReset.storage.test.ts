@@ -125,7 +125,7 @@ describe('complete seed reset with PostgreSQL and test storage', () => {
       targetId: report.reportId,
       reasonCategory: 'regulatory-review',
       responsibleFunction: 'data-protection',
-      reviewAt: '2027-09-07T00:00:00.000Z',
+      reviewAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     })
     await payload.create({
       collection: 'inquiryDeletionProofs',
@@ -382,7 +382,9 @@ describe('complete seed reset with PostgreSQL and test storage', () => {
       id: heroId,
       overrideAccess: true,
     })
-    const originalBytes = Buffer.from(await (await fetch(objectUrl(originalMedia.storagePath))).arrayBuffer())
+    const originalResponse = await fetch(objectUrl(originalMedia.storagePath))
+    expect(originalResponse.status, originalMedia.storagePath).toBe(200)
+    const originalBytes = Buffer.from(await originalResponse.arrayBuffer())
     const seedMedia = (await loadSeedFile('baseline', 'platformContentMedia')).find(
       (record) => record.stableId === originalMedia.stableId,
     )!
@@ -410,7 +412,7 @@ describe('complete seed reset with PostgreSQL and test storage', () => {
       ),
     ]
     expect(obsoleteKeys.length).toBeGreaterThan(1)
-    for (const key of obsoleteKeys) expect((await fetch(objectUrl(key))).status).toBe(200)
+    for (const key of obsoleteKeys) expect((await fetch(objectUrl(key))).status, key).toBe(200)
     await payload.updateGlobal({
       slug: 'landingPages',
       overrideAccess: true,

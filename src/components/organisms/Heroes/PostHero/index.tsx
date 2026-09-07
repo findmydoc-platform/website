@@ -54,7 +54,7 @@ export const PostHero: React.FC<PostHeroProps> = ({
   const displayAuthor = author || (authors ? { name: authors } : { name: 'findmydoc Editorial Team' })
   const primaryCategory = categories?.[0]
   const avatarFallback = resolveAvatarPlaceholder({
-    persona: 'patient',
+    persona: 'author',
   })
   const authorAvatar = displayAuthor?.avatar || avatarFallback
   const authorRole = displayAuthor?.role || (author ? 'Author' : 'Editorial Team')

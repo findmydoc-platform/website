@@ -57,6 +57,7 @@ const PUBLIC_ASSET_PATHS = new Set([
   '/images/holding-page/immersive-hero-loop.mp4',
   '/images/our-process-gradient.png',
   '/images/placeholders/clinic-placeholder.webp',
+  '/images/placeholders/author-neutral-placeholder.webp',
   '/images/placeholders/doctor-female-placeholder.webp',
   '/images/placeholders/doctor-male-placeholder.webp',
   '/images/placeholders/doctor-neutral-placeholder.webp',

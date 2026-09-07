@@ -4,8 +4,8 @@ import { fireEvent } from 'storybook/test'
 
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
-import { getStoryImageSrc, storyClinicImages, storyPortraits } from '../fixtures/assets'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { getStoryImageSrc, storyClinicImages, storyPortraits } from '../../../../stories/fixtures/assets'
+import { withViewportStory } from '../../../../stories/utils/viewportMatrix'
 
 /**
  * BlogCard Compound Components
@@ -283,18 +283,18 @@ const fallbackOverlayBase: StoryObj<typeof BlogCard.Overlay> = {
     await waitFor(() => {
       const authorAvatar = Array.from(canvasElement.querySelectorAll('img')).find((image) => {
         const imageSrc = image.getAttribute('src') ?? ''
-        return imageSrc.includes('author-avatar') || imageSrc.includes('avatar-placeholder')
+        return imageSrc.includes('author-avatar') || imageSrc.includes('author-neutral-placeholder')
       })
-      if (authorAvatar && !authorAvatar.getAttribute('src')?.includes('avatar-placeholder')) {
+      if (authorAvatar && !authorAvatar.getAttribute('src')?.includes('author-neutral-placeholder')) {
         fireEvent.error(authorAvatar)
       }
 
       const resolvedAvatar = Array.from(canvasElement.querySelectorAll('img')).find((image) => {
         const imageSrc = image.getAttribute('src') ?? ''
-        return imageSrc.includes('avatar-placeholder')
+        return imageSrc.includes('author-neutral-placeholder')
       })
       const avatarSrc = resolvedAvatar?.getAttribute('src') ?? ''
-      expect(avatarSrc).toContain('avatar-placeholder')
+      expect(avatarSrc).toContain('author-neutral-placeholder')
     })
   },
 }

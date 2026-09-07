@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fireEvent, waitFor, within } from 'storybook/test'
 import { PostHero } from '@/components/organisms/Heroes/PostHero'
-import { getStoryImageSrc, storyClinicImages, storyPortraits } from '../fixtures/assets'
-import { samplePost } from './fixtures'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { getStoryImageSrc, storyClinicImages, storyPortraits } from '../../../../stories/fixtures/assets'
+import { samplePost } from '../../../../stories/organisms/fixtures'
+import { withViewportStory } from '../../../../stories/utils/viewportMatrix'
 
 const meta = {
   title: 'Domain/Blog/Organisms/Heroes/PostHero',
@@ -182,13 +182,13 @@ const brokenAuthorAvatarBase: Story = {
     const canvas = within(canvasElement)
     const avatarImage = canvas.getByAltText('Dr. Sarah Weber')
 
-    if (!avatarImage.getAttribute('src')?.includes('avatar-placeholder')) {
+    if (!avatarImage.getAttribute('src')?.includes('author-neutral-placeholder')) {
       fireEvent.error(avatarImage)
     }
 
     await waitFor(() => {
       const src = avatarImage.getAttribute('src') ?? ''
-      expect(src).toContain('avatar-placeholder')
+      expect(src).toContain('author-neutral-placeholder')
     })
   },
 }

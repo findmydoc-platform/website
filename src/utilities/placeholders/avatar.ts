@@ -1,12 +1,13 @@
-export type AvatarPersona = 'doctor' | 'patient'
+export type AvatarPersona = 'author' | 'doctor' | 'patient'
 export type AvatarGender = 'female' | 'male'
+type GenderedAvatarPersona = Exclude<AvatarPersona, 'author'>
 
 type ResolveAvatarPlaceholderArgs = {
   persona: AvatarPersona
   gender?: AvatarGender | null
 }
 
-const AVATAR_PLACEHOLDER_MAP: Record<AvatarPersona, Record<AvatarGender, string>> = {
+const AVATAR_PLACEHOLDER_MAP: Record<GenderedAvatarPersona, Record<AvatarGender, string>> = {
   doctor: {
     female: '/images/placeholders/doctor-female-placeholder.webp',
     male: '/images/placeholders/doctor-male-placeholder.webp',
@@ -18,12 +19,13 @@ const AVATAR_PLACEHOLDER_MAP: Record<AvatarPersona, Record<AvatarGender, string>
 }
 
 const DEFAULT_AVATAR_PLACEHOLDER_MAP: Record<AvatarPersona, string> = {
+  author: '/images/placeholders/author-neutral-placeholder.webp',
   doctor: '/images/placeholders/doctor-neutral-placeholder.webp',
   patient: '/images/avatar-placeholder.svg',
 }
 
 export function resolveAvatarPlaceholder({ persona, gender }: ResolveAvatarPlaceholderArgs): string {
-  if (gender === 'female' || gender === 'male') {
+  if (persona !== 'author' && (gender === 'female' || gender === 'male')) {
     return AVATAR_PLACEHOLDER_MAP[persona][gender]
   }
 

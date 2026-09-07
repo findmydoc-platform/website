@@ -22,6 +22,7 @@ describe('resolveAvatarPlaceholder', () => {
   })
 
   it('uses neutral fallback when gender is not provided', () => {
+    expect(resolveAvatarPlaceholder({ persona: 'author' })).toBe('/images/placeholders/author-neutral-placeholder.webp')
     expect(resolveAvatarPlaceholder({ persona: 'doctor' })).toBe('/images/placeholders/doctor-neutral-placeholder.webp')
     expect(resolveAvatarPlaceholder({ persona: 'patient' })).toBe('/images/avatar-placeholder.svg')
   })

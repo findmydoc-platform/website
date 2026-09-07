@@ -23,6 +23,7 @@ export const Patients: CollectionConfig = {
     description: 'Patient profiles for appointments and reviews',
   },
   access: {
+    unlock: () => false,
     read: ({ req }) => {
       if (isPlatformStaff({ req })) return true
 

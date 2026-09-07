@@ -25,6 +25,7 @@ export const ClinicStaff: CollectionConfig = {
     },
   },
   access: {
+    unlock: () => false,
     read: async ({ req }) => {
       if (isPlatformStaff({ req })) return true
 

@@ -94,6 +94,7 @@ export const createMcpPlugin = (): Plugin =>
           ...collection.access,
           create: isPlatformStaff,
           read: isPlatformStaff,
+          unlock: () => false,
           update: isPlatformStaff,
           delete: isPlatformStaff,
         },

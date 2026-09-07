@@ -33,8 +33,6 @@ import { ClinicApprovalRequirementError as ClinicApprovalRequirementError_6b9b57
 import { ClinicApprovalRequirements as ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4 } from '@/app/(payload)/components/ClinicApprovalRequirements'
 import { default as default_edf1bab331b69df45f809a41e2fc2349 } from '@/components/organisms/MedicalSpecialtiesAdminGuidance'
 import { ReviewCreationRequirementError as ReviewCreationRequirementError_8940a50fccf58880bb0f9c9a8202ef0e } from '@/app/(payload)/components/ReviewCreationRequirementError'
-import { LinkToDoc as LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
-import { ReindexButton as ReindexButton_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { FormatField as FormatField_cdf7e044479f899a31f804427d568b36 } from '@payloadcms/plugin-import-export/rsc'
 import { LimitField as LimitField_cdf7e044479f899a31f804427d568b36 } from '@payloadcms/plugin-import-export/rsc'
 import { Page as Page_cdf7e044479f899a31f804427d568b36 } from '@payloadcms/plugin-import-export/rsc'
@@ -97,8 +95,6 @@ export const importMap = {
   "@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirements": ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4,
   "@/components/organisms/MedicalSpecialtiesAdminGuidance#default": default_edf1bab331b69df45f809a41e2fc2349,
   "@/app/(payload)/components/ReviewCreationRequirementError#ReviewCreationRequirementError": ReviewCreationRequirementError_8940a50fccf58880bb0f9c9a8202ef0e,
-  "@payloadcms/plugin-search/client#LinkToDoc": LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634,
-  "@payloadcms/plugin-search/client#ReindexButton": ReindexButton_aead06e4cbf6b2620c5c51c9ab283634,
   "@payloadcms/plugin-import-export/rsc#FormatField": FormatField_cdf7e044479f899a31f804427d568b36,
   "@payloadcms/plugin-import-export/rsc#LimitField": LimitField_cdf7e044479f899a31f804427d568b36,
   "@payloadcms/plugin-import-export/rsc#Page": Page_cdf7e044479f899a31f804427d568b36,

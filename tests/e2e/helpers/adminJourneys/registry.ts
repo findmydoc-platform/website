@@ -9,6 +9,7 @@ import {
   medicalSpecialtyCreateJourney,
 } from './journeys/specialties'
 import { tagCreateJourney } from './journeys/tags'
+import { postPublishingJourney } from './journeys/posts'
 import {
   clinicTreatmentLinkJourney,
   doctorTreatmentLinkJourney,
@@ -19,6 +20,7 @@ import {
 } from './journeys/treatments'
 
 export const adminJourneyRegistry = {
+  'admin.posts.publish-lifecycle': postPublishingJourney,
   'admin.clinic-applications.provisioning-guidance': clinicApplicationLifecycleJourney,
   'admin.clinic-staff.lifecycle-guidance': clinicStaffLifecycleJourney,
   'admin.clinics.approve-pending': clinicApprovalJourney,

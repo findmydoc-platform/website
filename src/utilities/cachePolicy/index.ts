@@ -633,16 +633,6 @@ export const CACHE_POLICY_CATALOG = [
     pathFamilies: ['none'],
   },
   {
-    id: 'operational:search-sync-suppression',
-    kind: 'operational',
-    cacheClass: 'operational-scaling',
-    boundary: 'operational',
-    owner: 'seed-runner',
-    tagFamilies: [],
-    pathRelationship: 'no-path-invalidation',
-    pathFamilies: ['none'],
-  },
-  {
     id: 'operational:cache-visibility',
     kind: 'operational',
     cacheClass: 'operational-scaling',

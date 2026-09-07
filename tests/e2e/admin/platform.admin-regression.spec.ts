@@ -4,6 +4,17 @@ import { createBrowserIssueCollector, expectNoBrowserIssues, getAdminFieldRoot, 
 
 test.describe.configure({ mode: 'serial' })
 
+test('platform staff can publish and unpublish a complete article @regression', async ({ page }) => {
+  test.setTimeout(180_000)
+  await page.goto('/admin')
+  await executeAdminJourney(getAdminJourneyDefinition('admin.posts.publish-lifecycle'), {
+    mode: 'regression',
+    page,
+    persona: 'admin',
+    request: page.request,
+  })
+})
+
 test('platform staff sees and completes clinic approval requirements @regression', async ({ page }) => {
   const issues = createBrowserIssueCollector(page, {
     ignoredConsoleErrors: [/status of 400.*\/api\/clinics\//, /server responded with a status of 400/i],

@@ -113,7 +113,7 @@ Seed upload recovery uses Payload's Local API and the configured S3 adapter only
 - If a trashed upload still blocks a filename, the seed flow clears that filename through a scoped Payload update before retrying the create.
 - If an immutable upload owner relation changes, the obsolete upload is deleted through Payload before a replacement is created.
 
-The recovery calls keep the existing seed, search, and cache contexts. They therefore preserve collection hooks, validation, file proxy behavior, and S3 object cleanup.
+The recovery calls keep the existing seed and cache contexts. They therefore preserve collection hooks, validation, file proxy behavior, and S3 object cleanup.
 
 
 ## Tiered Error Handling Policy
@@ -161,9 +161,7 @@ Legal holds and deletion proofs are removed as non-production data. Application 
 clinic staff account. Run the reset without concurrent application writes; the reset does not introduce a global write lock.
 
 The reset uses Payload's Local API with permanent-delete semantics. This removes Payload versions and lets upload
-collections run their normal file lifecycle so deleted media objects do not remain in storage. The search collection is
-not deleted directly: normal source-document delete hooks remove stale index entries, and seed upserts keep search
-synchronization enabled to recreate current entries. Per-record public cache revalidation stays disabled; the terminal
+hooks clean up stored files. Per-record public cache revalidation stays disabled; the terminal
 seed run performs one planner-owned `seed-final-flush` for the affected public surfaces.
 
 Once the destructive phase starts, the reset is intentionally not atomic across collections. A lifecycle or storage

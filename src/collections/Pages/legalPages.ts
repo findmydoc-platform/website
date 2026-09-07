@@ -123,7 +123,6 @@ async function createManagedPage(payload: Payload, spec: (typeof MANAGED_LEGAL_P
       overrideAccess: true,
       context: {
         disableRevalidate: true,
-        disableSearchSync: true,
       },
     })
   } catch (error) {
@@ -163,7 +162,6 @@ async function ensureManagedPage(payload: Payload, spec: (typeof MANAGED_LEGAL_P
     trash: true,
     context: {
       disableRevalidate: true,
-      disableSearchSync: true,
     },
   })
 }

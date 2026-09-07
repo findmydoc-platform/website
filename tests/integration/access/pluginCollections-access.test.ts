@@ -3,7 +3,7 @@ import { getPayload } from 'payload'
 import type { CollectionSlug, Payload } from 'payload'
 
 import config from '@payload-config'
-import type { Form, FormSubmission, Post, Redirect, Search } from '@/payload-types'
+import type { Form, FormSubmission, Redirect } from '@/payload-types'
 import { buildRichText } from '../../fixtures/richText'
 import { testSlug } from '../../fixtures/testSlug'
 import {
@@ -28,8 +28,6 @@ describe('Plugin collection access integration', () => {
   const createdFormIds: Array<number | string> = []
   const createdSubmissionIds: Array<number | string> = []
   const createdRedirectIds: Array<number | string> = []
-  const createdSearchIds: Array<number | string> = []
-  const createdPostIds: Array<number | string> = []
 
   const users = () =>
     [
@@ -52,7 +50,7 @@ describe('Plugin collection access integration', () => {
           collection,
           id,
           overrideAccess: true,
-          context: { disableRevalidate: true, disableSearchSync: true },
+          context: { disableRevalidate: true },
         })
       } catch {}
     }
@@ -104,25 +102,6 @@ describe('Plugin collection access integration', () => {
     return redirect
   }
 
-  const createSearchSourcePost = async (suffix: string): Promise<Post> => {
-    const post = (await payload.create({
-      collection: 'posts',
-      data: {
-        title: `${slugPrefix} ${suffix}`,
-        slug: `${slugPrefix}-${suffix}`,
-        excerpt: 'Search access integration test.',
-        content: buildRichText('Search access integration content.'),
-        _status: 'published',
-      },
-      depth: 0,
-      overrideAccess: true,
-      context: { disableRevalidate: true },
-    })) as Post
-
-    createdPostIds.push(post.id)
-    return post
-  }
-
   beforeAll(async () => {
     payload = await getPayload({ config })
 
@@ -148,8 +127,6 @@ describe('Plugin collection access integration', () => {
     await cleanup('form-submissions', createdSubmissionIds)
     await cleanup('forms', createdFormIds)
     await cleanup('redirects', createdRedirectIds)
-    await cleanup('search', createdSearchIds)
-    await cleanup('posts', createdPostIds)
   })
 
   afterAll(async () => {
@@ -340,104 +317,6 @@ describe('Plugin collection access integration', () => {
       overrideAccess: false,
       user: platformUser,
       context: { disableRevalidate: true },
-    })
-  })
-
-  it('keeps search public and preserves internal create and update sync', async () => {
-    const post = await createSearchSourcePost('search-source')
-    const searchResult = await payload.find({
-      collection: 'search',
-      depth: 0,
-      overrideAccess: true,
-      where: {
-        'doc.relationTo': { equals: 'posts' },
-        'doc.value': { equals: post.id },
-      },
-    })
-    const searchDoc = searchResult.docs[0] as Search | undefined
-    if (!searchDoc) throw new Error('Expected internal search sync to create a search document')
-    createdSearchIds.push(searchDoc.id)
-
-    for (const [role, user] of users()) {
-      const result = await payload.findByID({
-        collection: 'search',
-        id: searchDoc.id,
-        depth: 0,
-        overrideAccess: false,
-        ...userArg(user),
-      })
-      expect(result.id, `search read for ${role}`).toBe(searchDoc.id)
-
-      await expect(
-        payload.create({
-          collection: 'search',
-          data: {
-            title: `${slugPrefix} direct create ${role}`,
-            doc: { relationTo: 'posts', value: post.id },
-          },
-          overrideAccess: false,
-          ...userArg(user),
-        }),
-        `search create for ${role}`,
-      ).rejects.toThrow()
-    }
-
-    for (const [role, user] of nonPlatformUsers()) {
-      await expect(
-        payload.update({
-          collection: 'search',
-          id: searchDoc.id,
-          data: { priority: 10 },
-          overrideAccess: false,
-          ...userArg(user),
-        }),
-        `search update for ${role}`,
-      ).rejects.toThrow()
-      await expect(
-        payload.delete({
-          collection: 'search',
-          id: searchDoc.id,
-          overrideAccess: false,
-          ...userArg(user),
-        }),
-        `search delete for ${role}`,
-      ).rejects.toThrow()
-    }
-
-    const platformUpdated = await payload.update({
-      collection: 'search',
-      id: searchDoc.id,
-      data: { priority: 10 },
-      depth: 0,
-      overrideAccess: false,
-      user: platformUser,
-    })
-    expect(platformUpdated.priority).toBe(10)
-
-    const updatedTitle = `${slugPrefix} updated search source`
-    await payload.update({
-      collection: 'posts',
-      id: post.id,
-      data: { title: updatedTitle },
-      depth: 0,
-      overrideAccess: true,
-      context: { disableRevalidate: true },
-    })
-
-    const synced = await payload.findByID({
-      collection: 'search',
-      id: searchDoc.id,
-      depth: 0,
-      overrideAccess: true,
-    })
-    expect(synced.title).toBe(updatedTitle)
-    expect(synced.priority).toBe(10)
-
-    await payload.delete({
-      collection: 'search',
-      id: searchDoc.id,
-      overrideAccess: false,
-      user: platformUser,
     })
   })
 })

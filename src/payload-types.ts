@@ -115,7 +115,6 @@ export interface Config {
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
-    search: Search;
     exports: Export;
     imports: Import;
     'payload-mcp-api-keys': PayloadMcpApiKey;
@@ -192,7 +191,6 @@ export interface Config {
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
-    search: SearchSelect<false> | SearchSelect<true>;
     exports: ExportsSelect<false> | ExportsSelect<true>;
     imports: ImportsSelect<false> | ImportsSelect<true>;
     'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
@@ -3287,55 +3285,6 @@ export interface FormSubmission {
   createdAt: string;
 }
 /**
- * This is a collection of automatically created search results. These results are used by the global site search and will be updated automatically as documents in the CMS are created or updated.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "search".
- */
-export interface Search {
-  id: number;
-  title?: string | null;
-  priority?: number | null;
-  doc:
-    | {
-        relationTo: 'posts';
-        value: number | Post;
-      }
-    | {
-        relationTo: 'clinics';
-        value: number | Clinic;
-      }
-    | {
-        relationTo: 'treatments';
-        value: number | Treatment;
-      }
-    | {
-        relationTo: 'doctors';
-        value: number | Doctor;
-      };
-  slug?: string | null;
-  city?: (number | null) | City;
-  country?: (number | null) | Country;
-  clinic?: (number | null) | Clinic;
-  minPrice?: number | null;
-  maxPrice?: number | null;
-  treatmentName?: string | null;
-  meta?: {
-    title?: string | null;
-    description?: string | null;
-    image?: (number | null) | PlatformContentMedia;
-  };
-  categories?:
-    | {
-        relationTo?: string | null;
-        id?: string | null;
-        title?: string | null;
-      }[]
-    | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "exports".
  */
@@ -3874,10 +3823,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'form-submissions';
         value: number | FormSubmission;
-      } | null)
-    | ({
-        relationTo: 'search';
-        value: number | Search;
       } | null)
     | ({
         relationTo: 'payload-mcp-api-keys';
@@ -5675,38 +5620,6 @@ export interface FormSubmissionsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "search_select".
- */
-export interface SearchSelect<T extends boolean = true> {
-  title?: T;
-  priority?: T;
-  doc?: T;
-  slug?: T;
-  city?: T;
-  country?: T;
-  clinic?: T;
-  minPrice?: T;
-  maxPrice?: T;
-  treatmentName?: T;
-  meta?:
-    | T
-    | {
-        title?: T;
-        description?: T;
-        image?: T;
-      };
-  categories?:
-    | T
-    | {
-        relationTo?: T;
-        id?: T;
-        title?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "exports_select".
  */
 export interface ExportsSelect<T extends boolean = true> {
@@ -7098,7 +7011,6 @@ export interface TaskCreateCollectionExport {
       | 'redirects'
       | 'forms'
       | 'form-submissions'
-      | 'search'
       | 'exports'
       | 'imports';
     drafts?: ('yes' | 'no') | null;

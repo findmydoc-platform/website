@@ -129,16 +129,14 @@ is_plugin_collection_access_only_change() {
     esac
 
     case "${diff_line}" in
-      "+import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'" | \
-        "-import { generatedCollectionAccess, searchPluginCollectionAccessOverrides } from '@/security/generatedCollectionAccess'" | \
+      "+import { generatedCollectionAccess } from '@/security/generatedCollectionAccess'" | \
+        "-import { generatedCollectionAccess } from '@/security/generatedCollectionAccess'" | \
         '+      access: generatedCollectionAccess.redirects,' | \
         '-      access: generatedCollectionAccess.redirects,' | \
         '+      access: generatedCollectionAccess.forms,' | \
         '-      access: generatedCollectionAccess.forms,' | \
         "+      access: generatedCollectionAccess['form-submissions']," | \
-        "-      access: generatedCollectionAccess['form-submissions']," | \
-        '+      access: searchPluginCollectionAccessOverrides,' | \
-        '-      access: searchPluginCollectionAccessOverrides,')
+        "-      access: generatedCollectionAccess['form-submissions'],")
         ;;
       +* | -*)
         return 1

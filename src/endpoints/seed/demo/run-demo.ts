@@ -60,7 +60,7 @@ async function applyPostRelations(
         data: { relatedPosts: relatedIds },
         trash: true,
         overrideAccess: true,
-        context: { disableRevalidate: true, disableSearchSync: true },
+        context: { disableRevalidate: true },
       })
       updated += 1
     } catch (error) {

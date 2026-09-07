@@ -41,7 +41,7 @@ export const Enhanced: React.FC<EnhancedProps> = ({
   const imageSizes = resolvedImage.sizes ?? '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
   const imageQuality = resolvedImage.quality ?? 70
   const avatarFallback = resolveAvatarPlaceholder({
-    persona: 'patient',
+    persona: 'author',
   })
   const authorAvatar = author?.avatar || avatarFallback
   const authorName = author?.name || 'findmydoc Editorial Team'

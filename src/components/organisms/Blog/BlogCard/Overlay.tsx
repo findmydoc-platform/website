@@ -36,7 +36,7 @@ export const Overlay: React.FC<OverlayProps> = ({
   const imageSizes = resolvedImage.sizes ?? '(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px'
   const imageQuality = resolvedImage.quality ?? 70
   const avatarFallback = resolveAvatarPlaceholder({
-    persona: 'patient',
+    persona: 'author',
   })
   const authorAvatar = author?.avatar || avatarFallback
   const authorName = author?.name || 'findmydoc Editorial Team'

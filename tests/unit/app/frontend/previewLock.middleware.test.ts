@@ -951,12 +951,16 @@ describe('preview lock proxy', () => {
     const registrationPanelResponse = await proxy(
       new NextRequest('https://preview.findmydoc.eu/images/clinic-registration-funnel-panel.webp'),
     )
+    const authorPlaceholderResponse = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/images/placeholders/author-neutral-placeholder.webp'),
+    )
 
     expect(faviconResponse.status).toBe(200)
     expect(imageResponse.status).toBe(200)
     expect(cssBackgroundResponse.status).toBe(200)
     expect(clinicMapResponse.status).toBe(200)
     expect(registrationPanelResponse.status).toBe(200)
+    expect(authorPlaceholderResponse.status).toBe(200)
     expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })

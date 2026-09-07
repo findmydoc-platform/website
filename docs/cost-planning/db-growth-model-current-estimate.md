@@ -11,6 +11,8 @@ This document estimates PostgreSQL growth for the current data model under a Tü
 - Moderate retention overhead for mutable collections
 - A fixed baseline data block that does not scale linearly with clinic count
 
+The displayed totals describe the plugin-free schema after the Search contract migration. During the application-stage rollout, the database still retains the retired Search storage. Add `3.58 MB`, `6.48 MB`, or `11.61 MB` to the Low, Med, or High total until that contract migration has completed.
+
 Out of scope:
 
 - Binary image/video file bytes (covered in `media-growth-model-current-estimate.md`)
@@ -66,7 +68,7 @@ Overlay rules:
 
 ### 3-Year Trajectory (DB Rows and Size)
 
-| Scenario | Year | Active Clinics | Forecast Users | Derived Doctors | Derived Reviews | Derived Posts | Derived Pages | Estimated DB Total MB (incl. baseline) |
+| Scenario | Year | Active Clinics | Forecast Users | Derived Doctors | Derived Reviews | Derived Posts | Derived Pages | Post-contract DB Total MB (incl. baseline) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Low | 1 | 30 | 12000 | 120 | 600 | 9 | 1 | 1.43 |
 | Low | 2 | 55 | 35000 | 220 | 1100 | 26 | 4 | 3.05 |
@@ -132,7 +134,7 @@ estimated_mb = (active_rows + historical_rows + retention_rows)
 | platformStaff | 8 | 0 | 1 | 0.00 | fixed platform operations team |
 | posts | 60 | 240 | 6 | 2.62 | posts_total |
 | pages | 8 | 32 | 1 | 0.22 | pages_total |
-| **Dynamic total** |  |  |  | **21.51** |  |
+| **Post-contract dynamic total** |  |  |  | **21.51** |  |
 
 ### Med Scenario
 
@@ -148,7 +150,7 @@ estimated_mb = (active_rows + historical_rows + retention_rows)
 | platformStaff | 8 | 0 | 1 | 0.00 | fixed platform operations team |
 | posts | 180 | 1440 | 27 | 14.11 | posts_total |
 | pages | 15 | 120 | 2 | 0.72 | pages_total |
-| **Dynamic total** |  |  |  | **80.92** |  |
+| **Post-contract dynamic total** |  |  |  | **80.92** |  |
 
 ### High Scenario
 
@@ -164,7 +166,7 @@ estimated_mb = (active_rows + historical_rows + retention_rows)
 | platformStaff | 8 | 0 | 2 | 0.00 | fixed platform operations team |
 | posts | 420 | 8400 | 105 | 76.47 | posts_total |
 | pages | 30 | 600 | 8 | 3.35 | pages_total |
-| **Dynamic total** |  |  |  | **276.68** |  |
+| **Post-contract dynamic total** |  |  |  | **276.68** |  |
 
 ## Fixed Baseline (Non-Linear Block)
 
@@ -186,7 +188,7 @@ Naming note: the Payload collection slug is `accreditation` (singular), and this
 
 ## Centric Views
 
-| Scenario | Clinic-Centric MB | Page/Post-Centric MB | User-Centric MB | Dynamic MB | Baseline MB | Total MB |
+| Scenario | Clinic-Centric MB | Page/Post-Centric MB | User-Centric MB | Post-contract Dynamic MB | Baseline MB | Post-contract Total MB |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Low | 18.46 | 2.83 | 0.21 | 21.50 | 0.066 | 21.57 |
 | Med | 65.65 | 14.84 | 0.44 | 80.92 | 0.066 | 80.99 |
@@ -200,7 +202,7 @@ Centric definitions:
 
 ## Consistency Checks
 
-### Totals Check
+### Post-contract Totals Check
 
 | Scenario | Dynamic MB (Exact) | Baseline MB (Exact) | Dynamic + Baseline (Exact) | Total MB (Exact) | Match |
 | --- | ---: | ---: | ---: | ---: | --- |

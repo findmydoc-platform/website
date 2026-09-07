@@ -1,4 +1,5 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test'
+import sharp from 'sharp'
 import { buildRichText } from '../../../../fixtures/richText'
 import { getFirstCollectionDoc, getRecordId } from '../../adminApi'
 import { fillAdminRichTextField, getAdminFieldRoot, openAdminDocumentPage, openAdminTab } from '../../adminUI'
@@ -70,10 +71,11 @@ export const postPublishingJourney: AdminJourneyDefinition<PostState> = {
               file: {
                 name: `${state.slug}.png`,
                 mimeType: 'image/png',
-                buffer: Buffer.from(
-                  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=',
-                  'base64',
-                ),
+                buffer: await sharp({
+                  create: { width: 1600, height: 900, channels: 3, background: '#38bda6' },
+                })
+                  .png()
+                  .toBuffer(),
               },
             },
           })
@@ -101,7 +103,19 @@ export const postPublishingJourney: AdminJourneyDefinition<PostState> = {
           await openAdminTab(page, 'Content')
           await getAdminFieldRoot(page, 'excerpt').getByRole('textbox').fill('Edited article summary')
           await fillAdminRichTextField(page, 'Content', 'Edited article body', { fieldPath: 'content' })
-          await savePost(page, id, /^Save draft$/i)
+          await expect
+            .poll(
+              async () => {
+                const doc = await readPost(request, id)
+                return (
+                  doc.title === title &&
+                  doc.excerpt === 'Edited article summary' &&
+                  JSON.stringify(doc.content).includes('Edited article body')
+                )
+              },
+              { timeout: 15000 },
+            )
+            .toBe(true)
           await page.reload()
           await expect(getAdminFieldRoot(page, 'title').getByRole('textbox')).toHaveValue(title)
           const expected = { ...fields, title, excerpt: 'Edited article summary' }
@@ -123,9 +137,6 @@ export const postPublishingJourney: AdminJourneyDefinition<PostState> = {
             const api = await publicContext.request.get(`${origin}/api/posts?where[slug][equals]=${state.slug}`)
             expect(api.ok()).toBeTruthy()
             expect((await api.json()).docs).toHaveLength(0)
-            const sitemap = await publicContext.request.get(`${origin}/posts-sitemap.xml`)
-            expect(sitemap.ok()).toBeTruthy()
-            expect(await sitemap.text()).not.toContain(publicUrl)
           }
           const assertPublic = async (expectedTitle: string) => {
             const response = await publicPage.goto(publicUrl)
@@ -160,7 +171,7 @@ export const postPublishingJourney: AdminJourneyDefinition<PostState> = {
           await assertPublic(title)
           const revisedTitle = `${state.slug} revised`
           await getAdminFieldRoot(page, 'title').getByRole('textbox').fill(revisedTitle)
-          await savePost(page, id, /^Save draft$/i)
+          await expect.poll(async () => (await readPost(request, id)).title, { timeout: 15000 }).toBe(revisedTitle)
           await page.reload()
           await assertFields('draft', revisedTitle)
           expect((await readPost(request, id, false)).title).toBe(title)

@@ -8,7 +8,7 @@ import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { buildRichText, buildRichTextWithInternalPostLink } from '../fixtures/richText'
 import { testSlug } from '../fixtures/testSlug'
 import { slugify } from '@/utilities/slugify'
-import { findPostBySlug, findPublishedPostsPage } from '@/utilities/content/serverData'
+import { findPostBySlug, findPublishedPostsPage, findPostSitemapDocs } from '@/utilities/content/serverData'
 import type { Post, Tag, Category, PlatformStaff } from '@/payload-types'
 import demoPosts from '@/endpoints/seed/data/demo/posts.json'
 
@@ -157,6 +157,34 @@ describe('Posts integration - lifecycle and access', () => {
       const publicPost = await findPostBySlug(payload, String(draft.slug), false)
       expect(publicPost?.id).toBe(draft.id)
     }
+  })
+
+  it('includes a post in sitemap data only while published', async () => {
+    const post = await payload.create({
+      collection: 'posts',
+      data: buildPostData({ title: `${slugPrefix} sitemap lifecycle` }),
+      draft: true,
+      context: { disableRevalidate: true },
+    })
+    const sitemapContainsPost = async () => (await findPostSitemapDocs(payload)).some((doc) => doc.slug === post.slug)
+
+    expect(await sitemapContainsPost()).toBe(false)
+    await payload.update({
+      collection: 'posts',
+      id: post.id,
+      data: { _status: 'published' },
+      draft: false,
+      context: { disableRevalidate: true },
+    })
+    expect(await sitemapContainsPost()).toBe(true)
+    await payload.update({
+      collection: 'posts',
+      id: post.id,
+      data: { _status: 'draft' },
+      draft: false,
+      context: { disableRevalidate: true },
+    })
+    expect(await sitemapContainsPost()).toBe(false)
   })
 
   it('creates a draft post and generates slug from title', async () => {

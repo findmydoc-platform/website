@@ -1,3 +1,4 @@
+import { beforeOperationNormalizeImageEdits } from '@/hooks/media/normalizeImageEdits'
 import type { CollectionConfig, PayloadRequest, Where } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -279,6 +280,7 @@ export const UserProfileMedia: CollectionConfig = {
     ],
     beforeDelete: [captureUserProfileMediaPlatformAuthorsBeforeDelete],
     beforeOperation: [
+      beforeOperationNormalizeImageEdits,
       beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({

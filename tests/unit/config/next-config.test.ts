@@ -1,12 +1,33 @@
 import { describe, expect, it } from 'vitest'
 
-import nextConfig from '../../../next.config.js'
+import nextConfig, { isPreviewDeployment } from '../../../next.config.js'
 import vercelConfig from '../../../vercel.json'
 import { getAllowedDevOrigins } from '@/utilities/nextDevOrigins.js'
 
 describe('nextConfig', () => {
   it('includes seed assets in API output tracing', () => {
     expect(nextConfig.outputFileTracingIncludes?.['/api/**/*']).toContain('./src/endpoints/seed/assets/**/*')
+  })
+
+  it('disables image optimization only for preview deployments', () => {
+    expect(
+      isPreviewDeployment({
+        deploymentEnvironment: 'production',
+        vercelEnvironment: 'preview',
+      }),
+    ).toBe(true)
+    expect(
+      isPreviewDeployment({
+        deploymentEnvironment: 'preview',
+        vercelEnvironment: 'production',
+      }),
+    ).toBe(false)
+    expect(
+      isPreviewDeployment({
+        deploymentEnvironment: 'preview',
+        vercelEnvironment: undefined,
+      }),
+    ).toBe(true)
   })
 
   it('bounds Payload API workers below the abandoned seed recovery lease', () => {

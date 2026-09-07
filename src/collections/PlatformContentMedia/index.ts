@@ -1,3 +1,4 @@
+import { beforeOperationNormalizeImageEdits } from '@/hooks/media/normalizeImageEdits'
 import type { CollectionConfig } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -50,6 +51,7 @@ export const PlatformContentMedia: CollectionConfig = {
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [stableIdBeforeChangeHook, beforeChangePlatformContentMedia],
     beforeOperation: [
+      beforeOperationNormalizeImageEdits,
       beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,
       beforeOperationCaptureMediaUpload({

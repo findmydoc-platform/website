@@ -3,7 +3,12 @@ import type { Payload } from 'payload'
 import { createStableIdResolvers } from '@/endpoints/seed/utils/resolvers'
 import { upsertByStableId } from '@/endpoints/seed/utils/upsert'
 import { resetCollections } from '@/endpoints/seed/utils/reset'
+import * as seedLoader from '@/endpoints/seed/utils/load-json'
 import { loadSeedFile } from '@/endpoints/seed/utils/load-json'
+
+const deleteObjects = vi.hoisted(() => vi.fn())
+const createStorage = vi.hoisted(() => vi.fn(() => ({ deleteObjects })))
+vi.mock('@/features/inquiryCommunication/storage', () => ({ createS3InquiryAttachmentStorage: createStorage }))
 
 describe('stableId resolvers', () => {
   const find = vi.fn()
@@ -358,6 +363,7 @@ describe('resetCollections', () => {
     expect(deleteDocuments).not.toHaveBeenCalled()
     expect(update).not.toHaveBeenCalled()
     expect(find).not.toHaveBeenCalled()
+    expect(createStorage).not.toHaveBeenCalled()
   })
 
   it('throws for demo reset in production', async () => {
@@ -369,6 +375,7 @@ describe('resetCollections', () => {
     expect(deleteDocuments).not.toHaveBeenCalled()
     expect(update).not.toHaveBeenCalled()
     expect(find).not.toHaveBeenCalled()
+    expect(createStorage).not.toHaveBeenCalled()
   })
 
   it('returns the post slugs that must be invalidated after reset', async () => {
@@ -404,16 +411,29 @@ describe('resetCollections', () => {
       'reviewAppeals',
       'reviewResponses',
       'reviews',
+      'inquiryLegalHolds',
+      'inquiryDeletionProofs',
+      'inquiryModerationEvents',
+      'inquiryModerationCases',
+      'inquiryAuditEvents',
+      'inquiryReadPositions',
+      'inquiryInternalNotes',
+      'inquiryMessages',
+      'inquiryAttachments',
+      'inquiryConversations',
       'patientClinicInquiries',
       'favoriteclinics',
       'doctortreatments',
       'doctorspecialties',
       'clinictreatments',
       'clinicProfileDrafts',
-      'clinicMedia',
+      'clinicApplications',
+      'clinicGalleryEntries',
+      'clinicGalleryMedia',
       'doctorMedia',
       'doctors',
       'clinics',
+      'clinicMedia',
       'posts',
       'userProfileMedia',
       'platformContentMedia',
@@ -473,7 +493,7 @@ describe('resetCollections', () => {
     vi.stubEnv('NODE_ENV', 'test')
 
     find.mockImplementation(async ({ collection, where }: { collection: string; where?: Record<string, unknown> }) => {
-      if (collection === 'posts') return { docs: [] }
+      if (collection === 'posts' || collection === 'inquiryAttachments') return { docs: [] }
       if (collection === 'platformStaff') return { docs: [{ id: 'platform-1' }] }
       if (collection === 'clinicStaff') return { docs: [{ id: 'clinic-staff-1' }] }
       if (collection === 'patients') return { docs: [{ id: 'patient-1' }] }
@@ -522,7 +542,7 @@ describe('resetCollections', () => {
     vi.stubEnv('NODE_ENV', 'test')
 
     find.mockImplementation(async ({ collection, where }: { collection: string; where?: Record<string, unknown> }) => {
-      if (collection === 'posts') return { docs: [] }
+      if (collection === 'posts' || collection === 'inquiryAttachments') return { docs: [] }
       if (collection === 'patients' && where && 'country' in where) return { docs: [{ id: 'patient-1' }] }
       return { docs: [] }
     })
@@ -573,9 +593,125 @@ describe('resetCollections', () => {
     deleteDocuments.mockResolvedValueOnce({ docs: [], errors: [{ id: 'appeal-1', message: 'blocked' }] })
 
     await expect(resetCollections(payload, 'demo')).rejects.toThrow(
-      /Seed reset failed while deleting reviewAppeals: appeal-1: blocked/,
+      /Seed reset failed while deleting reviewAppeals: document IDs appeal-1/,
     )
     expect(deleteDocuments).toHaveBeenCalledTimes(1)
+  })
+
+  it('cleans attachment files after preparation and before account updates or collection deletion', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    const events: string[] = []
+    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs:
+        collection === 'inquiryAttachments'
+          ? [{ id: 42, draftObjectKey: 'draft/42', readyObjectKey: 'ready/42' }]
+          : collection === 'clinicStaff'
+            ? [{ id: 7 }]
+            : [],
+    }))
+    deleteObjects.mockImplementation(async () => {
+      events.push('files')
+    })
+    update.mockImplementation(async () => {
+      events.push('account')
+      return { id: 7 }
+    })
+    deleteDocuments.mockImplementation(async () => {
+      events.push('documents')
+      return { docs: [], errors: [] }
+    })
+    await resetCollections(payload, 'demo', {
+      onPrepared: () => {
+        events.push('prepared')
+      },
+    })
+    expect(events.slice(0, 4)).toEqual(['prepared', 'files', 'account', 'documents'])
+    expect(deleteObjects).toHaveBeenCalledWith(['draft/42', 'ready/42'])
+  })
+
+  it('keeps attachment metadata and account relations after storage failure and retries the same files', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs:
+        collection === 'inquiryAttachments'
+          ? [{ id: 42, draftObjectKey: 'private/42' }]
+          : collection === 'clinicStaff'
+            ? [{ id: 7 }]
+            : [],
+    }))
+    deleteObjects.mockRejectedValueOnce(new Error('private key or signed URL'))
+    await expect(resetCollections(payload, 'demo')).rejects.toThrow(
+      'Seed reset failed during file cleanup of inquiryAttachments:42',
+    )
+    expect(update).not.toHaveBeenCalled()
+    expect(deleteDocuments).not.toHaveBeenCalled()
+    deleteObjects.mockResolvedValue(undefined)
+    await resetCollections(payload, 'demo')
+    expect(deleteObjects).toHaveBeenCalledTimes(2)
+    expect(deleteDocuments).toHaveBeenCalledWith(expect.objectContaining({ collection: 'inquiryAttachments' }))
+  })
+
+  it.each(['demo', 'baseline'] as const)(
+    'rejects an unreadable other media list before mutations for %s',
+    async (kind) => {
+      vi.stubEnv('VERCEL_ENV', '')
+      vi.stubEnv('DEPLOYMENT_ENV', 'test')
+      const original = seedLoader.loadSeedFile
+      const spy = vi.spyOn(seedLoader, 'loadSeedFile').mockImplementation(async (source, name) => {
+        if (source !== kind && name === 'platformContentMedia') throw new Error('Invalid seed media file')
+        return original(source, name)
+      })
+      const onPrepared = vi.fn()
+      try {
+        await expect(resetCollections(payload, kind, { onPrepared })).rejects.toThrow('Invalid seed media file')
+        expect(onPrepared).not.toHaveBeenCalled()
+        expect(deleteObjects).not.toHaveBeenCalled()
+        expect(update).not.toHaveBeenCalled()
+        expect(deleteDocuments).not.toHaveBeenCalled()
+      } finally {
+        spy.mockRestore()
+      }
+    },
+  )
+
+  it.each(['demo', 'baseline'] as const)(
+    'preserves baseline media and skips an empty difference for %s',
+    async (kind) => {
+      vi.stubEnv('VERCEL_ENV', '')
+      vi.stubEnv('DEPLOYMENT_ENV', 'test')
+      const original = seedLoader.loadSeedFile
+      const spy = vi.spyOn(seedLoader, 'loadSeedFile').mockImplementation(async (source, name) => {
+        if (name === 'platformContentMedia') return [{ stableId: 'shared' }]
+        return original(source, name)
+      })
+      try {
+        await resetCollections(payload, kind)
+        expect(deleteDocuments.mock.calls.map(([args]) => args.collection)).not.toContain('platformContentMedia')
+      } finally {
+        spy.mockRestore()
+      }
+    },
+  )
+
+  it.each(['demo', 'baseline'] as const)('deletes only demo-only media for %s', async (kind) => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    const original = seedLoader.loadSeedFile
+    const spy = vi.spyOn(seedLoader, 'loadSeedFile').mockImplementation(async (source, name) => {
+      if (name === 'platformContentMedia')
+        return (source === 'baseline' ? ['baseline', 'shared'] : ['demo', 'shared']).map((stableId) => ({ stableId }))
+      return original(source, name)
+    })
+    try {
+      await resetCollections(payload, kind)
+      expect(deleteDocuments).toHaveBeenCalledWith(
+        expect.objectContaining({ collection: 'platformContentMedia', where: { stableId: { in: ['demo'] } } }),
+      )
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('deletes demo then baseline collections for baseline reset', async () => {
@@ -587,19 +723,31 @@ describe('resetCollections', () => {
       'reviewAppeals',
       'reviewResponses',
       'reviews',
+      'inquiryLegalHolds',
+      'inquiryDeletionProofs',
+      'inquiryModerationEvents',
+      'inquiryModerationCases',
+      'inquiryAuditEvents',
+      'inquiryReadPositions',
+      'inquiryInternalNotes',
+      'inquiryMessages',
+      'inquiryAttachments',
+      'inquiryConversations',
       'patientClinicInquiries',
       'favoriteclinics',
       'doctortreatments',
       'doctorspecialties',
       'clinictreatments',
       'clinicProfileDrafts',
-      'clinicMedia',
+      'clinicApplications',
+      'clinicGalleryEntries',
+      'clinicGalleryMedia',
       'doctorMedia',
       'doctors',
       'clinics',
+      'clinicMedia',
       'posts',
       'userProfileMedia',
-      'platformContentMedia',
       'treatments',
       'categories',
       'tags',
@@ -607,6 +755,7 @@ describe('resetCollections', () => {
       'medical-specialties',
       'cities',
       'countries',
+      'platformContentMedia',
     ]
 
     await resetCollections(payload, 'baseline')
@@ -619,7 +768,11 @@ describe('resetCollections', () => {
     expect(actualOrder).toEqual(expectedOrder)
     const baselineMedia = await loadSeedFile('baseline', 'platformContentMedia')
     const demoMedia = await loadSeedFile('demo', 'platformContentMedia')
-    const expectedStableIds = [...new Set([...baselineMedia, ...demoMedia].map((record) => record.stableId))].sort()
+    const baselineIds = new Set(baselineMedia.map((record) => record.stableId))
+    const expectedStableIds = demoMedia
+      .map((record) => record.stableId)
+      .filter((id) => !baselineIds.has(id))
+      .sort()
     expect(deleteDocuments).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'platformContentMedia',

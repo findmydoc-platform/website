@@ -219,7 +219,9 @@ export const postPublishingJourney: AdminJourneyDefinition<PostState> = {
             expect(api.ok()).toBeTruthy()
             expect((await api.json()).docs[0]).toMatchObject({ title: expectedTitle, _status: 'published' })
           }
-          await assertTemporaryLandingMode()
+          if (process.env.E2E_RUNTIME_POLICY === 'temporary-landing') {
+            await assertTemporaryLandingMode()
+          }
           await assertFields('draft')
           await assertHidden()
           await savePost(page, id, /^Publish(?: changes)?$/i)

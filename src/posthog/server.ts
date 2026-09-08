@@ -1,6 +1,8 @@
 import { PostHog } from 'posthog-node'
 import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
 import { createScopedLogger, toLoggedError } from '@/utilities/logging/shared'
+import { resolvePostHogDeploymentMetadata } from './deployment-metadata'
+import { sanitizeExceptionProperties } from './exception-context'
 import { createPostHogFlagDefinitionCacheProvider } from './flag-definition-cache'
 
 let posthogServerClient: PostHog | null = null
@@ -9,11 +11,15 @@ let posthogFeatureFlagShutdownTimer: ReturnType<typeof setTimeout> | null = null
 
 export const POSTHOG_FEATURE_FLAGS_POLLING_INTERVAL_MS = 120_000
 export const POSTHOG_FEATURE_FLAGS_IDLE_SHUTDOWN_MS = POSTHOG_FEATURE_FLAGS_POLLING_INTERVAL_MS + 30_000
+const POSTHOG_EXCEPTION_SEND_TIMEOUT_MS = 1_500
 
 const logger = createScopedLogger(fallbackConsoleLogger, {
   component: 'posthog-server',
   scope: 'telemetry.posthog',
 })
+
+const POSTHOG_SERVER_EXCEPTION_APPLICATION = 'website'
+const POSTHOG_SERVER_EXCEPTION_DISTINCT_ID = 'server:website'
 
 type PostHogClientWithCaptureException = PostHog & {
   captureException: (
@@ -27,6 +33,23 @@ const hasCaptureException = (client: PostHog): client is PostHogClientWithCaptur
   const maybe = client as unknown as { captureException?: unknown }
   return typeof maybe.captureException === 'function'
 }
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> =>
+  new Promise<T>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error(`PostHog exception send exceeded ${timeoutMs}ms`)), timeoutMs)
+    timeout.unref?.()
+
+    promise.then(
+      (value) => {
+        clearTimeout(timeout)
+        resolve(value)
+      },
+      (error: unknown) => {
+        clearTimeout(timeout)
+        reject(error)
+      },
+    )
+  })
 
 const createPostHogServerClient = ({ enableFeatureFlags }: { enableFeatureFlags: boolean }): PostHog => {
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
@@ -149,12 +172,46 @@ export async function sendExceptionToPostHog(
     distinctId?: string
     url?: string
     method?: string
-    userAgent?: string
     timestamp?: string
     properties?: Record<string, boolean | number | string | null>
   },
 ): Promise<void> {
   try {
+    const { distinctId: _callerDistinctId, properties, ...contextProperties } = props ?? {}
+    const payload = {
+      ...sanitizeExceptionProperties({ ...contextProperties, ...properties }),
+      application: POSTHOG_SERVER_EXCEPTION_APPLICATION,
+      error: err instanceof Error ? err.message : String(err),
+    }
+    const deploymentMetadata = resolvePostHogDeploymentMetadata()
+
+    if (deploymentMetadata.kind === 'local') {
+      const { error: _error, ...localPayload } = payload
+      logger.error(
+        {
+          ...localPayload,
+          distinctId: POSTHOG_SERVER_EXCEPTION_DISTINCT_ID,
+          err: toLoggedError(err),
+          event: 'telemetry.posthog.exception_local',
+          posthog_event: '$exception',
+        },
+        'Captured server exception locally without PostHog',
+      )
+      return
+    }
+
+    if (deploymentMetadata.kind === 'invalid') {
+      logger.error(
+        {
+          err: toLoggedError(err),
+          event: 'telemetry.posthog.exception_skipped_invalid_deployment_metadata',
+          reason: deploymentMetadata.reason,
+        },
+        'PostHog exception skipped because deployment metadata is invalid',
+      )
+      return
+    }
+
     let client: PostHog | null = null
     try {
       client = getPostHogServer()
@@ -169,25 +226,30 @@ export async function sendExceptionToPostHog(
       return
     }
 
-    const distinctId = props?.distinctId ?? 'server'
-    const { properties, ...contextProperties } = props ?? {}
-    const payload = {
-      error: err instanceof Error ? err.message : String(err),
-      ...contextProperties,
-      ...properties,
+    const additionalProperties = {
+      ...payload,
+      ...deploymentMetadata.metadata,
     }
-    const { distinctId: _distinctId, ...additionalProperties } = payload
 
     if (!client) return
 
-    // Prefer captureException if available, else fallback to generic capture
-    if (hasCaptureException(client)) {
-      await client.captureException(err, distinctId, additionalProperties)
-    } else if (typeof client.capture === 'function') {
-      await client.capture({ distinctId, event: 'exception', properties: payload })
-    }
+    await withTimeout(
+      (async () => {
+        // Prefer captureException if available, else fallback to generic capture
+        if (hasCaptureException(client)) {
+          await client.captureException(err, POSTHOG_SERVER_EXCEPTION_DISTINCT_ID, additionalProperties)
+        } else if (typeof client.capture === 'function') {
+          await client.capture({
+            distinctId: POSTHOG_SERVER_EXCEPTION_DISTINCT_ID,
+            event: 'exception',
+            properties: additionalProperties,
+          })
+        }
 
-    await client.flush()
+        await client.flush()
+      })(),
+      POSTHOG_EXCEPTION_SEND_TIMEOUT_MS,
+    )
   } catch (sendErr) {
     // Never allow telemetry failures to bubble up
     logger.error(

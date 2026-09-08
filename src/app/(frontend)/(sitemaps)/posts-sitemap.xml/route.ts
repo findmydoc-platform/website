@@ -4,7 +4,7 @@ import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { findPostSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
-import { shouldBlockSitemapIndexingForRequest } from '@/features/searchIndexing/sitemapGuards'
+import { resolveSitemapIndexingAccessForRequest } from '@/features/searchIndexing/sitemapGuards'
 import { buildSitemapTag } from '@/utilities/cachePolicy'
 
 const buildSitemapLocation = (siteUrl: string, path: string): string => {
@@ -49,7 +49,9 @@ const getPostsSitemap = unstable_cache(
 )
 
 export async function GET(request: Request) {
-  if (await shouldBlockSitemapIndexingForRequest(request)) {
+  const access = await resolveSitemapIndexingAccessForRequest(request)
+
+  if (!access.allowed) {
     return getServerSideSitemap([], {
       [SEARCH_ROBOTS_HEADER]: SEARCH_ROBOTS_HEADER_VALUE,
     })

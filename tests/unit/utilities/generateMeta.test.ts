@@ -79,6 +79,7 @@ describe('generateMeta', () => {
 
     expect(result.title).toBe('How to Build Amazing Websites | findmydoc')
     expect(result.description).toBe('A comprehensive guide to modern web development')
+    expect(result.alternates).toEqual({ canonical: '/how-to-build-amazing-websites' })
     expect(result.openGraph).toMatchObject({ url: 'https://example.com/how-to-build-amazing-websites' })
   })
 
@@ -87,6 +88,7 @@ describe('generateMeta', () => {
 
     expect(result.title).toBe('findmydoc')
     expect(result.description).toBe(DEFAULT_SITE_DESCRIPTION)
+    expect(result.alternates).toEqual({ canonical: '/' })
     expect(result.openGraph).toBeDefined()
   })
 

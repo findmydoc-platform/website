@@ -26,6 +26,7 @@ Test mode guidance:
 - With `TEST_DB_ALLOW_REMOTE=1`, the database lifecycle stays external. The harness still starts local S3Mock for the default local test endpoint; set `S3_TEST_ENDPOINT` to an isolated external endpoint when that storage lifecycle is external too.
 - If a test scenario needs Supabase endpoints, use `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - The Playwright admin smoke lane additionally expects `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD` for an already existing Supabase platform admin account.
+- The temporary-landing posts lane additionally requires `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, and `POSTHOG_FEATURE_FLAGS_SECURE_API_KEY`. It runs only the post lifecycle with production guard policy against `localhost`, while S3 remains the isolated test bucket.
 - Do not put blank `E2E_ADMIN_*` values into `.env.test`; that file overrides `.env.local` during test startup.
 
 A couple of notes about logging and test-time behavior:
@@ -44,6 +45,7 @@ pnpm tests --project=unit    # unit only
 pnpm tests --project=integration
 pnpm tests:e2e:smoke:admin   # Playwright admin smoke suite
 pnpm tests:e2e:regression:admin
+pnpm tests:e2e:temporary-landing:posts
 pnpm tests:e2e:smoke:public  # Playwright public smoke suite
 pnpm tests:e2e               # full Playwright E2E suite
 pnpm tests:e2e:headed        # visible browser for local diagnosis
@@ -123,6 +125,7 @@ Set `TEST_DB_REBUILD_TEMPLATES=1` when you need a manual repair run that discard
 - New journeys should compose reusable fragments from `adminJourneys/fragments.ts` before adding lower-level step sequences directly.
 - `pnpm tests:e2e:smoke:admin` keeps the small platform-admin smoke lane.
 - `pnpm tests:e2e:regression:admin` runs the heavier multi-step platform-admin journeys.
+- `pnpm tests:e2e:temporary-landing:posts` runs the isolated post lifecycle against the production guard policy on `localhost`.
 - Local screenshot capture for supported admin journeys uses `pnpm playwright:journey:capture -- --journey <id> --persona admin`.
 - Admin journey coverage uses `pnpm admin:journey:coverage` and writes JSON/Markdown reports to `output/playwright/journey-coverage/**`.
 - Capture-ready medical-network journeys now include:

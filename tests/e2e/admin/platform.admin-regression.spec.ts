@@ -4,7 +4,7 @@ import { createBrowserIssueCollector, expectNoBrowserIssues, getAdminFieldRoot, 
 
 test.describe.configure({ mode: 'serial' })
 
-test('platform staff can publish and unpublish a complete article @regression', async ({ page }) => {
+test('platform staff can publish and unpublish a complete article @regression @temporary-landing', async ({ page }) => {
   test.setTimeout(180_000)
   await page.goto('/admin')
   await executeAdminJourney(getAdminJourneyDefinition('admin.posts.publish-lifecycle'), {

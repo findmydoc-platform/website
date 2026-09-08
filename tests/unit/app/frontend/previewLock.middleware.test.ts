@@ -470,9 +470,9 @@ describe('preview lock proxy', () => {
       const response = await proxy(new NextRequest(`https://findmydoc.eu${path}`))
       expect(response.status).toBe(200)
       expect(response.headers.get('location')).toBeNull()
-      expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+      expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBeNull()
       expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
-      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBeNull()
     }
 
     for (const path of blockedPaths) {
@@ -486,17 +486,24 @@ describe('preview lock proxy', () => {
   it('applies temporary landing mode to canonical crawl entrypoints', async () => {
     mockGuardFlags({ 'temporary-landing-mode': true })
 
-    const responses = await Promise.all(
-      ['/robots.txt', '/sitemap.xml', '/llms.txt', '/.well-known/llms.txt'].map((path) =>
+    const indexableResponses = await Promise.all(
+      ['/robots.txt', '/pages-sitemap.xml', '/posts-sitemap.xml'].map((path) =>
+        proxy(new NextRequest(`https://findmydoc.eu${path}`)),
+      ),
+    )
+    const blockedResponses = await Promise.all(
+      ['/sitemap.xml', '/llms.txt', '/.well-known/llms.txt'].map((path) =>
         proxy(new NextRequest(`https://findmydoc.eu${path}`)),
       ),
     )
 
-    expect(responses.every((response) => response.status === 404)).toBe(true)
+    expect(indexableResponses.every((response) => response.status === 200)).toBe(true)
+    expect(indexableResponses.every((response) => response.headers.get(SEARCH_ROBOTS_HEADER) === null)).toBe(true)
+    expect(blockedResponses.every((response) => response.status === 404)).toBe(true)
     expect(
-      responses.every((response) => response.headers.get(SEARCH_ROBOTS_HEADER) === SEARCH_ROBOTS_HEADER_VALUE),
+      blockedResponses.every((response) => response.headers.get(SEARCH_ROBOTS_HEADER) === SEARCH_ROBOTS_HEADER_VALUE),
     ).toBe(true)
-    expect(mocks.evaluatePostHogFlags).toHaveBeenCalledTimes(4)
+    expect(mocks.evaluatePostHogFlags).toHaveBeenCalledTimes(6)
   })
 
   it('keeps admin and auth routes reachable in temporary landing mode', async () => {

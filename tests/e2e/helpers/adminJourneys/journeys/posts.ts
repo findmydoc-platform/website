@@ -1,11 +1,30 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test'
 import sharp from 'sharp'
-import { buildRichText } from '../../../../fixtures/richText'
+import { buildRichTextWithMediaBlock } from '../../../../fixtures/richText'
 import { getFirstCollectionDoc, getRecordId } from '../../adminApi'
-import { fillAdminRichTextField, getAdminFieldRoot, openAdminDocumentPage, openAdminTab } from '../../adminUI'
+import { getAdminFieldRoot, openAdminDocumentPage, openAdminTab } from '../../adminUI'
 import type { AdminJourneyDefinition } from '../types'
 
 type PostState = { slug: string }
+
+type UploadedMedia = {
+  filename?: string | null
+  sizes?: Record<string, { url?: string | null } | undefined>
+  url?: string | null
+}
+
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const getMediaPathFragment = (media: UploadedMedia): string => {
+  if (media.filename) {
+    return media.filename.replace(/\.[^.]+$/, '')
+  }
+
+  const url = media.sizes?.xlarge?.url ?? media.sizes?.large?.url ?? media.url
+  if (!url) throw new Error('Uploaded media has no public URL')
+
+  return (new URL(url, 'https://findmydoc.eu').pathname.split('/').pop() ?? url).replace(/\.[^.]+$/, '')
+}
 
 const readPost = async (request: APIRequestContext, id: string | number, draft = true) => {
   const response = await request.get(`/api/posts/${id}?depth=0&locale=en&draft=${draft}`)
@@ -65,36 +84,45 @@ export const postPublishingJourney: AdminJourneyDefinition<PostState> = {
           const tag = await create('tags', { name: state.slug, slug: state.slug })
           const author = getRecordId(await getFirstCollectionDoc(request, '/api/platformStaff?limit=1&depth=0'))
           expect(author).toBeTruthy()
-          const upload = await request.post('/api/platformContentMedia', {
-            multipart: {
-              _payload: JSON.stringify({ alt: state.slug }),
-              file: {
-                name: `${state.slug}.png`,
-                mimeType: 'image/png',
-                buffer: await sharp({
-                  create: { width: 1600, height: 900, channels: 3, background: '#38bda6' },
-                })
-                  .png()
-                  .toBuffer(),
+          const uploadMedia = async (role: 'content' | 'hero' | 'seo') => {
+            const upload = await request.post('/api/platformContentMedia', {
+              multipart: {
+                _payload: JSON.stringify({ alt: `${state.slug} ${role}` }),
+                file: {
+                  name: `${state.slug}-${role}.png`,
+                  mimeType: 'image/png',
+                  buffer: await sharp({
+                    create: { width: 1600, height: 900, channels: 3, background: '#38bda6' },
+                  })
+                    .png()
+                    .toBuffer(),
+                },
               },
-            },
-          })
-          expect(upload.ok()).toBeTruthy()
-          const media = (await upload.json()).doc
-          const mediaId = getRecordId(media)
-          if (mediaId === undefined) throw new Error('Missing uploaded image ID')
-          created.push({ collection: 'platformContentMedia', id: mediaId })
+            })
+            expect(upload.ok()).toBeTruthy()
+            const media = (await upload.json()).doc as UploadedMedia
+            const mediaId = getRecordId(media)
+            if (mediaId === undefined) throw new Error(`Missing ${role} media ID`)
+            created.push({ collection: 'platformContentMedia', id: mediaId })
+            return { id: mediaId, media }
+          }
+
+          const [contentMedia, heroMedia, seoMedia] = await Promise.all([
+            uploadMedia('content'),
+            uploadMedia('hero'),
+            uploadMedia('seo'),
+          ])
           const fields = {
             slug: state.slug,
             title: `${state.slug} initial`,
             excerpt: 'Initial article summary',
-            content: buildRichText('Initial article body'),
+            content: buildRichTextWithMediaBlock('Initial article body', Number(contentMedia.id)),
             categories: [category],
             tags: [tag],
             authors: [author],
-            heroImage: mediaId,
+            heroImage: heroMedia.id,
             publishedAt: new Date().toISOString(),
-            meta: { title: 'Article SEO title', description: 'Article SEO description', image: mediaId },
+            meta: { title: 'Article SEO title', description: 'Article SEO description', image: seoMedia.id },
           }
           const id = await create('posts', { ...fields, _status: 'draft' })
           await openAdminDocumentPage(page, 'posts', id)
@@ -102,7 +130,6 @@ export const postPublishingJourney: AdminJourneyDefinition<PostState> = {
           await getAdminFieldRoot(page, 'title').getByRole('textbox').fill(title)
           await openAdminTab(page, 'Content')
           await getAdminFieldRoot(page, 'excerpt').getByRole('textbox').fill('Edited article summary')
-          await fillAdminRichTextField(page, 'Content', 'Edited article body', { fieldPath: 'content' })
           await expect
             .poll(
               async () => {
@@ -110,7 +137,7 @@ export const postPublishingJourney: AdminJourneyDefinition<PostState> = {
                 return (
                   doc.title === title &&
                   doc.excerpt === 'Edited article summary' &&
-                  JSON.stringify(doc.content).includes('Edited article body')
+                  JSON.stringify(doc.content).includes('Initial article body')
                 )
               },
               { timeout: 15000 },
@@ -127,11 +154,24 @@ export const postPublishingJourney: AdminJourneyDefinition<PostState> = {
               content: expect.any(Object),
               _status: status,
             })
-            expect(JSON.stringify(doc.content)).toContain('Edited article body')
+            expect(JSON.stringify(doc.content)).toContain('Initial article body')
+          }
+          const assertTemporaryLandingMode = async () => {
+            const blockedResponse = await publicPage.goto(`${origin}/about`)
+            expect(blockedResponse?.status()).toBe(404)
+            await publicPage.goto(origin)
+            await expect(publicPage.locator('a[href="/posts"]').first()).toBeVisible()
           }
           const assertHidden = async () => {
             const response = await publicPage.goto(publicUrl)
             expect(response?.status()).toBe(404)
+            const renderedJsonLd = (
+              await publicPage.locator('script[type="application/ld+json"]').allTextContents()
+            ).join('\\n')
+            expect(renderedJsonLd).not.toContain(state.slug)
+            for (const media of [contentMedia.media, heroMedia.media, seoMedia.media]) {
+              expect(renderedJsonLd).not.toContain(getMediaPathFragment(media))
+            }
             await publicPage.goto(`${origin}/posts`)
             await expect(publicPage.locator(`a[href="/posts/${state.slug}"]`)).toHaveCount(0)
             const api = await publicContext.request.get(`${origin}/api/posts?where[slug][equals]=${state.slug}`)
@@ -142,21 +182,45 @@ export const postPublishingJourney: AdminJourneyDefinition<PostState> = {
             const response = await publicPage.goto(publicUrl)
             expect(response?.status()).toBe(200)
             await expect(publicPage.getByRole('heading', { name: expectedTitle, exact: true })).toBeVisible()
-            await expect(publicPage.getByText('Edited article body', { exact: true })).toBeVisible()
+            await expect(publicPage.getByText('Initial article body', { exact: true })).toBeVisible()
             await expect(publicPage.locator('meta[name="description"]')).toHaveAttribute(
               'content',
               fields.meta.description,
             )
-            const hero = publicPage.locator(`img[src*="${state.slug}"], img[srcset*="${state.slug}"]`).first()
+            await expect(publicPage.locator('link[rel="canonical"]')).toHaveAttribute('href', publicUrl)
+            await expect(publicPage.locator('meta[name="robots"]')).toHaveCount(0)
+            await expect(publicPage.locator('meta[property="og:image"]')).toHaveAttribute(
+              'content',
+              new RegExp(escapeRegExp(getMediaPathFragment(seoMedia.media))),
+            )
+            await expect(publicPage.locator('meta[name="twitter:image"]')).toHaveAttribute(
+              'content',
+              new RegExp(escapeRegExp(getMediaPathFragment(seoMedia.media))),
+            )
+            const hero = publicPage.locator(`img[src*="${getMediaPathFragment(heroMedia.media)}"]`).first()
             await expect(hero).toBeVisible()
             await expect
               .poll(() => hero.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0))
               .toBe(true)
+            await expect(
+              publicPage.locator(`img[src*="${getMediaPathFragment(contentMedia.media)}"]`).first(),
+            ).toBeVisible()
+            for (const media of [contentMedia.media, heroMedia.media, seoMedia.media]) {
+              const mediaUrl = media.sizes?.xlarge?.url ?? media.sizes?.large?.url ?? media.url
+              if (!mediaUrl) throw new Error('Uploaded media has no public URL')
+              expect((await publicContext.request.get(new URL(mediaUrl, origin).toString())).ok()).toBeTruthy()
+            }
             await publicPage.goto(`${origin}/posts`)
             await expect(publicPage.locator(`a[href="/posts/${state.slug}"]`).first()).toBeVisible()
+            const sitemap = await publicContext.request.get(`${origin}/posts-sitemap.xml`)
+            expect(sitemap.ok()).toBeTruthy()
+            expect(await sitemap.text()).toContain(state.slug)
             const api = await publicContext.request.get(`${origin}/api/posts?where[slug][equals]=${state.slug}`)
             expect(api.ok()).toBeTruthy()
             expect((await api.json()).docs[0]).toMatchObject({ title: expectedTitle, _status: 'published' })
+          }
+          if (process.env.E2E_RUNTIME_POLICY === 'temporary-landing') {
+            await assertTemporaryLandingMode()
           }
           await assertFields('draft')
           await assertHidden()
@@ -188,6 +252,9 @@ export const postPublishingJourney: AdminJourneyDefinition<PostState> = {
           await page.reload()
           await assertFields('draft', revisedTitle)
           await assertHidden()
+          const sitemapResponse = await publicContext.request.get(`${origin}/posts-sitemap.xml`)
+          expect(sitemapResponse.ok()).toBeTruthy()
+          expect(await sitemapResponse.text()).not.toContain(state.slug)
         } finally {
           await publicContext.close()
           const failures: string[] = []

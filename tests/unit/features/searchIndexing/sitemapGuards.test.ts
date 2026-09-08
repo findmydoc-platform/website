@@ -58,7 +58,7 @@ describe('sitemap indexing guards', () => {
         NODE_ENV: 'production',
         VERCEL_ENV: 'production',
       }),
-    ).resolves.toBe(true)
+    ).resolves.toBe(false)
 
     expect(posthogMocks.createPostHogFlagEvaluationContext).toHaveBeenCalledWith({
       url: new URL('https://findmydoc.eu/posts-sitemap.xml'),

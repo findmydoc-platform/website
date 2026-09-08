@@ -28,7 +28,7 @@ describe('E2E runtime defaults', () => {
       S3_BUCKET: 'findmydoc-test',
       S3_ENDPOINT: 'http://localhost:9091',
       S3_REGION: 'us-east-1',
-      S3_SECRET_ACCESS_KEY: 's3mock-secret-key',
+      S3_SECRET_ACCESS_KEY: 's3mock-secret-key', // pragma: allowlist secret
     })
   })
 

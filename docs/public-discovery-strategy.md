@@ -38,7 +38,7 @@ Public canonical URLs should prefer readable slug routes over query URLs. Query 
 
 Sitemap entries should use real content timestamps when available. Request-time timestamps must not be used as freshness signals because they imply content freshness that did not happen.
 
-Preview, temporary landing, draft, unpublished, private, and admin-only states stay out of public sitemap discovery.
+Preview, draft, unpublished, private, and admin-only states stay out of public sitemap discovery. Temporary landing mode is the narrow exception: it exposes only the public blog index, positive-integer pagination, published post details, `robots.txt`, and the pages and posts sitemaps. Its pages sitemap contains only `/posts`; its posts sitemap keeps the published-status filter. The landing page, sitemap index, `llms.txt`, and all other discovery routes remain excluded.
 
 findmydoc observes public discovery traffic only as operational visibility. Platform logs may record recognized crawler classes, the requested public path, platform timestamp, runtime environment, and coarse response context so the team can detect crawl problems, sitemap errors, and agent-discovery drift. This is not product analytics or user behavior tracking. Logs must not capture private content, draft content, admin-only surfaces, cookies, authentication data, contact details, medical free text, IP-based user profiles, or individual user identities.
 

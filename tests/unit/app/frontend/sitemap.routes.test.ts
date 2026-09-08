@@ -6,7 +6,7 @@ const routeMocks = vi.hoisted(() => ({
   getListingComparisonServerData: vi.fn(),
   getPayload: vi.fn(),
   getServerSideSitemap: vi.fn(),
-  shouldBlockSitemapIndexingForRequest: vi.fn(),
+  resolveSitemapIndexingAccessForRequest: vi.fn(),
   unstableCache: vi.fn((callback: () => unknown) => callback),
 }))
 
@@ -36,7 +36,7 @@ vi.mock('@/utilities/listingComparison/serverData', () => ({
 }))
 
 vi.mock('@/features/searchIndexing/sitemapGuards', () => ({
-  shouldBlockSitemapIndexingForRequest: routeMocks.shouldBlockSitemapIndexingForRequest,
+  resolveSitemapIndexingAccessForRequest: routeMocks.resolveSitemapIndexingAccessForRequest,
 }))
 
 const getEntryLocations = (entries: Array<{ loc: string }>) => entries.map((entry) => entry.loc)
@@ -62,22 +62,25 @@ describe('frontend sitemap routes', () => {
     routeMocks.getServerSideSitemap.mockImplementation((entries: unknown[], headers?: Record<string, string>) => {
       return Response.json({ entries, headers })
     })
-    routeMocks.shouldBlockSitemapIndexingForRequest.mockResolvedValue(false)
+    routeMocks.resolveSitemapIndexingAccessForRequest.mockResolvedValue({ allowed: true })
   })
 
   afterEach(() => {
     process.env = originalEnv
   })
 
-  it('returns an empty noindex pages sitemap when temporary landing mode blocks indexing', async () => {
-    routeMocks.shouldBlockSitemapIndexingForRequest.mockResolvedValue(true)
+  it('returns an empty noindex pages sitemap when discovery is blocked', async () => {
+    routeMocks.resolveSitemapIndexingAccessForRequest.mockResolvedValue({
+      allowed: false,
+      reason: 'preview-runtime',
+    })
     const request = new Request('https://findmydoc.eu/pages-sitemap.xml')
     const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(routeMocks.shouldBlockSitemapIndexingForRequest).toHaveBeenCalledWith(request)
+    expect(routeMocks.resolveSitemapIndexingAccessForRequest).toHaveBeenCalledWith(request)
     expect(routeMocks.findPageSitemapDocs).not.toHaveBeenCalled()
     expect(body).toEqual({
       entries: [],
@@ -87,15 +90,18 @@ describe('frontend sitemap routes', () => {
     })
   })
 
-  it('returns an empty noindex posts sitemap when temporary landing mode blocks indexing', async () => {
-    routeMocks.shouldBlockSitemapIndexingForRequest.mockResolvedValue(true)
+  it('returns an empty noindex posts sitemap when discovery is blocked', async () => {
+    routeMocks.resolveSitemapIndexingAccessForRequest.mockResolvedValue({
+      allowed: false,
+      reason: 'preview-runtime',
+    })
     const request = new Request('https://findmydoc.eu/posts-sitemap.xml')
     const { GET } = await import('@/app/(frontend)/(sitemaps)/posts-sitemap.xml/route')
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(routeMocks.shouldBlockSitemapIndexingForRequest).toHaveBeenCalledWith(request)
+    expect(routeMocks.resolveSitemapIndexingAccessForRequest).toHaveBeenCalledWith(request)
     expect(routeMocks.findPostSitemapDocs).not.toHaveBeenCalled()
     expect(body).toEqual({
       entries: [],
@@ -103,6 +109,21 @@ describe('frontend sitemap routes', () => {
         'X-Robots-Tag': 'noindex, nofollow, noarchive',
       },
     })
+  })
+
+  it('returns only the blog index in the temporary landing pages sitemap', async () => {
+    routeMocks.resolveSitemapIndexingAccessForRequest.mockResolvedValue({
+      allowed: true,
+      temporaryLandingMode: true,
+    })
+    const request = new Request('https://findmydoc.eu/pages-sitemap.xml')
+    const { GET } = await import('@/app/(frontend)/(sitemaps)/pages-sitemap.xml/route')
+
+    const response = await GET(request)
+    const body = await response.json()
+
+    expect(body.entries).toEqual([{ loc: 'https://findmydoc.eu/posts' }])
+    expect(routeMocks.findPageSitemapDocs).not.toHaveBeenCalled()
   })
 
   it('includes fixed public routes in the pages sitemap', async () => {

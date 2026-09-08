@@ -4,7 +4,7 @@ import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { findPageSitemapDocs } from '@/utilities/content/serverData'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
-import { shouldBlockSitemapIndexingForRequest } from '@/features/searchIndexing/sitemapGuards'
+import { resolveSitemapIndexingAccessForRequest } from '@/features/searchIndexing/sitemapGuards'
 import { getListingComparisonServerData } from '@/utilities/listingComparison/serverData'
 import { buildSitemapTag } from '@/utilities/cachePolicy'
 
@@ -82,10 +82,23 @@ const getPagesSitemap = unstable_cache(
 )
 
 export async function GET(request: Request) {
-  if (await shouldBlockSitemapIndexingForRequest(request)) {
+  const access = await resolveSitemapIndexingAccessForRequest(request)
+
+  if (!access.allowed) {
     return getServerSideSitemap([], {
       [SEARCH_ROBOTS_HEADER]: SEARCH_ROBOTS_HEADER_VALUE,
     })
+  }
+
+  if (access.temporaryLandingMode) {
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://example.com'
+
+    return getServerSideSitemap([
+      {
+        loc: buildSitemapLocation(siteUrl, '/posts'),
+      },
+    ])
   }
 
   const sitemap = await getPagesSitemap()

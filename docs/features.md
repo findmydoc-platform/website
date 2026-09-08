@@ -133,15 +133,18 @@ PostHog can enable a temporary public landing mode through the server-side featu
 - Flag default in code: `false`
 - URL-specific rules use the PostHog person properties `feature_flag_site_host` and normalized `feature_flag_site_path`
 - Missing PostHog configuration or unavailable local evaluation keeps the flag at the code default `false`
-- Public and non-platform sessions can access only `/`
+- Public and non-platform sessions can access the landing page and legal pages, which remain `noindex`
+- Published blog routes stay public and indexable: `/posts`, `/posts/page/:positiveInteger`, and `/posts/:singleSlug`
+- Blog discovery stays public: `/robots.txt`, `/pages-sitemap.xml`, and `/posts-sitemap.xml`; the temporary pages sitemap contains only `/posts`
 - Exempt paths stay reachable: `/privacy-policy`, `/imprint`, `/contact`
 - Exempt prefixes stay reachable: `/admin`, `/auth`, `/login`, `/register`
-- Other frontend page routes return `404` (no login redirect)
+- Other frontend and discovery routes return `404` (no login redirect)
 - Platform sessions (`app_metadata.user_type === "platform"`) keep normal access
 
 Priority behavior:
 - Preview Guard takes precedence when both controls are active. Its closed anonymous allowlist remains unchanged.
 - Temporary Landing Mode keeps the behavior above when Preview Guard is inactive.
+- The local temporary-landing E2E lane uses the production guard policy only against `localhost`; PostHog enables Temporary Landing Mode there and keeps Preview Guard disabled.
 - While Preview Guard is enabled, patient creation is staff-managed through Payload Admin. Patient login, reset, invitation completion, favorites, inquiries, and inquiry details remain available for patient-side QA.
 
 ## Preview Access Policy
@@ -180,10 +183,10 @@ Architecture and runtime ownership are documented in [Cache Revalidation Runtime
 ## Public Sitemaps
 The public sitemap surface is split between the generated `robots.txt` file and App Router sitemap route handlers.
 
-- `robots.txt` references `/sitemap.xml`, `/pages-sitemap.xml`, and `/posts-sitemap.xml` outside preview runtime.
+- `robots.txt` references `/pages-sitemap.xml` and `/posts-sitemap.xml` outside preview runtime.
 - `/pages-sitemap.xml` lists `/`, `/posts`, `/contact`, `/about`, `/listing-comparison`, and published CMS pages. It does not list `/search` because there is no dedicated public search route.
 - `/posts-sitemap.xml` lists published post detail URLs with valid single-segment slugs.
-- Preview runtime and Temporary Landing Mode keep deeper public content out of sitemap discovery through preview robots policy and empty guarded sitemap responses.
+- Preview runtime returns guarded empty sitemap responses. Temporary Landing Mode keeps only `/robots.txt`, `/pages-sitemap.xml`, and `/posts-sitemap.xml` reachable; its pages sitemap contains only `/posts`, and its posts sitemap contains only published posts.
 - `/llms.txt` provides a curated public agent-context file for findmydoc. `/.well-known/llms.txt` serves the same content as an optional discovery alias. The file uses canonical production URLs only and does not publish a full content dump, private routes, admin routes, authenticated endpoints, draft content, or unpublished data.
 - Preview runtime and Temporary Landing Mode do not expose `llms.txt` as a public discovery surface; guarded responses include `X-Robots-Tag: noindex, nofollow, noarchive`.
 

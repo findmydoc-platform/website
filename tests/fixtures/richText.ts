@@ -23,6 +23,16 @@ interface RichTextLinkNode {
   version: 3
 }
 
+interface RichTextMediaBlockNode {
+  [key: string]: unknown
+  type: 'block'
+  version: 2
+  fields: {
+    blockType: 'mediaBlock'
+    media: number
+  }
+}
+
 type RichTextNode = RichTextTextNode | RichTextLinkNode
 
 interface RichTextParagraph {
@@ -35,7 +45,7 @@ interface RichTextParagraph {
 interface RichTextRoot {
   [key: string]: unknown
   type: 'root'
-  children: RichTextParagraph[]
+  children: Array<RichTextParagraph | RichTextMediaBlockNode>
   direction: 'ltr'
   format: ''
   indent: 0
@@ -55,6 +65,31 @@ export const buildRichText = (text: string): RichTextValue => ({
         type: 'paragraph',
         version: 1,
         children: [{ type: 'text', text }],
+      },
+    ],
+    direction: 'ltr',
+    format: '',
+    indent: 0,
+    version: 1,
+  },
+})
+
+export const buildRichTextWithMediaBlock = (text: string, media: number): RichTextValue => ({
+  root: {
+    type: 'root',
+    children: [
+      {
+        type: 'paragraph',
+        version: 1,
+        children: [{ type: 'text', text }],
+      },
+      {
+        type: 'block',
+        version: 2,
+        fields: {
+          blockType: 'mediaBlock',
+          media,
+        },
       },
     ],
     direction: 'ltr',

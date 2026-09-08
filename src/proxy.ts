@@ -24,6 +24,7 @@ import {
 } from '@/features/previewGuard'
 import {
   isTemporaryLandingModeExemptPath,
+  isTemporaryLandingIndexablePath,
   isTemporaryLandingPublicExemptPath,
   isTemporaryLandingRootPath,
   TEMPORARY_LANDING_MODE_REQUEST_HEADER,
@@ -176,6 +177,13 @@ const nextWithTemporaryLandingHeaders = (request: NextRequest): NextResponse =>
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
   })
 
+const nextWithTemporaryLandingPublicHeaders = (request: NextRequest): NextResponse =>
+  nextWithRequestHeaders(request, {
+    [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
+    [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: null,
+    [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
+  })
+
 const nextWithoutGuardHeaders = (request: NextRequest): NextResponse =>
   nextWithRequestHeaders(request, {
     [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
@@ -316,6 +324,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   if (temporaryLandingModeEnabled && !isPlatformUser) {
     if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {
+      if (isTemporaryLandingIndexablePath(pathname)) {
+        return nextWithTemporaryLandingPublicHeaders(request)
+      }
+
       return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request))
     }
 

@@ -52,6 +52,9 @@ export const createSiteMetadata = (
   return {
     title,
     description,
+    alternates: {
+      canonical: args.path ?? '/',
+    },
     openGraph: mergeOpenGraph({
       title,
       description,

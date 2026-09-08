@@ -99,6 +99,23 @@ describe('public discovery access', () => {
     })
   })
 
+  it('allows only the blog discovery files when temporary landing mode is active', async () => {
+    posthogMocks.evaluatePostHogFlags.mockResolvedValue({
+      isEnabled: vi.fn((key: string) => key === 'temporary-landing-mode'),
+    })
+    const { resolvePublicDiscoveryAccessForRequest } = await import('@/features/publicDiscovery/access')
+
+    await expect(
+      resolvePublicDiscoveryAccessForRequest(new Request('https://findmydoc.eu/posts-sitemap.xml'), {
+        NODE_ENV: 'production',
+        VERCEL_ENV: 'production',
+      }),
+    ).resolves.toEqual({
+      allowed: true,
+      temporaryLandingMode: true,
+    })
+  })
+
   it('allows production discovery when runtime and feature flag policy allow it', async () => {
     const { resolvePublicDiscoveryAccessForRequest } = await import('@/features/publicDiscovery/access')
 

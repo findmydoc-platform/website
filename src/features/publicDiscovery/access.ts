@@ -5,12 +5,14 @@ import {
   shouldBlockSearchIndexing,
   type SearchIndexingEnvInput,
 } from '@/features/searchIndexing'
+import { isTemporaryLandingPublicDiscoveryPath } from '@/features/temporaryLandingMode'
 
 export type PublicDiscoveryBlockReason = 'preview-runtime' | 'temporary-landing-mode'
 
 export type PublicDiscoveryAccess =
   | {
       allowed: true
+      temporaryLandingMode?: true
     }
   | {
       allowed: false
@@ -52,6 +54,13 @@ export const resolvePublicDiscoveryAccessForRequest = async (
   })
 
   if (flags.isEnabled('temporary-landing-mode')) {
+    if (isTemporaryLandingPublicDiscoveryPath(new URL(request.url).pathname)) {
+      return {
+        allowed: true,
+        temporaryLandingMode: true,
+      }
+    }
+
     return {
       allowed: false,
       reason: 'temporary-landing-mode',

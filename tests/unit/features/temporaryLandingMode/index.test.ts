@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   isTemporaryLandingModeExemptPath,
+  isTemporaryLandingIndexablePath,
   isTemporaryLandingModeRequest,
+  isTemporaryLandingPublicDiscoveryPath,
   isTemporaryLandingPublicExemptPath,
   isTemporaryLandingRootPath,
   TEMPORARY_LANDING_MODE_REQUEST_HEADER,
@@ -39,10 +41,22 @@ describe('temporaryLandingMode feature', () => {
     expect(isTemporaryLandingPublicExemptPath('/login/patient')).toBe(false)
     expect(isTemporaryLandingPublicExemptPath('/posts-admin')).toBe(false)
     expect(isTemporaryLandingPublicExemptPath('/postscript')).toBe(false)
-    expect(isTemporaryLandingPublicExemptPath('/posts-sitemap.xml')).toBe(false)
+    expect(isTemporaryLandingPublicExemptPath('/posts-sitemap.xml')).toBe(true)
     expect(isTemporaryLandingPublicExemptPath('/posts/foo/bar')).toBe(false)
     expect(isTemporaryLandingPublicExemptPath('/posts/page/0')).toBe(false)
     expect(isTemporaryLandingPublicExemptPath('/posts/page/2/extra')).toBe(false)
+  })
+
+  it('keeps the indexable surface limited to blog and its discovery files', () => {
+    expect(isTemporaryLandingIndexablePath('/posts')).toBe(true)
+    expect(isTemporaryLandingIndexablePath('/posts/example')).toBe(true)
+    expect(isTemporaryLandingIndexablePath('/posts/page/2')).toBe(true)
+    expect(isTemporaryLandingIndexablePath('/robots.txt')).toBe(true)
+    expect(isTemporaryLandingIndexablePath('/pages-sitemap.xml')).toBe(true)
+    expect(isTemporaryLandingIndexablePath('/posts-sitemap.xml')).toBe(true)
+    expect(isTemporaryLandingIndexablePath('/contact')).toBe(false)
+    expect(isTemporaryLandingIndexablePath('/sitemap.xml')).toBe(false)
+    expect(isTemporaryLandingPublicDiscoveryPath('/llms.txt')).toBe(false)
   })
 
   it('recognizes temporary landing root paths', () => {

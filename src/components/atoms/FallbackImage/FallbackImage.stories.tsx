@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 
 import { FallbackImage } from '@/components/atoms/FallbackImage'
-import { storyClinicImages } from '../fixtures/assets'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { storyClinicImages } from '../../../stories/fixtures/assets'
+import { withViewportStory } from '../../../stories/utils/viewportMatrix'
 
 const meta = {
   title: 'Shared/Atoms/FallbackImage',
@@ -65,7 +65,7 @@ const brokenAvatarBase: Story = {
   name: 'Broken avatar image',
   args: {
     src: '/images/does-not-exist-avatar.jpg',
-    fallbackSrc: '/images/avatar-placeholder.svg',
+    fallbackSrc: '/images/placeholders/author-neutral-placeholder.webp',
     alt: 'Broken author avatar',
   },
   render: (args) => (
@@ -87,7 +87,7 @@ const brokenAvatarBase: Story = {
 
     await waitFor(() => {
       const src = image.getAttribute('src') ?? ''
-      expect(src).toContain('avatar-placeholder')
+      expect(src).toContain('author-neutral-placeholder')
     })
   },
 }

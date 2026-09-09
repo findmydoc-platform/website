@@ -85,7 +85,7 @@ describe('Vercel deployment boundary', () => {
     expect(previewWorkflow).toContain('CLINIC_DASHBOARD_URL: https://clinics.preview.findmydoc.eu')
     expect(previewWorkflow).toContain('DEPLOYMENT_ENVIRONMENT: preview')
     expect(previewWorkflow).toContain('git rev-parse HEAD')
-    expect(platformReleaseWorkflow).toContain('reusable-deploy-website.yml@d9864de3b6d453464f4b84960cd1d6b40b97bb71')
+    expect(platformReleaseWorkflow).toContain('reusable-deploy-website.yml@e63054077390413aef41b4b2d39a6f4458ceedc8')
     expect(fs.existsSync(path.join(repositoryRoot, '.github/workflows/deploy-production.yml'))).toBe(false)
 
     const preview = runDeployHelper('preview')

@@ -58,6 +58,14 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Resolve Preview deployment metadata
+        id: deployment_metadata
+        run: |
+          set -euo pipefail
+          deployment_commit_sha="$(git rev-parse HEAD)"
+          [[ "$deployment_commit_sha" =~ ^[0-9a-f]{40}$ ]]
+          echo "commit_sha=$deployment_commit_sha" >> "$GITHUB_OUTPUT"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
         with:
@@ -84,6 +92,8 @@ jobs:
         env:
           DATABASE_DIRECT_URI: ${{ secrets.DATABASE_DIRECT_URI }}
           DATABASE_URI: ${{ secrets.DATABASE_URI }}
+          DEPLOYMENT_COMMIT_SHA: ${{ steps.deployment_metadata.outputs.commit_sha }}
+          DEPLOYMENT_ENVIRONMENT: preview
           EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

@@ -1,16 +1,18 @@
 import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
+import { sanitizePostHogRequestUrl } from './exception-context'
+
+export { sanitizePostHogRequestUrl } from './exception-context'
 
 type HeaderRecord = Record<string, string | string[] | undefined>
 
 export type RequestLike = {
   headers?: unknown
+  path?: unknown
   url?: unknown
   method?: unknown
 }
 
-const POSTHOG_SERVER_EXCEPTION_DISTINCT_ID = 'server'
-const REQUEST_URL_BASE = 'https://findmydoc.invalid'
-const MAX_REQUEST_URL_LENGTH = 2048
+const POSTHOG_SERVER_EXCEPTION_DISTINCT_ID = 'server:website'
 
 export const readHeader = (request: unknown, name: string): string | null => {
   if (!request || typeof request !== 'object') return null
@@ -29,24 +31,12 @@ export const readHeader = (request: unknown, name: string): string | null => {
   return null
 }
 
-export const sanitizePostHogRequestUrl = (url: string | undefined): string | undefined => {
-  if (!url) return undefined
-
-  try {
-    const parsed = new URL(url, REQUEST_URL_BASE)
-    return parsed.pathname.slice(0, MAX_REQUEST_URL_LENGTH)
-  } catch {
-    const [path] = url.split(/[?#]/)
-    const normalizedPath = path?.trim()
-    return normalizedPath ? normalizedPath.slice(0, MAX_REQUEST_URL_LENGTH) : undefined
-  }
-}
-
 export const readRequestMeta = (request: unknown): { url?: string; method?: string } => {
   if (!request || typeof request !== 'object') return {}
-  const maybe = request as { url?: unknown; method?: unknown }
+  const maybe = request as RequestLike
+  const path = typeof maybe.path === 'string' ? maybe.path : typeof maybe.url === 'string' ? maybe.url : undefined
   return {
-    url: typeof maybe.url === 'string' ? sanitizePostHogRequestUrl(maybe.url) : undefined,
+    url: sanitizePostHogRequestUrl(path),
     method: typeof maybe.method === 'string' ? maybe.method : undefined,
   }
 }
@@ -81,7 +71,6 @@ export const sendRequestErrorToPostHog = async (err: unknown, request: unknown):
     distinctId: POSTHOG_SERVER_EXCEPTION_DISTINCT_ID,
     url: meta.url,
     method: meta.method,
-    userAgent: readHeader(request, 'user-agent') ?? undefined,
     timestamp: getCurrentIsoTimestampString(),
   })
 }

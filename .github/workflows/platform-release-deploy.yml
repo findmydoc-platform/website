@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   deploy:
-    uses: findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@8a0d46e5da74f816e2a06259123fccdfa47bba84
+    uses: findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@e63054077390413aef41b4b2d39a6f4458ceedc8
     with:
       target_sha: ${{ inputs.target_sha }}
       platform_version: ${{ inputs.platform_version }}

@@ -30,6 +30,7 @@ src/posthog/
 ├── api.ts            # Public server facade for flags, identity, and typed business events
 ├── client-api.ts     # Public browser facade for consent and typed business events
 ├── client.ts         # Internal browser PostHog client
+├── exception-context.ts # Exception property and request-path sanitization
 ├── events.ts         # Business event registry and event payload contracts
 ├── index.ts          # Main server-safe exports
 ├── server.ts         # Internal server PostHog client (Node.js 24.x runtime)
@@ -73,6 +74,26 @@ These are operational access guards, not product rollout flags. They are evaluat
 - `src/auth/strategies/supabaseStrategy.ts` - User identification on auth
 - `src/instrumentation.ts` - Server-side error tracking
 - `src/instrumentation-client.ts` - Client-side initialization
+
+### Server Exception Deployment Context
+
+Server-side exceptions use the deployment contract supplied by the deployment workflow, not provider-specific runtime
+variables. Production requires `DEPLOYMENT_ENVIRONMENT=production`, a full lowercase
+`DEPLOYMENT_COMMIT_SHA`, and the shared `RELEASE_VERSION` in `vX.Y.Z` form. Preview requires
+`DEPLOYMENT_ENVIRONMENT=preview` and its built commit SHA, and must not set `RELEASE_VERSION`.
+
+Captured server exceptions always use `application=website` and `server:website` as the server-side distinct ID. Their
+properties include `deployment_environment` and `deployment_commit_sha`; production additionally includes
+`release_version`. Caller-provided properties cannot replace these values.
+
+Development and tests do not create a PostHog client or send network telemetry. They write the same sanitized exception
+context to the server log with `event=telemetry.posthog.exception_local`. Request context is limited to the method and
+path; it never includes headers, cookies, credentials, or URL query parameters.
+
+The original exception object, message, and stack are intentionally preserved for diagnosis in PostHog and local
+server logs. Developers must not include secrets, access credentials, patient data, medical free text, or raw request
+data in exception messages. Treat any real incident that violates this rule as a telemetry privacy defect and tighten
+the capture boundary based on that evidence.
 
 ## Privacy & Security
 

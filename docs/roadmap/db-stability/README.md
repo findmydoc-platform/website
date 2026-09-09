@@ -49,7 +49,7 @@ Current evidence:
 
 - `vercel.json` sets `buildCommand` to `pnpm run ci`.
 - `package.json` defines `ci` as `pnpm run migrate && pnpm build`.
-- `.github/workflows/deploy-production.yml` pulls Production Vercel env and delegates deploy to `.github/scripts/deploy/vercel-deploy.sh`.
+- `.github/workflows/platform-release-deploy.yml` is the Website caller for the central platform release; its pinned reusable workflow pulls Production Vercel env and delegates deployment to `.github/scripts/deploy/vercel-deploy.sh`.
 - Payload migrations run within a transaction through Payload's migration runner.
 
 Minimum next step:

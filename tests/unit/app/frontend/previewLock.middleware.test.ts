@@ -6,7 +6,6 @@ import {
   PREVIEW_GUARD_ACTIVE_REQUEST_HEADER,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
   PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH,
-  POSTHOG_PREVIEW_EXCEPTION_TEST_PATH,
 } from '@/features/previewGuard'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
@@ -112,19 +111,6 @@ describe('preview lock proxy', () => {
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     expect(mocks.getUser).toHaveBeenCalledOnce()
     expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
-  })
-
-  it('passes the token-protected PostHog verification route to its handler in preview', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
-    const request = new NextRequest(`https://preview.findmydoc.eu${POSTHOG_PREVIEW_EXCEPTION_TEST_PATH}`, {
-      method: 'POST',
-    })
-
-    const response = await proxy(request)
-
-    expect(response.status).toBe(200)
-    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
-    expect(mocks.getUser).not.toHaveBeenCalled()
   })
 
   it('passes host and path context into PostHog flag evaluation', async () => {

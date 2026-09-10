@@ -26,8 +26,23 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify-dispatcher:
+    name: Require platform release dispatcher
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Verify dispatch identity
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        run: bash ./.github/scripts/deploy/require-platform-release-dispatcher.sh
+
   deploy:
-    uses: findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@e63054077390413aef41b4b2d39a6f4458ceedc8
+    needs: verify-dispatcher
+    uses: findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@fde486496d8bde13a3c8cad9d23a1cbbe075507d
     with:
       target_sha: ${{ inputs.target_sha }}
       platform_version: ${{ inputs.platform_version }}

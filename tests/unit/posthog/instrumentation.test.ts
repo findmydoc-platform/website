@@ -18,15 +18,44 @@ describe('onRequestError', () => {
     vi.restoreAllMocks()
   })
 
-  it('does not change error handling when exception telemetry fails', async () => {
-    sendPostHogRequestError.mockRejectedValueOnce(new Error('telemetry unavailable'))
+  it('awaits canonical request telemetry in the supported error hook', async () => {
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const { onRequestError } = await import('../../../src/instrumentation')
     const error = new Error('boom')
-    const request = { method: 'GET', url: '/api/health' }
+    const request = { headers: {}, method: 'GET', path: '/clinics/42?preview=true' }
+    const context = {
+      revalidateReason: undefined,
+      routePath: '/clinics/[clinicId]',
+      routeType: 'render' as const,
+      routerKind: 'App Router' as const,
+    }
 
-    await expect(onRequestError(error, request, {})).resolves.toBeUndefined()
-    expect(sendPostHogRequestError).toHaveBeenCalledWith(error, request)
+    await expect(onRequestError(error, request, context)).resolves.toBeUndefined()
+
+    expect(sendPostHogRequestError).toHaveBeenCalledWith(error, {
+      method: 'GET',
+      route: '/clinics/[clinicId]',
+    })
+    expect(consoleWarn).not.toHaveBeenCalled()
+  })
+
+  it('contains telemetry failures without rejecting the error hook', async () => {
+    sendPostHogRequestError.mockRejectedValueOnce(new Error('telemetry unavailable'))
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const { onRequestError } = await import('../../../src/instrumentation')
+
+    await expect(
+      onRequestError(
+        new Error('boom'),
+        { headers: {}, method: 'GET', path: '/api/health' },
+        {
+          revalidateReason: undefined,
+          routePath: '/api/health',
+          routeType: 'route',
+          routerKind: 'App Router',
+        },
+      ),
+    ).resolves.toBeUndefined()
     expect(consoleWarn).toHaveBeenCalledWith(
       expect.objectContaining({ event: 'telemetry.posthog.request_error_send_failed' }),
       'PostHog telemetry failed; continuing',

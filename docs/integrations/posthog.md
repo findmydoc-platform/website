@@ -86,14 +86,20 @@ Captured server exceptions always use `application=website` and `server:website`
 properties include `deployment_environment` and `deployment_commit_sha`; production additionally includes
 `release_version`. Caller-provided properties cannot replace these values.
 
+Next.js requires asynchronous work in `onRequestError` to be awaited. Exception capture therefore has a fixed 1.5-second
+budget, catches every telemetry failure, and never changes the original error status or body. A slow telemetry provider can
+delay completion of an already failing request only until that budget expires.
+
 Development and tests do not create a PostHog client or send network telemetry. They write the same sanitized exception
 context to the server log with `event=telemetry.posthog.exception_local`. Request context is limited to the method and
 path; it never includes headers, cookies, credentials, or URL query parameters.
 
-The original exception object, message, and stack are intentionally preserved for diagnosis in PostHog and local
-server logs. Developers must not include secrets, access credentials, patient data, medical free text, or raw request
-data in exception messages. Treat any real incident that violates this rule as a telemetry privacy defect and tighten
-the capture boundary based on that evidence.
+Server exception capture is a documented temporary exception to the usual telemetry privacy boundary. The original
+exception object, message, and stack are intentionally preserved in PostHog and local server logs, even though the
+project has not yet defined sensitive exception content or a redaction contract. This can transmit confidential data.
+Developers must therefore not add secrets, access credentials, patient data, medical free text, or raw request data to
+exception messages. The exception applies only to diagnosis output, not to business-event properties. Treat any real
+exposure as a telemetry privacy defect and use it to define and enforce the capture boundary.
 
 ## Privacy & Security
 

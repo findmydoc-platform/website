@@ -10,7 +10,12 @@ import {
   sendExceptionToPostHog,
   schedulePostHogFeatureFlagServerIdleShutdown,
 } from './server'
-import { extractPostHogDistinctIdFromCookieHeader, readHeader, sendRequestErrorToPostHog } from './telemetry'
+import {
+  extractPostHogDistinctIdFromCookieHeader,
+  readHeader,
+  sendRequestErrorToPostHog,
+  type PostHogRequestErrorContext,
+} from './telemetry'
 import {
   POSTHOG_EVENT_REGISTRY,
   type PostHogEventName,
@@ -490,8 +495,8 @@ export function resetPostHogClientForTests(): void {
   inFlightFlagEvaluations.clear()
 }
 
-export async function sendPostHogRequestError(err: unknown, request: unknown): Promise<void> {
-  await sendRequestErrorToPostHog(err, request)
+export async function sendPostHogRequestError(err: unknown, context: PostHogRequestErrorContext): Promise<void> {
+  await sendRequestErrorToPostHog(err, context)
 }
 
 export async function sendPostHogException(

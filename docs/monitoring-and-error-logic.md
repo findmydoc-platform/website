@@ -74,6 +74,11 @@ Keep routine warnings inside technical triage unless the same event repeats, aff
 
 Logs and monitoring notes must use the minimum data needed to debug the operational signal.
 
+Server exception capture is the documented temporary exception: it preserves the original exception object, message,
+and stack in PostHog and local server logs before the project has defined a sensitive-data exclusion contract. This
+output can contain confidential data. It must never be copied into tickets, Notion pages, PR descriptions, screenshots,
+or external artifacts; see [PostHog Integration](./integrations/posthog.md) for the exact scope and developer duty.
+
 Never log or copy these values into tickets, Notion pages, PR descriptions, screenshots, or external artifacts:
 
 - passwords, tokens, cookies, secret keys, service role keys, authorization headers, database URLs, or webhook secrets

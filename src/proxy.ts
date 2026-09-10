@@ -17,6 +17,7 @@ import {
   isPreviewGuardAnonymousApiPath,
   isPreviewGuardEndpointAuthApiPath,
   isPreviewGuardPatientRegistrationApiPath,
+  isPreviewGuardTokenProtectedApiPath,
   isPreviewGuardScannerPath,
   PREVIEW_GUARD_ACTIVE_REQUEST_HEADER,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
@@ -204,7 +205,11 @@ const handlePreviewApiRequest = async (request: NextRequest): Promise<NextRespon
 
   if (isPreviewGuardPatientRegistrationApiPath(pathname)) return nextWithGuardActiveHeader(request)
 
-  if (isPreviewGuardAnonymousApiPath(pathname) || isPreviewGuardEndpointAuthApiPath(pathname)) {
+  if (
+    isPreviewGuardAnonymousApiPath(pathname) ||
+    isPreviewGuardEndpointAuthApiPath(pathname) ||
+    isPreviewGuardTokenProtectedApiPath(pathname)
+  ) {
     return nextWithGuardActiveHeader(request)
   }
 

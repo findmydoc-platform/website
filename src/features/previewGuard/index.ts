@@ -9,6 +9,7 @@ export const PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY = 'preview-login-required'
 export const PREVIEW_GUARD_LOGIN_PATH = '/admin/login'
 export const PREVIEW_GUARD_FALLBACK_REDIRECT = '/admin'
 export const PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH = '/api/auth/register/patient'
+export const POSTHOG_PREVIEW_EXCEPTION_TEST_PATH = '/api/internal/posthog-exception-test'
 
 // Guest inquiry submission is intentionally unavailable in Preview; only authentication entry and recovery stay anonymous.
 const PREVIEW_GUARD_ANONYMOUS_API_PATHS = new Set(['/api/auth/callback', '/api/auth/login', '/api/auth/password/reset'])
@@ -158,6 +159,9 @@ export const isPreviewGuardPatientRegistrationApiPath = (pathname: string): bool
 
 export const isPreviewGuardAnonymousApiPath = (pathname: string): boolean =>
   PREVIEW_GUARD_ANONYMOUS_API_PATHS.has(normalizePathname(pathname))
+
+export const isPreviewGuardTokenProtectedApiPath = (pathname: string): boolean =>
+  normalizePathname(pathname) === POSTHOG_PREVIEW_EXCEPTION_TEST_PATH
 
 export const isPreviewGuardEndpointAuthApiPath = (pathname: string): boolean => {
   const normalizedPath = normalizePathname(pathname)

@@ -116,7 +116,7 @@ describe('Vercel deployment boundary', () => {
     expect(dispatcherGuardStep.run).toBe('bash ./.github/scripts/deploy/require-platform-release-dispatcher.sh')
     expect(platformReleaseWorkflow.jobs.deploy?.needs).toBe('verify-dispatcher')
     expect(platformReleaseWorkflow.jobs.deploy?.uses).toBe(
-      'findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@a30bc16453020c012ece89013a45b293d2316dd3',
+      'findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@fde486496d8bde13a3c8cad9d23a1cbbe075507d',
     )
     expect(fs.existsSync(path.join(repositoryRoot, '.github/workflows/deploy-production.yml'))).toBe(false)
 

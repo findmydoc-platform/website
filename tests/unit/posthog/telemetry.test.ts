@@ -45,21 +45,17 @@ describe('posthog telemetry helpers', () => {
     )
   })
 
-  it('sendRequestErrorToPostHog sends sanitized server-scoped exception metadata without request headers', async () => {
+  it('sendRequestErrorToPostHog sends the canonical route without request headers', async () => {
     await sendRequestErrorToPostHog(new Error('boom'), {
-      headers: {
-        cookie: `ph_phc_abc_posthog=${encodeURIComponent(JSON.stringify({ distinct_id: 'attacker-controlled' }))}`,
-        'user-agent': 'vitest',
-      },
       method: 'GET',
-      path: '/auth/callback?code=secret&email=patient@example.com#done',
+      route: '/auth/callback?code=secret&email=patient@example.com#done',
     })
 
     expect(sendExceptionToPostHog).toHaveBeenCalledWith(expect.any(Error), {
       distinctId: 'server:website',
       method: 'GET',
+      properties: { route: '/auth/callback' },
       timestamp: expect.any(String),
-      url: '/auth/callback',
     })
   })
 })

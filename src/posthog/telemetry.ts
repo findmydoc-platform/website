@@ -5,19 +5,21 @@ export { sanitizePostHogRequestUrl } from './exception-context'
 
 type HeaderRecord = Record<string, string | string[] | undefined>
 
-export type RequestLike = {
+type RequestHeaderCarrier = {
   headers?: unknown
-  path?: unknown
-  url?: unknown
-  method?: unknown
 }
 
 const POSTHOG_SERVER_EXCEPTION_DISTINCT_ID = 'server:website'
 
+export type PostHogRequestErrorContext = {
+  method?: string
+  route?: string
+}
+
 export const readHeader = (request: unknown, name: string): string | null => {
   if (!request || typeof request !== 'object') return null
 
-  const maybeHeaders = (request as RequestLike).headers
+  const maybeHeaders = (request as RequestHeaderCarrier).headers
   if (!maybeHeaders || typeof maybeHeaders !== 'object') return null
 
   if ('get' in maybeHeaders && typeof (maybeHeaders as { get?: unknown }).get === 'function') {
@@ -29,16 +31,6 @@ export const readHeader = (request: unknown, name: string): string | null => {
   if (Array.isArray(value)) return value.join('; ')
   if (typeof value === 'string') return value
   return null
-}
-
-export const readRequestMeta = (request: unknown): { url?: string; method?: string } => {
-  if (!request || typeof request !== 'object') return {}
-  const maybe = request as RequestLike
-  const path = typeof maybe.path === 'string' ? maybe.path : typeof maybe.url === 'string' ? maybe.url : undefined
-  return {
-    url: sanitizePostHogRequestUrl(path),
-    method: typeof maybe.method === 'string' ? maybe.method : undefined,
-  }
 }
 
 export const extractPostHogDistinctIdFromCookieHeader = (cookieHeader: string | null): string | undefined => {
@@ -62,15 +54,14 @@ export const extractPostHogDistinctIdFromCookieHeader = (cookieHeader: string | 
   }
 }
 
-export const sendRequestErrorToPostHog = async (err: unknown, request: unknown): Promise<void> => {
+export const sendRequestErrorToPostHog = async (err: unknown, context: PostHogRequestErrorContext): Promise<void> => {
   const { sendExceptionToPostHog } = await import('./server')
-
-  const meta = readRequestMeta(request)
+  const route = sanitizePostHogRequestUrl(context.route)
 
   await sendExceptionToPostHog(err, {
     distinctId: POSTHOG_SERVER_EXCEPTION_DISTINCT_ID,
-    url: meta.url,
-    method: meta.method,
+    method: context.method,
+    ...(route ? { properties: { route } } : {}),
     timestamp: getCurrentIsoTimestampString(),
   })
 }

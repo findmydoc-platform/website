@@ -30,6 +30,11 @@ Keep schema changes safe and repeatable across local development, preview, and p
    Production uses the same target architecture, but its release wiring and environment secret remain a separate
    operator gate after Preview validation.
 
+5. **Deployment metadata contract**
+   The deployment boundary validates the target environment, full commit SHA, and production release version before
+   calling Vercel. Its controlled Vercel-stub test verifies the build and runtime values actually passed to the CLI;
+   it is not a replacement for validating a real Preview deployment.
+
 ## Developer Workflow for Schema Changes
 
 1. Change schema-related code (`src/collections/**`, `src/globals/**`, etc.).

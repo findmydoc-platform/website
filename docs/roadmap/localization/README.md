@@ -1,6 +1,6 @@
 # Localization Planning
 
-This folder keeps local planning material for the refreshed findmydoc localization work. It captures the current research synthesis and early issue planning before GitHub issues or ADR updates are created.
+This folder keeps local planning material for the refreshed findmydoc localization work. It captures the current research synthesis and early issue planning before GitHub issues or new and superseding ADRs are created.
 
 ## Planning Documents
 

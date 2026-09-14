@@ -190,10 +190,8 @@ stores those exact bytes as a transient provider-prepared field on the outbox in
 marks provider preparation complete. The field is private, is never queried independently, and follows the same
 scrubbing rules as the prepared recipient and rendered content.
 
-That transaction also stores an immutable, content-free provider binding containing the expected team, project,
-route, and provider-destination version. The destination version changes when an environment moves to another team
-or project; it does not change merely because a token for the same project rotates. These binding fields remain with
-the scrubbed operational metadata until normal outbox deletion.
+That transaction also stores an immutable, content-free provider binding containing the expected team, project, and
+route. These binding fields remain with the scrubbed operational metadata until normal outbox deletion.
 
 Every attempt sends the stored bytes unchanged with:
 
@@ -208,10 +206,12 @@ sender change, or route change therefore cannot cause the same idempotency key t
 project binding. It may use a rotated token for that same project, but it may never move the operation to another
 team or project.
 
-A planned provider-destination change keeps the previous destination credential available until every operation
-bound to it is provider-accepted or terminal and the 24-hour ambiguity window has closed. Removal is blocked while a
-nonterminal outbox operation references the binding. If the bound credential is unexpectedly unavailable, the
-operation fails closed with `provider-binding-unavailable`; it is never redirected to the new project.
+The team, project, and route assigned to one hosted environment are immutable after that environment's first real
+command activation. V1 does not support a live destination change or keep parallel old and new provider credentials.
+The non-secret identities are locked server-only module constants, not deployment-secret values. A secret that does
+not match the committed environment target fails module initialization. An operation whose stored binding does not
+match that target fails before transport and is never redirected. Moving an environment to another team, project, or
+route requires a separate migration decision and specification.
 
 The production transport is a minimal HTTPS transport behind the private adapter. It may use a maintained HTTP
 client or provider SDK internally, but no SDK type, exception, retry behavior, or request builder escapes the adapter.
@@ -258,34 +258,38 @@ The existing central runtime-environment policy remains authoritative. Adapter s
 | Preview | Lettermint Preview adapter | Allowed only after all Preview gates | Per-command activation plus digest allowlist |
 | Production | Lettermint Production adapter | Allowed only after all Production gates | Per-command activation plus legal and release evidence |
 
-Preview and Production use the same configuration schema but deployment-scoped values. Required hosted values cover
-the project token, expected team, project, and route identities, provider-destination version, sender identity,
-current webhook secret, optional bounded previous webhook secret, recipient-digest key ring, and activation-registry
-version. Secrets remain in the deployment secret store and never appear in the repository, activation registry,
-logs, metrics, issue text, or test fixtures.
+Preview and Production use the same configuration schema but deployment-scoped values. Required hosted secret values
+cover the project token, current webhook secret, optional bounded previous webhook secret, and recipient-digest key
+ring. Non-secret target values cover the expected team, project, route, provider webhook identifier, sender identity,
+and activation-registry version and live as server-only module constants. Secrets remain in the deployment secret
+store and never appear in the repository, activation registry, logs, metrics, issue text, or test fixtures.
 
 The project token is an opaque Lettermint `lm_...` credential, not a documented JWT. The Sending API ping proves only
 that the token authenticates; it does not return a trusted team or project identity. Vercel environment scoping keeps
 normal Preview and Production access separate, but it cannot detect a human copying a valid Preview token into the
 Production secret slot.
 
-The module therefore owns a private, versioned token-fingerprint registry. During provider setup, the operator
-verifies the visible team and project, creates the project token there, supplies it to a local setup command through
-concealed input, and records only the full SHA-256 fingerprint beside the expected environment, team, project, and
-provider-destination version. The fingerprint is a non-secret, one-way verification value and is committed as a
-server-only constant. The setup command never prints, logs, or writes the token itself.
+The module therefore owns a private credential-fingerprint registry. During provider setup, the operator verifies
+the visible team, project, route, and webhook configuration; supplies the project token or webhook secret to a local
+setup command through concealed input; and records only the full SHA-256 fingerprint beside the expected
+environment, team, project, route, credential kind, and provider webhook identifier where applicable. A fingerprint
+is a non-secret, one-way verification value and is committed as a server-only constant. The setup command never
+prints, logs, or writes the credential itself.
 
-At module initialization, the Website environment binding reads the real project token from the environment-scoped
-Vercel secret, calculates its SHA-256 fingerprint in memory, and matches exactly one registry entry before it creates
-the private delivery adapter. The public command port never receives the token, fingerprint, or provider identity.
-A missing or mismatched fingerprint stops initialization before the worker or transport can run. Storing the expected
-fingerprint beside the token in the same Vercel secret set is insufficient because both wrong values could be copied
-together.
+At module initialization, the Website environment binding reads the real project token and webhook secret from their
+environment-scoped Vercel secrets, calculates both SHA-256 fingerprints in memory, and matches each configured
+credential to exactly one registry entry before it creates the private delivery adapter or signature verifier. An
+optional previous webhook secret requires its own matching fingerprint entry and `validUntil`. The public command
+port never receives a credential, fingerprint, or provider identity. A missing or mismatched fingerprint stops
+initialization before the worker, transport, or webhook boundary can run. Storing the expected fingerprints beside
+the credentials in the same Vercel secret set is insufficient because wrong pairs could be copied together.
 
 Token rotation for the same project updates the Vercel secret and its reviewed fingerprint entry together. The stable
-team, project, and provider-destination binding lets already prepared operations use the replacement token without
-moving to another project. No Team API token is needed at runtime: the project token sends mail, while Team API access
-is limited to separate setup and administration work.
+team, project, and route binding lets already prepared operations use the replacement token without moving to
+another project. Webhook-secret rotation for the same webhook target updates the current and optional previous Vercel
+secrets, their reviewed fingerprints, and the bounded `validUntil` together. Neither rotation changes the immutable
+provider target. No Team API token is needed at runtime: the project token sends mail, while Team API access is
+limited to separate setup and administration work.
 
 Hosted startup validates the complete configuration before command or worker processing. Missing, malformed,
 cross-environment, duplicated, or internally inconsistent configuration fails startup. A hosted runtime never falls
@@ -308,8 +312,8 @@ Each Preview activation record identifies:
 - opaque evidence references for the dedicated provider team, project, and route;
 - opaque evidence references for verified sender and DNS readiness;
 - an opaque evidence reference for the enabled, signed webhook configuration;
-- the expected non-secret activation-registry and provider-destination versions;
-- the expected project-token fingerprint entry.
+- the expected non-secret activation-registry version;
+- the expected project-token and webhook-secret fingerprint entries.
 
 Each Production activation record contains the same fields plus opaque approval references for:
 
@@ -320,11 +324,13 @@ Each Production activation record contains the same fields plus opaque approval 
 - Lettermint compliance verification;
 - the command-specific one-path cutover review.
 
-Evidence references reveal neither document content nor private URLs. CI validates the registry schema, command union,
-environment, uniqueness, distinct Preview and Production team identifiers, evidence completeness, fingerprint
-binding, and version bindings. Runtime initialization repeats the relevant environment, fingerprint, and
-configuration checks before it constructs the delivery adapter. A Production entry without every Production field
-is invalid rather than partially active.
+Evidence references reveal neither document content nor private URLs. CI validates the registry schema, command
+union, environment, uniqueness, distinct Preview and Production team identifiers, immutable provider targets,
+evidence completeness, credential-fingerprint bindings, and registry-version bindings. Runtime initialization
+repeats the relevant environment, fingerprint, and configuration checks before it constructs the delivery adapter
+and webhook verifier. A Production entry without every Production field is invalid rather than partially active.
+After first real activation, changing a committed team, project, or route constant is a V1 stop condition rather than
+a valid registry update.
 
 Command activation does not provision a provider project, set DNS, add credentials, or remove an old product-flow
 send path. The relevant flow issue owns the one-path cutover. Its activation change must prove that the former direct
@@ -373,10 +379,11 @@ does not perform DNS or provider-administration calls. A preflight does not chan
 records that the responsible operator verified the already-provisioned state. Provisioning and DNS changes remain out
 of scope.
 
-An activation record binds to the preflight version. Changing the sender, team, project, route, webhook target, event
-subscription, token fingerprint, or tracking setting invalidates the old evidence and disables affected activation
-until a new preflight is recorded. Runtime validation also compares the configured team, project, route, sender,
-provider destination, fingerprint, and registry versions before serializing a provider request.
+An activation record binds to the preflight version. Changing the sender, webhook target, event subscription,
+credential fingerprint, or tracking setting invalidates the old evidence and disables affected activation until a
+new preflight is recorded. Changing the team, project, or route after first real activation is rejected rather than
+treated as a routine preflight update. Runtime validation compares the configured team, project, route, sender,
+credential fingerprints, and registry version before serializing a provider request or accepting a webhook.
 
 Production credentials, Production DNS cutover, Supabase auth-delivery cutover, Production recipients, and Production
 activation remain blocked until the complete written legal and privacy approval set exists. Fake Local and CI
@@ -741,9 +748,10 @@ consumer, or another affected public path.
 The edge never guesses when evidence or configuration is incomplete:
 
 - missing hosted configuration fails startup;
-- a missing or mismatched project-token fingerprint fails module initialization;
+- a missing or mismatched project-token or webhook-secret fingerprint fails module initialization;
 - Preview and Production configuration with the same provider team identifier fails validation;
-- a prepared operation cannot move to a different team or project when configuration changes;
+- a hosted environment cannot change its provider team, project, or route after first real activation;
+- a prepared operation with a mismatched provider binding is never sent or redirected;
 - a disabled command is suppressed before preparation;
 - a Preview recipient outside the digest allowlist is suppressed before preparation;
 - invalid sender, project, route, webhook, registry, or evidence version blocks activation;
@@ -768,13 +776,13 @@ command remains disabled. Readiness proceeds in this order:
 
 1. implement and validate the adapter, webhook boundary, suppression collection, environment policy, activation
    registry, metrics contract, and automated tests with no real provider call;
-2. provision and verify the isolated Preview team, project, route, token fingerprint, webhook, and sender resources
-   outside this implementation;
+2. provision and verify the isolated Preview team, project, route, token and webhook-secret fingerprints, webhook,
+   and sender resources outside this implementation;
 3. record Preview preflight evidence and enable one command for allowlisted synthetic recipients;
 4. validate signed webhook delivery, provider idempotency, suppression, logs, and one-path behavior in Preview;
 5. obtain written Production legal, privacy, compliance, retention, and key-management approvals;
-6. provision and verify a separate Production team, project, route, token fingerprint, webhook, and sender resources
-   without yet enabling a command;
+6. provision and verify a separate Production team, project, route, token and webhook-secret fingerprints, webhook,
+   and sender resources without yet enabling a command;
 7. prepare and validate one release artifact that both removes the command's former direct send path and adds its
    command-specific Production activation record;
 8. release that artifact explicitly, so the old deployment has only the old path and the new deployment has only the
@@ -803,11 +811,10 @@ This seam must prove:
 7. the serialized provider body is durable before the first transport call;
 8. a retry sends byte-identical body data and the same provider idempotency key after a deployment-style adapter
    recreation;
-9. the provider team, project, route, and destination version are stored before the first attempt and never change on
-   a retry;
+9. the provider team, project, and route are stored before the first attempt and never change on a retry;
 10. a token rotation within the same project can serve the stored binding, while another team or project cannot;
-11. removing a still-referenced destination binding is rejected, and an unavailable binding never redirects an
-    operation;
+11. changing the configured team, project, or route after first real activation is rejected, and a mismatched stored
+    binding never redirects an operation;
 12. a valid accepted response records the provider message identifier and scrubs transient content;
 13. `429` and `5xx` responses use the foundation retry schedule without an SDK retry;
 14. a missing definitive response is ambiguous and stays within the 24-hour ambiguity window;
@@ -824,8 +831,8 @@ This seam must prove:
     values;
 23. missing, malformed, cross-environment, duplicated, or inconsistent hosted configuration fails before adapter,
     worker, database, or transport work;
-24. a Preview token in the Production secret slot fails its independently stored fingerprint check before adapter
-    construction;
+24. a Preview token or webhook secret in the Production secret slot fails its independently stored fingerprint check
+    before adapter or webhook-verifier construction;
 25. Preview and Production registry entries cannot share a provider team identifier;
 26. logs and metrics contain only their explicit allowlists.
 
@@ -889,11 +896,13 @@ Small deterministic tests cover policy that does not justify a third integration
 - exhaustive runtime adapter selection;
 - table-driven hosted initialization failures for every missing, malformed, cross-environment, duplicated, or
   inconsistent configuration field;
-- activation-registry schema, uniqueness, distinct team identities, evidence completeness, fingerprint binding, and
-  version binding;
+- activation-registry schema, uniqueness, distinct and immutable provider targets, evidence completeness,
+  credential-fingerprint binding, and registry-version binding;
 - command-by-command Preview and Production activation;
-- concealed-input fingerprint generation that outputs only the expected full SHA-256 value;
-- project-token rotation within one stable provider binding and rejection across bindings;
+- concealed-input fingerprint generation for project tokens and webhook secrets that outputs only the expected full
+  SHA-256 value;
+- project-token and webhook-secret rotation within one stable provider binding, plus rejection of provider-target
+  changes;
 - recipient normalization and Preview digest allowlist behavior;
 - provider status, Lettermint `409` error-code, and transport-error outcome mapping;
 - signature parsing, timing-safe comparison inputs, five-minute tolerance boundaries, and ten-minute maximum secret
@@ -969,7 +978,9 @@ Implementation must stop and request a new decision if:
 
 - Lettermint cannot preserve the documented idempotency behavior for the single-message API;
 - Preview and Production cannot use separate Lettermint teams;
-- an approved project token cannot be bound independently to its expected environment, team, and project;
+- an approved project token or webhook secret cannot be bound independently to its expected environment and provider
+  target;
+- a team, project, or route change is required after an environment's first real activation;
 - required webhook events omit both the opaque operation metadata and a usable provider message identifier;
 - a webhook cannot be verified against unmodified raw bytes in the selected Next.js runtime;
 - sender or DNS readiness cannot be bound to an auditable activation version;

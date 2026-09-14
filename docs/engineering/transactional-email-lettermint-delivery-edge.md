@@ -35,11 +35,11 @@ event through opaque provider metadata and the provider message identifier, dedu
 applies the corresponding outbox event, terminal state, and suppression effect in one short database transaction.
 Provider content is never retained.
 
-Local development, tests, and CI remain fake-only. Preview and Production use separate projects, routes, tokens,
-webhook secrets, digest keys, and activation records. Preview additionally requires a central digest allowlist.
-Production additionally requires the legal, privacy, compliance, sender, DNS, webhook, and release evidence defined
-below. Every command type starts disabled and can be activated independently. There is no fallback or parallel send
-path.
+Local development, tests, and CI remain fake-only. Preview and Production use separate teams, projects, routes,
+tokens, webhook secrets, digest keys, and activation records. Preview additionally requires a central digest
+allowlist. Production additionally requires the legal, privacy, compliance, sender, DNS, webhook, and release
+evidence defined below. Every command type starts disabled and can be activated independently. There is no fallback
+or parallel send path.
 
 The product-flow issues retain their existing responsibility:
 
@@ -147,9 +147,15 @@ accept commands, resolve recipients, generate action links, render templates, or
 
 ### Provider and route topology
 
-Preview and Production each use their own Lettermint project and their own dedicated transactional route. Tokens,
-webhooks, webhook secrets, sender readiness, suppressions, message history, and operational evidence do not cross
-between those projects. Local development, tests, and CI have no Lettermint project configuration.
+Preview and Production each use their own Lettermint team, project, and dedicated transactional route. One human
+account may own or access both teams, but the provider resources and billing contexts remain separate. Tokens,
+webhooks, webhook secrets, sender readiness, team-level and project-level suppressions, message history, and
+operational evidence do not cross between environments. Local development, tests, and CI have no Lettermint team or
+project configuration.
+
+Separate projects inside one team are insufficient because Lettermint applies automatic hard-bounce suppressions at
+team scope. The Preview team and Production team must therefore have different provider team identifiers. A shared
+team identifier is invalid configuration even when project and route identifiers differ.
 
 The dedicated route serves only the shared transactional email module. It is not shared with marketing, broadcast,
 inbound email, the generic Payload adapter, or another application. The route subscribes only to the provider events
@@ -184,6 +190,11 @@ stores those exact bytes as a transient provider-prepared field on the outbox in
 marks provider preparation complete. The field is private, is never queried independently, and follows the same
 scrubbing rules as the prepared recipient and rendered content.
 
+That transaction also stores an immutable, content-free provider binding containing the expected team, project,
+route, and provider-destination version. The destination version changes when an environment moves to another team
+or project; it does not change merely because a token for the same project rotates. These binding fields remain with
+the scrubbed operational metadata until normal outbox deletion.
+
 Every attempt sends the stored bytes unchanged with:
 
 - the environment-scoped project token in the Lettermint token header;
@@ -193,7 +204,14 @@ Every attempt sends the stored bytes unchanged with:
 
 The adapter never rebuilds the request from current sender configuration after the first attempt. A deployment,
 sender change, or route change therefore cannot cause the same idempotency key to carry a different body during the
-24-hour provider idempotency window.
+24-hour provider idempotency window. Every retry resolves a currently approved project token for the stored team and
+project binding. It may use a rotated token for that same project, but it may never move the operation to another
+team or project.
+
+A planned provider-destination change keeps the previous destination credential available until every operation
+bound to it is provider-accepted or terminal and the 24-hour ambiguity window has closed. Removal is blocked while a
+nonterminal outbox operation references the binding. If the bound credential is unexpectedly unavailable, the
+operation fails closed with `provider-binding-unavailable`; it is never redirected to the new project.
 
 The production transport is a minimal HTTPS transport behind the private adapter. It may use a maintained HTTP
 client or provider SDK internally, but no SDK type, exception, retry behavior, or request builder escapes the adapter.
@@ -215,7 +233,9 @@ error messages, exception objects, or provider headers.
 | Documented success with a valid provider message identifier and accepted status | `accepted` | `provider-accepted` | Persist provider reference and enter `accepted` |
 | HTTP `408`, `425`, `429`, or `5xx` | `retryable` | `provider-temporary` or `provider-rate-limited` | Use the foundation retry schedule |
 | No definitive response or a malformed/truncated success response | `ambiguous` | `provider-ambiguous` | Reuse exact request within the 24-hour ambiguity window |
-| HTTP `409` idempotency conflict | `permanent` | `provider-idempotency-conflict` | Fail terminally and emit an invariant alert |
+| HTTP `409` with `invalid_idempotent_request` | `permanent` | `provider-idempotency-conflict` | A different body used the key; fail terminally and emit an invariant alert |
+| HTTP `409` with `concurrent_idempotent_requests` | `ambiguous` | `provider-request-in-progress` | Retry the same bytes and key through the foundation schedule |
+| HTTP `409` without one of the two validated provider codes | `ambiguous` | `provider-conflict-unknown` | Preserve the operation and retry the same bytes and key |
 | Other HTTP `4xx`, including invalid token or request | `permanent` | `provider-request-rejected` | Fail terminally and emit an operational alert |
 | Documented provider rejection or provider-side suppression in a definitive response | `permanent` | `provider-policy-rejected` | Fail terminally; do not infer a local hard-bounce or complaint suppression |
 
@@ -239,9 +259,33 @@ The existing central runtime-environment policy remains authoritative. Adapter s
 | Production | Lettermint Production adapter | Allowed only after all Production gates | Per-command activation plus legal and release evidence |
 
 Preview and Production use the same configuration schema but deployment-scoped values. Required hosted values cover
-the project token, expected project and route identities, sender identity, current webhook secret, optional bounded
-previous webhook secret, recipient-digest key ring, and activation-registry version. Secrets remain in the deployment
-secret store and never appear in the repository, activation registry, logs, metrics, issue text, or test fixtures.
+the project token, expected team, project, and route identities, provider-destination version, sender identity,
+current webhook secret, optional bounded previous webhook secret, recipient-digest key ring, and activation-registry
+version. Secrets remain in the deployment secret store and never appear in the repository, activation registry,
+logs, metrics, issue text, or test fixtures.
+
+The project token is an opaque Lettermint `lm_...` credential, not a documented JWT. The Sending API ping proves only
+that the token authenticates; it does not return a trusted team or project identity. Vercel environment scoping keeps
+normal Preview and Production access separate, but it cannot detect a human copying a valid Preview token into the
+Production secret slot.
+
+The module therefore owns a private, versioned token-fingerprint registry. During provider setup, the operator
+verifies the visible team and project, creates the project token there, supplies it to a local setup command through
+concealed input, and records only the full SHA-256 fingerprint beside the expected environment, team, project, and
+provider-destination version. The fingerprint is a non-secret, one-way verification value and is committed as a
+server-only constant. The setup command never prints, logs, or writes the token itself.
+
+At module initialization, the Website environment binding reads the real project token from the environment-scoped
+Vercel secret, calculates its SHA-256 fingerprint in memory, and matches exactly one registry entry before it creates
+the private delivery adapter. The public command port never receives the token, fingerprint, or provider identity.
+A missing or mismatched fingerprint stops initialization before the worker or transport can run. Storing the expected
+fingerprint beside the token in the same Vercel secret set is insufficient because both wrong values could be copied
+together.
+
+Token rotation for the same project updates the Vercel secret and its reviewed fingerprint entry together. The stable
+team, project, and provider-destination binding lets already prepared operations use the replacement token without
+moving to another project. No Team API token is needed at runtime: the project token sends mail, while Team API access
+is limited to separate setup and administration work.
 
 Hosted startup validates the complete configuration before command or worker processing. Missing, malformed,
 cross-environment, duplicated, or internally inconsistent configuration fails startup. A hosted runtime never falls
@@ -261,10 +305,11 @@ Each Preview activation record identifies:
 
 - one closed command type;
 - the `preview` environment;
-- opaque evidence references for the dedicated provider project and route;
+- opaque evidence references for the dedicated provider team, project, and route;
 - opaque evidence references for verified sender and DNS readiness;
 - an opaque evidence reference for the enabled, signed webhook configuration;
-- the expected non-secret activation-registry and provider-configuration versions.
+- the expected non-secret activation-registry and provider-destination versions;
+- the expected project-token fingerprint entry.
 
 Each Production activation record contains the same fields plus opaque approval references for:
 
@@ -276,8 +321,9 @@ Each Production activation record contains the same fields plus opaque approval 
 - the command-specific one-path cutover review.
 
 Evidence references reveal neither document content nor private URLs. CI validates the registry schema, command union,
-environment, uniqueness, evidence completeness, and version bindings. Runtime validation repeats the relevant
-environment and configuration checks before provider preparation. A Production entry without every Production field
+environment, uniqueness, distinct Preview and Production team identifiers, evidence completeness, fingerprint
+binding, and version bindings. Runtime initialization repeats the relevant environment, fingerprint, and
+configuration checks before it constructs the delivery adapter. A Production entry without every Production field
 is invalid rather than partially active.
 
 Command activation does not provision a provider project, set DNS, add credentials, or remove an old product-flow
@@ -306,20 +352,20 @@ Admin, and public requests cannot add or override entries. Address normalization
 suppression lookup, so letter casing or presentation differences cannot bypass the comparison.
 
 Preview evidence uses synthetic content and approved test recipients only. Production does not inherit or reuse the
-Preview allowlist, project, route, token, webhook secret, or sender-readiness evidence.
+Preview allowlist, team, project, route, token, webhook secret, or sender-readiness evidence.
 
 ### Sender, DNS, webhook, and compliance preflight
 
 Real delivery activation requires an operational preflight for the exact environment-specific project and route. The
 preflight verifies and records evidence for:
 
-1. the expected Lettermint project and dedicated transactional route;
+1. the expected Lettermint team, project, and dedicated transactional route;
 2. a verified sender domain and approved sender identity;
 3. the Lettermint-required DKIM and Return-Path records and the approved DMARC posture;
 4. disabled open and click tracking at route level;
 5. a route-scoped HTTPS webhook with the exact event subscription defined below;
 6. a current webhook signature test against the environment endpoint;
-7. the separation of Preview and Production provider resources;
+7. distinct Preview and Production team, project, token, webhook, and suppression resources;
 8. Production team compliance verification before any Production recipient is allowed.
 
 Preflight evidence is produced outside the request and worker runtimes. Runtime delivery has no Team API token and
@@ -327,10 +373,10 @@ does not perform DNS or provider-administration calls. A preflight does not chan
 records that the responsible operator verified the already-provisioned state. Provisioning and DNS changes remain out
 of scope.
 
-An activation record binds to the preflight version. Changing the sender, project, route, webhook target, event
-subscription, or tracking setting invalidates the old evidence and disables affected activation until a new
-preflight is recorded. Runtime validation also compares the configured project, route, sender, and registry versions
-before serializing a provider request.
+An activation record binds to the preflight version. Changing the sender, team, project, route, webhook target, event
+subscription, token fingerprint, or tracking setting invalidates the old evidence and disables affected activation
+until a new preflight is recorded. Runtime validation also compares the configured team, project, route, sender,
+provider destination, fingerprint, and registry versions before serializing a provider request.
 
 Production credentials, Production DNS cutover, Supabase auth-delivery cutover, Production recipients, and Production
 activation remain blocked until the complete written legal and privacy approval set exists. Fake Local and CI
@@ -339,8 +385,11 @@ evidence and allowlisted synthetic Preview evidence do not require that Producti
 ### Webhook request boundary
 
 The Website exposes one environment-specific POST endpoint for the dedicated Lettermint route. It accepts HTTPS JSON
-requests no larger than 256 KiB. The endpoint performs no provider call, link generation, template rendering,
-recipient resolution, or other network work.
+requests no larger than 256 KiB. The limit is enforced at the platform ingress when supported and again while the
+route reads the request stream. The route counts bytes and aborts as soon as the limit is exceeded; it never calls a
+whole-body helper before enforcing the bound. `Content-Length` may reject an oversized request early but is not
+trusted as the only guard, so chunked requests receive the same limit. The endpoint performs no provider call, link
+generation, template rendering, recipient resolution, or other network work.
 
 The endpoint obtains the exact request bytes before any body parser runs. It then performs these steps in order:
 
@@ -351,15 +400,16 @@ The endpoint obtains the exact request bytes before any body parser runs. It the
    valid, the previous secret;
 5. compare fixed-length values with timing-safe equality;
 6. only after a successful match, parse and validate the closed event envelope;
-7. verify that header event type, body event type, project identity, route identity, and runtime environment match;
+7. verify that header event type, body event type, team identity, project identity, route identity, and runtime
+   environment match;
 8. map only the allowed fields and discard the raw body and provider-only fields;
 9. apply deduplication and any state or suppression effect in one short database transaction.
 
-The five-minute tolerance follows Lettermint's current replay-protection recommendation. The receiver may hold one
-previous secret for at most 24 hours after a planned rotation. That overlap safely exceeds Lettermint's documented
-roughly 14-hour webhook retry horizon, but it does not make the old secret valid at Lettermint: regenerating the
-provider secret invalidates it there immediately. The old receiver value exists only to verify an already issued
-delivery attempt. After the local `validUntil`, the previous value is rejected and removed.
+The five-minute tolerance follows Lettermint's current replay-protection recommendation. During a planned rotation,
+the receiver may hold one previous secret only for a controlled deploy-and-switch window of at most ten minutes.
+Lettermint invalidates the old secret immediately when it regenerates the provider secret, so the documented webhook
+retry horizon does not justify a longer local overlap. The ordinary five-minute signature-age check still applies to
+every old-secret request. After the local `validUntil`, the previous value is rejected and removed.
 
 Unplanned compromise does not use the overlap. It removes the old secret immediately, disables real activation until
 a new signed test succeeds, and treats failed in-flight webhook deliveries as an incident to reconcile through
@@ -387,6 +437,7 @@ After signature and environment verification, the adapter may retain or use only
 event.id
 event.event
 event.timestamp
+context.team_id
 context.project_id
 context.route_id
 data.message_id
@@ -401,8 +452,8 @@ metric, suppression record, or provider-history field.
 
 The primary correlation key is the opaque `operation_id` originally supplied by the adapter. This exists before the
 network request and avoids a race in which a provider webhook arrives before the synchronous provider message
-identifier is persisted. The provider message identifier is then stored or compared as a consistency check.
-`command_type` and `environment` must match the outbox record.
+identifier is persisted. The provider message identifier is then stored or compared as a consistency check. Team,
+project, route, `command_type`, and `environment` must match the immutable outbox provider binding.
 
 A verified event with no matching operation is acknowledged without mutation and emits only
 `provider-event-unmatched`. A verified event whose operation, environment, command type, provider message identifier,
@@ -479,6 +530,12 @@ The event adapter applies this mapping:
 was ambiguous. When a terminal delivery event arrives for a still-`prepared` operation, the transaction first records
 provider acceptance and then the terminal event, preserving the foundation's explicit transition graph.
 
+The synchronous worker result and a verified webhook may race. Both mutations reload and lock the current outbox row
+before applying their effect. If a webhook already established the same provider message identifier and advanced the
+operation to `accepted` or a later terminal delivery state, the later worker result is an idempotent success: it does
+not require the cleared lease, append another acceptance event, restore transient fields, schedule a retry, or
+replace the newer state. A conflicting provider message identifier is an invariant failure and mutates nothing.
+
 The first valid terminal delivery outcome among `delivered`, `bounced`, and `complained` wins the outbox state. A later
 conflicting verified event does not replace a terminal state, because the foundation does not allow terminal-to-
 terminal transitions. It still receives a deduplicated content-free event result. Hard-bounce and complaint
@@ -487,6 +544,11 @@ even when the original outbox already says `delivered`.
 
 Provider event timestamps are retained only as `sourceOccurredAt`. They never determine processing order. Local event
 sequence records receipt order, and the explicit transition contract decides whether an effect is applied or ignored.
+
+Different verified events for one operation may also arrive concurrently. The event transaction serializes on the
+outbox row, allocates a distinct sequence for every provider event identifier, and retries the complete short
+transaction after a serialization or unique conflict. Terminal-state selection uses the transition graph rather
+than last-write-wins.
 
 ### Local suppression collection
 
@@ -514,6 +576,11 @@ A verified `message.hard_bounced` or `message.spam_complaint` event upserts the 
 event-history result. Repeated hard bounces update only `lastObservedAt`. A later complaint upgrades the reason to
 `spam-complaint`; a later hard bounce never downgrades a complaint. No other provider event creates a local
 suppression.
+
+The reason update is monotonic under concurrency: `spam-complaint` outranks `hard-bounce`, and the database upsert
+computes the stronger retained reason instead of writing the last request value. Concurrent hard-bounce and complaint
+events therefore leave one suppression record with complaint reason while preserving one idempotent history result
+for each provider event identifier.
 
 Before every link generation, render, or provider request, the worker computes the operation recipient's current and
 still-supported previous versioned digests and queries the suppression collection within the current environment. A
@@ -624,8 +691,11 @@ provider request retains its own two-minute lease and 20-second network timeout.
 remaining invocation budget cannot cover one bounded attempt and its result transaction.
 
 Lease ownership makes overlapping scheduler invocations safe. Scheduler authentication is a separate secret from
-all Lettermint credentials. An unauthenticated invocation cannot call the worker. The scheduling mechanism may change
-without changing the one-minute logical cadence or worker contract.
+all Lettermint credentials. The scheduler boundary accepts that secret only in an authorization header, compares it
+without timing-dependent string comparison, and completes authentication before resolving a worker capability. It
+never accepts the secret in a URL, query string, body, cookie, log, or metric. A missing or incorrect secret returns an
+unauthorized result without a database read, claim, sweep, provider call, or worker log. The scheduling mechanism may
+change without changing this request-level capability check, the one-minute logical cadence, or the worker contract.
 
 The five-operation bound is a conservative first-release value, not a product-flow override. Queue-age and due-count
 metrics reveal when volume requires a separate capacity decision. An implementation must stop rather than silently
@@ -671,6 +741,9 @@ consumer, or another affected public path.
 The edge never guesses when evidence or configuration is incomplete:
 
 - missing hosted configuration fails startup;
+- a missing or mismatched project-token fingerprint fails module initialization;
+- Preview and Production configuration with the same provider team identifier fails validation;
+- a prepared operation cannot move to a different team or project when configuration changes;
 - a disabled command is suppressed before preparation;
 - a Preview recipient outside the digest allowlist is suppressed before preparation;
 - invalid sender, project, route, webhook, registry, or evidence version blocks activation;
@@ -681,6 +754,8 @@ The edge never guesses when evidence or configuration is incomplete:
 - permanent provider rejection never falls back;
 - an unavailable suppression store prevents preparation rather than sending without the check;
 - an unavailable event store causes a temporary webhook failure so the provider retries;
+- an oversized webhook is rejected while streaming, before complete buffering;
+- an unauthenticated scheduler request reaches neither storage nor the worker;
 - unknown environments select neither a fake nor a real adapter.
 
 No flow may catch one of these failures and call the generic email adapter, Supabase email delivery, Lettermint
@@ -693,11 +768,13 @@ command remains disabled. Readiness proceeds in this order:
 
 1. implement and validate the adapter, webhook boundary, suppression collection, environment policy, activation
    registry, metrics contract, and automated tests with no real provider call;
-2. provision and verify the isolated Preview provider resources outside this implementation;
+2. provision and verify the isolated Preview team, project, route, token fingerprint, webhook, and sender resources
+   outside this implementation;
 3. record Preview preflight evidence and enable one command for allowlisted synthetic recipients;
 4. validate signed webhook delivery, provider idempotency, suppression, logs, and one-path behavior in Preview;
 5. obtain written Production legal, privacy, compliance, retention, and key-management approvals;
-6. provision and verify isolated Production resources without yet enabling a command;
+6. provision and verify a separate Production team, project, route, token fingerprint, webhook, and sender resources
+   without yet enabling a command;
 7. prepare and validate one release artifact that both removes the command's former direct send path and adds its
    command-specific Production activation record;
 8. release that artifact explicitly, so the old deployment has only the old path and the new deployment has only the
@@ -726,22 +803,35 @@ This seam must prove:
 7. the serialized provider body is durable before the first transport call;
 8. a retry sends byte-identical body data and the same provider idempotency key after a deployment-style adapter
    recreation;
-9. a valid accepted response records the provider message identifier and scrubs transient content;
-10. `429` and `5xx` responses use the foundation retry schedule without an SDK retry;
-11. a missing definitive response is ambiguous and stays within the 24-hour ambiguity window;
-12. an idempotency conflict is permanent and raises the invariant signal;
-13. invalid credentials or request rejection fail permanently without fallback;
-14. the 20-second timeout finishes with enough lease budget to record an outcome;
-15. a disabled command makes no link, render, serialization, or transport call;
-16. a Preview allowlist miss makes no link, render, serialization, or transport call;
-17. a local suppression hit makes no link, render, serialization, or transport call;
-18. Production activation without every evidence field is rejected before provider work;
-19. Local, test, and CI cannot select the real transport even when a test process exposes provider-like environment
+9. the provider team, project, route, and destination version are stored before the first attempt and never change on
+   a retry;
+10. a token rotation within the same project can serve the stored binding, while another team or project cannot;
+11. removing a still-referenced destination binding is rejected, and an unavailable binding never redirects an
+    operation;
+12. a valid accepted response records the provider message identifier and scrubs transient content;
+13. `429` and `5xx` responses use the foundation retry schedule without an SDK retry;
+14. a missing definitive response is ambiguous and stays within the 24-hour ambiguity window;
+15. `invalid_idempotent_request` is permanent, while `concurrent_idempotent_requests` and an unknown `409` remain
+    ambiguous and reuse the exact request;
+16. invalid credentials or request rejection fail permanently without fallback;
+17. an injected transport timer reaches the 20-second timeout without wall-clock waiting and leaves enough lease
+    budget to record an outcome;
+18. a disabled command makes no link, render, serialization, or transport call;
+19. a Preview allowlist miss makes no link, render, serialization, or transport call;
+20. a local suppression hit makes no link, render, serialization, or transport call;
+21. Production activation without every evidence field is rejected before provider work;
+22. Local, test, and CI cannot select the real transport even when a test process exposes provider-like environment
     values;
-20. logs and metrics contain only their explicit allowlists.
+23. missing, malformed, cross-environment, duplicated, or inconsistent hosted configuration fails before adapter,
+    worker, database, or transport work;
+24. a Preview token in the Production secret slot fails its independently stored fingerprint check before adapter
+    construction;
+25. Preview and Production registry entries cannot share a provider team identifier;
+26. logs and metrics contain only their explicit allowlists.
 
-The controlled transport records request bytes and returns scripted protocol responses. It does not resolve or call
-the public Lettermint hostname. A network guard fails the suite if any external connection is attempted.
+The controlled transport records request bytes and returns scripted protocol responses. It accepts an injected timer
+and abort signal, so the suite can advance the 20-second boundary without sleeping. It does not resolve or call the
+public Lettermint hostname. A network guard fails the suite if any external connection is attempted.
 
 ### Highest-value seam 2: signed Next.js webhook through real Payload
 
@@ -755,9 +845,12 @@ This seam must prove:
 2. changing insignificant-looking JSON whitespace after signing invalidates the request;
 3. a parsed and re-serialized equivalent body cannot pass raw-body verification;
 4. absent, malformed, invalid, future, and older-than-five-minute signatures return `401` and mutate nothing;
-5. current-secret and still-valid previous-secret signatures pass, while an expired previous secret fails;
-6. an oversized body and unsupported content type are rejected before JSON processing;
-7. a body/header event mismatch, project mismatch, route mismatch, or environment mismatch mutates nothing;
+5. current-secret and still-valid previous-secret signatures pass during the ten-minute rotation window, while an
+   expired previous secret fails and the five-minute signature-age check remains authoritative;
+6. an oversized fixed-length body and an oversized chunked body without `Content-Length` are rejected while streaming
+   and before complete buffering or JSON processing;
+7. a body/header event mismatch, team mismatch, project mismatch, route mismatch, or environment mismatch mutates
+   nothing;
 8. `webhook.test` verifies successfully without creating persistent records;
 9. a verified `message.created` recovers an ambiguous provider acceptance;
 10. a verified delivered event can recover provider acceptance and then reach `delivered` atomically;
@@ -769,23 +862,42 @@ This seam must prove:
 16. an identical provider event retry returns `2xx` without a second event or suppression mutation;
 17. one provider event ID with conflicting normalized fields mutates nothing and raises a mismatch signal;
 18. operation metadata correlates an event before the synchronous provider message identifier is stored;
-19. an unmatched or mismatched verified event is acknowledged safely without exposing payload content;
-20. a temporary database failure returns `5xx`, and the retried delivery applies once after recovery;
-21. concurrent delivery of the same event produces one event sequence and one suppression effect;
-22. recipient comparison uses a transient HMAC calculation and never persists or logs the raw webhook recipient;
-23. raw subjects, recipients, reason strings, SMTP responses, tags, and unapproved metadata are discarded;
-24. an unsubscribed tracking or suppression-management event cannot change state or local suppression.
+19. a coordinated race pauses the worker after the provider response, applies a signed webhook, and then resumes the
+    worker; the provider identifier and newer terminal state remain unchanged, with no retry or duplicate event;
+20. an unmatched or mismatched verified event is acknowledged safely without exposing payload content;
+21. a temporary database failure returns `5xx`, and the retried delivery applies once after recovery;
+22. concurrent delivery of the same event produces one event sequence and one suppression effect;
+23. concurrent distinct `delivered` and complaint events retain the first allowed terminal state, preserve both event
+    results, and create complaint suppression;
+24. concurrent distinct hard-bounce and complaint events preserve both event results and leave exactly one
+    suppression record with complaint precedence;
+25. recipient comparison uses a transient HMAC calculation and never persists or logs the raw webhook recipient;
+26. raw subjects, recipients, reason strings, SMTP responses, tags, and unapproved metadata are discarded;
+27. an unsubscribed tracking or suppression-management event cannot change state or local suppression.
+
+### Scheduler request boundary
+
+A focused request-level integration suite invokes the hosted scheduler boundary rather than the worker directly. It
+proves that a missing secret, an incorrect secret, a secret in the URL, and a secret in the request body all return an
+unauthorized result without a worker call, database read, claim, sweep, provider call, or sensitive log. A correct
+authorization header invokes the bounded worker exactly once. The suite uses only a synthetic scheduler secret.
 
 ### Focused policy tests
 
 Small deterministic tests cover policy that does not justify a third integration seam:
 
 - exhaustive runtime adapter selection;
-- activation-registry schema, uniqueness, evidence completeness, and version binding;
+- table-driven hosted initialization failures for every missing, malformed, cross-environment, duplicated, or
+  inconsistent configuration field;
+- activation-registry schema, uniqueness, distinct team identities, evidence completeness, fingerprint binding, and
+  version binding;
 - command-by-command Preview and Production activation;
+- concealed-input fingerprint generation that outputs only the expected full SHA-256 value;
+- project-token rotation within one stable provider binding and rejection across bindings;
 - recipient normalization and Preview digest allowlist behavior;
-- provider status and transport-error outcome mapping;
-- signature parsing, timing-safe comparison inputs, tolerance boundaries, and bounded secret overlap;
+- provider status, Lettermint `409` error-code, and transport-error outcome mapping;
+- signature parsing, timing-safe comparison inputs, five-minute tolerance boundaries, and ten-minute maximum secret
+  overlap;
 - provider event field projection and safe outcome-code mapping;
 - terminal-state precedence and independent suppression effects;
 - suppression reason precedence and unique upsert behavior;
@@ -846,15 +958,18 @@ scrubbing, and outbox retention. This specification adds only the provider-speci
 adapter, verified inbound event behavior, local suppression collection, hosted environment policy, activation,
 preflight, scheduling, and operational signals.
 
-The provider-specific transient request bytes are an additive delivery-edge requirement. They exist because
-Lettermint binds an idempotency key to the request body for 24 hours. They do not create a generic provider payload
-extension point and are scrubbed with the prepared recipient and content.
+The provider-specific transient request bytes and content-free provider binding are additive delivery-edge
+requirements. They exist because Lettermint binds an idempotency key and request body within one project for 24
+hours. They do not create a generic provider payload extension point. The request bytes are scrubbed with the
+prepared recipient and content; the provider binding remains as operational metadata until normal outbox deletion.
 
 ### Implementation stop conditions
 
 Implementation must stop and request a new decision if:
 
 - Lettermint cannot preserve the documented idempotency behavior for the single-message API;
+- Preview and Production cannot use separate Lettermint teams;
+- an approved project token cannot be bound independently to its expected environment, team, and project;
 - required webhook events omit both the opaque operation metadata and a usable provider message identifier;
 - a webhook cannot be verified against unmodified raw bytes in the selected Next.js runtime;
 - sender or DNS readiness cannot be bound to an auditable activation version;
@@ -873,6 +988,9 @@ The provider-specific constraints were checked against the current Lettermint do
 
 - [single-message Sending API](https://lettermint.co/docs/api-reference/sending/send);
 - [24-hour idempotency behavior](https://lettermint.co/docs/platform/emails/idempotency);
+- [project and team hierarchy](https://lettermint.co/docs/platform/projects-and-routes/introduction);
+- [project and Team API token boundaries](https://lettermint.co/docs/platform/api-token-security);
+- [Sending API token ping](https://lettermint.co/docs/api-reference/sending/generic);
 - [signed webhook format and replay guidance](https://lettermint.co/docs/platform/webhooks/signing);
 - [webhook retries and delivery behavior](https://lettermint.co/docs/platform/webhooks/introduction);
 - [webhook event catalog](https://lettermint.co/docs/platform/webhooks/events);

@@ -256,7 +256,11 @@ The outbox requires these logical fields. Payload-generated identifiers and time
 | `preparedSubject` | text, nullable | Transient exact subject; scrubbed |
 | `preparedHtml` | textarea, nullable | Transient exact HTML; scrubbed |
 | `preparedText` | textarea, nullable | Transient exact plain text; scrubbed |
+| `preparedProviderRequest` | textarea or bytes, nullable | Transient exact serialized provider request introduced by the delivery edge; immutable after preparation and scrubbed |
 | `preparedAt` | date, nullable | Set once when the exact delivery payload becomes durable |
+| `providerTeamId` | text, nullable | Content-free provider-team binding introduced by the delivery edge; immutable after preparation |
+| `providerProjectId` | text, nullable | Content-free provider-project binding introduced by the delivery edge; immutable after preparation |
+| `providerRouteId` | text, nullable | Content-free provider-route binding introduced by the delivery edge; immutable after preparation |
 | `deliveryDeadline` | date | Last safe provider-completion time; indexed |
 | `attemptCount` | integer | Starts at zero and never exceeds six |
 | `nextAttemptAt` | date, nullable | Central retry schedule; indexed |
@@ -472,6 +476,7 @@ provider acceptance or a terminal pre-provider outcome:
 - `preparedSubject`;
 - `preparedHtml`;
 - `preparedText`;
+- `preparedProviderRequest`;
 - `nextAttemptAt`;
 - `leaseToken`;
 - `leaseExpiresAt`.
@@ -481,6 +486,7 @@ Until hard deletion, the scrubbed outbox retains only this explicit content-free
 - the Payload record identifier and repository-managed timestamps;
 - `commandType`, `operationReference`, `runtimeEnvironment`, and `state` after outgoing processing has terminated;
 - `providerIdempotencyKey`, `recipientDigest`, and `providerMessageId`;
+- `providerTeamId`, `providerProjectId`, and `providerRouteId`;
 - `attemptCount` and `latestEventSequence`;
 - `preparedAt`, `deliveryDeadline`, `lastAttemptAt`, `firstAmbiguousAt`, `providerAcceptedAt`, `terminalAt`, and
   `scrubbedAt`.
@@ -594,7 +600,9 @@ The behavior suite must prove:
    policy.
 8. Two workers cannot hold a valid lease for the same operation at the same time.
 9. An expired lease can be reclaimed, while a stale lease token cannot mutate the record.
-10. Preparation becomes durable before a provider attempt and never changes across retries.
+10. Preparation becomes durable before a provider attempt. The exact serialized provider request and its
+    team/project/route binding never change across retries; scrubbing later clears only the serialized request and
+    retains the content-free binding.
 11. Changing recipient ownership or eligibility after command acceptance but before preparation produces no link or
     delivery call and records the command-specific terminal result.
 12. Changing recipient ownership or eligibility between provider attempts prevents the next link or delivery call,

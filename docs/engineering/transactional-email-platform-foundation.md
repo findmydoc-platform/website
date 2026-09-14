@@ -47,15 +47,20 @@ Dashboard handoff. The existing flow issues retain their approved product respon
 
 ## Ownership and module shape
 
-The foundation will be a deep module. Its planned directory and single public import file are:
+The foundation will be a deep module. Its planned directory and single payload-independent public import file are:
 
 ```text
 src/features/transactionalEmail/
 src/features/transactionalEmail/index.ts
 ```
 
-Product flows import only that public interface. They do not import storage, worker, retry, template, link, logging,
-or delivery implementations.
+Product flows receive only the command port exported by that public interface. A Website integration layer binds the
+current `PayloadRequest`, authentication state, and transaction to private module capabilities before it supplies that
+port. The integration binding is not part of the domain command contract, and the public import does not export
+`PayloadRequest` or another Payload type.
+
+Product flows do not import storage, worker, retry, template, link, logging, delivery, or Payload integration
+implementations.
 
 Payload collection declarations remain in the repository's collection directory:
 
@@ -94,7 +99,7 @@ function and does not need an adapter.
 
 ## Public command interface
 
-The module exposes one command-acceptance function to product flows:
+The module exposes one request-bound command port to product flows:
 
 ```ts
 type TransactionalEmailAcceptance = {
@@ -103,15 +108,19 @@ type TransactionalEmailAcceptance = {
   deduplicated: boolean
 }
 
-async function acceptTransactionalEmailCommand(input: {
-  req: PayloadRequest
-  command: TransactionalEmailCommand
-}): Promise<TransactionalEmailAcceptance>
+type TransactionalEmailCommands = {
+  accept(command: TransactionalEmailCommand): Promise<TransactionalEmailAcceptance>
+}
 ```
 
-`accepted` means that the logical operation, outbox record, and first event are durable. `acceptedAt` is the original
-command-acceptance time stored as the outbox `createdAt`. It does not mean that the worker has run, Lettermint has
-accepted the message, or a recipient server has delivered it.
+Command acceptance means that the logical operation, outbox record, and first event have joined the current atomic
+unit of work. `acceptedAt` is the original command-acceptance time stored as the outbox `createdAt`. It does not mean
+that the worker has run, Lettermint has accepted the message, or a recipient server has delivered it.
+
+When the module owns the transaction, `accept` returns only after commit. When the module joins a caller-owned
+transaction, its result remains transaction-scoped until the owner commits. The Website integration layer and the
+owning product flow must not expose a successful receipt before that commit. A rollback invalidates the scoped result,
+and no external caller may observe a successful command acceptance for the rolled-back operation.
 
 The return value never contains a recipient, rendered content, action link, template identifier, sender, provider
 reference, or delivery result. A duplicate command returns the original `operationId`, original `acceptedAt`, and
@@ -145,10 +154,15 @@ clinic.registration-received
 There is no generic send command and no fallback command type. Adding a tenth type requires a new explicit platform
 decision and a catalog change.
 
-### Acceptance errors
+### Command-acceptance errors
 
 The interface returns typed internal errors for unsupported commands, invalid command data, failed authorization,
-missing source records, and unavailable transaction storage. These errors create no outbox record.
+missing source records, retryable transaction conflicts, and unavailable transaction storage. These errors create no
+outbox record in the failed transaction.
+
+Validation and authorization run before the module returns either a new or deduplicated receipt. A caller that is not
+authorized for an existing operation receives no operation identifier, original acceptance time, or other evidence
+that the operation exists.
 
 A public recovery route must map target-dependent errors to its existing non-enumerating response contract. The
 transactional email module never decides public HTTP status or response wording.
@@ -164,7 +178,7 @@ The command catalog is exhaustive and resolved at build time. Each registered co
 - command validation;
 - authorization and source-record loading;
 - recipient resolution;
-- eligibility revalidation before preparation;
+- eligibility and recipient-binding revalidation before every preparation or delivery attempt;
 - latest-delivery calculation;
 - action-link generation when required;
 - one closed typed React Email renderer that renders HTML and plain text.
@@ -180,12 +194,19 @@ allows an identity-specific template variant, the catalog entry registers and se
 
 Command acceptance follows a join-or-own transaction model.
 
-When `req.transactionID` identifies an active Payload transaction, the module joins it. The module does not commit or
-roll back a transaction owned by the caller. The caller's domain mutation, the new or reused logical email operation,
-the outbox record, and the first event then share one commit.
+When the Website integration layer detects an active Payload transaction, it supplies the module with private
+transaction capabilities and the module joins it. The deep module does not receive the `PayloadRequest`. The module
+does not commit or roll back a transaction owned by the caller. The caller's domain mutation, the new or reused logical
+email operation, the outbox record, and the first event then share one commit.
 
-When no transaction exists, the module starts a serializable read-write transaction, performs command acceptance, and
-owns its commit or rollback. Serialization conflicts use the repository's bounded transaction-retry pattern.
+When no transaction exists, the Website integration lets the module start a serializable read-write transaction,
+perform command acceptance, and own its commit or rollback. Serialization and deduplication conflicts use the
+repository's bounded transaction-retry pattern.
+
+If command acceptance joins a caller-owned transaction, the transaction owner also owns whole-transaction retry. The
+module reports a typed retryable conflict instead of trying to recover inside a failed PostgreSQL transaction. The
+owner rolls back and repeats the complete domain mutation and command acceptance through the repository's bounded
+retry pattern. Only a committed owner transaction may expose the returned receipt.
 
 The transaction performs no Supabase or delivery-provider network call. A failed or rolled-back domain mutation
 cannot leave a committed email command behind.
@@ -197,8 +218,14 @@ obtain a specific work order if it cannot identify that durable intent.
 ## Logical and provider idempotency
 
 The database has a unique constraint on `(commandType, operationReference)`. This is the durable authority for one
-logical email operation. Concurrent inserts race through the database constraint, then load and return the winning
-record rather than creating a second message.
+logical email operation. After validation and authorization, command acceptance first returns an existing matching
+operation when one is visible.
+
+Concurrent inserts still race through the database constraint. A module-owned transaction rolls back after losing the
+race, repeats the complete transaction through the bounded retry pattern, and then returns the winning record. A
+caller-owned transaction receives the typed retryable conflict described above; its owner rolls back and repeats the
+complete transaction. The module never tries to load the winner from a PostgreSQL transaction that a constraint error
+has already invalidated.
 
 The module generates one opaque random provider idempotency key when it creates the logical operation. It persists the
 key on the outbox record. Callers cannot provide, read, or modify it. Every provider attempt for that operation uses
@@ -220,12 +247,12 @@ The outbox requires these logical fields. Payload-generated identifiers and time
 | --- | --- | --- |
 | `commandType` | closed select | One of the nine approved command types; indexed |
 | `operationReference` | text | Stable flow-owned reference; never sent to the provider |
-| `commandPayload` | JSON | Serialized member of the closed typed command union; validated on every internal read and write; never queryable by callers |
+| `commandPayload` | JSON, nullable after scrubbing | Serialized member of the closed typed command union; validated on every internal read and write; never queryable by callers; cleared by scrubbing |
 | `runtimeEnvironment` | closed select | Captured deployment environment; operational only |
 | `state` | closed select | Current state from the state model; indexed |
-| `providerIdempotencyKey` | text | Module-generated opaque key; unique and immutable |
-| `recipientAddress` | email, nullable | Resolved server-side; transient and scrubbed |
-| `recipientDigest` | text, nullable | Versioned keyed digest used only after recipient resolution; never logged |
+| `providerIdempotencyKey` | text | Module-generated opaque key; unique and immutable until hard deletion |
+| `recipientAddress` | email, nullable | Resolved and stored at command acceptance; transient and scrubbed |
+| `recipientDigest` | text, nullable | Versioned keyed digest stored at command acceptance; never logged |
 | `preparedSubject` | text, nullable | Transient exact subject; scrubbed |
 | `preparedHtml` | textarea, nullable | Transient exact HTML; scrubbed |
 | `preparedText` | textarea, nullable | Transient exact plain text; scrubbed |
@@ -235,7 +262,7 @@ The outbox requires these logical fields. Payload-generated identifiers and time
 | `nextAttemptAt` | date, nullable | Central retry schedule; indexed |
 | `lastAttemptAt` | date, nullable | Time at which the latest provider request started |
 | `firstAmbiguousAt` | date, nullable | Start of the non-extendable 24-hour ambiguity window |
-| `providerMessageId` | text, nullable | Provider reference returned after acceptance; operational only |
+| `providerMessageId` | text, nullable | Provider reference returned after provider acceptance; operational only |
 | `leaseToken` | text, nullable | Random worker ownership token |
 | `leaseExpiresAt` | date, nullable | Durable two-minute lease deadline; indexed |
 | `latestEventSequence` | integer | Monotonic counter used to allocate event order |
@@ -307,7 +334,9 @@ Both collections:
 - have no versions, drafts, trash, or soft-delete workflow.
 
 The implementation should follow the access and hook patterns already used by `InquiryCommandLocks` and
-`InquiryAuditEvents`. The private context capability must not be exported from the module's public interface.
+`InquiryAuditEvents`. The private context capability must not be exported from the module's public interface. Access
+checks must compare an unforgeable module-private identity. A caller cannot reproduce the capability by setting a
+Boolean or another freely constructible `req.context` value.
 
 ## State model
 
@@ -343,21 +372,31 @@ still receives an idempotent, content-free history result.
 `terminalAt` is set when outgoing processing reaches `accepted`, `suppressed`, `failed`, or `expired`. A later verified
 delivery outcome may replace `accepted` without resetting the retention clock.
 
+This contract always qualifies the two meanings of acceptance. Command acceptance is the atomic recording of a domain
+command. Provider acceptance is the `accepted` outbox state and `delivery.accepted` event created after the delivery
+provider accepts the prepared message. Unqualified "acceptance" must not be used when either meaning could apply.
+
 ## Two-stage preparation
 
 Command acceptance validates authorization, resolves the intended recipient from authoritative Website data, stores
-the typed command, and commits the outbox operation. It never calls Supabase or a delivery provider.
+the transient recipient binding and typed command, and joins the outbox operation to the current atomic unit of work.
+It never calls Supabase or a delivery provider.
 
-After claiming the record, the worker revalidates current eligibility. It then creates an action link where required,
-renders HTML and plain text, and persists the exact recipient and rendered payload before any provider call. A crash
-before that persistence may repeat preparation because no delivery attempt has started. A crash after persistence may
-only reuse the stored payload.
+After every successful claim, including a reclaim or retry, the worker revalidates current eligibility and confirms
+that the stored recipient still belongs to the intended identity. This check occurs immediately before any link
+generation, rendering, or provider request. An ineligible target, missing source relationship, or changed recipient
+binding ends the operation with its command-specific terminal result. The worker neither redirects the operation nor
+contacts a link or delivery adapter.
 
-The worker does not silently redirect an accepted operation to a changed address. If the stored recipient no longer
-belongs to the intended identity or the target is no longer eligible, it records the command-specific terminal result.
-A later valid product action creates a new operation.
+For a valid unprepared operation, the worker then creates an action link where required, renders HTML and plain text,
+and persists the exact recipient and rendered payload before any provider call. A crash before that persistence may
+repeat preparation because no delivery attempt has started. A crash after persistence may only reuse the stored
+payload.
 
-Local development and CI use fake link generation. They do not contact Supabase or any other network service.
+The worker does not silently redirect a command-accepted operation to a changed address. A later valid product action
+creates a new operation.
+
+Local development, test, and CI use fake link generation. They do not contact Supabase or any other network service.
 
 ## Worker claim contract
 
@@ -379,7 +418,9 @@ batch size, and concurrency belong to issue #1847.
 
 The module increments `attemptCount` and appends an attempt-started event before the provider request. A crash after
 the request starts therefore consumes an attempt. Provider idempotency handles the case where the provider accepted a
-request but the Website did not record the response.
+request but the Website did not record the response. After lease reclaim, the worker must reuse the stored provider
+idempotency key and byte-equivalent prepared payload. It must not regenerate a link, recipient, subject, HTML, or plain
+text after this crash boundary.
 
 ## Retry and deadline policy
 
@@ -420,20 +461,47 @@ calling the clock throughout the implementation.
 
 ## Scrubbing and retention
 
-The outbox may temporarily hold the recipient address, action link inside rendered content, subject, HTML, and plain
-text. The event collection and logs never hold those values.
+The outbox may temporarily hold the typed command payload, recipient address, action link inside rendered content,
+subject, HTML, and plain text. The event collection and logs never hold those values.
 
-The module clears `recipientAddress`, `commandPayload`, `preparedSubject`, `preparedHtml`, and `preparedText` in the
-same short transaction that records provider acceptance or a terminal pre-acceptance outcome. It preserves only the
-command type, state, timestamps, provider reference, safe outcome codes, and a versioned keyed recipient digest.
+The module clears these transient or no-longer-actionable outbox fields in the same short transaction that records
+provider acceptance or a terminal pre-provider outcome:
+
+- `commandPayload`;
+- `recipientAddress`;
+- `preparedSubject`;
+- `preparedHtml`;
+- `preparedText`;
+- `nextAttemptAt`;
+- `leaseToken`;
+- `leaseExpiresAt`.
+
+Until hard deletion, the scrubbed outbox retains only this explicit content-free allowlist:
+
+- the Payload record identifier and repository-managed timestamps;
+- `commandType`, `operationReference`, `runtimeEnvironment`, and `state` after outgoing processing has terminated;
+- `providerIdempotencyKey`, `recipientDigest`, and `providerMessageId`;
+- `attemptCount` and `latestEventSequence`;
+- `preparedAt`, `deliveryDeadline`, `lastAttemptAt`, `firstAmbiguousAt`, `providerAcceptedAt`, `terminalAt`, and
+  `scrubbedAt`.
+
+The associated event history retains only its already content-free schema, including safe outcome codes. The retained
+business reference remains the deduplication authority, and the sequence counter remains the event-ordering authority.
 
 The first implementation does not add application-level encryption for the transient fields. The collections remain
 private and the fields have a short lifetime. If Legal or Security requires application-level encryption, work stops
 for a separate key-management and rotation decision rather than adding custom cryptography inside the foundation.
 
 Scrubbing remains opportunistic as required by ADR 028. The worker runs the retention sweep before preparing another
-message. The eventual runner should invoke that same worker entry point at least daily, including when there is no due
-message, so the sweep also supplies a bounded safety path without a separate cleanup application.
+message. The eventual runner must invoke that same worker entry point at least every 30 minutes, including when there
+is no due message. The safety sweep runs first on every invocation. This cadence supplies enough scheduling margin for
+the one-hour limit without a separate cleanup application. Issue #1847 owns the exact runner configuration but may not
+weaken this maximum interval.
+
+For a `queued` or `prepared` record past its `deliveryDeadline`, the safety sweep atomically clears the transient fields,
+sets `state` to `expired`, and writes `terminalAt` and `scrubbedAt`. If an already terminal or provider-accepted record
+somehow remains unscrubbed, the sweep clears its transient fields and writes `scrubbedAt` without replacing its
+recorded outcome. The hard-deletion phase may run daily through the same entry point.
 
 The provisional retention assumptions are:
 
@@ -462,8 +530,10 @@ fake delivery adapter:
 - emits one structured event through the existing server logger;
 - can receive a scripted outcome sequence in tests.
 
-Scripted outcomes cover temporary failure, ambiguous submission, permanent failure, and acceptance. They are injected
-per test and are not runtime environment variables.
+Scripted outcomes cover temporary failure, ambiguous submission, permanent failure, and provider acceptance. They are
+injected per test and are not runtime environment variables. Test orchestration may also trigger one deterministic
+crash after the fake provider returns and before local result persistence. That fault point is test-only and cannot be
+selected through runtime configuration.
 
 The safe structured fields are:
 
@@ -478,12 +548,14 @@ environment
 The adapter must never log or emit the recipient, recipient digest, link, subject, body, template props, command
 payload, provider key, provider response, raw error, or source record. It must never call PostHog.
 
-The implementation must prove through a network guard that Local and CI cannot contact Lettermint, Supabase link
+The implementation must prove through a network guard that Local, test, and CI cannot contact Lettermint, Supabase link
 generation, PostHog, or another external delivery endpoint. The existing generic Payload silent email adapter remains
 unchanged and is not used by this module.
 
 Preview and Production fail closed until issue #1847 supplies the real delivery adapter and environment-specific
-configuration. A missing real adapter cannot fall back to the fake in a hosted environment.
+configuration. A missing real adapter cannot fall back to the fake in a hosted environment. Environment selection is
+an exhaustive startup contract: Local, test, and CI select only fakes; Preview and Production without a real adapter
+fail before command or worker processing starts.
 
 ## Cache impact
 
@@ -502,28 +574,47 @@ discovery use, new cache class, new tag family, or revalidation behavior.
 
 ## Outside-in test contract
 
-The primary behavior tests cross the same public command interface that product flows will use. They use real Payload
-with the test Postgres database, the static test catalog, fake link generation, and the fake delivery adapter.
+The primary behavior tests cross the same payload-independent command port that product flows use. The Website test
+integration binds real Payload with the test Postgres database, the static test catalog, fake link generation, and the
+fake delivery adapter.
 
 The behavior suite must prove:
 
-1. A valid command durably creates one outbox operation and its first event.
-2. Repeating the same business operation returns the original operation without creating another row.
-3. Concurrent acceptance of the same operation produces one logical operation.
-4. A caller-owned transaction commits or rolls back its domain mutation, outbox record, and first event together.
-5. A standalone call owns a serializable transaction and handles a serialization conflict within the bounded retry policy.
-6. Invalid and unauthorized commands leave no outbox or event record.
-7. Two workers cannot hold a valid lease for the same operation at the same time.
-8. An expired lease can be reclaimed, while a stale lease token cannot mutate the record.
-9. Preparation becomes durable before a provider attempt and never changes across retries.
-10. Retry delays, six-attempt limit, Auth safety margin, non-Auth deadline, and 24-hour ambiguity window use an injected clock.
-11. State transitions reject every transition not listed in this contract.
-12. Event sequences remain unique under concurrent worker and provider-event writes.
-13. Provider-event identities deduplicate repeated webhook input at the storage seam.
-14. Acceptance and terminal transitions scrub every transient field while retaining only approved metadata.
-15. The safety sweep and provisional 42-day deletion policy honor their time limits.
-16. Local and CI make no external network or PostHog call.
-17. Structured logs contain only the approved field allowlist.
+1. A valid standalone command returns a successful receipt only after one outbox operation and its first event commit.
+2. A caller-owned transaction commits or rolls back its domain mutation, outbox record, and first event together; its
+   product-facing integration boundary returns no successful receipt before commit or after rollback.
+3. Repeating the same authorized business operation returns the original operation without creating another row.
+4. An unauthorized initial or duplicate command returns no receipt or existing-operation metadata and does not change
+   the outbox or event history.
+5. Concurrent standalone command acceptance produces one logical operation after the losing module-owned transaction
+   retries in full.
+6. Concurrent command acceptance inside caller-owned transactions returns a typed retryable conflict to the losing
+   owner; repeating that complete transaction returns the winning operation as deduplicated.
+7. A standalone call owns a serializable transaction and handles a serialization conflict within the bounded retry
+   policy.
+8. Two workers cannot hold a valid lease for the same operation at the same time.
+9. An expired lease can be reclaimed, while a stale lease token cannot mutate the record.
+10. Preparation becomes durable before a provider attempt and never changes across retries.
+11. Changing recipient ownership or eligibility after command acceptance but before preparation produces no link or
+    delivery call and records the command-specific terminal result.
+12. Changing recipient ownership or eligibility between provider attempts prevents the next link or delivery call,
+    records the command-specific terminal result, and scrubs the prepared payload.
+13. A deterministic crash after the fake provider returns but before local result persistence consumes the started
+    attempt. Lease reclaim reuses the same provider idempotency key and byte-equivalent prepared payload without
+    regenerating the link or content.
+14. Retry delays, six-attempt limit, Auth safety margin, non-Auth deadline, and 24-hour ambiguity window use an injected
+    clock.
+15. State transitions reject every transition not listed in this contract.
+16. Event sequences remain unique under concurrent worker and provider-event writes.
+17. Provider-event identities deduplicate repeated webhook input at the storage seam.
+18. Provider acceptance and every terminal pre-provider outcome scrub every transient field while retaining exactly
+    the approved content-free metadata.
+19. A 30-minute runner cadence and safety sweep meet the one-hour scrub limit, while the provisional 42-day deletion
+    policy meets its daily deletion bound.
+20. Local, test, and CI make no external network or PostHog call.
+21. Environment selection is exhaustive: Local, test, and CI choose only fakes; Preview and Production without a real
+    adapter fail before processing and never fall back to a fake.
+22. Structured logs contain only the approved field allowlist.
 
 Small unit tests cover pure state-transition, retry, deadline, and retention calculations. They do not replace the
 outside-in behavior suite with mocks of Payload internals.
@@ -531,7 +622,8 @@ outside-in behavior suite with mocks of Payload internals.
 Collection contract tests must also prove:
 
 - Admin, REST, GraphQL, and normal Local API access stay denied;
-- the module's private capability is required;
+- the module's unforgeable private capability is required and cannot be reproduced with a Boolean or caller-created
+  context value;
 - direct event updates stay denied;
 - the required unique constraints exist after migration;
 - the integration contract registry includes both collections;
@@ -544,11 +636,13 @@ Implementation remains separate from this specification and requires a new expli
 When authorized, the foundation should be implemented in this order:
 
 1. Add failing outside-in command-acceptance and worker tests with the test catalog and fake adapters.
-2. Add the public command types, acceptance result, typed errors, and static catalog contract.
+2. Add the public command types, acceptance result, typed errors, static catalog contract, and Payload-independent
+   command port with its Website integration binding.
 3. Add both hidden collection declarations and generate the Payload migration.
 4. Add join-or-own transaction handling, storage invariants, business-key deduplication, and ordered event appends.
 5. Add state, deadline, retry, lease, preparation, scrubbing, and retention behavior.
-6. Add the fake link and delivery adapters, safe logger events, and Local and CI network guard.
+6. Add the fake link and delivery adapters, safe logger events, Local, test, and CI network guard, and hosted
+   fail-closed environment tests.
 7. Register both collections in Payload, permission metadata, integration contracts, and cache policy.
 8. Run the focused suites, full repository validation, and the matching read-only reviewers after user confirmation.
 
@@ -595,12 +689,14 @@ relationships.
 
 The future foundation implementation is complete only when:
 
-- product callers can submit only a closed typed command and receive only the acceptance result;
+- product callers can submit only a closed typed command through a Payload-independent port and receive only the
+  acceptance result after commit;
 - the outbox and first event share the triggering Payload transaction when possible;
 - storage constraints prevent duplicate logical operations and duplicate provider events;
 - the worker claim, exact-payload retry, deadline, scrubbing, and retention contracts pass against test Postgres;
 - both collections remain unreachable through normal Payload surfaces;
-- Local and CI prove zero external delivery, link-generation, and PostHog traffic;
+- Local, test, and CI prove zero external delivery, link-generation, and PostHog traffic, while Preview and Production
+  prove that missing real adapters fail closed without a fake fallback;
 - the cache architecture records `no-public-impact` and no public invalidation wiring exists;
 - no real provider, flow, Dashboard, Preview, or Production behavior has entered the change.
 

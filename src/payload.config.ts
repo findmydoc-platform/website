@@ -78,6 +78,9 @@ import { createPayloadLoggerConfig } from '@/utilities/logging/payloadLogger'
 import { createPayloadRuntimePoolConfig, payloadDatabaseAvailabilityAfterError } from '@/features/databaseAvailability'
 import { createAdminDashboardConfig } from './dashboard/adminDashboard'
 
+import { TransactionalEmailOutbox } from './collections/TransactionalEmailOutbox'
+import { TransactionalEmailEvents } from './collections/TransactionalEmailEvents'
+
 // Import Collections
 import { Categories } from './collections/Categories'
 import { PlatformContentMedia } from './collections/PlatformContentMedia'
@@ -498,6 +501,8 @@ export default buildConfig({
     afterError: [payloadDatabaseAvailabilityAfterError],
   },
   collections: [
+    TransactionalEmailOutbox,
+    TransactionalEmailEvents,
     Pages,
     Posts,
     PlatformContentMedia,

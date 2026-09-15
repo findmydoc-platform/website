@@ -8,6 +8,11 @@ overrides:
   '@modelcontextprotocol/sdk': 1.26.0
   esbuild@<0.28.1: 0.28.1
 
+patchedDependencies:
+  '@payloadcms/drizzle@3.88.0':
+    hash: e67de845eaa5a1eb7098f6a1557862fd8ce86afe47c9531a140ec1bf9f782d29
+    path: patches/@payloadcms__drizzle@3.88.0.patch
+
 importers:
 
   .:
@@ -175,6 +180,9 @@ importers:
       '@next/eslint-plugin-next':
         specifier: 16.3.3
         version: 16.3.3(eslint@9.39.4(jiti@2.7.0))
+      '@payloadcms/graphql':
+        specifier: 3.88.0
+        version: 3.88.0(graphql@16.14.2)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(typescript@5.9.3)
       '@playwright/test':
         specifier: 1.62.1
         version: 1.62.1
@@ -9365,7 +9373,7 @@ snapshots:
 
   '@payloadcms/db-postgres@3.88.0(@opentelemetry/api@1.9.1)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))':
     dependencies:
-      '@payloadcms/drizzle': 3.88.0(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(pg@8.20.0)
+      '@payloadcms/drizzle': 3.88.0(patch_hash=e67de845eaa5a1eb7098f6a1557862fd8ce86afe47c9531a140ec1bf9f782d29)(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(pg@8.20.0)
       '@types/pg': 8.20.0
       console-table-printer: 2.12.1
       drizzle-kit: 0.31.7
@@ -9406,7 +9414,7 @@ snapshots:
       - sqlite3
       - supports-color
 
-  '@payloadcms/drizzle@3.88.0(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(pg@8.20.0)':
+  '@payloadcms/drizzle@3.88.0(patch_hash=e67de845eaa5a1eb7098f6a1557862fd8ce86afe47c9531a140ec1bf9f782d29)(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(pg@8.20.0)':
     dependencies:
       console-table-printer: 2.12.1
       dequal: 2.0.3

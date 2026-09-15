@@ -70,6 +70,8 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    transactionalEmailOutbox: TransactionalEmailOutbox;
+    transactionalEmailEvents: TransactionalEmailEvent;
     pages: Page;
     posts: Post;
     platformContentMedia: PlatformContentMedia;
@@ -146,6 +148,8 @@ export interface Config {
     };
   };
   collectionsSelect: {
+    transactionalEmailOutbox: TransactionalEmailOutboxSelect<false> | TransactionalEmailOutboxSelect<true>;
+    transactionalEmailEvents: TransactionalEmailEventsSelect<false> | TransactionalEmailEventsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     platformContentMedia: PlatformContentMediaSelect<false> | PlatformContentMediaSelect<true>;
@@ -308,6 +312,60 @@ export interface PayloadMcpApiKeyAuthOperations {
     email: string;
     password: string;
   };
+}
+/**
+ * Private accepted transactional email operations
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactionalEmailOutbox".
+ */
+export interface TransactionalEmailOutbox {
+  id: number;
+  commandType:
+    | 'auth.email-verification'
+    | 'auth.invitation'
+    | 'auth.password-recovery'
+    | 'conversation.external-message-received'
+    | 'moderation.report-received'
+    | 'moderation.report-decided'
+    | 'moderation.appeal-received'
+    | 'moderation.appeal-decided'
+    | 'clinic.registration-received';
+  operationReference: string;
+  commandPayload:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  runtimeEnvironment: 'local' | 'test' | 'ci' | 'preview' | 'production';
+  state:
+    'queued' | 'prepared' | 'accepted' | 'delivered' | 'suppressed' | 'bounced' | 'complained' | 'failed' | 'expired';
+  providerIdempotencyKey: string;
+  recipientAddress: string;
+  recipientDigest: string;
+  latestEventSequence: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Private immutable transactional email event history
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactionalEmailEvents".
+ */
+export interface TransactionalEmailEvent {
+  id: number;
+  outbox: number | TransactionalEmailOutbox;
+  sequence: number;
+  type: 'command.accepted';
+  source: 'command' | 'worker' | 'provider';
+  providerEventId?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Static pages such as contact and about
@@ -3898,6 +3956,36 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactionalEmailOutbox_select".
+ */
+export interface TransactionalEmailOutboxSelect<T extends boolean = true> {
+  commandType?: T;
+  operationReference?: T;
+  commandPayload?: T;
+  runtimeEnvironment?: T;
+  state?: T;
+  providerIdempotencyKey?: T;
+  recipientAddress?: T;
+  recipientDigest?: T;
+  latestEventSequence?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactionalEmailEvents_select".
+ */
+export interface TransactionalEmailEventsSelect<T extends boolean = true> {
+  outbox?: T;
+  sequence?: T;
+  type?: T;
+  source?: T;
+  providerEventId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
@@ -6966,6 +7054,8 @@ export interface TaskCreateCollectionExport {
     name: string;
     batchSize?: number | null;
     collectionSlug:
+      | 'transactionalEmailOutbox'
+      | 'transactionalEmailEvents'
       | 'pages'
       | 'posts'
       | 'platformContentMedia'

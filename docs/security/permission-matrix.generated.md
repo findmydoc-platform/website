@@ -52,6 +52,8 @@
 | InquiryLegalHolds `(inquiryLegalHolds)` | Conditional<br/><sub>capability-checked retention commands only</sub> | Conditional<br/><sub>capability-checked retention projection only</sub> | Conditional<br/><sub>dedicated hold release command only</sub> | Conditional<br/><sub>legal hold records remain auditable</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 | InquiryDeletionProofs `(inquiryDeletionProofs)` | Conditional<br/><sub>authorized deletion commands only</sub> | Conditional<br/><sub>retention service and restore barrier only</sub> | Conditional<br/><sub>immutable after command creation</sub> | Conditional<br/><sub>deletion proof cannot be removed generically</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 | InquiryCommandLocks `(inquiryCommandLocks)` | Conditional<br/><sub>active inquiry domain transactions only</sub> | Conditional<br/><sub>not exposed through generic access</sub> | Conditional<br/><sub>locks are never updated</sub> | Conditional<br/><sub>owning inquiry transaction release only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| TransactionalEmailOutbox `(transactionalEmailOutbox)` | Conditional<br/><sub>private mail module capability and transaction only</sub> | Conditional<br/><sub>not exposed through generic access</sub> | Conditional<br/><sub>private mail module invariants only</sub> | Conditional<br/><sub>no generic deletion</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| TransactionalEmailEvents `(transactionalEmailEvents)` | Conditional<br/><sub>private mail module capability and transaction only</sub> | Conditional<br/><sub>not exposed through generic access</sub> | Conditional<br/><sub>private mail module invariants only</sub> | Conditional<br/><sub>no generic deletion</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 
 ## Notes
 
@@ -102,3 +104,5 @@
 - **InquiryLegalHolds**: Case-specific private holds with reason category, responsible function, review date, and release proof
 - **InquiryDeletionProofs**: Minimal content-free proof and terminal restore barrier for authorized deletion operations
 - **InquiryCommandLocks**: Ephemeral private lock records created and released inside one serializable domain transaction
+- **TransactionalEmailOutbox**: Private mail operation data; public APIs deny every operation and hooks require a scoped identity capability
+- **TransactionalEmailEvents**: Private mail operation data; public APIs deny every operation and hooks require a scoped identity capability

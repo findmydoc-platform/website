@@ -258,7 +258,7 @@ describe('transactional email command acceptance', () => {
     expect(await persisted(command.operationReference)).toEqual({ operations: [], events: [] })
   })
 
-  it('returns unavailable storage without starting partial work or joining a caller transaction', async () => {
+  it('returns unavailable storage without starting partial work or joining an unknown transaction', async () => {
     const commands = await port()
     const command = commandFor()
     vi.spyOn(payload.db, 'beginTransaction').mockResolvedValueOnce(null)

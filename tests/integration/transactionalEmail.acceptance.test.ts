@@ -139,26 +139,62 @@ describe('transactional email command acceptance', () => {
     expect(receipt.deduplicated).toBe(false)
   })
 
-  it('retries owned serialization conflicts in full at most three times', async () => {
-    const commands = await port()
+  it('does not acknowledge data rolled back by a real PostgreSQL COMMIT failure', async () => {
     const command = commandFor()
-    const serializationFailure = Object.assign(new Error('synthetic transaction conflict'), { code: '40001' })
-    const start = vi.spyOn(payload.db, 'beginTransaction')
-    const commit = vi.spyOn(payload.db, 'commitTransaction').mockRejectedValueOnce(serializationFailure)
-    const accepted = await commands.accept(command)
-    expect(accepted.deduplicated).toBe(false)
-    expect(
-      start.mock.calls.every(
-        ([options]) => options?.isolationLevel === 'serializable' && options.accessMode === 'read write',
-      ),
-    ).toBe(true)
-    expect(commit).toHaveBeenCalledTimes(2)
-    expect((await persisted(command.operationReference)).events).toHaveLength(1)
-    const failed = commandFor()
-    commit.mockClear().mockRejectedValue(serializationFailure)
-    await expect(commands.accept(failed)).rejects.toMatchObject({ code: 'transaction-conflict' })
-    expect(commit).toHaveBeenCalledTimes(3)
-    expect(await persisted(failed.operationReference)).toEqual({ operations: [], events: [] })
+    await observer.query(`CREATE FUNCTION mail_test_commit_failure() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'synthetic deferred commit failure' USING ERRCODE = '23514'; END;
+    $$`)
+    await observer.query(`CREATE CONSTRAINT TRIGGER mail_test_commit_failure
+      AFTER INSERT ON transactional_email_events DEFERRABLE INITIALLY DEFERRED
+      FOR EACH ROW EXECUTE FUNCTION mail_test_commit_failure()`)
+    try {
+      const result = await (await port()).accept(command).then(
+        (receipt) => ({ receipt, error: null }),
+        (error: unknown) => ({ receipt: null, error }),
+      )
+      expect(await persisted(command.operationReference)).toEqual({ operations: [], events: [] })
+      expect(result.receipt).toBeNull()
+      expect(result.error).toMatchObject({ code: 'storage-unavailable' })
+    } finally {
+      await observer.query('DROP TRIGGER mail_test_commit_failure ON transactional_email_events')
+      await observer.query('DROP FUNCTION mail_test_commit_failure()')
+    }
+  })
+
+  it.each([1, 3])('retries real PostgreSQL commit conflicts in full with %i failing attempts', async (failures) => {
+    const command = commandFor()
+    await observer.query('CREATE SEQUENCE mail_test_commit_attempt')
+    await observer.query(`CREATE FUNCTION mail_test_serialization_failure() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN
+        IF nextval('mail_test_commit_attempt') <= ${failures} THEN
+          RAISE EXCEPTION 'synthetic deferred serialization conflict' USING ERRCODE = '40001';
+        END IF;
+        RETURN NEW;
+      END;
+    $$`)
+    await observer.query(`CREATE CONSTRAINT TRIGGER mail_test_serialization_failure
+      AFTER INSERT ON transactional_email_events DEFERRABLE INITIALLY DEFERRED
+      FOR EACH ROW EXECUTE FUNCTION mail_test_serialization_failure()`)
+    try {
+      const commands = await port()
+      if (failures === 1) {
+        const receipt = await commands.accept(command)
+        const stored = await persisted(command.operationReference)
+        expect(receipt.deduplicated).toBe(false)
+        expect(stored.operations).toHaveLength(1)
+        expect(stored.events).toHaveLength(1)
+        expect(String(stored.operations[0].id)).toBe(receipt.operationId)
+      } else {
+        await expect(commands.accept(command)).rejects.toMatchObject({ code: 'transaction-conflict' })
+        expect(await persisted(command.operationReference)).toEqual({ operations: [], events: [] })
+      }
+      const attempts = await observer.query('SELECT last_value FROM mail_test_commit_attempt')
+      expect(Number(attempts.rows[0].last_value)).toBe(failures === 1 ? 2 : 3)
+    } finally {
+      await observer.query('DROP TRIGGER mail_test_serialization_failure ON transactional_email_events')
+      await observer.query('DROP FUNCTION mail_test_serialization_failure()')
+      await observer.query('DROP SEQUENCE mail_test_commit_attempt')
+    }
   })
 
   it('rejects unauthorized initial and duplicate commands without exposing existing-operation data', async () => {

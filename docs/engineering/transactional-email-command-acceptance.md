@@ -22,6 +22,25 @@ one outbox record and its first event, and returns only after commit. A duplicat
 acceptance time, recipient binding, provider key, and event history. Serialization failures retry the whole transaction
 up to three times. An active caller transaction is rejected; joining it belongs to Website #1853.
 
+## Payload commit outcome
+
+The pinned `@payloadcms/drizzle@3.88.0` dependency needs
+`patches/@payloadcms__drizzle@3.88.0.patch` to propagate native commit errors. Its original transaction
+promise consumes PostgreSQL commit failures after transaction initialization. The original commit wrapper
+then resolves successfully even though Drizzle rolled the transaction back.
+
+The patch retains that native error and rethrows it from the existing Payload commit API. It preserves
+the initialization failure path and the rollback promise, including cleanup after a failed operation.
+All Payload transactions use the corrected dependency. No application code accesses Drizzle sessions or
+writes Payload records through SQL. When upgrading Payload, remove this patch only after the acceptance
+commit regression tests pass against the replacement version without it.
+
+The regression uses a deferred PostgreSQL constraint trigger, so the server rejects COMMIT after both
+writes succeeded. A separate connection confirms that neither row exists and the port returns no receipt.
+Server-raised `40001` failures at COMMIT cover a full retry and exhaustion after three attempts; a PostgreSQL
+sequence counts attempts across rollbacks. These are deterministic injected serialization failures, not
+a claim of concurrent-transaction coverage, which belongs to Website #1853.
+
 ## Private persistence
 
 `transactionalEmailOutbox` stores the accepted command, resolved address, a versioned HMAC digest of the recipient

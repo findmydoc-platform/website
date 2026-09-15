@@ -193,6 +193,9 @@
     "overrides": {
       "@modelcontextprotocol/sdk": "1.26.0",
       "esbuild@<0.28.1": "0.28.1"
+    },
+    "patchedDependencies": {
+      "@payloadcms/drizzle@3.88.0": "patches/@payloadcms__drizzle@3.88.0.patch"
     }
   },
   "packageManager": "pnpm@10.28.2"

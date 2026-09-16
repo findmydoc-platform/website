@@ -38,6 +38,7 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
       'createdAt',
       'recipientDigest',
       'runtimeEnvironment',
+      'deliveryDeadline',
     ]) {
       if (field in data && data[field] !== originalDoc?.[field]) throw new TransactionalEmailError('access-denied')
     }
@@ -64,6 +65,15 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
     ) {
       throw new TransactionalEmailError('access-denied')
     }
+    if (originalDoc.firstAmbiguousAt && merged.firstAmbiguousAt !== originalDoc.firstAmbiguousAt)
+      throw new TransactionalEmailError('access-denied')
+    if (
+      !Number.isInteger(merged.attemptCount) ||
+      merged.attemptCount < originalDoc.attemptCount ||
+      merged.attemptCount > 6 ||
+      merged.attemptCount > originalDoc.attemptCount + 1
+    )
+      throw new TransactionalEmailError('access-denied')
     const allowed: Record<string, string[]> = {
       queued: ['prepared', 'suppressed', 'failed', 'expired'],
       prepared: ['accepted', 'suppressed', 'failed', 'expired'],
@@ -75,10 +85,11 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
     if (
       authority.kind === 'worker' &&
       !terminal &&
-      (merged.leaseToken !== originalDoc.leaseToken ||
-        merged.leaseExpiresAt !== originalDoc.leaseExpiresAt ||
-        merged.recipientAddress !== originalDoc.recipientAddress)
+      !(merged.nextAttemptAt && merged.leaseToken === null && merged.leaseExpiresAt === null) &&
+      (merged.leaseToken !== originalDoc.leaseToken || merged.leaseExpiresAt !== originalDoc.leaseExpiresAt)
     )
+      throw new TransactionalEmailError('access-denied')
+    if (!terminal && merged.recipientAddress !== originalDoc.recipientAddress)
       throw new TransactionalEmailError('access-denied')
     if (originalDoc.preparedAt && !terminal) {
       for (const field of ['recipientAddress', 'preparedSubject', 'preparedHtml', 'preparedText', 'preparedAt']) {
@@ -96,6 +107,7 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
       'preparedText',
       'leaseToken',
       'leaseExpiresAt',
+      'nextAttemptAt',
     ].some((key) => merged[key] != null) ||
       !merged.scrubbedAt ||
       !merged.terminalAt)

@@ -7,11 +7,30 @@ import { selectTransactionalEmailRuntime } from './environment'
 import { TransactionalEmailError } from './errors'
 import { recipientDigest } from './recipientBinding'
 import { fakeLinks, renderSyntheticNotification, type LinkGenerator } from './preparation'
-import { createFakeDeliveryAdapter, type DeliveryAdapter, type DeliveryLog } from './delivery'
+import { createFakeDeliveryAdapter, type DeliveryAdapter, type DeliveryLog, type DeliveryOutcome } from './delivery'
 import { workerTransaction } from './workerStorage'
 
 const leaseMilliseconds = 120_000
 const stepBudgetMilliseconds = 5_000
+const retryDelays = [60_000, 300_000, 1_800_000, 7_200_000, 28_800_000] as const
+async function boundedStep<Result>(work: (signal: AbortSignal) => Promise<Result>): Promise<Result> {
+  const controller = new AbortController()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      work(controller.signal),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort()
+          reject(new TransactionalEmailError('storage-unavailable'))
+        }, 4_000)
+      }),
+    ])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export type WorkerClaim = { operationId: string; token: string }
 type WorkerOptions = {
   catalog?: CommandCatalog
@@ -19,10 +38,13 @@ type WorkerOptions = {
   links?: LinkGenerator
   delivery?: DeliveryAdapter
   log?: (event: DeliveryLog) => void
+  crashAfterDelivery?: () => void
 }
 
 export function createTransactionalEmailWorker(req: PayloadRequest, options: WorkerOptions = {}) {
   const runtime = selectTransactionalEmailRuntime()
+  if (options.crashAfterDelivery && (!['test', 'ci'].includes(runtime.environment) || process.env.VITEST !== 'true'))
+    throw new TransactionalEmailError('environment-unavailable')
   const now = options.now ?? Date.now
   const catalog = options.catalog ?? commandCatalog
   const links = options.links ?? fakeLinks
@@ -30,6 +52,15 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
   const log = options.log ?? ((event: DeliveryLog) => req.payload.logger.info(event))
   const validLease = (record: TransactionalEmailOutbox, claim: WorkerClaim) =>
     record.leaseToken === claim.token && Date.parse(record.leaseExpiresAt ?? '') > now()
+  const deadline = (record: TransactionalEmailOutbox) =>
+    Math.min(
+      record.deliveryDeadline
+        ? Date.parse(record.deliveryDeadline)
+        : record.commandType.startsWith('auth.')
+          ? 0
+          : Date.parse(record.createdAt) + 86_400_000,
+      record.firstAmbiguousAt ? Date.parse(record.firstAmbiguousAt) + 86_400_000 : Infinity,
+    )
   const enoughBudget = (record: TransactionalEmailOutbox) =>
     Date.parse(record.leaseExpiresAt ?? '') - now() > stepBudgetMilliseconds
   const transaction = <Result>(claim: WorkerClaim, work: Parameters<typeof workerTransaction<Result>>[2]) =>
@@ -42,8 +73,9 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     })
   const finish = (
     claim: WorkerClaim,
-    state: 'accepted' | 'suppressed' | 'failed',
-    outcomeCode: 'fake-accepted' | 'recipient-changed' | 'ineligible' | 'preparation-failed' | 'permanent-failure',
+    state: 'accepted' | 'suppressed' | 'failed' | 'expired',
+    outcomeCode:
+      'fake-accepted' | 'recipient-changed' | 'ineligible' | 'preparation-failed' | 'permanent-failure' | 'expired',
     providerMessageId?: string,
   ) =>
     transaction(claim, async (storage) => {
@@ -59,6 +91,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
           preparedSubject: null,
           preparedHtml: null,
           preparedText: null,
+          nextAttemptAt: null,
           leaseToken: null,
           leaseExpiresAt: null,
           terminalAt: timestamp,
@@ -74,7 +107,9 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
                   ? 'delivery.accepted'
                   : state === 'suppressed'
                     ? 'delivery.suppressed'
-                    : 'delivery.failed',
+                    : state === 'expired'
+                      ? 'delivery.expired'
+                      : 'delivery.failed',
             outcomeCode,
             attemptNumber: record.attemptCount || undefined,
           },
@@ -84,11 +119,15 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
       return true
     })
   const revalidate = async (claim: WorkerClaim, record: TransactionalEmailOutbox) => {
+    if (deadline(record) - now() <= stepBudgetMilliseconds || (record.attemptCount ?? 0) >= 6) {
+      await finish(claim, 'expired', 'expired')
+      return false
+    }
     if (!enoughBudget(record)) return false
     const command = validateCommand(record.commandPayload)
     const entry = resolveCatalogEntry(catalog, command).worker
     if (!entry) throw new TransactionalEmailError('unsupported-command')
-    const current = await entry.revalidate(command)
+    const current = await boundedStep(() => entry.revalidate(command))
     if (
       !current ||
       current.address !== record.recipientAddress ||
@@ -97,8 +136,19 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
       await finish(claim, entry.terminalState, current ? 'recipient-changed' : 'ineligible')
       return false
     }
+    if (deadline(record) - now() <= stepBudgetMilliseconds) {
+      await finish(claim, 'expired', 'expired')
+      return false
+    }
     return enoughBudget(record)
   }
+
+  const dueAt = (record: TransactionalEmailOutbox) =>
+    record.nextAttemptAt
+      ? Date.parse(record.nextAttemptAt)
+      : record.attemptCount && record.lastAttemptAt
+        ? Date.parse(record.lastAttemptAt) + (retryDelays[record.attemptCount - 1] ?? 0)
+        : 0
 
   async function claim(operationId: string): Promise<WorkerClaim | null> {
     const token = randomUUID()
@@ -108,7 +158,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
         record.runtimeEnvironment !== runtime.environment ||
         !['queued', 'prepared'].includes(record.state) ||
         (record.leaseExpiresAt && Date.parse(record.leaseExpiresAt) > now()) ||
-        record.attemptCount
+        (dueAt(record) > now() && deadline(record) - now() > stepBudgetMilliseconds)
       )
         return null
       await storage.write(
@@ -122,13 +172,26 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
 
   async function processClaim(claim: WorkerClaim) {
     let record = await read(claim)
-    if (!record || !(await revalidate(claim, record))) return
+    if (!record) return
+    if (record.attemptCount && !record.nextAttemptAt && record.lastAttemptAt && !record.firstAmbiguousAt) {
+      const recovered = await transaction(claim, async (storage) => {
+        const current = await storage.read(Number(claim.operationId))
+        if (!validLease(current, claim)) return null
+        return storage.write(current, { firstAmbiguousAt: current.lastAttemptAt }, [
+          { type: 'delivery.ambiguous', outcomeCode: 'ambiguous', attemptNumber: current.attemptCount! },
+        ])
+      })
+      if (!recovered) return
+      record = recovered
+    }
+    if (!(await revalidate(claim, record))) return
     if (record.state === 'queued') {
       let prepared
       try {
-        const actionLink = await links.generate()
+        const actionLink = await boundedStep(() => links.generate())
         if (!(await revalidate(claim, record))) return
-        prepared = await renderSyntheticNotification(record.recipientAddress!, actionLink)
+        const recipientAddress = record.recipientAddress!
+        prepared = await boundedStep(() => renderSyntheticNotification(recipientAddress, actionLink))
       } catch {
         await finish(claim, 'failed', 'preparation-failed')
         return
@@ -154,31 +217,102 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     if (record.state !== 'prepared' || !(await revalidate(claim, record))) return
     const started = await transaction(claim, async (storage) => {
       const current = await storage.read(Number(claim.operationId))
-      if (!validLease(current, claim) || !enoughBudget(current) || current.attemptCount) return null
-      return storage.write(current, { attemptCount: 1, lastAttemptAt: new Date(now()).toISOString() }, [
-        { type: 'delivery.attempt-started', attemptNumber: 1 },
-      ])
+      if (
+        !validLease(current, claim) ||
+        !enoughBudget(current) ||
+        deadline(current) - now() <= stepBudgetMilliseconds ||
+        (current.attemptCount ?? 0) >= 6
+      )
+        return null
+      return storage.write(
+        current,
+        {
+          attemptCount: (current.attemptCount ?? 0) + 1,
+          lastAttemptAt: new Date(now()).toISOString(),
+          nextAttemptAt: null,
+        },
+        [{ type: 'delivery.attempt-started', attemptNumber: (current.attemptCount ?? 0) + 1 }],
+      )
     })
-    if (!started || !enoughBudget(started)) return
-    const result = await delivery.deliver({
-      recipientAddress: started.recipientAddress!,
-      subject: started.preparedSubject!,
-      html: started.preparedHtml!,
-      text: started.preparedText!,
-      providerIdempotencyKey: started.providerIdempotencyKey,
-    })
-    const outcomeCode = result.type === 'accepted' ? 'fake-accepted' : 'permanent-failure'
+    if (!started || !enoughBudget(started) || deadline(started) - now() <= stepBudgetMilliseconds) return
+    let result: DeliveryOutcome
+    try {
+      result = await boundedStep((signal) =>
+        delivery.deliver(
+          {
+            recipientAddress: started.recipientAddress!,
+            subject: started.preparedSubject!,
+            html: started.preparedHtml!,
+            text: started.preparedText!,
+            providerIdempotencyKey: started.providerIdempotencyKey,
+          },
+          signal,
+        ),
+      )
+    } catch {
+      result = { type: 'ambiguous' }
+    }
+    options.crashAfterDelivery?.()
+    const outcomeCode =
+      result.type === 'accepted'
+        ? 'fake-accepted'
+        : result.type === 'retryable'
+          ? 'retryable-failure'
+          : result.type === 'ambiguous'
+            ? 'ambiguous'
+            : result.type === 'suppressed'
+              ? 'ineligible'
+              : 'permanent-failure'
     log({
       operationId: claim.operationId,
       commandType: started.commandType,
-      attemptNumber: 1,
+      attemptNumber: started.attemptCount!,
       outcomeCode,
       environment: runtime.environment,
     })
+    if (result.type === 'retryable' || result.type === 'ambiguous') {
+      const next = retryDelays[started.attemptCount! - 1]
+      if (
+        next === undefined ||
+        now() + next + stepBudgetMilliseconds >=
+          Math.min(
+            deadline(started),
+            result.type === 'ambiguous'
+              ? Date.parse(started.firstAmbiguousAt ?? started.lastAttemptAt!) + 86_400_000
+              : Infinity,
+          )
+      ) {
+        await finish(claim, 'expired', 'expired')
+        return
+      }
+      await transaction(claim, async (storage) => {
+        const current = await storage.read(Number(claim.operationId))
+        if (!validLease(current, claim)) return
+        await storage.write(
+          current,
+          {
+            nextAttemptAt: new Date(now() + retryDelays[current.attemptCount! - 1]!).toISOString(),
+            leaseToken: null,
+            leaseExpiresAt: null,
+            ...(result.type === 'ambiguous'
+              ? { firstAmbiguousAt: current.firstAmbiguousAt ?? current.lastAttemptAt }
+              : {}),
+          },
+          [
+            {
+              type: result.type === 'ambiguous' ? 'delivery.ambiguous' : 'delivery.retry-scheduled',
+              outcomeCode,
+              attemptNumber: current.attemptCount!,
+            },
+          ],
+        )
+      })
+      return
+    }
     await finish(
       claim,
-      result.type === 'accepted' ? 'accepted' : 'failed',
-      outcomeCode,
+      result.type === 'accepted' ? 'accepted' : result.type === 'suppressed' ? 'suppressed' : 'failed',
+      result.type === 'accepted' ? 'fake-accepted' : result.type === 'suppressed' ? 'ineligible' : 'permanent-failure',
       result.type === 'accepted' ? result.messageId : undefined,
     )
   }

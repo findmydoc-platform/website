@@ -48,6 +48,8 @@ async function withStorage<Result>(
           overrideAccess: true,
           depth: 0,
           data: {
+            createdAt: operation.acceptedAt,
+            deliveryDeadline: operation.deliveryDeadline,
             commandType: operation.command.type,
             operationReference: operation.command.operationReference,
             commandPayload: operation.command,
@@ -77,9 +79,14 @@ async function withStorage<Result>(
   }
 }
 
-export function bindTransactionalEmail(req: PayloadRequest, catalog: CommandCatalog = commandCatalog) {
+export function bindTransactionalEmail(
+  req: PayloadRequest,
+  catalog: CommandCatalog = commandCatalog,
+  now: () => number = Date.now,
+) {
   const runtime = selectTransactionalEmailRuntime()
   return createCommandPort({
+    now,
     actor: req.user ? `${req.user.collection}:${req.user.id}` : null,
     catalog,
     environment: runtime.environment,

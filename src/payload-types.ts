@@ -355,6 +355,9 @@ export interface TransactionalEmailOutbox {
   leaseExpiresAt?: string | null;
   attemptCount?: number | null;
   lastAttemptAt?: string | null;
+  deliveryDeadline?: string | null;
+  nextAttemptAt?: string | null;
+  firstAmbiguousAt?: string | null;
   providerMessageId?: string | null;
   providerAcceptedAt?: string | null;
   terminalAt?: string | null;
@@ -379,6 +382,8 @@ export interface TransactionalEmailEvent {
     | 'preparation.completed'
     | 'preparation.failed'
     | 'delivery.attempt-started'
+    | 'delivery.retry-scheduled'
+    | 'delivery.ambiguous'
     | 'delivery.accepted'
     | 'delivery.suppressed'
     | 'delivery.failed'
@@ -387,7 +392,16 @@ export interface TransactionalEmailEvent {
   source: 'command' | 'worker' | 'provider';
   attemptNumber?: number | null;
   outcomeCode?:
-    | ('fake-accepted' | 'recipient-changed' | 'ineligible' | 'preparation-failed' | 'permanent-failure' | 'expired')
+    | (
+        | 'fake-accepted'
+        | 'recipient-changed'
+        | 'ineligible'
+        | 'preparation-failed'
+        | 'permanent-failure'
+        | 'retryable-failure'
+        | 'ambiguous'
+        | 'expired'
+      )
     | null;
   providerEventId?: string | null;
   updatedAt: string;
@@ -4001,6 +4015,9 @@ export interface TransactionalEmailOutboxSelect<T extends boolean = true> {
   leaseExpiresAt?: T;
   attemptCount?: T;
   lastAttemptAt?: T;
+  deliveryDeadline?: T;
+  nextAttemptAt?: T;
+  firstAmbiguousAt?: T;
   providerMessageId?: T;
   providerAcceptedAt?: T;
   terminalAt?: T;

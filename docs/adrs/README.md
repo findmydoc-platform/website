@@ -4,14 +4,14 @@ This repository contains the Architecture Decision Records (ADRs) for the projec
 
 ## Repository Structure
 
-- **/adrs/**: The main folder where all ADRs are stored.
-- **/adrs/000x-decision-title.md**: Each ADR is numbered sequentially and includes a descriptive title.
-- **/adrs/archive/**: Deprecated or rejected ADRs are moved here to keep the main folder clean.
-- **/adrs/templates/**: This folder contains the template to create new ADRs.
+- **/docs/adrs/**: The main folder where all ADRs are stored.
+- **/docs/adrs/NNN-decision-title.md**: Each ADR is numbered sequentially and includes a descriptive title.
+- **/docs/adrs/archive/**: Reserved for legacy archived records. Do not move new closed ADRs from their stable paths.
+- **/docs/adrs/templates/**: This folder contains the template to create new ADRs.
 
 ## How to Create a New ADR
 
-1. Create a new file in the `/adr` directory with the next sequential number (e.g., `0004-new-decision.md`).
+1. Create a new file in the `/docs/adrs` directory with the next sequential number (for example, `028-new-decision.md`).
 2. Follow the structure used in previous ADRs, ensuring it includes:
    - Background
    - Problem Description
@@ -25,11 +25,22 @@ This repository contains the Architecture Decision Records (ADRs) for the projec
 ## ADR Status
 
 Each ADR can have one of the following statuses:
+
 - **Draft**: The ADR is under review and not yet finalized.
 - **Approved**: The ADR has been reviewed and accepted.
 - **Rejected**: The ADR was reviewed but not accepted.
 - **Deprecated**: The ADR is outdated or has been replaced by another decision.
 - **Superseded**: The ADR has been replaced by a newer decision, which is referenced.
+
+## Lifecycle and Immutability
+
+Only a **Draft** ADR may be revised. Once an ADR is **Approved**, **Rejected**, **Deprecated**, or **Superseded**, it is closed and its decision record is immutable. Do not rewrite its context, decision, rationale, consequences, scope, or historical evidence.
+
+If a closed decision changes, create a new sequential ADR. The new ADR must identify the record it supersedes, while the old ADR may receive only the lifecycle metadata needed to set its status to **Deprecated** or **Superseded** and link to the replacement. Keep both records in version control.
+
+Corrections and clarifications that would alter the meaning of a closed ADR also require a new ADR. Historical in-place revisions remain historical exceptions and do not authorize further edits.
+
+Treat any revisit or update wording inside a closed ADR as a trigger for a successor, not as permission to edit the closed record.
 
 ## Purpose of ADRs
 
@@ -38,13 +49,15 @@ Architecture Decision Records serve as a log of important technical and architec
 ## Contributing
 
 When adding a new ADR:
+
 - Ensure to provide enough detail in the **Considerations** section about the evaluated alternatives and why some were discarded.
 - Always include rationale in the **Decision** section to explain why the final decision was made.
-- Update any deprecated or superseded ADRs with links to the new decisions.
+- Limit changes to a deprecated or superseded ADR to its status and replacement link.
 
 ## References
 
 - [ADR GitHub Template](https://github.com/joelparkerhenderson/architecture_decision_record)
+- [Semantic Anchors: ADR according to Nygard](https://llm-coding.github.io/Semantic-Anchors/anchor/adr-according-to-nygard/)
 - [ADRs: Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
 
 ## ADR Index

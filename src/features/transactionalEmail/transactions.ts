@@ -23,17 +23,27 @@ export function transactionError(error: unknown): TransactionalEmailError {
     if (
       detail.code === '40001' ||
       detail.code === '40P01' ||
-      (detail.code === '23505' && detail.constraint === 'commandType_operationReference_idx')
+      (detail.code === '23505' &&
+        [
+          'commandType_operationReference_idx',
+          'transactional_email_events_provider_event_id_idx',
+          'outbox_sequence_idx',
+        ].includes(String(detail.constraint)))
     ) {
       return new TransactionalEmailError('transaction-conflict')
     }
     if (
       current instanceof ValidationError &&
-      current.data.collection === 'transactionalEmailOutbox' &&
-      current.data.errors.some(
-        ({ path, tableName }) =>
-          tableName === 'transactional_email_outbox' && path === 'command_type, operation_reference',
-      )
+      ((current.data.collection === 'transactionalEmailEvents' &&
+        current.data.errors.some(
+          ({ path, tableName }) =>
+            tableName === 'transactional_email_events' && ['provider_event_id', 'outbox_id, sequence'].includes(path),
+        )) ||
+        (current.data.collection === 'transactionalEmailOutbox' &&
+          current.data.errors.some(
+            ({ path, tableName }) =>
+              tableName === 'transactional_email_outbox' && path === 'command_type, operation_reference',
+          )))
     ) {
       return new TransactionalEmailError('transaction-conflict')
     }

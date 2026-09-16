@@ -75,6 +75,7 @@ import * as migration_20260905_135339_landing_subscription_pricing_contract from
 import * as migration_20260907_091852_remove_search_compatibility from './20260907_091852_remove_search_compatibility'
 import * as migration_20260907_092854_remove_search_contract from './20260907_092854_remove_search_contract'
 import * as migration_20260915_214645_transactional_email_acceptance from './20260915_214645_transactional_email_acceptance'
+import * as migration_20260916_001253_transactional_email_worker from './20260916_001253_transactional_email_worker'
 
 export const migrations = [
   {
@@ -461,5 +462,10 @@ export const migrations = [
     up: migration_20260915_214645_transactional_email_acceptance.up,
     down: migration_20260915_214645_transactional_email_acceptance.down,
     name: '20260915_214645_transactional_email_acceptance',
+  },
+  {
+    up: migration_20260916_001253_transactional_email_worker.up,
+    down: migration_20260916_001253_transactional_email_worker.down,
+    name: '20260916_001253_transactional_email_worker',
   },
 ]

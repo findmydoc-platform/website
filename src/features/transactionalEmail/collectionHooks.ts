@@ -1,7 +1,7 @@
 import type { CollectionBeforeDeleteHook, CollectionAfterReadHook, CollectionBeforeChangeHook } from 'payload'
 import {
   consumeRetentionDelete,
-  consumeWorkerEventAppend,
+  consumeEventAppend,
   requireStorageCapability,
   storageWorkerAuthority,
 } from './capability'
@@ -65,6 +65,15 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
         )
       )
         throw new TransactionalEmailError('access-denied')
+    } else if (authority.kind === 'provider') {
+      if (
+        Object.keys(data).some(
+          (key) =>
+            !['state', 'latestEventSequence', 'updatedAt'].includes(key) &&
+            JSON.stringify(data[key]) !== JSON.stringify(originalDoc[key]),
+        )
+      )
+        throw new TransactionalEmailError('access-denied')
     } else if (authority.kind === 'sweep') {
       if (
         !needsScrubbing(originalDoc, authority.now()) ||
@@ -102,6 +111,7 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
     const allowed: Record<string, string[]> = {
       queued: ['prepared', 'suppressed', 'failed', 'expired'],
       prepared: ['accepted', 'suppressed', 'failed', 'expired'],
+      accepted: authority.kind === 'provider' ? ['delivered', 'bounced', 'complained'] : [],
     }
     if (merged.state !== originalDoc.state && !allowed[originalDoc.state]?.includes(merged.state))
       throw new TransactionalEmailError('access-denied')
@@ -145,10 +155,12 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
 export const guardEventWrite: CollectionBeforeChangeHook = async ({ data, operation, req }) => {
   await requireStorageCapability(req)
   if (operation !== 'create') throw new TransactionalEmailError('access-denied')
-  if (storageWorkerAuthority(req) || data.source === 'worker') {
-    if (data.source !== 'worker') throw new TransactionalEmailError('access-denied')
-    consumeWorkerEventAppend(req, data.outbox, data.sequence)
-  }
+  if (storageWorkerAuthority(req) || data.source !== 'command') {
+    if (data.source !== (storageWorkerAuthority(req)?.kind === 'provider' ? 'provider' : 'worker'))
+      throw new TransactionalEmailError('access-denied')
+    consumeEventAppend(req, data.outbox, data.sequence)
+  } else if (data.type !== 'command.accepted' || data.sequence !== 1 || data.providerEventId != null)
+    throw new TransactionalEmailError('access-denied')
   return data
 }
 

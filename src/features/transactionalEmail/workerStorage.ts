@@ -2,7 +2,7 @@ import { createLocalReq, type PayloadRequest, type Where } from 'payload'
 import type { TransactionalEmailOutbox, TransactionalEmailEvent } from '@/payload-types'
 import {
   authorizeRetentionDeletes,
-  authorizeWorkerEventAppends,
+  authorizeEventAppends,
   openStorageCapability,
   type WorkerAuthority,
 } from './capability'
@@ -82,7 +82,7 @@ export function workerTransaction<Result>(
             depth: 0,
             data: { ...data, latestEventSequence: sequence + events.length },
           })
-          authorizeWorkerEventAppends(
+          authorizeEventAppends(
             internalReq,
             record.id,
             events.map((_, index) => sequence + index + 1),

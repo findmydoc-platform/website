@@ -385,6 +385,9 @@ export interface TransactionalEmailEvent {
     | 'delivery.retry-scheduled'
     | 'delivery.ambiguous'
     | 'delivery.accepted'
+    | 'delivery.delivered'
+    | 'delivery.bounced'
+    | 'delivery.complained'
     | 'delivery.suppressed'
     | 'delivery.failed'
     | 'delivery.expired'
@@ -404,6 +407,7 @@ export interface TransactionalEmailEvent {
       )
     | null;
   providerEventId?: string | null;
+  sourceOccurredAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -4038,6 +4042,7 @@ export interface TransactionalEmailEventsSelect<T extends boolean = true> {
   attemptNumber?: T;
   outcomeCode?: T;
   providerEventId?: T;
+  sourceOccurredAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

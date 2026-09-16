@@ -4,6 +4,14 @@ export interface CollectionContractEntry {
 }
 
 export const collectionContractRegistry = {
+  transactionalEmailOutbox: {
+    baseline: ['tests/integration/transactionalEmail.acceptance.test.ts'],
+    deep: ['tests/integration/transactionalEmail.acceptance.test.ts'],
+  },
+  transactionalEmailEvents: {
+    baseline: ['tests/integration/transactionalEmail.acceptance.test.ts'],
+    deep: ['tests/integration/transactionalEmail.acceptance.test.ts'],
+  },
   accreditation: {
     baseline: ['tests/integration/accreditation.lifecycle.test.ts'],
     deep: ['tests/integration/accreditation.lifecycle.test.ts'],

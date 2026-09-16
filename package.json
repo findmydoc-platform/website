@@ -94,6 +94,8 @@
     "@radix-ui/react-separator": "^1.1.15",
     "@radix-ui/react-slot": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.21",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
     "@vercel/functions": "^3.9.5",
@@ -125,6 +127,7 @@
     "@eslint/eslintrc": "^3.3.6",
     "@fontsource/dm-sans": "^5.3.0",
     "@next/eslint-plugin-next": "16.3.3",
+    "@payloadcms/graphql": "3.88.0",
     "@playwright/test": "1.62.1",
     "@poupe/eslint-plugin-tailwindcss": "^0.3.1",
     "@radix-ui/react-slider": "^1.4.7",
@@ -191,7 +194,11 @@
     ],
     "overrides": {
       "@modelcontextprotocol/sdk": "1.26.0",
-      "esbuild@<0.28.1": "0.28.1"
+      "esbuild@<0.28.1": "0.28.1",
+      "@payloadcms/plugin-import-export@3.88.0>csv-parse": "7.0.2"
+    },
+    "patchedDependencies": {
+      "@payloadcms/drizzle@3.88.0": "patches/@payloadcms__drizzle@3.88.0.patch"
     }
   },
   "packageManager": "pnpm@10.28.2"

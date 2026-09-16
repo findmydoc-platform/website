@@ -1,0 +1,47 @@
+diff --git a/dist/transactions/beginTransaction.js b/dist/transactions/beginTransaction.js
+index b997960d6443005979890c1fdeef9271810a407c..fe6c860abe685bd5263c2f2125ad9bf50178b466 100644
+--- a/dist/transactions/beginTransaction.js
++++ b/dist/transactions/beginTransaction.js
+@@ -8,6 +8,8 @@ export const beginTransaction = async function beginTransaction(options) {
+         let transaction;
+         let transactionReady;
+         let transactionFailed;
++        let transactionError;
++        let failed = false;
+         // Await initialization here
+         // Prevent race conditions where the adapter may be
+         // re-initializing, and `this.drizzle` is potentially undefined
+@@ -22,7 +24,9 @@ export const beginTransaction = async function beginTransaction(options) {
+             await new Promise((res, rej)=>{
+                 resolve = ()=>{
+                     res();
+-                    return done;
++                    return done.then(()=>{
++                        if (failed) throw transactionError;
++                    });
+                 };
+                 reject = ()=>{
+                     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+@@ -33,6 +37,8 @@ export const beginTransaction = async function beginTransaction(options) {
+             });
+         }, options || this.transactionOptions).catch((err)=>{
+             // Connection failed before callback ran - reject instead of hanging forever
++            failed = true;
++            transactionError = err;
+             transactionFailed(err);
+         });
+         // Need to wait until the transaction is ready
+diff --git a/dist/transactions/commitTransaction.js b/dist/transactions/commitTransaction.js
+index 50c8251dbd29fe3ca7296800ed4fe5d2bb814057..df70d39b26c1a97e43ab10765858800d5167f866 100644
+--- a/dist/transactions/commitTransaction.js
++++ b/dist/transactions/commitTransaction.js
+@@ -10,7 +10,8 @@ export const commitTransaction = async function commitTransaction(incomingID = '
+     delete this.sessions[transactionID];
+     try {
+         await session.resolve();
+-    } catch (_) {
++    } catch (error) {
+         await session.reject();
++        throw error;
+     }
+ };

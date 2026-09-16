@@ -1,3 +1,4 @@
+import { transactionalEmailEventSchema } from './features/transactionalEmail/eventSchema'
 // storage-adapter-import-placeholder
 import { postgresAdapter } from '@payloadcms/db-postgres'
 
@@ -77,6 +78,9 @@ import { canRunPayloadJobs } from '@/access/payloadJobs'
 import { createPayloadLoggerConfig } from '@/utilities/logging/payloadLogger'
 import { createPayloadRuntimePoolConfig, payloadDatabaseAvailabilityAfterError } from '@/features/databaseAvailability'
 import { createAdminDashboardConfig } from './dashboard/adminDashboard'
+
+import { TransactionalEmailOutbox } from './collections/TransactionalEmailOutbox'
+import { TransactionalEmailEvents } from './collections/TransactionalEmailEvents'
 
 // Import Collections
 import { Categories } from './collections/Categories'
@@ -489,6 +493,7 @@ export default buildConfig({
   // This config helps us configure global or default features that the other editors can inherit
   editor: defaultLexical,
   db: postgresAdapter({
+    afterSchemaInit: [transactionalEmailEventSchema],
     // Keep schema push disabled by default so all shared schema changes flow through migrations.
     // Opt in only for throwaway local experiments with PAYLOAD_DB_PUSH=true.
     push: isDbPushEnabled,
@@ -498,6 +503,8 @@ export default buildConfig({
     afterError: [payloadDatabaseAvailabilityAfterError],
   },
   collections: [
+    TransactionalEmailOutbox,
+    TransactionalEmailEvents,
     Pages,
     Posts,
     PlatformContentMedia,

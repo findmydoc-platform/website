@@ -18,7 +18,7 @@ The repository now uses a hybrid workflow model with clear top-level ownership:
 - `db-quality.yml` owns the stable database quality gate.
 - `workflow-security.yml` owns workflow and secret-scan validation.
 - `deploy-preview.yml` owns preview deployment.
-- `deploy-production.yml` owns manual production deployment.
+- `platform-release-deploy.yml` owns the production deployment dispatch into the shared Platform Release workflow.
 - `deep-quality-lane.yml` owns broad repository hygiene.
 - `pr-gates.yml`, `docs-check.yml`, `admin-e2e-smoke.yml`, and the maintenance workflows remain separate focused workflows.
 
@@ -88,17 +88,17 @@ Current scope:
 - preview alias update on `main`
 - preview summary output
 
-### `deploy-production.yml`
+### `platform-release-deploy.yml`
 
-Purpose: production deployment only.
+Purpose: production deployment dispatch only.
 
 Current scope:
 
-- manual dispatch only
-- main-branch guard
-- production deploy
-- production alias update
-- production summary output
+- accept the frozen website commit, platform version, and release-plan digest
+- verify that the Platform Release GitHub App initiated the dispatch
+- invoke the pinned reusable Platform Release deployment workflow
+
+The shared reusable workflow owns the provider deployment, production environment configuration, and deployment summary.
 
 ### `deep-quality-lane.yml`
 

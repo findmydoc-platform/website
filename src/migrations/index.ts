@@ -74,6 +74,10 @@ import * as migration_20260825_054030_inquiry_identity_package_deletion from './
 import * as migration_20260905_135339_landing_subscription_pricing_contract from './20260905_135339_landing_subscription_pricing_contract'
 import * as migration_20260907_091852_remove_search_compatibility from './20260907_091852_remove_search_compatibility'
 import * as migration_20260907_092854_remove_search_contract from './20260907_092854_remove_search_contract'
+import * as migration_20260915_214645_transactional_email_acceptance from './20260915_214645_transactional_email_acceptance'
+import * as migration_20260916_001253_transactional_email_worker from './20260916_001253_transactional_email_worker'
+import * as migration_20260916_021357_transactional_email_retry from './20260916_021357_transactional_email_retry'
+import * as migration_20260916_050558_transactional_email_event_invariants from './20260916_050558_transactional_email_event_invariants'
 
 export const migrations = [
   {
@@ -455,5 +459,25 @@ export const migrations = [
     up: migration_20260907_092854_remove_search_contract.up,
     down: migration_20260907_092854_remove_search_contract.down,
     name: '20260907_092854_remove_search_contract',
+  },
+  {
+    up: migration_20260915_214645_transactional_email_acceptance.up,
+    down: migration_20260915_214645_transactional_email_acceptance.down,
+    name: '20260915_214645_transactional_email_acceptance',
+  },
+  {
+    up: migration_20260916_001253_transactional_email_worker.up,
+    down: migration_20260916_001253_transactional_email_worker.down,
+    name: '20260916_001253_transactional_email_worker',
+  },
+  {
+    up: migration_20260916_021357_transactional_email_retry.up,
+    down: migration_20260916_021357_transactional_email_retry.down,
+    name: '20260916_021357_transactional_email_retry',
+  },
+  {
+    up: migration_20260916_050558_transactional_email_event_invariants.up,
+    down: migration_20260916_050558_transactional_email_event_invariants.down,
+    name: '20260916_050558_transactional_email_event_invariants',
   },
 ]

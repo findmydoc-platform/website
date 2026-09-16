@@ -70,6 +70,8 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    transactionalEmailOutbox: TransactionalEmailOutbox;
+    transactionalEmailEvents: TransactionalEmailEvent;
     pages: Page;
     posts: Post;
     platformContentMedia: PlatformContentMedia;
@@ -146,6 +148,8 @@ export interface Config {
     };
   };
   collectionsSelect: {
+    transactionalEmailOutbox: TransactionalEmailOutboxSelect<false> | TransactionalEmailOutboxSelect<true>;
+    transactionalEmailEvents: TransactionalEmailEventsSelect<false> | TransactionalEmailEventsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     platformContentMedia: PlatformContentMediaSelect<false> | PlatformContentMediaSelect<true>;
@@ -308,6 +312,104 @@ export interface PayloadMcpApiKeyAuthOperations {
     email: string;
     password: string;
   };
+}
+/**
+ * Private accepted transactional email operations
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactionalEmailOutbox".
+ */
+export interface TransactionalEmailOutbox {
+  id: number;
+  commandType:
+    | 'auth.email-verification'
+    | 'auth.invitation'
+    | 'auth.password-recovery'
+    | 'conversation.external-message-received'
+    | 'moderation.report-received'
+    | 'moderation.report-decided'
+    | 'moderation.appeal-received'
+    | 'moderation.appeal-decided'
+    | 'clinic.registration-received';
+  operationReference: string;
+  commandPayload?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  runtimeEnvironment: 'local' | 'test' | 'ci' | 'preview' | 'production';
+  state:
+    'queued' | 'prepared' | 'accepted' | 'delivered' | 'suppressed' | 'bounced' | 'complained' | 'failed' | 'expired';
+  providerIdempotencyKey: string;
+  recipientAddress?: string | null;
+  recipientDigest: string;
+  preparedSubject?: string | null;
+  preparedHtml?: string | null;
+  preparedText?: string | null;
+  preparedAt?: string | null;
+  leaseToken?: string | null;
+  leaseExpiresAt?: string | null;
+  attemptCount?: number | null;
+  lastAttemptAt?: string | null;
+  deliveryDeadline?: string | null;
+  nextAttemptAt?: string | null;
+  firstAmbiguousAt?: string | null;
+  providerMessageId?: string | null;
+  providerAcceptedAt?: string | null;
+  terminalAt?: string | null;
+  scrubbedAt?: string | null;
+  latestEventSequence: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Private immutable transactional email event history
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactionalEmailEvents".
+ */
+export interface TransactionalEmailEvent {
+  id: number;
+  outbox: number | TransactionalEmailOutbox;
+  sequence: number;
+  type:
+    | 'command.accepted'
+    | 'lease.acquired'
+    | 'preparation.completed'
+    | 'preparation.failed'
+    | 'delivery.attempt-started'
+    | 'delivery.retry-scheduled'
+    | 'delivery.ambiguous'
+    | 'delivery.accepted'
+    | 'delivery.delivered'
+    | 'delivery.bounced'
+    | 'delivery.complained'
+    | 'delivery.suppressed'
+    | 'delivery.failed'
+    | 'delivery.expired'
+    | 'payload.scrubbed';
+  source: 'command' | 'worker' | 'provider';
+  attemptNumber?: number | null;
+  outcomeCode?:
+    | (
+        | 'fake-accepted'
+        | 'recipient-changed'
+        | 'ineligible'
+        | 'preparation-failed'
+        | 'permanent-failure'
+        | 'retryable-failure'
+        | 'ambiguous'
+        | 'expired'
+      )
+    | null;
+  providerEventId?: string | null;
+  sourceOccurredAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Static pages such as contact and about
@@ -3898,6 +4000,54 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactionalEmailOutbox_select".
+ */
+export interface TransactionalEmailOutboxSelect<T extends boolean = true> {
+  commandType?: T;
+  operationReference?: T;
+  commandPayload?: T;
+  runtimeEnvironment?: T;
+  state?: T;
+  providerIdempotencyKey?: T;
+  recipientAddress?: T;
+  recipientDigest?: T;
+  preparedSubject?: T;
+  preparedHtml?: T;
+  preparedText?: T;
+  preparedAt?: T;
+  leaseToken?: T;
+  leaseExpiresAt?: T;
+  attemptCount?: T;
+  lastAttemptAt?: T;
+  deliveryDeadline?: T;
+  nextAttemptAt?: T;
+  firstAmbiguousAt?: T;
+  providerMessageId?: T;
+  providerAcceptedAt?: T;
+  terminalAt?: T;
+  scrubbedAt?: T;
+  latestEventSequence?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactionalEmailEvents_select".
+ */
+export interface TransactionalEmailEventsSelect<T extends boolean = true> {
+  outbox?: T;
+  sequence?: T;
+  type?: T;
+  source?: T;
+  attemptNumber?: T;
+  outcomeCode?: T;
+  providerEventId?: T;
+  sourceOccurredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
@@ -6966,6 +7116,8 @@ export interface TaskCreateCollectionExport {
     name: string;
     batchSize?: number | null;
     collectionSlug:
+      | 'transactionalEmailOutbox'
+      | 'transactionalEmailEvents'
       | 'pages'
       | 'posts'
       | 'platformContentMedia'

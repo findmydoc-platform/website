@@ -11,7 +11,11 @@ message. Content scrubbing finishes before metadata deletion starts. `run()` wit
 only the current runtime environment, pages candidates by identifier, and processes each operation in a short
 serializable Payload transaction. Concurrent sweeps reread each candidate and tolerate an already deleted operation.
 
-Queued and prepared operations strictly past their delivery deadline become expired. That transaction removes
+Queued and prepared operations strictly past their effective delivery deadline become expired. Worker and sweep
+share the same deadline policy. Legacy non-authentication rows without a stored deadline use creation time plus
+24 hours; legacy authentication rows without an authoritative deadline expire immediately. The first ambiguous
+attempt also caps delivery at 24 hours. Candidate selection includes nullable legacy deadlines, and the transaction
+rechecks the effective deadline before changing a record. That transaction removes
 command data, recipient address, rendered subject/HTML/text, retry scheduling, and lease fields; records terminal
 and scrub timestamps; and appends expiry and scrub events. A worker with an older or in-flight claim cannot restore
 the payload or overwrite that outcome after losing its lease. Existing terminal outcomes, including accepted and

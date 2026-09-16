@@ -8,6 +8,7 @@ import { TransactionalEmailError } from './errors'
 import { recipientDigest } from './recipientBinding'
 import { fakeLinks, renderSyntheticNotification, type LinkGenerator } from './preparation'
 import { createFakeDeliveryAdapter, type DeliveryAdapter, type DeliveryLog, type DeliveryOutcome } from './delivery'
+import { effectiveDeliveryDeadline as deadline } from './deliveryDeadline'
 import { transientFields } from './retentionPolicy'
 import { sweepTransactionalEmail } from './retention'
 import { workerTransaction } from './workerStorage'
@@ -54,15 +55,6 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
   const log = options.log ?? ((event: DeliveryLog) => req.payload.logger.info(event))
   const validLease = (record: TransactionalEmailOutbox, claim: WorkerClaim) =>
     record.leaseToken === claim.token && Date.parse(record.leaseExpiresAt ?? '') > now()
-  const deadline = (record: TransactionalEmailOutbox) =>
-    Math.min(
-      record.deliveryDeadline
-        ? Date.parse(record.deliveryDeadline)
-        : record.commandType.startsWith('auth.')
-          ? 0
-          : Date.parse(record.createdAt) + 86_400_000,
-      record.firstAmbiguousAt ? Date.parse(record.firstAmbiguousAt) + 86_400_000 : Infinity,
-    )
   const enoughBudget = (record: TransactionalEmailOutbox) =>
     Date.parse(record.leaseExpiresAt ?? '') - now() > stepBudgetMilliseconds
   const transaction = <Result>(claim: WorkerClaim, work: Parameters<typeof workerTransaction<Result>>[2]) =>

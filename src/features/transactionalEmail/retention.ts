@@ -33,7 +33,13 @@ export async function sweepTransactionalEmail(req: PayloadRequest, environment: 
                 {
                   and: [
                     { state: { in: ['queued', 'prepared'] } },
-                    { deliveryDeadline: { less_than: new Date(now()).toISOString() } },
+                    {
+                      or: [
+                        { deliveryDeadline: { less_than: new Date(now()).toISOString() } },
+                        { deliveryDeadline: { exists: false } },
+                        { firstAmbiguousAt: { less_than: new Date(now() - 86_400_000).toISOString() } },
+                      ],
+                    },
                   ],
                 },
               ],

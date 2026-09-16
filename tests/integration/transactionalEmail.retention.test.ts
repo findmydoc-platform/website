@@ -410,4 +410,84 @@ describe('transactional email safety sweep and retention', () => {
     }
     expect(checked).toBe(true)
   })
+  it.each([
+    { auth: false, state: 'queued' },
+    { auth: false, state: 'prepared' },
+    { auth: true, state: 'queued' },
+    { auth: true, state: 'prepared' },
+  ])('scrubs legacy NULL deadlines for auth=$auth state=$state during an empty run', async ({ auth, state }) => {
+    const req = await createLocalReq({}, payload)
+    const now = Date.now()
+    const operationReference = randomUUID()
+    references.push(operationReference)
+    const receipt = auth
+      ? await bindTransactionalEmail(req, {
+          'auth.password-recovery': {
+            authorizeAndResolve: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+            authValidity: async () => ({ actionAt: new Date(now).toISOString(), lifetimeMilliseconds: 7200000 }),
+          },
+        }).accept({ type: 'auth.password-recovery', operationReference, recoveryId: syntheticRegistrationId })
+      : await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
+          type: 'clinic.registration-received',
+          operationReference,
+          registrationId: syntheticRegistrationId,
+        })
+    const id = receipt.operationId
+    const control = await accept()
+    // Model rows preserved by the nullable deadline migration, with prepared data from an interrupted worker.
+    const legacy = async (operationId: string, createdAt: number) =>
+      observer.query(
+        "UPDATE transactional_email_outbox SET delivery_deadline = NULL, created_at = $2, state = $3, prepared_at = $2, prepared_subject = 'synthetic', prepared_html = '<p>synthetic</p>', prepared_text = 'synthetic' WHERE id = $1",
+        [operationId, new Date(createdAt), state],
+      )
+    await legacy(id, auth ? now : now - 86400001)
+    await legacy(control.id, now - 3600000)
+    await createTransactionalEmailWorker(req, { now: () => now }).run()
+    const expired = await row(id)
+    expect(expired.state).toBe('expired')
+    expect(expired.terminal_at.getTime()).toBe(now)
+    expect(expired.scrubbed_at.getTime()).toBe(now)
+    for (const field of ['command_payload', 'recipient_address', 'prepared_subject', 'prepared_html', 'prepared_text'])
+      expect(expired[field]).toBeNull()
+    const retained = await row(control.id)
+    expect(retained.state).toBe(state)
+    expect(retained.command_payload).not.toBeNull()
+    expect(retained.recipient_address).toBe('recipient@example.test')
+    expect(retained.scrubbed_at).toBeNull()
+  })
+
+  it('scrubs the exhausted ambiguity window even while the stored auth deadline is still future', async () => {
+    const req = await createLocalReq({}, payload)
+    let clock = Date.now()
+    const actionAt = new Date(clock).toISOString()
+    const operationReference = randomUUID()
+    references.push(operationReference)
+    const catalog = {
+      'auth.password-recovery': {
+        authorizeAndResolve: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+        authValidity: async () => ({ actionAt, lifetimeMilliseconds: 48 * 3600000 }),
+        worker: {
+          template: 'synthetic-notification' as const,
+          terminalState: 'failed' as const,
+          revalidate: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+        },
+      },
+    }
+    const receipt = await bindTransactionalEmail(req, catalog, () => clock).accept({
+      type: 'auth.password-recovery',
+      operationReference,
+      recoveryId: syntheticRegistrationId,
+    })
+    const delivery = { deliver: vi.fn(async () => ({ type: 'ambiguous' as const })) }
+    const worker = createTransactionalEmailWorker(req, { catalog, delivery, now: () => clock })
+    await worker.run(receipt.operationId)
+    clock += 86400001
+    expect((await row(receipt.operationId)).delivery_deadline.getTime()).toBeGreaterThan(clock)
+    await worker.run()
+    const expired = await row(receipt.operationId)
+    expect(expired.state).toBe('expired')
+    expect(expired.command_payload).toBeNull()
+    expect(expired.prepared_html).toBeNull()
+    expect(delivery.deliver).toHaveBeenCalledTimes(1)
+  })
 })

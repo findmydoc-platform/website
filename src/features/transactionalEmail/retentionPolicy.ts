@@ -1,4 +1,5 @@
 import type { TransactionalEmailOutbox } from '@/payload-types'
+import { effectiveDeliveryDeadline } from './deliveryDeadline'
 
 export const transientFields = {
   commandPayload: null,
@@ -23,7 +24,7 @@ export function needsScrubbing(record: TransactionalEmailOutbox, now: number) {
   return outgoingTerminalStates.includes(record.state)
     ? !record.scrubbedAt ||
         Object.keys(transientFields).some((key) => record[key as keyof TransactionalEmailOutbox] != null)
-    : !!record.deliveryDeadline && Date.parse(record.deliveryDeadline) < now
+    : effectiveDeliveryDeadline(record) < now
 }
 
 export const metadataRetentionMilliseconds = 42 * 86_400_000

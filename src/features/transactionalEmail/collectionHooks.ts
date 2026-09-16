@@ -3,14 +3,14 @@ import { requireStorageCapability } from './capability'
 import { validateCommand } from './commands'
 import { TransactionalEmailError } from './errors'
 
-export const validateStoredCommand: CollectionAfterReadHook = ({ doc, req }) => {
-  requireStorageCapability(req)
+export const validateStoredCommand: CollectionAfterReadHook = async ({ doc, req }) => {
+  await requireStorageCapability(req)
   if (doc.commandPayload !== null && typeof doc.commandPayload !== 'undefined') validateCommand(doc.commandPayload)
   return doc
 }
 
-export const guardOutboxWrite: CollectionBeforeChangeHook = ({ data, originalDoc, operation, req }) => {
-  requireStorageCapability(req)
+export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, originalDoc, operation, req }) => {
+  await requireStorageCapability(req)
   const command = validateCommand(data.commandPayload ?? originalDoc?.commandPayload)
   if (
     command.type !== (data.commandType ?? originalDoc?.commandType) ||
@@ -26,8 +26,8 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = ({ data, originalDoc
   return data
 }
 
-export const guardEventWrite: CollectionBeforeChangeHook = ({ data, operation, req }) => {
-  requireStorageCapability(req)
+export const guardEventWrite: CollectionBeforeChangeHook = async ({ data, operation, req }) => {
+  await requireStorageCapability(req)
   if (operation !== 'create') throw new TransactionalEmailError('access-denied')
   return data
 }

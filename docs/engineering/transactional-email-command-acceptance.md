@@ -1,6 +1,7 @@
 # Transactional email command acceptance
 
-[Website #1852](https://github.com/findmydoc-platform/website/issues/1852) implements standalone command acceptance from
+[Website #1852](https://github.com/findmydoc-platform/website/issues/1852) and
+[Website #1853](https://github.com/findmydoc-platform/website/issues/1853) implement command acceptance and transaction ownership from
 [the foundation contract](transactional-email-platform-foundation.md). [ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md)
 continues to govern the platform.
 
@@ -17,10 +18,10 @@ Extra properties and unknown command types fail before persistence. The runtime 
 The tests supply a static synthetic catalog, which resolves only addresses under `example.test`.
 
 An acceptance returns exactly `operationId`, `acceptedAt`, and `deduplicated`. Validation and source authorization run
-before both initial acceptance and duplicate receipts. The module owns a serializable read-write transaction, writes
-one outbox record and its first event, and returns only after commit. A duplicate preserves the original record,
-acceptance time, recipient binding, provider key, and event history. Serialization failures retry the whole transaction
-up to three times. An active caller transaction is rejected; joining it belongs to Website #1853.
+before both initial acceptance and duplicate receipts. Without a caller transaction, the module owns a serializable read-write transaction, writes one outbox record and its
+first event, and returns only after commit. A duplicate preserves the original record, acceptance time, recipient
+binding, provider key, and event history. Serialization and business-key conflicts retry the whole transaction up to
+three attempts.
 
 ## Payload commit outcome
 
@@ -39,7 +40,45 @@ The regression uses a deferred PostgreSQL constraint trigger, so the server reje
 writes succeeded. A separate connection confirms that neither row exists and the port returns no receipt.
 Server-raised `40001` failures at COMMIT cover a full retry and exhaustion after three attempts; a PostgreSQL
 sequence counts attempts across rollbacks. These are deterministic injected serialization failures, not
-a claim of concurrent-transaction coverage, which belongs to Website #1853.
+a substitute for the concurrent-transaction tests described below.
+
+## Caller-owned transactions
+
+The private `bindTransactionalEmail` integration joins an active `PayloadRequest.transactionID`, including a pending
+transaction promise. It does not commit, roll back, or retry that caller's transaction. The returned receipt is scoped
+to the transaction. The owner must discard it on rollback and expose it only after a successful commit.
+
+`runTransactionalEmailTransaction` supplies an outer Website integration boundary for a complete business callback.
+It opens a serializable transaction, passes its request and the narrow command port to the callback, commits, and then
+returns the callback result. It repeats the entire callback after a retryable conflict, at most three attempts. The
+callback must perform only transaction-bound database work, propagate failures, and avoid external side effects.
+This boundary rejects an already active transaction because it cannot commit another owner's work. Product commands
+still import only the Payload-independent public interface; the integration functions are private Website adapters.
+
+The pinned Payload Local API rolls back numeric request transaction IDs on operation errors even when it did not start
+the transaction. The mail adapter instead supplies Payload's supported promise-valued transaction ID. Native
+`initTransaction` treats that form as borrowed and `killTransaction` leaves it to its owner. Capability checks resolve
+the promise before checking the exact transaction identity. No additional dependency patch changes rollback behavior.
+
+The adapter reads only the documented Payload `db.sessions` registry to verify that an ID is active before binding and
+at each guarded collection operation. This check prevents Drizzle's missing-session fallback from writing outside a
+transaction. It never reads the session's database handle or calls SQL. Unknown, zero, rejected, and already closed
+transaction IDs fail closed. The owner must not end the transaction while its callback is still running.
+
+Serialization and deadlock failures become the content-free `transaction-conflict` error. Payload converts a PostgreSQL
+business-key unique violation into a `ValidationError` without retaining its cause. The adapter recognizes only the
+outbox collection, table, and exact composite business-key field path. Other validation errors remain
+`storage-unavailable`. After a joined conflict, the owner rolls back and retries the full business transaction; the
+module never queries the winner inside the failed transaction.
+
+`tests/integration/transactionalEmail.transactions.test.ts` uses synthetic Countries records as business mutations,
+real Payload calls, and an independent PostgreSQL observer. It checks the shared commit, full rollback, pending outer
+response at COMMIT, native write failures, and concurrent standalone and caller-owned requests. A barrier places both
+requests after their deduplication reads before either insert. READ COMMITTED exercises the native unique-violation
+translation; SERIALIZABLE exercises PostgreSQL serialization conflict. The losing owner receives a typed conflict,
+rolls back, and repeats its complete mutation before obtaining the original deduplicated receipt. Deferred commit
+faults prove whole-business retries and bounded exhaustion. Fetch and HTTP(S) guards forbid external mail, link, or
+analytics calls throughout these transactions.
 
 ## Private persistence
 

@@ -1,5 +1,6 @@
 import type { CollectionBeforeOperationHook, PayloadRequest } from 'payload'
 import { TransactionalEmailError } from './errors'
+import { isActiveTransaction } from './transactions'
 
 const capabilities = new WeakMap<object, number | string>()
 
@@ -12,17 +13,19 @@ export function openStorageCapability(transactionID: number | string) {
   }
 }
 
-export function requireStorageCapability(req: PayloadRequest): void {
+export async function requireStorageCapability(req: PayloadRequest): Promise<void> {
   const identity: unknown = req.context?.transactionalEmail
+  const transactionID = await req.transactionID
   if (
     !identity ||
     typeof identity !== 'object' ||
     typeof req.transactionID === 'undefined' ||
-    capabilities.get(identity) !== req.transactionID
+    capabilities.get(identity) !== transactionID ||
+    !isActiveTransaction(req, transactionID)
   )
     throw new TransactionalEmailError('access-denied')
 }
 
-export const guardStorageOperation: CollectionBeforeOperationHook = ({ req }) => {
-  requireStorageCapability(req)
+export const guardStorageOperation: CollectionBeforeOperationHook = async ({ req }) => {
+  await requireStorageCapability(req)
 }

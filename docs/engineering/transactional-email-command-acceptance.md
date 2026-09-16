@@ -67,7 +67,8 @@ transaction IDs fail closed. The owner must not end the transaction while its ca
 
 Serialization and deadlock failures become the content-free `transaction-conflict` error. Payload converts a PostgreSQL
 business-key unique violation into a `ValidationError` without retaining its cause. The adapter recognizes only the
-outbox collection, table, and exact composite business-key field path. Other validation errors remain
+outbox collection, table, and exact composite business-key field path. The private event storage also recognizes its
+exact sequence and provider-identity constraint paths. Other validation errors remain
 `storage-unavailable`. After a joined conflict, the owner rolls back and retries the full business transaction; the
 module never queries the winner inside the failed transaction.
 
@@ -95,6 +96,9 @@ Provider keys and acceptance identities are immutable; event updates and generic
 The generated additive migration creates unique indexes for the command type plus operation reference, provider key,
 outbox plus event sequence, and non-null provider event identifiers. PostgreSQL permits multiple null entries in the
 last index. Existing application versions ignore the added tables; the new version requires this migration.
+
+Provider feedback storage and its partial provider-identity index are described in
+[event invariants](transactional-email-events.md).
 
 Both collections join the `private-live` operational cache policy with `no-public-impact`. There are no public reads,
 cache tags, invalidation calls, or seed records.

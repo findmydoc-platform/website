@@ -1,3 +1,4 @@
+import { transactionalEmailEventSchema } from './features/transactionalEmail/eventSchema'
 // storage-adapter-import-placeholder
 import { postgresAdapter } from '@payloadcms/db-postgres'
 
@@ -492,6 +493,7 @@ export default buildConfig({
   // This config helps us configure global or default features that the other editors can inherit
   editor: defaultLexical,
   db: postgresAdapter({
+    afterSchemaInit: [transactionalEmailEventSchema],
     // Keep schema push disabled by default so all shared schema changes flow through migrations.
     // Opt in only for throwaway local experiments with PAYLOAD_DB_PUSH=true.
     push: isDbPushEnabled,

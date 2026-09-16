@@ -3,6 +3,7 @@ import { TransactionalEmailError } from './errors'
 
 export type RecipientBinding = { address: string; binding: string }
 export type CatalogEntry<Command extends TransactionalEmailCommand = TransactionalEmailCommand> = {
+  authValidity?(command: Command): Promise<{ actionAt: string; lifetimeMilliseconds: number }>
   worker?: {
     revalidate(command: Command): Promise<RecipientBinding | null>
     terminalState: 'suppressed' | 'failed'

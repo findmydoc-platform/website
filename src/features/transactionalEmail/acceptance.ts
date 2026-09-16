@@ -9,6 +9,8 @@ import type { EmailEnvironment } from './environment'
 export type AcceptedOperation = { id: number | string; createdAt: string }
 export type NewOperation = {
   command: TransactionalEmailCommand
+  acceptedAt: string
+  deliveryDeadline: string
   recipientAddress: string
   recipientDigest: string
   providerIdempotencyKey: string
@@ -19,6 +21,7 @@ export type AcceptanceStorage = {
   create(operation: NewOperation): Promise<AcceptedOperation>
 }
 export type AcceptanceDependencies = {
+  now?: () => number
   actor: string | null
   catalog: CommandCatalog
   environment: EmailEnvironment
@@ -37,8 +40,24 @@ export function createCommandPort(dependencies: AcceptanceDependencies): Transac
         }
         const existing = await storage.find(command)
         if (existing) return { operationId: String(existing.id), acceptedAt: existing.createdAt, deduplicated: true }
+        const acceptedAt = new Date((dependencies.now ?? Date.now)()).toISOString()
+        let deadline = Date.parse(acceptedAt) + 86_400_000
+        if (command.type.startsWith('auth.')) {
+          const validity = await entry.authValidity?.(command)
+          if (
+            !validity ||
+            !Number.isFinite(Date.parse(validity.actionAt)) ||
+            !Number.isFinite(validity.lifetimeMilliseconds) ||
+            validity.lifetimeMilliseconds <= 300_000
+          ) {
+            throw new TransactionalEmailError('invalid-command')
+          }
+          deadline = Date.parse(validity.actionAt) + validity.lifetimeMilliseconds - 300_000
+        }
         const operation = await storage.create({
           command,
+          acceptedAt,
+          deliveryDeadline: new Date(deadline).toISOString(),
           recipientAddress: recipient.address,
           recipientDigest: recipientDigest(recipient),
           providerIdempotencyKey: randomUUID(),

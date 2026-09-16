@@ -59,6 +59,393 @@ describe('transactional email worker', () => {
     }
   })
 
+  it.each([
+    { boundary: 'attempt-read', leaseLost: false },
+    { boundary: 'attempt-commit', leaseLost: false },
+    { boundary: 'attempt-read', leaseLost: true },
+    { boundary: 'attempt-commit', leaseLost: true },
+  ] as const)('handles deadline exhaustion at $boundary with leaseLost=$leaseLost', async ({ boundary, leaseLost }) => {
+    const { req, id } = await accept()
+    const original = await row(id)
+    let clock = original.delivery_deadline.getTime() - 5001
+    let validations = 0
+    let armed = false
+    let advanced = false
+    const advance = () => {
+      clock += leaseLost ? 120000 : 2
+      advanced = true
+      armed = false
+    }
+    const catalog: CommandCatalog = {
+      'clinic.registration-received': {
+        ...syntheticEmailCatalog['clinic.registration-received']!,
+        worker: {
+          ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
+          revalidate: async () => {
+            if (++validations === 3 && boundary === 'attempt-read') armed = true
+            return { address: 'recipient@example.test', binding: syntheticRegistrationId }
+          },
+        },
+      },
+    }
+    const outboxHooks = payload.collections.transactionalEmailOutbox.config.hooks
+    const eventHooks = payload.collections.transactionalEmailEvents.config.hooks
+    const originalAfterRead = outboxHooks.afterRead
+    const originalAfterChange = eventHooks.afterChange
+    const nativeCommit = payload.db.commitTransaction.bind(payload.db)
+    const commit = vi.spyOn(payload.db, 'commitTransaction').mockImplementation(async (transactionID) => {
+      await nativeCommit(transactionID)
+      if (boundary === 'attempt-commit' && armed && !advanced) advance()
+    })
+    outboxHooks.afterRead = [
+      ...(originalAfterRead ?? []),
+      ({ doc }) => {
+        if (boundary === 'attempt-read' && armed && !advanced && String(doc.id) === id) advance()
+        return doc
+      },
+    ]
+    eventHooks.afterChange = [
+      ...(originalAfterChange ?? []),
+      ({ doc }) => {
+        if (doc.type === 'delivery.attempt-started' && boundary === 'attempt-commit') armed = true
+        return doc
+      },
+    ]
+    const delivery = { deliver: vi.fn() }
+    try {
+      await createTransactionalEmailWorker(req, { catalog, delivery, now: () => clock }).run(id)
+    } finally {
+      outboxHooks.afterRead = originalAfterRead
+      eventHooks.afterChange = originalAfterChange
+      commit.mockRestore()
+    }
+    expect(advanced).toBe(true)
+    expect(delivery.deliver).not.toHaveBeenCalled()
+    const stored = await row(id)
+    expect(Number(stored.attempt_count)).toBe(boundary === 'attempt-read' ? 0 : 1)
+    const events = (
+      await observer.query('SELECT type FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence', [id])
+    ).rows.map((event) => event.type)
+    if (leaseLost) {
+      expect(stored.state).toBe('prepared')
+      expect(stored.prepared_html).not.toBeNull()
+      expect(stored.lease_token).not.toBeNull()
+      expect(events).not.toContain('delivery.expired')
+      expect(events).not.toContain('payload.scrubbed')
+    } else {
+      expect(stored).toMatchObject({
+        state: 'expired',
+        command_payload: null,
+        recipient_address: null,
+        prepared_subject: null,
+        prepared_html: null,
+        prepared_text: null,
+        next_attempt_at: null,
+        lease_token: null,
+        lease_expires_at: null,
+      })
+      expect(stored.terminal_at).not.toBeNull()
+      expect(stored.scrubbed_at).toEqual(stored.terminal_at)
+      expect(events.slice(-2)).toEqual(['delivery.expired', 'payload.scrubbed'])
+    }
+  })
+
+  it.each([5001, 5000, 0, -1])('enforces the delivery completion budget with %i ms left', async (remaining) => {
+    const { req, id } = await accept()
+    const original = await row(id)
+    const delivery = { deliver: vi.fn(async () => ({ type: 'accepted' as const, messageId: 'fake-boundary' })) }
+    await createTransactionalEmailWorker(req, {
+      catalog: syntheticEmailCatalog,
+      delivery,
+      now: () => original.delivery_deadline.getTime() - remaining,
+    }).run(id)
+    expect(delivery.deliver).toHaveBeenCalledTimes(remaining > 5000 ? 1 : 0)
+    expect((await row(id)).state).toBe(remaining > 5000 ? 'accepted' : 'expired')
+  })
+
+  it('aborts a stalled delivery inside the lease budget and schedules only an ambiguous retry', async () => {
+    const { req, id } = await accept()
+    let signal: AbortSignal | undefined
+    await createTransactionalEmailWorker(req, {
+      catalog: syntheticEmailCatalog,
+      delivery: {
+        deliver: async (_, deliverySignal) => {
+          signal = deliverySignal
+          return new Promise(() => {})
+        },
+      },
+    }).run(id)
+    expect(signal?.aborted).toBe(true)
+    expect(await row(id)).toMatchObject({ state: 'prepared', lease_token: null })
+    expect((await row(id)).first_ambiguous_at).toEqual((await row(id)).last_attempt_at)
+  })
+
+  it('rejects the crash seam outside a test runner', async () => {
+    const { req } = await accept()
+    vi.stubEnv('VITEST', 'false')
+    expect(() =>
+      createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, crashAfterDelivery: () => {} }),
+    ).toThrow('environment-unavailable')
+  })
+
+  it('rejects auth acceptance without authoritative action validity', async () => {
+    const req = await createLocalReq({}, payload)
+    const catalog: CommandCatalog = {
+      'auth.password-recovery': {
+        authorizeAndResolve: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+      },
+    }
+    const reference = operationReference()
+    await expect(
+      bindTransactionalEmail(req, catalog).accept({
+        type: 'auth.password-recovery',
+        operationReference: reference,
+        recoveryId: syntheticRegistrationId,
+      }),
+    ).rejects.toMatchObject({ code: 'invalid-command' })
+    expect(
+      (await observer.query('SELECT id FROM transactional_email_outbox WHERE operation_reference = $1', [reference]))
+        .rows,
+    ).toHaveLength(0)
+  })
+
+  it('treats a thrown adapter result as ambiguous without logging its raw error', async () => {
+    const { req, id } = await accept()
+    const log = vi.fn()
+    const worker = createTransactionalEmailWorker(req, {
+      catalog: syntheticEmailCatalog,
+      log,
+      delivery: {
+        deliver: async () => {
+          throw Error('recipient@example.test private link')
+        },
+      },
+    })
+    await worker.run(id)
+    expect((await row(id)).state).toBe('prepared')
+    expect((await row(id)).first_ambiguous_at).toEqual((await row(id)).last_attempt_at)
+    expect(log).toHaveBeenCalledWith({
+      operationId: id,
+      commandType: 'clinic.registration-received',
+      attemptNumber: 1,
+      outcomeCode: 'ambiguous',
+      environment: 'test',
+    })
+    expect(JSON.stringify(log.mock.calls)).not.toContain('recipient@example.test')
+  })
+
+  it.each(['retryable', 'ambiguous'] as const)(
+    'uses all five fixed delays and stops after six %s attempts',
+    async (outcome) => {
+      const { req, id } = await accept()
+      let clock = Date.now()
+      const deny = () => {
+        throw Error('External network forbidden')
+      }
+      const fetchGuard = vi.spyOn(globalThis, 'fetch').mockImplementation(deny)
+      const httpGuard = vi.spyOn(http, 'request').mockImplementation(deny)
+      const httpsGuard = vi.spyOn(https, 'request').mockImplementation(deny)
+      const delivery = { deliver: vi.fn(async () => ({ type: outcome })) }
+      const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, now: () => clock, delivery })
+      await worker.run(id)
+      const first = await row(id)
+      for (const [index, delay] of [60000, 300000, 1800000, 7200000, 28800000].entries()) {
+        expect((await row(id)).next_attempt_at.getTime()).toBe(clock + delay)
+        clock += delay - 1
+        await worker.run(id)
+        expect(delivery.deliver).toHaveBeenCalledTimes(index + 1)
+        clock += 1
+        await worker.run(id)
+        expect(delivery.deliver).toHaveBeenCalledTimes(index + 2)
+      }
+      const terminal = await row(id)
+      expect(terminal).toMatchObject({
+        state: 'expired',
+        command_payload: null,
+        prepared_html: null,
+        next_attempt_at: null,
+        lease_token: null,
+      })
+      expect(Number(terminal.attempt_count)).toBe(6)
+      if (outcome === 'ambiguous') expect(terminal.first_ambiguous_at).toEqual(first.last_attempt_at)
+      clock += 86400000
+      await worker.run(id)
+      expect(delivery.deliver).toHaveBeenCalledTimes(6)
+      expect(fetchGuard).not.toHaveBeenCalled()
+      expect(httpGuard).not.toHaveBeenCalled()
+      expect(httpsGuard).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(['permanent', 'suppressed'] as const)('never retries a %s adapter result', async (type) => {
+    const { req, id } = await accept()
+    let clock = Date.now()
+    const delivery = { deliver: vi.fn(async () => ({ type })) }
+    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, now: () => clock, delivery })
+    await worker.run(id)
+    clock += 120000
+    await worker.run(id)
+    expect(delivery.deliver).toHaveBeenCalledTimes(1)
+    expect((await row(id)).state).toBe(type === 'permanent' ? 'failed' : 'suppressed')
+  })
+
+  it.each(['address', 'binding', 'ineligible'] as const)(
+    'revalidates %s before a retry without new adapter work',
+    async (change) => {
+      const { req, id } = await accept()
+      let clock = Date.now()
+      let eligible = true
+      const catalog: CommandCatalog = {
+        'clinic.registration-received': {
+          ...syntheticEmailCatalog['clinic.registration-received']!,
+          worker: {
+            ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
+            revalidate: async () =>
+              !eligible && change === 'ineligible'
+                ? null
+                : {
+                    address: !eligible && change === 'address' ? 'other@example.test' : 'recipient@example.test',
+                    binding: !eligible && change === 'binding' ? randomUUID() : syntheticRegistrationId,
+                  },
+          },
+        },
+      }
+      const links = { generate: vi.fn(async () => 'https://example.test/once') }
+      const delivery = { deliver: vi.fn(async () => ({ type: 'ambiguous' as const })) }
+      const worker = createTransactionalEmailWorker(req, { catalog, now: () => clock, links, delivery })
+      await worker.run(id)
+      eligible = false
+      clock += 60000
+      await worker.run(id)
+      expect(delivery.deliver).toHaveBeenCalledTimes(1)
+      expect(links.generate).toHaveBeenCalledTimes(1)
+      expect(await row(id)).toMatchObject({ state: 'suppressed', prepared_html: null, recipient_address: null })
+    },
+  )
+
+  it('fixes the auth deadline at the original action and does not extend the ambiguity window on retry', async () => {
+    const req = await createLocalReq({}, payload)
+    const actionAt = Date.now() - 3600000
+    let clock = actionAt + 3600000
+    const catalog: CommandCatalog = {
+      'auth.password-recovery': {
+        authorizeAndResolve: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+        authValidity: async () => ({ actionAt: new Date(actionAt).toISOString(), lifetimeMilliseconds: 48 * 3600000 }),
+        worker: {
+          template: 'synthetic-notification',
+          terminalState: 'failed',
+          revalidate: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+        },
+      },
+    }
+    const receipt = await bindTransactionalEmail(req, catalog, () => clock).accept({
+      type: 'auth.password-recovery',
+      operationReference: operationReference(),
+      recoveryId: syntheticRegistrationId,
+    })
+    const id = receipt.operationId
+    expect((await row(id)).delivery_deadline.getTime()).toBe(actionAt + 48 * 3600000 - 300000)
+    clock += 3600000
+    const firstRequest = clock
+    const links = { generate: vi.fn(async () => 'https://example.test/auth') }
+    const delivery = { deliver: vi.fn(async () => ({ type: 'ambiguous' as const })) }
+    const worker = createTransactionalEmailWorker(req, { catalog, now: () => clock, links, delivery })
+    await worker.run(id)
+    clock += 60000
+    await worker.run(id)
+    expect((await row(id)).first_ambiguous_at.getTime()).toBe(firstRequest)
+    clock = firstRequest + 86400000 - 5000
+    await worker.run(id)
+    expect(delivery.deliver).toHaveBeenCalledTimes(2)
+    expect(links.generate).toHaveBeenCalledTimes(1)
+    expect(await row(id)).toMatchObject({
+      state: 'expired',
+      command_payload: null,
+      prepared_text: null,
+      next_attempt_at: null,
+    })
+  })
+
+  it('reclaims a crash after fake return with the consumed attempt and unchanged prepared bytes', async () => {
+    const { req, id } = await accept()
+    let clock = Date.now()
+    const attempts: unknown[] = []
+    const links = { generate: vi.fn(async () => 'https://example.test/one-link') }
+    const delivery = {
+      deliver: vi.fn(async (attempt: unknown) => {
+        attempts.push(attempt)
+        return { type: 'accepted' as const, messageId: 'fake-crash' }
+      }),
+    }
+    const crashed = createTransactionalEmailWorker(req, {
+      catalog: syntheticEmailCatalog,
+      now: () => clock,
+      links,
+      delivery,
+      crashAfterDelivery: () => {
+        throw Error('deterministic crash')
+      },
+    })
+    await expect(crashed.run(id)).rejects.toThrow('deterministic crash')
+    expect(Number((await row(id)).attempt_count)).toBe(1)
+    clock += 120000
+    const recovered = createTransactionalEmailWorker(req, {
+      catalog: syntheticEmailCatalog,
+      now: () => clock,
+      links,
+      delivery,
+    })
+    const claims = await Promise.all([recovered.claim(id), recovered.claim(id)])
+    expect(claims.filter(Boolean)).toHaveLength(1)
+    await recovered.processClaim(claims.find(Boolean)!)
+    expect((await row(id)).state).toBe('accepted')
+    expect(Number((await row(id)).attempt_count)).toBe(2)
+    expect(attempts[1]).toEqual(attempts[0])
+    expect(links.generate).toHaveBeenCalledTimes(1)
+  })
+
+  it('expires an unprepared non-auth operation at its original acceptance deadline without generating a link', async () => {
+    const { req, id } = await accept()
+    const original = await row(id)
+    const links = { generate: vi.fn() }
+    const delivery = { deliver: vi.fn() }
+    await createTransactionalEmailWorker(req, {
+      catalog: syntheticEmailCatalog,
+      links,
+      delivery,
+      now: () => original.created_at.getTime() + 86400000 - 5000,
+    }).run(id)
+    expect((await row(id)).state).toBe('expired')
+    expect((await row(id)).command_payload).toBeNull()
+    expect(links.generate).not.toHaveBeenCalled()
+    expect(delivery.deliver).not.toHaveBeenCalled()
+  })
+
+  it('waits one minute after a retryable result and reuses the exact stored request', async () => {
+    const { req, id } = await accept()
+    let clock = Date.now()
+    const attempts: unknown[] = []
+    const delivery = {
+      deliver: vi.fn(async (attempt: unknown) => {
+        attempts.push(attempt)
+        return attempts.length === 1
+          ? { type: 'retryable' as const }
+          : { type: 'accepted' as const, messageId: 'fake-retry' }
+      }),
+    }
+    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, now: () => clock, delivery })
+    await worker.run(id)
+    expect((await row(id)).state).toBe('prepared')
+    clock += 59999
+    await worker.run(id)
+    expect(delivery.deliver).toHaveBeenCalledTimes(1)
+    clock += 1
+    await worker.run(id)
+    expect(delivery.deliver).toHaveBeenCalledTimes(2)
+    expect(attempts[1]).toEqual(attempts[0])
+    expect((await row(id)).state).toBe('accepted')
+  })
+
   it('persists preparation and the started attempt before fake acceptance, then scrubs atomically', async () => {
     const req = await createLocalReq({}, payload)
     const receipt = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
@@ -211,6 +598,7 @@ describe('transactional email worker', () => {
         'attempt_count',
         'command_type',
         'created_at',
+        'delivery_deadline',
         'id',
         'last_attempt_at',
         'latest_event_sequence',

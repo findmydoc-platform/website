@@ -1,6 +1,13 @@
-import { createLocalReq, type PayloadRequest } from 'payload'
+import { createLocalReq, type PayloadRequest, type Where } from 'payload'
 import type { TransactionalEmailOutbox, TransactionalEmailEvent } from '@/payload-types'
-import { authorizeWorkerEventAppends, openStorageCapability, type WorkerAuthority } from './capability'
+import {
+  authorizeRetentionDeletes,
+  authorizeWorkerEventAppends,
+  openStorageCapability,
+  type WorkerAuthority,
+} from './capability'
+import { deletionEligible } from './retentionPolicy'
+import { TransactionalEmailError } from './errors'
 import { runOwnedTransaction } from './transactions'
 
 type EventData = Pick<TransactionalEmailEvent, 'type'> &
@@ -12,6 +19,8 @@ export function workerTransaction<Result>(
   authority: WorkerAuthority,
   work: (storage: {
     read(id: number): Promise<TransactionalEmailOutbox>
+    find(where: Where): Promise<TransactionalEmailOutbox[]>
+    remove(record: TransactionalEmailOutbox): Promise<void>
     write(record: TransactionalEmailOutbox, data: OutboxUpdate, events: EventData[]): Promise<TransactionalEmailOutbox>
   }) => Promise<Result>,
 ): Promise<Result> {
@@ -23,7 +32,47 @@ export function workerTransaction<Result>(
         req.payload,
       )
       return await work({
+        find: async (where) =>
+          (
+            await req.payload.find({
+              collection: 'transactionalEmailOutbox',
+              req: internalReq,
+              depth: 0,
+              limit: 100,
+              sort: 'id',
+              where,
+            })
+          ).docs,
         read: (id) => req.payload.findByID({ collection: 'transactionalEmailOutbox', id, req: internalReq, depth: 0 }),
+        async remove(record) {
+          if (authority.kind !== 'sweep' || !deletionEligible(record, authority.now()))
+            throw new TransactionalEmailError('access-denied')
+          const events = await req.payload.find({
+            collection: 'transactionalEmailEvents',
+            req: internalReq,
+            depth: 0,
+            pagination: false,
+            where: { outbox: { equals: record.id } },
+          })
+          authorizeRetentionDeletes(
+            internalReq,
+            record.id,
+            events.docs.map((event) => event.id),
+          )
+          for (const event of events.docs)
+            await req.payload.delete({
+              collection: 'transactionalEmailEvents',
+              id: event.id,
+              req: internalReq,
+              depth: 0,
+            })
+          await req.payload.delete({
+            collection: 'transactionalEmailOutbox',
+            id: record.id,
+            req: internalReq,
+            depth: 0,
+          })
+        },
         async write(record, data, events) {
           let sequence = record.latestEventSequence
           const updated = await req.payload.update({

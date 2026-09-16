@@ -2,7 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { commandTypes } from '@/features/transactionalEmail/commands'
 import { guardStorageOperation } from '@/features/transactionalEmail/capability'
 import {
-  denyStorageDelete,
+  guardStorageDelete,
   guardOutboxWrite,
   validateStoredCommand,
 } from '@/features/transactionalEmail/collectionHooks'
@@ -17,7 +17,7 @@ export const TransactionalEmailOutbox: CollectionConfig = {
   hooks: {
     beforeOperation: [guardStorageOperation],
     beforeChange: [guardOutboxWrite],
-    beforeDelete: [denyStorageDelete],
+    beforeDelete: [guardStorageDelete],
     afterRead: [validateStoredCommand],
   },
   indexes: [{ fields: ['commandType', 'operationReference'], unique: true }],

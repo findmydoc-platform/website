@@ -1,5 +1,5 @@
 import type { CollectionAfterReadHook, CollectionBeforeChangeHook } from 'payload'
-import { requireStorageCapability, storageWorkerAuthority } from './capability'
+import { consumeWorkerEventAppend, requireStorageCapability, storageWorkerAuthority } from './capability'
 import { validateCommand } from './commands'
 import { TransactionalEmailError } from './errors'
 
@@ -108,6 +108,10 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
 export const guardEventWrite: CollectionBeforeChangeHook = async ({ data, operation, req }) => {
   await requireStorageCapability(req)
   if (operation !== 'create') throw new TransactionalEmailError('access-denied')
+  if (storageWorkerAuthority(req) || data.source === 'worker') {
+    if (data.source !== 'worker') throw new TransactionalEmailError('access-denied')
+    consumeWorkerEventAppend(req, data.outbox, data.sequence)
+  }
   return data
 }
 

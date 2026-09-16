@@ -1,3 +1,4 @@
+import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type CollectionBeforeChangeHook } from 'payload'
@@ -16,6 +17,12 @@ vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: asyn
 describe('transactional email worker', () => {
   let payload: Payload
   let observer: pg.Client
+  const ownedReferences = new Set<string>()
+  const operationReference = () => {
+    const reference = randomUUID()
+    ownedReferences.add(reference)
+    return reference
+  }
   beforeAll(async () => {
     payload = await getPayload({ config })
     observer = new pg.Client({ connectionString: process.env.DATABASE_URI })
@@ -34,20 +41,29 @@ describe('transactional email worker', () => {
     const req = await createLocalReq({}, payload)
     const receipt = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
       type: 'clinic.registration-received',
-      operationReference: randomUUID(),
+      operationReference: operationReference(),
       registrationId: syntheticRegistrationId,
     })
     return { req, id: receipt.operationId }
   }
   afterAll(async () => {
-    await observer?.end()
+    try {
+      await cleanupTransactionalEmailFixtures(payload, [...ownedReferences])
+      const remaining = await observer.query(
+        'SELECT count(*)::int AS count FROM transactional_email_outbox WHERE operation_reference = ANY($1)',
+        [[...ownedReferences]],
+      )
+      expect(remaining.rows[0].count).toBe(0)
+    } finally {
+      await observer?.end()
+    }
   })
 
   it('persists preparation and the started attempt before fake acceptance, then scrubs atomically', async () => {
     const req = await createLocalReq({}, payload)
     const receipt = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
       type: 'clinic.registration-received',
-      operationReference: randomUUID(),
+      operationReference: operationReference(),
       registrationId: syntheticRegistrationId,
     })
     const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog })
@@ -401,6 +417,162 @@ describe('transactional email worker', () => {
       await payload.db.rollbackTransaction(transactionID)
     }
     expect((await row(id)).state).toBe('queued')
+  })
+
+  it('allows the current token to prepare but fences the same write after expiry and reclaim', async () => {
+    const { req, id } = await accept()
+    let clock = Date.now()
+    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, now: () => clock })
+    const first = await worker.claim(id)
+    const prepare = async (token: string) => {
+      const transactionID = await payload.db.beginTransaction()
+      if (!transactionID) throw Error('Expected transaction')
+      const capability = openStorageCapability(transactionID, { kind: 'worker', token, now: () => clock })
+      try {
+        const internalReq = await createLocalReq(
+          { context: capability.context, req: { transactionID: Promise.resolve(transactionID) } },
+          payload,
+        )
+        await payload.update({
+          collection: 'transactionalEmailOutbox',
+          id: Number(id),
+          req: internalReq,
+          depth: 0,
+          data: {
+            state: 'prepared',
+            preparedSubject: 'Synthetic subject',
+            preparedHtml: '<p>Synthetic</p>',
+            preparedText: 'Synthetic',
+            preparedAt: new Date(clock).toISOString(),
+          },
+        })
+        await payload.db.commitTransaction(transactionID)
+      } catch (error) {
+        await payload.db.rollbackTransaction(transactionID)
+        throw error
+      } finally {
+        capability.close()
+      }
+    }
+    clock += 120001
+    const expired = await row(id)
+    await expect(prepare(first!.token)).rejects.toMatchObject({ code: 'access-denied' })
+    expect(await row(id)).toEqual(expired)
+    const second = await worker.claim(id)
+    const reclaimed = await row(id)
+    const events = async () =>
+      (await observer.query('SELECT * FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence', [id]))
+        .rows
+    const beforeEvents = await events()
+    await expect(prepare(first!.token)).rejects.toMatchObject({ code: 'access-denied' })
+    expect(await row(id)).toEqual(reclaimed)
+    expect(await events()).toEqual(beforeEvents)
+    await prepare(second!.token)
+    expect(await row(id)).toMatchObject({
+      state: 'prepared',
+      prepared_subject: 'Synthetic subject',
+      lease_token: second!.token,
+    })
+    expect(await events()).toEqual(beforeEvents)
+  })
+
+  it('consumes each worker event permission once', async () => {
+    const { req, id } = await accept()
+    const hooks = payload.collections.transactionalEmailEvents.config.hooks
+    const originalHooks = hooks.afterChange
+    let checked = false
+    hooks.afterChange = [
+      ...(originalHooks ?? []),
+      async ({ doc, req: internalReq }) => {
+        if (doc.source === 'worker' && !checked) {
+          checked = true
+          await expect(
+            payload.create({
+              collection: 'transactionalEmailEvents',
+              req: internalReq,
+              depth: 0,
+              data: { outbox: Number(id), sequence: doc.sequence, type: doc.type, source: 'worker' },
+            }),
+          ).rejects.toMatchObject({ code: 'access-denied' })
+        }
+        return doc
+      },
+    ]
+    try {
+      expect(await createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog }).claim(id)).not.toBeNull()
+    } finally {
+      hooks.afterChange = originalHooks
+    }
+    expect(checked).toBe(true)
+    expect(
+      (
+        await observer.query('SELECT sequence FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence', [
+          id,
+        ])
+      ).rows.map((event) => Number(event.sequence)),
+    ).toEqual([1, 2])
+  })
+
+  it.each(['outbox', 'sequence'] as const)(
+    'rolls back a guarded update when its event targets the wrong %s',
+    async (field) => {
+      const { req, id } = await accept()
+      const foreign = await accept()
+      const original = await row(id)
+      const beforeEvents = (
+        await observer.query('SELECT * FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence', [id])
+      ).rows
+      const hooks = payload.collections.transactionalEmailEvents.config.hooks
+      const originalHooks = hooks.beforeChange
+      hooks.beforeChange = [
+        ({ data }) => ({ ...data, [field]: field === 'outbox' ? Number(foreign.id) : data.sequence + 1 }),
+        ...(originalHooks ?? []),
+      ]
+      try {
+        await expect(
+          createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog }).claim(id),
+        ).rejects.toMatchObject({ code: 'access-denied' })
+      } finally {
+        hooks.beforeChange = originalHooks
+      }
+      expect(await row(id)).toEqual(original)
+      expect(
+        (await observer.query('SELECT * FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence', [id]))
+          .rows,
+      ).toEqual(beforeEvents)
+    },
+  )
+
+  it('rejects worker event appends without a preceding guarded outbox write', async () => {
+    const { req, id } = await accept()
+    const claim = await createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog }).claim(id)
+    const before = (
+      await observer.query('SELECT * FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence', [id])
+    ).rows
+    const transactionID = await payload.db.beginTransaction()
+    if (!transactionID) throw Error('Expected transaction')
+    const capability = openStorageCapability(transactionID, { kind: 'worker', token: claim!.token, now: Date.now })
+    try {
+      const internalReq = await createLocalReq(
+        { context: capability.context, req: { transactionID: Promise.resolve(transactionID) } },
+        payload,
+      )
+      await expect(
+        payload.create({
+          collection: 'transactionalEmailEvents',
+          req: internalReq,
+          depth: 0,
+          data: { outbox: Number(id), sequence: 3, type: 'preparation.completed', source: 'worker' },
+        }),
+      ).rejects.toMatchObject({ code: 'access-denied' })
+    } finally {
+      capability.close()
+      await payload.db.rollbackTransaction(transactionID)
+    }
+    expect(
+      (await observer.query('SELECT * FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence', [id]))
+        .rows,
+    ).toEqual(before)
   })
 
   it('rejects direct writes with stale tokens and prevents lease renewal', async () => {

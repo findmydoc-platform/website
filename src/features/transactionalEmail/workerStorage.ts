@@ -1,6 +1,6 @@
 import { createLocalReq, type PayloadRequest } from 'payload'
 import type { TransactionalEmailOutbox, TransactionalEmailEvent } from '@/payload-types'
-import { openStorageCapability, type WorkerAuthority } from './capability'
+import { authorizeWorkerEventAppends, openStorageCapability, type WorkerAuthority } from './capability'
 import { runOwnedTransaction } from './transactions'
 
 type EventData = Pick<TransactionalEmailEvent, 'type'> &
@@ -33,6 +33,11 @@ export function workerTransaction<Result>(
             depth: 0,
             data: { ...data, latestEventSequence: sequence + events.length },
           })
+          authorizeWorkerEventAppends(
+            internalReq,
+            record.id,
+            events.map((_, index) => sequence + index + 1),
+          )
           for (const event of events)
             await req.payload.create({
               collection: 'transactionalEmailEvents',

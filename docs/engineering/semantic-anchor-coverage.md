@@ -6,7 +6,7 @@ This record separates established methods from Website-specific contracts. `AGEN
 
 ## Catalog Status
 
-The current [Semantic Anchors catalog](https://llm-coding.github.io/Semantic-Anchors/llms.txt) has dedicated entries for London School TDD and Hexagonal Architecture. It references Information Hiding and the Dependency Rule through related architecture entries. The remaining adopted names do not have dedicated catalog entries, so their primary sources establish the method and the repository keeps concrete behavior explicit.
+The current [Semantic Anchors catalog](https://llm-coding.github.io/Semantic-Anchors/llms.txt) has dedicated entries for ADR according to Nygard, London School TDD, and Hexagonal Architecture. It references Information Hiding and the Dependency Rule through related architecture entries. The remaining adopted names do not have dedicated catalog entries, so their primary sources establish the method and the repository keeps concrete behavior explicit.
 
 The [evaluation guidance](https://llm-coding.github.io/Semantic-Anchors/evaluations/) treats recognition and consistency as model-dependent. An anchor's presence in this repository does not prove behavioral equivalence across models.
 
@@ -14,6 +14,7 @@ The [evaluation guidance](https://llm-coding.github.io/Semantic-Anchors/evaluati
 
 | Anchor | Primary source | Reliably covers | Does not cover | Residual doubt and retained contract |
 | --- | --- | --- | --- | --- |
+| ADR according to Nygard | [Semantic Anchors entry](https://llm-coding.github.io/Semantic-Anchors/anchor/adr-according-to-nygard/) and [Michael Nygard's original article](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) | Short, version-controlled records with title, status, context, decision, consequences, and supersession instead of deletion or historical rewriting | Repository paths, local status names, numbering, templates, or approval authority | Keep the Website ADR directory, `Draft` and `Approved` vocabulary, sequential numbering, index, and the rule that only Draft records are editable while lifecycle metadata links closed records to replacements. |
 | Freeman and Pryce's Outside-In TDD | [Growing Object-Oriented Software](https://growing-object-oriented-software.com/) | Driving development from observable behavior toward collaborators | Test quality, test-first chronology, or repository exclusions | Keep chronology evidence, docs and configuration exclusions, Vitest and Playwright paths, and false-confidence review rules. |
 | Kent Beck's Test Desiderata | [Test Desiderata](https://medium.com/@kentbeck_7670/test-desiderata-94150638a4b3) | Named test qualities and their tradeoffs | Test selection, tooling, or the Outside-In process | Keep behavior-risk evidence, tradeoff reporting, and the repository sense check. |
 | Parnas's Information-Hiding Criterion | [On the Criteria To Be Used in Decomposing Systems into Modules](https://doi.org/10.1145/361598.361623) | Hiding change-prone design decisions behind module interfaces | Repository folders or Payload ownership | Keep the Website module and adapter boundaries. |

@@ -2,10 +2,15 @@ import type { CollectionBeforeOperationHook, PayloadRequest } from 'payload'
 import { TransactionalEmailError } from './errors'
 import { isActiveTransaction } from './transactions'
 
-export type WorkerAuthority = { kind: 'claim' | 'worker'; now: () => number; token: string }
+export type WorkerAuthority = { kind: 'claim' | 'worker' | 'sweep'; now: () => number; token: string }
 const capabilities = new WeakMap<
   object,
-  { transactionID: number | string; worker?: WorkerAuthority; eventAppends?: Set<string> }
+  {
+    transactionID: number | string
+    worker?: WorkerAuthority
+    eventAppends?: Set<string>
+    retentionDeletes?: Set<string>
+  }
 >()
 
 export function openStorageCapability(transactionID: number | string, worker?: WorkerAuthority) {
@@ -49,5 +54,21 @@ export function authorizeWorkerEventAppends(req: PayloadRequest, outbox: number,
 export function consumeWorkerEventAppend(req: PayloadRequest, outbox: number, sequence: number) {
   const state = capabilities.get(req.context.transactionalEmail as object)
   if (!state?.worker || !state.eventAppends?.delete(`${outbox}:${sequence}`))
+    throw new TransactionalEmailError('access-denied')
+}
+
+// The retention transaction grants each deletion only after checking the persisted expiry.
+export function authorizeRetentionDeletes(req: PayloadRequest, outbox: number, eventIds: number[]) {
+  const state = capabilities.get(req.context.transactionalEmail as object)
+  if (state?.worker?.kind !== 'sweep') throw new TransactionalEmailError('access-denied')
+  state.retentionDeletes = new Set([
+    `transactionalEmailOutbox:${outbox}`,
+    ...eventIds.map((id) => `transactionalEmailEvents:${id}`),
+  ])
+}
+
+export function consumeRetentionDelete(req: PayloadRequest, collection: string, id: number | string) {
+  const state = capabilities.get(req.context.transactionalEmail as object)
+  if (state?.worker?.kind !== 'sweep' || !state.retentionDeletes?.delete(`${collection}:${id}`))
     throw new TransactionalEmailError('access-denied')
 }

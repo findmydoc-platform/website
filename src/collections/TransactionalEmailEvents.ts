@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { guardStorageOperation } from '@/features/transactionalEmail/capability'
-import { denyStorageDelete, guardEventWrite } from '@/features/transactionalEmail/collectionHooks'
+import { guardStorageDelete, guardEventWrite } from '@/features/transactionalEmail/collectionHooks'
 
 export const TransactionalEmailEvents: CollectionConfig = {
   slug: 'transactionalEmailEvents',
@@ -12,7 +12,7 @@ export const TransactionalEmailEvents: CollectionConfig = {
   hooks: {
     beforeOperation: [guardStorageOperation],
     beforeChange: [guardEventWrite],
-    beforeDelete: [denyStorageDelete],
+    beforeDelete: [guardStorageDelete],
   },
   indexes: [{ fields: ['outbox', 'sequence'], unique: true }],
   fields: [

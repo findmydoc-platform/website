@@ -1,5 +1,11 @@
-import type { CollectionAfterReadHook, CollectionBeforeChangeHook } from 'payload'
-import { consumeWorkerEventAppend, requireStorageCapability, storageWorkerAuthority } from './capability'
+import type { CollectionBeforeDeleteHook, CollectionAfterReadHook, CollectionBeforeChangeHook } from 'payload'
+import {
+  consumeRetentionDelete,
+  consumeWorkerEventAppend,
+  requireStorageCapability,
+  storageWorkerAuthority,
+} from './capability'
+import { needsScrubbing, outgoingTerminalStates, transientFields } from './retentionPolicy'
 import { validateCommand } from './commands'
 import { TransactionalEmailError } from './errors'
 
@@ -12,7 +18,7 @@ export const validateStoredCommand: CollectionAfterReadHook = async ({ doc, req 
 export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, originalDoc, operation, req }) => {
   await requireStorageCapability(req)
   const merged = { ...originalDoc, ...data }
-  const terminal = ['accepted', 'suppressed', 'failed', 'expired'].includes(merged.state)
+  const terminal = outgoingTerminalStates.includes(merged.state)
   if (!terminal) {
     const command = validateCommand(merged.commandPayload)
     if (
@@ -59,12 +65,31 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
         )
       )
         throw new TransactionalEmailError('access-denied')
+    } else if (authority.kind === 'sweep') {
+      if (
+        !needsScrubbing(originalDoc, authority.now()) ||
+        merged.state !== (outgoingTerminalStates.includes(originalDoc.state) ? originalDoc.state : 'expired') ||
+        Object.keys(data).some(
+          (key) =>
+            ![
+              ...Object.keys(transientFields),
+              'state',
+              'terminalAt',
+              'scrubbedAt',
+              'latestEventSequence',
+              'updatedAt',
+            ].includes(key) && JSON.stringify(data[key]) !== JSON.stringify(originalDoc[key]),
+        )
+      )
+        throw new TransactionalEmailError('access-denied')
     } else if (
       originalDoc.leaseToken !== authority.token ||
       !(Date.parse(originalDoc.leaseExpiresAt) > authority.now())
     ) {
       throw new TransactionalEmailError('access-denied')
     }
+    if (originalDoc.terminalAt && merged.terminalAt !== originalDoc.terminalAt)
+      throw new TransactionalEmailError('access-denied')
     if (originalDoc.firstAmbiguousAt && merged.firstAmbiguousAt !== originalDoc.firstAmbiguousAt)
       throw new TransactionalEmailError('access-denied')
     if (
@@ -127,6 +152,7 @@ export const guardEventWrite: CollectionBeforeChangeHook = async ({ data, operat
   return data
 }
 
-export const denyStorageDelete = () => {
-  throw new TransactionalEmailError('access-denied')
+export const guardStorageDelete: CollectionBeforeDeleteHook = async ({ req, collection, id }) => {
+  await requireStorageCapability(req)
+  consumeRetentionDelete(req, collection.slug, id)
 }

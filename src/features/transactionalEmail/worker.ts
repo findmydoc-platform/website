@@ -8,6 +8,9 @@ import { TransactionalEmailError } from './errors'
 import { recipientDigest } from './recipientBinding'
 import { fakeLinks, renderSyntheticNotification, type LinkGenerator } from './preparation'
 import { createFakeDeliveryAdapter, type DeliveryAdapter, type DeliveryLog, type DeliveryOutcome } from './delivery'
+import { effectiveDeliveryDeadline as deadline } from './deliveryDeadline'
+import { transientFields } from './retentionPolicy'
+import { sweepTransactionalEmail } from './retention'
 import { workerTransaction } from './workerStorage'
 
 const leaseMilliseconds = 120_000
@@ -52,15 +55,6 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
   const log = options.log ?? ((event: DeliveryLog) => req.payload.logger.info(event))
   const validLease = (record: TransactionalEmailOutbox, claim: WorkerClaim) =>
     record.leaseToken === claim.token && Date.parse(record.leaseExpiresAt ?? '') > now()
-  const deadline = (record: TransactionalEmailOutbox) =>
-    Math.min(
-      record.deliveryDeadline
-        ? Date.parse(record.deliveryDeadline)
-        : record.commandType.startsWith('auth.')
-          ? 0
-          : Date.parse(record.createdAt) + 86_400_000,
-      record.firstAmbiguousAt ? Date.parse(record.firstAmbiguousAt) + 86_400_000 : Infinity,
-    )
   const enoughBudget = (record: TransactionalEmailOutbox) =>
     Date.parse(record.leaseExpiresAt ?? '') - now() > stepBudgetMilliseconds
   const transaction = <Result>(claim: WorkerClaim, work: Parameters<typeof workerTransaction<Result>>[2]) =>
@@ -86,14 +80,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
         record,
         {
           state,
-          commandPayload: null,
-          recipientAddress: null,
-          preparedSubject: null,
-          preparedHtml: null,
-          preparedText: null,
-          nextAttemptAt: null,
-          leaseToken: null,
-          leaseExpiresAt: null,
+          ...transientFields,
           terminalAt: timestamp,
           scrubbedAt: timestamp,
           ...(state === 'accepted' ? { providerAcceptedAt: timestamp, providerMessageId } : {}),
@@ -322,9 +309,17 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     )
   }
   return {
-    claim,
-    processClaim,
-    async run(operationId: string) {
+    async claim(operationId: string) {
+      await sweepTransactionalEmail(req, runtime.environment, now)
+      return claim(operationId)
+    },
+    async processClaim(acquired: WorkerClaim) {
+      await sweepTransactionalEmail(req, runtime.environment, now)
+      return processClaim(acquired)
+    },
+    async run(operationId?: string) {
+      await sweepTransactionalEmail(req, runtime.environment, now)
+      if (!operationId) return
       const acquired = await claim(operationId)
       if (acquired) await processClaim(acquired)
     },

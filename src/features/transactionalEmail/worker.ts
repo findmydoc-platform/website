@@ -234,7 +234,12 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
         [{ type: 'delivery.attempt-started', attemptNumber: (current.attemptCount ?? 0) + 1 }],
       )
     })
-    if (!started || !enoughBudget(started) || deadline(started) - now() <= stepBudgetMilliseconds) return
+    const afterAttempt = started ?? (await read(claim))
+    if (afterAttempt && deadline(afterAttempt) - now() <= stepBudgetMilliseconds) {
+      await finish(claim, 'expired', 'expired')
+      return
+    }
+    if (!started || !enoughBudget(started)) return
     let result: DeliveryOutcome
     try {
       result = await boundedStep((signal) =>

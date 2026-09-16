@@ -59,6 +59,97 @@ describe('transactional email worker', () => {
     }
   })
 
+  it.each([
+    { boundary: 'attempt-read', leaseLost: false },
+    { boundary: 'attempt-commit', leaseLost: false },
+    { boundary: 'attempt-read', leaseLost: true },
+    { boundary: 'attempt-commit', leaseLost: true },
+  ] as const)('handles deadline exhaustion at $boundary with leaseLost=$leaseLost', async ({ boundary, leaseLost }) => {
+    const { req, id } = await accept()
+    const original = await row(id)
+    let clock = original.delivery_deadline.getTime() - 5001
+    let validations = 0
+    let armed = false
+    let advanced = false
+    const advance = () => {
+      clock += leaseLost ? 120000 : 2
+      advanced = true
+      armed = false
+    }
+    const catalog: CommandCatalog = {
+      'clinic.registration-received': {
+        ...syntheticEmailCatalog['clinic.registration-received']!,
+        worker: {
+          ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
+          revalidate: async () => {
+            if (++validations === 3 && boundary === 'attempt-read') armed = true
+            return { address: 'recipient@example.test', binding: syntheticRegistrationId }
+          },
+        },
+      },
+    }
+    const outboxHooks = payload.collections.transactionalEmailOutbox.config.hooks
+    const eventHooks = payload.collections.transactionalEmailEvents.config.hooks
+    const originalAfterRead = outboxHooks.afterRead
+    const originalAfterChange = eventHooks.afterChange
+    const nativeCommit = payload.db.commitTransaction.bind(payload.db)
+    const commit = vi.spyOn(payload.db, 'commitTransaction').mockImplementation(async (transactionID) => {
+      await nativeCommit(transactionID)
+      if (boundary === 'attempt-commit' && armed && !advanced) advance()
+    })
+    outboxHooks.afterRead = [
+      ...(originalAfterRead ?? []),
+      ({ doc }) => {
+        if (boundary === 'attempt-read' && armed && !advanced && String(doc.id) === id) advance()
+        return doc
+      },
+    ]
+    eventHooks.afterChange = [
+      ...(originalAfterChange ?? []),
+      ({ doc }) => {
+        if (doc.type === 'delivery.attempt-started' && boundary === 'attempt-commit') armed = true
+        return doc
+      },
+    ]
+    const delivery = { deliver: vi.fn() }
+    try {
+      await createTransactionalEmailWorker(req, { catalog, delivery, now: () => clock }).run(id)
+    } finally {
+      outboxHooks.afterRead = originalAfterRead
+      eventHooks.afterChange = originalAfterChange
+      commit.mockRestore()
+    }
+    expect(advanced).toBe(true)
+    expect(delivery.deliver).not.toHaveBeenCalled()
+    const stored = await row(id)
+    expect(Number(stored.attempt_count)).toBe(boundary === 'attempt-read' ? 0 : 1)
+    const events = (
+      await observer.query('SELECT type FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence', [id])
+    ).rows.map((event) => event.type)
+    if (leaseLost) {
+      expect(stored.state).toBe('prepared')
+      expect(stored.prepared_html).not.toBeNull()
+      expect(stored.lease_token).not.toBeNull()
+      expect(events).not.toContain('delivery.expired')
+      expect(events).not.toContain('payload.scrubbed')
+    } else {
+      expect(stored).toMatchObject({
+        state: 'expired',
+        command_payload: null,
+        recipient_address: null,
+        prepared_subject: null,
+        prepared_html: null,
+        prepared_text: null,
+        next_attempt_at: null,
+        lease_token: null,
+        lease_expires_at: null,
+      })
+      expect(stored.terminal_at).not.toBeNull()
+      expect(stored.scrubbed_at).toEqual(stored.terminal_at)
+      expect(events.slice(-2)).toEqual(['delivery.expired', 'payload.scrubbed'])
+    }
+  })
+
   it.each([5001, 5000, 0, -1])('enforces the delivery completion budget with %i ms left', async (remaining) => {
     const { req, id } = await accept()
     const original = await row(id)

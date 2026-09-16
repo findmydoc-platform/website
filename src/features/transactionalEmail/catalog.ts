@@ -3,6 +3,11 @@ import { TransactionalEmailError } from './errors'
 
 export type RecipientBinding = { address: string; binding: string }
 export type CatalogEntry<Command extends TransactionalEmailCommand = TransactionalEmailCommand> = {
+  worker?: {
+    revalidate(command: Command): Promise<RecipientBinding | null>
+    terminalState: 'suppressed' | 'failed'
+    template: 'synthetic-notification'
+  }
   authorizeAndResolve(command: Command, actor: string | null): Promise<RecipientBinding>
 }
 export type CommandCatalog = {

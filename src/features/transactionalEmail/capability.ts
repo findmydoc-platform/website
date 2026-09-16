@@ -2,11 +2,15 @@ import type { CollectionBeforeOperationHook, PayloadRequest } from 'payload'
 import { TransactionalEmailError } from './errors'
 import { isActiveTransaction } from './transactions'
 
-const capabilities = new WeakMap<object, number | string>()
+export type WorkerAuthority = { kind: 'claim' | 'worker'; now: () => number; token: string }
+const capabilities = new WeakMap<
+  object,
+  { transactionID: number | string; worker?: WorkerAuthority; eventAppends?: Set<string> }
+>()
 
-export function openStorageCapability(transactionID: number | string) {
+export function openStorageCapability(transactionID: number | string, worker?: WorkerAuthority) {
   const identity = Object.freeze({})
-  capabilities.set(identity, transactionID)
+  capabilities.set(identity, { transactionID, worker })
   return {
     context: { transactionalEmail: identity },
     close: () => capabilities.delete(identity),
@@ -20,7 +24,7 @@ export async function requireStorageCapability(req: PayloadRequest): Promise<voi
     !identity ||
     typeof identity !== 'object' ||
     typeof req.transactionID === 'undefined' ||
-    capabilities.get(identity) !== transactionID ||
+    capabilities.get(identity)?.transactionID !== transactionID ||
     !isActiveTransaction(req, transactionID)
   )
     throw new TransactionalEmailError('access-denied')
@@ -28,4 +32,22 @@ export async function requireStorageCapability(req: PayloadRequest): Promise<voi
 
 export const guardStorageOperation: CollectionBeforeOperationHook = async ({ req }) => {
   await requireStorageCapability(req)
+}
+
+export function storageWorkerAuthority(req: PayloadRequest) {
+  const identity: unknown = req.context?.transactionalEmail
+  return identity && typeof identity === 'object' ? capabilities.get(identity)?.worker : undefined
+}
+
+// Issued only after workerStorage has completed its guarded outbox update.
+export function authorizeWorkerEventAppends(req: PayloadRequest, outbox: number, sequences: number[]) {
+  const state = capabilities.get(req.context.transactionalEmail as object)
+  if (!state?.worker) throw new TransactionalEmailError('access-denied')
+  state.eventAppends = new Set(sequences.map((sequence) => `${outbox}:${sequence}`))
+}
+
+export function consumeWorkerEventAppend(req: PayloadRequest, outbox: number, sequence: number) {
+  const state = capabilities.get(req.context.transactionalEmail as object)
+  if (!state?.worker || !state.eventAppends?.delete(`${outbox}:${sequence}`))
+    throw new TransactionalEmailError('access-denied')
 }

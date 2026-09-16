@@ -1,4 +1,5 @@
-import { createHmac, randomUUID } from 'node:crypto'
+import { recipientDigest } from './recipientBinding'
+import { randomUUID } from 'node:crypto'
 import type { TransactionalEmailAcceptance, TransactionalEmailCommands } from './index'
 import { validateCommand, type TransactionalEmailCommand } from './commands'
 import { resolveCatalogEntry, type CommandCatalog } from './catalog'
@@ -39,9 +40,7 @@ export function createCommandPort(dependencies: AcceptanceDependencies): Transac
         const operation = await storage.create({
           command,
           recipientAddress: recipient.address,
-          recipientDigest: `fake-v1:${createHmac('sha256', 'synthetic-mail-binding-key')
-            .update(JSON.stringify([recipient.binding, recipient.address]))
-            .digest('hex')}`,
+          recipientDigest: recipientDigest(recipient),
           providerIdempotencyKey: randomUUID(),
           runtimeEnvironment: dependencies.environment,
         })

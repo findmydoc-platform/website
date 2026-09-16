@@ -102,7 +102,7 @@ cache tags, invalidation calls, or seed records.
 ## Runtime limits and evidence
 
 Local, test, and CI select fake boundaries. Preview and Production fail before command initialization because no real
-adapter is installed. The shared runtime selection is also the gate for subsequent worker integration. No worker,
+adapter is installed. The shared runtime selection also gates the private worker described in [worker processing](transactional-email-worker.md). No worker,
 provider, link generation, product trigger, or Dashboard consumer is activated by command acceptance.
 
 `tests/integration/transactionalEmail.acceptance.test.ts` crosses the command port with real Payload and a disposable

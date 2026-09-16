@@ -1,3 +1,4 @@
+import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import http from 'node:http'
@@ -16,11 +17,25 @@ vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: asyn
 describe('transactional email transaction ownership', () => {
   let payload: Payload
   let observer: pg.Client
-  const commandFor = () => ({
-    type: 'clinic.registration-received' as const,
-    operationReference: randomUUID(),
-    registrationId: syntheticRegistrationId,
-  })
+  const ownedReferences = new Set<string>()
+  const commandFor = () => {
+    const operationReference = randomUUID()
+    ownedReferences.add(operationReference)
+    return {
+      type: 'clinic.registration-received' as const,
+      operationReference,
+      registrationId: syntheticRegistrationId,
+    }
+  }
+  const cleanupFixtures = async () => {
+    if (!payload || !ownedReferences.size) return
+    const references = [...ownedReferences]
+    await cleanupTransactionalEmailFixtures(payload, references)
+    for (const reference of references)
+      expect(await persisted(reference)).toEqual({ business: 0, outbox: 0, events: 0 })
+    ownedReferences.clear()
+  }
+
   const persisted = async (reference: string) => {
     const result = await observer.query(
       `SELECT (SELECT count(*)::int FROM countries WHERE name = $1) AS business,
@@ -53,12 +68,17 @@ describe('transactional email transaction ownership', () => {
     vi.spyOn(http, 'get').mockImplementation(denied)
     vi.spyOn(https, 'get').mockImplementation(denied)
   })
-  afterEach(() => {
+  afterEach(async () => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+    await cleanupFixtures()
   })
   afterAll(async () => {
-    await observer?.end()
+    try {
+      await cleanupFixtures()
+    } finally {
+      await observer?.end()
+    }
   })
 
   it.each(['commit', 'rollback'] as const)(

@@ -5,6 +5,14 @@ export const syntheticRegistrationId = '00000000-0000-4000-8000-000000000001'
 
 export const syntheticEmailCatalog: CommandCatalog = Object.freeze({
   'clinic.registration-received': {
+    worker: {
+      revalidate: async (command) =>
+        command.registrationId === syntheticRegistrationId
+          ? { address: 'recipient@example.test', binding: command.registrationId }
+          : null,
+      terminalState: 'suppressed',
+      template: 'synthetic-notification',
+    },
     authorizeAndResolve: async (command, actor) => {
       if (actor !== null) throw new TransactionalEmailError('access-denied')
       if (command.registrationId !== syntheticRegistrationId) throw new TransactionalEmailError('source-missing')

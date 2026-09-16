@@ -332,7 +332,7 @@ export interface TransactionalEmailOutbox {
     | 'moderation.appeal-decided'
     | 'clinic.registration-received';
   operationReference: string;
-  commandPayload:
+  commandPayload?:
     | {
         [k: string]: unknown;
       }
@@ -345,8 +345,20 @@ export interface TransactionalEmailOutbox {
   state:
     'queued' | 'prepared' | 'accepted' | 'delivered' | 'suppressed' | 'bounced' | 'complained' | 'failed' | 'expired';
   providerIdempotencyKey: string;
-  recipientAddress: string;
+  recipientAddress?: string | null;
   recipientDigest: string;
+  preparedSubject?: string | null;
+  preparedHtml?: string | null;
+  preparedText?: string | null;
+  preparedAt?: string | null;
+  leaseToken?: string | null;
+  leaseExpiresAt?: string | null;
+  attemptCount?: number | null;
+  lastAttemptAt?: string | null;
+  providerMessageId?: string | null;
+  providerAcceptedAt?: string | null;
+  terminalAt?: string | null;
+  scrubbedAt?: string | null;
   latestEventSequence: number;
   updatedAt: string;
   createdAt: string;
@@ -361,8 +373,22 @@ export interface TransactionalEmailEvent {
   id: number;
   outbox: number | TransactionalEmailOutbox;
   sequence: number;
-  type: 'command.accepted';
+  type:
+    | 'command.accepted'
+    | 'lease.acquired'
+    | 'preparation.completed'
+    | 'preparation.failed'
+    | 'delivery.attempt-started'
+    | 'delivery.accepted'
+    | 'delivery.suppressed'
+    | 'delivery.failed'
+    | 'delivery.expired'
+    | 'payload.scrubbed';
   source: 'command' | 'worker' | 'provider';
+  attemptNumber?: number | null;
+  outcomeCode?:
+    | ('fake-accepted' | 'recipient-changed' | 'ineligible' | 'preparation-failed' | 'permanent-failure' | 'expired')
+    | null;
   providerEventId?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -3967,6 +3993,18 @@ export interface TransactionalEmailOutboxSelect<T extends boolean = true> {
   providerIdempotencyKey?: T;
   recipientAddress?: T;
   recipientDigest?: T;
+  preparedSubject?: T;
+  preparedHtml?: T;
+  preparedText?: T;
+  preparedAt?: T;
+  leaseToken?: T;
+  leaseExpiresAt?: T;
+  attemptCount?: T;
+  lastAttemptAt?: T;
+  providerMessageId?: T;
+  providerAcceptedAt?: T;
+  terminalAt?: T;
+  scrubbedAt?: T;
   latestEventSequence?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -3980,6 +4018,8 @@ export interface TransactionalEmailEventsSelect<T extends boolean = true> {
   sequence?: T;
   type?: T;
   source?: T;
+  attemptNumber?: T;
+  outcomeCode?: T;
   providerEventId?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -8,6 +8,7 @@ import { ClinicDetailClientAdapter } from '@/app/(frontend)/clinics/[slug]/Clini
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 
 vi.mock('@/posthog/client-api', () => ({
+  getConsentedPostHogSessionId: vi.fn(() => undefined),
   postHogBrowserEvents: {
     clinicCtaClicked: vi.fn(),
     clinicProfileViewed: vi.fn(),
@@ -19,10 +20,15 @@ const originalFetch = global.fetch
 afterEach(() => {
   global.fetch = originalFetch
   vi.clearAllMocks()
+  vi.unstubAllGlobals()
 })
 
 describe('ClinicDetailClientAdapter flow', () => {
   it('shows an expired-session response from the route adapter in the real contact form', async () => {
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 0),
+    )
     global.fetch = vi.fn(
       async () =>
         new Response(JSON.stringify({ error: { code: 'INQUIRY_UNAUTHORIZED' } }), {

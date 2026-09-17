@@ -99,6 +99,17 @@ export function resetPostHogIdentity(): boolean {
   return true
 }
 
+export function getPostHogSessionId(): string | undefined {
+  if (typeof window === 'undefined' || !isInitialized || !isCapturingEnabled) return undefined
+
+  try {
+    const sessionId = posthog.get_session_id()
+    return typeof sessionId === 'string' && /^[A-Za-z0-9_-]{1,128}$/u.test(sessionId) ? sessionId : undefined
+  } catch {
+    return undefined
+  }
+}
+
 const toDefinedScalarProperties = <Name extends PostHogEventName>(
   value: PostHogEventPropertiesByName[Name],
 ): Record<string, PostHogScalarProperty> => {

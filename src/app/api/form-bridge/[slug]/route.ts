@@ -3,6 +3,7 @@ import { getServerLogger } from '@/utilities/logging/serverLogger'
 import { createScopedLogger, getRequestLogContext, toLoggedError } from '@/utilities/logging/shared'
 import { FormSubmissionError, submitFormData } from '@/utilities/submitForm'
 import { postHogServerConsent, postHogServerEvents, resolveAnonymousPostHogActor } from '@/posthog/api'
+import { readClinicInquirySessionId } from '@/posthog/api'
 import { NextRequest, NextResponse } from 'next/server'
 
 type FormBridgePayload = Record<string, unknown>
@@ -14,8 +15,6 @@ type CaptureFormBridgeEventInput = {
   values: FormBridgePayload
 }
 
-const MAX_TRACKING_IDENTIFIER_LENGTH = 120
-const TRACKING_IDENTIFIER_PATTERN = /^[a-zA-Z0-9_-]+$/
 const FORM_BRIDGE_EVENT_CONTEXTS = {
   clinic_partner_landing: {
     formSlug: 'public-contact',
@@ -27,7 +26,15 @@ const FORM_BRIDGE_EVENT_CONTEXTS = {
     sourceRoute: 'clinic_detail',
   },
 } as const
-const INTERNAL_FORM_BRIDGE_FIELDS = ['contact_mode', 'form_context', 'page_path', 'source_route'] as const
+const INTERNAL_FORM_BRIDGE_FIELDS = [
+  '$session_id',
+  'contact_mode',
+  'distinct_id',
+  'form_context',
+  'page_path',
+  'session_id',
+  'source_route',
+] as const
 const internalFormBridgeFieldSet = new Set<string>(INTERNAL_FORM_BRIDGE_FIELDS)
 
 type FormBridgeEventContext = keyof typeof FORM_BRIDGE_EVENT_CONTEXTS
@@ -41,15 +48,6 @@ const readStringField = (values: FormBridgePayload, field: string): string | und
   return normalized || undefined
 }
 
-const readTrackingIdentifier = (values: FormBridgePayload, field: string): string | undefined => {
-  const value = readStringField(values, field)
-  if (!value || value.length > MAX_TRACKING_IDENTIFIER_LENGTH || !TRACKING_IDENTIFIER_PATTERN.test(value)) {
-    return undefined
-  }
-
-  return value
-}
-
 const readFormBridgeEventContext = (values: FormBridgePayload): FormBridgeEventContext | undefined => {
   const value = readStringField(values, 'form_context')
   if (value === 'clinic_partner_landing' || value === 'clinic_profile_inquiry') return value
@@ -59,9 +57,6 @@ const readFormBridgeEventContext = (values: FormBridgePayload): FormBridgeEventC
 
 const hasStringField = (values: FormBridgePayload, field: string): boolean =>
   readStringField(values, field) !== undefined
-
-const hasAnyStringField = (values: FormBridgePayload, fields: readonly string[]): boolean =>
-  fields.some((field) => hasStringField(values, field))
 
 const readSubmissionId = (result: unknown): string | undefined => {
   if (typeof result !== 'object' || result === null) return undefined
@@ -138,44 +133,9 @@ const captureFormBridgePostHogEvent = async ({
   const submissionId = readSubmissionId(result)
 
   if (formContext === 'clinic_profile_inquiry') {
-    const context = FORM_BRIDGE_EVENT_CONTEXTS.clinic_profile_inquiry
-    if (slug !== context.formSlug) return
-
-    const clinicId = readTrackingIdentifier(values, 'clinic_id')
-    const clinicSlug = readTrackingIdentifier(values, 'clinic_slug')
-
-    if (!clinicId || !clinicSlug) return
-    if (!hasExpectedRefererPath(request, `/clinics/${encodeURIComponent(clinicSlug)}`)) return
-
-    const doctorId = readTrackingIdentifier(values, 'doctor_id')
-    const treatmentId = readTrackingIdentifier(values, 'treatment_id')
-    const analyticsConsent = await postHogServerConsent.resolveAnalyticsConsent({ headers: request.headers })
-    if (!analyticsConsent.isAllowed) return
-
-    const actor = resolveAnonymousPostHogActor({
-      fallbackAnonymousId: submissionId ? `form_submission:${submissionId}` : `form_bridge:${slug}`,
-      headers: request.headers,
-    })
-
-    await postHogServerEvents.patientInquiryCreated({
-      actor,
-      analyticsConsent,
-      flush: true,
-      properties: {
-        clinic_id: clinicId,
-        clinic_slug: clinicSlug,
-        doctor_id: doctorId,
-        form_slug: slug,
-        has_doctor: doctorId !== undefined,
-        has_message: hasAnyStringField(values, ['message', 'note']),
-        has_preferred_date: hasStringField(values, 'preferred_date'),
-        has_preferred_time: hasStringField(values, 'preferred_time'),
-        has_treatment: treatmentId !== undefined,
-        source_route: context.sourceRoute,
-        submission_id: submissionId,
-        treatment_id: treatmentId,
-      },
-    })
+    // Generic Payload forms never create patientClinicInquiries. Validate and discard
+    // the optional transport value; only the durable inquiry routes may emit this event.
+    readClinicInquirySessionId(values.session_id)
     return
   }
 

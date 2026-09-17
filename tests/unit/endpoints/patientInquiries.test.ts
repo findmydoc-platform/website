@@ -18,6 +18,7 @@ import { InquiryCommunicationServiceError } from '@/features/inquiryCommunicatio
 const mocks = vi.hoisted(() => ({
   after: vi.fn(),
   cleanup: vi.fn(),
+  captureStoredPatientInquiryPostHogEvent: vi.fn(),
   createInquiry: vi.fn(),
   createDraft: vi.fn(),
   discardDraft: vi.fn(),
@@ -50,6 +51,12 @@ vi.mock('@/features/inquiryCommunication/service', async (importOriginal) => ({
 
 vi.mock('@/features/inquiryModeration/service', () => ({
   reconcileExpiredInquiryModerationMeasures: mocks.reconcileModeration,
+}))
+
+vi.mock('@/posthog/api', () => ({
+  captureStoredPatientInquiryPostHogEvent: mocks.captureStoredPatientInquiryPostHogEvent,
+  readClinicInquirySessionId: (value: unknown) =>
+    typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/u.test(value) ? value : undefined,
 }))
 
 vi.mock('@/plugins/storageConfig', () => ({
@@ -205,7 +212,7 @@ describe('patient inquiry endpoints', () => {
     expect(mocks.createInquiry).not.toHaveBeenCalled()
   })
 
-  it('creates an account-bound inquiry without accepting browser identity fields', async () => {
+  it('creates an account-bound inquiry with a transport-only valid session correlation', async () => {
     const input = {
       clinicId: '42',
       consent: true,
@@ -213,6 +220,7 @@ describe('patient inquiry endpoints', () => {
       idempotencyKey: 'patient-create-key-1',
       message: 'Synthetic account-bound inquiry.',
       phoneNumber: '+49 30 123456',
+      session_id: 'session_42',
       treatmentTimeline: 'within_two_weeks',
     }
     const req = request({ body: input })
@@ -220,7 +228,16 @@ describe('patient inquiry endpoints', () => {
     const response = await patientInquiryCreatePostHandler(req)
 
     expect(response.status).toBe(201)
-    expect(mocks.createInquiry).toHaveBeenCalledWith(req, input)
+    const { session_id: _sessionId, ...domainInput } = input
+    expect(mocks.createInquiry).toHaveBeenCalledWith(req, domainInput)
+    expect(mocks.captureStoredPatientInquiryPostHogEvent).toHaveBeenCalledWith({
+      inquiryId: 'inquiry-patient-1',
+      req,
+      sessionId: 'session_42',
+    })
+    expect(mocks.createInquiry.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.captureStoredPatientInquiryPostHogEvent.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+    )
     await expect(response.json()).resolves.toEqual({ inquiry, replayed: false })
     expectPrivateLive(response)
 
@@ -237,6 +254,53 @@ describe('patient inquiry endpoints', () => {
       })
     }
     expect(mocks.createInquiry).toHaveBeenCalledOnce()
+  })
+
+  it('strips an invalid session correlation from the account-bound domain command', async () => {
+    const input = {
+      clinicId: '42',
+      consent: true,
+      doctorId: '601',
+      idempotencyKey: 'patient-create-key-invalid-session',
+      message: 'Synthetic account-bound inquiry.',
+      phoneNumber: '+49 30 123456',
+      session_id: 'invalid session id',
+      treatmentTimeline: 'within_two_weeks',
+    }
+    const req = request({ body: input })
+
+    const response = await patientInquiryCreatePostHandler(req)
+
+    const { session_id: _sessionId, ...domainInput } = input
+    expect(response.status).toBe(201)
+    expect(mocks.createInquiry).toHaveBeenCalledWith(req, domainInput)
+    expect(mocks.captureStoredPatientInquiryPostHogEvent).toHaveBeenCalledWith({
+      inquiryId: 'inquiry-patient-1',
+      req,
+      sessionId: undefined,
+    })
+  })
+
+  it('does not schedule an inquiry event for an idempotent replay', async () => {
+    mocks.createInquiry.mockResolvedValueOnce({ inquiry, replayed: true })
+
+    const response = await patientInquiryCreatePostHandler(
+      request({
+        body: {
+          clinicId: '42',
+          consent: true,
+          doctorId: '601',
+          idempotencyKey: 'patient-create-key-replay',
+          message: 'Synthetic account-bound inquiry.',
+          phoneNumber: '+49 30 123456',
+          session_id: 'session_42',
+          treatmentTimeline: 'within_two_weeks',
+        },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.captureStoredPatientInquiryPostHogEvent).not.toHaveBeenCalled()
   })
 
   it('keeps missing and foreign patient inquiries indistinguishable', async () => {

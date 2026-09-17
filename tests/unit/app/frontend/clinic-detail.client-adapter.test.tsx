@@ -12,6 +12,7 @@ import { ClinicContactRequestError } from '@/features/clinicDetail/contracts'
 
 const mocks = vi.hoisted(() => ({
   clinicDetailComponent: vi.fn((_props: unknown) => null),
+  getConsentedPostHogSessionId: vi.fn(),
   postHogBrowserEvents: {
     clinicCtaClicked: vi.fn(),
     clinicProfileViewed: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock('@/components/templates/ClinicDetailConcepts', () => ({
 }))
 
 vi.mock('@/posthog/client-api', () => ({
+  getConsentedPostHogSessionId: mocks.getConsentedPostHogSessionId,
   postHogBrowserEvents: mocks.postHogBrowserEvents,
 }))
 
@@ -127,6 +129,19 @@ describe('ClinicDetailClientAdapter', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestPayload),
+    })
+  })
+
+  it('sends the bounded session correlation only when consent made it available', async () => {
+    mocks.getConsentedPostHogSessionId.mockReturnValueOnce('session_42')
+    global.fetch = vi.fn(async () => new Response(JSON.stringify({ id: 42 }), { status: 200 }))
+
+    await submitClinicContactRequest(requestPayload, false)
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/clinic-contact-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...requestPayload, session_id: 'session_42' }),
     })
   })
 

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const posthogMock = vi.hoisted(() => ({
   capture: vi.fn(),
+  get_session_id: vi.fn(),
   init: vi.fn(),
   opt_in_capturing: vi.fn(),
   opt_out_capturing: vi.fn(),
@@ -105,6 +106,18 @@ describe('posthog client helpers', () => {
       page_path: '/clinics/berlin-health-clinic',
       source_route: 'clinic_detail',
     })
+  })
+
+  it('exposes only a bounded session identifier after analytics consent', async () => {
+    const { getConsentedPostHogSessionId, enablePostHogAnalyticsCapture } = await import('@/posthog/client-api')
+    posthogMock.get_session_id.mockReturnValueOnce('session_42')
+
+    expect(getConsentedPostHogSessionId()).toBeUndefined()
+    expect(enablePostHogAnalyticsCapture()).toBe(true)
+    expect(getConsentedPostHogSessionId()).toBe('session_42')
+
+    posthogMock.get_session_id.mockReturnValueOnce('invalid session id')
+    expect(getConsentedPostHogSessionId()).toBeUndefined()
   })
 
   it('does not expose the raw PostHog browser instance', async () => {

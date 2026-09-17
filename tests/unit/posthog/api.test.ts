@@ -307,6 +307,22 @@ describe('PostHog API facade', () => {
     expect(Object.keys(POSTHOG_EVENT_REGISTRY).every((eventName) => /^[a-z0-9_]+$/.test(eventName))).toBe(true)
   })
 
+  it('derives the clinic reporting query catalog from the registered event taxonomy', async () => {
+    const { CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG, POSTHOG_EVENT_REGISTRY } = await import('@/posthog/api')
+
+    expect(
+      Object.values(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.events).every((eventName) =>
+        Object.hasOwn(POSTHOG_EVENT_REGISTRY, eventName),
+      ),
+    ).toBe(true)
+    expect(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.ctaIds).toEqual(
+      POSTHOG_EVENT_REGISTRY.clinic_cta_clicked.allowedPropertyValues.cta_id,
+    )
+    expect(Object.isFrozen(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG)).toBe(true)
+    expect(Object.isFrozen(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.events)).toBe(true)
+    expect(Object.isFrozen(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.ctaIds)).toBe(true)
+  })
+
   it('captures server events through the typed event interface with the already evaluated flag snapshot', async () => {
     fakeClient.getAllFlagsAndPayloads.mockResolvedValue({
       featureFlagPayloads: {},

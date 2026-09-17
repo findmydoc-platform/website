@@ -101,6 +101,131 @@ The DTO deliberately omits Supabase identifiers, tokens, internal roles, access-
 and unrelated clinic fields. Later capability endpoints may add their own DTOs without expanding this bootstrap into a
 generic data endpoint.
 
+## Clinic Dashboard Reporting Contract
+
+> **Canonical decision:**
+> [ADR 029](https://github.com/findmydoc-platform/website/blob/main/docs/adrs/029-adr-tenant-safe-clinic-dashboard-reporting.md)
+
+`GET /api/clinic-dashboard/reporting` is the fixed `clinic-dashboard-reporting-v1` reporting contract. It is a
+request-bound private route. Each request validates the Bearer token, resolves the current approved `clinicStaff` and
+its assigned clinic, and derives every scope, source, and timezone server-side. The request never chooses a clinic,
+role, source, timezone, cache policy, or analytic identity.
+
+The sole query parameter is exactly one `periodDays` value: `7`, `30`, or `90`. Missing, repeated, malformed, or
+additional parameters return:
+
+```json
+{
+  "error": {
+    "code": "CLINIC_DASHBOARD_REPORTING_INVALID_INPUT",
+    "message": "Reporting period must be 7, 30, or 90 days."
+  }
+}
+```
+
+Every success and error response has `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
+`Vary: Authorization`. The route has no tags, revalidation, cache layer, cache policy, or public-cache impact
+(`no-public-impact`). Authentication failures return `401 CLINIC_DASHBOARD_UNAUTHORIZED` with `Authentication is
+required.`; unavailable reporting access returns `403 CLINIC_DASHBOARD_ACCESS_DENIED` with `Reporting access is not
+available.`; an authorization/source bootstrap failure returns `503
+CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE` with `Reporting is temporarily unavailable.`.
+
+The response is always complete and uses `Europe/Istanbul` calendar boundaries. `asOf` equals `period.to`; all
+instants are UTC ISO-8601 values with exactly three fractional digits. A comparison period is the immediately
+preceding local calendar block with the same number of days and the equivalent local clock boundary.
+
+```ts
+type ClinicDashboardReportingV1 = {
+  schemaVersion: 'clinic-dashboard-reporting-v1'
+  asOf: string
+  timezone: 'Europe/Istanbul'
+  period: { days: 7 | 30 | 90; from: string; to: string }
+  comparisonPeriod: { days: 7 | 30 | 90; from: string; to: string }
+  metrics: {
+    profileViews: CountMetric<'posthog'>
+    ctaInteractions: {
+      source: 'posthog'
+      total: CountMetric<'posthog'>
+      byCtaId: {
+        choose_treatment: CountMetric<'posthog'>
+        contact: CountMetric<'posthog'>
+        contact_doctor: CountMetric<'posthog'>
+      }
+    }
+    inquiries: CountMetric<'payload'>
+    sessionConversion: SessionConversionMetric
+    reviews: {
+      source: 'payload'
+      count: ReviewCountSnapshot
+      average: ReviewAverageSnapshot
+    }
+    profileCompleteness: {
+      source: 'payload'
+      completedAreas: number | null
+      totalAreas: 6
+      percent: number | null
+      state: 'available' | 'source_unavailable' | 'partial_coverage'
+      comparison: null
+    }
+  }
+}
+
+type CountMetric<Source extends 'payload' | 'posthog'> = {
+  source: Source
+  current: { value: number | null; state: SourceState }
+  comparison: {
+    value: number | null
+    state: SourceState
+    absoluteDelta: number | null
+    relativeDeltaPercent: number | null
+  }
+}
+
+type SessionConversionMetric = {
+  source: 'posthog'
+  current: SessionConversionWindow
+  comparison: SessionConversionWindow & { percentagePointDelta: number | null }
+}
+
+type SessionConversionWindow = {
+  ratePercent: number | null
+  numeratorSessions: number | null
+  denominatorSessions: number | null
+  state: SourceState | 'zero_denominator'
+}
+
+type ReviewCountSnapshot = {
+  source: 'payload'
+  value: number | null
+  state: SourceState
+  comparison: null
+}
+
+type ReviewAverageSnapshot = {
+  source: 'payload'
+  value: number | null
+  state: SourceState | 'no_reviews'
+  comparison: null
+}
+
+type SourceState = 'available' | 'source_unavailable' | 'partial_coverage'
+```
+
+`null` denotes an unavailable or inapplicable numeric value; it is never silently replaced with `0`. Deltas are only
+present when both values are available, and relative deltas are `null` when the comparison value is zero. A review
+average is `null` with `no_reviews` when the available review count is zero. Session conversion remains unknown when
+the correlated funnel cannot be established; a `zero_denominator` is only a known zero-profile-session condition.
+
+Payload owns inquiry counts, review snapshots, and all six profile-completeness areas. PostHog owns profile views,
+CTA interactions, and the ordered session funnel. The server executes one aggregate PostHog query per load with a
+three-second timeout and no retry. Individual source failure or incomplete coverage remains metric-level state in a
+`200` response after authorization, so a source failure cannot erase available metrics from the other source.
+
+The only browser-to-server funnel correlation input is an optional bounded `session_id` on a clinic inquiry request,
+and only after analytics consent. It is validated and discarded by bridges and inquiry routes; it is not persisted,
+logged, or returned. A server event is emitted only after a new inquiry is durably stored, and its `clinic_id` comes
+from that stored inquiry. Browser analytics values are measurement data, never clinic authorization.
+
 ## Clinic Profile Draft Contract
 
 The profile capability uses five custom Payload endpoints:

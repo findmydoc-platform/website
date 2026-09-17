@@ -7,7 +7,7 @@ import {
   type ClinicContactRequestSubmitter,
   type ClinicDetailConceptProps,
 } from '@/features/clinicDetail/contracts'
-import { postHogBrowserEvents } from '@/posthog/client-api'
+import { getConsentedPostHogSessionId, postHogBrowserEvents } from '@/posthog/client-api'
 
 export const clinicDetailAnalytics: ClinicDetailAnalyticsPort = {
   onCtaClicked: ({ clinicId, clinicSlug, ctaId, ctaLabel, ctaLocation, doctorId, pagePath, treatmentId }) => {
@@ -37,10 +37,11 @@ export const clinicDetailAnalytics: ClinicDetailAnalyticsPort = {
 }
 
 export const submitClinicContactRequest: ClinicContactRequestSubmitter = async (payload, authenticated) => {
+  const sessionId = getConsentedPostHogSessionId()
   const response = await fetch(authenticated ? '/api/patient/inquiries' : '/api/clinic-contact-requests', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, ...(sessionId ? { session_id: sessionId } : {}) }),
   })
 
   if (!response.ok) {

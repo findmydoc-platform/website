@@ -222,4 +222,44 @@ describe('Clinic Dashboard PostHog reporting adapter', () => {
     expect(result.comparisonState).toBe('partial_coverage')
     expect(result.currentState).toBe('available')
   })
+
+  it('builds HogQL from the PostHog API taxonomy catalog', async () => {
+    vi.resetModules()
+    vi.doMock('@/posthog/api', async (importOriginal) => ({
+      ...(await importOriginal()),
+      CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG: Object.freeze({
+        ctaIds: Object.freeze(['governed_cta'] as const),
+        events: Object.freeze({
+          ctaClicked: 'governed_cta_clicked',
+          patientInquiryCreated: 'governed_patient_inquiry_created',
+          profileViewed: 'governed_clinic_profile_viewed',
+        }),
+      }),
+    }))
+    vi.stubEnv('POSTHOG_QUERY_API_KEY', 'phx_server_only')
+    vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', '42')
+    vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '180')
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(queryResponse), { status: 200 }))
+    global.fetch = fetchMock
+
+    try {
+      const { readPostHogClinicDashboardReporting: readReporting } =
+        await import('@/features/clinicDashboard/reporting/posthog')
+
+      await readReporting(input)
+
+      const [, options] = (fetchMock.mock.calls as unknown as Array<[string, RequestInit]>)[0] ?? []
+      const query = JSON.parse(String(options?.body)).query.query as string
+      expect(query).toContain(
+        "event IN ('governed_clinic_profile_viewed', 'governed_cta_clicked', 'governed_patient_inquiry_created')",
+      )
+      expect(query).toContain("event = 'governed_cta_clicked'")
+      expect(query).toContain("cta_id = 'governed_cta'")
+      expect(query).not.toContain("event = 'clinic_cta_clicked'")
+      expect(query).not.toContain("cta_id = 'choose_treatment'")
+    } finally {
+      vi.doUnmock('@/posthog/api')
+      vi.resetModules()
+    }
+  })
 })

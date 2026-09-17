@@ -17,6 +17,7 @@ import {
   type PostHogRequestErrorContext,
 } from './telemetry'
 import {
+  CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG,
   POSTHOG_EVENT_REGISTRY,
   type PostHogEventName,
   type PostHogEventPropertiesByName,
@@ -24,8 +25,13 @@ import {
 } from './events'
 import { readClinicInquirySessionId } from './inquirySessionCorrelation'
 
-export { POSTHOG_EVENT_REGISTRY }
-export type { PostHogEventDefinition, PostHogEventName, PostHogScalarProperty } from './events'
+export { CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG, POSTHOG_EVENT_REGISTRY }
+export type {
+  ClinicDashboardReportingCtaId,
+  PostHogEventDefinition,
+  PostHogEventName,
+  PostHogScalarProperty,
+} from './events'
 export { readClinicInquirySessionId }
 
 export type PostHogActorType = 'anonymous' | 'patient' | 'clinic' | 'platform'

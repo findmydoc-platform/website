@@ -1,3 +1,4 @@
+import { CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG, type ClinicDashboardReportingCtaId } from '@/posthog/api'
 import type { ReportingPeriodDays, ReportingSourceState } from './contracts'
 
 const POSTHOG_QUERY_TIMEOUT_MS = 3_000
@@ -10,7 +11,7 @@ type ReportingWindow = {
 }
 
 export type PostHogReportingValues = {
-  ctaById: Record<'choose_treatment' | 'contact' | 'contact_doctor', number>
+  ctaById: Record<ClinicDashboardReportingCtaId, number>
   ctaTotal: number
   inquirySessions: number
   incompleteInquirySessionIds: number
@@ -29,7 +30,10 @@ export type PostHogReportingRead = {
 type ReportingQueryColumns = Record<string, number>
 
 const emptyValues = (): PostHogReportingValues => ({
-  ctaById: { choose_treatment: 0, contact: 0, contact_doctor: 0 },
+  ctaById: Object.fromEntries(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.ctaIds.map((ctaId) => [ctaId, 0])) as Record<
+    ClinicDashboardReportingCtaId,
+    number
+  >,
   ctaTotal: 0,
   inquirySessions: 0,
   incompleteInquirySessionIds: 0,
@@ -69,9 +73,9 @@ const asValues = (
   const value = (field: string) => toQueryValue(columns, `${prefix}_${field}`)
   const profileViews = value('profile_views')
   const ctaTotal = value('cta_total')
-  const chooseTreatment = value('cta_choose_treatment')
-  const contact = value('cta_contact')
-  const contactDoctor = value('cta_contact_doctor')
+  const ctaById = Object.fromEntries(
+    CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.ctaIds.map((ctaId) => [ctaId, value(`cta_${ctaId}`)]),
+  ) as Record<ClinicDashboardReportingCtaId, number | undefined>
   const profileViewSessions = value('profile_view_sessions')
   const inquirySessions = value('inquiry_sessions')
   const incompleteInquirySessionIds = value('incomplete_inquiry_session_ids')
@@ -80,9 +84,7 @@ const asValues = (
   if (
     profileViews === undefined ||
     ctaTotal === undefined ||
-    chooseTreatment === undefined ||
-    contact === undefined ||
-    contactDoctor === undefined ||
+    CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.ctaIds.some((ctaId) => ctaById[ctaId] === undefined) ||
     profileViewSessions === undefined ||
     inquirySessions === undefined ||
     incompleteInquirySessionIds === undefined ||
@@ -92,11 +94,7 @@ const asValues = (
   }
 
   return {
-    ctaById: {
-      choose_treatment: chooseTreatment,
-      contact,
-      contact_doctor: contactDoctor,
-    },
+    ctaById: ctaById as Record<ClinicDashboardReportingCtaId, number>,
     ctaTotal,
     inquirySessions,
     incompleteInquirySessionIds,
@@ -107,6 +105,14 @@ const asValues = (
 }
 
 const escapeHogQLString = (value: string): string => value.replaceAll('\\', '\\\\').replaceAll("'", "\\'")
+
+const ctaCountColumns = (window: 'comparison' | 'current', ctaClickedEvent: string): string =>
+  CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.ctaIds
+    .map(
+      (ctaId) =>
+        `  countIf(event = '${ctaClickedEvent}' AND cta_id = '${escapeHogQLString(ctaId)}' AND window = '${window}') AS ${window}_cta_${ctaId},`,
+    )
+    .join('\n')
 
 const buildQuery = ({
   clinicId,
@@ -122,6 +128,11 @@ const buildQuery = ({
   const comparisonTo = escapeHogQLString(comparison.to)
   const currentFrom = escapeHogQLString(current.from)
   const asOf = escapeHogQLString(current.to)
+  const profileViewedEvent = escapeHogQLString(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.events.profileViewed)
+  const ctaClickedEvent = escapeHogQLString(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.events.ctaClicked)
+  const patientInquiryCreatedEvent = escapeHogQLString(
+    CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.events.patientInquiryCreated,
+  )
 
   return `
 WITH filtered_events AS (
@@ -137,13 +148,13 @@ WITH filtered_events AS (
       OR (timestamp >= toDateTime64('${currentFrom}', 3) AND timestamp <= toDateTime64('${asOf}', 3))
     )
     AND properties.clinic_id = '${clinic}'
-    AND event IN ('clinic_profile_viewed', 'clinic_cta_clicked', 'patient_inquiry_created')
+    AND event IN ('${profileViewedEvent}', '${ctaClickedEvent}', '${patientInquiryCreatedEvent}')
 ), sessions AS (
   SELECT
     window,
     session_id,
-    countIf(event = 'clinic_profile_viewed') AS profile_view_count,
-    countIf(event = 'patient_inquiry_created') AS inquiry_count
+    countIf(event = '${profileViewedEvent}') AS profile_view_count,
+    countIf(event = '${patientInquiryCreatedEvent}') AS inquiry_count
   FROM filtered_events
   WHERE match(session_id, '^[A-Za-z0-9_-]{1,128}$')
   GROUP BY window, session_id
@@ -156,26 +167,22 @@ WITH filtered_events AS (
     ON profile_view.window = inquiry.window
     AND profile_view.session_id = inquiry.session_id
   WHERE match(profile_view.session_id, '^[A-Za-z0-9_-]{1,128}$')
-    AND profile_view.event = 'clinic_profile_viewed'
-    AND inquiry.event = 'patient_inquiry_created'
+    AND profile_view.event = '${profileViewedEvent}'
+    AND inquiry.event = '${patientInquiryCreatedEvent}'
     AND profile_view.timestamp < inquiry.timestamp
   GROUP BY profile_view.window, profile_view.session_id
 )
 SELECT
-  countIf(event = 'clinic_profile_viewed' AND window = 'current') AS current_profile_views,
-  countIf(event = 'clinic_cta_clicked' AND window = 'current') AS current_cta_total,
-  countIf(event = 'clinic_cta_clicked' AND cta_id = 'choose_treatment' AND window = 'current') AS current_cta_choose_treatment,
-  countIf(event = 'clinic_cta_clicked' AND cta_id = 'contact' AND window = 'current') AS current_cta_contact,
-  countIf(event = 'clinic_cta_clicked' AND cta_id = 'contact_doctor' AND window = 'current') AS current_cta_contact_doctor,
-  countIf(event = 'clinic_profile_viewed' AND window = 'current' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS current_incomplete_profile_view_session_ids,
-  countIf(event = 'patient_inquiry_created' AND window = 'current' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS current_incomplete_inquiry_session_ids,
-  countIf(event = 'clinic_profile_viewed' AND window = 'comparison') AS comparison_profile_views,
-  countIf(event = 'clinic_cta_clicked' AND window = 'comparison') AS comparison_cta_total,
-  countIf(event = 'clinic_cta_clicked' AND cta_id = 'choose_treatment' AND window = 'comparison') AS comparison_cta_choose_treatment,
-  countIf(event = 'clinic_cta_clicked' AND cta_id = 'contact' AND window = 'comparison') AS comparison_cta_contact,
-  countIf(event = 'clinic_cta_clicked' AND cta_id = 'contact_doctor' AND window = 'comparison') AS comparison_cta_contact_doctor,
-  countIf(event = 'clinic_profile_viewed' AND window = 'comparison' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS comparison_incomplete_profile_view_session_ids,
-  countIf(event = 'patient_inquiry_created' AND window = 'comparison' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS comparison_incomplete_inquiry_session_ids,
+  countIf(event = '${profileViewedEvent}' AND window = 'current') AS current_profile_views,
+  countIf(event = '${ctaClickedEvent}' AND window = 'current') AS current_cta_total,
+${ctaCountColumns('current', ctaClickedEvent)}
+  countIf(event = '${profileViewedEvent}' AND window = 'current' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS current_incomplete_profile_view_session_ids,
+  countIf(event = '${patientInquiryCreatedEvent}' AND window = 'current' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS current_incomplete_inquiry_session_ids,
+  countIf(event = '${profileViewedEvent}' AND window = 'comparison') AS comparison_profile_views,
+  countIf(event = '${ctaClickedEvent}' AND window = 'comparison') AS comparison_cta_total,
+${ctaCountColumns('comparison', ctaClickedEvent)}
+  countIf(event = '${profileViewedEvent}' AND window = 'comparison' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS comparison_incomplete_profile_view_session_ids,
+  countIf(event = '${patientInquiryCreatedEvent}' AND window = 'comparison' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS comparison_incomplete_inquiry_session_ids,
   (SELECT countIf(profile_view_count > 0) FROM sessions WHERE window = 'current') AS current_profile_view_sessions,
   (SELECT count() FROM conversion_sessions WHERE window = 'current') AS current_inquiry_sessions,
   (SELECT countIf(profile_view_count > 0) FROM sessions WHERE window = 'comparison') AS comparison_profile_view_sessions,

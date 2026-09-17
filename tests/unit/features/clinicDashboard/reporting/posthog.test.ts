@@ -113,10 +113,29 @@ describe('Clinic Dashboard PostHog reporting adapter', () => {
     expect(query).toContain("countIf(event = 'clinic_profile_viewed') AS profile_view_count")
     expect(query).toContain("countIf(event = 'patient_inquiry_created') AS inquiry_count")
     expect(query).toContain('countIf(profile_view_count > 0) FROM sessions')
-    expect(query).toContain(
-      'countIf(profile_view_count > 0 AND inquiry_count > 0 AND inquiry_created_at >= profile_viewed_at)',
-    )
-    expect(query).not.toContain('profile_viewed_at IS NOT NULL')
+    expect(query).not.toContain('profile_viewed_at')
+  })
+
+  it('counts a later inquiry after a profile even when the same session began with an inquiry', async () => {
+    vi.stubEnv('POSTHOG_QUERY_API_KEY', 'phx_server_only')
+    vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', '42')
+    vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '180')
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(queryResponse), { status: 200 }))
+    global.fetch = fetchMock
+
+    await readPostHogClinicDashboardReporting(input)
+
+    const [, options] = (fetchMock.mock.calls as unknown as Array<[string, RequestInit]>)[0] ?? []
+    const query = JSON.parse(String(options?.body)).query.query as string
+    expect(query).toContain('FROM filtered_events AS profile_view')
+    expect(query).toContain('INNER JOIN filtered_events AS inquiry')
+    expect(query).toContain('profile_view.window = inquiry.window')
+    expect(query).toContain('profile_view.session_id = inquiry.session_id')
+    expect(query).toContain("profile_view.event = 'clinic_profile_viewed'")
+    expect(query).toContain("inquiry.event = 'patient_inquiry_created'")
+    expect(query).toContain('profile_view.timestamp < inquiry.timestamp')
+    expect(query).toContain('GROUP BY profile_view.window, profile_view.session_id')
+    expect(query).not.toContain('profile_view.timestamp <= inquiry.timestamp')
   })
 
   it('keeps a valid inquiry-only session out of the funnel denominator and conversions', async () => {

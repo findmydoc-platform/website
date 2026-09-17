@@ -143,12 +143,23 @@ WITH filtered_events AS (
     window,
     session_id,
     countIf(event = 'clinic_profile_viewed') AS profile_view_count,
-    countIf(event = 'patient_inquiry_created') AS inquiry_count,
-    minIf(timestamp, event = 'clinic_profile_viewed') AS profile_viewed_at,
-    minIf(timestamp, event = 'patient_inquiry_created') AS inquiry_created_at
+    countIf(event = 'patient_inquiry_created') AS inquiry_count
   FROM filtered_events
   WHERE match(session_id, '^[A-Za-z0-9_-]{1,128}$')
   GROUP BY window, session_id
+), conversion_sessions AS (
+  SELECT
+    profile_view.window AS window,
+    profile_view.session_id AS session_id
+  FROM filtered_events AS profile_view
+  INNER JOIN filtered_events AS inquiry
+    ON profile_view.window = inquiry.window
+    AND profile_view.session_id = inquiry.session_id
+  WHERE match(profile_view.session_id, '^[A-Za-z0-9_-]{1,128}$')
+    AND profile_view.event = 'clinic_profile_viewed'
+    AND inquiry.event = 'patient_inquiry_created'
+    AND profile_view.timestamp < inquiry.timestamp
+  GROUP BY profile_view.window, profile_view.session_id
 )
 SELECT
   countIf(event = 'clinic_profile_viewed' AND window = 'current') AS current_profile_views,
@@ -166,9 +177,9 @@ SELECT
   countIf(event = 'clinic_profile_viewed' AND window = 'comparison' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS comparison_incomplete_profile_view_session_ids,
   countIf(event = 'patient_inquiry_created' AND window = 'comparison' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS comparison_incomplete_inquiry_session_ids,
   (SELECT countIf(profile_view_count > 0) FROM sessions WHERE window = 'current') AS current_profile_view_sessions,
-  (SELECT countIf(profile_view_count > 0 AND inquiry_count > 0 AND inquiry_created_at >= profile_viewed_at) FROM sessions WHERE window = 'current') AS current_inquiry_sessions,
+  (SELECT count() FROM conversion_sessions WHERE window = 'current') AS current_inquiry_sessions,
   (SELECT countIf(profile_view_count > 0) FROM sessions WHERE window = 'comparison') AS comparison_profile_view_sessions,
-  (SELECT countIf(profile_view_count > 0 AND inquiry_count > 0 AND inquiry_created_at >= profile_viewed_at) FROM sessions WHERE window = 'comparison') AS comparison_inquiry_sessions
+  (SELECT count() FROM conversion_sessions WHERE window = 'comparison') AS comparison_inquiry_sessions
 FROM filtered_events
 `
 }

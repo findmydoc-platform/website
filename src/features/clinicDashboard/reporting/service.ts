@@ -218,9 +218,14 @@ const countAllDocuments = async (
   }
 }
 
-const inCurrentOrComparison = (date: unknown, window: ReportingWindow): boolean => {
+const isInWindow = (date: unknown, window: ReportingWindow, endInclusive: boolean): boolean => {
   const parsed = typeof date === 'string' ? Date.parse(date) : Number.NaN
-  return Number.isFinite(parsed) && parsed >= Date.parse(window.from) && parsed <= Date.parse(window.to)
+  const windowEnd = Date.parse(window.to)
+  return (
+    Number.isFinite(parsed) &&
+    parsed >= Date.parse(window.from) &&
+    (endInclusive ? parsed <= windowEnd : parsed < windowEnd)
+  )
 }
 
 const resolveInquiryMetrics = async (req: PayloadRequest, clinicId: string, windows: ReportingWindows) => {
@@ -234,8 +239,8 @@ const resolveInquiryMetrics = async (req: PayloadRequest, clinicId: string, wind
     ],
   })
   return {
-    comparison: inquiries.filter((inquiry) => inCurrentOrComparison(inquiry.createdAt, windows.comparison)).length,
-    current: inquiries.filter((inquiry) => inCurrentOrComparison(inquiry.createdAt, windows.current)).length,
+    comparison: inquiries.filter((inquiry) => isInWindow(inquiry.createdAt, windows.comparison, false)).length,
+    current: inquiries.filter((inquiry) => isInWindow(inquiry.createdAt, windows.current, true)).length,
   }
 }
 

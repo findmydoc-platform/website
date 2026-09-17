@@ -184,7 +184,9 @@ const withPartialComparisonPostHog = (): ClinicDashboardReportingDTO => {
   }
 }
 
-const configuredPayload = () => {
+const configuredPayload = (
+  inquiryDocuments: Array<{ createdAt: string }> = [{ createdAt: '2026-04-08T10:00:00.000Z' }],
+) => {
   const payload = createMockPayload()
   payload.find.mockImplementation(async ({ collection }: { collection: string }) => {
     if (collection === 'clinics') {
@@ -212,7 +214,7 @@ const configuredPayload = () => {
     }
     if (collection === 'countries') return { docs: [{ isoCode: 'TR' }] }
     if (collection === 'patientClinicInquiries') {
-      return { docs: [{ createdAt: '2026-04-08T10:00:00.000Z' }], hasNextPage: false }
+      return { docs: inquiryDocuments, hasNextPage: false }
     }
     if (collection === 'reviews') return { docs: [{ starRating: 4 }, { starRating: 5 }], hasNextPage: false }
     if (collection === 'clinictreatments') return { docs: [{ id: 1 }] }
@@ -304,6 +306,30 @@ describe('Clinic Dashboard reporting service', () => {
             percent: 100,
             state: 'available',
             totalAreas: 6,
+          },
+        },
+      },
+      status: 'success',
+    })
+  })
+
+  it('excludes an inquiry at comparison.to while including one at the current-period start', async () => {
+    const result = await resolveClinicDashboardReporting(
+      createMockReq(
+        null,
+        configuredPayload([{ createdAt: completeDto.comparisonPeriod.to }, { createdAt: completeDto.period.from }]),
+      ),
+      7,
+      now,
+    )
+
+    expect(result).toMatchObject({
+      data: {
+        metrics: {
+          inquiries: {
+            comparison: { absoluteDelta: 1, relativeDeltaPercent: null, state: 'available', value: 0 },
+            current: { state: 'available', value: 1 },
+            source: 'payload',
           },
         },
       },

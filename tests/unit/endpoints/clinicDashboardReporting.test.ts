@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { clinicDashboardReportingGetHandler } from '@/endpoints/clinicDashboardReporting'
+import type { ClinicDashboardReportingDTO, ReportingCountMetric } from '@/features/clinicDashboard/reporting/contracts'
 import { createMockPayload, createMockReq } from '../helpers/testHelpers'
 
 const mocks = vi.hoisted(() => ({ resolveClinicDashboardReporting: vi.fn() }))
@@ -9,14 +10,65 @@ vi.mock('@/features/clinicDashboard/reporting/service', async (importOriginal) =
   resolveClinicDashboardReporting: mocks.resolveClinicDashboardReporting,
 }))
 
-const reportingPayload = {
+const metric = <Source extends 'payload' | 'posthog'>(
+  source: Source,
+  current: number,
+  comparison: number,
+): ReportingCountMetric & { source: Source } => ({
+  comparison: {
+    absoluteDelta: current - comparison,
+    relativeDeltaPercent: comparison === 0 ? null : ((current - comparison) / comparison) * 100,
+    state: 'available' as const,
+    value: comparison,
+  },
+  current: { state: 'available' as const, value: current },
+  source,
+})
+
+const reportingPayload = (days: 7 | 30 | 90): ClinicDashboardReportingDTO => ({
   asOf: '2026-04-10T09:15:30.123Z',
-  comparisonPeriod: { days: 7, from: '2026-03-27T21:00:00.000Z', to: '2026-04-03T09:15:30.123Z' },
-  metrics: {},
-  period: { days: 7, from: '2026-04-03T21:00:00.000Z', to: '2026-04-10T09:15:30.123Z' },
+  comparisonPeriod: { days, from: '2026-03-27T21:00:00.000Z', to: '2026-04-03T09:15:30.123Z' },
+  metrics: {
+    ctaInteractions: {
+      byCtaId: {
+        choose_treatment: metric('posthog', 3, 2),
+        contact: metric('posthog', 4, 3),
+        contact_doctor: metric('posthog', 5, 4),
+      },
+      source: 'posthog',
+      total: metric('posthog', 12, 9),
+    },
+    inquiries: metric('payload', 1, 0),
+    profileCompleteness: {
+      comparison: null,
+      completedAreas: 6,
+      percent: 100,
+      source: 'payload',
+      state: 'available',
+      totalAreas: 6,
+    },
+    profileViews: metric('posthog', 20, 10),
+    reviews: {
+      average: { comparison: null, source: 'payload', state: 'available', value: 4.5 },
+      count: { comparison: null, source: 'payload', state: 'available', value: 2 },
+      source: 'payload',
+    },
+    sessionConversion: {
+      comparison: {
+        denominatorSessions: 2,
+        numeratorSessions: 1,
+        percentagePointDelta: 0,
+        ratePercent: 50,
+        state: 'available',
+      },
+      current: { denominatorSessions: 4, numeratorSessions: 2, ratePercent: 50, state: 'available' },
+      source: 'posthog',
+    },
+  },
+  period: { days, from: '2026-04-03T21:00:00.000Z', to: '2026-04-10T09:15:30.123Z' },
   schemaVersion: 'clinic-dashboard-reporting-v1',
   timezone: 'Europe/Istanbul',
-}
+})
 
 const request = (query: string) => {
   const payload = createMockPayload()
@@ -36,7 +88,10 @@ const expectPrivateHeaders = (response: Response) => {
 describe('Clinic Dashboard reporting endpoint', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.resolveClinicDashboardReporting.mockResolvedValue({ status: 'success', data: reportingPayload })
+    mocks.resolveClinicDashboardReporting.mockImplementation(async (_, periodDays) => ({
+      data: reportingPayload(periodDays as 7 | 30 | 90),
+      status: 'success',
+    }))
   })
 
   it.each(['', 'periodDays=6', 'periodDays=07', 'periodDays=7&periodDays=30', 'periodDays=7&clinicId=other'])(
@@ -61,7 +116,7 @@ describe('Clinic Dashboard reporting endpoint', () => {
     const response = await clinicDashboardReportingGetHandler(req)
 
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual(reportingPayload)
+    await expect(response.json()).resolves.toEqual(reportingPayload(periodDays as 7 | 30 | 90))
     expect(mocks.resolveClinicDashboardReporting).toHaveBeenCalledWith(req, periodDays)
     expectPrivateHeaders(response)
   })

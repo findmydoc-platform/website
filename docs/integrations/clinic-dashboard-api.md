@@ -156,8 +156,8 @@ type ClinicDashboardReportingV1 = {
     sessionConversion: SessionConversionMetric
     reviews: {
       source: 'payload'
-      count: SnapshotMetric
-      average: SnapshotMetric
+      count: ReviewCountSnapshot
+      average: ReviewAverageSnapshot
     }
     profileCompleteness: {
       source: 'payload'
@@ -194,10 +194,17 @@ type SessionConversionWindow = {
   state: SourceState | 'zero_denominator'
 }
 
-type SnapshotMetric = {
+type ReviewCountSnapshot = {
   source: 'payload'
   value: number | null
-  state: SourceState | 'zero_denominator' | 'no_reviews'
+  state: SourceState
+  comparison: null
+}
+
+type ReviewAverageSnapshot = {
+  source: 'payload'
+  value: number | null
+  state: SourceState | 'no_reviews'
   comparison: null
 }
 

@@ -13,7 +13,8 @@ export type PostHogReportingValues = {
   ctaById: Record<'choose_treatment' | 'contact' | 'contact_doctor', number>
   ctaTotal: number
   inquirySessions: number
-  missingCorrelationEvents: number
+  incompleteInquirySessionIds: number
+  incompleteProfileViewSessionIds: number
   profileViews: number
   profileViewSessions: number
 }
@@ -31,7 +32,8 @@ const emptyValues = (): PostHogReportingValues => ({
   ctaById: { choose_treatment: 0, contact: 0, contact_doctor: 0 },
   ctaTotal: 0,
   inquirySessions: 0,
-  missingCorrelationEvents: 0,
+  incompleteInquirySessionIds: 0,
+  incompleteProfileViewSessionIds: 0,
   profileViews: 0,
   profileViewSessions: 0,
 })
@@ -72,7 +74,8 @@ const asValues = (
   const contactDoctor = value('cta_contact_doctor')
   const profileViewSessions = value('profile_view_sessions')
   const inquirySessions = value('inquiry_sessions')
-  const missingCorrelationEvents = value('missing_correlation_events')
+  const incompleteInquirySessionIds = value('incomplete_inquiry_session_ids')
+  const incompleteProfileViewSessionIds = value('incomplete_profile_view_session_ids')
 
   if (
     profileViews === undefined ||
@@ -82,7 +85,8 @@ const asValues = (
     contactDoctor === undefined ||
     profileViewSessions === undefined ||
     inquirySessions === undefined ||
-    missingCorrelationEvents === undefined
+    incompleteInquirySessionIds === undefined ||
+    incompleteProfileViewSessionIds === undefined
   ) {
     return undefined
   }
@@ -95,7 +99,8 @@ const asValues = (
     },
     ctaTotal,
     inquirySessions,
-    missingCorrelationEvents,
+    incompleteInquirySessionIds,
+    incompleteProfileViewSessionIds,
     profileViews,
     profileViewSessions,
   }
@@ -114,6 +119,7 @@ const buildQuery = ({
 }): string => {
   const clinic = escapeHogQLString(clinicId)
   const comparisonFrom = escapeHogQLString(comparison.from)
+  const comparisonTo = escapeHogQLString(comparison.to)
   const currentFrom = escapeHogQLString(current.from)
   const asOf = escapeHogQLString(current.to)
 
@@ -123,11 +129,13 @@ WITH filtered_events AS (
     event,
     timestamp,
     properties.cta_id AS cta_id,
-    properties.$session_id AS session_id,
+    coalesce(toString(properties.$session_id), '') AS session_id,
     if(timestamp >= toDateTime64('${currentFrom}', 3), 'current', 'comparison') AS window
   FROM events
-  WHERE timestamp >= toDateTime64('${comparisonFrom}', 3)
-    AND timestamp <= toDateTime64('${asOf}', 3)
+  WHERE (
+      (timestamp >= toDateTime64('${comparisonFrom}', 3) AND timestamp < toDateTime64('${comparisonTo}', 3))
+      OR (timestamp >= toDateTime64('${currentFrom}', 3) AND timestamp <= toDateTime64('${asOf}', 3))
+    )
     AND properties.clinic_id = '${clinic}'
     AND event IN ('clinic_profile_viewed', 'clinic_cta_clicked', 'patient_inquiry_created')
 ), sessions AS (
@@ -137,7 +145,7 @@ WITH filtered_events AS (
     minIf(timestamp, event = 'clinic_profile_viewed') AS profile_viewed_at,
     minIf(timestamp, event = 'patient_inquiry_created') AS inquiry_created_at
   FROM filtered_events
-  WHERE session_id IS NOT NULL AND session_id != ''
+  WHERE match(session_id, '^[A-Za-z0-9_-]{1,128}$')
   GROUP BY window, session_id
 )
 SELECT
@@ -146,13 +154,15 @@ SELECT
   countIf(event = 'clinic_cta_clicked' AND cta_id = 'choose_treatment' AND window = 'current') AS current_cta_choose_treatment,
   countIf(event = 'clinic_cta_clicked' AND cta_id = 'contact' AND window = 'current') AS current_cta_contact,
   countIf(event = 'clinic_cta_clicked' AND cta_id = 'contact_doctor' AND window = 'current') AS current_cta_contact_doctor,
-  countIf(event = 'patient_inquiry_created' AND window = 'current' AND (session_id IS NULL OR session_id = '')) AS current_missing_correlation_events,
+  countIf(event = 'clinic_profile_viewed' AND window = 'current' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS current_incomplete_profile_view_session_ids,
+  countIf(event = 'patient_inquiry_created' AND window = 'current' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS current_incomplete_inquiry_session_ids,
   countIf(event = 'clinic_profile_viewed' AND window = 'comparison') AS comparison_profile_views,
   countIf(event = 'clinic_cta_clicked' AND window = 'comparison') AS comparison_cta_total,
   countIf(event = 'clinic_cta_clicked' AND cta_id = 'choose_treatment' AND window = 'comparison') AS comparison_cta_choose_treatment,
   countIf(event = 'clinic_cta_clicked' AND cta_id = 'contact' AND window = 'comparison') AS comparison_cta_contact,
   countIf(event = 'clinic_cta_clicked' AND cta_id = 'contact_doctor' AND window = 'comparison') AS comparison_cta_contact_doctor,
-  countIf(event = 'patient_inquiry_created' AND window = 'comparison' AND (session_id IS NULL OR session_id = '')) AS comparison_missing_correlation_events,
+  countIf(event = 'clinic_profile_viewed' AND window = 'comparison' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS comparison_incomplete_profile_view_session_ids,
+  countIf(event = 'patient_inquiry_created' AND window = 'comparison' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS comparison_incomplete_inquiry_session_ids,
   (SELECT countIf(profile_viewed_at IS NOT NULL) FROM sessions WHERE window = 'current') AS current_profile_view_sessions,
   (SELECT countIf(profile_viewed_at IS NOT NULL AND inquiry_created_at >= profile_viewed_at) FROM sessions WHERE window = 'current') AS current_inquiry_sessions,
   (SELECT countIf(profile_viewed_at IS NOT NULL) FROM sessions WHERE window = 'comparison') AS comparison_profile_view_sessions,

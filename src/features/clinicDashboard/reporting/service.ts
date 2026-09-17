@@ -160,7 +160,7 @@ const countMetric = (
 
 const sessionMetric = (read: PostHogReportingRead): ReportingSessionConversionMetric => {
   const toWindow = (values: PostHogReportingValues, state: ReportingSourceState) => {
-    if (state !== 'available' || values.missingCorrelationEvents > 0) {
+    if (state !== 'available' || values.incompleteProfileViewSessionIds > 0 || values.incompleteInquirySessionIds > 0) {
       return {
         denominatorSessions: null,
         numeratorSessions: null,
@@ -372,7 +372,8 @@ export async function resolveClinicDashboardReporting(
             ctaById: { choose_treatment: 0, contact: 0, contact_doctor: 0 },
             ctaTotal: 0,
             inquirySessions: 0,
-            missingCorrelationEvents: 0,
+            incompleteInquirySessionIds: 0,
+            incompleteProfileViewSessionIds: 0,
             profileViews: 0,
             profileViewSessions: 0,
           },
@@ -381,7 +382,8 @@ export async function resolveClinicDashboardReporting(
             ctaById: { choose_treatment: 0, contact: 0, contact_doctor: 0 },
             ctaTotal: 0,
             inquirySessions: 0,
-            missingCorrelationEvents: 0,
+            incompleteInquirySessionIds: 0,
+            incompleteProfileViewSessionIds: 0,
             profileViews: 0,
             profileViewSessions: 0,
           },

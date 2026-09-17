@@ -4,7 +4,6 @@ export const REPORTING_PERIOD_DAYS = [7, 30, 90] as const
 export type ReportingPeriodDays = (typeof REPORTING_PERIOD_DAYS)[number]
 export type ReportingMetricSource = 'payload' | 'posthog'
 export type ReportingSourceState = 'available' | 'source_unavailable' | 'partial_coverage'
-export type ReportingMetricState = ReportingSourceState | 'zero_denominator' | 'no_reviews'
 
 export type ReportingMetricValue = {
   value: number | null
@@ -37,10 +36,17 @@ export type ReportingSessionConversionMetric = {
   }
 }
 
-export type ReportingSnapshotMetric = {
+export type ReportingReviewCountSnapshot = {
   source: 'payload'
   value: number | null
-  state: ReportingMetricState
+  state: ReportingSourceState
+  comparison: null
+}
+
+export type ReportingReviewAverageSnapshot = {
+  source: 'payload'
+  value: number | null
+  state: ReportingSourceState | 'no_reviews'
   comparison: null
 }
 
@@ -69,8 +75,8 @@ export type ClinicDashboardReportingDTO = {
     sessionConversion: ReportingSessionConversionMetric
     reviews: {
       source: 'payload'
-      count: ReportingSnapshotMetric
-      average: ReportingSnapshotMetric
+      count: ReportingReviewCountSnapshot
+      average: ReportingReviewAverageSnapshot
     }
     profileCompleteness: {
       source: 'payload'

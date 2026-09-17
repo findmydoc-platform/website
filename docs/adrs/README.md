@@ -90,3 +90,4 @@ When adding a new ADR:
 - [026 — Standalone Clinic Dashboard BFF architecture](./026-adr-standalone-clinic-dashboard-bff-architecture.md)
 - [027 — Database runtime connection modes](./027-adr-database-runtime-connection-modes.md)
 - [028 — Lettermint for transactional email](./028-adr-lettermint-for-transactional-email.md)
+- [029 — Tenant-safe Clinic Dashboard reporting contract](./029-adr-tenant-safe-clinic-dashboard-reporting.md)

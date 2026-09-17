@@ -142,6 +142,8 @@ WITH filtered_events AS (
   SELECT
     window,
     session_id,
+    countIf(event = 'clinic_profile_viewed') AS profile_view_count,
+    countIf(event = 'patient_inquiry_created') AS inquiry_count,
     minIf(timestamp, event = 'clinic_profile_viewed') AS profile_viewed_at,
     minIf(timestamp, event = 'patient_inquiry_created') AS inquiry_created_at
   FROM filtered_events
@@ -163,10 +165,10 @@ SELECT
   countIf(event = 'clinic_cta_clicked' AND cta_id = 'contact_doctor' AND window = 'comparison') AS comparison_cta_contact_doctor,
   countIf(event = 'clinic_profile_viewed' AND window = 'comparison' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS comparison_incomplete_profile_view_session_ids,
   countIf(event = 'patient_inquiry_created' AND window = 'comparison' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')) AS comparison_incomplete_inquiry_session_ids,
-  (SELECT countIf(profile_viewed_at IS NOT NULL) FROM sessions WHERE window = 'current') AS current_profile_view_sessions,
-  (SELECT countIf(profile_viewed_at IS NOT NULL AND inquiry_created_at >= profile_viewed_at) FROM sessions WHERE window = 'current') AS current_inquiry_sessions,
-  (SELECT countIf(profile_viewed_at IS NOT NULL) FROM sessions WHERE window = 'comparison') AS comparison_profile_view_sessions,
-  (SELECT countIf(profile_viewed_at IS NOT NULL AND inquiry_created_at >= profile_viewed_at) FROM sessions WHERE window = 'comparison') AS comparison_inquiry_sessions
+  (SELECT countIf(profile_view_count > 0) FROM sessions WHERE window = 'current') AS current_profile_view_sessions,
+  (SELECT countIf(profile_view_count > 0 AND inquiry_count > 0 AND inquiry_created_at >= profile_viewed_at) FROM sessions WHERE window = 'current') AS current_inquiry_sessions,
+  (SELECT countIf(profile_view_count > 0) FROM sessions WHERE window = 'comparison') AS comparison_profile_view_sessions,
+  (SELECT countIf(profile_view_count > 0 AND inquiry_count > 0 AND inquiry_created_at >= profile_viewed_at) FROM sessions WHERE window = 'comparison') AS comparison_inquiry_sessions
 FROM filtered_events
 `
 }
@@ -205,22 +207,19 @@ export const readPostHogClinicDashboardReporting = async ({
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), POSTHOG_QUERY_TIMEOUT_MS)
   try {
-    const response = await fetch(
-      `${process.env.POSTHOG_QUERY_HOST ?? POSTHOG_QUERY_HOST}/api/projects/${encodeURIComponent(projectId)}/query/`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          name: 'clinic-dashboard-reporting-v1',
-          query: { kind: 'HogQLQuery', query: buildQuery({ clinicId, comparison, current }) },
-          refresh: 'force_blocking',
-        }),
+    const response = await fetch(`${POSTHOG_QUERY_HOST}/api/projects/${encodeURIComponent(projectId)}/query/`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
-    )
+      signal: controller.signal,
+      body: JSON.stringify({
+        name: 'clinic-dashboard-reporting-v1',
+        query: { kind: 'HogQLQuery', query: buildQuery({ clinicId, comparison, current }) },
+        refresh: 'force_blocking',
+      }),
+    })
     if (!response.ok) throw new Error('PostHog reporting query failed')
     const columns = parseQueryRow(await response.json())
     const currentValues = columns ? asValues(columns, 'current') : undefined

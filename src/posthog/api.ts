@@ -22,9 +22,11 @@ import {
   type PostHogEventPropertiesByName,
   type PostHogScalarProperty,
 } from './events'
+import { readClinicInquirySessionId } from './inquirySessionCorrelation'
 
 export { POSTHOG_EVENT_REGISTRY }
 export type { PostHogEventDefinition, PostHogEventName, PostHogScalarProperty } from './events'
+export { readClinicInquirySessionId }
 
 export type PostHogActorType = 'anonymous' | 'patient' | 'clinic' | 'platform'
 
@@ -461,6 +463,13 @@ export const postHogServerEvents: PostHogServerEventInterface = {
 }
 
 export { postHogServerConsent, type PostHogServerConsentInterface } from './serverConsent'
+
+export const captureStoredPatientInquiryPostHogEvent = async (
+  input: import('./inquiry').StoredPatientInquiryPostHogCaptureInput,
+): Promise<void> => {
+  const { captureStoredPatientInquiryPostHogEvent: capture } = await import('./inquiry')
+  await capture(input)
+}
 
 export async function identifyPostHogActor(actor: PostHogActor): Promise<void> {
   if (!actor.isAuthenticated || identifiedActors.has(actor.distinctId) || !isNodeRuntime()) {

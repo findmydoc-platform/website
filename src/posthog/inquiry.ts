@@ -1,5 +1,5 @@
 import type { PayloadRequest } from 'payload'
-import { readClinicInquirySessionId } from '@/features/clinicDashboard/reporting/sessionCorrelation'
+import { readClinicInquirySessionId } from './inquirySessionCorrelation'
 import { postHogServerConsent, postHogServerEvents, resolveAnonymousPostHogActor } from './api'
 
 type RecordValue = Record<string, unknown>
@@ -26,6 +26,12 @@ const findOne = async (req: PayloadRequest, collection: 'clinics' | 'patientClin
   return asRecord(result.docs[0])
 }
 
+export type StoredPatientInquiryPostHogCaptureInput = {
+  inquiryId: string
+  req: PayloadRequest
+  sessionId: string | undefined
+}
+
 /**
  * Reads the server-stored inquiry before emitting analytics. The correlation value
  * remains in-memory only and is intentionally absent from logs and response DTOs.
@@ -34,11 +40,7 @@ export const captureStoredPatientInquiryPostHogEvent = async ({
   inquiryId,
   req,
   sessionId,
-}: {
-  inquiryId: string
-  req: PayloadRequest
-  sessionId: string | undefined
-}): Promise<void> => {
+}: StoredPatientInquiryPostHogCaptureInput): Promise<void> => {
   try {
     const analyticsConsent = await postHogServerConsent.resolveAnalyticsConsent({ headers: req.headers })
     if (!analyticsConsent.isAllowed) return

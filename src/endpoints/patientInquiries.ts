@@ -25,8 +25,7 @@ import {
   sweepExpiredAttachmentDrafts,
   updatePatientInquiryReadPosition,
 } from '@/features/inquiryCommunication/service'
-import { readClinicInquirySessionId } from '@/features/clinicDashboard/reporting/sessionCorrelation'
-import { captureStoredPatientInquiryPostHogEvent } from '@/posthog/inquiry'
+import { captureStoredPatientInquiryPostHogEvent, readClinicInquirySessionId } from '@/posthog/api'
 import { reconcileExpiredInquiryModerationMeasures } from '@/features/inquiryModeration/service'
 import { toLoggedError } from '@/utilities/logging/shared'
 import { proxyInquiryAttachment } from './inquiryAttachmentProxy'

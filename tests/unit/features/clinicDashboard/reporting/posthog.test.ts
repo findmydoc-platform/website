@@ -37,6 +37,7 @@ describe('Clinic Dashboard PostHog reporting adapter', () => {
   afterEach(() => {
     global.fetch = originalFetch
     vi.unstubAllEnvs()
+    vi.useRealTimers()
   })
 
   it('makes one fresh, server-only aggregate query without retrying', async () => {
@@ -109,6 +110,70 @@ describe('Clinic Dashboard PostHog reporting adapter', () => {
     expect(query).toContain(
       "event = 'patient_inquiry_created' AND window = 'comparison' AND NOT match(session_id, '^[A-Za-z0-9_-]{1,128}$')",
     )
+    expect(query).toContain("countIf(event = 'clinic_profile_viewed') AS profile_view_count")
+    expect(query).toContain("countIf(event = 'patient_inquiry_created') AS inquiry_count")
+    expect(query).toContain('countIf(profile_view_count > 0) FROM sessions')
+    expect(query).toContain(
+      'countIf(profile_view_count > 0 AND inquiry_count > 0 AND inquiry_created_at >= profile_viewed_at)',
+    )
+    expect(query).not.toContain('profile_viewed_at IS NOT NULL')
+  })
+
+  it('keeps a valid inquiry-only session out of the funnel denominator and conversions', async () => {
+    vi.stubEnv('POSTHOG_QUERY_API_KEY', 'phx_server_only')
+    vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', '42')
+    vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '180')
+    const inquiryOnlySessionResponse = {
+      ...queryResponse,
+      results: [queryResponse.results[0]!.map((value, index) => (index === 14 || index === 15 ? 0 : value))],
+    }
+    global.fetch = vi.fn(async () => new Response(JSON.stringify(inquiryOnlySessionResponse), { status: 200 }))
+
+    const result = await readPostHogClinicDashboardReporting(input)
+
+    expect(result.current).toMatchObject({ inquirySessions: 0, profileViewSessions: 0 })
+  })
+
+  it('uses the fixed official EU query endpoint even when an untrusted host variable is configured', async () => {
+    vi.stubEnv('POSTHOG_QUERY_API_KEY', 'phx_server_only')
+    vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', '42')
+    vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '180')
+    vi.stubEnv('POSTHOG_QUERY_HOST', 'https://untrusted.example')
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(queryResponse), { status: 200 }))
+    global.fetch = fetchMock
+
+    await readPostHogClinicDashboardReporting(input)
+
+    expect(fetchMock).toHaveBeenCalledWith('https://eu.i.posthog.com/api/projects/42/query/', expect.anything())
+  })
+
+  it('aborts the one PostHog request at the three-second budget without retrying', async () => {
+    vi.useFakeTimers()
+    vi.stubEnv('POSTHOG_QUERY_API_KEY', 'phx_server_only')
+    vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', '42')
+    vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '180')
+    let signal: AbortSignal | undefined
+    const fetchMock = vi.fn(
+      (_url: string, options: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          signal = options.signal ?? undefined
+          signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+        }),
+    )
+    global.fetch = fetchMock as typeof fetch
+
+    const result = readPostHogClinicDashboardReporting(input)
+    await vi.advanceTimersByTimeAsync(2_999)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(signal?.aborted).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(1)
+    await expect(result).resolves.toMatchObject({
+      comparisonState: 'source_unavailable',
+      currentState: 'source_unavailable',
+    })
+    expect(signal?.aborted).toBe(true)
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 
   it('represents an unavailable source as unknown rather than zero', async () => {

@@ -5,9 +5,8 @@ import type { z } from 'zod'
 
 import { guestInquiryCreateInputSchema } from '@/features/inquiryCommunication/contracts'
 import { InquiryCommunicationServiceError, submitGuestClinicInquiry } from '@/features/inquiryCommunication/service'
-import { readClinicInquirySessionId } from '@/features/clinicDashboard/reporting/sessionCorrelation'
 import { hasSupabaseAuthenticationAttempt } from '@/features/patientInquiries/creationContext'
-import { captureStoredPatientInquiryPostHogEvent } from '@/posthog/inquiry'
+import { captureStoredPatientInquiryPostHogEvent, readClinicInquirySessionId } from '@/posthog/api'
 
 const publicValidationMessages = new Set([
   'Consent is required.',

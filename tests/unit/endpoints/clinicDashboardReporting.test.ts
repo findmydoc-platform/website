@@ -134,4 +134,19 @@ describe('Clinic Dashboard reporting endpoint', () => {
     await expect(response.json()).resolves.toEqual({ error: { code, message } })
     expectPrivateHeaders(response)
   })
+
+  it('contains an unexpected reporting-service rejection in the normative private 503 envelope', async () => {
+    mocks.resolveClinicDashboardReporting.mockRejectedValueOnce(new Error('private upstream failure'))
+
+    const response = await clinicDashboardReportingGetHandler(request('periodDays=7'))
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: 'CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE',
+        message: 'Reporting is temporarily unavailable.',
+      },
+    })
+    expectPrivateHeaders(response)
+  })
 })

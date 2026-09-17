@@ -34,7 +34,12 @@ export const clinicDashboardReportingGetHandler: PayloadHandler = async (req) =>
     return errorResponse('CLINIC_DASHBOARD_REPORTING_INVALID_INPUT', 'Reporting period must be 7, 30, or 90 days.', 400)
   }
 
-  const result = await resolveClinicDashboardReporting(req, periodDays)
+  let result: Awaited<ReturnType<typeof resolveClinicDashboardReporting>>
+  try {
+    result = await resolveClinicDashboardReporting(req, periodDays)
+  } catch {
+    return errorResponse('CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE', 'Reporting is temporarily unavailable.', 503)
+  }
   switch (result.status) {
     case 'success':
       return Response.json(result.data, { headers: REPORTING_PRIVATE_HEADERS, status: 200 })

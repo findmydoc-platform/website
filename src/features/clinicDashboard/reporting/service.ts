@@ -1,5 +1,5 @@
 import { validateOpeningHours } from '@/collections/clinics/openingHours'
-import { resolveClinicDashboardBootstrap } from '@/features/clinicDashboard/bootstrap'
+import { revalidateClinicDashboardRequest } from '@/features/clinicDashboard/authorization'
 import type { PayloadRequest, Where } from 'payload'
 import {
   CLINIC_DASHBOARD_REPORTING_SCHEMA_VERSION,
@@ -344,8 +344,8 @@ export async function resolveClinicDashboardReporting(
   periodDays: ReportingPeriodDays,
   now = new Date(),
 ): Promise<ClinicDashboardReportingResult> {
-  const access = await resolveClinicDashboardBootstrap(req)
-  if (access.status !== 'success') return access
+  const access = await revalidateClinicDashboardRequest(req, 'legacy')
+  if (access.status !== 'authorized') return access
   const clinicId = access.data.clinic.id
   const windows = createReportingWindows(periodDays, now)
 

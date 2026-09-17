@@ -22,8 +22,10 @@ vi.mock('@/features/inquiryCommunication/service', async (importOriginal) => ({
   submitGuestClinicInquiry: mocks.submitGuestInquiry,
 }))
 
-vi.mock('@/posthog/inquiry', () => ({
+vi.mock('@/posthog/api', () => ({
   captureStoredPatientInquiryPostHogEvent: mocks.captureStoredPatientInquiryPostHogEvent,
+  readClinicInquirySessionId: (value: unknown) =>
+    typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/u.test(value) ? value : undefined,
 }))
 
 import { InquiryCommunicationServiceError } from '@/features/inquiryCommunication/service'

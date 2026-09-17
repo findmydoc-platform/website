@@ -3,7 +3,7 @@ import { getServerLogger } from '@/utilities/logging/serverLogger'
 import { createScopedLogger, getRequestLogContext, toLoggedError } from '@/utilities/logging/shared'
 import { FormSubmissionError, submitFormData } from '@/utilities/submitForm'
 import { postHogServerConsent, postHogServerEvents, resolveAnonymousPostHogActor } from '@/posthog/api'
-import { readClinicInquirySessionId } from '@/features/clinicDashboard/reporting/sessionCorrelation'
+import { readClinicInquirySessionId } from '@/posthog/api'
 import { NextRequest, NextResponse } from 'next/server'
 
 type FormBridgePayload = Record<string, unknown>

@@ -51,6 +51,8 @@ vi.mock('@/posthog/api', () => ({
     clinicOnboardingInterestCreated: postHogMocks.clinicOnboardingInterestCreated,
     patientInquiryCreated: postHogMocks.patientInquiryCreated,
   },
+  readClinicInquirySessionId: (value: unknown) =>
+    typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/u.test(value) ? value : undefined,
   resolveAnonymousPostHogActor: postHogMocks.resolveAnonymousPostHogActor,
 }))
 

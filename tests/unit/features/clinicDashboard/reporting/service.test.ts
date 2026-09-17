@@ -8,11 +8,11 @@ import { createMockPayload, createMockReq } from '../../../helpers/testHelpers'
 
 const mocks = vi.hoisted(() => ({
   readPostHogClinicDashboardReporting: vi.fn(),
-  resolveClinicDashboardBootstrap: vi.fn(),
+  revalidateClinicDashboardRequest: vi.fn(),
 }))
 
-vi.mock('@/features/clinicDashboard/bootstrap', () => ({
-  resolveClinicDashboardBootstrap: mocks.resolveClinicDashboardBootstrap,
+vi.mock('@/features/clinicDashboard/authorization', () => ({
+  revalidateClinicDashboardRequest: mocks.revalidateClinicDashboardRequest,
 }))
 
 vi.mock('@/features/clinicDashboard/reporting/posthog', async (importOriginal) => ({
@@ -144,6 +144,46 @@ const withUnknownPostHog = (state: ReportingSourceState): ClinicDashboardReporti
   },
 })
 
+const withPartialComparisonPostHog = (): ClinicDashboardReportingDTO => {
+  const partialComparisonMetric = <Source extends 'posthog'>(metric: ReportingCountMetric & { source: Source }) => ({
+    ...metric,
+    comparison: {
+      absoluteDelta: null,
+      relativeDeltaPercent: null,
+      state: 'partial_coverage' as const,
+      value: null,
+    },
+  })
+
+  return {
+    ...completeDto,
+    metrics: {
+      ...completeDto.metrics,
+      ctaInteractions: {
+        byCtaId: {
+          choose_treatment: partialComparisonMetric(completeDto.metrics.ctaInteractions.byCtaId.choose_treatment),
+          contact: partialComparisonMetric(completeDto.metrics.ctaInteractions.byCtaId.contact),
+          contact_doctor: partialComparisonMetric(completeDto.metrics.ctaInteractions.byCtaId.contact_doctor),
+        },
+        source: 'posthog',
+        total: partialComparisonMetric(completeDto.metrics.ctaInteractions.total),
+      },
+      profileViews: partialComparisonMetric(completeDto.metrics.profileViews),
+      sessionConversion: {
+        comparison: {
+          denominatorSessions: null,
+          numeratorSessions: null,
+          percentagePointDelta: null,
+          ratePercent: null,
+          state: 'partial_coverage',
+        },
+        current: completeDto.metrics.sessionConversion.current,
+        source: 'posthog',
+      },
+    },
+  }
+}
+
 const configuredPayload = () => {
   const payload = createMockPayload()
   payload.find.mockImplementation(async ({ collection }: { collection: string }) => {
@@ -189,9 +229,9 @@ const findFor = (payload: ReturnType<typeof createMockPayload>, collection: stri
 describe('Clinic Dashboard reporting service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.resolveClinicDashboardBootstrap.mockResolvedValue({
+    mocks.revalidateClinicDashboardRequest.mockResolvedValue({
       data: { clinic: { id: '8', name: 'Türkiye Clinic' } },
-      status: 'success',
+      status: 'authorized',
     })
     mocks.readPostHogClinicDashboardReporting.mockResolvedValue(availablePostHog)
   })
@@ -230,6 +270,8 @@ describe('Clinic Dashboard reporting service', () => {
             { clinic: { equals: '8' } },
             { status: { in: ['submitted', 'in_review', 'contacted', 'closed'] } },
             { status: { not_equals: 'spam' } },
+            { createdAt: { greater_than_equal: completeDto.comparisonPeriod.from } },
+            { createdAt: { less_than_equal: completeDto.period.to } },
           ]),
         },
       }),
@@ -372,6 +414,17 @@ describe('Clinic Dashboard reporting service', () => {
     },
   )
 
+  it('keeps current PostHog values while suppressing a partial comparison and every dependent delta', async () => {
+    mocks.readPostHogClinicDashboardReporting.mockResolvedValue({
+      ...availablePostHog,
+      comparisonState: 'partial_coverage',
+    })
+
+    const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), 7, now)
+
+    expect(result).toEqual({ data: withPartialComparisonPostHog(), status: 'success' })
+  })
+
   it('emits zero_denominator only for a complete session funnel with no profiles', async () => {
     mocks.readPostHogClinicDashboardReporting.mockResolvedValue({
       ...availablePostHog,
@@ -404,7 +457,7 @@ describe('Clinic Dashboard reporting service', () => {
     ['unauthorized', { status: 'unauthorized' }],
     ['access denied', { status: 'access-denied' }],
   ] as const)('stops before every source read for %s', async (_, access) => {
-    mocks.resolveClinicDashboardBootstrap.mockResolvedValueOnce(access)
+    mocks.revalidateClinicDashboardRequest.mockResolvedValueOnce(access)
     const payload = configuredPayload()
 
     await expect(resolveClinicDashboardReporting(createMockReq(null, payload), 7, now)).resolves.toEqual(access)

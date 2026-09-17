@@ -3,6 +3,7 @@
 import {
   disablePostHog,
   enablePostHog,
+  getPostHogSessionId,
   postHogBrowserEvents as postHogBrowserEventInterface,
   resetPostHogIdentity,
   type PostHogBrowserEventInterface,
@@ -30,6 +31,10 @@ export function setPostHogAnalyticsConsent(enabled: boolean): boolean {
 
 export function resetPostHogBrowserIdentity(): boolean {
   return resetPostHogIdentity()
+}
+
+export function getConsentedPostHogSessionId(): string | undefined {
+  return getPostHogSessionId()
 }
 
 export const postHogBrowserEvents: PostHogBrowserEventInterface = postHogBrowserEventInterface

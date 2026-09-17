@@ -5,7 +5,9 @@ import type { z } from 'zod'
 
 import { guestInquiryCreateInputSchema } from '@/features/inquiryCommunication/contracts'
 import { InquiryCommunicationServiceError, submitGuestClinicInquiry } from '@/features/inquiryCommunication/service'
+import { readClinicInquirySessionId } from '@/features/clinicDashboard/reporting/sessionCorrelation'
 import { hasSupabaseAuthenticationAttempt } from '@/features/patientInquiries/creationContext'
+import { captureStoredPatientInquiryPostHogEvent } from '@/posthog/inquiry'
 
 const publicValidationMessages = new Set([
   'Consent is required.',
@@ -19,6 +21,13 @@ const publicValidationMessages = new Set([
 const firstValidationMessage = (error: z.ZodError): string => {
   const message = error.issues[0]?.message
   return message && publicValidationMessages.has(message) ? message : 'Invalid request payload.'
+}
+
+const readGuestInquiryBody = (body: unknown) => {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return { input: body, sessionId: undefined }
+  const values = body as Record<string, unknown>
+  const { session_id: sessionValue, ...input } = values
+  return { input, sessionId: readClinicInquirySessionId(sessionValue) }
 }
 
 const serializeError = (error: unknown): { message: string; name?: string } =>
@@ -53,8 +62,8 @@ export async function POST(request: NextRequest) {
       { status: 401 },
     )
   }
-  const body = await request.json().catch(() => undefined)
-  const parsed = guestInquiryCreateInputSchema.safeParse(body)
+  const body = readGuestInquiryBody(await request.json().catch(() => undefined))
+  const parsed = guestInquiryCreateInputSchema.safeParse(body.input)
   if (!parsed.success) {
     return NextResponse.json({ error: firstValidationMessage(parsed.error) }, { status: 400 })
   }
@@ -63,6 +72,9 @@ export async function POST(request: NextRequest) {
   try {
     const req = await createLocalReq({ req: { headers: request.headers } }, payload)
     const result = await submitGuestClinicInquiry(req, parsed.data)
+    if (!result.deduped) {
+      void captureStoredPatientInquiryPostHogEvent({ inquiryId: result.id, req, sessionId: body.sessionId })
+    }
     return NextResponse.json({
       success: true,
       id: result.id,

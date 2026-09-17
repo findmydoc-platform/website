@@ -16,10 +16,18 @@ PostHog is the findmydoc analytics, replay, error-tracking, and operational guar
 NEXT_PUBLIC_POSTHOG_KEY=phc_xxx
 NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
 POSTHOG_FEATURE_FLAGS_SECURE_API_KEY=phx_xxx
+POSTHOG_QUERY_API_KEY=phx_xxx
+POSTHOG_QUERY_PROJECT_ID=12345
+POSTHOG_QUERY_RETENTION_DAYS=180
 ```
 
 > **Note:** The project targets the EU host (`https://eu.i.posthog.com`); keep that consistent in documentation and deployments.
 > **Security:** `POSTHOG_FEATURE_FLAGS_SECURE_API_KEY` is a server-side secret for local feature flag evaluation. Store it in Vercel environment variables or a secrets manager, not in PayloadCMS.
+> **Reporting Query API:** `POSTHOG_QUERY_API_KEY` is a separate server-only personal API key with Query Read access.
+> `clinic-dashboard-reporting-v1` sends one aggregate HogQL query per load to [PostHog's documented Query API](https://posthog.com/docs/api/queries),
+> requests `refresh: force_blocking`, times out after three seconds, and never retries. Configure retention for at
+> least 180 days so a 90-day report and its preceding comparison period have complete coverage. Do not expose this key
+> to the browser or use browser credentials.
 
 ## Architecture
 
@@ -47,7 +55,7 @@ Business event names and payload contracts are registered in `src/posthog/events
 |--------------------------------------|------------------------------------------------------------------|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
 | `clinic_profile_viewed`              | Consent-eligible public clinic profile view in the browser       | `clinic_id`, `clinic_slug`, `page_path`, `source_route`                                        | `has_doctors`, `has_treatments`, `verification_tier`                                                                                   | Clinic metadata only. No visitor contact details or medical data.                                | Clinic profile reach and entry-volume analysis.                   |
 | `clinic_cta_clicked`                 | Consent-eligible tracked clinic profile CTA click in the browser | `clinic_id`, `clinic_slug`, `cta_id`, `cta_label`, `cta_location`, `page_path`, `source_route` | `doctor_id`, `treatment_id`                                                                                                            | No contact details, medical free text, or raw message content.                                   | Clinic profile CTA engagement and contact-intent funnels.         |
-| `patient_inquiry_created`            | Clinic profile contact form accepted by the form bridge          | `clinic_id`, `clinic_slug`, `form_slug`, `source_route`                                        | `doctor_id`, `has_doctor`, `has_message`, `has_preferred_date`, `has_preferred_time`, `has_treatment`, `submission_id`, `treatment_id` | No patient name, email, phone, appointment date/time, medical free text, or raw message content. | Clinic profile inquiry conversion analysis.                       |
+| `patient_inquiry_created`            | New clinic inquiry durably stored on the server                  | `clinic_id`, `clinic_slug`, `form_slug`, `source_route`                                        | `$session_id`, `doctor_id`, `has_doctor`, `has_message`, `has_preferred_date`, `has_preferred_time`, `has_treatment`, `submission_id`, `treatment_id` | No patient name, email, phone, appointment date/time, medical free text, or raw message content. `$session_id` is consent-gated, bounded, and never stored or logged. | Clinic profile inquiry conversion analysis.                       |
 | `clinic_onboarding_interest_created` | Clinic partner contact form accepted by the form bridge          | `form_slug`, `page_path`, `source_route`                                                       | `has_message`, `submission_id`                                                                                                         | No contact details or submitted message content.                                                 | Clinic partner landing conversion analysis.                       |
 | `register_clinic_submitted`          | Clinic registration application created or deduplicated          | `source_route`, `submission_status`                                                            | `country`, `has_additional_notes`, `has_contact_phone`                                                                                 | No clinic contact person, email, phone, street address, or additional notes content.             | Clinic registration submission and duplicate-submission analysis. |
 

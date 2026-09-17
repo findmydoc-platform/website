@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   createVerifiedInquiry: vi.fn(),
   createLocalReq: vi.fn(),
   getPayload: vi.fn(),
+  captureStoredPatientInquiryPostHogEvent: vi.fn(),
   submitGuestInquiry: vi.fn(),
 }))
 
@@ -19,6 +20,10 @@ vi.mock('@/features/inquiryCommunication/service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/inquiryCommunication/service')>()),
   createVerifiedPatientInquiry: mocks.createVerifiedInquiry,
   submitGuestClinicInquiry: mocks.submitGuestInquiry,
+}))
+
+vi.mock('@/posthog/inquiry', () => ({
+  captureStoredPatientInquiryPostHogEvent: mocks.captureStoredPatientInquiryPostHogEvent,
 }))
 
 import { InquiryCommunicationServiceError } from '@/features/inquiryCommunication/service'
@@ -79,6 +84,25 @@ describe('POST /api/clinic-contact-requests', () => {
       fullName: 'Jane Patient',
     })
     expect(mocks.createVerifiedInquiry).not.toHaveBeenCalled()
+  })
+
+  it('keeps a valid session correlation out of the stored inquiry and forwards it only after creation', async () => {
+    const response = await POST(makeRequest({ ...validBody, session_id: 'session_42', distinct_id: 'not-allowed' }))
+
+    expect(response.status).toBe(400)
+    expect(mocks.submitGuestInquiry).not.toHaveBeenCalled()
+
+    const accepted = await POST(makeRequest({ ...validBody, session_id: 'session_42' }))
+    expect(accepted.status).toBe(200)
+    expect(mocks.submitGuestInquiry).toHaveBeenLastCalledWith(
+      localReq,
+      expect.not.objectContaining({ session_id: expect.anything() }),
+    )
+    expect(mocks.captureStoredPatientInquiryPostHogEvent).toHaveBeenCalledWith({
+      inquiryId: '42',
+      req: localReq,
+      sessionId: 'session_42',
+    })
   })
 
   it.each([

@@ -25,6 +25,8 @@ import {
   sweepExpiredAttachmentDrafts,
   updatePatientInquiryReadPosition,
 } from '@/features/inquiryCommunication/service'
+import { readClinicInquirySessionId } from '@/features/clinicDashboard/reporting/sessionCorrelation'
+import { captureStoredPatientInquiryPostHogEvent } from '@/posthog/inquiry'
 import { reconcileExpiredInquiryModerationMeasures } from '@/features/inquiryModeration/service'
 import { toLoggedError } from '@/utilities/logging/shared'
 import { proxyInquiryAttachment } from './inquiryAttachmentProxy'
@@ -89,6 +91,21 @@ const readBody = async <Value>(req: PayloadRequest, schema: ZodType<Value>): Pro
   const body = typeof req.json === 'function' ? await req.json().catch(() => undefined) : undefined
   const parsed = schema.safeParse(body)
   return parsed.success ? parsed.data : invalidInputResponse()
+}
+
+const readInquiryCreateBody = async (
+  req: PayloadRequest,
+): Promise<
+  Response | { input: ReturnType<typeof verifiedInquiryCreateInputSchema.parse>; sessionId: string | undefined }
+> => {
+  const body = typeof req.json === 'function' ? await req.json().catch(() => undefined) : undefined
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return invalidInputResponse()
+  const values = body as Record<string, unknown>
+  const { session_id: sessionValue, ...input } = values
+  const parsed = verifiedInquiryCreateInputSchema.safeParse(input)
+  return parsed.success
+    ? { input: parsed.data, sessionId: readClinicInquirySessionId(sessionValue) }
+    : invalidInputResponse()
 }
 
 const hasOnlyAllowedSearchParams = (req: PayloadRequest, allowed: ReadonlySet<string>): boolean => {
@@ -238,13 +255,22 @@ export const patientInquiriesGetHandler: PayloadHandler = async (req) => {
 export const patientInquiryCreatePostHandler: PayloadHandler = async (req) => {
   const authorization = authorizePatient(req)
   if (!authorization.ok) return authorization.response
-  const input = await readBody(req, verifiedInquiryCreateInputSchema)
-  if (input instanceof Response) return input
+  const request = await readInquiryCreateBody(req)
+  if (request instanceof Response) return request
   return execute(
     req,
     'create',
-    () => createVerifiedPatientInquiry(req, input),
-    (value) => patientPrivateJsonResponse(value, value.replayed ? 200 : 201),
+    () => createVerifiedPatientInquiry(req, request.input),
+    (value) => {
+      if (!value.replayed) {
+        void captureStoredPatientInquiryPostHogEvent({
+          inquiryId: String(value.inquiry.id),
+          req,
+          sessionId: request.sessionId,
+        })
+      }
+      return patientPrivateJsonResponse(value, value.replayed ? 200 : 201)
+    },
   )
 }
 

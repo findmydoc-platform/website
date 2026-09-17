@@ -34,6 +34,7 @@ export type ClinicCtaClickedProperties = {
 }
 
 export type PatientInquiryCreatedProperties = {
+  $session_id?: string
   clinic_id: string
   clinic_slug: string
   doctor_id?: string
@@ -124,8 +125,9 @@ export const POSTHOG_EVENT_REGISTRY = {
   },
   patient_inquiry_created: {
     analysis: 'Clinic profile inquiry conversion analysis.',
-    description: 'A patient contact request was accepted by the form bridge.',
+    description: 'A patient contact request was durably stored.',
     optionalProperties: [
+      '$session_id',
       'doctor_id',
       'has_doctor',
       'has_message',
@@ -140,7 +142,7 @@ export const POSTHOG_EVENT_REGISTRY = {
       'No patient name, email, phone number, appointment date/time, medical free text, or raw message content are allowed.',
     requiredProperties: ['clinic_id', 'clinic_slug', 'form_slug', 'source_route'],
     targetSystem: 'posthog',
-    trigger: 'Captured on the server only after a clinic profile contact form submission succeeds.',
+    trigger: 'Captured on the server only after the corresponding patient inquiry is durably stored.',
   },
   register_clinic_submitted: {
     analysis: 'Clinic registration submission and duplicate-submission analysis.',

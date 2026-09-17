@@ -196,7 +196,7 @@ describe('POST /api/form-bridge/[slug]', () => {
     expect(mockedSubmitFormData).not.toHaveBeenCalled()
   })
 
-  it('tracks a privacy-safe patient inquiry event after a clinic detail form submission succeeds', async () => {
+  it('strips and discards clinic session correlation because generic forms do not create inquiries', async () => {
     mockedGetForm.mockResolvedValueOnce({ id: 'form-123' } as unknown as Awaited<ReturnType<typeof getForm>>)
     mockedSubmitFormData.mockResolvedValueOnce({ id: 'submission-1' })
 
@@ -214,6 +214,8 @@ describe('POST /api/form-bridge/[slug]', () => {
           preferred_date: '2026-06-01',
           preferred_time: '10:00',
           treatment_id: 'treatment-1',
+          session_id: 'session_42',
+          distinct_id: 'browser-identity',
         },
         '/clinics/berlin-health-clinic',
       ),
@@ -223,29 +225,13 @@ describe('POST /api/form-bridge/[slug]', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(postHogMocks.resolveAnonymousPostHogActor).toHaveBeenCalledWith({
-      fallbackAnonymousId: 'form_submission:submission-1',
-      headers: expect.any(Headers),
-    })
-    expect(postHogMocks.patientInquiryCreated).toHaveBeenCalledWith({
-      actor: postHogMocks.actor,
-      analyticsConsent: postHogMocks.analyticsConsent,
-      flush: true,
-      properties: {
-        clinic_id: '42',
-        clinic_slug: 'berlin-health-clinic',
-        doctor_id: 'doctor-1',
-        form_slug: 'public-contact',
-        has_doctor: true,
-        has_message: true,
-        has_preferred_date: true,
-        has_preferred_time: true,
-        has_treatment: true,
-        source_route: 'clinic_detail',
-        submission_id: 'submission-1',
-        treatment_id: 'treatment-1',
-      },
-    })
+    expect(postHogMocks.resolveAnonymousPostHogActor).not.toHaveBeenCalled()
+    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
+    expect(mockedSubmitFormData).toHaveBeenCalledWith(
+      expect.objectContaining({
+        values: expect.not.objectContaining({ distinct_id: expect.anything(), session_id: expect.anything() }),
+      }),
+    )
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 

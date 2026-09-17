@@ -191,7 +191,7 @@ const configuredPayload = () => {
       return {
         docs: [
           {
-            address: { city: 'Istanbul', country: 77, houseNumber: '1', street: 'Main', zipCode: '34000' },
+            address: { city: 34, country: 77, houseNumber: '1', street: 'Main', zipCode: '34000' },
             description: { root: { children: [{ text: 'Description' }] } },
             name: 'Türkiye Clinic',
             openingHours: {
@@ -291,6 +291,24 @@ describe('Clinic Dashboard reporting service', () => {
     expect(findFor(payload, 'clinictreatments')).toEqual(
       expect.objectContaining({ where: { and: [{ clinic: { equals: '8' } }, { active: { equals: true } }] } }),
     )
+  })
+
+  it('counts a depth-zero city relationship as a complete address area', async () => {
+    const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), 7, now)
+
+    expect(result).toMatchObject({
+      data: {
+        metrics: {
+          profileCompleteness: {
+            completedAreas: 6,
+            percent: 100,
+            state: 'available',
+            totalAreas: 6,
+          },
+        },
+      },
+      status: 'success',
+    })
   })
 
   it.each([

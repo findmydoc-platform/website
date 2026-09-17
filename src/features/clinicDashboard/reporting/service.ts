@@ -261,7 +261,8 @@ const resolveReviews = async (req: PayloadRequest, clinicId: string) => {
 const hasValidAddress = (value: unknown): boolean => {
   if (!isRecord(value)) return false
   return (
-    ['street', 'houseNumber', 'zipCode', 'city'].every((field) => nonBlankString(value[field])) &&
+    ['street', 'houseNumber', 'zipCode'].every((field) => nonBlankString(value[field])) &&
+    relationId(value.city) !== undefined &&
     (relationId(value.country) !== undefined || (isRecord(value.country) && nonBlankString(value.country.isoCode)))
   )
 }

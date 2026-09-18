@@ -95,6 +95,9 @@ jobs:
     if: needs.e2e-scope.outputs.e2e_required == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    concurrency:
+      group: admin-e2e-smoke-staging
+      cancel-in-progress: false
     environment: admin-e2e-smoke
     env:
       E2E_PORT: 3100

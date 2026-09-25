@@ -1,0 +1,35 @@
+name: Lettermint target lock
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preserve-targets:
+    name: preserve registered targets
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: compare pull request targets with base targets
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { targetLocksPreserved } = require('./.github/scripts/pr-gates-lettermint-target-lock.cjs');
+            if (!(await targetLocksPreserved({ github, context }))) {
+              core.setFailed('Registered Lettermint targets cannot change.');
+            }

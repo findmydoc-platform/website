@@ -295,6 +295,37 @@ Hosted startup validates the complete configuration before command or worker pro
 cross-environment, duplicated, or internally inconsistent configuration fails startup. A hosted runtime never falls
 back to a fake. Local, test, and CI reject the presence or selection of a real project token.
 
+The server-only target and fingerprint registry lives in
+`src/features/transactionalEmail/lettermintRegistry.json`. A separate reviewed target lock lives in
+`src/features/transactionalEmail/lettermintTargetLocks.json`. Both remain empty until the operator has independently
+verified the Preview and Production teams, projects, routes, webhook identifiers, sender identities, sender evidence,
+and digest-key identifiers. The operator enters only non-secret values in the registry, copies the verified team,
+project, and route to the separate lock, and reviews both changes before recording fingerprints. The setup command
+never edits the target lock. A target's `activatedTarget` is `null` before credential registration; the first
+fingerprint command pins it to the reviewed target, ahead of command activation. Runtime validation requires both
+the pin and the independent target lock to match. Rotation refuses target drift.
+The `Lettermint target lock` check compares the reviewed lock in a PR with its base commit. The check runs its
+validator from the base branch and treats the PR's lock file only as data. The workflow becomes active after its
+initial merge; this change introduces it with an empty lock, before target registration. Require its `preserve
+registered targets` status check in the default-branch ruleset before registering either target.
+
+The deployment secret store supplies `LETTERMINT_PROJECT_TOKEN`, `LETTERMINT_WEBHOOK_SECRET`, and
+`LETTERMINT_RECIPIENT_DIGEST_KEY` separately for Preview and Production. A planned webhook rotation may also supply
+`LETTERMINT_PREVIOUS_WEBHOOK_SECRET`. The fingerprint command runs from an interactive terminal, reads one credential
+without echo, and writes only its full SHA-256 fingerprint plus the already reviewed target metadata:
+
+```sh
+node scripts/lettermint-fingerprint.mjs --environment preview --kind project-token
+node scripts/lettermint-fingerprint.mjs --environment preview --kind webhook-current
+node scripts/lettermint-fingerprint.mjs --environment preview --kind digest-key
+```
+
+The same commands run separately for Production after its approvals. For a planned previous-webhook overlap, use
+`--kind webhook-previous --starts-at <ISO timestamp> --valid-until <ISO timestamp>`. The interval may not exceed ten
+minutes. The operator reviews the registry diff before committing it. Credentials never belong in command arguments,
+shell history, the registry, or review artifacts. Until the later adapter and webhook issues install real capabilities,
+hosted runtime selection still fails closed after validating the binding.
+
 The send token is read only by the outbound capability. The webhook secret is read only by the signature verifier.
 Provider team credentials, suppression-management credentials, and DNS-management credentials are not application
 runtime configuration.

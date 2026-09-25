@@ -9,12 +9,19 @@ import {
 } from './retentionPolicy'
 import { workerTransaction } from './workerStorage'
 
-export async function sweepTransactionalEmail(req: PayloadRequest, environment: string, now: () => number) {
+export async function sweepTransactionalEmail(
+  req: PayloadRequest,
+  environment: string,
+  now: () => number,
+  options: { mayContinue?: () => boolean } = {},
+): Promise<boolean> {
   const authority = { kind: 'sweep' as const, token: randomUUID(), now }
+  const mayContinue = options.mayContinue ?? (() => true)
   // Content removal precedes metadata deletion, including when a retained backlog exists.
   for (const phase of ['scrub', 'delete'] as const) {
     let afterId = 0
     while (true) {
+      if (!mayContinue()) return phase === 'delete'
       const eligible: Where =
         phase === 'scrub'
           ? {
@@ -58,6 +65,7 @@ export async function sweepTransactionalEmail(req: PayloadRequest, environment: 
       )
       if (!records.length) break
       for (const candidate of records) {
+        if (!mayContinue()) return phase === 'delete'
         await workerTransaction(req, authority, async (storage) => {
           const [record] = await storage.find({ id: { equals: candidate.id } })
           if (!record) return
@@ -86,4 +94,5 @@ export async function sweepTransactionalEmail(req: PayloadRequest, environment: 
       }
     }
   }
+  return true
 }

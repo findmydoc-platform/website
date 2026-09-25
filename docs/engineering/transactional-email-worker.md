@@ -4,7 +4,31 @@
 [Website #1855](https://github.com/findmydoc-platform/website/issues/1855) implement synthetic processing and bounded recovery under
 [ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md) and the [foundation contract](transactional-email-platform-foundation.md).
 The public command port remains unchanged. The private Website worker receives an accepted operation identifier.
-No route, schedule, product catalog entry, or hosted activation invokes it.
+No product catalog entry or hosted delivery activation invokes it.
+
+## Hosted scheduler boundary
+
+The private GET route at `/api/internal/transactional-email/worker` accepts only a dedicated `CRON_SECRET` in the
+Authorization header. It compares fixed-length digests with a timing-safe comparison before loading Payload or the
+worker. Missing or misplaced credentials return 401 without a worker call, storage read, sweep, provider call, or
+application log. POST does not run the worker. Local and test runs remain explicit-only.
+
+After a hosted worker capability is available, an authenticated invocation runs the safety and retention sweep first,
+then examines candidate operations in ID order. The worker makes the final due and lease decision. The sweep stops
+when 50 seconds remain in the invocation budget. If content scrubbing is incomplete, the invocation starts no claims;
+unfinished metadata deletion can continue on the next call without blocking claims. It starts at most five claims
+and processes at most two at once. A claim is refused when fewer than 25 seconds
+remain in the 240-second invocation budget, including a second check inside the claim transaction. The route has a
+300-second function limit. Existing two-minute leases protect against overlap.
+
+The route is private-live with `no-public-impact`: it has no public read, rendered output, cache tag, or revalidation
+event. Hosted processing remains closed before Payload initialization until the environment-specific real delivery
+capability is available; the existing worker refuses hosted fake delivery. No command is activated by this route.
+
+Production and Preview need independent one-minute invocations and distinct `CRON_SECRET` values. Vercel Cron can
+invoke the Production deployment, but it does not invoke Preview deployments. This change does not add a cron
+definition until Preview has an independent scheduler and both hosted bindings are ready. Production never calls
+Preview. Neither environment holds the other environment's scheduler credential.
 
 ## Claim and preparation
 

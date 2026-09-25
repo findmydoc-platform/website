@@ -50,6 +50,8 @@ jobs:
         run: vercel pull --yes --environment=production --token=${{ env.VERCEL_TOKEN }} --scope=${{ env.VERCEL_ORG_ID }} --local-config .storybook/vercel.json
 
       - name: Build Storybook via Vercel Build Output
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}
         run: vercel build --prod --yes --token=${{ env.VERCEL_TOKEN }} --scope=${{ env.VERCEL_ORG_ID }} --local-config .storybook/vercel.json
 
       - name: Deploy Storybook to Vercel (Production)

@@ -44,6 +44,7 @@ const runDeployHelper = (
   fs.writeFileSync(path.join(vercelDirectory, '.env.preview.local'), pulledPreviewEnvironment)
 
   const commandLog = path.join(temporaryDirectory, 'commands.log')
+  const tokenLog = path.join(temporaryDirectory, 'token-presence.log')
   const githubOutput = path.join(temporaryDirectory, 'github-output.txt')
   const pnpmPath = path.join(temporaryDirectory, 'pnpm')
 
@@ -52,6 +53,7 @@ const runDeployHelper = (
     `#!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" >> "\${COMMAND_LOG}"
+printf '%s\n' "\${NODE_AUTH_TOKEN:+present}" >> "\${TOKEN_LOG}"
 if [[ "$*" == *" deploy "* ]]; then
   echo "https://findmydoc-preview-test.vercel.app"
 fi
@@ -66,6 +68,7 @@ fi
     env: {
       ...environmentWithoutReleaseVersion,
       COMMAND_LOG: commandLog,
+      TOKEN_LOG: tokenLog,
       DATABASE_DIRECT_URI: 'postgresql://direct.example.test:5432/postgres',
       DATABASE_URI: 'postgresql://runtime.example.test:6543/postgres',
       DEPLOYMENT_COMMIT_SHA: 'a'.repeat(40),
@@ -85,6 +88,7 @@ fi
 
   return {
     commands: fs.existsSync(commandLog) ? fs.readFileSync(commandLog, 'utf8').trim().split('\n').filter(Boolean) : [],
+    tokenPresence: fs.existsSync(tokenLog) ? fs.readFileSync(tokenLog, 'utf8').split('\n').slice(0, -1) : [],
     result,
   }
 }
@@ -99,15 +103,21 @@ afterEach(() => {
 describe('Vercel deployment boundary', () => {
   it('routes Preview and central production through guarded deployment boundaries', () => {
     const previewWorkflow = readWorkflow('deploy-preview.yml')
+    const storybookWorkflow = readWorkflow('deploy-storybook.yml')
     const platformReleaseWorkflow = readWorkflow('platform-release-deploy.yml')
     const previewDeployStep = namedStep(previewWorkflow, 'deploy-preview', 'Deploy to Vercel (Preview)')
+    const storybookBuildStep = namedStep(storybookWorkflow, 'deploy', 'Build Storybook via Vercel Build Output')
+    const storybookDeployStep = namedStep(storybookWorkflow, 'deploy', 'Deploy Storybook to Vercel (Production)')
     const dispatcherGuardStep = namedStep(platformReleaseWorkflow, 'verify-dispatcher', 'Verify dispatch identity')
 
     expect(previewDeployStep.env).toMatchObject({
       DATABASE_DIRECT_URI: '${{ secrets.DATABASE_DIRECT_URI }}',
       DEPLOYMENT_COMMIT_SHA: '${{ steps.deployment_metadata.outputs.commit_sha }}',
       DEPLOYMENT_ENVIRONMENT: 'preview',
+      NODE_AUTH_TOKEN: '${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}',
     })
+    expect(storybookBuildStep.env?.NODE_AUTH_TOKEN).toBe('${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}')
+    expect(storybookDeployStep.env?.NODE_AUTH_TOKEN).toBeUndefined()
     expect(previewDeployStep.run).toBe('bash ./.github/scripts/deploy/vercel-deploy.sh preview')
     expect(dispatcherGuardStep.env).toEqual({
       GITHUB_ACTOR: '${{ github.actor }}',
@@ -120,9 +130,10 @@ describe('Vercel deployment boundary', () => {
     )
     expect(fs.existsSync(path.join(repositoryRoot, '.github/workflows/deploy-production.yml'))).toBe(false)
 
-    const preview = runDeployHelper('preview')
+    const preview = runDeployHelper('preview', { NODE_AUTH_TOKEN: 'synthetic-read-token' })
     expect(preview.result.status).toBe(0)
     expect(preview.commands).toHaveLength(2)
+    expect(preview.tokenPresence).toEqual(['present', ''])
     expect(preview.commands[0]).toBe('dlx vercel@canary build --target preview --yes')
     expect(preview.commands[1]).toContain('dlx vercel@canary deploy --prebuilt --target preview --yes')
     expect(preview.commands[1]).toContain('--build-env DEPLOYMENT_ENVIRONMENT=preview')

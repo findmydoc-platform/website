@@ -13,6 +13,9 @@ Authorization header. It compares fixed-length digests with a timing-safe compar
 worker. Missing or misplaced credentials return 401 without a worker call, storage read, sweep, provider call, or
 application log. POST does not run the worker. Local and test runs remain explicit-only.
 
+The Preview guard delegates this exact worker path to the route's authentication and performs no Supabase session
+lookup for it. Neighboring internal API paths retain their Preview session checks.
+
 After a hosted worker capability is available, an authenticated invocation runs the safety and retention sweep first,
 then examines candidate operations in ID order. The worker makes the final due and lease decision. The sweep stops
 when 50 seconds remain in the invocation budget. If content scrubbing is incomplete, the invocation starts no claims;

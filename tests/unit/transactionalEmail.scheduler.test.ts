@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { GET, POST } from '@/app/api/internal/transactional-email/worker/route'
+import { GET, HEAD, POST } from '@/app/api/internal/transactional-email/worker/route'
 import { runBoundedTransactionalEmailWorker } from '@/features/transactionalEmail/scheduler'
 
 const runHosted = vi.fn()
@@ -24,6 +24,12 @@ afterEach(() => {
 })
 
 describe('hosted transactional email scheduler request', () => {
+  it.each([HEAD, POST])('refuses authenticated non-GET requests without resolving work', async (handler) => {
+    vi.stubEnv('CRON_SECRET', secret)
+    expect((await handler(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))).status).toBe(405)
+    expect(runHosted).not.toHaveBeenCalled()
+  })
+
   it.each(invalidCredentials)('rejects $label credentials without resolving work', async ({ url, headers, body }) => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('CRON_SECRET', secret)
@@ -50,9 +56,58 @@ describe('hosted transactional email scheduler request', () => {
       expect(fetch).not.toHaveBeenCalled()
     },
   )
+
+  it.each([
+    ['preview', 'synthetic-preview-secret-for-tests-only', 'synthetic-production-secret-for-tests-only'],
+    ['production', 'synthetic-production-secret-for-tests-only', 'synthetic-preview-secret-for-tests-only'],
+  ])('rejects the other environment credential in %s', async (environment, ownSecret, otherSecret) => {
+    vi.stubEnv('VERCEL_ENV', environment)
+    vi.stubEnv('CRON_SECRET', ownSecret)
+    const response = await GET(new Request(endpoint, { headers: { authorization: `Bearer ${otherSecret}` } }))
+    expect(response.status).toBe(401)
+    expect(runHosted).not.toHaveBeenCalled()
+  })
 })
 
 describe('bounded transactional email worker invocation', () => {
+  it('counts initialization against the request deadline', async () => {
+    const claim = vi.fn()
+    const result = await runBoundedTransactionalEmailWorker(
+      {
+        sweep: async (mayContinue) => mayContinue(),
+        candidates: async (afterId) => (afterId ? [] : [1]),
+        claim,
+        processClaim: async () => undefined,
+      },
+      () => 215_001,
+      240_000,
+    )
+    expect(result.claimed).toBe(0)
+    expect(claim).not.toHaveBeenCalled()
+  })
+
+  it('finishes an in-flight result before reporting a later claim failure', async () => {
+    const events: string[] = []
+    const failure = new Error('claim failed')
+    const pending = runBoundedTransactionalEmailWorker({
+      sweep: async () => true,
+      candidates: async () => [1, 2],
+      claim: async (id) => {
+        if (id === 2) throw failure
+        return { operationId: String(id), token: 'synthetic-lease' }
+      },
+      processClaim: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1))
+        events.push('result recorded')
+      },
+    }).catch((error) => {
+      events.push('request failed')
+      throw error
+    })
+    await expect(pending).rejects.toBe(failure)
+    expect(events).toEqual(['result recorded', 'request failed'])
+  })
+
   it('sweeps first and limits claims to five with at most two in flight', async () => {
     const order: string[] = []
     let active = 0

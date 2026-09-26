@@ -23,6 +23,7 @@ const secret = 'synthetic-scheduler-secret-for-tests-only'
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.clearAllMocks()
+  vi.restoreAllMocks()
 })
 
 describe('scheduler request through hosted composition', () => {
@@ -43,6 +44,30 @@ describe('scheduler request through hosted composition', () => {
     const response = await GET(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))
     expect(response.status).toBe(503)
     expect(dependencies.getPayload).not.toHaveBeenCalled()
+  })
+
+  it('does not claim when Payload initialization consumes the request budget', async () => {
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    vi.stubEnv('CRON_SECRET', secret)
+    let clock = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => clock)
+    dependencies.selectRuntime.mockReturnValue({ environment: 'preview' })
+    dependencies.getPayload.mockImplementation(async () => {
+      clock = 215_001
+      return {}
+    })
+    dependencies.createLocalReq.mockResolvedValue({})
+    const worker = {
+      sweepForBatch: vi.fn(async (mayContinue: () => boolean) => mayContinue()),
+      candidatesForBatch: vi.fn(async (afterId: number) => (afterId ? [] : [1])),
+      claimForBatch: vi.fn(async () => ({ operationId: '1', token: 'synthetic-lease' })),
+      processClaimForBatch: vi.fn(async () => undefined),
+    }
+    dependencies.createWorker.mockReturnValue(worker)
+    const response = await GET(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))
+    expect(response.status).toBe(200)
+    expect(worker.claimForBatch).not.toHaveBeenCalled()
+    expect(worker.processClaimForBatch).not.toHaveBeenCalled()
   })
 
   it('runs safety work and at most five claims with two in flight after authorization', async () => {

@@ -5,7 +5,7 @@ import { createTransactionalEmailWorker } from './worker'
 import { selectTransactionalEmailRuntime } from './environment'
 import { TransactionalEmailError } from './errors'
 
-export async function runHostedTransactionalEmailWorker() {
+export async function runHostedTransactionalEmailWorker(deadline: number) {
   const environment = process.env.VERCEL_ENV
   if (environment !== 'preview' && environment !== 'production')
     throw new TransactionalEmailError('environment-unavailable')
@@ -25,5 +25,6 @@ export async function runHostedTransactionalEmailWorker() {
       processClaim: worker.processClaimForBatch,
     },
     now,
+    deadline,
   )
 }

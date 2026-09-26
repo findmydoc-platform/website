@@ -31,6 +31,12 @@ install with strict peer checks. The script checks the pinned version against Gi
 or package metadata. A missing or invalid token prevents dependency installation and therefore prevents the build
 from passing.
 
+Dependabot uses the `github-packages` registry entry in `.github/dependabot.yml` for npm updates. Its separate
+Dependabot secret store must also contain `GH_PACKAGES_READ_TOKEN` with the same read-only package access.
+An Actions secret alone does not authorize Dependabot updates. The Dependabot secret also supplies package access
+to GitHub Actions checks on Dependabot pull requests. Keep the package's GitHub Actions access grant disabled for
+this public repository; the dedicated token preserves the fork boundary.
+
 Website workflows disable package-manager caching and do not cache Next.js build output in GitHub Actions.
 Fork pull requests can read default-branch Actions caches, including private package files left in a cached pnpm
 store. The only explicit Actions cache contains Playwright browser binaries at `~/.cache/ms-playwright`; the cache

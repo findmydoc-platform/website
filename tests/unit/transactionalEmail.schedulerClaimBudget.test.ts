@@ -13,6 +13,7 @@ afterEach(() => {
 describe('scheduler claim budget at the storage boundary', () => {
   it('does not write a lease when reading the row consumes the remaining budget', async () => {
     vi.stubEnv('VERCEL_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
     let clock = 0
     const write = vi.fn()
     transaction.mockImplementation(async (_req, _authority, work) =>

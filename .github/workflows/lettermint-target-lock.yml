@@ -1,7 +1,11 @@
 name: Lettermint target lock
 
 on:
-  pull_request_target:
+  # The gate must use the trusted default-branch workflow and script. It never
+  # checks out or executes pull-request-controlled code; PR files are API data.
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+    branches:
+      - main
     types:
       - opened
       - reopened
@@ -17,6 +21,7 @@ concurrency:
 jobs:
   preserve-targets:
     name: preserve registered targets
+    if: github.repository == 'findmydoc-platform/website'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

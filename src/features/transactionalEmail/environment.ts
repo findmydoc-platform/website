@@ -1,7 +1,7 @@
 import { TransactionalEmailError } from './errors'
 import { resolveHostedLettermintBinding } from './hostedConfiguration'
-import registry from './lettermintRegistry.json'
-import targetLocks from './lettermintTargetLocks.json'
+import registry from './lettermintRegistry.json' with { type: 'json' }
+import targetLocks from './lettermintTargetLocks.json' with { type: 'json' }
 
 export type EmailEnvironment = 'local' | 'test' | 'ci' | 'preview' | 'production'
 

@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
-import registry from './lettermintRegistry.json'
-import targetLocks from './lettermintTargetLocks.json'
+import registry from './lettermintRegistry.json' with { type: 'json' }
+import targetLocks from './lettermintTargetLocks.json' with { type: 'json' }
 import { TransactionalEmailError } from './errors'
 
 const environmentSchema = z.enum(['preview', 'production'])

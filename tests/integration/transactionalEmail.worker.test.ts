@@ -46,6 +46,30 @@ describe('transactional email worker', () => {
     })
     return { req, id: receipt.operationId }
   }
+  it('filters future retries while retaining due legacy retry candidates', async () => {
+    const future = await accept()
+    const legacyFuture = await accept()
+    const legacyDue = await accept()
+    const due = await accept()
+    const now = Date.now()
+    await observer.query(
+      "UPDATE transactional_email_outbox SET state = 'prepared', attempt_count = 1, last_attempt_at = $2, next_attempt_at = $3 WHERE id = $1",
+      [future.id, new Date(now), new Date(now + 60_000)],
+    )
+    await observer.query(
+      "UPDATE transactional_email_outbox SET state = 'prepared', attempt_count = 1, last_attempt_at = $2, next_attempt_at = NULL WHERE id = $1",
+      [legacyFuture.id, new Date(now)],
+    )
+    await observer.query(
+      "UPDATE transactional_email_outbox SET state = 'prepared', attempt_count = 1, last_attempt_at = $2, next_attempt_at = NULL WHERE id = $1",
+      [legacyDue.id, new Date(now - 60_001)],
+    )
+    const candidates = await createTransactionalEmailWorker(due.req, { now: () => now }).candidatesForBatch(0)
+    expect(candidates).not.toContain(Number(future.id))
+    expect(candidates).not.toContain(Number(legacyFuture.id))
+    expect(candidates).toContain(Number(legacyDue.id))
+    expect(candidates).toContain(Number(due.id))
+  })
   afterAll(async () => {
     try {
       await cleanupTransactionalEmailFixtures(payload, [...ownedReferences])

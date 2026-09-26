@@ -38,6 +38,7 @@ const unitExclude = [
 const storybookExclude = [...baseExclude, 'src/collections/**', 'src/utilities/**', 'src/blocks/**', 'src/access/**']
 
 const unitInclude = [
+  'apps/preview-email-scheduler/api/**/*.{js,ts}',
   'src/access/**/*.{js,jsx,ts,tsx}',
   'src/app/**/use*.{js,jsx,ts,tsx}',
   'src/app/api/**/*.{js,jsx,ts,tsx}',

@@ -364,6 +364,14 @@ describe('transactional email safety sweep and retention', () => {
     const last = await row(created.at(-1)!.id)
     const now = last.delivery_deadline.getTime() + 1
     const req = created[0]!.req
+    let budgetChecks = 0
+    const worker = createTransactionalEmailWorker(req, { now: () => now })
+    expect(await worker.sweepForBatch(() => ++budgetChecks <= 2)).toBe(false)
+    const partial = await observer.query('SELECT state FROM transactional_email_outbox WHERE id = ANY($1)', [
+      created.map(({ id }) => id),
+    ])
+    expect(partial.rows.some(({ state }) => state === 'queued')).toBe(true)
+    expect(partial.rows.some(({ state }) => state === 'expired')).toBe(true)
     await createTransactionalEmailWorker(req, { now: () => now }).run()
     const ids = created.map(({ id }) => id)
     const expired = await observer.query('SELECT state FROM transactional_email_outbox WHERE id = ANY($1)', [ids])

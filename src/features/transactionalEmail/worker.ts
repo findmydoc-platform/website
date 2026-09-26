@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { PayloadRequest } from 'payload'
+import type { PayloadRequest, Where } from 'payload'
 import type { TransactionalEmailOutbox } from '@/payload-types'
 import { commandCatalog, resolveCatalogEntry, type CommandCatalog } from './catalog'
 import { validateCommand } from './commands'
@@ -139,11 +139,14 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
         ? Date.parse(record.lastAttemptAt) + (retryDelays[record.attemptCount - 1] ?? 0)
         : 0
 
-  async function claim(operationId: string): Promise<WorkerClaim | null> {
+  async function claim(operationId: string, mayClaim: () => boolean = () => true): Promise<WorkerClaim | null> {
+    if (!mayClaim()) return null
     const token = randomUUID()
     return workerTransaction(req, { kind: 'claim', token, now }, async (storage) => {
+      if (!mayClaim()) return null
       const record = await storage.read(Number(operationId))
       if (
+        !mayClaim() ||
         record.runtimeEnvironment !== runtime.environment ||
         !['queued', 'prepared'].includes(record.state) ||
         (record.leaseExpiresAt && Date.parse(record.leaseExpiresAt) > now()) ||
@@ -311,6 +314,40 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     )
   }
   return {
+    sweepForBatch: (mayContinue: () => boolean) =>
+      sweepTransactionalEmail(req, runtime.environment, now, { mayContinue }),
+    candidatesForBatch: async (afterId: number) => {
+      const timestamp = now()
+      const legacyDue: Where[] = [
+        { lastAttemptAt: { exists: false } },
+        ...retryDelays.map((delay, index) => ({
+          attemptCount: { equals: index + 1 },
+          lastAttemptAt: { less_than_equal: new Date(timestamp - delay).toISOString() },
+        })),
+        {
+          attemptCount: { greater_than_equal: 6 },
+          lastAttemptAt: { less_than_equal: new Date(timestamp).toISOString() },
+        },
+      ]
+      const records = await workerTransaction(req, { kind: 'claim', token: randomUUID(), now }, (storage) =>
+        storage.find({
+          and: [
+            { runtimeEnvironment: { equals: runtime.environment } },
+            { state: { in: ['queued', 'prepared'] } },
+            { id: { greater_than: afterId } },
+            {
+              or: [
+                { nextAttemptAt: { less_than_equal: new Date(timestamp).toISOString() } },
+                { and: [{ nextAttemptAt: { exists: false } }, { or: legacyDue }] },
+              ],
+            },
+          ],
+        }),
+      )
+      return records.map(({ id }) => id)
+    },
+    claimForBatch: (operationId: string, mayClaim: () => boolean) => claim(operationId, mayClaim),
+    processClaimForBatch: processClaim,
     async claim(operationId: string) {
       await sweepTransactionalEmail(req, runtime.environment, now)
       return claim(operationId)

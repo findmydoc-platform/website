@@ -98,6 +98,7 @@ case "${target}" in
 
     echo "Building Preview deployment in the GitHub runner..."
     pnpm dlx vercel@canary build --target preview --yes
+    unset NODE_AUTH_TOKEN
     deploy_command=(pnpm dlx vercel@canary deploy --prebuilt --target preview --yes)
     label="Preview"
     ;;

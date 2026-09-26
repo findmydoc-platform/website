@@ -58,14 +58,17 @@ open a new decision. Scaleway Transactional Email is the first researched candid
 failover.
 
 We will send through the Lettermint API. Supabase will only generate authentication action links. It will no longer
-render or send findmydoc email. Templates will live in the findmydoc repository as typed React Email components and
-render to HTML and plain text when a message is prepared. The repository will remain the canonical template source even
-if Lettermint later adds a suitable template-deployment capability.
+render or send findmydoc email. Typed React Email components, copy, and props live in the private
+`@findmydoc-platform/email-templates` package. The Website selects a reviewed, exact package version and renders its
+components to HTML and plain text when a message is prepared. The template repository remains the canonical template
+source even if Lettermint later adds a suitable template-deployment capability.
 
 We will build transactional email as a deep module inside the Website runtime. Its small interface will accept only a
 closed set of approved domain commands. Callers cannot choose a provider, template, sender, subject, rendered body,
 retry policy, or idempotency key. The module will hide link generation, template rendering, outbox persistence,
 provider submission, retry classification, content cleanup, webhook processing, suppression, logging, and monitoring.
+The Website also owns recipient resolution, the worker, provider integration, and delivery state. A package release
+does not activate a Website flow; template updates require an explicit reviewed dependency change.
 
 The authentication domain owns whether an authentication flow is allowed, its link type, the user and clinic context,
 and its callback target. Callback targets come from environment-specific server configuration and cannot be supplied
@@ -125,8 +128,8 @@ decide legal wording.
 
 - **Positive:** findmydoc gets the closest researched European alternative to Resend's developer experience while
   keeping the documented email-data infrastructure and subprocessors in the EU.
-- **Positive:** templates and delivery behavior remain versioned with the applications instead of being split across
-  Supabase and a provider dashboard.
+- **Positive:** the Website pins reviewed template versions while retaining rendering and delivery behavior in its
+  application runtime, outside Supabase and the provider dashboard.
 - **Positive:** one narrow interface concentrates delivery, privacy, retry, and provider complexity in a deep module
   that can move to another deployment later.
 - **Positive:** a durable outbox and two idempotency layers protect against lost messages and ordinary duplicate sends.

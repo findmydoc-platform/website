@@ -44,7 +44,7 @@ export function validateTransactionalEmailStartup(
 export function selectTransactionalEmailRuntime(env: Record<string, string | undefined> = process.env) {
   const { environment } = validateTransactionalEmailStartup(env)
   if (environment === 'preview' || environment === 'production') {
-    // The real adapter and signature verifier are installed by later delivery-edge issues.
+    // Hosted delivery remains unavailable until the outbound adapter is installed.
     throw new TransactionalEmailError('environment-unavailable')
   }
   return { environment, delivery: 'fake', links: 'fake' } as const

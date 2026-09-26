@@ -43,6 +43,7 @@ export type HostedLettermintBinding = {
   projectToken: string
   webhookSecret: string
   previousWebhookSecret?: string
+  previousWebhookSecretWindow?: Readonly<{ startsAt: number; validUntil: number }>
   digestKey: string
 }
 
@@ -164,6 +165,14 @@ export function resolveHostedLettermintBinding(
     projectToken: { value: projectToken },
     webhookSecret: { value: webhookSecret },
     previousWebhookSecret: { value: previousWebhookSecret },
+    previousWebhookSecretWindow: {
+      value: previous?.overlap
+        ? Object.freeze({
+            startsAt: Date.parse(previous.overlap.startsAt),
+            validUntil: Date.parse(previous.overlap.validUntil),
+          })
+        : undefined,
+    },
     digestKey: { value: digestKey },
   })
   return Object.freeze(binding) as HostedLettermintBinding
@@ -174,4 +183,23 @@ export function loadHostedLettermintBinding(
   env: Record<string, string | undefined> = process.env,
 ) {
   return resolveHostedLettermintBinding(environment, registry, env)
+}
+
+type HostedWebhookBinding = Pick<
+  HostedLettermintBinding,
+  'webhookSecret' | 'previousWebhookSecret' | 'previousWebhookSecretWindow'
+> & {
+  target: Readonly<Pick<Target, 'environment' | 'teamId' | 'projectId' | 'routeId' | 'webhookId'>>
+}
+
+export function loadHostedLettermintWebhookBinding(environment: HostedEnvironment): HostedWebhookBinding {
+  const binding = loadHostedLettermintBinding(environment)
+  const { teamId, projectId, routeId, webhookId } = binding.target
+  const inbound = { target: Object.freeze({ environment, teamId, projectId, routeId, webhookId }) }
+  Object.defineProperties(inbound, {
+    webhookSecret: { value: binding.webhookSecret },
+    previousWebhookSecret: { value: binding.previousWebhookSecret },
+    previousWebhookSecretWindow: { value: binding.previousWebhookSecretWindow },
+  })
+  return Object.freeze(inbound) as HostedWebhookBinding
 }

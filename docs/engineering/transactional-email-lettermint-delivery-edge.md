@@ -323,8 +323,9 @@ node scripts/lettermint-fingerprint.mjs --environment preview --kind digest-key
 The same commands run separately for Production after its approvals. For a planned previous-webhook overlap, use
 `--kind webhook-previous --starts-at <ISO timestamp> --valid-until <ISO timestamp>`. The interval may not exceed ten
 minutes. The operator reviews the registry diff before committing it. Credentials never belong in command arguments,
-shell history, the registry, or review artifacts. Until the later adapter and webhook issues install real capabilities,
-hosted runtime selection still fails closed after validating the binding.
+shell history, the registry, or review artifacts. Hosted command and worker runtime selection still fails closed
+after validating the binding, until the outbound adapter is installed. The independent inbound test boundary below
+can verify a request once its hosted binding has been provisioned and reviewed.
 
 The send token is read only by the outbound capability. The webhook secret is read only by the signature verifier.
 Provider team credentials, suppression-management credentials, and DNS-management credentials are not application
@@ -466,6 +467,52 @@ The endpoint returns:
 result. It does not create an outbox, event, or suppression record. Normal webhook work is intentionally small and
 must finish within five seconds; it does not introduce another application queue. If durable processing cannot finish
 within that budget, the endpoint returns a temporary failure and relies on provider retry.
+
+#### Implemented test boundary
+
+`POST /api/internal/transactional-email/lettermint/[environment]` accepts `preview` or `production` only when the
+path matches the hosted runtime and the complete fingerprint-bound configuration passes validation. The
+Preview session guard exempts only the exact Preview and Production webhook paths, leaving their authentication to
+the signature boundary even when a caller supplies session headers. Neighboring internal paths remain guarded. The
+private inbound binding contains only target identities, webhook secrets, and their overlap bounds; project tokens
+and recipient-digest keys remain outside the receiver. The Node.js
+route authenticates `t=<Unix seconds>,v1=<64 hex characters>` over the timestamp, a period, and the unmodified request
+bytes. It uses the complete secret, including any `whsec_` prefix. The
+[Lettermint signing contract](https://lettermint.co/docs/platform/webhooks/signing) and
+[common event envelope](https://lettermint.co/docs/platform/webhooks/events) were checked on 26 September 2026.
+
+The first tracer accepts only `webhook.test`. It requires the common envelope's route-scoped team, project, and route
+identities, matching header/body event types, and the test payload's matching `data.webhook_id`. The runtime
+environment follows from that signed target and the checked endpoint path. Test events need no message metadata;
+if `data.metadata.environment` is present, it must also match. An abbreviated test payload without the common
+context is rejected. This requirement must be verified during the separately authorized provider preflight.
+
+A successful test returns only `{"outcomeCode":"webhook-test-verified"}`. The tracer emits no log or metric and
+uses no persistence, delivery, rendering, or recipient capability. Other event types return `422` until their
+transactional handling is installed. Additional provider fields are discarded during envelope validation.
+
+Requests require HTTPS and `application/json`, optionally with a UTF-8 charset. Content encoding other than
+`identity` returns `415`. Invalid JSON or UTF-8 returns `400` only after authentication. Invalid envelopes return
+`422`, target mismatches return `403`, and unavailable hosted configuration returns `503`. All application responses
+use `Cache-Control: no-store` and a fixed outcome code. Stream failures and unfinished reads after five seconds return
+`503` without forwarding exceptions to request telemetry. The 256 KiB guard counts bytes while streaming even when
+`Content-Length` is absent or understates the body size.
+
+The previous secret retains its reviewed overlap bounds in the private binding. Signature age and the previous
+secret's window are checked again after reading the body. Expired or not-yet-valid rotation configuration fails
+closed with `503` when resolving the hosted binding; a window that expires during a request rejects that previous
+signature with `401`. Operators must remove the previous secret and registry entry when the overlap ends.
+
+`tests/integration/transactionalEmail.webhook.test.ts` dispatches raw streaming `NextRequest` objects through the real
+Preview proxy, Next.js App Route module, and actual route export. Only configuration data, deployment variables, and time are
+synthetic. Real Payload and PostgreSQL retain an existing outbox/event sentinel unchanged after every case. Network
+guards reject external fetch and HTTP calls; request telemetry and console calls must remain empty. No suppression
+collection exists in this tracer, and the route imports no storage capability.
+
+Cache decision: `no-public-impact`. The private request boundary has no public read, cache tag, revalidation event,
+discovery consumer, or affected public path. Route responses and mutation-free rejects are covered at the request
+boundary; no collection catalog entry or invalidation owner is added. A later public delivery-status consumer would
+require a separate cache decision.
 
 ### Webhook field allowlist and correlation
 

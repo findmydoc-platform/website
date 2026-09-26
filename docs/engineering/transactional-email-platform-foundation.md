@@ -2,8 +2,53 @@
 
 This document is the implementation contract for the shared transactional email foundation owned by the Website
 runtime. [ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md) remains the binding architecture decision.
-This document does not reconsider the provider, template ownership, outbox requirement, or application ownership set
-by that ADR.
+This document does not reconsider the provider, outbox requirement, or application ownership set by that ADR.
+The private `@findmydoc-platform/email-templates` package owns template components, copy, and typed props. The Website
+owns recipient resolution, HTML and plain-text rendering, the outbox, worker, provider integration, and delivery state.
+Package releases reach Website only through a reviewed exact-version dependency change.
+
+The Website currently pins `@findmydoc-platform/email-templates@0.1.1` for a synthetic consumer contract. Only the
+package root export is supported. The Website script `scripts/render-synthetic-email-template.mjs` imports the
+fictional template and subject, then uses Website's `@react-email/render` dependency to produce HTML and plain text.
+The contract under `tests/tooling/emailTemplatesConsumer.test.tsx` checks that output with typed fictional props.
+It does not register a product command or invoke the outbox, worker, or a delivery adapter. Production templates and
+flow activation require separate issues.
+
+### Private package installation
+
+The committed `.npmrc` maps only `@findmydoc-platform` to GitHub Packages and reads `NODE_AUTH_TOKEN` at install time.
+It contains no token value. Local developers set `NODE_AUTH_TOKEN` from a classic GitHub personal access token with
+only `read:packages` and account access to the private package. They keep that token in their secure local credential
+store and run `pnpm install --frozen-lockfile`; they do not add it to a repository file or shell history.
+
+GitHub Actions install steps read `GH_PACKAGES_READ_TOKEN` into `NODE_AUTH_TOKEN`. This repository is public, so
+the package must not grant it GitHub Actions access: [GitHub warns that forks of a public repository may gain access to
+private packages through such a grant](https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#about-permissions-and-package-access).
+The repository secret must contain a classic token with only `read:packages` and package access. GitHub does not pass
+repository secrets to forked pull-request workflows; those installs fail closed until a trusted maintainer runs the
+checks on an internal branch. CI and Vercel run `scripts/assert-email-template-package-access.mjs` before a frozen
+install with strict peer checks. The script checks the pinned version against GitHub Packages without logging the token
+or package metadata. A missing or invalid token prevents dependency installation and therefore prevents the build
+from passing.
+
+Website workflows disable package-manager caching and do not cache Next.js build output in GitHub Actions.
+Fork pull requests can read default-branch Actions caches, including private package files left in a cached pnpm
+store. The only explicit Actions cache contains Playwright browser binaries at `~/.cache/ms-playwright`; the cache
+contract test rejects package stores, build directories, and additional cache paths. The central Website release
+workflow also disables package-manager caching and uses no Actions cache for the Website checkout.
+
+The `findmydoc-portal` Preview and Production builds and the `fmd-storybooks` Production build require
+`NODE_AUTH_TOKEN` while installing Website dependencies. The Preview and Storybook GitHub Actions builds pass the
+repository secret only to their build steps. The Preview helper removes it before the prebuilt deployment upload.
+Vercel project environment variables also reach Functions at runtime, so the package token must not be stored as a
+Vercel project variable. The central Production release caller pins the reviewed workflow from
+[platform-release PR #27](https://github.com/findmydoc-platform/platform-release/pull/27) and passes
+`GH_PACKAGES_READ_TOKEN`. That workflow maps it to `NODE_AUTH_TOKEN` only for the runner build, then uploads the
+prebuilt output without the package token. Use a classic token with only `read:packages` and package access for that
+handoff; never pull, print, or commit its value. The separate Production migration-secret gate remains documented in
+the [deployment runbook](../deployment-runbook.md#when-migrations-run). Package access does not activate email delivery.
+A failed registry authorization, unresolved package, missing public export, or incompatible
+React Email peer must fail installation, the consumer contract, or the build.
 
 The work is tracked by [Website issue #1846](https://github.com/findmydoc-platform/website/issues/1846) under
 [management issue #388](https://github.com/findmydoc-platform/management/issues/388). It specifies the foundation
@@ -40,10 +85,10 @@ Dashboard handoff. The existing flow issues retain their approved product respon
 
 | Flow issue | Retained responsibility |
 | --- | --- |
-| [#1734](https://github.com/findmydoc-platform/website/issues/1734) | Auth triggers, identities, action-link types, callbacks, recipients, and templates |
-| [#1735](https://github.com/findmydoc-platform/website/issues/1735) | External-message trigger, patient recipient, protected conversation link, and template |
-| [#1736](https://github.com/findmydoc-platform/website/issues/1736) | Moderation triggers, participant matrix, protected links, allowed status content, and templates |
-| [#1737](https://github.com/findmydoc-platform/website/issues/1737) | Clinic-registration trigger, contact recipient, process wording, and template |
+| [#1734](https://github.com/findmydoc-platform/website/issues/1734) | Auth triggers, identities, action-link types, callbacks, recipients, and Website integration of package templates |
+| [#1735](https://github.com/findmydoc-platform/website/issues/1735) | External-message trigger, patient recipient, protected conversation link, and Website integration of a package template |
+| [#1736](https://github.com/findmydoc-platform/website/issues/1736) | Moderation triggers, participant matrix, protected links, allowed status content, and Website integration of package templates |
+| [#1737](https://github.com/findmydoc-platform/website/issues/1737) | Clinic-registration trigger, contact recipient, process wording, and Website integration of a package template |
 
 ## Ownership and module shape
 

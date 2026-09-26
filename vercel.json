@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "devCommand": "pnpm dev",
-  "installCommand": "pnpm install",
+  "installCommand": "node scripts/assert-email-template-package-access.mjs && pnpm install --frozen-lockfile --strict-peer-dependencies",
   "buildCommand": "node scripts/validate-clinic-dashboard-deployment-env.mjs && pnpm run ci",
   "crons": [
     {

@@ -162,6 +162,7 @@ export const isPreviewGuardAnonymousApiPath = (pathname: string): boolean =>
 export const isPreviewGuardEndpointAuthApiPath = (pathname: string): boolean => {
   const normalizedPath = normalizePathname(pathname)
   return (
+    normalizedPath === '/api/internal/transactional-email/worker' ||
     normalizedPath === '/api/mcp' ||
     normalizedPath === '/api/clinic-dashboard' ||
     normalizedPath.startsWith('/api/clinic-dashboard/')

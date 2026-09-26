@@ -158,6 +158,22 @@ describe('runTestSenseCheck', () => {
     expect(runTestSenseCheck({ rootDir }).ok).toBe(true)
   })
 
+  it('recognizes separately deployed runtime handlers and deployment manifests in their suites', () => {
+    const rootDir = createTempRepo({
+      'tests/unit/scheduler.test.ts': "import handler from '../../apps/preview-email-scheduler/api/tick'",
+      'tests/tooling/scheduler.test.ts': "import config from '../../apps/preview-email-scheduler/vercel.json'",
+    })
+    expect(runTestSenseCheck({ rootDir })).toMatchObject({ failures: [], ok: true })
+  })
+
+  it('does not treat arbitrary app scripts or unused manifest paths as runtime or tooling evidence', () => {
+    const rootDir = createTempRepo({
+      'tests/unit/scheduler.test.ts': "import helper from '../../apps/preview-email-scheduler/scripts/helper'",
+      'tests/tooling/scheduler.test.ts': "const unusedPath = '../../apps/preview-email-scheduler/vercel.json'",
+    })
+    expect(runTestSenseCheck({ rootDir }).failures).toHaveLength(2)
+  })
+
   it('recognizes documentation contracts in the data-integrity suite', () => {
     const rootDir = createTempRepo({
       'tests/data-integrity/docs/reviewModificationProcess.test.ts': [

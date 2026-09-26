@@ -77,6 +77,7 @@ function hasProductionRuntimeSignal(source) {
     /(?:from\s+|import\s*\(|require\s*\(|vi\.mock\s*\()\s*['"]@\//u,
     /(?:from\s+|import\s*\(|require\s*\(|vi\.mock\s*\()\s*['"]@payload-config/u,
     /(?:from\s+|import\s*\(|require\s*\(|vi\.mock\s*\()\s*['"][^'"]*\/src\//u,
+    /(?:from\s+|import\s*\(|require\s*\(|vi\.mock\s*\()\s*['"][^'"]*\/apps\/[^/]+\/api\//u,
     /(?:next|next-sitemap)\.config\.(?:js|cjs|mjs|ts)/u,
     /redirects\.js/u,
   ].some((pattern) => pattern.test(runtimeSource))
@@ -84,6 +85,7 @@ function hasProductionRuntimeSignal(source) {
 
 function hasToolingSignal(source) {
   return [
+    /(?:from\s+|import\s*\(|require\s*\()\s*['"][^'"]*\/vercel\.json['"]/u,
     /(?:from\s+|import\s*\(|require\s*\()\s*['"][^'"]*(?:\/scripts\/|scripts\/)/u,
     /(?:from\s+|import\s*\(|require\s*\()\s*['"][^'"]*\.github\/scripts\//u,
     /(?:from\s+|import\s*\(|require\s*\()\s*['"][^'"]*\.codex\/skills\/[^'"]*\/scripts\//u,

@@ -4,7 +4,80 @@
 [Website #1855](https://github.com/findmydoc-platform/website/issues/1855) implement synthetic processing and bounded recovery under
 [ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md) and the [foundation contract](transactional-email-platform-foundation.md).
 The public command port remains unchanged. The private Website worker receives an accepted operation identifier.
-No route, schedule, product catalog entry, or hosted activation invokes it.
+No product catalog entry or hosted delivery activation invokes it.
+
+## Hosted scheduler boundary
+
+The private GET route at `/api/internal/transactional-email/worker` accepts only a dedicated `CRON_SECRET` in the
+Authorization header. It compares fixed-length digests with a timing-safe comparison before loading Payload or the
+worker. Missing or misplaced credentials return 401 without a worker call, storage read, sweep, provider call, or
+application log. POST does not run the worker. Local and test runs remain explicit-only.
+
+After a hosted worker capability is available, an authenticated invocation runs the safety and retention sweep first,
+then examines candidate operations in ID order. The worker makes the final due and lease decision. The sweep stops
+when 50 seconds remain in the invocation budget. If content scrubbing is incomplete, the invocation starts no claims;
+unfinished metadata deletion can continue on the next call without blocking claims. It starts at most five claims
+and processes at most two at once. A claim is refused when fewer than 25 seconds
+remain in the 240-second request budget, including initialization and a second check inside the claim transaction. The route has a
+300-second function limit. Existing two-minute leases protect against overlap.
+
+The route is private-live with `no-public-impact`: it has no public read, rendered output, cache tag, or revalidation
+event. Hosted processing remains closed before Payload initialization until the environment-specific real delivery
+capability is available; the existing worker refuses hosted fake delivery. No command is activated by this route.
+
+Production and Preview each own an independent one-minute scheduler, authentication, credentials, runtime
+configuration, scheduling authority, and failure domain. Production never calls Preview. Neither environment can
+access or store the other's credentials. Shared source code does not grant runtime authority across environments.
+
+The root `vercel.json` schedules only the Production Website worker. Vercel Cron invokes only Production deployments,
+so Preview owns the separate application in `apps/preview-email-scheduler`. Its `/api/tick` function authenticates the
+Vercel Cron request, then invokes only the fixed Preview worker URL with the Preview scheduler credential. It refuses
+redirects, any other target, and any logical environment other than Preview. One Preview failure produces a 503 in
+that application; it cannot affect Production scheduling or invoke the Production worker. The relay has a 250-second
+request timeout and a 300-second function limit. It does not retry within a tick.
+
+### Deployment and credential ownership
+
+| Component | Vercel project and scope | Schedule | Runtime configuration |
+| --- | --- | --- | --- |
+| Production Website | `findmydoc-portal`, Production | Root cron, once per minute | Production-only `CRON_SECRET` |
+| Preview Website | `findmydoc-portal`, Preview | Receives only the Preview scheduler's requests | Preview-only `CRON_SECRET` |
+| Preview scheduler | `findmydoc-preview-email-scheduler`, Production | Its own cron, once per minute | Preview `CRON_SECRET`, `SCHEDULER_ENVIRONMENT=preview`, `PREVIEW_WORKER_URL=https://preview.findmydoc.eu/api/internal/transactional-email/worker` |
+
+The Preview scheduler's Vercel Production scope is the platform slot required to run Cron. The application belongs
+exclusively to Preview. Its project has no Production Website credential, database credential, provider credential,
+or Vercel deployment token. The Website runtime has no dependency on this separate application. Local development,
+tests, and CI run no background schedule. Vercel Preview deployments of the scheduler application refuse to relay
+requests.
+
+Provision a fresh Preview `CRON_SECRET` with at least 32 cryptographically random bytes. Authorized provisioning
+generates it in memory and writes the same value directly to the two Preview-owned scopes through the CLI's stdin.
+It never reads, compares, changes, or copies the Production Website secret. Each Website secret is scoped only to its
+own environment. Do not export, pull, log, or persist credential values in checkout files, CI artifacts, or PRs.
+Verify only presence, sensitive storage, and scope metadata. If provisioning is incomplete, deployment and activation
+stop.
+
+Deploy the Preview application independently from its own directory after provisioning:
+
+```sh
+cd apps/preview-email-scheduler
+vercel-findmydoc deploy --local-config vercel.json --target production --yes --scope findmydoc --project findmydoc-preview-email-scheduler
+```
+
+Do not deploy the repository root to the Preview scheduler project. The application has no dependencies and does not
+need the Website environment or an environment pull. Production Website rollout remains part of the joint platform
+release. Scheduling does not activate product commands or bypass the existing hosted-delivery capability gate.
+
+After deployment, verify each project's own one-minute cron separately, confirm the Preview target and environment
+metadata, and confirm that unauthenticated requests return 401 without worker activity. Deployment protection must
+allow the Preview scheduler to reach the private application-authenticated endpoint. If protection blocks that path,
+stop for an explicit platform configuration decision; do not reuse another environment's bypass credential.
+Authorized acceptance checks use synthetic work only. No real-email test is part of scheduler activation.
+
+To stop one scheduler, disable that project's cron in Vercel. A Vercel instant rollback does not update active cron
+definitions; verify or disable the affected project's schedule explicitly. The other environment keeps its cadence.
+See [Vercel Cron setup](https://vercel.com/docs/cron-jobs/quickstart) and
+[Cron management](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
 
 ## Claim and preparation
 

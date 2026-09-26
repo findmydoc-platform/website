@@ -1,0 +1,42 @@
+name: Lettermint target lock
+
+on:
+  # The gate must use the trusted default-branch workflow and script. It never
+  # checks out or executes pull-request-controlled code; PR files are API data.
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+    branches:
+      - main
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preserve-targets:
+    name: preserve registered targets
+    if: github.repository == 'findmydoc-platform/website'
+    runs-on: ubuntu-24.04
+    steps:
+      # v6.0.2. This checkout is pinned to the trusted base SHA below.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # nosemgrep: yaml.github-actions.security.pull-request-target-code-checkout.pull-request-target-code-checkout
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: compare pull request targets with base targets
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { targetLocksPreserved } = require('./.github/scripts/pr-gates-lettermint-target-lock.cjs');
+            if (!(await targetLocksPreserved({ github, context }))) {
+              core.setFailed('Registered Lettermint targets cannot change.');
+            }

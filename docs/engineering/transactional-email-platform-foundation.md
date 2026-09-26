@@ -31,12 +31,18 @@ install with strict peer checks. The script checks the pinned version against Gi
 or package metadata. A missing or invalid token prevents dependency installation and therefore prevents the build
 from passing.
 
+Website workflows disable package-manager caching and do not cache Next.js build output in GitHub Actions.
+Fork pull requests can read default-branch Actions caches, including private package files left in a cached pnpm
+store. The only explicit Actions cache contains Playwright browser binaries at `~/.cache/ms-playwright`; the cache
+contract test rejects package stores, build directories, and additional cache paths. The central Website release
+workflow also disables package-manager caching and uses no Actions cache for the Website checkout.
+
 The `findmydoc-portal` Preview and Production builds and the `fmd-storybooks` Production build require
 `NODE_AUTH_TOKEN` while installing Website dependencies. The Preview and Storybook GitHub Actions builds pass the
 repository secret only to their build steps. The Preview helper removes it before the prebuilt deployment upload.
 Vercel project environment variables also reach Functions at runtime, so the package token must not be stored as a
 Vercel project variable. The central Production release caller pins the reviewed workflow from
-[platform-release PR #26](https://github.com/findmydoc-platform/platform-release/pull/26) and passes
+[platform-release PR #27](https://github.com/findmydoc-platform/platform-release/pull/27) and passes
 `GH_PACKAGES_READ_TOKEN`. That workflow maps it to `NODE_AUTH_TOKEN` only for the runner build, then uploads the
 prebuilt output without the package token. Use a classic token with only `read:packages` and package access for that
 handoff; never pull, print, or commit its value. The separate Production migration-secret gate remains documented in

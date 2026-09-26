@@ -42,7 +42,7 @@ jobs:
 
   deploy:
     needs: verify-dispatcher
-    uses: findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@da53a85bc83cd07ff1a9214b6e1747a37d2e19c8
+    uses: findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@e5c1488985bb02faaa6bc97b89f7f94ff1ed23c9
     with:
       target_sha: ${{ inputs.target_sha }}
       platform_version: ${{ inputs.platform_version }}

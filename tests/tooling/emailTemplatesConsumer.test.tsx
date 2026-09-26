@@ -1,6 +1,9 @@
 import type { SyntheticWelcomeEmailProps } from '@findmydoc-platform/email-templates'
 import { spawnSync } from 'node:child_process'
 import { JSDOM } from 'jsdom'
+import { readFileSync, readdirSync } from 'node:fs'
+import path from 'node:path'
+import { parse } from 'yaml'
 import { renderSyntheticEmailTemplate } from '../../scripts/render-synthetic-email-template.mjs'
 
 describe('private email template package', () => {
@@ -27,5 +30,37 @@ describe('private email template package', () => {
     expect(text.toLowerCase()).toContain('hello, avery')
     expect(text).toContain('Continue to a fictional findmydoc example')
     expect(text).toContain(actionUrl)
+  })
+})
+
+type Step = {
+  name?: string
+  uses?: string
+  with?: Record<string, unknown>
+}
+type Workflow = { jobs?: Record<string, { steps?: Step[] }> }
+
+describe('private package cache boundary', () => {
+  it('keeps package and build artifacts out of restorable Actions caches', () => {
+    const directory = path.resolve(import.meta.dirname, '../../.github/workflows')
+    for (const file of readdirSync(directory).filter((name) => /\.ya?ml$/.test(name))) {
+      const workflow = parse(readFileSync(path.join(directory, file), 'utf8')) as Workflow
+      for (const [jobName, job] of Object.entries(workflow.jobs ?? {})) {
+        for (const step of job.steps ?? []) {
+          const context = `${file}: ${jobName}: ${step.name ?? step.uses}`
+          if (step.uses?.startsWith('pnpm/action-setup@')) {
+            expect(step.with?.cache, context).toBe(false)
+          }
+          if (step.uses?.startsWith('actions/setup-node@')) {
+            expect(step.with?.cache, context).toBeUndefined()
+            expect(step.with?.['package-manager-cache'], context).toBe(false)
+          }
+          if (/^actions\/cache(?:\/(?:restore|save))?@/.test(step.uses ?? '')) {
+            expect(step.with?.path, context).toBe('~/.cache/ms-playwright')
+            expect(step.with?.key, context).toMatch(/^playwright-/)
+          }
+        }
+      }
+    }
   })
 })

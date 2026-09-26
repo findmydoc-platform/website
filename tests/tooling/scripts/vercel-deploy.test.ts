@@ -15,7 +15,12 @@ type WorkflowStep = {
 type Workflow = {
   readonly jobs: Record<
     string,
-    { readonly needs?: string | readonly string[]; readonly steps?: readonly WorkflowStep[]; readonly uses?: string }
+    {
+      readonly needs?: string | readonly string[]
+      readonly secrets?: Record<string, string>
+      readonly steps?: readonly WorkflowStep[]
+      readonly uses?: string
+    }
   >
 }
 
@@ -126,7 +131,10 @@ describe('Vercel deployment boundary', () => {
     expect(dispatcherGuardStep.run).toBe('bash ./.github/scripts/deploy/require-platform-release-dispatcher.sh')
     expect(platformReleaseWorkflow.jobs.deploy?.needs).toBe('verify-dispatcher')
     expect(platformReleaseWorkflow.jobs.deploy?.uses).toBe(
-      'findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@fde486496d8bde13a3c8cad9d23a1cbbe075507d',
+      'findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@da53a85bc83cd07ff1a9214b6e1747a37d2e19c8',
+    )
+    expect(platformReleaseWorkflow.jobs.deploy?.secrets?.GH_PACKAGES_READ_TOKEN).toBe(
+      '${{ secrets.GH_PACKAGES_READ_TOKEN }}',
     )
     expect(fs.existsSync(path.join(repositoryRoot, '.github/workflows/deploy-production.yml'))).toBe(false)
 

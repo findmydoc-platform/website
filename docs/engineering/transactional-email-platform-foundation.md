@@ -35,10 +35,13 @@ The `findmydoc-portal` Preview and Production builds and the `fmd-storybooks` Pr
 `NODE_AUTH_TOKEN` while installing Website dependencies. The Preview and Storybook GitHub Actions builds pass the
 repository secret only to their build steps. The Preview helper removes it before the prebuilt deployment upload.
 Vercel project environment variables also reach Functions at runtime, so the package token must not be stored as a
-Vercel project variable. The central Production release workflow needs a build-only handoff of
-`GH_PACKAGES_READ_TOKEN` to `NODE_AUTH_TOKEN` before the Website can be deployed. Use a classic token with only
-`read:packages` and package access for that handoff; never pull, print, or commit its value. Package access does not
-activate email delivery. A failed registry authorization, unresolved package, missing public export, or incompatible
+Vercel project variable. The central Production release caller pins the reviewed workflow from
+[platform-release PR #26](https://github.com/findmydoc-platform/platform-release/pull/26) and passes
+`GH_PACKAGES_READ_TOKEN`. That workflow maps it to `NODE_AUTH_TOKEN` only for the runner build, then uploads the
+prebuilt output without the package token. Use a classic token with only `read:packages` and package access for that
+handoff; never pull, print, or commit its value. The separate Production migration-secret gate remains documented in
+the [deployment runbook](../deployment-runbook.md#when-migrations-run). Package access does not activate email delivery.
+A failed registry authorization, unresolved package, missing public export, or incompatible
 React Email peer must fail installation, the consumer contract, or the build.
 
 The work is tracked by [Website issue #1846](https://github.com/findmydoc-platform/website/issues/1846) under

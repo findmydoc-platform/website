@@ -15,7 +15,6 @@ on:
       - '.github/actions/**'
       - '.secrets.baseline'
       - 'zizmor.yml'
-      - '**/.github/dependabot.yml'
       - '**/*.md'
       - '**/.vscode/settings.json'
   push:

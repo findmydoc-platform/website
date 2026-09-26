@@ -64,3 +64,29 @@ describe('private package cache boundary', () => {
     }
   })
 })
+
+describe('private package update automation', () => {
+  it('keeps Dependabot configuration eligible for ordinary PR validation', () => {
+    const repository = path.resolve(import.meta.dirname, '../..')
+    const workflow = parse(readFileSync(path.join(repository, '.github/workflows/deploy.yml'), 'utf8')) as {
+      on: { pull_request?: { paths?: string[]; 'paths-ignore'?: string[] } }
+    }
+
+    expect(workflow.on).toHaveProperty('pull_request')
+    expect(workflow.on.pull_request?.paths).toBeUndefined()
+    const ignoredPatterns = workflow.on.pull_request?.['paths-ignore'] ?? []
+    if (ignoredPatterns.length === 0) return
+
+    const ignoredFiles = spawnSync(
+      'git',
+      ['ls-files', '--', ...ignoredPatterns.map((pattern) => `:(glob)${pattern}`)],
+      {
+        cwd: repository,
+        encoding: 'utf8',
+      },
+    )
+
+    expect(ignoredFiles.status, ignoredFiles.stderr).toBe(0)
+    expect(ignoredFiles.stdout.split('\n')).not.toContain('.github/dependabot.yml')
+  })
+})

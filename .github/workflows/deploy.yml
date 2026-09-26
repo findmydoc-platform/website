@@ -116,7 +116,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: node scripts/assert-email-template-package-access.mjs && pnpm install --frozen-lockfile --strict-peer-dependencies
 
       - name: Run tooling and data integrity tests
@@ -134,7 +134,7 @@ jobs:
       - name: Compare generated payload types
         id: payload_types
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: pnpm run check:payload-types
 
       - name: Sync payload type review comment
@@ -199,7 +199,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: node scripts/assert-email-template-package-access.mjs && pnpm install --frozen-lockfile --strict-peer-dependencies
 
       - name: Run unit tests
@@ -259,7 +259,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: node scripts/assert-email-template-package-access.mjs && pnpm install --frozen-lockfile --strict-peer-dependencies
 
       - name: Cache Playwright Browsers
@@ -354,7 +354,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: node scripts/assert-email-template-package-access.mjs && pnpm install --frozen-lockfile --strict-peer-dependencies
 
       - name: Wait for PostgreSQL service
@@ -416,7 +416,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: node scripts/assert-email-template-package-access.mjs && pnpm install --frozen-lockfile --strict-peer-dependencies
 
       - name: Run integration tests

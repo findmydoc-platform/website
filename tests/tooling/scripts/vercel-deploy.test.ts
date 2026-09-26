@@ -114,9 +114,9 @@ describe('Vercel deployment boundary', () => {
       DATABASE_DIRECT_URI: '${{ secrets.DATABASE_DIRECT_URI }}',
       DEPLOYMENT_COMMIT_SHA: '${{ steps.deployment_metadata.outputs.commit_sha }}',
       DEPLOYMENT_ENVIRONMENT: 'preview',
-      NODE_AUTH_TOKEN: '${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}',
+      NODE_AUTH_TOKEN: '${{ secrets.GH_PACKAGES_READ_TOKEN }}',
     })
-    expect(storybookBuildStep.env?.NODE_AUTH_TOKEN).toBe('${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}')
+    expect(storybookBuildStep.env?.NODE_AUTH_TOKEN).toBe('${{ secrets.GH_PACKAGES_READ_TOKEN }}')
     expect(storybookDeployStep.env?.NODE_AUTH_TOKEN).toBeUndefined()
     expect(previewDeployStep.run).toBe('bash ./.github/scripts/deploy/vercel-deploy.sh preview')
     expect(dispatcherGuardStep.env).toEqual({

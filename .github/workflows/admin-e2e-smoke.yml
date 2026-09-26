@@ -121,7 +121,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: node scripts/assert-email-template-package-access.mjs && pnpm install --frozen-lockfile --strict-peer-dependencies
 
       - name: Cache Playwright Browsers
@@ -179,7 +179,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_PACKAGES_READ_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: node scripts/assert-email-template-package-access.mjs && pnpm install --frozen-lockfile --strict-peer-dependencies
 
       - name: Cache Playwright Browsers

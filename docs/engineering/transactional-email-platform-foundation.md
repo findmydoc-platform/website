@@ -21,7 +21,7 @@ It contains no token value. Local developers set `NODE_AUTH_TOKEN` from a classi
 only `read:packages` and account access to the private package. They keep that token in their secure local credential
 store and run `pnpm install --frozen-lockfile`; they do not add it to a repository file or shell history.
 
-GitHub Actions install steps read `GITHUB_PACKAGES_READ_TOKEN` into `NODE_AUTH_TOKEN`. This repository is public, so
+GitHub Actions install steps read `GH_PACKAGES_READ_TOKEN` into `NODE_AUTH_TOKEN`. This repository is public, so
 the package must not grant it GitHub Actions access: [GitHub warns that forks of a public repository may gain access to
 private packages through such a grant](https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#about-permissions-and-package-access).
 The repository secret must contain a classic token with only `read:packages` and package access. GitHub does not pass
@@ -35,11 +35,11 @@ The `findmydoc-portal` Preview and Production builds and the `fmd-storybooks` Pr
 `NODE_AUTH_TOKEN` while installing Website dependencies. The Preview and Storybook GitHub Actions builds pass the
 repository secret only to their build steps. The Preview helper removes it before the prebuilt deployment upload.
 Vercel project environment variables also reach Functions at runtime, so the package token must not be stored as a
-Vercel project variable. The central Production release workflow needs a build-only credential handoff before the
-Website can be deployed. Use a classic token with only `read:packages` and package access for that handoff; never
-pull, print, or commit its value. Package access does not activate email delivery. A failed registry authorization,
-unresolved package, missing public export, or incompatible React Email peer must fail installation, the consumer
-contract, or the build.
+Vercel project variable. The central Production release workflow needs a build-only handoff of
+`GH_PACKAGES_READ_TOKEN` to `NODE_AUTH_TOKEN` before the Website can be deployed. Use a classic token with only
+`read:packages` and package access for that handoff; never pull, print, or commit its value. Package access does not
+activate email delivery. A failed registry authorization, unresolved package, missing public export, or incompatible
+React Email peer must fail installation, the consumer contract, or the build.
 
 The work is tracked by [Website issue #1846](https://github.com/findmydoc-platform/website/issues/1846) under
 [management issue #388](https://github.com/findmydoc-platform/management/issues/388). It specifies the foundation

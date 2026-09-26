@@ -1,4 +1,5 @@
 import { transactionalEmailEventSchema } from './features/transactionalEmail/eventSchema'
+import { validateTransactionalEmailStartup } from './features/transactionalEmail/environment'
 // storage-adapter-import-placeholder
 import { postgresAdapter } from '@payloadcms/db-postgres'
 
@@ -586,9 +587,12 @@ export default buildConfig({
   },
   logger: createPayloadLoggerConfig(process.env),
   onInit: async (payload) => {
-    if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.CI === 'true') {
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
       return
     }
+
+    validateTransactionalEmailStartup()
+    if (process.env.CI === 'true') return
 
     await ensureManagedLegalContent(payload)
   },

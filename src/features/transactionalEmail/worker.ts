@@ -46,6 +46,8 @@ type WorkerOptions = {
 
 export function createTransactionalEmailWorker(req: PayloadRequest, options: WorkerOptions = {}) {
   const runtime = selectTransactionalEmailRuntime()
+  if (options.delivery && (runtime.environment !== 'test' || process.env.VITEST !== 'true'))
+    throw new TransactionalEmailError('environment-unavailable')
   if (options.crashAfterDelivery && (!['test', 'ci'].includes(runtime.environment) || process.env.VITEST !== 'true'))
     throw new TransactionalEmailError('environment-unavailable')
   const now = options.now ?? Date.now

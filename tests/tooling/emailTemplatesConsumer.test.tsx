@@ -66,6 +66,32 @@ describe('private package cache boundary', () => {
 })
 
 describe('private package update automation', () => {
+  it('scopes private package updates without replacing public npm resolution', () => {
+    const configuration = parse(
+      readFileSync(path.resolve(import.meta.dirname, '../../.github/dependabot.yml'), 'utf8'),
+    ) as {
+      registries: Record<string, { type: string; url: string; scope?: string; 'replaces-base'?: boolean }>
+      updates: { 'package-ecosystem': string; directory: string; registries?: string[]; allow?: unknown }[]
+    }
+    const npmUpdate = configuration.updates.find((update) => update['package-ecosystem'] === 'npm')
+
+    expect(npmUpdate).toMatchObject({ directory: '/', registries: ['github-packages'] })
+    expect(npmUpdate?.allow).toBeUndefined()
+    expect(configuration.registries['github-packages']).toMatchObject({
+      type: 'npm-registry',
+      url: 'https://npm.pkg.github.com',
+    })
+    for (const registry of Object.values(configuration.registries)) {
+      if (registry.type !== 'npm-registry') continue
+      expect(registry.scope).toBeUndefined()
+      expect(registry['replaces-base']).not.toBe(true)
+    }
+
+    const npmrc = readFileSync(path.resolve(import.meta.dirname, '../../.npmrc'), 'utf8')
+    expect(npmrc).toMatch(/^registry=https:\/\/registry\.npmjs\.org\/?$/m)
+    expect(npmrc).toMatch(/^@findmydoc-platform:registry=https:\/\/npm\.pkg\.github\.com\/?$/m)
+  })
+
   it('keeps Dependabot configuration eligible for ordinary PR validation', () => {
     const repository = path.resolve(import.meta.dirname, '../..')
     const workflow = parse(readFileSync(path.join(repository, '.github/workflows/deploy.yml'), 'utf8')) as {

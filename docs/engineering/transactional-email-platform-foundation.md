@@ -33,6 +33,9 @@ from passing.
 
 Dependabot uses the `github-packages` registry entry in `.github/dependabot.yml` for npm updates. Its separate
 Dependabot secret store must also contain `GH_PACKAGES_READ_TOKEN` with the same read-only package access.
+The committed `.npmrc` explicitly routes public packages to npmjs and `@findmydoc-platform` packages to GitHub
+Packages. Keep the credential-level `scope` and `replaces-base` options unset so Dependabot uses that file;
+[those options override the committed registry configuration](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#scope).
 An Actions secret alone does not authorize Dependabot updates. The Dependabot secret also supplies package access
 to GitHub Actions checks on Dependabot pull requests. Keep the package's GitHub Actions access grant disabled for
 this public repository; the dedicated token preserves the fork boundary.

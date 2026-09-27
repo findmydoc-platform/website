@@ -4,14 +4,7 @@ const identifier = /^[A-Za-z0-9_-]{1,128}$/
 
 function validTargets(value) {
   if (!value || !Array.isArray(value.targets)) return false
-  if (value.targets.length !== 0 && value.targets.length !== 2) return false
-  if (
-    value.targets.length === 2 &&
-    environments.some(
-      (environment) => value.targets.filter((target) => target.environment === environment).length !== 1,
-    )
-  )
-    return false
+  if (value.targets.length > environments.length) return false
   const validShape = value.targets.every(
     (target) =>
       target !== null &&
@@ -21,9 +14,9 @@ function validTargets(value) {
       ),
   )
   if (!validShape) return false
-  return (
-    value.targets.length === 0 ||
-    ['teamId', 'projectId', 'routeId'].every((field) => value.targets[0][field] !== value.targets[1][field])
+  if (new Set(value.targets.map((target) => target.environment)).size !== value.targets.length) return false
+  return ['teamId', 'projectId', 'routeId'].every(
+    (field) => new Set(value.targets.map((target) => target[field])).size === value.targets.length,
   )
 }
 

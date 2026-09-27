@@ -1,3 +1,4 @@
+import { providerOutcomeCodes } from '@/features/transactionalEmail/delivery'
 import type { CollectionConfig } from 'payload'
 import { guardStorageOperation } from '@/features/transactionalEmail/capability'
 import { guardStorageDelete, guardEventWrite } from '@/features/transactionalEmail/collectionHooks'
@@ -47,6 +48,7 @@ export const TransactionalEmailEvents: CollectionConfig = {
       type: 'select',
       options: [
         'fake-accepted',
+        ...providerOutcomeCodes,
         'recipient-changed',
         'ineligible',
         'preparation-failed',

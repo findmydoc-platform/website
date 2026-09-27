@@ -1,6 +1,11 @@
+import {
+  createLettermintDeliveryAdapter,
+  lettermintTimeoutMilliseconds,
+  type LettermintHttpTransport,
+} from './lettermintDelivery'
 import { randomUUID } from 'node:crypto'
 import type { PayloadRequest, Where } from 'payload'
-import type { TransactionalEmailOutbox } from '@/payload-types'
+import type { TransactionalEmailOutbox, TransactionalEmailEvent } from '@/payload-types'
 import { commandCatalog, resolveCatalogEntry, type CommandCatalog } from './catalog'
 import { validateCommand } from './commands'
 import { selectTransactionalEmailRuntime } from './environment'
@@ -12,7 +17,7 @@ import { effectiveDeliveryDeadline as deadline } from './deliveryDeadline'
 import { transientFields } from './retentionPolicy'
 import { sweepTransactionalEmail } from './retention'
 import { workerTransaction } from './workerStorage'
-import { requireActivationPolicy, type ActivationPolicy, type ActivationSuppression } from './activationPolicy'
+import { requireActivationPolicy, type ActivationPolicy } from './activationPolicy'
 import type { SuppressionLookup } from './suppression'
 import { requireVerifiedHostedBinding, type HostedLettermintBinding } from './hostedConfiguration'
 import { prepareProviderRequest, providerBindingFields, storedProviderRequest } from './providerPreparation'
@@ -44,6 +49,7 @@ type WorkerOptions = {
   now?: () => number
   links?: LinkGenerator
   delivery?: DeliveryAdapter
+  httpTransport?: LettermintHttpTransport
   log?: (event: DeliveryLog) => void
   crashAfterDelivery?: () => void
   activationPolicy?: ActivationPolicy
@@ -74,12 +80,20 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
   const now = options.now ?? Date.now
   const catalog = options.catalog ?? commandCatalog
   const links = options.links ?? fakeLinks
-  const delivery = options.delivery ?? createFakeDeliveryAdapter()
+  if (options.httpTransport && (!providerBinding || options.delivery))
+    throw new TransactionalEmailError('environment-unavailable')
+  const delivery =
+    options.httpTransport && providerBinding
+      ? createLettermintDeliveryAdapter(providerBinding, options.httpTransport)
+      : (options.delivery ?? createFakeDeliveryAdapter())
+  const deliveryBudget = options.httpTransport
+    ? lettermintTimeoutMilliseconds + stepBudgetMilliseconds
+    : stepBudgetMilliseconds
   const log = options.log ?? ((event: DeliveryLog) => req.payload.logger.info(event))
   const validLease = (record: TransactionalEmailOutbox, claim: WorkerClaim) =>
     record.leaseToken === claim.token && Date.parse(record.leaseExpiresAt ?? '') > now()
-  const enoughBudget = (record: TransactionalEmailOutbox) =>
-    Date.parse(record.leaseExpiresAt ?? '') - now() > stepBudgetMilliseconds
+  const enoughBudget = (record: TransactionalEmailOutbox, budget = stepBudgetMilliseconds) =>
+    Date.parse(record.leaseExpiresAt ?? '') - now() > budget
   const transaction = <Result>(claim: WorkerClaim, work: Parameters<typeof workerTransaction<Result>>[2]) =>
     workerTransaction(req, { kind: 'worker', token: claim.token, now }, work)
   const read = (claim: WorkerClaim) =>
@@ -91,14 +105,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
   const finish = (
     claim: WorkerClaim,
     state: 'accepted' | 'suppressed' | 'failed' | 'expired',
-    outcomeCode:
-      | 'fake-accepted'
-      | 'recipient-changed'
-      | 'ineligible'
-      | 'preparation-failed'
-      | 'permanent-failure'
-      | 'expired'
-      | ActivationSuppression,
+    outcomeCode: NonNullable<TransactionalEmailEvent['outcomeCode']>,
     providerMessageId?: string,
   ) =>
     transaction(claim, async (storage) => {
@@ -259,12 +266,16 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
       record = saved
     }
     if (record.state !== 'prepared' || !(await revalidate(claim, record))) return
+    if (deadline(record) - now() <= deliveryBudget) {
+      await finish(claim, 'expired', 'expired')
+      return
+    }
     const started = await transaction(claim, async (storage) => {
       const current = await storage.read(Number(claim.operationId))
       if (
         !validLease(current, claim) ||
-        !enoughBudget(current) ||
-        deadline(current) - now() <= stepBudgetMilliseconds ||
+        !enoughBudget(current, deliveryBudget) ||
+        deadline(current) - now() <= deliveryBudget ||
         (current.attemptCount ?? 0) >= 6
       )
         return null
@@ -280,14 +291,14 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
       )
     })
     const afterAttempt = started ?? (await read(claim))
-    if (afterAttempt && deadline(afterAttempt) - now() <= stepBudgetMilliseconds) {
+    if (afterAttempt && deadline(afterAttempt) - now() <= deliveryBudget) {
       await finish(claim, 'expired', 'expired')
       return
     }
-    if (!started || !enoughBudget(started)) return
+    if (!started || !enoughBudget(started, deliveryBudget)) return
     let result: DeliveryOutcome
     try {
-      result = await boundedStep((signal) =>
+      const deliver = (signal?: AbortSignal) =>
         delivery.deliver(
           {
             recipientAddress: started.recipientAddress!,
@@ -298,34 +309,38 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
             ...(providerBinding ? { providerRequest: storedProviderRequest(started) } : {}),
           },
           signal,
-        ),
-      )
+        )
+      result = options.httpTransport ? await deliver() : await boundedStep(deliver)
     } catch {
       result = { type: 'ambiguous' }
     }
     options.crashAfterDelivery?.()
     const outcomeCode =
-      result.type === 'accepted'
-        ? 'fake-accepted'
+      result.outcomeCode ??
+      (result.type === 'accepted'
+        ? (result.outcomeCode ?? 'fake-accepted')
         : result.type === 'retryable'
           ? 'retryable-failure'
           : result.type === 'ambiguous'
             ? 'ambiguous'
             : result.type === 'suppressed'
               ? 'ineligible'
-              : 'permanent-failure'
-    log({
+              : 'permanent-failure')
+    const deliveryLog: DeliveryLog = {
       operationId: claim.operationId,
       commandType: started.commandType,
       attemptNumber: started.attemptCount!,
       outcomeCode,
       environment: runtime.environment,
-    })
+    }
+    log(deliveryLog)
+    if (result.alert === 'configuration') req.payload.logger.fatal(deliveryLog)
+    else if (result.alert) req.payload.logger.error(deliveryLog)
     if (result.type === 'retryable' || result.type === 'ambiguous') {
       const next = retryDelays[started.attemptCount! - 1]
       if (
         next === undefined ||
-        now() + next + stepBudgetMilliseconds >=
+        now() + next + deliveryBudget >=
           Math.min(
             deadline(started),
             result.type === 'ambiguous'
@@ -363,7 +378,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     await finish(
       claim,
       result.type === 'accepted' ? 'accepted' : result.type === 'suppressed' ? 'suppressed' : 'failed',
-      result.type === 'accepted' ? 'fake-accepted' : result.type === 'suppressed' ? 'ineligible' : 'permanent-failure',
+      outcomeCode,
       result.type === 'accepted' ? result.messageId : undefined,
     )
   }

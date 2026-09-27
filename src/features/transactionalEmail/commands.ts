@@ -15,9 +15,10 @@ export const commandTypes = [
 
 const reference = z.uuid()
 const common = { operationReference: reference }
+const clinicApplicationIdentifier = z.number().int().positive()
 
 // These identifiers bind synthetic source records. Product catalog entries remain owned by the flow issues.
-const commandSchema = z.discriminatedUnion('type', [
+const syntheticCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('auth.email-verification'), ...common, verificationId: reference }),
   z.strictObject({ type: z.literal('auth.invitation'), ...common, invitationId: reference }),
   z.strictObject({ type: z.literal('auth.password-recovery'), ...common, recoveryId: reference }),
@@ -26,11 +27,22 @@ const commandSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('moderation.report-decided'), ...common, decisionId: reference }),
   z.strictObject({ type: z.literal('moderation.appeal-received'), ...common, appealId: reference }),
   z.strictObject({ type: z.literal('moderation.appeal-decided'), ...common, decisionId: reference }),
+  // The synthetic fixture keeps its UUID source contract.
   z.strictObject({ type: z.literal('clinic.registration-received'), ...common, registrationId: reference }),
+])
+
+// A real clinic application uses its existing numeric identifier for both the source and operation reference.
+const commandSchema = z.union([
+  syntheticCommandSchema,
+  z.strictObject({ type: z.literal('clinic.registration-received'), registrationId: clinicApplicationIdentifier }),
 ])
 
 export type TransactionalEmailCommand = z.infer<typeof commandSchema>
 export type CommandType = TransactionalEmailCommand['type']
+
+export function commandOperationReference(command: TransactionalEmailCommand): string {
+  return 'operationReference' in command ? command.operationReference : String(command.registrationId)
+}
 
 export function validateCommand(input: unknown): TransactionalEmailCommand {
   if (input && typeof input === 'object' && 'type' in input && !commandTypes.includes(input.type as CommandType)) {

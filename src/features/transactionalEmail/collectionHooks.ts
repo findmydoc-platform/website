@@ -6,7 +6,7 @@ import {
   storageWorkerAuthority,
 } from './capability'
 import { needsScrubbing, outgoingTerminalStates, transientFields } from './retentionPolicy'
-import { validateCommand } from './commands'
+import { commandOperationReference, validateCommand } from './commands'
 import { TransactionalEmailError } from './errors'
 import { providerBindingFields, validateProviderPreparation } from './providerPreparation'
 
@@ -25,7 +25,7 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
     const command = validateCommand(merged.commandPayload)
     if (
       command.type !== merged.commandType ||
-      command.operationReference !== merged.operationReference ||
+      commandOperationReference(command) !== merged.operationReference ||
       !merged.recipientAddress
     ) {
       throw new TransactionalEmailError('invalid-command')

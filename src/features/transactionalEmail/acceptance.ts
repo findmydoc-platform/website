@@ -35,7 +35,10 @@ export function createCommandPort(dependencies: AcceptanceDependencies): Transac
       const entry = resolveCatalogEntry(dependencies.catalog, command)
       return dependencies.transaction(async (storage): Promise<TransactionalEmailAcceptance> => {
         const recipient = await entry.authorizeAndResolve(command, dependencies.actor)
-        if (!recipient.address.endsWith('@example.test') || !recipient.binding) {
+        if (
+          !recipient.binding ||
+          !(entry.isRecipientAllowed?.(recipient) ?? recipient.address.endsWith('@example.test'))
+        ) {
           throw new TransactionalEmailError('invalid-command')
         }
         const existing = await storage.find(command)

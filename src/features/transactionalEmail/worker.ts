@@ -6,7 +6,8 @@ import {
 import { randomUUID } from 'node:crypto'
 import type { PayloadRequest, Where } from 'payload'
 import type { TransactionalEmailOutbox, TransactionalEmailEvent } from '@/payload-types'
-import { commandCatalog, resolveCatalogEntry, type CommandCatalog } from './catalog'
+import { resolveCatalogEntry, type CommandCatalog } from './catalog'
+import { bindPayloadCommandCatalog } from './payloadCatalog'
 import { validateCommand } from './commands'
 import { selectTransactionalEmailRuntime } from './environment'
 import { TransactionalEmailError } from './errors'
@@ -31,6 +32,7 @@ import {
 const leaseMilliseconds = 120_000
 const stepBudgetMilliseconds = 5_000
 const retryDelays = [60_000, 300_000, 1_800_000, 7_200_000, 28_800_000] as const
+
 async function boundedStep<Result>(work: (signal: AbortSignal) => Promise<Result>): Promise<Result> {
   const controller = new AbortController()
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -87,7 +89,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
   if (options.crashAfterDelivery && (!['test', 'ci'].includes(runtime.environment) || process.env.VITEST !== 'true'))
     throw new TransactionalEmailError('environment-unavailable')
   const now = options.now ?? Date.now
-  const catalog = options.catalog ?? commandCatalog
+  const catalog = options.catalog ?? bindPayloadCommandCatalog(req)
   const links = options.links ?? fakeLinks
   if (options.httpTransport && (!providerBinding || options.delivery))
     throw new TransactionalEmailError('environment-unavailable')
@@ -181,9 +183,9 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
           outcomeCode: 'expired',
           outboxState: 'expired',
         })
-      return false
+      return null
     }
-    if (!enoughBudget(record)) return false
+    if (!enoughBudget(record)) return null
     const command = validateCommand(record.commandPayload)
     const entry = resolveCatalogEntry(catalog, command).worker
     if (!entry) throw new TransactionalEmailError('unsupported-command')
@@ -202,7 +204,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
           outcomeCode,
           outboxState: entry.terminalState,
         })
-      return false
+      return null
     }
     const suppression = activationPolicy.evaluate(command.type, current.address)
     if (suppression) {
@@ -214,7 +216,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
           outcomeCode: suppression,
           outboxState: 'suppressed',
         })
-      return false
+      return null
     }
     let decision: Awaited<ReturnType<SuppressionLookup>> = 'unavailable'
     try {
@@ -237,7 +239,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
         outcomeCode: 'suppression-unavailable',
         outboxState: record.state,
       })
-      return false
+      return null
     }
     if (decision !== 'cleared') {
       if (decision === 'suppressed') {
@@ -258,7 +260,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
           outboxState: record.state,
         })
       }
-      return false
+      return null
     }
     if (deadline(record) - now() <= stepBudgetMilliseconds) {
       if (await finish(claim, 'expired', 'expired'))
@@ -269,9 +271,9 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
           outcomeCode: 'expired',
           outboxState: 'expired',
         })
-      return false
+      return null
     }
-    return enoughBudget(record)
+    return enoughBudget(record) ? current : null
   }
 
   const dueAt = (record: TransactionalEmailOutbox) =>
@@ -326,10 +328,14 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     if (record.state === 'queued') {
       let prepared
       try {
-        const actionLink = await boundedStep(() => links.generate())
-        if (!(await revalidate(claim, record))) return
+        const refreshedRecipient = await revalidate(claim, record)
+        if (!refreshedRecipient) return
         const recipientAddress = record.recipientAddress!
-        prepared = await boundedStep(() => renderSyntheticNotification(recipientAddress, actionLink))
+        prepared = await boundedStep(async () =>
+          refreshedRecipient.prepare
+            ? refreshedRecipient.prepare(links)
+            : renderSyntheticNotification(recipientAddress, await links.generate()),
+        )
       } catch {
         if (await finish(claim, 'failed', 'preparation-failed'))
           emit({

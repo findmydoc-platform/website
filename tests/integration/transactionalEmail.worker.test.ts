@@ -394,7 +394,6 @@ describe('transactional email worker', () => {
         authorizeAndResolve: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
         authValidity: async () => ({ actionAt: new Date(actionAt).toISOString(), lifetimeMilliseconds: 48 * 3600000 }),
         worker: {
-          template: 'synthetic-notification',
           terminalState: 'failed',
           revalidate: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
         },
@@ -598,7 +597,6 @@ describe('transactional email worker', () => {
         'clinic.registration-received': {
           ...syntheticEmailCatalog['clinic.registration-received']!,
           worker: {
-            template: 'synthetic-notification',
             terminalState: 'suppressed',
             revalidate: async () =>
               change === 'ineligible'

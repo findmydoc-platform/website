@@ -10,7 +10,11 @@ import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadInt
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { resolveActivationPolicy } from '@/features/transactionalEmail/activationPolicy'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
-import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/transactionalEmail'
+import {
+  clearedSyntheticSuppression,
+  syntheticEmailCatalog,
+  syntheticRegistrationId,
+} from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: async () => null }))
@@ -64,6 +68,7 @@ describe('transactional email activation at the worker boundary', () => {
         vi.spyOn(https, 'request').mockImplementation(deny),
       ]
       await createTransactionalEmailWorker(req, {
+        suppression: clearedSyntheticSuppression,
         catalog: syntheticEmailCatalog,
         links,
         delivery,
@@ -124,6 +129,7 @@ describe('transactional email activation at the worker boundary', () => {
       const render = vi.mocked(emailRenderer.render)
       const options = { catalog: syntheticEmailCatalog, links, delivery, now: () => now }
       await createTransactionalEmailWorker(req, {
+        suppression: clearedSyntheticSuppression,
         ...options,
         activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, allowlist),
       }).run(operationId)
@@ -137,6 +143,7 @@ describe('transactional email activation at the worker boundary', () => {
       else allowlist.length = 0
       now += 60_000
       await createTransactionalEmailWorker(req, {
+        suppression: clearedSyntheticSuppression,
         ...options,
         activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, allowlist),
       }).run(operationId)
@@ -195,6 +202,7 @@ describe('transactional email activation at the worker boundary', () => {
     try {
       await expect(
         createTransactionalEmailWorker(req, {
+          suppression: clearedSyntheticSuppression,
           catalog: syntheticEmailCatalog,
           links,
           delivery,
@@ -228,10 +236,15 @@ describe('transactional email activation at the worker boundary', () => {
     const fixture = createActivationFixture()
     const activationPolicy = resolveActivationPolicy(fixture.binding, fixture.registry)
     vi.stubEnv('VITEST', 'false')
-    expect(() => createTransactionalEmailWorker(req, { activationPolicy })).toThrow('environment-unavailable')
+    expect(() =>
+      createTransactionalEmailWorker(req, { suppression: clearedSyntheticSuppression, activationPolicy }),
+    ).toThrow('environment-unavailable')
     vi.stubEnv('VITEST', 'true')
-    expect(() => createTransactionalEmailWorker(req, { activationPolicy: { evaluate: () => null } })).toThrow(
-      'environment-unavailable',
-    )
+    expect(() =>
+      createTransactionalEmailWorker(req, {
+        suppression: clearedSyntheticSuppression,
+        activationPolicy: { evaluate: () => null },
+      }),
+    ).toThrow('environment-unavailable')
   })
 })

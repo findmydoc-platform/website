@@ -10,7 +10,11 @@ import { openStorageCapability } from '@/features/transactionalEmail/capability'
 import config from '@payload-config'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
-import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/transactionalEmail'
+import {
+  clearedSyntheticSuppression,
+  syntheticEmailCatalog,
+  syntheticRegistrationId,
+} from '../fixtures/transactionalEmail'
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: async () => null }))
 
@@ -64,7 +68,10 @@ describe('transactional email worker', () => {
       "UPDATE transactional_email_outbox SET state = 'prepared', attempt_count = 1, last_attempt_at = $2, next_attempt_at = NULL WHERE id = $1",
       [legacyDue.id, new Date(now - 60_001)],
     )
-    const candidates = await createTransactionalEmailWorker(due.req, { now: () => now }).candidatesForBatch(0)
+    const candidates = await createTransactionalEmailWorker(due.req, {
+      suppression: clearedSyntheticSuppression,
+      now: () => now,
+    }).candidatesForBatch(0)
     expect(candidates).not.toContain(Number(future.id))
     expect(candidates).not.toContain(Number(legacyFuture.id))
     expect(candidates).toContain(Number(legacyDue.id))
@@ -137,7 +144,12 @@ describe('transactional email worker', () => {
     ]
     const delivery = { deliver: vi.fn() }
     try {
-      await createTransactionalEmailWorker(req, { catalog, delivery, now: () => clock }).run(id)
+      await createTransactionalEmailWorker(req, {
+        suppression: clearedSyntheticSuppression,
+        catalog,
+        delivery,
+        now: () => clock,
+      }).run(id)
     } finally {
       outboxHooks.afterRead = originalAfterRead
       eventHooks.afterChange = originalAfterChange
@@ -179,6 +191,7 @@ describe('transactional email worker', () => {
     const original = await row(id)
     const delivery = { deliver: vi.fn(async () => ({ type: 'accepted' as const, messageId: 'fake-boundary' })) }
     await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
       catalog: syntheticEmailCatalog,
       delivery,
       now: () => original.delivery_deadline.getTime() - remaining,
@@ -191,6 +204,7 @@ describe('transactional email worker', () => {
     const { req, id } = await accept()
     let signal: AbortSignal | undefined
     await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
       catalog: syntheticEmailCatalog,
       delivery: {
         deliver: async (_, deliverySignal) => {
@@ -208,7 +222,11 @@ describe('transactional email worker', () => {
     const { req } = await accept()
     vi.stubEnv('VITEST', 'false')
     expect(() =>
-      createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, crashAfterDelivery: () => {} }),
+      createTransactionalEmailWorker(req, {
+        suppression: clearedSyntheticSuppression,
+        catalog: syntheticEmailCatalog,
+        crashAfterDelivery: () => {},
+      }),
     ).toThrow('environment-unavailable')
   })
 
@@ -237,6 +255,7 @@ describe('transactional email worker', () => {
     const { req, id } = await accept()
     const log = vi.fn()
     const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
       catalog: syntheticEmailCatalog,
       log,
       delivery: {
@@ -270,7 +289,12 @@ describe('transactional email worker', () => {
       const httpGuard = vi.spyOn(http, 'request').mockImplementation(deny)
       const httpsGuard = vi.spyOn(https, 'request').mockImplementation(deny)
       const delivery = { deliver: vi.fn(async () => ({ type: outcome })) }
-      const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, now: () => clock, delivery })
+      const worker = createTransactionalEmailWorker(req, {
+        suppression: clearedSyntheticSuppression,
+        catalog: syntheticEmailCatalog,
+        now: () => clock,
+        delivery,
+      })
       await worker.run(id)
       const first = await row(id)
       for (const [index, delay] of [60000, 300000, 1800000, 7200000, 28800000].entries()) {
@@ -305,7 +329,12 @@ describe('transactional email worker', () => {
     const { req, id } = await accept()
     let clock = Date.now()
     const delivery = { deliver: vi.fn(async () => ({ type })) }
-    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, now: () => clock, delivery })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+      now: () => clock,
+      delivery,
+    })
     await worker.run(id)
     clock += 120000
     await worker.run(id)
@@ -336,7 +365,13 @@ describe('transactional email worker', () => {
       }
       const links = { generate: vi.fn(async () => 'https://example.test/once') }
       const delivery = { deliver: vi.fn(async () => ({ type: 'ambiguous' as const })) }
-      const worker = createTransactionalEmailWorker(req, { catalog, now: () => clock, links, delivery })
+      const worker = createTransactionalEmailWorker(req, {
+        suppression: clearedSyntheticSuppression,
+        catalog,
+        now: () => clock,
+        links,
+        delivery,
+      })
       await worker.run(id)
       eligible = false
       clock += 60000
@@ -373,7 +408,13 @@ describe('transactional email worker', () => {
     const firstRequest = clock
     const links = { generate: vi.fn(async () => 'https://example.test/auth') }
     const delivery = { deliver: vi.fn(async () => ({ type: 'ambiguous' as const })) }
-    const worker = createTransactionalEmailWorker(req, { catalog, now: () => clock, links, delivery })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog,
+      now: () => clock,
+      links,
+      delivery,
+    })
     await worker.run(id)
     clock += 60000
     await worker.run(id)
@@ -402,6 +443,7 @@ describe('transactional email worker', () => {
       }),
     }
     const crashed = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
       catalog: syntheticEmailCatalog,
       now: () => clock,
       links,
@@ -414,6 +456,7 @@ describe('transactional email worker', () => {
     expect(Number((await row(id)).attempt_count)).toBe(1)
     clock += 120000
     const recovered = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
       catalog: syntheticEmailCatalog,
       now: () => clock,
       links,
@@ -434,6 +477,7 @@ describe('transactional email worker', () => {
     const links = { generate: vi.fn() }
     const delivery = { deliver: vi.fn() }
     await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
       catalog: syntheticEmailCatalog,
       links,
       delivery,
@@ -457,7 +501,12 @@ describe('transactional email worker', () => {
           : { type: 'accepted' as const, messageId: 'fake-retry' }
       }),
     }
-    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, now: () => clock, delivery })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+      now: () => clock,
+      delivery,
+    })
     await worker.run(id)
     expect((await row(id)).state).toBe('prepared')
     clock += 59999
@@ -477,7 +526,10 @@ describe('transactional email worker', () => {
       operationReference: operationReference(),
       registrationId: syntheticRegistrationId,
     })
-    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+    })
     await worker.run(receipt.operationId)
     const stored = (
       await observer.query('SELECT * FROM transactional_email_outbox WHERE id = $1', [receipt.operationId])
@@ -512,7 +564,11 @@ describe('transactional email worker', () => {
   it('grants exactly one two-minute lease under concurrent claims and rejects stale workers after reclaim', async () => {
     const { req, id } = await accept()
     let clock = Date.now()
-    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, now: () => clock })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+      now: () => clock,
+    })
     const claims = await Promise.all([worker.claim(id), worker.claim(id)])
     expect(claims.filter(Boolean)).toHaveLength(1)
     const original = claims.find(Boolean)!
@@ -551,7 +607,12 @@ describe('transactional email worker', () => {
           },
         },
       }
-      await createTransactionalEmailWorker(req, { catalog, links, delivery }).run(id)
+      await createTransactionalEmailWorker(req, {
+        suppression: clearedSyntheticSuppression,
+        catalog,
+        links,
+        delivery,
+      }).run(id)
       const stored = await row(id)
       expect(stored).toMatchObject({
         state: 'suppressed',
@@ -597,6 +658,7 @@ describe('transactional email worker', () => {
       },
     }
     await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
       catalog: syntheticEmailCatalog,
       links,
       delivery,
@@ -658,7 +720,12 @@ describe('transactional email worker', () => {
         },
       },
     }
-    const worker = createTransactionalEmailWorker(req, { catalog, now: () => clock, links })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog,
+      now: () => clock,
+      links,
+    })
     await worker.run(id)
     const prepared = await row(id)
     expect(prepared.state).toBe('prepared')
@@ -672,7 +739,13 @@ describe('transactional email worker', () => {
         return { type: 'accepted' as const, messageId: 'fake-reclaimed' }
       }),
     }
-    await createTransactionalEmailWorker(req, { catalog, now: () => clock, links, delivery }).run(id)
+    await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog,
+      now: () => clock,
+      links,
+      delivery,
+    }).run(id)
     expect(links.generate).toHaveBeenCalledTimes(1)
     expect(delivery.deliver).toHaveBeenCalledTimes(1)
     expect((await row(id)).state).toBe('accepted')
@@ -693,6 +766,7 @@ describe('transactional email worker', () => {
       },
     }
     await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
       catalog,
       links: {
         generate: async () => {
@@ -716,7 +790,10 @@ describe('transactional email worker', () => {
     hooks.push(fault)
     try {
       await expect(
-        createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog }).run(id),
+        createTransactionalEmailWorker(req, {
+          suppression: clearedSyntheticSuppression,
+          catalog: syntheticEmailCatalog,
+        }).run(id),
       ).rejects.toMatchObject({ code: 'storage-unavailable' })
     } finally {
       hooks.splice(hooks.indexOf(fault), 1)
@@ -734,6 +811,7 @@ describe('transactional email worker', () => {
     const { req, id } = await accept()
     const log = vi.fn()
     await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
       catalog: syntheticEmailCatalog,
       log,
       links: {
@@ -753,7 +831,10 @@ describe('transactional email worker', () => {
 
   it('rejects an illegal state transition', async () => {
     const { req, id } = await accept()
-    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+    })
     const claim = await worker.claim(id)
     const transactionID = await payload.db.beginTransaction()
     if (!transactionID) throw Error('Expected transaction')
@@ -788,7 +869,10 @@ describe('transactional email worker', () => {
     const fetchGuard = vi.spyOn(globalThis, 'fetch').mockImplementation(deny)
     const httpGuard = vi.spyOn(http, 'request').mockImplementation(deny)
     const httpsGuard = vi.spyOn(https, 'request').mockImplementation(deny)
-    await createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog }).run(id)
+    await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+    }).run(id)
     expect((await row(id)).state).toBe('accepted')
     expect(fetchGuard).not.toHaveBeenCalled()
     expect(httpGuard).not.toHaveBeenCalled()
@@ -799,15 +883,18 @@ describe('transactional email worker', () => {
     const { req, id } = await accept()
     const original = await row(id)
     vi.stubEnv('DEPLOYMENT_ENV', environment)
-    expect(() => createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog })).toThrow(
-      'environment-unavailable',
-    )
+    expect(() =>
+      createTransactionalEmailWorker(req, { suppression: clearedSyntheticSuppression, catalog: syntheticEmailCatalog }),
+    ).toThrow('environment-unavailable')
     expect(await row(id)).toEqual(original)
   })
 
   it('rejects a prepared state without durable message fields', async () => {
     const { req, id } = await accept()
-    const claim = await createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog }).claim(id)
+    const claim = await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+    }).claim(id)
     const transactionID = await payload.db.beginTransaction()
     if (!transactionID) throw Error('Expected transaction')
     const capability = openStorageCapability(transactionID, { kind: 'worker', token: claim!.token, now: Date.now })
@@ -834,7 +921,11 @@ describe('transactional email worker', () => {
   it('allows the current token to prepare but fences the same write after expiry and reclaim', async () => {
     const { req, id } = await accept()
     let clock = Date.now()
-    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, now: () => clock })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+      now: () => clock,
+    })
     const first = await worker.claim(id)
     const prepare = async (token: string) => {
       const transactionID = await payload.db.beginTransaction()
@@ -911,7 +1002,12 @@ describe('transactional email worker', () => {
       },
     ]
     try {
-      expect(await createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog }).claim(id)).not.toBeNull()
+      expect(
+        await createTransactionalEmailWorker(req, {
+          suppression: clearedSyntheticSuppression,
+          catalog: syntheticEmailCatalog,
+        }).claim(id),
+      ).not.toBeNull()
     } finally {
       hooks.afterChange = originalHooks
     }
@@ -942,7 +1038,10 @@ describe('transactional email worker', () => {
       ]
       try {
         await expect(
-          createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog }).claim(id),
+          createTransactionalEmailWorker(req, {
+            suppression: clearedSyntheticSuppression,
+            catalog: syntheticEmailCatalog,
+          }).claim(id),
         ).rejects.toMatchObject({ code: 'access-denied' })
       } finally {
         hooks.beforeChange = originalHooks
@@ -957,7 +1056,10 @@ describe('transactional email worker', () => {
 
   it('rejects worker event appends without a preceding guarded outbox write', async () => {
     const { req, id } = await accept()
-    const claim = await createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog }).claim(id)
+    const claim = await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+    }).claim(id)
     const before = (
       await observer.query('SELECT * FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence', [id])
     ).rows
@@ -990,7 +1092,11 @@ describe('transactional email worker', () => {
   it('rejects direct writes with stale tokens and prevents lease renewal', async () => {
     const { req, id } = await accept()
     let clock = Date.now()
-    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, now: () => clock })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+      now: () => clock,
+    })
     const first = await worker.claim(id)
     clock += 120001
     const second = await worker.claim(id)
@@ -1024,7 +1130,12 @@ describe('transactional email worker', () => {
     const { req, id } = await accept()
     let clock = Date.now()
     const links = { generate: vi.fn() }
-    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, now: () => clock, links })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+      now: () => clock,
+      links,
+    })
     const claim = await worker.claim(id)
     clock += 115000
     await worker.processClaim(claim!)
@@ -1050,7 +1161,12 @@ describe('transactional email worker', () => {
       },
     }
     const delivery = { deliver: vi.fn() }
-    const worker = createTransactionalEmailWorker(req, { catalog, now: () => clock, delivery })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog,
+      now: () => clock,
+      delivery,
+    })
     const claim = await worker.claim(id)
     await worker.processClaim(claim!)
     const prepared = await row(id)
@@ -1092,6 +1208,7 @@ describe('transactional email worker', () => {
     const { req, id } = await accept()
     const log = vi.fn()
     await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
       catalog: syntheticEmailCatalog,
       log,
       delivery: { deliver: async () => ({ type: 'permanent' }) },

@@ -7,6 +7,7 @@ export const transientFields = {
   preparedSubject: null,
   preparedHtml: null,
   preparedText: null,
+  preparedProviderRequest: null,
   nextAttemptAt: null,
   leaseToken: null,
   leaseExpiresAt: null,

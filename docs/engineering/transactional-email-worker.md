@@ -100,6 +100,44 @@ redirects the operation. The fake link generator uses example.test and performs 
 notification renders HTML and plain text. The worker commits the exact recipient, subject, HTML, and text before any
 attempt starts. Reclaim after this commit reuses those bytes without generating another link.
 
+Every preparation step also requires an explicit `cleared` decision from the private suppression lookup. Missing,
+unavailable, rejected, or failed lookup results stop before the next link, render, serialization, or delivery step.
+A suppression hit records the existing suppressed outcome. Activation and the Preview allowlist remain separate
+checks and cannot grant suppression clearance. The default worker has no suppression store and therefore cannot
+prepare mail. Local, test, and CI callers must supply an explicit synthetic decision to exercise processing.
+[Website #1898](https://github.com/findmydoc-platform/website/issues/1898) owns the real store and its integration.
+
+## Immutable provider preparation
+
+[Website #1895](https://github.com/findmydoc-platform/website/issues/1895) adds the private preparation boundary.
+After eligibility, recipient binding, activation, allowlist, and suppression checks, one short Payload transaction
+serializes the prepared content with the verified sender and route. It stores `preparedProviderRequest`,
+`providerTeamId`, `providerProjectId`, and `providerRouteId` together with the first attempt marker and event. No
+delivery adapter sees the request until commit succeeds. An audit or commit failure rolls back that transaction.
+
+The UTF-8 JSON string has a fixed field order and a closed schema. It contains one recipient, subject, HTML, text,
+configured sender and route, disabled open/click tracking, and only operation ID, command type, and environment
+metadata. The persistence guard rejects unknown fields, duplicate JSON keys, content mismatches, partial bindings,
+and edits to prepared bytes. It never stores credentials in the body or binding. The request shape follows the
+[Lettermint single-message API](https://lettermint.co/docs/api-reference/sending/send), checked on 27 September 2026.
+
+Retries use the stored string and provider key unchanged. A reviewed sender change cannot rebuild that string.
+Another team, project, route, or environment fails before another attempt; missing provider configuration cannot
+downgrade a prepared operation to fake delivery. Target and activation policy must come from the same verified
+binding. The private worker test option accepts synthetic bindings only in the Vitest test runtime. Hosted selection
+remains closed until the real transport and suppression integration exist. No registry or product command is enabled.
+
+The generated migration adds only four nullable columns. Old and new application versions can use the expanded
+schema. An application rollback keeps those columns: dropping them after provider preparation would discard the
+durable request and destination. The generated down migration is tested only on disposable data containing an
+unprepared operation, followed by up and an unchanged-row check. It is not a hosted rollback procedure.
+
+The preparation integration suite uses real Payload and PostgreSQL, a separate committed-row observer, explicit
+synthetic suppression decisions, and a controlled delivery adapter. It checks durable-before-delivery preparation,
+same-byte retries, target drift, forbidden fields, atomic rollback, private writes, content scrubbing, and 42-day
+binding deletion. Network guards reject fetch and HTTP(S) calls. The transport and response protocol belong to
+[Website #1905](https://github.com/findmydoc-platform/website/issues/1905).
+
 ## Fake provider acceptance and privacy
 
 The worker commits attempt count and an attempt-started event before calling the fake delivery adapter. The adapter
@@ -108,7 +146,8 @@ outcomes clear command data, recipient address, prepared content, and lease fiel
 events. Retained fields follow the foundation metadata allowlist. A terminal event failure rolls back scrubbing and
 state together.
 
-The delivery seam receives only the exact stored message and internal provider key. Structured server logging allows
+The delivery seam receives the exact stored message, internal provider key, and, when prepared, the immutable provider
+request and content-free target. Structured server logging allows
 only operationId, commandType, attemptNumber, outcomeCode, and environment. Raw preparation failures are discarded.
 Tests may inject synthetic link/delivery behavior and a log observer through this private composition seam. Hosted
 runtime detection runs first and rejects Preview and Production, even when test dependencies are supplied.

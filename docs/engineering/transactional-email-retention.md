@@ -22,9 +22,10 @@ the payload or overwrite that outcome after losing its lease. Existing terminal 
 later delivery states, remain unchanged when the sweep repairs leftover content. An existing terminal timestamp is
 immutable, so later metadata activity cannot extend retention.
 
-Both normal worker completion and the sweep use the same transient-field list. Remaining non-null columns belong
-to the foundation's content-free metadata allowlist. Provider request and routing fields do not exist in this
-foundation; their future owner must extend the same scrubbing contract when introducing them.
+Both normal worker completion and the sweep use the same transient-field list, including `preparedProviderRequest`.
+The exact serialized provider body is cleared with the recipient and rendered content. The immutable
+`providerTeamId`, `providerProjectId`, and `providerRouteId` remain as content-free metadata until joint deletion.
+Remaining non-null columns belong to the foundation's content-free metadata allowlist.
 
 ## Joint deletion
 

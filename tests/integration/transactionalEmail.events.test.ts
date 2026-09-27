@@ -12,7 +12,11 @@ import type { TransactionalEmailOutbox } from '@/payload-types'
 import { openStorageCapability } from '@/features/transactionalEmail/capability'
 import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
 import { appendProviderEvent } from '@/features/transactionalEmail/providerEvents'
-import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/transactionalEmail'
+import {
+  clearedSyntheticSuppression,
+  syntheticEmailCatalog,
+  syntheticRegistrationId,
+} from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: async () => null }))
@@ -111,7 +115,10 @@ describe('transactional email event invariants', () => {
   })
   it('serializes a worker claim and provider input using sequence instead of provider time', async () => {
     const { req, id } = await accept()
-    const worker = createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog })
+    const worker = createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+    })
     const [claim] = await overlappingReads(id, () =>
       Promise.all([
         worker.claim(String(id)),
@@ -153,7 +160,10 @@ describe('transactional email event invariants', () => {
     'allows accepted to %s without extending retention or restoring content',
     async (state) => {
       const { req, id } = await accept()
-      await createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog }).run(String(id))
+      await createTransactionalEmailWorker(req, {
+        suppression: clearedSyntheticSuppression,
+        catalog: syntheticEmailCatalog,
+      }).run(String(id))
       const before = (await observer.query('SELECT * FROM transactional_email_outbox WHERE id=$1', [id])).rows[0]
       await appendProviderEvent(req, {
         outbox: id,
@@ -177,7 +187,10 @@ describe('transactional email event invariants', () => {
   )
   it('does not decide precedence for contradictory outcomes but can record an explicitly ignored event', async () => {
     const { req, id } = await accept()
-    await createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog }).run(String(id))
+    await createTransactionalEmailWorker(req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+    }).run(String(id))
     await appendProviderEvent(req, {
       outbox: id,
       providerEventId: randomUUID(),

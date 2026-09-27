@@ -49,6 +49,8 @@ describe('Lettermint webhook Next.js request boundary', () => {
   const operationReference = randomUUID()
   const references = [operationReference]
   let mutationExpected = false
+  const raceCleanup = new Set<() => void>()
+  const raceWork = new Set<Promise<unknown>>()
 
   const state = async () => {
     const { rows } = await observer.query(`
@@ -129,6 +131,10 @@ describe('Lettermint webhook Next.js request boundary', () => {
 
   afterEach(async () => {
     try {
+      // Release every participant before awaiting any of them, including after a test timeout.
+      for (const cleanup of raceCleanup) cleanup()
+      await Promise.allSettled(raceWork)
+      raceWork.clear()
       if (!mutationExpected) expect(await state()).toEqual(beforeState)
       expect(networkAttempts).toBe(0)
       expect(requestErrors).toHaveLength(0)
@@ -279,6 +285,38 @@ describe('Lettermint webhook Next.js request boundary', () => {
     return { promise, resolve }
   }
 
+  function trackRaceWork<Result>(work: Promise<Result>): Promise<Result> {
+    raceWork.add(work)
+    // The test awaits the original promise; this handler also covers rejection before its barrier wait starts.
+    void work.catch(() => {})
+    return work
+  }
+
+  function registerRaceCleanup(cleanup: () => void) {
+    const close = () => {
+      if (raceCleanup.delete(close)) cleanup()
+    }
+    raceCleanup.add(close)
+    return close
+  }
+
+  async function reachBarrier(ready: Promise<void>, participant: Promise<unknown>) {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    try {
+      await Promise.race([
+        ready,
+        participant.then(() => {
+          throw new Error('Race participant completed before the expected barrier')
+        }),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Race barrier was not reached within six seconds')), 6000)
+        }),
+      ])
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
   async function inFlightOperation(messageId = 'synthetic-message', status = 202) {
     vi.unstubAllEnvs()
     vi.stubEnv('CI', 'false')
@@ -293,27 +331,25 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const fixture = createActivationFixture('preview')
     const received = signal()
     const release = signal()
-    const completion = createTransactionalEmailWorker(req, {
-      catalog: syntheticEmailCatalog,
-      now: () => webhookNow,
-      suppression: async () => 'cleared',
-      providerBinding: fixture.binding,
-      activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [
-        'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf',
-      ]),
-      httpTransport: async () => {
-        received.resolve()
-        await release.promise
-        return new Response(JSON.stringify({ message_id: messageId, status: 'pending' }), { status })
-      },
-      log: () => {},
-    }).run(operationId)
-    await Promise.race([
-      received.promise,
-      completion.then(() => {
-        throw new Error('Worker did not submit')
-      }),
-    ])
+    const resume = registerRaceCleanup(release.resolve)
+    const completion = trackRaceWork(
+      createTransactionalEmailWorker(req, {
+        catalog: syntheticEmailCatalog,
+        now: () => webhookNow,
+        suppression: async () => 'cleared',
+        providerBinding: fixture.binding,
+        activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [
+          'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf',
+        ]),
+        httpTransport: async () => {
+          received.resolve()
+          await release.promise
+          return new Response(JSON.stringify({ message_id: messageId, status: 'pending' }), { status })
+        },
+        log: () => {},
+      }).run(operationId),
+    )
+    await reachBarrier(received.promise, completion)
     // The test worker prepares real provider bytes without activating a hosted runtime.
     await observer.query('UPDATE transactional_email_outbox SET runtime_environment = $1 WHERE id = $2', [
       'preview',
@@ -324,7 +360,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('DEPLOYMENT_ENV', 'preview')
     beforeState = await state()
-    return { operationId, resume: release.resolve, completion }
+    return { operationId, resume, completion }
   }
 
   it('signals a conflicting worker provider reference after a webhook wins without changing durable state', async () => {
@@ -460,14 +496,15 @@ describe('Lettermint webhook Next.js request boundary', () => {
       return doc
     }
     hooks.push(hook)
+    const close = registerRaceCleanup(() => {
+      releases.forEach((release) => release.resolve())
+      hooks.splice(hooks.indexOf(hook), 1)
+    })
     return {
       reads,
       releases,
       transactions,
-      close() {
-        releases.forEach((release) => release.resolve())
-        hooks.splice(hooks.indexOf(hook), 1)
-      },
+      close,
     }
   }
 
@@ -482,9 +519,9 @@ describe('Lettermint webhook Next.js request boundary', () => {
       try {
         // The first read is reached only after the controlled HTTP acceptance was parsed.
         worker.resume()
-        await coordination.reads[0]!.promise
-        webhook = sendEvent(messageEvent(id, 'message.delivered'))
-        await coordination.reads[1]!.promise
+        await reachBarrier(coordination.reads[0]!.promise, worker.completion)
+        webhook = trackRaceWork(sendEvent(messageEvent(id, 'message.delivered')))
+        await reachBarrier(coordination.reads[1]!.promise, webhook)
         expect(await state()).toEqual(beforeState)
         if (winner === 'webhook') {
           coordination.releases[1]!.resolve()
@@ -547,14 +584,18 @@ describe('Lettermint webhook Next.js request boundary', () => {
       return data
     }
     hooks.push(hook)
-    const first = sendEvent(firstEvent)
+    const close = registerRaceCleanup(() => {
+      releases.forEach((release) => release.resolve())
+      hooks.splice(hooks.indexOf(hook), 1)
+    })
+    const first = trackRaceWork(sendEvent(firstEvent))
     let second: ReturnType<typeof sendEvent> | undefined
     mutationExpected = true
     expectedSignals.push({ outcomeCode: 'provider-event-mismatch' })
     try {
-      await arrivals[0]!.promise
-      second = sendEvent(secondEvent)
-      await arrivals[1]!.promise
+      await reachBarrier(arrivals[0]!.promise, first)
+      second = trackRaceWork(sendEvent(secondEvent))
+      await reachBarrier(arrivals[1]!.promise, second)
       expect(await state()).toEqual(beforeState)
       releases[0]!.resolve()
       expect((await first).status).toBe(200)
@@ -566,8 +607,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
       expect(await history(secondId)).toEqual(beforeHistory)
       expect((await history(firstId)).filter((entry) => entry.provider_event_id === firstEvent.id)).toHaveLength(1)
     } finally {
-      releases.forEach((release) => release.resolve())
-      hooks.splice(hooks.indexOf(hook), 1)
+      close()
       await Promise.all([first, second])
       attempts.mockRestore()
     }
@@ -671,13 +711,13 @@ describe('Lettermint webhook Next.js request boundary', () => {
       if (mismatch) expectedSignals.push({ outcomeCode: 'provider-event-mismatch' })
       const beforeEvents = await history(id)
       const coordination = pauseFirstTwoReads(id)
-      const first = sendEvent(firstEvent)
+      const first = trackRaceWork(sendEvent(firstEvent))
       let second: ReturnType<typeof sendEvent> | undefined
       mutationExpected = true
       try {
-        await coordination.reads[0]!.promise
-        second = sendEvent(secondEvent)
-        await coordination.reads[1]!.promise
+        await reachBarrier(coordination.reads[0]!.promise, first)
+        second = trackRaceWork(sendEvent(secondEvent))
+        await reachBarrier(coordination.reads[1]!.promise, second)
         expect(await state()).toEqual(beforeState)
         coordination.releases[0]!.resolve()
         expect((await first).status).toBe(200)

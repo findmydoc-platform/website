@@ -404,6 +404,8 @@ export interface TransactionalEmailEvent {
         | 'retryable-failure'
         | 'ambiguous'
         | 'expired'
+        | 'command-not-enabled'
+        | 'preview-recipient-not-allowed'
       )
     | null;
   providerEventId?: string | null;

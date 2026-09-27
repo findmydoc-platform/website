@@ -2,6 +2,8 @@ import { TransactionalEmailError } from './errors'
 import { resolveHostedLettermintBinding } from './hostedConfiguration'
 import registry from './lettermintRegistry.json' with { type: 'json' }
 import targetLocks from './lettermintTargetLocks.json' with { type: 'json' }
+import activationRegistry from './activationRegistry.json' with { type: 'json' }
+import { resolveActivationPolicy } from './activationPolicy'
 
 export type EmailEnvironment = 'local' | 'test' | 'ci' | 'preview' | 'production'
 
@@ -28,24 +30,39 @@ function classifyEnvironment(env: Record<string, string | undefined>): EmailEnvi
   return environment
 }
 
-export function validateTransactionalEmailStartup(
+function resolveStartup(
   env: Record<string, string | undefined> = process.env,
   registryInput: unknown = registry,
   lockedTargets: unknown = targetLocks,
   now = Date.now(),
+  activationInput: unknown = activationRegistry,
 ) {
   const environment = classifyEnvironment(env)
   if (environment === 'preview' || environment === 'production') {
-    resolveHostedLettermintBinding(environment, registryInput, env, now, lockedTargets)
+    const binding = resolveHostedLettermintBinding(environment, registryInput, env, now, lockedTargets)
+    let previewRecipients: unknown
+    if (environment === 'preview') {
+      try {
+        previewRecipients = JSON.parse(env.LETTERMINT_PREVIEW_RECIPIENT_DIGESTS ?? '[]')
+      } catch {
+        throw new TransactionalEmailError('environment-unavailable')
+      }
+    }
+    return { environment, activationPolicy: resolveActivationPolicy(binding, activationInput, previewRecipients) }
   }
+  return { environment, activationPolicy: Object.freeze({ evaluate: () => null }) }
+}
+
+export function validateTransactionalEmailStartup(...args: Parameters<typeof resolveStartup>) {
+  const { environment } = resolveStartup(...args)
   return { environment }
 }
 
 export function selectTransactionalEmailRuntime(env: Record<string, string | undefined> = process.env) {
-  const { environment } = validateTransactionalEmailStartup(env)
+  const { environment, activationPolicy } = resolveStartup(env)
   if (environment === 'preview' || environment === 'production') {
     // Hosted delivery remains unavailable until the outbound adapter is installed.
     throw new TransactionalEmailError('environment-unavailable')
   }
-  return { environment, delivery: 'fake', links: 'fake' } as const
+  return { environment, delivery: 'fake', links: 'fake', activationPolicy } as const
 }

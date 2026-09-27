@@ -54,6 +54,8 @@ export const TransactionalEmailEvents: CollectionConfig = {
         'retryable-failure',
         'ambiguous',
         'expired',
+        'command-not-enabled',
+        'preview-recipient-not-allowed',
       ],
     },
     { name: 'providerEventId', type: 'text' },

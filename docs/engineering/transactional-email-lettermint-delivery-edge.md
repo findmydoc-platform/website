@@ -373,6 +373,52 @@ An outbox operation for a disabled command remains an auditable command result b
 rendering, provider serialization, or provider submission. It enters the existing `suppressed` state with the safe
 code `command-not-enabled`, then follows normal scrubbing and retention.
 
+#### Implemented activation policy
+
+[Website #1904](https://github.com/findmydoc-platform/website/issues/1904) implements the private policy in
+`activationPolicy.ts` and the committed `activationRegistry.json`. The registry has schema version `1`, a reviewed
+registry `version`, environment-specific `preflights`, and command/environment `records`. Both arrays remain empty.
+No product command, provider resource, sender, DNS record, or credential is activated by this implementation.
+
+A preflight binds its own version and the registry version to the team, project, route, sender, webhook identifier,
+and digest-key version. It records the exact binding ID and full SHA-256 fingerprint for the project token, current
+webhook secret, and digest key. The previous webhook secret is explicitly `null` when absent; otherwise it binds
+its binding ID, full fingerprint, and exact `startsAt`/`validUntil` overlap window. Adding, removing, or changing that
+credential or window invalidates old evidence. Those values must match the independently validated hosted binding
+from #1894.
+The sender reference must also match the hosted sender-readiness reference. Preflights require opaque evidence
+references for team, project, route, sender, DNS, signed webhook verification, and disabled tracking. The tracking
+flags must both be false, and the webhook subscription must contain exactly the nine delivery events listed below.
+References accept bounded identifiers only, without URLs, document content, or secrets.
+
+Each activation record names one command, one environment, the exact registry version, and the current preflight
+version. Duplicate command/environment records, duplicate preflights, unknown fields, and stale version references
+fail initialization. Production additionally requires `dpa`, `subprocessors`, `retentionDeletion`,
+`digestKeyOwnershipRotation`, `privacyNotice`, `processingPurpose`, `compliance`, and `onePath` approval references.
+The one-path reference cannot be reused for another command. Preview and Production cannot share provider identities,
+credential bindings, or preflight evidence. Credential rotation or changed sender/webhook configuration rejects old
+preflight evidence until the registry has been reviewed again. References record operator approvals; runtime code
+does not contact the provider, inspect approval documents, or infer an approval from successful authentication.
+
+Hosted startup validates credentials first and then builds an immutable activation policy. The worker evaluates that
+policy after recipient revalidation before each link, render, and delivery step, including a prepared retry. A denial
+records the safe suppression code and scrubs transient data atomically with its audit events. The generated additive
+migration extends only the event outcome enum. Existing application versions remain compatible with the expanded
+database enum. Keep that enum during an application rollback; the generated down migration cannot preserve records
+that already use either new outcome code.
+
+The policy stays behind the module's private Node.js imports and is absent from the public command port. Its crypto
+dependency cannot be bundled for a browser, and policy construction rejects browser execution. A test-only worker
+option accepts only a policy issued after real configuration validation with synthetic credentials. It requires the
+test runtime and Vitest; it grants no hosted runtime or network capability. Local and CI retain their explicit fake
+execution. Hosted delivery still fails closed because the outbound adapter is not installed. This policy does not
+change scheduler authority, credentials, cadence, projects, or failure domains.
+
+Policy tests cover every command, malformed and missing evidence, version and fingerprint drift, environment
+separation, address normalization, and empty allowlists. The worker integration suite uses real Payload and Postgres
+with synthetic policy inputs to prove suppression before preparation, policy removal before prepared retries, and
+transactional rollback when the audit write fails. No real provider call is part of this evidence.
+
 ### Preview recipient allowlist
 
 Preview real delivery requires both a Preview activation record and an environment-scoped recipient allowlist. The
@@ -391,6 +437,19 @@ suppression lookup, so letter casing or presentation differences cannot bypass t
 
 Preview evidence uses synthetic content and approved test recipients only. Production does not inherit or reuse the
 Preview allowlist, team, project, route, token, webhook secret, or sender-readiness evidence.
+
+The implemented central input is the Preview-only `LETTERMINT_PREVIEW_RECIPIENT_DIGESTS` deployment configuration.
+Its value is a JSON array of `<digestKeyId>:<lowercase HMAC-SHA256 hex>` strings. The key ID and secret come from the
+fingerprint-verified Preview binding. An absent value means an empty list; invalid JSON, plaintext addresses,
+wildcards, duplicate entries, and unknown key versions fail startup. Production rejects the presence of this setting
+and never reads its value. Product commands expose no allowlist field or mutation capability.
+
+`recipientAddressDigest` trims surrounding whitespace and lowercases the full address with the shared email
+normalization helper, validates it, and computes HMAC-SHA256 over its UTF-8 bytes. It preserves plus tags and dots.
+The synthetic outbox identity-binding digest uses the same normalization and HMAC algorithm while also binding the
+source identity. Address-only allowlist digests never depend on a command or source identity. The current hosted
+credential contract supports one digest-key version; unsupported versions fail closed. Previous-key support and
+suppression-store migration remain with their delivery-edge work order.
 
 ### Sender, DNS, webhook, and compliance preflight
 

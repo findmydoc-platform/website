@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { resolveHostedLettermintBinding } from '@/features/transactionalEmail/hostedConfiguration'
-import { resolveActivationPolicy } from '@/features/transactionalEmail/activationPolicy'
+import {
+  isTransactionalEmailCommandActivationDeclared,
+  resolveActivationPolicy,
+} from '@/features/transactionalEmail/activationPolicy'
 import { createWebhookConfiguration, webhookNow } from '../../../fixtures/lettermintWebhook'
 import { createActivationFixture } from '../../../fixtures/transactionalEmailActivation'
 import { validateTransactionalEmailStartup } from '@/features/transactionalEmail/environment'
@@ -12,6 +15,35 @@ import { recipientAddressDigest } from '@/features/transactionalEmail/recipientB
 const previewDigest = 'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf'
 
 describe('transactional email activation policy', () => {
+  it('keeps hosted command acceptance inactive without an environment declaration', () => {
+    expect(
+      isTransactionalEmailCommandActivationDeclared('preview', 'clinic.registration-received', committedRegistry),
+    ).toBe(false)
+    expect(
+      isTransactionalEmailCommandActivationDeclared('production', 'clinic.registration-received', committedRegistry),
+    ).toBe(false)
+  })
+
+  it('declares command acceptance only in the environment named by valid activation evidence', () => {
+    const fixture = createActivationFixture('preview')
+
+    expect(
+      isTransactionalEmailCommandActivationDeclared('preview', 'clinic.registration-received', fixture.registry),
+    ).toBe(true)
+    expect(
+      isTransactionalEmailCommandActivationDeclared('production', 'clinic.registration-received', fixture.registry),
+    ).toBe(false)
+  })
+
+  it('fails closed when the activation registry is malformed before checking declarations', () => {
+    expect(() =>
+      isTransactionalEmailCommandActivationDeclared('preview', 'clinic.registration-received', {
+        ...committedRegistry,
+        records: [{ environment: 'preview', commandType: 'clinic.registration-received' }],
+      }),
+    ).toThrow('environment-unavailable')
+  })
+
   it('keeps every committed command disabled before provider provisioning and reviewed activation', () => {
     for (const environment of ['preview', 'production'] as const) {
       const { binding } = createActivationFixture(environment)

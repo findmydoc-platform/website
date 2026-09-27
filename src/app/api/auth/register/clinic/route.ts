@@ -1,9 +1,9 @@
 import { isIP } from 'node:net'
 import { NextRequest, NextResponse } from 'next/server'
 import configPromise from '@/payload.config'
+import { ClinicRegistrationSubmissionError, submitClinicRegistration } from '@/features/clinicRegistration/service'
 import { postHogServerConsent, postHogServerEvents, resolveAnonymousPostHogActor } from '@/posthog/api'
-import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
-import { getPayload } from 'payload'
+import { createLocalReq, getPayload, type Payload } from 'payload'
 
 type ClinicRegistrationSubmissionStatus = 'created' | 'deduped'
 type ClinicRegistrationContactRole = 'Medical Director' | 'Clinic Management' | 'International Office'
@@ -14,7 +14,8 @@ type MedicalSpecialtyLookup = {
   parentSpecialty?: unknown
 }
 
-const PRIVACY_NOTICE_URL = '/privacy-policy'
+const ACCEPTED_RESPONSE = { success: true } as const
+const RETRYABLE_FAILURE_RESPONSE = { error: 'Clinic registration could not be completed. Please try again.' } as const
 const CONTACT_ROLE_VALUES = new Set<ClinicRegistrationContactRole>([
   'Medical Director',
   'Clinic Management',
@@ -136,6 +137,23 @@ const captureClinicRegistrationSubmitted = async ({
   })
 }
 
+const captureClinicRegistrationSubmittedSafely = async (
+  payload: Payload,
+  input: Parameters<typeof captureClinicRegistrationSubmitted>[0],
+): Promise<void> => {
+  try {
+    await captureClinicRegistrationSubmitted(input)
+  } catch {
+    payload.logger.warn(
+      { applicationId: input.submissionId },
+      'Clinic registration analytics failed after durable submission',
+    )
+  }
+}
+
+const registrationFailureCode = (error: unknown): string =>
+  error instanceof ClinicRegistrationSubmissionError ? error.code : 'clinic-registration-request-failed'
+
 // Public endpoint to submit a clinic application from the clinic registration funnel.
 export async function POST(req: NextRequest) {
   const payload = await getPayload({ config: configPromise })
@@ -219,53 +237,47 @@ export async function POST(req: NextRequest) {
     })
     const existingDoc = existing.docs[0]
     if (existingDoc) {
-      await captureClinicRegistrationSubmitted({
+      await captureClinicRegistrationSubmittedSafely(payload, {
         medicalSpecialtyCount: medicalSpecialtyIds.length,
         req,
         submissionId: existingDoc.id,
         submissionStatus: 'deduped',
       })
-      return NextResponse.json({ success: true, id: existingDoc.id, dedupe: true }, { status: 202 })
+      return NextResponse.json(ACCEPTED_RESPONSE, { status: 202 })
     }
 
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || ''
     const userAgent = req.headers.get('user-agent') || ''
 
-    const application = await payload.create({
-      collection: 'clinicApplications',
-      data: {
+    try {
+      const publicReq = await createLocalReq({ req: { headers: req.headers } }, payload)
+      const submission = await submitClinicRegistration(publicReq, {
         clinicName,
         clinicWebsite,
         contactFirstName,
         contactLastName,
         contactEmail,
         contactRole,
-        medicalSpecialties: medicalSpecialtyIds,
-        status: 'submitted',
+        medicalSpecialtyIds,
         sourceMeta: { ip, userAgent },
-        privacyNotice: {
-          acknowledgedAt: getCurrentIsoTimestampString(),
-          url: PRIVACY_NOTICE_URL,
-        },
-      },
-      overrideAccess: true,
-    })
+      })
 
-    payload.logger.info({ msg: 'clinicApplications: submitted', applicationId: application.id })
+      payload.logger.info({ applicationId: submission.applicationId }, 'Clinic registration accepted')
 
-    await captureClinicRegistrationSubmitted({
-      medicalSpecialtyCount: medicalSpecialtyIds.length,
-      req,
-      submissionId: application.id,
-      submissionStatus: 'created',
-    })
+      await captureClinicRegistrationSubmittedSafely(payload, {
+        medicalSpecialtyCount: medicalSpecialtyIds.length,
+        req,
+        submissionId: submission.applicationId,
+        submissionStatus: 'created',
+      })
 
-    return NextResponse.json({ success: true, id: application.id })
+      return NextResponse.json(ACCEPTED_RESPONSE, { status: 202 })
+    } catch (error: unknown) {
+      payload.logger.error({ errorCode: registrationFailureCode(error) }, 'Clinic registration transaction failed')
+      return NextResponse.json(RETRYABLE_FAILURE_RESPONSE, { status: 503 })
+    }
   } catch (error: unknown) {
-    payload.logger.error(
-      { error, clinicName: body?.clinicName, contactEmail: body?.contactEmail },
-      'Clinic registration submission failed',
-    )
-    return NextResponse.json({ error: 'Clinic registration failed' }, { status: 500 })
+    payload.logger.error({ errorCode: registrationFailureCode(error) }, 'Clinic registration request failed')
+    return NextResponse.json(RETRYABLE_FAILURE_RESPONSE, { status: 503 })
   }
 }

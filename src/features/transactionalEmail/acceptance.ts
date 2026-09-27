@@ -1,8 +1,7 @@
-import { recipientDigest } from './recipientBinding'
 import { randomUUID } from 'node:crypto'
 import type { TransactionalEmailAcceptance, TransactionalEmailCommands } from './index'
 import { validateCommand, type TransactionalEmailCommand } from './commands'
-import { resolveCatalogEntry, type CommandCatalog } from './catalog'
+import { resolveCatalogEntry, type CommandCatalog, type RecipientBinding } from './catalog'
 import { TransactionalEmailError } from './errors'
 import type { EmailEnvironment } from './environment'
 
@@ -24,6 +23,7 @@ export type AcceptanceDependencies = {
   now?: () => number
   actor: string | null
   catalog: CommandCatalog
+  digestRecipient(recipient: RecipientBinding): string
   environment: EmailEnvironment
   transaction<Result>(work: (storage: AcceptanceStorage) => Promise<Result>): Promise<Result>
 }
@@ -62,7 +62,7 @@ export function createCommandPort(dependencies: AcceptanceDependencies): Transac
           acceptedAt,
           deliveryDeadline: new Date(deadline).toISOString(),
           recipientAddress: recipient.address,
-          recipientDigest: recipientDigest(recipient),
+          recipientDigest: dependencies.digestRecipient(recipient),
           providerIdempotencyKey: randomUUID(),
           runtimeEnvironment: dependencies.environment,
         })

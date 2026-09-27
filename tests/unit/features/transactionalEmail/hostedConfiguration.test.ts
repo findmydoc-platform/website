@@ -2,9 +2,13 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { resolveHostedLettermintBinding } from '@/features/transactionalEmail/hostedConfiguration'
 import {
+  selectTransactionalEmailAcceptanceRuntime,
   selectTransactionalEmailRuntime,
   validateTransactionalEmailStartup,
 } from '@/features/transactionalEmail/environment'
+import { recipientDigest } from '@/features/transactionalEmail/recipientBinding'
+import { createActivationFixture } from '../../../fixtures/transactionalEmailActivation'
+import { webhookNow } from '../../../fixtures/lettermintWebhook'
 
 const fingerprint = (value: string) => createHash('sha256').update(value).digest('hex')
 const now = Date.parse('2026-09-25T12:00:00.000Z')
@@ -124,6 +128,57 @@ function bind(input = fixture(), environment: Environment = 'preview') {
 }
 
 describe('hosted Lettermint binding', () => {
+  it.each(['preview', 'production'] as const)(
+    'binds %s command acceptance to its verified digest key without enabling delivery',
+    (environment) => {
+      const input = createActivationFixture(environment)
+      const env = {
+        NODE_ENV: 'production',
+        VERCEL_ENV: environment,
+        DEPLOYMENT_ENV: environment,
+        ...input.configuration.secrets[environment],
+      }
+      const runtime = selectTransactionalEmailAcceptanceRuntime(
+        env,
+        input.configuration.registry,
+        input.configuration.locks,
+        webhookNow,
+        input.registry,
+      )
+      const recipient = { address: 'recipient@example.test', binding: 'clinic-registration' }
+
+      expect(runtime.environment).toBe(environment)
+      expect(runtime.digestRecipient(recipient)).toBe(
+        recipientDigest(recipient, {
+          version: input.binding.target.digestKeyId,
+          secret: input.binding.digestKey,
+        }),
+      )
+      expect(() => selectTransactionalEmailRuntime(env)).toThrow('environment-unavailable')
+    },
+  )
+
+  it('fails hosted acceptance closed when an activated environment lacks verified configuration', () => {
+    const input = createActivationFixture('preview')
+    const env = {
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'preview',
+      DEPLOYMENT_ENV: 'preview',
+      ...input.configuration.secrets.preview,
+      LETTERMINT_RECIPIENT_DIGEST_KEY: undefined,
+    }
+
+    expect(() =>
+      selectTransactionalEmailAcceptanceRuntime(
+        env,
+        input.configuration.registry,
+        input.configuration.locks,
+        webhookNow,
+        input.registry,
+      ),
+    ).toThrow('environment-unavailable')
+  })
+
   it('binds each hosted secret only to its reviewed provider target and kind', () => {
     const input = fixture()
     const preview = bind(input, 'preview')

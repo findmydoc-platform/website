@@ -13,9 +13,10 @@ that port. Catalogs, storage capabilities, transaction handling, and environment
 
 The nine approved command types use a strict runtime schema. Operation references and synthetic source identifiers
 are UUIDs. Each command has one named source identifier, such as `registrationId` or `recoveryId`. These identifiers
-address synthetic test records; they do not implement the source loading or recipient policy of a product flow.
-Extra properties and unknown command types fail before persistence. The runtime catalog has no product entries.
-The tests supply a static synthetic catalog, which resolves only addresses under `example.test`.
+address synthetic test records for commands without an activated product flow. Extra properties and unknown command
+types fail before persistence. The runtime catalog contains the `clinic.registration-received` product entry, which
+loads an existing clinic application and derives its recipient and template props. The tests retain a static synthetic
+catalog for the foundation commands, which resolves only addresses under `example.test`.
 
 An acceptance returns exactly `operationId`, `acceptedAt`, and `deduplicated`. Validation and source authorization run
 before both initial acceptance and duplicate receipts. Without a caller transaction, the module owns a serializable read-write transaction, writes one outbox record and its
@@ -85,7 +86,8 @@ analytics calls throughout these transactions.
 
 `transactionalEmailOutbox` stores the accepted command, resolved address, a versioned HMAC digest of the recipient
 binding and address, an independently generated UUID provider key, and acceptance state. The synthetic digest uses a
-fixed non-secret test key with version `fake-v1`. A real key owner and rotation policy remain a Production decision.
+fixed non-secret test key with version `fake-v1`. Hosted acceptance uses only the verified, environment-specific digest
+key and version for its binding. Preview and Production keys and credential evidence remain isolated.
 `transactionalEmailEvents` stores the content-free first event with sequence one.
 
 Both collections deny Admin and normal Local API access, including `overrideAccess`. They have no REST or GraphQL
@@ -105,15 +107,38 @@ cache tags, invalidation calls, or seed records.
 
 ## Runtime limits and evidence
 
-Local, test, and CI select fake boundaries. Preview and Production fail before command initialization because no real
-adapter is installed. The shared runtime selection also gates the private worker described in [worker processing](transactional-email-worker.md). No worker,
-provider, link generation, product trigger, or Dashboard consumer is activated by command acceptance.
+Local, test, and CI select fake, network-blocked boundaries. The clinic-registration service creates the application
+and accepts `clinic.registration-received` in one caller-owned serializable transaction in those environments.
+
+Hosted registration is staged. Preview and Production without a valid command declaration in the committed activation
+registry preserve the existing application-only intake. They return the same neutral accepted response after the
+application commits and run consent-aware analytics afterward. This inactive decision reads only the non-secret
+activation registry; it does not inspect provider or digest credentials.
+
+A valid declaration for the matching hosted environment is the only transition to atomic application and command
+acceptance. Once declared, acceptance verifies the complete matching target, activation policy, digest binding, and
+Lettermint credential evidence before opening the transaction. Missing, malformed, reused, or mismatched configuration
+fails closed and never falls back to application-only intake. Preview and Production have separate declarations,
+bindings, credentials, schedulers, and failure domains.
+
+This change adds no hosted declaration, credential, provider call, link generation, scheduler, or Dashboard consumer.
+[Website #1893](https://github.com/findmydoc-platform/website/issues/1893) owns Preview activation and real Lettermint
+bindings. [Website #1910](https://github.com/findmydoc-platform/website/issues/1910) owns Production activation. The
+shared delivery runtime and private worker described in [worker processing](transactional-email-worker.md) remain
+unavailable in hosted environments until those activation changes land.
 
 `tests/integration/transactionalEmail.acceptance.test.ts` crosses the command port with real Payload and a disposable
 Postgres database. It observes commits from a separate connection, checks rollback and bounded retries, denies normal
 collection access, exercises REST exclusion and the absence of query and mutation fields in the real Payload GraphQL schema,
 checks the migrated indexes, and blocks fetch and HTTP(S)
 requests during local/test/CI command acceptance. Permission-matrix and cache architecture tests cover registration.
+
+`tests/integration/clinicRegistration.atomic.test.ts` enters through the public request handler with real Payload and
+PostgreSQL. An independent connection proves that the application, operation, and first event remain invisible until
+commit. Catalog-source, authenticated-access, storage, commit, and exhausted serialization failures leave all three
+absent and return no success. Independent counts detect orphaned operations and events. Preview and Production tests
+also prove that the empty committed activation registry keeps intake application-only. Fetch and HTTP(S) guards keep
+the test path externally network-blocked.
 
 The GraphQL contract uses the real sanitized mail collections and Countries as a positive query/mutation control.
 The repository-wide GraphQL schema currently fails to build on an unrelated relationship, including when both mail

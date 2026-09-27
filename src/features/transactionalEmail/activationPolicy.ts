@@ -89,36 +89,7 @@ function unavailable(): never {
   throw new TransactionalEmailError('environment-unavailable')
 }
 
-export type ActivationSuppression = 'command-not-enabled' | 'preview-recipient-not-allowed'
-export type ActivationPolicy = {
-  evaluate(command: CommandType, address: string): ActivationSuppression | null
-}
-const policies = new WeakSet<object>()
-const policyBindings = new WeakMap<object, HostedLettermintBinding>()
-
-export function requireActivationPolicy(policy: ActivationPolicy, binding?: HostedLettermintBinding) {
-  if (!policies.has(policy)) unavailable()
-  if (binding && policyBindings.get(policy) !== binding) unavailable()
-}
-
-export function resolveActivationPolicy(
-  binding: HostedLettermintBinding,
-  input: unknown,
-  previewAllowlist?: unknown,
-): ActivationPolicy {
-  if (typeof window !== 'undefined') unavailable()
-  requireVerifiedHostedBinding(binding)
-  if (binding.target.environment === 'production' && previewAllowlist !== undefined) unavailable()
-  const supportedDigestVersions = new Set(binding.recipientDigestKeys.map(({ version }) => version))
-  const allowlist = z
-    .array(z.string().regex(/^[A-Za-z0-9_-]{1,128}:[a-f0-9]{64}$/))
-    .safeParse(previewAllowlist === undefined ? [] : previewAllowlist)
-  if (
-    !allowlist.success ||
-    new Set(allowlist.data).size !== allowlist.data.length ||
-    allowlist.data.some((digest) => !supportedDigestVersions.has(digest.slice(0, digest.indexOf(':'))))
-  )
-    unavailable()
+function parseActivationRegistry(input: unknown): z.infer<typeof registrySchema> {
   const parsed = registrySchema.safeParse(input)
   if (!parsed.success) unavailable()
   const registry = parsed.data
@@ -134,41 +105,9 @@ export function resolveActivationPolicy(
   for (const preflight of preflights) {
     if (
       preflight.registryVersion !== registry.version ||
-      new Set(preflight.webhookEvents).size !== webhookEvents.length
-    )
-      unavailable()
-    if (preflight.environment !== binding.target.environment) continue
-    for (const key of Object.keys(preflight.target) as (keyof typeof preflight.target)[]) {
-      if (preflight.target[key] !== binding.target[key]) unavailable()
-    }
-    if (preflight.evidence.sender !== binding.target.senderEvidenceId) unavailable()
-    for (const kind of ['projectToken', 'webhookSecret', 'digestKey'] as const) {
-      if (
-        preflight.credentials[kind].bindingId !== binding.credentialEvidence[kind].bindingId ||
-        preflight.credentials[kind].sha256 !== binding.credentialEvidence[kind].sha256
-      )
-        unavailable()
-    }
-    if (
+      new Set(preflight.webhookEvents).size !== webhookEvents.length ||
       new Set(preflight.credentials.previousDigestKeys.map(({ version }) => version)).size !==
-        preflight.credentials.previousDigestKeys.length ||
-      preflight.credentials.previousDigestKeys.length !== binding.credentialEvidence.previousDigestKeys.length ||
-      preflight.credentials.previousDigestKeys.some((key) => {
-        const verified = binding.credentialEvidence.previousDigestKeys.find(({ version }) => version === key.version)
-        return !verified || verified.bindingId !== key.bindingId || verified.sha256 !== key.sha256
-      })
-    )
-      unavailable()
-    const previous = preflight.credentials.previousWebhookSecret
-    const verifiedPrevious = binding.credentialEvidence.previousWebhookSecret
-    if ((previous === null) !== (verifiedPrevious === null)) unavailable()
-    if (
-      previous &&
-      verifiedPrevious &&
-      (previous.bindingId !== verifiedPrevious.bindingId ||
-        previous.sha256 !== verifiedPrevious.sha256 ||
-        previous.overlap.startsAt !== verifiedPrevious.overlap.startsAt ||
-        previous.overlap.validUntil !== verifiedPrevious.overlap.validUntil)
+        preflight.credentials.previousDigestKeys.length
     )
       unavailable()
   }
@@ -205,6 +144,84 @@ export function resolveActivationPolicy(
       !preflights.some(
         (preflight) => preflight.environment === record.environment && preflight.version === record.preflightVersion,
       )
+    )
+      unavailable()
+  }
+  return registry
+}
+
+export function isTransactionalEmailCommandActivationDeclared(
+  targetEnvironment: 'preview' | 'production',
+  command: CommandType,
+  input: unknown,
+): boolean {
+  const registry = parseActivationRegistry(input)
+  return registry.records.some((record) => record.environment === targetEnvironment && record.commandType === command)
+}
+
+export type ActivationSuppression = 'command-not-enabled' | 'preview-recipient-not-allowed'
+export type ActivationPolicy = {
+  evaluate(command: CommandType, address: string): ActivationSuppression | null
+}
+const policies = new WeakSet<object>()
+const policyBindings = new WeakMap<object, HostedLettermintBinding>()
+
+export function requireActivationPolicy(policy: ActivationPolicy, binding?: HostedLettermintBinding) {
+  if (!policies.has(policy)) unavailable()
+  if (binding && policyBindings.get(policy) !== binding) unavailable()
+}
+
+export function resolveActivationPolicy(
+  binding: HostedLettermintBinding,
+  input: unknown,
+  previewAllowlist?: unknown,
+): ActivationPolicy {
+  if (typeof window !== 'undefined') unavailable()
+  requireVerifiedHostedBinding(binding)
+  if (binding.target.environment === 'production' && previewAllowlist !== undefined) unavailable()
+  const supportedDigestVersions = new Set(binding.recipientDigestKeys.map(({ version }) => version))
+  const allowlist = z
+    .array(z.string().regex(/^[A-Za-z0-9_-]{1,128}:[a-f0-9]{64}$/))
+    .safeParse(previewAllowlist === undefined ? [] : previewAllowlist)
+  if (
+    !allowlist.success ||
+    new Set(allowlist.data).size !== allowlist.data.length ||
+    allowlist.data.some((digest) => !supportedDigestVersions.has(digest.slice(0, digest.indexOf(':'))))
+  )
+    unavailable()
+  const registry = parseActivationRegistry(input)
+  const { preflights, records } = registry
+  for (const preflight of preflights) {
+    if (preflight.environment !== binding.target.environment) continue
+    for (const key of Object.keys(preflight.target) as (keyof typeof preflight.target)[]) {
+      if (preflight.target[key] !== binding.target[key]) unavailable()
+    }
+    if (preflight.evidence.sender !== binding.target.senderEvidenceId) unavailable()
+    for (const kind of ['projectToken', 'webhookSecret', 'digestKey'] as const) {
+      if (
+        preflight.credentials[kind].bindingId !== binding.credentialEvidence[kind].bindingId ||
+        preflight.credentials[kind].sha256 !== binding.credentialEvidence[kind].sha256
+      )
+        unavailable()
+    }
+    if (
+      preflight.credentials.previousDigestKeys.length !== binding.credentialEvidence.previousDigestKeys.length ||
+      preflight.credentials.previousDigestKeys.some((key) => {
+        const verified = binding.credentialEvidence.previousDigestKeys.find(({ version }) => version === key.version)
+        return !verified || verified.bindingId !== key.bindingId || verified.sha256 !== key.sha256
+      })
+    )
+      unavailable()
+    const previous = preflight.credentials.previousWebhookSecret
+    const verifiedPrevious = binding.credentialEvidence.previousWebhookSecret
+    if ((previous === null) !== (verifiedPrevious === null)) unavailable()
+    if (
+      previous &&
+      verifiedPrevious &&
+      (previous.bindingId !== verifiedPrevious.bindingId ||
+        previous.sha256 !== verifiedPrevious.sha256 ||
+        previous.overlap.startsAt !== verifiedPrevious.overlap.startsAt ||
+        previous.overlap.validUntil !== verifiedPrevious.overlap.validUntil)
     )
       unavailable()
   }

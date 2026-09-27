@@ -1,10 +1,12 @@
 import { createLocalReq, type PayloadRequest } from 'payload'
+import activationRegistry from './activationRegistry.json' with { type: 'json' }
 import { createCommandPort, type AcceptanceStorage } from './acceptance'
-import { commandOperationReference } from './commands'
+import { isTransactionalEmailCommandActivationDeclared } from './activationPolicy'
+import { commandOperationReference, type CommandType } from './commands'
 import type { CommandCatalog } from './catalog'
 import { bindPayloadCommandCatalog } from './payloadCatalog'
 import { openStorageCapability } from './capability'
-import { selectTransactionalEmailRuntime } from './environment'
+import { resolveTransactionalEmailEnvironment, selectTransactionalEmailAcceptanceRuntime } from './environment'
 import { TransactionalEmailError } from './errors'
 import { isActiveTransaction, runOwnedTransaction, transactionError } from './transactions'
 import type { TransactionalEmailCommands } from './index'
@@ -81,12 +83,19 @@ async function withStorage<Result>(
   }
 }
 
-export function bindTransactionalEmail(req: PayloadRequest, catalog?: CommandCatalog, now: () => number = Date.now) {
-  const runtime = selectTransactionalEmailRuntime()
+type AcceptanceRuntime = ReturnType<typeof selectTransactionalEmailAcceptanceRuntime>
+
+function bindTransactionalEmailWithRuntime(
+  req: PayloadRequest,
+  catalog: CommandCatalog | undefined,
+  now: () => number,
+  runtime: AcceptanceRuntime,
+) {
   return createCommandPort({
     now,
     actor: req.user ? `${req.user.collection}:${req.user.id}` : null,
     catalog: catalog ?? bindPayloadCommandCatalog(req),
+    digestRecipient: runtime.digestRecipient,
     environment: runtime.environment,
     async transaction(work) {
       if (typeof req.transactionID !== 'undefined') {
@@ -105,14 +114,48 @@ export function bindTransactionalEmail(req: PayloadRequest, catalog?: CommandCat
   })
 }
 
+export function bindTransactionalEmail(req: PayloadRequest, catalog?: CommandCatalog, now: () => number = Date.now) {
+  return bindTransactionalEmailWithRuntime(req, catalog, now, selectTransactionalEmailAcceptanceRuntime())
+}
+
+function runTransactionalEmailTransactionWithRuntime<Result>(
+  req: PayloadRequest,
+  work: (transactionReq: PayloadRequest, commands: TransactionalEmailCommands) => Promise<Result>,
+  catalog: CommandCatalog | undefined,
+  runtime: AcceptanceRuntime,
+): Promise<Result> {
+  return runOwnedTransaction(req, (transactionReq) =>
+    work(transactionReq, bindTransactionalEmailWithRuntime(transactionReq, catalog, Date.now, runtime)),
+  )
+}
+
 /** The Website integration owns this outer response boundary and repeats the whole business callback. */
 export function runTransactionalEmailTransaction<Result>(
   req: PayloadRequest,
   work: (transactionReq: PayloadRequest, commands: TransactionalEmailCommands) => Promise<Result>,
   catalog?: CommandCatalog,
 ): Promise<Result> {
-  selectTransactionalEmailRuntime()
-  return runOwnedTransaction(req, (transactionReq) =>
-    work(transactionReq, bindTransactionalEmail(transactionReq, catalog)),
-  )
+  const runtime = selectTransactionalEmailAcceptanceRuntime()
+  return runTransactionalEmailTransactionWithRuntime(req, work, catalog, runtime)
+}
+
+export function selectTransactionalEmailCommandAcceptance(command: CommandType) {
+  const environment = resolveTransactionalEmailEnvironment()
+  if (
+    (environment === 'preview' || environment === 'production') &&
+    !isTransactionalEmailCommandActivationDeclared(environment, command, activationRegistry)
+  ) {
+    return Object.freeze({ kind: 'inactive' as const })
+  }
+  const runtime = selectTransactionalEmailAcceptanceRuntime()
+  return Object.freeze({
+    kind: 'active' as const,
+    run<Result>(
+      req: PayloadRequest,
+      work: (transactionReq: PayloadRequest, commands: TransactionalEmailCommands) => Promise<Result>,
+      catalog?: CommandCatalog,
+    ) {
+      return runTransactionalEmailTransactionWithRuntime(req, work, catalog, runtime)
+    },
+  })
 }

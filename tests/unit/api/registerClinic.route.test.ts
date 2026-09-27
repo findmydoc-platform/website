@@ -16,6 +16,8 @@ const postHogMocks = vi.hoisted(() => ({
   resolveAnalyticsConsent: vi.fn(),
 }))
 
+const serviceMocks = vi.hoisted(() => ({ submit: vi.fn() }))
+
 const topLevelSpecialties = [
   { id: 1, name: 'Dental', parentSpecialty: null },
   { id: 2, name: 'Eye Care', parentSpecialty: null },
@@ -26,8 +28,8 @@ const childSpecialty = { id: 11, name: 'Implants', parentSpecialty: 1 }
 let existingClinicApplications: Array<{ id: number }> = []
 
 const findMock = vi.fn()
-const createMock = vi.fn().mockResolvedValue({ id: 123 })
 const loggerMock = { info: vi.fn(), error: vi.fn(), warn: vi.fn() }
+const publicReq = { kind: 'public-request' }
 
 const mockPayloadFind = async ({ collection }: { collection?: string }) => {
   if (collection === 'medical-specialties') {
@@ -47,13 +49,20 @@ vi.mock('payload', async (importOriginal) => {
   return {
     ...actual,
     buildConfig: (cfg: unknown) => cfg,
+    createLocalReq: async () => publicReq,
     getPayload: async () => ({
       find: findMock,
-      create: createMock,
       logger: loggerMock,
     }),
   }
 })
+
+vi.mock('@/features/clinicRegistration/service', () => ({
+  ClinicRegistrationSubmissionError: class ClinicRegistrationSubmissionError extends Error {
+    readonly code = 'clinic-registration-unavailable'
+  },
+  submitClinicRegistration: serviceMocks.submit,
+}))
 
 vi.mock('@/posthog/api', () => ({
   postHogServerConsent: {
@@ -66,6 +75,7 @@ vi.mock('@/posthog/api', () => ({
 }))
 
 import { POST } from '@/app/api/auth/register/clinic/route'
+import { TransactionalEmailError } from '@/features/transactionalEmail'
 import { NextRequest } from 'next/server'
 
 const validSubmission = {
@@ -91,7 +101,7 @@ describe('POST /api/auth/register/clinic', () => {
     vi.clearAllMocks()
     existingClinicApplications = []
     findMock.mockImplementation(mockPayloadFind)
-    createMock.mockResolvedValue({ id: 123 })
+    serviceMocks.submit.mockResolvedValue({ applicationId: 123 })
     postHogMocks.resolveAnonymousPostHogActor.mockReturnValue(postHogMocks.actor)
     postHogMocks.resolveAnalyticsConsent.mockResolvedValue(postHogMocks.analyticsConsent)
   })
@@ -100,39 +110,29 @@ describe('POST /api/auth/register/clinic', () => {
     const res = await POST(makeRequest(validSubmission))
     const json = await res.json()
 
-    expect(res.status).toBe(200)
-    expect(json.success).toBe(true)
-    expect(json.id).toBe(123)
-    expect(createMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        collection: 'clinicApplications',
-        data: expect.objectContaining({
-          clinicName: 'New Clinic',
-          clinicWebsite: 'https://new-clinic.example/',
-          contactFirstName: 'Ada',
-          contactLastName: 'Lovelace',
-          contactEmail: 'clinic@example.com',
-          contactRole: 'Clinic Management',
-          medicalSpecialties: [1, 3],
-          status: 'submitted',
-          privacyNotice: expect.objectContaining({
-            acknowledgedAt: expect.any(String),
-            url: '/privacy-policy',
-          }),
-        }),
-        overrideAccess: true,
-      }),
-    )
-    expect(createMock.mock.calls[0]?.[0]?.data).not.toHaveProperty('websiteOrPublicProfile')
-    expect(createMock.mock.calls[0]?.[0]?.data).not.toHaveProperty('contactPhone')
-    expect(createMock.mock.calls[0]?.[0]?.data).not.toHaveProperty('address')
-    expect(createMock.mock.calls[0]?.[0]?.data).not.toHaveProperty('additionalNotes')
+    expect(res.status).toBe(202)
+    expect(json).toEqual({ success: true })
+    expect(serviceMocks.submit).toHaveBeenCalledWith(publicReq, {
+      clinicName: 'New Clinic',
+      clinicWebsite: 'https://new-clinic.example/',
+      contactFirstName: 'Ada',
+      contactLastName: 'Lovelace',
+      contactEmail: 'clinic@example.com',
+      contactRole: 'Clinic Management',
+      medicalSpecialtyIds: [1, 3],
+      sourceMeta: { ip: '', userAgent: '' },
+    })
+    const submittedInput = serviceMocks.submit.mock.calls[0]?.[1]
+    expect(submittedInput).not.toHaveProperty('websiteOrPublicProfile')
+    expect(submittedInput).not.toHaveProperty('contactPhone')
+    expect(submittedInput).not.toHaveProperty('address')
+    expect(submittedInput).not.toHaveProperty('additionalNotes')
   })
 
   test('tracks a privacy-safe submission event', async () => {
     const res = await POST(makeRequest(validSubmission))
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(202)
     expect(postHogMocks.resolveAnonymousPostHogActor).toHaveBeenCalledWith({
       fallbackAnonymousId: 'clinic_registration:123',
       headers: expect.any(Headers),
@@ -158,8 +158,8 @@ describe('POST /api/auth/register/clinic', () => {
     const json = await res.json()
 
     expect(res.status).toBe(202)
-    expect(json).toEqual({ success: true, id: 456, dedupe: true })
-    expect(createMock).not.toHaveBeenCalled()
+    expect(json).toEqual({ success: true })
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
     expect(postHogMocks.registerClinicSubmitted).toHaveBeenCalledWith(
       expect.objectContaining({
         properties: expect.objectContaining({
@@ -176,11 +176,69 @@ describe('POST /api/auth/register/clinic', () => {
     const res = await POST(makeRequest(validSubmission))
     const json = await res.json()
 
-    expect(res.status).toBe(200)
-    expect(json.success).toBe(true)
+    expect(res.status).toBe(202)
+    expect(json).toEqual({ success: true })
     expect(postHogMocks.resolveAnonymousPostHogActor).not.toHaveBeenCalled()
     expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
   })
+
+  test('does not run analytics before the durable transaction succeeds', async () => {
+    let releaseTransaction!: () => void
+    let transactionCompleted!: () => void
+    const held = new Promise<void>((resolve) => {
+      releaseTransaction = resolve
+    })
+    const completed = new Promise<void>((resolve) => {
+      transactionCompleted = resolve
+    })
+    serviceMocks.submit.mockImplementationOnce(async () => {
+      transactionCompleted()
+      await held
+      return { applicationId: 123 }
+    })
+
+    const responsePromise = POST(makeRequest(validSubmission))
+    try {
+      await completed
+      expect(postHogMocks.resolveAnalyticsConsent).not.toHaveBeenCalled()
+      expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
+    } finally {
+      releaseTransaction()
+    }
+
+    const response = await responsePromise
+    expect(response.status).toBe(202)
+    expect(postHogMocks.registerClinicSubmitted).toHaveBeenCalledOnce()
+  })
+
+  test('keeps durable success when analytics fails', async () => {
+    postHogMocks.registerClinicSubmitted.mockRejectedValueOnce(new Error('private analytics detail'))
+
+    const response = await POST(makeRequest(validSubmission))
+
+    expect(response.status).toBe(202)
+    await expect(response.json()).resolves.toEqual({ success: true })
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      { applicationId: 123 },
+      'Clinic registration analytics failed after durable submission',
+    )
+  })
+
+  test.each(['unsupported-command', 'access-denied', 'storage-unavailable', 'transaction-conflict'] as const)(
+    'returns one retryable public failure for %s',
+    async (code) => {
+      serviceMocks.submit.mockRejectedValueOnce(new TransactionalEmailError(code))
+
+      const response = await POST(makeRequest(validSubmission))
+
+      expect(response.status).toBe(503)
+      await expect(response.json()).resolves.toEqual({
+        error: 'Clinic registration could not be completed. Please try again.',
+      })
+      expect(postHogMocks.resolveAnalyticsConsent).not.toHaveBeenCalled()
+      expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
+    },
+  )
 
   test.each([
     ['plain non-url text', 'not-a-url'],
@@ -212,7 +270,7 @@ describe('POST /api/auth/register/clinic', () => {
 
     expect(res.status).toBe(400)
     expect(json.error).toBe('Invalid clinicWebsite')
-    expect(createMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
     expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
   })
 
@@ -227,7 +285,7 @@ describe('POST /api/auth/register/clinic', () => {
 
     expect(res.status).toBe(400)
     expect(json.error).toBe('Invalid contactEmail')
-    expect(createMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
   })
 
   test('rejects missing contactFirstName values', async () => {
@@ -241,7 +299,7 @@ describe('POST /api/auth/register/clinic', () => {
 
     expect(res.status).toBe(400)
     expect(json.error).toBe('Contact first name is required')
-    expect(createMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
   })
 
   test('rejects missing contactLastName values', async () => {
@@ -255,7 +313,7 @@ describe('POST /api/auth/register/clinic', () => {
 
     expect(res.status).toBe(400)
     expect(json.error).toBe('Contact last name is required')
-    expect(createMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
   })
 
   test('rejects invalid contactRole values', async () => {
@@ -269,7 +327,7 @@ describe('POST /api/auth/register/clinic', () => {
 
     expect(res.status).toBe(400)
     expect(json.error).toBe('Invalid contactRole')
-    expect(createMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
   })
 
   test('rejects missing medicalSpecialties values', async () => {
@@ -283,7 +341,7 @@ describe('POST /api/auth/register/clinic', () => {
 
     expect(res.status).toBe(400)
     expect(json.error).toBe('Invalid medicalSpecialties')
-    expect(createMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
   })
 
   test('rejects medicalSpecialties that do not exist', async () => {
@@ -297,7 +355,7 @@ describe('POST /api/auth/register/clinic', () => {
 
     expect(res.status).toBe(400)
     expect(json.error).toBe('Invalid medicalSpecialties')
-    expect(createMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
   })
 
   test('rejects non-top-level medicalSpecialties', async () => {
@@ -311,6 +369,6 @@ describe('POST /api/auth/register/clinic', () => {
 
     expect(res.status).toBe(400)
     expect(json.error).toBe('Invalid medicalSpecialties')
-    expect(createMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
   })
 })

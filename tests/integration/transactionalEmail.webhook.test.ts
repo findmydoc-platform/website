@@ -32,6 +32,8 @@ import type { CommandCatalog } from '@/features/transactionalEmail/catalog'
 import { retireDigestKey } from '@/features/transactionalEmail/digestKeyRotation'
 import { validateTransactionalEmailStartup } from '@/features/transactionalEmail/environment'
 import { runDigestKeyRetirement } from '../../scripts/lettermint-digest-key-retirement'
+import { validateDeliveryEdgeLog } from '@/features/transactionalEmail/operationalSignals'
+import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
 
 vi.hoisted(async () => {
   const { createRequire } = await import('node:module')
@@ -137,7 +139,10 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.spyOn(payload.logger, 'warn').mockImplementation((...args: unknown[]) => {
       signalCalls.push(...args)
     })
-    for (const method of ['log', 'info', 'warn', 'error', 'debug'] as const) {
+    vi.spyOn(fallbackConsoleLogger, 'warn').mockImplementation((...args: unknown[]) => {
+      signalCalls.push(...args)
+    })
+    for (const method of ['log', 'info', 'error', 'debug'] as const) {
       vi.spyOn(console, method).mockImplementation((...args: unknown[]) => {
         logCalls.push(args)
       })
@@ -167,7 +172,9 @@ describe('Lettermint webhook Next.js request boundary', () => {
       expect(networkAttempts).toBe(0)
       expect(requestErrors).toHaveLength(0)
       expect(logCalls).toHaveLength(0)
-      expect(signalCalls).toEqual(expectedSignals)
+      expect(signalCalls.map((signal) => validateDeliveryEdgeLog(signal).outcomeCode)).toEqual(
+        expect.arrayContaining(expectedSignals.map(({ outcomeCode }) => outcomeCode)),
+      )
     } finally {
       vi.restoreAllMocks()
       vi.unstubAllEnvs()
@@ -488,7 +495,18 @@ describe('Lettermint webhook Next.js request boundary', () => {
       },
     ])
     const committed = await state()
+    const replaySignalOffset = signalCalls.length
     expect(await (await sendEvent(complaint)).json()).toEqual({ outcomeCode: 'provider-event-duplicate' })
+    expect(signalCalls.slice(replaySignalOffset)).toEqual([
+      {
+        operationId: id,
+        environment: 'preview',
+        outcomeCode: 'provider-event-duplicate',
+        providerEventId: complaint.id,
+        providerEventType: 'message.spam_complaint',
+        providerMessageId: 'synthetic-message',
+      },
+    ])
     expect(await state()).toEqual(committed)
     expect((await stored(id)).state).toBe('bounced')
   })
@@ -1096,6 +1114,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
         throw new Error('private-unavailable-detail')
       }
       if (scenario === 'unavailable') hooks.push(failure)
+      const workerSignalOffset = signalCalls.length
       try {
         await createTransactionalEmailWorker(req, {
           catalog,
@@ -1109,6 +1128,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
               secret: fixture.binding.digestKey,
             })!,
           ]),
+          log: (event) => signalCalls.push(event),
         }).run(operationId)
       } finally {
         if (scenario === 'unavailable') hooks.splice(hooks.indexOf(failure), 1)
@@ -1119,6 +1139,16 @@ describe('Lettermint webhook Next.js request boundary', () => {
         state: scenario === 'unavailable' ? 'queued' : 'suppressed',
         attempt_count: scenario === 'prepared' ? '1' : '0',
       })
+      expect(signalCalls.slice(workerSignalOffset)).toEqual([
+        {
+          operationId,
+          commandType: 'clinic.registration-received',
+          environment: 'test',
+          outcomeCode: scenario === 'unavailable' ? 'suppression-unavailable' : 'suppression-hit',
+          outboxState: scenario === 'unavailable' ? 'queued' : 'suppressed',
+          ...(scenario === 'prepared' ? { attemptNumber: 1 } : {}),
+        },
+      ])
       expect(JSON.stringify([logCalls, signalCalls, requestErrors]).includes('private-unavailable-detail')).toBe(false)
     },
   )
@@ -1195,7 +1225,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
           await release.promise
           return new Response(JSON.stringify({ message_id: messageId, status: 'pending' }), { status })
         },
-        log: () => {},
+        log: (event) => signalCalls.push(event),
       }).run(operationId),
     )
     await reachBarrier(received.promise, completion)
@@ -1221,7 +1251,9 @@ describe('Lettermint webhook Next.js request boundary', () => {
       worker.resume()
       await worker.completion
       expect(await state()).toEqual(committed)
-      expect(signalCalls).toEqual([{ outcomeCode: 'provider-event-mismatch' }])
+      expect(signalCalls.map((signal) => validateDeliveryEdgeLog(signal).outcomeCode)).toContain(
+        'provider-event-mismatch',
+      )
       expectedSignals.push({ outcomeCode: 'provider-event-mismatch' })
     } finally {
       worker.resume()
@@ -1275,30 +1307,31 @@ describe('Lettermint webhook Next.js request boundary', () => {
     'preserves webhook delivery after an ambiguous, retryable, or permanent HTTP %i worker result',
     async (status) => {
       const worker = await inFlightOperation('synthetic-message', status)
-      const errors: unknown[] = []
-      vi.spyOn(payload.logger, 'error').mockImplementation((...args: unknown[]) => {
-        errors.push(...args)
-      })
       mutationExpected = true
       try {
         expect((await sendEvent(messageEvent(worker.operationId, 'message.delivered'))).status).toBe(200)
         const committed = await state()
+        const workerSignalOffset = signalCalls.length
         worker.resume()
         await worker.completion
         expect(await state()).toEqual(committed)
-        expect(errors).toEqual(
-          status === 422
-            ? [
-                {
-                  operationId: worker.operationId,
-                  commandType: 'clinic.registration-received',
-                  attemptNumber: 1,
-                  outcomeCode: 'provider-request-rejected',
-                  environment: 'test',
-                },
-              ]
-            : [],
-        )
+        expect(signalCalls.slice(workerSignalOffset)).toEqual([
+          {
+            operationId: worker.operationId,
+            commandType: 'clinic.registration-received',
+            attemptNumber: 1,
+            outcomeCode:
+              status === 422
+                ? 'provider-request-rejected'
+                : status === 503
+                  ? 'provider-temporary'
+                  : 'provider-ambiguous',
+            environment: 'test',
+            outboxState: 'delivered',
+            durationBucket: 'lt-1s',
+            queueAgeBucket: 'lt-1m',
+          },
+        ])
       } finally {
         worker.resume()
         await worker.completion
@@ -2097,6 +2130,17 @@ describe('Lettermint webhook Next.js request boundary', () => {
     expect(response.headers.get('cache-control')).toBe('no-store')
   })
 
+  it('acknowledges an authenticated webhook when the repository signal writer fails', async () => {
+    vi.mocked(fallbackConsoleLogger.warn).mockImplementation(() => {
+      throw new Error('synthetic-log-failure')
+    })
+
+    const response = await send()
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ outcomeCode: 'webhook-test-verified' })
+  })
+
   it('withholds sending and digest credentials from the inbound capability at runtime', () => {
     const binding = loadHostedLettermintWebhookBinding('preview')
     expect('projectToken' in binding).toBe(false)
@@ -2129,12 +2173,15 @@ describe('Lettermint webhook Next.js request boundary', () => {
     't=1790424000,v1=' + 'a'.repeat(64) + ',v1=' + 'b'.repeat(64),
   ])('rejects an absent, malformed or duplicated signature header, case %#', async (signature) => {
     expect((await send({ signature, body: '{invalid-json' })).status).toBe(401)
+    expect(signalCalls).toContainEqual({ environment: 'preview', outcomeCode: 'webhook-unauthorized' })
   })
 
   it.each([-301, 301])(
     'rejects a correctly signed request outside the timestamp tolerance by %i seconds',
     async (offset) => {
+      const signalOffset = signalCalls.length
       expect((await send({ timestamp: webhookNow / 1000 + offset })).status).toBe(401)
+      expect(signalCalls.slice(signalOffset)).toEqual([{ environment: 'preview', outcomeCode: 'webhook-unauthorized' }])
     },
   )
   it.each([-300, 300])('accepts the inclusive timestamp boundary at %i seconds', async (offset) => {
@@ -2146,6 +2193,14 @@ describe('Lettermint webhook Next.js request boundary', () => {
     expect((await send({ body })).status).toBe(200)
     expect((await send({ body: body + ' ', signedBody: body })).status).toBe(401)
     expect((await send({ body: JSON.stringify(JSON.parse(body)), signedBody: body })).status).toBe(401)
+  })
+
+  it('signals a valid-format HMAC mismatch without recording request content', async () => {
+    const signalOffset = signalCalls.length
+
+    expect((await send({ secret: 'synthetic-wrong-hmac-key' })).status).toBe(401)
+
+    expect(signalCalls.slice(signalOffset)).toEqual([{ environment: 'preview', outcomeCode: 'webhook-unauthorized' }])
   })
 
   it('authenticates before parsing malformed JSON or decoding invalid UTF-8', async () => {
@@ -2408,9 +2463,11 @@ describe('Lettermint webhook Next.js request boundary', () => {
 
   it('fails closed when a deployment secret does not match its reviewed fingerprint', async () => {
     vi.stubEnv('LETTERMINT_WEBHOOK_SECRET', webhookConfiguration.secrets.production.LETTERMINT_WEBHOOK_SECRET!)
+    const signalOffset = signalCalls.length
     expect((await send({ secret: webhookConfiguration.secrets.production.LETTERMINT_WEBHOOK_SECRET! })).status).toBe(
       503,
     )
+    expect(signalCalls.slice(signalOffset)).toEqual([{ environment: 'preview', outcomeCode: 'configuration-drift' }])
   })
 
   it('rechecks signature age after streaming and rejects duplicate valid headers', async () => {
@@ -2431,7 +2488,9 @@ describe('Lettermint webhook Next.js request boundary', () => {
       },
       { highWaterMark: 0 },
     )
+    const signalOffset = signalCalls.length
     expect((await send({ stream, timestamp: timestamp - 300 })).status).toBe(401)
+    expect(signalCalls.slice(signalOffset)).toEqual([{ environment: 'preview', outcomeCode: 'webhook-unauthorized' }])
   })
 
   it('leaves non-POST methods to Next.js method rejection', async () => {

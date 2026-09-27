@@ -30,6 +30,10 @@ function classifyEnvironment(env: Record<string, string | undefined>): EmailEnvi
   return environment
 }
 
+export function resolveTransactionalEmailEnvironment(env: Record<string, string | undefined> = process.env) {
+  return classifyEnvironment(env)
+}
+
 function resolveStartup(
   env: Record<string, string | undefined> = process.env,
   registryInput: unknown = registry,
@@ -37,7 +41,7 @@ function resolveStartup(
   now = Date.now(),
   activationInput: unknown = activationRegistry,
 ) {
-  const environment = classifyEnvironment(env)
+  const environment = resolveTransactionalEmailEnvironment(env)
   if (environment === 'preview' || environment === 'production') {
     const binding = resolveHostedLettermintBinding(environment, registryInput, env, now, lockedTargets)
     let previewRecipients: unknown

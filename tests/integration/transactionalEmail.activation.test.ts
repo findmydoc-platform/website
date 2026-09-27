@@ -58,6 +58,7 @@ describe('transactional email activation at the worker boundary', () => {
       if (outcomeCode === 'command-not-enabled') fixture.registry.records = []
       const links = { generate: vi.fn(async () => 'https://example.test/action') }
       const delivery = { deliver: vi.fn(async () => ({ type: 'accepted' as const, messageId: 'fake-policy' })) }
+      const log = vi.fn()
       const render = vi.mocked(emailRenderer.render)
       const deny = () => {
         throw new Error('External network forbidden')
@@ -72,11 +73,19 @@ describe('transactional email activation at the worker boundary', () => {
         catalog: syntheticEmailCatalog,
         links,
         delivery,
+        log,
         activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry),
       }).run(operationId)
       expect(links.generate).not.toHaveBeenCalled()
       expect(render).not.toHaveBeenCalled()
       expect(delivery.deliver).not.toHaveBeenCalled()
+      expect(log).toHaveBeenCalledWith({
+        operationId,
+        commandType: 'clinic.registration-received',
+        environment: 'test',
+        outcomeCode,
+        outboxState: 'suppressed',
+      })
       for (const guard of guards) expect(guard).not.toHaveBeenCalled()
       const stored = (await observer.query('SELECT * FROM transactional_email_outbox WHERE id = $1', [operationId]))
         .rows[0]

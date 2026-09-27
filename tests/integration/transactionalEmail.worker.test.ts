@@ -273,6 +273,9 @@ describe('transactional email worker', () => {
       attemptNumber: 1,
       outcomeCode: 'ambiguous',
       environment: 'test',
+      outboxState: 'prepared',
+      durationBucket: 'lt-1s',
+      queueAgeBucket: 'lt-1m',
     })
     expect(JSON.stringify(log.mock.calls)).not.toContain('recipient@example.test')
   })
@@ -672,6 +675,9 @@ describe('transactional email worker', () => {
         attemptNumber: 1,
         outcomeCode: 'fake-accepted',
         environment: 'test',
+        outboxState: 'accepted',
+        durationBucket: 'lt-1s',
+        queueAgeBucket: 'lt-1m',
       },
     ])
     const stored = await row(id)
@@ -826,7 +832,14 @@ describe('transactional email worker', () => {
       recipient_address: null,
       lease_token: null,
     })
-    expect(log).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith({
+      operationId: id,
+      commandType: 'clinic.registration-received',
+      environment: 'test',
+      outcomeCode: 'preparation-failed',
+      outboxState: 'failed',
+    })
+    expect(JSON.stringify(log.mock.calls)).not.toContain('secret recipient@example.test')
   })
 
   it('rejects an illegal state transition', async () => {
@@ -1227,6 +1240,9 @@ describe('transactional email worker', () => {
       attemptNumber: 1,
       outcomeCode: 'permanent-failure',
       environment: 'test',
+      outboxState: 'failed',
+      durationBucket: 'lt-1s',
+      queueAgeBucket: 'lt-1m',
     })
     const events = await observer.query(
       'SELECT type, outcome_code FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence',

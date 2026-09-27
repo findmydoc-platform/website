@@ -21,6 +21,9 @@ import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/tran
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import { proxy } from '@/proxy'
 import { loadHostedLettermintWebhookBinding } from '@/features/transactionalEmail/hostedConfiguration'
+import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
+import { resolveActivationPolicy } from '@/features/transactionalEmail/activationPolicy'
+import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
 
 vi.hoisted(async () => {
   const { createRequire } = await import('node:module')
@@ -41,7 +44,11 @@ describe('Lettermint webhook Next.js request boundary', () => {
   let payload: Payload
   const requestErrors: unknown[] = []
   const logCalls: unknown[] = []
+  const signalCalls: unknown[] = []
+  const expectedSignals: { outcomeCode: string }[] = []
   const operationReference = randomUUID()
+  const references = [operationReference]
+  let mutationExpected = false
 
   const state = async () => {
     const { rows } = await observer.query(`
@@ -92,6 +99,11 @@ describe('Lettermint webhook Next.js request boundary', () => {
     networkAttempts = 0
     requestErrors.length = 0
     logCalls.length = 0
+    signalCalls.length = 0
+    expectedSignals.length = 0
+    vi.spyOn(payload.logger, 'warn').mockImplementation((...args: unknown[]) => {
+      signalCalls.push(...args)
+    })
     for (const method of ['log', 'info', 'warn', 'error', 'debug'] as const) {
       vi.spyOn(console, method).mockImplementation((...args: unknown[]) => {
         logCalls.push(args)
@@ -109,18 +121,23 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.spyOn(net.Socket.prototype, 'connect').mockImplementation(deny)
     vi.spyOn(tls, 'connect').mockImplementation(deny)
     beforeState = await state()
+    mutationExpected = false
   })
 
   afterEach(async () => {
-    expect(await state()).toEqual(beforeState)
-    expect(networkAttempts).toBe(0)
-    expect(requestErrors).toHaveLength(0)
-    expect(logCalls).toHaveLength(0)
-    vi.restoreAllMocks()
-    vi.unstubAllEnvs()
+    try {
+      if (!mutationExpected) expect(await state()).toEqual(beforeState)
+      expect(networkAttempts).toBe(0)
+      expect(requestErrors).toHaveLength(0)
+      expect(logCalls).toHaveLength(0)
+      expect(signalCalls).toEqual(expectedSignals)
+    } finally {
+      vi.restoreAllMocks()
+      vi.unstubAllEnvs()
+    }
   })
   afterAll(async () => {
-    if (payload) await cleanupTransactionalEmailFixtures(payload, [operationReference])
+    if (payload) await cleanupTransactionalEmailFixtures(payload, references)
     await observer?.end()
   })
 
@@ -184,6 +201,527 @@ describe('Lettermint webhook Next.js request boundary', () => {
       sharedContext: { buildId: 'test', deploymentId: '' },
     })
   }
+
+  async function preparedOperation(
+    environment: 'preview' | 'production' = 'preview',
+    initialOutcome: 'ambiguous' | 'permanent' = 'ambiguous',
+  ) {
+    // Build durable provider bytes through the real worker with synthetic dependencies only.
+    vi.unstubAllEnvs()
+    vi.stubEnv('CI', 'false')
+    const req = await createLocalReq({}, payload)
+    const reference = randomUUID()
+    references.push(reference)
+    const { operationId } = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
+      type: 'clinic.registration-received',
+      operationReference: reference,
+      registrationId: syntheticRegistrationId,
+    })
+    const fixture = createActivationFixture(environment)
+    await createTransactionalEmailWorker(req, {
+      catalog: syntheticEmailCatalog,
+      now: () => webhookNow,
+      suppression: async () => 'cleared',
+      providerBinding: fixture.binding,
+      activationPolicy: resolveActivationPolicy(
+        fixture.binding,
+        fixture.registry,
+        environment === 'preview'
+          ? ['digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf']
+          : undefined,
+      ),
+      delivery: { deliver: async () => ({ type: initialOutcome }) },
+      log: () => {},
+    }).run(operationId)
+    // Only fixture setup changes deployment identity; the request uses unmodified collection guards.
+    await observer.query('UPDATE transactional_email_outbox SET runtime_environment = $1 WHERE id = $2', [
+      environment,
+      operationId,
+    ])
+    for (const [key, value] of Object.entries(webhookConfiguration.secrets[environment])) vi.stubEnv(key, value)
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', environment)
+    vi.stubEnv('DEPLOYMENT_ENV', environment)
+    beforeState = await state()
+    return operationId
+  }
+
+  const messageEvent = (operationId: string, event: string) => ({
+    ...webhookTestEvent(),
+    id: randomUUID(),
+    event,
+    data: {
+      message_id: 'synthetic-message',
+      metadata: { operation_id: operationId, command_type: 'clinic.registration-received', environment: 'preview' },
+    },
+  })
+  const sendEvent = (event: ReturnType<typeof messageEvent>) =>
+    send({ body: JSON.stringify(event), headers: { 'x-lettermint-event': event.event } })
+  const stored = async (id: string) =>
+    (await observer.query('SELECT * FROM transactional_email_outbox WHERE id = $1', [id])).rows[0]
+  const history = async (id: string) =>
+    (await observer.query('SELECT * FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence', [id])).rows
+
+  it('recovers ambiguous provider acceptance from a signed created event and deduplicates its replay', async () => {
+    const operationId = await preparedOperation()
+    const event = messageEvent(operationId, 'message.created')
+    const options = { body: JSON.stringify(event), headers: { 'x-lettermint-event': event.event } }
+    const response = await send(options)
+    expect(response.status).toBe(200)
+    mutationExpected = true
+    expect(await response.json()).toEqual({ outcomeCode: 'provider-event-applied' })
+    const {
+      rows: [outbox],
+    } = await observer.query('SELECT * FROM transactional_email_outbox WHERE id = $1', [operationId])
+    expect(outbox).toMatchObject({
+      state: 'accepted',
+      provider_message_id: 'synthetic-message',
+      recipient_address: null,
+      prepared_provider_request: null,
+      next_attempt_at: null,
+    })
+    const { rows: events } = await observer.query(
+      'SELECT type, provider_event_id FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence',
+      [operationId],
+    )
+    expect(events.slice(-3)).toEqual([
+      { type: 'delivery.accepted', provider_event_id: null },
+      { type: 'payload.scrubbed', provider_event_id: null },
+      { type: 'provider.created', provider_event_id: event.id },
+    ])
+    const committed = await state()
+    expect((await send(options)).status).toBe(200)
+    expect(await state()).toEqual(committed)
+  })
+
+  it.each([
+    ['message.sent', 'accepted', 'provider.sent'],
+    ['message.delivered', 'delivered', 'delivery.delivered'],
+    ['message.hard_bounced', 'bounced', 'delivery.bounced'],
+    ['message.soft_bounced', 'accepted', 'provider.soft-bounced'],
+    ['message.spam_complaint', 'complained', 'delivery.complained'],
+    ['message.failed', 'accepted', 'provider.failed'],
+    ['message.suppressed', 'failed', 'provider.suppressed'],
+    ['message.policy_rejected', 'failed', 'provider.policy-rejected'],
+  ])('maps signed %s to %s with one durable provider result', async (type, expectedState, expectedEvent) => {
+    const operationId = await preparedOperation()
+    const event = messageEvent(operationId, type)
+    mutationExpected = true
+    expect((await sendEvent(event)).status).toBe(200)
+    const outbox = await stored(operationId)
+    expect(outbox.state).toBe(expectedState)
+    expect(outbox.provider_message_id).toBe('synthetic-message')
+    for (const field of [
+      'recipient_address',
+      'command_payload',
+      'prepared_subject',
+      'prepared_html',
+      'prepared_text',
+      'prepared_provider_request',
+      'next_attempt_at',
+      'lease_token',
+      'lease_expires_at',
+    ])
+      expect(outbox[field] === null, field).toBe(true)
+    const events = await history(operationId)
+    expect(events.filter((result) => result.provider_event_id === event.id)).toEqual([
+      expect.objectContaining({
+        type: expectedEvent,
+        source: 'provider',
+        provider_event_type: type,
+        provider_message_id: 'synthetic-message',
+      }),
+    ])
+    if (expectedState !== 'failed') {
+      expect(outbox.provider_accepted_at).toBeInstanceOf(Date)
+      expect(events.filter((result) => result.type === 'delivery.accepted')).toHaveLength(1)
+    } else {
+      expect(outbox.provider_accepted_at).toBeNull()
+      expect(events.filter((result) => result.type === 'delivery.failed')).toHaveLength(1)
+    }
+    const committed = await state()
+    expect((await sendEvent(event)).status).toBe(200)
+    expect(await state()).toEqual(committed)
+  })
+
+  it.each([
+    'message.created',
+    'message.sent',
+    'message.delivered',
+    'message.hard_bounced',
+    'message.soft_bounced',
+    'message.spam_complaint',
+    'message.failed',
+    'message.suppressed',
+    'message.policy_rejected',
+  ])('retains established acceptance and retention clocks when %s follows delivery', async (type) => {
+    const id = await preparedOperation()
+    mutationExpected = true
+    expect((await sendEvent(messageEvent(id, 'message.delivered'))).status).toBe(200)
+    const before = await stored(id)
+    const event = messageEvent(id, type)
+    event.timestamp = '2020-01-01T00:00:00.000Z'
+    expect((await sendEvent(event)).status).toBe(200)
+    const after = await stored(id)
+    expect(after.state).toBe('delivered')
+    for (const field of ['provider_accepted_at', 'terminal_at', 'scrubbed_at', 'provider_message_id'])
+      expect(after[field]).toEqual(before[field])
+    expect((await history(id)).filter((entry) => entry.type === 'delivery.accepted')).toHaveLength(1)
+    expect((await history(id)).at(-1)?.source_occurred_at).toEqual(new Date(event.timestamp))
+  })
+
+  it.each([
+    'operation',
+    'oversized-operation',
+    'missing-operation',
+    'command',
+    'environment',
+    'message',
+    'team',
+    'project',
+    'route',
+  ])('acknowledges a verified %s correlation mismatch without mutation or provider content', async (field) => {
+    const id = await preparedOperation()
+    const event = messageEvent(id, 'message.created')
+    if (field === 'operation') event.data.metadata.operation_id = '2147483647'
+    if (field === 'oversized-operation') event.data.metadata.operation_id = '9007199254740991'
+    if (field === 'missing-operation') Reflect.deleteProperty(event.data.metadata, 'operation_id')
+    if (field === 'command') event.data.metadata.command_type = 'auth.password-recovery'
+    if (field === 'environment') event.data.metadata.environment = 'production'
+    if (field === 'message')
+      await observer.query(
+        "UPDATE transactional_email_outbox SET provider_message_id = 'different-message' WHERE id = $1",
+        [id],
+      )
+    if (['team', 'project', 'route'].includes(field)) {
+      const column = { team: 'provider_team_id', project: 'provider_project_id', route: 'provider_route_id' }[
+        field as 'team' | 'project' | 'route'
+      ]
+      await observer.query(`UPDATE transactional_email_outbox SET ${column} = $1 WHERE id = $2`, [
+        'different-binding',
+        id,
+      ])
+    }
+    beforeState = await state()
+    const outcomeCode = ['operation', 'oversized-operation', 'missing-operation'].includes(field)
+      ? 'provider-event-unmatched'
+      : 'provider-event-mismatch'
+    expectedSignals.push({ outcomeCode })
+    const response = await sendEvent(event)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ outcomeCode })
+  })
+
+  it('discards raw fields from signed provider feedback before durable history and logs', async () => {
+    const id = await preparedOperation()
+    const base = messageEvent(id, 'message.failed')
+    const privateValue = 'synthetic-private-provider-content@example.test'
+    const event = {
+      ...base,
+      subject: privateValue,
+      context: { ...base.context, privateValue },
+      data: {
+        ...base.data,
+        recipient: privateValue,
+        subject: privateValue,
+        reason: privateValue,
+        reason_code: privateValue,
+        response: { content: privateValue },
+        tags: [{ name: privateValue, value: privateValue }],
+        metadata: { ...base.data.metadata, privateValue },
+      },
+    }
+    mutationExpected = true
+    const response = await sendEvent(event)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ outcomeCode: 'provider-event-applied' })
+    const events = await history(id)
+    expect(events.at(-1)?.type).toBe('provider.failed')
+    expect(JSON.stringify([await stored(id), events, logCalls, signalCalls]).includes(privateValue)).toBe(false)
+    expect(events.at(-1)?.outcome_code).toBeNull()
+    expect(Object.keys(events.at(-1)!).sort()).toEqual(
+      [
+        'id',
+        'outbox_id',
+        'sequence',
+        'type',
+        'source',
+        'attempt_number',
+        'outcome_code',
+        'provider_event_id',
+        'provider_event_type',
+        'provider_message_id',
+        'source_occurred_at',
+        'created_at',
+        'updated_at',
+      ].sort(),
+    )
+  })
+
+  it.each(['immediate', 'commit'])(
+    'rolls back a temporary %s storage failure and applies its retry once',
+    async (failure) => {
+      const id = await preparedOperation()
+      const event = messageEvent(id, 'message.delivered')
+      await observer.query(`CREATE FUNCTION webhook_result_failure() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN IF NEW.provider_event_id IS NOT NULL THEN RAISE EXCEPTION 'synthetic-private-database-detail'; END IF; RETURN NEW; END $$`)
+      try {
+        await observer.query(
+          failure === 'commit'
+            ? 'CREATE CONSTRAINT TRIGGER webhook_result_failure AFTER INSERT ON transactional_email_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION webhook_result_failure()'
+            : 'CREATE TRIGGER webhook_result_failure BEFORE INSERT ON transactional_email_events FOR EACH ROW EXECUTE FUNCTION webhook_result_failure()',
+        )
+        const response = await sendEvent(event)
+        expect(response.status).toBe(503)
+        expect(await response.json()).toEqual({ outcomeCode: 'webhook-unavailable' })
+        expect(await state()).toEqual(beforeState)
+      } finally {
+        await observer.query('DROP TRIGGER IF EXISTS webhook_result_failure ON transactional_email_events')
+        await observer.query('DROP FUNCTION webhook_result_failure()')
+      }
+      mutationExpected = true
+      expect((await sendEvent(event)).status).toBe(200)
+      expect((await stored(id)).state).toBe('delivered')
+      const committed = await state()
+      expect((await sendEvent(event)).status).toBe(200)
+      expect(await state()).toEqual(committed)
+    },
+  )
+
+  it('returns within the total deadline and rolls back a stalled Payload operation when it resumes', async () => {
+    const id = await preparedOperation()
+    const hooks = payload.collections.transactionalEmailOutbox.config.hooks.afterChange
+    let entered!: () => void
+    let resume!: () => void
+    const ready = new Promise<void>((resolve) => {
+      entered = resolve
+    })
+    const stalled = new Promise<void>((resolve) => {
+      resume = resolve
+    })
+    const hook: (typeof hooks)[number] = async ({ doc }) => {
+      entered()
+      await stalled
+      return doc
+    }
+    hooks.push(hook)
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const response = sendEvent(messageEvent(id, 'message.delivered'))
+    try {
+      await ready
+      let status: number | undefined
+      void response.then((value) => {
+        status = value.status
+      })
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(status).toBe(503)
+      expect(await (await response).json()).toEqual({ outcomeCode: 'webhook-unavailable' })
+    } finally {
+      resume()
+      hooks.splice(hooks.indexOf(hook), 1)
+      vi.useRealTimers()
+      await response
+      await vi.waitFor(() => expect(Object.keys(payload.db.sessions ?? {})).toHaveLength(0))
+    }
+    expect(await state()).toEqual(beforeState)
+  })
+
+  it.each(['statement', 'lock'])(
+    'uses the remaining total budget for a blocked %s and rolls back all effects',
+    async (failure) => {
+      const id = await preparedOperation()
+      const event = messageEvent(id, 'message.delivered')
+      const body = JSON.stringify(event)
+      const clock = performance.now.bind(performance)
+      let bodyElapsed = 0
+      vi.spyOn(performance, 'now').mockImplementation(() => clock() + bodyElapsed)
+      await observer.query(`CREATE FUNCTION webhook_deadline_failure() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN IF NEW.provider_event_id IS NOT NULL THEN PERFORM pg_sleep(2); END IF; RETURN NEW; END $$`)
+      try {
+        if (failure === 'lock') {
+          await observer.query('BEGIN')
+          await observer.query('SELECT id FROM transactional_email_outbox WHERE id = $1 FOR UPDATE', [id])
+        } else {
+          await observer.query(
+            'CREATE TRIGGER webhook_deadline_failure BEFORE INSERT ON transactional_email_events FOR EACH ROW EXECUTE FUNCTION webhook_deadline_failure()',
+          )
+        }
+        const stream = new ReadableStream<Uint8Array>(
+          {
+            pull(controller) {
+              // Streaming has consumed most of the one request budget before storage starts.
+              bodyElapsed = 4600
+              controller.enqueue(Buffer.from(body))
+              controller.close()
+            },
+          },
+          { highWaterMark: 0 },
+        )
+        const started = clock()
+        const response = await send({ body, stream, headers: { 'x-lettermint-event': event.event } })
+        expect(response.status).toBe(503)
+        expect(await response.json()).toEqual({ outcomeCode: 'webhook-unavailable' })
+        expect(clock() - started).toBeLessThan(1000)
+      } finally {
+        if (failure === 'lock') await observer.query('ROLLBACK')
+        await observer.query('DROP TRIGGER IF EXISTS webhook_deadline_failure ON transactional_email_events')
+        await observer.query('DROP FUNCTION webhook_deadline_failure()')
+      }
+      await vi.waitFor(() => expect(Object.keys(payload.db.sessions ?? {})).toHaveLength(0))
+      expect(await state()).toEqual(beforeState)
+    },
+  )
+
+  it.each(['succeeds', 'fails'])(
+    'returns 503 at the deadline when an already-started commit later %s and reconciles its retry once',
+    async (outcome) => {
+      const id = await preparedOperation()
+      const event = messageEvent(id, 'message.delivered')
+      await observer.query(`CREATE FUNCTION webhook_late_commit() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN IF NEW.provider_event_id IS NOT NULL THEN
+          PERFORM pg_sleep(6);
+          ${outcome === 'fails' ? "RAISE EXCEPTION 'synthetic-private-commit-detail';" : ''}
+        END IF; RETURN NEW; END $$`)
+      await observer.query(
+        'CREATE CONSTRAINT TRIGGER webhook_late_commit AFTER INSERT ON transactional_email_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION webhook_late_commit()',
+      )
+      const started = performance.now()
+      try {
+        const response = await sendEvent(event)
+        const elapsed = performance.now() - started
+        expect(response.status).toBe(503)
+        expect(await response.json()).toEqual({ outcomeCode: 'webhook-unavailable' })
+        expect(elapsed).toBeGreaterThanOrEqual(4900)
+        expect(elapsed).toBeLessThan(5500)
+        expect(await state()).toEqual(beforeState)
+      } finally {
+        // DDL waits for the real transaction to finish before removing the injected fault.
+        await observer.query('DROP TRIGGER IF EXISTS webhook_late_commit ON transactional_email_events')
+        await observer.query('DROP FUNCTION webhook_late_commit()')
+      }
+      if (outcome === 'fails') expect(await state()).toEqual(beforeState)
+      else expect((await stored(id)).state).toBe('delivered')
+      mutationExpected = true
+      const retry = await sendEvent(event)
+      expect(retry.status).toBe(200)
+      expect(await retry.json()).toEqual({
+        outcomeCode: outcome === 'succeeds' ? 'provider-event-duplicate' : 'provider-event-applied',
+      })
+      const events = await history(id)
+      expect(events.filter((item) => item.provider_event_id === event.id)).toHaveLength(1)
+      expect(events.filter((item) => item.type === 'delivery.accepted')).toHaveLength(1)
+      expect(events.filter((item) => item.type === 'delivery.delivered')).toHaveLength(1)
+      const committed = await state()
+      expect((await sendEvent(event)).status).toBe(200)
+      expect(await state()).toEqual(committed)
+      expectedSignals.push({ outcomeCode: 'provider-event-mismatch' })
+      expect((await sendEvent({ ...event, event: 'message.sent' })).status).toBe(200)
+      expect(await state()).toEqual(committed)
+    },
+    15000,
+  )
+
+  it('rolls back when the deadline expires after the last event write but before commit', async () => {
+    const id = await preparedOperation()
+    const hooks = payload.collections.transactionalEmailEvents.config.hooks.afterChange
+    const clock = performance.now.bind(performance)
+    let elapsed = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => clock() + elapsed)
+    const hook: (typeof hooks)[number] = ({ doc }) => {
+      if (doc.providerEventId) elapsed = 5000
+      return doc
+    }
+    hooks.push(hook)
+    try {
+      const response = await sendEvent(messageEvent(id, 'message.delivered'))
+      expect(response.status).toBe(503)
+      expect(await response.json()).toEqual({ outcomeCode: 'webhook-unavailable' })
+    } finally {
+      hooks.splice(hooks.indexOf(hook), 1)
+    }
+    expect(await state()).toEqual(beforeState)
+  })
+
+  it.each(['message.opened', 'message.clicked', 'suppression.added'])(
+    'records correlated unsubscribed %s without a delivery transition',
+    async (type) => {
+      const id = await preparedOperation()
+      const before = await stored(id)
+      const event = messageEvent(id, type)
+      expectedSignals.push({ outcomeCode: 'provider-event-ignored' })
+      mutationExpected = true
+      expect((await sendEvent(event)).status).toBe(200)
+      const after = await stored(id)
+      expect(after.state).toBe('prepared')
+      expect(after.provider_message_id).toBeNull()
+      expect(after.next_attempt_at).toEqual(before.next_attempt_at)
+      expect((await history(id)).at(-1)?.type).toBe('provider.event-ignored')
+    },
+  )
+
+  it('rejects an incomplete test envelope carrying message fields', async () => {
+    const event = messageEvent('2147483647', 'webhook.test')
+    expect((await sendEvent(event)).status).toBe(422)
+  })
+
+  it('acknowledges an unsubscribed suppression event without message correlation', async () => {
+    const event = {
+      ...webhookTestEvent(),
+      event: 'suppression.added',
+      data: { reason: 'synthetic-private-reason', email: 'synthetic@example.test' },
+    }
+    expectedSignals.push({ outcomeCode: 'provider-event-unmatched' })
+    const response = await send({ body: JSON.stringify(event), headers: { 'x-lettermint-event': event.event } })
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ outcomeCode: 'provider-event-unmatched' })
+  })
+
+  it('processes Production feedback only for its own immutable operation and provider binding', async () => {
+    const previewId = await preparedOperation()
+    const productionId = await preparedOperation('production')
+    const event = {
+      ...messageEvent(previewId, 'message.delivered'),
+      context: webhookTestEvent('production').context,
+      data: {
+        message_id: 'production-message',
+        metadata: { operation_id: previewId, command_type: 'clinic.registration-received', environment: 'production' },
+      },
+    }
+    const options = {
+      environment: 'production',
+      secret: webhookConfiguration.secrets.production.LETTERMINT_WEBHOOK_SECRET!,
+      headers: { 'x-lettermint-event': event.event },
+    }
+    expectedSignals.push({ outcomeCode: 'provider-event-mismatch' })
+    const mismatch = await send({ ...options, body: JSON.stringify(event) })
+    expect(mismatch.status).toBe(200)
+    expect(await mismatch.json()).toEqual({ outcomeCode: 'provider-event-mismatch' })
+    expect(await state()).toEqual(beforeState)
+    mutationExpected = true
+    event.data.metadata.operation_id = productionId
+    expect((await send({ ...options, body: JSON.stringify(event) })).status).toBe(200)
+    expect((await stored(productionId)).state).toBe('delivered')
+    expect((await stored(previewId)).state).toBe('prepared')
+  })
+
+  it('binds a late provider reference without resurrecting a failed operation', async () => {
+    const id = await preparedOperation('preview', 'permanent')
+    const before = await stored(id)
+    mutationExpected = true
+    expect((await sendEvent(messageEvent(id, 'message.delivered'))).status).toBe(200)
+    const after = await stored(id)
+    expect(after.state).toBe('failed')
+    expect(after.terminal_at).toEqual(before.terminal_at)
+    expect(after.provider_accepted_at).toBeNull()
+    expect(after.provider_message_id).toBe('synthetic-message')
+    const committed = await state()
+    const conflict = messageEvent(id, 'message.sent')
+    conflict.data.message_id = 'foreign-message'
+    expectedSignals.push({ outcomeCode: 'provider-event-mismatch' })
+    const response = await sendEvent(conflict)
+    expect(await response.json()).toEqual({ outcomeCode: 'provider-event-mismatch' })
+    expect(await state()).toEqual(committed)
+  })
 
   it('acknowledges an authenticated test event without persistent mutations or provider calls', async () => {
     const response = await send()
@@ -403,6 +941,32 @@ describe('Lettermint webhook Next.js request boundary', () => {
     }
   }, 1000)
 
+  it('starts the deadline at route entry before awaiting route parameters', async () => {
+    const { POST } = await import('@/app/api/internal/transactional-email/lettermint/[environment]/route')
+    let resolve!: (params: { environment: string }) => void
+    const params = new Promise<{ environment: string }>((done) => {
+      resolve = done
+    })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const response = POST(
+      new Request('https://webhook.example.test/api/internal/transactional-email/lettermint/preview'),
+      { params },
+    )
+    try {
+      let status: number | undefined
+      void response.then((value) => {
+        status = value.status
+      })
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(status).toBe(503)
+      expect(await (await response).json()).toEqual({ outcomeCode: 'webhook-unavailable' })
+    } finally {
+      resolve({ environment: 'preview' })
+      vi.useRealTimers()
+      await response
+    }
+  })
+
   it('keeps provider content out of responses, logs, telemetry and persistent records', async () => {
     const event = webhookTestEvent()
     const privateValue = 'synthetic-private-content-recipient@example.test'
@@ -435,8 +999,8 @@ describe('Lettermint webhook Next.js request boundary', () => {
     expect(await failed.json()).toEqual({ outcomeCode: 'webhook-unavailable' })
   })
 
-  it.each(['message.created', 'message.delivered', 'message.opened', 'suppression.added', 'unknown'])(
-    'rejects unsupported event %s without applying provider effects',
+  it.each(['message.created', 'message.delivered', 'unknown'])(
+    'rejects an incomplete or invalid event %s without applying provider effects',
     async (event) => {
       expect(
         (

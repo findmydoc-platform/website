@@ -5,6 +5,41 @@
 
 ## Private provider storage
 
+`POST /api/internal/transactional-email/lettermint/[environment]` verifies the raw signature and provider target before
+projecting the closed envelope. `applyLettermintEvent` receives only those projected fields. It resolves the opaque
+operation metadata, then checks the command, deployment environment, immutable team/project/route binding, and any
+existing provider message reference. A provider message reference alone never selects an operation. An unmatched
+or mismatched event returns success with only `provider-event-unmatched` or `provider-event-mismatch`, leaves storage
+unchanged, and emits that fixed reconciliation code through the native logger.
+
+The short serializable Payload transaction records one unique provider result together with all allowed effects.
+It compares the retained event type, source time, outbox relationship, and message reference when recognizing a
+replay. An identical replay changes neither the sequence nor history. Provider timestamps remain informational.
+Provider reasons, subjects, recipients, SMTP responses, tags, and unapproved metadata never enter this transaction.
+
+The webhook uses the absolute response and start-new-work deadline from
+[ADR 030](../adrs/030-adr-bound-transactional-email-webhook-processing.md). Expiration stops new operations and commit
+initiation and returns the fixed temporary `503`. Transaction-local controls bound statements and lock waits.
+A commit already in progress may finish later with an outcome unknown to the caller. Its identical provider retry
+either recognizes the committed event or applies the rolled-back event once. The response timer never turns an
+unconfirmed commit into success. Conflicting replay remains a mutation-free mismatch.
+
+Created, sent, delivered, hard-bounce, soft-bounce, complaint, and failed feedback establish provider acceptance for
+a prepared operation. Acceptance clears transient fields and records acceptance and scrub events. A delivery,
+hard-bounce, or complaint then follows the existing `accepted` transition in the same transaction. Provider suppression
+and policy rejection fail a prepared operation without inventing a post-acceptance state. Accepted and terminal
+records retain their original acceptance, retention, and scrub times. A later conflicting terminal result adds
+history without replacing the terminal state. Unsubscribed events add `provider.event-ignored` only when correlated
+and emit a fixed drift code. They do not change delivery state.
+
+The transaction's private writer owns sequence allocation and appends. Follow-up event coordination in #1906 and
+suppression effects in #1898 can extend that same transaction. This slice adds neither suppression storage nor
+worker-result race coordination. Recipient fields are discarded; recipient-digest validation for suppression stays
+with the suppression integration. Hosted command acceptance and delivery remain disabled, and no provider resource,
+credential, scheduler, or product command is activated.
+
+## Foundation storage seam
+
 `appendProviderEvent` is a private Website integration seam. It accepts an outbox identifier, a nonempty opaque provider
 event identifier, one of `delivery.delivered`, `delivery.bounced`, or `delivery.complained`, and an optional source time.
 It rejects additional fields and identities outside the bounded alphanumeric, underscore, and hyphen form. It performs
@@ -28,6 +63,13 @@ clock. No public cache, tag, route, or invalidation depends on either private co
 
 ## Schema and migration
 
+The generated additive migrations `20260927_073954_transactional_email_provider_results` and
+`20260927_074230_transactional_email_provider_mapping` add the seven closed provider event types and nullable
+`providerEventType` and `providerMessageId` columns. Existing rows and the provider identity and sequence indexes
+remain unchanged. Both application versions can use the expanded schema. Roll back the application while retaining
+these columns and enum values; a down migration after provider results exist requires a separate data recovery
+decision.
+
 Payload's native `afterSchemaInit` hook declares the partial unique provider-identity index. The generated migration
 `20260916_050558_transactional_email_event_invariants` adds the three approved event values and nullable
 `sourceOccurredAt`, then replaces the existing provider-identity index with uniqueness for non-null, nonempty identities.
@@ -39,6 +81,18 @@ them. The generated down migration must not run after the new event types are st
 decision; it removes those enum values and the source-time field.
 
 ## Evidence
+
+`tests/integration/transactionalEmail.webhook.test.ts` crosses the real Next.js request dispatcher and real Payload
+with signed synthetic envelopes. It covers all nine mappings, ambiguous acceptance, identical replay, binding
+mismatch, source-time ordering, field disposal, and immediate and deferred database failures. A PostgreSQL trigger
+rejects the provider result at INSERT or COMMIT; independent observations prove complete rollback and successful
+single application after recovery. Network guards prohibit external traffic. The request tests retain the signature,
+rotation, byte-limit, target, and environment checks from #1896.
+
+Deadline tests stall a real Payload hook, block PostgreSQL statements and locks, expire immediately before commit,
+and delay deferred commit triggers beyond the HTTP deadline. Both late success and late failure return `503` before
+the database completes and reconcile to one event/effect on retry. Bridge tests reject unsupported adapter/session
+capabilities and unsafe control results and constrain emitted SQL to the fixed transaction-local controls.
 
 `tests/integration/transactionalEmail.events.test.ts` uses real Payload and disposable Postgres. It covers concurrent
 worker/provider appends, concurrent identity deduplication, sequence rollback, direct update denial, the full forbidden

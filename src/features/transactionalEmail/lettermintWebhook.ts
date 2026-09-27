@@ -2,6 +2,8 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
 import { validateTransactionalEmailStartup } from './environment'
 import { loadHostedLettermintWebhookBinding } from './hostedConfiguration'
+import { lettermintMessageEnvelope, type VerifiedLettermintEvent } from './lettermintEvent'
+import { WebhookDeadline } from './webhookDeadline'
 
 const maxBodyBytes = 256 * 1024
 const identifier = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)
@@ -25,12 +27,11 @@ function result(status: number, outcomeCode: string) {
   return Response.json({ outcomeCode }, { status, headers: { 'Cache-Control': 'no-store' } })
 }
 
-async function readRawBody(request: Request): Promise<Buffer | Response> {
+async function readRawBody(request: Request, deadline: WebhookDeadline): Promise<Buffer | Response> {
   const reader = request.body?.getReader()
   if (!reader) return result(400, 'webhook-invalid')
-  let timer: ReturnType<typeof setTimeout> | undefined
   try {
-    return await Promise.race([
+    return await deadline.wait(
       (async () => {
         const chunks: Uint8Array[] = []
         let size = 0
@@ -42,19 +43,19 @@ async function readRawBody(request: Request): Promise<Buffer | Response> {
           chunks.push(value)
         }
       })(),
-      new Promise<Response>((resolve) => {
-        timer = setTimeout(() => resolve(result(503, 'webhook-unavailable')), 5000)
-      }),
-    ])
+    )
   } finally {
-    clearTimeout(timer)
     // A client-controlled stream must not delay rejection by hanging in cancel().
     void reader.cancel().catch(() => {})
     reader.releaseLock()
   }
 }
 
-export async function receiveLettermintWebhook(request: Request, routeEnvironment: string): Promise<Response> {
+async function verifyLettermintWebhook(
+  request: Request,
+  routeEnvironment: string,
+  deadline: WebhookDeadline,
+): Promise<Response | VerifiedLettermintEvent> {
   try {
     if (new URL(request.url).protocol !== 'https:') return result(400, 'webhook-invalid')
     if (
@@ -78,7 +79,7 @@ export async function receiveLettermintWebhook(request: Request, routeEnvironmen
     if (!signature || Math.abs(Date.now() / 1000 - Number(signature[1])) > 300) {
       return result(401, 'webhook-unauthorized')
     }
-    const body = await readRawBody(request)
+    const body = await readRawBody(request, deadline)
     if (body instanceof Response) return body
     const now = Date.now()
     if (Math.abs(now / 1000 - Number(signature[1])) > 300) return result(401, 'webhook-unauthorized')
@@ -100,21 +101,75 @@ export async function receiveLettermintWebhook(request: Request, routeEnvironmen
     } catch {
       return result(400, 'webhook-invalid')
     }
-    const envelope = testEnvelope.safeParse(parsed)
+    const envelope = z.union([testEnvelope, lettermintMessageEnvelope]).safeParse(parsed)
     if (!envelope.success) return result(422, 'webhook-invalid')
     const event = envelope.data
     if (
       request.headers.get('x-lettermint-event') !== event.event ||
       event.context.team_id !== binding.target.teamId ||
       event.context.project_id !== binding.target.projectId ||
-      event.context.route_id !== binding.target.routeId ||
-      event.data.webhook_id !== binding.target.webhookId ||
-      (event.data.metadata?.environment !== undefined && event.data.metadata.environment !== environment)
+      event.context.route_id !== binding.target.routeId
     )
       return result(403, 'webhook-target-mismatch')
-    return result(200, 'webhook-test-verified')
+    if ('webhook_id' in event.data) {
+      if (
+        event.data.webhook_id !== binding.target.webhookId ||
+        (event.data.metadata?.environment !== undefined && event.data.metadata.environment !== environment)
+      )
+        return result(403, 'webhook-target-mismatch')
+      return result(200, 'webhook-test-verified')
+    }
+    const message = lettermintMessageEnvelope.safeParse(event)
+    if (!message.success) return result(422, 'webhook-invalid')
+    const { team_id, project_id, route_id } = message.data.context
+    return { envelope: { ...message.data, context: { team_id, project_id, route_id } }, environment }
   } catch {
     // Never forward stream, parsing, or configuration exceptions to request telemetry.
+    return result(503, 'webhook-unavailable')
+  }
+}
+
+export async function receiveLettermintWebhook(
+  request: Request,
+  params: Promise<{ environment: string }>,
+): Promise<Response> {
+  const deadline = new WebhookDeadline()
+  try {
+    return await deadline.wait(processWebhook(request, params, deadline))
+  } catch {
+    return result(503, 'webhook-unavailable')
+  } finally {
+    deadline.dispose()
+  }
+}
+
+async function processWebhook(
+  request: Request,
+  params: Promise<{ environment: string }>,
+  deadline: WebhookDeadline,
+): Promise<Response> {
+  const { environment: routeEnvironment } = await params
+  deadline.check()
+  // Verification returns only projected fields. Its raw bytes and parsed body never reach storage or logging.
+  const verified = await verifyLettermintWebhook(request, routeEnvironment, deadline)
+  if (verified instanceof Response) return verified
+  try {
+    const [{ getPayload, createLocalReq }, { default: config }, { applyLettermintEvent }] = await Promise.all([
+      import('payload'),
+      import('@payload-config'),
+      import('./providerEvents'),
+    ])
+    const payload = await getPayload({ config })
+    const outcomeCode = await applyLettermintEvent(await createLocalReq({}, payload), verified, deadline)
+    deadline.check()
+    if (
+      outcomeCode === 'provider-event-unmatched' ||
+      outcomeCode === 'provider-event-mismatch' ||
+      outcomeCode === 'provider-event-ignored'
+    )
+      payload.logger.warn({ outcomeCode })
+    return result(200, outcomeCode)
+  } catch {
     return result(503, 'webhook-unavailable')
   }
 }

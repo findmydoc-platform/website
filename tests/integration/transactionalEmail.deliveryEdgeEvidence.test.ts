@@ -59,7 +59,7 @@ describe('delivery-edge evidence helpers', () => {
     const promiseResolver = new dns.promises.Resolver()
     try {
       for (const denied of [
-        () => fetch('http://127.0.0.1:9'),
+        () => fetch('https://127.0.0.1:9'),
         () => http.request('http://127.0.0.1:9'),
         () => namedHttpRequest('http://127.0.0.1:9'),
         () => https.request('https://127.0.0.1:9'),

@@ -92,7 +92,7 @@ An expired lease can be reclaimed once its retry delay is due, including after a
 Every later write passes its token through the transaction-bound private capability. The collection hook rejects
 expired or replaced tokens, lease renewal, illegal state changes, recipient redirection, and prepared-content edits.
 Claim and storage transactions finish before link generation, rendering, or delivery. Each step needs more than five
-seconds of remaining lease and delivery-deadline budget. Async steps time out after four seconds, leaving a margin for recording the outcome. The delivery adapter receives an abort signal. A delivery timeout or thrown error is ambiguous. The injected clock controls policy tests.
+seconds of remaining lease and delivery-deadline budget. Preparation steps time out after four seconds. Lettermint delivery owns a separate 20-second total timeout and requires more than 25 seconds of lease and delivery-deadline budget before starting. The delivery adapter receives an abort signal. A delivery timeout or thrown error is ambiguous. The injected clock controls policy tests.
 
 The static synthetic catalog revalidates eligibility and recipient binding before link generation, rendering, and
 delivery. A missing or changed recipient ends processing with the catalog's suppressed or failed outcome. It never
@@ -135,8 +135,48 @@ unprepared operation, followed by up and an unchanged-row check. It is not a hos
 The preparation integration suite uses real Payload and PostgreSQL, a separate committed-row observer, explicit
 synthetic suppression decisions, and a controlled delivery adapter. It checks durable-before-delivery preparation,
 same-byte retries, target drift, forbidden fields, atomic rollback, private writes, content scrubbing, and 42-day
-binding deletion. Network guards reject fetch and HTTP(S) calls. The transport and response protocol belong to
-[Website #1905](https://github.com/findmydoc-platform/website/issues/1905).
+binding deletion. Network guards reject fetch and HTTP(S) calls. The transport protocol is described below.
+
+## Controlled Lettermint transport
+
+[Website #1905](https://github.com/findmydoc-platform/website/issues/1905) adds `lettermintDelivery.ts` behind the private
+worker composition. It sends the stored JSON string directly to the fixed single-message HTTPS endpoint. The only
+application headers are the fingerprint-bound project token, the stored foundation idempotency key, and JSON content
+type. Fetch uses no cache, credentials, redirect following, SDK, or automatic retry layer. Binding drift stops before
+another attempt. A recreated worker can use a newly verified token and reviewed activation evidence for the same
+team, project, and route without rebuilding the stored request.
+
+The adapter owns one 20-second timer covering connection, headers, and body reading. It aborts the transport and
+returns ambiguity even when the controlled transport ignores cancellation. Response decoding accepts at most 64 KiB
+of valid UTF-8. Missing, malformed, truncated, oversized, or unfinished success responses remain ambiguous. The worker
+reserves another five seconds for recording the outcome, preserves its six-attempt schedule, and ignores all provider
+retry timing. Ordinary fake delivery keeps the foundation's four-second timeout.
+
+HTTP 202 with a valid message identifier and a known acceptance status records provider acceptance and scrubs content.
+The accepted statuses are `pending`, `queued`, `processed`, `delivered`, `opened`, `clicked`, `soft_bounced`,
+`hard_bounced`, and `spam_complaint`. They establish acceptance only; later delivery state belongs to verified events.
+`scheduled`, `quarantined`, and unknown statuses remain ambiguous. HTTP
+408, 425, 429 and 5xx schedule a foundation retry. An exact structured `code` of `invalid_idempotent_request` on 409
+fails permanently; `concurrent_idempotent_requests` and unknown 409 responses retain the same operation. Free-form
+provider messages never select a code. Other 4xx responses are permanent. `suppressed`, `policy_rejected`, `blocked`, `failed`, `canceled`, and `unsubscribed`
+are permanent and do not create local suppression. No outcome selects a fallback. The adapter emits only the four
+foundation outcome types with closed safe codes. The worker stores those codes in private events. Authentication
+failures emit a fatal structured signal; idempotency invariants and permanent rejections emit an error signal, using
+only the existing safe log fields.
+
+The generated migration expands only the event outcome enum. Previous application versions can run against the
+expanded schema. Keep the expanded enum during an application rollback: the generated down migration cannot preserve
+events that already use the new codes and is not a hosted rollback procedure.
+
+The integration suite starts at the real worker, uses real Payload and PostgreSQL, synthetic configuration and
+explicit suppression decisions, and replaces only the external HTTP transport. Network guards deny fetch and HTTP(S).
+It covers committed request bytes and headers, accepted identifiers and scrubbing, outcome mapping and safe signals,
+connection/body timeout boundaries, fixed retry timing and exhaustion, same-byte and same-key retries after token
+rotation, target drift, environment isolation, and deadline budget. Time is controlled without waiting 20 seconds.
+
+Local development and CI keep explicit fake execution. Only Vitest in the test runtime accepts the controlled HTTP
+transport. Real hosted worker selection remains closed pending the separately owned suppression integration. Provider
+registries and activation records remain empty; no product command, hosted service, or credential is enabled here.
 
 ## Fake provider acceptance and privacy
 

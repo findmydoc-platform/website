@@ -61,7 +61,7 @@ export function validateTransactionalEmailStartup(...args: Parameters<typeof res
 export function selectTransactionalEmailRuntime(env: Record<string, string | undefined> = process.env) {
   const { environment, activationPolicy } = resolveStartup(env)
   if (environment === 'preview' || environment === 'production') {
-    // Hosted delivery remains unavailable until the outbound adapter is installed.
+    // Hosted delivery remains unavailable until suppression and product preparation are integrated.
     throw new TransactionalEmailError('environment-unavailable')
   }
   return { environment, delivery: 'fake', links: 'fake', activationPolicy } as const

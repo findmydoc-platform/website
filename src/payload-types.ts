@@ -401,6 +401,15 @@ export interface TransactionalEmailEvent {
   outcomeCode?:
     | (
         | 'fake-accepted'
+        | 'provider-accepted'
+        | 'provider-temporary'
+        | 'provider-rate-limited'
+        | 'provider-ambiguous'
+        | 'provider-idempotency-conflict'
+        | 'provider-request-in-progress'
+        | 'provider-conflict-unknown'
+        | 'provider-request-rejected'
+        | 'provider-policy-rejected'
         | 'recipient-changed'
         | 'ineligible'
         | 'preparation-failed'

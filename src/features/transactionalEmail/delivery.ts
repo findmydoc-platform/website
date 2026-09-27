@@ -1,7 +1,6 @@
 import type { PreparedMessage } from './preparation'
-import type { CommandType } from './commands'
-import type { EmailEnvironment } from './environment'
 import type { PreparedProviderRequest } from './providerPreparation'
+import type { DeliveryEdgeLog } from './operationalSignals'
 
 export const providerOutcomeCodes = [
   'provider-accepted',
@@ -23,14 +22,7 @@ export type DeliveryAttempt = PreparedMessage & {
   providerRequest?: PreparedProviderRequest
 }
 export type DeliveryAdapter = { deliver(attempt: DeliveryAttempt, signal?: AbortSignal): Promise<DeliveryOutcome> }
-export type DeliveryLog = {
-  operationId: string
-  commandType: CommandType
-  attemptNumber: number
-  outcomeCode:
-    ProviderOutcomeCode | 'fake-accepted' | 'permanent-failure' | 'retryable-failure' | 'ambiguous' | 'ineligible'
-  environment: EmailEnvironment
-}
+export type DeliveryLog = DeliveryEdgeLog
 
 export function createFakeDeliveryAdapter(): DeliveryAdapter {
   return {

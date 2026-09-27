@@ -91,6 +91,8 @@ describe('Lettermint delivery through the real worker', () => {
   it('sends durable bytes and bound headers once, then stores acceptance and scrubs content', async () => {
     const { req, operationId } = await accept()
     const options = providerOptions()
+    const log = vi.fn()
+    const metric = vi.fn()
     let committed: Record<string, unknown> | undefined
     const httpTransport: LettermintHttpTransport = vi.fn(async (url, init) => {
       committed = await stored(operationId)
@@ -105,7 +107,7 @@ describe('Lettermint delivery through the real worker', () => {
       expect(init.redirect).toBe('error')
       return Response.json({ message_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', status: 'pending' }, { status: 202 })
     })
-    await createTransactionalEmailWorker(req, { ...options, httpTransport }).run(operationId)
+    await createTransactionalEmailWorker(req, { ...options, httpTransport, log, metric }).run(operationId)
     expect(httpTransport).toHaveBeenCalledOnce()
     expect(committed).toMatchObject({ state: 'prepared', attempt_count: '1' })
     expect(await stored(operationId)).toMatchObject({
@@ -123,6 +125,53 @@ describe('Lettermint delivery through the real worker', () => {
       [operationId, 'delivery.accepted'],
     )
     expect(events.rows).toEqual([{ outcome_code: 'provider-accepted' }])
+    expect(log).toHaveBeenCalledWith({
+      operationId,
+      commandType: 'clinic.registration-received',
+      attemptNumber: 1,
+      outcomeCode: 'provider-accepted',
+      environment: 'test',
+      outboxState: 'accepted',
+      durationBucket: 'lt-1s',
+      queueAgeBucket: 'lt-1m',
+    })
+    expect(metric).toHaveBeenCalledWith({
+      name: 'transactional-email.delivery-edge.events',
+      dimensions: {
+        commandType: 'clinic.registration-received',
+        environment: 'test',
+        outcomeCode: 'provider-accepted',
+        outboxState: 'accepted',
+        durationBucket: 'lt-1s',
+        queueAgeBucket: 'lt-1m',
+      },
+    })
+  })
+
+  it('persists provider acceptance when operational sinks fail', async () => {
+    const { req, operationId } = await accept()
+    const log = vi.fn(() => {
+      throw new Error('synthetic-log-failure')
+    })
+    const metric = vi.fn(() => {
+      throw new Error('synthetic-metric-failure')
+    })
+    const httpTransport = vi.fn(async () =>
+      Response.json({ message_id: 'sink-safe-message', status: 'pending' }, { status: 202 }),
+    )
+
+    await createTransactionalEmailWorker(req, { ...providerOptions(), httpTransport, log, metric }).run(operationId)
+
+    expect(httpTransport).toHaveBeenCalledOnce()
+    expect(log).toHaveBeenCalledOnce()
+    expect(metric).toHaveBeenCalledOnce()
+    expect(await stored(operationId)).toMatchObject({
+      state: 'accepted',
+      provider_message_id: 'sink-safe-message',
+      command_payload: null,
+      recipient_address: null,
+      prepared_provider_request: null,
+    })
   })
   it.each([
     [408, {}, 'prepared', 'provider-temporary'],
@@ -168,16 +217,17 @@ describe('Lettermint delivery through the real worker', () => {
     expect(httpTransport).toHaveBeenCalledOnce()
     const row = await stored(operationId)
     expect(row.state).toBe(state)
-    if (status === 401 || status === 403) expect(payload.logger.fatal).toHaveBeenCalledWith(log.mock.calls[0]![0])
-    else expect(payload.logger.fatal).not.toHaveBeenCalled()
-    if (state === 'failed' && status !== 401 && status !== 403)
-      expect(payload.logger.error).toHaveBeenCalledWith(log.mock.calls[0]![0])
+    expect(payload.logger.fatal).not.toHaveBeenCalled()
+    expect(payload.logger.error).not.toHaveBeenCalled()
     expect(log).toHaveBeenCalledWith({
       operationId,
       commandType: 'clinic.registration-received',
       attemptNumber: 1,
       environment: 'test',
-      outcomeCode: code,
+      outcomeCode: status === 401 || status === 403 ? 'configuration-drift' : code,
+      outboxState: state,
+      durationBucket: 'lt-1s',
+      queueAgeBucket: 'lt-1m',
     })
     const events = await observer.query('SELECT outcome_code FROM transactional_email_events WHERE outbox_id = $1', [
       operationId,

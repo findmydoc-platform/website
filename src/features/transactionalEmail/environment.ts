@@ -4,6 +4,7 @@ import registry from './lettermintRegistry.json' with { type: 'json' }
 import targetLocks from './lettermintTargetLocks.json' with { type: 'json' }
 import activationRegistry from './activationRegistry.json' with { type: 'json' }
 import { resolveActivationPolicy } from './activationPolicy'
+import { recipientDigest } from './recipientBinding'
 
 export type EmailEnvironment = 'local' | 'test' | 'ci' | 'preview' | 'production'
 
@@ -52,9 +53,16 @@ function resolveStartup(
         throw new TransactionalEmailError('environment-unavailable')
       }
     }
-    return { environment, activationPolicy: resolveActivationPolicy(binding, activationInput, previewRecipients) }
+    const digestRecipient = (recipient: Parameters<typeof recipientDigest>[0]) =>
+      recipientDigest(recipient, { version: binding.target.digestKeyId, secret: binding.digestKey })
+    return {
+      environment,
+      binding,
+      digestRecipient,
+      activationPolicy: resolveActivationPolicy(binding, activationInput, previewRecipients),
+    }
   }
-  return { environment, activationPolicy: Object.freeze({ evaluate: () => null }) }
+  return { environment, digestRecipient: recipientDigest, activationPolicy: Object.freeze({ evaluate: () => null }) }
 }
 
 export function validateTransactionalEmailStartup(...args: Parameters<typeof resolveStartup>) {
@@ -63,10 +71,15 @@ export function validateTransactionalEmailStartup(...args: Parameters<typeof res
 }
 
 export function selectTransactionalEmailRuntime(env: Record<string, string | undefined> = process.env) {
-  const { environment, activationPolicy } = resolveStartup(env)
+  const { environment, activationPolicy, digestRecipient } = resolveStartup(env)
   if (environment === 'preview' || environment === 'production') {
     // Hosted delivery remains unavailable until suppression and product preparation are integrated.
     throw new TransactionalEmailError('environment-unavailable')
   }
-  return { environment, delivery: 'fake', links: 'fake', activationPolicy } as const
+  return { environment, delivery: 'fake', links: 'fake', activationPolicy, digestRecipient } as const
+}
+
+export function selectTransactionalEmailAcceptanceRuntime(...args: Parameters<typeof resolveStartup>) {
+  const startup = resolveStartup(...args)
+  return { environment: startup.environment, digestRecipient: startup.digestRecipient } as const
 }

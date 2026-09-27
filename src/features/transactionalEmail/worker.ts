@@ -11,7 +11,6 @@ import { bindPayloadCommandCatalog } from './payloadCatalog'
 import { validateCommand } from './commands'
 import { selectTransactionalEmailRuntime } from './environment'
 import { TransactionalEmailError } from './errors'
-import { recipientDigest } from './recipientBinding'
 import { fakeLinks, renderSyntheticNotification, type LinkGenerator } from './preparation'
 import { createFakeDeliveryAdapter, type DeliveryAdapter, type DeliveryLog, type DeliveryOutcome } from './delivery'
 import { effectiveDeliveryDeadline as deadline } from './deliveryDeadline'
@@ -193,7 +192,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     if (
       !current ||
       current.address !== record.recipientAddress ||
-      recipientDigest(current) !== record.recipientDigest
+      runtime.digestRecipient(current) !== record.recipientDigest
     ) {
       const outcomeCode = current ? 'recipient-changed' : 'ineligible'
       if (await finish(claim, entry.terminalState, outcomeCode))

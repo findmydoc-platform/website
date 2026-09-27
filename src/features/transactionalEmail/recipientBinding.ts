@@ -8,8 +8,14 @@ export function recipientAddressDigest(address: string, key: { version: string; 
   return `${key.version}:${createHmac('sha256', key.secret).update(normalized, 'utf8').digest('hex')}`
 }
 
-export function recipientDigest(recipient: RecipientBinding) {
-  return `fake-v1:${createHmac('sha256', 'synthetic-mail-binding-key')
+export function recipientDigest(
+  recipient: RecipientBinding,
+  key: { version: string; secret: string } = {
+    version: 'fake-v1',
+    secret: 'synthetic-mail-binding-key', // pragma: allowlist secret
+  },
+) {
+  return `${key.version}:${createHmac('sha256', key.secret)
     .update(JSON.stringify([recipient.binding, normalizeEmail(recipient.address)]))
     .digest('hex')}`
 }

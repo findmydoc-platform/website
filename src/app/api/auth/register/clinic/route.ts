@@ -5,7 +5,6 @@ import { ClinicRegistrationSubmissionError, submitClinicRegistration } from '@/f
 import { postHogServerConsent, postHogServerEvents, resolveAnonymousPostHogActor } from '@/posthog/api'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 
-type ClinicRegistrationSubmissionStatus = 'created' | 'deduped'
 type ClinicRegistrationContactRole = 'Medical Director' | 'Clinic Management' | 'International Office'
 
 type MedicalSpecialtyLookup = {
@@ -112,12 +111,10 @@ const captureClinicRegistrationSubmitted = async ({
   medicalSpecialtyCount,
   req,
   submissionId,
-  submissionStatus,
 }: {
   medicalSpecialtyCount: number
   req: NextRequest
   submissionId: number | string
-  submissionStatus: ClinicRegistrationSubmissionStatus
 }): Promise<void> => {
   const analyticsConsent = await postHogServerConsent.resolveAnalyticsConsent({ headers: req.headers })
   if (!analyticsConsent.isAllowed) return
@@ -132,7 +129,7 @@ const captureClinicRegistrationSubmitted = async ({
     properties: {
       medical_specialty_count: medicalSpecialtyCount,
       source_route: 'clinic_registration',
-      submission_status: submissionStatus,
+      submission_status: 'created',
     },
   })
 }
@@ -222,30 +219,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid medicalSpecialties' }, { status: 400 })
     }
 
-    // Dedupe: existing submitted application with same clinicName + email.
-    const existing = await payload.find({
-      collection: 'clinicApplications',
-      where: {
-        and: [
-          { clinicName: { equals: clinicName } },
-          { contactEmail: { equals: contactEmail } },
-          { status: { equals: 'submitted' } },
-        ],
-      },
-      limit: 1,
-      overrideAccess: true,
-    })
-    const existingDoc = existing.docs[0]
-    if (existingDoc) {
-      await captureClinicRegistrationSubmittedSafely(payload, {
-        medicalSpecialtyCount: medicalSpecialtyIds.length,
-        req,
-        submissionId: existingDoc.id,
-        submissionStatus: 'deduped',
-      })
-      return NextResponse.json(ACCEPTED_RESPONSE, { status: 202 })
-    }
-
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || ''
     const userAgent = req.headers.get('user-agent') || ''
 
@@ -264,12 +237,13 @@ export async function POST(req: NextRequest) {
 
       payload.logger.info({ applicationId: submission.applicationId }, 'Clinic registration accepted')
 
-      await captureClinicRegistrationSubmittedSafely(payload, {
-        medicalSpecialtyCount: medicalSpecialtyIds.length,
-        req,
-        submissionId: submission.applicationId,
-        submissionStatus: 'created',
-      })
+      if (submission.created) {
+        await captureClinicRegistrationSubmittedSafely(payload, {
+          medicalSpecialtyCount: medicalSpecialtyIds.length,
+          req,
+          submissionId: submission.applicationId,
+        })
+      }
 
       return NextResponse.json(ACCEPTED_RESPONSE, { status: 202 })
     } catch (error: unknown) {

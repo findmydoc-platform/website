@@ -2,11 +2,19 @@ import http from 'node:http'
 import https from 'node:https'
 import { NextRequest } from 'next/server'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createLocalReq, getPayload, type CollectionAfterChangeHook, type Payload } from 'payload'
+import {
+  createLocalReq,
+  getPayload,
+  type CollectionAfterChangeHook,
+  type CollectionBeforeChangeHook,
+  type Payload,
+} from 'payload'
 import pg from 'pg'
 import config from '@payload-config'
 import { POST as submitClinicRegistrationRoute } from '@/app/api/auth/register/clinic/route'
 import { submitClinicRegistration as submitClinicRegistrationService } from '@/features/clinicRegistration/service'
+import type { DeliveryAdapter } from '@/features/transactionalEmail/delivery'
+import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
@@ -81,12 +89,12 @@ describe('public clinic registration transaction', () => {
     }
   })
 
-  function requestFor(contactEmail: string) {
+  function requestFor(contactEmail: string, clinicName = `${prefix} Atomic Clinic`) {
     return new NextRequest('http://localhost/api/auth/register/clinic', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        clinicName: `${prefix} Atomic Clinic`,
+        clinicName,
         clinicWebsite: 'https://atomic-clinic.example',
         contactFirstName: 'Ada',
         contactLastName: 'Lovelace',
@@ -110,6 +118,22 @@ describe('public clinic registration transaction', () => {
       [contactEmail],
     )
     return result.rows[0]!
+  }
+
+  async function trackRegistrations(contactEmail: string) {
+    const registrations = await observer.query<{ application_id: number; operation_reference: string | null }>(
+      `SELECT clinic_applications.id AS application_id, transactional_email_outbox.operation_reference
+      FROM clinic_applications
+      LEFT JOIN transactional_email_outbox
+        ON transactional_email_outbox.operation_reference = clinic_applications.id::text
+      WHERE clinic_applications.contact_email = $1`,
+      [contactEmail],
+    )
+    for (const registration of registrations.rows) {
+      if (!applicationIds.includes(registration.application_id)) applicationIds.push(registration.application_id)
+      if (registration.operation_reference && !operationReferences.includes(registration.operation_reference))
+        operationReferences.push(registration.operation_reference)
+    }
   }
 
   function serviceInput(contactEmail: string) {
@@ -167,6 +191,162 @@ describe('public clinic registration transaction', () => {
     expect(registration.operation_reference).toBe(String(registration.application_id))
     applicationIds.push(registration.application_id)
     operationReferences.push(registration.operation_reference)
+  })
+
+  it('returns the neutral response and preserves one queued receipt for a repeated submission', async () => {
+    const contactEmail = `${prefix}-queued-repeat@clinic.example`
+
+    const first = await submitClinicRegistrationRoute(requestFor(contactEmail))
+    const second = await submitClinicRegistrationRoute(requestFor(contactEmail))
+
+    expect(first.status).toBe(202)
+    expect(second.status).toBe(202)
+    await expect(first.json()).resolves.toEqual({ success: true })
+    await expect(second.json()).resolves.toEqual({ success: true })
+    expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 1, events: 1 })
+    expect(
+      (
+        await observer.query('SELECT state FROM transactional_email_outbox WHERE recipient_address = $1', [
+          contactEmail,
+        ])
+      ).rows,
+    ).toEqual([{ state: 'queued' }])
+    await trackRegistrations(contactEmail)
+  })
+
+  it('does not create a second receipt after delivery when the submission repeats', async () => {
+    const contactEmail = `${prefix}-delivered-repeat@clinic.example`
+    const first = await submitClinicRegistrationRoute(requestFor(contactEmail))
+    expect(first.status).toBe(202)
+    await observer.query("UPDATE transactional_email_outbox SET state = 'delivered' WHERE recipient_address = $1", [
+      contactEmail,
+    ])
+
+    const repeated = await submitClinicRegistrationRoute(requestFor(contactEmail))
+
+    expect(repeated.status).toBe(202)
+    await expect(repeated.json()).resolves.toEqual({ success: true })
+    expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 1, events: 1 })
+    expect(
+      (
+        await observer.query('SELECT state FROM transactional_email_outbox WHERE recipient_address = $1', [
+          contactEmail,
+        ])
+      ).rows,
+    ).toEqual([{ state: 'delivered' }])
+    await trackRegistrations(contactEmail)
+  })
+
+  it('keeps the same retryable receipt for a repeated submission', async () => {
+    const contactEmail = `${prefix}-retryable-repeat@clinic.example`
+    const first = await submitClinicRegistrationRoute(requestFor(contactEmail))
+    expect(first.status).toBe(202)
+    const operation = await observer.query<{ id: number }>(
+      'SELECT id FROM transactional_email_outbox WHERE recipient_address = $1',
+      [contactEmail],
+    )
+    const delivery: DeliveryAdapter = { deliver: vi.fn(async () => ({ type: 'retryable' as const })) }
+    const workerReq = await createLocalReq({}, payload)
+    await createTransactionalEmailWorker(workerReq, {
+      delivery,
+      suppression: async () => 'cleared' as const,
+    }).run(String(operation.rows[0]!.id))
+
+    const repeated = await submitClinicRegistrationRoute(requestFor(contactEmail))
+
+    expect(repeated.status).toBe(202)
+    await expect(repeated.json()).resolves.toEqual({ success: true })
+    expect(delivery.deliver).toHaveBeenCalledOnce()
+    expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 1, events: 5 })
+    expect(
+      (
+        await observer.query(
+          'SELECT state, attempt_count, next_attempt_at FROM transactional_email_outbox WHERE recipient_address = $1',
+          [contactEmail],
+        )
+      ).rows,
+    ).toEqual([
+      expect.objectContaining({
+        state: 'prepared',
+        attempt_count: '1',
+        next_attempt_at: expect.any(Date),
+      }),
+    ])
+    await trackRegistrations(contactEmail)
+  })
+
+  it('returns the neutral response without a receipt for an approved application', async () => {
+    const contactEmail = `${prefix}-approved-repeat@clinic.example`
+    const first = await submitClinicRegistrationRoute(requestFor(contactEmail))
+    expect(first.status).toBe(202)
+    await observer.query("UPDATE clinic_applications SET status = 'approved' WHERE contact_email = $1", [contactEmail])
+
+    const repeated = await submitClinicRegistrationRoute(requestFor(contactEmail))
+
+    expect(repeated.status).toBe(202)
+    await expect(repeated.json()).resolves.toEqual({ success: true })
+    expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 1, events: 1 })
+    expect(
+      (await observer.query('SELECT status FROM clinic_applications WHERE contact_email = $1', [contactEmail])).rows,
+    ).toEqual([{ status: 'approved' }])
+    await trackRegistrations(contactEmail)
+  })
+
+  it('creates independent receipts for different clinic names sharing one normalized email', async () => {
+    const contactEmail = `${prefix}-same-email@clinic.example`
+
+    const first = await submitClinicRegistrationRoute(
+      requestFor(`  ${contactEmail.toUpperCase()}  `, `${prefix} Clinic A`),
+    )
+    const second = await submitClinicRegistrationRoute(requestFor(contactEmail, `${prefix} Clinic B`))
+
+    expect(first.status).toBe(202)
+    expect(second.status).toBe(202)
+    await expect(first.json()).resolves.toEqual({ success: true })
+    await expect(second.json()).resolves.toEqual({ success: true })
+    expect(await storedCounts(contactEmail)).toEqual({ applications: 2, operations: 2, events: 2 })
+    await trackRegistrations(contactEmail)
+  })
+
+  it('converges concurrent identical submissions on one application and one receipt', async () => {
+    const contactEmail = `${prefix}-concurrent@clinic.example`
+    const applicationHooks = payload.collections.clinicApplications.config.hooks.beforeChange
+    let releaseWrites!: () => void
+    let bothWriting!: () => void
+    const writesReleased = new Promise<void>((resolve) => {
+      releaseWrites = resolve
+    })
+    const bothWritesReached = new Promise<void>((resolve) => {
+      bothWriting = resolve
+    })
+    let writes = 0
+    const synchronize: CollectionBeforeChangeHook = async ({ data }) => {
+      if (data.contactEmail === contactEmail) {
+        writes++
+        if (writes === 2) bothWriting()
+        await writesReleased
+      }
+      return data
+    }
+    applicationHooks.push(synchronize)
+
+    try {
+      const first = submitClinicRegistrationRoute(requestFor(contactEmail))
+      const second = submitClinicRegistrationRoute(requestFor(contactEmail))
+      await bothWritesReached
+      releaseWrites()
+      const responses = await Promise.all([first, second])
+
+      expect(responses.map(({ status }) => status)).toEqual([202, 202])
+      await expect(Promise.all(responses.map((response) => response.json()))).resolves.toEqual([
+        { success: true },
+        { success: true },
+      ])
+      expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 1, events: 1 })
+      await trackRegistrations(contactEmail)
+    } finally {
+      applicationHooks.splice(applicationHooks.indexOf(synchronize), 1)
+    }
   })
 
   it('rolls back the complete registration when command storage fails', async () => {
@@ -290,9 +470,12 @@ describe('public clinic registration transaction', () => {
       const contactEmail = `${prefix}-${environment}-inactive@clinic.example`
 
       const response = await submitClinicRegistrationRoute(requestFor(contactEmail))
+      const repeated = await submitClinicRegistrationRoute(requestFor(contactEmail))
 
       expect(response.status).toBe(202)
+      expect(repeated.status).toBe(202)
       await expect(response.json()).resolves.toEqual({ success: true })
+      await expect(repeated.json()).resolves.toEqual({ success: true })
       expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 0, events: 0 })
       const stored = await observer.query<{ id: number }>(
         'SELECT id FROM clinic_applications WHERE contact_email = $1',
@@ -301,4 +484,48 @@ describe('public clinic registration transaction', () => {
       applicationIds.push(stored.rows[0]!.id)
     },
   )
+
+  it('converges concurrent hosted-inactive submissions on one application', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    const contactEmail = `${prefix}-preview-inactive-concurrent@clinic.example`
+    const applicationHooks = payload.collections.clinicApplications.config.hooks.beforeChange
+    let releaseWrites!: () => void
+    let bothWriting!: () => void
+    const writesReleased = new Promise<void>((resolve) => {
+      releaseWrites = resolve
+    })
+    const bothWritesReached = new Promise<void>((resolve) => {
+      bothWriting = resolve
+    })
+    let writes = 0
+    const synchronize: CollectionBeforeChangeHook = async ({ data }) => {
+      if (data.contactEmail === contactEmail) {
+        writes++
+        if (writes === 2) bothWriting()
+        await writesReleased
+      }
+      return data
+    }
+    applicationHooks.push(synchronize)
+
+    try {
+      const first = submitClinicRegistrationRoute(requestFor(contactEmail))
+      const second = submitClinicRegistrationRoute(requestFor(contactEmail))
+      await bothWritesReached
+      releaseWrites()
+      const responses = await Promise.all([first, second])
+
+      expect(responses.map(({ status }) => status)).toEqual([202, 202])
+      await expect(Promise.all(responses.map((response) => response.json()))).resolves.toEqual([
+        { success: true },
+        { success: true },
+      ])
+      expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 0, events: 0 })
+      await trackRegistrations(contactEmail)
+    } finally {
+      applicationHooks.splice(applicationHooks.indexOf(synchronize), 1)
+    }
+  })
 })

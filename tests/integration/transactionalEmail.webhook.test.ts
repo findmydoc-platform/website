@@ -49,6 +49,8 @@ describe('Lettermint webhook Next.js request boundary', () => {
   const operationReference = randomUUID()
   const references = [operationReference]
   let mutationExpected = false
+  const raceCleanup = new Set<() => void>()
+  const raceWork = new Set<Promise<unknown>>()
 
   const state = async () => {
     const { rows } = await observer.query(`
@@ -68,6 +70,9 @@ describe('Lettermint webhook Next.js request boundary', () => {
     })
     observer = new pg.Client({ connectionString: process.env.DATABASE_URI })
     await observer.connect()
+    // Open the two PostgreSQL connections needed by coordinated races before forbidding new network sockets.
+    const transactions = await Promise.all([payload.db.beginTransaction(), payload.db.beginTransaction()])
+    for (const id of transactions) if (id !== null) await payload.db.rollbackTransaction(id)
     route = new AppRouteRouteModule({
       definition: {
         kind: 'APP_ROUTE' as RouteKind.APP_ROUTE,
@@ -126,6 +131,10 @@ describe('Lettermint webhook Next.js request boundary', () => {
 
   afterEach(async () => {
     try {
+      // Release every participant before awaiting any of them, including after a test timeout.
+      for (const cleanup of raceCleanup) cleanup()
+      await Promise.allSettled(raceWork)
+      raceWork.clear()
       if (!mutationExpected) expect(await state()).toEqual(beforeState)
       expect(networkAttempts).toBe(0)
       expect(requestErrors).toHaveLength(0)
@@ -258,9 +267,497 @@ describe('Lettermint webhook Next.js request boundary', () => {
   const sendEvent = (event: ReturnType<typeof messageEvent>) =>
     send({ body: JSON.stringify(event), headers: { 'x-lettermint-event': event.event } })
   const stored = async (id: string) =>
-    (await observer.query('SELECT * FROM transactional_email_outbox WHERE id = $1', [id])).rows[0]
+    (await observer.query('SELECT *, latest_event_sequence::int FROM transactional_email_outbox WHERE id = $1', [id]))
+      .rows[0]
   const history = async (id: string) =>
-    (await observer.query('SELECT * FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence', [id])).rows
+    (
+      await observer.query(
+        'SELECT *, sequence::int FROM transactional_email_events WHERE outbox_id = $1 ORDER BY transactional_email_events.sequence',
+        [id],
+      )
+    ).rows
+
+  function signal() {
+    let resolve!: () => void
+    const promise = new Promise<void>((done) => {
+      resolve = done
+    })
+    return { promise, resolve }
+  }
+
+  function trackRaceWork<Result>(work: Promise<Result>): Promise<Result> {
+    raceWork.add(work)
+    // The test awaits the original promise; this handler also covers rejection before its barrier wait starts.
+    void work.catch(() => {})
+    return work
+  }
+
+  function registerRaceCleanup(cleanup: () => void) {
+    const close = () => {
+      if (raceCleanup.delete(close)) cleanup()
+    }
+    raceCleanup.add(close)
+    return close
+  }
+
+  async function reachBarrier(ready: Promise<void>, participant: Promise<unknown>) {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    try {
+      await Promise.race([
+        ready,
+        participant.then(() => {
+          throw new Error('Race participant completed before the expected barrier')
+        }),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Race barrier was not reached within six seconds')), 6000)
+        }),
+      ])
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  async function inFlightOperation(messageId = 'synthetic-message', status = 202) {
+    vi.unstubAllEnvs()
+    vi.stubEnv('CI', 'false')
+    const req = await createLocalReq({}, payload)
+    const reference = randomUUID()
+    references.push(reference)
+    const { operationId } = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
+      type: 'clinic.registration-received',
+      operationReference: reference,
+      registrationId: syntheticRegistrationId,
+    })
+    const fixture = createActivationFixture('preview')
+    const received = signal()
+    const release = signal()
+    const resume = registerRaceCleanup(release.resolve)
+    const completion = trackRaceWork(
+      createTransactionalEmailWorker(req, {
+        catalog: syntheticEmailCatalog,
+        now: () => webhookNow,
+        suppression: async () => 'cleared',
+        providerBinding: fixture.binding,
+        activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [
+          'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf',
+        ]),
+        httpTransport: async () => {
+          received.resolve()
+          await release.promise
+          return new Response(JSON.stringify({ message_id: messageId, status: 'pending' }), { status })
+        },
+        log: () => {},
+      }).run(operationId),
+    )
+    await reachBarrier(received.promise, completion)
+    // The test worker prepares real provider bytes without activating a hosted runtime.
+    await observer.query('UPDATE transactional_email_outbox SET runtime_environment = $1 WHERE id = $2', [
+      'preview',
+      operationId,
+    ])
+    for (const [key, value] of Object.entries(webhookConfiguration.secrets.preview)) vi.stubEnv(key, value)
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    beforeState = await state()
+    return { operationId, resume, completion }
+  }
+
+  it('signals a conflicting worker provider reference after a webhook wins without changing durable state', async () => {
+    const worker = await inFlightOperation('conflicting-message')
+    mutationExpected = true
+    try {
+      expect((await sendEvent(messageEvent(worker.operationId, 'message.delivered'))).status).toBe(200)
+      const committed = await state()
+      worker.resume()
+      await worker.completion
+      expect(await state()).toEqual(committed)
+      expect(signalCalls).toEqual([{ outcomeCode: 'provider-event-mismatch' }])
+      expectedSignals.push({ outcomeCode: 'provider-event-mismatch' })
+    } finally {
+      worker.resume()
+      await worker.completion
+    }
+  })
+
+  it.each(['message.created', 'message.delivered', 'message.hard_bounced', 'message.spam_complaint'])(
+    'preserves %s when the synchronous worker result arrives after the webhook',
+    async (type) => {
+      const worker = await inFlightOperation()
+      mutationExpected = true
+      try {
+        const event = messageEvent(worker.operationId, type)
+        expect((await sendEvent(event)).status).toBe(200)
+        const committed = await state()
+        worker.resume()
+        await worker.completion
+        expect(await state()).toEqual(committed)
+        const events = await history(worker.operationId)
+        expect(events.filter((entry) => entry.type === 'delivery.accepted')).toHaveLength(1)
+        expect(events.filter((entry) => entry.type === 'payload.scrubbed')).toHaveLength(1)
+        expect((await stored(worker.operationId)).provider_message_id).toBe('synthetic-message')
+        expect(await (await sendEvent(event)).json()).toEqual({ outcomeCode: 'provider-event-duplicate' })
+        expect(await state()).toEqual(committed)
+      } finally {
+        worker.resume()
+        await worker.completion
+      }
+    },
+  )
+
+  it('applies delivery after a committed worker acceptance without another acceptance or scrub event', async () => {
+    const worker = await inFlightOperation()
+    worker.resume()
+    await worker.completion
+    mutationExpected = true
+    const before = await stored(worker.operationId)
+    expect(before.state).toBe('accepted')
+    expect((await sendEvent(messageEvent(worker.operationId, 'message.delivered'))).status).toBe(200)
+    const after = await stored(worker.operationId)
+    expect(after.state).toBe('delivered')
+    for (const field of ['provider_message_id', 'provider_accepted_at', 'terminal_at', 'scrubbed_at'])
+      expect(after[field]).toEqual(before[field])
+    const events = await history(worker.operationId)
+    expect(events.filter((entry) => entry.type === 'delivery.accepted')).toHaveLength(1)
+    expect(events.filter((entry) => entry.type === 'payload.scrubbed')).toHaveLength(1)
+  })
+
+  it.each([200, 503, 422])(
+    'preserves webhook delivery after an ambiguous, retryable, or permanent HTTP %i worker result',
+    async (status) => {
+      const worker = await inFlightOperation('synthetic-message', status)
+      const errors: unknown[] = []
+      vi.spyOn(payload.logger, 'error').mockImplementation((...args: unknown[]) => {
+        errors.push(...args)
+      })
+      mutationExpected = true
+      try {
+        expect((await sendEvent(messageEvent(worker.operationId, 'message.delivered'))).status).toBe(200)
+        const committed = await state()
+        worker.resume()
+        await worker.completion
+        expect(await state()).toEqual(committed)
+        expect(errors).toEqual(
+          status === 422
+            ? [
+                {
+                  operationId: worker.operationId,
+                  commandType: 'clinic.registration-received',
+                  attemptNumber: 1,
+                  outcomeCode: 'provider-request-rejected',
+                  environment: 'test',
+                },
+              ]
+            : [],
+        )
+      } finally {
+        worker.resume()
+        await worker.completion
+      }
+    },
+  )
+
+  it.each(['type', 'timestamp', 'operation', 'message'])(
+    'acknowledges conflicting replay of the same provider event ID with changed %s without mutation',
+    async (field) => {
+      const id = await preparedOperation()
+      const otherId = field === 'operation' ? await preparedOperation() : id
+      const event = messageEvent(id, 'message.delivered')
+      mutationExpected = true
+      expect((await sendEvent(event)).status).toBe(200)
+      const committed = await state()
+      if (field === 'type') event.event = 'message.spam_complaint'
+      if (field === 'timestamp') event.timestamp = '2020-01-01T00:00:00.000Z'
+      if (field === 'operation') event.data.metadata.operation_id = otherId
+      if (field === 'message') event.data.message_id = 'conflicting-message'
+      expectedSignals.push({ outcomeCode: 'provider-event-mismatch' })
+      const response = await sendEvent(event)
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ outcomeCode: 'provider-event-mismatch' })
+      expect(await state()).toEqual(committed)
+    },
+  )
+
+  function pauseFirstTwoReads(id: string) {
+    const hooks = payload.collections.transactionalEmailOutbox.config.hooks.afterRead
+    const reads = [signal(), signal()]
+    const releases = [signal(), signal()]
+    const transactions = new Set<number | string>()
+    const hook: (typeof hooks)[number] = async ({ doc, req }) => {
+      const transactionID = await req.transactionID
+      if (String(doc.id) === id && transactionID && !transactions.has(transactionID)) {
+        transactions.add(transactionID)
+        const index = transactions.size - 1
+        if (index < 2) {
+          reads[index]!.resolve()
+          await releases[index]!.promise
+        }
+      }
+      return doc
+    }
+    hooks.push(hook)
+    const close = registerRaceCleanup(() => {
+      releases.forEach((release) => release.resolve())
+      hooks.splice(hooks.indexOf(hook), 1)
+    })
+    return {
+      reads,
+      releases,
+      transactions,
+      close,
+    }
+  }
+
+  it.each(['webhook', 'worker'])(
+    'retries an overlapping worker result and webhook transaction when the %s commits first',
+    async (winner) => {
+      const worker = await inFlightOperation()
+      const id = worker.operationId
+      const coordination = pauseFirstTwoReads(id)
+      let webhook: ReturnType<typeof sendEvent> | undefined
+      mutationExpected = true
+      try {
+        // The first read is reached only after the controlled HTTP acceptance was parsed.
+        worker.resume()
+        await reachBarrier(coordination.reads[0]!.promise, worker.completion)
+        webhook = trackRaceWork(sendEvent(messageEvent(id, 'message.delivered')))
+        await reachBarrier(coordination.reads[1]!.promise, webhook)
+        expect(await state()).toEqual(beforeState)
+        if (winner === 'webhook') {
+          coordination.releases[1]!.resolve()
+          expect((await webhook).status).toBe(200)
+          const committed = await state()
+          coordination.releases[0]!.resolve()
+          await worker.completion
+          expect(await state()).toEqual(committed)
+        } else {
+          coordination.releases[0]!.resolve()
+          await worker.completion
+          expect((await stored(id)).state).toBe('accepted')
+          coordination.releases[1]!.resolve()
+          expect((await webhook).status).toBe(200)
+        }
+        expect(coordination.transactions.size).toBe(3)
+        const events = await history(id)
+        expect(events.filter((entry) => entry.type === 'delivery.accepted')).toEqual([
+          expect.objectContaining({ source: winner === 'webhook' ? 'provider' : 'worker' }),
+        ])
+        expect(events.filter((entry) => entry.type === 'payload.scrubbed')).toHaveLength(1)
+        expect(events.map((entry) => entry.sequence)).toEqual(
+          Array.from({ length: events.length }, (_, index) => index + 1),
+        )
+        expect(await stored(id)).toMatchObject({
+          state: 'delivered',
+          provider_message_id: 'synthetic-message',
+          latest_event_sequence: events.length,
+        })
+      } finally {
+        coordination.close()
+        worker.resume()
+        await Promise.all([worker.completion, webhook])
+      }
+    },
+  )
+
+  it('rolls back a native provider-ID unique conflict and retries the entire event transaction', async () => {
+    const firstId = await preparedOperation()
+    const secondId = await preparedOperation()
+    const beforeSecond = await stored(secondId)
+    const beforeHistory = await history(secondId)
+    const firstEvent = messageEvent(firstId, 'message.delivered')
+    const secondEvent = { ...messageEvent(secondId, 'message.spam_complaint'), id: firstEvent.id }
+    // READ COMMITTED isolates native unique-constraint translation from SERIALIZABLE's earlier conflict.
+    const begin = payload.db.beginTransaction.bind(payload.db)
+    const attempts = vi
+      .spyOn(payload.db, 'beginTransaction')
+      .mockImplementation((options) => begin({ ...options, isolationLevel: 'read committed' }))
+    const hooks = payload.collections.transactionalEmailEvents.config.hooks.beforeChange
+    const arrivals = [signal(), signal()]
+    const releases = [signal(), signal()]
+    let inserts = 0
+    const hook: (typeof hooks)[number] = async ({ data }) => {
+      if (data.providerEventId === firstEvent.id) {
+        const index = inserts++
+        arrivals[index]!.resolve()
+        await releases[index]!.promise
+      }
+      return data
+    }
+    hooks.push(hook)
+    const close = registerRaceCleanup(() => {
+      releases.forEach((release) => release.resolve())
+      hooks.splice(hooks.indexOf(hook), 1)
+    })
+    const first = trackRaceWork(sendEvent(firstEvent))
+    let second: ReturnType<typeof sendEvent> | undefined
+    mutationExpected = true
+    expectedSignals.push({ outcomeCode: 'provider-event-mismatch' })
+    try {
+      await reachBarrier(arrivals[0]!.promise, first)
+      second = trackRaceWork(sendEvent(secondEvent))
+      await reachBarrier(arrivals[1]!.promise, second)
+      expect(await state()).toEqual(beforeState)
+      releases[0]!.resolve()
+      expect((await first).status).toBe(200)
+      releases[1]!.resolve()
+      expect(await (await second).json()).toEqual({ outcomeCode: 'provider-event-mismatch' })
+      expect(attempts).toHaveBeenCalledTimes(3)
+      expect(inserts).toBe(2)
+      expect(await stored(secondId)).toEqual(beforeSecond)
+      expect(await history(secondId)).toEqual(beforeHistory)
+      expect((await history(firstId)).filter((entry) => entry.provider_event_id === firstEvent.id)).toHaveLength(1)
+    } finally {
+      close()
+      await Promise.all([first, second])
+      attempts.mockRestore()
+    }
+    const committed = await state()
+    expect(await (await sendEvent(firstEvent)).json()).toEqual({ outcomeCode: 'provider-event-duplicate' })
+    expect(await state()).toEqual(committed)
+  })
+
+  it.each([2, 3])(
+    'retries complete event transactions after %i real COMMIT serialization failures',
+    async (failures) => {
+      const id = await preparedOperation()
+      const event = messageEvent(id, 'message.delivered')
+      const beforeEvents = await history(id)
+      await observer.query('CREATE SEQUENCE webhook_commit_attempt')
+      await observer.query(`CREATE FUNCTION webhook_commit_conflict() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN
+        IF NEW.provider_event_id IS NOT NULL AND nextval('webhook_commit_attempt') <= ${failures} THEN
+          RAISE EXCEPTION 'synthetic-private-commit-conflict' USING ERRCODE = '40001';
+        END IF;
+        RETURN NEW;
+      END $$`)
+      await observer.query(`CREATE CONSTRAINT TRIGGER webhook_commit_conflict
+      AFTER INSERT ON transactional_email_events DEFERRABLE INITIALLY DEFERRED
+      FOR EACH ROW EXECUTE FUNCTION webhook_commit_conflict()`)
+      const hooks = payload.collections.transactionalEmailEvents.config.hooks.afterChange
+      let uncommittedAttempts = 0
+      const hook: (typeof hooks)[number] = async ({ doc }) => {
+        if (doc.providerEventId === event.id) {
+          uncommittedAttempts++
+          expect(await state()).toEqual(beforeState)
+        }
+        return doc
+      }
+      hooks.push(hook)
+      mutationExpected = true
+      try {
+        const response = await sendEvent(event)
+        expect(response.status).toBe(failures === 2 ? 200 : 503)
+        expect(await response.json()).toEqual({
+          outcomeCode: failures === 2 ? 'provider-event-applied' : 'webhook-unavailable',
+        })
+        expect(uncommittedAttempts).toBe(3)
+        expect((await observer.query('SELECT last_value::int FROM webhook_commit_attempt')).rows[0].last_value).toBe(3)
+        if (failures === 3) expect(await state()).toEqual(beforeState)
+      } finally {
+        hooks.splice(hooks.indexOf(hook), 1)
+        await observer.query('DROP TRIGGER webhook_commit_conflict ON transactional_email_events')
+        await observer.query('DROP FUNCTION webhook_commit_conflict()')
+        await observer.query('DROP SEQUENCE webhook_commit_attempt')
+      }
+      const retry = await sendEvent(event)
+      expect(retry.status).toBe(200)
+      expect(await retry.json()).toEqual({
+        outcomeCode: failures === 2 ? 'provider-event-duplicate' : 'provider-event-applied',
+      })
+      const events = await history(id)
+      expect(events).toHaveLength(beforeEvents.length + 3)
+      expect(events.map((entry) => entry.sequence)).toEqual(
+        Array.from({ length: events.length }, (_, index) => index + 1),
+      )
+      expect(events.filter((entry) => entry.provider_event_id === event.id)).toHaveLength(1)
+      expect(await stored(id)).toMatchObject({
+        state: 'delivered',
+        provider_message_id: 'synthetic-message',
+        latest_event_sequence: events.length,
+      })
+      const committed = await state()
+      expect(await (await sendEvent(event)).json()).toEqual({ outcomeCode: 'provider-event-duplicate' })
+      expect(await state()).toEqual(committed)
+    },
+  )
+
+  it.each([
+    ['message.delivered', 'message.spam_complaint', 'delivered'],
+    ['message.spam_complaint', 'message.delivered', 'complained'],
+    ['message.hard_bounced', 'message.spam_complaint', 'bounced'],
+    ['message.spam_complaint', 'message.hard_bounced', 'complained'],
+    ['message.created', 'message.sent', 'accepted'],
+    ['message.suppressed', 'message.delivered', 'failed'],
+    ['message.delivered', 'message.policy_rejected', 'delivered'],
+    ['message.delivered', 'identical-replay', 'delivered'],
+    ['message.delivered', 'conflicting-replay', 'delivered'],
+    ['message.delivered', 'conflicting-message', 'delivered'],
+  ])(
+    'serializes overlapping %s and %s with complete retries and retains %s',
+    async (firstType, secondType, stateName) => {
+      const id = await preparedOperation()
+      const firstEvent = messageEvent(id, firstType)
+      const secondEvent = secondType === 'identical-replay' ? firstEvent : messageEvent(id, secondType)
+      if (secondType === 'conflicting-replay') {
+        secondEvent.id = firstEvent.id
+        secondEvent.event = 'message.spam_complaint'
+      }
+      if (secondType === 'conflicting-message') {
+        secondEvent.event = 'message.delivered'
+        secondEvent.data.message_id = 'conflicting-message'
+      }
+      const ignored = ['identical-replay', 'conflicting-replay', 'conflicting-message'].includes(secondType)
+      const mismatch = ['conflicting-replay', 'conflicting-message'].includes(secondType)
+      if (mismatch) expectedSignals.push({ outcomeCode: 'provider-event-mismatch' })
+      const beforeEvents = await history(id)
+      const coordination = pauseFirstTwoReads(id)
+      const first = trackRaceWork(sendEvent(firstEvent))
+      let second: ReturnType<typeof sendEvent> | undefined
+      mutationExpected = true
+      try {
+        await reachBarrier(coordination.reads[0]!.promise, first)
+        second = trackRaceWork(sendEvent(secondEvent))
+        await reachBarrier(coordination.reads[1]!.promise, second)
+        expect(await state()).toEqual(beforeState)
+        coordination.releases[0]!.resolve()
+        expect((await first).status).toBe(200)
+        const firstCommitted = await stored(id)
+        coordination.releases[1]!.resolve()
+        const response = await second
+        expect(response.status).toBe(200)
+        expect(await response.json()).toEqual({
+          outcomeCode: mismatch
+            ? 'provider-event-mismatch'
+            : ignored
+              ? 'provider-event-duplicate'
+              : 'provider-event-applied',
+        })
+        expect(coordination.transactions.size).toBe(3)
+        const outbox = await stored(id)
+        expect(outbox.state).toBe(stateName)
+        expect(outbox.provider_message_id).toBe('synthetic-message')
+        for (const field of ['provider_accepted_at', 'terminal_at', 'scrubbed_at'])
+          expect(outbox[field]).toEqual(firstCommitted[field])
+        const events = await history(id)
+        expect(events.map((entry) => entry.sequence)).toEqual(
+          Array.from({ length: events.length }, (_, index) => index + 1),
+        )
+        expect(outbox.latest_event_sequence).toBe(events.length)
+        expect(events).toHaveLength(beforeEvents.length + (ignored ? 3 : 4))
+        expect(events.filter((entry) => entry.provider_event_id === firstEvent.id)).toHaveLength(1)
+        if (!ignored)
+          expect(events.at(-1)).toMatchObject({ provider_event_id: secondEvent.id, provider_event_type: secondType })
+        const committed = await state()
+        expect(await (await sendEvent(firstEvent)).json()).toEqual({ outcomeCode: 'provider-event-duplicate' })
+        if (!ignored)
+          expect(await (await sendEvent(secondEvent)).json()).toEqual({ outcomeCode: 'provider-event-duplicate' })
+        expect(await state()).toEqual(committed)
+      } finally {
+        coordination.close()
+        await Promise.all([first, second])
+      }
+    },
+  )
 
   it('recovers ambiguous provider acceptance from a signed created event and deduplicates its replay', async () => {
     const operationId = await preparedOperation()

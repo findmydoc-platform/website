@@ -1072,6 +1072,8 @@ describe('Lettermint webhook Next.js request boundary', () => {
         expect(events.filter((entry) => entry.provider_event_id === firstEvent.id)).toHaveLength(1)
         if (!ignored)
           expect(events.at(-1)).toMatchObject({ provider_event_id: secondEvent.id, provider_event_type: secondType })
+        if ([firstType, !ignored && secondType].includes('message.spam_complaint'))
+          expect((await suppressionsFor(id)).map((entry) => entry.reason)).toEqual(['spam-complaint'])
         const committed = await state()
         expect(await (await sendEvent(firstEvent)).json()).toEqual({ outcomeCode: 'provider-event-duplicate' })
         if (!ignored)
@@ -1193,6 +1195,8 @@ describe('Lettermint webhook Next.js request boundary', () => {
       expect(after[field]).toEqual(before[field])
     expect((await history(id)).filter((entry) => entry.type === 'delivery.accepted')).toHaveLength(1)
     expect((await history(id)).at(-1)?.source_occurred_at).toEqual(new Date(event.timestamp))
+    if (type === 'message.spam_complaint')
+      expect((await suppressionsFor(id)).map((entry) => entry.reason)).toEqual(['spam-complaint'])
   })
 
   it.each([

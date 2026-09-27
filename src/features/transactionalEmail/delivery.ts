@@ -1,10 +1,14 @@
 import type { PreparedMessage } from './preparation'
 import type { CommandType } from './commands'
 import type { EmailEnvironment } from './environment'
+import type { PreparedProviderRequest } from './providerPreparation'
 
 export type DeliveryOutcome =
   { type: 'accepted'; messageId: string } | { type: 'permanent' | 'retryable' | 'ambiguous' | 'suppressed' }
-export type DeliveryAttempt = PreparedMessage & { providerIdempotencyKey: string }
+export type DeliveryAttempt = PreparedMessage & {
+  providerIdempotencyKey: string
+  providerRequest?: PreparedProviderRequest
+}
 export type DeliveryAdapter = { deliver(attempt: DeliveryAttempt, signal?: AbortSignal): Promise<DeliveryOutcome> }
 export type DeliveryLog = {
   operationId: string

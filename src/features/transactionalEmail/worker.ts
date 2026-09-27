@@ -13,6 +13,9 @@ import { transientFields } from './retentionPolicy'
 import { sweepTransactionalEmail } from './retention'
 import { workerTransaction } from './workerStorage'
 import { requireActivationPolicy, type ActivationPolicy, type ActivationSuppression } from './activationPolicy'
+import type { SuppressionLookup } from './suppression'
+import { requireVerifiedHostedBinding, type HostedLettermintBinding } from './hostedConfiguration'
+import { prepareProviderRequest, providerBindingFields, storedProviderRequest } from './providerPreparation'
 
 const leaseMilliseconds = 120_000
 const stepBudgetMilliseconds = 5_000
@@ -44,16 +47,26 @@ type WorkerOptions = {
   log?: (event: DeliveryLog) => void
   crashAfterDelivery?: () => void
   activationPolicy?: ActivationPolicy
+  suppression?: SuppressionLookup
+  providerBinding?: HostedLettermintBinding
 }
 
 export function createTransactionalEmailWorker(req: PayloadRequest, options: WorkerOptions = {}) {
   const runtime = selectTransactionalEmailRuntime()
+  const providerBinding = options.providerBinding
+  const suppressionLookup = options.suppression
   if (options.activationPolicy) {
     if (runtime.environment !== 'test' || process.env.VITEST !== 'true')
       throw new TransactionalEmailError('environment-unavailable')
     requireActivationPolicy(options.activationPolicy)
   }
   const activationPolicy = options.activationPolicy ?? runtime.activationPolicy
+  if (providerBinding) {
+    if (runtime.environment !== 'test' || process.env.VITEST !== 'true')
+      throw new TransactionalEmailError('environment-unavailable')
+    requireVerifiedHostedBinding(providerBinding)
+    requireActivationPolicy(activationPolicy, providerBinding)
+  }
   if (options.delivery && (runtime.environment !== 'test' || process.env.VITEST !== 'true'))
     throw new TransactionalEmailError('environment-unavailable')
   if (options.crashAfterDelivery && (!['test', 'ci'].includes(runtime.environment) || process.env.VITEST !== 'true'))
@@ -144,6 +157,22 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
       await finish(claim, 'suppressed', suppression)
       return false
     }
+    let decision: Awaited<ReturnType<SuppressionLookup>> = 'unavailable'
+    try {
+      if (suppressionLookup)
+        decision = await boundedStep((signal) =>
+          suppressionLookup(
+            { address: current.address, environment: providerBinding?.target.environment ?? runtime.environment },
+            signal,
+          ),
+        )
+    } catch {
+      return false
+    }
+    if (decision !== 'cleared') {
+      if (decision === 'suppressed') await finish(claim, 'suppressed', 'ineligible')
+      return false
+    }
     if (deadline(record) - now() <= stepBudgetMilliseconds) {
       await finish(claim, 'expired', 'expired')
       return false
@@ -184,6 +213,10 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
   async function processClaim(claim: WorkerClaim) {
     let record = await read(claim)
     if (!record) return
+    if (record.preparedProviderRequest || providerBindingFields.some((field) => record![field] != null)) {
+      if (!providerBinding) throw new TransactionalEmailError('environment-unavailable')
+      prepareProviderRequest(record, providerBinding)
+    }
     if (record.attemptCount && !record.nextAttemptAt && record.lastAttemptAt && !record.firstAmbiguousAt) {
       const recovered = await transaction(claim, async (storage) => {
         const current = await storage.read(Number(claim.operationId))
@@ -238,6 +271,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
       return storage.write(
         current,
         {
+          ...(providerBinding ? prepareProviderRequest(current, providerBinding) : {}),
           attemptCount: (current.attemptCount ?? 0) + 1,
           lastAttemptAt: new Date(now()).toISOString(),
           nextAttemptAt: null,
@@ -261,6 +295,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
             html: started.preparedHtml!,
             text: started.preparedText!,
             providerIdempotencyKey: started.providerIdempotencyKey,
+            ...(providerBinding ? { providerRequest: storedProviderRequest(started) } : {}),
           },
           signal,
         ),

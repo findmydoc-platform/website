@@ -93,9 +93,11 @@ export type ActivationPolicy = {
   evaluate(command: CommandType, address: string): ActivationSuppression | null
 }
 const policies = new WeakSet<object>()
+const policyBindings = new WeakMap<object, HostedLettermintBinding>()
 
-export function requireActivationPolicy(policy: ActivationPolicy) {
+export function requireActivationPolicy(policy: ActivationPolicy, binding?: HostedLettermintBinding) {
   if (!policies.has(policy)) unavailable()
+  if (binding && policyBindings.get(policy) !== binding) unavailable()
 }
 
 export function resolveActivationPolicy(
@@ -202,5 +204,6 @@ export function resolveActivationPolicy(
     },
   })
   policies.add(policy)
+  policyBindings.set(policy, binding)
   return policy
 }

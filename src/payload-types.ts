@@ -350,6 +350,10 @@ export interface TransactionalEmailOutbox {
   preparedSubject?: string | null;
   preparedHtml?: string | null;
   preparedText?: string | null;
+  preparedProviderRequest?: string | null;
+  providerTeamId?: string | null;
+  providerProjectId?: string | null;
+  providerRouteId?: string | null;
   preparedAt?: string | null;
   leaseToken?: string | null;
   leaseExpiresAt?: string | null;
@@ -4016,6 +4020,10 @@ export interface TransactionalEmailOutboxSelect<T extends boolean = true> {
   preparedSubject?: T;
   preparedHtml?: T;
   preparedText?: T;
+  preparedProviderRequest?: T;
+  providerTeamId?: T;
+  providerProjectId?: T;
+  providerRouteId?: T;
   preparedAt?: T;
   leaseToken?: T;
   leaseExpiresAt?: T;

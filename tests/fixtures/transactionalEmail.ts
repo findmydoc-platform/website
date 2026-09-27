@@ -1,5 +1,8 @@
 import type { CommandCatalog } from '@/features/transactionalEmail/catalog'
 import { TransactionalEmailError } from '@/features/transactionalEmail'
+import type { SuppressionLookup } from '@/features/transactionalEmail/suppression'
+
+export const clearedSyntheticSuppression: SuppressionLookup = async () => 'cleared'
 
 export const syntheticRegistrationId = '00000000-0000-4000-8000-000000000001'
 

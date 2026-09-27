@@ -8,6 +8,7 @@ import {
 import { needsScrubbing, outgoingTerminalStates, transientFields } from './retentionPolicy'
 import { validateCommand } from './commands'
 import { TransactionalEmailError } from './errors'
+import { providerBindingFields, validateProviderPreparation } from './providerPreparation'
 
 export const validateStoredCommand: CollectionAfterReadHook = async ({ doc, req }) => {
   await requireStorageCapability(req)
@@ -19,6 +20,7 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
   await requireStorageCapability(req)
   const merged = { ...originalDoc, ...data }
   const terminal = outgoingTerminalStates.includes(merged.state)
+  validateProviderPreparation(merged)
   if (!terminal) {
     const command = validateCommand(merged.commandPayload)
     if (
@@ -50,6 +52,22 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
     }
     const authority = storageWorkerAuthority(req)
     if (!authority) throw new TransactionalEmailError('access-denied')
+    for (const field of providerBindingFields) {
+      if (originalDoc[field] != null && merged[field] !== originalDoc[field])
+        throw new TransactionalEmailError('access-denied')
+    }
+    if (
+      originalDoc.preparedProviderRequest != null &&
+      !terminal &&
+      merged.preparedProviderRequest !== originalDoc.preparedProviderRequest
+    )
+      throw new TransactionalEmailError('access-denied')
+    if (
+      originalDoc.preparedProviderRequest == null &&
+      merged.preparedProviderRequest != null &&
+      (authority.kind !== 'worker' || originalDoc.attemptCount || originalDoc.scrubbedAt || merged.state !== 'prepared')
+    )
+      throw new TransactionalEmailError('access-denied')
     if (authority.kind === 'claim') {
       if (
         !['queued', 'prepared'].includes(originalDoc.state) ||
@@ -131,7 +149,12 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
         if (field in data && data[field] !== originalDoc[field]) throw new TransactionalEmailError('access-denied')
       }
     }
-  } else if (merged.state !== 'queued') throw new TransactionalEmailError('access-denied')
+  } else if (
+    merged.state !== 'queued' ||
+    merged.preparedProviderRequest != null ||
+    providerBindingFields.some((field) => merged[field] != null)
+  )
+    throw new TransactionalEmailError('access-denied')
   if (
     terminal &&
     ([
@@ -140,6 +163,7 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
       'preparedSubject',
       'preparedHtml',
       'preparedText',
+      'preparedProviderRequest',
       'leaseToken',
       'leaseExpiresAt',
       'nextAttemptAt',

@@ -1,9 +1,10 @@
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+
 const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
   () => import('../helpers/deliveryEdgeNetworkBoundary'),
 )
 import { randomUUID } from 'node:crypto'
 import * as emailRenderer from '@react-email/render'
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 import pg from 'pg'
 import config from '@payload-config'

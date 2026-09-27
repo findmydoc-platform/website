@@ -1,3 +1,5 @@
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+
 const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
   () => import('../helpers/deliveryEdgeNetworkBoundary'),
 )
@@ -11,7 +13,6 @@ import config from '@payload-config'
 import { NextRequest } from 'next/server'
 import { AppRouteRouteModule, type AppRouteUserlandModule } from 'next/dist/server/route-modules/app-route/module'
 import type { RouteKind } from 'next/dist/server/route-kind'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createWebhookConfiguration,
   webhookConfiguration,

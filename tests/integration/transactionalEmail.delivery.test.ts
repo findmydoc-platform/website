@@ -1,8 +1,9 @@
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+
 const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
   () => import('../helpers/deliveryEdgeNetworkBoundary'),
 )
 import { createHash, randomUUID } from 'node:crypto'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 import pg from 'pg'
 import config from '@payload-config'

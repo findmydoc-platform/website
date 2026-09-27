@@ -1,7 +1,8 @@
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
+
 const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
   () => import('../helpers/deliveryEdgeNetworkBoundary'),
 )
-import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
 import { GET } from '@/app/api/internal/transactional-email/worker/route'
 
 const dependencies = vi.hoisted(() => ({

@@ -1,8 +1,9 @@
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
   () => import('../helpers/deliveryEdgeNetworkBoundary'),
 )
 import { NextRequest } from 'next/server'
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   createServerClient: vi.fn(),

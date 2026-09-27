@@ -280,6 +280,8 @@ describe('transactional email command acceptance', () => {
       for (const overrideAccess of [false, true]) {
         for (const context of [
           {},
+          { seed: true },
+          { transactionalEmailSeed: true },
           { transactionalEmail: true },
           { transactionalEmail: {} },
           { transactionalEmail: { internal: true } },
@@ -408,7 +410,18 @@ describe('transactional email command acceptance', () => {
 
   it('keeps private mail collections hidden from Admin, REST, GraphQL, and public caches', async () => {
     const policy = getCachePolicyEntry('collection:private-operational')
-    expect(policy).toMatchObject({ cacheClass: 'private-live', tagFamilies: [], pathRelationship: 'private-live' })
+    expect(policy).toMatchObject({
+      kind: 'collection',
+      cacheClass: 'private-live',
+      boundary: 'private',
+      owner: 'auth-owner',
+      tagFamilies: [],
+      pathRelationship: 'private-live',
+      pathFamilies: ['none'],
+    })
+    expect(policy.surfaces ?? []).toEqual([])
+    expect(policy.sitemapSurfaces ?? []).toEqual([])
+    expect(policy.discoverySurfaces ?? []).toEqual([])
     for (const collection of [
       'transactionalEmailOutbox',
       'transactionalEmailEvents',
@@ -417,6 +430,14 @@ describe('transactional email command acceptance', () => {
       const collectionConfig = payload.collections[collection].config
       expect(collectionConfig.admin.hidden).toBe(true)
       expect(await collectionConfig.access.admin?.({ req: await createLocalReq({}, payload) })).toBe(false)
+      if (collection === 'transactionalEmailSuppressions') {
+        expect(collectionConfig.versions).toBeUndefined()
+        expect(collectionConfig.trash).not.toBe(true)
+        expect(collectionConfig.lockDocuments).toBe(false)
+        expect(collectionConfig.fields.map((field) => ('name' in field ? field.name : null))).not.toEqual(
+          expect.arrayContaining(['deletedAt', 'expiresAt', 'plaintextAddress', 'encryptedAddress']),
+        )
+      }
       expect(collectionContractRegistry[collection].baseline).toContain(
         collection === 'transactionalEmailSuppressions'
           ? 'tests/integration/transactionalEmail.webhook.test.ts'

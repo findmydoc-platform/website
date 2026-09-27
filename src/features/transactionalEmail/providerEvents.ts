@@ -66,7 +66,9 @@ export async function applyLettermintEvent(
           record.providerTeamId !== event.context.team_id ||
           record.providerProjectId !== event.context.project_id ||
           record.providerRouteId !== event.context.route_id ||
-          (verified.recipientDigest !== undefined && record.providerRecipientDigest !== verified.recipientDigest) ||
+          (verified.recipientDigestCandidates !== undefined &&
+            (!record.providerRecipientDigest ||
+              !verified.recipientDigestCandidates.includes(record.providerRecipientDigest))) ||
           (event.data.message_id && record.providerMessageId && record.providerMessageId !== event.data.message_id)
         )
           return 'provider-event-mismatch'

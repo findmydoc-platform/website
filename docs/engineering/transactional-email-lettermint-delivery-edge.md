@@ -311,8 +311,10 @@ registered targets` status check in the default-branch ruleset before registerin
 
 The deployment secret store supplies `LETTERMINT_PROJECT_TOKEN`, `LETTERMINT_WEBHOOK_SECRET`, and
 `LETTERMINT_RECIPIENT_DIGEST_KEY` separately for Preview and Production. A planned webhook rotation may also supply
-`LETTERMINT_PREVIOUS_WEBHOOK_SECRET`. The fingerprint command runs from an interactive terminal, reads one credential
-without echo, and writes only its full SHA-256 fingerprint plus the already reviewed target metadata:
+`LETTERMINT_PREVIOUS_WEBHOOK_SECRET`. Digest-key rotation supplies `LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS` as a
+JSON object from explicitly reviewed previous versions to their environment-scoped secrets. The fingerprint command
+runs from an interactive terminal, reads one credential without echo, and writes only its full SHA-256 fingerprint
+plus the already reviewed target metadata:
 
 ```sh
 node scripts/lettermint-fingerprint.mjs --environment preview --kind project-token
@@ -322,10 +324,20 @@ node scripts/lettermint-fingerprint.mjs --environment preview --kind digest-key
 
 The same commands run separately for Production after its approvals. For a planned previous-webhook overlap, use
 `--kind webhook-previous --starts-at <ISO timestamp> --valid-until <ISO timestamp>`. The interval may not exceed ten
-minutes. The operator reviews the registry diff before committing it. Credentials never belong in command arguments,
-shell history, the registry, or review artifacts. Hosted command and worker runtime selection still fails closed
-after validating the binding, until the outbound adapter is installed. The independent inbound test boundary below
-can verify a request once its hosted binding has been provisioned and reviewed.
+minutes. A digest fingerprint records the target's current `digestKeyId`; rotating that target identifier retains
+other explicitly versioned digest fingerprints while replacing only the same version. Before the first rotation of
+a legacy unversioned entry, re-record its still-current fingerprint so the registry contains its explicit version.
+Retirement runs only through
+`pnpm exec tsx scripts/lettermint-digest-key-retirement.ts --environment <preview|production> --version
+<previous-version>` while the
+previous fingerprint and secret are still active. A successful zero-reference proof removes that exact fingerprint;
+the matching previous-secret entry is removed from deployment configuration and a newly approved activation
+preflight records the reduced `previousDigestKeys` evidence before deployment. The command's success output means
+only that the fingerprint was removed; startup remains fail-closed until both follow-up changes validate. The
+operator reviews the registry and activation diffs before committing them. Credentials never belong in command
+arguments, shell history, the registry, or review artifacts. Hosted command and worker runtime selection still fails
+closed after validating the binding, until the outbound adapter is installed. The independent inbound test boundary
+below can verify a request once its hosted binding has been provisioned and reviewed.
 
 The send token is read only by the outbound capability. The webhook secret is read only by the signature verifier.
 Provider team credentials, suppression-management credentials, and DNS-management credentials are not application
@@ -381,11 +393,12 @@ registry `version`, environment-specific `preflights`, and command/environment `
 No product command, provider resource, sender, DNS record, or credential is activated by this implementation.
 
 A preflight binds its own version and the registry version to the team, project, route, sender, webhook identifier,
-and digest-key version. It records the exact binding ID and full SHA-256 fingerprint for the project token, current
-webhook secret, and digest key. The previous webhook secret is explicitly `null` when absent; otherwise it binds
-its binding ID, full fingerprint, and exact `startsAt`/`validUntil` overlap window. Adding, removing, or changing that
-credential or window invalidates old evidence. Those values must match the independently validated hosted binding
-from #1894.
+and current digest-key version. It records the exact binding ID and full SHA-256 fingerprint for the project token,
+current webhook secret, current digest key, and every explicitly configured previous digest-key version. The previous
+webhook secret is explicitly `null` when absent; otherwise it binds its binding ID, full fingerprint, and exact
+`startsAt`/`validUntil` overlap window. Adding, removing, or changing either previous-key evidence or the webhook
+credential and window invalidates old evidence. Those values must match the independently validated hosted binding
+from #1894 and #1907.
 The sender reference must also match the hosted sender-readiness reference. Preflights require opaque evidence
 references for team, project, route, sender, DNS, signed webhook verification, and disabled tracking. The tracking
 flags must both be false, and the webhook subscription must contain exactly the nine delivery events listed below.
@@ -447,9 +460,10 @@ and never reads its value. Product commands expose no allowlist field or mutatio
 `recipientAddressDigest` trims surrounding whitespace and lowercases the full address with the shared email
 normalization helper, validates it, and computes HMAC-SHA256 over its UTF-8 bytes. It preserves plus tags and dots.
 The synthetic outbox identity-binding digest uses the same normalization and HMAC algorithm while also binding the
-source identity. Address-only allowlist digests never depend on a command or source identity. The current hosted
-credential contract supports one digest-key version; unsupported versions fail closed. Previous-key support and
-suppression-store migration remain with their delivery-edge work order.
+source identity. Address-only allowlist digests never depend on a command or source identity. The hosted credential
+contract supports the current version and only explicitly fingerprinted previous versions. Unsupported versions fail
+closed. The worker uses the same verified ring for suppression lookup, while every new digest uses the current
+version.
 
 ### Sender, DNS, webhook, and compliance preflight
 
@@ -575,8 +589,9 @@ Preview proxy, Next.js App Route module, and actual route export. Only configura
 synthetic. Real Payload and PostgreSQL retain an existing outbox/event sentinel unchanged after rejected requests.
 The same request seam verifies provider-result persistence, replay, mapping, and rollback. Network guards reject
 external calls; request telemetry and console calls remain empty. Reconciliation logs contain fixed outcome codes
-only. The [suppression integration](transactional-email-suppression.md) adds current-key recipient correlation and atomic
-suppression effects. Concurrent worker/event coordination follows the existing event transaction.
+only. The [suppression integration](transactional-email-suppression.md) adds current-and-previous-key recipient
+correlation, current-key writes, and atomic suppression effects. Concurrent worker/event coordination follows the
+existing event transaction.
 
 Cache decision: `no-public-impact`. The private request boundary has no public read, cache tag, revalidation event,
 discovery consumer, or affected public path. Route responses and mutation-free rejects are covered at the request
@@ -765,6 +780,13 @@ suppression, or Preview allowlist entry still references its version. Because an
 again, a complete rehash is impossible without plaintext. A forced retirement therefore requires a separate,
 explicit migration decision with an authoritative plaintext source or an acknowledged loss of suppression coverage.
 The Production legal gate must approve this limitation and name the key owner before activation.
+
+The private retirement command is the sole supported removal path. It validates the active environment-specific
+binding, proves each retained source with count-only capabilities in one transaction, and mutates no registry file
+when any source remains. On success it atomically removes only the fingerprint covered by that proof. It has no
+public endpoint, Admin surface, caller-supplied binding, or force mode. Removing the previous secret and approving a
+replacement preflight are mandatory reviewed follow-up steps; the resulting configuration must pass startup
+validation before deployment.
 
 This specification does not introduce reversible encryption or custom cryptography for recipient addresses. Keys
 remain in the deployment secret store; versions and usage counts are operational metadata.

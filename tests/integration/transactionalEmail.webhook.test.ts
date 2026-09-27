@@ -1,7 +1,10 @@
 import { createHash, createHmac, randomUUID } from 'node:crypto'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import http from 'node:http'
 import https from 'node:https'
 import net from 'node:net'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import tls from 'node:tls'
 import pg from 'pg'
 import { createLocalReq, getPayload, type Payload } from 'payload'
@@ -26,6 +29,9 @@ import { resolveActivationPolicy } from '@/features/transactionalEmail/activatio
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
 import { recipientAddressDigest } from '@/features/transactionalEmail/recipientBinding'
 import type { CommandCatalog } from '@/features/transactionalEmail/catalog'
+import { retireDigestKey } from '@/features/transactionalEmail/digestKeyRotation'
+import { validateTransactionalEmailStartup } from '@/features/transactionalEmail/environment'
+import { runDigestKeyRetirement } from '../../scripts/lettermint-digest-key-retirement'
 
 vi.hoisted(async () => {
   const { createRequire } = await import('node:module')
@@ -305,6 +311,143 @@ describe('Lettermint webhook Next.js request boundary', () => {
     )
     expect(rows).toEqual([{ reason: 'hard-bounce', source: 'lettermint' }])
   })
+
+  it('correlates a retained previous-version outbox digest while writing only the current suppression version', async () => {
+    const id = await preparedOperation()
+    const rotated = createActivationFixture('preview', false, true)
+    Object.assign(webhookConfiguration.registry, rotated.configuration.registry)
+    Object.assign(webhookConfiguration.secrets, rotated.configuration.secrets)
+    for (const [key, value] of Object.entries(rotated.configuration.secrets.preview)) vi.stubEnv(key, value)
+
+    mutationExpected = true
+    expect(await (await sendEvent(messageEvent(id, 'message.spam_complaint'))).json()).toEqual({
+      outcomeCode: 'provider-event-applied',
+    })
+    const candidateDigests = rotated.binding.recipientDigestKeys.map((key) =>
+      recipientAddressDigest(recipientAddress, key)!,
+    )
+    expect(
+      (
+        await observer.query(
+          "SELECT split_part(provider_recipient_digest, ':', 1) AS version FROM transactional_email_outbox WHERE id = $1",
+          [id],
+        )
+      ).rows,
+    ).toEqual([{ version: rotated.binding.recipientDigestKeys[1]!.version }])
+    const { rows } = await observer.query(
+      `SELECT split_part(recipient_digest, ':', 1) AS version, reason
+         FROM transactional_email_suppressions
+        WHERE runtime_environment = 'preview'
+          AND recipient_digest = ANY($1::text[])
+        ORDER BY version`,
+      [candidateDigests],
+    )
+    expect(rows).toEqual([
+      {
+        version: rotated.binding.recipientDigestKeys[0]!.version,
+        reason: 'spam-complaint',
+      },
+    ])
+  })
+
+  it('writes only the current digest version for new provider preparation after rotation', async () => {
+    mutationExpected = true
+    vi.unstubAllEnvs()
+    vi.stubEnv('CI', 'false')
+    const req = await createLocalReq({}, payload)
+    const reference = randomUUID()
+    references.push(reference)
+    const { operationId } = await bindTransactionalEmail(req, catalog).accept({
+      type: 'clinic.registration-received',
+      operationReference: reference,
+      registrationId: syntheticRegistrationId,
+    })
+    const rotated = createActivationFixture('preview', false, true)
+    const currentKey = rotated.binding.recipientDigestKeys[0]!
+    await createTransactionalEmailWorker(req, {
+      catalog,
+      providerBinding: rotated.binding,
+      activationPolicy: resolveActivationPolicy(rotated.binding, rotated.registry, [
+        recipientAddressDigest(recipientAddress, currentKey)!,
+      ]),
+      delivery: { deliver: async () => ({ type: 'ambiguous' }) },
+      log: () => {},
+    }).run(operationId)
+
+    expect(
+      (
+        await observer.query(
+          "SELECT split_part(provider_recipient_digest, ':', 1) AS version FROM transactional_email_outbox WHERE id = $1",
+          [operationId],
+        )
+      ).rows[0].version,
+    ).toBe(currentKey.version)
+  })
+
+  it('ignores a suppression stored under a digest version that is not explicitly configured', async () => {
+    mutationExpected = true
+    vi.unstubAllEnvs()
+    vi.stubEnv('CI', 'false')
+    const req = await createLocalReq({}, payload)
+    const reference = randomUUID()
+    references.push(reference)
+    const { operationId } = await bindTransactionalEmail(req, catalog).accept({
+      type: 'clinic.registration-received',
+      operationReference: reference,
+      registrationId: syntheticRegistrationId,
+    })
+    const fixture = createActivationFixture()
+    const currentKey = fixture.binding.recipientDigestKeys[0]!
+    const unconfiguredDigest = recipientAddressDigest(recipientAddress, {
+      version: `unconfigured-${randomUUID()}`,
+      secret: 'synthetic-unconfigured-digest-key', // pragma: allowlist secret
+    })!
+    const observedAt = new Date(webhookNow).toISOString()
+    await observer.query(
+      `INSERT INTO transactional_email_suppressions
+        (runtime_environment, recipient_digest, reason, first_observed_at, last_observed_at, source, created_at, updated_at)
+       VALUES ('preview', $1, 'hard-bounce', $2, $2, 'lettermint', $2, $2)`,
+      [unconfiguredDigest, observedAt],
+    )
+    const delivery = { deliver: vi.fn(async () => ({ type: 'ambiguous' as const })) }
+    try {
+      await createTransactionalEmailWorker(req, {
+        catalog,
+        links: { generate: async () => 'https://example.test/synthetic-action' },
+        delivery,
+        log: () => {},
+        providerBinding: fixture.binding,
+        activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [
+          recipientAddressDigest(recipientAddress, currentKey)!,
+        ]),
+      }).run(operationId)
+      expect(delivery.deliver).toHaveBeenCalledOnce()
+      expect((await stored(operationId)).state).not.toBe('suppressed')
+      expect(
+        (
+          await observer.query(
+            `SELECT reason, source, first_observed_at, last_observed_at
+               FROM transactional_email_suppressions
+              WHERE runtime_environment = 'preview' AND recipient_digest = $1`,
+            [unconfiguredDigest],
+          )
+        ).rows,
+      ).toEqual([
+        {
+          reason: 'hard-bounce',
+          source: 'lettermint',
+          first_observed_at: new Date(observedAt),
+          last_observed_at: new Date(observedAt),
+        },
+      ])
+    } finally {
+      await observer.query(
+        "DELETE FROM transactional_email_suppressions WHERE runtime_environment = 'preview' AND recipient_digest = $1",
+        [unconfiguredDigest],
+      )
+    }
+  })
+
   const stored = async (id: string) =>
     (await observer.query('SELECT *, latest_event_sequence::int FROM transactional_email_outbox WHERE id = $1', [id]))
       .rows[0]
@@ -448,6 +591,387 @@ describe('Lettermint webhook Next.js request boundary', () => {
     expect(
       JSON.stringify([logCalls, signalCalls, requestErrors]).includes((await stored(id)).provider_recipient_digest),
     ).toBe(false)
+  })
+
+  it('materializes the current digest atomically when a previous-version suppression blocks preparation', async () => {
+    const sourceId = await preparedOperation()
+    mutationExpected = true
+    expect((await sendEvent(messageEvent(sourceId, 'message.hard_bounced'))).status).toBe(200)
+
+    vi.unstubAllEnvs()
+    vi.stubEnv('CI', 'false')
+    const req = await createLocalReq({}, payload)
+    const reference = randomUUID()
+    references.push(reference)
+    const { operationId } = await bindTransactionalEmail(req, catalog).accept({
+      type: 'clinic.registration-received',
+      operationReference: reference,
+      registrationId: syntheticRegistrationId,
+    })
+    const rotated = createActivationFixture('preview', false, true)
+    const currentKey = rotated.binding.recipientDigestKeys[0]!
+    const links = { generate: vi.fn() }
+    const transport = vi.fn()
+
+    await createTransactionalEmailWorker(req, {
+      catalog,
+      now: () => webhookNow,
+      links,
+      httpTransport: transport,
+      providerBinding: rotated.binding,
+      activationPolicy: resolveActivationPolicy(rotated.binding, rotated.registry, [
+        recipientAddressDigest(recipientAddress, currentKey)!,
+      ]),
+    }).run(operationId)
+
+    expect(links.generate).not.toHaveBeenCalled()
+    expect(transport).not.toHaveBeenCalled()
+    expect((await stored(operationId)).state).toBe('suppressed')
+    const digests = rotated.binding.recipientDigestKeys.map((key) => recipientAddressDigest(recipientAddress, key)!)
+    const versions = rotated.binding.recipientDigestKeys.map(({ version }) => version).sort()
+    const { rows } = await observer.query(
+      `SELECT split_part(recipient_digest, ':', 1) AS version,
+              reason,
+              source,
+              first_observed_at,
+              last_observed_at
+        FROM transactional_email_suppressions
+        WHERE runtime_environment = 'preview'
+          AND recipient_digest = ANY($1::text[])
+        ORDER BY version`,
+      [digests],
+    )
+    expect(rows).toEqual(
+      versions.map((version) => ({
+        version,
+        reason: 'hard-bounce',
+        source: 'lettermint',
+        first_observed_at: new Date(webhookTestEvent().timestamp),
+        last_observed_at: new Date(webhookTestEvent().timestamp),
+      })),
+    )
+  })
+
+  it('converges concurrent previous-version matches on one current suppression before either delivery proceeds', async () => {
+    const sourceId = await preparedOperation()
+    mutationExpected = true
+    expect((await sendEvent(messageEvent(sourceId, 'message.hard_bounced'))).status).toBe(200)
+
+    vi.unstubAllEnvs()
+    vi.stubEnv('CI', 'false')
+    const rotated = createActivationFixture('preview', false, true)
+    const currentKey = rotated.binding.recipientDigestKeys[0]!
+    const allowlist = [recipientAddressDigest(recipientAddress, currentKey)!]
+    const currentDigest = allowlist[0]!
+    const queued = async () => {
+      const req = await createLocalReq({}, payload)
+      const reference = randomUUID()
+      references.push(reference)
+      const receipt = await bindTransactionalEmail(req, catalog).accept({
+        type: 'clinic.registration-received',
+        operationReference: reference,
+        registrationId: syntheticRegistrationId,
+      })
+      return { req, operationId: receipt.operationId }
+    }
+    const [firstOperation, secondOperation] = await Promise.all([queued(), queued()])
+    const links = { generate: vi.fn() }
+    const transport = vi.fn()
+    const begin = payload.db.beginTransaction.bind(payload.db)
+    const attempts = vi
+      .spyOn(payload.db, 'beginTransaction')
+      .mockImplementation((options) => begin({ ...options, isolationLevel: 'read committed' }))
+    const hooks = payload.collections.transactionalEmailSuppressions.config.hooks.beforeChange
+    const arrivals = [signal(), signal()]
+    const releases = [signal(), signal()]
+    let creates = 0
+    const hook: (typeof hooks)[number] = async ({ data, operation }) => {
+      if (operation === 'create' && String(data.recipientDigest).startsWith(`${currentKey.version}:`)) {
+        const index = creates++
+        arrivals[index]!.resolve()
+        await releases[index]!.promise
+      }
+      return data
+    }
+    hooks.push(hook)
+    const close = registerRaceCleanup(() => {
+      releases.forEach((release) => release.resolve())
+      hooks.splice(hooks.indexOf(hook), 1)
+    })
+    const run = ({ req, operationId }: Awaited<ReturnType<typeof queued>>) =>
+      createTransactionalEmailWorker(req, {
+        catalog,
+        links,
+        httpTransport: transport,
+        providerBinding: rotated.binding,
+        activationPolicy: resolveActivationPolicy(rotated.binding, rotated.registry, allowlist),
+      }).run(operationId)
+    const first = trackRaceWork(run(firstOperation))
+    let second: Promise<void> | undefined
+    try {
+      await reachBarrier(arrivals[0]!.promise, first)
+      second = trackRaceWork(run(secondOperation))
+      await reachBarrier(arrivals[1]!.promise, second)
+      expect(
+        (
+          await observer.query(
+            "SELECT count(*)::int AS count FROM transactional_email_suppressions WHERE runtime_environment = 'preview' AND recipient_digest = $1",
+            [currentDigest],
+          )
+        ).rows[0].count,
+      ).toBe(0)
+      releases[0]!.resolve()
+      await first
+      releases[1]!.resolve()
+      await second
+      expect(links.generate).not.toHaveBeenCalled()
+      expect(transport).not.toHaveBeenCalled()
+      expect((await stored(firstOperation.operationId)).state).toBe('suppressed')
+      expect((await stored(secondOperation.operationId)).state).toBe('suppressed')
+      expect(
+        (
+          await observer.query(
+            "SELECT count(*)::int AS count FROM transactional_email_suppressions WHERE runtime_environment = 'preview' AND recipient_digest = $1",
+            [currentDigest],
+          )
+        ).rows[0].count,
+      ).toBe(1)
+      expect(attempts.mock.calls.length).toBeGreaterThan(2)
+    } finally {
+      close()
+      await Promise.all([first, second])
+      attempts.mockRestore()
+    }
+  })
+
+  it('rolls back current-version materialization when its transaction fails', async () => {
+    const sourceId = await preparedOperation()
+    mutationExpected = true
+    expect((await sendEvent(messageEvent(sourceId, 'message.hard_bounced'))).status).toBe(200)
+
+    vi.unstubAllEnvs()
+    vi.stubEnv('CI', 'false')
+    const req = await createLocalReq({}, payload)
+    const reference = randomUUID()
+    references.push(reference)
+    const { operationId } = await bindTransactionalEmail(req, catalog).accept({
+      type: 'clinic.registration-received',
+      operationReference: reference,
+      registrationId: syntheticRegistrationId,
+    })
+    const rotated = createActivationFixture('preview', false, true)
+    const currentKey = rotated.binding.recipientDigestKeys[0]!
+    const currentDigest = recipientAddressDigest(recipientAddress, currentKey)!
+    const links = { generate: vi.fn() }
+    const transport = vi.fn()
+    const hooks = payload.collections.transactionalEmailSuppressions.config.hooks.afterChange ?? []
+    payload.collections.transactionalEmailSuppressions.config.hooks.afterChange = hooks
+    const failure: (typeof hooks)[number] = async ({ doc, operation }) => {
+      if (operation === 'create' && String(doc.recipientDigest).startsWith(`${currentKey.version}:`))
+        throw new Error('Synthetic private materialization failure')
+      return doc
+    }
+    hooks.push(failure)
+    try {
+      await createTransactionalEmailWorker(req, {
+        catalog,
+        links,
+        httpTransport: transport,
+        providerBinding: rotated.binding,
+        activationPolicy: resolveActivationPolicy(rotated.binding, rotated.registry, [currentDigest]),
+      }).run(operationId)
+    } finally {
+      hooks.splice(hooks.indexOf(failure), 1)
+    }
+
+    expect(links.generate).not.toHaveBeenCalled()
+    expect(transport).not.toHaveBeenCalled()
+    expect(await stored(operationId)).toMatchObject({ state: 'queued', attempt_count: '0' })
+    expect(
+      (
+        await observer.query(
+          "SELECT count(*)::int AS count FROM transactional_email_suppressions WHERE runtime_environment = 'preview' AND recipient_digest = $1",
+          [currentDigest],
+        )
+      ).rows[0].count,
+    ).toBe(0)
+    expect(JSON.stringify([logCalls, signalCalls, requestErrors])).not.toContain('materialization failure')
+  })
+
+  it.each(['outbox', 'suppression', 'allowlist'] as const)(
+    'blocks the supported retirement workflow when only %s still references the previous version',
+    async (source) => {
+      mutationExpected = true
+      const version = `retire-${source}-${randomUUID()}`
+      const rotated = createActivationFixture('preview', false, true, version)
+      Object.assign(webhookConfiguration.registry, rotated.configuration.registry)
+      Object.assign(webhookConfiguration.secrets, rotated.configuration.secrets)
+      for (const [key, value] of Object.entries(rotated.configuration.secrets.preview)) vi.stubEnv(key, value)
+      vi.stubEnv('LETTERMINT_PREVIEW_RECIPIENT_DIGESTS', undefined)
+      const previous = rotated.binding.recipientDigestKeys.find((key) => key.version === version)!
+      const digest = recipientAddressDigest(recipientAddress, previous)!
+      if (source === 'outbox') {
+        const operationId = await preparedOperation()
+        await observer.query('UPDATE transactional_email_outbox SET provider_recipient_digest = $1 WHERE id = $2', [
+          digest,
+          operationId,
+        ])
+      } else if (source === 'suppression') {
+        const observedAt = new Date(webhookNow).toISOString()
+        await observer.query(
+          `INSERT INTO transactional_email_suppressions
+            (runtime_environment, recipient_digest, reason, first_observed_at, last_observed_at, source, created_at, updated_at)
+           VALUES ('preview', $1, 'hard-bounce', $2, $2, 'lettermint', $2, $2)`,
+          [digest, observedAt],
+        )
+      } else vi.stubEnv('LETTERMINT_PREVIEW_RECIPIENT_DIGESTS', JSON.stringify([digest]))
+      const req = await createLocalReq({}, payload)
+      const retireConfiguration = vi.fn()
+      try {
+        let failure: unknown
+        try {
+          await retireDigestKey(req, 'preview', version, retireConfiguration)
+        } catch (error) {
+          failure = error
+        }
+        expect(failure).toBeInstanceOf(Error)
+        expect(JSON.parse(JSON.stringify(failure))).toEqual({
+          code: 'digest-key-retirement-blocked',
+          evidence: {
+            environment: 'preview',
+            version,
+            outboxRecords: source === 'outbox' ? 1 : 0,
+            suppressionRecords: source === 'suppression' ? 1 : 0,
+            previewAllowlistEntries: source === 'allowlist' ? 1 : 0,
+          },
+          name: 'DigestKeyRetirementBlockedError',
+        })
+        expect(retireConfiguration).not.toHaveBeenCalled()
+        const visible = JSON.stringify([failure, logCalls, signalCalls, requestErrors])
+        for (const sentinel of [
+          recipientAddress,
+          digest,
+          previous.secret,
+          rotated.binding.digestKey,
+          rotated.binding.projectToken,
+          rotated.binding.target.projectId,
+          'synthetic-message',
+        ])
+          expect(visible).not.toContain(sentinel)
+      } finally {
+        await observer.query(
+          "DELETE FROM transactional_email_suppressions WHERE runtime_environment = 'preview' AND recipient_digest = $1",
+          [digest],
+        )
+      }
+    },
+  )
+
+  it('retires only an explicitly configured previous version after a zero-reference proof', async () => {
+    mutationExpected = true
+    const version = `retire-production-${randomUUID()}`
+    const rotated = createActivationFixture('production', false, true, version)
+    Object.assign(webhookConfiguration.registry, rotated.configuration.registry)
+    Object.assign(webhookConfiguration.secrets, rotated.configuration.secrets)
+    for (const [key, value] of Object.entries(rotated.configuration.secrets.production)) vi.stubEnv(key, value)
+    vi.stubEnv('LETTERMINT_PREVIEW_RECIPIENT_DIGESTS', undefined)
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    const req = await createLocalReq({}, payload)
+    const retireConfiguration = vi.fn()
+
+    await expect(retireDigestKey(req, 'production', version, retireConfiguration)).resolves.toEqual({
+      environment: 'production',
+      version,
+      outboxRecords: 0,
+      suppressionRecords: 0,
+      previewAllowlistEntries: 0,
+    })
+    expect(retireConfiguration).toHaveBeenCalledOnce()
+    expect(retireConfiguration).toHaveBeenCalledWith({
+      environment: 'production',
+      version,
+      fingerprint: rotated.binding.credentialEvidence.previousDigestKeys.find(
+        (fingerprint) => fingerprint.version === version,
+      ),
+    })
+
+    const currentVersion = rotated.binding.recipientDigestKeys[0]!.version
+    await expect(retireDigestKey(req, 'production', currentVersion, retireConfiguration)).rejects.toMatchObject({
+      code: 'environment-unavailable',
+    })
+    await expect(retireDigestKey(req, 'production', 'unknown-version', retireConfiguration)).rejects.toMatchObject({
+      code: 'environment-unavailable',
+    })
+    expect(retireConfiguration).toHaveBeenCalledOnce()
+  })
+
+  it('runs the real retirement command and proves the reviewed follow-up configuration starts', async () => {
+    const version = `retire-command-${randomUUID()}`
+    const rotated = createActivationFixture('production', false, true, version)
+    Object.assign(webhookConfiguration.registry, rotated.configuration.registry)
+    Object.assign(webhookConfiguration.secrets, rotated.configuration.secrets)
+    for (const [key, value] of Object.entries(rotated.configuration.secrets.production)) vi.stubEnv(key, value)
+    vi.stubEnv('LETTERMINT_PREVIEW_RECIPIENT_DIGESTS', undefined)
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    const directory = await mkdtemp(join(tmpdir(), 'lettermint-retirement-command-'))
+    const path = join(directory, 'registry.json')
+    await writeFile(path, `${JSON.stringify(rotated.configuration.registry, null, 2)}\n`)
+    let output = ''
+    try {
+      await runDigestKeyRetirement(['--environment', 'production', '--version', version], {
+        open: async () => ({
+          req: await createLocalReq({}, payload),
+          close: async () => {},
+        }),
+        registryPath: path,
+        write: (value) => {
+          output += value
+        },
+      })
+      expect(output).toBe(
+        `Digest key fingerprint removed: environment=production version=${version} outbox=0 suppressions=0 previewAllowlist=0. Remove the matching previous secret and approve the updated activation preflight before deployment.\n`,
+      )
+      const retiredRegistry = JSON.parse(await readFile(path, 'utf8'))
+      expect(
+        retiredRegistry.fingerprints.some(
+          (entry: { environment: string; digestKeyId?: string }) =>
+            entry.environment === 'production' && entry.digestKeyId === version,
+        ),
+      ).toBe(false)
+      const retiredEnv = {
+        NODE_ENV: 'production',
+        VERCEL_ENV: 'production',
+        DEPLOYMENT_ENV: 'production',
+        ...rotated.configuration.secrets.production,
+        LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS: undefined,
+      }
+      expect(() =>
+        validateTransactionalEmailStartup(
+          retiredEnv,
+          retiredRegistry,
+          rotated.configuration.locks,
+          webhookNow,
+          rotated.registry,
+        ),
+      ).toThrow('environment-unavailable')
+      const approvedActivation = structuredClone(rotated.registry)
+      approvedActivation.preflights[0]!.credentials.previousDigestKeys = []
+      expect(
+        validateTransactionalEmailStartup(
+          retiredEnv,
+          retiredRegistry,
+          rotated.configuration.locks,
+          webhookNow,
+          approvedActivation,
+        ),
+      ).toEqual({ environment: 'production' })
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
   })
 
   it.each(['message.hard_bounced', 'message.spam_complaint'])(

@@ -39,6 +39,7 @@ const preflightSchema = z.strictObject({
       })
       .nullable(),
     digestKey: fingerprint,
+    previousDigestKeys: z.array(fingerprint.extend({ version: reference })),
   }),
   tracking: z.strictObject({ open: z.literal(false), click: z.literal(false) }),
   webhookEvents: z.array(z.enum(webhookEvents)).length(webhookEvents.length),
@@ -108,13 +109,14 @@ export function resolveActivationPolicy(
   if (typeof window !== 'undefined') unavailable()
   requireVerifiedHostedBinding(binding)
   if (binding.target.environment === 'production' && previewAllowlist !== undefined) unavailable()
+  const supportedDigestVersions = new Set(binding.recipientDigestKeys.map(({ version }) => version))
   const allowlist = z
     .array(z.string().regex(/^[A-Za-z0-9_-]{1,128}:[a-f0-9]{64}$/))
     .safeParse(previewAllowlist === undefined ? [] : previewAllowlist)
   if (
     !allowlist.success ||
     new Set(allowlist.data).size !== allowlist.data.length ||
-    allowlist.data.some((digest) => !digest.startsWith(`${binding.target.digestKeyId}:`))
+    allowlist.data.some((digest) => !supportedDigestVersions.has(digest.slice(0, digest.indexOf(':'))))
   )
     unavailable()
   const parsed = registrySchema.safeParse(input)
@@ -147,6 +149,16 @@ export function resolveActivationPolicy(
       )
         unavailable()
     }
+    if (
+      new Set(preflight.credentials.previousDigestKeys.map(({ version }) => version)).size !==
+        preflight.credentials.previousDigestKeys.length ||
+      preflight.credentials.previousDigestKeys.length !== binding.credentialEvidence.previousDigestKeys.length ||
+      preflight.credentials.previousDigestKeys.some((key) => {
+        const verified = binding.credentialEvidence.previousDigestKeys.find(({ version }) => version === key.version)
+        return !verified || verified.bindingId !== key.bindingId || verified.sha256 !== key.sha256
+      })
+    )
+      unavailable()
     const previous = preflight.credentials.previousWebhookSecret
     const verifiedPrevious = binding.credentialEvidence.previousWebhookSecret
     if ((previous === null) !== (verifiedPrevious === null)) unavailable()
@@ -168,12 +180,22 @@ export function resolveActivationPolicy(
     const firstReferences = new Set(Object.values(first!.evidence))
     if (Object.values(second!.evidence).some((value) => firstReferences.has(value))) unavailable()
     const firstCredentials = new Set(
-      Object.values(first!.credentials).flatMap((value) => (value ? [value.bindingId, value.sha256] : [])),
+      [
+        first!.credentials.projectToken,
+        first!.credentials.webhookSecret,
+        first!.credentials.previousWebhookSecret,
+        first!.credentials.digestKey,
+        ...first!.credentials.previousDigestKeys,
+      ].flatMap((value) => (value ? [value.bindingId, value.sha256] : [])),
     )
     if (
-      Object.values(second!.credentials).some(
-        (value) => value && (firstCredentials.has(value.bindingId) || firstCredentials.has(value.sha256)),
-      )
+      [
+        second!.credentials.projectToken,
+        second!.credentials.webhookSecret,
+        second!.credentials.previousWebhookSecret,
+        second!.credentials.digestKey,
+        ...second!.credentials.previousDigestKeys,
+      ].some((value) => value && (firstCredentials.has(value.bindingId) || firstCredentials.has(value.sha256)))
     )
       unavailable()
   }
@@ -194,11 +216,11 @@ export function resolveActivationPolicy(
     evaluate(command: CommandType, address: string) {
       if (!enabled.has(command)) return 'command-not-enabled'
       if (binding.target.environment === 'preview') {
-        const digest = recipientAddressDigest(address, {
-          version: binding.target.digestKeyId,
-          secret: binding.digestKey,
+        const allowed = binding.recipientDigestKeys.some((key) => {
+          const digest = recipientAddressDigest(address, key)
+          return digest !== null && recipients.has(digest)
         })
-        if (!digest || !recipients.has(digest)) return 'preview-recipient-not-allowed'
+        if (!allowed) return 'preview-recipient-not-allowed'
       }
       return null
     },

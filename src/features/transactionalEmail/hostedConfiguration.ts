@@ -27,10 +27,11 @@ const fingerprintSchema = targetIdentitySchema.extend({
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
   webhookId: identifier.nullable(),
   overlap: z.strictObject({ startsAt: z.iso.datetime(), validUntil: z.iso.datetime() }).nullable(),
+  digestKeyId: identifier.nullable().optional(),
 })
 const registrySchema = z.strictObject({
   targets: z.array(targetSchema).length(2),
-  fingerprints: z.array(fingerprintSchema).min(6).max(8),
+  fingerprints: z.array(fingerprintSchema).min(6),
 })
 const targetLocksSchema = z.strictObject({
   targets: z.array(targetIdentitySchema.extend({ environment: environmentSchema })).length(2),
@@ -40,12 +41,14 @@ type HostedEnvironment = z.infer<typeof environmentSchema>
 type Target = z.infer<typeof targetSchema>
 type Fingerprint = z.infer<typeof fingerprintSchema>
 type CredentialEvidence = Readonly<Pick<Fingerprint, 'bindingId' | 'sha256'>>
+type RecipientDigestKey = Readonly<{ version: string; secret: string }>
 const verifiedBindings = new WeakSet<object>()
 export type HostedLettermintBinding = {
   target: Readonly<Target>
   credentialEvidence: Readonly<
     Record<'projectToken' | 'webhookSecret' | 'digestKey', CredentialEvidence> & {
       previousWebhookSecret: (CredentialEvidence & { overlap: Readonly<NonNullable<Fingerprint['overlap']>> }) | null
+      previousDigestKeys: readonly (CredentialEvidence & { version: string })[]
     }
   >
   projectToken: string
@@ -53,6 +56,7 @@ export type HostedLettermintBinding = {
   previousWebhookSecret?: string
   previousWebhookSecretWindow?: Readonly<{ startsAt: number; validUntil: number }>
   digestKey: string
+  recipientDigestKeys: readonly RecipientDigestKey[]
 }
 
 function unavailable(): never {
@@ -76,6 +80,21 @@ function secret(value: string | undefined, kind: 'project-token' | 'webhook' | '
   return value
 }
 
+function previousDigestSecrets(value: string | undefined) {
+  if (value === undefined) return new Map<string, string>()
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(value)
+  } catch {
+    unavailable()
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) unavailable()
+  const entries = Object.entries(parsed)
+  if (entries.some(([version, value]) => !/^[A-Za-z0-9_-]{1,128}$/.test(version) || typeof value !== 'string'))
+    unavailable()
+  return new Map(entries.map(([version, value]) => [version, secret(value as string, 'digest-key')]))
+}
+
 export function resolveHostedLettermintBinding(
   environment: HostedEnvironment,
   input: unknown,
@@ -95,6 +114,7 @@ export function resolveHostedLettermintBinding(
           'LETTERMINT_WEBHOOK_SECRET',
           'LETTERMINT_PREVIOUS_WEBHOOK_SECRET',
           'LETTERMINT_RECIPIENT_DIGEST_KEY',
+          'LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS',
           ...(environment === 'preview' ? ['LETTERMINT_PREVIEW_RECIPIENT_DIGESTS'] : []),
         ].includes(key),
     )
@@ -118,11 +138,26 @@ export function resolveHostedLettermintBinding(
     unavailable()
   if (new Set(fingerprints.map((entry) => entry.bindingId)).size !== fingerprints.length) unavailable()
   if (new Set(fingerprints.map((entry) => entry.sha256)).size !== fingerprints.length) unavailable()
+  const digestVersions = fingerprints.flatMap((entry) =>
+    entry.kind === 'digest-key'
+      ? [entry.digestKeyId ?? targets.find(({ environment }) => environment === entry.environment)?.digestKeyId]
+      : [],
+  )
+  if (digestVersions.some((version) => !version) || new Set(digestVersions).size !== digestVersions.length)
+    unavailable()
   for (const target of targets) {
-    for (const kind of ['project-token', 'webhook-current', 'digest-key'] as const) {
+    for (const kind of ['project-token', 'webhook-current'] as const) {
       if (fingerprints.filter((entry) => entry.environment === target.environment && entry.kind === kind).length !== 1)
         unavailable()
     }
+    const targetDigestKeys = fingerprints.filter(
+      (entry) => entry.environment === target.environment && entry.kind === 'digest-key',
+    )
+    if (
+      targetDigestKeys.length < 1 ||
+      targetDigestKeys.filter((entry) => (entry.digestKeyId ?? target.digestKeyId) === target.digestKeyId).length !== 1
+    )
+      unavailable()
     if (
       fingerprints.filter((entry) => entry.environment === target.environment && entry.kind === 'webhook-previous')
         .length > 1
@@ -133,6 +168,7 @@ export function resolveHostedLettermintBinding(
     const target = targets.find((candidate) => candidate.environment === entry.environment)
     if (!target || !sameTarget(target, entry)) unavailable()
     if (entry.webhookId !== (entry.kind.startsWith('webhook-') ? target.webhookId : null)) unavailable()
+    if (entry.kind !== 'digest-key' && entry.digestKeyId != null) unavailable()
     if ((entry.kind === 'webhook-previous') !== Boolean(entry.overlap)) unavailable()
     if (entry.overlap) {
       const start = Date.parse(entry.overlap.startsAt)
@@ -148,8 +184,23 @@ export function resolveHostedLettermintBinding(
   const projectToken = secret(env.LETTERMINT_PROJECT_TOKEN, 'project-token')
   const webhookSecret = secret(env.LETTERMINT_WEBHOOK_SECRET, 'webhook')
   const digestKey = secret(env.LETTERMINT_RECIPIENT_DIGEST_KEY, 'digest-key')
+  const configuredPreviousDigestKeys = previousDigestSecrets(env.LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS)
   const previousWebhookSecret = env.LETTERMINT_PREVIOUS_WEBHOOK_SECRET
   const previous = findEntry('webhook-previous')
+  const digestEntries = fingerprints
+    .filter((entry) => entry.environment === environment && entry.kind === 'digest-key')
+    .map((entry) => ({ entry, version: entry.digestKeyId ?? target.digestKeyId }))
+  const currentDigestEntry = digestEntries.find(({ version }) => version === target.digestKeyId)
+  const previousDigestEntries = digestEntries
+    .filter(({ version }) => version !== target.digestKeyId)
+    .sort((left, right) => left.version.localeCompare(right.version))
+  if (
+    !currentDigestEntry ||
+    configuredPreviousDigestKeys.has(target.digestKeyId) ||
+    configuredPreviousDigestKeys.size !== previousDigestEntries.length ||
+    previousDigestEntries.some(({ version }) => !configuredPreviousDigestKeys.has(version))
+  )
+    unavailable()
   if ((previousWebhookSecret !== undefined) !== Boolean(previous)) unavailable()
   if (previous) {
     if (
@@ -163,11 +214,14 @@ export function resolveHostedLettermintBinding(
   for (const [kind, value] of [
     ['project-token', projectToken],
     ['webhook-current', webhookSecret],
-    ['digest-key', digestKey],
     ...(previousWebhookSecret ? ([['webhook-previous', previousWebhookSecret]] as const) : []),
   ] as const) {
     const entry = findEntry(kind)
     if (!entry || !matchingFingerprint(value, entry)) unavailable()
+  }
+  if (!matchingFingerprint(digestKey, currentDigestEntry.entry)) unavailable()
+  for (const { entry, version } of previousDigestEntries) {
+    if (!matchingFingerprint(configuredPreviousDigestKeys.get(version)!, entry)) unavailable()
   }
   const binding = { target: Object.freeze(target) }
   Object.defineProperties(binding, {
@@ -189,9 +243,14 @@ export function resolveHostedLettermintBinding(
             })
           : null,
         digestKey: Object.freeze({
-          bindingId: findEntry('digest-key')!.bindingId,
-          sha256: findEntry('digest-key')!.sha256,
+          bindingId: currentDigestEntry.entry.bindingId,
+          sha256: currentDigestEntry.entry.sha256,
         }),
+        previousDigestKeys: Object.freeze(
+          previousDigestEntries.map(({ entry, version }) =>
+            Object.freeze({ bindingId: entry.bindingId, sha256: entry.sha256, version }),
+          ),
+        ),
       }),
     },
     projectToken: { value: projectToken },
@@ -206,6 +265,14 @@ export function resolveHostedLettermintBinding(
         : undefined,
     },
     digestKey: { value: digestKey },
+    recipientDigestKeys: {
+      value: Object.freeze([
+        Object.freeze({ version: target.digestKeyId, secret: digestKey }),
+        ...previousDigestEntries.map(({ version }) =>
+          Object.freeze({ version, secret: configuredPreviousDigestKeys.get(version)! }),
+        ),
+      ]),
+    },
   })
   verifiedBindings.add(binding)
   return Object.freeze(binding) as HostedLettermintBinding
@@ -226,7 +293,7 @@ type HostedWebhookBinding = Pick<
   HostedLettermintBinding,
   'webhookSecret' | 'previousWebhookSecret' | 'previousWebhookSecretWindow'
 > & {
-  recipientDigest(address: string): string | null
+  recipientDigests(address: string): readonly string[] | null
   target: Readonly<Pick<Target, 'environment' | 'teamId' | 'projectId' | 'routeId' | 'webhookId'>>
 }
 
@@ -235,9 +302,11 @@ export function loadHostedLettermintWebhookBinding(environment: HostedEnvironmen
   const { teamId, projectId, routeId, webhookId } = binding.target
   const inbound = { target: Object.freeze({ environment, teamId, projectId, routeId, webhookId }) }
   Object.defineProperties(inbound, {
-    recipientDigest: {
-      value: (address: string) =>
-        recipientAddressDigest(address, { version: binding.target.digestKeyId, secret: binding.digestKey }),
+    recipientDigests: {
+      value: (address: string) => {
+        const digests = binding.recipientDigestKeys.map((key) => recipientAddressDigest(address, key))
+        return digests.some((digest) => digest === null) ? null : Object.freeze(digests as string[])
+      },
     },
     webhookSecret: { value: binding.webhookSecret },
     previousWebhookSecret: { value: binding.previousWebhookSecret },

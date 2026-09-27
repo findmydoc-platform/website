@@ -53,22 +53,29 @@ export function recordFingerprint(registry, options, credential, locks) {
     if (duration <= 0 || duration > 600_000) fail()
   } else if (startsAt || validUntil) fail()
   const sha256 = createHash('sha256').update(credential, 'utf8').digest('hex')
-  if (
-    registry.fingerprints.some(
-      (entry) => entry.sha256 === sha256 && (entry.environment !== environment || entry.kind !== kind),
-    )
-  )
-    fail()
+  const digestKeyId = kind === 'digest-key' ? target.digestKeyId : null
+  const replaces = (entry) =>
+    entry.environment === environment &&
+    entry.kind === kind &&
+    (kind !== 'digest-key' || (entry.digestKeyId ?? target.digestKeyId) === digestKeyId)
+  if (registry.fingerprints.some((entry) => entry.sha256 === sha256 && !replaces(entry))) fail()
+  const descriptiveDigestBindingId = `digest-key-${environment}-${digestKeyId}`
   const entry = {
     environment,
     kind,
-    bindingId: `${kind}-${environment}`,
+    bindingId:
+      kind === 'digest-key'
+        ? descriptiveDigestBindingId.length <= 128
+          ? descriptiveDigestBindingId
+          : `digest-key-${environment}-${createHash('sha256').update(digestKeyId).digest('hex')}`
+        : `${kind}-${environment}`,
     sha256,
     teamId: target.teamId,
     projectId: target.projectId,
     routeId: target.routeId,
     webhookId: kind.startsWith('webhook-') ? target.webhookId : null,
     overlap,
+    ...(kind === 'digest-key' ? { digestKeyId } : {}),
   }
   return {
     ...registry,
@@ -84,10 +91,7 @@ export function recordFingerprint(registry, options, credential, locks) {
           }
         : current,
     ),
-    fingerprints: [
-      ...registry.fingerprints.filter((current) => current.environment !== environment || current.kind !== kind),
-      entry,
-    ],
+    fingerprints: [...registry.fingerprints.filter((current) => !replaces(current)), entry],
   }
 }
 

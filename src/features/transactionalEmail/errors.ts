@@ -6,6 +6,7 @@ export type TransactionalEmailErrorCode =
   | 'transaction-conflict'
   | 'storage-unavailable'
   | 'environment-unavailable'
+  | 'digest-key-retirement-blocked'
 
 export class TransactionalEmailError extends Error {
   constructor(readonly code: TransactionalEmailErrorCode) {

@@ -30,6 +30,7 @@ type FingerprintFixture = {
   routeId: string
   webhookId: string | null
   overlap: { startsAt: string; validUntil: string } | null
+  digestKeyId?: string | null
 }
 
 function fixture() {
@@ -251,6 +252,157 @@ describe('hosted Lettermint binding', () => {
     ).toThrow('environment-unavailable')
     input.secrets.preview.LETTERMINT_PREVIOUS_WEBHOOK_SECRET = ''
     expect(() => bind(input)).toThrow('environment-unavailable')
+  })
+
+  it('binds only the current environment current and explicitly configured previous digest keys', () => {
+    const input = fixture()
+    const previousVersion = 'digest-preview-previous'
+    const previousSecret = 'preview-synthetic-previous-digest-key' // pragma: allowlist secret
+    input.secrets.preview.LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS = JSON.stringify({
+      [previousVersion]: previousSecret,
+    })
+    for (const entry of input.registry.fingerprints) {
+      Reflect.set(
+        entry,
+        'digestKeyId',
+        entry.kind === 'digest-key'
+          ? input.registry.targets.find(({ environment }) => environment === entry.environment)!.digestKeyId
+          : null,
+      )
+    }
+    const current = input.registry.fingerprints.find(
+      (entry) => entry.environment === 'preview' && entry.kind === 'digest-key',
+    )!
+    input.registry.fingerprints.push({
+      ...current,
+      bindingId: 'digest-preview-previous',
+      sha256: fingerprint(previousSecret),
+      ...({ digestKeyId: previousVersion } as object),
+    })
+
+    const preview = bind(input)
+    expect(
+      (
+        preview as unknown as {
+          recipientDigestKeys: readonly { version: string; secret: string }[]
+        }
+      ).recipientDigestKeys.map(({ version }) => version),
+    ).toEqual(['digest-preview', previousVersion])
+    expect(JSON.stringify(preview)).not.toContain(previousSecret)
+
+    const production = bind(input, 'production')
+    expect(
+      (
+        production as unknown as {
+          recipientDigestKeys: readonly { version: string; secret: string }[]
+        }
+      ).recipientDigestKeys.map(({ version }) => version),
+    ).toEqual(['digest-production'])
+  })
+
+  it.each([
+    ['malformed JSON', '{'],
+    ['an unknown version', JSON.stringify({ 'digest-preview-unknown': 'preview-synthetic-previous-digest-key' })],
+    ['the current version', JSON.stringify({ 'digest-preview': 'preview-synthetic-previous-digest-key' })],
+  ])('rejects previous digest configuration with %s', (_case, configured) => {
+    const input = fixture()
+    const current = input.registry.fingerprints.find(
+      (entry) => entry.environment === 'preview' && entry.kind === 'digest-key',
+    )!
+    current.digestKeyId = 'digest-preview'
+    input.registry.fingerprints.push({
+      ...current,
+      bindingId: 'digest-preview-previous',
+      digestKeyId: 'digest-preview-previous',
+      sha256: fingerprint('preview-synthetic-previous-digest-key'),
+    })
+    input.secrets.preview.LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS = configured
+
+    expect(() => bind(input)).toThrow('environment-unavailable')
+  })
+
+  it('rejects a missing or unreviewed previous digest secret', () => {
+    const input = fixture()
+    const current = input.registry.fingerprints.find(
+      (entry) => entry.environment === 'preview' && entry.kind === 'digest-key',
+    )!
+    current.digestKeyId = 'digest-preview'
+    input.registry.fingerprints.push({
+      ...current,
+      bindingId: 'digest-preview-previous',
+      digestKeyId: 'digest-preview-previous',
+      sha256: fingerprint('preview-synthetic-previous-digest-key'),
+    })
+    expect(() => bind(input)).toThrow('environment-unavailable')
+
+    input.secrets.preview.LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS = JSON.stringify({
+      'digest-preview-previous': 'preview-synthetic-unreviewed-digest-key',
+    })
+    expect(() => bind(input)).toThrow('environment-unavailable')
+  })
+
+  it('returns an exact content-free error for invalid previous digest configuration', () => {
+    const input = fixture()
+    const current = input.registry.fingerprints.find(
+      (entry) => entry.environment === 'preview' && entry.kind === 'digest-key',
+    )!
+    current.digestKeyId = 'digest-preview'
+    input.registry.fingerprints.push({
+      ...current,
+      bindingId: 'digest-preview-previous',
+      digestKeyId: 'digest-preview-previous',
+      sha256: fingerprint('preview-synthetic-previous-digest-key'),
+    })
+    input.secrets.preview.LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS = JSON.stringify({
+      'digest-preview-previous': 'preview-synthetic-unreviewed-digest-key',
+    })
+
+    let failure: unknown
+    try {
+      bind(input)
+    } catch (error) {
+      failure = error
+    }
+    expect(failure).toBeInstanceOf(Error)
+    expect(failure).toMatchObject({
+      code: 'environment-unavailable',
+      message: 'environment-unavailable',
+      name: 'TransactionalEmailError',
+    })
+    expect(JSON.parse(JSON.stringify(failure))).toEqual({
+      code: 'environment-unavailable',
+      name: 'TransactionalEmailError',
+    })
+    const visible = `${String(failure)} ${JSON.stringify(failure)}`
+    for (const sentinel of [
+      'preview-synthetic-unreviewed-digest-key',
+      'preview-synthetic-previous-digest-key',
+      input.secrets.preview.LETTERMINT_RECIPIENT_DIGEST_KEY!,
+      input.registry.targets[0]!.projectId,
+      input.registry.targets[0]!.webhookId,
+    ])
+      expect(visible).not.toContain(sentinel)
+  })
+
+  it('rejects digest versions or key fingerprints reused across environments', () => {
+    const duplicateVersion = fixture()
+    const productionDigest = duplicateVersion.registry.fingerprints.find(
+      (entry) => entry.environment === 'production' && entry.kind === 'digest-key',
+    )!
+    productionDigest.digestKeyId = 'digest-preview'
+    expect(() => bind(duplicateVersion, 'production')).toThrow('environment-unavailable')
+
+    const duplicateKey = fixture()
+    const previewDigest = duplicateKey.registry.fingerprints.find(
+      (entry) => entry.environment === 'preview' && entry.kind === 'digest-key',
+    )!
+    const copiedProductionDigest = duplicateKey.registry.fingerprints.find(
+      (entry) => entry.environment === 'production' && entry.kind === 'digest-key',
+    )!
+    copiedProductionDigest.sha256 = previewDigest.sha256
+    duplicateKey.secrets.production.LETTERMINT_RECIPIENT_DIGEST_KEY =
+      duplicateKey.secrets.preview.LETTERMINT_RECIPIENT_DIGEST_KEY
+    expect(() => bind(duplicateKey, 'production')).toThrow('environment-unavailable')
   })
 
   it('keeps local, test, and CI fake-only even with provider-like values', () => {

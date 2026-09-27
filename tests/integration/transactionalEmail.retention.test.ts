@@ -9,12 +9,15 @@ import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadInt
 import { openStorageCapability } from '@/features/transactionalEmail/capability'
 import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
+import { resolveActivationPolicy } from '@/features/transactionalEmail/activationPolicy'
+import { recipientAddressDigest } from '@/features/transactionalEmail/recipientBinding'
 import {
   clearedSyntheticSuppression,
   syntheticEmailCatalog,
   syntheticRegistrationId,
 } from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
+import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: async () => null }))
 
@@ -102,6 +105,75 @@ describe('transactional email safety sweep and retention', () => {
     expect((await observer.query('SELECT id FROM transactional_email_events WHERE outbox_id = $1', [id])).rows).toEqual(
       [],
     )
+  })
+
+  it('keeps suppression active after its originating outbox and events are deleted', async () => {
+    const original = await accept()
+    await createTransactionalEmailWorker(original.req, {
+      suppression: clearedSyntheticSuppression,
+      catalog: syntheticEmailCatalog,
+    }).run(original.id)
+    const terminal = await row(original.id)
+    const fixture = createActivationFixture('preview')
+    const currentKey = fixture.binding.recipientDigestKeys[0]!
+    const digest = recipientAddressDigest('recipient@example.test', currentKey)!
+    const observedAt = new Date(terminal.terminal_at).toISOString()
+    await observer.query(
+      `INSERT INTO transactional_email_suppressions
+        (runtime_environment, recipient_digest, reason, first_observed_at, last_observed_at, source, created_at, updated_at)
+       VALUES ('preview', $1, 'hard-bounce', $2, $2, 'lettermint', $2, $2)`,
+      [digest, observedAt],
+    )
+    try {
+      const deletionTime = terminal.terminal_at.getTime() + 42 * 86400000
+      await createTransactionalEmailWorker(original.req, {
+        suppression: clearedSyntheticSuppression,
+        now: () => deletionTime,
+      }).run()
+      expect(await row(original.id)).toBeUndefined()
+      expect(
+        (
+          await observer.query('SELECT count(*)::int AS count FROM transactional_email_events WHERE outbox_id = $1', [
+            original.id,
+          ])
+        ).rows[0].count,
+      ).toBe(0)
+      expect(
+        (
+          await observer.query(
+            "SELECT count(*)::int AS count FROM transactional_email_suppressions WHERE runtime_environment = 'preview' AND recipient_digest = $1",
+            [digest],
+          )
+        ).rows[0].count,
+      ).toBe(1)
+
+      const next = await accept()
+      const links = { generate: vi.fn() }
+      const transport = vi.fn()
+      await createTransactionalEmailWorker(next.req, {
+        catalog: syntheticEmailCatalog,
+        links,
+        httpTransport: transport,
+        providerBinding: fixture.binding,
+        activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [digest]),
+      }).run(next.id)
+      expect((await row(next.id)).state).toBe('suppressed')
+      expect(links.generate).not.toHaveBeenCalled()
+      expect(transport).not.toHaveBeenCalled()
+      expect(
+        (
+          await observer.query(
+            "SELECT count(*)::int AS count FROM transactional_email_suppressions WHERE runtime_environment = 'preview' AND recipient_digest = $1",
+            [digest],
+          )
+        ).rows[0].count,
+      ).toBe(1)
+    } finally {
+      await observer.query(
+        "DELETE FROM transactional_email_suppressions WHERE runtime_environment = 'preview' AND recipient_digest = $1",
+        [digest],
+      )
+    }
   })
 
   it('honors the deadline boundary and the simulated 30-minute runner cadence', async () => {

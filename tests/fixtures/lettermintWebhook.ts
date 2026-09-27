@@ -38,6 +38,7 @@ export function createWebhookConfiguration() {
       bindingId: `${target.environment}-${kind}`,
       sha256: createHash('sha256').update(secrets[target.environment][variable!]!).digest('hex'),
       webhookId: kind === 'webhook-current' ? target.webhookId : null,
+      digestKeyId: kind === 'digest-key' ? target.digestKeyId : null,
       overlap: null as { startsAt: string; validUntil: string } | null,
     })),
   )

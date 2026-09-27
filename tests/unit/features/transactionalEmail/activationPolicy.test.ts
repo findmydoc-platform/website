@@ -7,6 +7,7 @@ import { createActivationFixture } from '../../../fixtures/transactionalEmailAct
 import { validateTransactionalEmailStartup } from '@/features/transactionalEmail/environment'
 import { commandTypes } from '@/features/transactionalEmail/commands'
 import committedRegistry from '@/features/transactionalEmail/activationRegistry.json'
+import { recipientAddressDigest } from '@/features/transactionalEmail/recipientBinding'
 
 const previewDigest = 'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf'
 
@@ -102,6 +103,12 @@ describe('transactional email activation policy', () => {
     expect(() => resolveActivationPolicy(fixture.binding, fixture.registry)).toThrow('environment-unavailable')
   })
 
+  it('requires explicit previous digest-key evidence in every preflight', () => {
+    const fixture = createActivationFixture('production')
+    Reflect.deleteProperty(fixture.preflight.credentials, 'previousDigestKeys')
+    expect(() => resolveActivationPolicy(fixture.binding, fixture.registry)).toThrow('environment-unavailable')
+  })
+
   it('allows only the normalized address covered by a versioned Preview HMAC', () => {
     const { binding, registry } = createActivationFixture()
     const policy = resolveActivationPolicy(binding, registry, [
@@ -112,6 +119,63 @@ describe('transactional email activation policy', () => {
       'preview-recipient-not-allowed',
     )
     expect(policy.evaluate('auth.invitation', 'recipient@example.test')).toBe('command-not-enabled')
+  })
+
+  it('accepts a Preview allowlist entry under an explicitly supported previous digest key', () => {
+    const { binding, registry } = createActivationFixture('preview', false, true)
+    const previous = (
+      binding as typeof binding & { recipientDigestKeys: readonly { version: string; secret: string }[] }
+    ).recipientDigestKeys[1]!
+    const allowed = recipientAddressDigest('recipient@example.test', previous)!
+    const policy = resolveActivationPolicy(binding, registry, [allowed])
+
+    expect(policy.evaluate('clinic.registration-received', '  Recipient@EXAMPLE.test  ')).toBeNull()
+    expect(policy.evaluate('clinic.registration-received', 'other@example.test')).toBe('preview-recipient-not-allowed')
+  })
+
+  it('requires every configured previous digest-key fingerprint exactly once in preflight evidence', () => {
+    const fixture = createActivationFixture('production', false, true)
+    const secondVersion = 'digest-production-older'
+    const secondSecret = 'synthetic_production_older_digest_key' // pragma: allowlist secret
+    const configured = JSON.parse(
+      fixture.configuration.secrets.production.LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS!,
+    ) as Record<string, string>
+    configured[secondVersion] = secondSecret
+    fixture.configuration.secrets.production.LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS = JSON.stringify(configured)
+    const current = fixture.configuration.registry.fingerprints.find(
+      (entry) =>
+        entry.environment === 'production' && entry.kind === 'digest-key' && entry.digestKeyId?.endsWith('current'),
+    )!
+    const secondEvidence = {
+      version: secondVersion,
+      bindingId: 'production-digest-key-older',
+      sha256: createHash('sha256').update(secondSecret).digest('hex'),
+    }
+    fixture.configuration.registry.fingerprints.push({
+      ...current,
+      bindingId: secondEvidence.bindingId,
+      sha256: secondEvidence.sha256,
+      digestKeyId: secondVersion,
+    })
+    const binding = resolveHostedLettermintBinding(
+      'production',
+      fixture.configuration.registry,
+      fixture.configuration.secrets.production,
+      webhookNow,
+      fixture.configuration.locks,
+    )
+    fixture.preflight.credentials.previousDigestKeys.push(secondEvidence)
+    expect(
+      resolveActivationPolicy(binding, fixture.registry).evaluate(
+        'clinic.registration-received',
+        'recipient@example.test',
+      ),
+    ).toBeNull()
+
+    fixture.preflight.credentials.previousDigestKeys[1] = {
+      ...fixture.preflight.credentials.previousDigestKeys[0]!,
+    }
+    expect(() => resolveActivationPolicy(binding, fixture.registry)).toThrow('environment-unavailable')
   })
 
   it('fails hosted startup on incomplete activation evidence after the credential check', () => {

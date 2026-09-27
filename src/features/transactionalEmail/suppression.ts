@@ -22,7 +22,19 @@ type SuppressionWrite = SuppressionIdentity & {
   lastObservedAt: string
   source: 'lettermint'
 }
-const scopes = new WeakMap<object, SuppressionIdentity & { transactionID: string | number; write?: SuppressionWrite }>()
+type ExactSuppressionScope = SuppressionIdentity & {
+  kind: 'identity'
+  transactionID: string | number
+  write?: SuppressionWrite
+}
+type RetirementSuppressionScope = {
+  kind: 'retirement-evidence'
+  runtimeEnvironment: 'preview' | 'production'
+  version: string
+  transactionID: string | number
+}
+type SuppressionScope = ExactSuppressionScope | RetirementSuppressionScope
+const scopes = new WeakMap<object, SuppressionScope>()
 
 async function scopeFor(req: PayloadRequest) {
   const identity: unknown = req.context.transactionalEmailSuppression
@@ -33,19 +45,29 @@ async function scopeFor(req: PayloadRequest) {
 }
 
 export const guardSuppressionOperation: CollectionBeforeOperationHook = async ({ req, operation }) => {
-  await scopeFor(req)
-  if (!['read', 'create', 'update'].includes(operation)) throw new TransactionalEmailError('access-denied')
+  const scope = await scopeFor(req)
+  if (
+    (scope.kind === 'retirement-evidence' && !['read', 'count'].includes(operation)) ||
+    (scope.kind === 'identity' && !['read', 'create', 'update'].includes(operation))
+  )
+    throw new TransactionalEmailError('access-denied')
 }
 
 export const guardSuppressionRead: CollectionAfterReadHook = async ({ req, doc }) => {
   const scope = await scopeFor(req)
-  if (doc.runtimeEnvironment !== scope.runtimeEnvironment || doc.recipientDigest !== scope.recipientDigest)
+  if (
+    doc.runtimeEnvironment !== scope.runtimeEnvironment ||
+    (scope.kind === 'identity'
+      ? doc.recipientDigest !== scope.recipientDigest
+      : !doc.recipientDigest.startsWith(`${scope.version}:`))
+  )
     throw new TransactionalEmailError('access-denied')
   return doc
 }
 
 export const guardSuppressionWrite: CollectionBeforeChangeHook = async ({ req, data, originalDoc, operation }) => {
   const scope = await scopeFor(req)
+  if (scope.kind !== 'identity') throw new TransactionalEmailError('access-denied')
   const write = scope.write
   scope.write = undefined
   if (
@@ -54,7 +76,8 @@ export const guardSuppressionWrite: CollectionBeforeChangeHook = async ({ req, d
     (operation === 'update' &&
       (originalDoc.runtimeEnvironment !== write.runtimeEnvironment ||
         originalDoc.recipientDigest !== write.recipientDigest ||
-        originalDoc.firstObservedAt !== write.firstObservedAt ||
+        write.firstObservedAt > originalDoc.firstObservedAt ||
+        write.lastObservedAt < originalDoc.lastObservedAt ||
         (originalDoc.reason === 'spam-complaint' && write.reason !== 'spam-complaint')))
   )
     throw new TransactionalEmailError('access-denied')
@@ -64,13 +87,13 @@ export const guardSuppressionWrite: CollectionBeforeChangeHook = async ({ req, d
 async function withScope<Result>(
   req: PayloadRequest,
   identity: SuppressionIdentity,
-  work: (scoped: PayloadRequest, scope: NonNullable<ReturnType<typeof scopes.get>>) => Promise<Result>,
+  work: (scoped: PayloadRequest, scope: ExactSuppressionScope) => Promise<Result>,
 ) {
   const transactionID = await req.transactionID
   if (!isActiveTransaction(req, transactionID) || !/^[A-Za-z0-9_-]{1,128}:[a-f0-9]{64}$/.test(identity.recipientDigest))
     throw new TransactionalEmailError('access-denied')
   const token = Object.freeze({})
-  const scope = { ...identity, transactionID }
+  const scope: ExactSuppressionScope = { kind: 'identity', ...identity, transactionID }
   scopes.set(token, scope)
   try {
     const scoped = await createLocalReq(
@@ -78,6 +101,41 @@ async function withScope<Result>(
       req.payload,
     )
     return await work(scoped, scope)
+  } finally {
+    scopes.delete(token)
+  }
+}
+
+export async function countSuppressionVersionReferences(
+  req: PayloadRequest,
+  runtimeEnvironment: 'preview' | 'production',
+  version: string,
+) {
+  const transactionID = await req.transactionID
+  if (!isActiveTransaction(req, transactionID) || !/^[A-Za-z0-9_-]{1,128}$/.test(version))
+    throw new TransactionalEmailError('access-denied')
+  const token = Object.freeze({})
+  const scope: RetirementSuppressionScope = {
+    kind: 'retirement-evidence',
+    runtimeEnvironment,
+    version,
+    transactionID,
+  }
+  scopes.set(token, scope)
+  try {
+    const scoped = await createLocalReq(
+      { context: { transactionalEmailSuppression: token }, req: { transactionID: Promise.resolve(transactionID) } },
+      req.payload,
+    )
+    const result = await req.payload.count({
+      collection: 'transactionalEmailSuppressions',
+      req: scoped,
+      where: {
+        runtimeEnvironment: { equals: runtimeEnvironment },
+        recipientDigest: { like: `${version}:%` },
+      },
+    })
+    return result.totalDocs
   } finally {
     scopes.delete(token)
   }
@@ -143,28 +201,75 @@ export function createSuppressionLookup(req: PayloadRequest, binding: HostedLett
   requireVerifiedHostedBinding(binding)
   return async ({ address, environment }, signal) => {
     if (environment !== binding.target.environment || signal.aborted) return 'unavailable'
-    const digest = recipientAddressDigest(address, { version: binding.target.digestKeyId, secret: binding.digestKey })
-    if (!digest) return 'unavailable'
+    const digests = binding.recipientDigestKeys.map((key) => recipientAddressDigest(address, key))
+    if (digests.some((digest) => digest === null)) return 'unavailable'
+    const [currentDigest, ...previousDigests] = digests as string[]
     try {
       const hit = await runOwnedTransaction(req, (transactionReq) =>
-        withScope(
-          transactionReq,
-          { runtimeEnvironment: binding.target.environment, recipientDigest: digest },
-          async (scoped) => {
-            if (signal.aborted) throw new TransactionalEmailError('storage-unavailable')
-            const result = await req.payload.find({
-              collection: 'transactionalEmailSuppressions',
-              req: scoped,
-              depth: 0,
-              limit: 1,
-              where: {
-                runtimeEnvironment: { equals: binding.target.environment },
-                recipientDigest: { equals: digest },
+        (async () => {
+          const read = (recipientDigest: string) =>
+            withScope(
+              transactionReq,
+              { runtimeEnvironment: binding.target.environment, recipientDigest },
+              async (scoped) => {
+                if (signal.aborted) throw new TransactionalEmailError('storage-unavailable')
+                const result = await req.payload.find({
+                  collection: 'transactionalEmailSuppressions',
+                  req: scoped,
+                  depth: 0,
+                  limit: 1,
+                  where: {
+                    runtimeEnvironment: { equals: binding.target.environment },
+                    recipientDigest: { equals: recipientDigest },
+                  },
+                })
+                return result.docs[0]
               },
-            })
-            return result.docs.length > 0
-          },
-        ),
+            )
+          const current = await read(currentDigest!)
+          const previous = []
+          for (const previousDigest of previousDigests) {
+            const record = await read(previousDigest)
+            if (record) previous.push(record)
+          }
+          if (previous.length === 0) return current !== undefined
+          const retained = [current, ...previous].filter((record) => record !== undefined)
+          const data: SuppressionWrite = {
+            runtimeEnvironment: binding.target.environment,
+            recipientDigest: currentDigest!,
+            source: 'lettermint',
+            reason: retained.some(({ reason }) => reason === 'spam-complaint') ? 'spam-complaint' : 'hard-bounce',
+            firstObservedAt: retained.map(({ firstObservedAt }) => firstObservedAt).sort()[0]!,
+            lastObservedAt: retained
+              .map(({ lastObservedAt }) => lastObservedAt)
+              .sort()
+              .at(-1)!,
+          }
+          await withScope(
+            transactionReq,
+            { runtimeEnvironment: binding.target.environment, recipientDigest: currentDigest! },
+            async (scoped, scope) => {
+              if (signal.aborted) throw new TransactionalEmailError('storage-unavailable')
+              scope.write = data
+              if (current)
+                await req.payload.update({
+                  collection: 'transactionalEmailSuppressions',
+                  req: scoped,
+                  id: current.id,
+                  data,
+                  depth: 0,
+                })
+              else
+                await req.payload.create({
+                  collection: 'transactionalEmailSuppressions',
+                  req: scoped,
+                  data,
+                  depth: 0,
+                })
+            },
+          )
+          return true
+        })(),
       )
       return signal.aborted ? 'unavailable' : hit ? 'suppressed' : 'cleared'
     } catch {

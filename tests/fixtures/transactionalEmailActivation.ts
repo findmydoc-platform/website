@@ -6,6 +6,8 @@ import type { CommandType } from '@/features/transactionalEmail/commands'
 export function createActivationFixture(
   environment: 'preview' | 'production' = 'preview',
   withPreviousWebhook = false,
+  withPreviousDigestKey = false,
+  previousDigestVersion?: string,
 ) {
   const configuration = createWebhookConfiguration()
   const target = configuration.registry.targets.find((entry) => entry.environment === environment)!
@@ -23,7 +25,46 @@ export function createActivationFixture(
       environment,
       kind: 'webhook-previous',
       webhookId: target.webhookId,
+      digestKeyId: null,
       ...previousWebhookSecret,
+    })
+  }
+  const previousDigestKey = withPreviousDigestKey
+    ? {
+        version: previousDigestVersion ?? target.digestKeyId,
+        bindingId: `${environment}-digest-key-previous`,
+        secret: configuration.secrets[environment].LETTERMINT_RECIPIENT_DIGEST_KEY!,
+      }
+    : null
+  if (previousDigestKey) {
+    target.digestKeyId = `${target.digestKeyId}-current`
+    configuration.secrets[environment].LETTERMINT_RECIPIENT_DIGEST_KEY = `synthetic_${environment}_current_digest_key`
+    for (const entry of configuration.registry.fingerprints) {
+      Reflect.set(
+        entry,
+        'digestKeyId',
+        entry.kind === 'digest-key'
+          ? configuration.registry.targets.find(
+              ({ environment: targetEnvironment }) => targetEnvironment === entry.environment,
+            )!.digestKeyId
+          : null,
+      )
+    }
+    const currentDigest = configuration.registry.fingerprints.find(
+      (entry) => entry.environment === environment && entry.kind === 'digest-key',
+    )!
+    currentDigest.bindingId = `${environment}-digest-key-current`
+    currentDigest.sha256 = createHash('sha256')
+      .update(configuration.secrets[environment].LETTERMINT_RECIPIENT_DIGEST_KEY)
+      .digest('hex')
+    configuration.secrets[environment].LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS = JSON.stringify({
+      [previousDigestKey.version]: previousDigestKey.secret,
+    })
+    configuration.registry.fingerprints.push({
+      ...currentDigest,
+      bindingId: previousDigestKey.bindingId,
+      sha256: createHash('sha256').update(previousDigestKey.secret).digest('hex'),
+      digestKeyId: previousDigestKey.version,
     })
   }
   const credential = (kind: string) => {
@@ -49,6 +90,15 @@ export function createActivationFixture(
       webhookSecret: credential('webhook-current'),
       previousWebhookSecret,
       digestKey: credential('digest-key'),
+      previousDigestKeys: previousDigestKey
+        ? [
+            {
+              version: previousDigestKey.version,
+              bindingId: previousDigestKey.bindingId,
+              sha256: createHash('sha256').update(previousDigestKey.secret).digest('hex'),
+            },
+          ]
+        : [],
     },
     tracking: { open: false, click: false },
     webhookEvents: [

@@ -128,15 +128,18 @@ async function verifyLettermintWebhook(
     const { team_id, project_id, route_id } = message.data.context
     const { recipient, ...data } = message.data.data
     let recipientDigest: string | undefined
+    let recipientDigestCandidates: readonly string[] | undefined
     if (['message.hard_bounced', 'message.spam_complaint'].includes(message.data.event)) {
       if (typeof recipient !== 'string') return result(422, 'webhook-invalid')
-      recipientDigest = binding.recipientDigest(recipient) ?? undefined
-      if (!recipientDigest) return result(422, 'webhook-invalid')
+      recipientDigestCandidates = binding.recipientDigests(recipient) ?? undefined
+      recipientDigest = recipientDigestCandidates?.[0]
+      if (!recipientDigest || !recipientDigestCandidates) return result(422, 'webhook-invalid')
     }
     return issueVerifiedLettermintEvent({
       envelope: { ...message.data, data, context: { team_id, project_id, route_id } },
       environment,
       recipientDigest,
+      recipientDigestCandidates,
     })
   } catch {
     // Never forward stream, parsing, or configuration exceptions to request telemetry.

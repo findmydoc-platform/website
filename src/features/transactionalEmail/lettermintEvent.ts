@@ -6,6 +6,7 @@ const verifiedEvents = new WeakSet<object>()
 
 /** Issued by the raw-signature boundary after projection and target verification. */
 export function issueVerifiedLettermintEvent(event: VerifiedLettermintEvent): VerifiedLettermintEvent {
+  if (event.recipientDigestCandidates) Object.freeze(event.recipientDigestCandidates)
   Object.freeze(event.envelope.data.metadata)
   Object.freeze(event.envelope.data)
   Object.freeze(event.envelope.context)
@@ -73,4 +74,5 @@ export type VerifiedLettermintEvent = Readonly<{
   }
   environment: 'preview' | 'production'
   recipientDigest?: string
+  recipientDigestCandidates?: readonly string[]
 }>

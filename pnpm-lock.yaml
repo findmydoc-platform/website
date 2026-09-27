@@ -25,8 +25,8 @@ importers:
         specifier: 3.1130.0
         version: 3.1130.0
       '@findmydoc-platform/email-templates':
-        specifier: 0.1.1
-        version: 0.1.1(react-dom@19.3.0(react@19.3.0))(react-email@6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
+        specifier: 0.2.0
+        version: 0.2.0(react-dom@19.3.0(react@19.3.0))(react-email@6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
       '@payloadcms/db-postgres':
         specifier: 3.88.0
         version: 3.88.0(@opentelemetry/api@1.9.1)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))
@@ -1028,8 +1028,8 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@findmydoc-platform/email-templates@0.1.1':
-    resolution: {integrity: sha512-ClT0kwo1vS3qsGJvSyp1bePyAA9r9Zkni24Bl+/kPOelaXp5FNLE/K1tQcHcGAuZW9WisD2htyxwoHCWCallUQ==, tarball: https://npm.pkg.github.com/download/@findmydoc-platform/email-templates/0.1.1/41ae2c2bdb8170dad1238b486f6ddde5cd0b6688}
+  '@findmydoc-platform/email-templates@0.2.0':
+    resolution: {integrity: sha512-tR7E3GPRbX3oAlwZAkucy0Xa1UH8bvZR3kb638F/F7n/Ccmw8lKp5+VbTo42ZMATohZjtXiP053oqjIjgMVKrQ==, tarball: https://npm.pkg.github.com/download/@findmydoc-platform/email-templates/0.2.0/dc9774048a3e2183007024294663e6def8473819}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
@@ -8955,7 +8955,7 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  '@findmydoc-platform/email-templates@0.1.1(react-dom@19.3.0(react@19.3.0))(react-email@6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)':
+  '@findmydoc-platform/email-templates@0.2.0(react-dom@19.3.0(react@19.3.0))(react-email@6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)':
     dependencies:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)

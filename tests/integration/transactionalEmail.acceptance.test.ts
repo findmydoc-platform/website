@@ -253,7 +253,7 @@ describe('transactional email command acceptance', () => {
     await expect(commands.accept({ ...command, type: 'send' } as never)).rejects.toMatchObject({
       code: 'unsupported-command',
     })
-    const unregistered = bindTransactionalEmail(await createLocalReq({}, payload))
+    const unregistered = bindTransactionalEmail(await createLocalReq({}, payload), {})
     await expect(unregistered.accept(command)).rejects.toMatchObject({ code: 'unsupported-command' })
     expect(await persisted(command.operationReference)).toEqual({ operations: [], events: [] })
   })

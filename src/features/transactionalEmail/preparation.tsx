@@ -1,4 +1,9 @@
 import { randomUUID } from 'node:crypto'
+import {
+  CLINIC_REGISTRATION_RECEIPT_SUBJECT,
+  ClinicRegistrationReceiptEmail,
+  type ClinicRegistrationReceiptEmailProps,
+} from '@findmydoc-platform/email-templates'
 import { Body, Html, Link, Text } from '@react-email/components'
 import { render, toPlainText } from '@react-email/render'
 
@@ -28,4 +33,17 @@ export async function renderSyntheticNotification(
 ): Promise<PreparedMessage> {
   const html = await render(<SyntheticNotification actionLink={actionLink} />)
   return { recipientAddress, subject: 'Synthetic notification', html, text: toPlainText(html) }
+}
+
+export async function renderClinicRegistrationReceipt(
+  recipientAddress: string,
+  props: ClinicRegistrationReceiptEmailProps,
+): Promise<PreparedMessage> {
+  const html = await render(<ClinicRegistrationReceiptEmail {...props} />)
+  return {
+    recipientAddress,
+    subject: CLINIC_REGISTRATION_RECEIPT_SUBJECT,
+    html,
+    text: toPlainText(html),
+  }
 }

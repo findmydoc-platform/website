@@ -1,6 +1,8 @@
 import { createLocalReq, type PayloadRequest } from 'payload'
 import { createCommandPort, type AcceptanceStorage } from './acceptance'
-import { commandCatalog, type CommandCatalog } from './catalog'
+import { commandOperationReference } from './commands'
+import type { CommandCatalog } from './catalog'
+import { bindPayloadCommandCatalog } from './payloadCatalog'
 import { openStorageCapability } from './capability'
 import { selectTransactionalEmailRuntime } from './environment'
 import { TransactionalEmailError } from './errors'
@@ -35,7 +37,7 @@ async function withStorage<Result>(
           where: {
             and: [
               { commandType: { equals: command.type } },
-              { operationReference: { equals: command.operationReference } },
+              { operationReference: { equals: commandOperationReference(command) } },
             ],
           },
         })
@@ -51,7 +53,7 @@ async function withStorage<Result>(
             createdAt: operation.acceptedAt,
             deliveryDeadline: operation.deliveryDeadline,
             commandType: operation.command.type,
-            operationReference: operation.command.operationReference,
+            operationReference: commandOperationReference(operation.command),
             commandPayload: operation.command,
             recipientAddress: operation.recipientAddress,
             recipientDigest: operation.recipientDigest,
@@ -79,16 +81,12 @@ async function withStorage<Result>(
   }
 }
 
-export function bindTransactionalEmail(
-  req: PayloadRequest,
-  catalog: CommandCatalog = commandCatalog,
-  now: () => number = Date.now,
-) {
+export function bindTransactionalEmail(req: PayloadRequest, catalog?: CommandCatalog, now: () => number = Date.now) {
   const runtime = selectTransactionalEmailRuntime()
   return createCommandPort({
     now,
     actor: req.user ? `${req.user.collection}:${req.user.id}` : null,
-    catalog,
+    catalog: catalog ?? bindPayloadCommandCatalog(req),
     environment: runtime.environment,
     async transaction(work) {
       if (typeof req.transactionID !== 'undefined') {
@@ -111,7 +109,7 @@ export function bindTransactionalEmail(
 export function runTransactionalEmailTransaction<Result>(
   req: PayloadRequest,
   work: (transactionReq: PayloadRequest, commands: TransactionalEmailCommands) => Promise<Result>,
-  catalog: CommandCatalog = commandCatalog,
+  catalog?: CommandCatalog,
 ): Promise<Result> {
   selectTransactionalEmailRuntime()
   return runOwnedTransaction(req, (transactionReq) =>

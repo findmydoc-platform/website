@@ -101,7 +101,7 @@ describe('POST /api/auth/register/clinic', () => {
     vi.clearAllMocks()
     existingClinicApplications = []
     findMock.mockImplementation(mockPayloadFind)
-    serviceMocks.submit.mockResolvedValue({ applicationId: 123 })
+    serviceMocks.submit.mockResolvedValue({ applicationId: 123, created: true })
     postHogMocks.resolveAnonymousPostHogActor.mockReturnValue(postHogMocks.actor)
     postHogMocks.resolveAnalyticsConsent.mockResolvedValue(postHogMocks.analyticsConsent)
   })
@@ -151,7 +151,7 @@ describe('POST /api/auth/register/clinic', () => {
     expect(postHogMocks.registerClinicSubmitted.mock.calls[0]?.[0]?.properties).not.toHaveProperty('clinicName')
   })
 
-  test('dedupes an existing submitted application and tracks a dedupe event', async () => {
+  test('delegates duplicate decisions to the transactional registration service', async () => {
     existingClinicApplications = [{ id: 456 }]
 
     const res = await POST(makeRequest(validSubmission))
@@ -159,15 +159,18 @@ describe('POST /api/auth/register/clinic', () => {
 
     expect(res.status).toBe(202)
     expect(json).toEqual({ success: true })
-    expect(serviceMocks.submit).not.toHaveBeenCalled()
-    expect(postHogMocks.registerClinicSubmitted).toHaveBeenCalledWith(
-      expect.objectContaining({
-        properties: expect.objectContaining({
-          medical_specialty_count: 2,
-          submission_status: 'deduped',
-        }),
-      }),
-    )
+    expect(serviceMocks.submit).toHaveBeenCalledOnce()
+    expect(findMock.mock.calls.map(([options]) => options.collection)).toEqual(['medical-specialties'])
+  })
+
+  test('does not track a reused submission as newly created', async () => {
+    serviceMocks.submit.mockResolvedValue({ applicationId: 456, created: false })
+
+    const res = await POST(makeRequest(validSubmission))
+
+    expect(res.status).toBe(202)
+    expect(postHogMocks.resolveAnalyticsConsent).not.toHaveBeenCalled()
+    expect(postHogMocks.registerClinicSubmitted).not.toHaveBeenCalled()
   })
 
   test('creates application success and skips PostHog without analytics consent', async () => {
@@ -194,7 +197,7 @@ describe('POST /api/auth/register/clinic', () => {
     serviceMocks.submit.mockImplementationOnce(async () => {
       transactionCompleted()
       await held
-      return { applicationId: 123 }
+      return { applicationId: 123, created: true }
     })
 
     const responsePromise = POST(makeRequest(validSubmission))

@@ -91,3 +91,4 @@ When adding a new ADR:
 - [027 — Database runtime connection modes](./027-adr-database-runtime-connection-modes.md)
 - [028 — Lettermint for transactional email](./028-adr-lettermint-for-transactional-email.md)
 - [029 — Tenant-safe Clinic Dashboard reporting contract](./029-adr-tenant-safe-clinic-dashboard-reporting.md)
+- [030 — Bound transactional email webhook processing](./030-adr-bound-transactional-email-webhook-processing.md)

@@ -412,6 +412,8 @@ describe('transactional email event invariants', () => {
         'outbox_id',
         'outcome_code',
         'provider_event_id',
+        'provider_event_type',
+        'provider_message_id',
         'sequence',
         'source',
         'source_occurred_at',

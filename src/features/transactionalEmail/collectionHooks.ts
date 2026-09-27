@@ -87,9 +87,23 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
       if (
         Object.keys(data).some(
           (key) =>
-            !['state', 'latestEventSequence', 'updatedAt'].includes(key) &&
-            JSON.stringify(data[key]) !== JSON.stringify(originalDoc[key]),
+            ![
+              'state',
+              'latestEventSequence',
+              'updatedAt',
+              'providerMessageId',
+              'providerAcceptedAt',
+              'terminalAt',
+              'scrubbedAt',
+              ...Object.keys(transientFields),
+            ].includes(key) && JSON.stringify(data[key]) !== JSON.stringify(originalDoc[key]),
         )
+      )
+        throw new TransactionalEmailError('access-denied')
+      if (
+        (originalDoc.providerMessageId && merged.providerMessageId !== originalDoc.providerMessageId) ||
+        (originalDoc.providerAcceptedAt && merged.providerAcceptedAt !== originalDoc.providerAcceptedAt) ||
+        (originalDoc.scrubbedAt && merged.scrubbedAt !== originalDoc.scrubbedAt)
       )
         throw new TransactionalEmailError('access-denied')
     } else if (authority.kind === 'sweep') {

@@ -523,11 +523,18 @@ The endpoint returns:
 - `5xx` for temporary storage or transaction failure so Lettermint retries.
 
 `webhook.test` is signature-verified, environment-verified, acknowledged with `2xx`, and emits only a safe test
-result. It does not create an outbox, event, or suppression record. Normal webhook work is intentionally small and
-must finish within five seconds; it does not introduce another application queue. If durable processing cannot finish
-within that budget, the endpoint returns a temporary failure and relies on provider retry.
+result. It does not create an outbox, event, or suppression record. The endpoint has one absolute five-second response
+and start-new-work budget, including body reading and storage. It introduces no application queue. Expiration returns
+the fixed temporary `503` outcome and prevents starting another Local API operation or commit. Transaction-local
+PostgreSQL controls bound pre-commit statements and lock waits; expired work rolls back.
 
-#### Implemented test boundary
+A commit started before expiration may finish after the response deadline. PostgreSQL 15 disables statement timeout
+before its commit phase, so the result is unknown to the caller. A late successful commit becomes an identical duplicate
+on provider retry; a failed commit permits one later application of the effect. Conflicting replay never mutates state.
+The endpoint returns `2xx` only with durable evidence. [ADR 030](../adrs/030-adr-bound-transactional-email-webhook-processing.md)
+defines the narrow control-only adapter exception, cleanup limits and required Preview transaction-pool evidence.
+
+#### Implemented request boundary
 
 `POST /api/internal/transactional-email/lettermint/[environment]` accepts `preview` or `production` only when the
 path matches the hosted runtime and the complete fingerprint-bound configuration passes validation. The
@@ -540,15 +547,16 @@ bytes. It uses the complete secret, including any `whsec_` prefix. The
 [Lettermint signing contract](https://lettermint.co/docs/platform/webhooks/signing) and
 [common event envelope](https://lettermint.co/docs/platform/webhooks/events) were checked on 26 September 2026.
 
-The first tracer accepts only `webhook.test`. It requires the common envelope's route-scoped team, project, and route
+The `webhook.test` path requires the common envelope's route-scoped team, project, and route
 identities, matching header/body event types, and the test payload's matching `data.webhook_id`. The runtime
 environment follows from that signed target and the checked endpoint path. Test events need no message metadata;
 if `data.metadata.environment` is present, it must also match. An abbreviated test payload without the common
 context is rejected. This requirement must be verified during the separately authorized provider preflight.
 
-A successful test returns only `{"outcomeCode":"webhook-test-verified"}`. The tracer emits no log or metric and
-uses no persistence, delivery, rendering, or recipient capability. Other event types return `422` until their
-transactional handling is installed. Additional provider fields are discarded during envelope validation.
+A successful test returns only `{"outcomeCode":"webhook-test-verified"}` and uses no persistence, delivery, rendering,
+or recipient capability. Message feedback follows the projection, correlation, mapping, and transactional result
+handling documented in [event invariants](transactional-email-events.md). Additional provider fields are discarded
+during envelope validation. Missing message identifiers on subscribed delivery events return `422`.
 
 Requests require HTTPS and `application/json`, optionally with a UTF-8 charset. Content encoding other than
 `identity` returns `415`. Invalid JSON or UTF-8 returns `400` only after authentication. Invalid envelopes return
@@ -564,9 +572,10 @@ signature with `401`. Operators must remove the previous secret and registry ent
 
 `tests/integration/transactionalEmail.webhook.test.ts` dispatches raw streaming `NextRequest` objects through the real
 Preview proxy, Next.js App Route module, and actual route export. Only configuration data, deployment variables, and time are
-synthetic. Real Payload and PostgreSQL retain an existing outbox/event sentinel unchanged after every case. Network
-guards reject external fetch and HTTP calls; request telemetry and console calls must remain empty. No suppression
-collection exists in this tracer, and the route imports no storage capability.
+synthetic. Real Payload and PostgreSQL retain an existing outbox/event sentinel unchanged after rejected requests.
+The same request seam verifies provider-result persistence, replay, mapping, and rollback. Network guards reject
+external calls; request telemetry and console calls remain empty. Reconciliation logs contain fixed outcome codes
+only. Suppression storage belongs to #1898; concurrent worker/event coordination belongs to #1906.
 
 Cache decision: `no-public-impact`. The private request boundary has no public read, cache tag, revalidation event,
 discovery consumer, or affected public path. Route responses and mutation-free rejects are covered at the request

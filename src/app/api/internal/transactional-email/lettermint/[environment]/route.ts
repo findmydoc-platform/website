@@ -2,7 +2,6 @@ import { receiveLettermintWebhook } from '@/features/transactionalEmail/lettermi
 
 export const runtime = 'nodejs'
 
-export async function POST(request: Request, context: { params: Promise<{ environment: string }> }) {
-  const { environment } = await context.params
-  return receiveLettermintWebhook(request, environment)
+export function POST(request: Request, context: { params: Promise<{ environment: string }> }) {
+  return receiveLettermintWebhook(request, context.params)
 }

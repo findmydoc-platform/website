@@ -395,7 +395,14 @@ export interface TransactionalEmailEvent {
     | 'delivery.suppressed'
     | 'delivery.failed'
     | 'delivery.expired'
-    | 'payload.scrubbed';
+    | 'payload.scrubbed'
+    | 'provider.created'
+    | 'provider.sent'
+    | 'provider.soft-bounced'
+    | 'provider.failed'
+    | 'provider.suppressed'
+    | 'provider.policy-rejected'
+    | 'provider.event-ignored';
   source: 'command' | 'worker' | 'provider';
   attemptNumber?: number | null;
   outcomeCode?:
@@ -422,6 +429,8 @@ export interface TransactionalEmailEvent {
       )
     | null;
   providerEventId?: string | null;
+  providerEventType?: string | null;
+  providerMessageId?: string | null;
   sourceOccurredAt?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -4061,6 +4070,8 @@ export interface TransactionalEmailEventsSelect<T extends boolean = true> {
   attemptNumber?: T;
   outcomeCode?: T;
   providerEventId?: T;
+  providerEventType?: T;
+  providerMessageId?: T;
   sourceOccurredAt?: T;
   updatedAt?: T;
   createdAt?: T;

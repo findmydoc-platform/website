@@ -1,5 +1,6 @@
 import { createLocalReq, ValidationError, type PayloadRequest } from 'payload'
 import { TransactionalEmailError } from './errors'
+import type { WebhookDeadline } from './webhookDeadline'
 
 const maximumTransactionAttempts = 3
 
@@ -55,25 +56,31 @@ export function transactionError(error: unknown): TransactionalEmailError {
 export async function runOwnedTransaction<Result>(
   req: PayloadRequest,
   work: (req: PayloadRequest, transactionID: number | string) => Promise<Result>,
+  deadline?: WebhookDeadline,
 ): Promise<Result> {
   if (typeof req.transactionID !== 'undefined') throw new TransactionalEmailError('storage-unavailable')
   for (let attempt = 1; attempt <= maximumTransactionAttempts; attempt++) {
     let transactionID: number | string | null = null
     try {
+      deadline?.check()
       transactionID = await req.payload.db.beginTransaction({
         accessMode: 'read write',
         isolationLevel: 'serializable',
       })
       if (transactionID === null) throw new TransactionalEmailError('storage-unavailable')
       const transactionReq = await createLocalReq({ user: req.user ?? undefined, req: { transactionID } }, req.payload)
+      await deadline?.beforeOperation(transactionReq, transactionID)
       const result = await work(transactionReq, transactionID)
       if (!isActiveTransaction(transactionReq, transactionID)) throw new TransactionalEmailError('storage-unavailable')
+      await deadline?.beforeOperation(transactionReq, transactionID)
       await req.payload.db.commitTransaction(transactionID)
       return result
     } catch (error) {
       if (transactionID !== null) {
         try {
-          await req.payload.db.rollbackTransaction(transactionID)
+          const rollback = req.payload.db.rollbackTransaction(transactionID)
+          if (deadline) await deadline.cleanup(rollback)
+          else await rollback
         } catch {
           throw new TransactionalEmailError('storage-unavailable')
         }

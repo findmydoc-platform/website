@@ -103,16 +103,16 @@ attempt starts. Reclaim after this commit reuses those bytes without generating 
 Every preparation step also requires an explicit `cleared` decision from the private suppression lookup. Missing,
 unavailable, rejected, or failed lookup results stop before the next link, render, serialization, or delivery step.
 A suppression hit records the existing suppressed outcome. Activation and the Preview allowlist remain separate
-checks and cannot grant suppression clearance. The default worker has no suppression store and therefore cannot
-prepare mail. Local, test, and CI callers must supply an explicit synthetic decision to exercise processing.
-[Website #1898](https://github.com/findmydoc-platform/website/issues/1898) owns the real store and its integration.
+checks and cannot grant suppression clearance. A worker with a verified provider binding uses the environment-scoped private suppression store. An injected synthetic
+decision cannot override its result. Fake-only Local, test, and CI callers without that binding still supply an explicit
+synthetic decision. See [suppression storage and correlation](transactional-email-suppression.md).
 
 ## Immutable provider preparation
 
 [Website #1895](https://github.com/findmydoc-platform/website/issues/1895) adds the private preparation boundary.
 After eligibility, recipient binding, activation, allowlist, and suppression checks, one short Payload transaction
 serializes the prepared content with the verified sender and route. It stores `preparedProviderRequest`,
-`providerTeamId`, `providerProjectId`, and `providerRouteId` together with the first attempt marker and event. No
+`providerTeamId`, `providerProjectId`, `providerRouteId`, and the immutable `providerRecipientDigest` together with the first attempt marker and event. No
 delivery adapter sees the request until commit succeeds. An audit or commit failure rolls back that transaction.
 
 The UTF-8 JSON string has a fixed field order and a closed schema. It contains one recipient, subject, HTML, text,

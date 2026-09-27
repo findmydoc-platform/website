@@ -29,6 +29,7 @@ export function transactionError(error: unknown): TransactionalEmailError {
           'commandType_operationReference_idx',
           'transactional_email_events_provider_event_id_idx',
           'outbox_sequence_idx',
+          'runtimeEnvironment_recipientDigest_idx',
         ].includes(String(detail.constraint)))
     ) {
       return new TransactionalEmailError('transaction-conflict')
@@ -40,6 +41,11 @@ export function transactionError(error: unknown): TransactionalEmailError {
           ({ path, tableName }) =>
             tableName === 'transactional_email_events' && ['provider_event_id', 'outbox_id, sequence'].includes(path),
         )) ||
+        (current.data.collection === 'transactionalEmailSuppressions' &&
+          current.data.errors.some(
+            ({ path, tableName }) =>
+              tableName === 'transactional_email_suppressions' && path === 'runtime_environment, recipient_digest',
+          )) ||
         (current.data.collection === 'transactionalEmailOutbox' &&
           current.data.errors.some(
             ({ path, tableName }) =>

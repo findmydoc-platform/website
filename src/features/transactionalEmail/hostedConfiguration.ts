@@ -3,6 +3,7 @@ import { z } from 'zod'
 import registry from './lettermintRegistry.json' with { type: 'json' }
 import targetLocks from './lettermintTargetLocks.json' with { type: 'json' }
 import { TransactionalEmailError } from './errors'
+import { recipientAddressDigest } from './recipientBinding'
 
 const environmentSchema = z.enum(['preview', 'production'])
 const identifier = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)
@@ -225,6 +226,7 @@ type HostedWebhookBinding = Pick<
   HostedLettermintBinding,
   'webhookSecret' | 'previousWebhookSecret' | 'previousWebhookSecretWindow'
 > & {
+  recipientDigest(address: string): string | null
   target: Readonly<Pick<Target, 'environment' | 'teamId' | 'projectId' | 'routeId' | 'webhookId'>>
 }
 
@@ -233,6 +235,10 @@ export function loadHostedLettermintWebhookBinding(environment: HostedEnvironmen
   const { teamId, projectId, routeId, webhookId } = binding.target
   const inbound = { target: Object.freeze({ environment, teamId, projectId, routeId, webhookId }) }
   Object.defineProperties(inbound, {
+    recipientDigest: {
+      value: (address: string) =>
+        recipientAddressDigest(address, { version: binding.target.digestKeyId, secret: binding.digestKey }),
+    },
     webhookSecret: { value: binding.webhookSecret },
     previousWebhookSecret: { value: binding.previousWebhookSecret },
     previousWebhookSecretWindow: { value: binding.previousWebhookSecretWindow },

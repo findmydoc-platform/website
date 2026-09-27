@@ -51,6 +51,7 @@ export const TransactionalEmailOutbox: CollectionConfig = {
     { name: 'providerIdempotencyKey', type: 'text', required: true, unique: true },
     { name: 'recipientAddress', type: 'email' },
     { name: 'recipientDigest', type: 'text', required: true },
+    { name: 'providerRecipientDigest', type: 'text' },
     { name: 'preparedSubject', type: 'text' },
     { name: 'preparedHtml', type: 'textarea' },
     { name: 'preparedText', type: 'textarea' },

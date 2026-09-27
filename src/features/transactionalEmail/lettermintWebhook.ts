@@ -2,7 +2,11 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
 import { validateTransactionalEmailStartup } from './environment'
 import { loadHostedLettermintWebhookBinding } from './hostedConfiguration'
-import { lettermintMessageEnvelope, type VerifiedLettermintEvent } from './lettermintEvent'
+import {
+  issueVerifiedLettermintEvent,
+  lettermintMessageEnvelope,
+  type VerifiedLettermintEvent,
+} from './lettermintEvent'
 import { WebhookDeadline } from './webhookDeadline'
 
 const maxBodyBytes = 256 * 1024
@@ -122,7 +126,18 @@ async function verifyLettermintWebhook(
     const message = lettermintMessageEnvelope.safeParse(event)
     if (!message.success) return result(422, 'webhook-invalid')
     const { team_id, project_id, route_id } = message.data.context
-    return { envelope: { ...message.data, context: { team_id, project_id, route_id } }, environment }
+    const { recipient, ...data } = message.data.data
+    let recipientDigest: string | undefined
+    if (['message.hard_bounced', 'message.spam_complaint'].includes(message.data.event)) {
+      if (typeof recipient !== 'string') return result(422, 'webhook-invalid')
+      recipientDigest = binding.recipientDigest(recipient) ?? undefined
+      if (!recipientDigest) return result(422, 'webhook-invalid')
+    }
+    return issueVerifiedLettermintEvent({
+      envelope: { ...message.data, data, context: { team_id, project_id, route_id } },
+      environment,
+      recipientDigest,
+    })
   } catch {
     // Never forward stream, parsing, or configuration exceptions to request telemetry.
     return result(503, 'webhook-unavailable')

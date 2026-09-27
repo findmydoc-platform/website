@@ -54,6 +54,7 @@
 | InquiryCommandLocks `(inquiryCommandLocks)` | Conditional<br/><sub>active inquiry domain transactions only</sub> | Conditional<br/><sub>not exposed through generic access</sub> | Conditional<br/><sub>locks are never updated</sub> | Conditional<br/><sub>owning inquiry transaction release only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 | TransactionalEmailOutbox `(transactionalEmailOutbox)` | Conditional<br/><sub>private mail module capability and transaction only</sub> | Conditional<br/><sub>not exposed through generic access</sub> | Conditional<br/><sub>private mail module invariants only</sub> | Conditional<br/><sub>no generic deletion</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 | TransactionalEmailEvents `(transactionalEmailEvents)` | Conditional<br/><sub>private mail module capability and transaction only</sub> | Conditional<br/><sub>not exposed through generic access</sub> | Conditional<br/><sub>private mail module invariants only</sub> | Conditional<br/><sub>no generic deletion</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
+| TransactionalEmailSuppressions `(transactionalEmailSuppressions)` | Conditional<br/><sub>private mail module capability and transaction only</sub> | Conditional<br/><sub>not exposed through generic access</sub> | Conditional<br/><sub>private mail module invariants only</sub> | Conditional<br/><sub>no generic deletion</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 
 ## Notes
 
@@ -106,3 +107,4 @@
 - **InquiryCommandLocks**: Ephemeral private lock records created and released inside one serializable domain transaction
 - **TransactionalEmailOutbox**: Private mail operation data; public APIs deny every operation and hooks require a scoped identity capability
 - **TransactionalEmailEvents**: Private mail operation data; public APIs deny every operation and hooks require a scoped identity capability
+- **TransactionalEmailSuppressions**: Private permanent recipient suppression; public APIs deny every operation and hooks require a scoped identity capability

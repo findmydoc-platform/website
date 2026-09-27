@@ -575,7 +575,8 @@ Preview proxy, Next.js App Route module, and actual route export. Only configura
 synthetic. Real Payload and PostgreSQL retain an existing outbox/event sentinel unchanged after rejected requests.
 The same request seam verifies provider-result persistence, replay, mapping, and rollback. Network guards reject
 external calls; request telemetry and console calls remain empty. Reconciliation logs contain fixed outcome codes
-only. Suppression storage belongs to #1898; concurrent worker/event coordination belongs to #1906.
+only. The [suppression integration](transactional-email-suppression.md) adds current-key recipient correlation and atomic
+suppression effects. Concurrent worker/event coordination follows the existing event transaction.
 
 Cache decision: `no-public-impact`. The private request boundary has no public read, cache tag, revalidation event,
 discovery consumer, or affected public path. Route responses and mutation-free rejects are covered at the request

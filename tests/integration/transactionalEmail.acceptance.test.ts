@@ -8,7 +8,7 @@ import { createRequire } from 'node:module'
 
 // Payload's native dependency uses GraphQL's CommonJS instance; Vite otherwise loads its separate ESM instance.
 const { graphql } = createRequire(import.meta.url)('graphql') as typeof import('graphql')
-import { buildCollectionTag, getCachePolicyEntry } from '@/utilities/cachePolicy'
+import { CACHE_TAGGABLE_COLLECTIONS, buildCollectionTag, getCachePolicyEntry } from '@/utilities/cachePolicy'
 import { selectTransactionalEmailRuntime } from '@/features/transactionalEmail/environment'
 import { openStorageCapability } from '@/features/transactionalEmail/capability'
 import { collectionContractRegistry } from './contracts/collectionContractRegistry'
@@ -271,7 +271,7 @@ describe('transactional email command acceptance', () => {
     expect(await persisted(command.operationReference)).toEqual({ operations: [], events: [] })
   })
 
-  it.each(['transactionalEmailOutbox', 'transactionalEmailEvents'] as const)(
+  it.each(['transactionalEmailOutbox', 'transactionalEmailEvents', 'transactionalEmailSuppressions'] as const)(
     'denies every normal Local API operation on %s, including forged context and overrideAccess',
     async (collection) => {
       const commands = await port()
@@ -315,6 +315,61 @@ describe('transactional email command acceptance', () => {
     })
   })
 
+  it('denies suppression enumeration and mutation even with the ordinary private outbox capability', async () => {
+    const transactionID = await payload.db.beginTransaction()
+    if (transactionID === null) throw new Error('Expected a test transaction')
+    const capability = openStorageCapability(transactionID, { kind: 'provider', token: '', now: Date.now })
+    const req = await createLocalReq(
+      {
+        context: { ...capability.context, transactionalEmailSuppression: {} },
+        req: { transactionID: Promise.resolve(transactionID) },
+      },
+      payload,
+    )
+    try {
+      for (const operation of [
+        () => payload.find({ collection: 'transactionalEmailSuppressions', req }),
+        () => payload.count({ collection: 'transactionalEmailSuppressions', req }),
+        () => payload.create({ collection: 'transactionalEmailSuppressions', req, data: {} as never }),
+        () =>
+          payload.update({ collection: 'transactionalEmailSuppressions', req, id: 1, data: { reason: 'hard-bounce' } }),
+        () => payload.delete({ collection: 'transactionalEmailSuppressions', req, id: 1 }),
+      ])
+        await expect(operation()).rejects.toMatchObject({ code: 'access-denied' })
+    } finally {
+      capability.close()
+      await payload.db.rollbackTransaction(transactionID)
+    }
+  })
+
+  it('installs only content-free suppression fields and the environment-scoped unique index', async () => {
+    const columns = await observer.query(
+      "SELECT column_name FROM information_schema.columns WHERE table_name = 'transactional_email_suppressions' ORDER BY column_name",
+    )
+    expect(columns.rows.map(({ column_name }) => column_name)).toEqual([
+      'created_at',
+      'first_observed_at',
+      'id',
+      'last_observed_at',
+      'reason',
+      'recipient_digest',
+      'runtime_environment',
+      'source',
+      'updated_at',
+    ])
+    const indexes = await observer.query(
+      "SELECT indexdef FROM pg_indexes WHERE tablename = 'transactional_email_suppressions'",
+    )
+    expect(
+      indexes.rows.some(
+        ({ indexdef }) =>
+          indexdef.includes('UNIQUE INDEX') && indexdef.includes('(runtime_environment, recipient_digest)'),
+      ),
+    ).toBe(true)
+    const migrations = await payload.find({ collection: 'payload-migrations', pagination: false })
+    expect(migrations.docs.some(({ name }) => name === '20260927_091630_transactional_email_suppressions')).toBe(true)
+  })
+
   it('rejects provider key replacement and event updates even within a valid internal transaction', async () => {
     const command = commandFor()
     const receipt = await (await port()).accept(command)
@@ -351,17 +406,24 @@ describe('transactional email command acceptance', () => {
     expect(await persisted(command.operationReference)).toEqual(records)
   })
 
-  it('keeps both registered collections hidden from Admin, REST, GraphQL, and public caches', async () => {
+  it('keeps private mail collections hidden from Admin, REST, GraphQL, and public caches', async () => {
     const policy = getCachePolicyEntry('collection:private-operational')
     expect(policy).toMatchObject({ cacheClass: 'private-live', tagFamilies: [], pathRelationship: 'private-live' })
-    for (const collection of ['transactionalEmailOutbox', 'transactionalEmailEvents'] as const) {
+    for (const collection of [
+      'transactionalEmailOutbox',
+      'transactionalEmailEvents',
+      'transactionalEmailSuppressions',
+    ] as const) {
       const collectionConfig = payload.collections[collection].config
       expect(collectionConfig.admin.hidden).toBe(true)
       expect(await collectionConfig.access.admin?.({ req: await createLocalReq({}, payload) })).toBe(false)
       expect(collectionContractRegistry[collection].baseline).toContain(
-        'tests/integration/transactionalEmail.acceptance.test.ts',
+        collection === 'transactionalEmailSuppressions'
+          ? 'tests/integration/transactionalEmail.webhook.test.ts'
+          : 'tests/integration/transactionalEmail.acceptance.test.ts',
       )
       expect(policy.collections).toContain(collection)
+      expect((CACHE_TAGGABLE_COLLECTIONS as readonly string[]).includes(collection)).toBe(false)
       expect(() => buildCollectionTag(collection)).toThrow('not public-cache taggable')
       for (const method of ['GET', 'POST', 'PATCH', 'DELETE']) {
         const response = await handleEndpoints({
@@ -377,7 +439,12 @@ describe('transactional email command acceptance', () => {
     const { schema } = configToSchema({
       ...resolved,
       collections: resolved.collections.filter((entry) =>
-        ['countries', 'transactionalEmailOutbox', 'transactionalEmailEvents'].includes(entry.slug),
+        [
+          'countries',
+          'transactionalEmailOutbox',
+          'transactionalEmailEvents',
+          'transactionalEmailSuppressions',
+        ].includes(entry.slug),
       ),
       globals: [],
     })
@@ -388,10 +455,11 @@ describe('transactional email command acceptance', () => {
     }
     const body = await graphql({
       schema,
-      source: '{ TransactionalEmailOutbox { docs { id } } TransactionalEmailEvents { docs { id } } }',
+      source:
+        '{ TransactionalEmailOutbox { docs { id } } TransactionalEmailEvents { docs { id } } TransactionalEmailSuppressions { docs { id } } }',
     })
     expect(body.data).toBeUndefined()
-    expect(body.errors).toHaveLength(2)
+    expect(body.errors).toHaveLength(3)
     expect(body.errors?.every((error: { message: string }) => error.message.includes('Cannot query field'))).toBe(true)
   })
 

@@ -83,6 +83,7 @@ import * as migration_20260927_063204_transactional_email_provider_preparation f
 import * as migration_20260927_070749_transactional_email_delivery_outcomes from './20260927_070749_transactional_email_delivery_outcomes'
 import * as migration_20260927_073954_transactional_email_provider_results from './20260927_073954_transactional_email_provider_results'
 import * as migration_20260927_074230_transactional_email_provider_mapping from './20260927_074230_transactional_email_provider_mapping'
+import * as migration_20260927_091630_transactional_email_suppressions from './20260927_091630_transactional_email_suppressions'
 
 export const migrations = [
   {
@@ -509,5 +510,10 @@ export const migrations = [
     up: migration_20260927_074230_transactional_email_provider_mapping.up,
     down: migration_20260927_074230_transactional_email_provider_mapping.down,
     name: '20260927_074230_transactional_email_provider_mapping',
+  },
+  {
+    up: migration_20260927_091630_transactional_email_suppressions.up,
+    down: migration_20260927_091630_transactional_email_suppressions.down,
+    name: '20260927_091630_transactional_email_suppressions',
   },
 ]

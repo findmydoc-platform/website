@@ -24,7 +24,7 @@ immutable, so later metadata activity cannot extend retention.
 
 Both normal worker completion and the sweep use the same transient-field list, including `preparedProviderRequest`.
 The exact serialized provider body is cleared with the recipient and rendered content. The immutable
-`providerTeamId`, `providerProjectId`, and `providerRouteId` remain as content-free metadata until joint deletion.
+`providerTeamId`, `providerProjectId`, `providerRouteId`, and `providerRecipientDigest` remain as content-free metadata until joint deletion.
 Remaining non-null columns belong to the foundation's content-free metadata allowlist.
 
 ## Joint deletion

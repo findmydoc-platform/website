@@ -52,7 +52,7 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
     }
     const authority = storageWorkerAuthority(req)
     if (!authority) throw new TransactionalEmailError('access-denied')
-    for (const field of providerBindingFields) {
+    for (const field of [...providerBindingFields, 'providerRecipientDigest'] as const) {
       if (originalDoc[field] != null && merged[field] !== originalDoc[field])
         throw new TransactionalEmailError('access-denied')
     }
@@ -166,7 +166,8 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
   } else if (
     merged.state !== 'queued' ||
     merged.preparedProviderRequest != null ||
-    providerBindingFields.some((field) => merged[field] != null)
+    providerBindingFields.some((field) => merged[field] != null) ||
+    merged.providerRecipientDigest != null
   )
     throw new TransactionalEmailError('access-denied')
   if (

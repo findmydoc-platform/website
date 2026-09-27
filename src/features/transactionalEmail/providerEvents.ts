@@ -7,6 +7,8 @@ import { lettermintEventMapping, type VerifiedLettermintEvent } from './lettermi
 import { transientFields } from './retentionPolicy'
 import type { WebhookDeadline } from './webhookDeadline'
 import type { TransactionalEmailEvent, TransactionalEmailOutbox } from '@/payload-types'
+import { applyVerifiedSuppression } from './suppression'
+import { requireVerifiedLettermintEvent } from './lettermintEvent'
 
 type EventResult = Pick<TransactionalEmailEvent, 'type'> &
   Partial<
@@ -28,6 +30,7 @@ export async function applyLettermintEvent(
   verified: VerifiedLettermintEvent,
   deadline: WebhookDeadline,
 ) {
+  requireVerifiedLettermintEvent(verified)
   deadline.check()
   const { envelope: event, environment } = verified
   const metadata = event.data.metadata
@@ -63,6 +66,7 @@ export async function applyLettermintEvent(
           record.providerTeamId !== event.context.team_id ||
           record.providerProjectId !== event.context.project_id ||
           record.providerRouteId !== event.context.route_id ||
+          (verified.recipientDigest !== undefined && record.providerRecipientDigest !== verified.recipientDigest) ||
           (event.data.message_id && record.providerMessageId && record.providerMessageId !== event.data.message_id)
         )
           return 'provider-event-mismatch'
@@ -86,6 +90,7 @@ export async function applyLettermintEvent(
         const type = Object.hasOwn(lettermintEventMapping, event.event)
           ? lettermintEventMapping[event.event as keyof typeof lettermintEventMapping]
           : 'provider.event-ignored'
+        await applyVerifiedSuppression(internalReq, verified, deadline)
         // This writer remains inside the owning transaction so later suppression effects can share its commit.
         const write = async (data: Partial<TransactionalEmailOutbox>, events: EventResult[]) => {
           const sequence = record.latestEventSequence

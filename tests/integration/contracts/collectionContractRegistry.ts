@@ -12,6 +12,10 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/transactionalEmail.acceptance.test.ts'],
     deep: ['tests/integration/transactionalEmail.acceptance.test.ts'],
   },
+  transactionalEmailSuppressions: {
+    baseline: ['tests/integration/transactionalEmail.webhook.test.ts'],
+    deep: ['tests/integration/transactionalEmail.webhook.test.ts'],
+  },
   accreditation: {
     baseline: ['tests/integration/accreditation.lifecycle.test.ts'],
     deep: ['tests/integration/accreditation.lifecycle.test.ts'],

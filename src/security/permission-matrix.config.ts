@@ -1026,5 +1026,27 @@ export const permissionMatrix: PermissionMatrix = {
       notes:
         'Private mail operation data; public APIs deny every operation and hooks require a scoped identity capability',
     },
+    transactionalEmailSuppressions: {
+      slug: 'transactionalEmailSuppressions',
+      displayName: 'TransactionalEmailSuppressions',
+      operations: {
+        create: { type: 'conditional', details: 'private mail module capability and transaction only' },
+        read: { type: 'conditional', details: 'not exposed through generic access' },
+        update: { type: 'conditional', details: 'private mail module invariants only' },
+        delete: { type: 'conditional', details: 'no generic deletion' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes:
+        'Private permanent recipient suppression; public APIs deny every operation and hooks require a scoped identity capability',
+    },
   },
 }

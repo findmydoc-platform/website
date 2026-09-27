@@ -78,6 +78,7 @@ import * as migration_20260915_214645_transactional_email_acceptance from './202
 import * as migration_20260916_001253_transactional_email_worker from './20260916_001253_transactional_email_worker'
 import * as migration_20260916_021357_transactional_email_retry from './20260916_021357_transactional_email_retry'
 import * as migration_20260916_050558_transactional_email_event_invariants from './20260916_050558_transactional_email_event_invariants'
+import * as migration_20260927_051347_transactional_email_activation_outcomes from './20260927_051347_transactional_email_activation_outcomes'
 
 export const migrations = [
   {
@@ -479,5 +480,10 @@ export const migrations = [
     up: migration_20260916_050558_transactional_email_event_invariants.up,
     down: migration_20260916_050558_transactional_email_event_invariants.down,
     name: '20260916_050558_transactional_email_event_invariants',
+  },
+  {
+    up: migration_20260927_051347_transactional_email_activation_outcomes.up,
+    down: migration_20260927_051347_transactional_email_activation_outcomes.down,
+    name: '20260927_051347_transactional_email_activation_outcomes',
   },
 ]

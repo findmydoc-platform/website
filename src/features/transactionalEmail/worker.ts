@@ -12,6 +12,7 @@ import { effectiveDeliveryDeadline as deadline } from './deliveryDeadline'
 import { transientFields } from './retentionPolicy'
 import { sweepTransactionalEmail } from './retention'
 import { workerTransaction } from './workerStorage'
+import { requireActivationPolicy, type ActivationPolicy, type ActivationSuppression } from './activationPolicy'
 
 const leaseMilliseconds = 120_000
 const stepBudgetMilliseconds = 5_000
@@ -42,10 +43,17 @@ type WorkerOptions = {
   delivery?: DeliveryAdapter
   log?: (event: DeliveryLog) => void
   crashAfterDelivery?: () => void
+  activationPolicy?: ActivationPolicy
 }
 
 export function createTransactionalEmailWorker(req: PayloadRequest, options: WorkerOptions = {}) {
   const runtime = selectTransactionalEmailRuntime()
+  if (options.activationPolicy) {
+    if (runtime.environment !== 'test' || process.env.VITEST !== 'true')
+      throw new TransactionalEmailError('environment-unavailable')
+    requireActivationPolicy(options.activationPolicy)
+  }
+  const activationPolicy = options.activationPolicy ?? runtime.activationPolicy
   if (options.delivery && (runtime.environment !== 'test' || process.env.VITEST !== 'true'))
     throw new TransactionalEmailError('environment-unavailable')
   if (options.crashAfterDelivery && (!['test', 'ci'].includes(runtime.environment) || process.env.VITEST !== 'true'))
@@ -71,7 +79,13 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     claim: WorkerClaim,
     state: 'accepted' | 'suppressed' | 'failed' | 'expired',
     outcomeCode:
-      'fake-accepted' | 'recipient-changed' | 'ineligible' | 'preparation-failed' | 'permanent-failure' | 'expired',
+      | 'fake-accepted'
+      | 'recipient-changed'
+      | 'ineligible'
+      | 'preparation-failed'
+      | 'permanent-failure'
+      | 'expired'
+      | ActivationSuppression,
     providerMessageId?: string,
   ) =>
     transaction(claim, async (storage) => {
@@ -123,6 +137,11 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
       recipientDigest(current) !== record.recipientDigest
     ) {
       await finish(claim, entry.terminalState, current ? 'recipient-changed' : 'ineligible')
+      return false
+    }
+    const suppression = activationPolicy.evaluate(command.type, current.address)
+    if (suppression) {
+      await finish(claim, 'suppressed', suppression)
       return false
     }
     if (deadline(record) - now() <= stepBudgetMilliseconds) {

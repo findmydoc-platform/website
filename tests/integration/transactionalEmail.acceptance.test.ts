@@ -450,7 +450,7 @@ describe('transactional email command acceptance', () => {
       const fetchGuard = vi.spyOn(globalThis, 'fetch').mockImplementation(blocked)
       const httpGuard = vi.spyOn(http, 'request').mockImplementation(blocked)
       const httpsGuard = vi.spyOn(https, 'request').mockImplementation(blocked)
-      expect(selectTransactionalEmailRuntime()).toEqual({ environment, delivery: 'fake', links: 'fake' })
+      expect(selectTransactionalEmailRuntime()).toMatchObject({ environment, delivery: 'fake', links: 'fake' })
       const accepted = await (await port()).accept(commandFor())
       expect(accepted.deduplicated).toBe(false)
       expect(fetchGuard).not.toHaveBeenCalled()

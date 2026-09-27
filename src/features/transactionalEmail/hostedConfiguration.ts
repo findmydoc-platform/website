@@ -38,8 +38,15 @@ const targetLocksSchema = z.strictObject({
 type HostedEnvironment = z.infer<typeof environmentSchema>
 type Target = z.infer<typeof targetSchema>
 type Fingerprint = z.infer<typeof fingerprintSchema>
+type CredentialEvidence = Readonly<Pick<Fingerprint, 'bindingId' | 'sha256'>>
+const verifiedBindings = new WeakSet<object>()
 export type HostedLettermintBinding = {
   target: Readonly<Target>
+  credentialEvidence: Readonly<
+    Record<'projectToken' | 'webhookSecret' | 'digestKey', CredentialEvidence> & {
+      previousWebhookSecret: (CredentialEvidence & { overlap: Readonly<NonNullable<Fingerprint['overlap']>> }) | null
+    }
+  >
   projectToken: string
   webhookSecret: string
   previousWebhookSecret?: string
@@ -87,6 +94,7 @@ export function resolveHostedLettermintBinding(
           'LETTERMINT_WEBHOOK_SECRET',
           'LETTERMINT_PREVIOUS_WEBHOOK_SECRET',
           'LETTERMINT_RECIPIENT_DIGEST_KEY',
+          ...(environment === 'preview' ? ['LETTERMINT_PREVIEW_RECIPIENT_DIGESTS'] : []),
         ].includes(key),
     )
   )
@@ -162,6 +170,29 @@ export function resolveHostedLettermintBinding(
   }
   const binding = { target: Object.freeze(target) }
   Object.defineProperties(binding, {
+    credentialEvidence: {
+      value: Object.freeze({
+        projectToken: Object.freeze({
+          bindingId: findEntry('project-token')!.bindingId,
+          sha256: findEntry('project-token')!.sha256,
+        }),
+        webhookSecret: Object.freeze({
+          bindingId: findEntry('webhook-current')!.bindingId,
+          sha256: findEntry('webhook-current')!.sha256,
+        }),
+        previousWebhookSecret: previous
+          ? Object.freeze({
+              bindingId: previous.bindingId,
+              sha256: previous.sha256,
+              overlap: Object.freeze({ ...previous.overlap! }),
+            })
+          : null,
+        digestKey: Object.freeze({
+          bindingId: findEntry('digest-key')!.bindingId,
+          sha256: findEntry('digest-key')!.sha256,
+        }),
+      }),
+    },
     projectToken: { value: projectToken },
     webhookSecret: { value: webhookSecret },
     previousWebhookSecret: { value: previousWebhookSecret },
@@ -175,7 +206,12 @@ export function resolveHostedLettermintBinding(
     },
     digestKey: { value: digestKey },
   })
+  verifiedBindings.add(binding)
   return Object.freeze(binding) as HostedLettermintBinding
+}
+
+export function requireVerifiedHostedBinding(binding: HostedLettermintBinding) {
+  if (!verifiedBindings.has(binding)) unavailable()
 }
 
 export function loadHostedLettermintBinding(

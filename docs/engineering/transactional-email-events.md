@@ -32,9 +32,19 @@ records retain their original acceptance, retention, and scrub times. A later co
 history without replacing the terminal state. Unsubscribed events add `provider.event-ignored` only when correlated
 and emit a fixed drift code. They do not change delivery state.
 
-The transaction's private writer owns sequence allocation and appends. Follow-up event coordination in #1906 and
-suppression effects in #1898 can extend that same transaction. This slice adds neither suppression storage nor
-worker-result race coordination. Recipient fields are discarded; recipient-digest validation for suppression stays
+The transaction's private writer owns sequence allocation and appends. Worker completion and verified feedback
+reread the outbox in separate serializable transactions. The outbox update takes PostgreSQL's row lock; a competing
+write from an older snapshot fails and retries the complete transaction, including correlation and replay checks.
+The first allowed terminal delivery state wins. Later distinct events retain their own sequence and provider result
+without replacing that state. Provider timestamps do not choose the winner.
+
+If feedback established acceptance before the synchronous worker result, matching worker acceptance succeeds without
+requiring the cleared lease or writing another acceptance, scrub event, or provider reference. A conflicting worker
+reference changes nothing and emits only `provider-event-mismatch` after its read transaction completes. Retryable,
+ambiguous, and permanent worker results cannot overwrite feedback after it clears the lease.
+
+Suppression effects in #1898 can extend the existing event transaction independently of terminal-state precedence.
+Recipient fields are discarded; recipient-digest validation for suppression stays
 with the suppression integration. Hosted command acceptance and delivery remain disabled, and no provider resource,
 credential, scheduler, or product command is activated.
 
@@ -93,6 +103,20 @@ Deadline tests stall a real Payload hook, block PostgreSQL statements and locks,
 and delay deferred commit triggers beyond the HTTP deadline. Both late success and late failure return `503` before
 the database completes and reconcile to one event/effect on retry. Bridge tests reject unsupported adapter/session
 capabilities and unsafe control results and constrain emitted SQL to the fixed transaction-local controls.
+
+Coordinated request tests pause real Payload reads after the worker parses its controlled HTTP response, and let
+either the worker or webhook commit first. Other barriers force overlapping identical, conflicting, and distinct
+provider events to read the same snapshot. The tests prove complete retries, consecutive event sequences, stable
+provider references, and first-terminal precedence. A two-operation race at READ COMMITTED isolates Payload's native
+provider-ID unique-violation translation from serializable conflicts. Its losing transaction rolls back acceptance,
+scrubbing, and every sequence before returning the winning event's mismatch result on retry. Deferred PostgreSQL
+COMMIT failures prove successful whole-transaction retry and exhaustion after three attempts. Independent committed
+observations remain unchanged during every failed attempt; a later provider retry applies at most once.
+
+These changes require no schema migration. Cache decision remains `no-public-impact`: the existing
+`collection:private-operational` policy classifies both collections as `private-live`, without public readers,
+discovery consumers, tag families, affected paths, or revalidation events. Collection privacy and cache architecture
+contracts remain the boundary checks. A public delivery-status consumer requires a new cache decision.
 
 `tests/integration/transactionalEmail.events.test.ts` uses real Payload and disposable Postgres. It covers concurrent
 worker/provider appends, concurrent identity deduplication, sequence rollback, direct update denial, the full forbidden

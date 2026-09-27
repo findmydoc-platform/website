@@ -102,14 +102,19 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
       if (!validLease(record, claim)) return null
       return record
     })
-  const finish = (
+  const finish = async (
     claim: WorkerClaim,
     state: 'accepted' | 'suppressed' | 'failed' | 'expired',
     outcomeCode: NonNullable<TransactionalEmailEvent['outcomeCode']>,
     providerMessageId?: string,
-  ) =>
-    transaction(claim, async (storage) => {
+  ) => {
+    const result = await transaction(claim, async (storage) => {
       const record = await storage.read(Number(claim.operationId))
+      // Verified feedback can establish acceptance and clear the lease before this worker resumes.
+      if (state === 'accepted' && record.providerMessageId) {
+        if (record.providerMessageId !== providerMessageId) return 'provider-event-mismatch'
+        if (['accepted', 'delivered', 'bounced', 'complained'].includes(record.state)) return true
+      }
       if (!validLease(record, claim)) return false
       const timestamp = new Date(now()).toISOString()
       await storage.write(
@@ -141,6 +146,12 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
       )
       return true
     })
+    if (result === 'provider-event-mismatch') {
+      req.payload.logger.warn({ outcomeCode: result })
+      return false
+    }
+    return result
+  }
   const revalidate = async (claim: WorkerClaim, record: TransactionalEmailOutbox) => {
     if (deadline(record) - now() <= stepBudgetMilliseconds || (record.attemptCount ?? 0) >= 6) {
       await finish(claim, 'expired', 'expired')

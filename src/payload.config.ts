@@ -83,6 +83,7 @@ import { createAdminDashboardConfig } from './dashboard/adminDashboard'
 
 import { TransactionalEmailOutbox } from './collections/TransactionalEmailOutbox'
 import { TransactionalEmailEvents } from './collections/TransactionalEmailEvents'
+import { TransactionalEmailSuppressions } from './collections/TransactionalEmailSuppressions'
 
 // Import Collections
 import { Categories } from './collections/Categories'
@@ -512,6 +513,7 @@ export default buildConfig({
   collections: [
     TransactionalEmailOutbox,
     TransactionalEmailEvents,
+    TransactionalEmailSuppressions,
     Pages,
     Posts,
     PlatformContentMedia,

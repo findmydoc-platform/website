@@ -72,6 +72,7 @@ export interface Config {
   collections: {
     transactionalEmailOutbox: TransactionalEmailOutbox;
     transactionalEmailEvents: TransactionalEmailEvent;
+    transactionalEmailSuppressions: TransactionalEmailSuppression;
     pages: Page;
     posts: Post;
     platformContentMedia: PlatformContentMedia;
@@ -150,6 +151,7 @@ export interface Config {
   collectionsSelect: {
     transactionalEmailOutbox: TransactionalEmailOutboxSelect<false> | TransactionalEmailOutboxSelect<true>;
     transactionalEmailEvents: TransactionalEmailEventsSelect<false> | TransactionalEmailEventsSelect<true>;
+    transactionalEmailSuppressions: TransactionalEmailSuppressionsSelect<false> | TransactionalEmailSuppressionsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     platformContentMedia: PlatformContentMediaSelect<false> | PlatformContentMediaSelect<true>;
@@ -347,6 +349,7 @@ export interface TransactionalEmailOutbox {
   providerIdempotencyKey: string;
   recipientAddress?: string | null;
   recipientDigest: string;
+  providerRecipientDigest?: string | null;
   preparedSubject?: string | null;
   preparedHtml?: string | null;
   preparedText?: string | null;
@@ -432,6 +435,23 @@ export interface TransactionalEmailEvent {
   providerEventType?: string | null;
   providerMessageId?: string | null;
   sourceOccurredAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Private recipient suppression from verified delivery feedback
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactionalEmailSuppressions".
+ */
+export interface TransactionalEmailSuppression {
+  id: number;
+  runtimeEnvironment: 'preview' | 'production';
+  recipientDigest: string;
+  reason: 'hard-bounce' | 'spam-complaint';
+  firstObservedAt: string;
+  lastObservedAt: string;
+  source: 'lettermint';
   updatedAt: string;
   createdAt: string;
 }
@@ -4035,6 +4055,7 @@ export interface TransactionalEmailOutboxSelect<T extends boolean = true> {
   providerIdempotencyKey?: T;
   recipientAddress?: T;
   recipientDigest?: T;
+  providerRecipientDigest?: T;
   preparedSubject?: T;
   preparedHtml?: T;
   preparedText?: T;
@@ -4073,6 +4094,20 @@ export interface TransactionalEmailEventsSelect<T extends boolean = true> {
   providerEventType?: T;
   providerMessageId?: T;
   sourceOccurredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactionalEmailSuppressions_select".
+ */
+export interface TransactionalEmailSuppressionsSelect<T extends boolean = true> {
+  runtimeEnvironment?: T;
+  recipientDigest?: T;
+  reason?: T;
+  firstObservedAt?: T;
+  lastObservedAt?: T;
+  source?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -7148,6 +7183,7 @@ export interface TaskCreateCollectionExport {
     collectionSlug:
       | 'transactionalEmailOutbox'
       | 'transactionalEmailEvents'
+      | 'transactionalEmailSuppressions'
       | 'pages'
       | 'posts'
       | 'platformContentMedia'

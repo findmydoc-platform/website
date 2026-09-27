@@ -91,6 +91,7 @@ export const CACHE_POLICY_COLLECTIONS = [
   'inquiryCommandLocks',
   'transactionalEmailOutbox',
   'transactionalEmailEvents',
+  'transactionalEmailSuppressions',
   'userProfileMedia',
 ] as const
 
@@ -557,6 +558,7 @@ export const CACHE_POLICY_CATALOG = [
       'inquiryCommandLocks',
       'transactionalEmailOutbox',
       'transactionalEmailEvents',
+      'transactionalEmailSuppressions',
       'clinicGalleryEntries',
       'clinicGalleryMedia',
       'reviewAppeals',

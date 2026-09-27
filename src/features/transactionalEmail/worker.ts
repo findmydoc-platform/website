@@ -18,7 +18,7 @@ import { transientFields } from './retentionPolicy'
 import { sweepTransactionalEmail } from './retention'
 import { workerTransaction } from './workerStorage'
 import { requireActivationPolicy, type ActivationPolicy } from './activationPolicy'
-import type { SuppressionLookup } from './suppression'
+import { createSuppressionLookup, type SuppressionLookup } from './suppression'
 import { requireVerifiedHostedBinding, type HostedLettermintBinding } from './hostedConfiguration'
 import { prepareProviderRequest, providerBindingFields, storedProviderRequest } from './providerPreparation'
 
@@ -60,7 +60,7 @@ type WorkerOptions = {
 export function createTransactionalEmailWorker(req: PayloadRequest, options: WorkerOptions = {}) {
   const runtime = selectTransactionalEmailRuntime()
   const providerBinding = options.providerBinding
-  const suppressionLookup = options.suppression
+  const suppressionLookup = providerBinding ? createSuppressionLookup(req, providerBinding) : options.suppression
   if (options.activationPolicy) {
     if (runtime.environment !== 'test' || process.env.VITEST !== 'true')
       throw new TransactionalEmailError('environment-unavailable')
@@ -184,6 +184,10 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
             signal,
           ),
         )
+      if (decision === 'cleared' && providerBinding && options.suppression)
+        decision = await boundedStep((signal) =>
+          options.suppression!({ address: current.address, environment: providerBinding.target.environment }, signal),
+        )
     } catch {
       return false
     }
@@ -231,10 +235,6 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
   async function processClaim(claim: WorkerClaim) {
     let record = await read(claim)
     if (!record) return
-    if (record.preparedProviderRequest || providerBindingFields.some((field) => record![field] != null)) {
-      if (!providerBinding) throw new TransactionalEmailError('environment-unavailable')
-      prepareProviderRequest(record, providerBinding)
-    }
     if (record.attemptCount && !record.nextAttemptAt && record.lastAttemptAt && !record.firstAmbiguousAt) {
       const recovered = await transaction(claim, async (storage) => {
         const current = await storage.read(Number(claim.operationId))
@@ -247,6 +247,10 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
       record = recovered
     }
     if (!(await revalidate(claim, record))) return
+    if (record.preparedProviderRequest || providerBindingFields.some((field) => record![field] != null)) {
+      if (!providerBinding) throw new TransactionalEmailError('environment-unavailable')
+      prepareProviderRequest(record, providerBinding)
+    }
     if (record.state === 'queued') {
       let prepared
       try {

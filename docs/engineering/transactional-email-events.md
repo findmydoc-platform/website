@@ -43,9 +43,9 @@ requiring the cleared lease or writing another acceptance, scrub event, or provi
 reference changes nothing and emits only `provider-event-mismatch` after its read transaction completes. Retryable,
 ambiguous, and permanent worker results cannot overwrite feedback after it clears the lease.
 
-Suppression effects in #1898 can extend the existing event transaction independently of terminal-state precedence.
-Recipient fields are discarded; recipient-digest validation for suppression stays
-with the suppression integration. Hosted command acceptance and delivery remain disabled, and no provider resource,
+Verified hard-bounce and complaint effects update the private suppression store inside this event transaction,
+independently of terminal-state precedence. The signature boundary discards recipients after digest calculation;
+correlation compares that digest before any mutation. See [suppression invariants](transactional-email-suppression.md). Hosted command acceptance and delivery remain disabled, and no provider resource,
 credential, scheduler, or product command is activated.
 
 ## Foundation storage seam

@@ -24,6 +24,8 @@ import { loadHostedLettermintWebhookBinding } from '@/features/transactionalEmai
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { resolveActivationPolicy } from '@/features/transactionalEmail/activationPolicy'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
+import { recipientAddressDigest } from '@/features/transactionalEmail/recipientBinding'
+import type { CommandCatalog } from '@/features/transactionalEmail/catalog'
 
 vi.hoisted(async () => {
   const { createRequire } = await import('node:module')
@@ -46,6 +48,24 @@ describe('Lettermint webhook Next.js request boundary', () => {
   const logCalls: unknown[] = []
   const signalCalls: unknown[] = []
   const expectedSignals: { outcomeCode: string }[] = []
+  let recipientAddress = 'recipient@example.test'
+  const originalEntry = syntheticEmailCatalog['clinic.registration-received']!
+  const catalog: CommandCatalog = {
+    'clinic.registration-received': {
+      ...originalEntry,
+      authorizeAndResolve: async (...args) => ({
+        ...(await originalEntry.authorizeAndResolve(...args)),
+        address: recipientAddress,
+      }),
+      worker: {
+        ...originalEntry.worker!,
+        revalidate: async (command) => {
+          const current = await originalEntry.worker!.revalidate(command)
+          return current ? { ...current, address: recipientAddress } : null
+        },
+      },
+    },
+  }
   const operationReference = randomUUID()
   const references = [operationReference]
   let mutationExpected = false
@@ -56,6 +76,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const { rows } = await observer.query(`
     SELECT 'outbox' AS kind, to_jsonb(o) AS record FROM transactional_email_outbox o
     UNION ALL SELECT 'event', to_jsonb(e) FROM transactional_email_events e
+    UNION ALL SELECT 'suppression', to_jsonb(s) FROM transactional_email_suppressions s
     ORDER BY kind, record
   `)
     return createHash('sha256').update(JSON.stringify(rows)).digest('hex')
@@ -63,7 +84,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
 
   beforeAll(async () => {
     payload = await getPayload({ config })
-    await bindTransactionalEmail(await createLocalReq({}, payload), syntheticEmailCatalog).accept({
+    await bindTransactionalEmail(await createLocalReq({}, payload), catalog).accept({
       type: 'clinic.registration-received',
       operationReference,
       registrationId: syntheticRegistrationId,
@@ -92,6 +113,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
   })
 
   beforeEach(async () => {
+    recipientAddress = `${randomUUID()}@example.test`
     Object.assign(webhookConfiguration.registry, createWebhookConfiguration().registry)
     Object.assign(webhookConfiguration.secrets, createWebhookConfiguration().secrets)
     for (const [key, value] of Object.entries(webhookConfiguration.secrets.preview)) vi.stubEnv(key, value)
@@ -221,14 +243,14 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const req = await createLocalReq({}, payload)
     const reference = randomUUID()
     references.push(reference)
-    const { operationId } = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
+    const { operationId } = await bindTransactionalEmail(req, catalog).accept({
       type: 'clinic.registration-received',
       operationReference: reference,
       registrationId: syntheticRegistrationId,
     })
     const fixture = createActivationFixture(environment)
     await createTransactionalEmailWorker(req, {
-      catalog: syntheticEmailCatalog,
+      catalog,
       now: () => webhookNow,
       suppression: async () => 'cleared',
       providerBinding: fixture.binding,
@@ -236,7 +258,12 @@ describe('Lettermint webhook Next.js request boundary', () => {
         fixture.binding,
         fixture.registry,
         environment === 'preview'
-          ? ['digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf']
+          ? [
+              recipientAddressDigest(recipientAddress, {
+                version: fixture.binding.target.digestKeyId,
+                secret: fixture.binding.digestKey,
+              })!,
+            ]
           : undefined,
       ),
       delivery: { deliver: async () => ({ type: initialOutcome }) },
@@ -261,11 +288,23 @@ describe('Lettermint webhook Next.js request boundary', () => {
     event,
     data: {
       message_id: 'synthetic-message',
+      recipient: recipientAddress,
       metadata: { operation_id: operationId, command_type: 'clinic.registration-received', environment: 'preview' },
     },
   })
   const sendEvent = (event: ReturnType<typeof messageEvent>) =>
     send({ body: JSON.stringify(event), headers: { 'x-lettermint-event': event.event } })
+
+  it('commits a verified hard bounce with one private address suppression', async () => {
+    const id = await preparedOperation()
+    mutationExpected = true
+    expect((await sendEvent(messageEvent(id, 'message.hard_bounced'))).status).toBe(200)
+    const { rows } = await observer.query(
+      "SELECT reason, source FROM transactional_email_suppressions WHERE runtime_environment = 'preview' AND recipient_digest = (SELECT provider_recipient_digest FROM transactional_email_outbox WHERE id = $1)",
+      [id],
+    )
+    expect(rows).toEqual([{ reason: 'hard-bounce', source: 'lettermint' }])
+  })
   const stored = async (id: string) =>
     (await observer.query('SELECT *, latest_event_sequence::int FROM transactional_email_outbox WHERE id = $1', [id]))
       .rows[0]
@@ -276,6 +315,289 @@ describe('Lettermint webhook Next.js request boundary', () => {
         [id],
       )
     ).rows
+
+  const suppressionsFor = async (id: string) =>
+    (
+      await observer.query(
+        `SELECT runtime_environment, reason, source, first_observed_at, last_observed_at
+     FROM transactional_email_suppressions WHERE recipient_digest =
+     (SELECT provider_recipient_digest FROM transactional_email_outbox WHERE id = $1)`,
+        [id],
+      )
+    ).rows
+
+  it('keeps complaint suppression after replay and later hard bounces without extending it on duplicates', async () => {
+    const id = await preparedOperation()
+    mutationExpected = true
+    const bounce = messageEvent(id, 'message.hard_bounced')
+    expect((await sendEvent(bounce)).status).toBe(200)
+    const complaint = { ...messageEvent(id, 'message.spam_complaint'), timestamp: '2026-09-26T12:01:00.000Z' }
+    expect((await sendEvent(complaint)).status).toBe(200)
+    const laterBounce = { ...messageEvent(id, 'message.hard_bounced'), timestamp: '2026-09-26T12:02:00.000Z' }
+    expect((await sendEvent(laterBounce)).status).toBe(200)
+    expect(await suppressionsFor(id)).toEqual([
+      {
+        runtime_environment: 'preview',
+        reason: 'spam-complaint',
+        source: 'lettermint',
+        first_observed_at: new Date(bounce.timestamp),
+        last_observed_at: new Date(laterBounce.timestamp),
+      },
+    ])
+    const committed = await state()
+    expect(await (await sendEvent(complaint)).json()).toEqual({ outcomeCode: 'provider-event-duplicate' })
+    expect(await state()).toEqual(committed)
+    expect((await stored(id)).state).toBe('bounced')
+  })
+
+  it.each(['recipient', 'missing-digest', 'foreign-digest'])(
+    'rejects a verified suppression %s mismatch without any effect',
+    async (mismatch) => {
+      const id = await preparedOperation()
+      const event = messageEvent(id, 'message.spam_complaint')
+      if (mismatch === 'recipient') event.data.recipient = 'another@example.test'
+      else
+        await observer.query('UPDATE transactional_email_outbox SET provider_recipient_digest = $1 WHERE id = $2', [
+          mismatch === 'missing-digest'
+            ? null
+            : recipientAddressDigest(recipientAddress, {
+                version: 'digest-production',
+                secret: webhookConfiguration.secrets.production.LETTERMINT_RECIPIENT_DIGEST_KEY!,
+              }),
+          id,
+        ])
+      beforeState = await state()
+      expectedSignals.push({ outcomeCode: 'provider-event-mismatch' })
+      expect(await (await sendEvent(event)).json()).toEqual({ outcomeCode: 'provider-event-mismatch' })
+      expect(await state()).toEqual(beforeState)
+    },
+  )
+
+  it.each([undefined, null, [], '', 'invalid-address'])(
+    'rejects suppression feedback without a valid recipient',
+    async (recipient) => {
+      const id = await preparedOperation()
+      const base = messageEvent(id, 'message.hard_bounced')
+      const response = await send({
+        body: JSON.stringify({ ...base, data: { ...base.data, recipient } }),
+        headers: { 'x-lettermint-event': base.event },
+      })
+      expect(response.status).toBe(422)
+    },
+  )
+
+  it('checks persisted suppression before link, rendering, serialization and controlled transport despite caller clearance', async () => {
+    const id = await preparedOperation()
+    mutationExpected = true
+    const event = messageEvent(id, 'message.spam_complaint')
+    event.data.recipient = `  ${recipientAddress.toUpperCase()}  `
+    expect((await sendEvent(event)).status).toBe(200)
+    vi.unstubAllEnvs()
+    vi.stubEnv('CI', 'false')
+    const req = await createLocalReq({}, payload)
+    const reference = randomUUID()
+    references.push(reference)
+    const receipt = await bindTransactionalEmail(req, catalog).accept({
+      type: 'clinic.registration-received',
+      operationReference: reference,
+      registrationId: syntheticRegistrationId,
+    })
+    const fixture = createActivationFixture()
+    const links = {
+      generate: vi.fn(async () => {
+        throw new Error('Unexpected auth link generation')
+      }),
+    }
+    const httpTransport = vi.fn(async () => {
+      throw new Error('Unexpected provider transport')
+    })
+    const suppression = vi.fn(async () => 'cleared' as const)
+    await createTransactionalEmailWorker(req, {
+      catalog,
+      now: () => webhookNow,
+      links,
+      httpTransport,
+      suppression,
+      providerBinding: fixture.binding,
+      activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [
+        recipientAddressDigest(recipientAddress, {
+          version: fixture.binding.target.digestKeyId,
+          secret: fixture.binding.digestKey,
+        })!,
+      ]),
+    }).run(receipt.operationId)
+    expect(links.generate).not.toHaveBeenCalled()
+    expect(httpTransport).not.toHaveBeenCalled()
+    expect(suppression).not.toHaveBeenCalled()
+    const record = await stored(receipt.operationId)
+    expect(record).toMatchObject({
+      state: 'suppressed',
+      prepared_at: null,
+      prepared_provider_request: null,
+      recipient_address: null,
+      command_payload: null,
+      attempt_count: '0',
+    })
+    expect((await history(receipt.operationId)).map((entry) => entry.type)).toEqual([
+      'command.accepted',
+      'lease.acquired',
+      'delivery.suppressed',
+      'payload.scrubbed',
+    ])
+    expect(JSON.stringify([logCalls, signalCalls, requestErrors]).includes(recipientAddress)).toBe(false)
+    expect(
+      JSON.stringify([logCalls, signalCalls, requestErrors]).includes((await stored(id)).provider_recipient_digest),
+    ).toBe(false)
+  })
+
+  it.each(['message.hard_bounced', 'message.spam_complaint'])(
+    'retries native suppression uniqueness with %s committing first and retains complaint',
+    async (firstType) => {
+      const firstId = await preparedOperation()
+      const secondId = await preparedOperation()
+      const firstEvent = messageEvent(firstId, firstType)
+      const secondEvent = messageEvent(
+        secondId,
+        firstType === 'message.hard_bounced' ? 'message.spam_complaint' : 'message.hard_bounced',
+      )
+      const begin = payload.db.beginTransaction.bind(payload.db)
+      const attempts = vi
+        .spyOn(payload.db, 'beginTransaction')
+        .mockImplementation((options) => begin({ ...options, isolationLevel: 'read committed' }))
+      const hooks = payload.collections.transactionalEmailSuppressions.config.hooks.beforeChange
+      const arrivals = [signal(), signal()]
+      const releases = [signal(), signal()]
+      let inserts = 0
+      const hook: (typeof hooks)[number] = async ({ data, operation }) => {
+        if (operation === 'create') {
+          const index = inserts++
+          arrivals[index]!.resolve()
+          await releases[index]!.promise
+        }
+        return data
+      }
+      hooks.push(hook)
+      const close = registerRaceCleanup(() => {
+        releases.forEach((release) => release.resolve())
+        hooks.splice(hooks.indexOf(hook), 1)
+      })
+      const first = trackRaceWork(sendEvent(firstEvent))
+      let second: ReturnType<typeof sendEvent> | undefined
+      mutationExpected = true
+      try {
+        await reachBarrier(arrivals[0]!.promise, first)
+        second = trackRaceWork(sendEvent(secondEvent))
+        await reachBarrier(arrivals[1]!.promise, second)
+        expect(await state()).toEqual(beforeState)
+        releases[0]!.resolve()
+        expect((await first).status).toBe(200)
+        releases[1]!.resolve()
+        expect((await second).status).toBe(200)
+        expect(attempts).toHaveBeenCalledTimes(3)
+        expect((await suppressionsFor(firstId)).map((entry) => entry.reason)).toEqual(['spam-complaint'])
+        for (const id of [firstId, secondId])
+          expect((await history(id)).filter((entry) => entry.provider_event_id)).toHaveLength(1)
+      } finally {
+        close()
+        await Promise.all([first, second])
+        attempts.mockRestore()
+      }
+    },
+  )
+
+  it('isolates suppression lookups and writes between Preview and Production for the same recipient', async () => {
+    const previewId = await preparedOperation()
+    mutationExpected = true
+    expect((await sendEvent(messageEvent(previewId, 'message.spam_complaint'))).status).toBe(200)
+    const productionId = await preparedOperation('production')
+    expect((await stored(productionId)).attempt_count).toBe('1')
+    const event = {
+      ...messageEvent(productionId, 'message.hard_bounced'),
+      context: webhookTestEvent('production').context,
+    }
+    event.data.metadata.environment = 'production'
+    expect(
+      (
+        await send({
+          environment: 'production',
+          body: JSON.stringify(event),
+          secret: webhookConfiguration.secrets.production.LETTERMINT_WEBHOOK_SECRET!,
+          headers: { 'x-lettermint-event': event.event },
+        })
+      ).status,
+    ).toBe(200)
+    expect(
+      (await suppressionsFor(previewId)).map(({ runtime_environment, reason }) => [runtime_environment, reason]),
+    ).toEqual([['preview', 'spam-complaint']])
+    expect(
+      (await suppressionsFor(productionId)).map(({ runtime_environment, reason }) => [runtime_environment, reason]),
+    ).toEqual([['production', 'hard-bounce']])
+  })
+
+  it.each(['queued', 'prepared', 'unavailable'])(
+    'withholds the next preparation or provider attempt when suppression is %s',
+    async (scenario) => {
+      const sourceId = await preparedOperation()
+      const retryId = scenario === 'prepared' ? await preparedOperation() : null
+      mutationExpected = true
+      if (scenario !== 'unavailable')
+        expect((await sendEvent(messageEvent(sourceId, 'message.hard_bounced'))).status).toBe(200)
+      vi.unstubAllEnvs()
+      vi.stubEnv('CI', 'false')
+      const req = await createLocalReq({}, payload)
+      let operationId = retryId
+      if (!operationId) {
+        const reference = randomUUID()
+        references.push(reference)
+        operationId = (
+          await bindTransactionalEmail(req, catalog).accept({
+            type: 'clinic.registration-received',
+            operationReference: reference,
+            registrationId: syntheticRegistrationId,
+          })
+        ).operationId
+      } else
+        await observer.query("UPDATE transactional_email_outbox SET runtime_environment = 'test' WHERE id = $1", [
+          operationId,
+        ])
+      const fixture = createActivationFixture()
+      const generate = vi.fn(async () => {
+        throw new Error('Unexpected auth generation')
+      })
+      const transport = vi.fn(async () => {
+        throw new Error('Unexpected transport')
+      })
+      const hooks = payload.collections.transactionalEmailSuppressions.config.hooks.beforeOperation
+      const failure: (typeof hooks)[number] = () => {
+        throw new Error('private-unavailable-detail')
+      }
+      if (scenario === 'unavailable') hooks.push(failure)
+      try {
+        await createTransactionalEmailWorker(req, {
+          catalog,
+          now: () => webhookNow + 61_000,
+          links: { generate },
+          httpTransport: transport,
+          providerBinding: fixture.binding,
+          activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [
+            recipientAddressDigest(recipientAddress, {
+              version: fixture.binding.target.digestKeyId,
+              secret: fixture.binding.digestKey,
+            })!,
+          ]),
+        }).run(operationId)
+      } finally {
+        if (scenario === 'unavailable') hooks.splice(hooks.indexOf(failure), 1)
+      }
+      expect(generate).not.toHaveBeenCalled()
+      expect(transport).not.toHaveBeenCalled()
+      expect(await stored(operationId)).toMatchObject({
+        state: scenario === 'unavailable' ? 'queued' : 'suppressed',
+        attempt_count: scenario === 'prepared' ? '1' : '0',
+      })
+      expect(JSON.stringify([logCalls, signalCalls, requestErrors]).includes('private-unavailable-detail')).toBe(false)
+    },
+  )
 
   function signal() {
     let resolve!: () => void
@@ -323,7 +645,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const req = await createLocalReq({}, payload)
     const reference = randomUUID()
     references.push(reference)
-    const { operationId } = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
+    const { operationId } = await bindTransactionalEmail(req, catalog).accept({
       type: 'clinic.registration-received',
       operationReference: reference,
       registrationId: syntheticRegistrationId,
@@ -334,12 +656,15 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const resume = registerRaceCleanup(release.resolve)
     const completion = trackRaceWork(
       createTransactionalEmailWorker(req, {
-        catalog: syntheticEmailCatalog,
+        catalog,
         now: () => webhookNow,
         suppression: async () => 'cleared',
         providerBinding: fixture.binding,
         activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [
-          'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf',
+          recipientAddressDigest(recipientAddress, {
+            version: fixture.binding.target.digestKeyId,
+            secret: fixture.binding.digestKey,
+          })!,
         ]),
         httpTransport: async () => {
           received.resolve()
@@ -807,6 +1132,9 @@ describe('Lettermint webhook Next.js request boundary', () => {
     expect((await sendEvent(event)).status).toBe(200)
     const outbox = await stored(operationId)
     expect(outbox.state).toBe(expectedState)
+    expect((await suppressionsFor(operationId)).map((entry) => entry.reason)).toEqual(
+      type === 'message.hard_bounced' ? ['hard-bounce'] : type === 'message.spam_complaint' ? ['spam-complaint'] : [],
+    )
     expect(outbox.provider_message_id).toBe('synthetic-message')
     for (const field of [
       'recipient_address',
@@ -955,35 +1283,37 @@ describe('Lettermint webhook Next.js request boundary', () => {
     )
   })
 
-  it.each(['immediate', 'commit'])(
-    'rolls back a temporary %s storage failure and applies its retry once',
-    async (failure) => {
-      const id = await preparedOperation()
-      const event = messageEvent(id, 'message.delivered')
-      await observer.query(`CREATE FUNCTION webhook_result_failure() RETURNS trigger LANGUAGE plpgsql AS $$
+  it.each([
+    ['immediate', 'message.delivered'],
+    ['commit', 'message.delivered'],
+    ['immediate', 'message.spam_complaint'],
+    ['commit', 'message.spam_complaint'],
+  ])('rolls back a temporary %s storage failure for %s and applies its retry once', async (failure, type) => {
+    const id = await preparedOperation()
+    const event = messageEvent(id, type)
+    await observer.query(`CREATE FUNCTION webhook_result_failure() RETURNS trigger LANGUAGE plpgsql AS $$
       BEGIN IF NEW.provider_event_id IS NOT NULL THEN RAISE EXCEPTION 'synthetic-private-database-detail'; END IF; RETURN NEW; END $$`)
-      try {
-        await observer.query(
-          failure === 'commit'
-            ? 'CREATE CONSTRAINT TRIGGER webhook_result_failure AFTER INSERT ON transactional_email_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION webhook_result_failure()'
-            : 'CREATE TRIGGER webhook_result_failure BEFORE INSERT ON transactional_email_events FOR EACH ROW EXECUTE FUNCTION webhook_result_failure()',
-        )
-        const response = await sendEvent(event)
-        expect(response.status).toBe(503)
-        expect(await response.json()).toEqual({ outcomeCode: 'webhook-unavailable' })
-        expect(await state()).toEqual(beforeState)
-      } finally {
-        await observer.query('DROP TRIGGER IF EXISTS webhook_result_failure ON transactional_email_events')
-        await observer.query('DROP FUNCTION webhook_result_failure()')
-      }
-      mutationExpected = true
-      expect((await sendEvent(event)).status).toBe(200)
-      expect((await stored(id)).state).toBe('delivered')
-      const committed = await state()
-      expect((await sendEvent(event)).status).toBe(200)
-      expect(await state()).toEqual(committed)
-    },
-  )
+    try {
+      await observer.query(
+        failure === 'commit'
+          ? 'CREATE CONSTRAINT TRIGGER webhook_result_failure AFTER INSERT ON transactional_email_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION webhook_result_failure()'
+          : 'CREATE TRIGGER webhook_result_failure BEFORE INSERT ON transactional_email_events FOR EACH ROW EXECUTE FUNCTION webhook_result_failure()',
+      )
+      const response = await sendEvent(event)
+      expect(response.status).toBe(503)
+      expect(await response.json()).toEqual({ outcomeCode: 'webhook-unavailable' })
+      expect(await state()).toEqual(beforeState)
+    } finally {
+      await observer.query('DROP TRIGGER IF EXISTS webhook_result_failure ON transactional_email_events')
+      await observer.query('DROP FUNCTION webhook_result_failure()')
+    }
+    mutationExpected = true
+    expect((await sendEvent(event)).status).toBe(200)
+    expect((await stored(id)).state).toBe(type === 'message.delivered' ? 'delivered' : 'complained')
+    const committed = await state()
+    expect((await sendEvent(event)).status).toBe(200)
+    expect(await state()).toEqual(committed)
+  })
 
   it('returns within the total deadline and rolls back a stalled Payload operation when it resumes', async () => {
     const id = await preparedOperation()
@@ -1069,11 +1399,16 @@ describe('Lettermint webhook Next.js request boundary', () => {
     },
   )
 
-  it.each(['succeeds', 'fails'])(
-    'returns 503 at the deadline when an already-started commit later %s and reconciles its retry once',
-    async (outcome) => {
+  it.each([
+    ['succeeds', 'message.delivered'],
+    ['fails', 'message.delivered'],
+    ['succeeds', 'message.spam_complaint'],
+    ['fails', 'message.spam_complaint'],
+  ])(
+    'returns 503 at the deadline when an already-started commit later %s for %s and reconciles its retry once',
+    async (outcome, type) => {
       const id = await preparedOperation()
-      const event = messageEvent(id, 'message.delivered')
+      const event = messageEvent(id, type)
       await observer.query(`CREATE FUNCTION webhook_late_commit() RETURNS trigger LANGUAGE plpgsql AS $$
         BEGIN IF NEW.provider_event_id IS NOT NULL THEN
           PERFORM pg_sleep(6);
@@ -1097,7 +1432,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
         await observer.query('DROP FUNCTION webhook_late_commit()')
       }
       if (outcome === 'fails') expect(await state()).toEqual(beforeState)
-      else expect((await stored(id)).state).toBe('delivered')
+      else expect((await stored(id)).state).toBe(type === 'message.delivered' ? 'delivered' : 'complained')
       mutationExpected = true
       const retry = await sendEvent(event)
       expect(retry.status).toBe(200)
@@ -1107,7 +1442,14 @@ describe('Lettermint webhook Next.js request boundary', () => {
       const events = await history(id)
       expect(events.filter((item) => item.provider_event_id === event.id)).toHaveLength(1)
       expect(events.filter((item) => item.type === 'delivery.accepted')).toHaveLength(1)
-      expect(events.filter((item) => item.type === 'delivery.delivered')).toHaveLength(1)
+      expect(
+        events.filter(
+          (item) => item.type === (type === 'message.delivered' ? 'delivery.delivered' : 'delivery.complained'),
+        ),
+      ).toHaveLength(1)
+      expect((await suppressionsFor(id)).map((entry) => entry.reason)).toEqual(
+        type === 'message.spam_complaint' ? ['spam-complaint'] : [],
+      )
       const committed = await state()
       expect((await sendEvent(event)).status).toBe(200)
       expect(await state()).toEqual(committed)

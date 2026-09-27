@@ -180,19 +180,16 @@ describe('immutable provider preparation through the worker', () => {
     expect((await stored(operationId)).prepared_provider_request).toBeTypeOf('string')
   })
 
-  it.each(['missing', 'unavailable', 'throws', 'suppressed'] as const)(
+  it.each(['unavailable', 'throws', 'suppressed'] as const)(
     'stops provider preparation when suppression is %s',
     async (decision) => {
       const { req, operationId } = await accept()
       const links = { generate: vi.fn(async () => 'https://example.test/action') }
       const delivery = { deliver: vi.fn(async () => ({ type: 'retryable' as const })) }
-      const suppression =
-        decision === 'missing'
-          ? undefined
-          : async () => {
-              if (decision === 'throws') throw new Error('Private store error')
-              return decision
-            }
+      const suppression = async () => {
+        if (decision === 'throws') throw new Error('Private store error')
+        return decision
+      }
       await createTransactionalEmailWorker(req, { ...providerOptions(), suppression, links, delivery }).run(operationId)
       expect(links.generate).not.toHaveBeenCalled()
       expect(delivery.deliver).not.toHaveBeenCalled()
@@ -369,7 +366,7 @@ describe('immutable provider preparation through the worker', () => {
     })
   })
 
-  it.each(['body', 'team', 'project', 'route'] as const)(
+  it.each(['body', 'team', 'project', 'route', 'digest'] as const)(
     'denies changes to stored %s through a valid worker lease',
     async (field) => {
       const { req, operationId } = await accept()
@@ -399,7 +396,9 @@ describe('immutable provider preparation through the worker', () => {
                 ? { providerTeamId: 'changed-team' }
                 : field === 'project'
                   ? { providerProjectId: 'changed-project' }
-                  : { providerRouteId: 'changed-route' }
+                  : field === 'route'
+                    ? { providerRouteId: 'changed-route' }
+                    : { providerRecipientDigest: null }
           return storage.write(record, data, [])
         }),
       ).rejects.toMatchObject({ code: 'access-denied' })

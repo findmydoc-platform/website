@@ -1,5 +1,23 @@
 import { z } from 'zod'
 import { commandTypes } from './commands'
+import { TransactionalEmailError } from './errors'
+
+const verifiedEvents = new WeakSet<object>()
+
+/** Issued by the raw-signature boundary after projection and target verification. */
+export function issueVerifiedLettermintEvent(event: VerifiedLettermintEvent): VerifiedLettermintEvent {
+  Object.freeze(event.envelope.data.metadata)
+  Object.freeze(event.envelope.data)
+  Object.freeze(event.envelope.context)
+  Object.freeze(event.envelope)
+  Object.freeze(event)
+  verifiedEvents.add(event)
+  return event
+}
+
+export function requireVerifiedLettermintEvent(event: VerifiedLettermintEvent) {
+  if (!verifiedEvents.has(event)) throw new TransactionalEmailError('access-denied')
+}
 
 const identifier = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)
 export const lettermintEventMapping = {
@@ -31,6 +49,7 @@ export const lettermintMessageEnvelope = z
     }),
     data: z.object({
       message_id: identifier.optional(),
+      recipient: z.unknown().optional(),
       metadata: z
         .object({
           operation_id: identifier.optional(),
@@ -48,6 +67,10 @@ export const lettermintMessageEnvelope = z
 
 type MessageEnvelope = z.infer<typeof lettermintMessageEnvelope>
 export type VerifiedLettermintEvent = Readonly<{
-  envelope: Omit<MessageEnvelope, 'context'> & { context: Omit<MessageEnvelope['context'], 'scope'> }
+  envelope: Omit<MessageEnvelope, 'context' | 'data'> & {
+    context: Omit<MessageEnvelope['context'], 'scope'>
+    data: Omit<MessageEnvelope['data'], 'recipient'>
+  }
   environment: 'preview' | 'production'
+  recipientDigest?: string
 }>

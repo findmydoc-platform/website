@@ -307,6 +307,7 @@ The outbox requires these logical fields. Payload-generated identifiers and time
 | `providerIdempotencyKey` | text | Module-generated opaque key; unique and immutable until hard deletion |
 | `recipientAddress` | email, nullable | Resolved and stored at command acceptance; transient and scrubbed |
 | `recipientDigest` | text, nullable | Versioned keyed digest stored at command acceptance; never logged |
+| `providerRecipientDigest` | text, nullable | Immutable environment-keyed address digest stored with provider preparation for verified suppression correlation; never logged |
 | `preparedSubject` | text, nullable | Transient exact subject; scrubbed |
 | `preparedHtml` | textarea, nullable | Transient exact HTML; scrubbed |
 | `preparedText` | textarea, nullable | Transient exact plain text; scrubbed |
@@ -539,7 +540,7 @@ Until hard deletion, the scrubbed outbox retains only this explicit content-free
 
 - the Payload record identifier and repository-managed timestamps;
 - `commandType`, `operationReference`, `runtimeEnvironment`, and `state` after outgoing processing has terminated;
-- `providerIdempotencyKey`, `recipientDigest`, and `providerMessageId`;
+- `providerIdempotencyKey`, `recipientDigest`, `providerRecipientDigest`, and `providerMessageId`;
 - `providerTeamId`, `providerProjectId`, and `providerRouteId`;
 - `attemptCount` and `latestEventSequence`;
 - `preparedAt`, `deliveryDeadline`, `lastAttemptAt`, `firstAmbiguousAt`, `providerAcceptedAt`, `terminalAt`, and

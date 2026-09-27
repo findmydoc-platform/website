@@ -3,6 +3,7 @@ import type { TransactionalEmailOutbox } from '@/payload-types'
 import { commandTypes } from './commands'
 import { TransactionalEmailError } from './errors'
 import { requireVerifiedHostedBinding, type HostedLettermintBinding } from './hostedConfiguration'
+import { recipientAddressDigest } from './recipientBinding'
 
 const identifier = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)
 const requestSchema = z.strictObject({
@@ -23,7 +24,15 @@ export const providerBindingFields = ['providerTeamId', 'providerProjectId', 'pr
 export type PreparedProviderRequest = Readonly<{ body: string; teamId: string; projectId: string; routeId: string }>
 
 export function validateProviderPreparation(record: TransactionalEmailOutbox) {
-  if (!providerBindingFields.some((field) => record[field] != null) && record.preparedProviderRequest == null) return
+  if (
+    record.providerRecipientDigest != null &&
+    !/^[A-Za-z0-9_-]{1,128}:[a-f0-9]{64}$/.test(record.providerRecipientDigest)
+  )
+    throw new TransactionalEmailError('access-denied')
+  if (!providerBindingFields.some((field) => record[field] != null) && record.preparedProviderRequest == null) {
+    if (record.providerRecipientDigest != null) throw new TransactionalEmailError('access-denied')
+    return
+  }
   if (providerBindingFields.some((field) => !identifier.safeParse(record[field]).success))
     throw new TransactionalEmailError('access-denied')
   if (record.preparedProviderRequest == null) {
@@ -59,6 +68,8 @@ export function prepareProviderRequest(record: TransactionalEmailOutbox, binding
       record.providerTeamId !== target.teamId ||
       record.providerProjectId !== target.projectId ||
       record.providerRouteId !== target.routeId ||
+      record.providerRecipientDigest !==
+        recipientAddressDigest(record.recipientAddress!, { version: target.digestKeyId, secret: binding.digestKey }) ||
       !record.preparedProviderRequest
     )
       throw new TransactionalEmailError('environment-unavailable')
@@ -70,6 +81,10 @@ export function prepareProviderRequest(record: TransactionalEmailOutbox, binding
   if (record.preparedProviderRequest || record.attemptCount || record.state !== 'prepared')
     throw new TransactionalEmailError('access-denied')
   const prepared = {
+    providerRecipientDigest: recipientAddressDigest(record.recipientAddress!, {
+      version: target.digestKeyId,
+      secret: binding.digestKey,
+    }),
     preparedProviderRequest: JSON.stringify({
       from: target.sender,
       to: [record.recipientAddress],

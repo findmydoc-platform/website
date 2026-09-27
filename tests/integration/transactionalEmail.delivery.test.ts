@@ -1,7 +1,9 @@
-import { createHash, randomUUID } from 'node:crypto'
-import http from 'node:http'
-import https from 'node:https'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
+  () => import('../helpers/deliveryEdgeNetworkBoundary'),
+)
+import { createHash, randomUUID } from 'node:crypto'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 import pg from 'pg'
 import config from '@payload-config'
@@ -17,39 +19,43 @@ import { webhookNow } from '../fixtures/lettermintWebhook'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
 import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
+import { assertNoPrivateEvidence } from '../helpers/deliveryEdgeEvidence'
 
 describe('Lettermint delivery through the real worker', () => {
   let payload: Payload
   let observer: pg.Client
   const references: string[] = []
   beforeAll(async () => {
+    expect(networkGuard.isInstalled()).toBe(true)
     payload = await getPayload({ config })
     observer = new pg.Client({ connectionString: process.env.DATABASE_URI })
     await observer.connect()
   }, 60000)
   beforeEach(() => {
     vi.stubEnv('CI', 'false')
-    const deny = () => {
-      throw new Error('External network forbidden')
-    }
-    vi.spyOn(globalThis, 'fetch').mockImplementation(deny)
-    vi.spyOn(http, 'request').mockImplementation(deny)
-    vi.spyOn(https, 'request').mockImplementation(deny)
     vi.spyOn(payload.logger, 'error').mockImplementation(() => undefined)
     vi.spyOn(payload.logger, 'fatal').mockImplementation(() => undefined)
   })
   afterEach(() => {
-    expect(globalThis.fetch).not.toHaveBeenCalled()
-    expect(http.request).not.toHaveBeenCalled()
-    expect(https.request).not.toHaveBeenCalled()
-    vi.restoreAllMocks()
-    vi.unstubAllEnvs()
+    try {
+      networkGuard.assertNoAttempts()
+    } finally {
+      vi.restoreAllMocks()
+      vi.unstubAllEnvs()
+      networkGuard.reinstall()
+      networkGuard.resetAttempts()
+    }
   })
   afterAll(async () => {
     try {
       await cleanupTransactionalEmailFixtures(payload, references)
     } finally {
-      await observer?.end()
+      try {
+        await observer?.end()
+        networkGuard.assertNoAttempts()
+      } finally {
+        closeDeliveryEdgeNetworkBoundary()
+      }
     }
   })
   async function accept() {
@@ -88,12 +94,17 @@ describe('Lettermint delivery through the real worker', () => {
     }
   }
 
+  it('keeps Payload external telemetry disabled for delivery-edge execution', () => {
+    expect(payload.config.telemetry).toBe(false)
+  })
+
   it('sends durable bytes and bound headers once, then stores acceptance and scrubs content', async () => {
     const { req, operationId } = await accept()
     const options = providerOptions()
     const log = vi.fn()
     const metric = vi.fn()
     let committed: Record<string, unknown> | undefined
+    let actionLink: string | undefined
     const httpTransport: LettermintHttpTransport = vi.fn(async (url, init) => {
       committed = await stored(operationId)
       expect(url).toBe('https://api.lettermint.co/v1/send')
@@ -105,9 +116,41 @@ describe('Lettermint delivery through the real worker', () => {
       })
       expect(init.method).toBe('POST')
       expect(init.redirect).toBe('error')
-      return Response.json({ message_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', status: 'pending' }, { status: 202 })
+      const body = JSON.parse(String(init.body))
+      actionLink = String(committed!.prepared_html).match(/https:\/\/example\.test\/action\/[0-9a-f-]+/)?.[0]
+      expect(actionLink).toBeDefined()
+      expect(body).toEqual({
+        from: options.providerBinding.target.sender,
+        to: [committed!.recipient_address],
+        subject: committed!.prepared_subject,
+        html: committed!.prepared_html,
+        text: committed!.prepared_text,
+        route: options.providerBinding.target.routeId,
+        settings: { track_opens: false, track_clicks: false },
+        metadata: {
+          operation_id: operationId,
+          command_type: 'clinic.registration-received',
+          environment: 'preview',
+        },
+      })
+      assertNoPrivateEvidence(init.body, [
+        options.providerBinding.projectToken,
+        committed!.provider_idempotency_key,
+        committed!.operation_reference,
+      ])
+      return Response.json(
+        {
+          message_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+          status: 'pending',
+          reason: 'synthetic-private-provider-reason',
+        },
+        { status: 202 },
+      )
     })
-    await createTransactionalEmailWorker(req, { ...options, httpTransport, log, metric }).run(operationId)
+    const publicResult = await createTransactionalEmailWorker(req, { ...options, httpTransport, log, metric }).run(
+      operationId,
+    )
+    expect(publicResult).toBeUndefined()
     expect(httpTransport).toHaveBeenCalledOnce()
     expect(committed).toMatchObject({ state: 'prepared', attempt_count: '1' })
     expect(await stored(operationId)).toMatchObject({
@@ -146,6 +189,19 @@ describe('Lettermint delivery through the real worker', () => {
         queueAgeBucket: 'lt-1m',
       },
     })
+    assertNoPrivateEvidence({ logs: log.mock.calls, metrics: metric.mock.calls, publicResult }, [
+      options.providerBinding.projectToken,
+      committed!.provider_idempotency_key,
+      committed!.operation_reference,
+      committed!.recipient_address,
+      committed!.recipient_digest,
+      committed!.provider_recipient_digest,
+      committed!.prepared_subject,
+      committed!.prepared_html,
+      committed!.prepared_text,
+      actionLink,
+      'synthetic-private-provider-reason',
+    ])
   })
 
   it('persists provider acceptance when operational sinks fail', async () => {
@@ -211,9 +267,14 @@ describe('Lettermint delivery through the real worker', () => {
       ),
     )
     const log = vi.fn()
-    await createTransactionalEmailWorker(req, { ...providerOptions(), httpTransport, log, now: () => now }).run(
-      operationId,
-    )
+    const metric = vi.fn()
+    const publicResult = await createTransactionalEmailWorker(req, {
+      ...providerOptions(),
+      httpTransport,
+      log,
+      metric,
+      now: () => now,
+    }).run(operationId)
     expect(httpTransport).toHaveBeenCalledOnce()
     const row = await stored(operationId)
     expect(row.state).toBe(state)
@@ -229,10 +290,8 @@ describe('Lettermint delivery through the real worker', () => {
       durationBucket: 'lt-1s',
       queueAgeBucket: 'lt-1m',
     })
-    const events = await observer.query('SELECT outcome_code FROM transactional_email_events WHERE outbox_id = $1', [
-      operationId,
-    ])
-    expect(events.rows).toContainEqual({ outcome_code: code })
+    const events = await observer.query('SELECT * FROM transactional_email_events WHERE outbox_id = $1', [operationId])
+    expect(events.rows).toContainEqual(expect.objectContaining({ outcome_code: code }))
     if (state === 'failed') {
       expect(row.prepared_provider_request).toBeNull()
       expect(row.next_attempt_at).toBeNull()
@@ -243,6 +302,18 @@ describe('Lettermint delivery through the real worker', () => {
         code.startsWith('provider-temporary') || code === 'provider-rate-limited' ? null : now,
       )
     }
+    assertNoPrivateEvidence(
+      {
+        row,
+        events: events.rows,
+        logs: log.mock.calls,
+        metrics: metric.mock.calls,
+        payloadErrors: vi.mocked(payload.logger.error).mock.calls,
+        payloadFatals: vi.mocked(payload.logger.fatal).mock.calls,
+        publicResult,
+      },
+      ['private provider response'],
+    )
   })
 
   it.each(['connection', 'response-body', 'delayed-response-body'] as const)(
@@ -300,21 +371,44 @@ describe('Lettermint delivery through the real worker', () => {
     async (failure) => {
       const { req, operationId } = await accept()
       const log = vi.fn()
+      const metric = vi.fn()
+      const privateProviderDetail = `private ${failure} provider detail`
       const httpTransport = vi.fn(async () => {
-        if (failure === 'reset') throw new Error('private connection failure')
+        if (failure === 'reset') throw new Error(privateProviderDetail)
         return new Response(
           failure === 'truncated'
-            ? '{"message_id":'
+            ? `{"message":"${privateProviderDetail}"`
             : failure === 'oversized'
-              ? 'x'.repeat(65537)
-              : new Uint8Array([0xff]),
+              ? privateProviderDetail.padEnd(65537, 'x')
+              : new Uint8Array([...new TextEncoder().encode(privateProviderDetail), 0xff]),
           { status: 202 },
         )
       })
-      await createTransactionalEmailWorker(req, { ...providerOptions(), httpTransport, log }).run(operationId)
-      expect(await stored(operationId)).toMatchObject({ state: 'prepared', attempt_count: '1' })
+      const publicResult = await createTransactionalEmailWorker(req, {
+        ...providerOptions(),
+        httpTransport,
+        log,
+        metric,
+      }).run(operationId)
+      const row = await stored(operationId)
+      const events = await observer.query('SELECT * FROM transactional_email_events WHERE outbox_id = $1', [
+        operationId,
+      ])
+      expect(row).toMatchObject({ state: 'prepared', attempt_count: '1' })
       expect(log.mock.calls[0]![0].outcomeCode).toBe('provider-ambiguous')
       expect(httpTransport).toHaveBeenCalledOnce()
+      assertNoPrivateEvidence(
+        {
+          row,
+          events: events.rows,
+          logs: log.mock.calls,
+          metrics: metric.mock.calls,
+          payloadErrors: vi.mocked(payload.logger.error).mock.calls,
+          payloadFatals: vi.mocked(payload.logger.fatal).mock.calls,
+          publicResult,
+        },
+        [privateProviderDetail],
+      )
     },
   )
 

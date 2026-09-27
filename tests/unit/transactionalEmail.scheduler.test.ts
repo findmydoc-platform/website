@@ -1,4 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
+
+const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
+  () => import('../helpers/deliveryEdgeNetworkBoundary'),
+)
 import { GET, HEAD, POST } from '@/app/api/internal/transactional-email/worker/route'
 import { runBoundedTransactionalEmailWorker } from '@/features/transactionalEmail/scheduler'
 
@@ -18,10 +22,19 @@ const invalidCredentials: Array<{ label: string; url: string; headers: Record<st
 ]
 
 afterEach(() => {
-  vi.unstubAllEnvs()
-  vi.unstubAllGlobals()
-  vi.clearAllMocks()
+  try {
+    networkGuard.assertNoAttempts()
+  } finally {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    vi.clearAllMocks()
+    networkGuard.reinstall()
+    networkGuard.resetAttempts()
+  }
 })
+
+afterAll(closeDeliveryEdgeNetworkBoundary)
 
 describe('hosted transactional email scheduler request', () => {
   it.each([HEAD, POST])('refuses authenticated non-GET requests without resolving work', async (handler) => {
@@ -33,13 +46,10 @@ describe('hosted transactional email scheduler request', () => {
   it.each(invalidCredentials)('rejects $label credentials without resolving work', async ({ url, headers, body }) => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('CRON_SECRET', secret)
-    const fetch = vi.fn()
-    vi.stubGlobal('fetch', fetch)
     const request = new Request(url, { headers, ...(body ? { body, method: 'POST' } : {}) })
     const response = body ? await POST(request) : await GET(request)
     expect(response.status).toBe(401)
     expect(runHosted).not.toHaveBeenCalled()
-    expect(fetch).not.toHaveBeenCalled()
   })
 
   it.each(['preview', 'production'])(
@@ -48,12 +58,9 @@ describe('hosted transactional email scheduler request', () => {
       vi.stubEnv('VERCEL_ENV', environment)
       vi.stubEnv('CRON_SECRET', secret)
       runHosted.mockResolvedValue({ claimed: 0 })
-      const fetch = vi.fn()
-      vi.stubGlobal('fetch', fetch)
       const response = await GET(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))
       expect(response.status).toBe(200)
       expect(runHosted).toHaveBeenCalledTimes(1)
-      expect(fetch).not.toHaveBeenCalled()
     },
   )
 

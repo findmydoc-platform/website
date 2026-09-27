@@ -1,8 +1,10 @@
-import { randomUUID } from 'node:crypto'
-import http from 'node:http'
-import https from 'node:https'
-import * as emailRenderer from '@react-email/render'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+
+const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
+  () => import('../helpers/deliveryEdgeNetworkBoundary'),
+)
+import { randomUUID } from 'node:crypto'
+import * as emailRenderer from '@react-email/render'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 import pg from 'pg'
 import config from '@payload-config'
@@ -25,20 +27,32 @@ describe('transactional email activation at the worker boundary', () => {
   let observer: pg.Client
   const references: string[] = []
   beforeAll(async () => {
+    expect(networkGuard.isInstalled()).toBe(true)
     payload = await getPayload({ config })
     observer = new pg.Client({ connectionString: process.env.DATABASE_URI })
     await observer.connect()
   }, 60000)
   afterEach(() => {
-    vi.clearAllMocks()
-    vi.restoreAllMocks()
-    vi.unstubAllEnvs()
+    try {
+      networkGuard.assertNoAttempts()
+    } finally {
+      vi.clearAllMocks()
+      vi.restoreAllMocks()
+      vi.unstubAllEnvs()
+      networkGuard.reinstall()
+      networkGuard.resetAttempts()
+    }
   })
   afterAll(async () => {
     try {
       await cleanupTransactionalEmailFixtures(payload, references)
     } finally {
-      await observer?.end()
+      try {
+        await observer?.end()
+        networkGuard.assertNoAttempts()
+      } finally {
+        closeDeliveryEdgeNetworkBoundary()
+      }
     }
   })
 
@@ -60,14 +74,6 @@ describe('transactional email activation at the worker boundary', () => {
       const delivery = { deliver: vi.fn(async () => ({ type: 'accepted' as const, messageId: 'fake-policy' })) }
       const log = vi.fn()
       const render = vi.mocked(emailRenderer.render)
-      const deny = () => {
-        throw new Error('External network forbidden')
-      }
-      const guards = [
-        vi.spyOn(globalThis, 'fetch').mockImplementation(deny),
-        vi.spyOn(http, 'request').mockImplementation(deny),
-        vi.spyOn(https, 'request').mockImplementation(deny),
-      ]
       await createTransactionalEmailWorker(req, {
         suppression: clearedSyntheticSuppression,
         catalog: syntheticEmailCatalog,
@@ -86,7 +92,6 @@ describe('transactional email activation at the worker boundary', () => {
         outcomeCode,
         outboxState: 'suppressed',
       })
-      for (const guard of guards) expect(guard).not.toHaveBeenCalled()
       const stored = (await observer.query('SELECT * FROM transactional_email_outbox WHERE id = $1', [operationId]))
         .rows[0]
       expect(stored).toMatchObject({

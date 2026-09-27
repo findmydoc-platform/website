@@ -164,6 +164,8 @@ const silentEmailAdapter: EmailAdapter<void> = () => ({
 })
 
 export default buildConfig({
+  // Keep production behavior unchanged while network-isolated tests run real Payload initialization.
+  telemetry: process.env.VITEST !== 'true',
   // Keep the complete multipart request below Vercel's 4.5 MB request limit.
   upload: {
     limits: {

@@ -1,5 +1,9 @@
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
+  () => import('../helpers/deliveryEdgeNetworkBoundary'),
+)
 import { NextRequest } from 'next/server'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   createServerClient: vi.fn(),
@@ -45,8 +49,17 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  vi.unstubAllEnvs()
+  try {
+    networkGuard.assertNoAttempts()
+  } finally {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+    networkGuard.reinstall()
+    networkGuard.resetAttempts()
+  }
 })
+
+afterAll(closeDeliveryEdgeNetworkBoundary)
 
 describe('Preview scheduler request through the proxy and worker', () => {
   it('authenticates the scheduler at the worker while hosted processing remains closed', async () => {

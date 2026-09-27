@@ -1,4 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
+
+const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
+  () => import('../helpers/deliveryEdgeNetworkBoundary'),
+)
 import { GET } from '@/app/api/internal/transactional-email/worker/route'
 
 const dependencies = vi.hoisted(() => ({
@@ -19,12 +23,19 @@ vi.mock('@/features/transactionalEmail/worker', () => ({
 
 const endpoint = 'https://example.test/api/internal/transactional-email/worker'
 const secret = 'synthetic-scheduler-secret-for-tests-only'
-
 afterEach(() => {
-  vi.unstubAllEnvs()
-  vi.clearAllMocks()
-  vi.restoreAllMocks()
+  try {
+    networkGuard.assertNoAttempts()
+  } finally {
+    vi.unstubAllEnvs()
+    vi.clearAllMocks()
+    vi.restoreAllMocks()
+    networkGuard.reinstall()
+    networkGuard.resetAttempts()
+  }
 })
+
+afterAll(closeDeliveryEdgeNetworkBoundary)
 
 describe('scheduler request through hosted composition', () => {
   it('rejects an unauthenticated request before Payload or worker resolution', async () => {

@@ -1,18 +1,18 @@
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
+  () => import('../helpers/deliveryEdgeNetworkBoundary'),
+)
 import { createHash, createHmac, randomUUID } from 'node:crypto'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import http from 'node:http'
-import https from 'node:https'
-import net from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import tls from 'node:tls'
 import pg from 'pg'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 import config from '@payload-config'
 import { NextRequest } from 'next/server'
 import { AppRouteRouteModule, type AppRouteUserlandModule } from 'next/dist/server/route-modules/app-route/module'
 import type { RouteKind } from 'next/dist/server/route-kind'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createWebhookConfiguration,
   webhookConfiguration,
@@ -50,7 +50,6 @@ describe('Lettermint webhook Next.js request boundary', () => {
   let observer: pg.Client
   let route: AppRouteRouteModule
   let beforeState: string
-  let networkAttempts = 0
   let payload: Payload
   const requestErrors: unknown[] = []
   const logCalls: unknown[] = []
@@ -91,6 +90,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
   }
 
   beforeAll(async () => {
+    expect(networkGuard.isInstalled()).toBe(true)
     payload = await getPayload({ config })
     await bindTransactionalEmail(await createLocalReq({}, payload), catalog).accept({
       type: 'clinic.registration-received',
@@ -99,7 +99,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     })
     observer = new pg.Client({ connectionString: process.env.DATABASE_URI })
     await observer.connect()
-    // Open the two PostgreSQL connections needed by coordinated races before forbidding new network sockets.
+    // Warm the two PostgreSQL connections needed by coordinated races through the exact test-database allowance.
     const transactions = await Promise.all([payload.db.beginTransaction(), payload.db.beginTransaction()])
     for (const id of transactions) if (id !== null) await payload.db.rollbackTransaction(id)
     route = new AppRouteRouteModule({
@@ -131,7 +131,6 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('DEPLOYMENT_ENV', 'preview')
     vi.spyOn(Date, 'now').mockReturnValue(webhookNow)
-    networkAttempts = 0
     requestErrors.length = 0
     logCalls.length = 0
     signalCalls.length = 0
@@ -147,17 +146,6 @@ describe('Lettermint webhook Next.js request boundary', () => {
         logCalls.push(args)
       })
     }
-    const deny = () => {
-      networkAttempts++
-      throw new Error('External network forbidden by webhook contract')
-    }
-    vi.spyOn(globalThis, 'fetch').mockImplementation(deny)
-    vi.spyOn(http, 'request').mockImplementation(deny)
-    vi.spyOn(https, 'request').mockImplementation(deny)
-    vi.spyOn(http, 'get').mockImplementation(deny)
-    vi.spyOn(https, 'get').mockImplementation(deny)
-    vi.spyOn(net.Socket.prototype, 'connect').mockImplementation(deny)
-    vi.spyOn(tls, 'connect').mockImplementation(deny)
     beforeState = await state()
     mutationExpected = false
   })
@@ -169,7 +157,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
       await Promise.allSettled(raceWork)
       raceWork.clear()
       if (!mutationExpected) expect(await state()).toEqual(beforeState)
-      expect(networkAttempts).toBe(0)
+      networkGuard.assertNoAttempts()
       expect(requestErrors).toHaveLength(0)
       expect(logCalls).toHaveLength(0)
       expect(signalCalls.map((signal) => validateDeliveryEdgeLog(signal).outcomeCode)).toEqual(
@@ -178,11 +166,18 @@ describe('Lettermint webhook Next.js request boundary', () => {
     } finally {
       vi.restoreAllMocks()
       vi.unstubAllEnvs()
+      networkGuard.reinstall()
+      networkGuard.resetAttempts()
     }
   })
   afterAll(async () => {
-    if (payload) await cleanupTransactionalEmailFixtures(payload, references)
-    await observer?.end()
+    try {
+      if (payload) await cleanupTransactionalEmailFixtures(payload, references)
+      await observer?.end()
+      networkGuard.assertNoAttempts()
+    } finally {
+      closeDeliveryEdgeNetworkBoundary()
+    }
   })
 
   const send = async (

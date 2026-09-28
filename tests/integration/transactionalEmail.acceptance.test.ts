@@ -317,6 +317,26 @@ describe('transactional email command acceptance', () => {
     })
   })
 
+  it('accepts a capability issued by a reloaded server module instance', async () => {
+    const transactionID = await payload.db.beginTransaction()
+    if (transactionID === null) throw new Error('Expected a test transaction')
+    vi.resetModules()
+    const reloadedCapability = await import('@/features/transactionalEmail/capability')
+    const capability = reloadedCapability.openStorageCapability(transactionID)
+    const req = await createLocalReq(
+      { context: capability.context, req: { transactionID: Promise.resolve(transactionID) } },
+      payload,
+    )
+    try {
+      await expect(payload.count({ collection: 'transactionalEmailOutbox', req })).resolves.toMatchObject({
+        totalDocs: expect.any(Number),
+      })
+    } finally {
+      capability.close()
+      await payload.db.rollbackTransaction(transactionID)
+    }
+  })
+
   it('denies suppression enumeration and mutation even with the ordinary private outbox capability', async () => {
     const transactionID = await payload.db.beginTransaction()
     if (transactionID === null) throw new Error('Expected a test transaction')

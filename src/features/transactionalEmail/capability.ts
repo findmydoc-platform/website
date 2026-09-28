@@ -18,7 +18,25 @@ type RetirementEvidenceCapability = {
   kind: 'outbox-retirement-evidence'
   transactionID: number | string
 }
-const capabilities = new WeakMap<object, StorageCapability | RetirementEvidenceCapability>()
+type CapabilityState = StorageCapability | RetirementEvidenceCapability
+const capabilityRegistryKey = Symbol.for('findmydoc.transactional-email.capabilities')
+
+function resolveCapabilityRegistry(): WeakMap<object, CapabilityState> {
+  const existing = Reflect.get(globalThis, capabilityRegistryKey)
+  if (existing instanceof WeakMap) return existing as WeakMap<object, CapabilityState>
+  const registry = new WeakMap<object, CapabilityState>()
+  Object.defineProperty(globalThis, capabilityRegistryKey, {
+    configurable: false,
+    enumerable: false,
+    value: registry,
+    writable: false,
+  })
+  return registry
+}
+
+// Next.js can evaluate route code and Payload collection hooks as separate server module instances.
+// The process-wide registry keeps their opaque identities interoperable without making capabilities enumerable.
+const capabilities = resolveCapabilityRegistry()
 
 export function openStorageCapability(transactionID: number | string, worker?: WorkerAuthority) {
   const identity = Object.freeze({})

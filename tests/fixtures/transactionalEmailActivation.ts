@@ -130,14 +130,7 @@ export function createActivationFixture(
     preflightVersion: preflight.version,
     ...(environment === 'production'
       ? {
-          approvals: {
-            dpa: 'production-dpa',
-            subprocessors: 'production-subprocessors',
-            retentionDeletion: 'production-retention',
-            digestKeyOwnershipRotation: 'production-key-management',
-            privacyNotice: 'production-privacy',
-            processingPurpose: 'production-purpose',
-            compliance: 'production-compliance',
+          release: {
             onePath: 'production-clinic-registration-cutover',
           },
         }

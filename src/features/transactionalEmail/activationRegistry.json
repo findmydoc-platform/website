@@ -55,6 +55,60 @@
         "webhook": "preview-webhook-v1",
         "tracking": "preview-tracking-disabled-v1"
       }
+    },
+    {
+      "environment": "production",
+      "version": "production-preflight-v1",
+      "registryVersion": "activation-v1",
+      "target": {
+        "teamId": "01a0da1e-cf71-7133-8495-9c11a0f4ec1d",
+        "projectId": "01a0da21-7c43-73dc-bf11-2e73fa8c3c9a",
+        "routeId": "01a0da21-7c4e-722f-a90f-ff68d2ad8fe2",
+        "routeSlug": "outgoing",
+        "sender": "no-reply@findmydoc.eu",
+        "webhookId": "01a0e800-07c8-7171-8eac-95075ab2d45a",
+        "digestKeyId": "production-digest-key-v1"
+      },
+      "credentials": {
+        "projectToken": {
+          "bindingId": "project-token-production",
+          "sha256": "e06ec0a6c425b6ea38fcb920b329ff0eb77950affc595c60b91513621886778d"
+        },
+        "webhookSecret": {
+          "bindingId": "webhook-current-production",
+          "sha256": "2e17d31651cab89f1d66b3f35ca7d75f03383a6e3fd2e7306447dceebbd62552"
+        },
+        "previousWebhookSecret": null,
+        "digestKey": {
+          "bindingId": "digest-key-production-production-digest-key-v1",
+          "sha256": "4c7e79feb31002818c47ed9cd812e6950ee04e97b8f657d324453838433beca2"
+        },
+        "previousDigestKeys": []
+      },
+      "tracking": {
+        "open": false,
+        "click": false
+      },
+      "webhookEvents": [
+        "message.created",
+        "message.sent",
+        "message.delivered",
+        "message.hard_bounced",
+        "message.soft_bounced",
+        "message.spam_complaint",
+        "message.failed",
+        "message.suppressed",
+        "message.policy_rejected"
+      ],
+      "evidence": {
+        "team": "production-team-20260928",
+        "project": "production-project-20260928",
+        "route": "production-route-transactional-20260928",
+        "sender": "production-sender-no-reply-v1",
+        "dns": "production-dns-v1",
+        "webhook": "production-webhook-v1",
+        "tracking": "production-tracking-disabled-v1"
+      }
     }
   ],
   "records": [
@@ -63,6 +117,15 @@
       "registryVersion": "activation-v1",
       "preflightVersion": "preview-preflight-v1",
       "environment": "preview"
+    },
+    {
+      "commandType": "clinic.registration-received",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "production-preflight-v1",
+      "environment": "production",
+      "release": {
+        "onePath": "production-clinic-registration-cutover-1910"
+      }
     }
   ]
 }

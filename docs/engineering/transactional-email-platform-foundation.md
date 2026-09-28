@@ -1,8 +1,9 @@
 # Transactional email platform foundation
 
 This document is the implementation contract for the shared transactional email foundation owned by the Website
-runtime. [ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md) remains the binding architecture decision.
-This document does not reconsider the provider, outbox requirement, or application ownership set by that ADR.
+runtime. [ADR 031](../adrs/031-adr-transactional-email-technical-activation-gates.md) is the current architecture
+decision and retains the provider, outbox, and application-ownership decisions from
+[ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md).
 The private `@findmydoc-platform/email-templates` package owns template components, copy, and typed props. The Website
 owns recipient resolution, HTML and plain-text rendering, the outbox, worker, provider integration, and delivery state.
 Package releases reach Website only through a reviewed exact-version dependency change.
@@ -79,10 +80,10 @@ The foundation owns:
 - a fake delivery adapter and privacy-safe local and CI evidence;
 - the cache classification and test contract for the new collections.
 
-The foundation does not include:
+The foundation layer itself does not include:
 
 - the Lettermint adapter, webhook endpoint, suppression store, sender identity, DNS, or provider credentials;
-- Preview or Production activation;
+- Preview or Production activation, which is composed by the delivery edge and command-specific product flows;
 - a Dashboard route or Dashboard implementation;
 - a product-flow trigger, recipient rule, action link, or template;
 - a change to the existing generic Payload email adapter;
@@ -266,7 +267,7 @@ The transaction performs no Supabase or delivery-provider network call. A failed
 cannot leave a committed email command behind.
 
 Supabase and Payload cannot share a database transaction. A flow that changes Supabase state must first persist a
-recoverable intent and reconcile interrupted progress as required by ADR 028. A flow implementation must stop and
+recoverable intent and reconcile interrupted progress as retained by ADR 031. A flow implementation must stop and
 obtain a specific work order if it cannot identify that durable intent.
 
 ## Logical and provider idempotency
@@ -553,7 +554,7 @@ The first implementation does not add application-level encryption for the trans
 private and the fields have a short lifetime. If Legal or Security requires application-level encryption, work stops
 for a separate key-management and rotation decision rather than adding custom cryptography inside the foundation.
 
-Scrubbing remains opportunistic as required by ADR 028. The worker runs the retention sweep before preparing another
+Scrubbing remains opportunistic as retained by ADR 031. The worker runs the retention sweep before preparing another
 message. The eventual runner must invoke that same worker entry point at least every 30 minutes, including when there
 is no due message. The safety sweep runs first on every invocation. This cadence supplies enough scheduling margin for
 the one-hour limit without a separate cleanup application. Issue #1847 owns the exact runner configuration but may not

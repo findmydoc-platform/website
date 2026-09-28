@@ -75,14 +75,7 @@ const registrySchema = z.strictObject({
         z.strictObject({
           ...recordFields,
           environment: z.literal('production'),
-          approvals: z.strictObject({
-            dpa: reference,
-            subprocessors: reference,
-            retentionDeletion: reference,
-            digestKeyOwnershipRotation: reference,
-            privacyNotice: reference,
-            processingPurpose: reference,
-            compliance: reference,
+          release: z.strictObject({
             onePath: reference,
           }),
         }),
@@ -106,7 +99,7 @@ function parseActivationRegistry(input: unknown): z.infer<typeof registrySchema>
     new Set(records.map((entry) => `${entry.environment}:${entry.commandType}`)).size !== records.length
   )
     unavailable()
-  const cutovers = records.flatMap((entry) => (entry.environment === 'production' ? [entry.approvals.onePath] : []))
+  const cutovers = records.flatMap((entry) => (entry.environment === 'production' ? [entry.release.onePath] : []))
   if (new Set(cutovers).size !== cutovers.length) unavailable()
   for (const preflight of preflights) {
     if (

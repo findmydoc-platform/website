@@ -13,6 +13,12 @@ type MedicalSpecialtyLookup = {
   parentSpecialty?: unknown
 }
 
+const MAXIMUM_REQUEST_BODY_BYTES = 32 * 1024
+const MAXIMUM_CLINIC_NAME_LENGTH = 160
+const MAXIMUM_CONTACT_NAME_LENGTH = 100
+const MAXIMUM_CONTACT_EMAIL_LENGTH = 254
+const MAXIMUM_CLINIC_WEBSITE_LENGTH = 2048
+const MAXIMUM_MEDICAL_SPECIALTY_COUNT = 25
 const ACCEPTED_RESPONSE = { success: true } as const
 const RETRYABLE_FAILURE_RESPONSE = { error: 'Clinic registration could not be completed. Please try again.' } as const
 const CONTACT_ROLE_VALUES = new Set<ClinicRegistrationContactRole>([
@@ -21,8 +27,63 @@ const CONTACT_ROLE_VALUES = new Set<ClinicRegistrationContactRole>([
   'International Office',
 ])
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const TRUSTED_FETCH_SITES = new Set(['same-origin', 'none'])
+
+class RequestBodyTooLargeError extends Error {}
 
 const readString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
+
+const hasJsonMediaType = (req: NextRequest): boolean =>
+  req.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase() === 'application/json'
+
+const hasTrustedBrowserOrigin = (req: NextRequest): boolean => {
+  const fetchSite = req.headers.get('sec-fetch-site')?.trim().toLowerCase()
+  if (fetchSite && !TRUSTED_FETCH_SITES.has(fetchSite)) return false
+
+  const origin = req.headers.get('origin')
+  if (!origin) return true
+
+  try {
+    return new URL(origin).origin === req.nextUrl.origin
+  } catch {
+    return false
+  }
+}
+
+const readRequestBody = async (req: NextRequest): Promise<Record<string, unknown>> => {
+  const declaredLength = req.headers.get('content-length')
+  if (declaredLength && /^\d+$/.test(declaredLength) && Number(declaredLength) > MAXIMUM_REQUEST_BODY_BYTES) {
+    throw new RequestBodyTooLargeError()
+  }
+
+  if (!req.body) return {}
+
+  const reader = req.body.getReader()
+  const chunks: Uint8Array[] = []
+  let byteLength = 0
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    byteLength += value.byteLength
+    if (byteLength > MAXIMUM_REQUEST_BODY_BYTES) {
+      await reader.cancel()
+      throw new RequestBodyTooLargeError()
+    }
+    chunks.push(value)
+  }
+
+  const bytes = new Uint8Array(byteLength)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+
+  const parsed = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {}
+}
 
 const isContactRole = (value: string): value is ClinicRegistrationContactRole =>
   CONTACT_ROLE_VALUES.has(value as ClinicRegistrationContactRole)
@@ -54,7 +115,7 @@ const isPublicDomainHostname = (hostname: string): boolean => {
 const normalizeWebsite = (value: unknown): string | null => {
   const rawValue = readString(value)
 
-  if (rawValue.length === 0) {
+  if (rawValue.length === 0 || rawValue.length > MAXIMUM_CLINIC_WEBSITE_LENGTH) {
     return null
   }
 
@@ -76,7 +137,8 @@ const normalizeWebsite = (value: unknown): string | null => {
       return null
     }
 
-    return url.toString()
+    const normalizedWebsite = url.toString()
+    return normalizedWebsite.length <= MAXIMUM_CLINIC_WEBSITE_LENGTH ? normalizedWebsite : null
   } catch {
     return null
   }
@@ -97,7 +159,7 @@ const extractRelationId = (value: unknown): number | null => {
 }
 
 const readMedicalSpecialtyIds = (value: unknown): number[] | null => {
-  if (!Array.isArray(value)) return null
+  if (!Array.isArray(value) || value.length > MAXIMUM_MEDICAL_SPECIALTY_COUNT) return null
 
   const ids = value
     .map((item) => (typeof item === 'number' ? item : typeof item === 'string' ? Number(item.trim()) : Number.NaN))
@@ -153,15 +215,32 @@ const registrationFailureCode = (error: unknown): string =>
 
 // Public endpoint to submit a clinic application from the clinic registration funnel.
 export async function POST(req: NextRequest) {
-  const payload = await getPayload({ config: configPromise })
+  if (!hasJsonMediaType(req)) {
+    return NextResponse.json({ error: 'Unsupported media type' }, { status: 415 })
+  }
+  if (!hasTrustedBrowserOrigin(req)) {
+    return NextResponse.json({ error: 'Cross-origin request forbidden' }, { status: 403 })
+  }
+
   let body: Record<string, unknown> = {}
 
   try {
-    body = await req.json().catch(() => ({}))
+    body = await readRequestBody(req)
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return NextResponse.json({ error: 'Request body too large' }, { status: 413 })
+    }
+  }
 
+  const payload = await getPayload({ config: configPromise })
+
+  try {
     const clinicName = readString(body.clinicName)
     if (clinicName.length === 0) {
       return NextResponse.json({ error: 'Clinic name is required' }, { status: 400 })
+    }
+    if (clinicName.length > MAXIMUM_CLINIC_NAME_LENGTH) {
+      return NextResponse.json({ error: 'Invalid clinicName' }, { status: 400 })
     }
 
     const clinicWebsite = normalizeWebsite(body.clinicWebsite)
@@ -173,14 +252,24 @@ export async function POST(req: NextRequest) {
     if (contactFirstName.length === 0) {
       return NextResponse.json({ error: 'Contact first name is required' }, { status: 400 })
     }
+    if (contactFirstName.length > MAXIMUM_CONTACT_NAME_LENGTH) {
+      return NextResponse.json({ error: 'Invalid contactFirstName' }, { status: 400 })
+    }
 
     const contactLastName = readString(body.contactLastName)
     if (contactLastName.length === 0) {
       return NextResponse.json({ error: 'Contact last name is required' }, { status: 400 })
     }
+    if (contactLastName.length > MAXIMUM_CONTACT_NAME_LENGTH) {
+      return NextResponse.json({ error: 'Invalid contactLastName' }, { status: 400 })
+    }
 
     const contactEmail = readString(body.contactEmail).toLowerCase()
-    if (contactEmail.length === 0 || !emailPattern.test(contactEmail)) {
+    if (
+      contactEmail.length === 0 ||
+      contactEmail.length > MAXIMUM_CONTACT_EMAIL_LENGTH ||
+      !emailPattern.test(contactEmail)
+    ) {
       return NextResponse.json({ error: 'Invalid contactEmail' }, { status: 400 })
     }
 

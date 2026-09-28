@@ -89,6 +89,7 @@ When adding a new ADR:
 - [025 — Direct staff authentication collections](./025-adr-direct-staff-auth-collections.md)
 - [026 — Standalone Clinic Dashboard BFF architecture](./026-adr-standalone-clinic-dashboard-bff-architecture.md)
 - [027 — Database runtime connection modes](./027-adr-database-runtime-connection-modes.md)
-- [028 — Lettermint for transactional email](./028-adr-lettermint-for-transactional-email.md)
+- [028 — Lettermint for transactional email](./028-adr-lettermint-for-transactional-email.md) _(superseded by ADR 031)_
 - [029 — Tenant-safe Clinic Dashboard reporting contract](./029-adr-tenant-safe-clinic-dashboard-reporting.md)
 - [030 — Bound transactional email webhook processing](./030-adr-bound-transactional-email-webhook-processing.md)
+- [031 — Transactional email technical activation gates](./031-adr-transactional-email-technical-activation-gates.md)

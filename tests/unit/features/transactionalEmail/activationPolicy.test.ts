@@ -261,7 +261,7 @@ describe('transactional email activation policy', () => {
     expect(() => resolveActivationPolicy(fixture.binding, fixture.registry)).toThrow('environment-unavailable')
   })
 
-  it.each(['teamId', 'projectId', 'routeId', 'webhookId', 'digestKeyId', 'sender'] as const)(
+  it.each(['teamId', 'projectId', 'routeId', 'routeSlug', 'webhookId', 'digestKeyId', 'sender'] as const)(
     'rejects preflight evidence for a different %s',
     (field) => {
       const fixture = createActivationFixture()

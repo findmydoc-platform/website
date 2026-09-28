@@ -164,6 +164,7 @@ describe('immutable provider preparation through the worker', () => {
         teamId: 'team-preview',
         projectId: 'project-preview',
         routeId: 'route-preview',
+        routeSlug: 'route-preview-slug',
       })
       expect(row).toMatchObject({
         provider_team_id: 'team-preview',
@@ -176,7 +177,7 @@ describe('immutable provider preparation through the worker', () => {
         subject: row.prepared_subject,
         html: row.prepared_html,
         text: row.prepared_text,
-        route: 'route-preview',
+        route: 'route-preview-slug',
         settings: { track_opens: false, track_clicks: false },
         metadata: { operation_id: operationId, command_type: 'clinic.registration-received', environment: 'preview' },
       })
@@ -230,7 +231,7 @@ describe('immutable provider preparation through the worker', () => {
     expect((await stored(operationId)).prepared_provider_request).toBe(before.prepared_provider_request)
   })
 
-  it.each(['teamId', 'projectId', 'routeId', 'environment', 'missing'] as const)(
+  it.each(['teamId', 'projectId', 'routeId', 'routeSlug', 'environment', 'missing'] as const)(
     'rejects %s target drift without rewriting or another attempt',
     async (field) => {
       const { req, operationId } = await accept()

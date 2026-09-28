@@ -11,6 +11,7 @@ const targetIdentitySchema = z.strictObject({
   teamId: identifier,
   projectId: identifier,
   routeId: identifier,
+  routeSlug: identifier,
 })
 const targetSchema = targetIdentitySchema.extend({
   environment: environmentSchema,
@@ -63,7 +64,9 @@ export type HostedLettermintBinding = {
   recipientDigestKeys: readonly RecipientDigestKey[]
 }
 export type HostedLettermintOutboundBinding = Readonly<{
-  target: Readonly<Pick<Target, 'environment' | 'teamId' | 'projectId' | 'routeId' | 'sender' | 'digestKeyId'>>
+  target: Readonly<
+    Pick<Target, 'environment' | 'teamId' | 'projectId' | 'routeId' | 'routeSlug' | 'sender' | 'digestKeyId'>
+  >
   projectToken: string
   digestKey: string
   recipientDigestKeys: readonly RecipientDigestKey[]
@@ -73,8 +76,13 @@ function unavailable(): never {
   throw new TransactionalEmailError('environment-unavailable')
 }
 
-function sameTarget(left: Pick<Target, 'teamId' | 'projectId' | 'routeId'>, right: typeof left) {
-  return left.teamId === right.teamId && left.projectId === right.projectId && left.routeId === right.routeId
+function sameTarget(left: Pick<Target, 'teamId' | 'projectId' | 'routeId' | 'routeSlug'>, right: typeof left) {
+  return (
+    left.teamId === right.teamId &&
+    left.projectId === right.projectId &&
+    left.routeId === right.routeId &&
+    left.routeSlug === right.routeSlug
+  )
 }
 
 function matchingFingerprint(secret: string, entry: Fingerprint) {
@@ -301,9 +309,9 @@ export function createHostedLettermintOutboundBinding(
   binding: HostedLettermintBinding,
 ): HostedLettermintOutboundBinding {
   requireVerifiedHostedBinding(binding)
-  const { environment, teamId, projectId, routeId, sender, digestKeyId } = binding.target
+  const { environment, teamId, projectId, routeId, routeSlug, sender, digestKeyId } = binding.target
   const outbound = {
-    target: Object.freeze({ environment, teamId, projectId, routeId, sender, digestKeyId }),
+    target: Object.freeze({ environment, teamId, projectId, routeId, routeSlug, sender, digestKeyId }),
   }
   Object.defineProperties(outbound, {
     projectToken: { value: binding.projectToken },

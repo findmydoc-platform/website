@@ -23,6 +23,7 @@ const registry = () => ({
       teamId: 'preview-team',
       projectId: 'preview-project',
       routeId: 'preview-route',
+      routeSlug: 'preview-route-slug',
       webhookId: 'preview-webhook',
       sender: 'preview@example.test',
       senderEvidenceId: 'preview-sender-evidence',
@@ -33,7 +34,15 @@ const registry = () => ({
   fingerprints: [],
 })
 const targetLocks = () => ({
-  targets: [{ environment: 'preview', teamId: 'preview-team', projectId: 'preview-project', routeId: 'preview-route' }],
+  targets: [
+    {
+      environment: 'preview',
+      teamId: 'preview-team',
+      projectId: 'preview-project',
+      routeId: 'preview-route',
+      routeSlug: 'preview-route-slug',
+    },
+  ],
 })
 const directories: string[] = []
 afterEach(async () => {
@@ -58,6 +67,7 @@ describe('Lettermint fingerprint setup', () => {
         teamId: 'preview-team',
         projectId: 'preview-project',
         routeId: 'preview-route',
+        routeSlug: 'preview-route-slug',
         webhookId: null,
         overlap: null,
       },
@@ -66,6 +76,7 @@ describe('Lettermint fingerprint setup', () => {
       teamId: 'preview-team',
       projectId: 'preview-project',
       routeId: 'preview-route',
+      routeSlug: 'preview-route-slug',
     })
   })
 
@@ -100,6 +111,7 @@ describe('Lettermint fingerprint setup', () => {
       teamId: 'preview-team',
       projectId: 'preview-project',
       routeId: 'different-route',
+      routeSlug: 'preview-route-slug',
     }
     expect(() =>
       recordFingerprint(changed, { environment: 'preview', kind: 'project-token' }, synthetic, targetLocks()),

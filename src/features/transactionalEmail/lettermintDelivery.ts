@@ -29,7 +29,8 @@ export function createLettermintDeliveryAdapter(
         !request ||
         request.teamId !== binding.target.teamId ||
         request.projectId !== binding.target.projectId ||
-        request.routeId !== binding.target.routeId
+        request.routeId !== binding.target.routeId ||
+        request.routeSlug !== binding.target.routeSlug
       )
         throw new TransactionalEmailError('environment-unavailable')
       const controller = new AbortController()

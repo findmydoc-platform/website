@@ -27,12 +27,12 @@ function checkedTarget(registry, environment, locks) {
   const target = matching[0]
   if (
     !Object.hasOwn(target, 'activatedTarget') ||
-    ['teamId', 'projectId', 'routeId', 'webhookId', 'senderEvidenceId', 'digestKeyId'].some(
+    ['teamId', 'projectId', 'routeId', 'routeSlug', 'webhookId', 'senderEvidenceId', 'digestKeyId'].some(
       (field) => typeof target[field] !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(target[field]),
     ) ||
-    ['teamId', 'projectId', 'routeId'].some((field) => target[field] !== pinned[0][field]) ||
+    ['teamId', 'projectId', 'routeId', 'routeSlug'].some((field) => target[field] !== pinned[0][field]) ||
     (target.activatedTarget &&
-      ['teamId', 'projectId', 'routeId'].some((field) => target[field] !== target.activatedTarget[field]))
+      ['teamId', 'projectId', 'routeId', 'routeSlug'].some((field) => target[field] !== target.activatedTarget[field]))
   )
     fail()
   return target
@@ -73,6 +73,7 @@ export function recordFingerprint(registry, options, credential, locks) {
     teamId: target.teamId,
     projectId: target.projectId,
     routeId: target.routeId,
+    routeSlug: target.routeSlug,
     webhookId: kind.startsWith('webhook-') ? target.webhookId : null,
     overlap,
     ...(kind === 'digest-key' ? { digestKeyId } : {}),
@@ -87,6 +88,7 @@ export function recordFingerprint(registry, options, credential, locks) {
               teamId: current.teamId,
               projectId: current.projectId,
               routeId: current.routeId,
+              routeSlug: current.routeSlug,
             },
           }
         : current,

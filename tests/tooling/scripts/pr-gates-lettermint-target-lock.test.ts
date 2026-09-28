@@ -9,12 +9,14 @@ const preview = {
   teamId: 'preview-team',
   projectId: 'preview-project',
   routeId: 'preview-route',
+  routeSlug: 'preview-route-slug',
 }
 const production = {
   environment: 'production',
   teamId: 'production-team',
   projectId: 'production-project',
   routeId: 'production-route',
+  routeSlug: 'production-route-slug',
 }
 
 describe('Lettermint target lock PR gate', () => {
@@ -35,7 +37,16 @@ describe('Lettermint target lock PR gate', () => {
       preservesActivatedTargets(
         { targets: [] },
         {
-          targets: [preview, { ...preview, teamId: 'other-team', projectId: 'other-project', routeId: 'other-route' }],
+          targets: [
+            preview,
+            {
+              ...preview,
+              teamId: 'other-team',
+              projectId: 'other-project',
+              routeId: 'other-route',
+              routeSlug: 'other-route-slug',
+            },
+          ],
         },
       ),
     ).toBe(false)
@@ -47,20 +58,32 @@ describe('Lettermint target lock PR gate', () => {
     ).toBe(false)
   })
 
+  it('allows the same route slug in separate projects', () => {
+    expect(
+      preservesActivatedTargets(
+        { targets: [] },
+        { targets: [preview, { ...production, routeSlug: preview.routeSlug }] },
+      ),
+    ).toBe(true)
+  })
+
   it('allows credential rotation without target changes', () => {
     expect(preservesActivatedTargets({ targets: [preview, production] }, { targets: [preview, production] })).toBe(true)
   })
 
-  it.each(['teamId', 'projectId', 'routeId'] as const)('rejects a changed %s after registration', (field) => {
-    expect(
-      preservesActivatedTargets(
-        { targets: [preview, production] },
-        { targets: [{ ...preview, [field]: 'new-value' }, production] },
-      ),
-    ).toBe(false)
-  })
+  it.each(['teamId', 'projectId', 'routeId', 'routeSlug'] as const)(
+    'rejects a changed %s after registration',
+    (field) => {
+      expect(
+        preservesActivatedTargets(
+          { targets: [preview, production] },
+          { targets: [{ ...preview, [field]: 'new-value' }, production] },
+        ),
+      ).toBe(false)
+    },
+  )
 
-  it.each(['teamId', 'projectId', 'routeId'] as const)(
+  it.each(['teamId', 'projectId', 'routeId', 'routeSlug'] as const)(
     'rejects a changed Preview %s while Production is appended',
     (field) => {
       expect(

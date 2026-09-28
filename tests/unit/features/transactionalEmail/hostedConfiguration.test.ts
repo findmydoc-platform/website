@@ -22,11 +22,12 @@ type TargetFixture = {
   teamId: string
   projectId: string
   routeId: string
+  routeSlug: string
   webhookId: string
   sender: string
   senderEvidenceId: string
   digestKeyId: string
-  activatedTarget: { teamId: string; projectId: string; routeId: string } | null
+  activatedTarget: { teamId: string; projectId: string; routeId: string; routeSlug: string } | null
 }
 type FingerprintFixture = {
   environment: Environment
@@ -36,6 +37,7 @@ type FingerprintFixture = {
   teamId: string
   projectId: string
   routeId: string
+  routeSlug: string
   webhookId: string | null
   overlap: { startsAt: string; validUntil: string } | null
   digestKeyId?: string | null
@@ -48,22 +50,34 @@ function fixture() {
       teamId: 'team-preview',
       projectId: 'project-preview',
       routeId: 'route-preview',
+      routeSlug: 'route-preview-slug',
       webhookId: 'webhook-preview',
       sender: 'preview@example.test',
       senderEvidenceId: 'sender-evidence-preview',
       digestKeyId: 'digest-preview',
-      activatedTarget: { teamId: 'team-preview', projectId: 'project-preview', routeId: 'route-preview' },
+      activatedTarget: {
+        teamId: 'team-preview',
+        projectId: 'project-preview',
+        routeId: 'route-preview',
+        routeSlug: 'route-preview-slug',
+      },
     },
     {
       environment: 'production',
       teamId: 'team-production',
       projectId: 'project-production',
       routeId: 'route-production',
+      routeSlug: 'route-production-slug',
       webhookId: 'webhook-production',
       sender: 'production@example.test',
       senderEvidenceId: 'sender-evidence-production',
       digestKeyId: 'digest-production',
-      activatedTarget: { teamId: 'team-production', projectId: 'project-production', routeId: 'route-production' },
+      activatedTarget: {
+        teamId: 'team-production',
+        projectId: 'project-production',
+        routeId: 'route-production',
+        routeSlug: 'route-production-slug',
+      },
     },
   ]
   const secrets: Record<Environment, Record<string, string | undefined>> = {
@@ -89,6 +103,7 @@ function fixture() {
         teamId: target.teamId,
         projectId: target.projectId,
         routeId: target.routeId,
+        routeSlug: target.routeSlug,
         webhookId: null,
         overlap: null,
       },
@@ -100,6 +115,7 @@ function fixture() {
         teamId: target.teamId,
         projectId: target.projectId,
         routeId: target.routeId,
+        routeSlug: target.routeSlug,
         webhookId: target.webhookId,
         overlap: null,
       },
@@ -111,17 +127,19 @@ function fixture() {
         teamId: target.teamId,
         projectId: target.projectId,
         routeId: target.routeId,
+        routeSlug: target.routeSlug,
         webhookId: null,
         overlap: null,
       },
     ]
   })
   const targetLocks = {
-    targets: targets.map(({ environment, teamId, projectId, routeId }) => ({
+    targets: targets.map(({ environment, teamId, projectId, routeId, routeSlug }) => ({
       environment,
       teamId,
       projectId,
       routeId,
+      routeSlug,
     })),
   }
   return { registry: { targets, fingerprints }, targetLocks, secrets }
@@ -372,12 +390,27 @@ describe('hosted Lettermint binding', () => {
     },
   )
 
+  it('allows the same route slug in separate projects', () => {
+    const input = fixture()
+    input.registry.targets[1]!.routeSlug = input.registry.targets[0]!.routeSlug
+    input.registry.targets[1]!.activatedTarget!.routeSlug = input.registry.targets[0]!.routeSlug
+    input.targetLocks.targets[1]!.routeSlug = input.registry.targets[0]!.routeSlug
+    input.registry.fingerprints
+      .filter((entry) => entry.environment === 'production')
+      .forEach((entry) => {
+        entry.routeSlug = input.registry.targets[0]!.routeSlug
+      })
+
+    expect(() => bind(input, 'production')).not.toThrow()
+  })
+
   it('rejects an activated target change during credential rotation', () => {
     const input = fixture()
     input.registry.targets[0]!.activatedTarget = {
       teamId: 'team-preview',
       projectId: 'project-preview',
       routeId: 'route-preview',
+      routeSlug: 'route-preview-slug',
     }
     input.registry.targets[0]!.routeId = 'new-preview-route'
     expect(() => bind(input)).toThrow('environment-unavailable')

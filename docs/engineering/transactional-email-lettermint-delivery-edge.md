@@ -166,6 +166,11 @@ not use batch sending, scheduling, `cc`, `bcc`, attachments, arbitrary headers, 
 caller-selected route. The sender and route come only from the validated environment configuration. Subject, HTML,
 plain text, and recipient come only from the durable prepared operation.
 
+Lettermint's Sending API selects a route by its slug, while webhook context identifies that route by its provider ID.
+The environment target therefore binds both values. The immutable route ID remains the durable provider identity;
+the separately locked route slug is serialized into the outbound request. Startup, provider preparation, and
+transport reject a missing or mismatched pair before network access.
+
 Open and click tracking are disabled in the dedicated Lettermint route and set to disabled on every request. The
 provider request contains no marketing tag, free-form metadata, source record, business operation reference, action
 link field, or template identifier.
@@ -260,7 +265,7 @@ The existing central runtime-environment policy remains authoritative. Adapter s
 
 Preview and Production use the same configuration schema but deployment-scoped values. Required hosted secret values
 cover the project token, current webhook secret, optional bounded previous webhook secret, and recipient-digest key
-ring. Non-secret target values cover the expected team, project, route, provider webhook identifier, sender identity,
+ring. Non-secret target values cover the expected team, project, route ID and slug, provider webhook identifier, sender identity,
 and activation-registry version and live as server-only module constants. Secrets remain in the deployment secret
 store and never appear in the repository, activation registry, logs, metrics, issue text, or test fixtures.
 
@@ -270,9 +275,9 @@ normal Preview and Production access separate, but it cannot detect a human copy
 Production secret slot.
 
 The module therefore owns a private credential-fingerprint registry. During provider setup, the operator verifies
-the visible team, project, route, and webhook configuration; supplies the project token or webhook secret to a local
+the visible team, project, route ID and slug, and webhook configuration; supplies the project token or webhook secret to a local
 setup command through concealed input; and records only the full SHA-256 fingerprint beside the expected
-environment, team, project, route, credential kind, and provider webhook identifier where applicable. A fingerprint
+environment, team, project, route ID and slug, credential kind, and provider webhook identifier where applicable. A fingerprint
 is a non-secret, one-way verification value and is committed as a server-only constant. The setup command never
 prints, logs, or writes the credential itself.
 
@@ -304,8 +309,8 @@ The server-only target and fingerprint registry lives in
 `src/features/transactionalEmail/lettermintTargetLocks.json`. Targets are registered one environment at a time.
 Preview registration requires no Production target, fingerprint, credential, or lock entry. A later Production
 registration adds its independent entry without changing or removing Preview. For each environment, the operator
-first verifies its team, project, route, webhook identifier, sender identity, sender evidence, and digest-key
-identifier. The operator enters only non-secret values in the registry, copies the verified team, project, and route
+first verifies its team, project, route ID and slug, webhook identifier, sender identity, sender evidence, and digest-key
+identifier. The operator enters only non-secret values in the registry, copies the verified team, project, route ID, and route slug
 to the separate lock, and reviews both changes before recording fingerprints. The setup command never edits the
 target lock. A target's `activatedTarget` is `null` before credential registration; the first fingerprint command pins
 it to the reviewed target, ahead of command activation. Runtime validation requires both the pin and the independent

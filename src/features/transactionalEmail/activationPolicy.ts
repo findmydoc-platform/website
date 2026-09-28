@@ -31,6 +31,7 @@ const preflightSchema = z.strictObject({
     teamId: reference,
     projectId: reference,
     routeId: reference,
+    routeSlug: reference,
     sender: z.email(),
     webhookId: reference,
     digestKeyId: reference,

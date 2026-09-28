@@ -243,7 +243,7 @@ describe('Lettermint delivery through the real worker', () => {
         subject: committed!.prepared_subject,
         html: committed!.prepared_html,
         text: committed!.prepared_text,
-        route: options.providerBinding.target.routeId,
+        route: options.providerBinding.target.routeSlug,
         settings: { track_opens: false, track_clicks: false },
         metadata: {
           operation_id: operationId,
@@ -579,7 +579,7 @@ describe('Lettermint delivery through the real worker', () => {
     expect(httpTransport).toHaveBeenCalledTimes(6)
   })
 
-  it.each(['teamId', 'projectId', 'routeId', 'environment'] as const)(
+  it.each(['teamId', 'projectId', 'routeId', 'routeSlug', 'environment'] as const)(
     'stops %s drift before another HTTP attempt',
     async (field) => {
       const { req, operationId } = await accept()
@@ -618,7 +618,7 @@ describe('Lettermint delivery through the real worker', () => {
     await createTransactionalEmailWorker(req, { ...options, httpTransport }).run(operationId)
     const init = httpTransport.mock.calls[0]![1]
     expect(init.headers).toMatchObject({ 'x-lettermint-token': options.providerBinding.projectToken })
-    expect(JSON.parse(init.body)).toMatchObject({ route: `route-${environment}`, metadata: { environment } })
+    expect(JSON.parse(init.body)).toMatchObject({ route: `route-${environment}-slug`, metadata: { environment } })
     expect(await stored(operationId)).toMatchObject({
       provider_team_id: `team-${environment}`,
       provider_project_id: `project-${environment}`,

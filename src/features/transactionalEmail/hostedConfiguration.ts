@@ -326,13 +326,13 @@ export function requireVerifiedHostedOutboundBinding(binding: HostedLettermintOu
   if (!outboundBindingOwners.has(binding)) unavailable()
 }
 
-export function hostedLettermintBindingIdentity(
-  binding: HostedLettermintBinding | HostedLettermintOutboundBinding,
-): object {
-  if (verifiedBindings.has(binding)) return binding
-  const owner = outboundBindingOwners.get(binding)
-  if (!owner) unavailable()
-  return owner
+export function requireMatchingHostedLettermintBinding(
+  owner: HostedLettermintBinding,
+  candidate: HostedLettermintBinding | HostedLettermintOutboundBinding,
+): void {
+  requireVerifiedHostedBinding(owner)
+  const candidateOwner = verifiedBindings.has(candidate) ? candidate : outboundBindingOwners.get(candidate)
+  if (candidateOwner !== owner) unavailable()
 }
 
 export function loadHostedLettermintBinding(

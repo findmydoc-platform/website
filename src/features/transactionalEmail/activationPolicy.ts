@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { commandTypes, type CommandType } from './commands'
 import {
-  hostedLettermintBindingIdentity,
+  requireMatchingHostedLettermintBinding,
   requireVerifiedHostedBinding,
   type HostedLettermintBinding,
   type HostedLettermintOutboundBinding,
@@ -183,14 +183,16 @@ export type ActivationPolicy = {
   evaluate(command: CommandType, address: string): ActivationSuppression | null
 }
 const policies = new WeakSet<object>()
-const policyBindings = new WeakMap<object, object>()
+const policyBindings = new WeakMap<object, HostedLettermintBinding>()
 
 export function requireActivationPolicy(
   policy: ActivationPolicy,
   binding?: HostedLettermintBinding | HostedLettermintOutboundBinding,
 ) {
   if (!policies.has(policy)) unavailable()
-  if (binding && policyBindings.get(policy) !== hostedLettermintBindingIdentity(binding)) unavailable()
+  const owner = policyBindings.get(policy)
+  if (!owner) unavailable()
+  if (binding) requireMatchingHostedLettermintBinding(owner, binding)
 }
 
 export function resolveActivationPolicy(
@@ -265,6 +267,6 @@ export function resolveActivationPolicy(
     },
   })
   policies.add(policy)
-  policyBindings.set(policy, hostedLettermintBindingIdentity(binding))
+  policyBindings.set(policy, binding)
   return policy
 }

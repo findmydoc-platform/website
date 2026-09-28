@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   createHostedLettermintOutboundBinding,
+  requireMatchingHostedLettermintBinding,
   requireVerifiedHostedOutboundBinding,
   resolveHostedLettermintBinding,
 } from '@/features/transactionalEmail/hostedConfiguration'
@@ -156,6 +157,10 @@ describe('hosted Lettermint binding', () => {
 
     const outbound = createHostedLettermintOutboundBinding(binding)
     expect(() => requireVerifiedHostedOutboundBinding(outbound)).not.toThrow()
+    expect(() => requireMatchingHostedLettermintBinding(binding, outbound)).not.toThrow()
+    expect(() =>
+      requireMatchingHostedLettermintBinding(binding, createHostedLettermintOutboundBinding(bind())),
+    ).toThrow('environment-unavailable')
     expect('webhookSecret' in outbound).toBe(false)
     expect('previousWebhookSecret' in outbound).toBe(false)
   })

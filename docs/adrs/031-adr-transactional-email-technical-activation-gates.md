@@ -44,8 +44,9 @@ Production activation remains command-specific and fail-closed. It requires an i
 credential fingerprints, digest-key evidence, sender and DNS evidence, disabled tracking, a signed webhook binding,
 and one unique release reference identifying the reviewed command-specific release artifact. CI, Outside-In tests,
 and review establish that the artifact leaves exactly one send path. The activation registry records the artifact
-under `release.onePath` and validates its bounded identity and uniqueness; runtime does not infer source topology from
-the reference. The registry contains no legal, privacy, compliance, retention, or public-document approval fields.
+under `release.onePath` as `website-pr-<number>` and validates its bounded identity and uniqueness; runtime does not
+infer source topology from the reference. The registry contains no legal, privacy, compliance, retention, or
+public-document approval fields.
 
 Legal, privacy, compliance, retention, key-management, and public-document review continue in
 [management issue #396](https://github.com/findmydoc-platform/management/issues/396) against the implemented

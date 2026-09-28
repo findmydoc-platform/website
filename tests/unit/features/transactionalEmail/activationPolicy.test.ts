@@ -237,6 +237,13 @@ describe('transactional email activation policy', () => {
     ).toThrow('environment-unavailable')
   })
 
+  it('rejects a Production release reference that is not bound to a Website pull request', () => {
+    const fixture = createActivationFixture('production')
+    fixture.record.release!.onePath = 'production-clinic-registration-cutover'
+
+    expect(() => resolveActivationPolicy(fixture.binding, fixture.registry)).toThrow('environment-unavailable')
+  })
+
   it.each(['team', 'project', 'route', 'sender', 'dns', 'webhook', 'tracking'] as const)(
     'rejects missing %s preflight evidence',
     (field) => {
@@ -257,7 +264,7 @@ describe('transactional email activation policy', () => {
       privacyNotice: 'production-privacy',
       processingPurpose: 'production-purpose',
       compliance: 'production-compliance',
-      onePath: 'production-clinic-registration-cutover',
+      onePath: 'website-pr-9999',
     })
 
     expect(() => resolveActivationPolicy(fixture.binding, fixture.registry)).toThrow('environment-unavailable')

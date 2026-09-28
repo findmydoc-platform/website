@@ -79,5 +79,9 @@ describe('committed transactional email activation', () => {
         )
       }
     }
+
+    expect(activationRegistry.records.find(({ environment }) => environment === 'production')?.release).toEqual({
+      onePath: 'website-pr-1943',
+    })
   })
 })

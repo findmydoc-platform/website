@@ -131,7 +131,7 @@ export function createActivationFixture(
     ...(environment === 'production'
       ? {
           release: {
-            onePath: 'production-clinic-registration-cutover',
+            onePath: 'website-pr-9999',
           },
         }
       : {}),

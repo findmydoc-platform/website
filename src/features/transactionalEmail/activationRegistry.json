@@ -124,7 +124,7 @@
       "preflightVersion": "production-preflight-v1",
       "environment": "production",
       "release": {
-        "onePath": "production-clinic-registration-cutover-1910"
+        "onePath": "website-pr-1943"
       }
     }
   ]

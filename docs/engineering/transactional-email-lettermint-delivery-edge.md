@@ -374,9 +374,9 @@ Each Preview activation record identifies:
 
 Each Production activation record contains the same fields plus one opaque `release.onePath` reference that
 identifies the command-specific release artifact reviewed for a single-path cutover. CI, Outside-In tests, and review
-establish the source topology; runtime validates only the bounded, unique release reference. Legal, privacy,
-compliance, retention, key-management, and public-document reviews are separate follow-up work and do not appear in
-the activation registry.
+establish the source topology; runtime validates only the bounded, unique `website-pr-<number>` release reference.
+Legal, privacy, compliance, retention, key-management, and public-document reviews are separate follow-up work and do
+not appear in the activation registry.
 
 Evidence references reveal neither document content nor private URLs. CI validates the registry schema, command
 union, environment, uniqueness, distinct Preview and Production team identifiers, immutable provider targets,

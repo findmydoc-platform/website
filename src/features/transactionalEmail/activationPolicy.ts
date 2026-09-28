@@ -10,6 +10,7 @@ import { TransactionalEmailError } from './errors'
 import { recipientAddressDigest } from './recipientBinding'
 
 const reference = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)
+const websitePullRequestReference = z.string().regex(/^website-pr-[1-9]\d{0,9}$/)
 const environment = z.enum(['preview', 'production'])
 const fingerprint = z.strictObject({ bindingId: reference, sha256: z.string().regex(/^[a-f0-9]{64}$/) })
 const webhookEvents = [
@@ -76,7 +77,7 @@ const registrySchema = z.strictObject({
           ...recordFields,
           environment: z.literal('production'),
           release: z.strictObject({
-            onePath: reference,
+            onePath: websitePullRequestReference,
           }),
         }),
       ]),

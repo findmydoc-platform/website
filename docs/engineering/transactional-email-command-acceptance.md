@@ -2,8 +2,9 @@
 
 [Website #1852](https://github.com/findmydoc-platform/website/issues/1852) and
 [Website #1853](https://github.com/findmydoc-platform/website/issues/1853) implement command acceptance and transaction ownership from
-[the foundation contract](transactional-email-platform-foundation.md). [ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md)
-continues to govern the platform.
+[the foundation contract](transactional-email-platform-foundation.md). [ADR 031](../adrs/031-adr-transactional-email-technical-activation-gates.md)
+is the current platform decision. It supersedes the Production governance gate in
+[ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md) while retaining its other decisions.
 
 ## Command boundary
 
@@ -121,11 +122,19 @@ Lettermint credential evidence before opening the transaction. Missing, malforme
 fails closed and never falls back to application-only intake. Preview and Production have separate declarations,
 bindings, credentials, schedulers, and failure domains.
 
-This change adds no hosted declaration, credential, provider call, link generation, scheduler, or Dashboard consumer.
-[Website #1893](https://github.com/findmydoc-platform/website/issues/1893) owns Preview activation and real Lettermint
-bindings. [Website #1910](https://github.com/findmydoc-platform/website/issues/1910) owns Production activation. The
-shared delivery runtime and private worker described in [worker processing](transactional-email-worker.md) remain
-unavailable in hosted environments until those activation changes land.
+[Website #1893](https://github.com/findmydoc-platform/website/issues/1893) commits the Preview declaration and real
+Lettermint binding. [Website #1910](https://github.com/findmydoc-platform/website/issues/1910) commits the separate
+Production declaration and binding for `clinic.registration-received` only. All other commands remain disabled. The
+shared delivery runtime and private worker described in [worker processing](transactional-email-worker.md) become
+available for that command only when the matching release artifact and hosted secrets are present.
+
+The public registration handler independently limits a request body to 32 KiB, clinic names to 160 characters,
+contact first and last names to 100 characters each, contact email to 254 characters, clinic website input to 2,048
+characters, and medical-specialty selection to 25 unique top-level identifiers. It rejects oversized bodies before
+Payload initialization or lookup. It accepts only JSON and rejects browser requests from a foreign origin before
+persistence, preventing a third-party page from distributing submissions across visitor IP addresses. The Production
+edge separately applies a fixed-window rate limit of five `POST` requests per source IP in ten minutes to
+`/api/auth/register/clinic` and returns `429` when exceeded. Preview policy is configured independently.
 
 `tests/integration/transactionalEmail.acceptance.test.ts` crosses the command port with real Payload and a disposable
 Postgres database. It observes commits from a separate connection, checks rollback and bounded retries, denies normal
@@ -137,8 +146,10 @@ requests during local/test/CI command acceptance. Permission-matrix and cache ar
 PostgreSQL. An independent connection proves that the application, operation, and first event remain invisible until
 commit. Catalog-source, authenticated-access, storage, commit, and exhausted serialization failures leave all three
 absent and return no success. Independent counts detect orphaned operations and events. Preview and Production tests
-also prove that the empty committed activation registry keeps intake application-only. Fetch and HTTP(S) guards keep
-the test path externally network-blocked.
+prove that their committed command declarations atomically create one queued receipt with one initial event, remain
+idempotent on repeated intake, and converge concurrent Production submissions. A mismatched Production credential
+fingerprint fails closed before any application, operation, or event persists. Fetch and HTTP(S) guards keep the test
+path externally network-blocked.
 
 The GraphQL contract uses the real sanitized mail collections and Countries as a positive query/mutation control.
 The repository-wide GraphQL schema currently fails to build on an unrelated relationship, including when both mail

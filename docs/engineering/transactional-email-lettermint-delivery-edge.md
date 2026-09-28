@@ -4,9 +4,9 @@ This document is the implementation contract for the Lettermint delivery edge ow
 tracked by [Website issue #1847](https://github.com/findmydoc-platform/website/issues/1847) under
 [management issue #388](https://github.com/findmydoc-platform/management/issues/388).
 
-[ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md) remains binding. This specification does not
-reconsider Lettermint, Website ownership, React Email ownership, the outbox requirement, environment isolation, or
-the absence of a hot provider fallback. It consumes the
+[ADR 031](../adrs/031-adr-transactional-email-technical-activation-gates.md) is the current decision and retains the
+provider, Website ownership, React Email ownership, outbox, environment-isolation, and no-fallback decisions from
+[ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md). It consumes the
 [transactional email platform foundation](transactional-email-platform-foundation.md) and does not replace its
 command, transaction, state, retry, deadline, or retention contracts.
 
@@ -20,7 +20,7 @@ activation.
 Without that boundary, product flows could acquire provider credentials, select senders, interpret provider errors,
 or bypass suppression and activation policy. Webhook payloads could also leak recipient or message content into
 storage and logs, while Preview and Production could accidentally share provider state. Those failures would break
-the ownership and privacy guarantees established by ADR 028 and the platform foundation.
+the ownership and privacy guarantees retained by ADR 031 and the platform foundation.
 
 ## Solution
 
@@ -37,9 +37,10 @@ Provider content is never retained.
 
 Local development, tests, and CI remain fake-only. Preview and Production use separate teams, projects, routes,
 tokens, webhook secrets, digest keys, and activation records. Preview additionally requires a central digest
-allowlist. Production additionally requires the legal, privacy, compliance, sender, DNS, webhook, and release
-evidence defined below. Every command type starts disabled and can be activated independently. There is no fallback
-or parallel send path.
+allowlist. Production additionally requires the technical provider, sender, DNS, webhook, credential, and one-path
+release evidence defined below. Legal, privacy, compliance, retention, key-management, and public-document review
+remain separate follow-up work and are not represented as activation evidence. Every command type starts disabled
+and can be activated independently. There is no fallback or parallel send path.
 
 The product-flow issues retain their existing responsibility:
 
@@ -96,7 +97,7 @@ The product-flow issues retain their existing responsibility:
 22. As a Preview tester, I cannot bypass the allowlist by changing a command payload, flow parameter, email casing,
     or environment variable owned by a product flow.
 23. As a Production user, I cannot receive a real message until the specific command has passed provider, sender,
-    DNS, webhook, legal, privacy, compliance, and release gates.
+    DNS, webhook, credential-binding, environment-isolation, and one-path release gates.
 24. As a release owner, I can activate one command without activating any other command.
 25. As a release owner, I cannot activate Production by copying Preview credentials or an incomplete Preview
     activation record.
@@ -118,8 +119,8 @@ The product-flow issues retain their existing responsibility:
     product-flow contracts.
 34. As a cache reviewer, I can prove that suppression and delivery operations have no public read, cache tag,
     revalidation event, discovery consumer, or affected path.
-35. As a compliance reviewer, I can stop Production activation without blocking fake Local and CI evidence or
-    approved synthetic Preview evidence.
+35. As a governance reviewer, I can assess the implemented Production data flow without the runtime claiming that an
+    opaque reference constitutes legal, privacy, or compliance approval.
 36. As an incident responder, I can distinguish invalid signatures, provider contract drift, configuration drift,
     suppression hits, and provider outages through privacy-safe codes without inspecting message content.
 
@@ -261,7 +262,7 @@ The existing central runtime-environment policy remains authoritative. Adapter s
 | Automated test | Scripted fake or controlled test transport | Forbidden | Test-owned outcomes only |
 | CI | Fake | Forbidden | Commands can be exercised only through fake evidence |
 | Preview | Lettermint Preview adapter | Allowed only after all Preview gates | Per-command activation plus digest allowlist |
-| Production | Lettermint Production adapter | Allowed only after all Production gates | Per-command activation plus legal and release evidence |
+| Production | Lettermint Production adapter | Allowed only after all technical Production gates | Per-command activation plus one-path release evidence |
 
 Preview and Production use the same configuration schema but deployment-scoped values. Required hosted secret values
 cover the project token, current webhook secret, optional bounded previous webhook secret, and recipient-digest key
@@ -334,7 +335,7 @@ node scripts/lettermint-fingerprint.mjs --environment preview --kind webhook-cur
 node scripts/lettermint-fingerprint.mjs --environment preview --kind digest-key
 ```
 
-The same commands run separately for Production after its approvals. For a planned previous-webhook overlap, use
+The same commands run separately for Production after its technical target review. For a planned previous-webhook overlap, use
 `--kind webhook-previous --starts-at <ISO timestamp> --valid-until <ISO timestamp>`. The interval may not exceed ten
 minutes. A digest fingerprint records the target's current `digestKeyId`; rotating that target identifier retains
 other explicitly versioned digest fingerprints while replacing only the same version. Before the first rotation of
@@ -371,18 +372,15 @@ Each Preview activation record identifies:
 - the expected non-secret activation-registry version;
 - the expected project-token and webhook-secret fingerprint entries.
 
-Each Production activation record contains the same fields plus opaque approval references for:
-
-- the DPA and subprocessor review;
-- retention and deletion policy;
-- digest-key ownership and rotation policy;
-- privacy notice and processing-purpose review;
-- Lettermint compliance verification;
-- the command-specific one-path cutover review.
+Each Production activation record contains the same fields plus one opaque `release.onePath` reference that
+identifies the command-specific release artifact reviewed for a single-path cutover. CI, Outside-In tests, and review
+establish the source topology; runtime validates only the bounded, unique `website-pr-<number>` release reference.
+Legal, privacy, compliance, retention, key-management, and public-document reviews are separate follow-up work and do
+not appear in the activation registry.
 
 Evidence references reveal neither document content nor private URLs. CI validates the registry schema, command
 union, environment, uniqueness, distinct Preview and Production team identifiers, immutable provider targets,
-evidence completeness, credential-fingerprint bindings, and registry-version bindings. Runtime initialization
+technical evidence completeness, credential-fingerprint bindings, and registry-version bindings. Runtime initialization
 repeats the relevant environment, fingerprint, and configuration checks before it constructs the delivery adapter
 and webhook verifier. A Production entry without every Production field is invalid rather than partially active.
 After first real activation, changing a committed team, project, or route constant is a V1 stop condition rather than
@@ -403,7 +401,9 @@ code `command-not-enabled`, then follows normal scrubbing and retention.
 `activationPolicy.ts` and the committed `activationRegistry.json`. The registry has schema version `1`, a reviewed
 registry `version`, environment-specific `preflights`, and command/environment `records`. Website #1893 adds the
 reviewed Preview preflight and enables only `clinic.registration-received` for the digest-bound Preview allowlist.
-Production retains no target, credential, preflight, activation record, or recipient configuration.
+Website #1910 adds the isolated Production target, credential fingerprints, technical preflight, and one-path release
+record for that same command. Every other Production command remains disabled, and Production has no recipient
+allowlist.
 
 A preflight binds its own version and the registry version to the team, project, route, sender, webhook identifier,
 and current digest-key version. It records the exact binding ID and full SHA-256 fingerprint for the project token,
@@ -419,12 +419,11 @@ References accept bounded identifiers only, without URLs, document content, or s
 
 Each activation record names one command, one environment, the exact registry version, and the current preflight
 version. Duplicate command/environment records, duplicate preflights, unknown fields, and stale version references
-fail initialization. Production additionally requires `dpa`, `subprocessors`, `retentionDeletion`,
-`digestKeyOwnershipRotation`, `privacyNotice`, `processingPurpose`, `compliance`, and `onePath` approval references.
-The one-path reference cannot be reused for another command. Preview and Production cannot share provider identities,
-credential bindings, or preflight evidence. Credential rotation or changed sender/webhook configuration rejects old
-preflight evidence until the registry has been reviewed again. References record operator approvals; runtime code
-does not contact the provider, inspect approval documents, or infer an approval from successful authentication.
+fail initialization. Production additionally requires one `release.onePath` reference. That reference cannot be
+reused for another command. Preview and Production cannot share provider identities, credential bindings, or
+preflight evidence. Credential rotation or changed sender/webhook configuration rejects old preflight evidence until
+the registry has been reviewed again. Runtime code does not contact the provider or infer legal, privacy, compliance,
+retention, key-management, or public-document approval from successful authentication.
 
 Hosted startup validates credentials first and then builds an immutable activation policy. The worker evaluates that
 policy after recipient revalidation before each link, render, and delivery step, including a prepared retry. A denial
@@ -479,7 +478,7 @@ contract supports the current version and only explicitly fingerprinted previous
 closed. The worker uses the same verified ring for suppression lookup, while every new digest uses the current
 version.
 
-### Sender, DNS, webhook, and compliance preflight
+### Sender, DNS, webhook, and technical preflight
 
 Real delivery activation requires an operational preflight for the exact environment-specific project and route. The
 preflight verifies and records evidence for:
@@ -490,8 +489,7 @@ preflight verifies and records evidence for:
 4. disabled open and click tracking at route level;
 5. a route-scoped HTTPS webhook with the exact event subscription defined below;
 6. a current webhook signature test against the environment endpoint;
-7. distinct Preview and Production team, project, token, webhook, and suppression resources;
-8. Production team compliance verification before any Production recipient is allowed.
+7. distinct Preview and Production team, project, token, webhook, digest-key, and suppression resources.
 
 Preflight evidence is produced outside the request and worker runtimes. Runtime delivery has no Team API token and
 does not perform DNS or provider-administration calls. A preflight does not change DNS or provider configuration; it
@@ -504,9 +502,9 @@ new preflight is recorded. Changing the team, project, or route after first real
 treated as a routine preflight update. Runtime validation compares the configured team, project, route, sender,
 credential fingerprints, and registry version before serializing a provider request or accepting a webhook.
 
-Production credentials, Production DNS cutover, Supabase auth-delivery cutover, Production recipients, and Production
-activation remain blocked until the complete written legal and privacy approval set exists. Fake Local and CI
-evidence and allowlisted synthetic Preview evidence do not require that Production approval.
+Legal, privacy, compliance, retention, key-management, and public-document review assess the implemented data flow in
+[management issue #396](https://github.com/findmydoc-platform/management/issues/396). This work is non-blocking;
+technical activation neither records nor implies approval from those reviews.
 
 ### Webhook request boundary
 
@@ -778,8 +776,8 @@ local record automatically.
 
 Suppression records do not follow the outbox's 42-day deletion policy. They remain active until an approved manual or
 legal removal process exists. The first implementation provides no Admin UI, public API, automatic expiry, provider-
-driven removal, or application delete command. Legal and Privacy must approve that indefinite active retention before
-Production activation.
+driven removal, or application delete command. Management issue #396 assesses that indefinite active retention as
+non-blocking follow-up work against the implemented data flow.
 
 Recipient digests use a dedicated HMAC key ring per environment. A digest is prefixed with a non-secret key version.
 New outbox and suppression digests use only the current key. Lookup computes the digest under the current key and all
@@ -793,7 +791,8 @@ A previous digest key cannot be retired merely because time passed. Retirement i
 suppression, or Preview allowlist entry still references its version. Because an address may never be encountered
 again, a complete rehash is impossible without plaintext. A forced retirement therefore requires a separate,
 explicit migration decision with an authoritative plaintext source or an acknowledged loss of suppression coverage.
-The Production legal gate must approve this limitation and name the key owner before activation.
+Management issue #396 must assess this limitation and name the key owner. Technical activation does not imply that
+the follow-up review is complete.
 
 The private retirement command is the sole supported removal path. It validates the active environment-specific
 binding, proves each retained source with count-only capabilities in one transaction, and mutates no registry file
@@ -939,7 +938,7 @@ The edge never guesses when evidence or configuration is incomplete:
 - a disabled command is suppressed before preparation;
 - a Preview recipient outside the digest allowlist is suppressed before preparation;
 - invalid sender, project, route, webhook, registry, or evidence version blocks activation;
-- missing Production legal or privacy approval blocks Production activation;
+- missing Production technical preflight or one-path release evidence blocks Production activation;
 - invalid or stale webhook signatures mutate nothing;
 - provider contract drift produces a safe failure signal and no raw payload retention;
 - an ambiguous send reuses exact bytes and the same idempotency key;
@@ -964,13 +963,13 @@ command remains disabled. Readiness proceeds in this order:
    and sender resources outside this implementation;
 3. record Preview preflight evidence and enable one command for allowlisted synthetic recipients;
 4. validate signed webhook delivery, provider idempotency, suppression, logs, and one-path behavior in Preview;
-5. obtain written Production legal, privacy, compliance, retention, and key-management approvals;
-6. provision and verify a separate Production team, project, route, token and webhook-secret fingerprints, webhook,
+5. provision and verify a separate Production team, project, route, token and webhook-secret fingerprints, webhook,
    and sender resources without yet enabling a command;
-7. prepare and validate one release artifact that both removes the command's former direct send path and adds its
+6. prepare and validate one release artifact that both removes the command's former direct send path and adds its
    command-specific Production activation record;
-8. release that artifact explicitly, so the old deployment has only the old path and the new deployment has only the
+7. release that artifact explicitly, so the old deployment has only the old path and the new deployment has only the
    outbox path;
+8. continue the governance review in management issue #396 against the implemented data flow;
 9. repeat the command-specific cutover for later flows.
 
 This specification authorizes none of those implementation, provider, DNS, Preview, or Production actions by itself.
@@ -1010,7 +1009,8 @@ This seam must prove:
 18. a disabled command makes no link, render, serialization, or transport call;
 19. a Preview allowlist miss makes no link, render, serialization, or transport call;
 20. a local suppression hit makes no link, render, serialization, or transport call;
-21. Production activation without every evidence field is rejected before provider work;
+21. Production activation without every technical preflight and one-path release field is rejected before provider
+    work;
 22. Local, test, and CI cannot select the real transport even when a test process exposes provider-like environment
     values;
 23. missing, malformed, cross-environment, duplicated, or inconsistent hosted configuration fails before adapter,
@@ -1115,12 +1115,14 @@ Preview readiness run may use one enabled command and one allowlisted synthetic 
 - a controlled test recipient bounce or provider test event produces only the approved privacy-safe evidence;
 - no former direct path sends in parallel.
 
-That evidence is not a Production release. Production requires its own project, preflight, approvals, cutover review,
-and explicit activation.
+That evidence is not a Production release. After the Website #1910 release artifact is deployed, a separately
+authorized controlled Production run must prove one receipt, one idempotent duplicate outcome, signed webhook
+feedback, privacy-safe evidence, and absence of a former parallel send path. Repository activation evidence does not
+claim that post-release run has happened.
 
 ## Out of Scope
 
-- Reconsidering ADR 028 or selecting another provider.
+- Reconsidering the provider retained by ADR 031 or selecting another provider.
 - Changing the foundation command interface, transaction ownership, lease model, retry schedule, state list, action-
   link deadlines, scrubbing deadline, or 42-day outbox-history assumption.
 - Defining or changing triggers, recipients, action links, callbacks, templates, template wording, or template
@@ -1129,7 +1131,7 @@ and explicit activation.
 - Provisioning Lettermint teams, projects, routes, tokens, webhooks, or sender identities.
 - Editing DNS records, Vercel environment values, Supabase settings, or provider suppressions.
 - Sending a real Preview or Production email.
-- Activating Preview or Production for any command.
+- Activating any hosted command other than `clinic.registration-received`.
 - Removing a current direct send path; that belongs to the command's flow issue and cutover change.
 - Adding a hot fallback, shadow provider, parallel send, batch send, scheduled send, marketing route, inbound email,
   attachment support, or arbitrary provider metadata.

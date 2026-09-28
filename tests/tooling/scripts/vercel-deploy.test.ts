@@ -131,7 +131,7 @@ describe('Vercel deployment boundary', () => {
     expect(dispatcherGuardStep.run).toBe('bash ./.github/scripts/deploy/require-platform-release-dispatcher.sh')
     expect(platformReleaseWorkflow.jobs.deploy?.needs).toBe('verify-dispatcher')
     expect(platformReleaseWorkflow.jobs.deploy?.uses).toBe(
-      'findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@e5c1488985bb02faaa6bc97b89f7f94ff1ed23c9',
+      'findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@ee7f555442f81ae2bb7ae592b4df16d2ae7a704a',
     )
     expect(platformReleaseWorkflow.jobs.deploy?.secrets?.GH_PACKAGES_READ_TOKEN).toBe(
       '${{ secrets.GH_PACKAGES_READ_TOKEN }}',

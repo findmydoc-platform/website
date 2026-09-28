@@ -10,7 +10,10 @@ import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadInt
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { resolveActivationPolicy } from '@/features/transactionalEmail/activationPolicy'
 import type { DeliveryAttempt } from '@/features/transactionalEmail/delivery'
-import { resolveHostedLettermintBinding } from '@/features/transactionalEmail/hostedConfiguration'
+import {
+  createHostedLettermintOutboundBinding,
+  resolveHostedLettermintBinding,
+} from '@/features/transactionalEmail/hostedConfiguration'
 import { workerTransaction } from '@/features/transactionalEmail/workerStorage'
 import { webhookNow } from '../fixtures/lettermintWebhook'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
@@ -73,10 +76,11 @@ describe('immutable provider preparation through the worker', () => {
       webhookNow,
       fixture.configuration.locks,
     )
+    const providerBinding = createHostedLettermintOutboundBinding(binding)
     return {
       catalog: syntheticEmailCatalog,
       suppression: async () => 'cleared' as const,
-      providerBinding: binding,
+      providerBinding,
       activationPolicy: resolveActivationPolicy(
         binding,
         fixture.registry,

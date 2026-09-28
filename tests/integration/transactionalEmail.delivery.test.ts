@@ -7,19 +7,24 @@ import { createHash, randomUUID } from 'node:crypto'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 import pg from 'pg'
 import config from '@payload-config'
-import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
+import { bindTransactionalEmail, bindTransactionalEmailForTest } from '@/features/transactionalEmail/payloadIntegration'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { resolveActivationPolicy } from '@/features/transactionalEmail/activationPolicy'
 import {
   createLettermintDeliveryAdapter,
   type LettermintHttpTransport,
 } from '@/features/transactionalEmail/lettermintDelivery'
-import { resolveHostedLettermintBinding } from '@/features/transactionalEmail/hostedConfiguration'
+import {
+  createHostedLettermintOutboundBinding,
+  resolveHostedLettermintBinding,
+} from '@/features/transactionalEmail/hostedConfiguration'
 import { webhookNow } from '../fixtures/lettermintWebhook'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
 import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import { assertNoPrivateEvidence } from '../helpers/deliveryEdgeEvidence'
+import { renderClinicRegistrationReceipt } from '@/features/transactionalEmail/preparation'
+import type { CommandCatalog } from '@/features/transactionalEmail/catalog'
 
 describe('Lettermint delivery through the real worker', () => {
   let payload: Payload
@@ -80,10 +85,11 @@ describe('Lettermint delivery through the real worker', () => {
       webhookNow,
       fixture.configuration.locks,
     )
+    const providerBinding = createHostedLettermintOutboundBinding(binding)
     return {
       catalog: syntheticEmailCatalog,
       suppression: async () => 'cleared' as const,
-      providerBinding: binding,
+      providerBinding,
       activationPolicy: resolveActivationPolicy(
         binding,
         fixture.registry,
@@ -94,8 +100,120 @@ describe('Lettermint delivery through the real worker', () => {
     }
   }
 
+  function previewRuntimeInput() {
+    const fixture = createActivationFixture('preview')
+    fixture.configuration.registry.targets = fixture.configuration.registry.targets.filter(
+      ({ environment }) => environment === 'preview',
+    )
+    fixture.configuration.registry.fingerprints = fixture.configuration.registry.fingerprints.filter(
+      ({ environment }) => environment === 'preview',
+    )
+    fixture.configuration.locks.targets = fixture.configuration.locks.targets.filter(
+      ({ environment }) => environment === 'preview',
+    )
+    return {
+      fixture,
+      input: [
+        {
+          NODE_ENV: 'production',
+          VERCEL_ENV: 'preview',
+          DEPLOYMENT_ENV: 'preview',
+          ...fixture.configuration.secrets.preview,
+          LETTERMINT_PREVIEW_RECIPIENT_DIGESTS: JSON.stringify([
+            'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf',
+          ]),
+        },
+        fixture.configuration.registry,
+        fixture.configuration.locks,
+        webhookNow,
+        fixture.registry,
+      ] as Parameters<typeof bindTransactionalEmailForTest>[2],
+    }
+  }
+
+  const clinicRegistrationCatalog: CommandCatalog = Object.freeze({
+    'clinic.registration-received': {
+      isRecipientAllowed: (recipient) => recipient.address.endsWith('@example.test'),
+      worker: {
+        revalidate: async (command) =>
+          command.registrationId === syntheticRegistrationId
+            ? {
+                address: 'recipient@example.test',
+                binding: syntheticRegistrationId,
+                prepare: async () =>
+                  renderClinicRegistrationReceipt('recipient@example.test', {
+                    fullName: 'Synthetic Recipient',
+                    clinicName: 'Synthetic Clinic',
+                  }),
+              }
+            : null,
+        terminalState: 'suppressed',
+      },
+      authorizeAndResolve: async (command, actor) => {
+        if (actor !== null || command.registrationId !== syntheticRegistrationId)
+          throw new Error('Unexpected synthetic command')
+        return {
+          address: 'recipient@example.test',
+          binding: syntheticRegistrationId,
+          prepare: async () =>
+            renderClinicRegistrationReceipt('recipient@example.test', {
+              fullName: 'Synthetic Recipient',
+              clinicName: 'Synthetic Clinic',
+            }),
+        }
+      },
+    },
+  })
+
   it('keeps Payload external telemetry disabled for delivery-edge execution', () => {
     expect(payload.config.telemetry).toBe(false)
+  })
+
+  it('selects Preview delivery from Preview-only runtime configuration and keeps Production unavailable', async () => {
+    const req = await createLocalReq({}, payload)
+    const operationReference = randomUUID()
+    references.push(operationReference)
+    const { fixture, input } = previewRuntimeInput()
+    const { operationId } = await bindTransactionalEmailForTest(req, clinicRegistrationCatalog, input).accept({
+      type: 'clinic.registration-received',
+      operationReference,
+      registrationId: syntheticRegistrationId,
+    })
+    const httpTransport = vi.fn(async () =>
+      Response.json({ message_id: 'preview-runtime-message', status: 'pending' }, { status: 202 }),
+    )
+
+    await createTransactionalEmailWorker(req, {
+      catalog: clinicRegistrationCatalog,
+      runtimeInput: input,
+      httpTransport,
+    }).run(operationId)
+
+    expect(httpTransport).toHaveBeenCalledOnce()
+    expect(await stored(operationId)).toMatchObject({
+      runtime_environment: 'preview',
+      state: 'accepted',
+      provider_message_id: 'preview-runtime-message',
+      provider_team_id: 'team-preview',
+      provider_project_id: 'project-preview',
+      provider_route_id: 'route-preview',
+    })
+
+    const productionInput = [
+      { NODE_ENV: 'production', VERCEL_ENV: 'production', DEPLOYMENT_ENV: 'production' },
+      fixture.configuration.registry,
+      fixture.configuration.locks,
+      webhookNow,
+      fixture.registry,
+    ] as Parameters<typeof bindTransactionalEmailForTest>[2]
+    expect(() =>
+      createTransactionalEmailWorker(req, {
+        catalog: clinicRegistrationCatalog,
+        runtimeInput: productionInput,
+        httpTransport,
+      }),
+    ).toThrow('environment-unavailable')
+    expect(httpTransport).toHaveBeenCalledOnce()
   })
 
   it('sends durable bytes and bound headers once, then stores acceptance and scrubs content', async () => {

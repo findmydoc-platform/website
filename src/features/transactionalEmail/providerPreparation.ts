@@ -2,7 +2,7 @@ import { z } from 'zod'
 import type { TransactionalEmailOutbox } from '@/payload-types'
 import { commandTypes } from './commands'
 import { TransactionalEmailError } from './errors'
-import { requireVerifiedHostedBinding, type HostedLettermintBinding } from './hostedConfiguration'
+import { requireVerifiedHostedOutboundBinding, type HostedLettermintOutboundBinding } from './hostedConfiguration'
 import { recipientAddressDigest } from './recipientBinding'
 
 const identifier = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)
@@ -60,8 +60,8 @@ export function validateProviderPreparation(record: TransactionalEmailOutbox) {
     throw new TransactionalEmailError('access-denied')
 }
 
-export function prepareProviderRequest(record: TransactionalEmailOutbox, binding: HostedLettermintBinding) {
-  requireVerifiedHostedBinding(binding)
+export function prepareProviderRequest(record: TransactionalEmailOutbox, binding: HostedLettermintOutboundBinding) {
+  requireVerifiedHostedOutboundBinding(binding)
   const { target } = binding
   if (providerBindingFields.some((field) => record[field] != null)) {
     if (

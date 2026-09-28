@@ -14,13 +14,33 @@ import config from '@payload-config'
 import { POST as submitClinicRegistrationRoute } from '@/app/api/auth/register/clinic/route'
 import { submitClinicRegistration as submitClinicRegistrationService } from '@/features/clinicRegistration/service'
 import type { DeliveryAdapter } from '@/features/transactionalEmail/delivery'
+import { selectTransactionalEmailCommandAcceptanceForTest } from '@/features/transactionalEmail/payloadIntegration'
+import { recipientAddressDigest } from '@/features/transactionalEmail/recipientBinding'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
+import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
+import { webhookNow } from '../fixtures/lettermintWebhook'
 import { testSlug } from '../fixtures/testSlug'
 import { asPayloadStaffUser, cleanupTrackedUsers, createPlatformTestUser } from '../fixtures/testUsers'
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: async () => null }))
+
+type CommandAcceptanceSelector =
+  typeof import('@/features/transactionalEmail/payloadIntegration').selectTransactionalEmailCommandAcceptance
+const commandAcceptanceOverride = vi.hoisted(() => ({
+  select: undefined as CommandAcceptanceSelector | undefined,
+}))
+
+vi.mock('@/features/transactionalEmail/payloadIntegration', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/features/transactionalEmail/payloadIntegration')>()
+  return {
+    ...original,
+    selectTransactionalEmailCommandAcceptance: ((command) =>
+      commandAcceptanceOverride.select?.(command) ??
+      original.selectTransactionalEmailCommandAcceptance(command)) satisfies CommandAcceptanceSelector,
+  }
+})
 
 type StoredRegistrationCounts = {
   applications: number
@@ -54,6 +74,7 @@ describe('public clinic registration transaction', () => {
 
   beforeEach(() => {
     vi.stubEnv('CI', 'false')
+    commandAcceptanceOverride.select = undefined
     const deny = () => {
       throw new Error('External network forbidden')
     }
@@ -72,6 +93,7 @@ describe('public clinic registration transaction', () => {
       expect(https.get).not.toHaveBeenCalled()
       expect(https.request).not.toHaveBeenCalled()
     } finally {
+      commandAcceptanceOverride.select = undefined
       vi.restoreAllMocks()
       vi.unstubAllEnvs()
     }
@@ -461,35 +483,84 @@ describe('public clinic registration transaction', () => {
     expect(await storedCounts(contactEmail)).toEqual({ applications: 0, operations: 0, events: 0 })
   })
 
-  it.each(['preview', 'production'] as const)(
-    'keeps %s application-only while the command has no activation declaration',
-    async (environment) => {
-      vi.stubEnv('NODE_ENV', 'production')
-      vi.stubEnv('VERCEL_ENV', environment)
-      vi.stubEnv('DEPLOYMENT_ENV', environment)
-      const contactEmail = `${prefix}-${environment}-inactive@clinic.example`
-
-      const response = await submitClinicRegistrationRoute(requestFor(contactEmail))
-      const repeated = await submitClinicRegistrationRoute(requestFor(contactEmail))
-
-      expect(response.status).toBe(202)
-      expect(repeated.status).toBe(202)
-      await expect(response.json()).resolves.toEqual({ success: true })
-      await expect(repeated.json()).resolves.toEqual({ success: true })
-      expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 0, events: 0 })
-      const stored = await observer.query<{ id: number }>(
-        'SELECT id FROM clinic_applications WHERE contact_email = $1',
-        [contactEmail],
-      )
-      applicationIds.push(stored.rows[0]!.id)
-    },
-  )
-
-  it('converges concurrent hosted-inactive submissions on one application', async () => {
+  it('keeps production application-only while the command has no activation declaration', async () => {
     vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('VERCEL_ENV', 'preview')
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
-    const contactEmail = `${prefix}-preview-inactive-concurrent@clinic.example`
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    const contactEmail = `${prefix}-production-inactive@clinic.example`
+
+    const response = await submitClinicRegistrationRoute(requestFor(contactEmail))
+    const repeated = await submitClinicRegistrationRoute(requestFor(contactEmail))
+
+    expect(response.status).toBe(202)
+    expect(repeated.status).toBe(202)
+    await expect(response.json()).resolves.toEqual({ success: true })
+    await expect(repeated.json()).resolves.toEqual({ success: true })
+    expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 0, events: 0 })
+    const stored = await observer.query<{ id: number }>('SELECT id FROM clinic_applications WHERE contact_email = $1', [
+      contactEmail,
+    ])
+    applicationIds.push(stored.rows[0]!.id)
+  })
+
+  it('activates Preview at the public route and keeps repeated submission idempotent', async () => {
+    const contactEmail = `${prefix}-preview-active@clinic.example`
+    const fixture = createActivationFixture('preview')
+    fixture.configuration.registry.targets = fixture.configuration.registry.targets.filter(
+      ({ environment }) => environment === 'preview',
+    )
+    fixture.configuration.registry.fingerprints = fixture.configuration.registry.fingerprints.filter(
+      ({ environment }) => environment === 'preview',
+    )
+    fixture.configuration.locks.targets = fixture.configuration.locks.targets.filter(
+      ({ environment }) => environment === 'preview',
+    )
+    const recipientDigest = recipientAddressDigest(contactEmail, {
+      version: fixture.binding.target.digestKeyId,
+      secret: fixture.configuration.secrets.preview.LETTERMINT_RECIPIENT_DIGEST_KEY!,
+    })
+    expect(recipientDigest).not.toBeNull()
+    const runtimeInput = [
+      {
+        NODE_ENV: 'production',
+        VERCEL_ENV: 'preview',
+        DEPLOYMENT_ENV: 'preview',
+        ...fixture.configuration.secrets.preview,
+        LETTERMINT_PREVIEW_RECIPIENT_DIGESTS: JSON.stringify([recipientDigest]),
+      },
+      fixture.configuration.registry,
+      fixture.configuration.locks,
+      webhookNow,
+      fixture.registry,
+    ] as Parameters<typeof selectTransactionalEmailCommandAcceptanceForTest>[1]
+    commandAcceptanceOverride.select = (command) =>
+      selectTransactionalEmailCommandAcceptanceForTest(command, runtimeInput)
+
+    expect(await storedCounts(contactEmail)).toEqual({ applications: 0, operations: 0, events: 0 })
+    const first = await submitClinicRegistrationRoute(requestFor(contactEmail))
+    const repeated = await submitClinicRegistrationRoute(requestFor(contactEmail))
+
+    expect(first.status).toBe(202)
+    expect(repeated.status).toBe(202)
+    await expect(first.json()).resolves.toEqual({ success: true })
+    await expect(repeated.json()).resolves.toEqual({ success: true })
+    expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 1, events: 1 })
+    expect(
+      (
+        await observer.query(
+          'SELECT runtime_environment, state FROM transactional_email_outbox WHERE recipient_address = $1',
+          [contactEmail],
+        )
+      ).rows,
+    ).toEqual([{ runtime_environment: 'preview', state: 'queued' }])
+    await trackRegistrations(contactEmail)
+  })
+
+  it('converges concurrent production-inactive submissions on one application', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    const contactEmail = `${prefix}-production-inactive-concurrent@clinic.example`
     const applicationHooks = payload.collections.clinicApplications.config.hooks.beforeChange
     let releaseWrites!: () => void
     let bothWriting!: () => void

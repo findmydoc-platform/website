@@ -2,12 +2,13 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { resolveHostedLettermintBinding } from '@/features/transactionalEmail/hostedConfiguration'
 import {
+  hasTransactionalEmailActivationForEnvironment,
   isTransactionalEmailCommandActivationDeclared,
   resolveActivationPolicy,
 } from '@/features/transactionalEmail/activationPolicy'
 import { createWebhookConfiguration, webhookNow } from '../../../fixtures/lettermintWebhook'
 import { createActivationFixture } from '../../../fixtures/transactionalEmailActivation'
-import { validateTransactionalEmailStartup } from '@/features/transactionalEmail/environment'
+import { validateTransactionalEmailStartupForTest } from '@/features/transactionalEmail/environment'
 import { commandTypes } from '@/features/transactionalEmail/commands'
 import committedRegistry from '@/features/transactionalEmail/activationRegistry.json'
 import { recipientAddressDigest } from '@/features/transactionalEmail/recipientBinding'
@@ -15,13 +16,14 @@ import { recipientAddressDigest } from '@/features/transactionalEmail/recipientB
 const previewDigest = 'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf'
 
 describe('transactional email activation policy', () => {
-  it('keeps hosted command acceptance inactive without an environment declaration', () => {
+  it('activates only the committed Preview clinic-registration command', () => {
     expect(
       isTransactionalEmailCommandActivationDeclared('preview', 'clinic.registration-received', committedRegistry),
-    ).toBe(false)
+    ).toBe(true)
     expect(
       isTransactionalEmailCommandActivationDeclared('production', 'clinic.registration-received', committedRegistry),
     ).toBe(false)
+    expect(isTransactionalEmailCommandActivationDeclared('preview', 'auth.invitation', committedRegistry)).toBe(false)
   })
 
   it('declares command acceptance only in the environment named by valid activation evidence', () => {
@@ -44,10 +46,21 @@ describe('transactional email activation policy', () => {
     ).toThrow('environment-unavailable')
   })
 
-  it('keeps every committed command disabled before provider provisioning and reviewed activation', () => {
+  it('does not parse an invalid Preview activation when Production has no activation entries', () => {
+    const fixture = createActivationFixture('preview')
+    fixture.registry.records[0]!.registryVersion = 'invalid-preview-registry-version'
+
+    expect(hasTransactionalEmailActivationForEnvironment('production', fixture.registry)).toBe(false)
+    expect(() =>
+      isTransactionalEmailCommandActivationDeclared('production', 'clinic.registration-received', fixture.registry),
+    ).toThrow('environment-unavailable')
+  })
+
+  it('keeps every command disabled without reviewed activation records', () => {
+    const inactiveRegistry = { schemaVersion: 1, version: 'activation-v1', preflights: [], records: [] }
     for (const environment of ['preview', 'production'] as const) {
       const { binding } = createActivationFixture(environment)
-      const policy = resolveActivationPolicy(binding, committedRegistry)
+      const policy = resolveActivationPolicy(binding, inactiveRegistry)
       for (const command of commandTypes)
         expect(policy.evaluate(command, 'recipient@example.test')).toBe('command-not-enabled')
     }
@@ -214,7 +227,7 @@ describe('transactional email activation policy', () => {
     const fixture = createActivationFixture('production')
     Reflect.deleteProperty(fixture.record.approvals!, 'dpa')
     expect(() =>
-      validateTransactionalEmailStartup(
+      validateTransactionalEmailStartupForTest(
         { VERCEL_ENV: 'production', ...fixture.configuration.secrets.production },
         fixture.configuration.registry,
         fixture.configuration.locks,
@@ -444,7 +457,7 @@ describe('transactional email activation policy', () => {
       'environment-unavailable',
     )
     expect(() =>
-      validateTransactionalEmailStartup(
+      validateTransactionalEmailStartupForTest(
         {
           VERCEL_ENV: 'production',
           ...production.configuration.secrets.production,
@@ -503,7 +516,7 @@ describe('transactional email activation policy', () => {
     (value) => {
       const fixture = createActivationFixture()
       expect(() =>
-        validateTransactionalEmailStartup(
+        validateTransactionalEmailStartupForTest(
           {
             VERCEL_ENV: 'preview',
             ...fixture.configuration.secrets.preview,

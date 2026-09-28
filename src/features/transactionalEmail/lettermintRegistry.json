@@ -1,4 +1,55 @@
 {
-  "targets": [],
-  "fingerprints": []
+  "targets": [
+    {
+      "environment": "preview",
+      "teamId": "01a0da4c-4e00-70b5-b832-4053aca5dd83",
+      "projectId": "01a0da4c-64f4-7324-9e59-8067ba18da0f",
+      "routeId": "01a0da4c-6501-71a3-8ec7-1ce1f283b8a5",
+      "webhookId": "01a0e49c-5edd-718a-b21a-70f263f880bd",
+      "sender": "notifications@preview.findmydoc.eu",
+      "senderEvidenceId": "preview-sender-notifications-v1",
+      "digestKeyId": "preview-digest-key-v1",
+      "activatedTarget": {
+        "teamId": "01a0da4c-4e00-70b5-b832-4053aca5dd83",
+        "projectId": "01a0da4c-64f4-7324-9e59-8067ba18da0f",
+        "routeId": "01a0da4c-6501-71a3-8ec7-1ce1f283b8a5"
+      }
+    }
+  ],
+  "fingerprints": [
+    {
+      "environment": "preview",
+      "kind": "project-token",
+      "bindingId": "project-token-preview",
+      "sha256": "121a01846f1f518c1a9c6e232a3cd2704221f000a5c7aae2421aead4df456c78",
+      "teamId": "01a0da4c-4e00-70b5-b832-4053aca5dd83",
+      "projectId": "01a0da4c-64f4-7324-9e59-8067ba18da0f",
+      "routeId": "01a0da4c-6501-71a3-8ec7-1ce1f283b8a5",
+      "webhookId": null,
+      "overlap": null
+    },
+    {
+      "environment": "preview",
+      "kind": "webhook-current",
+      "bindingId": "webhook-current-preview",
+      "sha256": "1edbc5e4e26ae973e8ad0a58fb5df8710f53fe435f194eb605d3002b3e30e870",
+      "teamId": "01a0da4c-4e00-70b5-b832-4053aca5dd83",
+      "projectId": "01a0da4c-64f4-7324-9e59-8067ba18da0f",
+      "routeId": "01a0da4c-6501-71a3-8ec7-1ce1f283b8a5",
+      "webhookId": "01a0e49c-5edd-718a-b21a-70f263f880bd",
+      "overlap": null
+    },
+    {
+      "environment": "preview",
+      "kind": "digest-key",
+      "bindingId": "digest-key-preview-preview-digest-key-v1",
+      "sha256": "eabb6c0471384deb92c1e82ede4a725053c54b06b500a3a2b60e7d86fb07b908",
+      "teamId": "01a0da4c-4e00-70b5-b832-4053aca5dd83",
+      "projectId": "01a0da4c-64f4-7324-9e59-8067ba18da0f",
+      "routeId": "01a0da4c-6501-71a3-8ec7-1ce1f283b8a5",
+      "webhookId": null,
+      "overlap": null,
+      "digestKeyId": "preview-digest-key-v1"
+    }
+  ]
 }

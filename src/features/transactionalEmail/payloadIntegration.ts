@@ -1,12 +1,19 @@
 import { createLocalReq, type PayloadRequest } from 'payload'
 import activationRegistry from './activationRegistry.json' with { type: 'json' }
 import { createCommandPort, type AcceptanceStorage } from './acceptance'
-import { isTransactionalEmailCommandActivationDeclared } from './activationPolicy'
+import {
+  hasTransactionalEmailActivationForEnvironment,
+  isTransactionalEmailCommandActivationDeclared,
+} from './activationPolicy'
 import { commandOperationReference, type CommandType } from './commands'
 import type { CommandCatalog } from './catalog'
 import { bindPayloadCommandCatalog } from './payloadCatalog'
 import { openStorageCapability } from './capability'
-import { resolveTransactionalEmailEnvironment, selectTransactionalEmailAcceptanceRuntime } from './environment'
+import {
+  resolveTransactionalEmailEnvironment,
+  selectTransactionalEmailAcceptanceRuntime,
+  selectTransactionalEmailAcceptanceRuntimeForTest,
+} from './environment'
 import { TransactionalEmailError } from './errors'
 import { isActiveTransaction, runOwnedTransaction, transactionError } from './transactions'
 import type { TransactionalEmailCommands } from './index'
@@ -118,6 +125,21 @@ export function bindTransactionalEmail(req: PayloadRequest, catalog?: CommandCat
   return bindTransactionalEmailWithRuntime(req, catalog, now, selectTransactionalEmailAcceptanceRuntime())
 }
 
+export function bindTransactionalEmailForTest(
+  req: PayloadRequest,
+  catalog: CommandCatalog,
+  runtimeInput: Parameters<typeof selectTransactionalEmailAcceptanceRuntimeForTest>,
+  now: () => number = Date.now,
+) {
+  if (process.env.VITEST !== 'true') throw new TransactionalEmailError('environment-unavailable')
+  return bindTransactionalEmailWithRuntime(
+    req,
+    catalog,
+    now,
+    selectTransactionalEmailAcceptanceRuntimeForTest(...runtimeInput),
+  )
+}
+
 function runTransactionalEmailTransactionWithRuntime<Result>(
   req: PayloadRequest,
   work: (transactionReq: PayloadRequest, commands: TransactionalEmailCommands) => Promise<Result>,
@@ -139,15 +161,20 @@ export function runTransactionalEmailTransaction<Result>(
   return runTransactionalEmailTransactionWithRuntime(req, work, catalog, runtime)
 }
 
-export function selectTransactionalEmailCommandAcceptance(command: CommandType) {
-  const environment = resolveTransactionalEmailEnvironment()
+function selectTransactionalEmailCommandAcceptanceWithRuntime(
+  command: CommandType,
+  environment: ReturnType<typeof resolveTransactionalEmailEnvironment>,
+  activationInput: unknown,
+  selectRuntime: () => AcceptanceRuntime,
+) {
   if (
     (environment === 'preview' || environment === 'production') &&
-    !isTransactionalEmailCommandActivationDeclared(environment, command, activationRegistry)
+    (!hasTransactionalEmailActivationForEnvironment(environment, activationInput) ||
+      !isTransactionalEmailCommandActivationDeclared(environment, command, activationInput))
   ) {
     return Object.freeze({ kind: 'inactive' as const })
   }
-  const runtime = selectTransactionalEmailAcceptanceRuntime()
+  const runtime = selectRuntime()
   return Object.freeze({
     kind: 'active' as const,
     run<Result>(
@@ -158,4 +185,26 @@ export function selectTransactionalEmailCommandAcceptance(command: CommandType) 
       return runTransactionalEmailTransactionWithRuntime(req, work, catalog, runtime)
     },
   })
+}
+
+export function selectTransactionalEmailCommandAcceptance(command: CommandType) {
+  return selectTransactionalEmailCommandAcceptanceWithRuntime(
+    command,
+    resolveTransactionalEmailEnvironment(),
+    activationRegistry,
+    selectTransactionalEmailAcceptanceRuntime,
+  )
+}
+
+export function selectTransactionalEmailCommandAcceptanceForTest(
+  command: CommandType,
+  runtimeInput: Parameters<typeof selectTransactionalEmailAcceptanceRuntimeForTest>,
+) {
+  if (process.env.VITEST !== 'true') throw new TransactionalEmailError('environment-unavailable')
+  return selectTransactionalEmailCommandAcceptanceWithRuntime(
+    command,
+    resolveTransactionalEmailEnvironment(runtimeInput[0]),
+    runtimeInput[4] ?? activationRegistry,
+    () => selectTransactionalEmailAcceptanceRuntimeForTest(...runtimeInput),
+  )
 }

@@ -292,18 +292,25 @@ provider target. No Team API token is needed at runtime: the project token sends
 limited to separate setup and administration work.
 
 Hosted startup validates the complete configuration before command or worker processing. Missing, malformed,
-cross-environment, duplicated, or internally inconsistent configuration fails startup. A hosted runtime never falls
-back to a fake. Local, test, and CI reject the presence or selection of a real project token.
+cross-environment, duplicated, or internally inconsistent configuration fails startup for that configured or
+activated environment. A hosted environment with no target, fingerprints, credentials, lock, or activation record
+may continue running with transactional email inactive. Its worker, webhook, and direct command-acceptance runtime
+remain unavailable. This lets Preview activate independently without provisioning or storing Production resources.
+A hosted runtime never falls back to a fake. Local, test, and CI reject the presence or selection of a real project
+token.
 
 The server-only target and fingerprint registry lives in
 `src/features/transactionalEmail/lettermintRegistry.json`. A separate reviewed target lock lives in
-`src/features/transactionalEmail/lettermintTargetLocks.json`. Both remain empty until the operator has independently
-verified the Preview and Production teams, projects, routes, webhook identifiers, sender identities, sender evidence,
-and digest-key identifiers. The operator enters only non-secret values in the registry, copies the verified team,
-project, and route to the separate lock, and reviews both changes before recording fingerprints. The setup command
-never edits the target lock. A target's `activatedTarget` is `null` before credential registration; the first
-fingerprint command pins it to the reviewed target, ahead of command activation. Runtime validation requires both
-the pin and the independent target lock to match. Rotation refuses target drift.
+`src/features/transactionalEmail/lettermintTargetLocks.json`. Targets are registered one environment at a time.
+Preview registration requires no Production target, fingerprint, credential, or lock entry. A later Production
+registration adds its independent entry without changing or removing Preview. For each environment, the operator
+first verifies its team, project, route, webhook identifier, sender identity, sender evidence, and digest-key
+identifier. The operator enters only non-secret values in the registry, copies the verified team, project, and route
+to the separate lock, and reviews both changes before recording fingerprints. The setup command never edits the
+target lock. A target's `activatedTarget` is `null` before credential registration; the first fingerprint command pins
+it to the reviewed target, ahead of command activation. Runtime validation requires both the pin and the independent
+target lock to match. Rotation refuses target drift. The target-lock check permits a new environment to be appended
+but never permits a registered environment to be removed or changed.
 The `Lettermint target lock` check compares the reviewed lock in a PR with its base commit. The check runs its
 validator from the base branch and treats the PR's lock file only as data. The workflow becomes active after its
 initial merge; this change introduces it with an empty lock, before target registration. Require its `preserve
@@ -389,8 +396,9 @@ code `command-not-enabled`, then follows normal scrubbing and retention.
 
 [Website #1904](https://github.com/findmydoc-platform/website/issues/1904) implements the private policy in
 `activationPolicy.ts` and the committed `activationRegistry.json`. The registry has schema version `1`, a reviewed
-registry `version`, environment-specific `preflights`, and command/environment `records`. Both arrays remain empty.
-No product command, provider resource, sender, DNS record, or credential is activated by this implementation.
+registry `version`, environment-specific `preflights`, and command/environment `records`. Website #1893 adds the
+reviewed Preview preflight and enables only `clinic.registration-received` for the digest-bound Preview allowlist.
+Production retains no target, credential, preflight, activation record, or recipient configuration.
 
 A preflight binds its own version and the registry version to the team, project, route, sender, webhook identifier,
 and current digest-key version. It records the exact binding ID and full SHA-256 fingerprint for the project token,
@@ -424,8 +432,9 @@ The policy stays behind the module's private Node.js imports and is absent from 
 dependency cannot be bundled for a browser, and policy construction rejects browser execution. A test-only worker
 option accepts only a policy issued after real configuration validation with synthetic credentials. It requires the
 test runtime and Vitest; it grants no hosted runtime or network capability. Local and CI retain their explicit fake
-execution. Hosted delivery still fails closed because the outbound adapter is not installed. This policy does not
-change scheduler authority, credentials, cadence, projects, or failure domains.
+execution. Hosted delivery constructs the outbound adapter only from the verified, secret-minimized binding for its
+own environment. An absent or inconsistent binding remains unavailable without fallback. This policy does not change
+scheduler authority, cadence, projects, or failure domains.
 
 Policy tests cover every command, malformed and missing evidence, version and fingerprint drift, environment
 separation, address normalization, and empty allowlists. The worker integration suite uses real Payload and Postgres
@@ -916,7 +925,8 @@ consumer, or another affected public path.
 
 The edge never guesses when evidence or configuration is incomplete:
 
-- missing hosted configuration fails startup;
+- missing hosted configuration fails startup for any configured or activated environment, while a wholly
+  unconfigured environment keeps transactional email inactive;
 - a missing or mismatched project-token or webhook-secret fingerprint fails module initialization;
 - Preview and Production configuration with the same provider team identifier fails validation;
 - a hosted environment cannot change its provider team, project, or route after first real activation;

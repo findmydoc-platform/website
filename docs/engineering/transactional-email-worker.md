@@ -175,8 +175,9 @@ connection/body timeout boundaries, fixed retry timing and exhaustion, same-byte
 rotation, target drift, environment isolation, and deadline budget. Time is controlled without waiting 20 seconds.
 
 Local development and CI keep explicit fake execution. Only Vitest in the test runtime accepts the controlled HTTP
-transport. Real hosted worker selection remains closed pending the separately owned suppression integration. Provider
-registries and activation records remain empty; no product command, hosted service, or credential is enabled here.
+transport. Preview hosted worker selection is available only through its fingerprint-verified target, minimized
+outbound capability, suppression lookup, command activation, and recipient digest allowlist. Production retains no
+target, credential, preflight, activation record, or recipient configuration and remains unavailable without fallback.
 
 ## Fake provider acceptance and privacy
 

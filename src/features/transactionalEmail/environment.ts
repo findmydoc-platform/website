@@ -1,12 +1,58 @@
 import { TransactionalEmailError } from './errors'
-import { resolveHostedLettermintBinding } from './hostedConfiguration'
+import {
+  createHostedLettermintOutboundBinding,
+  resolveHostedLettermintBinding,
+  type HostedLettermintOutboundBinding,
+} from './hostedConfiguration'
 import registry from './lettermintRegistry.json' with { type: 'json' }
 import targetLocks from './lettermintTargetLocks.json' with { type: 'json' }
 import activationRegistry from './activationRegistry.json' with { type: 'json' }
-import { resolveActivationPolicy } from './activationPolicy'
+import {
+  hasTransactionalEmailActivationForEnvironment,
+  resolveActivationPolicy,
+  type ActivationPolicy,
+} from './activationPolicy'
 import { recipientDigest } from './recipientBinding'
 
 export type EmailEnvironment = 'local' | 'test' | 'ci' | 'preview' | 'production'
+type HostedEnvironment = Extract<EmailEnvironment, 'preview' | 'production'>
+type LocalEnvironment = Exclude<EmailEnvironment, HostedEnvironment>
+type DigestRecipient = (recipient: Parameters<typeof recipientDigest>[0]) => string
+type Startup =
+  | {
+      environment: LocalEnvironment
+      configured: true
+      digestRecipient: DigestRecipient
+      activationPolicy: ActivationPolicy
+    }
+  | { environment: HostedEnvironment; configured: false }
+  | {
+      environment: HostedEnvironment
+      configured: true
+      binding: HostedLettermintOutboundBinding
+      digestRecipient: DigestRecipient
+      activationPolicy: ActivationPolicy
+    }
+type TransactionalEmailRuntime =
+  | {
+      environment: LocalEnvironment
+      delivery: 'fake'
+      links: 'fake'
+      activationPolicy: ActivationPolicy
+      digestRecipient: DigestRecipient
+    }
+  | {
+      environment: HostedEnvironment
+      delivery: 'lettermint'
+      links: 'unavailable'
+      activationPolicy: ActivationPolicy
+      digestRecipient: DigestRecipient
+      binding: HostedLettermintOutboundBinding
+    }
+type TransactionalEmailAcceptanceRuntime = {
+  environment: EmailEnvironment
+  digestRecipient: DigestRecipient
+}
 
 function classifyEnvironment(env: Record<string, string | undefined>): EmailEnvironment {
   if (env.VERCEL_ENV?.trim() && env.DEPLOYMENT_ENV?.trim() && env.VERCEL_ENV.trim() !== env.DEPLOYMENT_ENV.trim())
@@ -35,15 +81,32 @@ export function resolveTransactionalEmailEnvironment(env: Record<string, string 
   return classifyEnvironment(env)
 }
 
+function hasEnvironmentEntry(input: unknown, key: 'targets' | 'fingerprints', environment: 'preview' | 'production') {
+  if (!input || typeof input !== 'object') return true
+  const entries = Reflect.get(input, key)
+  if (!Array.isArray(entries)) return true
+  return entries.some(
+    (entry) => entry !== null && typeof entry === 'object' && Reflect.get(entry, 'environment') === environment,
+  )
+}
+
 function resolveStartup(
   env: Record<string, string | undefined> = process.env,
   registryInput: unknown = registry,
   lockedTargets: unknown = targetLocks,
   now = Date.now(),
   activationInput: unknown = activationRegistry,
-) {
+): Startup {
   const environment = resolveTransactionalEmailEnvironment(env)
   if (environment === 'preview' || environment === 'production') {
+    const activationDeclared = hasTransactionalEmailActivationForEnvironment(environment, activationInput)
+    const configured =
+      activationDeclared ||
+      Object.keys(env).some((key) => key.startsWith('LETTERMINT_')) ||
+      hasEnvironmentEntry(registryInput, 'targets', environment) ||
+      hasEnvironmentEntry(registryInput, 'fingerprints', environment) ||
+      hasEnvironmentEntry(lockedTargets, 'targets', environment)
+    if (!configured) return { environment, configured: false }
     const binding = resolveHostedLettermintBinding(environment, registryInput, env, now, lockedTargets)
     let previewRecipients: unknown
     if (environment === 'preview') {
@@ -57,29 +120,75 @@ function resolveStartup(
       recipientDigest(recipient, { version: binding.target.digestKeyId, secret: binding.digestKey })
     return {
       environment,
-      binding,
+      configured: true,
+      binding: createHostedLettermintOutboundBinding(binding),
       digestRecipient,
       activationPolicy: resolveActivationPolicy(binding, activationInput, previewRecipients),
     }
   }
-  return { environment, digestRecipient: recipientDigest, activationPolicy: Object.freeze({ evaluate: () => null }) }
+  return {
+    environment,
+    configured: true,
+    digestRecipient: recipientDigest,
+    activationPolicy: Object.freeze({ evaluate: () => null }),
+  }
 }
 
-export function validateTransactionalEmailStartup(...args: Parameters<typeof resolveStartup>) {
+export function validateTransactionalEmailStartup() {
+  const { environment } = resolveStartup()
+  return { environment }
+}
+
+export function validateTransactionalEmailStartupForTest(...args: Parameters<typeof resolveStartup>) {
+  if (process.env.VITEST !== 'true') throw new TransactionalEmailError('environment-unavailable')
   const { environment } = resolveStartup(...args)
   return { environment }
 }
 
-export function selectTransactionalEmailRuntime(env: Record<string, string | undefined> = process.env) {
-  const { environment, activationPolicy, digestRecipient } = resolveStartup(env)
-  if (environment === 'preview' || environment === 'production') {
-    // Hosted delivery remains unavailable until suppression and product preparation are integrated.
-    throw new TransactionalEmailError('environment-unavailable')
+function runtimeFromStartup(startup: Startup): TransactionalEmailRuntime {
+  if (!startup.configured) throw new TransactionalEmailError('environment-unavailable')
+  if ('binding' in startup) {
+    return {
+      environment: startup.environment,
+      delivery: 'lettermint',
+      links: 'unavailable',
+      activationPolicy: startup.activationPolicy,
+      digestRecipient: startup.digestRecipient,
+      binding: startup.binding,
+    } as const
   }
-  return { environment, delivery: 'fake', links: 'fake', activationPolicy, digestRecipient } as const
+  return {
+    environment: startup.environment,
+    delivery: 'fake',
+    links: 'fake',
+    activationPolicy: startup.activationPolicy,
+    digestRecipient: startup.digestRecipient,
+  } as const
 }
 
-export function selectTransactionalEmailAcceptanceRuntime(...args: Parameters<typeof resolveStartup>) {
-  const startup = resolveStartup(...args)
+export function selectTransactionalEmailRuntime(): TransactionalEmailRuntime {
+  return runtimeFromStartup(resolveStartup())
+}
+
+export function selectTransactionalEmailRuntimeForTest(
+  ...args: Parameters<typeof resolveStartup>
+): TransactionalEmailRuntime {
+  if (process.env.VITEST !== 'true') throw new TransactionalEmailError('environment-unavailable')
+  return runtimeFromStartup(resolveStartup(...args))
+}
+
+function acceptanceRuntimeFromStartup(startup: Startup): TransactionalEmailAcceptanceRuntime {
+  if (!startup.configured) throw new TransactionalEmailError('environment-unavailable')
   return { environment: startup.environment, digestRecipient: startup.digestRecipient } as const
+}
+
+export function selectTransactionalEmailAcceptanceRuntime(): TransactionalEmailAcceptanceRuntime {
+  return acceptanceRuntimeFromStartup(resolveStartup())
+}
+
+export function selectTransactionalEmailAcceptanceRuntimeForTest(
+  ...args: Parameters<typeof resolveStartup>
+): TransactionalEmailAcceptanceRuntime {
+  if (process.env.VITEST !== 'true') throw new TransactionalEmailError('environment-unavailable')
+  return acceptanceRuntimeFromStartup(resolveStartup(...args))
 }

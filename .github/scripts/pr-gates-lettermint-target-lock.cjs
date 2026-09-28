@@ -1,6 +1,8 @@
 const path = 'src/features/transactionalEmail/lettermintTargetLocks.json'
 const environments = ['preview', 'production']
 const identifier = /^[A-Za-z0-9_-]{1,128}$/
+const targetFields = ['teamId', 'projectId', 'routeId', 'routeSlug']
+const uniqueTargetFields = ['teamId', 'projectId', 'routeId']
 
 function validTargets(value) {
   if (!value || !Array.isArray(value.targets)) return false
@@ -9,13 +11,11 @@ function validTargets(value) {
     (target) =>
       target !== null &&
       environments.includes(target.environment) &&
-      ['teamId', 'projectId', 'routeId'].every(
-        (field) => typeof target[field] === 'string' && identifier.test(target[field]),
-      ),
+      targetFields.every((field) => typeof target[field] === 'string' && identifier.test(target[field])),
   )
   if (!validShape) return false
   if (new Set(value.targets.map((target) => target.environment)).size !== value.targets.length) return false
-  return ['teamId', 'projectId', 'routeId'].every(
+  return uniqueTargetFields.every(
     (field) => new Set(value.targets.map((target) => target[field])).size === value.targets.length,
   )
 }
@@ -24,7 +24,7 @@ function preservesActivatedTargets(previous, current) {
   if (!validTargets(previous) || !validTargets(current)) return false
   return previous.targets.every((old) => {
     const next = current.targets.find((target) => target.environment === old.environment)
-    return next && ['teamId', 'projectId', 'routeId'].every((field) => old[field] === next[field])
+    return next && targetFields.every((field) => old[field] === next[field])
   })
 }
 

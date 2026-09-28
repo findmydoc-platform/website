@@ -10,7 +10,7 @@ import { createRequire } from 'node:module'
 const { graphql } = createRequire(import.meta.url)('graphql') as typeof import('graphql')
 import { CACHE_TAGGABLE_COLLECTIONS, buildCollectionTag, getCachePolicyEntry } from '@/utilities/cachePolicy'
 import { selectTransactionalEmailRuntime } from '@/features/transactionalEmail/environment'
-import { openStorageCapability } from '@/features/transactionalEmail/capability'
+import { openStorageCapability, storageWorkerAuthority } from '@/features/transactionalEmail/capability'
 import { collectionContractRegistry } from './contracts/collectionContractRegistry'
 import { createLocalReq, getPayload, handleEndpoints, type Payload } from 'payload'
 import config from '@payload-config'
@@ -315,6 +315,50 @@ describe('transactional email command acceptance', () => {
     await expect(payload.find({ collection: 'transactionalEmailOutbox', req })).rejects.toMatchObject({
       code: 'access-denied',
     })
+  })
+
+  it('accepts a capability issued by a reloaded server module instance', async () => {
+    const transactionID = await payload.db.beginTransaction()
+    if (transactionID === null) throw new Error('Expected a test transaction')
+    vi.resetModules()
+    const reloadedCapability = await import('@/features/transactionalEmail/capability')
+    const capability = reloadedCapability.openStorageCapability(transactionID)
+    const req = await createLocalReq(
+      { context: capability.context, req: { transactionID: Promise.resolve(transactionID) } },
+      payload,
+    )
+    try {
+      await expect(payload.count({ collection: 'transactionalEmailOutbox', req })).resolves.toMatchObject({
+        totalDocs: expect.any(Number),
+      })
+    } finally {
+      capability.close()
+      await payload.db.rollbackTransaction(transactionID)
+    }
+  })
+
+  it('keeps process-shared capability state behind an immutable broker', () => {
+    const broker = Reflect.get(globalThis, Symbol.for('findmydoc.transactional-email.capability-broker.v1'))
+
+    expect(broker).not.toBeInstanceOf(WeakMap)
+    expect(Object.isFrozen(broker)).toBe(true)
+    expect(Reflect.ownKeys(broker as object).some((key) => Reflect.get(broker as object, key) instanceof WeakMap)).toBe(
+      false,
+    )
+  })
+
+  it('isolates issued worker authority from caller and broker mutations', async () => {
+    const source = { kind: 'worker' as const, token: 'lease-token', now: () => 1 }
+    const capability = openStorageCapability('owned-transaction', source)
+    const req = await createLocalReq({ context: capability.context }, payload)
+    const authority = storageWorkerAuthority(req)
+
+    expect(authority).not.toBe(source)
+    expect(Object.isFrozen(authority)).toBe(true)
+    expect(Reflect.set(source, 'kind', 'sweep')).toBe(true)
+    expect(Reflect.set(authority!, 'kind', 'sweep')).toBe(false)
+    expect(storageWorkerAuthority(req)).toMatchObject({ kind: 'worker', token: 'lease-token' })
+    capability.close()
   })
 
   it('denies suppression enumeration and mutation even with the ordinary private outbox capability', async () => {

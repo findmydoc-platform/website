@@ -1,7 +1,7 @@
 import type { DeliveryAdapter, DeliveryOutcome } from './delivery'
 import { TransactionalEmailError } from './errors'
 import { selectTransactionalEmailRuntime, validateTransactionalEmailStartup } from './environment'
-import { requireVerifiedHostedBinding, type HostedLettermintBinding } from './hostedConfiguration'
+import { requireVerifiedHostedOutboundBinding, type HostedLettermintOutboundBinding } from './hostedConfiguration'
 
 export const lettermintTimeoutMilliseconds = 20_000
 
@@ -11,10 +11,10 @@ export type LettermintHttpTransport = (
 ) => Promise<Response>
 
 export function createLettermintDeliveryAdapter(
-  binding: HostedLettermintBinding,
+  binding: HostedLettermintOutboundBinding,
   testTransport?: LettermintHttpTransport,
 ): DeliveryAdapter {
-  requireVerifiedHostedBinding(binding)
+  requireVerifiedHostedOutboundBinding(binding)
   if (testTransport) {
     if (process.env.VITEST !== 'true' || selectTransactionalEmailRuntime().environment !== 'test')
       throw new TransactionalEmailError('environment-unavailable')
@@ -29,7 +29,8 @@ export function createLettermintDeliveryAdapter(
         !request ||
         request.teamId !== binding.target.teamId ||
         request.projectId !== binding.target.projectId ||
-        request.routeId !== binding.target.routeId
+        request.routeId !== binding.target.routeId ||
+        request.routeSlug !== binding.target.routeSlug
       )
         throw new TransactionalEmailError('environment-unavailable')
       const controller = new AbortController()

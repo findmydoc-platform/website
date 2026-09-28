@@ -24,7 +24,7 @@ export async function cleanupTransactionalEmailFixtures(payload: Payload, refere
           req,
           overrideAccess: true,
           depth: 0,
-          limit: 100,
+          pagination: false,
           where: { operationReference: { in: references } },
         })
         const ids = outbox.docs.map((record) => record.id)

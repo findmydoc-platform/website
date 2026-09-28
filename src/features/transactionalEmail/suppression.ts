@@ -10,7 +10,7 @@ import { requireStorageCapability } from './capability'
 import { TransactionalEmailError } from './errors'
 import { runOwnedTransaction, isActiveTransaction } from './transactions'
 import { recipientAddressDigest } from './recipientBinding'
-import { requireVerifiedHostedBinding, type HostedLettermintBinding } from './hostedConfiguration'
+import { requireVerifiedHostedOutboundBinding, type HostedLettermintOutboundBinding } from './hostedConfiguration'
 import type { WebhookDeadline } from './webhookDeadline'
 import type { VerifiedLettermintEvent } from './lettermintEvent'
 import { requireVerifiedLettermintEvent } from './lettermintEvent'
@@ -197,8 +197,11 @@ export async function applyVerifiedSuppression(
   })
 }
 
-export function createSuppressionLookup(req: PayloadRequest, binding: HostedLettermintBinding): SuppressionLookup {
-  requireVerifiedHostedBinding(binding)
+export function createSuppressionLookup(
+  req: PayloadRequest,
+  binding: HostedLettermintOutboundBinding,
+): SuppressionLookup {
+  requireVerifiedHostedOutboundBinding(binding)
   return async ({ address, environment }, signal) => {
     if (environment !== binding.target.environment || signal.aborted) return 'unavailable'
     const digests = binding.recipientDigestKeys.map((key) => recipientAddressDigest(address, key))

@@ -1,3 +1,11 @@
 {
-  "targets": []
+  "targets": [
+    {
+      "environment": "preview",
+      "teamId": "01a0da4c-4e00-70b5-b832-4053aca5dd83",
+      "projectId": "01a0da4c-64f4-7324-9e59-8067ba18da0f",
+      "routeId": "01a0da4c-6501-71a3-8ec7-1ce1f283b8a5",
+      "routeSlug": "outgoing"
+    }
+  ]
 }

@@ -16,6 +16,7 @@ export function createWebhookConfiguration() {
     teamId: `team-${environment}`,
     projectId: `project-${environment}`,
     routeId: `route-${environment}`,
+    routeSlug: `route-${environment}-slug`,
     webhookId: `webhook-${environment}`,
     sender: `${environment}@example.test`,
     senderEvidenceId: `sender-${environment}`,
@@ -24,6 +25,7 @@ export function createWebhookConfiguration() {
       teamId: `team-${environment}`,
       projectId: `project-${environment}`,
       routeId: `route-${environment}`,
+      routeSlug: `route-${environment}-slug`,
     },
   }))
   const fingerprints = targets.flatMap((target) =>

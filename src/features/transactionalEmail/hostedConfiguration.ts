@@ -11,6 +11,7 @@ const targetIdentitySchema = z.strictObject({
   teamId: identifier,
   projectId: identifier,
   routeId: identifier,
+  routeSlug: identifier,
 })
 const targetSchema = targetIdentitySchema.extend({
   environment: environmentSchema,
@@ -30,11 +31,14 @@ const fingerprintSchema = targetIdentitySchema.extend({
   digestKeyId: identifier.nullable().optional(),
 })
 const registrySchema = z.strictObject({
-  targets: z.array(targetSchema).length(2),
-  fingerprints: z.array(fingerprintSchema).min(6),
+  targets: z.array(targetSchema).min(1).max(2),
+  fingerprints: z.array(fingerprintSchema).min(3),
 })
 const targetLocksSchema = z.strictObject({
-  targets: z.array(targetIdentitySchema.extend({ environment: environmentSchema })).length(2),
+  targets: z
+    .array(targetIdentitySchema.extend({ environment: environmentSchema }))
+    .min(1)
+    .max(2),
 })
 
 type HostedEnvironment = z.infer<typeof environmentSchema>
@@ -43,6 +47,7 @@ type Fingerprint = z.infer<typeof fingerprintSchema>
 type CredentialEvidence = Readonly<Pick<Fingerprint, 'bindingId' | 'sha256'>>
 type RecipientDigestKey = Readonly<{ version: string; secret: string }>
 const verifiedBindings = new WeakSet<object>()
+const outboundBindingOwners = new WeakMap<object, HostedLettermintBinding>()
 export type HostedLettermintBinding = {
   target: Readonly<Target>
   credentialEvidence: Readonly<
@@ -58,13 +63,26 @@ export type HostedLettermintBinding = {
   digestKey: string
   recipientDigestKeys: readonly RecipientDigestKey[]
 }
+export type HostedLettermintOutboundBinding = Readonly<{
+  target: Readonly<
+    Pick<Target, 'environment' | 'teamId' | 'projectId' | 'routeId' | 'routeSlug' | 'sender' | 'digestKeyId'>
+  >
+  projectToken: string
+  digestKey: string
+  recipientDigestKeys: readonly RecipientDigestKey[]
+}>
 
 function unavailable(): never {
   throw new TransactionalEmailError('environment-unavailable')
 }
 
-function sameTarget(left: Pick<Target, 'teamId' | 'projectId' | 'routeId'>, right: typeof left) {
-  return left.teamId === right.teamId && left.projectId === right.projectId && left.routeId === right.routeId
+function sameTarget(left: Pick<Target, 'teamId' | 'projectId' | 'routeId' | 'routeSlug'>, right: typeof left) {
+  return (
+    left.teamId === right.teamId &&
+    left.projectId === right.projectId &&
+    left.routeId === right.routeId &&
+    left.routeSlug === right.routeSlug
+  )
 }
 
 function matchingFingerprint(secret: string, entry: Fingerprint) {
@@ -122,10 +140,15 @@ export function resolveHostedLettermintBinding(
     unavailable()
   const { targets, fingerprints } = parsed.data
   const pinnedTargets = parsedLocks.data.targets
-  if (targets[0]!.environment === targets[1]!.environment) unavailable()
-  if (pinnedTargets[0]!.environment === pinnedTargets[1]!.environment) unavailable()
+  if (
+    new Set(targets.map(({ environment }) => environment)).size !== targets.length ||
+    new Set(pinnedTargets.map(({ environment }) => environment)).size !== pinnedTargets.length ||
+    targets.length !== pinnedTargets.length ||
+    targets.some(({ environment }) => !pinnedTargets.some((target) => target.environment === environment))
+  )
+    unavailable()
   for (const key of ['teamId', 'projectId', 'routeId', 'webhookId', 'senderEvidenceId', 'digestKeyId'] as const) {
-    if (targets[0]![key] === targets[1]![key]) unavailable()
+    if (new Set(targets.map((target) => target[key])).size !== targets.length) unavailable()
   }
   if (
     targets.some((target) => {
@@ -280,6 +303,36 @@ export function resolveHostedLettermintBinding(
 
 export function requireVerifiedHostedBinding(binding: HostedLettermintBinding) {
   if (!verifiedBindings.has(binding)) unavailable()
+}
+
+export function createHostedLettermintOutboundBinding(
+  binding: HostedLettermintBinding,
+): HostedLettermintOutboundBinding {
+  requireVerifiedHostedBinding(binding)
+  const { environment, teamId, projectId, routeId, routeSlug, sender, digestKeyId } = binding.target
+  const outbound = {
+    target: Object.freeze({ environment, teamId, projectId, routeId, routeSlug, sender, digestKeyId }),
+  }
+  Object.defineProperties(outbound, {
+    projectToken: { value: binding.projectToken },
+    digestKey: { value: binding.digestKey },
+    recipientDigestKeys: { value: binding.recipientDigestKeys },
+  })
+  outboundBindingOwners.set(outbound, binding)
+  return Object.freeze(outbound) as HostedLettermintOutboundBinding
+}
+
+export function requireVerifiedHostedOutboundBinding(binding: HostedLettermintOutboundBinding) {
+  if (!outboundBindingOwners.has(binding)) unavailable()
+}
+
+export function requireMatchingHostedLettermintBinding(
+  owner: HostedLettermintBinding,
+  candidate: HostedLettermintBinding | HostedLettermintOutboundBinding,
+): void {
+  requireVerifiedHostedBinding(owner)
+  const candidateOwner = verifiedBindings.has(candidate) ? candidate : outboundBindingOwners.get(candidate)
+  if (candidateOwner !== owner) unavailable()
 }
 
 export function loadHostedLettermintBinding(

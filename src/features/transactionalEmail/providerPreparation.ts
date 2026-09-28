@@ -2,7 +2,7 @@ import { z } from 'zod'
 import type { TransactionalEmailOutbox } from '@/payload-types'
 import { commandTypes } from './commands'
 import { TransactionalEmailError } from './errors'
-import { requireVerifiedHostedBinding, type HostedLettermintBinding } from './hostedConfiguration'
+import { requireVerifiedHostedOutboundBinding, type HostedLettermintOutboundBinding } from './hostedConfiguration'
 import { recipientAddressDigest } from './recipientBinding'
 
 const identifier = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)
@@ -21,7 +21,13 @@ const requestSchema = z.strictObject({
   }),
 })
 export const providerBindingFields = ['providerTeamId', 'providerProjectId', 'providerRouteId'] as const
-export type PreparedProviderRequest = Readonly<{ body: string; teamId: string; projectId: string; routeId: string }>
+export type PreparedProviderRequest = Readonly<{
+  body: string
+  teamId: string
+  projectId: string
+  routeId: string
+  routeSlug: string
+}>
 
 export function validateProviderPreparation(record: TransactionalEmailOutbox) {
   if (
@@ -51,7 +57,6 @@ export function validateProviderPreparation(record: TransactionalEmailOutbox) {
     body.subject !== record.preparedSubject ||
     body.html !== record.preparedHtml ||
     body.text !== record.preparedText ||
-    body.route !== record.providerRouteId ||
     body.metadata.operation_id !== String(record.id) ||
     body.metadata.command_type !== record.commandType ||
     (!['local', 'test', 'ci'].includes(record.runtimeEnvironment) &&
@@ -60,8 +65,8 @@ export function validateProviderPreparation(record: TransactionalEmailOutbox) {
     throw new TransactionalEmailError('access-denied')
 }
 
-export function prepareProviderRequest(record: TransactionalEmailOutbox, binding: HostedLettermintBinding) {
-  requireVerifiedHostedBinding(binding)
+export function prepareProviderRequest(record: TransactionalEmailOutbox, binding: HostedLettermintOutboundBinding) {
+  requireVerifiedHostedOutboundBinding(binding)
   const { target } = binding
   if (providerBindingFields.some((field) => record[field] != null)) {
     if (
@@ -70,7 +75,8 @@ export function prepareProviderRequest(record: TransactionalEmailOutbox, binding
       record.providerRouteId !== target.routeId ||
       record.providerRecipientDigest !==
         recipientAddressDigest(record.recipientAddress!, { version: target.digestKeyId, secret: binding.digestKey }) ||
-      !record.preparedProviderRequest
+      !record.preparedProviderRequest ||
+      requestRoute(record.preparedProviderRequest) !== target.routeSlug
     )
       throw new TransactionalEmailError('environment-unavailable')
     validateProviderPreparation(record)
@@ -91,7 +97,7 @@ export function prepareProviderRequest(record: TransactionalEmailOutbox, binding
       subject: record.preparedSubject,
       html: record.preparedHtml,
       text: record.preparedText,
-      route: target.routeId,
+      route: target.routeSlug,
       settings: { track_opens: false, track_clicks: false },
       metadata: { operation_id: String(record.id), command_type: record.commandType, environment: target.environment },
     }),
@@ -110,5 +116,14 @@ export function storedProviderRequest(record: TransactionalEmailOutbox): Prepare
     teamId: record.providerTeamId!,
     projectId: record.providerProjectId!,
     routeId: record.providerRouteId!,
+    routeSlug: requestRoute(record.preparedProviderRequest),
   })
+}
+
+function requestRoute(body: string): string {
+  try {
+    return requestSchema.parse(JSON.parse(body)).route
+  } catch {
+    throw new TransactionalEmailError('access-denied')
+  }
 }

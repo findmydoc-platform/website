@@ -10,7 +10,10 @@ import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadInt
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { resolveActivationPolicy } from '@/features/transactionalEmail/activationPolicy'
 import type { DeliveryAttempt } from '@/features/transactionalEmail/delivery'
-import { resolveHostedLettermintBinding } from '@/features/transactionalEmail/hostedConfiguration'
+import {
+  createHostedLettermintOutboundBinding,
+  resolveHostedLettermintBinding,
+} from '@/features/transactionalEmail/hostedConfiguration'
 import { workerTransaction } from '@/features/transactionalEmail/workerStorage'
 import { webhookNow } from '../fixtures/lettermintWebhook'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
@@ -73,10 +76,11 @@ describe('immutable provider preparation through the worker', () => {
       webhookNow,
       fixture.configuration.locks,
     )
+    const providerBinding = createHostedLettermintOutboundBinding(binding)
     return {
       catalog: syntheticEmailCatalog,
       suppression: async () => 'cleared' as const,
-      providerBinding: binding,
+      providerBinding,
       activationPolicy: resolveActivationPolicy(
         binding,
         fixture.registry,
@@ -160,6 +164,7 @@ describe('immutable provider preparation through the worker', () => {
         teamId: 'team-preview',
         projectId: 'project-preview',
         routeId: 'route-preview',
+        routeSlug: 'route-preview-slug',
       })
       expect(row).toMatchObject({
         provider_team_id: 'team-preview',
@@ -172,7 +177,7 @@ describe('immutable provider preparation through the worker', () => {
         subject: row.prepared_subject,
         html: row.prepared_html,
         text: row.prepared_text,
-        route: 'route-preview',
+        route: 'route-preview-slug',
         settings: { track_opens: false, track_clicks: false },
         metadata: { operation_id: operationId, command_type: 'clinic.registration-received', environment: 'preview' },
       })
@@ -226,7 +231,7 @@ describe('immutable provider preparation through the worker', () => {
     expect((await stored(operationId)).prepared_provider_request).toBe(before.prepared_provider_request)
   })
 
-  it.each(['teamId', 'projectId', 'routeId', 'environment', 'missing'] as const)(
+  it.each(['teamId', 'projectId', 'routeId', 'routeSlug', 'environment', 'missing'] as const)(
     'rejects %s target drift without rewriting or another attempt',
     async (field) => {
       const { req, operationId } = await accept()

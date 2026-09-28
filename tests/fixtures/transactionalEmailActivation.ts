@@ -81,6 +81,7 @@ export function createActivationFixture(
       teamId: target.teamId,
       projectId: target.projectId,
       routeId: target.routeId,
+      routeSlug: target.routeSlug,
       sender: target.sender,
       webhookId: target.webhookId,
       digestKeyId: target.digestKeyId,

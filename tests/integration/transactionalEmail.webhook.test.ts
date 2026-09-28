@@ -1,5 +1,13 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const { activationRegistryFixture } = vi.hoisted(() => ({
+  activationRegistryFixture: {
+    schemaVersion: 1,
+    version: 'activation-v1',
+    preflights: [] as unknown[],
+    records: [] as unknown[],
+  },
+}))
 const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
   () => import('../helpers/deliveryEdgeNetworkBoundary'),
 )
@@ -23,14 +31,17 @@ import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadInt
 import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import { proxy } from '@/proxy'
-import { loadHostedLettermintWebhookBinding } from '@/features/transactionalEmail/hostedConfiguration'
+import {
+  createHostedLettermintOutboundBinding,
+  loadHostedLettermintWebhookBinding,
+} from '@/features/transactionalEmail/hostedConfiguration'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { resolveActivationPolicy } from '@/features/transactionalEmail/activationPolicy'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
 import { recipientAddressDigest } from '@/features/transactionalEmail/recipientBinding'
 import type { CommandCatalog } from '@/features/transactionalEmail/catalog'
 import { retireDigestKey } from '@/features/transactionalEmail/digestKeyRotation'
-import { validateTransactionalEmailStartup } from '@/features/transactionalEmail/environment'
+import { validateTransactionalEmailStartupForTest } from '@/features/transactionalEmail/environment'
 import { runDigestKeyRetirement } from '../../scripts/lettermint-digest-key-retirement'
 import { validateDeliveryEdgeLog } from '@/features/transactionalEmail/operationalSignals'
 import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
@@ -45,6 +56,28 @@ vi.mock('@/features/transactionalEmail/lettermintRegistry.json', async () => ({
 vi.mock('@/features/transactionalEmail/lettermintTargetLocks.json', async () => ({
   default: (await import('../fixtures/lettermintWebhook')).webhookConfiguration.locks,
 }))
+vi.mock('@/features/transactionalEmail/activationRegistry.json', () => ({ default: activationRegistryFixture }))
+
+function installActivationFixture(fixture: ReturnType<typeof createActivationFixture>) {
+  const environment = fixture.preflight.environment
+  activationRegistryFixture.preflights = [
+    ...activationRegistryFixture.preflights.filter(
+      (entry) => Reflect.get(entry as object, 'environment') !== environment,
+    ),
+    fixture.preflight,
+  ]
+  activationRegistryFixture.records = [
+    ...activationRegistryFixture.records.filter((entry) => Reflect.get(entry as object, 'environment') !== environment),
+    fixture.record,
+  ]
+}
+
+function resetActivationRegistry() {
+  activationRegistryFixture.preflights = []
+  activationRegistryFixture.records = []
+  installActivationFixture(createActivationFixture('preview'))
+  installActivationFixture(createActivationFixture('production'))
+}
 
 describe('Lettermint webhook Next.js request boundary', () => {
   let observer: pg.Client
@@ -124,6 +157,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     recipientAddress = `${randomUUID()}@example.test`
     Object.assign(webhookConfiguration.registry, createWebhookConfiguration().registry)
     Object.assign(webhookConfiguration.secrets, createWebhookConfiguration().secrets)
+    resetActivationRegistry()
     for (const [key, value] of Object.entries(webhookConfiguration.secrets.preview)) vi.stubEnv(key, value)
     vi.stubEnv('LETTERMINT_PREVIOUS_WEBHOOK_SECRET', undefined)
     vi.stubEnv('CI', 'false')
@@ -261,7 +295,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
       catalog,
       now: () => webhookNow,
       suppression: async () => 'cleared',
-      providerBinding: fixture.binding,
+      providerBinding: createHostedLettermintOutboundBinding(fixture.binding),
       activationPolicy: resolveActivationPolicy(
         fixture.binding,
         fixture.registry,
@@ -319,6 +353,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const rotated = createActivationFixture('preview', false, true)
     Object.assign(webhookConfiguration.registry, rotated.configuration.registry)
     Object.assign(webhookConfiguration.secrets, rotated.configuration.secrets)
+    installActivationFixture(rotated)
     for (const [key, value] of Object.entries(rotated.configuration.secrets.preview)) vi.stubEnv(key, value)
 
     mutationExpected = true
@@ -368,7 +403,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const currentKey = rotated.binding.recipientDigestKeys[0]!
     await createTransactionalEmailWorker(req, {
       catalog,
-      providerBinding: rotated.binding,
+      providerBinding: createHostedLettermintOutboundBinding(rotated.binding),
       activationPolicy: resolveActivationPolicy(rotated.binding, rotated.registry, [
         recipientAddressDigest(recipientAddress, currentKey)!,
       ]),
@@ -418,7 +453,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
         links: { generate: async () => 'https://example.test/synthetic-action' },
         delivery,
         log: () => {},
-        providerBinding: fixture.binding,
+        providerBinding: createHostedLettermintOutboundBinding(fixture.binding),
         activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [
           recipientAddressDigest(recipientAddress, currentKey)!,
         ]),
@@ -574,7 +609,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
       links,
       httpTransport,
       suppression,
-      providerBinding: fixture.binding,
+      providerBinding: createHostedLettermintOutboundBinding(fixture.binding),
       activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [
         recipientAddressDigest(recipientAddress, {
           version: fixture.binding.target.digestKeyId,
@@ -631,7 +666,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
       now: () => webhookNow,
       links,
       httpTransport: transport,
-      providerBinding: rotated.binding,
+      providerBinding: createHostedLettermintOutboundBinding(rotated.binding),
       activationPolicy: resolveActivationPolicy(rotated.binding, rotated.registry, [
         recipientAddressDigest(recipientAddress, currentKey)!,
       ]),
@@ -716,7 +751,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
         catalog,
         links,
         httpTransport: transport,
-        providerBinding: rotated.binding,
+        providerBinding: createHostedLettermintOutboundBinding(rotated.binding),
         activationPolicy: resolveActivationPolicy(rotated.binding, rotated.registry, allowlist),
       }).run(operationId)
     const first = trackRaceWork(run(firstOperation))
@@ -790,7 +825,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
         catalog,
         links,
         httpTransport: transport,
-        providerBinding: rotated.binding,
+        providerBinding: createHostedLettermintOutboundBinding(rotated.binding),
         activationPolicy: resolveActivationPolicy(rotated.binding, rotated.registry, [currentDigest]),
       }).run(operationId)
     } finally {
@@ -819,6 +854,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
       const rotated = createActivationFixture('preview', false, true, version)
       Object.assign(webhookConfiguration.registry, rotated.configuration.registry)
       Object.assign(webhookConfiguration.secrets, rotated.configuration.secrets)
+      installActivationFixture(rotated)
       for (const [key, value] of Object.entries(rotated.configuration.secrets.preview)) vi.stubEnv(key, value)
       vi.stubEnv('LETTERMINT_PREVIEW_RECIPIENT_DIGESTS', undefined)
       const previous = rotated.binding.recipientDigestKeys.find((key) => key.version === version)!
@@ -886,6 +922,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const rotated = createActivationFixture('production', false, true, version)
     Object.assign(webhookConfiguration.registry, rotated.configuration.registry)
     Object.assign(webhookConfiguration.secrets, rotated.configuration.secrets)
+    installActivationFixture(rotated)
     for (const [key, value] of Object.entries(rotated.configuration.secrets.production)) vi.stubEnv(key, value)
     vi.stubEnv('LETTERMINT_PREVIEW_RECIPIENT_DIGESTS', undefined)
     vi.stubEnv('NODE_ENV', 'production')
@@ -925,6 +962,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const rotated = createActivationFixture('production', false, true, version)
     Object.assign(webhookConfiguration.registry, rotated.configuration.registry)
     Object.assign(webhookConfiguration.secrets, rotated.configuration.secrets)
+    installActivationFixture(rotated)
     for (const [key, value] of Object.entries(rotated.configuration.secrets.production)) vi.stubEnv(key, value)
     vi.stubEnv('LETTERMINT_PREVIEW_RECIPIENT_DIGESTS', undefined)
     vi.stubEnv('NODE_ENV', 'production')
@@ -963,7 +1001,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
         LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS: undefined,
       }
       expect(() =>
-        validateTransactionalEmailStartup(
+        validateTransactionalEmailStartupForTest(
           retiredEnv,
           retiredRegistry,
           rotated.configuration.locks,
@@ -974,7 +1012,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
       const approvedActivation = structuredClone(rotated.registry)
       approvedActivation.preflights[0]!.credentials.previousDigestKeys = []
       expect(
-        validateTransactionalEmailStartup(
+        validateTransactionalEmailStartupForTest(
           retiredEnv,
           retiredRegistry,
           rotated.configuration.locks,
@@ -1116,7 +1154,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
           now: () => webhookNow + 61_000,
           links: { generate },
           httpTransport: transport,
-          providerBinding: fixture.binding,
+          providerBinding: createHostedLettermintOutboundBinding(fixture.binding),
           activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [
             recipientAddressDigest(recipientAddress, {
               version: fixture.binding.target.digestKeyId,
@@ -1208,7 +1246,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
         catalog,
         now: () => webhookNow,
         suppression: async () => 'cleared',
-        providerBinding: fixture.binding,
+        providerBinding: createHostedLettermintOutboundBinding(fixture.binding),
         activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [
           recipientAddressDigest(recipientAddress, {
             version: fixture.binding.target.digestKeyId,
@@ -2275,18 +2313,28 @@ describe('Lettermint webhook Next.js request boundary', () => {
   const rotate = () => {
     const previous = 'whsec_synthetic_preview_previous' // pragma: allowlist secret
     vi.stubEnv('LETTERMINT_PREVIOUS_WEBHOOK_SECRET', previous)
+    const overlap = {
+      startsAt: new Date(webhookNow - 300_000).toISOString(),
+      validUntil: new Date(webhookNow + 300_000).toISOString(),
+    }
+    const sha256 = createHash('sha256').update(previous).digest('hex')
     webhookConfiguration.registry.fingerprints.push({
       ...webhookConfiguration.registry.fingerprints.find(
         (entry) => entry.environment === 'preview' && entry.kind === 'webhook-current',
       )!,
       kind: 'webhook-previous',
       bindingId: 'preview-webhook-previous',
-      sha256: createHash('sha256').update(previous).digest('hex'),
-      overlap: {
-        startsAt: new Date(webhookNow - 300_000).toISOString(),
-        validUntil: new Date(webhookNow + 300_000).toISOString(),
-      },
+      sha256,
+      overlap,
     })
+    const preflight = activationRegistryFixture.preflights.find(
+      (entry) => Reflect.get(entry as object, 'environment') === 'preview',
+    ) as ReturnType<typeof createActivationFixture>['preflight']
+    preflight.credentials.previousWebhookSecret = {
+      bindingId: 'preview-webhook-previous',
+      sha256,
+      overlap,
+    }
     return previous
   }
 

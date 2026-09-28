@@ -11,6 +11,7 @@ import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { resolveActivationPolicy } from '@/features/transactionalEmail/activationPolicy'
 import { recipientAddressDigest } from '@/features/transactionalEmail/recipientBinding'
+import { createHostedLettermintOutboundBinding } from '@/features/transactionalEmail/hostedConfiguration'
 import {
   clearedSyntheticSuppression,
   syntheticEmailCatalog,
@@ -154,7 +155,7 @@ describe('transactional email safety sweep and retention', () => {
         catalog: syntheticEmailCatalog,
         links,
         httpTransport: transport,
-        providerBinding: fixture.binding,
+        providerBinding: createHostedLettermintOutboundBinding(fixture.binding),
         activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [digest]),
       }).run(next.id)
       expect((await row(next.id)).state).toBe('suppressed')

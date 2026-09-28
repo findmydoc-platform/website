@@ -116,13 +116,13 @@ serializes the prepared content with the verified sender and route. It stores `p
 delivery adapter sees the request until commit succeeds. An audit or commit failure rolls back that transaction.
 
 The UTF-8 JSON string has a fixed field order and a closed schema. It contains one recipient, subject, HTML, text,
-configured sender and route, disabled open/click tracking, and only operation ID, command type, and environment
+configured sender and route slug, disabled open/click tracking, and only operation ID, command type, and environment
 metadata. The persistence guard rejects unknown fields, duplicate JSON keys, content mismatches, partial bindings,
 and edits to prepared bytes. It never stores credentials in the body or binding. The request shape follows the
 [Lettermint single-message API](https://lettermint.co/docs/api-reference/sending/send), checked on 27 September 2026.
 
 Retries use the stored string and provider key unchanged. A reviewed sender change cannot rebuild that string.
-Another team, project, route, or environment fails before another attempt; missing provider configuration cannot
+Another team, project, route ID, route slug, or environment fails before another attempt; missing provider configuration cannot
 downgrade a prepared operation to fake delivery. Target and activation policy must come from the same verified
 binding. The private worker test option accepts synthetic bindings only in the Vitest test runtime. Hosted selection
 remains closed until the real transport and suppression integration exist. No registry or product command is enabled.
@@ -175,8 +175,9 @@ connection/body timeout boundaries, fixed retry timing and exhaustion, same-byte
 rotation, target drift, environment isolation, and deadline budget. Time is controlled without waiting 20 seconds.
 
 Local development and CI keep explicit fake execution. Only Vitest in the test runtime accepts the controlled HTTP
-transport. Real hosted worker selection remains closed pending the separately owned suppression integration. Provider
-registries and activation records remain empty; no product command, hosted service, or credential is enabled here.
+transport. Preview hosted worker selection is available only through its fingerprint-verified target, minimized
+outbound capability, suppression lookup, command activation, and recipient digest allowlist. Production retains no
+target, credential, preflight, activation record, or recipient configuration and remains unavailable without fallback.
 
 ## Fake provider acceptance and privacy
 

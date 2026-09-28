@@ -1,6 +1,11 @@
 import { z } from 'zod'
 import { commandTypes, type CommandType } from './commands'
-import { requireVerifiedHostedBinding, type HostedLettermintBinding } from './hostedConfiguration'
+import {
+  requireMatchingHostedLettermintBinding,
+  requireVerifiedHostedBinding,
+  type HostedLettermintBinding,
+  type HostedLettermintOutboundBinding,
+} from './hostedConfiguration'
 import { TransactionalEmailError } from './errors'
 import { recipientAddressDigest } from './recipientBinding'
 
@@ -26,6 +31,7 @@ const preflightSchema = z.strictObject({
     teamId: reference,
     projectId: reference,
     routeId: reference,
+    routeSlug: reference,
     sender: z.email(),
     webhookId: reference,
     digestKeyId: reference,
@@ -159,6 +165,19 @@ export function isTransactionalEmailCommandActivationDeclared(
   return registry.records.some((record) => record.environment === targetEnvironment && record.commandType === command)
 }
 
+export function hasTransactionalEmailActivationForEnvironment(
+  targetEnvironment: 'preview' | 'production',
+  input: unknown,
+): boolean {
+  if (!input || typeof input !== 'object') return true
+  const preflights = Reflect.get(input, 'preflights')
+  const records = Reflect.get(input, 'records')
+  if (!Array.isArray(preflights) || !Array.isArray(records)) return true
+  return [...preflights, ...records].some(
+    (entry) => entry !== null && typeof entry === 'object' && Reflect.get(entry, 'environment') === targetEnvironment,
+  )
+}
+
 export type ActivationSuppression = 'command-not-enabled' | 'preview-recipient-not-allowed'
 export type ActivationPolicy = {
   evaluate(command: CommandType, address: string): ActivationSuppression | null
@@ -166,9 +185,14 @@ export type ActivationPolicy = {
 const policies = new WeakSet<object>()
 const policyBindings = new WeakMap<object, HostedLettermintBinding>()
 
-export function requireActivationPolicy(policy: ActivationPolicy, binding?: HostedLettermintBinding) {
+export function requireActivationPolicy(
+  policy: ActivationPolicy,
+  binding?: HostedLettermintBinding | HostedLettermintOutboundBinding,
+) {
   if (!policies.has(policy)) unavailable()
-  if (binding && policyBindings.get(policy) !== binding) unavailable()
+  const owner = policyBindings.get(policy)
+  if (!owner) unavailable()
+  if (binding) requireMatchingHostedLettermintBinding(owner, binding)
 }
 
 export function resolveActivationPolicy(

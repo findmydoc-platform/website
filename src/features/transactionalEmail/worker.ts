@@ -9,7 +9,7 @@ import type { TransactionalEmailOutbox, TransactionalEmailEvent } from '@/payloa
 import { resolveCatalogEntry, type CommandCatalog } from './catalog'
 import { bindPayloadCommandCatalog } from './payloadCatalog'
 import { validateCommand } from './commands'
-import { selectTransactionalEmailRuntime } from './environment'
+import { selectTransactionalEmailRuntime, selectTransactionalEmailRuntimeForTest } from './environment'
 import { TransactionalEmailError } from './errors'
 import { fakeLinks, renderSyntheticNotification, type LinkGenerator } from './preparation'
 import { createFakeDeliveryAdapter, type DeliveryAdapter, type DeliveryLog, type DeliveryOutcome } from './delivery'
@@ -19,7 +19,7 @@ import { sweepTransactionalEmail } from './retention'
 import { workerTransaction } from './workerStorage'
 import { requireActivationPolicy, type ActivationPolicy } from './activationPolicy'
 import { createSuppressionLookup, type SuppressionLookup } from './suppression'
-import { requireVerifiedHostedBinding, type HostedLettermintBinding } from './hostedConfiguration'
+import { requireVerifiedHostedOutboundBinding, type HostedLettermintOutboundBinding } from './hostedConfiguration'
 import { prepareProviderRequest, providerBindingFields, storedProviderRequest } from './providerPreparation'
 import {
   createDeliveryEdgeSignals,
@@ -31,6 +31,11 @@ import {
 const leaseMilliseconds = 120_000
 const stepBudgetMilliseconds = 5_000
 const retryDelays = [60_000, 300_000, 1_800_000, 7_200_000, 28_800_000] as const
+const unavailableLinks: LinkGenerator = Object.freeze({
+  async generate() {
+    throw new TransactionalEmailError('environment-unavailable')
+  },
+})
 
 async function boundedStep<Result>(work: (signal: AbortSignal) => Promise<Result>): Promise<Result> {
   const controller = new AbortController()
@@ -62,12 +67,15 @@ type WorkerOptions = {
   crashAfterDelivery?: () => void
   activationPolicy?: ActivationPolicy
   suppression?: SuppressionLookup
-  providerBinding?: HostedLettermintBinding
+  providerBinding?: HostedLettermintOutboundBinding
+  runtimeInput?: Parameters<typeof selectTransactionalEmailRuntimeForTest>
 }
 
 export function createTransactionalEmailWorker(req: PayloadRequest, options: WorkerOptions = {}) {
-  const runtime = selectTransactionalEmailRuntime()
-  const providerBinding = options.providerBinding
+  const runtime = options.runtimeInput
+    ? selectTransactionalEmailRuntimeForTest(...options.runtimeInput)
+    : selectTransactionalEmailRuntime()
+  const providerBinding = options.providerBinding ?? ('binding' in runtime ? runtime.binding : undefined)
   const suppressionLookup = providerBinding ? createSuppressionLookup(req, providerBinding) : options.suppression
   if (options.activationPolicy) {
     if (runtime.environment !== 'test' || process.env.VITEST !== 'true')
@@ -75,10 +83,12 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     requireActivationPolicy(options.activationPolicy)
   }
   const activationPolicy = options.activationPolicy ?? runtime.activationPolicy
-  if (providerBinding) {
+  if (options.providerBinding) {
     if (runtime.environment !== 'test' || process.env.VITEST !== 'true')
       throw new TransactionalEmailError('environment-unavailable')
-    requireVerifiedHostedBinding(providerBinding)
+  }
+  if (providerBinding) {
+    requireVerifiedHostedOutboundBinding(providerBinding)
     requireActivationPolicy(activationPolicy, providerBinding)
   }
   if (options.delivery && (runtime.environment !== 'test' || process.env.VITEST !== 'true'))
@@ -89,14 +99,18 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     throw new TransactionalEmailError('environment-unavailable')
   const now = options.now ?? Date.now
   const catalog = options.catalog ?? bindPayloadCommandCatalog(req)
-  const links = options.links ?? fakeLinks
+  const links = options.links ?? (runtime.links === 'fake' ? fakeLinks : unavailableLinks)
   if (options.httpTransport && (!providerBinding || options.delivery))
     throw new TransactionalEmailError('environment-unavailable')
+  const usesLettermintDelivery = Boolean(
+    providerBinding && !options.delivery && (!options.providerBinding || options.httpTransport),
+  )
   const delivery =
-    options.httpTransport && providerBinding
+    options.delivery ??
+    (providerBinding && usesLettermintDelivery
       ? createLettermintDeliveryAdapter(providerBinding, options.httpTransport)
-      : (options.delivery ?? createFakeDeliveryAdapter())
-  const deliveryBudget = options.httpTransport
+      : createFakeDeliveryAdapter())
+  const deliveryBudget = usesLettermintDelivery
     ? lettermintTimeoutMilliseconds + stepBudgetMilliseconds
     : stepBudgetMilliseconds
   const log = options.log ?? ((event: DeliveryLog) => req.payload.logger.info(event))
@@ -423,7 +437,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
           },
           signal,
         )
-      result = options.httpTransport ? await deliver() : await boundedStep(deliver)
+      result = usesLettermintDelivery ? await deliver() : await boundedStep(deliver)
     } catch {
       result = { type: 'ambiguous' }
     }

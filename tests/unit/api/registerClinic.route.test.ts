@@ -87,6 +87,11 @@ const validSubmission = {
   contactRole: 'Clinic Management',
   medicalSpecialties: ['1', '3'],
 }
+const websitePrefix = 'https://example.com/'
+const maximumLengthEmail = `${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(61)}`
+const tooLongEmail = `${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(62)}`
+const maximumLengthWebsite = websitePrefix + 'w'.repeat(2048 - websitePrefix.length)
+const tooLongWebsite = websitePrefix + 'w'.repeat(2049 - websitePrefix.length)
 
 function makeRequest(body: unknown) {
   return new NextRequest('http://localhost/api/auth/register/clinic', {
@@ -144,8 +149,6 @@ describe('POST /api/auth/register/clinic', () => {
   })
 
   test('accepts the documented request and field boundaries', async () => {
-    const websitePrefix = 'https://example.com/'
-    const maximumLengthEmail = `${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(61)}`
     const specialties = Array.from({ length: 25 }, (_, index) => index + 1)
     findMock.mockResolvedValueOnce({
       docs: specialties.map((id) => ({ id, name: `Specialty ${id}`, parentSpecialty: null })),
@@ -154,7 +157,7 @@ describe('POST /api/auth/register/clinic', () => {
     const response = await POST(
       makeRequest({
         clinicName: 'C'.repeat(160),
-        clinicWebsite: websitePrefix + 'w'.repeat(2048 - websitePrefix.length),
+        clinicWebsite: maximumLengthWebsite,
         contactFirstName: 'F'.repeat(100),
         contactLastName: 'L'.repeat(100),
         contactEmail: maximumLengthEmail,
@@ -168,7 +171,7 @@ describe('POST /api/auth/register/clinic', () => {
       publicReq,
       expect.objectContaining({
         clinicName: 'C'.repeat(160),
-        clinicWebsite: websitePrefix + 'w'.repeat(2048 - websitePrefix.length),
+        clinicWebsite: maximumLengthWebsite,
         contactFirstName: 'F'.repeat(100),
         contactLastName: 'L'.repeat(100),
         contactEmail: maximumLengthEmail,
@@ -220,12 +223,13 @@ describe('POST /api/auth/register/clinic', () => {
   })
 
   test.each([
-    ['clinicName', 'C'.repeat(161), 'Invalid clinicName'],
-    ['contactFirstName', 'F'.repeat(101), 'Invalid contactFirstName'],
-    ['contactLastName', 'L'.repeat(101), 'Invalid contactLastName'],
-    ['contactEmail', `${'a'.repeat(255)}@example.com`, 'Invalid contactEmail'],
-    ['clinicWebsite', `https://example.com/${'w'.repeat(2049)}`, 'Invalid clinicWebsite'],
-  ])('rejects %s values above the documented limit', async (field, value, error) => {
+    ['clinicName', 'C'.repeat(161), 'Invalid clinicName', 160],
+    ['contactFirstName', 'F'.repeat(101), 'Invalid contactFirstName', 100],
+    ['contactLastName', 'L'.repeat(101), 'Invalid contactLastName', 100],
+    ['contactEmail', tooLongEmail, 'Invalid contactEmail', 254],
+    ['clinicWebsite', tooLongWebsite, 'Invalid clinicWebsite', 2048],
+  ])('rejects %s values at limit + 1', async (field, value, error, maximumLength) => {
+    expect(value).toHaveLength(maximumLength + 1)
     const response = await POST(makeRequest({ ...validSubmission, [field]: value }))
 
     expect(response.status).toBe(400)

@@ -17,6 +17,18 @@ const expectedWebhookEvents = [
   'message.suppressed',
   'message.policy_rejected',
 ] as const
+type CredentialEvidence = { bindingId: string; sha256: string }
+type PreflightCredentials = {
+  projectToken: CredentialEvidence
+  webhookSecret: CredentialEvidence
+  previousWebhookSecret:
+    | (CredentialEvidence & {
+        overlap: { startsAt: string; validUntil: string }
+      })
+    | null
+  digestKey: CredentialEvidence
+  previousDigestKeys: Array<CredentialEvidence & { version: string }>
+}
 
 const targetIdentity = ({
   projectId,
@@ -40,8 +52,12 @@ describe('committed transactional email activation', () => {
       const target = lettermintRegistry.targets.find((entry) => entry.environment === environment)!
       const lock = targetLocks.targets.find((entry) => entry.environment === environment)!
       const preflight = activationRegistry.preflights.find((entry) => entry.environment === environment)!
+      const credentials = preflight.credentials as PreflightCredentials
+      const environmentFingerprints = lettermintRegistry.fingerprints.filter(
+        (entry) => entry.environment === environment,
+      )
       const fingerprint = (kind: 'digest-key' | 'project-token' | 'webhook-current') =>
-        lettermintRegistry.fingerprints.find((entry) => entry.environment === environment && entry.kind === kind)!
+        environmentFingerprints.find((entry) => entry.kind === kind)!
       const credentialEvidence = (kind: 'digest-key' | 'project-token' | 'webhook-current') => {
         const entry = fingerprint(kind)
         return { bindingId: entry.bindingId, sha256: entry.sha256 }
@@ -55,13 +71,70 @@ describe('committed transactional email activation', () => {
         sender: target.sender,
         webhookId: target.webhookId,
       })
-      expect(preflight.credentials).toEqual({
+      expect(credentials).toEqual({
         digestKey: credentialEvidence('digest-key'),
         previousDigestKeys: [],
         previousWebhookSecret: null,
         projectToken: credentialEvidence('project-token'),
         webhookSecret: credentialEvidence('webhook-current'),
       })
+      for (const entry of environmentFingerprints) {
+        expect(targetIdentity(entry)).toEqual(targetIdentity(target))
+      }
+      expect(
+        environmentFingerprints
+          .map(({ bindingId, digestKeyId, kind, overlap, sha256, webhookId }) => ({
+            bindingId,
+            digestKeyId: digestKeyId ?? null,
+            kind,
+            overlap,
+            sha256,
+            webhookId,
+          }))
+          .sort((left, right) => left.bindingId.localeCompare(right.bindingId)),
+      ).toEqual(
+        [
+          {
+            ...credentials.projectToken,
+            digestKeyId: null,
+            kind: 'project-token',
+            overlap: null,
+            webhookId: null,
+          },
+          {
+            ...credentials.webhookSecret,
+            digestKeyId: null,
+            kind: 'webhook-current',
+            overlap: null,
+            webhookId: target.webhookId,
+          },
+          ...(credentials.previousWebhookSecret
+            ? [
+                {
+                  ...credentials.previousWebhookSecret,
+                  digestKeyId: null,
+                  kind: 'webhook-previous',
+                  webhookId: target.webhookId,
+                },
+              ]
+            : []),
+          {
+            ...credentials.digestKey,
+            digestKeyId: target.digestKeyId,
+            kind: 'digest-key',
+            overlap: null,
+            webhookId: null,
+          },
+          ...credentials.previousDigestKeys.map(({ bindingId, sha256, version }) => ({
+            bindingId,
+            digestKeyId: version,
+            kind: 'digest-key',
+            overlap: null,
+            sha256,
+            webhookId: null,
+          })),
+        ].sort((left, right) => left.bindingId.localeCompare(right.bindingId)),
+      )
       expect(fingerprint('digest-key').digestKeyId).toBe(target.digestKeyId)
       expect(fingerprint('project-token').webhookId).toBeNull()
       expect(fingerprint('webhook-current').webhookId).toBe(target.webhookId)

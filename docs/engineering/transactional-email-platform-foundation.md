@@ -575,9 +575,11 @@ The provisional retention assumptions are:
 The 42-day working value matches Lettermint's documented
 [28-day active message retention](https://lettermint.co/docs/platform/emails/data-retention) plus the
 [DPA](https://lettermint.co/dpa)'s maximum 14-day residual backup cycle. It is an engineering assumption, not Legal
-approval. Before Production, Legal and Privacy must approve or replace the value, document the processing purpose,
-approve the HMAC key owner and rotation policy, and confirm the deletion mechanism. Production remains blocked until
-that decision is complete.
+approval. Legal and Privacy review the value, processing purpose, HMAC key ownership and rotation policy, and deletion
+mechanism in [management issue #396](https://github.com/findmydoc-platform/management/issues/396). As decided in
+[ADR 031](../adrs/031-adr-transactional-email-technical-activation-gates.md), that governance review does not block the
+technical activation and technical activation does not imply approval. Any resulting contract change requires its own
+decision before deployment.
 
 Suppression retention belongs to issue #1847 and is not governed by this 42-day value.
 
@@ -777,5 +779,5 @@ Stop and obtain a new explicit decision if implementation would require:
 - a different retry count, delay schedule, lease duration, delivery deadline, or state;
 - a public cache, cache tag, invalidation owner, Redis, or another remote coordination store;
 - a real provider or Supabase network call in Local or CI;
-- a Production retention value without written Legal and Privacy approval;
+- a change to the committed Production retention value or processing contract without a separate explicit decision;
 - a Dashboard credential that grants Supabase service-role or Lettermint access.

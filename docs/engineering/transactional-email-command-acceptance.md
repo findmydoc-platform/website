@@ -2,8 +2,9 @@
 
 [Website #1852](https://github.com/findmydoc-platform/website/issues/1852) and
 [Website #1853](https://github.com/findmydoc-platform/website/issues/1853) implement command acceptance and transaction ownership from
-[the foundation contract](transactional-email-platform-foundation.md). [ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md)
-continues to govern the platform.
+[the foundation contract](transactional-email-platform-foundation.md). [ADR 031](../adrs/031-adr-transactional-email-technical-activation-gates.md)
+is the current platform decision. It supersedes the Production governance gate in
+[ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md) while retaining its other decisions.
 
 ## Command boundary
 
@@ -145,8 +146,10 @@ requests during local/test/CI command acceptance. Permission-matrix and cache ar
 PostgreSQL. An independent connection proves that the application, operation, and first event remain invisible until
 commit. Catalog-source, authenticated-access, storage, commit, and exhausted serialization failures leave all three
 absent and return no success. Independent counts detect orphaned operations and events. Preview and Production tests
-also prove that the empty committed activation registry keeps intake application-only. Fetch and HTTP(S) guards keep
-the test path externally network-blocked.
+prove that their committed command declarations atomically create one queued receipt with one initial event, remain
+idempotent on repeated intake, and converge concurrent Production submissions. A mismatched Production credential
+fingerprint fails closed before any application, operation, or event persists. Fetch and HTTP(S) guards keep the test
+path externally network-blocked.
 
 The GraphQL contract uses the real sanitized mail collections and Countries as a positive query/mutation control.
 The repository-wide GraphQL schema currently fails to build on an unrelated relationship, including when both mail

@@ -75,18 +75,6 @@
     },
     {
       "environment": "production",
-      "kind": "project-token",
-      "bindingId": "project-token-production",
-      "sha256": "e06ec0a6c425b6ea38fcb920b329ff0eb77950affc595c60b91513621886778d",
-      "teamId": "01a0da1e-cf71-7133-8495-9c11a0f4ec1d",
-      "projectId": "01a0da21-7c43-73dc-bf11-2e73fa8c3c9a",
-      "routeId": "01a0da21-7c4e-722f-a90f-ff68d2ad8fe2",
-      "routeSlug": "outgoing",
-      "webhookId": null,
-      "overlap": null
-    },
-    {
-      "environment": "production",
       "kind": "webhook-current",
       "bindingId": "webhook-current-production",
       "sha256": "2e17d31651cab89f1d66b3f35ca7d75f03383a6e3fd2e7306447dceebbd62552",
@@ -109,6 +97,18 @@
       "webhookId": null,
       "overlap": null,
       "digestKeyId": "production-digest-key-v1"
+    },
+    {
+      "environment": "production",
+      "kind": "project-token",
+      "bindingId": "project-token-production",
+      "sha256": "b8fc9e8d67ebece7baa409a3a2c6b1e63cd11c2e2804ed361e622e82c09cc931",
+      "teamId": "01a0da1e-cf71-7133-8495-9c11a0f4ec1d",
+      "projectId": "01a0da21-7c43-73dc-bf11-2e73fa8c3c9a",
+      "routeId": "01a0da21-7c4e-722f-a90f-ff68d2ad8fe2",
+      "routeSlug": "outgoing",
+      "webhookId": null,
+      "overlap": null
     }
   ]
 }

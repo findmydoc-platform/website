@@ -42,12 +42,13 @@ jobs:
 
   deploy:
     needs: verify-dispatcher
-    uses: findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@ee7f555442f81ae2bb7ae592b4df16d2ae7a704a
+    uses: findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@9f5543d5f0ba37ff7bf2732a7c4e32d8721e28f8
     with:
       target_sha: ${{ inputs.target_sha }}
       platform_version: ${{ inputs.platform_version }}
       plan_digest: ${{ inputs.plan_digest }}
     secrets:
+      DATABASE_DIRECT_URI: ${{ secrets.DATABASE_DIRECT_URI }}
       GH_PACKAGES_READ_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
       PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

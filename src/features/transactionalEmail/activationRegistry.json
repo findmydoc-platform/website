@@ -58,7 +58,7 @@
     },
     {
       "environment": "production",
-      "version": "production-preflight-v1",
+      "version": "production-preflight-v2",
       "registryVersion": "activation-v1",
       "target": {
         "teamId": "01a0da1e-cf71-7133-8495-9c11a0f4ec1d",
@@ -72,7 +72,7 @@
       "credentials": {
         "projectToken": {
           "bindingId": "project-token-production",
-          "sha256": "e06ec0a6c425b6ea38fcb920b329ff0eb77950affc595c60b91513621886778d"
+          "sha256": "b8fc9e8d67ebece7baa409a3a2c6b1e63cd11c2e2804ed361e622e82c09cc931"
         },
         "webhookSecret": {
           "bindingId": "webhook-current-production",
@@ -121,7 +121,7 @@
     {
       "commandType": "clinic.registration-received",
       "registryVersion": "activation-v1",
-      "preflightVersion": "production-preflight-v1",
+      "preflightVersion": "production-preflight-v2",
       "environment": "production",
       "release": {
         "onePath": "website-pr-1943"

@@ -98,7 +98,7 @@ For VPN hostnames, set your own local value in `.env`:
 NEXT_ALLOWED_DEV_ORIGINS=your-machine.example.test
 ```
 
-Use hostnames only, without `http://` and without `:3000`. Separate multiple hosts with commas. Keep personal VPN hostnames in `.env`; `.env` is ignored by Git, while `.env.local` is tracked in this repository. Restart `pnpm dev` after changing the value.
+Use hostnames only, without `http://` and without `:3000`. Separate multiple hosts with commas. Keep personal VPN hostnames in `.env`; `.env` and local override files are ignored by Git. Restart `pnpm dev` after changing the value.
 
 ### Migrations
 

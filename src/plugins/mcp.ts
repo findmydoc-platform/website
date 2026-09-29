@@ -42,6 +42,7 @@ export const mcpReadCollectionSlugs = [
 // is not valid for MCP function input parameters. Keep writable collection list to safe types only.
 // issue: https://github.com/payloadcms/payload/issues/15287
 const mcpWriteCollections = new Set<string>([
+  'posts',
   'tags',
   'accreditation',
   'categories',

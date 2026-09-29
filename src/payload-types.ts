@@ -3536,6 +3536,14 @@ export interface PayloadMcpApiKey {
      * Allow clients to find posts.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create posts.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update posts.
+     */
+    update?: boolean | null;
   };
   clinics?: {
     /**
@@ -5909,6 +5917,8 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   clinics?:
     | T

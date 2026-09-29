@@ -84,6 +84,7 @@ import * as migration_20260927_070749_transactional_email_delivery_outcomes from
 import * as migration_20260927_073954_transactional_email_provider_results from './20260927_073954_transactional_email_provider_results'
 import * as migration_20260927_074230_transactional_email_provider_mapping from './20260927_074230_transactional_email_provider_mapping'
 import * as migration_20260927_091630_transactional_email_suppressions from './20260927_091630_transactional_email_suppressions'
+import * as migration_20260929_191230_mcp_posts_mcp_access from './20260929_191230_mcp_posts_mcp_access'
 
 export const migrations = [
   {
@@ -515,5 +516,10 @@ export const migrations = [
     up: migration_20260927_091630_transactional_email_suppressions.up,
     down: migration_20260927_091630_transactional_email_suppressions.down,
     name: '20260927_091630_transactional_email_suppressions',
+  },
+  {
+    up: migration_20260929_191230_mcp_posts_mcp_access.up,
+    down: migration_20260929_191230_mcp_posts_mcp_access.down,
+    name: '20260929_191230_mcp_posts_mcp_access',
   },
 ]

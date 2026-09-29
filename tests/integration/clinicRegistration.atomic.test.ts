@@ -171,6 +171,36 @@ describe('public clinic registration transaction', () => {
     }
   }
 
+  function installProductionAcceptance(
+    configure: (fixture: ReturnType<typeof createActivationFixture>) => void = () => undefined,
+  ) {
+    const fixture = createActivationFixture('production')
+    configure(fixture)
+    fixture.configuration.registry.targets = fixture.configuration.registry.targets.filter(
+      ({ environment }) => environment === 'production',
+    )
+    fixture.configuration.registry.fingerprints = fixture.configuration.registry.fingerprints.filter(
+      ({ environment }) => environment === 'production',
+    )
+    fixture.configuration.locks.targets = fixture.configuration.locks.targets.filter(
+      ({ environment }) => environment === 'production',
+    )
+    const runtimeInput = [
+      {
+        NODE_ENV: 'production',
+        VERCEL_ENV: 'production',
+        DEPLOYMENT_ENV: 'production',
+        ...fixture.configuration.secrets.production,
+      },
+      fixture.configuration.registry,
+      fixture.configuration.locks,
+      webhookNow,
+      fixture.registry,
+    ] as Parameters<typeof selectTransactionalEmailCommandAcceptanceForTest>[1]
+    commandAcceptanceOverride.select = (command) =>
+      selectTransactionalEmailCommandAcceptanceForTest(command, runtimeInput)
+  }
+
   it('publishes the application, operation, and first event together after commit', async () => {
     const contactEmail = `${prefix}-commit@clinic.example`
     const nativeCommit = payload.db.commitTransaction.bind(payload.db)
@@ -483,24 +513,48 @@ describe('public clinic registration transaction', () => {
     expect(await storedCounts(contactEmail)).toEqual({ applications: 0, operations: 0, events: 0 })
   })
 
-  it('keeps production application-only while the command has no activation declaration', async () => {
-    vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
-    const contactEmail = `${prefix}-production-inactive@clinic.example`
+  it('activates Production at the public route and keeps repeated submission idempotent', async () => {
+    installProductionAcceptance()
+    const contactEmail = `${prefix}-production-active@clinic.example`
+    const clinicName = `${prefix} Atomic Clinic`
 
-    const response = await submitClinicRegistrationRoute(requestFor(contactEmail))
-    const repeated = await submitClinicRegistrationRoute(requestFor(contactEmail))
+    const response = await submitClinicRegistrationRoute(
+      requestFor(`  ${contactEmail.toUpperCase()}  `, `  ${clinicName}  `),
+    )
+    const repeated = await submitClinicRegistrationRoute(requestFor(contactEmail, clinicName))
 
     expect(response.status).toBe(202)
     expect(repeated.status).toBe(202)
     await expect(response.json()).resolves.toEqual({ success: true })
     await expect(repeated.json()).resolves.toEqual({ success: true })
-    expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 0, events: 0 })
-    const stored = await observer.query<{ id: number }>('SELECT id FROM clinic_applications WHERE contact_email = $1', [
-      contactEmail,
-    ])
-    applicationIds.push(stored.rows[0]!.id)
+    expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 1, events: 1 })
+    expect(
+      (
+        await observer.query(
+          'SELECT runtime_environment, state FROM transactional_email_outbox WHERE recipient_address = $1',
+          [contactEmail],
+        )
+      ).rows,
+    ).toEqual([{ runtime_environment: 'production', state: 'queued' }])
+    await trackRegistrations(contactEmail)
+  })
+
+  it('fails closed before persistence when active Production credentials do not match the registry', async () => {
+    installProductionAcceptance((fixture) => {
+      const projectToken = fixture.configuration.registry.fingerprints.find(
+        ({ environment, kind }) => environment === 'production' && kind === 'project-token',
+      )!
+      projectToken.sha256 = 'a'.repeat(64)
+    })
+    const contactEmail = `${prefix}-production-invalid-binding@clinic.example`
+
+    const response = await submitClinicRegistrationRoute(requestFor(contactEmail))
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Clinic registration could not be completed. Please try again.',
+    })
+    expect(await storedCounts(contactEmail)).toEqual({ applications: 0, operations: 0, events: 0 })
   })
 
   it('activates Preview at the public route and keeps repeated submission idempotent', async () => {
@@ -556,11 +610,9 @@ describe('public clinic registration transaction', () => {
     await trackRegistrations(contactEmail)
   })
 
-  it('converges concurrent production-inactive submissions on one application', async () => {
-    vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
-    const contactEmail = `${prefix}-production-inactive-concurrent@clinic.example`
+  it('converges concurrent Production submissions on one application and receipt', async () => {
+    installProductionAcceptance()
+    const contactEmail = `${prefix}-production-active-concurrent@clinic.example`
     const applicationHooks = payload.collections.clinicApplications.config.hooks.beforeChange
     let releaseWrites!: () => void
     let bothWriting!: () => void
@@ -593,7 +645,7 @@ describe('public clinic registration transaction', () => {
         { success: true },
         { success: true },
       ])
-      expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 0, events: 0 })
+      expect(await storedCounts(contactEmail)).toEqual({ applications: 1, operations: 1, events: 1 })
       await trackRegistrations(contactEmail)
     } finally {
       applicationHooks.splice(applicationHooks.indexOf(synchronize), 1)

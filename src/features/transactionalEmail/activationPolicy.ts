@@ -10,6 +10,7 @@ import { TransactionalEmailError } from './errors'
 import { recipientAddressDigest } from './recipientBinding'
 
 const reference = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)
+const websitePullRequestReference = z.string().regex(/^website-pr-[1-9]\d{0,9}$/)
 const environment = z.enum(['preview', 'production'])
 const fingerprint = z.strictObject({ bindingId: reference, sha256: z.string().regex(/^[a-f0-9]{64}$/) })
 const webhookEvents = [
@@ -75,15 +76,8 @@ const registrySchema = z.strictObject({
         z.strictObject({
           ...recordFields,
           environment: z.literal('production'),
-          approvals: z.strictObject({
-            dpa: reference,
-            subprocessors: reference,
-            retentionDeletion: reference,
-            digestKeyOwnershipRotation: reference,
-            privacyNotice: reference,
-            processingPurpose: reference,
-            compliance: reference,
-            onePath: reference,
+          release: z.strictObject({
+            onePath: websitePullRequestReference,
           }),
         }),
       ]),
@@ -106,7 +100,7 @@ function parseActivationRegistry(input: unknown): z.infer<typeof registrySchema>
     new Set(records.map((entry) => `${entry.environment}:${entry.commandType}`)).size !== records.length
   )
     unavailable()
-  const cutovers = records.flatMap((entry) => (entry.environment === 'production' ? [entry.approvals.onePath] : []))
+  const cutovers = records.flatMap((entry) => (entry.environment === 'production' ? [entry.release.onePath] : []))
   if (new Set(cutovers).size !== cutovers.length) unavailable()
   for (const preflight of preflights) {
     if (

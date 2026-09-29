@@ -16,6 +16,23 @@
         "routeId": "01a0da4c-6501-71a3-8ec7-1ce1f283b8a5",
         "routeSlug": "outgoing"
       }
+    },
+    {
+      "environment": "production",
+      "teamId": "01a0da1e-cf71-7133-8495-9c11a0f4ec1d",
+      "projectId": "01a0da21-7c43-73dc-bf11-2e73fa8c3c9a",
+      "routeId": "01a0da21-7c4e-722f-a90f-ff68d2ad8fe2",
+      "routeSlug": "outgoing",
+      "webhookId": "01a0e800-07c8-7171-8eac-95075ab2d45a",
+      "sender": "no-reply@findmydoc.eu",
+      "senderEvidenceId": "production-sender-no-reply-v1",
+      "digestKeyId": "production-digest-key-v1",
+      "activatedTarget": {
+        "teamId": "01a0da1e-cf71-7133-8495-9c11a0f4ec1d",
+        "projectId": "01a0da21-7c43-73dc-bf11-2e73fa8c3c9a",
+        "routeId": "01a0da21-7c4e-722f-a90f-ff68d2ad8fe2",
+        "routeSlug": "outgoing"
+      }
     }
   ],
   "fingerprints": [
@@ -55,6 +72,43 @@
       "webhookId": null,
       "overlap": null,
       "digestKeyId": "preview-digest-key-v1"
+    },
+    {
+      "environment": "production",
+      "kind": "project-token",
+      "bindingId": "project-token-production",
+      "sha256": "e06ec0a6c425b6ea38fcb920b329ff0eb77950affc595c60b91513621886778d",
+      "teamId": "01a0da1e-cf71-7133-8495-9c11a0f4ec1d",
+      "projectId": "01a0da21-7c43-73dc-bf11-2e73fa8c3c9a",
+      "routeId": "01a0da21-7c4e-722f-a90f-ff68d2ad8fe2",
+      "routeSlug": "outgoing",
+      "webhookId": null,
+      "overlap": null
+    },
+    {
+      "environment": "production",
+      "kind": "webhook-current",
+      "bindingId": "webhook-current-production",
+      "sha256": "2e17d31651cab89f1d66b3f35ca7d75f03383a6e3fd2e7306447dceebbd62552",
+      "teamId": "01a0da1e-cf71-7133-8495-9c11a0f4ec1d",
+      "projectId": "01a0da21-7c43-73dc-bf11-2e73fa8c3c9a",
+      "routeId": "01a0da21-7c4e-722f-a90f-ff68d2ad8fe2",
+      "routeSlug": "outgoing",
+      "webhookId": "01a0e800-07c8-7171-8eac-95075ab2d45a",
+      "overlap": null
+    },
+    {
+      "environment": "production",
+      "kind": "digest-key",
+      "bindingId": "digest-key-production-production-digest-key-v1",
+      "sha256": "4c7e79feb31002818c47ed9cd812e6950ee04e97b8f657d324453838433beca2",
+      "teamId": "01a0da1e-cf71-7133-8495-9c11a0f4ec1d",
+      "projectId": "01a0da21-7c43-73dc-bf11-2e73fa8c3c9a",
+      "routeId": "01a0da21-7c4e-722f-a90f-ff68d2ad8fe2",
+      "routeSlug": "outgoing",
+      "webhookId": null,
+      "overlap": null,
+      "digestKeyId": "production-digest-key-v1"
     }
   ]
 }

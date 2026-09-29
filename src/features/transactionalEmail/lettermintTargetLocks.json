@@ -6,6 +6,13 @@
       "projectId": "01a0da4c-64f4-7324-9e59-8067ba18da0f",
       "routeId": "01a0da4c-6501-71a3-8ec7-1ce1f283b8a5",
       "routeSlug": "outgoing"
+    },
+    {
+      "environment": "production",
+      "teamId": "01a0da1e-cf71-7133-8495-9c11a0f4ec1d",
+      "projectId": "01a0da21-7c43-73dc-bf11-2e73fa8c3c9a",
+      "routeId": "01a0da21-7c4e-722f-a90f-ff68d2ad8fe2",
+      "routeSlug": "outgoing"
     }
   ]
 }

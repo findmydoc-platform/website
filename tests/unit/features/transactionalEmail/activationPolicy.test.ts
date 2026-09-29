@@ -16,14 +16,14 @@ import { recipientAddressDigest } from '@/features/transactionalEmail/recipientB
 const previewDigest = 'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf'
 
 describe('transactional email activation policy', () => {
-  it('activates only the committed Preview clinic-registration command', () => {
-    expect(
-      isTransactionalEmailCommandActivationDeclared('preview', 'clinic.registration-received', committedRegistry),
-    ).toBe(true)
-    expect(
-      isTransactionalEmailCommandActivationDeclared('production', 'clinic.registration-received', committedRegistry),
-    ).toBe(false)
-    expect(isTransactionalEmailCommandActivationDeclared('preview', 'auth.invitation', committedRegistry)).toBe(false)
+  it('activates only the committed clinic-registration command in Preview and Production', () => {
+    for (const environment of ['preview', 'production'] as const) {
+      expect(
+        isTransactionalEmailCommandActivationDeclared(environment, 'clinic.registration-received', committedRegistry),
+      ).toBe(true)
+      for (const command of commandTypes.filter((entry) => entry !== 'clinic.registration-received'))
+        expect(isTransactionalEmailCommandActivationDeclared(environment, command, committedRegistry)).toBe(false)
+    }
   })
 
   it('declares command acceptance only in the environment named by valid activation evidence', () => {
@@ -83,7 +83,7 @@ describe('transactional email activation policy', () => {
     expect(policy.evaluate('clinic.registration-received', 'recipient@example.test')).toBe('command-not-enabled')
   })
 
-  it('enables one Production command only with all environment-bound preflight and approval evidence', () => {
+  it('enables one Production command only with environment-bound preflight and one-path release evidence', () => {
     const { binding, registry } = createActivationFixture('production')
     const policy = resolveActivationPolicy(binding, registry)
     expect(policy.evaluate('clinic.registration-received', 'recipient@example.test')).toBeNull()
@@ -223,9 +223,9 @@ describe('transactional email activation policy', () => {
     expect(() => resolveActivationPolicy(binding, fixture.registry)).toThrow('environment-unavailable')
   })
 
-  it('fails hosted startup on incomplete activation evidence after the credential check', () => {
+  it('fails hosted startup without one-path release evidence after the credential check', () => {
     const fixture = createActivationFixture('production')
-    Reflect.deleteProperty(fixture.record.approvals!, 'dpa')
+    Reflect.deleteProperty(fixture.record.release!, 'onePath')
     expect(() =>
       validateTransactionalEmailStartupForTest(
         { VERCEL_ENV: 'production', ...fixture.configuration.secrets.production },
@@ -237,6 +237,13 @@ describe('transactional email activation policy', () => {
     ).toThrow('environment-unavailable')
   })
 
+  it('rejects a Production release reference that is not bound to a Website pull request', () => {
+    const fixture = createActivationFixture('production')
+    fixture.record.release!.onePath = 'production-clinic-registration-cutover'
+
+    expect(() => resolveActivationPolicy(fixture.binding, fixture.registry)).toThrow('environment-unavailable')
+  })
+
   it.each(['team', 'project', 'route', 'sender', 'dns', 'webhook', 'tracking'] as const)(
     'rejects missing %s preflight evidence',
     (field) => {
@@ -246,18 +253,20 @@ describe('transactional email activation policy', () => {
     },
   )
 
-  it.each([
-    'dpa',
-    'subprocessors',
-    'retentionDeletion',
-    'digestKeyOwnershipRotation',
-    'privacyNotice',
-    'processingPurpose',
-    'compliance',
-    'onePath',
-  ] as const)('rejects missing Production %s approval', (field) => {
+  it('rejects a Production activation with legacy approval fields instead of one-path release evidence', () => {
     const fixture = createActivationFixture('production')
-    Reflect.deleteProperty(fixture.record.approvals!, field)
+    Reflect.deleteProperty(fixture.record, 'release')
+    Reflect.set(fixture.record, 'approvals', {
+      dpa: 'production-dpa',
+      subprocessors: 'production-subprocessors',
+      retentionDeletion: 'production-retention',
+      digestKeyOwnershipRotation: 'production-key-management',
+      privacyNotice: 'production-privacy',
+      processingPurpose: 'production-purpose',
+      compliance: 'production-compliance',
+      onePath: 'website-pr-9999',
+    })
+
     expect(() => resolveActivationPolicy(fixture.binding, fixture.registry)).toThrow('environment-unavailable')
   })
 

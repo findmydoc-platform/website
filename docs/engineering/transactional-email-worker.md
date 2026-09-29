@@ -2,9 +2,10 @@
 
 [Website #1854](https://github.com/findmydoc-platform/website/issues/1854) and
 [Website #1855](https://github.com/findmydoc-platform/website/issues/1855) implement synthetic processing and bounded recovery under
-[ADR 028](../adrs/028-adr-lettermint-for-transactional-email.md) and the [foundation contract](transactional-email-platform-foundation.md).
+[ADR 031](../adrs/031-adr-transactional-email-technical-activation-gates.md) and the [foundation contract](transactional-email-platform-foundation.md).
 The public command port remains unchanged. The private Website worker receives an accepted operation identifier.
-No product catalog entry or hosted delivery activation invokes it.
+The committed Preview and Production activation for `clinic.registration-received` can enqueue operations for it.
+No other product command is active in either hosted environment.
 
 ## Hosted scheduler boundary
 
@@ -176,8 +177,9 @@ rotation, target drift, environment isolation, and deadline budget. Time is cont
 
 Local development and CI keep explicit fake execution. Only Vitest in the test runtime accepts the controlled HTTP
 transport. Preview hosted worker selection is available only through its fingerprint-verified target, minimized
-outbound capability, suppression lookup, command activation, and recipient digest allowlist. Production retains no
-target, credential, preflight, activation record, or recipient configuration and remains unavailable without fallback.
+outbound capability, suppression lookup, command activation, and recipient digest allowlist. Production uses its own
+fingerprint-verified target, credentials, preflight, and activation record. Its committed declaration enables only
+`clinic.registration-received`; every other command remains unavailable without fallback.
 
 ## Fake provider acceptance and privacy
 

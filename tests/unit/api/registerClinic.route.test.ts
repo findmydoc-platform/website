@@ -87,6 +87,11 @@ const validSubmission = {
   contactRole: 'Clinic Management',
   medicalSpecialties: ['1', '3'],
 }
+const websitePrefix = 'https://example.com/'
+const maximumLengthEmail = `${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(61)}`
+const tooLongEmail = `${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(62)}`
+const maximumLengthWebsite = websitePrefix + 'w'.repeat(2048 - websitePrefix.length)
+const tooLongWebsite = websitePrefix + 'w'.repeat(2049 - websitePrefix.length)
 
 function makeRequest(body: unknown) {
   return new NextRequest('http://localhost/api/auth/register/clinic', {
@@ -94,6 +99,20 @@ function makeRequest(body: unknown) {
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
   })
+}
+
+function makeRawRequest(body: string, headers: Record<string, string> = {}) {
+  return new NextRequest('http://localhost/api/auth/register/clinic', {
+    method: 'POST',
+    body,
+    headers: { 'Content-Type': 'application/json', ...headers },
+  })
+}
+
+function paddedSubmissionBody(byteLength: number): string {
+  const emptyBody = JSON.stringify({ ...validSubmission, padding: '' })
+  const emptyBodyByteLength = new TextEncoder().encode(emptyBody).byteLength
+  return JSON.stringify({ ...validSubmission, padding: 'x'.repeat(byteLength - emptyBodyByteLength) })
 }
 
 describe('POST /api/auth/register/clinic', () => {
@@ -127,6 +146,107 @@ describe('POST /api/auth/register/clinic', () => {
     expect(submittedInput).not.toHaveProperty('contactPhone')
     expect(submittedInput).not.toHaveProperty('address')
     expect(submittedInput).not.toHaveProperty('additionalNotes')
+  })
+
+  test('accepts the documented request and field boundaries', async () => {
+    const specialties = Array.from({ length: 25 }, (_, index) => index + 1)
+    findMock.mockResolvedValueOnce({
+      docs: specialties.map((id) => ({ id, name: `Specialty ${id}`, parentSpecialty: null })),
+    })
+
+    const response = await POST(
+      makeRequest({
+        clinicName: 'C'.repeat(160),
+        clinicWebsite: maximumLengthWebsite,
+        contactFirstName: 'F'.repeat(100),
+        contactLastName: 'L'.repeat(100),
+        contactEmail: maximumLengthEmail,
+        contactRole: 'Clinic Management',
+        medicalSpecialties: specialties,
+      }),
+    )
+
+    expect(response.status).toBe(202)
+    expect(serviceMocks.submit).toHaveBeenCalledWith(
+      publicReq,
+      expect.objectContaining({
+        clinicName: 'C'.repeat(160),
+        clinicWebsite: maximumLengthWebsite,
+        contactFirstName: 'F'.repeat(100),
+        contactLastName: 'L'.repeat(100),
+        contactEmail: maximumLengthEmail,
+        medicalSpecialtyIds: specialties,
+      }),
+    )
+  })
+
+  test('accepts a request body of exactly 32 KiB', async () => {
+    const body = paddedSubmissionBody(32 * 1024)
+
+    expect(new TextEncoder().encode(body)).toHaveLength(32 * 1024)
+    const response = await POST(makeRawRequest(body))
+
+    expect(response.status).toBe(202)
+    expect(serviceMocks.submit).toHaveBeenCalledOnce()
+  })
+
+  test('rejects a request body larger than 32 KiB before persistence', async () => {
+    const response = await POST(makeRawRequest(paddedSubmissionBody(32 * 1024 + 1)))
+
+    expect(response.status).toBe(413)
+    await expect(response.json()).resolves.toEqual({ error: 'Request body too large' })
+    expect(findMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
+  })
+
+  test('rejects a simple cross-origin content type before persistence', async () => {
+    const response = await POST(makeRawRequest(JSON.stringify(validSubmission), { 'Content-Type': 'text/plain' }))
+
+    expect(response.status).toBe(415)
+    await expect(response.json()).resolves.toEqual({ error: 'Unsupported media type' })
+    expect(findMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
+  })
+
+  test('rejects a foreign browser origin before persistence', async () => {
+    const response = await POST(
+      makeRawRequest(JSON.stringify(validSubmission), {
+        Origin: 'https://attacker.example',
+        'Sec-Fetch-Site': 'cross-site',
+      }),
+    )
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({ error: 'Cross-origin request forbidden' })
+    expect(findMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['clinicName', 'C'.repeat(161), 'Invalid clinicName', 160],
+    ['contactFirstName', 'F'.repeat(101), 'Invalid contactFirstName', 100],
+    ['contactLastName', 'L'.repeat(101), 'Invalid contactLastName', 100],
+    ['contactEmail', tooLongEmail, 'Invalid contactEmail', 254],
+    ['clinicWebsite', tooLongWebsite, 'Invalid clinicWebsite', 2048],
+  ])('rejects %s values at limit + 1', async (field, value, error, maximumLength) => {
+    expect(value).toHaveLength(maximumLength + 1)
+    const response = await POST(makeRequest({ ...validSubmission, [field]: value }))
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error })
+    expect(findMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
+  })
+
+  test('rejects more than 25 medical specialty IDs before lookup', async () => {
+    const response = await POST(
+      makeRequest({ ...validSubmission, medicalSpecialties: Array.from({ length: 26 }, (_, index) => index + 1) }),
+    )
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error: 'Invalid medicalSpecialties' })
+    expect(findMock).not.toHaveBeenCalled()
+    expect(serviceMocks.submit).not.toHaveBeenCalled()
   })
 
   test('tracks a privacy-safe submission event', async () => {

@@ -7,7 +7,7 @@
 | Author | Sebastian Schütze |
 | Version | 0.1 |
 | Date | 11.09.2026 |
-| Status | Accepted |
+| Status | Superseded |
 
 ## Context
 
@@ -186,4 +186,4 @@ decide legal wording.
 
 ## Superseded by
 
-Not superseded.
+[ADR 031: Transactional email technical activation gates](./031-adr-transactional-email-technical-activation-gates.md)

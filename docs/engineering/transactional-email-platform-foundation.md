@@ -184,9 +184,13 @@ reference, or delivery result. A duplicate command returns the original `operati
 The command is a discriminated TypeScript union. Every command contains:
 
 - one closed `type` value;
-- one stable, opaque `operationReference` owned by the triggering flow that embeds no address, name, content, or
-  secret;
-- a command-specific, typed set of internal entity or operation identifiers.
+- one command-specific authoritative source identity;
+- a closed recipient slot where one source event can address more than one approved recipient role.
+
+Callers do not provide `operationReference`. The module derives it centrally from the validated command. AuthAction,
+Conversation message, and Moderation event references use fixed versioned forms. The already deployed Clinic
+Registration command retains `String(registrationId)` so persisted operations and worker invariants keep the same key.
+The normalized reference embeds no address, name, content, or secret.
 
 The command never contains an email address, URL, sender, subject, rendered body, template data, provider choice,
 retry setting, idempotency key, or free-form `metadata`, `context`, or arbitrary key-value object. Each flow issue owns
@@ -273,8 +277,9 @@ obtain a specific work order if it cannot identify that durable intent.
 ## Logical and provider idempotency
 
 The database has a unique constraint on `(commandType, operationReference)`. This is the durable authority for one
-logical email operation. After validation and authorization, command acceptance first returns an existing matching
-operation when one is visible.
+logical email operation. The deep module derives the reference from the command's authoritative identity before
+storage access. After validation and authorization, command acceptance first returns an existing matching operation
+when one is visible.
 
 Concurrent inserts still race through the database constraint. A module-owned transaction rolls back after losing the
 race, repeats the complete transaction through the bounded retry pattern, and then returns the winning record. A
@@ -301,7 +306,7 @@ The outbox requires these logical fields. Payload-generated identifiers and time
 | Field | Shape | Contract |
 | --- | --- | --- |
 | `commandType` | closed select | One of the nine approved command types; indexed |
-| `operationReference` | text | Stable flow-owned reference; never sent to the provider |
+| `operationReference` | text | Stable module-normalized authoritative source reference; never sent to the provider |
 | `commandPayload` | JSON, nullable after scrubbing | Serialized member of the closed typed command union; validated on every internal read and write; never queryable by callers; cleared by scrubbing |
 | `runtimeEnvironment` | closed select | Captured deployment environment; operational only |
 | `state` | closed select | Current state from the state model; indexed |

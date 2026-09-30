@@ -3,7 +3,6 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
   () => import('../helpers/deliveryEdgeNetworkBoundary'),
 )
-import { randomUUID } from 'node:crypto'
 import * as emailRenderer from '@react-email/render'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 import pg from 'pg'
@@ -14,8 +13,8 @@ import { resolveActivationPolicy } from '@/features/transactionalEmail/activatio
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
 import {
   clearedSyntheticSuppression,
+  createSyntheticRegistrationId,
   syntheticEmailCatalog,
-  syntheticRegistrationId,
 } from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 
@@ -61,12 +60,12 @@ describe('transactional email activation at the worker boundary', () => {
     async (outcomeCode) => {
       vi.stubEnv('CI', 'false')
       const req = await createLocalReq({}, payload)
-      const operationReference = randomUUID()
+      const registrationId = createSyntheticRegistrationId()
+      const operationReference = String(registrationId)
       references.push(operationReference)
       const { operationId } = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
         type: 'clinic.registration-received',
-        operationReference,
-        registrationId: syntheticRegistrationId,
+        registrationId,
       })
       const fixture = createActivationFixture()
       if (outcomeCode === 'command-not-enabled') fixture.registry.records = []
@@ -128,12 +127,12 @@ describe('transactional email activation at the worker boundary', () => {
     async (outcomeCode) => {
       vi.stubEnv('CI', 'false')
       const req = await createLocalReq({}, payload)
-      const operationReference = randomUUID()
+      const registrationId = createSyntheticRegistrationId()
+      const operationReference = String(registrationId)
       references.push(operationReference)
       const { operationId } = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
         type: 'clinic.registration-received',
-        operationReference,
-        registrationId: syntheticRegistrationId,
+        registrationId,
       })
       let now = Date.now()
       const fixture = createActivationFixture()
@@ -194,12 +193,12 @@ describe('transactional email activation at the worker boundary', () => {
   it('rolls back suppression and scrubbing together when the audit write fails', async () => {
     vi.stubEnv('CI', 'false')
     const req = await createLocalReq({}, payload)
-    const operationReference = randomUUID()
+    const registrationId = createSyntheticRegistrationId()
+    const operationReference = String(registrationId)
     references.push(operationReference)
     const { operationId } = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
       type: 'clinic.registration-received',
-      operationReference,
-      registrationId: syntheticRegistrationId,
+      registrationId,
     })
     const fixture = createActivationFixture()
     const hooks = payload.collections.transactionalEmailEvents.config.hooks

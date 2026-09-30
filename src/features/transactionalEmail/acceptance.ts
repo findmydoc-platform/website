@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import type { TransactionalEmailAcceptance, TransactionalEmailCommands } from './index'
-import { validateCommand, type TransactionalEmailCommand } from './commands'
+import {
+  commandOperationReference,
+  validateCommand,
+  type CommandType,
+  type TransactionalEmailCommand,
+} from './commands'
 import { resolveCatalogEntry, type CommandCatalog, type RecipientBinding } from './catalog'
 import { TransactionalEmailError } from './errors'
 import type { EmailEnvironment } from './environment'
@@ -8,6 +13,7 @@ import type { EmailEnvironment } from './environment'
 export type AcceptedOperation = { id: number | string; createdAt: string }
 export type NewOperation = {
   command: TransactionalEmailCommand
+  operationReference: string
   acceptedAt: string
   deliveryDeadline: string
   recipientAddress: string
@@ -16,7 +22,7 @@ export type NewOperation = {
   runtimeEnvironment: EmailEnvironment
 }
 export type AcceptanceStorage = {
-  find(command: TransactionalEmailCommand): Promise<AcceptedOperation | null>
+  find(commandType: CommandType, operationReference: string): Promise<AcceptedOperation | null>
   create(operation: NewOperation): Promise<AcceptedOperation>
 }
 export type AcceptanceDependencies = {
@@ -32,6 +38,7 @@ export function createCommandPort(dependencies: AcceptanceDependencies): Transac
   return {
     async accept(input) {
       const command = validateCommand(input)
+      const operationReference = commandOperationReference(command)
       const entry = resolveCatalogEntry(dependencies.catalog, command)
       return dependencies.transaction(async (storage): Promise<TransactionalEmailAcceptance> => {
         const recipient = await entry.authorizeAndResolve(command, dependencies.actor)
@@ -41,7 +48,7 @@ export function createCommandPort(dependencies: AcceptanceDependencies): Transac
         ) {
           throw new TransactionalEmailError('invalid-command')
         }
-        const existing = await storage.find(command)
+        const existing = await storage.find(command.type, operationReference)
         if (existing) return { operationId: String(existing.id), acceptedAt: existing.createdAt, deduplicated: true }
         const acceptedAt = new Date((dependencies.now ?? Date.now)()).toISOString()
         let deadline = Date.parse(acceptedAt) + 86_400_000
@@ -59,6 +66,7 @@ export function createCommandPort(dependencies: AcceptanceDependencies): Transac
         }
         const operation = await storage.create({
           command,
+          operationReference,
           acceptedAt,
           deliveryDeadline: new Date(deadline).toISOString(),
           recipientAddress: recipient.address,

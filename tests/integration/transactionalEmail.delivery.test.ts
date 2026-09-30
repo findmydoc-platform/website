@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
   () => import('../helpers/deliveryEdgeNetworkBoundary'),
 )
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 import pg from 'pg'
 import config from '@payload-config'
@@ -20,7 +20,11 @@ import {
 } from '@/features/transactionalEmail/hostedConfiguration'
 import { webhookNow } from '../fixtures/lettermintWebhook'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
-import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/transactionalEmail'
+import {
+  createSyntheticRegistrationId,
+  syntheticEmailCatalog,
+  syntheticRegistrationId,
+} from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import { assertNoPrivateEvidence } from '../helpers/deliveryEdgeEvidence'
 import { renderClinicRegistrationReceipt } from '@/features/transactionalEmail/preparation'
@@ -65,12 +69,12 @@ describe('Lettermint delivery through the real worker', () => {
   })
   async function accept() {
     const req = await createLocalReq({}, payload)
-    const operationReference = randomUUID()
+    const registrationId = createSyntheticRegistrationId()
+    const operationReference = String(registrationId)
     references.push(operationReference)
     const { operationId } = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
       type: 'clinic.registration-received',
-      operationReference,
-      registrationId: syntheticRegistrationId,
+      registrationId,
     })
     return { req, operationId }
   }
@@ -139,7 +143,7 @@ describe('Lettermint delivery through the real worker', () => {
           command.registrationId === syntheticRegistrationId
             ? {
                 address: 'recipient@example.test',
-                binding: syntheticRegistrationId,
+                binding: String(syntheticRegistrationId),
                 prepare: async () =>
                   renderClinicRegistrationReceipt('recipient@example.test', {
                     fullName: 'Synthetic Recipient',
@@ -154,7 +158,7 @@ describe('Lettermint delivery through the real worker', () => {
           throw new Error('Unexpected synthetic command')
         return {
           address: 'recipient@example.test',
-          binding: syntheticRegistrationId,
+          binding: String(syntheticRegistrationId),
           prepare: async () =>
             renderClinicRegistrationReceipt('recipient@example.test', {
               fullName: 'Synthetic Recipient',
@@ -171,13 +175,13 @@ describe('Lettermint delivery through the real worker', () => {
 
   it('selects Preview delivery from Preview-only runtime configuration and keeps Production unavailable', async () => {
     const req = await createLocalReq({}, payload)
-    const operationReference = randomUUID()
+    const registrationId = createSyntheticRegistrationId()
+    const operationReference = String(registrationId)
     references.push(operationReference)
     const { fixture, input } = previewRuntimeInput()
     const { operationId } = await bindTransactionalEmailForTest(req, clinicRegistrationCatalog, input).accept({
       type: 'clinic.registration-received',
-      operationReference,
-      registrationId: syntheticRegistrationId,
+      registrationId,
     })
     const httpTransport = vi.fn(async () =>
       Response.json({ message_id: 'preview-runtime-message', status: 'pending' }, { status: 202 }),

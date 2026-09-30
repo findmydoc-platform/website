@@ -14,8 +14,8 @@ import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
 import { appendProviderEvent } from '@/features/transactionalEmail/providerEvents'
 import {
   clearedSyntheticSuppression,
+  createSyntheticRegistrationId,
   syntheticEmailCatalog,
-  syntheticRegistrationId,
 } from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 
@@ -49,12 +49,12 @@ describe('transactional email event invariants', () => {
   })
   const accept = async () => {
     const req = await createLocalReq({}, payload)
-    const operationReference = randomUUID()
+    const registrationId = createSyntheticRegistrationId()
+    const operationReference = String(registrationId)
     references.push(operationReference)
     const receipt = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
       type: 'clinic.registration-received',
-      operationReference,
-      registrationId: syntheticRegistrationId,
+      registrationId,
     })
     return { req, id: Number(receipt.operationId) }
   }

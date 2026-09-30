@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import http from 'node:http'
 import https from 'node:https'
@@ -17,7 +16,7 @@ import {
 import { workerTransaction } from '@/features/transactionalEmail/workerStorage'
 import { webhookNow } from '../fixtures/lettermintWebhook'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
-import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/transactionalEmail'
+import { createSyntheticRegistrationId, syntheticEmailCatalog } from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: async () => null }))
@@ -56,12 +55,12 @@ describe('immutable provider preparation through the worker', () => {
   })
   async function accept() {
     const req = await createLocalReq({}, payload)
-    const operationReference = randomUUID()
+    const registrationId = createSyntheticRegistrationId()
+    const operationReference = String(registrationId)
     references.push(operationReference)
     const { operationId } = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
       type: 'clinic.registration-received',
-      operationReference,
-      registrationId: syntheticRegistrationId,
+      registrationId,
     })
     return { req, operationId }
   }

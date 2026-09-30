@@ -13,35 +13,58 @@ export const commandTypes = [
   'clinic.registration-received',
 ] as const
 
-const reference = z.uuid()
-const common = { operationReference: reference }
-const clinicApplicationIdentifier = z.number().int().positive()
+const positiveIdentifier = z.number().int().positive()
 
-// These identifiers bind synthetic source records. Product catalog entries remain owned by the flow issues.
-const syntheticCommandSchema = z.discriminatedUnion('type', [
-  z.strictObject({ type: z.literal('auth.email-verification'), ...common, verificationId: reference }),
-  z.strictObject({ type: z.literal('auth.invitation'), ...common, invitationId: reference }),
-  z.strictObject({ type: z.literal('auth.password-recovery'), ...common, recoveryId: reference }),
-  z.strictObject({ type: z.literal('conversation.external-message-received'), ...common, messageId: reference }),
-  z.strictObject({ type: z.literal('moderation.report-received'), ...common, reportId: reference }),
-  z.strictObject({ type: z.literal('moderation.report-decided'), ...common, decisionId: reference }),
-  z.strictObject({ type: z.literal('moderation.appeal-received'), ...common, appealId: reference }),
-  z.strictObject({ type: z.literal('moderation.appeal-decided'), ...common, decisionId: reference }),
-  // The synthetic fixture keeps its UUID source contract.
-  z.strictObject({ type: z.literal('clinic.registration-received'), ...common, registrationId: reference }),
-])
-
-// A real clinic application uses its existing numeric identifier for both the source and operation reference.
-const commandSchema = z.union([
-  syntheticCommandSchema,
-  z.strictObject({ type: z.literal('clinic.registration-received'), registrationId: clinicApplicationIdentifier }),
+const commandSchema = z.discriminatedUnion('type', [
+  z.strictObject({ type: z.literal('auth.email-verification'), authActionId: positiveIdentifier }),
+  z.strictObject({ type: z.literal('auth.invitation'), authActionId: positiveIdentifier }),
+  z.strictObject({ type: z.literal('auth.password-recovery'), authActionId: positiveIdentifier }),
+  z.strictObject({
+    type: z.literal('conversation.external-message-received'),
+    messageId: positiveIdentifier,
+  }),
+  z.strictObject({
+    type: z.literal('moderation.report-received'),
+    moderationEventId: positiveIdentifier,
+    recipientSlot: z.literal('reporter'),
+  }),
+  z.strictObject({
+    type: z.literal('moderation.report-decided'),
+    moderationEventId: positiveIdentifier,
+    recipientSlot: z.enum(['reporter', 'affected']),
+  }),
+  z.strictObject({
+    type: z.literal('moderation.appeal-received'),
+    moderationEventId: positiveIdentifier,
+    recipientSlot: z.literal('appellant'),
+  }),
+  z.strictObject({
+    type: z.literal('moderation.appeal-decided'),
+    moderationEventId: positiveIdentifier,
+    recipientSlot: z.enum(['appellant', 'reporter']),
+  }),
+  z.strictObject({ type: z.literal('clinic.registration-received'), registrationId: positiveIdentifier }),
 ])
 
 export type TransactionalEmailCommand = z.infer<typeof commandSchema>
 export type CommandType = TransactionalEmailCommand['type']
 
 export function commandOperationReference(command: TransactionalEmailCommand): string {
-  return 'operationReference' in command ? command.operationReference : String(command.registrationId)
+  if (
+    command.type === 'auth.email-verification' ||
+    command.type === 'auth.invitation' ||
+    command.type === 'auth.password-recovery'
+  )
+    return `v1|auth-action|${command.authActionId}`
+  if (command.type === 'conversation.external-message-received') return `v1|conversation-message|${command.messageId}`
+  if (
+    command.type === 'moderation.report-received' ||
+    command.type === 'moderation.report-decided' ||
+    command.type === 'moderation.appeal-received' ||
+    command.type === 'moderation.appeal-decided'
+  )
+    return `v1|moderation-event|${command.moderationEventId}|${command.recipientSlot}`
+  return String(command.registrationId)
 }
 
 export function validateCommand(input: unknown): TransactionalEmailCommand {

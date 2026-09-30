@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import https from 'node:https'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,6 +13,7 @@ import { recipientAddressDigest } from '@/features/transactionalEmail/recipientB
 import { createHostedLettermintOutboundBinding } from '@/features/transactionalEmail/hostedConfiguration'
 import {
   clearedSyntheticSuppression,
+  createSyntheticRegistrationId,
   syntheticEmailCatalog,
   syntheticRegistrationId,
 } from '../fixtures/transactionalEmail'
@@ -52,14 +52,14 @@ describe('transactional email safety sweep and retention', () => {
     (await observer.query('SELECT * FROM transactional_email_outbox WHERE id = $1', [id])).rows[0]
   const accept = async () => {
     const req = await createLocalReq({}, payload)
-    const operationReference = randomUUID()
+    const registrationId = createSyntheticRegistrationId()
+    const operationReference = String(registrationId)
     references.push(operationReference)
     const receipt = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
       type: 'clinic.registration-received',
-      operationReference,
-      registrationId: syntheticRegistrationId,
+      registrationId,
     })
-    return { req, id: receipt.operationId }
+    return { req, id: receipt.operationId, registrationId }
   }
   it('expires abandoned content during an empty worker invocation before any preparation', async () => {
     const { req, id } = await accept()
@@ -86,7 +86,7 @@ describe('transactional email safety sweep and retention', () => {
     expect(events.rows.map(({ type }) => type)).toEqual(['command.accepted', 'delivery.expired', 'payload.scrubbed'])
   })
   it('retains deduplication until day 42, then deletes the outbox and all events atomically', async () => {
-    const { req, id } = await accept()
+    const { req, id, registrationId } = await accept()
     await createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
       catalog: syntheticEmailCatalog,
@@ -97,8 +97,7 @@ describe('transactional email safety sweep and retention', () => {
     expect(await row(id)).toBeDefined()
     const duplicate = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
       type: 'clinic.registration-received',
-      operationReference: stored.operation_reference,
-      registrationId: syntheticRegistrationId,
+      registrationId,
     })
     expect(duplicate).toMatchObject({ operationId: id, deduplicated: true })
     await createTransactionalEmailWorker(req, { suppression: clearedSyntheticSuppression, now: () => day42 }).run()
@@ -548,19 +547,22 @@ describe('transactional email safety sweep and retention', () => {
   ])('scrubs legacy NULL deadlines for auth=$auth state=$state during an empty run', async ({ auth, state }) => {
     const req = await createLocalReq({}, payload)
     const now = Date.now()
-    const operationReference = randomUUID()
+    const sourceId = createSyntheticRegistrationId()
+    const operationReference = auth ? `v1|auth-action|${sourceId}` : String(sourceId)
     references.push(operationReference)
     const receipt = auth
       ? await bindTransactionalEmail(req, {
           'auth.password-recovery': {
-            authorizeAndResolve: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+            authorizeAndResolve: async () => ({
+              address: 'recipient@example.test',
+              binding: String(syntheticRegistrationId),
+            }),
             authValidity: async () => ({ actionAt: new Date(now).toISOString(), lifetimeMilliseconds: 7200000 }),
           },
-        }).accept({ type: 'auth.password-recovery', operationReference, recoveryId: syntheticRegistrationId })
+        }).accept({ type: 'auth.password-recovery', authActionId: sourceId })
       : await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
           type: 'clinic.registration-received',
-          operationReference,
-          registrationId: syntheticRegistrationId,
+          registrationId: sourceId,
         })
     const id = receipt.operationId
     const control = await accept()
@@ -590,23 +592,26 @@ describe('transactional email safety sweep and retention', () => {
     const req = await createLocalReq({}, payload)
     let clock = Date.now()
     const actionAt = new Date(clock).toISOString()
-    const operationReference = randomUUID()
+    const authActionId = createSyntheticRegistrationId()
+    const operationReference = `v1|auth-action|${authActionId}`
     references.push(operationReference)
     const catalog = {
       'auth.password-recovery': {
-        authorizeAndResolve: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+        authorizeAndResolve: async () => ({
+          address: 'recipient@example.test',
+          binding: String(syntheticRegistrationId),
+        }),
         authValidity: async () => ({ actionAt, lifetimeMilliseconds: 48 * 3600000 }),
         worker: {
           template: 'synthetic-notification' as const,
           terminalState: 'failed' as const,
-          revalidate: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+          revalidate: async () => ({ address: 'recipient@example.test', binding: String(syntheticRegistrationId) }),
         },
       },
     }
     const receipt = await bindTransactionalEmail(req, catalog, () => clock).accept({
       type: 'auth.password-recovery',
-      operationReference,
-      recoveryId: syntheticRegistrationId,
+      authActionId,
     })
     const delivery = { deliver: vi.fn(async () => ({ type: 'ambiguous' as const })) }
     const worker = createTransactionalEmailWorker(req, {

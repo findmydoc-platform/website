@@ -12,12 +12,18 @@ Product code receives `TransactionalEmailCommands` from `src/features/transactio
 only command and receipt types and typed errors. The private Website integration binds authentication and Payload to
 that port. Catalogs, storage capabilities, transaction handling, and environment selection remain internal imports.
 
-The nine approved command types use a strict runtime schema. Operation references and synthetic source identifiers
-are UUIDs. Each command has one named source identifier, such as `registrationId` or `recoveryId`. These identifiers
-address synthetic test records for commands without an activated product flow. Extra properties and unknown command
-types fail before persistence. The runtime catalog contains the `clinic.registration-received` product entry, which
-loads an existing clinic application and derives its recipient and template props. The tests retain a static synthetic
-catalog for the foundation commands, which resolves only addresses under `example.test`.
+The nine approved command types use a strict runtime schema. Callers provide only the authoritative source identity
+for the selected command. Auth commands use a positive numeric `authActionId`, Conversation uses a positive numeric
+`messageId`, and Moderation uses a positive numeric `moderationEventId` with its command-specific closed
+`recipientSlot`. Clinic Registration retains its positive numeric `registrationId`. Callers cannot provide an
+`operationReference`.
+
+The module derives the durable reference centrally. Auth uses `v1|auth-action|<id>`, Conversation uses
+`v1|conversation-message|<id>`, and Moderation uses `v1|moderation-event|<id>|<slot>`. Clinic Registration keeps its
+already deployed `String(registrationId)` reference so existing outbox records remain valid. Extra properties,
+invalid identity shapes, cross-command recipient slots, and unknown command types fail before persistence. The runtime
+catalog contains the `clinic.registration-received` product entry, which loads an existing clinic application and
+derives its recipient and template props. Tests use static catalogs that resolve only addresses under `example.test`.
 
 An acceptance returns exactly `operationId`, `acceptedAt`, and `deduplicated`. Validation and source authorization run
 before both initial acceptance and duplicate receipts. Without a caller transaction, the module owns a serializable read-write transaction, writes one outbox record and its

@@ -5,7 +5,14 @@ import runtime from '../../apps/preview-email-scheduler/package.json'
 
 describe('independent transactional email schedules', () => {
   it('schedules the Production Website worker in its own project once per minute', () => {
-    expect(website.crons).toEqual([{ path: '/api/internal/transactional-email/worker', schedule: '* * * * *' }])
+    expect(website.crons).toContainEqual({
+      path: '/api/internal/transactional-email/worker',
+      schedule: '* * * * *',
+    })
+  })
+
+  it('runs the default Payload job queue every five minutes in Production', () => {
+    expect(website.crons).toContainEqual({ path: '/api/payload-jobs/run', schedule: '*/5 * * * *' })
   })
 
   it('gives the Preview scheduler its own function, cadence, runtime and deployment root', () => {

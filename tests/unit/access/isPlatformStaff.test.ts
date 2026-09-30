@@ -6,7 +6,7 @@
  * Follows existing project patterns from userProfileManagement.test.ts
  */
 
-import { describe, it, beforeEach } from 'vitest'
+import { describe, it, beforeEach, afterEach, vi } from 'vitest'
 import { createAccessArgs, expectAccess, clearAllMocks } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 import { isPlatformStaff, isPlatformStaffOrSelf } from '@/access/isPlatformStaff'
@@ -64,6 +64,10 @@ describe('canRunPayloadJobs', () => {
     clearAllMocks()
   })
 
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('allows platform staff to run Payload jobs', () => {
     const result = canRunPayloadJobs(createAccessArgs(mockUsers.platform()))
     expectAccess.full(result)
@@ -82,5 +86,55 @@ describe('canRunPayloadJobs', () => {
   it('blocks anonymous users from running Payload jobs', () => {
     const result = canRunPayloadJobs(createAccessArgs(mockUsers.anonymous()))
     expectAccess.none(result)
+  })
+
+  it('allows the Vercel Cron bearer secret to run Payload jobs', () => {
+    vi.stubEnv('CRON_SECRET', 'scheduled-posts-test-secret')
+    const args = createAccessArgs(mockUsers.anonymous(), {
+      reqOverrides: { headers: new Headers({ authorization: 'Bearer scheduled-posts-test-secret' }) },
+    })
+
+    expectAccess.full(canRunPayloadJobs(args))
+  })
+
+  it.each([{ allQueues: 'true' }, { queue: 'seed:run-1' }, { limit: '100' }])(
+    'rejects Cron bearer access with job runner options %j',
+    (query) => {
+      vi.stubEnv('CRON_SECRET', 'scheduled-posts-test-secret')
+      const args = createAccessArgs(mockUsers.anonymous(), {
+        reqOverrides: {
+          headers: new Headers({ authorization: 'Bearer scheduled-posts-test-secret' }),
+          query,
+        },
+      })
+
+      expectAccess.none(canRunPayloadJobs(args))
+    },
+  )
+
+  it('keeps job runner options available to platform staff', () => {
+    const args = createAccessArgs(mockUsers.platform(), {
+      reqOverrides: { query: { allQueues: 'true' } },
+    })
+
+    expectAccess.full(canRunPayloadJobs(args))
+  })
+
+  it('rejects a missing or incorrect Cron secret', () => {
+    const args = createAccessArgs(mockUsers.anonymous(), {
+      reqOverrides: { headers: new Headers({ authorization: 'Bearer scheduled-posts-test-secret' }) },
+    })
+
+    vi.stubEnv('CRON_SECRET', '')
+    expectAccess.none(canRunPayloadJobs(args))
+
+    vi.stubEnv('CRON_SECRET', '   ')
+    expectAccess.none(canRunPayloadJobs(args))
+
+    vi.stubEnv('CRON_SECRET', 'another-secret')
+    expectAccess.none(canRunPayloadJobs(args))
+
+    vi.stubEnv('CRON_SECRET', 'scheduled-posts-test-secret')
+    expectAccess.none(canRunPayloadJobs(createAccessArgs(mockUsers.anonymous())))
   })
 })

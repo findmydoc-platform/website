@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, afterAll, vi } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import config from '@payload-config'
 
 import { ensureBaseline } from '../fixtures/ensureBaseline'
@@ -526,6 +527,46 @@ describe('Posts integration - lifecycle and access', () => {
 
     expect(updated._status).toBe('published')
     expect(updated.publishedAt).toBeTruthy()
+  })
+
+  it('publishes a scheduled post through the default Payload job runner and revalidates public content', async () => {
+    const title = `${slugPrefix} scheduled publication`
+    const draft = await payload.create({
+      collection: 'posts',
+      data: buildPostData({ title }),
+      draft: true,
+      overrideAccess: true,
+      context: { disableRevalidate: true },
+    })
+
+    const input = { type: 'publish' as const, doc: { relationTo: 'posts' as const, value: draft.id } }
+    const futureJob = await payload.jobs.queue({
+      task: 'schedulePublish',
+      input,
+      waitUntil: new Date(Date.now() + 60_000),
+    })
+
+    vi.clearAllMocks()
+    await payload.jobs.run({ queue: 'default', overrideAccess: true })
+    expect(await findPostBySlug(payload, draft.slug, false)).toBeNull()
+    expect(revalidatePath).not.toHaveBeenCalled()
+    await payload.delete({ collection: 'payload-jobs', id: futureJob.id, overrideAccess: true })
+
+    await payload.jobs.queue({
+      task: 'schedulePublish',
+      input,
+      waitUntil: new Date(Date.now() - 60_000),
+    })
+    vi.clearAllMocks()
+    await payload.jobs.run({ queue: 'default', overrideAccess: true })
+
+    const publishedDocument = await payload.findByID({ collection: 'posts', id: draft.id, depth: 0 })
+    const published = await findPostBySlug(payload, draft.slug, false)
+    expect(publishedDocument._status).toBe('published')
+    expect(published?.title).toBe(title)
+    expect(vi.mocked(revalidatePath).mock.calls.map(([path]) => path)).toContain(`/posts/${draft.slug}`)
+    expect(vi.mocked(revalidateTag).mock.calls.map(([tag]) => tag)).toContain('surface:sitemap:posts')
+    expect(vi.mocked(revalidateTag).mock.calls.map(([tag]) => tag)).toContain('surface:posts-list')
   })
 
   it('soft deletes a post (trash functionality)', async () => {

@@ -198,7 +198,8 @@
     "overrides": {
       "@modelcontextprotocol/sdk": "1.26.0",
       "esbuild@<0.28.1": "0.28.1",
-      "@payloadcms/plugin-import-export@3.88.0>csv-parse": "7.0.2"
+      "@payloadcms/plugin-import-export@3.88.0>csv-parse": "7.0.2",
+      "payload@3.88.0>undici": "7.29.1"
     },
     "patchedDependencies": {
       "@payloadcms/drizzle@3.88.0": "patches/@payloadcms__drizzle@3.88.0.patch"

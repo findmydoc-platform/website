@@ -15,7 +15,8 @@ import { collectionContractRegistry } from './contracts/collectionContractRegist
 import { createLocalReq, getPayload, handleEndpoints, type Payload } from 'payload'
 import config from '@payload-config'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
-import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/transactionalEmail'
+import type { CommandCatalog } from '@/features/transactionalEmail/catalog'
+import { createSyntheticRegistrationId, syntheticEmailCatalog } from '../fixtures/transactionalEmail'
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: async () => null }))
 
@@ -25,9 +26,9 @@ describe('transactional email command acceptance', () => {
 
   const commandFor = () => ({
     type: 'clinic.registration-received' as const,
-    operationReference: randomUUID(),
-    registrationId: syntheticRegistrationId,
+    registrationId: createSyntheticRegistrationId(),
   })
+  const referenceFor = (command: ReturnType<typeof commandFor>) => String(command.registrationId)
   const persisted = async (reference: string) => {
     const operations = await observer.query('SELECT * FROM transactional_email_outbox WHERE operation_reference = $1', [
       reference,
@@ -57,11 +58,7 @@ describe('transactional email command acceptance', () => {
   it('returns a committed receipt and reuses its original acceptance time', async () => {
     const req = await createLocalReq({}, payload)
     const commands = bindTransactionalEmail(req, syntheticEmailCatalog)
-    const command = {
-      type: 'clinic.registration-received' as const,
-      operationReference: randomUUID(),
-      registrationId: '00000000-0000-4000-8000-000000000001',
-    }
+    const command = commandFor()
 
     const accepted = await commands.accept(command)
     expect(Object.keys(accepted).sort()).toEqual(['acceptedAt', 'deduplicated', 'operationId'])
@@ -72,6 +69,65 @@ describe('transactional email command acceptance', () => {
     })
     expect(await commands.accept(command)).toEqual({ ...accepted, deduplicated: true })
     expect(req.transactionID).toBeUndefined()
+  })
+
+  it('persists and deduplicates the normalized numeric AuthAction identity', async () => {
+    const req = await createLocalReq({}, payload)
+    const authActionId = createSyntheticRegistrationId()
+    const reference = `v1|auth-action|${authActionId}`
+    const catalog = {
+      'auth.password-recovery': {
+        authorizeAndResolve: async () => ({ address: 'recipient@example.test', binding: String(authActionId) }),
+        authValidity: async () => ({
+          actionAt: '2026-09-30T08:00:00.000Z',
+          lifetimeMilliseconds: 3_600_000,
+        }),
+      },
+    } satisfies CommandCatalog
+    const commands = bindTransactionalEmail(req, catalog)
+    const command = { type: 'auth.password-recovery' as const, authActionId }
+
+    const accepted = await commands.accept(command)
+
+    expect((await persisted(reference)).operations).toEqual([
+      expect.objectContaining({
+        command_payload: command,
+        operation_reference: reference,
+      }),
+    ])
+    await expect(commands.accept(command)).resolves.toEqual({ ...accepted, deduplicated: true })
+    expect((await persisted(reference)).operations).toHaveLength(1)
+  })
+
+  it('persists and deduplicates the normalized composed Moderation identity', async () => {
+    const req = await createLocalReq({}, payload)
+    const moderationEventId = createSyntheticRegistrationId()
+    const reference = `v1|moderation-event|${moderationEventId}|reporter`
+    const catalog = {
+      'moderation.appeal-decided': {
+        authorizeAndResolve: async () => ({
+          address: 'recipient@example.test',
+          binding: `${moderationEventId}:reporter`,
+        }),
+      },
+    } satisfies CommandCatalog
+    const commands = bindTransactionalEmail(req, catalog)
+    const command = {
+      type: 'moderation.appeal-decided' as const,
+      moderationEventId,
+      recipientSlot: 'reporter' as const,
+    }
+
+    const accepted = await commands.accept(command)
+
+    expect((await persisted(reference)).operations).toEqual([
+      expect.objectContaining({
+        command_payload: command,
+        operation_reference: reference,
+      }),
+    ])
+    await expect(commands.accept(command)).resolves.toEqual({ ...accepted, deduplicated: true })
+    expect((await persisted(reference)).operations).toHaveLength(1)
   })
 
   it('keeps both records invisible and the receipt pending until the owned commit finishes', async () => {
@@ -99,12 +155,12 @@ describe('transactional email command acceptance', () => {
     await committing
     try {
       expect(completed).toBe(false)
-      expect(await persisted(command.operationReference)).toEqual({ operations: [], events: [] })
+      expect(await persisted(referenceFor(command))).toEqual({ operations: [], events: [] })
     } finally {
       finishCommit()
     }
     const receipt = await result
-    const stored = await persisted(command.operationReference)
+    const stored = await persisted(referenceFor(command))
     expect(stored.operations).toHaveLength(1)
     expect(stored.events).toHaveLength(1)
     expect(String(stored.operations[0].id)).toBe(receipt.operationId)
@@ -115,10 +171,10 @@ describe('transactional email command acceptance', () => {
       provider_idempotency_key: expect.any(String),
       latest_event_sequence: '1',
     })
-    expect(stored.operations[0].provider_idempotency_key).not.toBe(command.operationReference)
+    expect(stored.operations[0].provider_idempotency_key).not.toBe(referenceFor(command))
     expect(stored.events[0]).toMatchObject({ sequence: '1', type: 'command.accepted', source: 'command' })
     await commands.accept(command)
-    expect(await persisted(command.operationReference)).toEqual(stored)
+    expect(await persisted(referenceFor(command))).toEqual(stored)
   })
 
   it('rolls back both records after a failed event write and allows the complete command to be retried', async () => {
@@ -134,7 +190,7 @@ describe('transactional email command acceptance', () => {
     } finally {
       hooks.splice(hooks.indexOf(failEvent), 1)
     }
-    expect(await persisted(command.operationReference)).toEqual({ operations: [], events: [] })
+    expect(await persisted(referenceFor(command))).toEqual({ operations: [], events: [] })
     const receipt = await commands.accept(command)
     expect(receipt.deduplicated).toBe(false)
   })
@@ -152,7 +208,7 @@ describe('transactional email command acceptance', () => {
         (receipt) => ({ receipt, error: null }),
         (error: unknown) => ({ receipt: null, error }),
       )
-      expect(await persisted(command.operationReference)).toEqual({ operations: [], events: [] })
+      expect(await persisted(referenceFor(command))).toEqual({ operations: [], events: [] })
       expect(result.receipt).toBeNull()
       expect(result.error).toMatchObject({ code: 'storage-unavailable' })
     } finally {
@@ -179,14 +235,14 @@ describe('transactional email command acceptance', () => {
       const commands = await port()
       if (failures === 1) {
         const receipt = await commands.accept(command)
-        const stored = await persisted(command.operationReference)
+        const stored = await persisted(referenceFor(command))
         expect(receipt.deduplicated).toBe(false)
         expect(stored.operations).toHaveLength(1)
         expect(stored.events).toHaveLength(1)
         expect(String(stored.operations[0].id)).toBe(receipt.operationId)
       } else {
         await expect(commands.accept(command)).rejects.toMatchObject({ code: 'transaction-conflict' })
-        expect(await persisted(command.operationReference)).toEqual({ operations: [], events: [] })
+        expect(await persisted(referenceFor(command))).toEqual({ operations: [], events: [] })
       }
       const attempts = await observer.query('SELECT last_value FROM mail_test_commit_attempt')
       expect(Number(attempts.rows[0].last_value)).toBe(failures === 1 ? 2 : 3)
@@ -201,7 +257,7 @@ describe('transactional email command acceptance', () => {
     const commands = await port()
     const command = commandFor()
     await commands.accept(command)
-    const stored = await persisted(command.operationReference)
+    const stored = await persisted(referenceFor(command))
     const req = await createLocalReq({}, payload)
     req.user = { id: 1000000001, collection: 'platformStaff' } as NonNullable<typeof req.user>
     const denied = bindTransactionalEmail(req, syntheticEmailCatalog)
@@ -215,7 +271,7 @@ describe('transactional email command acceptance', () => {
         expect(error).not.toHaveProperty('operationId')
       }
     }
-    expect(await persisted(command.operationReference)).toEqual(stored)
+    expect(await persisted(referenceFor(command))).toEqual(stored)
   })
 
   it.each([
@@ -234,28 +290,28 @@ describe('transactional email command acceptance', () => {
     const commands = await port()
     const command = commandFor()
     await commands.accept(command)
-    const stored = await persisted(command.operationReference)
+    const stored = await persisted(referenceFor(command))
     await expect(commands.accept({ ...command, [field]: 'forbidden' })).rejects.toMatchObject({
       code: 'invalid-command',
     })
-    expect(await persisted(command.operationReference)).toEqual(stored)
+    expect(await persisted(referenceFor(command))).toEqual(stored)
   })
 
   it('rejects invalid commands, missing source records, and catalog gaps before persisting', async () => {
     const commands = await port()
     const command = commandFor()
-    await expect(commands.accept({ ...command, registrationId: randomUUID() })).rejects.toMatchObject({
+    await expect(commands.accept({ ...command, registrationId: 2_000_000_000 })).rejects.toMatchObject({
       code: 'source-missing',
     })
-    await expect(commands.accept({ ...command, operationReference: 'recipient@example.test' })).rejects.toMatchObject({
-      code: 'invalid-command',
-    })
+    await expect(
+      commands.accept({ ...command, operationReference: 'recipient@example.test' } as never),
+    ).rejects.toMatchObject({ code: 'invalid-command' })
     await expect(commands.accept({ ...command, type: 'send' } as never)).rejects.toMatchObject({
       code: 'unsupported-command',
     })
     const unregistered = bindTransactionalEmail(await createLocalReq({}, payload), {})
     await expect(unregistered.accept(command)).rejects.toMatchObject({ code: 'unsupported-command' })
-    expect(await persisted(command.operationReference)).toEqual({ operations: [], events: [] })
+    expect(await persisted(referenceFor(command))).toEqual({ operations: [], events: [] })
   })
 
   it('returns unavailable storage without starting partial work or joining an unknown transaction', async () => {
@@ -268,7 +324,7 @@ describe('transactional email command acceptance', () => {
       code: 'storage-unavailable',
     })
     expect(req.transactionID).toBe('caller-owned')
-    expect(await persisted(command.operationReference)).toEqual({ operations: [], events: [] })
+    expect(await persisted(referenceFor(command))).toEqual({ operations: [], events: [] })
   })
 
   it.each(['transactionalEmailOutbox', 'transactionalEmailEvents', 'transactionalEmailSuppressions'] as const)(
@@ -419,7 +475,7 @@ describe('transactional email command acceptance', () => {
   it('rejects provider key replacement and event updates even within a valid internal transaction', async () => {
     const command = commandFor()
     const receipt = await (await port()).accept(command)
-    const records = await persisted(command.operationReference)
+    const records = await persisted(referenceFor(command))
     for (const target of ['provider-key', 'event'] as const) {
       const transactionID = await payload.db.beginTransaction()
       if (transactionID === null) throw new Error('Expected a test transaction')
@@ -449,7 +505,7 @@ describe('transactional email command acceptance', () => {
         await payload.db.rollbackTransaction(transactionID)
       }
     }
-    expect(await persisted(command.operationReference)).toEqual(records)
+    expect(await persisted(referenceFor(command))).toEqual(records)
   })
 
   it('keeps private mail collections hidden from Admin, REST, GraphQL, and public caches', async () => {
@@ -545,18 +601,18 @@ describe('transactional email command acceptance', () => {
     }
     const command = commandFor()
     await (await port()).accept(command)
-    const before = await persisted(command.operationReference)
+    const before = await persisted(referenceFor(command))
     // The database rejects an insertion outside Payload too; application validation is not the unique authority.
     const copyOperation = `INSERT INTO transactional_email_outbox
       (command_type, operation_reference, command_payload, runtime_environment, state, provider_idempotency_key, recipient_address, recipient_digest, latest_event_sequence)
       SELECT command_type, $2, command_payload, runtime_environment, state, $3, recipient_address, recipient_digest, latest_event_sequence
       FROM transactional_email_outbox WHERE operation_reference = $1`
     await expect(
-      observer.query(copyOperation, [command.operationReference, command.operationReference, randomUUID()]),
+      observer.query(copyOperation, [referenceFor(command), referenceFor(command), randomUUID()]),
     ).rejects.toMatchObject({ code: '23505', constraint: 'commandType_operationReference_idx' })
     await expect(
       observer.query(copyOperation, [
-        command.operationReference,
+        referenceFor(command),
         randomUUID(),
         before.operations[0].provider_idempotency_key,
       ]),
@@ -567,7 +623,7 @@ describe('transactional email command acceptance', () => {
         [before.operations[0].id, 'command.accepted', 'command'],
       ),
     ).rejects.toMatchObject({ code: '23505', constraint: 'outbox_sequence_idx' })
-    expect(await persisted(command.operationReference)).toEqual(before)
+    expect(await persisted(referenceFor(command))).toEqual(before)
   })
 
   it.each(['local', 'test', 'ci'] as const)(

@@ -28,7 +28,7 @@ import {
   webhookTestEvent,
 } from '../fixtures/lettermintWebhook'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
-import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/transactionalEmail'
+import { createSyntheticRegistrationId, syntheticEmailCatalog } from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import { proxy } from '@/proxy'
 import {
@@ -106,7 +106,8 @@ describe('Lettermint webhook Next.js request boundary', () => {
       },
     },
   }
-  const operationReference = randomUUID()
+  const registrationId = createSyntheticRegistrationId()
+  const operationReference = String(registrationId)
   const references = [operationReference]
   let mutationExpected = false
   const raceCleanup = new Set<() => void>()
@@ -127,8 +128,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     payload = await getPayload({ config })
     await bindTransactionalEmail(await createLocalReq({}, payload), catalog).accept({
       type: 'clinic.registration-received',
-      operationReference,
-      registrationId: syntheticRegistrationId,
+      registrationId,
     })
     observer = new pg.Client({ connectionString: process.env.DATABASE_URI })
     await observer.connect()
@@ -283,12 +283,12 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.unstubAllEnvs()
     vi.stubEnv('CI', 'false')
     const req = await createLocalReq({}, payload)
-    const reference = randomUUID()
+    const sourceId = createSyntheticRegistrationId()
+    const reference = String(sourceId)
     references.push(reference)
     const { operationId } = await bindTransactionalEmail(req, catalog).accept({
       type: 'clinic.registration-received',
-      operationReference: reference,
-      registrationId: syntheticRegistrationId,
+      registrationId: sourceId,
     })
     const fixture = createActivationFixture(environment)
     await createTransactionalEmailWorker(req, {
@@ -392,12 +392,12 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.unstubAllEnvs()
     vi.stubEnv('CI', 'false')
     const req = await createLocalReq({}, payload)
-    const reference = randomUUID()
+    const sourceId = createSyntheticRegistrationId()
+    const reference = String(sourceId)
     references.push(reference)
     const { operationId } = await bindTransactionalEmail(req, catalog).accept({
       type: 'clinic.registration-received',
-      operationReference: reference,
-      registrationId: syntheticRegistrationId,
+      registrationId: sourceId,
     })
     const rotated = createActivationFixture('preview', false, true)
     const currentKey = rotated.binding.recipientDigestKeys[0]!
@@ -426,12 +426,12 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.unstubAllEnvs()
     vi.stubEnv('CI', 'false')
     const req = await createLocalReq({}, payload)
-    const reference = randomUUID()
+    const sourceId = createSyntheticRegistrationId()
+    const reference = String(sourceId)
     references.push(reference)
     const { operationId } = await bindTransactionalEmail(req, catalog).accept({
       type: 'clinic.registration-received',
-      operationReference: reference,
-      registrationId: syntheticRegistrationId,
+      registrationId: sourceId,
     })
     const fixture = createActivationFixture()
     const currentKey = fixture.binding.recipientDigestKeys[0]!
@@ -586,12 +586,12 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.unstubAllEnvs()
     vi.stubEnv('CI', 'false')
     const req = await createLocalReq({}, payload)
-    const reference = randomUUID()
+    const sourceId = createSyntheticRegistrationId()
+    const reference = String(sourceId)
     references.push(reference)
     const receipt = await bindTransactionalEmail(req, catalog).accept({
       type: 'clinic.registration-received',
-      operationReference: reference,
-      registrationId: syntheticRegistrationId,
+      registrationId: sourceId,
     })
     const fixture = createActivationFixture()
     const links = {
@@ -642,19 +642,19 @@ describe('Lettermint webhook Next.js request boundary', () => {
   })
 
   it('materializes the current digest atomically when a previous-version suppression blocks preparation', async () => {
-    const sourceId = await preparedOperation()
+    const providerSourceId = await preparedOperation()
     mutationExpected = true
-    expect((await sendEvent(messageEvent(sourceId, 'message.hard_bounced'))).status).toBe(200)
+    expect((await sendEvent(messageEvent(providerSourceId, 'message.hard_bounced'))).status).toBe(200)
 
     vi.unstubAllEnvs()
     vi.stubEnv('CI', 'false')
     const req = await createLocalReq({}, payload)
-    const reference = randomUUID()
+    const sourceId = createSyntheticRegistrationId()
+    const reference = String(sourceId)
     references.push(reference)
     const { operationId } = await bindTransactionalEmail(req, catalog).accept({
       type: 'clinic.registration-received',
-      operationReference: reference,
-      registrationId: syntheticRegistrationId,
+      registrationId: sourceId,
     })
     const rotated = createActivationFixture('preview', false, true)
     const currentKey = rotated.binding.recipientDigestKeys[0]!
@@ -701,9 +701,9 @@ describe('Lettermint webhook Next.js request boundary', () => {
   })
 
   it('converges concurrent previous-version matches on one current suppression before either delivery proceeds', async () => {
-    const sourceId = await preparedOperation()
+    const providerSourceId = await preparedOperation()
     mutationExpected = true
-    expect((await sendEvent(messageEvent(sourceId, 'message.hard_bounced'))).status).toBe(200)
+    expect((await sendEvent(messageEvent(providerSourceId, 'message.hard_bounced'))).status).toBe(200)
 
     vi.unstubAllEnvs()
     vi.stubEnv('CI', 'false')
@@ -713,12 +713,12 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const currentDigest = allowlist[0]!
     const queued = async () => {
       const req = await createLocalReq({}, payload)
-      const reference = randomUUID()
+      const sourceId = createSyntheticRegistrationId()
+      const reference = String(sourceId)
       references.push(reference)
       const receipt = await bindTransactionalEmail(req, catalog).accept({
         type: 'clinic.registration-received',
-        operationReference: reference,
-        registrationId: syntheticRegistrationId,
+        registrationId: sourceId,
       })
       return { req, operationId: receipt.operationId }
     }
@@ -793,19 +793,19 @@ describe('Lettermint webhook Next.js request boundary', () => {
   })
 
   it('rolls back current-version materialization when its transaction fails', async () => {
-    const sourceId = await preparedOperation()
+    const providerSourceId = await preparedOperation()
     mutationExpected = true
-    expect((await sendEvent(messageEvent(sourceId, 'message.hard_bounced'))).status).toBe(200)
+    expect((await sendEvent(messageEvent(providerSourceId, 'message.hard_bounced'))).status).toBe(200)
 
     vi.unstubAllEnvs()
     vi.stubEnv('CI', 'false')
     const req = await createLocalReq({}, payload)
-    const reference = randomUUID()
+    const sourceId = createSyntheticRegistrationId()
+    const reference = String(sourceId)
     references.push(reference)
     const { operationId } = await bindTransactionalEmail(req, catalog).accept({
       type: 'clinic.registration-received',
-      operationReference: reference,
-      registrationId: syntheticRegistrationId,
+      registrationId: sourceId,
     })
     const rotated = createActivationFixture('preview', false, true)
     const currentKey = rotated.binding.recipientDigestKeys[0]!
@@ -1122,13 +1122,13 @@ describe('Lettermint webhook Next.js request boundary', () => {
       const req = await createLocalReq({}, payload)
       let operationId = retryId
       if (!operationId) {
-        const reference = randomUUID()
+        const sourceId = createSyntheticRegistrationId()
+        const reference = String(sourceId)
         references.push(reference)
         operationId = (
           await bindTransactionalEmail(req, catalog).accept({
             type: 'clinic.registration-received',
-            operationReference: reference,
-            registrationId: syntheticRegistrationId,
+            registrationId: sourceId,
           })
         ).operationId
       } else
@@ -1230,12 +1230,12 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.unstubAllEnvs()
     vi.stubEnv('CI', 'false')
     const req = await createLocalReq({}, payload)
-    const reference = randomUUID()
+    const sourceId = createSyntheticRegistrationId()
+    const reference = String(sourceId)
     references.push(reference)
     const { operationId } = await bindTransactionalEmail(req, catalog).accept({
       type: 'clinic.registration-received',
-      operationReference: reference,
-      registrationId: syntheticRegistrationId,
+      registrationId: sourceId,
     })
     const fixture = createActivationFixture('preview')
     const received = signal()

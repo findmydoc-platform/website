@@ -1,5 +1,4 @@
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
-import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import http from 'node:http'
 import https from 'node:https'
@@ -10,7 +9,7 @@ import {
   bindTransactionalEmail,
   runTransactionalEmailTransaction,
 } from '@/features/transactionalEmail/payloadIntegration'
-import { syntheticEmailCatalog, syntheticRegistrationId } from '../fixtures/transactionalEmail'
+import { createSyntheticRegistrationId, syntheticEmailCatalog } from '../fixtures/transactionalEmail'
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: async () => null }))
 
@@ -19,14 +18,15 @@ describe('transactional email transaction ownership', () => {
   let observer: pg.Client
   const ownedReferences = new Set<string>()
   const commandFor = () => {
-    const operationReference = randomUUID()
+    const registrationId = createSyntheticRegistrationId()
+    const operationReference = String(registrationId)
     ownedReferences.add(operationReference)
     return {
       type: 'clinic.registration-received' as const,
-      operationReference,
-      registrationId: syntheticRegistrationId,
+      registrationId,
     }
   }
+  const referenceFor = (command: ReturnType<typeof commandFor>) => String(command.registrationId)
   const cleanupFixtures = async () => {
     if (!payload || !ownedReferences.size) return
     const references = [...ownedReferences]
@@ -91,15 +91,15 @@ describe('transactional email transaction ownership', () => {
       const commit = vi.spyOn(payload.db, 'commitTransaction')
       const rollback = vi.spyOn(payload.db, 'rollbackTransaction')
       try {
-        await mutate(req, command.operationReference)
+        await mutate(req, referenceFor(command))
         const receipt = await bindTransactionalEmail(req, syntheticEmailCatalog).accept(command)
         expect(receipt.deduplicated).toBe(false)
         expect(commit).not.toHaveBeenCalled()
         expect(rollback).not.toHaveBeenCalled()
         expect(req.transactionID).toBe(transactionID)
-        expect(await persisted(command.operationReference)).toEqual({ business: 0, outbox: 0, events: 0 })
+        expect(await persisted(referenceFor(command))).toEqual({ business: 0, outbox: 0, events: 0 })
         await payload.db[outcome === 'commit' ? 'commitTransaction' : 'rollbackTransaction'](transactionID)
-        expect(await persisted(command.operationReference)).toEqual(
+        expect(await persisted(referenceFor(command))).toEqual(
           outcome === 'commit' ? { business: 1, outbox: 1, events: 1 } : { business: 0, outbox: 0, events: 0 },
         )
       } finally {
@@ -120,24 +120,24 @@ describe('transactional email transaction ownership', () => {
     hooks.push(fail)
     const rollback = vi.spyOn(payload.db, 'rollbackTransaction')
     try {
-      await mutate(req, command.operationReference)
+      await mutate(req, referenceFor(command))
       await expect(bindTransactionalEmail(req, syntheticEmailCatalog).accept(command)).rejects.toMatchObject({
         code: 'storage-unavailable',
       })
       expect(rollback).not.toHaveBeenCalled()
       expect(req.transactionID).toBe(transactionID)
-      expect(await persisted(command.operationReference)).toEqual({ business: 0, outbox: 0, events: 0 })
+      expect(await persisted(referenceFor(command))).toEqual({ business: 0, outbox: 0, events: 0 })
       const scopedMutation = await payload.find({
         collection: 'countries',
         req,
-        where: { name: { equals: command.operationReference } },
+        where: { name: { equals: referenceFor(command) } },
       })
       expect(scopedMutation.docs).toHaveLength(1)
     } finally {
       hooks.splice(hooks.indexOf(fail), 1)
       await payload.db.rollbackTransaction(transactionID)
     }
-    expect(await persisted(command.operationReference)).toEqual({ business: 0, outbox: 0, events: 0 })
+    expect(await persisted(referenceFor(command))).toEqual({ business: 0, outbox: 0, events: 0 })
   })
 
   it.each(['commit', 'rollback'] as const)(
@@ -165,7 +165,7 @@ describe('transactional email transaction ownership', () => {
       const response = runTransactionalEmailTransaction(
         req,
         async (transactionReq, commands) => {
-          await mutate(transactionReq, command.operationReference)
+          await mutate(transactionReq, referenceFor(command))
           const scopedReceipt = await commands.accept(command)
           if (outcome === 'rollback') {
             reached()
@@ -185,7 +185,7 @@ describe('transactional email transaction ownership', () => {
       await ready
       try {
         expect(succeeded).toBe(false)
-        expect(await persisted(command.operationReference)).toEqual({ business: 0, outbox: 0, events: 0 })
+        expect(await persisted(referenceFor(command))).toEqual({ business: 0, outbox: 0, events: 0 })
       } finally {
         release()
       }
@@ -194,7 +194,7 @@ describe('transactional email transaction ownership', () => {
       expect(result).toMatchObject(
         outcome === 'commit' ? { receipt: { deduplicated: false } } : { error: { code: 'storage-unavailable' } },
       )
-      expect(await persisted(command.operationReference)).toEqual(
+      expect(await persisted(referenceFor(command))).toEqual(
         outcome === 'commit' ? { business: 1, outbox: 1, events: 1 } : { business: 0, outbox: 0, events: 0 },
       )
       expect(req.transactionID).toBeUndefined()
@@ -210,7 +210,7 @@ describe('transactional email transaction ownership', () => {
     let writes = 0
     const hooks = payload.collections.transactionalEmailOutbox.config.hooks.beforeChange
     const synchronize: (typeof hooks)[number] = async ({ data }) => {
-      if (data.operationReference === command.operationReference) {
+      if (data.operationReference === referenceFor(command)) {
         writes++
         if (writes === 2) bothWriting()
         await ready
@@ -226,7 +226,7 @@ describe('transactional email transaction ownership', () => {
       expect(receipts[0].acceptedAt).toBe(receipts[1].acceptedAt)
       expect(receipts.map((receipt) => receipt.deduplicated).sort()).toEqual([false, true])
       expect(writes).toBe(2)
-      expect(await persisted(command.operationReference)).toEqual({ business: 0, outbox: 1, events: 1 })
+      expect(await persisted(referenceFor(command))).toEqual({ business: 0, outbox: 1, events: 1 })
     } finally {
       hooks.splice(hooks.indexOf(synchronize), 1)
     }
@@ -253,7 +253,7 @@ describe('transactional email transaction ownership', () => {
       let writes = 0
       const hooks = payload.collections.transactionalEmailOutbox.config.hooks.beforeChange
       const synchronize: (typeof hooks)[number] = async ({ data }) => {
-        if (data.operationReference === command.operationReference) {
+        if (data.operationReference === referenceFor(command)) {
           writes++
           if (writes === 2) bothWriting()
           await ready
@@ -265,7 +265,7 @@ describe('transactional email transaction ownership', () => {
       try {
         const outcomes = await Promise.all(
           requests.map(async (req) => {
-            await mutate(req, command.operationReference)
+            await mutate(req, referenceFor(command))
             try {
               const receipt = await bindTransactionalEmail(req, syntheticEmailCatalog).accept(command)
               await payload.db.commitTransaction(req.transactionID!)
@@ -280,18 +280,18 @@ describe('transactional email transaction ownership', () => {
         expect(winner).toBeDefined()
         expect(loser).toMatchObject({ error: { code: 'transaction-conflict' } })
         expect(rollback).not.toHaveBeenCalled()
-        expect(await persisted(command.operationReference)).toEqual({ business: 1, outbox: 1, events: 1 })
+        expect(await persisted(referenceFor(command))).toEqual({ business: 1, outbox: 1, events: 1 })
         await payload.db.rollbackTransaction(loser!.req.transactionID!)
         const retried = await runTransactionalEmailTransaction(
           await createLocalReq({}, payload),
           async (req, commands) => {
-            await mutate(req, command.operationReference)
+            await mutate(req, referenceFor(command))
             return commands.accept(command)
           },
           syntheticEmailCatalog,
         )
         expect(retried).toEqual({ ...winner!.receipt, deduplicated: true })
-        expect(await persisted(command.operationReference)).toEqual({ business: 2, outbox: 1, events: 1 })
+        expect(await persisted(referenceFor(command))).toEqual({ business: 2, outbox: 1, events: 1 })
       } finally {
         hooks.splice(hooks.indexOf(synchronize), 1)
         for (const transactionID of transactionIDs) {
@@ -309,7 +309,7 @@ describe('transactional email transaction ownership', () => {
       await expect(bindTransactionalEmail(req, syntheticEmailCatalog).accept(command)).rejects.toMatchObject({
         code: 'storage-unavailable',
       })
-      expect(await persisted(command.operationReference)).toEqual({ business: 0, outbox: 0, events: 0 })
+      expect(await persisted(referenceFor(command))).toEqual({ business: 0, outbox: 0, events: 0 })
     },
   )
 
@@ -321,7 +321,7 @@ describe('transactional email transaction ownership', () => {
       code: 'storage-unavailable',
       message: 'storage-unavailable',
     })
-    expect(await persisted(command.operationReference)).toEqual({ business: 0, outbox: 0, events: 0 })
+    expect(await persisted(referenceFor(command))).toEqual({ business: 0, outbox: 0, events: 0 })
   })
 
   it('rejects a session closed during authorization before it can escape into autocommit', async () => {
@@ -333,12 +333,12 @@ describe('transactional email transaction ownership', () => {
       'clinic.registration-received': {
         authorizeAndResolve: async () => {
           await payload.db.rollbackTransaction(transactionID)
-          return { address: 'recipient@example.test', binding: command.registrationId }
+          return { address: 'recipient@example.test', binding: String(command.registrationId) }
         },
       },
     })
     await expect(commands.accept(command)).rejects.toMatchObject({ code: 'access-denied' })
-    expect(await persisted(command.operationReference)).toEqual({ business: 0, outbox: 0, events: 0 })
+    expect(await persisted(referenceFor(command))).toEqual({ business: 0, outbox: 0, events: 0 })
   })
 
   it.each([1, 3])(
@@ -363,7 +363,7 @@ describe('transactional email transaction ownership', () => {
           await createLocalReq({}, payload),
           async (req, commands) => {
             attempts++
-            await mutate(req, command.operationReference)
+            await mutate(req, referenceFor(command))
             return commands.accept(command)
           },
           syntheticEmailCatalog,
@@ -371,11 +371,11 @@ describe('transactional email transaction ownership', () => {
         if (failures === 1) {
           await expect(response).resolves.toMatchObject({ deduplicated: false })
           expect(attempts).toBe(2)
-          expect(await persisted(command.operationReference)).toEqual({ business: 1, outbox: 1, events: 1 })
+          expect(await persisted(referenceFor(command))).toEqual({ business: 1, outbox: 1, events: 1 })
         } else {
           await expect(response).rejects.toMatchObject({ code: 'transaction-conflict' })
           expect(attempts).toBe(3)
-          expect(await persisted(command.operationReference)).toEqual({ business: 0, outbox: 0, events: 0 })
+          expect(await persisted(referenceFor(command))).toEqual({ business: 0, outbox: 0, events: 0 })
         }
       } finally {
         await observer.query('DROP TRIGGER mail_business_commit_failure ON transactional_email_events')
@@ -396,7 +396,7 @@ describe('transactional email transaction ownership', () => {
         runTransactionalEmailTransaction(
           req,
           async (transactionReq, commands) => {
-            await mutate(transactionReq, command.operationReference)
+            await mutate(transactionReq, referenceFor(command))
             return commands.accept(command)
           },
           syntheticEmailCatalog,
@@ -404,7 +404,7 @@ describe('transactional email transaction ownership', () => {
       ).rejects.toMatchObject({ code: 'access-denied', message: 'access-denied' })
       expect(read.mock.calls.filter(([options]) => options.collection === 'transactionalEmailOutbox')).toHaveLength(0)
       read.mockRestore()
-      expect(await persisted(command.operationReference)).toEqual(
+      expect(await persisted(referenceFor(command))).toEqual(
         command === existing ? { business: 0, outbox: 1, events: 1 } : { business: 0, outbox: 0, events: 0 },
       )
     }

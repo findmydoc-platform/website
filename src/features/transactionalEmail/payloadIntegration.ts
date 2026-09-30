@@ -5,7 +5,7 @@ import {
   hasTransactionalEmailActivationForEnvironment,
   isTransactionalEmailCommandActivationDeclared,
 } from './activationPolicy'
-import { commandOperationReference, type CommandType } from './commands'
+import type { CommandType } from './commands'
 import type { CommandCatalog } from './catalog'
 import { bindPayloadCommandCatalog } from './payloadCatalog'
 import { openStorageCapability } from './capability'
@@ -36,7 +36,7 @@ async function withStorage<Result>(
       req.payload,
     )
     const storage: AcceptanceStorage = {
-      async find(command) {
+      async find(commandType, operationReference) {
         const result = await req.payload.find({
           collection: 'transactionalEmailOutbox',
           req: internalReq,
@@ -44,10 +44,7 @@ async function withStorage<Result>(
           depth: 0,
           limit: 1,
           where: {
-            and: [
-              { commandType: { equals: command.type } },
-              { operationReference: { equals: commandOperationReference(command) } },
-            ],
+            and: [{ commandType: { equals: commandType } }, { operationReference: { equals: operationReference } }],
           },
         })
         return result.docs[0] ?? null
@@ -62,7 +59,7 @@ async function withStorage<Result>(
             createdAt: operation.acceptedAt,
             deliveryDeadline: operation.deliveryDeadline,
             commandType: operation.command.type,
-            operationReference: commandOperationReference(operation.command),
+            operationReference: operation.operationReference,
             commandPayload: operation.command,
             recipientAddress: operation.recipientAddress,
             recipientDigest: operation.recipientDigest,

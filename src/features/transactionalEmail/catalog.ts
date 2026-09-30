@@ -47,7 +47,6 @@ export function createCommandCatalog(sources: {
   async function loadClinicRegistrationRecipient(
     command: Extract<TransactionalEmailCommand, { type: 'clinic.registration-received' }>,
   ): Promise<RecipientBinding | null> {
-    if (typeof command.registrationId !== 'number' || 'operationReference' in command) return null
     const source = await sources.findClinicApplication(command.registrationId)
     return source ? clinicRegistrationRecipient(source) : null
   }

@@ -12,6 +12,7 @@ import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadInt
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import {
   clearedSyntheticSuppression,
+  createSyntheticRegistrationId,
   syntheticEmailCatalog,
   syntheticRegistrationId,
 } from '../fixtures/transactionalEmail'
@@ -22,10 +23,15 @@ describe('transactional email worker', () => {
   let payload: Payload
   let observer: pg.Client
   const ownedReferences = new Set<string>()
-  const operationReference = () => {
-    const reference = randomUUID()
-    ownedReferences.add(reference)
-    return reference
+  const clinicRegistrationId = () => {
+    const id = createSyntheticRegistrationId()
+    ownedReferences.add(String(id))
+    return id
+  }
+  const authActionId = () => {
+    const id = createSyntheticRegistrationId()
+    ownedReferences.add(`v1|auth-action|${id}`)
+    return id
   }
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -45,8 +51,7 @@ describe('transactional email worker', () => {
     const req = await createLocalReq({}, payload)
     const receipt = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
       type: 'clinic.registration-received',
-      operationReference: operationReference(),
-      registrationId: syntheticRegistrationId,
+      registrationId: clinicRegistrationId(),
     })
     return { req, id: receipt.operationId }
   }
@@ -114,7 +119,7 @@ describe('transactional email worker', () => {
           ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
           revalidate: async () => {
             if (++validations === 3 && boundary === 'attempt-read') armed = true
-            return { address: 'recipient@example.test', binding: syntheticRegistrationId }
+            return { address: 'recipient@example.test', binding: String(syntheticRegistrationId) }
           },
         },
       },
@@ -234,15 +239,18 @@ describe('transactional email worker', () => {
     const req = await createLocalReq({}, payload)
     const catalog: CommandCatalog = {
       'auth.password-recovery': {
-        authorizeAndResolve: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+        authorizeAndResolve: async () => ({
+          address: 'recipient@example.test',
+          binding: String(syntheticRegistrationId),
+        }),
       },
     }
-    const reference = operationReference()
+    const actionId = authActionId()
+    const reference = `v1|auth-action|${actionId}`
     await expect(
       bindTransactionalEmail(req, catalog).accept({
         type: 'auth.password-recovery',
-        operationReference: reference,
-        recoveryId: syntheticRegistrationId,
+        authActionId: actionId,
       }),
     ).rejects.toMatchObject({ code: 'invalid-command' })
     expect(
@@ -361,7 +369,7 @@ describe('transactional email worker', () => {
                 ? null
                 : {
                     address: !eligible && change === 'address' ? 'other@example.test' : 'recipient@example.test',
-                    binding: !eligible && change === 'binding' ? randomUUID() : syntheticRegistrationId,
+                    binding: !eligible && change === 'binding' ? randomUUID() : String(syntheticRegistrationId),
                   },
           },
         },
@@ -391,18 +399,20 @@ describe('transactional email worker', () => {
     let clock = actionAt + 3600000
     const catalog: CommandCatalog = {
       'auth.password-recovery': {
-        authorizeAndResolve: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+        authorizeAndResolve: async () => ({
+          address: 'recipient@example.test',
+          binding: String(syntheticRegistrationId),
+        }),
         authValidity: async () => ({ actionAt: new Date(actionAt).toISOString(), lifetimeMilliseconds: 48 * 3600000 }),
         worker: {
           terminalState: 'failed',
-          revalidate: async () => ({ address: 'recipient@example.test', binding: syntheticRegistrationId }),
+          revalidate: async () => ({ address: 'recipient@example.test', binding: String(syntheticRegistrationId) }),
         },
       },
     }
     const receipt = await bindTransactionalEmail(req, catalog, () => clock).accept({
       type: 'auth.password-recovery',
-      operationReference: operationReference(),
-      recoveryId: syntheticRegistrationId,
+      authActionId: authActionId(),
     })
     const id = receipt.operationId
     expect((await row(id)).delivery_deadline.getTime()).toBe(actionAt + 48 * 3600000 - 300000)
@@ -525,8 +535,7 @@ describe('transactional email worker', () => {
     const req = await createLocalReq({}, payload)
     const receipt = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
       type: 'clinic.registration-received',
-      operationReference: operationReference(),
-      registrationId: syntheticRegistrationId,
+      registrationId: clinicRegistrationId(),
     })
     const worker = createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
@@ -603,7 +612,7 @@ describe('transactional email worker', () => {
                 ? null
                 : {
                     address: change === 'address' ? 'changed@example.test' : 'recipient@example.test',
-                    binding: change === 'binding' ? randomUUID() : syntheticRegistrationId,
+                    binding: change === 'binding' ? randomUUID() : String(syntheticRegistrationId),
                   },
           },
         },
@@ -719,7 +728,7 @@ describe('transactional email worker', () => {
           ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
           revalidate: async () => {
             if (++validations === 3) clock += 119000
-            return { address: 'recipient@example.test', binding: syntheticRegistrationId }
+            return { address: 'recipient@example.test', binding: String(syntheticRegistrationId) }
           },
         },
       },
@@ -765,7 +774,7 @@ describe('transactional email worker', () => {
         worker: {
           ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
           revalidate: async () =>
-            valid ? { address: 'recipient@example.test', binding: syntheticRegistrationId } : null,
+            valid ? { address: 'recipient@example.test', binding: String(syntheticRegistrationId) } : null,
         },
       },
     }
@@ -1166,7 +1175,7 @@ describe('transactional email worker', () => {
           ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
           revalidate: async () => {
             if (++calls === 3) clock += 119000
-            return eligible ? { address: 'recipient@example.test', binding: syntheticRegistrationId } : null
+            return eligible ? { address: 'recipient@example.test', binding: String(syntheticRegistrationId) } : null
           },
         },
       },

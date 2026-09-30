@@ -16,7 +16,11 @@ import {
 import { workerTransaction } from '@/features/transactionalEmail/workerStorage'
 import { webhookNow } from '../fixtures/lettermintWebhook'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
-import { createSyntheticRegistrationId, syntheticEmailCatalog } from '../fixtures/transactionalEmail'
+import {
+  createSyntheticRegistrationId,
+  syntheticEmailCatalog,
+  syntheticEmailCatalogWithLink,
+} from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: async () => null }))
@@ -132,7 +136,10 @@ describe('immutable provider preparation through the worker', () => {
     const { req, operationId } = await accept()
     const links = { generate: vi.fn(async () => 'https://example.test/action') }
     const delivery = { deliver: vi.fn(async () => ({ type: 'retryable' as const })) }
-    await createTransactionalEmailWorker(req, { catalog: syntheticEmailCatalog, links, delivery }).run(operationId)
+    await createTransactionalEmailWorker(req, {
+      catalog: syntheticEmailCatalogWithLink(links.generate),
+      delivery,
+    }).run(operationId)
     expect(links.generate).not.toHaveBeenCalled()
     expect(delivery.deliver).not.toHaveBeenCalled()
     expect(await stored(operationId)).toMatchObject({ state: 'queued', prepared_at: null, attempt_count: '0' })
@@ -194,7 +201,12 @@ describe('immutable provider preparation through the worker', () => {
         if (decision === 'throws') throw new Error('Private store error')
         return decision
       }
-      await createTransactionalEmailWorker(req, { ...providerOptions(), suppression, links, delivery }).run(operationId)
+      await createTransactionalEmailWorker(req, {
+        ...providerOptions(),
+        catalog: syntheticEmailCatalogWithLink(links.generate),
+        suppression,
+        delivery,
+      }).run(operationId)
       expect(links.generate).not.toHaveBeenCalled()
       expect(delivery.deliver).not.toHaveBeenCalled()
       expect(await stored(operationId)).toMatchObject({
@@ -213,17 +225,23 @@ describe('immutable provider preparation through the worker', () => {
     let now = Date.now()
     const links = { generate: vi.fn(async () => 'https://example.test/action?value=ümlaut') }
     const delivery = { deliver: vi.fn(async (_attempt: DeliveryAttempt) => ({ type: 'retryable' as const })) }
-    await createTransactionalEmailWorker(req, { ...providerOptions(), links, delivery, now: () => now }).run(
-      operationId,
-    )
+    await createTransactionalEmailWorker(req, {
+      ...providerOptions(),
+      catalog: syntheticEmailCatalogWithLink(links.generate),
+      delivery,
+      now: () => now,
+    }).run(operationId)
     const before = await stored(operationId)
     const rotated = createActivationFixture()
     rotated.configuration.registry.targets[0]!.sender = 'rotated@example.test'
     rotated.preflight.target.sender = 'rotated@example.test'
     now += 60_000
-    await createTransactionalEmailWorker(req, { ...providerOptions(rotated), links, delivery, now: () => now }).run(
-      operationId,
-    )
+    await createTransactionalEmailWorker(req, {
+      ...providerOptions(rotated),
+      catalog: syntheticEmailCatalogWithLink(links.generate),
+      delivery,
+      now: () => now,
+    }).run(operationId)
     expect(links.generate).toHaveBeenCalledOnce()
     expect(delivery.deliver).toHaveBeenCalledTimes(2)
     expect(delivery.deliver.mock.calls[1]![0]).toEqual(delivery.deliver.mock.calls[0]![0])

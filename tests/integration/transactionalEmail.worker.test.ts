@@ -14,8 +14,11 @@ import {
   clearedSyntheticSuppression,
   createSyntheticRegistrationId,
   syntheticEmailCatalog,
+  syntheticEmailCatalogWithLink,
+  syntheticPreparation,
   syntheticRegistrationId,
 } from '../fixtures/transactionalEmail'
+import { renderSyntheticNotification } from '@/features/transactionalEmail/preparation'
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: async () => null }))
 
@@ -115,12 +118,9 @@ describe('transactional email worker', () => {
     const catalog: CommandCatalog = {
       'clinic.registration-received': {
         ...syntheticEmailCatalog['clinic.registration-received']!,
-        worker: {
-          ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
-          revalidate: async () => {
-            if (++validations === 3 && boundary === 'attempt-read') armed = true
-            return { address: 'recipient@example.test', binding: String(syntheticRegistrationId) }
-          },
+        revalidate: async (command) => {
+          if (++validations === 3 && boundary === 'attempt-read') armed = true
+          return syntheticEmailCatalog['clinic.registration-received']!.revalidate(command)
         },
       },
     }
@@ -239,6 +239,7 @@ describe('transactional email worker', () => {
     const req = await createLocalReq({}, payload)
     const catalog: CommandCatalog = {
       'auth.password-recovery': {
+        revalidate: async () => ({ status: 'suppressed', outcomeCode: 'ineligible' }),
         authorizeAndResolve: async () => ({
           address: 'recipient@example.test',
           binding: String(syntheticRegistrationId),
@@ -359,28 +360,30 @@ describe('transactional email worker', () => {
       const { req, id } = await accept()
       let clock = Date.now()
       let eligible = true
+      const links = { generate: vi.fn(async () => 'https://example.test/once') }
+      const originalEntry = syntheticEmailCatalogWithLink(links.generate)['clinic.registration-received']!
       const catalog: CommandCatalog = {
         'clinic.registration-received': {
-          ...syntheticEmailCatalog['clinic.registration-received']!,
-          worker: {
-            ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
-            revalidate: async () =>
-              !eligible && change === 'ineligible'
-                ? null
-                : {
-                    address: !eligible && change === 'address' ? 'other@example.test' : 'recipient@example.test',
-                    binding: !eligible && change === 'binding' ? randomUUID() : String(syntheticRegistrationId),
-                  },
+          ...originalEntry,
+          revalidate: async (command) => {
+            if (!eligible && change === 'ineligible') return { status: 'suppressed', outcomeCode: 'ineligible' }
+            const decision = await originalEntry.revalidate(command)
+            if (decision.status === 'suppressed') return decision
+            return {
+              ...decision,
+              recipient: {
+                address: !eligible && change === 'address' ? 'other@example.test' : 'recipient@example.test',
+                binding: !eligible && change === 'binding' ? randomUUID() : String(syntheticRegistrationId),
+              },
+            }
           },
         },
       }
-      const links = { generate: vi.fn(async () => 'https://example.test/once') }
       const delivery = { deliver: vi.fn(async () => ({ type: 'ambiguous' as const })) }
       const worker = createTransactionalEmailWorker(req, {
         suppression: clearedSyntheticSuppression,
         catalog,
         now: () => clock,
-        links,
         delivery,
       })
       await worker.run(id)
@@ -397,6 +400,7 @@ describe('transactional email worker', () => {
     const req = await createLocalReq({}, payload)
     const actionAt = Date.now() - 3600000
     let clock = actionAt + 3600000
+    const links = { generate: vi.fn(async () => 'https://example.test/auth') }
     const catalog: CommandCatalog = {
       'auth.password-recovery': {
         authorizeAndResolve: async () => ({
@@ -404,10 +408,10 @@ describe('transactional email worker', () => {
           binding: String(syntheticRegistrationId),
         }),
         authValidity: async () => ({ actionAt: new Date(actionAt).toISOString(), lifetimeMilliseconds: 48 * 3600000 }),
-        worker: {
-          terminalState: 'failed',
-          revalidate: async () => ({ address: 'recipient@example.test', binding: String(syntheticRegistrationId) }),
-        },
+        revalidate: async () =>
+          syntheticPreparation(syntheticRegistrationId, async () =>
+            renderSyntheticNotification('recipient@example.test', await links.generate()),
+          ),
       },
     }
     const receipt = await bindTransactionalEmail(req, catalog, () => clock).accept({
@@ -418,13 +422,11 @@ describe('transactional email worker', () => {
     expect((await row(id)).delivery_deadline.getTime()).toBe(actionAt + 48 * 3600000 - 300000)
     clock += 3600000
     const firstRequest = clock
-    const links = { generate: vi.fn(async () => 'https://example.test/auth') }
     const delivery = { deliver: vi.fn(async () => ({ type: 'ambiguous' as const })) }
     const worker = createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
       catalog,
       now: () => clock,
-      links,
       delivery,
     })
     await worker.run(id)
@@ -456,9 +458,8 @@ describe('transactional email worker', () => {
     }
     const crashed = createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
-      catalog: syntheticEmailCatalog,
+      catalog: syntheticEmailCatalogWithLink(links.generate),
       now: () => clock,
-      links,
       delivery,
       crashAfterDelivery: () => {
         throw Error('deterministic crash')
@@ -469,9 +470,8 @@ describe('transactional email worker', () => {
     clock += 120000
     const recovered = createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
-      catalog: syntheticEmailCatalog,
+      catalog: syntheticEmailCatalogWithLink(links.generate),
       now: () => clock,
-      links,
       delivery,
     })
     const claims = await Promise.all([recovered.claim(id), recovered.claim(id)])
@@ -490,8 +490,7 @@ describe('transactional email worker', () => {
     const delivery = { deliver: vi.fn() }
     await createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
-      catalog: syntheticEmailCatalog,
-      links,
+      catalog: syntheticEmailCatalogWithLink(links.generate),
       delivery,
       now: () => original.created_at.getTime() + 86400000 - 5000,
     }).run(id)
@@ -596,31 +595,34 @@ describe('transactional email worker', () => {
     expect((await row(id)).state).toBe('accepted')
   })
 
-  it.each(['address', 'binding', 'ineligible'] as const)(
-    'terminates a changed %s before generating a link or delivering',
+  it.each(['address', 'binding', 'ineligible', 'source-unavailable', 'superseded'] as const)(
+    'suppresses %s before generating a link or delivering',
     async (change) => {
       const { req, id } = await accept()
       const links = { generate: vi.fn() }
       const delivery = { deliver: vi.fn() }
+      const originalEntry = syntheticEmailCatalogWithLink(links.generate)['clinic.registration-received']!
       const catalog: CommandCatalog = {
         'clinic.registration-received': {
-          ...syntheticEmailCatalog['clinic.registration-received']!,
-          worker: {
-            terminalState: 'suppressed',
-            revalidate: async () =>
-              change === 'ineligible'
-                ? null
-                : {
-                    address: change === 'address' ? 'changed@example.test' : 'recipient@example.test',
-                    binding: change === 'binding' ? randomUUID() : String(syntheticRegistrationId),
-                  },
+          ...originalEntry,
+          revalidate: async (command) => {
+            if (change === 'ineligible' || change === 'source-unavailable' || change === 'superseded')
+              return { status: 'suppressed', outcomeCode: change }
+            const decision = await originalEntry.revalidate(command)
+            if (decision.status === 'suppressed') return decision
+            return {
+              ...decision,
+              recipient: {
+                address: change === 'address' ? 'changed@example.test' : 'recipient@example.test',
+                binding: change === 'binding' ? randomUUID() : String(syntheticRegistrationId),
+              },
+            }
           },
         },
       }
       await createTransactionalEmailWorker(req, {
         suppression: clearedSyntheticSuppression,
         catalog,
-        links,
         delivery,
       }).run(id)
       const stored = await row(id)
@@ -632,6 +634,14 @@ describe('transactional email worker', () => {
       })
       expect(links.generate).not.toHaveBeenCalled()
       expect(delivery.deliver).not.toHaveBeenCalled()
+      const events = await observer.query(
+        'SELECT type, outcome_code FROM transactional_email_events WHERE outbox_id = $1 ORDER BY sequence',
+        [id],
+      )
+      expect(events.rows.at(-2)).toEqual({
+        type: 'delivery.suppressed',
+        outcome_code: ['address', 'binding'].includes(change) ? 'recipient-changed' : change,
+      })
     },
   )
 
@@ -669,8 +679,7 @@ describe('transactional email worker', () => {
     }
     await createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
-      catalog: syntheticEmailCatalog,
-      links,
+      catalog: syntheticEmailCatalogWithLink(links.generate),
       delivery,
       log: (event) => logs.push(event),
     }).run(id)
@@ -721,15 +730,13 @@ describe('transactional email worker', () => {
     let clock = Date.now()
     let validations = 0
     const links = { generate: vi.fn(async () => 'https://example.test/original') }
+    const originalEntry = syntheticEmailCatalogWithLink(links.generate)['clinic.registration-received']!
     const catalog: CommandCatalog = {
       'clinic.registration-received': {
-        ...syntheticEmailCatalog['clinic.registration-received']!,
-        worker: {
-          ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
-          revalidate: async () => {
-            if (++validations === 3) clock += 119000
-            return { address: 'recipient@example.test', binding: String(syntheticRegistrationId) }
-          },
+        ...originalEntry,
+        revalidate: async (command) => {
+          if (++validations === 3) clock += 119000
+          return originalEntry.revalidate(command)
         },
       },
     }
@@ -737,7 +744,6 @@ describe('transactional email worker', () => {
       suppression: clearedSyntheticSuppression,
       catalog,
       now: () => clock,
-      links,
     })
     await worker.run(id)
     const prepared = await row(id)
@@ -756,7 +762,6 @@ describe('transactional email worker', () => {
       suppression: clearedSyntheticSuppression,
       catalog,
       now: () => clock,
-      links,
       delivery,
     }).run(id)
     expect(links.generate).toHaveBeenCalledTimes(1)
@@ -768,25 +773,21 @@ describe('transactional email worker', () => {
     const { req, id } = await accept()
     let valid = true
     const delivery = { deliver: vi.fn() }
+    const generate = async () => {
+      valid = false
+      return 'https://example.test/action'
+    }
+    const originalEntry = syntheticEmailCatalogWithLink(generate)['clinic.registration-received']!
     const catalog: CommandCatalog = {
       'clinic.registration-received': {
-        ...syntheticEmailCatalog['clinic.registration-received']!,
-        worker: {
-          ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
-          revalidate: async () =>
-            valid ? { address: 'recipient@example.test', binding: String(syntheticRegistrationId) } : null,
-        },
+        ...originalEntry,
+        revalidate: async (command) =>
+          valid ? originalEntry.revalidate(command) : { status: 'suppressed', outcomeCode: 'ineligible' },
       },
     }
     await createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
       catalog,
-      links: {
-        generate: async () => {
-          valid = false
-          return 'https://example.test/action'
-        },
-      },
       delivery,
     }).run(id)
     expect(delivery.deliver).not.toHaveBeenCalled()
@@ -825,13 +826,10 @@ describe('transactional email worker', () => {
     const log = vi.fn()
     await createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
-      catalog: syntheticEmailCatalog,
+      catalog: syntheticEmailCatalogWithLink(async () => {
+        throw new Error('secret recipient@example.test')
+      }),
       log,
-      links: {
-        generate: async () => {
-          throw new Error('secret recipient@example.test')
-        },
-      },
     }).run(id)
     expect(await row(id)).toMatchObject({
       state: 'failed',
@@ -1152,9 +1150,8 @@ describe('transactional email worker', () => {
     const links = { generate: vi.fn() }
     const worker = createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
-      catalog: syntheticEmailCatalog,
+      catalog: syntheticEmailCatalogWithLink(links.generate),
       now: () => clock,
-      links,
     })
     const claim = await worker.claim(id)
     clock += 115000
@@ -1168,15 +1165,13 @@ describe('transactional email worker', () => {
     let clock = Date.now()
     let calls = 0
     let eligible = true
+    const originalEntry = syntheticEmailCatalog['clinic.registration-received']!
     const catalog: CommandCatalog = {
       'clinic.registration-received': {
-        ...syntheticEmailCatalog['clinic.registration-received']!,
-        worker: {
-          ...syntheticEmailCatalog['clinic.registration-received']!.worker!,
-          revalidate: async () => {
-            if (++calls === 3) clock += 119000
-            return eligible ? { address: 'recipient@example.test', binding: String(syntheticRegistrationId) } : null
-          },
+        ...originalEntry,
+        revalidate: async (command) => {
+          if (++calls === 3) clock += 119000
+          return eligible ? originalEntry.revalidate(command) : { status: 'suppressed', outcomeCode: 'ineligible' }
         },
       },
     }

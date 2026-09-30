@@ -138,32 +138,27 @@ describe('Lettermint delivery through the real worker', () => {
   const clinicRegistrationCatalog: CommandCatalog = Object.freeze({
     'clinic.registration-received': {
       isRecipientAllowed: (recipient) => recipient.address.endsWith('@example.test'),
-      worker: {
-        revalidate: async (command) =>
-          command.registrationId === syntheticRegistrationId
-            ? {
+      revalidate: async (command) =>
+        command.registrationId === syntheticRegistrationId
+          ? {
+              status: 'eligible',
+              recipient: {
                 address: 'recipient@example.test',
                 binding: String(syntheticRegistrationId),
-                prepare: async () =>
-                  renderClinicRegistrationReceipt('recipient@example.test', {
-                    fullName: 'Synthetic Recipient',
-                    clinicName: 'Synthetic Clinic',
-                  }),
-              }
-            : null,
-        terminalState: 'suppressed',
-      },
+              },
+              prepare: async () =>
+                renderClinicRegistrationReceipt('recipient@example.test', {
+                  fullName: 'Synthetic Recipient',
+                  clinicName: 'Synthetic Clinic',
+                }),
+            }
+          : { status: 'suppressed', outcomeCode: 'source-unavailable' },
       authorizeAndResolve: async (command, actor) => {
         if (actor !== null || command.registrationId !== syntheticRegistrationId)
           throw new Error('Unexpected synthetic command')
         return {
           address: 'recipient@example.test',
           binding: String(syntheticRegistrationId),
-          prepare: async () =>
-            renderClinicRegistrationReceipt('recipient@example.test', {
-              fullName: 'Synthetic Recipient',
-              clinicName: 'Synthetic Clinic',
-            }),
         }
       },
     },

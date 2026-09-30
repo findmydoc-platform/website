@@ -6,12 +6,11 @@ import {
 import { randomUUID } from 'node:crypto'
 import type { PayloadRequest, Where } from 'payload'
 import type { TransactionalEmailOutbox, TransactionalEmailEvent } from '@/payload-types'
-import { resolveCatalogEntry, type CommandCatalog } from './catalog'
+import { dispatchCommandPreparation, type CommandCatalog } from './catalog'
 import { bindPayloadCommandCatalog } from './payloadCatalog'
 import { validateCommand } from './commands'
 import { selectTransactionalEmailRuntime, selectTransactionalEmailRuntimeForTest } from './environment'
 import { TransactionalEmailError } from './errors'
-import { fakeLinks, renderSyntheticNotification, type LinkGenerator } from './preparation'
 import { createFakeDeliveryAdapter, type DeliveryAdapter, type DeliveryLog, type DeliveryOutcome } from './delivery'
 import { effectiveDeliveryDeadline as deadline } from './deliveryDeadline'
 import { transientFields } from './retentionPolicy'
@@ -31,11 +30,6 @@ import {
 const leaseMilliseconds = 120_000
 const stepBudgetMilliseconds = 5_000
 const retryDelays = [60_000, 300_000, 1_800_000, 7_200_000, 28_800_000] as const
-const unavailableLinks: LinkGenerator = Object.freeze({
-  async generate() {
-    throw new TransactionalEmailError('environment-unavailable')
-  },
-})
 
 async function boundedStep<Result>(work: (signal: AbortSignal) => Promise<Result>): Promise<Result> {
   const controller = new AbortController()
@@ -59,7 +53,6 @@ export type WorkerClaim = { operationId: string; token: string }
 type WorkerOptions = {
   catalog?: CommandCatalog
   now?: () => number
-  links?: LinkGenerator
   delivery?: DeliveryAdapter
   httpTransport?: LettermintHttpTransport
   log?: (event: DeliveryLog) => void
@@ -99,7 +92,6 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     throw new TransactionalEmailError('environment-unavailable')
   const now = options.now ?? Date.now
   const catalog = options.catalog ?? bindPayloadCommandCatalog(req)
-  const links = options.links ?? (runtime.links === 'fake' ? fakeLinks : unavailableLinks)
   if (options.httpTransport && (!providerBinding || options.delivery))
     throw new TransactionalEmailError('environment-unavailable')
   const usesLettermintDelivery = Boolean(
@@ -200,25 +192,27 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
     }
     if (!enoughBudget(record)) return null
     const command = validateCommand(record.commandPayload)
-    const entry = resolveCatalogEntry(catalog, command).worker
-    if (!entry) throw new TransactionalEmailError('unsupported-command')
-    const current = await boundedStep(() => entry.revalidate(command))
-    if (
-      !current ||
-      current.address !== record.recipientAddress ||
-      runtime.digestRecipient(current) !== record.recipientDigest
-    ) {
-      const outcomeCode = current ? 'recipient-changed' : 'ineligible'
-      if (await finish(claim, entry.terminalState, outcomeCode))
+    const preparationDecision = await boundedStep(() =>
+      dispatchCommandPreparation({
+        catalog,
+        command,
+        storedRecipientAddress: record.recipientAddress!,
+        storedRecipientDigest: record.recipientDigest,
+        digestRecipient: runtime.digestRecipient,
+      }),
+    )
+    if (preparationDecision.status === 'suppressed') {
+      if (await finish(claim, 'suppressed', preparationDecision.outcomeCode))
         emit({
           operationId: claim.operationId,
           commandType: record.commandType,
           attemptNumber: record.attemptCount || undefined,
-          outcomeCode,
-          outboxState: entry.terminalState,
+          outcomeCode: preparationDecision.outcomeCode,
+          outboxState: 'suppressed',
         })
       return null
     }
+    const current = preparationDecision.recipient
     const suppression = activationPolicy.evaluate(command.type, current.address)
     if (suppression) {
       if (await finish(claim, 'suppressed', suppression))
@@ -286,7 +280,7 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
         })
       return null
     }
-    return enoughBudget(record) ? current : null
+    return enoughBudget(record) ? preparationDecision : null
   }
 
   const dueAt = (record: TransactionalEmailOutbox) =>
@@ -339,16 +333,12 @@ export function createTransactionalEmailWorker(req: PayloadRequest, options: Wor
       prepareProviderRequest(record, providerBinding)
     }
     if (record.state === 'queued') {
+      const refreshedPreparation = await revalidate(claim, record)
+      if (!refreshedPreparation) return
       let prepared
       try {
-        const refreshedRecipient = await revalidate(claim, record)
-        if (!refreshedRecipient) return
-        const recipientAddress = record.recipientAddress!
-        prepared = await boundedStep(async () =>
-          refreshedRecipient.prepare
-            ? refreshedRecipient.prepare(links)
-            : renderSyntheticNotification(recipientAddress, await links.generate()),
-        )
+        prepared = await boundedStep(() => refreshedPreparation.prepare())
+        if (prepared.recipientAddress !== record.recipientAddress) throw new TransactionalEmailError('invalid-command')
       } catch {
         if (await finish(claim, 'failed', 'preparation-failed'))
           emit({

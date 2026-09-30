@@ -58,6 +58,8 @@ export const TransactionalEmailEvents: CollectionConfig = {
         ...providerOutcomeCodes,
         'recipient-changed',
         'ineligible',
+        'source-unavailable',
+        'superseded',
         'preparation-failed',
         'permanent-failure',
         'retryable-failure',

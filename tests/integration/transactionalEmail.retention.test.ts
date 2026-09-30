@@ -15,6 +15,8 @@ import {
   clearedSyntheticSuppression,
   createSyntheticRegistrationId,
   syntheticEmailCatalog,
+  syntheticEmailCatalogWithLink,
+  syntheticPreparation,
   syntheticRegistrationId,
 } from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
@@ -68,8 +70,7 @@ describe('transactional email safety sweep and retention', () => {
     const links = { generate: vi.fn() }
     await createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
-      catalog: syntheticEmailCatalog,
-      links,
+      catalog: syntheticEmailCatalogWithLink(links.generate),
       now: () => now,
     }).run()
     const stored = await row(id)
@@ -151,8 +152,7 @@ describe('transactional email safety sweep and retention', () => {
       const links = { generate: vi.fn() }
       const transport = vi.fn()
       await createTransactionalEmailWorker(next.req, {
-        catalog: syntheticEmailCatalog,
-        links,
+        catalog: syntheticEmailCatalogWithLink(links.generate),
         httpTransport: transport,
         providerBinding: createHostedLettermintOutboundBinding(fixture.binding),
         activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [digest]),
@@ -460,8 +460,7 @@ describe('transactional email safety sweep and retention', () => {
     }
     await createTransactionalEmailWorker(due.req, {
       suppression: clearedSyntheticSuppression,
-      catalog: syntheticEmailCatalog,
-      links,
+      catalog: syntheticEmailCatalogWithLink(links.generate),
       now: () => now,
     }).run(due.id)
     expect(links.generate).toHaveBeenCalledTimes(1)
@@ -553,6 +552,7 @@ describe('transactional email safety sweep and retention', () => {
     const receipt = auth
       ? await bindTransactionalEmail(req, {
           'auth.password-recovery': {
+            revalidate: async () => ({ status: 'suppressed', outcomeCode: 'ineligible' }),
             authorizeAndResolve: async () => ({
               address: 'recipient@example.test',
               binding: String(syntheticRegistrationId),
@@ -602,11 +602,7 @@ describe('transactional email safety sweep and retention', () => {
           binding: String(syntheticRegistrationId),
         }),
         authValidity: async () => ({ actionAt, lifetimeMilliseconds: 48 * 3600000 }),
-        worker: {
-          template: 'synthetic-notification' as const,
-          terminalState: 'failed' as const,
-          revalidate: async () => ({ address: 'recipient@example.test', binding: String(syntheticRegistrationId) }),
-        },
+        revalidate: async () => syntheticPreparation(authActionId),
       },
     }
     const receipt = await bindTransactionalEmail(req, catalog, () => clock).accept({

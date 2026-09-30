@@ -1,4 +1,4 @@
-import type { PreparedMessage, LinkGenerator } from './preparation'
+import type { PreparedMessage } from './preparation'
 import { renderClinicRegistrationReceipt } from './preparation'
 import type { CommandType, TransactionalEmailCommand } from './commands'
 import { TransactionalEmailError } from './errors'
@@ -6,8 +6,18 @@ import { TransactionalEmailError } from './errors'
 export type RecipientBinding = Readonly<{
   address: string
   binding: string
-  prepare?(links: LinkGenerator): Promise<PreparedMessage>
 }>
+export type CatalogSuppressionOutcome = 'ineligible' | 'source-unavailable' | 'superseded'
+export type EligibleCatalogPreparation = Readonly<{
+  status: 'eligible'
+  recipient: RecipientBinding
+  prepare(): Promise<PreparedMessage>
+}>
+export type CatalogPreparationDecision =
+  | EligibleCatalogPreparation
+  | Readonly<{ status: 'suppressed'; outcomeCode: CatalogSuppressionOutcome | 'recipient-changed' }>
+export type CatalogRevalidation =
+  EligibleCatalogPreparation | Readonly<{ status: 'suppressed'; outcomeCode: CatalogSuppressionOutcome }>
 export type ClinicApplicationSource = Readonly<{
   id: number
   clinicName: string
@@ -18,26 +28,26 @@ export type ClinicApplicationSource = Readonly<{
 export type CatalogEntry<Command extends TransactionalEmailCommand = TransactionalEmailCommand> = {
   authValidity?(command: Command): Promise<{ actionAt: string; lifetimeMilliseconds: number }>
   isRecipientAllowed?(recipient: RecipientBinding): boolean
-  worker?: {
-    revalidate(command: Command): Promise<RecipientBinding | null>
-    terminalState: 'suppressed' | 'failed'
-  }
+  revalidate(command: Command): Promise<CatalogRevalidation>
   authorizeAndResolve(command: Command, actor: string | null): Promise<RecipientBinding>
 }
 export type CommandCatalog = {
   readonly [Type in CommandType]?: CatalogEntry<Extract<TransactionalEmailCommand, { type: Type }>>
 }
 
-function clinicRegistrationRecipient(source: ClinicApplicationSource): RecipientBinding | null {
+function clinicRegistrationPreparation(source: ClinicApplicationSource): EligibleCatalogPreparation | null {
   const fullName = [source.contactFirstName, source.contactLastName].filter(Boolean).join(' ').trim()
   const clinicName = source.clinicName.trim()
   const address = source.contactEmail.trim()
   if (!fullName || !clinicName || !address) return null
   return {
-    address,
-    // The digest binds the exact recipient and rendered package props without storing a snapshot.
-    binding: JSON.stringify([source.id, fullName, clinicName]),
-    prepare: async () => renderClinicRegistrationReceipt(address, { fullName, clinicName }),
+    status: 'eligible',
+    recipient: {
+      address,
+      // The digest binds the exact recipient and rendered package props without storing a snapshot.
+      binding: JSON.stringify([source.id, fullName, clinicName]),
+    },
+    prepare: () => renderClinicRegistrationReceipt(address, { fullName, clinicName }),
   }
 }
 
@@ -46,9 +56,9 @@ export function createCommandCatalog(sources: {
 }): CommandCatalog {
   async function loadClinicRegistrationRecipient(
     command: Extract<TransactionalEmailCommand, { type: 'clinic.registration-received' }>,
-  ): Promise<RecipientBinding | null> {
+  ): Promise<EligibleCatalogPreparation | null> {
     const source = await sources.findClinicApplication(command.registrationId)
-    return source ? clinicRegistrationRecipient(source) : null
+    return source ? clinicRegistrationPreparation(source) : null
   }
 
   return Object.freeze({
@@ -56,13 +66,14 @@ export function createCommandCatalog(sources: {
       isRecipientAllowed: () => true,
       async authorizeAndResolve(command, actor) {
         if (actor !== null) throw new TransactionalEmailError('access-denied')
-        const recipient = await loadClinicRegistrationRecipient(command)
-        if (!recipient) throw new TransactionalEmailError('source-missing')
-        return recipient
+        const preparation = await loadClinicRegistrationRecipient(command)
+        if (!preparation) throw new TransactionalEmailError('source-missing')
+        return preparation.recipient
       },
-      worker: {
-        revalidate: loadClinicRegistrationRecipient,
-        terminalState: 'failed',
+      async revalidate(command) {
+        const source = await sources.findClinicApplication(command.registrationId)
+        if (!source) return { status: 'suppressed', outcomeCode: 'source-unavailable' }
+        return clinicRegistrationPreparation(source) ?? { status: 'suppressed', outcomeCode: 'ineligible' }
       },
     },
   })
@@ -72,4 +83,21 @@ export function resolveCatalogEntry(catalog: CommandCatalog, command: Transactio
   const entry = catalog[command.type]
   if (!entry) throw new TransactionalEmailError('unsupported-command')
   return entry as CatalogEntry
+}
+
+export async function dispatchCommandPreparation(input: {
+  catalog: CommandCatalog
+  command: TransactionalEmailCommand
+  storedRecipientAddress: string
+  storedRecipientDigest: string
+  digestRecipient(recipient: RecipientBinding): string
+}): Promise<CatalogPreparationDecision> {
+  const decision = await resolveCatalogEntry(input.catalog, input.command).revalidate(input.command)
+  if (decision.status === 'suppressed') return decision
+  if (
+    decision.recipient.address !== input.storedRecipientAddress ||
+    input.digestRecipient(decision.recipient) !== input.storedRecipientDigest
+  )
+    return { status: 'suppressed', outcomeCode: 'recipient-changed' }
+  return decision
 }

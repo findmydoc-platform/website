@@ -23,7 +23,16 @@ The module derives the durable reference centrally. Auth uses `v1|auth-action|<i
 already deployed `String(registrationId)` reference so existing outbox records remain valid. Extra properties,
 invalid identity shapes, cross-command recipient slots, and unknown command types fail before persistence. The runtime
 catalog contains the `clinic.registration-received` product entry, which loads an existing clinic application and
-derives its recipient and template props. Tests use static catalogs that resolve only addresses under `example.test`.
+derives its recipient and template props. The other eight command types remain valid command variants, but the runtime
+catalog does not register their product sources or templates yet. Tests use a complete typed catalog with one entry
+for every command variant and resolve only addresses under `example.test`.
+
+Each catalog entry owns acceptance authorization, recipient resolution, worker revalidation, link creation when the
+flow needs one, typed prop projection, and renderer selection. Revalidation returns either one eligible preparation
+closure or one closed terminal outcome. A changed address or binding maps to `recipient-changed`; a missing address or
+lost authorization maps to `ineligible`; a missing domain source maps to `source-unavailable`; and an obsolete domain
+state maps to `superseded`. These expected outcomes terminate as `suppressed`. An unexpected preparation exception
+terminates as `failed` with `preparation-failed`.
 
 An acceptance returns exactly `operationId`, `acceptedAt`, and `deduplicated`. Validation and source authorization run
 before both initial acceptance and duplicate receipts. Without a caller transaction, the module owns a serializable read-write transaction, writes one outbox record and its
@@ -105,6 +114,9 @@ Provider keys and acceptance identities are immutable; event updates and generic
 The generated additive migration creates unique indexes for the command type plus operation reference, provider key,
 outbox plus event sequence, and non-null provider event identifiers. PostgreSQL permits multiple null entries in the
 last index. Existing application versions ignore the added tables; the new version requires this migration.
+
+The generated additive migration `20260930_224722_transactional_email_preparation_outcomes` adds
+`source-unavailable` and `superseded` to the event outcome enum. It performs no backfill and changes no existing row.
 
 Provider feedback storage and its partial provider-identity index are described in
 [event invariants](transactional-email-events.md).

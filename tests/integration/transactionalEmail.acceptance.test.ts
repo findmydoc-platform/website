@@ -78,6 +78,7 @@ describe('transactional email command acceptance', () => {
     const catalog = {
       'auth.password-recovery': {
         authorizeAndResolve: async () => ({ address: 'recipient@example.test', binding: String(authActionId) }),
+        revalidate: async () => ({ status: 'suppressed', outcomeCode: 'ineligible' }),
         authValidity: async () => ({
           actionAt: '2026-09-30T08:00:00.000Z',
           lifetimeMilliseconds: 3_600_000,
@@ -109,6 +110,7 @@ describe('transactional email command acceptance', () => {
           address: 'recipient@example.test',
           binding: `${moderationEventId}:reporter`,
         }),
+        revalidate: async () => ({ status: 'suppressed', outcomeCode: 'ineligible' }),
       },
     } satisfies CommandCatalog
     const commands = bindTransactionalEmail(req, catalog)

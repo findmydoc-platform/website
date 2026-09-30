@@ -15,6 +15,7 @@ import {
   clearedSyntheticSuppression,
   createSyntheticRegistrationId,
   syntheticEmailCatalog,
+  syntheticEmailCatalogWithLink,
 } from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 
@@ -75,8 +76,7 @@ describe('transactional email activation at the worker boundary', () => {
       const render = vi.mocked(emailRenderer.render)
       await createTransactionalEmailWorker(req, {
         suppression: clearedSyntheticSuppression,
-        catalog: syntheticEmailCatalog,
-        links,
+        catalog: syntheticEmailCatalogWithLink(links.generate),
         delivery,
         log,
         activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry),
@@ -140,7 +140,11 @@ describe('transactional email activation at the worker boundary', () => {
       const links = { generate: vi.fn(async () => 'https://example.test/action') }
       const delivery = { deliver: vi.fn(async () => ({ type: 'retryable' as const })) }
       const render = vi.mocked(emailRenderer.render)
-      const options = { catalog: syntheticEmailCatalog, links, delivery, now: () => now }
+      const options = {
+        catalog: syntheticEmailCatalogWithLink(links.generate),
+        delivery,
+        now: () => now,
+      }
       await createTransactionalEmailWorker(req, {
         suppression: clearedSyntheticSuppression,
         ...options,
@@ -216,8 +220,7 @@ describe('transactional email activation at the worker boundary', () => {
       await expect(
         createTransactionalEmailWorker(req, {
           suppression: clearedSyntheticSuppression,
-          catalog: syntheticEmailCatalog,
-          links,
+          catalog: syntheticEmailCatalogWithLink(links.generate),
           delivery,
           activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry),
         }).run(operationId),

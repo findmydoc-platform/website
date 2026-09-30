@@ -45,6 +45,7 @@ import { validateTransactionalEmailStartupForTest } from '@/features/transaction
 import { runDigestKeyRetirement } from '../../scripts/lettermint-digest-key-retirement'
 import { validateDeliveryEdgeLog } from '@/features/transactionalEmail/operationalSignals'
 import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
+import { fakeLinks, renderSyntheticNotification } from '@/features/transactionalEmail/preparation'
 
 vi.hoisted(async () => {
   const { createRequire } = await import('node:module')
@@ -90,22 +91,26 @@ describe('Lettermint webhook Next.js request boundary', () => {
   const expectedSignals: { outcomeCode: string }[] = []
   let recipientAddress = 'recipient@example.test'
   const originalEntry = syntheticEmailCatalog['clinic.registration-received']!
-  const catalog: CommandCatalog = {
+  const catalogWithLink = (generate: () => Promise<string> = () => fakeLinks.generate()): CommandCatalog => ({
     'clinic.registration-received': {
       ...originalEntry,
       authorizeAndResolve: async (...args) => ({
         ...(await originalEntry.authorizeAndResolve(...args)),
         address: recipientAddress,
       }),
-      worker: {
-        ...originalEntry.worker!,
-        revalidate: async (command) => {
-          const current = await originalEntry.worker!.revalidate(command)
-          return current ? { ...current, address: recipientAddress } : null
-        },
+      revalidate: async (command) => {
+        const current = await originalEntry.revalidate(command)
+        if (current.status === 'suppressed') return current
+        const recipient = { ...current.recipient, address: recipientAddress }
+        return {
+          status: 'eligible',
+          recipient,
+          prepare: async () => renderSyntheticNotification(recipient.address, await generate()),
+        }
       },
     },
-  }
+  })
+  const catalog = catalogWithLink()
   const registrationId = createSyntheticRegistrationId()
   const operationReference = String(registrationId)
   const references = [operationReference]
@@ -449,8 +454,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const delivery = { deliver: vi.fn(async () => ({ type: 'ambiguous' as const })) }
     try {
       await createTransactionalEmailWorker(req, {
-        catalog,
-        links: { generate: async () => 'https://example.test/synthetic-action' },
+        catalog: catalogWithLink(async () => 'https://example.test/synthetic-action'),
         delivery,
         log: () => {},
         providerBinding: createHostedLettermintOutboundBinding(fixture.binding),
@@ -604,9 +608,8 @@ describe('Lettermint webhook Next.js request boundary', () => {
     })
     const suppression = vi.fn(async () => 'cleared' as const)
     await createTransactionalEmailWorker(req, {
-      catalog,
+      catalog: catalogWithLink(links.generate),
       now: () => webhookNow,
-      links,
       httpTransport,
       suppression,
       providerBinding: createHostedLettermintOutboundBinding(fixture.binding),
@@ -662,9 +665,8 @@ describe('Lettermint webhook Next.js request boundary', () => {
     const transport = vi.fn()
 
     await createTransactionalEmailWorker(req, {
-      catalog,
+      catalog: catalogWithLink(links.generate),
       now: () => webhookNow,
-      links,
       httpTransport: transport,
       providerBinding: createHostedLettermintOutboundBinding(rotated.binding),
       activationPolicy: resolveActivationPolicy(rotated.binding, rotated.registry, [
@@ -748,8 +750,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     })
     const run = ({ req, operationId }: Awaited<ReturnType<typeof queued>>) =>
       createTransactionalEmailWorker(req, {
-        catalog,
-        links,
+        catalog: catalogWithLink(links.generate),
         httpTransport: transport,
         providerBinding: createHostedLettermintOutboundBinding(rotated.binding),
         activationPolicy: resolveActivationPolicy(rotated.binding, rotated.registry, allowlist),
@@ -822,8 +823,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     hooks.push(failure)
     try {
       await createTransactionalEmailWorker(req, {
-        catalog,
-        links,
+        catalog: catalogWithLink(links.generate),
         httpTransport: transport,
         providerBinding: createHostedLettermintOutboundBinding(rotated.binding),
         activationPolicy: resolveActivationPolicy(rotated.binding, rotated.registry, [currentDigest]),
@@ -1150,9 +1150,8 @@ describe('Lettermint webhook Next.js request boundary', () => {
       const workerSignalOffset = signalCalls.length
       try {
         await createTransactionalEmailWorker(req, {
-          catalog,
+          catalog: catalogWithLink(generate),
           now: () => webhookNow + 61_000,
-          links: { generate },
           httpTransport: transport,
           providerBinding: createHostedLettermintOutboundBinding(fixture.binding),
           activationPolicy: resolveActivationPolicy(fixture.binding, fixture.registry, [

@@ -9,6 +9,7 @@ Use this index as the main entry point for project documentation.
 
 ## Core Docs
 
+- [Shared Platform Architecture](https://github.com/findmydoc-platform/platform-architecture) (private repository; GitHub access required)
 - [Setup & Development](./setup.md)
 - [Features & Integrations](./features.md)
 - [Monitoring and Error Logic](./monitoring-and-error-logic.md)

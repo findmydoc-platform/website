@@ -141,7 +141,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ### Platform architecture
 
-For questions spanning Website and Clinic Dashboard, start with the [shared platform architecture](https://github.com/findmydoc-platform/platform-architecture). This repository remains authoritative for its implementation and Payload API contracts. Follow links to the relevant local documentation before changing code.
+For questions spanning Website and Clinic Dashboard, start with the [shared platform architecture](https://github.com/findmydoc-platform/platform-architecture) when GitHub access is available. If access is unavailable, use the local application documentation and state that the shared architecture could not be checked. This repository remains authoritative for its implementation and Payload API contracts. Follow links to the relevant local documentation before changing code.
 
 ### Issue tracker
 

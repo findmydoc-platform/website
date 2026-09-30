@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { createCommandPort, type AcceptanceStorage, type NewOperation } from '@/features/transactionalEmail/acceptance'
-import type { CommandCatalog } from '@/features/transactionalEmail/catalog'
+import type { CatalogEntry, CommandCatalog } from '@/features/transactionalEmail/catalog'
+import type { CommandType, TransactionalEmailCommand } from '@/features/transactionalEmail/commands'
 
 const acceptedAt = '2026-09-30T08:00:00.000Z'
 
-function acceptanceHarness(catalog: CommandCatalog) {
+type AcceptanceTestCatalog = {
+  readonly [Type in CommandType]?: Omit<CatalogEntry<Extract<TransactionalEmailCommand, { type: Type }>>, 'revalidate'>
+}
+
+function acceptanceHarness(catalog: AcceptanceTestCatalog) {
   const created: NewOperation[] = []
   const accepted = new Map<string, { id: number; createdAt: string }>()
   const storage: AcceptanceStorage = {
@@ -18,7 +23,12 @@ function acceptanceHarness(catalog: CommandCatalog) {
   }
   const commands = createCommandPort({
     actor: null,
-    catalog,
+    catalog: Object.fromEntries(
+      Object.entries(catalog).map(([type, entry]) => [
+        type,
+        { ...entry, revalidate: async () => ({ status: 'suppressed', outcomeCode: 'ineligible' }) },
+      ]),
+    ) as CommandCatalog,
     digestRecipient: () => 'fake-v1:digest',
     environment: 'test',
     now: () => Date.parse(acceptedAt),

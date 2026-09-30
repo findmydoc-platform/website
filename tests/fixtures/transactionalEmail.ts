@@ -1,7 +1,7 @@
 import { randomInt } from 'node:crypto'
 import type { CommandCatalog } from '@/features/transactionalEmail/catalog'
 import { TransactionalEmailError } from '@/features/transactionalEmail'
-import { renderSyntheticNotification } from '@/features/transactionalEmail/preparation'
+import { fakeLinks, renderSyntheticNotification } from '@/features/transactionalEmail/preparation'
 import type { SuppressionLookup } from '@/features/transactionalEmail/suppression'
 
 export const clearedSyntheticSuppression: SuppressionLookup = async () => 'cleared'
@@ -21,19 +21,43 @@ function syntheticRecipient(registrationId: number) {
   return {
     address: 'recipient@example.test',
     binding: String(registrationId),
-    prepare: async (links: { generate(): Promise<string> }) =>
-      renderSyntheticNotification('recipient@example.test', await links.generate()),
   }
+}
+
+export function syntheticPreparation(
+  registrationId: number,
+  prepare = async () => renderSyntheticNotification('recipient@example.test', await fakeLinks.generate()),
+) {
+  return {
+    status: 'eligible' as const,
+    recipient: syntheticRecipient(registrationId),
+    prepare,
+  }
+}
+
+export function syntheticEmailCatalogWithLink(generate: () => Promise<string>): CommandCatalog {
+  const entry = syntheticEmailCatalog['clinic.registration-received']!
+  return Object.freeze({
+    'clinic.registration-received': {
+      ...entry,
+      async revalidate(command) {
+        const decision = await entry.revalidate(command)
+        if (decision.status === 'suppressed') return decision
+        return syntheticPreparation(command.registrationId, async () =>
+          renderSyntheticNotification(decision.recipient.address, await generate()),
+        )
+      },
+    },
+  })
 }
 
 export const syntheticEmailCatalog: CommandCatalog = Object.freeze({
   'clinic.registration-received': {
     isRecipientAllowed: (recipient) => recipient.address.endsWith('@example.test'),
-    worker: {
-      revalidate: async (command) =>
-        syntheticRegistrationIds.has(command.registrationId) ? syntheticRecipient(command.registrationId) : null,
-      terminalState: 'suppressed',
-    },
+    revalidate: async (command) =>
+      syntheticRegistrationIds.has(command.registrationId)
+        ? syntheticPreparation(command.registrationId)
+        : { status: 'suppressed', outcomeCode: 'source-unavailable' },
     authorizeAndResolve: async (command, actor) => {
       if (actor !== null) throw new TransactionalEmailError('access-denied')
       if (!syntheticRegistrationIds.has(command.registrationId)) throw new TransactionalEmailError('source-missing')

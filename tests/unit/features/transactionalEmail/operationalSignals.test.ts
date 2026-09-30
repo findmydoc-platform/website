@@ -58,6 +58,15 @@ describe('transactional email operational signals', () => {
     ).toThrow('invalid-command')
   })
 
+  it.each(['source-unavailable', 'superseded'] as const)('accepts the closed %s preparation outcome', (outcomeCode) => {
+    const log = vi.fn()
+    const signals = createDeliveryEdgeSignals({ log })
+
+    signals.emit({ ...safeSignal, outcomeCode, outboxState: 'suppressed' })
+
+    expect(log).toHaveBeenCalledWith({ ...safeSignal, outcomeCode, outboxState: 'suppressed' })
+  })
+
   it.each([
     ['environment', 'tenant-prod'],
     ['outcomeCode', 'provider-private-detail'],

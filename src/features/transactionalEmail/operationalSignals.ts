@@ -65,6 +65,8 @@ const outcomeCode = z.enum([
   'provider-policy-rejected',
   'recipient-changed',
   'ineligible',
+  'source-unavailable',
+  'superseded',
   'preparation-failed',
   'permanent-failure',
   'retryable-failure',

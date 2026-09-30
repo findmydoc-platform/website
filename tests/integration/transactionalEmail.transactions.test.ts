@@ -331,6 +331,7 @@ describe('transactional email transaction ownership', () => {
     const command = commandFor()
     const commands = bindTransactionalEmail(req, {
       'clinic.registration-received': {
+        revalidate: async () => ({ status: 'suppressed', outcomeCode: 'ineligible' }),
         authorizeAndResolve: async () => {
           await payload.db.rollbackTransaction(transactionID)
           return { address: 'recipient@example.test', binding: String(command.registrationId) }

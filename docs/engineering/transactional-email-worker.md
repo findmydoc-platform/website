@@ -95,11 +95,18 @@ expired or replaced tokens, lease renewal, illegal state changes, recipient redi
 Claim and storage transactions finish before link generation, rendering, or delivery. Each step needs more than five
 seconds of remaining lease and delivery-deadline budget. Preparation steps time out after four seconds. Lettermint delivery owns a separate 20-second total timeout and requires more than 25 seconds of lease and delivery-deadline budget before starting. The delivery adapter receives an abort signal. A delivery timeout or thrown error is ambiguous. The injected clock controls policy tests.
 
-The static synthetic catalog revalidates eligibility and recipient binding before link generation, rendering, and
-delivery. A missing or changed recipient ends processing with the catalog's suppressed or failed outcome. It never
-redirects the operation. The fake link generator uses example.test and performs no network call. A typed React Email
-notification renders HTML and plain text. The worker commits the exact recipient, subject, HTML, and text before any
-attempt starts. Reclaim after this commit reuses those bytes without generating another link.
+The static catalog revalidates eligibility and recipient binding before preparation and delivery. Each entry returns
+either one eligible preparation closure or one closed suppression outcome. The closure owns link generation, typed
+props, and renderer selection. The worker does not know product templates, generic template names, or a universal link
+generator. It compares the current address and binding digest with the accepted values before invoking the closure.
+
+Changed addresses or bindings end as `recipient-changed`; missing addresses or lost authorization end as
+`ineligible`; missing domain sources end as `source-unavailable`; and obsolete domain state ends as `superseded`.
+Each expected result is terminal `suppressed` and never redirects the operation. Unexpected preparation exceptions
+remain terminal `failed` with `preparation-failed`.
+
+The worker commits the exact recipient, subject, HTML, and plain text before any attempt starts. A reclaim or technical
+retry revalidates the recipient but reuses the stored bytes without invoking preparation again.
 
 Every preparation step also requires an explicit `cleared` decision from the private suppression lookup. Missing,
 unavailable, rejected, or failed lookup results stop before the next link, render, serialization, or delivery step.
@@ -225,6 +232,11 @@ The generated migration adds nullable/defaulted worker fields and closed event v
 and recipient columns nullable so scrubbing can clear them. Its up migration preserves existing rows and remains
 compatible with the preceding acceptance code. The retry migration adds nullable deadline/scheduling fields and closed retry event values without rewriting existing rows. A down migration after processing requires a separate data-safety
 assessment because scrubbed content cannot be reconstructed.
+
+The additive preparation-outcome migration adds `source-unavailable` and `superseded` to the existing event enum. It
+does not backfill, delete, or rewrite data. After either new outcome has been stored, the generated down migration
+cannot recreate the narrower enum. Rollback therefore keeps the additive enum in place and rolls back application code
+only.
 
 Both collections remain private-live with no-public-impact. There are no public reads, cache tags, discovery paths,
 or invalidation calls. Existing collection privacy, permission, and cache tests remain applicable.

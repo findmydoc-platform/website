@@ -172,6 +172,6 @@ describe('clinic-registration receipt command', () => {
           [operationId],
         )
       ).rows,
-    ).toEqual([{ state: 'failed', command_payload: null, recipient_address: null }])
+    ).toEqual([{ state: 'suppressed', command_payload: null, recipient_address: null }])
   })
 })

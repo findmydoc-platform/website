@@ -243,7 +243,9 @@ The command catalog is exhaustive and resolved at build time. Each registered co
 - one closed typed React Email renderer that renders HTML and plain text.
 
 The foundation defines the catalog contract and uses a test catalog. Issues #1734 through #1737 add the real entries
-they own. There is no database-backed, Admin-managed, environment-selected, or runtime plugin registration.
+they own. The runtime catalog registers only product flows whose source and package template already exist. The typed
+test catalog covers every command variant without activating the unimplemented Auth, Conversation, or Moderation
+flows. There is no database-backed, Admin-managed, environment-selected, or runtime plugin registration.
 
 A missing catalog entry fails before the module creates an outbox record. A catalog entry may derive template and
 recipient choices from authoritative Website data, but callers cannot pass or override those choices. If one command
@@ -447,16 +449,20 @@ Command acceptance validates authorization, resolves the intended recipient from
 the transient recipient binding and typed command, and joins the outbox operation to the current atomic unit of work.
 It never calls Supabase or a delivery provider.
 
-After every successful claim, including a reclaim or retry, the worker revalidates current eligibility and confirms
-that the stored recipient still belongs to the intended identity. This check occurs immediately before any link
-generation, rendering, or provider request. An ineligible target, missing source relationship, or changed recipient
-binding ends the operation with its command-specific terminal result. The worker neither redirects the operation nor
-contacts a link or delivery adapter.
+After every successful claim, including a reclaim or retry, the catalog entry revalidates current eligibility and
+returns either an eligible preparation closure or a closed terminal suppression outcome. The worker compares the
+current address and recipient-binding digest with the accepted values before it can invoke preparation. Changed
+addresses or bindings map to `recipient-changed`; missing addresses or lost authorization map to `ineligible`; missing
+domain sources map to `source-unavailable`; and obsolete domain state maps to `superseded`. Every expected result ends
+as `suppressed`. The worker neither redirects the operation nor contacts a link or delivery adapter.
 
-For a valid unprepared operation, the worker then creates an action link where required, renders HTML and plain text,
-and persists the exact recipient and rendered payload before any provider call. A crash before that persistence may
-repeat preparation because no delivery attempt has started. A crash after persistence may only reuse the stored
-payload.
+For a valid unprepared operation, the catalog-owned closure creates an action link where required, projects typed
+props, selects the renderer, and returns HTML and plain text. The worker knows none of those product choices. It
+persists the exact recipient and rendered payload before any provider call. A crash before that persistence may repeat
+preparation because no delivery attempt has started. A crash after persistence may only reuse the stored payload.
+
+Unexpected preparation exceptions end as `failed` with `preparation-failed`; they do not collapse into an expected
+domain suppression outcome.
 
 The worker does not silently redirect a command-accepted operation to a changed address. A later valid product action
 creates a new operation.

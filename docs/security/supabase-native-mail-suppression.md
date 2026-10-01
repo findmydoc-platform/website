@@ -3,7 +3,7 @@
 [ADR 032](../adrs/032-adr-supabase-native-mail-suppression.md) permits a no-op Supabase Send Email Hook solely to
 suppress native Auth email. Operations owns the function, grants, environment configuration and reconciliation.
 These are infrastructure controls without product logic. Their canonical implementation and operator procedure
-belong in the [Operations Supabase configuration runbook](https://github.com/findmydoc-platform/ops/blob/main/docs/supabase-auth-mail-config.md).
+belong in the [Operations Supabase configuration runbook](https://github.com/findmydoc-platform/ops/blob/f3deafd54970e4fad48a1e59cc24e39e0b4c8b3f/docs/supabase-auth-mail-config.md).
 Website owns Auth product paths and command availability; its Transactional Email platform owns delivery.
 
 Website does not maintain a duplicate suppression migration, declaration or configuration validator. Removing those

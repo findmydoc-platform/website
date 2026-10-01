@@ -63,7 +63,7 @@ concern. The Clinic Dashboard receives neither suppression configuration authori
 The Operations repository is the single source of the reviewed suppression implementation, permissions, and
 environment configuration. Website keeps no duplicate implementation or authoritative configuration validator.
 A declaration or migration in Git does not establish that a hosted hook is enabled. The
-[Operations Supabase configuration runbook](https://github.com/findmydoc-platform/ops/blob/main/docs/supabase-auth-mail-config.md)
+[Operations Supabase configuration runbook](https://github.com/findmydoc-platform/ops/blob/f3deafd54970e4fad48a1e59cc24e39e0b4c8b3f/docs/supabase-auth-mail-config.md)
 defines the implementation and reconciliation procedure.
 
 The verified runtime state is each Supabase project's enabled Send Email Hook binding to that exact function,
@@ -141,6 +141,6 @@ Environment-specific runtime binding and verification evidence remain required b
 
 ## More information
 
-- [Operations Supabase configuration runbook](https://github.com/findmydoc-platform/ops/blob/main/docs/supabase-auth-mail-config.md)
+- [Operations Supabase configuration runbook](https://github.com/findmydoc-platform/ops/blob/f3deafd54970e4fad48a1e59cc24e39e0b4c8b3f/docs/supabase-auth-mail-config.md)
 - [Supabase administrative action-link generation](https://supabase.com/docs/reference/javascript/auth-admin-generatelink)
 - [Nygard: Documenting architecture decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)

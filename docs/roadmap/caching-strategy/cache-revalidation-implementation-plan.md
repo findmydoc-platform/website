@@ -1,5 +1,7 @@
 # Public Cache And Revalidation Implementation Plan
 
+> **Historical plan:** This document records the implementation sequence and its original assignments. It is not the current runtime contract. For implemented behavior, use the [cache revalidation runtime guide](../../engineering/cache-revalidation-runtime.md); for the accepted decision, use [ADR 023](../../adrs/023-adr-public-website-cache-and-revalidation-strategy.md). Open or future-tense statements below describe the plan at the time, not verified deployment state.
+
 This document is the stable implementation planning reference for aligning public website caching and revalidation with [ADR 023](../../adrs/023-adr-public-website-cache-and-revalidation-strategy.md).
 
 It is not the ADR, and the ADR does not depend on this document. This plan consumes the accepted ADR and turns it into concrete area assignments and a stacked PR sequence.

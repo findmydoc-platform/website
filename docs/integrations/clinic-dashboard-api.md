@@ -792,6 +792,14 @@ The bootstrap always returns one of these stable Payload status and code pairs:
 
 Capability routes additionally use these general semantics:
 
+The Dashboard applies its one-refresh policy to the initial page read through a protected same-origin recovery form.
+Its React Server Component reads Payload directly and does not mutate cookies. After a bootstrap `401`, the browser
+posts to the Dashboard recovery handler, which refreshes once, retries with the new token, and propagates cookies before
+returning to the page. A bounded return marker prevents another automatic refresh; persistent rejection clears local
+Dashboard auth cookies before login. Writable Dashboard Route Handlers keep their existing refresh-and-retry path.
+The [Dashboard initial page recovery contract](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/authentication-and-bff.md#initial-page-recovery-and-writable-requests)
+owns these routes and guards. Payload bootstrap status codes, DTOs, and clinic authorization are unchanged.
+
 | Payload or upstream condition | Dashboard BFF result | Session effect |
 | --- | --- | --- |
 | Invalid request input | `400 Bad Request` with a stable error code | Preserve the session. |

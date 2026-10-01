@@ -87,7 +87,7 @@ Create unique page layouts for any type of content using a powerful layout build
 
 All posts and pages are draft-enabled so you can preview them before publishing them to your website. To do this, these collections use Versions with drafts set to true. This means that when you create a new post or page, it will be saved as a draft and will not be visible on your website until you publish it. This also means that you can preview your draft before publishing it to your website. To do this, we automatically format a custom URL which redirects to your front-end to securely fetch the draft version of your content.
 
-Page and post changes pass through Payload `afterChange` hooks to the shared revalidation planner and executor. For public content, the resulting plan invalidates the relevant cache tags and paths on demand; publication does not trigger a new deployment build. Draft and preview reads remain outside the persistent public cache. See the [cache revalidation runtime guide](./engineering/cache-revalidation-runtime.md) for the owning implementation contract.
+Page and post changes pass through Payload `afterChange` hooks to the shared revalidation planner and executor. For public content, the executor attempts to invalidate the planned cache tags and paths on demand. This path does not trigger a new deployment build. Draft and preview reads remain outside the persistent public cache. See the [cache revalidation runtime guide](./engineering/cache-revalidation-runtime.md) for the owning implementation contract.
 
 [Payload Draft Preview Example](https://github.com/payloadcms/payload/tree/main/examples/draft-preview)
 

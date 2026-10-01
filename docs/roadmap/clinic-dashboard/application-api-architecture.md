@@ -1,5 +1,9 @@
 # Clinic Dashboard Application and API Implementation Plan
 
+> **Historical implementation plan.** The status and sequence below record the planning baseline, not current
+> implementation or deployment evidence. The linked durable Website and Dashboard contracts describe their respective
+> application boundaries; verify runtime behavior against code and deployment evidence.
+
 > **Canonical decision:**
 > [ADR 026](../../adrs/026-adr-standalone-clinic-dashboard-bff-architecture.md)
 >

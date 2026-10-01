@@ -81,6 +81,7 @@ export const AuthActions: CollectionConfig = {
       relationTo: ['patients', 'clinicStaff', 'platformStaff'],
       maxDepth: 0,
     }),
+    privateField({ name: 'principalBoundAt', type: 'date' }),
     privateField({ name: 'callbackDestination', type: 'select', required: true, options: ['website-auth-callback'] }),
     privateField({
       name: 'completionRoute',

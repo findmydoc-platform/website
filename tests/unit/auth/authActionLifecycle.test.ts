@@ -209,6 +209,33 @@ describe('AuthAction lifecycle through the system command boundary', () => {
     expect(fixture.payload.create).not.toHaveBeenCalled()
   })
 
+  it('never rebinds an action after its previously bound principal is hard-deleted', async () => {
+    const action = await actions().create({
+      actionType: 'patient-verification',
+      principal: { relationTo: 'patients', value: 9 },
+    })
+    fixture.rows.get(action.id)!.principal = null // Native FK cascade removes the available relationship.
+    await expect(
+      actions().bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: 10 } }),
+    ).rejects.toMatchObject({ code: 'invalid-transition' })
+  })
+
+  it('terminalizes a recovery whose principal disappeared without blocking another due deletion', async () => {
+    const recovery = await actions().create({
+      actionType: 'patient-recovery',
+      principal: { relationTo: 'patients', value: 9 },
+    })
+    const other = await actions().create({ actionType: 'patient-verification' })
+    await actions().transition({ id: other.id, to: 'revoked' })
+    fixture.rows.get(recovery.id)!.principal = null
+    await expect(actions().transition({ id: recovery.id, to: 'active' })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+    now += 42 * day
+    expect(await actions().sweep()).toEqual({ expired: 1, deleted: 1 })
+    expect(await actions().read(recovery.id)).toMatchObject({ state: 'expired', principal: null })
+  })
+
   it('refuses progress after expiry and preserves the original terminal time through day 42', async () => {
     const action = await actions().create({
       actionType: 'patient-verification',

@@ -144,6 +144,7 @@ const storedFields = new Set<string>([
   ...authActionDiagnosticFields,
   'supabaseTokenType',
   'principal',
+  'principalBoundAt',
   'callbackDestination',
   'completionRoute',
   'finalDestination',
@@ -178,9 +179,12 @@ function validatePolicy(doc: Record<string, unknown>, scope: Scope) {
   if (doc.principal != null) {
     if (parsed(principalSchema, doc.principal).relationTo !== policy.principalCollection)
       throw new AuthActionError('invalid-command')
-  } else if (actionType !== 'patient-verification' || ['active', 'confirmed', 'completed'].includes(state)) {
+    if (!doc.principalBoundAt) throw new AuthActionError('invalid-command')
+  } else if (['active', 'confirmed', 'completed'].includes(state)) {
     throw new AuthActionError('invalid-transition')
   }
+  if (doc.principalBoundAt != null && !Number.isFinite(Date.parse(String(doc.principalBoundAt))))
+    throw new AuthActionError('invalid-command')
   if (
     terminal(state) !== (doc.terminalAt != null) ||
     (doc.terminalAt != null && !Number.isFinite(Date.parse(String(doc.terminalAt))))
@@ -207,6 +211,11 @@ export const guardAuthActionWrite: CollectionBeforeChangeHook = async ({ data, o
   if (operation === 'create') {
     if (data.id != null || doc.state !== 'pending' || doc.terminalAt != null || doc.outcomeCode != null)
       throw new AuthActionError('invalid-command')
+    if (
+      (doc.actionType !== 'patient-verification' && doc.principal == null) ||
+      (doc.principal == null ? doc.principalBoundAt != null : Date.parse(doc.principalBoundAt) !== scope.now)
+    )
+      throw new AuthActionError('invalid-command')
   } else {
     if (!originalDoc || originalDoc.id !== ('id' in write ? write.id : undefined) || terminal(originalDoc.state))
       throw new AuthActionError('invalid-transition')
@@ -216,13 +225,16 @@ export const guardAuthActionWrite: CollectionBeforeChangeHook = async ({ data, o
       if (
         originalDoc.state !== 'pending' ||
         originalDoc.principal != null ||
+        originalDoc.principalBoundAt != null ||
         doc.state !== originalDoc.state ||
         doc.terminalAt != null ||
-        doc.outcomeCode != null
+        doc.outcomeCode != null ||
+        Date.parse(doc.principalBoundAt) !== scope.now
       )
         throw new AuthActionError('invalid-transition')
     } else if (
       !sameValue(doc.principal, originalDoc.principal) ||
+      !sameValue(doc.principalBoundAt, originalDoc.principalBoundAt) ||
       !authActionTransitions[originalDoc.state as AuthAction['state']].includes(doc.state) ||
       (doc.state === 'expired'
         ? Date.parse(doc.expiresAt) > scope.now
@@ -353,6 +365,10 @@ export function bindAuthActions(req: PayloadRequest, options: { environment: Env
       return action
     }
     if (terminal(action.state)) throw new AuthActionError('invalid-transition')
+    if (['active', 'confirmed', 'completed'].includes(input.to)) {
+      if (!action.principal) throw new AuthActionError('invalid-transition')
+      await principalExists(internalReq, action.actionType, parsed(principalSchema, action.principal))
+    }
     const data = {
       state: input.to,
       terminalAt: terminal(input.to) ? new Date(scope.now).toISOString() : null,
@@ -379,6 +395,7 @@ export function bindAuthActions(req: PayloadRequest, options: { environment: Env
           environment,
           state: 'pending' as const,
           principal: command.principal ?? null,
+          principalBoundAt: command.principal ? new Date(scope.now).toISOString() : null,
           supabaseTokenType: policy.supabaseTokenType,
           callbackDestination: 'website-auth-callback' as const,
           completionRoute: policy.completionRoute,
@@ -400,10 +417,15 @@ export function bindAuthActions(req: PayloadRequest, options: { environment: Env
       return transaction(async (internalReq, scope) => {
         const action = await requireAction(internalReq, command.id)
         if (sameValue(action.principal, command.principal)) return action
-        if (action.state !== 'pending' || action.principal || Date.parse(action.expiresAt) <= scope.now)
+        if (
+          action.state !== 'pending' ||
+          action.principal ||
+          action.principalBoundAt ||
+          Date.parse(action.expiresAt) <= scope.now
+        )
           throw new AuthActionError('invalid-transition')
         await principalExists(internalReq, action.actionType, command.principal)
-        const data = { principal: command.principal }
+        const data = { principal: command.principal, principalBoundAt: new Date(scope.now).toISOString() }
         scope.write = { kind: 'bind', id: command.id, data }
         return req.payload.update({
           collection: 'authActions',

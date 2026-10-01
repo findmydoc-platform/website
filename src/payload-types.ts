@@ -3420,6 +3420,7 @@ export interface AuthAction {
         relationTo: 'platformStaff';
         value: number | PlatformStaff;
       } | null);
+  principalBoundAt?: string | null;
   callbackDestination: 'website-auth-callback';
   completionRoute: '/patient/inquiries' | '/auth/invite/complete' | '/auth/password/reset/complete';
   finalDestination: 'patient-inquiries' | 'clinic-dashboard' | 'platform-administration';
@@ -5726,6 +5727,7 @@ export interface AuthActionsSelect<T extends boolean = true> {
   outcomeCode?: T;
   supabaseTokenType?: T;
   principal?: T;
+  principalBoundAt?: T;
   callbackDestination?: T;
   completionRoute?: T;
   finalDestination?: T;

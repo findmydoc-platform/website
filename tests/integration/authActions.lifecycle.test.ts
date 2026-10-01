@@ -137,6 +137,43 @@ describe('AuthActions private Local API lifecycle contract', () => {
     expect(await (await actions()).sweep()).toEqual({ expired: 0, deleted: 0 })
   })
 
+  it('keeps one-time binding and terminal cleanup after native principal deletion', async () => {
+    const patient = await createPatientTestUser(payload, {
+      emailPrefix: `${prefix}-deleted-principal`,
+      createdPatientIds: patientIDs,
+    })
+    const replacement = await createPatientTestUser(payload, {
+      emailPrefix: `${prefix}-replacement-principal`,
+      createdPatientIds: patientIDs,
+    })
+    const system = await actions()
+    const principal = { relationTo: 'patients' as const, value: patient.id }
+    const verification = await system.create({ actionType: 'patient-verification', principal })
+    const recovery = await system.create({ actionType: 'patient-recovery', principal })
+    const cancelled = await system.create({ actionType: 'patient-recovery', principal })
+    for (const action of [verification, recovery, cancelled]) actionIDs.add(action.id)
+    await system.transition({ id: recovery.id, to: 'active' })
+    const other = await create()
+    await system.transition({ id: other.id, to: 'revoked' })
+
+    await payload.delete({ collection: 'patients', id: patient.id, overrideAccess: true })
+    for (const action of [verification, recovery, cancelled]) {
+      expect(await system.read(action.id)).toMatchObject({ principal: null, principalBoundAt: action.principalBoundAt })
+    }
+    await expect(
+      system.bindPrincipal({ id: verification.id, principal: { relationTo: 'patients', value: replacement.id } }),
+    ).rejects.toMatchObject({ code: 'invalid-transition' })
+    await expect(system.transition({ id: recovery.id, to: 'confirmed' })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+    await system.transition({ id: cancelled.id, to: 'revoked', outcomeCode: 'source-unavailable' })
+
+    now += authActionRetentionMs
+    expect(await (await actions()).sweep()).toEqual({ expired: 2, deleted: 2 })
+    expect(await (await actions()).read(recovery.id)).toMatchObject({ state: 'expired', principal: null })
+    expect(await (await actions()).read(cancelled.id)).toBeNull()
+  })
+
   it.each([false, true])(
     'serializes competing terminal commands and revalidates the loser (different=%s)',
     async (different) => {

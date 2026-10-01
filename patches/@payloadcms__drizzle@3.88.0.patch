@@ -1,17 +1,18 @@
 diff --git a/dist/transactions/beginTransaction.js b/dist/transactions/beginTransaction.js
-index b997960d6443005979890c1fdeef9271810a407c..fe6c860abe685bd5263c2f2125ad9bf50178b466 100644
+index b997960d6443005979890c1fdeef9271810a407c..f6929cfbeac78d99427c4d59d126a64d3c5860cc 100644
 --- a/dist/transactions/beginTransaction.js
 +++ b/dist/transactions/beginTransaction.js
-@@ -8,6 +8,8 @@ export const beginTransaction = async function beginTransaction(options) {
+@@ -8,6 +8,9 @@ export const beginTransaction = async function beginTransaction(options) {
          let transaction;
          let transactionReady;
          let transactionFailed;
 +        let transactionError;
 +        let failed = false;
++        const rollbackSignal = Symbol('payload-rollback');
          // Await initialization here
          // Prevent race conditions where the adapter may be
          // re-initializing, and `this.drizzle` is potentially undefined
-@@ -22,7 +24,9 @@ export const beginTransaction = async function beginTransaction(options) {
+@@ -22,17 +25,23 @@ export const beginTransaction = async function beginTransaction(options) {
              await new Promise((res, rej)=>{
                  resolve = ()=>{
                      res();
@@ -22,7 +23,14 @@ index b997960d6443005979890c1fdeef9271810a407c..fe6c860abe685bd5263c2f2125ad9bf5
                  };
                  reject = ()=>{
                      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-@@ -33,6 +37,8 @@ export const beginTransaction = async function beginTransaction(options) {
+-                    rej();
+-                    return done;
++                    rej(rollbackSignal);
++                    return done.then(()=>{
++                        if (failed && transactionError !== rollbackSignal) throw transactionError;
++                    });
+                 };
+                 transactionReady();
              });
          }, options || this.transactionOptions).catch((err)=>{
              // Connection failed before callback ran - reject instead of hanging forever

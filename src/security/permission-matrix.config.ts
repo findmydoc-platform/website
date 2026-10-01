@@ -982,6 +982,26 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Ephemeral private lock records created and released inside one serializable domain transaction',
     },
+    authActions: {
+      slug: 'authActions',
+      displayName: 'AuthActions',
+      operations: {
+        create: { type: 'conditional', details: 'owned Auth system commands only' },
+        read: { type: 'platform', details: 'content-free diagnostics only' },
+        update: { type: 'conditional', details: 'owned Auth lifecycle commands only' },
+        delete: { type: 'conditional', details: 'terminal retention after 42 days only' },
+        admin: { type: 'platform', details: 'read-only diagnostics' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+        },
+      },
+      notes:
+        'Private Auth lifecycle; hooks require an opaque command capability even with overrideAccess. Platform reads omit principal and destinations.',
+    },
     transactionalEmailOutbox: {
       slug: 'transactionalEmailOutbox',
       displayName: 'TransactionalEmailOutbox',

@@ -108,6 +108,7 @@ describe('cache policy contract', () => {
       'transactionalEmailOutbox',
       'transactionalEmailEvents',
       'transactionalEmailSuppressions',
+      'authActions',
       'patientClinicInquiries',
       'inquiryConversations',
       'inquiryMessages',

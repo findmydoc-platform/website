@@ -27,6 +27,7 @@ This index orients you through the platform security & identity documentation wi
 - 02 Auth Flow Diagram: `auth-flow-diagram.md`
 - 03 Provisioning Model: `supabase-provisioning.md`
 - 04 Permission Matrix: `permission-matrix.md`
+- Native Auth email suppression: [Supabase native-mail suppression](./supabase-native-mail-suppression.md)
  - Overrides (temporary): `overrides.md` — temporary record of pnpm security-related overrides and rationale. See `docs/security/overrides.md`.
 
 ## Change Guidelines

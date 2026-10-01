@@ -1,6 +1,6 @@
 # Issue 1974: AuthAction concurrency
 
-Research on 1 October 2026 supporting [Website #1974][issue]. The root orchestrator accepted the narrowly scoped decision below after evaluating this evidence.
+Research on 1 October 2026 supporting [Website #1974][issue]. The human-approved [ADR 033](../adrs/033-adr-auth-actions-owned-transactions.md) records the narrowly scoped decision supported by this evidence.
 
 ## Evidence and scope
 

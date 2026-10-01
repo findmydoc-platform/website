@@ -87,7 +87,7 @@ When adding a new ADR:
 - [023 — Public website cache and revalidation strategy](./023-adr-public-website-cache-and-revalidation-strategy.md)
 - [024 — Production build webpack fallback](./024-adr-production-build-webpack-fallback.md)
 - [025 — Direct staff authentication collections](./025-adr-direct-staff-auth-collections.md)
-- [026 — Standalone Clinic Dashboard BFF architecture](./026-adr-standalone-clinic-dashboard-bff-architecture.md)
+- [026 — Standalone Clinic Dashboard BFF architecture](https://github.com/findmydoc-platform/platform-architecture/blob/main/decisions/026-adr-standalone-clinic-dashboard-bff-architecture.md) _(migrated to the shared platform catalog; [former path](./026-adr-standalone-clinic-dashboard-bff-architecture.md) redirects; GitHub access required)_
 - [027 — Database runtime connection modes](./027-adr-database-runtime-connection-modes.md)
 - [028 — Lettermint for transactional email](./028-adr-lettermint-for-transactional-email.md) _(superseded by ADR 031)_
 - [029 — Tenant-safe Clinic Dashboard reporting contract](./029-adr-tenant-safe-clinic-dashboard-reporting.md)

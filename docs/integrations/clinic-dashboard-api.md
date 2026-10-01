@@ -1,7 +1,7 @@
 # Clinic Dashboard Application and API Architecture
 
 > **Canonical decision:**
-> [ADR 026](https://github.com/findmydoc-platform/website/blob/main/docs/adrs/026-adr-standalone-clinic-dashboard-bff-architecture.md)
+> [ADR 026](https://github.com/findmydoc-platform/platform-architecture/blob/main/decisions/026-adr-standalone-clinic-dashboard-bff-architecture.md) (GitHub access required)
 >
 > **Paired Dashboard architecture:**
 > [Clinic Dashboard authentication and BFF architecture](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/authentication-and-bff.md)

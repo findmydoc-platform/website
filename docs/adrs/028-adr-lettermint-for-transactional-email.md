@@ -187,3 +187,5 @@ decide legal wording.
 ## Superseded by
 
 [ADR 031: Transactional email technical activation gates](./031-adr-transactional-email-technical-activation-gates.md)
+
+[ADR 032: Supabase native-mail suppression](./032-adr-supabase-native-mail-suppression.md)

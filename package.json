@@ -17,7 +17,8 @@
     "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint --ext .ts,.tsx,.js,.jsx,.mjs ./src ./tests ./scripts --cache --max-warnings=0",
     "lint:fix": "cross-env NODE_OPTIONS=--no-deprecation eslint --ext .ts,.tsx,.js,.jsx,.mjs ./src ./tests ./scripts --fix --cache --max-warnings=0",
     "typegen": "cross-env NODE_OPTIONS=--no-deprecation next typegen",
-    "check": "cross-env NODE_OPTIONS=--no-deprecation pnpm run tests:sense-check && pnpm run lint && pnpm run typegen && pnpm run check:payload-types && tsc --noEmit",
+    "check": "cross-env NODE_OPTIONS=--no-deprecation pnpm run tests:sense-check && pnpm run auth:suppression:check && pnpm run lint && pnpm run typegen && pnpm run check:payload-types && tsc --noEmit",
+    "auth:suppression:check": "node scripts/supabase-native-mail-suppression.mjs && node scripts/check-supabase-native-auth-calls.mjs",
     "tests": "cross-env NODE_OPTIONS=--no-deprecation NODE_ENV=test vitest run",
     "tests:unit": "cross-env NODE_OPTIONS=--no-deprecation NODE_ENV=test vitest run --project unit",
     "tests:tooling": "cross-env NODE_OPTIONS=--no-deprecation NODE_ENV=test vitest run --project tooling",
@@ -125,6 +126,7 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.3.1",
+    "@electric-sql/pglite": "0.5.8",
     "@eslint/css": "^1.4.0",
     "@eslint/eslintrc": "^3.3.7",
     "@fontsource/dm-sans": "^5.3.0",

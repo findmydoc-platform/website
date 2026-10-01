@@ -93,3 +93,4 @@ When adding a new ADR:
 - [029 — Tenant-safe Clinic Dashboard reporting contract](./029-adr-tenant-safe-clinic-dashboard-reporting.md)
 - [030 — Bound transactional email webhook processing](./030-adr-bound-transactional-email-webhook-processing.md)
 - [031 — Transactional email technical activation gates](./031-adr-transactional-email-technical-activation-gates.md)
+- [032 — Supabase native-mail suppression](./032-adr-supabase-native-mail-suppression.md) _(narrow exception to ADR 028's hook rejection; ADR 031 remains in force)_

@@ -10,13 +10,6 @@ concurrency:
 on:
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '.github/workflows/**'
-      - '.github/actions/**'
-      - '.secrets.baseline'
-      - 'zizmor.yml'
-      - '**/*.md'
-      - '**/.vscode/settings.json'
   push:
     branches: [main]
     paths-ignore:
@@ -41,8 +34,12 @@ defaults:
 jobs:
   paths:
     name: Path Filter
+    permissions:
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     outputs:
+      validation: ${{ steps.validation-scope.outputs.validation }}
       deployable: ${{ steps.set-path-outputs.outputs.deployable }}
       integration: ${{ steps.set-path-outputs.outputs.integration }}
     steps:
@@ -54,7 +51,10 @@ jobs:
         id: filter
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
+          list-files: json
           filters: |
+            changed:
+              - '**'
             deployable:
               - '**'
               - '!docs/**'
@@ -77,6 +77,12 @@ jobs:
               - 'tests/setup/**'
               - 'vitest.config.ts'
 
+      - name: Classify application validation scope
+        id: validation-scope
+        env:
+          CHANGED_FILES: ${{ steps.filter.outputs.changed_files }}
+        run: node scripts/ci/pr-validation-scope.mjs
+
       - name: Set path outputs
         id: set-path-outputs
         run: |
@@ -94,12 +100,18 @@ jobs:
 
   ci-static:
     name: Static Checks
+    needs: paths
+    if: always() && (needs.paths.result != 'success' || github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write
     steps:
+      - name: Require successful scope classification
+        if: needs.paths.result != 'success'
+        run: exit 1
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
@@ -178,6 +190,8 @@ jobs:
 
   unit-tests:
     name: Unit Tests
+    needs: paths
+    if: github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -239,6 +253,8 @@ jobs:
 
   storybook-tests:
     name: Storybook Tests
+    needs: paths
+    if: github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

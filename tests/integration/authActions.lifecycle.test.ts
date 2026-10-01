@@ -158,7 +158,9 @@ describe('AuthActions private Local API lifecycle contract', () => {
 
     await payload.delete({ collection: 'patients', id: patient.id, overrideAccess: true })
     for (const action of [verification, recovery, cancelled]) {
-      expect(await system.read(action.id)).toMatchObject({ principal: null, principalBoundAt: action.principalBoundAt })
+      const persisted = await system.read(action.id)
+      expect(persisted!.principal ?? null).toBeNull()
+      expect(persisted).toMatchObject({ principalBoundAt: action.principalBoundAt })
     }
     await expect(
       system.bindPrincipal({ id: verification.id, principal: { relationTo: 'patients', value: replacement.id } }),
@@ -170,7 +172,9 @@ describe('AuthActions private Local API lifecycle contract', () => {
 
     now += authActionRetentionMs
     expect(await (await actions()).sweep()).toEqual({ expired: 2, deleted: 2 })
-    expect(await (await actions()).read(recovery.id)).toMatchObject({ state: 'expired', principal: null })
+    const expired = await (await actions()).read(recovery.id)
+    expect(expired).toMatchObject({ state: 'expired' })
+    expect(expired!.principal ?? null).toBeNull()
     expect(await (await actions()).read(cancelled.id)).toBeNull()
   })
 

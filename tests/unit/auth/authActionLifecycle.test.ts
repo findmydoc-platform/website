@@ -214,7 +214,7 @@ describe('AuthAction lifecycle through the system command boundary', () => {
       actionType: 'patient-verification',
       principal: { relationTo: 'patients', value: 9 },
     })
-    fixture.rows.get(action.id)!.principal = null // Native FK cascade removes the available relationship.
+    delete fixture.rows.get(action.id)!.principal // Native FK cascade removes the available relationship.
     await expect(
       actions().bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: 10 } }),
     ).rejects.toMatchObject({ code: 'invalid-transition' })

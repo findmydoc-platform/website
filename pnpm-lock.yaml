@@ -30,7 +30,7 @@ importers:
         version: 0.3.0(react-dom@19.3.0(react@19.3.0))(react-email@6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
       '@payloadcms/db-postgres':
         specifier: 3.88.0
-        version: 3.88.0(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))
+        version: 3.88.0(@opentelemetry/api@1.9.1)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))
       '@payloadcms/live-preview-react':
         specifier: 3.88.0
         version: 3.88.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -182,9 +182,6 @@ importers:
       '@chromatic-com/storybook':
         specifier: ^5.3.1
         version: 5.3.1(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.6)(react@19.3.0))
-      '@electric-sql/pglite':
-        specifier: 0.5.8
-        version: 0.5.8
       '@eslint/css':
         specifier: ^1.4.0
         version: 1.4.0
@@ -699,9 +696,6 @@ packages:
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
-
-  '@electric-sql/pglite@0.5.8':
-    resolution: {integrity: sha512-n9tsbUOhwx2epK1V0ZG9Ar4SHWUju04dhmzZXiSBXwBoleOvIfals33NAaWgagQVAL4Rbvx/Ptsu3P+pA09f6Q==}
 
   '@emnapi/core@1.10.0':
     resolution: {integrity: sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw==}
@@ -8647,8 +8641,6 @@ snapshots:
 
   '@drizzle-team/brocli@0.10.2': {}
 
-  '@electric-sql/pglite@0.5.8': {}
-
   '@emnapi/core@1.10.0':
     dependencies:
       '@emnapi/wasi-threads': 1.2.1
@@ -9753,13 +9745,13 @@ snapshots:
   '@oxc-resolver/binding-win32-x64-msvc@11.24.2':
     optional: true
 
-  '@payloadcms/db-postgres@3.88.0(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))':
+  '@payloadcms/db-postgres@3.88.0(@opentelemetry/api@1.9.1)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))':
     dependencies:
-      '@payloadcms/drizzle': 3.88.0(patch_hash=a0bfca4e783b80f74a8459bfc18d1d334b64c90aed681dd529a6447ce497c7e2)(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(pg@8.20.0)
+      '@payloadcms/drizzle': 3.88.0(patch_hash=a0bfca4e783b80f74a8459bfc18d1d334b64c90aed681dd529a6447ce497c7e2)(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(pg@8.20.0)
       '@types/pg': 8.20.0
       console-table-printer: 2.12.1
       drizzle-kit: 0.31.7
-      drizzle-orm: 0.45.2(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(pg@8.20.0)
+      drizzle-orm: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(pg@8.20.0)
       payload: 3.88.0(graphql@16.14.2)(typescript@5.9.3)
       pg: 8.20.0
       prompts: 2.4.2
@@ -9796,11 +9788,11 @@ snapshots:
       - sqlite3
       - supports-color
 
-  '@payloadcms/drizzle@3.88.0(patch_hash=a0bfca4e783b80f74a8459bfc18d1d334b64c90aed681dd529a6447ce497c7e2)(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(pg@8.20.0)':
+  '@payloadcms/drizzle@3.88.0(patch_hash=a0bfca4e783b80f74a8459bfc18d1d334b64c90aed681dd529a6447ce497c7e2)(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(payload@3.88.0(graphql@16.14.2)(typescript@5.9.3))(pg@8.20.0)':
     dependencies:
       console-table-printer: 2.12.1
       dequal: 2.0.3
-      drizzle-orm: 0.45.2(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(pg@8.20.0)
+      drizzle-orm: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(pg@8.20.0)
       payload: 3.88.0(graphql@16.14.2)(typescript@5.9.3)
       prompts: 2.4.2
       to-snake-case: 1.0.0
@@ -12368,9 +12360,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.45.2(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(pg@8.20.0):
+  drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(pg@8.20.0):
     optionalDependencies:
-      '@electric-sql/pglite': 0.5.8
       '@opentelemetry/api': 1.9.1
       '@types/pg': 8.20.0
       pg: 8.20.0

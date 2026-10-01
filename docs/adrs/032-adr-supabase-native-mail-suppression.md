@@ -5,7 +5,7 @@
 | Name    | Content           |
 | ------- | ----------------- |
 | Author  | Sebastian Schütze |
-| Version | 1.0               |
+| Version | 1.1               |
 | Date    | 01.10.2026        |
 | Status  | Approved          |
 
@@ -53,28 +53,33 @@ and schema permissions, revoke public and client-role execution, and avoid eleva
 
 ### Ownership and state
 
-The Website Auth domain owns native-mail suppression, its declaration, verification, and affected Auth command
-availability. The Transactional Email platform retains recipient resolution, preparation, templates, delivery,
+Operations owns the suppression function, its grants, the Supabase desired-state configuration, and configuration
+verification. This control has no product logic and belongs with the existing Operations reconciliation workflow.
+The Website Auth domain owns affected Auth command availability and the inventory of native send-capable product
+paths. The Transactional Email platform retains recipient resolution, preparation, templates, delivery,
 Outbox state, retries, and delivery outcomes. Provider-event recipient suppression remains a separate platform
 concern. The Clinic Dashboard receives neither suppression configuration authority nor provider credentials.
 
-The desired state is a versioned Postgres function and explicit permission declaration in the Website repository.
-It defines the reviewed function identity, signature, no-op body, and allowed execution permissions. A function
-declaration or migration in Git does not establish that a hosted hook is enabled.
+The Operations repository is the single source of the reviewed suppression implementation, permissions, and
+environment configuration. Website keeps no duplicate implementation or authoritative configuration validator.
+A declaration or migration in Git does not establish that a hosted hook is enabled. The
+[Operations Supabase configuration runbook](https://github.com/findmydoc-platform/ops/blob/main/docs/supabase-auth-mail-config.md)
+defines the implementation and reconciliation procedure.
 
 The verified runtime state is each Supabase project's enabled Send Email Hook binding to that exact function,
 together with its installed function definition and effective permissions. Verification compares actual state with
-the reviewed declaration. Configuration evidence records a content-free, environment-scoped fingerprint covering
-the binding identity and enabled state, function definition, signature, and permissions, plus the reviewed Website
-revision and verification result. Fingerprints identify configuration, not recipients or token material. Credential
-fingerprints required by ADR 031 remain separate.
+the reviewed Operations desired state. Configuration evidence records a content-free, environment-scoped fingerprint
+covering the binding identity and enabled state, function definition, signature, and permissions. It also records
+the reviewed Website and Operations revisions and verification result. Fingerprints identify configuration,
+not recipients or token material. Credential fingerprints required by ADR 031 remain separate.
 
 ### Environment boundaries and activation
 
 Preview and Production have separate Supabase projects and hook bindings. Each environment has its own ownership
 record, suppression fingerprint, configuration evidence, verification result, activation decision, and rollback
-record. The Website Auth owner is accountable for each record; an authorized operator verifies and applies that
-environment's configuration. The same reviewed declaration may be used in both projects, but evidence and approval
+record. Operations is accountable for configuration and its verification; the Website Auth owner remains accountable
+for affected command availability and product-path coverage. An authorized operator applies only the approved
+environment's configuration. The same reviewed desired state may be used in both projects, but evidence and approval
 for Preview cannot satisfy Production checks. No credentials, bindings, or evidence are copied across environments.
 
 Every affected Auth command must remain disabled until that environment's expected declaration exists and the
@@ -110,14 +115,15 @@ neither records nor implies legal approval.
 
 ## Technical Debt
 
-[Website #1987](https://github.com/findmydoc-platform/website/issues/1987) owns implementation of the versioned
-suppression function, permission declaration, and verification contract. This ADR does not install or activate a
-hook, bind a live Supabase project, configure a provider, activate a product command, deploy, or send email.
+The ownership transfer preserves any installed suppression objects and migration-history entries. Removing an
+obsolete Website source is not a database rollback and authorizes no drop, reset, or history repair. Operations must
+account for existing objects and history before its reconciliation procedure is used. This ADR does not install or
+activate a hook, bind a live Supabase project, configure a provider, activate a product command, deploy, or send email.
 Environment-specific runtime binding and verification evidence remain required before affected commands activate.
 
 ## Consequences
 
-- Native Supabase delivery has an explicit Auth-owned suppression contract while delivery remains in the
+- Native Supabase delivery has an explicit Operations-owned suppression contract while delivery remains in the
   Transactional Email platform.
 - Repository review and runtime verification prove different properties; both are required for activation.
 - Configuration drift or rollback can make affected authentication commands unavailable. Availability does not
@@ -135,6 +141,6 @@ Environment-specific runtime binding and verification evidence remain required b
 
 ## More information
 
-- [Website #1975](https://github.com/findmydoc-platform/website/issues/1975)
+- [Operations Supabase configuration runbook](https://github.com/findmydoc-platform/ops/blob/main/docs/supabase-auth-mail-config.md)
 - [Supabase administrative action-link generation](https://supabase.com/docs/reference/javascript/auth-admin-generatelink)
 - [Nygard: Documenting architecture decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)

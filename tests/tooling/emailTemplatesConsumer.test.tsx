@@ -1,4 +1,54 @@
-import type { SyntheticWelcomeEmailProps } from '@findmydoc-platform/email-templates'
+import {
+  APPEAL_DECIDED_SUBJECT,
+  APPEAL_RECEIVED_SUBJECT,
+  AppealDecidedEmail,
+  AppealReceivedEmail,
+  CLINIC_PASSWORD_RECOVERY_SUBJECT,
+  CLINIC_REGISTRATION_RECEIPT_SUBJECT,
+  CLINIC_STAFF_INVITATION_SUBJECT,
+  CONVERSATION_MESSAGE_SUBJECT,
+  ClinicPasswordRecoveryEmail,
+  ClinicRegistrationReceiptEmail,
+  ClinicStaffInvitationEmail,
+  ConversationMessageEmail,
+  EmailAction,
+  EmailHeading,
+  EmailLayout,
+  EmailText,
+  PATIENT_EMAIL_VERIFICATION_SUBJECT,
+  PATIENT_PASSWORD_RECOVERY_SUBJECT,
+  PLATFORM_PASSWORD_RECOVERY_SUBJECT,
+  PatientEmailVerificationEmail,
+  PatientPasswordRecoveryEmail,
+  PlatformPasswordRecoveryEmail,
+  REPORT_DECIDED_SUBJECT,
+  REPORT_RECEIVED_SUBJECT,
+  ReportDecidedEmail,
+  ReportReceivedEmail,
+  SYNTHETIC_WELCOME_SUBJECT,
+  SyntheticWelcomeEmail,
+  type AffectedReportDecisionStatus,
+  type AppealAppellantDecisionStatus,
+  type AppealDecidedEmailProps,
+  type AppealReceivedEmailProps,
+  type ClinicPasswordRecoveryEmailProps,
+  type ClinicRegistrationReceiptEmailProps,
+  type ClinicStaffInvitationEmailProps,
+  type ConversationMessageEmailProps,
+  type EmailActionProps,
+  type EmailHeadingProps,
+  type EmailLayoutProps,
+  type EmailTextProps,
+  type OriginalReporterAppealDecisionStatus,
+  type PatientEmailVerificationEmailProps,
+  type PatientPasswordRecoveryEmailProps,
+  type PlatformPasswordRecoveryEmailProps,
+  type ReportCategory,
+  type ReportDecidedEmailProps,
+  type ReportReceivedEmailProps,
+  type ReporterReportDecisionStatus,
+  type SyntheticWelcomeEmailProps,
+} from '@findmydoc-platform/email-templates'
 import { spawnSync } from 'node:child_process'
 import { JSDOM } from 'jsdom'
 import { readFileSync, readdirSync } from 'node:fs'
@@ -6,7 +56,99 @@ import path from 'node:path'
 import { parse } from 'yaml'
 import { renderSyntheticEmailTemplate } from '../../scripts/render-synthetic-email-template.mjs'
 
+const publicTemplateComponents = [
+  AppealDecidedEmail,
+  AppealReceivedEmail,
+  ClinicPasswordRecoveryEmail,
+  ClinicRegistrationReceiptEmail,
+  ClinicStaffInvitationEmail,
+  ConversationMessageEmail,
+  EmailAction,
+  EmailHeading,
+  EmailLayout,
+  EmailText,
+  PatientEmailVerificationEmail,
+  PatientPasswordRecoveryEmail,
+  PlatformPasswordRecoveryEmail,
+  ReportDecidedEmail,
+  ReportReceivedEmail,
+  SyntheticWelcomeEmail,
+]
+
+const publicTemplateSubjects = [
+  APPEAL_DECIDED_SUBJECT,
+  APPEAL_RECEIVED_SUBJECT,
+  CLINIC_PASSWORD_RECOVERY_SUBJECT,
+  CLINIC_REGISTRATION_RECEIPT_SUBJECT,
+  CLINIC_STAFF_INVITATION_SUBJECT,
+  CONVERSATION_MESSAGE_SUBJECT,
+  PATIENT_EMAIL_VERIFICATION_SUBJECT,
+  PATIENT_PASSWORD_RECOVERY_SUBJECT,
+  PLATFORM_PASSWORD_RECOVERY_SUBJECT,
+  REPORT_DECIDED_SUBJECT,
+  REPORT_RECEIVED_SUBJECT,
+  SYNTHETIC_WELCOME_SUBJECT,
+]
+
+const publicTemplateProps = [
+  { category: 'Other', actionUrl: 'https://example.com' } satisfies ReportReceivedEmailProps,
+  {
+    audience: 'reporter',
+    decisionCategory: 'Other',
+    status: 'action-taken',
+    actionUrl: 'https://example.com',
+  } satisfies ReportDecidedEmailProps,
+  {
+    audience: 'affected',
+    decisionCategory: 'Other',
+    status: 'content-restricted',
+    actionUrl: 'https://example.com',
+  } satisfies ReportDecidedEmailProps,
+  { decisionCategory: 'Other', actionUrl: 'https://example.com' } satisfies AppealReceivedEmailProps,
+  {
+    audience: 'appellant',
+    decisionCategory: 'Other',
+    status: 'restriction-remains',
+    actionUrl: 'https://example.com',
+  } satisfies AppealDecidedEmailProps,
+  {
+    audience: 'original-reporter',
+    decisionCategory: 'Other',
+    status: 'no-action',
+    actionUrl: 'https://example.com',
+  } satisfies AppealDecidedEmailProps,
+  { actionUrl: 'https://example.com' } satisfies PlatformPasswordRecoveryEmailProps,
+  { actionUrl: 'https://example.com' } satisfies ClinicPasswordRecoveryEmailProps,
+  { actionUrl: 'https://example.com' } satisfies PatientPasswordRecoveryEmailProps,
+  { actionUrl: 'https://example.com' } satisfies ClinicStaffInvitationEmailProps,
+  { actionUrl: 'https://example.com' } satisfies PatientEmailVerificationEmailProps,
+  { actionUrl: 'https://example.com' } satisfies ConversationMessageEmailProps,
+  { fullName: 'Avery', clinicName: 'North Clinic' } satisfies ClinicRegistrationReceiptEmailProps,
+  { firstName: 'Avery', actionUrl: 'https://example.com' } satisfies SyntheticWelcomeEmailProps,
+  { children: 'Continue', href: 'https://example.com' } satisfies EmailActionProps,
+  { children: 'Heading' } satisfies EmailHeadingProps,
+  { children: 'Content', preview: 'Preview' } satisfies EmailLayoutProps,
+  { children: 'Content' } satisfies EmailTextProps,
+] as const
+
+const publicTemplateUnionValues = ['Other', 'action-taken', 'content-restricted', 'restriction-remains'] satisfies [
+  ReportCategory,
+  ReporterReportDecisionStatus,
+  AffectedReportDecisionStatus,
+  AppealAppellantDecisionStatus,
+]
+
+const originalReporterDecisionStatus: OriginalReporterAppealDecisionStatus = 'no-action'
+
 describe('private email template package', () => {
+  it('exposes the complete shared template contract through the package root', () => {
+    expect(publicTemplateComponents.every((component) => typeof component === 'function')).toBe(true)
+    expect(publicTemplateSubjects.every((subject) => typeof subject === 'string' && subject.length > 0)).toBe(true)
+    expect(publicTemplateProps).toHaveLength(18)
+    expect(publicTemplateUnionValues).toHaveLength(4)
+    expect(originalReporterDecisionStatus).toBe('no-action')
+  })
+
   it('fails clearly before installation when package-read authentication is missing', () => {
     const result = spawnSync(process.execPath, ['scripts/assert-email-template-package-access.mjs'], {
       encoding: 'utf8',

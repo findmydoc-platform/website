@@ -26,9 +26,28 @@ Keep schema changes safe and repeatable across local development, preview, and p
    GitHub runner. The build command applies the guarded migration and builds the application. GitHub then deploys only
    the prebuilt artifact to Vercel. The operations URL is not forwarded as a Vercel runtime or build variable.
 
-4. **Production deployment (Vercel)**
-   Production uses the same target architecture, but its release wiring and environment secret remain a separate
-   operator gate after Preview validation.
+4. **Production deployment (GitHub Actions and Vercel)**
+   The configured Production release path is the joint Website and Clinic Dashboard platform release. Ops owns the
+   operator procedure in the [internal platform release runbook](https://github.com/findmydoc-platform/ops/blob/main/docs/platform-release.md).
+   The [Website release caller](../.github/workflows/platform-release-deploy.yml) accepts the frozen Website commit
+   as `target_sha`, the shared version as `platform_version`, and the frozen release plan digest as `plan_digest`.
+   Dispatch is restricted to the findmydoc Platform Release GitHub App. The caller invokes the reusable Production
+   workflow pinned to an exact commit SHA.
+
+   That workflow uses the GitHub `Production` environment, builds on the GitHub runner, deploys the prebuilt artifact
+   to Vercel, and includes an alias step for `findmydoc.eu`. `DATABASE_DIRECT_URI` is supplied only to the guarded
+   migration/build process on the runner; it is not forwarded as a Vercel build or runtime variable.
+
+   These sources establish the configured workflow only. Each operational claim needs separate evidence:
+
+   | Claim | Required evidence |
+   | --- | --- |
+   | Workflow configured | The caller and the reusable workflow at its exact pinned commit. |
+   | Deployment completed successfully | A successful deployment run tied to the frozen SHA, shared version, and deployment. |
+   | Domain routing active | A timestamped check that the domain routes to the intended deployment. |
+   | Application operating correctly | Timestamped observations of the expected version and relevant application flows. |
+
+   Workflow configuration alone does not verify a successful deployment, active domain routing, or observed operation.
 
 5. **Deployment metadata contract**
    The deployment boundary validates the target environment, full commit SHA, and production release version before

@@ -23,6 +23,10 @@ export const collectionContractRegistry = {
   categories: {
     baseline: ['tests/integration/categories.lifecycle.test.ts'],
   },
+  authActions: {
+    baseline: ['tests/integration/authActions.lifecycle.test.ts'],
+    deep: ['tests/integration/authActions.lifecycle.test.ts'],
+  },
   cities: {
     baseline: ['tests/integration/cities.creation.test.ts'],
   },

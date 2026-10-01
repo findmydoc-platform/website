@@ -115,6 +115,7 @@ export interface Config {
     countries: Country;
     cities: City;
     tags: Tag;
+    authActions: AuthAction;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -194,6 +195,7 @@ export interface Config {
     countries: CountriesSelect<false> | CountriesSelect<true>;
     cities: CitiesSelect<false> | CitiesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
+    authActions: AuthActionsSelect<false> | AuthActionsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -3390,6 +3392,41 @@ export interface ReviewAppeal {
   createdAt: string;
 }
 /**
+ * Read-only authentication lifecycle diagnostics without credentials or recipient content.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authActions".
+ */
+export interface AuthAction {
+  id: number;
+  actionType:
+    'patient-verification' | 'clinic-invitation' | 'patient-recovery' | 'clinic-recovery' | 'platform-recovery';
+  environment: 'local' | 'test' | 'ci' | 'preview' | 'production';
+  state: 'pending' | 'active' | 'confirmed' | 'completed' | 'superseded' | 'expired' | 'revoked';
+  expiresAt: string;
+  terminalAt?: string | null;
+  outcomeCode?: ('ineligible' | 'source-unavailable' | 'recipient-changed' | 'superseded') | null;
+  supabaseTokenType: 'magiclink' | 'invite' | 'recovery';
+  principal?:
+    | ({
+        relationTo: 'patients';
+        value: number | Patient;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      } | null)
+    | ({
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      } | null);
+  callbackDestination: 'website-auth-callback';
+  completionRoute: '/patient/inquiries' | '/auth/invite/complete' | '/auth/password/reset/complete';
+  finalDestination: 'patient-inquiries' | 'clinic-dashboard' | 'platform-administration';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
@@ -5678,6 +5715,25 @@ export interface TagsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authActions_select".
+ */
+export interface AuthActionsSelect<T extends boolean = true> {
+  actionType?: T;
+  environment?: T;
+  state?: T;
+  expiresAt?: T;
+  terminalAt?: T;
+  outcomeCode?: T;
+  supabaseTokenType?: T;
+  principal?: T;
+  callbackDestination?: T;
+  completionRoute?: T;
+  finalDestination?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects_select".
  */
 export interface RedirectsSelect<T extends boolean = true> {
@@ -7238,6 +7294,7 @@ export interface TaskCreateCollectionExport {
       | 'countries'
       | 'cities'
       | 'tags'
+      | 'authActions'
       | 'redirects'
       | 'forms'
       | 'form-submissions'

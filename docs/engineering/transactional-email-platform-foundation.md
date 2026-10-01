@@ -8,7 +8,7 @@ The private `@findmydoc-platform/email-templates` package owns template componen
 owns recipient resolution, HTML and plain-text rendering, the outbox, worker, provider integration, and delivery state.
 Package releases reach Website only through a reviewed exact-version dependency change.
 
-The Website currently pins `@findmydoc-platform/email-templates@0.1.1` for a synthetic consumer contract. Only the
+The Website currently pins `@findmydoc-platform/email-templates@0.2.0` for a synthetic consumer contract. Only the
 package root export is supported. The Website script `scripts/render-synthetic-email-template.mjs` imports the
 fictional template and subject, then uses Website's `@react-email/render` dependency to produce HTML and plain text.
 The contract under `tests/tooling/emailTemplatesConsumer.test.tsx` checks that output with typed fictional props.

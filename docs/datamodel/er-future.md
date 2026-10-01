@@ -1,3 +1,8 @@
+# Future Data Model
+
+> **Proposed design.** This diagram records a possible future schema. It does not describe the current Payload
+> collections or deployed database. Use the collection definitions and committed migrations for the implemented model.
+
 ```mermaid
 erDiagram
     %% User Collections with Authentication

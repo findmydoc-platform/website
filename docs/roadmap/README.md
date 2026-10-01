@@ -1,6 +1,10 @@
 # Roadmap Index
 
-Use these roadmap notes for planned work that has real future implementation or operating impact.
+> **Planning and historical records.** These notes preserve proposals, implementation sequences, and earlier
+> assessments. They do not establish current runtime behavior or supersede accepted ADRs and owner-local engineering
+> documentation. Check the linked issues and current source documents before treating an item as open work.
+
+Use these roadmap notes for planning context and implementation history.
 
 - [DB Stability and Schema Change Roadmap](./db-stability/README.md)
 - Clinic Dashboard: [Capability Matrix](./clinic-dashboard/capability-matrix.md),

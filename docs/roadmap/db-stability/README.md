@@ -1,6 +1,12 @@
 # DB Stability and Schema Change Roadmap
 
-This roadmap tracks the remaining high-impact database stability questions around schema changes, migrations, preview deployments, and production releases. It is intentionally scoped to risks above `7/10` severity. Smaller CI polish, naming cleanup, or style work belongs in normal issues, not here.
+> **Planning snapshot.** The findings and proposed sequence below record an earlier risk assessment. They are not
+> current deployment evidence or an active work queue. Check the [deployment runbook](../../deployment-runbook.md),
+> current workflows, and tracked issues before acting on a finding.
+
+This roadmap assessed high-impact database stability questions around schema changes, migrations, preview deployments,
+and production releases. Its review was scoped to risks above `7/10` severity. Smaller CI polish, naming cleanup, or
+style work belongs in normal issues, not here.
 
 ## Existing Guardrails
 

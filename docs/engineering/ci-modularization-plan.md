@@ -1,6 +1,9 @@
 # CI Modularization Plan
 
-This document captures the current CI workflow boundaries and the remaining follow-up work after the first modularization pass.
+> **Historical planning record.** Workflow names and follow-up items below describe a planning snapshot. Check the
+> current `.github/workflows/` files and tracked issues for active CI behavior and remaining work.
+
+This document records CI workflow boundaries and proposed follow-up work after the first modularization pass.
 
 ## Design goals
 
@@ -12,7 +15,7 @@ This document captures the current CI workflow boundaries and the remaining foll
 
 ## Current workflow topology
 
-The repository now uses a hybrid workflow model with clear top-level ownership:
+The planning snapshot described a hybrid workflow model with clear top-level ownership:
 
 - `deploy.yml` is the primary **PR Validation** workflow.
 - `db-quality.yml` owns the stable database quality gate.

@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "flows": [
+    {
+      "id": "patient-verification",
+      "status": "unreplaced",
+      "issue": 1734,
+      "scopes": [{ "path": "src/app/api/auth/register/patient/route.ts", "scope": "POST" }]
+    },
+    {
+      "id": "recovery",
+      "status": "unreplaced",
+      "issue": 1734,
+      "scopes": [{ "path": "src/app/api/auth/password/reset/route.ts", "scope": "POST" }]
+    },
+    {
+      "id": "clinic-invitation",
+      "status": "unreplaced",
+      "issue": 1734,
+      "scopes": [{ "path": "src/auth/utilities/supabaseProvision.ts", "scope": "inviteClinicSupabaseAccount" }]
+    },
+    {
+      "id": "legacy-account-invitation",
+      "status": "excluded",
+      "issue": null,
+      "scopes": [{ "path": "src/auth/utilities/supabaseProvision.ts", "scope": "inviteSupabaseUser" }]
+    }
+  ],
+  "calls": [
+    {
+      "flow": "patient-verification",
+      "path": "src/app/api/auth/register/patient/route.ts",
+      "scope": "POST",
+      "method": "signUp",
+      "count": 1
+    },
+    {
+      "flow": "recovery",
+      "path": "src/app/api/auth/password/reset/route.ts",
+      "scope": "POST",
+      "method": "resetPasswordForEmail",
+      "count": 1
+    },
+    {
+      "flow": "clinic-invitation",
+      "path": "src/auth/utilities/supabaseProvision.ts",
+      "scope": "inviteClinicSupabaseAccount",
+      "method": "inviteUserByEmail",
+      "count": 1
+    },
+    {
+      "flow": "legacy-account-invitation",
+      "path": "src/auth/utilities/supabaseProvision.ts",
+      "scope": "inviteSupabaseUser",
+      "method": "inviteUserByEmail",
+      "count": 1
+    }
+  ]
+}

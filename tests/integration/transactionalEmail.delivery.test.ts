@@ -20,11 +20,7 @@ import {
 } from '@/features/transactionalEmail/hostedConfiguration'
 import { webhookNow } from '../fixtures/lettermintWebhook'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
-import {
-  createSyntheticRegistrationId,
-  syntheticEmailCatalog,
-  syntheticRegistrationId,
-} from '../fixtures/transactionalEmail'
+import { createSyntheticRegistrationId, syntheticEmailCatalog } from '../fixtures/transactionalEmail'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import { assertNoPrivateEvidence } from '../helpers/deliveryEdgeEvidence'
 import { renderClinicRegistrationReceipt } from '@/features/transactionalEmail/preparation'
@@ -135,34 +131,35 @@ describe('Lettermint delivery through the real worker', () => {
     }
   }
 
-  const clinicRegistrationCatalog: CommandCatalog = Object.freeze({
-    'clinic.registration-received': {
-      isRecipientAllowed: (recipient) => recipient.address.endsWith('@example.test'),
-      revalidate: async (command) =>
-        command.registrationId === syntheticRegistrationId
-          ? {
-              status: 'eligible',
-              recipient: {
-                address: 'recipient@example.test',
-                binding: String(syntheticRegistrationId),
-              },
-              prepare: async () =>
-                renderClinicRegistrationReceipt('recipient@example.test', {
-                  fullName: 'Synthetic Recipient',
-                  clinicName: 'Synthetic Clinic',
-                }),
-            }
-          : { status: 'suppressed', outcomeCode: 'source-unavailable' },
-      authorizeAndResolve: async (command, actor) => {
-        if (actor !== null || command.registrationId !== syntheticRegistrationId)
-          throw new Error('Unexpected synthetic command')
-        return {
-          address: 'recipient@example.test',
-          binding: String(syntheticRegistrationId),
-        }
+  const clinicRegistrationCatalogFor = (registrationId: number): CommandCatalog =>
+    Object.freeze({
+      'clinic.registration-received': {
+        isRecipientAllowed: (recipient) => recipient.address.endsWith('@example.test'),
+        revalidate: async (command) =>
+          command.registrationId === registrationId
+            ? {
+                status: 'eligible',
+                recipient: {
+                  address: 'recipient@example.test',
+                  binding: String(registrationId),
+                },
+                prepare: async () =>
+                  renderClinicRegistrationReceipt('recipient@example.test', {
+                    fullName: 'Synthetic Recipient',
+                    clinicName: 'Synthetic Clinic',
+                  }),
+              }
+            : { status: 'suppressed', outcomeCode: 'source-unavailable' },
+        authorizeAndResolve: async (command, actor) => {
+          if (actor !== null || command.registrationId !== registrationId)
+            throw new Error('Unexpected synthetic command')
+          return {
+            address: 'recipient@example.test',
+            binding: String(registrationId),
+          }
+        },
       },
-    },
-  })
+    })
 
   it('keeps Payload external telemetry disabled for delivery-edge execution', () => {
     expect(payload.config.telemetry).toBe(false)
@@ -171,6 +168,7 @@ describe('Lettermint delivery through the real worker', () => {
   it('selects Preview delivery from Preview-only runtime configuration and keeps Production unavailable', async () => {
     const req = await createLocalReq({}, payload)
     const registrationId = createSyntheticRegistrationId()
+    const clinicRegistrationCatalog = clinicRegistrationCatalogFor(registrationId)
     const operationReference = String(registrationId)
     references.push(operationReference)
     const { fixture, input } = previewRuntimeInput()

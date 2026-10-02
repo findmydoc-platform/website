@@ -137,6 +137,29 @@ describe('AuthActions private Local API lifecycle contract', () => {
     expect(await (await actions()).sweep()).toEqual({ expired: 0, deleted: 0 })
   })
 
+  it('confirms a bound identity before patient provisioning and completes only with its matching patient', async () => {
+    const action = await create()
+    const system = await actions()
+    const supabaseSubject = '26b71580-16be-4f29-9d60-9ec6adc935ce'
+    const bound = await system.bindSubject({ id: action.id, supabaseSubject })
+    expect(await system.bindSubject({ id: action.id, supabaseSubject })).toEqual(bound)
+    await system.transition({ id: action.id, to: 'active' })
+    await system.transition({ id: action.id, to: 'confirmed' })
+    await expect(system.transition({ id: action.id, to: 'completed' })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+    const patient = await createPatientTestUser(payload, {
+      emailPrefix: `${prefix}-subject-principal`,
+      supabaseUserId: supabaseSubject,
+      createdPatientIds: patientIDs,
+    })
+    await system.bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: patient.id } })
+    expect(await system.transition({ id: action.id, to: 'completed' })).toMatchObject({
+      state: 'completed',
+      supabaseSubject,
+    })
+  })
+
   it('keeps one-time binding and terminal cleanup after native principal deletion', async () => {
     const patient = await createPatientTestUser(payload, {
       emailPrefix: `${prefix}-deleted-principal`,

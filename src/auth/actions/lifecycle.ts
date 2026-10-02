@@ -40,6 +40,8 @@ const principalSchema = z
   .strict()
 const createSchema = z.object({ actionType: z.enum(authActionTypes), principal: principalSchema.optional() }).strict()
 const bindSchema = z.object({ id: idSchema, principal: principalSchema }).strict()
+const subjectSchema = z.string().uuid()
+const bindSubjectSchema = z.object({ id: idSchema, supabaseSubject: subjectSchema }).strict()
 const transitionSchema = z
   .object({
     id: idSchema,
@@ -53,7 +55,7 @@ type TransitionInput = z.infer<typeof transitionSchema>
 type Environment = (typeof authActionEnvironments)[number]
 type Write =
   | { kind: 'create'; data: Record<string, unknown> }
-  | { kind: 'transition' | 'bind'; id: number; data: Record<string, unknown> }
+  | { kind: 'transition' | 'bind' | 'bind-subject'; id: number; data: Record<string, unknown> }
   | { kind: 'delete'; id: number }
 type Scope = { transactionID: string | number; environment: Environment; now: number; write?: Write }
 
@@ -116,8 +118,9 @@ export const guardAuthActionOperation: CollectionBeforeOperationHook = async ({ 
   if (operation === 'read' || operation === 'count') {
     if (scope || (await isPlatformStaff({ req }))) return
   } else if (scope?.write) {
-    const expectedOperation =
-      scope.write.kind === 'bind' || scope.write.kind === 'transition' ? 'update' : scope.write.kind
+    const expectedOperation = ['bind', 'bind-subject', 'transition'].includes(scope.write.kind)
+      ? 'update'
+      : scope.write.kind
     if (operation === expectedOperation) {
       const input = args as unknown as Record<string, unknown>
       if (scope.write.kind !== 'create' && input.id !== scope.write.id) throw new AuthActionError('access-denied')
@@ -145,6 +148,8 @@ const storedFields = new Set<string>([
   'supabaseTokenType',
   'principal',
   'principalBoundAt',
+  'supabaseSubject',
+  'subjectBoundAt',
   'callbackDestination',
   'completionRoute',
   'finalDestination',
@@ -168,7 +173,7 @@ function validatePolicy(doc: Record<string, unknown>, scope: Scope) {
   const createdAt = Date.parse(String(doc.createdAt))
   if (
     doc.environment !== scope.environment ||
-    doc.callbackDestination !== 'website-auth-callback' ||
+    doc.callbackDestination !== policy.callbackDestination ||
     doc.supabaseTokenType !== policy.supabaseTokenType ||
     doc.completionRoute !== policy.completionRoute ||
     doc.finalDestination !== policy.finalDestination ||
@@ -180,9 +185,18 @@ function validatePolicy(doc: Record<string, unknown>, scope: Scope) {
     if (parsed(principalSchema, doc.principal).relationTo !== policy.principalCollection)
       throw new AuthActionError('invalid-command')
     if (!doc.principalBoundAt) throw new AuthActionError('invalid-command')
-  } else if (['active', 'confirmed', 'completed'].includes(state)) {
+  } else if (
+    state === 'completed' ||
+    (['active', 'confirmed'].includes(state) &&
+      (actionType !== 'patient-verification' || !doc.supabaseSubject || doc.principalBoundAt != null))
+  ) {
     throw new AuthActionError('invalid-transition')
   }
+  if (doc.supabaseSubject != null) {
+    parsed(subjectSchema, doc.supabaseSubject)
+    if (actionType !== 'patient-verification' || !Number.isFinite(Date.parse(String(doc.subjectBoundAt))))
+      throw new AuthActionError('invalid-command')
+  } else if (doc.subjectBoundAt != null) throw new AuthActionError('invalid-command')
   if (doc.principalBoundAt != null && !Number.isFinite(Date.parse(String(doc.principalBoundAt))))
     throw new AuthActionError('invalid-command')
   if (
@@ -209,7 +223,14 @@ export const guardAuthActionWrite: CollectionBeforeChangeHook = async ({ data, o
   const doc = { ...originalDoc, ...data }
   validatePolicy(doc, scope)
   if (operation === 'create') {
-    if (data.id != null || doc.state !== 'pending' || doc.terminalAt != null || doc.outcomeCode != null)
+    if (
+      data.id != null ||
+      doc.state !== 'pending' ||
+      doc.terminalAt != null ||
+      doc.outcomeCode != null ||
+      doc.supabaseSubject != null ||
+      doc.subjectBoundAt != null
+    )
       throw new AuthActionError('invalid-command')
     if (
       (doc.actionType !== 'patient-verification' && doc.principal == null) ||
@@ -221,20 +242,40 @@ export const guardAuthActionWrite: CollectionBeforeChangeHook = async ({ data, o
       throw new AuthActionError('invalid-transition')
     for (const field of immutableFields)
       if (!sameValue(doc[field], originalDoc[field])) throw new AuthActionError('invalid-command')
-    if (write.kind === 'bind') {
+    if (write.kind === 'bind-subject') {
       if (
+        originalDoc.actionType !== 'patient-verification' ||
         originalDoc.state !== 'pending' ||
+        originalDoc.supabaseSubject != null ||
+        originalDoc.subjectBoundAt != null ||
+        originalDoc.principal != null ||
+        originalDoc.principalBoundAt != null ||
+        !sameValue(doc.principal, originalDoc.principal) ||
+        !sameValue(doc.principalBoundAt, originalDoc.principalBoundAt) ||
+        doc.state !== originalDoc.state ||
+        doc.supabaseSubject == null ||
+        Date.parse(doc.subjectBoundAt) !== scope.now ||
+        Date.parse(doc.expiresAt) <= scope.now
+      )
+        throw new AuthActionError('invalid-transition')
+    } else if (write.kind === 'bind') {
+      if (
+        (originalDoc.supabaseSubject ? originalDoc.state !== 'confirmed' : originalDoc.state !== 'pending') ||
         originalDoc.principal != null ||
         originalDoc.principalBoundAt != null ||
         doc.state !== originalDoc.state ||
         doc.terminalAt != null ||
         doc.outcomeCode != null ||
+        !sameValue(doc.supabaseSubject, originalDoc.supabaseSubject) ||
+        !sameValue(doc.subjectBoundAt, originalDoc.subjectBoundAt) ||
         Date.parse(doc.principalBoundAt) !== scope.now
       )
         throw new AuthActionError('invalid-transition')
     } else if (
       !sameValue(doc.principal, originalDoc.principal) ||
       !sameValue(doc.principalBoundAt, originalDoc.principalBoundAt) ||
+      !sameValue(doc.supabaseSubject, originalDoc.supabaseSubject) ||
+      !sameValue(doc.subjectBoundAt, originalDoc.subjectBoundAt) ||
       !authActionTransitions[originalDoc.state as AuthAction['state']].includes(doc.state) ||
       (doc.state === 'expired'
         ? Date.parse(doc.expiresAt) > scope.now
@@ -340,17 +381,16 @@ export function bindAuthActions(req: PayloadRequest, options: { environment: Env
     }
     if (principal.relationTo !== authActionPolicies[actionType].principalCollection)
       throw new AuthActionError('invalid-command')
-    if (
-      !(await req.payload.findByID({
-        collection: principal.relationTo,
-        id: principal.value,
-        req: internalReq,
-        depth: 0,
-        overrideAccess: true,
-        disableErrors: true,
-      }))
-    )
-      throw new AuthActionError('invalid-command')
+    const principalDoc = await req.payload.findByID({
+      collection: principal.relationTo,
+      id: principal.value,
+      req: internalReq,
+      depth: 0,
+      overrideAccess: true,
+      disableErrors: true,
+    })
+    if (!principalDoc) throw new AuthActionError('invalid-command')
+    return principalDoc
   }
   async function transition(internalReq: PayloadRequest, scope: Scope, input: TransitionInput) {
     const action = await requireAction(internalReq, input.id)
@@ -366,8 +406,23 @@ export function bindAuthActions(req: PayloadRequest, options: { environment: Env
     }
     if (terminal(action.state)) throw new AuthActionError('invalid-transition')
     if (['active', 'confirmed', 'completed'].includes(input.to)) {
-      if (!action.principal) throw new AuthActionError('invalid-transition')
-      await principalExists(internalReq, action.actionType, parsed(principalSchema, action.principal))
+      if (!action.principal) {
+        if (
+          input.to === 'completed' ||
+          action.actionType !== 'patient-verification' ||
+          !action.supabaseSubject ||
+          action.principalBoundAt
+        )
+          throw new AuthActionError('invalid-transition')
+      } else {
+        const principal = await principalExists(
+          internalReq,
+          action.actionType,
+          parsed(principalSchema, action.principal),
+        )
+        if (action.supabaseSubject && principal?.supabaseUserId !== action.supabaseSubject)
+          throw new AuthActionError('invalid-transition')
+      }
     }
     const data = {
       state: input.to,
@@ -397,7 +452,7 @@ export function bindAuthActions(req: PayloadRequest, options: { environment: Env
           principal: command.principal ?? null,
           principalBoundAt: command.principal ? new Date(scope.now).toISOString() : null,
           supabaseTokenType: policy.supabaseTokenType,
-          callbackDestination: 'website-auth-callback' as const,
+          callbackDestination: policy.callbackDestination,
           completionRoute: policy.completionRoute,
           finalDestination: policy.finalDestination,
           createdAt: new Date(scope.now).toISOString(),
@@ -412,19 +467,48 @@ export function bindAuthActions(req: PayloadRequest, options: { environment: Env
     read(id: number) {
       return transaction((internalReq) => find(internalReq, parsed(idSchema, id)))
     },
+    async bindSubject(input: z.infer<typeof bindSubjectSchema>) {
+      const command = parsed(bindSubjectSchema, input)
+      return transaction(async (internalReq, scope) => {
+        const action = await requireAction(internalReq, command.id)
+        if (action.supabaseSubject === command.supabaseSubject) return action
+        if (
+          action.actionType !== 'patient-verification' ||
+          action.state !== 'pending' ||
+          action.supabaseSubject ||
+          action.subjectBoundAt ||
+          action.principal ||
+          action.principalBoundAt ||
+          Date.parse(action.expiresAt) <= scope.now
+        )
+          throw new AuthActionError('invalid-transition')
+        const data = { supabaseSubject: command.supabaseSubject, subjectBoundAt: new Date(scope.now).toISOString() }
+        scope.write = { kind: 'bind-subject', id: command.id, data }
+        return req.payload.update({
+          collection: 'authActions',
+          id: command.id,
+          req: internalReq,
+          overrideAccess: true,
+          depth: 0,
+          data,
+        })
+      })
+    },
     async bindPrincipal(input: z.infer<typeof bindSchema>) {
       const command = parsed(bindSchema, input)
       return transaction(async (internalReq, scope) => {
         const action = await requireAction(internalReq, command.id)
         if (sameValue(action.principal, command.principal)) return action
         if (
-          action.state !== 'pending' ||
+          (action.supabaseSubject ? action.state !== 'confirmed' : action.state !== 'pending') ||
           action.principal ||
           action.principalBoundAt ||
           Date.parse(action.expiresAt) <= scope.now
         )
           throw new AuthActionError('invalid-transition')
-        await principalExists(internalReq, action.actionType, command.principal)
+        const principal = await principalExists(internalReq, action.actionType, command.principal)
+        if (action.supabaseSubject && principal?.supabaseUserId !== action.supabaseSubject)
+          throw new AuthActionError('invalid-transition')
         const data = { principal: command.principal, principalBoundAt: new Date(scope.now).toISOString() }
         scope.write = { kind: 'bind', id: command.id, data }
         return req.payload.update({

@@ -31,6 +31,8 @@ describe('AuthActions collection boundary', () => {
       updatedAt: '2026-10-01T10:00:00.000Z',
       expiresAt: '2026-10-02T10:00:00.000Z',
       principal: { relationTo: 'patients', value: 2 },
+      supabaseSubject: '26b71580-16be-4f29-9d60-9ec6adc935ce',
+      subjectBoundAt: '2026-10-01T10:00:00.000Z',
       callbackDestination: 'website-auth-callback',
       completionRoute: '/patient/inquiries',
       finalDestination: 'patient-inquiries',

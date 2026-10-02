@@ -35,6 +35,7 @@ const recoveryLifetime = 60 * 60 * 1000
 export const authActionPolicies = {
   'patient-verification': {
     principalCollection: 'patients',
+    callbackDestination: 'website-auth-callback',
     supabaseTokenType: 'magiclink',
     completionRoute: '/patient/inquiries',
     finalDestination: 'patient-inquiries',
@@ -42,6 +43,7 @@ export const authActionPolicies = {
   },
   'clinic-invitation': {
     principalCollection: 'clinicStaff',
+    callbackDestination: 'clinic-dashboard-auth-callback',
     supabaseTokenType: 'invite',
     completionRoute: '/auth/invite/complete',
     finalDestination: 'clinic-dashboard',
@@ -49,6 +51,7 @@ export const authActionPolicies = {
   },
   'patient-recovery': {
     principalCollection: 'patients',
+    callbackDestination: 'website-auth-callback',
     supabaseTokenType: 'recovery',
     completionRoute: '/auth/password/reset/complete',
     finalDestination: 'patient-inquiries',
@@ -56,6 +59,7 @@ export const authActionPolicies = {
   },
   'clinic-recovery': {
     principalCollection: 'clinicStaff',
+    callbackDestination: 'clinic-dashboard-auth-callback',
     supabaseTokenType: 'recovery',
     completionRoute: '/auth/password/reset/complete',
     finalDestination: 'clinic-dashboard',
@@ -63,6 +67,7 @@ export const authActionPolicies = {
   },
   'platform-recovery': {
     principalCollection: 'platformStaff',
+    callbackDestination: 'website-auth-callback',
     supabaseTokenType: 'recovery',
     completionRoute: '/auth/password/reset/complete',
     finalDestination: 'platform-administration',

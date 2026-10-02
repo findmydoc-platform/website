@@ -89,6 +89,7 @@ import * as migration_20260930_224722_transactional_email_preparation_outcomes f
 import * as migration_20261001_123848_auth_actions_lifecycle from './20261001_123848_auth_actions_lifecycle'
 import * as migration_20261001_132351_auth_actions_principal_binding from './20261001_132351_auth_actions_principal_binding'
 import * as migration_20261002_112214_auth_action_product_bindings from './20261002_112214_auth_action_product_bindings'
+import * as migration_20261002_115916_patient_verification_correlation from './20261002_115916_patient_verification_correlation'
 
 export const migrations = [
   {
@@ -545,5 +546,10 @@ export const migrations = [
     up: migration_20261002_112214_auth_action_product_bindings.up,
     down: migration_20261002_112214_auth_action_product_bindings.down,
     name: '20261002_112214_auth_action_product_bindings',
+  },
+  {
+    up: migration_20261002_115916_patient_verification_correlation.up,
+    down: migration_20261002_115916_patient_verification_correlation.down,
+    name: '20261002_115916_patient_verification_correlation',
   },
 ]

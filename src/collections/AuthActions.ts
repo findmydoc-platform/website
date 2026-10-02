@@ -84,6 +84,8 @@ export const AuthActions: CollectionConfig = {
     privateField({ name: 'principalBoundAt', type: 'date' }),
     privateField({ name: 'supabaseSubject', type: 'text' }),
     privateField({ name: 'subjectBoundAt', type: 'date' }),
+    privateField({ name: 'correlationDigest', type: 'text', index: true }),
+    privateField({ name: 'correlationKeyVersion', type: 'text', index: true }),
     privateField({
       name: 'callbackDestination',
       type: 'select',

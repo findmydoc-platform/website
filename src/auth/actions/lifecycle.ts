@@ -6,6 +6,7 @@ import {
   type CollectionBeforeDeleteHook,
   type CollectionBeforeOperationHook,
   type PayloadRequest,
+  type Where,
 } from 'payload'
 import { z } from 'zod'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
@@ -21,15 +22,36 @@ import {
   authActionTypes,
   terminalAuthActionStates,
 } from './contracts'
+import {
+  verificationCorrelations,
+  verificationCorrelationWindowMs,
+  verificationCooldownMs,
+  verificationDailyLimit,
+  type VerificationCorrelationKey,
+} from './verificationCorrelation'
 
 class AuthActionError extends APIError {
   constructor(
     public readonly code:
-      'access-denied' | 'invalid-command' | 'invalid-transition' | 'transaction-unavailable' | 'not-found',
+      | 'access-denied'
+      | 'invalid-command'
+      | 'invalid-transition'
+      | 'transaction-unavailable'
+      | 'not-found'
+      | 'correlation-unavailable'
+      | 'rate-limited',
   ) {
     super(
       code,
-      code === 'access-denied' ? 403 : code === 'not-found' ? 404 : code === 'transaction-unavailable' ? 503 : 409,
+      code === 'access-denied'
+        ? 403
+        : code === 'not-found'
+          ? 404
+          : ['transaction-unavailable', 'correlation-unavailable'].includes(code)
+            ? 503
+            : code === 'rate-limited'
+              ? 429
+              : 409,
     )
   }
 }
@@ -55,7 +77,7 @@ type TransitionInput = z.infer<typeof transitionSchema>
 type Environment = (typeof authActionEnvironments)[number]
 type Write =
   | { kind: 'create'; data: Record<string, unknown> }
-  | { kind: 'transition' | 'bind' | 'bind-subject'; id: number; data: Record<string, unknown> }
+  | { kind: 'transition' | 'bind' | 'bind-subject' | 'clear-correlation'; id: number; data: Record<string, unknown> }
   | { kind: 'delete'; id: number }
 type Scope = { transactionID: string | number; environment: Environment; now: number; write?: Write }
 
@@ -118,7 +140,7 @@ export const guardAuthActionOperation: CollectionBeforeOperationHook = async ({ 
   if (operation === 'read' || operation === 'count') {
     if (scope || (await isPlatformStaff({ req }))) return
   } else if (scope?.write) {
-    const expectedOperation = ['bind', 'bind-subject', 'transition'].includes(scope.write.kind)
+    const expectedOperation = ['bind', 'bind-subject', 'transition', 'clear-correlation'].includes(scope.write.kind)
       ? 'update'
       : scope.write.kind
     if (operation === expectedOperation) {
@@ -150,6 +172,8 @@ const storedFields = new Set<string>([
   'principalBoundAt',
   'supabaseSubject',
   'subjectBoundAt',
+  'correlationDigest',
+  'correlationKeyVersion',
   'callbackDestination',
   'completionRoute',
   'finalDestination',
@@ -164,6 +188,8 @@ const immutableFields = [
   'finalDestination',
   'expiresAt',
   'createdAt',
+  'correlationDigest',
+  'correlationKeyVersion',
 ] as const
 
 function validatePolicy(doc: Record<string, unknown>, scope: Scope) {
@@ -171,6 +197,20 @@ function validatePolicy(doc: Record<string, unknown>, scope: Scope) {
   const state = parsed(z.enum(authActionStates), doc.state)
   const policy = authActionPolicies[actionType]
   const createdAt = Date.parse(String(doc.createdAt))
+  if (doc.correlationDigest != null || doc.correlationKeyVersion != null) {
+    if (
+      actionType !== 'patient-verification' ||
+      !z
+        .string()
+        .regex(/^[a-f0-9]{64}$/)
+        .safeParse(doc.correlationDigest).success ||
+      !z
+        .string()
+        .regex(/^[a-zA-Z0-9_-]{1,64}$/)
+        .safeParse(doc.correlationKeyVersion).success
+    )
+      throw new AuthActionError('invalid-command')
+  }
   if (
     doc.environment !== scope.environment ||
     doc.callbackDestination !== policy.callbackDestination ||
@@ -221,6 +261,23 @@ export const guardAuthActionWrite: CollectionBeforeChangeHook = async ({ data, o
     throw new AuthActionError('access-denied')
   if (Object.keys(data).some((key) => !storedFields.has(key))) throw new AuthActionError('invalid-command')
   const doc = { ...originalDoc, ...data }
+  if (write.kind === 'clear-correlation') {
+    if (
+      operation !== 'update' ||
+      !originalDoc ||
+      originalDoc.id !== write.id ||
+      originalDoc.environment !== scope.environment ||
+      originalDoc.actionType !== 'patient-verification' ||
+      originalDoc.correlationDigest == null ||
+      !Number.isFinite(Date.parse(originalDoc.createdAt)) ||
+      Date.parse(originalDoc.createdAt) > scope.now - verificationCorrelationWindowMs ||
+      doc.correlationDigest !== null ||
+      doc.correlationKeyVersion !== null ||
+      Object.keys(data).some((field) => !['correlationDigest', 'correlationKeyVersion', 'updatedAt'].includes(field))
+    )
+      throw new AuthActionError('invalid-transition')
+    return data
+  }
   validatePolicy(doc, scope)
   if (operation === 'create') {
     if (
@@ -309,7 +366,10 @@ function retryable(error: unknown) {
 }
 
 /** Internal system commands. No request capability or retry callback escapes this module. */
-export function bindAuthActions(req: PayloadRequest, options: { environment: Environment; now?: () => number }) {
+export function bindAuthActions(
+  req: PayloadRequest,
+  options: { environment: Environment; now?: () => number; verificationKeys?: readonly VerificationCorrelationKey[] },
+) {
   const environment = parsed(z.enum(authActionEnvironments), options.environment)
   const clock = options.now ?? Date.now
   async function transaction<Result>(
@@ -439,29 +499,123 @@ export function bindAuthActions(req: PayloadRequest, options: { environment: Env
       data,
     })
   }
+  async function createPending(
+    internalReq: PayloadRequest,
+    scope: Scope,
+    command: CreateInput,
+    correlation?: { correlationDigest: string; correlationKeyVersion: string },
+  ) {
+    await principalExists(internalReq, command.actionType, command.principal)
+    const policy = authActionPolicies[command.actionType]
+    const data = {
+      actionType: command.actionType,
+      environment,
+      state: 'pending' as const,
+      principal: command.principal ?? null,
+      principalBoundAt: command.principal ? new Date(scope.now).toISOString() : null,
+      supabaseSubject: null,
+      subjectBoundAt: null,
+      correlationDigest: correlation?.correlationDigest ?? null,
+      correlationKeyVersion: correlation?.correlationKeyVersion ?? null,
+      supabaseTokenType: policy.supabaseTokenType,
+      callbackDestination: policy.callbackDestination,
+      completionRoute: policy.completionRoute,
+      finalDestination: policy.finalDestination,
+      createdAt: new Date(scope.now).toISOString(),
+      expiresAt: new Date(scope.now + policy.lifetime).toISOString(),
+      terminalAt: null,
+      outcomeCode: null,
+    }
+    scope.write = { kind: 'create', data }
+    return req.payload.create({ collection: 'authActions', req: internalReq, overrideAccess: true, depth: 0, data })
+  }
   return Object.freeze({
     async create(input: CreateInput) {
       const command = parsed(createSchema, input)
+      return transaction((internalReq, scope) => createPending(internalReq, scope, command))
+    },
+    async reservePatientVerification(input: { email: string; resendOf?: number }) {
+      const command = parsed(z.object({ email: z.string(), resendOf: idSchema.optional() }).strict(), input)
+      let correlations: ReturnType<typeof verificationCorrelations>
+      try {
+        correlations = verificationCorrelations(command.email, environment, options.verificationKeys ?? [])
+      } catch {
+        throw new AuthActionError('invalid-command')
+      }
       return transaction(async (internalReq, scope) => {
-        await principalExists(internalReq, command.actionType, command.principal)
-        const policy = authActionPolicies[command.actionType]
-        const data = {
-          actionType: command.actionType,
-          environment,
-          state: 'pending' as const,
-          principal: command.principal ?? null,
-          principalBoundAt: command.principal ? new Date(scope.now).toISOString() : null,
-          supabaseTokenType: policy.supabaseTokenType,
-          callbackDestination: policy.callbackDestination,
-          completionRoute: policy.completionRoute,
-          finalDestination: policy.finalDestination,
-          createdAt: new Date(scope.now).toISOString(),
-          expiresAt: new Date(scope.now + policy.lifetime).toISOString(),
-          terminalAt: null,
-          outcomeCode: null,
+        const missingVersion = await req.payload.find({
+          collection: 'authActions',
+          req: internalReq,
+          overrideAccess: true,
+          depth: 0,
+          pagination: false,
+          limit: 1,
+          where: {
+            and: [
+              { environment: { equals: environment } },
+              { actionType: { equals: 'patient-verification' } },
+              { correlationDigest: { exists: true } },
+              {
+                correlationKeyVersion: {
+                  not_in: correlations.map(({ correlationKeyVersion }) => correlationKeyVersion),
+                },
+              },
+            ],
+          },
+        })
+        if (missingVersion.docs.length) throw new AuthActionError('correlation-unavailable')
+        const matches = await req.payload.find({
+          collection: 'authActions',
+          req: internalReq,
+          overrideAccess: true,
+          depth: 0,
+          pagination: false,
+          limit: 6,
+          sort: '-createdAt',
+          where: {
+            and: [
+              { environment: { equals: environment } },
+              { actionType: { equals: 'patient-verification' } },
+              {
+                or: [
+                  { createdAt: { greater_than: new Date(scope.now - verificationCorrelationWindowMs).toISOString() } },
+                  { state: { not_in: [...terminalAuthActionStates] } },
+                ],
+              },
+              {
+                or: correlations.map<Where>(({ correlationDigest, correlationKeyVersion }) => ({
+                  correlationDigest: { equals: correlationDigest },
+                  correlationKeyVersion: { equals: correlationKeyVersion },
+                })),
+              },
+            ],
+          },
+        })
+        const live = matches.docs.filter(
+          (action) => !terminal(action.state) && Date.parse(action.expiresAt) > scope.now,
+        )
+        if (live.length > 1) throw new AuthActionError('invalid-transition')
+        const current = live[0]
+        if (
+          command.resendOf != null &&
+          (!current || current.id !== command.resendOf || !['pending', 'active'].includes(current.state))
+        )
+          throw new AuthActionError('invalid-transition')
+        if (current && command.resendOf == null) return current
+        const recent = matches.docs.filter(
+          (action) => Date.parse(action.createdAt) > scope.now - verificationCorrelationWindowMs,
+        )
+        if (
+          recent.length >= verificationDailyLimit ||
+          recent.some((action) => Date.parse(action.createdAt) > scope.now - verificationCooldownMs)
+        )
+          throw new AuthActionError('rate-limited')
+        for (const action of matches.docs) {
+          if (!terminal(action.state) && Date.parse(action.expiresAt) <= scope.now)
+            await transition(internalReq, scope, { id: action.id, to: 'expired' })
         }
-        scope.write = { kind: 'create', data }
-        return req.payload.create({ collection: 'authActions', req: internalReq, overrideAccess: true, depth: 0, data })
+        if (current) await transition(internalReq, scope, { id: current.id, to: 'superseded' })
+        return createPending(internalReq, scope, { actionType: 'patient-verification' }, correlations[0])
       })
     },
     read(id: number) {
@@ -552,6 +706,16 @@ export function bindAuthActions(req: PayloadRequest, options: { environment: Env
                       { expiresAt: { less_than_equal: new Date(scope.now).toISOString() } },
                     ],
                   },
+                  {
+                    and: [
+                      { correlationDigest: { exists: true } },
+                      {
+                        createdAt: {
+                          less_than_equal: new Date(scope.now - verificationCorrelationWindowMs).toISOString(),
+                        },
+                      },
+                    ],
+                  },
                 ],
               },
             ],
@@ -560,8 +724,11 @@ export function bindAuthActions(req: PayloadRequest, options: { environment: Env
         let expired = 0
         let deleted = 0
         for (const action of due.docs) {
-          if (terminal(action.state)) {
-            if (!action.terminalAt || Date.parse(action.terminalAt) > scope.now - authActionRetentionMs) continue
+          if (
+            terminal(action.state) &&
+            action.terminalAt &&
+            Date.parse(action.terminalAt) <= scope.now - authActionRetentionMs
+          ) {
             scope.write = { kind: 'delete', id: action.id }
             await req.payload.delete({
               collection: 'authActions',
@@ -571,9 +738,22 @@ export function bindAuthActions(req: PayloadRequest, options: { environment: Env
               depth: 0,
             })
             deleted++
-          } else if (Date.parse(action.expiresAt) <= scope.now) {
+            continue
+          } else if (!terminal(action.state) && Date.parse(action.expiresAt) <= scope.now) {
             await transition(internalReq, scope, { id: action.id, to: 'expired' })
             expired++
+          }
+          if (action.correlationDigest && Date.parse(action.createdAt) <= scope.now - verificationCorrelationWindowMs) {
+            const data = { correlationDigest: null, correlationKeyVersion: null }
+            scope.write = { kind: 'clear-correlation', id: action.id, data }
+            await req.payload.update({
+              collection: 'authActions',
+              id: action.id,
+              req: internalReq,
+              overrideAccess: true,
+              depth: 0,
+              data,
+            })
           }
         }
         return { expired, deleted }

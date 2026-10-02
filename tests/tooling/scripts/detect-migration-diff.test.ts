@@ -4,10 +4,29 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { createRequire } from 'node:module'
+import YAML from 'yaml'
+
 import { afterEach, describe, expect, it } from 'vitest'
 
 const tempDirectories = new Set<string>()
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
+
+const require = createRequire(import.meta.url)
+const picomatch = require(path.join(repositoryRoot, 'node_modules/.pnpm/picomatch@2.3.2/node_modules/picomatch')) as (
+  pattern: string,
+  options: { dot: boolean },
+) => (file: string) => boolean
+const workflow = YAML.parse(fs.readFileSync(path.join(repositoryRoot, '.github/workflows/db-quality.yml'), 'utf8'))
+const filters = YAML.parse(
+  workflow.jobs['detect-db-changes'].steps.find((step: { id?: string }) => step.id === 'paths').with.filters,
+) as Record<string, (string | Record<string, string>)[]>
+const selectPaths = (filter: string, files: string[]) =>
+  files.filter((file) =>
+    filters[filter]!.every((rule) =>
+      picomatch(typeof rule === 'string' ? rule : Object.values(rule)[0]!, { dot: true })(file),
+    ),
+  )
 
 afterEach(() => {
   for (const directoryPath of tempDirectories) {
@@ -157,11 +176,40 @@ const commitFiles = (rootDir: string, files: Record<string, string>) => {
   runGit(rootDir, ['commit', '--message', 'update multiple files'])
 }
 
-const runDetector = (rootDir: string) => {
+const runDetector = (rootDir: string, event = 'push', base = '', overrides: Record<string, string> = {}) => {
   const outputPath = path.join(rootDir, 'github-output')
-  execFileSync('bash', [path.join(repositoryRoot, '.github/scripts/ci/detect-migration-diff.sh'), 'push', ''], {
+  let changed: string[] = []
+  try {
+    changed = execFileSync(
+      'git',
+      [
+        'diff',
+        '--name-only',
+        '--diff-filter=ACMR',
+        '-z',
+        event === 'pull_request' ? `origin/${base}...HEAD` : 'HEAD~1...HEAD',
+      ],
+      {
+        cwd: rootDir,
+      },
+    )
+      .toString()
+      .split('\0')
+      .filter(Boolean)
+  } catch {
+    /* A first commit has no comparison predecessor. */
+  }
+  const selection = {
+    CHANGED_FILES: JSON.stringify(selectPaths('changed', changed)),
+    SCHEMA_FILES: JSON.stringify(selectPaths('schema', changed)),
+    BLOCK_SCHEMA_FILES: JSON.stringify(selectPaths('block_schema', changed)),
+    PAYLOAD_SCHEMA_FILES: JSON.stringify(selectPaths('payload_schema', changed)),
+    MIGRATIONS_CHANGED: String(selectPaths('migrations', changed).length > 0),
+    DB_TOOLING_CHANGED: String(selectPaths('tooling', changed).length > 0),
+  }
+  execFileSync('bash', [path.join(repositoryRoot, '.github/scripts/ci/detect-migration-diff.sh'), event, base], {
     cwd: rootDir,
-    env: { ...process.env, GITHUB_OUTPUT: outputPath },
+    env: { ...process.env, ...selection, ...overrides, GITHUB_OUTPUT: outputPath },
     stdio: 'pipe',
   })
 
@@ -556,5 +604,80 @@ export const Doctors = {
 
     expect(output).toContain('db_changed=true')
     expect(output).toContain('schema_changed=true')
+  })
+})
+
+describe('DB classifier event contracts', () => {
+  it('keeps a first commit empty', () => {
+    expect(runDetector(createTempRepo())).toContain('db_changed=false')
+  })
+  it('forces only migration application on manual dispatch', () => {
+    const output = runDetector(createTempRepo(), 'workflow_dispatch')
+    expect(output).toContain('db_changed=true')
+    expect(output).toContain('schema_changed=false')
+    expect(output).toContain('risk_scan_needed=false')
+  })
+  it('rejects malformed selected path input', () => {
+    expect(() => runDetector(createTempRepo(), 'push', '', { SCHEMA_FILES: '{}' })).toThrow()
+  })
+  it('uses all PR commits for the retained content classifier', () => {
+    const rootDir = createTempRepo()
+    runGit(rootDir, ['branch', 'comparison-base'])
+    runGit(rootDir, ['remote', 'add', 'origin', rootDir])
+    runGit(rootDir, ['fetch', 'origin', 'comparison-base'])
+    commitPayloadConfig(
+      rootDir,
+      `${initialPayloadConfig}\nexport const generatedTypes = { outputFile: 'src/payload-types.ts' }\n`,
+    )
+    commitFile(rootDir, 'docs/change.md', 'Documentation only in the last commit.')
+    expect(runDetector(rootDir, 'pull_request', 'comparison-base')).toContain('schema_changed=true')
+    expect(runDetector(rootDir)).toContain('schema_changed=false')
+  })
+  it('passes selected migrations and tooling decisions to the stable outputs', () => {
+    const rootDir = createTempRepo()
+    commitFile(rootDir, 'src/migrations/new.ts', 'export const up = () => {}')
+    const output = runDetector(rootDir)
+    expect(output).toContain('db_changed=true')
+    expect(output).toContain('migrations_changed=true')
+    expect(output).toContain('risk_scan_needed=true')
+  })
+})
+
+describe('DB workflow path selection', () => {
+  it.each([
+    ['src/collections/Clinics/index.ts', true],
+    ['src/collections/Clinics/AGENTS.md', false],
+    ['src/collections/Clinics/AGENTS.override.md', false],
+    ['src/collections/Clinics/hooks/update.ts', false],
+    ['src/collections/.hidden/index.ts', true],
+    ['src/collections/Clinic space/index.ts', true],
+    ['src/collections/Clinic$(echo bad)/index.ts', true],
+    ['docs/database.md', false],
+  ])('selects schema path %s: %s', (file, selected) => {
+    expect(selectPaths('schema', [file])).toEqual(selected ? [file] : [])
+  })
+  it('selects block config files without selecting renderers', () => {
+    expect(
+      selectPaths('block_schema', [
+        'src/blocks/Test/config.ts',
+        'src/blocks/Test/config.tsx',
+        'src/blocks/Test/nested/config.ts',
+        'src/blocks/Test space/config.ts',
+        'src/blocks/Test/Component.tsx',
+      ]),
+    ).toEqual(['src/blocks/Test/config.ts', 'src/blocks/Test/config.tsx', 'src/blocks/Test/nested/config.ts'])
+  })
+  it('selects each independent database tooling alternative', () => {
+    const files = [
+      '.github/workflows/db-quality.yml',
+      '.github/workflows/deploy.yml',
+      '.github/scripts/ci/detect-migration-diff.sh',
+      '.github/scripts/ci/enforce-schema-migration.sh',
+      '.github/scripts/ci/wait-for-postgres.sh',
+      'scripts/migration-risk-scan.mjs',
+      'scripts/test-database-harness.mjs',
+      'vitest.config.ts',
+    ]
+    expect(selectPaths('tooling', [...files, 'scripts/unrelated.mjs'])).toEqual(files)
   })
 })

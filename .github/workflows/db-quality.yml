@@ -27,6 +27,9 @@ jobs:
   detect-db-changes:
     name: detect db changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       db_changed: ${{ steps.detect.outputs.db_changed }}
       schema_changed: ${{ steps.detect.outputs.schema_changed }}
@@ -52,11 +55,60 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: node scripts/assert-email-template-package-access.mjs && pnpm install --frozen-lockfile --strict-peer-dependencies
 
+      - name: Resolve database comparison
+        id: comparison
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [[ "$CI_EVENT_NAME" == "pull_request" ]]; then
+            echo "base=$CI_BASE_REF" >> "$GITHUB_OUTPUT"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          elif base=$(git rev-parse --verify HEAD~1 2>/dev/null); then
+            echo "base=$base" >> "$GITHUB_OUTPUT"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Select database paths
+        id: paths
+        if: steps.comparison.outputs.available == 'true'
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          base: ${{ steps.comparison.outputs.base }}
+          list-files: json
+          predicate-quantifier: every
+          filters: |
+            changed:
+              - added|modified|copied: '**'
+            schema:
+              - added|modified|copied: 'src/{collections,globals,fields,plugins}/**'
+              - '!**/AGENTS{.override,}.md'
+              - '!src/{collections,globals}/*/hooks/*.{ts,tsx}'
+            block_schema:
+              - added|modified|copied: 'src/blocks/*/**/config.{ts,tsx}'
+              - '!src/blocks/**/*[[:space:]]*/**'
+            payload_schema:
+              - added|modified|copied: 'src/payload.config.ts'
+            migrations:
+              - added|modified|copied: 'src/migrations/**'
+            tooling:
+              - added|modified|copied: '@(.github/workflows/{db-quality,deploy}.yml|.github/scripts/ci/{detect-migration-diff,enforce-schema-migration,wait-for-postgres}.sh|scripts/{migration-risk-scan,test-database-harness}.mjs|vitest.config.ts)'
+
       - name: Detect DB quality changes
         id: detect
         env:
           CI_EVENT_NAME: ${{ github.event_name }}
           CI_BASE_REF: ${{ github.base_ref }}
+          CHANGED_FILES: ${{ steps.paths.outputs.changed_files || '[]' }}
+          SCHEMA_FILES: ${{ steps.paths.outputs.schema_files || '[]' }}
+          BLOCK_SCHEMA_FILES: ${{ steps.paths.outputs.block_schema_files || '[]' }}
+          PAYLOAD_SCHEMA_FILES: ${{ steps.paths.outputs.payload_schema_files || '[]' }}
+          MIGRATIONS_CHANGED: ${{ steps.paths.outputs.migrations || 'false' }}
+          DB_TOOLING_CHANGED: ${{ steps.paths.outputs.tooling || 'false' }}
         run: bash ./.github/scripts/ci/detect-migration-diff.sh "$CI_EVENT_NAME" "$CI_BASE_REF"
 
       - name: Summarize DB quality scope

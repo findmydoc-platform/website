@@ -67,6 +67,8 @@ Current scope:
 - local Postgres migration apply/status checks
 - committed migration enforcement for schema changes
 
+The pinned `dorny/paths-filter` action selects existing added or modified schema, migration, and database-tooling paths. Schema selection excludes scoped agent instructions and dedicated collection/global hook modules. The content classifier receives JSON file lists and explicit migration/tooling booleans; it retains the runtime-only and formatting allowlists. Pull requests compare against their base across all commits; pushes compare the last commit to its predecessor. A first commit has no changes to classify. Manual runs force migration apply/status without forcing schema enforcement or risk scanning. Detection failures block the stable gate.
+
 Branch protection should require only the stable `DB Quality / db-quality-gate` job from this workflow, not the conditional migration jobs.
 
 Decision record: [ADR 020 — Database migration quality gate](../adrs/020-adr-database-migration-quality-gate.md).

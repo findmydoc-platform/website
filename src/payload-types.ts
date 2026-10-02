@@ -116,6 +116,7 @@ export interface Config {
     cities: City;
     tags: Tag;
     authActions: AuthAction;
+    recoveryRequestEvents: RecoveryRequestEvent;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -196,6 +197,7 @@ export interface Config {
     cities: CitiesSelect<false> | CitiesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     authActions: AuthActionsSelect<false> | AuthActionsSelect<true>;
+    recoveryRequestEvents: RecoveryRequestEventsSelect<false> | RecoveryRequestEventsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -3432,6 +3434,20 @@ export interface AuthAction {
   createdAt: string;
 }
 /**
+ * Short-lived private abuse counters for password recovery. No recipient or IP content.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recoveryRequestEvents".
+ */
+export interface RecoveryRequestEvent {
+  id: number;
+  environment: 'local' | 'test' | 'ci' | 'preview' | 'production';
+  dimension: 'target' | 'ip';
+  keyVersion: string;
+  digest: string;
+  observedAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
@@ -5744,6 +5760,17 @@ export interface AuthActionsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recoveryRequestEvents_select".
+ */
+export interface RecoveryRequestEventsSelect<T extends boolean = true> {
+  environment?: T;
+  dimension?: T;
+  keyVersion?: T;
+  digest?: T;
+  observedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects_select".
  */
 export interface RedirectsSelect<T extends boolean = true> {
@@ -7305,6 +7332,7 @@ export interface TaskCreateCollectionExport {
       | 'cities'
       | 'tags'
       | 'authActions'
+      | 'recoveryRequestEvents'
       | 'redirects'
       | 'forms'
       | 'form-submissions'

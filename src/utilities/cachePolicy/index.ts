@@ -93,6 +93,7 @@ export const CACHE_POLICY_COLLECTIONS = [
   'transactionalEmailEvents',
   'transactionalEmailSuppressions',
   'authActions',
+  'recoveryRequestEvents',
   'userProfileMedia',
 ] as const
 
@@ -561,6 +562,7 @@ export const CACHE_POLICY_CATALOG = [
       'transactionalEmailEvents',
       'transactionalEmailSuppressions',
       'authActions',
+      'recoveryRequestEvents',
       'clinicGalleryEntries',
       'clinicGalleryMedia',
       'reviewAppeals',

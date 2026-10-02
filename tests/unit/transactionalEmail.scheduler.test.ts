@@ -7,6 +7,10 @@ import { GET, HEAD, POST } from '@/app/api/internal/transactional-email/worker/r
 import { runBoundedTransactionalEmailWorker } from '@/features/transactionalEmail/scheduler'
 
 const runHosted = vi.fn()
+const runRetention = vi.fn<(...args: unknown[]) => Promise<void>>(async () => undefined)
+vi.mock('@/auth/actions/hostedRecoveryRetention', () => ({
+  runHostedRecoveryRetention: (...args: unknown[]) => runRetention(...args),
+}))
 vi.mock('@/features/transactionalEmail/hostedScheduler', () => ({
   runHostedTransactionalEmailWorker: (...args: unknown[]) => runHosted(...args),
 }))
@@ -60,6 +64,7 @@ describe('hosted transactional email scheduler request', () => {
       runHosted.mockResolvedValue({ claimed: 0 })
       const response = await GET(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))
       expect(response.status).toBe(200)
+      expect(runRetention).toHaveBeenCalledTimes(1)
       expect(runHosted).toHaveBeenCalledTimes(1)
     },
   )

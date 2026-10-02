@@ -20,6 +20,8 @@ export async function GET(request: Request) {
   if (!authenticated(request)) return new Response(null, { status: 401, headers: noStore })
   const deadline = Date.now() + schedulerInvocationBudgetMilliseconds
   try {
+    const { runHostedRecoveryRetention } = await import('@/auth/actions/hostedRecoveryRetention')
+    await runHostedRecoveryRetention(deadline)
     const { runHostedTransactionalEmailWorker } = await import('@/features/transactionalEmail/hostedScheduler')
     await runHostedTransactionalEmailWorker(deadline)
     return Response.json({ ok: true }, { headers: noStore })

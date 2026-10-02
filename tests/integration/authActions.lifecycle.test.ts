@@ -122,6 +122,75 @@ describe('AuthActions private Local API lifecycle contract', () => {
     expect(await system.read(action.id)).toEqual(original)
   })
 
+  it('serializes concurrent pending reservations into one action and removes correlation at the deadline', async () => {
+    const keys = [{ version: 'ci-v1', secret: 'synthetic-ci-correlation-material-for-tests-only' }]
+    const reserve = async () =>
+      bindAuthActions(await createLocalReq({}, payload), {
+        environment: 'ci',
+        now: () => now,
+        verificationKeys: keys,
+      })
+    const email = `${prefix}-reservation@example.test`
+    const barrier = twoWriters()
+    const hooks = payload.collections.authActions.config.hooks.beforeChange
+    const synchronize: CollectionBeforeChangeHook = async ({ data, operation }) => {
+      if (operation === 'create' && data.correlationKeyVersion === 'ci-v1') await barrier.arrive()
+      return data
+    }
+    hooks.push(synchronize)
+    try {
+      const contenders = await Promise.all([reserve(), reserve()])
+      const results = await Promise.all(contenders.map((system) => system.reservePatientVerification({ email })))
+      for (const action of results) actionIDs.add(action.id)
+      expect(results[0]!.id).toBe(results[1]!.id)
+      const system = await reserve()
+      const action = results[0]!
+      now += 300000
+      const resent = await system.reservePatientVerification({ email, resendOf: action.id })
+      actionIDs.add(resent.id)
+      expect(await system.read(action.id)).toMatchObject({ state: 'superseded' })
+      now = start + 86400000
+      await system.sweep()
+      expect(await system.read(action.id)).toMatchObject({ correlationDigest: null, correlationKeyVersion: null })
+      expect((await system.read(resent.id))!.correlationDigest).toMatch(/^[a-f0-9]{64}$/)
+    } finally {
+      hooks.splice(hooks.indexOf(synchronize), 1)
+      barrier.close()
+    }
+  })
+
+  it('clears a completed verification correlation after native patient deletion and processes other due actions', async () => {
+    const system = bindAuthActions(await createLocalReq({}, payload), {
+      environment: 'ci',
+      now: () => now,
+      verificationKeys: [{ version: 'ci-v1', secret: 'synthetic-ci-correlation-material-for-tests-only' }],
+    })
+    const patient = await createPatientTestUser(payload, {
+      emailPrefix: `${prefix}-completed-deleted-principal`,
+      createdPatientIds: patientIDs,
+    })
+    const action = await system.reservePatientVerification({ email: `${prefix}-completed@example.test` })
+    actionIDs.add(action.id)
+    await system.bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: patient.id } })
+    for (const to of ['active', 'confirmed', 'completed'] as const) await system.transition({ id: action.id, to })
+    const completed = await system.read(action.id)
+    const other = await system.reservePatientVerification({ email: `${prefix}-other@example.test` })
+    actionIDs.add(other.id)
+    await payload.delete({ collection: 'patients', id: patient.id, overrideAccess: true })
+    now = start + 86400000
+    expect(await system.sweep()).toEqual({ expired: 1, deleted: 0 })
+    const retained = await system.read(action.id)
+    expect(retained!.principal ?? null).toBeNull()
+    expect(retained).toMatchObject({
+      state: 'completed',
+      terminalAt: completed!.terminalAt,
+      principalBoundAt: completed!.principalBoundAt,
+      correlationDigest: null,
+      correlationKeyVersion: null,
+    })
+    expect(await system.read(other.id)).toMatchObject({ state: 'expired', correlationDigest: null })
+  })
+
   it('expires at the deadline and deletes at day 42 without moving the original terminal time', async () => {
     const action = await create()
     now += 86400000

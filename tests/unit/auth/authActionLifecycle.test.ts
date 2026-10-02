@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Payload, PayloadRequest } from 'payload'
 import { AuthActions } from '@/collections/AuthActions'
 import { bindAuthActions } from '@/auth/actions/lifecycle'
+import { bindPendingPatientVerification } from '@/auth/actions/pendingPatientVerification'
+import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 
 vi.mock('payload', async (load) => ({
   ...(await load<typeof import('payload')>()),
@@ -15,6 +17,36 @@ vi.mock('payload', async (load) => ({
 
 const start = Date.parse('2026-10-01T10:00:00.000Z')
 const day = 86400000
+
+function matchesWhere(doc: Record<string, unknown>, where: Record<string, unknown>): boolean {
+  return Object.entries(where).every(([field, value]) => {
+    if (field === 'and' || field === 'or') {
+      const clauses = value as Record<string, unknown>[]
+      return field === 'and'
+        ? clauses.every((item) => matchesWhere(doc, item))
+        : clauses.some((item) => matchesWhere(doc, item))
+    }
+    return Object.entries(value as Record<string, unknown>).every(([operator, expected]) => {
+      const actual = doc[field]
+      switch (operator) {
+        case 'equals':
+          return actual === expected
+        case 'in':
+          return (expected as unknown[]).includes(actual)
+        case 'not_in':
+          return !(expected as unknown[]).includes(actual)
+        case 'exists':
+          return expected ? actual != null : actual == null
+        case 'greater_than':
+          return actual != null && String(actual) > String(expected)
+        case 'less_than_equal':
+          return actual != null && String(actual) <= String(expected)
+        default:
+          throw new Error(`Unsupported storage predicate: ${operator}`)
+      }
+    })
+  })
+}
 
 // The fake persists Local API documents and calls production hooks. It supplies no lifecycle decisions.
 function storage() {
@@ -59,8 +91,15 @@ function storage() {
     }),
     find: vi.fn(async (options) => {
       await operation('read', options)
-      // Sweep tests supply only due terminal records; production hooks still verify deletion eligibility.
-      return { docs: await Promise.all([...rows.values()].map((doc) => read(doc, options.req))) }
+      const docs = [...rows.values()].filter((doc) => matchesWhere(doc, options.where ?? {}))
+      docs.sort((left, right) =>
+        options.sort === '-createdAt'
+          ? String(right.createdAt).localeCompare(String(left.createdAt))
+          : Number(left.id) - Number(right.id),
+      )
+      return {
+        docs: await Promise.all(docs.slice(0, options.limit ?? docs.length).map((doc) => read(doc, options.req))),
+      }
     }),
     delete: vi.fn(async (options) => {
       await operation('delete', options)
@@ -82,6 +121,252 @@ describe('AuthAction lifecycle through the system command boundary', () => {
   beforeEach(() => {
     fixture = storage()
     now = start
+  })
+
+  it('resumes one private pending verification for normalized email before any subject exists', async () => {
+    const system = bindAuthActions(fixture.req, {
+      environment: 'test',
+      now: () => now,
+      verificationKeys: [{ version: 'test-v1', secret: 'synthetic-correlation-material-only-for-tests' }],
+    })
+    const first = await system.reservePatientVerification({ email: ' Patient+tag@Example.test ' })
+    const repeated = await system.reservePatientVerification({ email: 'patient+tag@example.test' })
+    expect(repeated.id).toBe(first.id)
+    expect(first).toMatchObject({ state: 'pending', correlationKeyVersion: 'test-v1', supabaseSubject: null })
+    expect(first.correlationDigest).toMatch(/^[a-f0-9]{64}$/)
+    expect(JSON.stringify(first)).not.toContain('patient+tag@example.test')
+  })
+
+  it('separates environments and addresses, and resumes a previous-key action after rotation', async () => {
+    const old = { version: 'test-v1', secret: 'synthetic-correlation-material-only-for-tests' }
+    const current = { version: 'test-v2', secret: 'synthetic-rotated-material-only-for-tests-v2' }
+    const bind = (environment: 'test' | 'local', verificationKeys: (typeof old)[]) =>
+      bindAuthActions(fixture.req, {
+        environment,
+        now: () => now,
+        verificationKeys,
+      })
+    const first = await bind('test', [old]).reservePatientVerification({ email: 'patient@example.test' })
+    // Independently checked with OpenSSL HMAC-SHA-256 over the documented UTF-8 input.
+    expect(first.correlationDigest).toBe('c1255e2f1a2981d712318d58dc4efbd6e0ae89b5622576d2d37784bab47b09f0')
+    const other = await bind('test', [old]).reservePatientVerification({ email: 'patient+tag@example.test' })
+    expect(other.id).not.toBe(first.id)
+    expect((await bind('local', [old]).reservePatientVerification({ email: 'patient@example.test' })).id).not.toBe(
+      first.id,
+    )
+    expect((await bind('test', [current, old]).reservePatientVerification({ email: 'patient@example.test' })).id).toBe(
+      first.id,
+    )
+    await expect(
+      bind('test', [current]).reservePatientVerification({ email: 'patient@example.test' }),
+    ).rejects.toMatchObject({
+      code: 'correlation-unavailable',
+    })
+  })
+
+  it('limits new authorized resends without counting technical retries and supersedes only the current unused action', async () => {
+    const system = bindAuthActions(fixture.req, {
+      environment: 'test',
+      now: () => now,
+      verificationKeys: [{ version: 'test-v1', secret: 'synthetic-correlation-material-only-for-tests' }],
+    })
+    const email = 'patient@example.test'
+    let current = await system.reservePatientVerification({ email })
+    now += 299999
+    await expect(system.reservePatientVerification({ email, resendOf: current.id })).rejects.toMatchObject({
+      code: 'rate-limited',
+    })
+    expect((await system.reservePatientVerification({ email })).id).toBe(current.id)
+    now += 1
+    for (let attempt = 2; attempt <= 5; attempt++) {
+      const older = current
+      current = await system.reservePatientVerification({ email, resendOf: older.id })
+      expect(current.id).not.toBe(older.id)
+      expect(await system.read(older.id)).toMatchObject({ state: 'superseded' })
+      now += 300000
+    }
+    await expect(system.reservePatientVerification({ email, resendOf: current.id })).rejects.toMatchObject({
+      code: 'rate-limited',
+    })
+    expect(await system.read(current.id)).toMatchObject({ state: 'pending' })
+    expect((await system.reservePatientVerification({ email })).id).toBe(current.id)
+    await expect(system.reservePatientVerification({ email, resendOf: 1 })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+  })
+
+  it('removes private correlation at its exact 24-hour boundary without erasing safe terminal history', async () => {
+    const system = bindAuthActions(fixture.req, {
+      environment: 'test',
+      now: () => now,
+      verificationKeys: [{ version: 'test-v1', secret: 'synthetic-correlation-material-only-for-tests' }],
+    })
+    const action = await system.reservePatientVerification({ email: 'patient@example.test' })
+    await system.transition({ id: action.id, to: 'revoked' })
+    now += day - 1
+    await system.sweep()
+    expect((await system.read(action.id))!.correlationDigest).toBe(action.correlationDigest)
+    now += 1
+    await system.sweep()
+    expect(await system.read(action.id)).toMatchObject({
+      state: 'revoked',
+      terminalAt: new Date(start).toISOString(),
+      correlationDigest: null,
+      correlationKeyVersion: null,
+    })
+    const rotated = bindAuthActions(fixture.req, {
+      environment: 'test',
+      now: () => now,
+      verificationKeys: [{ version: 'test-v2', secret: 'synthetic-rotated-material-only-for-tests-v2' }],
+    })
+    expect((await rotated.reservePatientVerification({ email: 'patient@example.test' })).id).not.toBe(action.id)
+  })
+
+  it('clears correlation after patient deletion without changing completion history or blocking other due actions', async () => {
+    const system = bindAuthActions(fixture.req, {
+      environment: 'test',
+      now: () => now,
+      verificationKeys: [{ version: 'test-v1', secret: 'synthetic-correlation-material-only-for-tests' }],
+    })
+    const action = await system.reservePatientVerification({ email: 'patient@example.test' })
+    const supabaseSubject = '26b71580-16be-4f29-9d60-9ec6adc935ce'
+    await system.bindSubject({ id: action.id, supabaseSubject })
+    await system.transition({ id: action.id, to: 'active' })
+    await system.transition({ id: action.id, to: 'confirmed' })
+    fixture.principals.set(9, { id: 9, supabaseUserId: supabaseSubject })
+    await system.bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: 9 } })
+    const completed = await system.transition({ id: action.id, to: 'completed' })
+    const other = await system.reservePatientVerification({ email: 'other@example.test' })
+    // Native relationship deletion updates storage without an AuthAction lifecycle command.
+    fixture.rows.set(action.id, { ...fixture.rows.get(action.id)!, principal: null })
+    now += day
+    expect(await system.sweep()).toEqual({ expired: 1, deleted: 0 })
+    expect(await system.read(action.id)).toMatchObject({
+      state: 'completed',
+      principal: null,
+      principalBoundAt: completed.principalBoundAt,
+      supabaseSubject,
+      subjectBoundAt: completed.subjectBoundAt,
+      terminalAt: completed.terminalAt,
+      correlationDigest: null,
+      correlationKeyVersion: null,
+    })
+    expect(await system.read(other.id)).toMatchObject({ state: 'expired', correlationDigest: null })
+  })
+
+  it('reconciles through SDK pagination from page nine to ten without trusting its truncated nextPage', async () => {
+    const target: User = {
+      id: '26b71580-16be-4f29-9d60-9ec6adc935ce',
+      email: 'patient@example.test',
+      app_metadata: { user_type: 'patient' },
+      user_metadata: {},
+      aud: 'authenticated',
+      created_at: new Date(start).toISOString(),
+    }
+    const pages: number[] = []
+    const client = createClient('https://supabase.example.test', 'synthetic-sdk-key', {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: {
+        fetch: async (input, init) => {
+          if (init?.method === 'POST')
+            return new Response(JSON.stringify({ message: 'Identity exists' }), { status: 422 })
+          const page = Number(new URL(String(input)).searchParams.get('page'))
+          pages.push(page)
+          const users =
+            page < 10
+              ? Array.from({ length: 1000 }, (_, index) => ({
+                  ...target,
+                  email: `other-${page}-${index}@example.test`,
+                }))
+              : [target]
+          return new Response(JSON.stringify({ users }), {
+            headers: {
+              'content-type': 'application/json',
+              'x-total-count': '9001',
+              link: `<https://supabase.example.test/auth/v1/admin/users?page=10>; rel="last"${page < 10 ? `, <https://supabase.example.test/auth/v1/admin/users?page=${page + 1}>; rel="next"` : ''}`,
+            },
+          })
+        },
+      },
+    })
+    const service = bindPendingPatientVerification(fixture.req, {
+      environment: 'test',
+      now: () => now,
+      admin: client.auth.admin,
+      verificationKeys: [{ version: 'test-v1', secret: 'synthetic-correlation-material-only-for-tests' }],
+    })
+    expect(await service.prepare({ email: target.email!, password: 'synthetic-test-password' })).toMatchObject({
+      supabaseSubject: target.id,
+      state: 'pending',
+    })
+    expect(pages).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+  })
+
+  it('keeps the reservation after an uncertain identity response and reconciles the same unconfirmed identity on retry', async () => {
+    const users: User[] = []
+    const admin = {
+      createUser: vi.fn(async (input) => {
+        if (users.length) throw new Error('Identity already exists')
+        users.push({
+          id: '26b71580-16be-4f29-9d60-9ec6adc935ce',
+          email: input.email,
+          app_metadata: input.app_metadata,
+          email_confirmed_at: undefined,
+        } as User)
+        throw new Error('Unknown network result containing private provider content')
+      }),
+      listUsers: vi
+        .fn()
+        .mockResolvedValueOnce({ data: { users: [] }, error: null })
+        .mockImplementation(async () => ({ data: { users, nextPage: null }, error: null })),
+    }
+    const service = bindPendingPatientVerification(fixture.req, {
+      environment: 'test',
+      now: () => now,
+      verificationKeys: [{ version: 'test-v1', secret: 'synthetic-correlation-material-only-for-tests' }],
+      admin: admin as unknown as SupabaseClient['auth']['admin'],
+    })
+    const command = { email: 'patient@example.test', password: 'synthetic-test-password' }
+    await expect(service.prepare(command)).rejects.toMatchObject({ message: 'identity-unavailable' })
+    const pending = await actions().read(1)
+    expect(pending).toMatchObject({ state: 'pending', supabaseSubject: null })
+    const bound = await service.prepare(command)
+    expect(bound).toMatchObject({ id: pending!.id, supabaseSubject: users[0]!.id, state: 'pending' })
+    expect(JSON.stringify(bound)).not.toContain(command.email)
+    expect(JSON.stringify(bound)).not.toContain(command.password)
+    expect(await service.prepare(command)).toEqual(bound)
+  })
+
+  it.each([
+    {
+      email: 'patient@example.test',
+      app_metadata: { user_type: 'patient' },
+      email_confirmed_at: '2026-10-01T09:00:00.000Z',
+    },
+    { email: 'patient@example.test', app_metadata: { user_type: 'clinic' }, email_confirmed_at: undefined },
+    { email: 'other@example.test', app_metadata: { user_type: 'patient' }, email_confirmed_at: undefined },
+  ])('never binds a confirmed, differently typed or different-address identity (%j)', async (identity) => {
+    const user: User = {
+      id: '26b71580-16be-4f29-9d60-9ec6adc935ce',
+      user_metadata: {},
+      aud: 'authenticated',
+      created_at: new Date(start).toISOString(),
+      ...identity,
+    }
+    const admin = {
+      createUser: vi.fn(async () => ({ data: { user }, error: null })),
+      listUsers: vi.fn(async () => ({ data: { users: [user], nextPage: null }, error: null })),
+    }
+    const service = bindPendingPatientVerification(fixture.req, {
+      environment: 'test',
+      now: () => now,
+      verificationKeys: [{ version: 'test-v1', secret: 'synthetic-correlation-material-only-for-tests' }],
+      admin: admin as unknown as SupabaseClient['auth']['admin'],
+    })
+    await expect(
+      service.prepare({ email: 'patient@example.test', password: 'synthetic-test-password' }),
+    ).rejects.toMatchObject({ message: 'identity-unavailable' })
+    expect(await actions().read(1)).toMatchObject({ state: 'pending', supabaseSubject: null })
   })
 
   it('creates a pending action with its numeric identity and fixed verification policy', async () => {

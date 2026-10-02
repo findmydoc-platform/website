@@ -18,15 +18,26 @@ const picomatch = require(path.join(repositoryRoot, 'node_modules/.pnpm/picomatc
   options: { dot: boolean },
 ) => (file: string) => boolean
 const workflow = YAML.parse(fs.readFileSync(path.join(repositoryRoot, '.github/workflows/db-quality.yml'), 'utf8'))
-const filters = YAML.parse(
-  workflow.jobs['detect-db-changes'].steps.find((step: { id?: string }) => step.id === 'paths').with.filters,
-) as Record<string, (string | Record<string, string>)[]>
-const selectPaths = (filter: string, files: string[]) =>
-  files.filter((file) =>
-    filters[filter]!.every((rule) =>
-      picomatch(typeof rule === 'string' ? rule : Object.values(rule)[0]!, { dot: true })(file),
-    ),
-  )
+const pathInputs = workflow.jobs['detect-db-changes'].steps.find((step: { id?: string }) => step.id === 'paths').with
+const filters = YAML.parse(pathInputs.filters) as Record<string, (string | Record<string, string>)[]>
+type ChangedFile = { filename: string; status: 'added' | 'modified' | 'copied' | 'deleted' }
+const selectPaths = (filter: string, files: (string | ChangedFile)[]) => {
+  const matches = (file: ChangedFile, rule: string | Record<string, string>) => {
+    if (typeof rule === 'string') return picomatch(rule, { dot: true })(file.filename)
+    return Object.entries(rule).some(
+      ([statuses, pattern]) =>
+        statuses.split('|').includes(file.status) && picomatch(pattern, { dot: true })(file.filename),
+    )
+  }
+  return files
+    .map((file): ChangedFile => (typeof file === 'string' ? { filename: file, status: 'modified' } : file))
+    .filter((file) =>
+      pathInputs['predicate-quantifier'] === 'every'
+        ? filters[filter]!.every((rule) => matches(file, rule))
+        : filters[filter]!.some((rule) => matches(file, rule)),
+    )
+    .map((file) => file.filename)
+}
 
 afterEach(() => {
   for (const directoryPath of tempDirectories) {
@@ -178,24 +189,27 @@ const commitFiles = (rootDir: string, files: Record<string, string>) => {
 
 const runDetector = (rootDir: string, event = 'push', base = '', overrides: Record<string, string> = {}) => {
   const outputPath = path.join(rootDir, 'github-output')
-  let changed: string[] = []
+  const changed: ChangedFile[] = []
   try {
-    changed = execFileSync(
+    const fields = execFileSync(
       'git',
       [
         'diff',
-        '--name-only',
-        '--diff-filter=ACMR',
+        '--name-status',
+        '--no-renames',
         '-z',
         event === 'pull_request' ? `origin/${base}...HEAD` : 'HEAD~1...HEAD',
       ],
-      {
-        cwd: rootDir,
-      },
+      { cwd: rootDir, stdio: 'pipe' },
     )
       .toString()
       .split('\0')
       .filter(Boolean)
+    const statuses: Record<string, ChangedFile['status']> = { A: 'added', M: 'modified', C: 'copied', D: 'deleted' }
+    for (let index = 0; index < fields.length; index += 2) {
+      const status = statuses[fields[index]![0]!]
+      if (status) changed.push({ filename: fields[index + 1]!, status })
+    }
   } catch {
     /* A first commit has no comparison predecessor. */
   }
@@ -644,6 +658,31 @@ describe('DB classifier event contracts', () => {
 })
 
 describe('DB workflow path selection', () => {
+  it.each(['added', 'modified', 'copied', 'deleted'] as const)('handles %s schema and migration paths', (status) => {
+    const expected = status === 'deleted' ? [] : ['src/payload.config.ts']
+    expect(selectPaths('payload_schema', [{ filename: 'src/payload.config.ts', status }])).toEqual(expected)
+    expect(selectPaths('migrations', [{ filename: 'src/migrations/new.ts', status }])).toEqual(
+      status === 'deleted' ? [] : ['src/migrations/new.ts'],
+    )
+  })
+  it('does not apply migration checks for deleted-only paths', () => {
+    const rootDir = createTempRepo()
+    commitFile(rootDir, 'src/migrations/old.ts', 'export const up = () => {}')
+    runGit(rootDir, ['rm', 'src/migrations/old.ts'])
+    runGit(rootDir, ['commit', '--message', 'delete migration fixture'])
+    expect(runDetector(rootDir)).toContain('migrations_changed=false')
+  })
+  it('normalizes a renamed migration to its added new path', () => {
+    const rootDir = createTempRepo()
+    commitFile(rootDir, 'src/migrations/old.ts', 'export const up = () => {}')
+    runGit(rootDir, ['mv', 'src/migrations/old.ts', 'src/migrations/new.ts'])
+    runGit(rootDir, ['commit', '--message', 'rename migration fixture'])
+    const output = runDetector(rootDir)
+    expect(output).toContain('migrations_changed=true')
+    expect(output).toContain('src/migrations/new.ts')
+    expect(output).not.toContain('src/migrations/old.ts')
+  })
+
   it.each([
     ['src/collections/Clinics/index.ts', true],
     ['src/collections/Clinics/AGENTS.md', false],

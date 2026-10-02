@@ -24,37 +24,39 @@ fi
 if [[ "${event_name}" == "pull_request" && -n "${base_ref}" ]]; then
   git fetch --no-tags --depth=1 origin "${base_ref}"
   range="origin/${base_ref}...HEAD"
-  fallback_range="origin/${base_ref}..HEAD"
   base_revision="$(git merge-base "origin/${base_ref}" HEAD)"
 elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
   range="HEAD~1...HEAD"
-  fallback_range="HEAD~1..HEAD"
   base_revision="HEAD~1"
 else
   range="HEAD"
-  fallback_range="HEAD"
   base_revision="HEAD"
 fi
 effective_range="${range}"
 
-if ! changed_files="$(git diff --name-only --diff-filter=ACMR "${range}" 2>/tmp/migration-diff-error.log)"; then
-  echo "Unable to diff ${range}; falling back to ${fallback_range}." >&2
-  cat /tmp/migration-diff-error.log >&2 || true
-  changed_files="$(git diff --name-only --diff-filter=ACMR "${fallback_range}" || true)"
-  effective_range="${fallback_range}"
-fi
+for boolean_input in MIGRATIONS_CHANGED DB_TOOLING_CHANGED; do
+  if [[ "${!boolean_input:-}" != "true" && "${!boolean_input:-}" != "false" ]]; then
+    echo "${boolean_input} must be true or false." >&2
+    exit 1
+  fi
+done
 
+schema_changed_files="$(node -e '
+  const files = ["SCHEMA_FILES", "BLOCK_SCHEMA_FILES", "PAYLOAD_SCHEMA_FILES"].flatMap((key) => {
+    const value = JSON.parse(process.env[key] ?? "");
+    if (!Array.isArray(value) || value.some((file) => typeof file !== "string" || file.includes("\n") || file.includes("\r"))) {
+      throw new Error(`Invalid ${key}`);
+    }
+    return value;
+  });
+  process.stdout.write([...new Set(files)].join("\n"));
+')"
+changed_files="$(node -e '
+  const files = JSON.parse(process.env.CHANGED_FILES ?? "");
+  if (!Array.isArray(files) || files.some((file) => typeof file !== "string" || file.includes("\n") || file.includes("\r"))) throw new Error("Invalid CHANGED_FILES");
+  process.stdout.write(files.join("\n"));
+')"
 echo "Diff range: ${range}"
-if [[ "${fallback_range}" != "${range}" ]]; then
-  echo "Fallback diff range: ${fallback_range}"
-fi
-echo "Changed files:"
-echo "${changed_files:-<none>}"
-
-# Block renderers live under src/blocks too, but only block config files affect the Payload schema.
-schema_pattern='^(src/collections/|src/globals/|src/fields/|src/plugins/|src/payload\.config\.ts|src/blocks/[^[:space:]]+/config\.tsx?$)'
-migration_pattern='^src/migrations/'
-db_tooling_pattern='^(\.github/workflows/db-quality\.yml|\.github/workflows/deploy\.yml|\.github/scripts/ci/(detect-migration-diff|enforce-schema-migration|wait-for-postgres)\.sh|scripts/(migration-risk-scan|test-database-harness)\.mjs|vitest\.config\.ts)$'
 import_export_allowlist_line_regex="^[+-][[:space:]]*\\{[[:space:]]*slug:[[:space:]]*'[^']+'(,[[:space:]]*(import|export):[[:space:]]*false)?[[:space:]]*\\},?[[:space:]]*$"
 import_export_target_slug_line_regex="^[+-][[:space:]]*'[A-Za-z0-9-]+',[[:space:]]*$"
 import_export_index_runtime_line_regex="^[+-][[:space:]]*(import[[:space:]]+\\{[[:space:]]*importExportPlugin[[:space:]]*\\}[[:space:]]+from[[:space:]]+'@payloadcms/plugin-import-export'|import[[:space:]]+\\{[[:space:]]*importExport[[:space:]]*\\}[[:space:]]+from[[:space:]]+'\\./importExport'|importExportPlugin\\(\\{|collections:[[:space:]]*\\[|\\],|\\}\\),|importExport,)[[:space:]]*$"
@@ -73,9 +75,8 @@ payload_config_upload_policy_import_line_regex="^[+-][[:space:]]*import[[:space:
 payload_config_upload_policy_line_regex="^[+-][[:space:]]*(//.*|upload:[[:space:]]*\\{|limits:[[:space:]]*\\{|fileSize:[[:space:]]*(MEDIA_UPLOAD_MAX_BYTES|5[[:space:]]*\\*[[:space:]]*1024[[:space:]]*\\*[[:space:]]*1024),?([[:space:]]*//.*)?|abortOnLimit:[[:space:]]*true,?|responseOnLimit:[[:space:]]*(MEDIA_UPLOAD_TOO_LARGE_MESSAGE|'File size limit exceeded \\(5MB\\)'),?|safeFileNames:[[:space:]]*true,?|\\},?)[[:space:]]*$"
 
 schema_changed=false
-migrations_changed=false
-db_tooling_changed=false
-schema_changed_files=''
+migrations_changed="${MIGRATIONS_CHANGED}"
+db_tooling_changed="${DB_TOOLING_CHANGED}"
 
 is_import_export_plugin_index_runtime_only_change() {
   local diff
@@ -292,14 +293,7 @@ is_endpoint_only_payload_config_change() {
   return 0
 }
 
-# Scoped agent instructions guide tooling but never change the Payload schema.
-schema_changed_files="$(grep -E "${schema_pattern}" <<<"${changed_files}" | grep -Ev '(^|/)AGENTS(\.override)?\.md$' || true)"
 
-is_dedicated_payload_hook_file() {
-  local file_path="$1"
-
-  [[ "${file_path}" =~ ^src/(collections|globals)/[^/]+/hooks/[^/]+\.tsx?$ ]]
-}
 
 if grep -qx 'src/plugins/index.ts' <<<"${schema_changed_files}" && { is_import_export_plugin_index_runtime_only_change || is_plugin_collection_access_only_change; }; then
   schema_changed_files="$(grep -vx 'src/plugins/index.ts' <<<"${schema_changed_files}" || true)"
@@ -317,10 +311,6 @@ if [[ -n "${schema_changed_files}" ]]; then
   hook_only_schema_changed_files=''
   while IFS= read -r schema_file; do
     if [[ -z "${schema_file}" ]]; then
-      continue
-    fi
-
-    if is_dedicated_payload_hook_file "${schema_file}"; then
       continue
     fi
 
@@ -346,14 +336,6 @@ fi
 
 if [[ -n "${schema_changed_files}" ]]; then
   schema_changed=true
-fi
-
-if grep -Eq "${migration_pattern}" <<<"${changed_files}"; then
-  migrations_changed=true
-fi
-
-if grep -Eq "${db_tooling_pattern}" <<<"${changed_files}"; then
-  db_tooling_changed=true
 fi
 
 db_changed=false

@@ -58,7 +58,7 @@ afterEach(() => {
 afterAll(closeDeliveryEdgeNetworkBoundary)
 
 describe('scheduler request through hosted composition', () => {
-  it('fails safely instead of claiming mail when recovery retention cannot drain within its budget', async () => {
+  it('still attempts independent mail work when recovery retention exhausts its budget, and reports the failure safely', async () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('CRON_SECRET', secret)
     let clock = 0
@@ -72,10 +72,17 @@ describe('scheduler request through hosted composition', () => {
       delete: async () => undefined,
     }
     dependencies.getPayload.mockResolvedValue(payload)
+    dependencies.selectRuntime.mockReturnValue({ environment: 'preview' })
+    dependencies.createWorker.mockReturnValue({
+      sweepForBatch: async () => true,
+      candidatesForBatch: async () => [],
+      claimForBatch: vi.fn(),
+      processClaimForBatch: vi.fn(),
+    })
     const response = await GET(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))
     expect(response.status).toBe(503)
     expect(await response.json()).toEqual({ ok: false })
-    expect(dependencies.createWorker).not.toHaveBeenCalled()
+    expect(dependencies.createWorker).toHaveBeenCalledTimes(1)
   })
   it('rejects an unauthenticated request before Payload or worker resolution', async () => {
     vi.stubEnv('VERCEL_ENV', 'preview')

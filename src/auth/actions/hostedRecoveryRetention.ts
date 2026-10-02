@@ -2,7 +2,7 @@ import configPromise from '@payload-config'
 import { createLocalReq, getPayload } from 'payload'
 import { bindAuthActions } from './lifecycle'
 
-/** The existing five-minute Website scheduler owns this sweep, independently of mail feature flags. */
+/** The existing one-minute Website scheduler owns this sweep, independently of mail feature flags. */
 export async function runHostedRecoveryRetention(deadline: number) {
   const environment = process.env.VERCEL_ENV
   if (environment !== 'preview' && environment !== 'production') throw new Error('Recovery retention unavailable.')

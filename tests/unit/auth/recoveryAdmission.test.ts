@@ -137,6 +137,26 @@ describe('recovery admission through the owned Auth command', () => {
     expect((await authority.request({ email: 'not-an-address', context: fixture.context() })).status).toBe(400)
   })
   it.each(['target', 'ip'] as const)(
+    'enforces the %s cooldown independently without extending it on denial',
+    async (dimension) => {
+      const fixture = storage()
+      let now = start
+      const actions = bindAuthActions(fixture.req, { environment: 'preview', now: () => now, recoveryKeys: [key] })
+      await actions.reserveRecovery({ email: 'same@example.test', context: fixture.context() })
+      const original = structuredClone(fixture.rows.recoveryRequestEvents)
+      const next = {
+        email: dimension === 'target' ? 'same@example.test' : 'another@example.test',
+        context: fixture.context(dimension === 'ip' ? '198.51.100.8' : '198.51.100.9'),
+      }
+      now = start + 299999
+      await actions.reserveRecovery(next)
+      expect(fixture.rows.recoveryRequestEvents).toEqual(original)
+      now = start + 300000
+      await actions.reserveRecovery(next)
+      expect(fixture.rows.recoveryRequestEvents).toHaveLength(4)
+    },
+  )
+  it.each(['target', 'ip'] as const)(
     'counts at most five admitted requests per %s in a rolling hour',
     async (dimension) => {
       const fixture = storage()

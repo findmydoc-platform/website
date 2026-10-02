@@ -39,7 +39,7 @@ jobs:
       pull-requests: read
     runs-on: ubuntu-latest
     outputs:
-      validation: ${{ steps.validation-scope.outputs.validation }}
+      validation: ${{ steps.filter.outputs.changed == 'false' || steps.filter.outputs.non_markdown == 'true' }}
       deployable: ${{ steps.set-path-outputs.outputs.deployable }}
       integration: ${{ steps.set-path-outputs.outputs.integration }}
     steps:
@@ -51,10 +51,11 @@ jobs:
         id: filter
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
-          list-files: json
           filters: |
             changed:
               - '**'
+            non_markdown:
+              - '!**/*.md'
             deployable:
               - '**'
               - '!docs/**'
@@ -76,12 +77,6 @@ jobs:
               - 'tests/integration/**'
               - 'tests/setup/**'
               - 'vitest.config.ts'
-
-      - name: Classify application validation scope
-        id: validation-scope
-        env:
-          CHANGED_FILES: ${{ steps.filter.outputs.changed_files }}
-        run: node scripts/ci/pr-validation-scope.mjs
 
       - name: Set path outputs
         id: set-path-outputs

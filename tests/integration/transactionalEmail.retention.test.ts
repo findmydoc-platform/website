@@ -599,7 +599,7 @@ describe('transactional email safety sweep and retention', () => {
       'auth.password-recovery': {
         authorizeAndResolve: async () => ({
           address: 'recipient@example.test',
-          binding: String(syntheticRegistrationId),
+          binding: String(authActionId),
         }),
         authValidity: async () => ({ actionAt, lifetimeMilliseconds: 48 * 3600000 }),
         revalidate: async () => syntheticPreparation(authActionId),
@@ -617,6 +617,8 @@ describe('transactional email safety sweep and retention', () => {
       now: () => clock,
     })
     await worker.run(receipt.operationId)
+    expect(delivery.deliver).toHaveBeenCalledTimes(1)
+    expect((await row(receipt.operationId)).state).toBe('prepared')
     clock += 86400001
     expect((await row(receipt.operationId)).delivery_deadline.getTime()).toBeGreaterThan(clock)
     await worker.run()

@@ -373,7 +373,7 @@ describe('transactional email worker', () => {
               ...decision,
               recipient: {
                 address: !eligible && change === 'address' ? 'other@example.test' : 'recipient@example.test',
-                binding: !eligible && change === 'binding' ? randomUUID() : String(syntheticRegistrationId),
+                binding: !eligible && change === 'binding' ? randomUUID() : decision.recipient.binding,
               },
             }
           },
@@ -387,6 +387,9 @@ describe('transactional email worker', () => {
         delivery,
       })
       await worker.run(id)
+      expect(delivery.deliver).toHaveBeenCalledTimes(1)
+      expect(links.generate).toHaveBeenCalledTimes(1)
+      expect((await row(id)).state).toBe('prepared')
       eligible = false
       clock += 60000
       await worker.run(id)
@@ -614,7 +617,7 @@ describe('transactional email worker', () => {
               ...decision,
               recipient: {
                 address: change === 'address' ? 'changed@example.test' : 'recipient@example.test',
-                binding: change === 'binding' ? randomUUID() : String(syntheticRegistrationId),
+                binding: change === 'binding' ? randomUUID() : decision.recipient.binding,
               },
             }
           },

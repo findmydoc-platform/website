@@ -31,28 +31,56 @@ jobs:
     name: Workflow Security
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
+      - name: Select changed security files
+        if: github.event_name == 'pull_request'
+        id: security-paths
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          list-files: json
+          filters: |
+            workflows:
+              - added|modified|copied: '.github/workflows/**/*.{yml,yaml}'
+              - added|modified|copied: '.github/actions/**'
+            secrets:
+              - added|modified|copied: '**/!(pnpm-lock.yaml)'
+
       - name: Determine zizmor inputs
         id: zizmor-inputs
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGED_FILES: ${{ steps.security-paths.outputs.workflows_files }}
         run: |
           set -euo pipefail
+          python3 - <<'PYTHON'
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
 
-          default_inputs="$(git ls-files '.github/workflows/*.yml' '.github/workflows/*.yaml' '.github/actions/**' | tr '\n' ' ' | sed -E 's/[[:space:]]+$//')"
-          inputs="$default_inputs"
+          files = json.loads(os.environ["CHANGED_FILES"]) if os.environ["EVENT_NAME"] == "pull_request" else []
+          if not files:
+              files = subprocess.check_output([
+                  "git", "ls-files", "-z", ".github/workflows/*.yml",
+                  ".github/workflows/*.yaml", ".github/actions/**",
+              ]).decode().rstrip("\0").split("\0")
+              files = [file for file in files if file]
 
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git diff --name-only --diff-filter=ACMR origin/main...HEAD > changed-files.txt
-            grep -E '^(\.github/workflows/.*\.(yml|yaml)|\.github/actions/.*)$' changed-files.txt > changed-workflow-security-targets.txt || true
-            if [ -s changed-workflow-security-targets.txt ]; then
-              inputs="$(tr '\n' ' ' < changed-workflow-security-targets.txt | sed -E 's/[[:space:]]+$//')"
-            fi
-          fi
+          # The pinned action splits inputs on whitespace and expands shell globs.
+          if any(not re.fullmatch(r"[-A-Za-z0-9_./]+", file) for file in files):
+              files = [directory for directory in [".github/workflows", ".github/actions"] if Path(directory).is_dir()]
 
-          echo "inputs=${inputs}" >> "$GITHUB_OUTPUT"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("inputs=" + " ".join(files) + "\n")
+          PYTHON
 
       - name: GitHub workflow lint (actionlint)
         uses: reviewdog/action-actionlint@0d952c597ef8459f634d7145b0b044a9699e5e43 # v1.71.0
@@ -83,15 +111,22 @@ jobs:
           python -m pip install detect-secrets==1.5.0
 
       - name: Detect secrets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGED_FILES: ${{ steps.security-paths.outputs.secrets_files }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git diff --name-only --diff-filter=ACMR origin/main...HEAD > changed-files.txt
-            grep -Ev '(^|/)pnpm-lock\.yaml$' changed-files.txt > changed-files-secret-scan.txt || true
-            if [ -s changed-files-secret-scan.txt ]; then
-              tr '\n' '\0' < changed-files-secret-scan.txt | xargs -0 detect-secrets-hook --baseline .secrets.baseline
-            else
-              echo "No changed files found for secret scan."
-            fi
-          else
-            detect-secrets scan --baseline .secrets.baseline
-          fi
+          set -euo pipefail
+          python3 - <<'PYTHON'
+          import json
+          import os
+          import subprocess
+
+          if os.environ["EVENT_NAME"] == "pull_request":
+              files = json.loads(os.environ["CHANGED_FILES"])
+              if files:
+                  subprocess.run(["detect-secrets-hook", "--baseline", ".secrets.baseline", "--", *files], check=True)
+              else:
+                  print("No changed files found for secret scan.")
+          else:
+              subprocess.run(["detect-secrets", "scan", "--baseline", ".secrets.baseline"], check=True)
+          PYTHON

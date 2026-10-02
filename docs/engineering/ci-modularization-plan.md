@@ -88,6 +88,16 @@ Trigger strategy:
 - nightly schedule
 - manual dispatch
 
+Pull-request file selection uses the pinned `dorny/paths-filter` action. Zizmor receives
+added or modified workflow YAML and action files. An empty selection retains the full
+workflow/action scan. Files whose names cannot safely round-trip through the pinned
+Zizmor action's whitespace-separated input trigger a conservative scan of the existing
+workflow/action directories instead. Detect-secrets receives changed, existing files
+as JSON converted directly to process arguments, excluding `pnpm-lock.yaml` at every
+directory level. Push, scheduled, and manual runs retain full scans. Failure to select
+PR paths fails the job before either scanner runs; no changed-file fallback duplicates
+the action's decision.
+
 ### `deploy-preview.yml`
 
 Purpose: preview deployment only.

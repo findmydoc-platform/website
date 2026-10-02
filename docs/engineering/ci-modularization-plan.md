@@ -47,6 +47,14 @@ Current scope:
 - integration tests for targeted PR paths and on `main`
 - combined coverage reporting
 
+### PR validation path selection
+
+`deploy.yml` uses the pinned Dorny action to report whether any files changed and whether any changed path is not Markdown. The non-Markdown filter uses one negative glob, so the action's default `some` predicate does not combine an inclusive wildcard with exclusions.
+
+Markdown-only pull requests skip the application validation suites. Non-Markdown or mixed changes run them, including deleted files and hidden paths. An empty changed-file set also runs validation. Push and manual runs retain their existing validation behavior. If path detection fails, Static Checks runs and fails before dependency setup; required check names remain stable.
+
+The existing deployment and integration filters retain their rules and matching semantics. Application validation no longer needs a separate changed-path classifier script.
+
 ### `db-quality.yml`
 
 Purpose: merge-critical database and migration validation with a stable branch-protection gate.

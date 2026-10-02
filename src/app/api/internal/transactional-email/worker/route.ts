@@ -19,13 +19,20 @@ function authenticated(request: Request) {
 export async function GET(request: Request) {
   if (!authenticated(request)) return new Response(null, { status: 401, headers: noStore })
   const deadline = Date.now() + schedulerInvocationBudgetMilliseconds
+  let failed = false
+  try {
+    const { runHostedRecoveryRetention } = await import('@/auth/actions/hostedRecoveryRetention')
+    await runHostedRecoveryRetention(deadline)
+  } catch {
+    failed = true
+  }
   try {
     const { runHostedTransactionalEmailWorker } = await import('@/features/transactionalEmail/hostedScheduler')
     await runHostedTransactionalEmailWorker(deadline)
-    return Response.json({ ok: true }, { headers: noStore })
   } catch {
-    return Response.json({ ok: false }, { status: 503, headers: noStore })
+    failed = true
   }
+  return Response.json({ ok: !failed }, { status: failed ? 503 : 200, headers: noStore })
 }
 
 export async function POST(request: Request) {

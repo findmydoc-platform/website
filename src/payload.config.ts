@@ -87,6 +87,7 @@ import { TransactionalEmailSuppressions } from './collections/TransactionalEmail
 
 // Import Collections
 import { AuthActions } from './collections/AuthActions'
+import { RecoveryRequestEvents } from './collections/RecoveryRequestEvents'
 import { Categories } from './collections/Categories'
 import { PlatformContentMedia } from './collections/PlatformContentMedia'
 import { Pages } from './collections/Pages'
@@ -560,6 +561,7 @@ export default buildConfig({
     Cities,
     Tags,
     AuthActions,
+    RecoveryRequestEvents,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   email: shouldUseSilentEmailAdapter ? silentEmailAdapter : undefined,

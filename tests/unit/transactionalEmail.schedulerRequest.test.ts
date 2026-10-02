@@ -1,4 +1,4 @@
-import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
   () => import('../helpers/deliveryEdgeNetworkBoundary'),
@@ -12,7 +12,11 @@ const dependencies = vi.hoisted(() => ({
   selectRuntime: vi.fn(),
 }))
 
-vi.mock('payload', () => ({ getPayload: dependencies.getPayload, createLocalReq: dependencies.createLocalReq }))
+vi.mock('payload', async (load) => ({
+  ...(await load<typeof import('payload')>()),
+  getPayload: dependencies.getPayload,
+  createLocalReq: dependencies.createLocalReq,
+}))
 vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('@/features/transactionalEmail/environment', () => ({
   selectTransactionalEmailRuntime: dependencies.selectRuntime,
@@ -23,6 +27,22 @@ vi.mock('@/features/transactionalEmail/worker', () => ({
 
 const endpoint = 'https://example.test/api/internal/transactional-email/worker'
 const secret = 'synthetic-scheduler-secret-for-tests-only'
+const emptyPayload = () => ({
+  db: {
+    beginTransaction: async () => 'owned',
+    commitTransaction: async () => undefined,
+    rollbackTransaction: async () => undefined,
+  },
+  find: async () => ({ docs: [] }),
+})
+beforeEach(() => {
+  dependencies.getPayload.mockResolvedValue(emptyPayload())
+  dependencies.createLocalReq.mockImplementation(async (input, payload) => ({
+    ...input.req,
+    context: input.context ?? {},
+    payload,
+  }))
+})
 afterEach(() => {
   try {
     networkGuard.assertNoAttempts()
@@ -38,6 +58,32 @@ afterEach(() => {
 afterAll(closeDeliveryEdgeNetworkBoundary)
 
 describe('scheduler request through hosted composition', () => {
+  it('still attempts independent mail work when recovery retention exhausts its budget, and reports the failure safely', async () => {
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    vi.stubEnv('CRON_SECRET', secret)
+    let clock = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => clock)
+    const payload = {
+      ...emptyPayload(),
+      find: async () => {
+        clock = 30000
+        return { docs: Array.from({ length: 100 }, (_, id) => ({ id })) }
+      },
+      delete: async () => undefined,
+    }
+    dependencies.getPayload.mockResolvedValue(payload)
+    dependencies.selectRuntime.mockReturnValue({ environment: 'preview' })
+    dependencies.createWorker.mockReturnValue({
+      sweepForBatch: async () => true,
+      candidatesForBatch: async () => [],
+      claimForBatch: vi.fn(),
+      processClaimForBatch: vi.fn(),
+    })
+    const response = await GET(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({ ok: false })
+    expect(dependencies.createWorker).toHaveBeenCalledTimes(1)
+  })
   it('rejects an unauthenticated request before Payload or worker resolution', async () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('CRON_SECRET', secret)
@@ -48,13 +94,13 @@ describe('scheduler request through hosted composition', () => {
     expect(dependencies.createWorker).not.toHaveBeenCalled()
   })
 
-  it('rejects environment drift before Payload resolution', async () => {
+  it('rejects mail environment drift after independent Auth retention', async () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('CRON_SECRET', secret)
     dependencies.selectRuntime.mockReturnValue({ environment: 'production' })
     const response = await GET(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))
     expect(response.status).toBe(503)
-    expect(dependencies.getPayload).not.toHaveBeenCalled()
+    expect(dependencies.getPayload).toHaveBeenCalledTimes(1)
   })
 
   it('does not claim when Payload initialization consumes the request budget', async () => {
@@ -65,9 +111,8 @@ describe('scheduler request through hosted composition', () => {
     dependencies.selectRuntime.mockReturnValue({ environment: 'preview' })
     dependencies.getPayload.mockImplementation(async () => {
       clock = 215_001
-      return {}
+      return emptyPayload()
     })
-    dependencies.createLocalReq.mockResolvedValue({})
     const worker = {
       sweepForBatch: vi.fn(async (mayContinue: () => boolean) => mayContinue()),
       candidatesForBatch: vi.fn(async (afterId: number) => (afterId ? [] : [1])),
@@ -85,8 +130,6 @@ describe('scheduler request through hosted composition', () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('CRON_SECRET', secret)
     dependencies.selectRuntime.mockReturnValue({ environment: 'preview' })
-    dependencies.getPayload.mockResolvedValue({})
-    dependencies.createLocalReq.mockResolvedValue({})
 
     const order: string[] = []
     let inFlight = 0

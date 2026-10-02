@@ -1,4 +1,4 @@
-import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard: networkGuard } = await vi.hoisted(
   () => import('../helpers/deliveryEdgeNetworkBoundary'),
@@ -7,6 +7,10 @@ import { GET, HEAD, POST } from '@/app/api/internal/transactional-email/worker/r
 import { runBoundedTransactionalEmailWorker } from '@/features/transactionalEmail/scheduler'
 
 const runHosted = vi.fn()
+const runRetention = vi.fn<(...args: unknown[]) => Promise<void>>(async () => undefined)
+vi.mock('@/auth/actions/hostedRecoveryRetention', () => ({
+  runHostedRecoveryRetention: (...args: unknown[]) => runRetention(...args),
+}))
 vi.mock('@/features/transactionalEmail/hostedScheduler', () => ({
   runHostedTransactionalEmailWorker: (...args: unknown[]) => runHosted(...args),
 }))
@@ -21,6 +25,10 @@ const invalidCredentials: Array<{ label: string; url: string; headers: Record<st
   { label: 'body', url: endpoint, headers: {}, body: secret },
 ]
 
+beforeEach(() => {
+  runHosted.mockReset()
+  runRetention.mockReset().mockResolvedValue(undefined)
+})
 afterEach(() => {
   try {
     networkGuard.assertNoAttempts()
@@ -37,6 +45,28 @@ afterEach(() => {
 afterAll(closeDeliveryEdgeNetworkBoundary)
 
 describe('hosted transactional email scheduler request', () => {
+  it.each([
+    { retentionFails: true, mailFails: false },
+    { retentionFails: false, mailFails: true },
+    { retentionFails: true, mailFails: true },
+  ])(
+    'attempts both independent jobs and returns a neutral failure for $retentionFails/$mailFails',
+    async ({ retentionFails, mailFails }) => {
+      vi.stubEnv('VERCEL_ENV', 'preview')
+      vi.stubEnv('CRON_SECRET', secret)
+      if (retentionFails) runRetention.mockRejectedValueOnce(new Error('Private retention failure'))
+      if (mailFails) runHosted.mockRejectedValueOnce(new Error('Private mail failure'))
+      else runHosted.mockResolvedValueOnce({ claimed: 0 })
+      const response = await GET(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))
+      expect(response.status).toBe(503)
+      expect(await response.json()).toEqual({ ok: false })
+      expect(response.headers.get('cache-control')).toBe('no-store')
+      expect(runRetention).toHaveBeenCalledTimes(1)
+      expect(runHosted).toHaveBeenCalledTimes(1)
+      expect(runHosted.mock.calls[0]).toEqual(runRetention.mock.calls[0])
+    },
+  )
+
   it.each([HEAD, POST])('refuses authenticated non-GET requests without resolving work', async (handler) => {
     vi.stubEnv('CRON_SECRET', secret)
     expect((await handler(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))).status).toBe(405)
@@ -60,6 +90,7 @@ describe('hosted transactional email scheduler request', () => {
       runHosted.mockResolvedValue({ claimed: 0 })
       const response = await GET(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))
       expect(response.status).toBe(200)
+      expect(runRetention).toHaveBeenCalledTimes(1)
       expect(runHosted).toHaveBeenCalledTimes(1)
     },
   )

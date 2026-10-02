@@ -982,6 +982,28 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Ephemeral private lock records created and released inside one serializable domain transaction',
     },
+    recoveryRequestEvents: {
+      slug: 'recoveryRequestEvents',
+      displayName: 'RecoveryRequestEvents',
+      operations: {
+        create: { type: 'conditional', details: 'owned Auth recovery admission only' },
+        read: { type: 'conditional', details: 'private Auth admission and retention only' },
+        update: { type: 'conditional', details: 'immutable event rows' },
+        delete: { type: 'conditional', details: 'short-lived retention only' },
+        admin: { type: 'conditional', details: 'hidden from all generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes:
+        'Separate private target/IP HMAC events; no principal, request or action relationship. Opaque owned command required even with overrideAccess.',
+    },
     authActions: {
       slug: 'authActions',
       displayName: 'AuthActions',

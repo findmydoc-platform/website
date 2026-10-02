@@ -9,6 +9,9 @@ import {
   type Where,
 } from 'payload'
 import { z } from 'zod'
+import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { inspectRecoveryContext, type RecoveryContext, type RecoveryKey } from './recoveryContext'
+import { recoveryCorrelations, recoveryWindowMs, recoveryCooldownMs, recoveryHourlyLimit } from './recoveryCorrelation'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import type { AuthAction } from '@/payload-types'
 import {
@@ -79,7 +82,9 @@ type Write =
   | { kind: 'create'; data: Record<string, unknown> }
   | { kind: 'transition' | 'bind' | 'bind-subject' | 'clear-correlation'; id: number; data: Record<string, unknown> }
   | { kind: 'delete'; id: number }
-type Scope = { transactionID: string | number; environment: Environment; now: number; write?: Write }
+  | { kind: 'recovery-create'; data: Record<string, unknown> }
+  | { kind: 'recovery-delete'; id: number }
+type Scope = { transactionID: string | number; environment: Environment; now: number; write?: Write; recovery?: true }
 
 // Server bundles can load this module more than once. Identity remains process-local and cannot be supplied as JSON.
 type Broker = {
@@ -140,6 +145,8 @@ export const guardAuthActionOperation: CollectionBeforeOperationHook = async ({ 
   if (operation === 'read' || operation === 'count') {
     if (scope || (await isPlatformStaff({ req }))) return
   } else if (scope?.write) {
+    if (scope.write.kind === 'recovery-create' || scope.write.kind === 'recovery-delete')
+      throw new AuthActionError('access-denied')
     const expectedOperation = ['bind', 'bind-subject', 'transition', 'clear-correlation'].includes(scope.write.kind)
       ? 'update'
       : scope.write.kind
@@ -163,6 +170,64 @@ export const readAuthActionDiagnostics: CollectionAfterReadHook = async ({ doc, 
   return Object.fromEntries(
     authActionDiagnosticFields.filter((field) => Object.hasOwn(doc, field)).map((field) => [field, doc[field]]),
   )
+}
+
+export const guardRecoveryEventOperation: CollectionBeforeOperationHook = async ({ operation, req, args }) => {
+  const scope = await requireScope(req)
+  if (!scope.recovery) throw new AuthActionError('access-denied')
+  if (operation === 'read' || operation === 'count') return
+  const input = args as unknown as Record<string, unknown>
+  if (operation === 'create' && scope.write?.kind === 'recovery-create' && sameValue(input.data, scope.write.data))
+    return
+  if (operation === 'delete' && scope.write?.kind === 'recovery-delete' && input.id === scope.write.id) return
+  throw new AuthActionError('access-denied')
+}
+
+export const guardRecoveryEventWrite: CollectionBeforeChangeHook = async ({ data, operation, req }) => {
+  const scope = await requireScope(req)
+  if (
+    !scope.recovery ||
+    operation !== 'create' ||
+    scope.write?.kind !== 'recovery-create' ||
+    !sameValue(data, scope.write.data) ||
+    Object.keys(data).some(
+      (key) => !['environment', 'dimension', 'keyVersion', 'digest', 'observedAt'].includes(key),
+    ) ||
+    data.environment !== scope.environment ||
+    !['target', 'ip'].includes(data.dimension) ||
+    !z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]{1,64}$/)
+      .safeParse(data.keyVersion).success ||
+    !z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .safeParse(data.digest).success ||
+    Date.parse(data.observedAt) !== scope.now
+  )
+    throw new AuthActionError('access-denied')
+  return data
+}
+
+export const readRecoveryEvent: CollectionAfterReadHook = async ({ doc, req }) => {
+  const scope = await requireScope(req)
+  if (!scope.recovery || doc.environment !== scope.environment) throw new AuthActionError('access-denied')
+  return doc
+}
+
+export const guardRecoveryEventDelete: CollectionBeforeDeleteHook = async ({ id, req }) => {
+  const scope = await requireScope(req)
+  if (!scope.recovery || scope.write?.kind !== 'recovery-delete' || scope.write.id !== id)
+    throw new AuthActionError('access-denied')
+  const doc = await req.payload.findByID({
+    collection: 'recoveryRequestEvents',
+    id,
+    req,
+    depth: 0,
+    overrideAccess: true,
+  })
+  if (doc.environment !== scope.environment || Date.parse(doc.observedAt) > scope.now - recoveryWindowMs)
+    throw new AuthActionError('invalid-transition')
 }
 
 const storedFields = new Set<string>([
@@ -257,7 +322,13 @@ function validatePolicy(doc: Record<string, unknown>, scope: Scope) {
 export const guardAuthActionWrite: CollectionBeforeChangeHook = async ({ data, originalDoc, operation, req }) => {
   const scope = await requireScope(req)
   const write = scope.write
-  if (!write || write.kind === 'delete' || (operation === 'create') !== (write.kind === 'create'))
+  if (
+    !write ||
+    write.kind === 'delete' ||
+    write.kind === 'recovery-create' ||
+    write.kind === 'recovery-delete' ||
+    (operation === 'create') !== (write.kind === 'create')
+  )
     throw new AuthActionError('access-denied')
   if (Object.keys(data).some((key) => !storedFields.has(key))) throw new AuthActionError('invalid-command')
   const doc = { ...originalDoc, ...data }
@@ -368,7 +439,12 @@ function retryable(error: unknown) {
 /** Internal system commands. No request capability or retry callback escapes this module. */
 export function bindAuthActions(
   req: PayloadRequest,
-  options: { environment: Environment; now?: () => number; verificationKeys?: readonly VerificationCorrelationKey[] },
+  options: {
+    environment: Environment
+    now?: () => number
+    verificationKeys?: readonly VerificationCorrelationKey[]
+    recoveryKeys?: readonly RecoveryKey[]
+  },
 ) {
   const environment = parsed(z.enum(authActionEnvironments), options.environment)
   const clock = options.now ?? Date.now
@@ -533,6 +609,145 @@ export function bindAuthActions(
     async create(input: CreateInput) {
       const command = parsed(createSchema, input)
       return transaction((internalReq, scope) => createPending(internalReq, scope, command))
+    },
+    async reserveRecovery(input: { email: string; context: RecoveryContext | null }): Promise<AuthAction | null> {
+      const email = normalizeEmail(input.email)
+      if (!isValidEmail(email) || email.length > 254) throw new AuthActionError('invalid-command')
+      return transaction(async (internalReq, scope) => {
+        const ip = inspectRecoveryContext(input.context, environment, email, scope.now)
+        if (!ip) return null
+        let dimensions: ReturnType<typeof recoveryCorrelations>
+        try {
+          dimensions = recoveryCorrelations(email, ip, environment, options.recoveryKeys ?? [])
+        } catch {
+          throw new AuthActionError('correlation-unavailable')
+        }
+        scope.recovery = true
+        const window = { observedAt: { greater_than: new Date(scope.now - recoveryWindowMs).toISOString() } }
+        const unknownVersion = await req.payload.find({
+          collection: 'recoveryRequestEvents',
+          req: internalReq,
+          overrideAccess: true,
+          depth: 0,
+          pagination: false,
+          limit: 1,
+          where: {
+            and: [
+              { environment: { equals: environment } },
+              window,
+              { keyVersion: { not_in: dimensions[0]!.correlations.map((key) => key.keyVersion) } },
+            ],
+          },
+        })
+        if (unknownVersion.docs.length) throw new AuthActionError('correlation-unavailable')
+        for (const { dimension, correlations } of dimensions) {
+          const recent = await req.payload.find({
+            collection: 'recoveryRequestEvents',
+            req: internalReq,
+            overrideAccess: true,
+            depth: 0,
+            pagination: false,
+            limit: recoveryHourlyLimit,
+            sort: '-observedAt',
+            where: {
+              and: [
+                { environment: { equals: environment } },
+                { dimension: { equals: dimension } },
+                window,
+                {
+                  or: correlations.map<Where>(({ keyVersion, digest }) => ({
+                    keyVersion: { equals: keyVersion },
+                    digest: { equals: digest },
+                  })),
+                },
+              ],
+            },
+          })
+          if (
+            recent.docs.length >= recoveryHourlyLimit ||
+            recent.docs.some((event) => Date.parse(event.observedAt) > scope.now - recoveryCooldownMs)
+          )
+            return null
+        }
+        for (const { dimension, correlations } of dimensions) {
+          const data = { environment, dimension, ...correlations[0]!, observedAt: new Date(scope.now).toISOString() }
+          scope.write = { kind: 'recovery-create', data }
+          await req.payload.create({
+            collection: 'recoveryRequestEvents',
+            req: internalReq,
+            overrideAccess: true,
+            depth: 0,
+            data,
+          })
+        }
+        const candidates: {
+          principal: Principal
+          actionType: 'patient-recovery' | 'clinic-recovery' | 'platform-recovery'
+          eligible: boolean
+        }[] = []
+        for (const collection of ['patients', 'clinicStaff', 'platformStaff'] as const) {
+          const matches = await req.payload.find({
+            collection,
+            req: internalReq,
+            overrideAccess: true,
+            depth: 0,
+            pagination: false,
+            limit: 2,
+            where: { email: { equals: email } },
+          })
+          for (const principal of matches.docs) {
+            const clinicEligible =
+              collection !== 'clinicStaff' ||
+              ('status' in principal &&
+                ['pending', 'approved'].includes(String(principal.status)) &&
+                'authSync' in principal &&
+                principal.authSync?.status === 'synced')
+            candidates.push({
+              principal: { relationTo: collection, value: principal.id },
+              actionType:
+                collection === 'patients'
+                  ? 'patient-recovery'
+                  : collection === 'clinicStaff'
+                    ? 'clinic-recovery'
+                    : 'platform-recovery',
+              eligible: clinicEligible && z.string().uuid().safeParse(principal.supabaseUserId).success,
+            })
+          }
+        }
+        if (candidates.length !== 1 || !candidates[0]!.eligible) return null
+        return createPending(internalReq, scope, candidates[0]!)
+      })
+    },
+    sweepRecovery() {
+      return transaction(async (internalReq, scope) => {
+        scope.recovery = true
+        const due = await req.payload.find({
+          collection: 'recoveryRequestEvents',
+          req: internalReq,
+          overrideAccess: true,
+          depth: 0,
+          pagination: false,
+          limit: 100,
+          sort: 'id',
+          where: {
+            and: [
+              { environment: { equals: environment } },
+              { observedAt: { less_than_equal: new Date(scope.now - recoveryWindowMs).toISOString() } },
+            ],
+          },
+        })
+        for (const event of due.docs) {
+          scope.write = { kind: 'recovery-delete', id: event.id }
+          await req.payload.delete({
+            collection: 'recoveryRequestEvents',
+            id: event.id,
+            req: internalReq,
+            overrideAccess: true,
+            depth: 0,
+          })
+        }
+        return { deleted: due.docs.length }
+      })
     },
     async reservePatientVerification(input: { email: string; resendOf?: number }) {
       const command = parsed(z.object({ email: z.string(), resendOf: idSchema.optional() }).strict(), input)

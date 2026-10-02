@@ -4,6 +4,10 @@ export interface CollectionContractEntry {
 }
 
 export const collectionContractRegistry = {
+  recoveryRequestEvents: {
+    baseline: ['tests/integration/recoveryRequests.lifecycle.test.ts'],
+    deep: ['tests/integration/recoveryRequests.lifecycle.test.ts'],
+  },
   transactionalEmailOutbox: {
     baseline: ['tests/integration/transactionalEmail.acceptance.test.ts'],
     deep: ['tests/integration/transactionalEmail.acceptance.test.ts'],

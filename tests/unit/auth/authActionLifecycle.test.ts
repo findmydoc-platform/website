@@ -19,6 +19,7 @@ const day = 86400000
 // The fake persists Local API documents and calls production hooks. It supplies no lifecycle decisions.
 function storage() {
   const rows = new Map<number, Record<string, unknown>>()
+  const principals = new Map<number, Record<string, unknown>>()
   let nextID = 1
   const db = {
     beginTransaction: vi.fn(async () => 'owned'),
@@ -51,7 +52,7 @@ function storage() {
     create: vi.fn((options) => write('create', options)),
     update: vi.fn((options) => write('update', options)),
     findByID: vi.fn(async (options) => {
-      if (options.collection !== 'authActions') return { id: options.id }
+      if (options.collection !== 'authActions') return principals.get(options.id) ?? { id: options.id }
       await operation('read', options)
       const doc = rows.get(options.id)
       return doc ? read(doc, options.req) : null
@@ -71,7 +72,7 @@ function storage() {
     }),
   } as unknown as Payload
   const req = { payload, context: {}, user: null } as PayloadRequest
-  return { payload, req, rows, db }
+  return { payload, req, rows, db, principals }
 }
 
 describe('AuthAction lifecycle through the system command boundary', () => {
@@ -121,6 +122,95 @@ describe('AuthAction lifecycle through the system command boundary', () => {
     await expect(
       actions().bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: 10 } }),
     ).rejects.toMatchObject({ code: 'invalid-transition' })
+  })
+
+  it.each(['clinic-invitation', 'clinic-recovery'] as const)(
+    'keeps %s callback ownership in the Clinic Dashboard',
+    async (actionType) => {
+      const action = await actions().create({ actionType, principal: { relationTo: 'clinicStaff', value: 9 } })
+      expect(action.callbackDestination).toBe('clinic-dashboard-auth-callback')
+      expect((await actions().transition({ id: action.id, to: 'active' })).callbackDestination).toBe(
+        'clinic-dashboard-auth-callback',
+      )
+    },
+  )
+
+  it('confirms verification for a bound identity before provisioning the patient, then completes for that patient', async () => {
+    const action = await actions().create({ actionType: 'patient-verification' })
+    const supabaseSubject = '26b71580-16be-4f29-9d60-9ec6adc935ce'
+    await actions().bindSubject({ id: action.id, supabaseSubject })
+    expect(await actions().transition({ id: action.id, to: 'active' })).toMatchObject({ principal: null })
+    expect(await actions().transition({ id: action.id, to: 'confirmed' })).toMatchObject({ principal: null })
+    await expect(actions().transition({ id: action.id, to: 'completed' })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+    fixture.principals.set(9, { id: 9, supabaseUserId: supabaseSubject })
+    await actions().bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: 9 } })
+    expect(await actions().transition({ id: action.id, to: 'completed' })).toMatchObject({
+      state: 'completed',
+      supabaseSubject,
+      principal: { relationTo: 'patients', value: 9 },
+    })
+  })
+
+  it('keeps the first identity binding immutable and idempotent without provisioning early', async () => {
+    const action = await actions().create({ actionType: 'patient-verification' })
+    const supabaseSubject = '26b71580-16be-4f29-9d60-9ec6adc935ce'
+    const bound = await actions().bindSubject({ id: action.id, supabaseSubject })
+    now += 1000
+    expect(await actions().bindSubject({ id: action.id, supabaseSubject })).toEqual(bound)
+    await expect(
+      actions().bindSubject({ id: action.id, supabaseSubject: '9edb6591-3115-4f1e-a09e-315951ca3628' }),
+    ).rejects.toMatchObject({ code: 'invalid-transition' })
+    fixture.principals.set(9, { id: 9, supabaseUserId: supabaseSubject })
+    await expect(
+      actions().bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: 9 } }),
+    ).rejects.toMatchObject({ code: 'invalid-transition' })
+    expect(await actions().read(action.id)).toEqual(bound)
+  })
+
+  it('rejects a patient belonging to another identity and rechecks the identity before completion', async () => {
+    const action = await actions().create({ actionType: 'patient-verification' })
+    const supabaseSubject = '26b71580-16be-4f29-9d60-9ec6adc935ce'
+    await actions().bindSubject({ id: action.id, supabaseSubject })
+    await actions().transition({ id: action.id, to: 'active' })
+    await actions().transition({ id: action.id, to: 'confirmed' })
+    fixture.principals.set(9, { id: 9, supabaseUserId: '9edb6591-3115-4f1e-a09e-315951ca3628' })
+    await expect(
+      actions().bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: 9 } }),
+    ).rejects.toMatchObject({ code: 'invalid-transition' })
+    fixture.principals.set(9, { id: 9, supabaseUserId: supabaseSubject })
+    await actions().bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: 9 } })
+    fixture.principals.set(9, { id: 9, supabaseUserId: '9edb6591-3115-4f1e-a09e-315951ca3628' })
+    await expect(actions().transition({ id: action.id, to: 'completed' })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+    fixture.rows.get(action.id)!.principal = null
+    await expect(actions().transition({ id: action.id, to: 'completed' })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+  })
+
+  it('rejects expired or non-verification identity binding and excludes it from diagnostics', async () => {
+    const action = await actions().create({ actionType: 'patient-verification' })
+    const supabaseSubject = '26b71580-16be-4f29-9d60-9ec6adc935ce'
+    const recovery = await actions().create({
+      actionType: 'patient-recovery',
+      principal: { relationTo: 'patients', value: 9 },
+    })
+    await expect(actions().bindSubject({ id: recovery.id, supabaseSubject })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+    const bound = await actions().bindSubject({ id: action.id, supabaseSubject })
+    const req = { ...fixture.req, user: { id: 1, collection: 'platformStaff' } }
+    const diagnostics = await AuthActions.hooks!.afterRead![0]!({ doc: bound, req } as never)
+    expect(diagnostics).not.toHaveProperty('supabaseSubject')
+    expect(diagnostics).not.toHaveProperty('subjectBoundAt')
+    const pending = await actions().create({ actionType: 'patient-verification' })
+    now += day
+    await expect(actions().bindSubject({ id: pending.id, supabaseSubject })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
   })
 
   it.each([

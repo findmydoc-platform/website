@@ -88,6 +88,7 @@ import * as migration_20260929_191230_mcp_posts_mcp_access from './20260929_1912
 import * as migration_20260930_224722_transactional_email_preparation_outcomes from './20260930_224722_transactional_email_preparation_outcomes'
 import * as migration_20261001_123848_auth_actions_lifecycle from './20261001_123848_auth_actions_lifecycle'
 import * as migration_20261001_132351_auth_actions_principal_binding from './20261001_132351_auth_actions_principal_binding'
+import * as migration_20261002_112214_auth_action_product_bindings from './20261002_112214_auth_action_product_bindings'
 
 export const migrations = [
   {
@@ -539,5 +540,10 @@ export const migrations = [
     up: migration_20261001_132351_auth_actions_principal_binding.up,
     down: migration_20261001_132351_auth_actions_principal_binding.down,
     name: '20261001_132351_auth_actions_principal_binding',
+  },
+  {
+    up: migration_20261002_112214_auth_action_product_bindings.up,
+    down: migration_20261002_112214_auth_action_product_bindings.down,
+    name: '20261002_112214_auth_action_product_bindings',
   },
 ]

@@ -8,7 +8,7 @@ import {
 } from '@/auth/actions/lifecycle'
 import { authActionTypes, authActionEnvironments, authActionStates, authActionOutcomes } from '@/auth/actions/contracts'
 
-type ActionField = Extract<Field, { type: 'select' | 'date' | 'relationship' }>
+type ActionField = Extract<Field, { type: 'select' | 'date' | 'relationship' | 'text' }>
 const diagnostic = <T extends ActionField>(field: T): T => ({ ...field, admin: { ...field.admin, readOnly: true } })
 const privateField = <T extends ActionField>(field: T): T => ({
   ...field,
@@ -82,7 +82,14 @@ export const AuthActions: CollectionConfig = {
       maxDepth: 0,
     }),
     privateField({ name: 'principalBoundAt', type: 'date' }),
-    privateField({ name: 'callbackDestination', type: 'select', required: true, options: ['website-auth-callback'] }),
+    privateField({ name: 'supabaseSubject', type: 'text' }),
+    privateField({ name: 'subjectBoundAt', type: 'date' }),
+    privateField({
+      name: 'callbackDestination',
+      type: 'select',
+      required: true,
+      options: ['website-auth-callback', 'clinic-dashboard-auth-callback'],
+    }),
     privateField({
       name: 'completionRoute',
       type: 'select',

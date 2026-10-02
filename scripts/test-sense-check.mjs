@@ -85,6 +85,7 @@ function hasProductionRuntimeSignal(source) {
 
 function hasToolingSignal(source) {
   return [
+    /readFileSync\([\s\S]{0,240}?['"]\.github\/workflows(?:\/|['"])/u,
     /(?:from\s+|import\s*\(|require\s*\()\s*['"][^'"]*\/vercel\.json['"]/u,
     /(?:from\s+|import\s*\(|require\s*\()\s*['"][^'"]*(?:\/scripts\/|scripts\/)/u,
     /(?:from\s+|import\s*\(|require\s*\()\s*['"][^'"]*\.github\/scripts\//u,

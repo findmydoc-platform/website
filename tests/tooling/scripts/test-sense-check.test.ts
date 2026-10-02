@@ -140,6 +140,20 @@ describe('runTestSenseCheck', () => {
     expect(result.warnings).toEqual(expect.arrayContaining([expect.stringContaining('styling/class assertions')]))
   })
 
+  it('recognizes tooling tests that read workflow rules from the repository', () => {
+    const rootDir = createTempRepo({
+      'tests/tooling/workflow.test.ts': [
+        "import { readFileSync } from 'node:fs'",
+        "import path from 'node:path'",
+        "import { expect, it } from 'vitest'",
+        "const source = readFileSync(path.join(root, '.github/workflows/deploy.yml'), 'utf8')",
+        "it('protects gate routing', () => expect(source).toContain('needs: paths'))",
+      ].join('\n'),
+    })
+
+    expect(runTestSenseCheck({ rootDir }).ok).toBe(true)
+  })
+
   it('recognizes tooling tests that execute repository scripts directly', () => {
     const rootDir = createTempRepo({
       'tests/tooling/scripts/detect-migration-diff.test.ts': [

@@ -161,13 +161,21 @@ export async function websiteRecoveryAuthority() {
           if (current?.own && current.progress.attempt !== grant.progressAttempt) invalid()
           if (!current?.own) {
             if (grant.progressInitializing) throw new Error('RECOVERY_TEMPORARILY_UNAVAILABLE')
-            if (action.state !== 'active' || (current && current.progress.expiresAt >= Date.parse(action.expiresAt)))
-              invalid()
+            if (action.state !== 'active') throw new Error('RECOVERY_TEMPORARILY_UNAVAILABLE')
+            if (current && current.progress.expiresAt >= Date.parse(action.expiresAt)) invalid()
             // The owned active->confirmed claim is non-idempotent: only its winner can initialize provider progress.
-            await actions.fenceWebsiteRecovery(action.id, true, (predecessor) => {
-              const known = websiteRecoveryProgress(predecessor, environment, keys).read(user)
-              return Boolean(known?.own && known.progress.state === 'ready')
-            })
+            try {
+              await actions.fenceWebsiteRecovery(action.id, true, (predecessor) => {
+                const known = websiteRecoveryProgress(predecessor, environment, keys).read(user)
+                return Boolean(known?.own && known.progress.state === 'ready')
+              })
+            } catch (error) {
+              // This invocation read active under the still-held guards and has emitted no metadata PUT.
+              // A fresh confirmed record therefore resolves its own lost commit acknowledgement, not an old grant.
+              execution.assertActive()
+              const reconciled = await load(action.id, grant, execution)
+              if (reconciled.action.state !== 'confirmed') throw error
+            }
             execution.assertActive()
             grant = { ...grant, progressInitializing: true }
             save(grant)

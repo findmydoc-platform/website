@@ -284,6 +284,12 @@ non-idempotent `active` to `confirmed` claim before initializing provider progre
 marker; signed technical retries observe existing progress. It replaces the pending context with a token-free
 completion grant valid for ten minutes. Later retries do not renew its expiry or consume the token again.
 
+If the claim commits but its acknowledgement is lost, the same invocation reconciles it with a fresh guarded read
+while retaining its original action/subject guards. It had read active and has not emitted a metadata PUT, so a current
+confirmed record proves its own claim. It can initialize once without repeating the claim. A rolled-back claim remains
+active and retryable with the token-free grant. Losing the execution guard as well removes that ownership proof;
+subsequent browser receipts cannot reconstruct it or reinitialize a missing marker.
+
 `POST /auth/password/complete` requires the matching grant, CSRF, current action, principal and server-verified session.
 It updates the Supabase password before advancing `confirmed` to `completed`. A signed `password-updated` receipt
 preserves a known successful password operation across a temporary lifecycle failure. A `completed` receipt resumes

@@ -760,6 +760,12 @@ describe('Website recovery at the callback HTTP boundary', () => {
       if (phase === 'started') {
         const cookie = confirmation.cookies.get('findmydoc_website_recovery')!
         expect((await finish({ ...newer, cookie: `${cookie.name}=${cookie.value}` })).status).toBe(400)
+        vi.setSystemTime(Date.now() + 600001)
+        await bindAuthActions(storage.req, { environment: 'test', recoveryKeys: [key] }).sweep()
+        expect(storage.rows.authActions!.get(newer.id)?.state).toBe('confirmed')
+        const third = await staged()
+        expect((await submit(third)).status).toBe(503)
+        expect(boundary.adminUpdate).not.toHaveBeenCalled()
       } else {
         expect((await submit(newer)).status).toBe(503)
         const cookie = first.cookies.get('findmydoc_website_recovery')!
@@ -783,6 +789,72 @@ describe('Website recovery at the callback HTTP boundary', () => {
     expect(boundary.adminUpdate).toHaveBeenCalledOnce()
     expect(boundary.verify).toHaveBeenCalledOnce()
     expect((await finish(retry)).status).toBe(400)
+  })
+  test('reconciles a committed confirmation claim whose commit acknowledgement was lost before any provider write', async () => {
+    const pending = await staged()
+    const commit = storage.payload.db.commitTransaction.bind(storage.payload.db)
+    let lost = false
+    vi.spyOn(storage.payload.db, 'commitTransaction').mockImplementation(async (transaction) => {
+      const claimed = storage.rows.authActions!.get(pending.id)?.state === 'confirmed'
+      await commit(transaction)
+      if (claimed && !lost && boundary.adminUpdate.mock.calls.length === 0) {
+        lost = true
+        throw new Error('offline-commit-acknowledgement-lost')
+      }
+    })
+    const response = await submit(pending)
+    expect(lost).toBe(true)
+    expect(response.status).toBe(200)
+    const cookie = response.cookies.get('findmydoc_website_recovery')!
+    const grant = { ...pending, cookie: `${cookie.name}=${cookie.value}` }
+    expect((await submit(grant)).status).toBe(200)
+    expect(boundary.verify).toHaveBeenCalledOnce()
+    expect(boundary.adminUpdate).toHaveBeenCalledOnce()
+    expect(boundary.update).not.toHaveBeenCalled()
+    expect((await finish(grant)).status).toBe(200)
+    expect(boundary.update).toHaveBeenCalledOnce()
+  })
+  test('retries a rolled-back confirmation claim through the same token-free grant without initializing twice', async () => {
+    const pending = await staged()
+    const commit = storage.payload.db.commitTransaction.bind(storage.payload.db)
+    let failed = false
+    vi.spyOn(storage.payload.db, 'commitTransaction').mockImplementation(async (transaction) => {
+      if (storage.rows.authActions!.get(pending.id)?.state === 'confirmed' && !failed) {
+        failed = true
+        throw new Error('offline-claim-commit-failed')
+      }
+      await commit(transaction)
+    })
+    const first = await submit(pending)
+    expect(first.status).toBe(503)
+    expect(storage.rows.authActions!.get(pending.id)?.state).toBe('active')
+    expect(boundary.adminUpdate).not.toHaveBeenCalled()
+    const cookie = first.cookies.get('findmydoc_website_recovery')!
+    expect((await submit({ ...pending, cookie: `${cookie.name}=${cookie.value}` })).status).toBe(200)
+    expect(boundary.verify).toHaveBeenCalledOnce()
+    expect(boundary.adminUpdate).toHaveBeenCalledOnce()
+  })
+  test('never reconstructs an initialization owner after simultaneous claim acknowledgement and guard loss', async () => {
+    const pending = await staged()
+    const commit = storage.payload.db.commitTransaction.bind(storage.payload.db)
+    let lost = false
+    vi.spyOn(storage.payload.db, 'commitTransaction').mockImplementation(async (transaction) => {
+      const claimed = storage.rows.authActions!.get(pending.id)?.state === 'confirmed'
+      await commit(transaction)
+      if (claimed && !lost && boundary.adminUpdate.mock.calls.length === 0) {
+        lost = true
+        pool.clients.at(-1)!.emit('end')
+        throw new Error('offline-commit-acknowledgement-lost')
+      }
+    })
+    const first = await submit(pending)
+    expect(first.status).toBe(503)
+    expect(storage.rows.authActions!.get(pending.id)?.state).toBe('confirmed')
+    const cookie = first.cookies.get('findmydoc_website_recovery')!
+    expect((await submit({ ...pending, cookie: `${cookie.name}=${cookie.value}` })).status).toBe(503)
+    expect(boundary.verify).toHaveBeenCalledOnce()
+    expect(boundary.adminUpdate).not.toHaveBeenCalled()
+    expect(boundary.update).not.toHaveBeenCalled()
   })
   test.each([300000, 600001])(
     'an unresolved initialization claim blocks a newer flow after %i milliseconds and sweep',

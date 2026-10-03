@@ -49,6 +49,12 @@ export async function clearLocalAuthSession() {
   })
 }
 
+/** Revoke the verified recovery session globally without removing local cookies on a provider error. */
+export async function signOutRecoverySession(accessToken: string) {
+  const admin = await createAdminClient()
+  return admin.auth.admin.signOut(accessToken, 'global')
+}
+
 /** Verify a callback token before allowing its returned identity to write browser session cookies. */
 export function createVerificationClient() {
   const { url, key } = getSupabaseConfig()

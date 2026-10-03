@@ -286,15 +286,19 @@ later retries do not renew its expiry or consume the token again.
 `POST /auth/password/complete` requires the matching grant, CSRF, current action, principal and server-verified session.
 It updates the Supabase password before advancing `confirmed` to `completed`. A signed `password-updated` receipt
 preserves a known successful password operation across a temporary lifecycle failure. A `completed` receipt resumes
-global sign-out after a temporary provider failure. These receipts keep the original grant expiry, and a refreshed
+global sign-out after a temporary provider failure. A `signed-out` receipt resumes local cleanup without requiring a
+session that the successful global logout has revoked. These receipts keep the original grant expiry, and a refreshed
 completion page shows a password-free finish action. A password operation whose provider response was lost is not
 proved successful by a receipt; Supabase and Payload do not share a transaction.
 
-Success calls `signOut({ scope: 'global' })`, clears local Supabase cookie chunks and the recovery context, then performs
+Success uses Supabase's stateless Admin `signOut` with the server-verified session JWT and `global` scope, clears local
+Supabase cookie chunks and the recovery context, then performs
 a full document navigation to `/login/patient?status=recovery-complete` or `/admin/login?status=recovery-complete`.
 Supabase revokes refresh-token sessions; already-issued access JWTs can remain valid until expiry, as documented in
 [the Supabase sign-out contract](https://supabase.com/docs/reference/javascript/auth-signout). Payload still checks the
 current principal for each authenticated request. The private action policy's destination identifiers remain unchanged.
+The Admin logout API does not remove Website cookies on a provider error. The ordinary session client's `signOut`
+removes its local session even when global logout fails, so that client method is unsuitable for this retry contract.
 
 Malformed, expired, replayed, revoked, superseded, cross-flow, cross-environment and identity-mismatched links share the
 same public error and request-again path. Temporary completion failures keep the grant and offer retry without another

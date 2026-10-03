@@ -115,4 +115,20 @@ describe('createAdminClient', () => {
       fetchSpy.mockRestore()
     }
   })
+  it('clears the base local auth cookie and all chunks while preserving foreign cookies', async () => {
+    cookieGetAll.mockReturnValue([
+      { name: 'sb-example-auth-token', value: 'offline-session' },
+      { name: 'sb-example-auth-token.0', value: 'offline-first-chunk' },
+      { name: 'sb-example-auth-token.3', value: 'offline-stale-chunk' },
+      { name: 'sb-other-auth-token', value: 'foreign-session' },
+      { name: 'unrelated', value: 'keep' },
+    ])
+    const { clearLocalAuthSession } = await import('@/auth/utilities/supaBaseServer')
+    await clearLocalAuthSession()
+    expect(cookieSet.mock.calls).toEqual([
+      ['sb-example-auth-token', '', expect.objectContaining({ maxAge: 0, path: '/' })],
+      ['sb-example-auth-token.0', '', expect.objectContaining({ maxAge: 0, path: '/' })],
+      ['sb-example-auth-token.3', '', expect.objectContaining({ maxAge: 0, path: '/' })],
+    ])
+  })
 })

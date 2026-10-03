@@ -6,6 +6,7 @@ import {
   createClient,
   createVerificationClient,
   clearLocalAuthSession,
+  signOutRecoverySession,
 } from '@/auth/utilities/supaBaseServer'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
@@ -40,7 +41,9 @@ export async function websiteRecoveryAuthority() {
         ? ['active']
         : context.stage === 'confirmed'
           ? ['active', 'confirmed']
-          : ['confirmed', 'completed']
+          : context.stage === 'signed-out'
+            ? ['completed']
+            : ['confirmed', 'completed']
       : ['active']
     if (
       action.environment !== environment ||
@@ -136,6 +139,10 @@ export async function websiteRecoveryAuthority() {
     async complete(context: WebsiteRecoveryContext, password: string, save: (grant: WebsiteRecoveryContext) => void) {
       if (context.stage === 'pending') invalid()
       const source = await load(context.actionId, context)
+      if (context.stage === 'signed-out') {
+        await clearLocalAuthSession()
+        return context.destination
+      }
       const client = await createClient()
       const identity = await client.auth.getUser()
       if (identity.error) providerFailure(identity.error)
@@ -163,8 +170,12 @@ export async function websiteRecoveryAuthority() {
       if (action.state !== 'completed') await actions.transition({ id: action.id, to: 'completed' })
       grant = { ...grant, stage: 'completed' }
       save(grant)
-      const result = await client.auth.signOut({ scope: 'global' })
+      const session = await client.auth.getSession()
+      if (session.error) providerFailure(session.error)
+      if (!session.data.session) invalid()
+      const result = await signOutRecoverySession(session.data.session.access_token)
       if (result.error) throw new Error('RECOVERY_TEMPORARILY_UNAVAILABLE')
+      save({ ...grant, stage: 'signed-out' })
       await clearLocalAuthSession()
       return grant.destination
     },

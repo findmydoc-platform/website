@@ -20,7 +20,7 @@ const schema = z
     csrf: z.string().regex(/^[a-f0-9]{64}$/),
     issuedAt: z.number().int(),
     expiresAt: z.number().int(),
-    stage: z.enum(['pending', 'confirmed', 'password-updated', 'completed']),
+    stage: z.enum(['pending', 'confirmed', 'password-updated', 'completed', 'signed-out']),
     tokenHash: z
       .string()
       .regex(/^[a-f0-9]{64}$/)

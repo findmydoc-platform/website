@@ -33,11 +33,16 @@ vi.mock('payload', async (load) => ({
 }))
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createClient: async () => ({
-    auth: { getUser: boundary.getUser, updateUser: boundary.update, signOut: boundary.signOut },
+    auth: {
+      getUser: boundary.getUser,
+      getSession: async () => ({ data: { session: { access_token: 'synthetic-access-token' } }, error: null }),
+      updateUser: boundary.update,
+    },
   }),
   createAdminClient: async () => ({ auth: { admin: { getUserById: boundary.adminUser } } }),
   createVerificationClient: () => ({ auth: { verifyOtp: boundary.verify }, commitSession: boundary.commit }),
   clearLocalAuthSession: boundary.clear,
+  signOutRecoverySession: boundary.signOut,
 }))
 
 const key = { version: 'offline-v1', secret: 'offline-only-recovery-completion-material' } // pragma: allowlist secret
@@ -325,6 +330,18 @@ describe('Website recovery at the callback HTTP boundary', () => {
       expect(boundary.update).toHaveBeenCalledOnce()
     },
   )
+  test('retries only local cleanup after confirmed global sign-out without an authenticated session', async () => {
+    const grant = await confirmed()
+    boundary.clear.mockRejectedValueOnce(new Error('offline-cookie-write-unavailable'))
+    const first = await finish(grant)
+    expect(first.status).toBe(503)
+    const cookie = first.cookies.get('findmydoc_website_recovery')!
+    boundary.getUser.mockResolvedValue({ data: { user: null }, error: { status: 400 } })
+    expect((await finish({ ...grant, cookie: `${cookie.name}=${cookie.value}` })).status).toBe(200)
+    expect(boundary.signOut).toHaveBeenCalledOnce()
+    expect(boundary.update).toHaveBeenCalledOnce()
+    expect(boundary.clear).toHaveBeenCalledTimes(2)
+  })
   async function confirmed(collection: 'patients' | 'platformStaff' = 'patients') {
     const pending = await staged(collection)
     const response = await submit(pending)
@@ -360,7 +377,7 @@ describe('Website recovery at the callback HTTP boundary', () => {
       expect(await response.json()).toEqual({ redirectTo })
       expect(storage.rows.authActions!.get(grant.id)).toMatchObject({ state: 'completed' })
       expect(boundary.update).toHaveBeenCalledWith({ password: 'OfflineNewPassword123' }) // pragma: allowlist secret
-      expect(boundary.signOut).toHaveBeenCalledWith({ scope: 'global' })
+      expect(boundary.signOut).toHaveBeenCalledOnce()
       expect(boundary.clear).toHaveBeenCalledOnce()
       expect(response.cookies.get('findmydoc_website_recovery')?.maxAge).toBe(0)
       expect((await finish(grant)).status).toBe(400)

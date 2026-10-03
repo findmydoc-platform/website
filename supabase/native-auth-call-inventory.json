@@ -9,7 +9,7 @@
     },
     {
       "id": "recovery",
-      "status": "unreplaced",
+      "status": "replaced",
       "issue": 1734,
       "scopes": [{ "path": "src/app/api/auth/password/reset/route.ts", "scope": "POST" }]
     },

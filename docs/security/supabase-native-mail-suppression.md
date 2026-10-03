@@ -21,7 +21,7 @@ product-flow scopes:
 | Flow | Source and function | Native API | State |
 | --- | --- | --- | --- |
 | Patient verification | `src/app/api/auth/register/patient/route.ts`, `POST` | `signUp` | Replaced, #1734 |
-| Shared recovery | `src/app/api/auth/password/reset/route.ts`, `POST` | `resetPasswordForEmail` | Unreplaced, #1734 |
+| Shared recovery | `src/app/api/auth/password/reset/route.ts`, `POST` | none | Replaced, #1734 |
 | Initial clinic invitation | `src/auth/utilities/supabaseProvision.ts`, `createInitialClinicSupabaseAccount` | none | Replaced, #1734 |
 | Generic legacy account invitation | `src/auth/utilities/supabaseProvision.ts`, `inviteSupabaseUser` | `inviteUserByEmail` | Excluded from #1734 |
 

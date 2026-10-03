@@ -35,7 +35,7 @@ export async function createClient() {
 }
 
 // Create a Supabase admin client for server-side admin operations
-export async function createAdminClient() {
+export async function createAdminClient(signal?: AbortSignal) {
   const { url } = getSupabaseConfig()
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -44,6 +44,7 @@ export async function createAdminClient() {
   }
 
   return createServerClient(url, serviceRoleKey, {
+    ...(signal ? { global: { fetch: (input, init) => fetch(input, { ...init, signal }) } } : {}),
     cookies: {
       getAll() {
         return []

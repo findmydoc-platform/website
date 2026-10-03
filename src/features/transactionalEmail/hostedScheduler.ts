@@ -4,6 +4,7 @@ import { runBoundedTransactionalEmailWorker } from './scheduler'
 import { createTransactionalEmailWorker } from './worker'
 import { selectTransactionalEmailRuntime } from './environment'
 import { TransactionalEmailError } from './errors'
+import { prepareCommittedRecoveries } from '@/auth/actions/passwordRecoveryRequests'
 import { prepareCommittedClinicInvitations } from '@/auth/actions/clinicInvitationRequests'
 
 export async function runHostedTransactionalEmailWorker(deadline: number) {
@@ -23,6 +24,11 @@ export async function runHostedTransactionalEmailWorker(deadline: number) {
   } catch {
     preparationFailed = true
   }
+  try {
+    await prepareCommittedRecoveries(req, { deadline, now })
+  } catch {
+    preparationFailed = true
+  }
   const result = await runBoundedTransactionalEmailWorker(
     {
       sweep: worker.sweepForBatch,
@@ -33,6 +39,6 @@ export async function runHostedTransactionalEmailWorker(deadline: number) {
     now,
     deadline,
   )
-  if (preparationFailed) throw new Error('Clinic invitation preparation unavailable.')
+  if (preparationFailed) throw new Error('Auth email command preparation unavailable.')
   return result
 }

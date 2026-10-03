@@ -24,8 +24,10 @@ already deployed `String(registrationId)` reference so existing outbox records r
 invalid identity shapes, cross-command recipient slots, and unknown command types fail before persistence. The runtime
 catalog contains `clinic.registration-received`, which loads the current application, and `auth.email-verification`,
 which reads an active AuthAction and its bound unconfirmed Supabase patient identity. The latter uses only the
-package-owned verification template and fixed Website callback. Its hosted activation remains separate. The other
-seven command types remain valid variants without production product entries. Tests use a complete typed catalog with one entry
+package-owned verification template and fixed Website callback. Its hosted activation remains separate. The catalog also contains `auth.invitation` for the authorized initial clinic principal and one
+`auth.password-recovery` entry for the three closed recovery principal variants. Their action-owned link preparation
+uses the same delivery platform and exact template package. Hosted auth activation remains separate. The other
+five command types remain valid variants without production product entries. Tests use a complete typed catalog with one entry
 for every command variant and resolve only addresses under `example.test`.
 
 Each catalog entry owns acceptance authorization, recipient resolution, worker revalidation, link creation when the

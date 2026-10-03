@@ -84,3 +84,7 @@ and production gates are documented in `supabase-email-template-rollout.md`.
 
 The detailed request sequences are documented in `auth-flow-diagram.md`. ADR 025 records the direct principal
 collections. ADR 026 records the standalone Clinic Dashboard BFF, session, callback, API, error, and cache boundaries.
+
+Password recovery delivery uses the Website-owned `auth.password-recovery` command described in
+[Auth actions](auth-actions.md#recovery-email-command). The Website reset route acknowledges every valid address neutrally
+and sends no native Supabase email. Preview and Production recovery remain disabled until separate environment approval.

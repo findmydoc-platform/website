@@ -2,6 +2,10 @@ import { createLocalReq, type PayloadRequest } from 'payload'
 import { createAdminClient } from '@/auth/utilities/supaBaseServer'
 import { bindAuthActions } from '@/auth/actions/lifecycle'
 import { resolveVerificationKeys } from '@/auth/actions/verificationConfiguration'
+import { createPasswordRecoveryCatalogEntry } from './passwordRecovery'
+import { recoveryAdmin } from './recoveryAdmin'
+import { readRecoveryPrincipal } from '@/auth/actions/recoveryPrincipal'
+import { resolveRecoveryKeys } from '@/auth/actions/recoveryConfiguration'
 import { createCommandCatalog } from './catalog'
 import { findClinicApplication } from './clinicApplicationSource'
 import { resolveTransactionalEmailEnvironment } from './environment'
@@ -9,7 +13,7 @@ import { createClinicInvitationCatalogEntry } from './clinicInvitation'
 import { createPatientVerificationCatalogEntry } from './patientVerification'
 import { findClinicInvitationPrincipal } from '@/auth/actions/clinicInvitationPrincipal'
 
-export function bindPayloadCommandCatalog(req: PayloadRequest) {
+export function bindPayloadCommandCatalog(req: PayloadRequest, options: { recoverySignal?: AbortSignal } = {}) {
   const environment = resolveTransactionalEmailEnvironment()
   return Object.freeze({
     ...createCommandCatalog({ findClinicApplication: (id) => findClinicApplication(req, id) }),
@@ -23,6 +27,22 @@ export function bindPayloadCommandCatalog(req: PayloadRequest) {
         },
       },
       admin: async () => (await createAdminClient()).auth.admin,
+    }),
+    'auth.password-recovery': createPasswordRecoveryCatalogEntry({
+      environment,
+      signal: options.recoverySignal,
+      recoveryKeys: () => resolveRecoveryKeys(environment),
+      actions: {
+        async read(id) {
+          const sourceReq = await createLocalReq({}, req.payload)
+          return bindAuthActions(sourceReq, { environment }).read(id)
+        },
+      },
+      findPrincipal: async (collection, id) => {
+        const sourceReq = await createLocalReq({}, req.payload)
+        return readRecoveryPrincipal(sourceReq, collection, id)
+      },
+      admin: (principal) => recoveryAdmin(environment, principal, options.recoverySignal),
     }),
     'auth.invitation': createClinicInvitationCatalogEntry({
       environment,

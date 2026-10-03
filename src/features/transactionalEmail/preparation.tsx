@@ -1,5 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import {
+  CLINIC_PASSWORD_RECOVERY_SUBJECT,
+  PATIENT_PASSWORD_RECOVERY_SUBJECT,
+  PLATFORM_PASSWORD_RECOVERY_SUBJECT,
+  ClinicPasswordRecoveryEmail,
+  PatientPasswordRecoveryEmail,
+  PlatformPasswordRecoveryEmail,
   CLINIC_REGISTRATION_RECEIPT_SUBJECT,
   CLINIC_STAFF_INVITATION_SUBJECT,
   ClinicStaffInvitationEmail,
@@ -66,4 +72,19 @@ export async function renderClinicStaffInvitation(
 ): Promise<PreparedMessage> {
   const html = await render(<ClinicStaffInvitationEmail actionUrl={actionUrl} />)
   return { recipientAddress, subject: CLINIC_STAFF_INVITATION_SUBJECT, html, text: toPlainText(html) }
+}
+
+export async function renderPasswordRecovery(
+  principal: 'patient' | 'clinic' | 'platform',
+  recipientAddress: string,
+  actionUrl: string,
+): Promise<PreparedMessage> {
+  const templates = {
+    patient: { Email: PatientPasswordRecoveryEmail, subject: PATIENT_PASSWORD_RECOVERY_SUBJECT },
+    clinic: { Email: ClinicPasswordRecoveryEmail, subject: CLINIC_PASSWORD_RECOVERY_SUBJECT },
+    platform: { Email: PlatformPasswordRecoveryEmail, subject: PLATFORM_PASSWORD_RECOVERY_SUBJECT },
+  } as const
+  const { Email, subject } = templates[principal]
+  const html = await render(<Email actionUrl={actionUrl} />)
+  return { recipientAddress, subject, html, text: toPlainText(html) }
 }

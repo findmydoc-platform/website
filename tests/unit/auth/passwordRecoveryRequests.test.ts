@@ -1,0 +1,142 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { PayloadRequest } from 'payload'
+import { requestPasswordRecovery, prepareCommittedRecoveries } from '@/auth/actions/passwordRecoveryRequests'
+const mocks = vi.hoisted(() => ({
+  environment: vi.fn(),
+  activation: vi.fn(),
+  keys: vi.fn(),
+  bind: vi.fn(),
+  transition: vi.fn(),
+  live: vi.fn(),
+  reserve: vi.fn(),
+  accept: vi.fn(),
+  email: vi.fn(),
+  localReq: vi.fn(),
+  catalog: vi.fn(),
+}))
+vi.mock('@/features/transactionalEmail/payloadCatalog', () => ({ bindPayloadCommandCatalog: mocks.catalog }))
+vi.mock('@/features/transactionalEmail/environment', () => ({
+  resolveTransactionalEmailEnvironment: mocks.environment,
+}))
+vi.mock('@/features/transactionalEmail/payloadIntegration', () => ({
+  selectTransactionalEmailCommandAcceptance: mocks.activation,
+  bindTransactionalEmail: mocks.email,
+}))
+vi.mock('@/auth/actions/recoveryConfiguration', () => ({ resolveRecoveryKeys: mocks.keys }))
+vi.mock('@/auth/actions/lifecycle', () => ({ bindAuthActions: mocks.bind }))
+vi.mock('payload', async (load) => ({ ...(await load<typeof import('payload')>()), createLocalReq: mocks.localReq }))
+beforeEach(() => {
+  vi.resetAllMocks()
+  mocks.environment.mockReturnValue('preview')
+  mocks.activation.mockReturnValue({ kind: 'active' })
+  mocks.keys.mockReturnValue([])
+  mocks.bind.mockReturnValue({
+    reserveRecovery: mocks.reserve,
+    liveRecoveries: mocks.live,
+    transition: mocks.transition,
+  })
+  mocks.transition.mockImplementation(async ({ id }) => ({ id, state: 'active' }))
+  mocks.live.mockResolvedValue([])
+  mocks.email.mockReturnValue({ accept: mocks.accept })
+  mocks.accept.mockResolvedValue({ deduplicated: false })
+  mocks.catalog.mockReturnValue({})
+})
+afterEach(() => vi.useRealTimers())
+const req = () => ({ payload: { logger: { error: vi.fn() } }, context: {}, user: null }) as unknown as PayloadRequest
+
+describe('bounded committed recovery command acceptance', () => {
+  it('does no work when the hosted command activation is absent', async () => {
+    mocks.activation.mockReturnValue({ kind: 'inactive' })
+    await requestPasswordRecovery(req(), { email: 'person@example.test', context: null })
+    await prepareCommittedRecoveries(req(), { deadline: 100000, now: () => 0 })
+    expect(mocks.bind).not.toHaveBeenCalled()
+    expect(mocks.keys).not.toHaveBeenCalled()
+    expect(mocks.accept).not.toHaveBeenCalled()
+  })
+  it('pages newest first and duplicate receipts do not exhaust the new acceptance cap', async () => {
+    mocks.live
+      .mockResolvedValueOnce(Array.from({ length: 25 }, (_, index) => ({ id: 26 - index, state: 'active' })))
+      .mockResolvedValueOnce([{ id: 1, state: 'pending' }])
+    mocks.accept.mockImplementation(async ({ authActionId }) => ({ deduplicated: authActionId > 1 }))
+    await prepareCommittedRecoveries(req(), { deadline: 100000, now: () => 0 })
+    expect(mocks.live).toHaveBeenNthCalledWith(1, { beforeId: undefined, limit: 25 })
+    expect(mocks.live).toHaveBeenNthCalledWith(2, { beforeId: 2, limit: 25 })
+    expect(mocks.transition).toHaveBeenCalledWith({ id: 1, to: 'active' })
+    expect(mocks.accept).toHaveBeenCalledWith({ type: 'auth.password-recovery', authActionId: 1 })
+  })
+  it('accepts new interruptions before older duplicate receipts consume each invocation budget', async () => {
+    let clock = 0
+    let newest = 26
+    mocks.live.mockImplementation(async () => [
+      { id: newest, state: 'pending' },
+      ...Array.from({ length: 24 }, (_, index) => ({ id: 25 - index, state: 'active' })),
+    ])
+    const newAcceptances: number[] = []
+    mocks.accept.mockImplementation(async ({ authActionId }) => {
+      clock += 1500
+      if (authActionId === newest) newAcceptances.push(authActionId)
+      return { deduplicated: authActionId !== newest }
+    })
+    for (newest of [26, 27]) {
+      await expect(prepareCommittedRecoveries(req(), { deadline: clock + 100000, now: () => clock })).rejects.toThrow(
+        'Recovery command acceptance unavailable.',
+      )
+    }
+    expect(newAcceptances).toEqual([26, 27])
+  })
+  it.each(['lookup', 'transition', 'acceptance'])(
+    'bounds a hung %s and starts no work after expiration',
+    async (step) => {
+      vi.useFakeTimers()
+      let release!: (value: never) => void
+      const hung = new Promise<never>((resolve) => {
+        release = resolve
+      })
+      if (step === 'lookup') mocks.live.mockReturnValueOnce(hung)
+      else
+        mocks.live.mockResolvedValueOnce([
+          { id: 2, state: 'pending' },
+          { id: 1, state: 'pending' },
+        ])
+      if (step === 'transition') mocks.transition.mockReturnValueOnce(hung)
+      if (step === 'acceptance') mocks.accept.mockReturnValueOnce(hung)
+      const work = prepareCommittedRecoveries(req(), { deadline: Date.now() + 5000 })
+      const result = expect(work).rejects.toThrow('Recovery command acceptance unavailable.')
+      await vi.advanceTimersByTimeAsync(5000)
+      await result
+      expect(mocks.accept).toHaveBeenCalledTimes(step === 'acceptance' ? 1 : 0)
+      if (step === 'acceptance') {
+        const signal = mocks.catalog.mock.calls[0]![1].recoverySignal as AbortSignal
+        expect(signal.aborted).toBe(true)
+      }
+      release({ id: 2, state: 'active', deduplicated: false } as never)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(mocks.accept).toHaveBeenCalledTimes(step === 'acceptance' ? 1 : 0)
+    },
+  )
+  it('limits new acceptances to 25 and stops at the deadline before any attempt', async () => {
+    mocks.live.mockResolvedValue(Array.from({ length: 25 }, (_, index) => ({ id: index + 1, state: 'active' })))
+    await prepareCommittedRecoveries(req(), { deadline: 100000, now: () => 0 })
+    expect(mocks.accept).toHaveBeenCalledTimes(25)
+    expect(mocks.live).toHaveBeenCalledOnce()
+    vi.clearAllMocks()
+    await prepareCommittedRecoveries(req(), { deadline: 0, now: () => 0 })
+    expect(mocks.live).not.toHaveBeenCalled()
+    expect(mocks.accept).not.toHaveBeenCalled()
+  })
+  it('continues independent actions after a content-free failure and reports invocation failure', async () => {
+    const request = req()
+    mocks.live.mockResolvedValueOnce([
+      { id: 1, state: 'active' },
+      { id: 2, state: 'active' },
+    ])
+    mocks.accept.mockRejectedValueOnce(new Error('Private recipient/provider detail'))
+    await expect(prepareCommittedRecoveries(request, { deadline: 100000, now: () => 0 })).rejects.toThrow(
+      'Recovery command acceptance unavailable.',
+    )
+    expect(mocks.accept).toHaveBeenCalledWith({ type: 'auth.password-recovery', authActionId: 2 })
+    expect(JSON.stringify(vi.mocked(request.payload.logger.error).mock.calls)).not.toContain(
+      'Private recipient/provider detail',
+    )
+  })
+})

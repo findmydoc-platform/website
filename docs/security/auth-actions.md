@@ -126,7 +126,7 @@ invitation column. Already recorded migration rows and installed legacy evidence
 
 The resolver reads current `patients`, `clinicStaff` and `platformStaff` records in the owned transaction. Exactly one principal with a valid Supabase UUID is required. Clinic staff additionally require `pending` or `approved` status and successful `authSync`. These authentication rules do not grant clinic business access. Eligible requests create the matching pending recovery AuthAction bound to the authoritative principal in the same transaction as both counters. No Supabase call or delivery effect runs in automatically retried work. [ADR 033](../adrs/033-adr-auth-actions-owned-transactions.md) bounds the transaction-control exception.
 
-`bindRecoveryRequests.request` returns HTTP 200 with `{ "ok": true }` and `Cache-Control: no-store` for every syntactically valid address, including limits, missing trusted IP and infrastructure failures. Invalid address syntax returns 400 without an admission. It never serializes the internal action or exception. This is an internal response adapter; existing public reset routes and native send calls remain unchanged until their delivery-flow replacement. It does not promise identical processing times.
+`bindRecoveryRequests.request` returns HTTP 200 with `{ "ok": true }` and `Cache-Control: no-store` for every syntactically valid address, including limits, missing trusted IP and infrastructure failures. Invalid address syntax returns 400 without an admission. It never serializes the internal action or exception. This internal admission adapter remains delivery-free. The public Website reset route calls the recovery command service and preserves its existing `{ "success": true }` response shape for valid addresses, including infrastructure failure, with `Cache-Control: no-store`. It does not promise identical processing times.
 
 `websiteRecoveryContext` accepts only `x-vercel-forwarded-for` while running on Vercel in Preview or Production. Arbitrary forwarded headers, IP chains and local fallback input are rejected. [Vercel's request header contract](https://vercel.com/docs/headers/request-headers#x-vercel-forwarded-for) supplies that deployment boundary. IPv6 spelling and IPv4-mapped IPv6 normalize to one counter identity.
 
@@ -184,3 +184,36 @@ Clinic invitation reservation binds the current subject immutably. The Dashboard
 password operation before completing the action and calling this boundary. No public
 completion route calls it today. An action state, email outcome, or mock alone does not prove account completion.
 The [clinic participation contract](clinic-participation.md) owns the legacy import and password-usability fallback.
+
+## Recovery email command
+
+[Website #1990](https://github.com/findmydoc-platform/website/issues/1990) binds one `auth.password-recovery` command to
+an AuthAction ID. Auth resolves exactly one current patient, clinic staff or platform staff principal through bounded
+Payload lookups. A duplicate email or subject across those collections fails closed. Clinic staff must remain pending
+or approved with synchronized identity. Supabase's current `app_metadata.user_type`, subject, email and ban state must
+match; user-editable metadata grants no authority.
+
+An admitted request stores the original subject and recipient HMAC using the existing private binding fields. Another
+admitted request supersedes prior pending or active recovery actions in the same principal scope. The original recipient
+correlation is cleared after one hour by the existing Auth sweep. No schema or migration is added.
+
+The static catalog validates action state, environment, expiry, original recipient, subject and current principal before
+acceptance, preparation and every attempt. It derives the callback, completion route and final destination from the
+immutable action policy. The exact `@findmydoc-platform/email-templates@0.3.0` root exports are
+`PatientPasswordRecoveryEmail`, `ClinicPasswordRecoveryEmail` and `PlatformPasswordRecoveryEmail`; each receives only
+`actionUrl`. Hosted `generateLink({ type: 'recovery' })` supplies a token hash without native mail. The rendered callback
+contains `authActionId`, the fixed completion `next`, `token_hash` and `type=recovery`. Final destinations remain on the
+action; completion UI and Dashboard protocol are separate work.
+
+The shared worker preserves the prepared bytes, generated link, operation and provider idempotency key on technical
+retry, and suppresses changed or missing recipients and lost authority. The existing scheduler reaccepts interrupted
+pending/active actions with newest-first keyset pages of at most 25, so older duplicate receipts cannot prevent a new
+interruption from being examined. Duplicate receipts do not consume its 25-new-acceptance cap. One deadline bounds
+all awaited steps to the remaining invocation budget, at most 30 seconds. Expiration aborts scoped Supabase requests;
+late source reads or transitions cannot start another acceptance. Supabase directory scans are absent.
+
+Local, test and CI use synthetic identity/link evidence and the shared Fake transport without constructing the live
+Supabase SDK. The lazily resolved `AUTH_RECOVERY_CORRELATION_KEYS_JSON` contains the exact environment and a current-first
+`keys` array of `{ version, secret }`. Keep prior keys while their recovery window remains live. Hosted recovery remains
+inactive because Preview and Production have no `auth.password-recovery` activation declaration. Source validation
+establishes no hosted configuration, email delivery or completion evidence.

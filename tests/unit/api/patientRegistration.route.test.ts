@@ -278,6 +278,7 @@ describe('patient registration through Auth, catalog, Outbox and offline deliver
   test('resends from email alone without changing the password and keeps unknown addresses neutral', async () => {
     await POST(makeRequest())
     vi.setSystemTime(new Date(Date.now() + 301000))
+    boundary.admin.listUsers!.mockRejectedValue(new Error('Directory unavailable'))
     const request = (email: string) =>
       new Request('http://localhost/api/auth/register/patient/resend', {
         method: 'POST',
@@ -289,6 +290,7 @@ describe('patient registration through Auth, catalog, Outbox and offline deliver
     expect(await response.json()).toEqual({ success: true })
     expect(storage.rows.authActions!.get(1)?.state).toBe('superseded')
     expect(storage.rows.transactionalEmailOutbox!.size).toBe(2)
+    expect(boundary.admin.getUserById).toHaveBeenCalledWith(subject)
     expect(boundary.admin.createUser).toHaveBeenCalledOnce()
     expect(boundary.admin.updateUserById).not.toHaveBeenCalled()
     boundary.admin.listUsers!.mockResolvedValue({ data: { users: [] }, error: null })

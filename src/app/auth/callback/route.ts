@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
 import { createClient } from '@/auth/utilities/supaBaseServer'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 import { InvalidPatientVerification, patientVerificationAuthority } from '@/auth/actions/patientVerificationCompletion'
@@ -38,10 +39,16 @@ export async function GET(request: NextRequest) {
       return applyPrivateAuthHeaders(response)
     try {
       const authority = await patientVerificationAuthority()
-      const { action } = await authority.load(Number(id))
+      let subject: string = randomUUID()
+      try {
+        const { action } = await authority.load(Number(id))
+        subject = action.supabaseSubject!
+      } catch {
+        // Opaque decoy contexts keep eligible and ineligible action IDs indistinguishable in the response.
+      }
       setPatientVerificationContext(
         response,
-        pendingPatientContext(action.id, action.supabaseSubject!, authority.environment, token),
+        pendingPatientContext(Number(id), subject, authority.environment, token),
         authority.keys,
       )
     } catch {

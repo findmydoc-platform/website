@@ -10,8 +10,22 @@ import { Label } from '@/components/atoms/label'
 import { Heading } from '@/components/atoms/Heading'
 import { usePublicFormValidation } from '@/components/molecules/PublicFormValidation'
 
-export function PatientVerificationResendForm() {
+async function requestVerification(email: string) {
+  const response = await fetch('/api/auth/register/patient/resend', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+    redirect: 'error',
+  })
+  if (!response.ok) throw new Error('REQUEST_UNAVAILABLE')
+}
+
+export function PatientVerificationResendForm({
+  onRequest = requestVerification,
+}: Readonly<{ onRequest?: (email: string) => Promise<void> }>) {
   const [state, setState] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
+  const [email, setEmail] = useState('')
   const validation = usePublicFormValidation({
     messages: {
       email: {
@@ -27,18 +41,8 @@ export function PatientVerificationResendForm() {
     if (!validation.validateForm(form)) return
     setState('pending')
     try {
-      const response = await fetch('/api/auth/register/patient/resend', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: new FormData(form).get('email') }),
-        redirect: 'error',
-      })
-      if (!response.ok) {
-        setState('error')
-        return
-      }
-      form.reset()
+      await onRequest(email)
+      setEmail('')
       setState('success')
     } catch {
       setState('error')
@@ -47,7 +51,7 @@ export function PatientVerificationResendForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <Heading as="h2" size="h5" align="left">
+        <Heading as="h2" size="h5" align="left" id="patient-verification-resend" tabIndex={-1}>
           Need another verification email?
         </Heading>
         <CardDescription>Enter the email you used to register.</CardDescription>
@@ -61,6 +65,11 @@ export function PatientVerificationResendForm() {
           noValidate
           className="space-y-4"
         >
+          {state === 'pending' ? (
+            <p className="sr-only" role="status">
+              Requesting your verification email.
+            </p>
+          ) : null}
           {state === 'success' ? (
             <Alert variant="success" role="status">
               If an eligible registration exists, you will receive a verification email. Check your inbox and spam
@@ -82,7 +91,11 @@ export function PatientVerificationResendForm() {
               autoComplete="email"
               required
               disabled={state === 'pending'}
-              onChange={validation.handleFieldChange}
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value)
+                validation.handleFieldChange(event)
+              }}
               {...validation.getFieldProps('email')}
             />
             <FieldError id={validation.getFieldErrorId('email')}>{validation.getFieldError('email')}</FieldError>

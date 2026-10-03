@@ -13,7 +13,7 @@ const commandSchema = z
     resendOf: z.number().int().positive().optional(),
   })
   .strict()
-type Admin = Pick<SupabaseClient['auth']['admin'], 'createUser' | 'listUsers'>
+type Admin = Pick<SupabaseClient['auth']['admin'], 'createUser' | 'listUsers' | 'getUserById'>
 
 function unavailable(): never {
   throw new APIError('identity-unavailable', 503)
@@ -22,6 +22,7 @@ function eligible(user: User, email: string) {
   return (
     normalizeEmail(user.email) === email &&
     !user.email_confirmed_at &&
+    (!user.banned_until || Date.parse(user.banned_until) <= Date.now()) &&
     user.app_metadata?.user_type === 'patient' &&
     z.string().uuid().safeParse(user.id).success
   )
@@ -56,7 +57,12 @@ export function bindPendingPatientVerification(
       const current = await actions.reservePatientVerification({ email })
       if (!['pending', 'active'].includes(current.state)) unavailable()
       // Email-only requests never create an identity or replace its password.
-      const user = await reconcile(options.admin, email).catch(() => unavailable())
+      let user: User
+      if (current.supabaseSubject) {
+        const result = await options.admin.getUserById(current.supabaseSubject)
+        if (result.error || !result.data.user || !eligible(result.data.user, email)) unavailable()
+        user = result.data.user
+      } else user = await reconcile(options.admin, email).catch(() => unavailable())
       if (current.supabaseSubject && current.supabaseSubject !== user.id) unavailable()
       if (!current.supabaseSubject && current.state === 'pending')
         return actions.bindSubject({ id: current.id, supabaseSubject: user.id })

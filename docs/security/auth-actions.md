@@ -79,34 +79,39 @@ Local API storage and Fake delivery. They prove this source behavior, not live S
 
 `GET /auth/callback` accepts only one `authActionId`, `token_hash` and `type=magiclink`, with no `code`, `next` or
 additional parameter. It checks the current active action, fixed policy, environment, expiry and correlated
-unconfirmed patient identity without calling `verifyOtp`. Every rejected link redirects to the same token-free
-`/auth/confirm?type=patient-verification` state. A valid link receives a signed ten-minute `HttpOnly`, same-site cookie
+unconfirmed patient identity without calling `verifyOtp`. Every link redirects to the same token-free
+`/auth/confirm?type=patient-verification` state. Every syntactically valid link receives an opaque ten-minute `HttpOnly`, same-site cookie
 scoped to `/auth`. The cookie contains the action, subject, fixed flow and destination, expiry, a random CSRF value
-and the pending token hash. It contains no email. HMAC signing uses the existing environment key ring with a separate
-message purpose, preserving rotation without adding configuration.
+and the pending token hash. It contains no email. AES-256-GCM encryption and HMAC signing derive separate purposes from
+the existing environment key ring, preserving rotation without adding configuration. Ineligible actions receive an
+equally sized encrypted decoy context, so the response does not disclose an action's existence or private subject.
 
 Only same-origin JSON `POST /auth/callback` with the matching CSRF value consumes the token. It rechecks current
 Auth authority and uses an isolated Supabase client whose cookies remain buffered until the verified subject,
-confirmed email and authoritative patient role match. A mismatched provider identity cannot install a session.
+confirmed email and authoritative patient role match and current authority is rechecked. A mismatched provider identity
+or rejected current action cannot install a session. The adapter clears obsolete cookies of the same Supabase storage
+family before installing the new session, including transitions between unchunked and chunked sessions.
 The confirmed session remains available while the action advances to `confirmed`. `ensurePatientOnAuth` reuses the
 existing unique-subject provisioning boundary, including concurrent-create conflict recovery. Principal binding
 checks the patient subject, and `completed` requires that binding. Success returns only `/patient/inquiries`.
 The initial confirmation UI exposes the CSRF value, never the pending token or identity.
 
-A successful token confirmation replaces the pending cookie with a signed token-free receipt bounded by the
+A successful token confirmation replaces the pending cookie with an encrypted, signed token-free receipt bounded by the
 AuthAction expiry. A temporary lifecycle or provisioning failure keeps that receipt and session for completion
 retry, including after the original ten-minute pending window. Retry checks the current authoritative identity
-and validates the session with Supabase `getUser`; it does not consume the token again. Invalid, expired, replayed,
+and validates the session with Supabase `getUser`; it does not consume the token again. A technical recheck failure
+retains the already verified session and receipt; a definitive authority rejection discards the buffered session.
+Invalid, expired, replayed,
 mismatched, superseded and revoked links share the same public error. No token, link or receipt enters an AuthAction
 or patient record. Next development request logging excludes `/auth/callback` queries.
 
 The existing `/register/patient` page includes an email-only resend form. Its same-origin
 `POST /api/auth/register/patient/resend` accepts only an email and returns the same no-store success for every valid
 address, including unknown identities, confirmed accounts, throttling and unavailable infrastructure. Auth performs
-bounded identity reconciliation and authorizes the current correlation's replacement through the existing
+direct subject lookup for bound actions or bounded reconciliation for unbound actions, and authorizes the current correlation's replacement through the existing
 five-minute cooldown and five-per-day reservation boundary. It never creates a Supabase identity or changes a
 password. An unbound pending reservation can resume identity binding. Preview Guard suppresses the operation.
-The form clears its input after acceptance and stores no address in a URL or cookie. Delivery continues through the
+The recovery link targets the resend heading directly. The controlled form clears its input after acceptance and stores no address in a URL or cookie. Delivery continues through the
 existing catalog, Outbox and pinned template. Preview and Production sending remain fail-closed.
 
 Offline HTTP and UI units cover GET/POST separation, CSRF, policy and identity mismatch, expiry, replay, provisioning

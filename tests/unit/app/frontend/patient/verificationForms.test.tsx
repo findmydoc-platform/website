@@ -10,6 +10,42 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 describe('patient verification public forms', () => {
+  test('announces confirmation while the request is pending', async () => {
+    let finish!: (value: unknown) => void
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve
+          }),
+      ),
+    )
+    render(<PatientVerificationForm csrf="offline-csrf" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm email' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Confirming your email')
+    expect(screen.getByRole('button', { name: 'Confirming...' })).toBeDisabled()
+    finish({ ok: false, status: 503, json: async () => ({}) })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled())
+  })
+  test('announces resend while the controlled email request is pending', async () => {
+    let finish!: () => void
+    render(
+      <PatientVerificationResendForm
+        onRequest={() =>
+          new Promise((resolve) => {
+            finish = resolve
+          })
+        }
+      />,
+    )
+    fireEvent.change(screen.getByRole('textbox', { name: 'Email' }), { target: { value: 'patient@example.test' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Request verification email' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Requesting your verification email')
+    finish()
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('If an eligible registration exists'))
+    expect(screen.getByRole('textbox', { name: 'Email' })).toHaveValue('')
+  })
   test('offers email-only resend after invalid-submit, inline error, correction and submit', async () => {
     const fetch = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal('fetch', fetch)
@@ -54,7 +90,7 @@ describe('patient verification public forms', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Request a verification email' })).toHaveAttribute(
       'href',
-      '/register/patient',
+      '/register/patient#patient-verification-resend',
     )
   })
 })

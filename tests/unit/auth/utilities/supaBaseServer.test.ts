@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const createServerClientMock = vi.fn()
 const cookieSet = vi.hoisted(() => vi.fn())
-vi.mock('next/headers.js', () => ({ cookies: async () => ({ set: cookieSet }) }))
+const cookieGetAll = vi.hoisted(() => vi.fn(() => [] as { name: string; value: string }[]))
+vi.mock('next/headers.js', () => ({ cookies: async () => ({ set: cookieSet, getAll: cookieGetAll }) }))
 
-vi.mock('@supabase/ssr', () => ({
+vi.mock('@supabase/ssr', async (load) => ({
+  ...(await load<typeof import('@supabase/ssr')>()),
   createServerClient: createServerClientMock,
 }))
 
@@ -12,6 +14,7 @@ describe('createAdminClient', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    cookieGetAll.mockReturnValue([])
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co'
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key'
     delete process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -57,6 +60,34 @@ describe('createAdminClient', () => {
     expect(cookieSet).toHaveBeenCalledWith('sb-offline-auth-token', 'offline-session', { httpOnly: true })
     await client.commitSession()
     expect(cookieSet).toHaveBeenCalledOnce()
+  })
+  it('replaces the old session cookie family before installing chunked verification cookies', async () => {
+    createServerClientMock.mockReturnValueOnce({ auth: {} })
+    cookieGetAll.mockReturnValue([
+      { name: 'sb-example-auth-token', value: 'old-identity' },
+      { name: 'sb-example-auth-token.0', value: 'old-chunk' },
+      { name: 'sb-example-auth-token.3', value: 'stale-chunk' },
+      { name: 'unrelated', value: 'keep' },
+    ])
+    const { createVerificationClient } = await import('@/auth/utilities/supaBaseServer')
+    const client = createVerificationClient()
+    const options = createServerClientMock.mock.calls[0]![2] as {
+      cookies: { setAll(values: { name: string; value: string; options: object }[]): void }
+    }
+    options.cookies.setAll([
+      { name: 'sb-example-auth-token.0', value: 'new-0', options: { path: '/' } },
+      { name: 'sb-example-auth-token.1', value: 'new-1', options: { path: '/' } },
+    ])
+    await client.commitSession()
+    expect(cookieSet.mock.calls.slice(0, 3)).toEqual([
+      ['sb-example-auth-token', '', expect.objectContaining({ maxAge: 0, path: '/' })],
+      ['sb-example-auth-token.0', '', expect.objectContaining({ maxAge: 0, path: '/' })],
+      ['sb-example-auth-token.3', '', expect.objectContaining({ maxAge: 0, path: '/' })],
+    ])
+    expect(cookieSet.mock.calls.slice(3).map(([name, value]) => [name, value])).toEqual([
+      ['sb-example-auth-token.0', 'new-0'],
+      ['sb-example-auth-token.1', 'new-1'],
+    ])
   })
   it('aborts a scoped admin request when the recovery scheduler deadline expires', async () => {
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key'

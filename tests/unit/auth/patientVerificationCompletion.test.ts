@@ -5,6 +5,7 @@ import type { User } from '@supabase/supabase-js'
 import { createEmailCommandStorage } from '../../helpers/emailCommandStorage'
 import { requestPatientVerification } from '@/auth/actions/patientVerificationRequests'
 import { GET, POST } from '@/app/auth/callback/route'
+import { readPatientVerificationContext } from '@/auth/actions/patientVerificationContext'
 
 const boundary = vi.hoisted(() => ({
   payload: undefined as unknown as Payload,
@@ -78,7 +79,7 @@ describe('patient verification at the callback HTTP boundary with offline Auth s
   async function staged() {
     const response = await open()
     const cookie = response.cookies.get('findmydoc_patient_verification')!
-    const context = JSON.parse(Buffer.from(cookie.value.split('.')[1]!, 'base64url').toString()) as { csrf: string }
+    const context = readPatientVerificationContext(cookie.value, 'test', [key])!
     return { cookie: `${cookie.name}=${cookie.value}`, csrf: context.csrf }
   }
   function submit(context: { cookie: string; csrf: string }, extra: { origin?: string; csrf?: string } = {}) {
@@ -122,6 +123,66 @@ describe('patient verification at the callback HTTP boundary with offline Auth s
     expect(replay.status).toBe(400)
     expect(await replay.json()).toEqual({ code: 'INVALID_OR_EXPIRED_LINK' })
     expect(boundary.verify).toHaveBeenCalledOnce()
+  })
+  test('conceals private subjects and does not distinguish eligible from unknown actions on GET', async () => {
+    const eligible = await open()
+    const unknown = await GET(
+      new NextRequest(`${origin}/auth/callback?authActionId=2&type=magiclink&token_hash=${token}`),
+    )
+    const cookie = eligible.cookies.get('findmydoc_patient_verification')!
+    expect(Buffer.from(cookie.value.split('.')[1]!, 'base64url').toString()).not.toContain(subject)
+    expect(unknown.status).toBe(eligible.status)
+    expect(unknown.headers.get('location')).toBe(eligible.headers.get('location'))
+    expect(unknown.cookies.get(cookie.name)?.value.length).toBe(cookie.value.length)
+    expect(boundary.verify).not.toHaveBeenCalled()
+  })
+  test.each(['revoked', 'superseded'])(
+    'does not install a session when the action becomes %s during token verification',
+    async (state) => {
+      const verify = boundary.verify.getMockImplementation()!
+      boundary.verify.mockImplementation(async () => {
+        const result = await verify()
+        storage.rows.authActions!.get(1)!.state = state
+        return result
+      })
+      expect((await submit(await staged())).status).toBe(400)
+      expect(boundary.setSession).not.toHaveBeenCalled()
+    },
+  )
+  test('shows the neutral invalid state when the bound identity was deleted', async () => {
+    const context = await staged()
+    boundary.admin.getUserById!.mockResolvedValue({
+      data: { user: null },
+      error: { status: 404, code: 'user_not_found' },
+    })
+    expect((await submit(context)).status).toBe(400)
+    expect(boundary.verify).not.toHaveBeenCalled()
+  })
+  test('retains a confirmed receipt when the post-consumption authority recheck is temporarily unavailable', async () => {
+    const context = await staged()
+    const verify = boundary.verify.getMockImplementation()!
+    boundary.verify.mockImplementationOnce(async () => {
+      const result = await verify()
+      boundary.admin.getUserById!.mockResolvedValueOnce({ data: { user: null }, error: { status: 500 } })
+      return result
+    })
+    const first = await submit(context)
+    expect(first.status).toBe(503)
+    const cookie = first.cookies.get('findmydoc_patient_verification')!
+    expect(readPatientVerificationContext(cookie.value, 'test', [key])).toMatchObject({ stage: 'confirmed' })
+    expect((await submit({ ...context, cookie: `${cookie.name}=${cookie.value}` })).status).toBe(200)
+    expect(boundary.verify).toHaveBeenCalledOnce()
+  })
+  test('accepts an encrypted pending context signed with a retained rotation key', async () => {
+    const context = await staged()
+    vi.stubEnv(
+      'AUTH_VERIFICATION_CORRELATION_KEYS_JSON',
+      JSON.stringify({
+        environment: 'test',
+        keys: [{ version: 'offline-v2', secret: 'offline-only-new-verification-key' }, key],
+      }),
+    ) // pragma: allowlist secret
+    expect((await submit(context)).status).toBe(200)
   })
   test.each([{ origin: 'https://attacker.example' }, { csrf: 'wrong' }])(
     'rejects untrusted POST %j before consumption',

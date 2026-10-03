@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
 import type { NextResponse } from 'next/server'
 import { authActionEnvironments } from './contracts'
@@ -28,6 +28,9 @@ export type PatientVerificationContext = z.infer<typeof schema>
 function signature(value: string, secret: string) {
   return createHmac('sha256', secret).update(`patient-verification-context-v1|${value}`).digest()
 }
+function encryptionKey(secret: string) {
+  return createHmac('sha256', secret).update('patient-verification-encryption-key-v1').digest()
+}
 
 export function readPatientVerificationContext(
   value: string | undefined,
@@ -43,7 +46,12 @@ export function readPatientVerificationContext(
     const key = keys.find((key) => key.version === version)
     if (!key || !/^[a-f0-9]{64}$/.test(mac)) return null
     if (!timingSafeEqual(signature(`${version}.${payload}`, key.secret), Buffer.from(mac, 'hex'))) return null
-    const parsed = schema.parse(JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')))
+    const encrypted = Buffer.from(payload, 'base64url')
+    if (encrypted.length <= 28) return null
+    const decipher = createDecipheriv('aes-256-gcm', encryptionKey(key.secret), encrypted.subarray(0, 12))
+    decipher.setAuthTag(encrypted.subarray(12, 28))
+    const plaintext = Buffer.concat([decipher.update(encrypted.subarray(28)), decipher.final()])
+    const parsed = schema.parse(JSON.parse(plaintext.toString('utf8')))
     if (
       parsed.environment !== environment ||
       parsed.issuedAt > now ||
@@ -87,7 +95,10 @@ export function setPatientVerificationContext(
   keys: readonly VerificationCorrelationKey[],
 ) {
   const key = keys[0]!
-  const payload = Buffer.from(JSON.stringify(schema.parse(context))).toString('base64url')
+  const nonce = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', encryptionKey(key.secret), nonce)
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify(schema.parse(context)), 'utf8'), cipher.final()])
+  const payload = Buffer.concat([nonce, cipher.getAuthTag(), encrypted]).toString('base64url')
   const value = `${key.version}.${payload}`
   response.cookies.set(PATIENT_VERIFICATION_COOKIE, `${value}.${signature(value, key.secret).toString('hex')}`, {
     httpOnly: true,

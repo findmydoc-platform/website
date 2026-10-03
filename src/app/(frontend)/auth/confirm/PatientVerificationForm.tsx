@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/components/ato
 import { Heading } from '@/components/atoms/Heading'
 import { UiLink } from '@/components/molecules/Link'
 
+export type PatientVerificationState = 'idle' | 'pending' | 'invalid' | 'retry' | 'completed'
 export function PatientVerificationForm({ csrf }: Readonly<{ csrf: string | null }>) {
-  const [state, setState] = useState<'idle' | 'pending' | 'invalid' | 'retry' | 'completed'>(csrf ? 'idle' : 'invalid')
+  const [state, setState] = useState<PatientVerificationState>(csrf ? 'idle' : 'invalid')
   async function confirm() {
     setState('pending')
     try {
@@ -28,6 +29,13 @@ export function PatientVerificationForm({ csrf }: Readonly<{ csrf: string | null
       setState('retry')
     }
   }
+  return <PatientVerificationView state={state} onConfirm={confirm} />
+}
+
+export function PatientVerificationView({
+  state,
+  onConfirm,
+}: Readonly<{ state: PatientVerificationState; onConfirm: () => void }>) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
@@ -37,6 +45,11 @@ export function PatientVerificationForm({ csrf }: Readonly<{ csrf: string | null
         <CardDescription className="text-center">Confirm your email to open your patient account.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {state === 'pending' ? (
+          <p className="sr-only" role="status">
+            Confirming your email.
+          </p>
+        ) : null}
         {state === 'invalid' ? (
           <Alert variant="error" role="alert">
             This link is invalid or has expired. Request a new verification email to continue.
@@ -53,11 +66,11 @@ export function PatientVerificationForm({ csrf }: Readonly<{ csrf: string | null
           </Alert>
         ) : null}
         {state !== 'invalid' && state !== 'completed' ? (
-          <Button className="w-full" disabled={state === 'pending'} onClick={confirm}>
+          <Button className="w-full" disabled={state === 'pending'} onClick={onConfirm}>
             {state === 'pending' ? 'Confirming...' : state === 'retry' ? 'Try again' : 'Confirm email'}
           </Button>
         ) : null}
-        <UiLink href="/register/patient" className="flex min-h-11 items-center">
+        <UiLink href="/register/patient#patient-verification-resend" className="flex min-h-11 items-center">
           Request a verification email
         </UiLink>
       </CardContent>

@@ -8,6 +8,8 @@ const commandSchema = z
   .object({
     email: z.string().max(254),
     password: z.string().min(6).max(4096),
+    firstName: z.string().trim().min(1).max(200).optional(),
+    lastName: z.string().trim().min(1).max(200).optional(),
     resendOf: z.number().int().positive().optional(),
   })
   .strict()
@@ -61,6 +63,10 @@ export function bindPendingPatientVerification(
           password,
           email_confirm: false,
           app_metadata: { user_type: 'patient' },
+          user_metadata: {
+            ...(parsed.data.firstName ? { first_name: parsed.data.firstName } : {}),
+            ...(parsed.data.lastName ? { last_name: parsed.data.lastName } : {}),
+          },
         })
         if (!result.error && result.data.user && eligible(result.data.user, email)) user = result.data.user
       } catch {

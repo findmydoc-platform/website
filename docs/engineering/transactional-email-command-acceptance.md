@@ -22,9 +22,10 @@ The module derives the durable reference centrally. Auth uses `v1|auth-action|<i
 `v1|conversation-message|<id>`, and Moderation uses `v1|moderation-event|<id>|<slot>`. Clinic Registration keeps its
 already deployed `String(registrationId)` reference so existing outbox records remain valid. Extra properties,
 invalid identity shapes, cross-command recipient slots, and unknown command types fail before persistence. The runtime
-catalog contains the `clinic.registration-received` product entry, which loads an existing clinic application and
-derives its recipient and template props. The other eight command types remain valid command variants, but the runtime
-catalog does not register their product sources or templates yet. Tests use a complete typed catalog with one entry
+catalog contains `clinic.registration-received`, which loads the current application, and `auth.email-verification`,
+which reads an active AuthAction and its bound unconfirmed Supabase patient identity. The latter uses only the
+package-owned verification template and fixed Website callback. Its hosted activation remains separate. The other
+seven command types remain valid variants without production product entries. Tests use a complete typed catalog with one entry
 for every command variant and resolve only addresses under `example.test`.
 
 Each catalog entry owns acceptance authorization, recipient resolution, worker revalidation, link creation when the

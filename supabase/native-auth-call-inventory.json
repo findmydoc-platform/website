@@ -3,7 +3,7 @@
   "flows": [
     {
       "id": "patient-verification",
-      "status": "unreplaced",
+      "status": "replaced",
       "issue": 1734,
       "scopes": [{ "path": "src/app/api/auth/register/patient/route.ts", "scope": "POST" }]
     },

@@ -212,6 +212,24 @@ describe('patient registration through Auth, catalog, Outbox and offline deliver
     expect(storage.rows.authActions!.size).toBe(0)
   })
 
+  test('bounds public identity reconciliation and never binds from an incomplete directory', async () => {
+    boundary.admin.createUser!.mockResolvedValue({ data: { user: null }, error: new Error('Already exists') })
+    const fullPage = Array.from({ length: 1000 }, (_, index) => ({
+      ...user,
+      email: index === 0 ? user.email : `other-${index}@example.test`,
+    }))
+    boundary.admin
+      .listUsers!.mockResolvedValueOnce({ data: { users: fullPage }, error: null })
+      .mockResolvedValueOnce({ data: { users: fullPage }, error: null })
+      .mockResolvedValue({ data: { users: [] }, error: null })
+    expect((await POST(makeRequest())).status).toBe(200)
+    expect(boundary.admin.listUsers).toHaveBeenCalledTimes(2)
+    expect([...storage.rows.authActions!.values()][0]).toMatchObject({ state: 'pending', supabaseSubject: null })
+    expect(storage.rows.transactionalEmailOutbox!.size).toBe(0)
+    expect(boundary.admin.updateUserById).not.toHaveBeenCalled()
+    expect(boundary.admin.generateLink).not.toHaveBeenCalled()
+  })
+
   test('expires a queued email without generating or sending a late verification link', async () => {
     await POST(makeRequest())
     vi.setSystemTime(new Date(Date.now() + 86400001))

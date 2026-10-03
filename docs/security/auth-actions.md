@@ -34,6 +34,13 @@ A technical retry returns the same nonterminal action across all supplied key ve
 
 The retention sweep removes both correlation fields at `createdAt + 24 hours`, including completed actions whose patient relationship has been deleted, while retaining the established lifecycle metadata. This narrowly scoped deletion does not change the subject, binding timestamps, state or original terminal timestamp. It expires due live actions and deletes terminal history at the existing 42-day boundary. Deployment activation and the hosted sweep schedule are separate from this internal preparation boundary.
 
+Public identity reconciliation reads at most two pages of 1,000 users. If the second page is full, the inventory is
+incomplete and no identity is bound, even if a matching address was seen. Registration returns its neutral response,
+leaves the reservation unbound and sends nothing. This resource limit prevents directory-size-dependent public work;
+it is not an account-existence result. Larger inventories require a trusted targeted identity-reconciliation mechanism
+before relying on uncertain creation recovery. Successfully created identities and already bound retries do not scan
+the directory. No global Supabase identity list is cached or exposed.
+
 ## Patient verification delivery
 
 `POST /api/auth/register/patient` validates the existing email, password and names and preserves Preview Guard.

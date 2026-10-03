@@ -30,12 +30,15 @@ function eligible(user: User, email: string) {
 async function reconcile(admin: Admin, email: string): Promise<User> {
   const matches: User[] = []
   const perPage = 1000
-  for (let page = 1; ; page++) {
+  const maxPages = 2
+  for (let page = 1; page <= maxPages; page++) {
     const { data, error } = await admin.listUsers({ page, perPage })
     if (error || !data) unavailable()
     matches.push(...data.users.filter((user) => normalizeEmail(user.email) === email))
     // The SDK truncates multi-digit Link header page numbers. Advance using the requested page size instead.
     if (data.users.length < perPage) break
+    // Never bind from a partial inventory or let a public request walk an unbounded directory.
+    if (page === maxPages) unavailable()
   }
   if (matches.length !== 1 || !eligible(matches[0]!, email)) unavailable()
   return matches[0]!

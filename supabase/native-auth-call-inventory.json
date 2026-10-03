@@ -15,9 +15,9 @@
     },
     {
       "id": "clinic-invitation",
-      "status": "unreplaced",
+      "status": "replaced",
       "issue": 1734,
-      "scopes": [{ "path": "src/auth/utilities/supabaseProvision.ts", "scope": "inviteClinicSupabaseAccount" }]
+      "scopes": [{ "path": "src/auth/utilities/supabaseProvision.ts", "scope": "createInitialClinicSupabaseAccount" }]
     },
     {
       "id": "legacy-account-invitation",
@@ -39,13 +39,6 @@
       "path": "src/app/api/auth/password/reset/route.ts",
       "scope": "POST",
       "method": "resetPasswordForEmail",
-      "count": 1
-    },
-    {
-      "flow": "clinic-invitation",
-      "path": "src/auth/utilities/supabaseProvision.ts",
-      "scope": "inviteClinicSupabaseAccount",
-      "method": "inviteUserByEmail",
       "count": 1
     },
     {

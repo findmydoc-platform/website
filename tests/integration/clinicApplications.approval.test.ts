@@ -7,7 +7,10 @@ import { testSlug } from '../fixtures/testSlug'
 import { runBaselineContract } from './contracts/baselineContract'
 import type { Clinic, ClinicApplication, ClinicStaff, PlatformStaff } from '@/payload-types'
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
-import { inviteClinicSupabaseAccount, reconcileExistingClinicSupabaseAccount } from '@/auth/utilities/supabaseProvision'
+import {
+  createInitialClinicSupabaseAccount,
+  reconcileExistingClinicSupabaseAccount,
+} from '@/auth/utilities/supabaseProvision'
 import { provisionClinicOnboarding } from '@/features/clinicOnboarding/provisionClinicOnboarding'
 
 type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
@@ -122,8 +125,7 @@ describe('ClinicApplications approval integration', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(inviteClinicSupabaseAccount).mockImplementation(async ({ onboardingKey, beforeInvite }) => {
-      await beforeInvite?.()
+    vi.mocked(createInitialClinicSupabaseAccount).mockImplementation(async ({ onboardingKey }) => {
       return `sb-clinic-${onboardingKey}`
     })
   })
@@ -296,7 +298,7 @@ describe('ClinicApplications approval integration', () => {
     ])
     expect(clinics.docs).toHaveLength(1)
     expect(staff.docs).toHaveLength(1)
-    expect(inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
+    expect(createInitialClinicSupabaseAccount).toHaveBeenCalledOnce()
   }, 45000)
 
   it('recovers existing participants without another invitation after an uncertain provider failure', async () => {
@@ -308,8 +310,7 @@ describe('ClinicApplications approval integration', () => {
       depth: 0,
     } as PayloadCreateArgs)) as ClinicApplication
     createdApplicationIds.push(app.id)
-    vi.mocked(inviteClinicSupabaseAccount).mockImplementationOnce(async ({ beforeInvite }) => {
-      await beforeInvite?.()
+    vi.mocked(createInitialClinicSupabaseAccount).mockImplementationOnce(async () => {
       throw new Error('temporary auth failure')
     })
 
@@ -345,7 +346,7 @@ describe('ClinicApplications approval integration', () => {
       depth: 0,
     })) as ClinicApplication
     expect(stillFailed.provisioningStatus).toBe('failed')
-    expect(inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
+    expect(createInitialClinicSupabaseAccount).toHaveBeenCalledOnce()
 
     vi.mocked(reconcileExistingClinicSupabaseAccount).mockResolvedValueOnce(`sb-clinic-clinic-application:${app.id}`)
     await payload.update({
@@ -385,7 +386,7 @@ describe('ClinicApplications approval integration', () => {
     ])
     expect(clinics.docs).toHaveLength(1)
     expect(staff.docs).toHaveLength(1)
-    expect(inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
+    expect(createInitialClinicSupabaseAccount).toHaveBeenCalledTimes(2)
   }, 45000)
 
   it('reuses records for repeated generic onboarding commands', async () => {
@@ -427,7 +428,7 @@ describe('ClinicApplications approval integration', () => {
 
     expect(clinics.docs).toHaveLength(1)
     expect(staff.docs).toHaveLength(1)
-    expect(inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
+    expect(createInitialClinicSupabaseAccount).toHaveBeenCalledOnce()
   }, 45000)
 
   it('blocks public collection create outside the controlled API route', async () => {

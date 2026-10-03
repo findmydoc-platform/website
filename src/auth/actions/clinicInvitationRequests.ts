@@ -4,6 +4,7 @@ import { isTransactionalEmailCommandActivationDeclared } from '@/features/transa
 import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
 import { bindAuthActions } from './lifecycle'
 import type { AuthAction } from '@/payload-types'
+import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
 
 function activeEnvironment() {
   const environment = resolveTransactionalEmailEnvironment()
@@ -21,7 +22,28 @@ export async function requestInitialClinicInvitation(req: PayloadRequest, clinic
   const action = await bindAuthActions(req, { environment }).reserveClinicInvitation({
     clinicStaffId: Number(clinicStaffId),
   })
-  return action ? 'prepared' : 'ineligible'
+  if (!action) return 'ineligible'
+  await acceptClinicInvitationCommand(req, { action, environment })
+  return 'prepared'
+}
+
+async function acceptClinicInvitationCommand(
+  req: PayloadRequest,
+  input: { action: AuthAction; environment: 'preview' | 'production'; now?: () => number },
+): Promise<boolean> {
+  const { action, environment, now } = input
+  let acceptedAction = action
+  const actions = bindAuthActions(req, { environment, now })
+  if (acceptedAction.state === 'pending') {
+    acceptedAction = await actions.transition({ id: action.id, to: 'active' })
+  }
+  if (acceptedAction.state !== 'active') return false
+  const systemReq = { ...req, user: null }
+  const acceptance = await bindTransactionalEmail(systemReq, undefined, now).accept({
+    type: 'auth.invitation',
+    authActionId: acceptedAction.id,
+  })
+  return !acceptance.deduplicated
 }
 
 /** Reads committed candidates only. Failed preparation leaves approval and its retry marker untouched. */
@@ -37,6 +59,7 @@ export async function prepareCommittedClinicInvitations(
   let afterId = 0
   let prepared = 0
   let failed = false
+  const acceptedActionIds = new Set<number>()
   while (now() < stop && prepared < 25) {
     const candidates = await req.payload.find({
       collection: 'clinicStaff',
@@ -64,7 +87,11 @@ export async function prepareCommittedClinicInvitations(
       afterId = staff.id
       try {
         const action: AuthAction | null = await actions.reserveClinicInvitation({ clinicStaffId: staff.id })
-        if (action) prepared++
+        if (action) {
+          const accepted = await acceptClinicInvitationCommand(req, { action, environment, now })
+          acceptedActionIds.add(action.id)
+          if (accepted) prepared++
+        }
       } catch {
         failed = true
         req.payload.logger.error(
@@ -74,6 +101,27 @@ export async function prepareCommittedClinicInvitations(
       }
     }
     if (candidates.docs.length < 25) break
+  }
+  afterId = 0
+  while (now() < stop && prepared < 25) {
+    const liveActions = await actions.liveClinicInvitations({ afterId, limit: 25 })
+    if (!liveActions.length) break
+    for (const action of liveActions) {
+      if (now() >= stop || prepared >= 25) break
+      afterId = action.id
+      if (acceptedActionIds.has(action.id)) continue
+      try {
+        const accepted = await acceptClinicInvitationCommand(req, { action, environment, now })
+        if (accepted) prepared++
+      } catch {
+        failed = true
+        req.payload.logger.error(
+          { event: 'auth.clinic_invitation_command_acceptance_failed', authActionId: action.id },
+          'Clinic invitation command acceptance failed; approval remains unchanged.',
+        )
+      }
+    }
+    if (liveActions.length < 25) break
   }
   if (failed) throw new Error('Clinic invitation preparation unavailable.')
 }

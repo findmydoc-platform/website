@@ -702,6 +702,7 @@ export function bindAuthActions(
           if (!terminal(action.state) && Date.parse(action.expiresAt) <= scope.now)
             await transition(internalReq, scope, { id: action.id, to: 'expired' })
         }
+        if (staff.invitationAuthorizedAt && !current) return null
         if (current) await transition(internalReq, scope, { id: current.id, to: 'superseded' })
         const action = await createPending(
           internalReq,
@@ -724,6 +725,38 @@ export function bindAuthActions(
           })
         }
         return action
+      })
+    },
+    liveClinicInvitations(input: { afterId?: number; limit?: number } = {}): Promise<AuthAction[]> {
+      const command = parsed(
+        z
+          .object({
+            afterId: z.number().int().nonnegative().optional(),
+            limit: z.number().int().min(1).max(25).optional(),
+          })
+          .strict(),
+        input,
+      )
+      return transaction(async (internalReq, scope) => {
+        const result = await req.payload.find({
+          collection: 'authActions',
+          req: internalReq,
+          overrideAccess: true,
+          depth: 0,
+          pagination: false,
+          limit: command.limit ?? 25,
+          sort: 'id',
+          where: {
+            and: [
+              { id: { greater_than: command.afterId ?? 0 } },
+              { environment: { equals: environment } },
+              { actionType: { equals: 'clinic-invitation' } },
+              { state: { in: ['pending', 'active'] } },
+              { expiresAt: { greater_than: new Date(scope.now).toISOString() } },
+            ],
+          },
+        })
+        return result.docs
       })
     },
     async reserveRecovery(input: { email: string; context: RecoveryContext | null }): Promise<AuthAction | null> {

@@ -6,7 +6,6 @@ import {
   type SupabaseInviteConfig,
 } from '@/auth/utilities/registration'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
-import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
 import { getLoggedSupabaseAdminClient, getSupabaseLogger } from './supabaseLogger'
 import { hashLogValue, toLoggedError, type ServerLogger } from '@/utilities/logging/shared'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
@@ -33,8 +32,7 @@ export interface DirectProvisionArgs extends BaseProvisionArgs {
   password: string
 }
 
-export interface ClinicInviteProvisionArgs {
-  beforeInvite?: () => Promise<void>
+export interface InitialClinicProvisionArgs {
   email: string
   onboardingKey: string
   userMetadata?: SupabaseProvisionMetadata
@@ -291,35 +289,34 @@ const repairClinicSupabaseUser = async ({
 }
 
 /**
- * Invites the initial clinic principal and reconciles unknown invite responses by email and onboarding key.
+ * Creates the initial clinic principal without native mail and reconciles uncertain responses by email and onboarding key.
  */
-export async function inviteClinicSupabaseAccount(
-  { email, onboardingKey, userMetadata, beforeInvite }: ClinicInviteProvisionArgs,
+export async function createInitialClinicSupabaseAccount(
+  { email, onboardingKey, userMetadata }: InitialClinicProvisionArgs,
   logger?: ServerLogger,
 ): Promise<string> {
   const normalizedEmail = normalizeEmail(email)
   const normalizedOnboardingKey = onboardingKey.trim()
   if (!isValidEmail(normalizedEmail)) {
-    throw new Error('Supabase clinic invite failed: Invalid email format')
+    throw new Error('Supabase clinic identity creation failed: Invalid email format')
   }
   if (!normalizedOnboardingKey) {
-    throw new Error('Supabase clinic invite failed: Missing onboarding key')
+    throw new Error('Supabase clinic identity creation failed: Missing onboarding key')
   }
 
   const { activeLogger, supabase } = await getProvisionAdminClient(logger, {
     emailHash: hashLogValue(normalizedEmail),
     onboardingKeyHash: hashLogValue(normalizedOnboardingKey),
-    operation: 'invite_clinic_user',
+    operation: 'create_initial_clinic_user',
     userType: 'clinic',
   })
-  const redirectTo = `${getClinicDashboardOrigin()}/auth/callback?next=/auth/invite/complete`
-  const inviteMetadata = {
+  const metadata = {
     first_name: userMetadata?.firstName ?? '',
     last_name: userMetadata?.lastName ?? '',
     onboarding_key: normalizedOnboardingKey,
   }
 
-  // Reconcile before sending. An existing ambiguous or unclassified identity must never trigger another invite.
+  // Reconcile before creating. An existing ambiguous or unclassified identity must never trigger another identity.
   const existing = await findSupabaseUsersByEmail(supabase, normalizedEmail)
   if (existing.length) {
     const candidate = existing[0]
@@ -334,33 +331,36 @@ export async function inviteClinicSupabaseAccount(
     return candidate.id
   }
 
-  await beforeInvite?.()
-
-  let invitedUser: User | null = null
-  let inviteError: unknown = null
+  let createdUser: User | null = null
+  let createError: unknown = null
 
   try {
-    const { data, error } = await supabase.auth.admin.inviteUserByEmail(normalizedEmail, {
-      data: inviteMetadata,
-      redirectTo,
+    const { data, error } = await supabase.auth.admin.createUser({
+      email: normalizedEmail,
+      email_confirm: false,
+      app_metadata: {
+        user_type: 'clinic',
+        onboarding_key: normalizedOnboardingKey,
+      },
+      user_metadata: metadata,
     })
-    inviteError = error
-    invitedUser = data.user
+    createError = error
+    createdUser = data.user
   } catch (error) {
-    inviteError = error
+    createError = error
   }
 
-  const user = invitedUser ?? (await findClinicSupabaseUser(supabase, normalizedEmail, normalizedOnboardingKey))
+  const user = createdUser ?? (await findClinicSupabaseUser(supabase, normalizedEmail, normalizedOnboardingKey))
 
   if (!user) {
-    const message = inviteError ? toSupabaseErrorMessage(inviteError) : 'invite returned no user payload'
-    await logProvisionError(logger, 'Failed to invite or reconcile Supabase clinic user', inviteError ?? message, {
+    const message = createError ? toSupabaseErrorMessage(createError) : 'create returned no user payload'
+    await logProvisionError(logger, 'Failed to create or reconcile Supabase clinic user', createError ?? message, {
       emailHash: hashLogValue(normalizedEmail),
-      event: 'auth.supabase.admin.clinic_invite_failed',
+      event: 'auth.supabase.admin.clinic_identity_create_failed',
       onboardingKeyHash: hashLogValue(normalizedOnboardingKey),
       userType: 'clinic',
     })
-    throw new Error(`Supabase clinic invite failed: ${message}`)
+    throw new Error(`Supabase clinic identity creation failed: ${message}`)
   }
 
   await repairClinicSupabaseUser({
@@ -374,14 +374,14 @@ export async function inviteClinicSupabaseAccount(
   activeLogger.info(
     {
       emailHash: hashLogValue(normalizedEmail),
-      event: invitedUser
-        ? 'auth.supabase.admin.clinic_invite_succeeded'
-        : 'auth.supabase.admin.clinic_invite_reconciled',
+      event: createdUser
+        ? 'auth.supabase.admin.clinic_identity_created'
+        : 'auth.supabase.admin.clinic_identity_create_reconciled',
       onboardingKeyHash: hashLogValue(normalizedOnboardingKey),
       supabaseUserId: user.id,
       userType: 'clinic',
     },
-    invitedUser ? 'Invited Supabase clinic user' : 'Reconciled Supabase clinic user',
+    createdUser ? 'Created Supabase clinic user' : 'Reconciled Supabase clinic user creation',
   )
 
   return user.id

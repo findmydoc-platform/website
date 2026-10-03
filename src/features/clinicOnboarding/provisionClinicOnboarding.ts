@@ -1,7 +1,7 @@
 import type { Clinic, ClinicStaff } from '@/payload-types'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 import {
-  inviteClinicSupabaseAccount,
+  createInitialClinicSupabaseAccount,
   setClinicSupabaseAccountAccess,
   reconcileExistingClinicSupabaseAccount,
 } from '@/auth/utilities/supabaseProvision'
@@ -180,19 +180,8 @@ const bindSupabaseIdentity = async (
         payload.logger,
       )
     } else {
-      supabaseUserId = await inviteClinicSupabaseAccount(
+      supabaseUserId = await createInitialClinicSupabaseAccount(
         {
-          beforeInvite: async () => {
-            await payload.update({
-              collection: 'clinicStaff',
-              id: staff.id,
-              context: { skipClinicStaffAuthSync: true },
-              data: { invitationAttemptedAt: new Date().toISOString() },
-              depth: 0,
-              overrideAccess: true,
-              req,
-            })
-          },
           email: command.contactEmail,
           onboardingKey: command.onboardingKey,
           userMetadata: {

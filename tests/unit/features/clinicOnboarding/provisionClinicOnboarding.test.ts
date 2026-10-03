@@ -8,7 +8,7 @@ import type { Payload } from 'payload'
 import { guardClinicAccountEvidence } from '@/auth/utilities/clinicAccountCompletion'
 
 const authMocks = vi.hoisted(() => ({
-  inviteClinicSupabaseAccount: vi.fn(),
+  createInitialClinicSupabaseAccount: vi.fn(),
   setClinicSupabaseAccountAccess: vi.fn(),
   reconcileExistingClinicSupabaseAccount: vi.fn(),
 }))
@@ -97,10 +97,9 @@ const createPayload = ({ failClinicStaffCreate = false }: { failClinicStaffCreat
 describe('provisionClinicOnboarding', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    authMocks.inviteClinicSupabaseAccount.mockImplementation(async ({ beforeInvite }) => {
-      await beforeInvite?.()
-      return `supabase-${authMocks.inviteClinicSupabaseAccount.mock.calls.length}`
-    })
+    authMocks.createInitialClinicSupabaseAccount.mockImplementation(
+      async () => `supabase-${authMocks.createInitialClinicSupabaseAccount.mock.calls.length}`,
+    )
     authMocks.setClinicSupabaseAccountAccess.mockResolvedValue(undefined)
   })
 
@@ -118,7 +117,15 @@ describe('provisionClinicOnboarding', () => {
       supabaseUserId: 'supabase-1',
       authSync: { status: 'synced' },
     })
-    expect(authMocks.inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
+    expect(state.clinicStaff[0]?.invitationAttemptedAt).toBeUndefined()
+    expect(authMocks.createInitialClinicSupabaseAccount).toHaveBeenCalledWith(
+      {
+        email: 'clinic@example.com',
+        onboardingKey: 'clinic-application:42',
+        userMetadata: { firstName: 'Ada', lastName: 'Lovelace' },
+      },
+      state.payload.logger,
+    )
     expect(state.payload.logger.warn).not.toHaveBeenCalled()
   })
 
@@ -129,39 +136,36 @@ describe('provisionClinicOnboarding', () => {
     expect(first).toEqual(second)
     expect(state.clinics).toHaveLength(1)
     expect(state.clinicStaff).toHaveLength(1)
-    expect(authMocks.inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
+    expect(authMocks.createInitialClinicSupabaseAccount).toHaveBeenCalledOnce()
     expect(state.clinics[0]).toMatchObject({ participationStatus: 'approved', status: 'pending' })
     expect(state.clinicStaff[0]?.accountCompletion?.source).toBeUndefined()
   })
 
-  it('reconciles an uncertain invitation without dispatching another email', async () => {
+  it('reconciles an uncertain identity creation without dispatching native invitation mail', async () => {
     const state = createPayload()
-    authMocks.inviteClinicSupabaseAccount.mockImplementationOnce(async ({ beforeInvite }) => {
-      await beforeInvite()
-      throw new Error('Uncertain provider response')
-    })
+    authMocks.createInitialClinicSupabaseAccount.mockRejectedValueOnce(new Error('Uncertain provider response'))
     await expect(provisionClinicOnboarding(state.payload, command)).rejects.toMatchObject({ code: 'auth_failed' })
     authMocks.reconcileExistingClinicSupabaseAccount.mockResolvedValueOnce('recovered-subject')
     await expect(provisionClinicOnboarding(state.payload, command)).resolves.toEqual({ clinicId: 8, clinicStaffId: 4 })
     expect(state.clinics).toHaveLength(1)
     expect(state.clinicStaff).toHaveLength(1)
-    expect(authMocks.inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
+    expect(authMocks.createInitialClinicSupabaseAccount).toHaveBeenCalledTimes(2)
   })
 
-  it('retries a failed provider lookup without marking an invitation attempt', async () => {
+  it('retries a failed provider lookup without marking a native invitation attempt', async () => {
     const state = createPayload()
-    authMocks.inviteClinicSupabaseAccount.mockRejectedValueOnce(new Error('Lookup unavailable'))
+    authMocks.createInitialClinicSupabaseAccount.mockRejectedValueOnce(new Error('Lookup unavailable'))
     await expect(provisionClinicOnboarding(state.payload, command)).rejects.toMatchObject({ code: 'auth_failed' })
     expect(state.clinicStaff[0]?.invitationAttemptedAt).toBeUndefined()
     await expect(provisionClinicOnboarding(state.payload, command)).resolves.toEqual({ clinicId: 8, clinicStaffId: 4 })
-    expect(authMocks.inviteClinicSupabaseAccount).toHaveBeenCalledTimes(2)
+    expect(authMocks.createInitialClinicSupabaseAccount).toHaveBeenCalledTimes(2)
     expect(authMocks.reconcileExistingClinicSupabaseAccount).not.toHaveBeenCalled()
     expect(state.clinicStaff).toHaveLength(1)
   })
 
   it('preserves partial records and returns a controlled auth failure', async () => {
     const state = createPayload()
-    authMocks.inviteClinicSupabaseAccount.mockRejectedValueOnce(new Error('Supabase unavailable'))
+    authMocks.createInitialClinicSupabaseAccount.mockRejectedValueOnce(new Error('Supabase unavailable'))
 
     await expect(provisionClinicOnboarding(state.payload, command)).rejects.toMatchObject({
       code: 'auth_failed',
@@ -179,7 +183,7 @@ describe('provisionClinicOnboarding', () => {
     )
     await expect(provisionClinicOnboarding(state.payload, command)).rejects.toMatchObject({ code: 'record_failed' })
     expect(state.payload.create).not.toHaveBeenCalled()
-    expect(authMocks.inviteClinicSupabaseAccount).not.toHaveBeenCalled()
+    expect(authMocks.createInitialClinicSupabaseAccount).not.toHaveBeenCalled()
   })
 
   it('rejects invalid command input before creating records', async () => {

@@ -154,7 +154,9 @@ export const isPreviewGuardPatientPath = (pathname: string): boolean =>
   classifyPreviewGuardPagePath(pathname) === 'patient'
 
 export const isPreviewGuardPatientRegistrationApiPath = (pathname: string): boolean =>
-  normalizePathname(pathname) === PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH
+  [PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH, `${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}/resend`].includes(
+    normalizePathname(pathname),
+  )
 
 export const isPreviewGuardAnonymousApiPath = (pathname: string): boolean =>
   PREVIEW_GUARD_ANONYMOUS_API_PATHS.has(normalizePathname(pathname))

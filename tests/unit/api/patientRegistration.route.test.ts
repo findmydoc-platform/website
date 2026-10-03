@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Payload } from 'payload'
 import type { User } from '@supabase/supabase-js'
 import { POST } from '@/app/api/auth/register/patient/route'
+import { POST as resend } from '@/app/api/auth/register/patient/resend/route'
 import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER } from '@/features/previewGuard'
 import { createEmailCommandStorage } from '../../helpers/emailCommandStorage'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
@@ -273,6 +274,30 @@ describe('patient registration through Auth, catalog, Outbox and offline deliver
       expect((await POST(makeRequest({ ...validBody, ...injected }))).status).toBe(400)
     }
     expect(boundary.admin.createUser).not.toHaveBeenCalled()
+  })
+  test('resends from email alone without changing the password and keeps unknown addresses neutral', async () => {
+    await POST(makeRequest())
+    vi.setSystemTime(new Date(Date.now() + 301000))
+    boundary.admin.listUsers!.mockRejectedValue(new Error('Directory unavailable'))
+    const request = (email: string) =>
+      new Request('http://localhost/api/auth/register/patient/resend', {
+        method: 'POST',
+        headers: { origin: 'http://localhost', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+    const response = await resend(request(user.email!))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ success: true })
+    expect(storage.rows.authActions!.get(1)?.state).toBe('superseded')
+    expect(storage.rows.transactionalEmailOutbox!.size).toBe(2)
+    expect(boundary.admin.getUserById).toHaveBeenCalledWith(subject)
+    expect(boundary.admin.createUser).toHaveBeenCalledOnce()
+    expect(boundary.admin.updateUserById).not.toHaveBeenCalled()
+    boundary.admin.listUsers!.mockResolvedValue({ data: { users: [] }, error: null })
+    const unknown = await resend(request('unknown@example.test'))
+    expect(unknown.status).toBe(200)
+    expect(await unknown.json()).toEqual({ success: true })
+    expect(storage.rows.transactionalEmailOutbox!.size).toBe(2)
   })
 
   test('fails closed with invalid verification keys and does not log credentials', async () => {

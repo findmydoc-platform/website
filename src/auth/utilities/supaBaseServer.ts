@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
+import { clearAuthCookiesAtScopes, createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers.js'
 
 // Common configuration for createServerClient
@@ -32,6 +32,39 @@ export async function createClient() {
       },
     },
   })
+}
+
+/** Verify a callback token before allowing its returned identity to write browser session cookies. */
+export function createVerificationClient() {
+  const { url, key } = getSupabaseConfig()
+  const storageKey = `sb-${new URL(url).hostname.split('.')[0]}-auth-token`
+  let pendingCookies: { name: string; value: string; options: CookieOptions }[] = []
+  const client = createServerClient(url, key, {
+    cookieOptions: { name: storageKey },
+    cookies: {
+      getAll: () => [],
+      setAll: (values) => {
+        pendingCookies = values
+      },
+    },
+  })
+  return {
+    auth: client.auth,
+    async commitSession() {
+      if (!pendingCookies.length) return
+      const store = await cookies()
+      await clearAuthCookiesAtScopes({
+        storageKey,
+        getAll: () => store.getAll(),
+        setAll: (values) => {
+          values.forEach(({ name, value, options }) => store.set(name, value, options))
+        },
+        scopes: [{ path: '/' }],
+      })
+      pendingCookies.forEach(({ name, value, options }) => store.set(name, value, options))
+      pendingCookies = []
+    },
+  }
 }
 
 // Create a Supabase admin client for server-side admin operations

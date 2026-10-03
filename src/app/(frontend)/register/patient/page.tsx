@@ -6,6 +6,7 @@ import { PatientRegistrationForm } from '@/components/organisms/Auth/PatientRegi
 import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER } from '@/features/previewGuard'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { PatientVerificationResendForm } from './PatientVerificationResendForm'
 
 export default async function PatientRegistrationPage() {
   const requestHeaders = await headers()
@@ -16,7 +17,10 @@ export default async function PatientRegistrationPage() {
 
   return (
     <PublicAuthRouteShell>
-      <PatientRegistrationForm containerClassName={PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME} />
+      <div className="flex w-full max-w-md flex-col gap-6">
+        <PatientRegistrationForm containerClassName={PUBLIC_AUTH_FORM_CONTAINER_CLASSNAME} />
+        <PatientVerificationResendForm />
+      </div>
     </PublicAuthRouteShell>
   )
 }

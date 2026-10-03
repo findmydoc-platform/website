@@ -109,8 +109,12 @@ async function recoveryPost(request: NextRequest, complete: boolean) {
       clearWebsiteRecoveryContext(response)
       return response
     }
-    if (error instanceof RecoveryPasswordRejected)
-      return applyPrivateAuthHeaders(NextResponse.json({ code: 'PASSWORD_REJECTED' }, { status: 422 }))
+    if (error instanceof RecoveryPasswordRejected) {
+      const rejected = applyPrivateAuthHeaders(NextResponse.json({ code: 'PASSWORD_REJECTED' }, { status: 422 }))
+      const grant = response.cookies.get(WEBSITE_RECOVERY_COOKIE)
+      if (grant) rejected.cookies.set(grant)
+      return rejected
+    }
     const retry = applyPrivateAuthHeaders(
       NextResponse.json({ code: 'RECOVERY_TEMPORARILY_UNAVAILABLE' }, { status: 503 }),
     )

@@ -1076,6 +1076,69 @@ export function bindAuthActions(
       const command = parsed(transitionSchema, input)
       return transaction((internalReq, scope) => transition(internalReq, scope, command))
     },
+    async fenceWebsiteRecovery(
+      id: number,
+      confirm = false,
+      replaceableConfirmation: (action: AuthAction) => boolean = () => false,
+    ) {
+      const actionId = parsed(idSchema, id)
+      const claimConfirmation = parsed(z.boolean(), confirm)
+      return transaction(async (internalReq, scope) => {
+        const action = await requireAction(internalReq, actionId)
+        if (
+          !['patient-recovery', 'platform-recovery'].includes(action.actionType) ||
+          !['active', 'confirmed'].includes(action.state) ||
+          !action.principal ||
+          !action.supabaseSubject ||
+          Date.parse(action.expiresAt) <= scope.now ||
+          (claimConfirmation && action.state !== 'active')
+        )
+          throw new AuthActionError('invalid-transition')
+        const principal = parsed(principalSchema, action.principal)
+        const prior = await req.payload.find({
+          collection: 'authActions',
+          req: internalReq,
+          overrideAccess: true,
+          depth: 0,
+          pagination: false,
+          limit: 6,
+          where: {
+            and: [
+              { environment: { equals: environment } },
+              { actionType: { equals: action.actionType } },
+              { 'principal.relationTo': { equals: principal.relationTo } },
+              { 'principal.value': { equals: principal.value } },
+              {
+                or: [
+                  { state: { equals: 'confirmed' } },
+                  {
+                    and: [
+                      { state: { in: ['pending', 'active'] } },
+                      { expiresAt: { greater_than: new Date(scope.now).toISOString() } },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        })
+        if (prior.docs.length >= 6 || prior.docs.some((candidate) => candidate.id > actionId))
+          throw new AuthActionError('invalid-transition')
+        // An unresolved provider writer must remain fenced even after expiry. The callback only examines a
+        // previously fetched identity in memory; provider effects never enter this retried transaction.
+        if (
+          prior.docs.some(
+            (candidate) =>
+              candidate.id !== actionId && candidate.state === 'confirmed' && !replaceableConfirmation(candidate),
+          )
+        )
+          throw new AuthActionError('invalid-transition')
+        for (const candidate of prior.docs) {
+          if (candidate.id !== actionId) await transition(internalReq, scope, { id: candidate.id, to: 'revoked' })
+        }
+        if (claimConfirmation) await transition(internalReq, scope, { id: actionId, to: 'confirmed' })
+      })
+    },
     sweep() {
       return transaction(async (internalReq, scope) => {
         const due = await req.payload.find({
@@ -1101,6 +1164,12 @@ export function bindAuthActions(
                     and: [
                       { state: { not_in: [...terminalAuthActionStates] } },
                       { expiresAt: { less_than_equal: new Date(scope.now).toISOString() } },
+                      {
+                        or: [
+                          { state: { not_in: ['confirmed'] } },
+                          { actionType: { not_in: ['patient-recovery', 'platform-recovery'] } },
+                        ],
+                      },
                     ],
                   },
                   {
@@ -1144,7 +1213,11 @@ export function bindAuthActions(
             })
             deleted++
             continue
-          } else if (!terminal(action.state) && Date.parse(action.expiresAt) <= scope.now) {
+          } else if (
+            !terminal(action.state) &&
+            Date.parse(action.expiresAt) <= scope.now &&
+            !(action.state === 'confirmed' && ['patient-recovery', 'platform-recovery'].includes(action.actionType))
+          ) {
             await transition(internalReq, scope, { id: action.id, to: 'expired' })
             expired++
           }

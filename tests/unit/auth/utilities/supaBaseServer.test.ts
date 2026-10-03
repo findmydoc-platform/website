@@ -109,6 +109,7 @@ describe('createAdminClient', () => {
       await expect(pending).rejects.toThrow('Aborted')
       expect(fetchSpy).toHaveBeenCalledWith('https://example.supabase.co/auth/v1/admin/users', {
         method: 'GET',
+        cache: 'no-store',
         signal: controller.signal,
       })
     } finally {

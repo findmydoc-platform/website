@@ -80,6 +80,8 @@ Website patient and platform recovery require the matching private AuthAction an
 Password completion updates Supabase before completing the action, then revokes all refresh-token sessions and clears
 the Website session. It returns the fixed patient or platform sign-in route. Already-issued access JWTs can remain
 valid until expiry. [The completion contract](auth-actions.md#website-recovery-completion) describes technical retries.
+Completion excludes competing requests with a bounded transaction-scoped try-lock on the existing Payload pool.
+Provider requests abort on connection loss or deadline; this does not prove distributed exactly-once execution.
 The website authorization-code, TokenHash, and browser-hash callback paths serve its Platform and Patient flows.
 Clinic invite and recovery callbacks use the Clinic Dashboard. Template snapshot, rollback, staging-first activation,
 and production gates are documented in `supabase-email-template-rollout.md`.

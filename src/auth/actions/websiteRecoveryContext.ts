@@ -21,6 +21,9 @@ const schema = z
     issuedAt: z.number().int(),
     expiresAt: z.number().int(),
     stage: z.enum(['pending', 'confirmed', 'password-updated', 'completed', 'signed-out']),
+    progressReady: z.boolean().optional(),
+    progressInitializing: z.boolean().optional(),
+    progressAttempt: z.number().int().nonnegative().max(100).optional(),
     tokenHash: z
       .string()
       .regex(/^[a-f0-9]{64}$/)
@@ -65,7 +68,17 @@ export function readWebsiteRecoveryContext(
       parsed.issuedAt > now ||
       parsed.expiresAt <= now ||
       parsed.expiresAt !== parsed.issuedAt + lifetime ||
-      (parsed.stage === 'pending' ? !parsed.tokenHash : parsed.tokenHash !== undefined)
+      (parsed.stage === 'pending'
+        ? !parsed.tokenHash ||
+          parsed.progressReady !== undefined ||
+          parsed.progressInitializing !== undefined ||
+          parsed.progressAttempt !== undefined
+        : parsed.tokenHash !== undefined ||
+          typeof parsed.progressReady !== 'boolean' ||
+          typeof parsed.progressInitializing !== 'boolean' ||
+          parsed.progressAttempt === undefined) ||
+      (parsed.progressReady && parsed.progressInitializing) ||
+      (!['pending', 'confirmed'].includes(parsed.stage) && parsed.progressReady !== true)
     )
       return null
     return parsed
@@ -97,7 +110,15 @@ export function pendingWebsiteRecovery(
 export function confirmedWebsiteRecovery(context: WebsiteRecoveryContext): WebsiteRecoveryContext {
   const { tokenHash: _token, ...grant } = context
   const issuedAt = Date.now()
-  return { ...grant, issuedAt, expiresAt: issuedAt + lifetime, stage: 'confirmed' }
+  return {
+    ...grant,
+    issuedAt,
+    expiresAt: issuedAt + lifetime,
+    stage: 'confirmed',
+    progressReady: false,
+    progressInitializing: false,
+    progressAttempt: 0,
+  }
 }
 export function setWebsiteRecoveryContext(
   response: NextResponse,

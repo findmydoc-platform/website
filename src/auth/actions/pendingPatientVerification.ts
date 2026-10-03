@@ -8,6 +8,8 @@ const commandSchema = z
   .object({
     email: z.string().max(254),
     password: z.string().min(6).max(4096),
+    firstName: z.string().trim().min(1).max(200).optional(),
+    lastName: z.string().trim().min(1).max(200).optional(),
     resendOf: z.number().int().positive().optional(),
   })
   .strict()
@@ -28,12 +30,15 @@ function eligible(user: User, email: string) {
 async function reconcile(admin: Admin, email: string): Promise<User> {
   const matches: User[] = []
   const perPage = 1000
-  for (let page = 1; ; page++) {
+  const maxPages = 2
+  for (let page = 1; page <= maxPages; page++) {
     const { data, error } = await admin.listUsers({ page, perPage })
     if (error || !data) unavailable()
     matches.push(...data.users.filter((user) => normalizeEmail(user.email) === email))
     // The SDK truncates multi-digit Link header page numbers. Advance using the requested page size instead.
     if (data.users.length < perPage) break
+    // Never bind from a partial inventory or let a public request walk an unbounded directory.
+    if (page === maxPages) unavailable()
   }
   if (matches.length !== 1 || !eligible(matches[0]!, email)) unavailable()
   return matches[0]!
@@ -61,6 +66,10 @@ export function bindPendingPatientVerification(
           password,
           email_confirm: false,
           app_metadata: { user_type: 'patient' },
+          user_metadata: {
+            ...(parsed.data.firstName ? { first_name: parsed.data.firstName } : {}),
+            ...(parsed.data.lastName ? { last_name: parsed.data.lastName } : {}),
+          },
         })
         if (!result.error && result.data.user && eligible(result.data.user, email)) user = result.data.user
       } catch {

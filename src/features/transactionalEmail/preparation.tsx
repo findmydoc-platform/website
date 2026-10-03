@@ -3,6 +3,8 @@ import {
   CLINIC_REGISTRATION_RECEIPT_SUBJECT,
   ClinicRegistrationReceiptEmail,
   type ClinicRegistrationReceiptEmailProps,
+  PATIENT_EMAIL_VERIFICATION_SUBJECT,
+  PatientEmailVerificationEmail,
 } from '@findmydoc-platform/email-templates'
 import { Body, Html, Link, Text } from '@react-email/components'
 import { render, toPlainText } from '@react-email/render'
@@ -46,4 +48,12 @@ export async function renderClinicRegistrationReceipt(
     html,
     text: toPlainText(html),
   }
+}
+
+export async function renderPatientEmailVerification(
+  recipientAddress: string,
+  actionUrl: string,
+): Promise<PreparedMessage> {
+  const html = await render(<PatientEmailVerificationEmail actionUrl={actionUrl} />)
+  return { recipientAddress, subject: PATIENT_EMAIL_VERIFICATION_SUBJECT, html, text: toPlainText(html) }
 }

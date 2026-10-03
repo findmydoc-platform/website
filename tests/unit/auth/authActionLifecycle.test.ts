@@ -475,7 +475,7 @@ describe('AuthAction lifecycle through the system command boundary', () => {
     expect(await system.read(other.id)).toMatchObject({ state: 'expired', correlationDigest: null })
   })
 
-  it('reconciles through SDK pagination from page nine to ten without trusting its truncated nextPage', async () => {
+  it('reconciles within the two-page budget without trusting the SDK nextPage', async () => {
     const target: User = {
       id: '26b71580-16be-4f29-9d60-9ec6adc935ce',
       email: 'patient@example.test',
@@ -494,7 +494,7 @@ describe('AuthAction lifecycle through the system command boundary', () => {
           const page = Number(new URL(String(input)).searchParams.get('page'))
           pages.push(page)
           const users =
-            page < 10
+            page < 2
               ? Array.from({ length: 1000 }, (_, index) => ({
                   ...target,
                   email: `other-${page}-${index}@example.test`,
@@ -503,8 +503,8 @@ describe('AuthAction lifecycle through the system command boundary', () => {
           return new Response(JSON.stringify({ users }), {
             headers: {
               'content-type': 'application/json',
-              'x-total-count': '9001',
-              link: `<https://supabase.example.test/auth/v1/admin/users?page=10>; rel="last"${page < 10 ? `, <https://supabase.example.test/auth/v1/admin/users?page=${page + 1}>; rel="next"` : ''}`,
+              'x-total-count': '1001',
+              link: `<https://supabase.example.test/auth/v1/admin/users?page=2>; rel="last"${page < 2 ? ', <https://supabase.example.test/auth/v1/admin/users?page=2>; rel="next"' : ''}`,
             },
           })
         },
@@ -520,7 +520,7 @@ describe('AuthAction lifecycle through the system command boundary', () => {
       supabaseSubject: target.id,
       state: 'pending',
     })
-    expect(pages).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expect(pages).toEqual([1, 2])
   })
 
   it('keeps the reservation after an uncertain identity response and reconciles the same unconfirmed identity on retry', async () => {

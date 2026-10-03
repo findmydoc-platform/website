@@ -1,6 +1,6 @@
 # Private AuthAction lifecycle
 
-`authActions` stores system-managed authentication lifecycle data. `bindAuthActions` in `src/auth/actions/lifecycle.ts` is its internal command boundary. It creates or reserves pending actions, binds identity and principal once, reads raw system state, advances the lifecycle and sweeps expiry/retention. `bindPendingPatientVerification` prepares an unconfirmed Supabase identity for a reserved action. No public product route calls these commands yet. They send no email, generate no authentication links and consume no callbacks.
+`authActions` stores system-managed authentication lifecycle data. `bindAuthActions` in `src/auth/actions/lifecycle.ts` is its internal command boundary. It creates or reserves pending actions, binds identity and principal once, reads raw system state, advances the lifecycle and sweeps expiry/retention. `bindPendingPatientVerification` prepares an unconfirmed Supabase identity for a reserved action. Patient registration calls the Auth request boundary, which activates the bound action and accepts its verification command. AuthActions store no rendered mail or authentication link. Callback consumption and final patient provisioning remain separate.
 
 ## Identity and fixed policy
 
@@ -33,6 +33,46 @@ A technical retry returns the same nonterminal action across all supplied key ve
 `bindPendingPatientVerification.prepare` commits the reservation before calling Supabase's server-only [createUser](https://supabase.com/docs/reference/javascript/auth-admin-createuser) API with `email_confirm: false` and authoritative patient app metadata. A missing or failed creation response is reconciled with the paginated [listUsers](https://supabase.com/docs/reference/javascript/auth-admin-listusers) API. Exactly one matching unconfirmed patient identity is eligible. Confirmed identities, other principal types, mismatched addresses and ambiguous matches are rejected. Existing passwords are never replaced during reconciliation. Provider errors are mapped to `identity-unavailable` without retaining their content. The subject is then bound to the same reserved action. If the process stops before binding, a retry resumes the reservation and reconciles the identity again. Supabase calls are outside all automatically retried database transactions.
 
 The retention sweep removes both correlation fields at `createdAt + 24 hours`, including completed actions whose patient relationship has been deleted, while retaining the established lifecycle metadata. This narrowly scoped deletion does not change the subject, binding timestamps, state or original terminal timestamp. It expires due live actions and deletes terminal history at the existing 42-day boundary. Deployment activation and the hosted sweep schedule are separate from this internal preparation boundary.
+
+Public identity reconciliation reads at most two pages of 1,000 users. If the second page is full, the inventory is
+incomplete and no identity is bound, even if a matching address was seen. Registration returns its neutral response,
+leaves the reservation unbound and sends nothing. This resource limit prevents directory-size-dependent public work;
+it is not an account-existence result. Larger inventories require a trusted targeted identity-reconciliation mechanism
+before relying on uncertain creation recovery. Successfully created identities and already bound retries do not scan
+the directory. No global Supabase identity list is cached or exposed.
+
+## Patient verification delivery
+
+`POST /api/auth/register/patient` validates the existing email, password and names and preserves Preview Guard.
+It accepts no resend authority, recipient, action URL, template or provider setting. `requestPatientVerification`
+prepares the identity without native mail, activates the same action and accepts only its `auth.email-verification`
+command. Names become Supabase user metadata only when creating a new identity. Reconciliation does not replace
+an existing password or profile. An authorized internal Auth resend uses `resendOf`; no new public resend route exists.
+Confirmed identities and other account types return the same neutral registration response without a mail command.
+Infrastructure or configuration failures return a generic 503. Logs contain a safe event and email hash, not passwords,
+provider exceptions or raw recipient addresses.
+
+`AUTH_VERIFICATION_CORRELATION_KEYS_JSON` supplies a strictly validated server-only object with `environment`
+and `keys`, each containing `version` and `secret`. Its environment must match the deployment. Keys use the validation
+and rotation rules above. Missing configuration fails closed. Catalog construction resolves the ring lazily so an
+unused verification entry cannot disable unrelated clinic receipt mail. No secret value is committed or supplied by a
+browser. Hosted verification remains disabled until its separate activation declaration and credentials are present.
+The registration path then returns 503 before creating an identity; it never falls back to native Supabase sending.
+
+The production catalog reads the current active action and its bound Supabase UUID before acceptance, preparation and
+each attempt. It requires the same environment, 24-hour expiry, patient role, unconfirmed identity and original
+email correlation. A changed address, missing identity, ban, confirmation or lost action eligibility suppresses the
+operation rather than redirecting it. Supabase `generateLink` generates only a `magiclink`; its returned subject,
+address and token type must still match. The Website callback URL contains `authActionId`, `token_hash` and
+`type=magiclink`. Fixed origins come from the deployment environment, never request input. The callback consumer must
+validate the action and subject before consuming that token; its implementation and activation are separate work.
+
+The renderer uses only `PatientEmailVerificationEmail` and its subject from the exact pinned package, with the single
+`actionUrl` prop. The existing worker saves the prepared content once and reuses it and the provider idempotency key
+for delivery retries. Preparation interrupted before that storage commit may generate another unsent link; it does
+not represent a completed delivery. AuthAction storage never receives a token hash, URL or rendered content.
+Offline unit contracts cross the public registration handler, production Auth commands and catalog, guarded private
+Local API storage and Fake delivery. They prove this source behavior, not live Supabase configuration or actual mail arrival.
 
 ## Initial clinic invitation admission
 

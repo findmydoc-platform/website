@@ -56,8 +56,10 @@ describe('GET /auth/callback', () => {
   it.each([
     ['invite', '/auth/invite/complete'],
     ['recovery', '/auth/password/reset/complete'],
-  ] as const)('stages %s TokenHash confirmation without consuming the token', async (type, next) => {
-    const request = new NextRequest(`http://localhost/auth/callback?token_hash=secret-token&type=${type}&next=${next}`)
+  ] as const)('stages %s TokenHash confirmation with an action id without consuming the token', async (type, next) => {
+    const request = new NextRequest(
+      `http://localhost/auth/callback?authActionId=45&token_hash=secret-token&type=${type}&next=${next}`,
+    )
 
     const response = await GET(request)
 
@@ -68,6 +70,16 @@ describe('GET /auth/callback', () => {
     expect(response.headers.get('set-cookie')).toContain('HttpOnly')
     expect(response.headers.get('cache-control')).toBe('private, no-store')
     expect(exchangeCodeForSessionMock).not.toHaveBeenCalled()
+  })
+
+  it('preserves code exchange and its internal destination when an action id is present', async () => {
+    const response = await GET(
+      new NextRequest('http://localhost/auth/callback?authActionId=45&code=auth-code&next=/auth/invite/complete'),
+    )
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe('http://localhost/auth/invite/complete')
+    expect(exchangeCodeForSessionMock).toHaveBeenCalledWith('auth-code')
   })
 
   it('rejects mismatched TokenHash flow destinations before verification', async () => {

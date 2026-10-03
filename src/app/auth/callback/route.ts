@@ -19,7 +19,7 @@ import {
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
-  if (requestUrl.searchParams.has('authActionId') || requestUrl.searchParams.get('type') === 'magiclink') {
+  if (requestUrl.searchParams.getAll('type').includes('magiclink')) {
     const response = NextResponse.redirect(new URL('/auth/confirm?type=patient-verification', requestUrl.origin), {
       status: 303,
     })

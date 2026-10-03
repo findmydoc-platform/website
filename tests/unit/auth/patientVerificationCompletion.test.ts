@@ -309,8 +309,11 @@ describe('patient verification at the callback HTTP boundary with offline Auth s
   test('rejects malformed, duplicated and caller-selected callback parameters without consumption', async () => {
     for (const query of [
       `authActionId=1&type=magiclink&token_hash=${token}&next=/admin`,
-      `authActionId=1&type=recovery&token_hash=${token}`,
       `authActionId=1&type=magiclink&token_hash=${token}&authActionId=2`,
+      `authActionId=1&type=magiclink&type=recovery&token_hash=${token}&next=/auth/password/reset/complete`,
+      `authActionId=1&type=recovery&type=magiclink&token_hash=${token}&next=/auth/password/reset/complete`,
+      `type=magiclink&token_hash=${token}`,
+      `authActionId=1&type=magiclink&token_hash=${token}&code=auth-code`,
       'authActionId=0&type=magiclink&token_hash=bad',
     ]) {
       const response = await GET(new NextRequest(`${origin}/auth/callback?${query}`))

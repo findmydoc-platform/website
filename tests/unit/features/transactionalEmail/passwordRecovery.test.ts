@@ -1,9 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
+import { NextRequest } from 'next/server'
 import type { User } from '@supabase/supabase-js'
 import type { AuthAction, Patient } from '@/payload-types'
 import { recoveryCorrelations } from '@/auth/actions/recoveryCorrelation'
 import { dispatchCommandPreparation } from '@/features/transactionalEmail/catalog'
 import { createPasswordRecoveryCatalogEntry } from '@/features/transactionalEmail/passwordRecovery'
+import { GET } from '@/app/auth/callback/route'
+import { decodePendingTokenHash, TOKEN_HASH_CALLBACK_COOKIE } from '@/auth/utilities/tokenHashCallback'
+
+const callbackBoundary = vi.hoisted(() => ({ createClient: vi.fn(), createVerificationClient: vi.fn() }))
+vi.mock('@/auth/utilities/supaBaseServer', () => callbackBoundary)
 
 const now = Date.parse('2026-10-03T12:00:00.000Z')
 const email = 'patient@example.test'
@@ -77,7 +83,7 @@ describe('password recovery through the authorized command catalog', () => {
     ).rejects.toThrow('Recovery command acceptance unavailable.')
     expect(admin.generateLink).not.toHaveBeenCalled()
   })
-  it('renders a usable action-owned patient recovery link with only the package actionUrl prop', async () => {
+  it('renders and stages an action-owned patient recovery link without consuming its token', async () => {
     const { catalog, admin } = fixture()
     const command = { type: 'auth.password-recovery', authActionId: 45 } as const
     const recipient = await catalog[command.type].authorizeAndResolve(command, null)
@@ -104,6 +110,18 @@ describe('password recovery through the authorized command catalog', () => {
       ['type', 'recovery'],
     ])
     expect(message.text).toContain(callback.toString())
+    const response = await GET(new NextRequest(callback))
+    expect(response.status).toBe(303)
+    expect(response.headers.get('location')).toBe('https://example.test/auth/confirm?type=recovery')
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(decodePendingTokenHash(response.cookies.get(TOKEN_HASH_CALLBACK_COOKIE)?.value)).toEqual({
+      type: 'recovery',
+      next: '/auth/password/reset/complete',
+      tokenHash: 'c'.repeat(64),
+    })
+    expect(response.cookies.get('findmydoc_patient_verification')).toBeUndefined()
+    expect(callbackBoundary.createClient).not.toHaveBeenCalled()
+    expect(callbackBoundary.createVerificationClient).not.toHaveBeenCalled()
     expect(admin.generateLink).toHaveBeenCalledWith({
       type: 'recovery',
       email,

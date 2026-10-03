@@ -153,6 +153,10 @@ export const Clinics: CollectionConfig<'clinics'> = {
   hooks: {
     beforeValidate: [validateGalleryEntriesBeforeValidate],
     beforeChange: [
+      ({ data, operation }) => {
+        if (operation === 'create' && data.participationStatus == null) data.participationStatus = 'pending'
+        return data
+      },
       stableIdBeforeChangeHook,
       beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
       beforeChangeSynchronizeClinicProfileGallery,
@@ -165,6 +169,28 @@ export const Clinics: CollectionConfig<'clinics'> = {
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
+    {
+      name: 'participationStatus',
+      type: 'select',
+      options: ['pending', 'approved', 'disabled', 'rejected'],
+      index: true,
+      access: {
+        create: platformClinicTrustFieldAccess,
+        update: platformClinicTrustFieldAccess,
+        read: platformOnlyFieldAccess,
+      },
+      admin: {
+        description: 'Dashboard participation. Public publication is a separate decision.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'provisioningIdentity',
+      type: 'text',
+      unique: true,
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+    },
     stableIdField(),
     {
       name: 'profileRevision',
@@ -582,7 +608,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
                 update: platformClinicTrustFieldAccess,
               },
               admin: {
-                description: 'Clinic approval status',
+                description: 'Public publication status',
                 condition: (data, siblingData, { user }) => {
                   // Hide status field from non-platform users in admin UI
                   return Boolean(user && user.collection === 'platformStaff')

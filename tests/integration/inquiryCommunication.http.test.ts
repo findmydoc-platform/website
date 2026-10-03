@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, handleEndpoints, type Payload, type PayloadRequest } from 'payload'
 
@@ -126,7 +127,7 @@ describe('inquiry communication registered Payload HTTP boundary', () => {
       emailPrefix: `${slugPrefix}-staff`,
       firstName: 'Synthetic',
       lastName: 'Clinician',
-      supabaseUserId: `${slugPrefix}-staff-subject`,
+      supabaseUserId: randomUUID(),
     })
     await asClinicScopedPayloadUser(payload, localStaff, clinicId)
     const localStaffEmail = localStaff.email
@@ -146,7 +147,7 @@ describe('inquiry communication registered Payload HTTP boundary', () => {
       emailPrefix: `${slugPrefix}-foreign-staff`,
       firstName: 'Foreign',
       lastName: 'Clinician',
-      supabaseUserId: `${slugPrefix}-foreign-staff-subject`,
+      supabaseUserId: randomUUID(),
     })
     await asClinicScopedPayloadUser(payload, foreignStaff, foreignClinicId)
     const foreignStaffEmail = foreignStaff.email

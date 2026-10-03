@@ -1,4 +1,4 @@
-import type { AuthStrategy, AuthStrategyResult, Payload, PayloadRequest } from 'payload'
+import { createLocalReq, type AuthStrategy, type AuthStrategyResult, type Payload, type PayloadRequest } from 'payload'
 
 import type { AuthData, UserResult } from '@/auth/types/authTypes'
 import { getUserConfig } from '@/auth/config/authConfig'
@@ -185,7 +185,8 @@ const authenticate: AuthStrategy['authenticate'] = async (args) => {
     )
 
     // Validate user access (includes clinic approval check)
-    const hasAccess = await validateUserAccess(payload, authData, result, logger)
+    const accessReq = req ?? (await createLocalReq({ req: { headers: args.headers } }, payload))
+    const hasAccess = await validateUserAccess(payload, authData, result, logger, accessReq)
     if (!hasAccess) {
       logger.warn(
         {

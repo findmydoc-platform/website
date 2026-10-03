@@ -1,3 +1,4 @@
+import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import { createHash } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 
@@ -131,21 +132,10 @@ const resolveReporter = async (req: PayloadRequest): Promise<Reporter> => {
     return { id: patient.id, key: `patients:${String(patient.id)}`, kind: 'patient' }
   }
   if (req.user.collection === 'clinicStaff') {
-    const staff = await findOne(req, 'clinicStaff', {
-      and: [
-        { id: { equals: req.user.id } },
-        { status: { equals: 'approved' } },
-        { 'authSync.status': { equals: 'synced' } },
-      ],
-    })
-    const clinicId = relationId(staff?.clinic)
-    if (!staff || clinicId === null) {
-      throw new InquiryModerationServiceError('access-denied', 'The clinic principal is not access-ready.')
-    }
-    const clinic = await findOne(req, 'clinics', {
-      and: [{ id: { equals: clinicId } }, { status: { equals: 'approved' } }],
-    })
-    if (!clinic) throw new InquiryModerationServiceError('access-denied', 'The clinic is not access-ready.')
+    const access = await readClinicAccessState(req.payload, req.user.id, req)
+    if (!access) throw new InquiryModerationServiceError('access-denied', 'The clinic principal is not access-ready.')
+    const { clinic, staff } = access
+    const clinicId = clinic.id
     return { clinicId, id: staff.id, key: `clinicStaff:${String(staff.id)}`, kind: 'clinic' }
   }
   throw new InquiryModerationServiceError('access-denied', 'An inquiry participant is required.')

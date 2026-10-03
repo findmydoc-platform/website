@@ -1,10 +1,14 @@
 import type { Clinic, ClinicStaff } from '@/payload-types'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
-import { inviteClinicSupabaseAccount, setClinicSupabaseAccountAccess } from '@/auth/utilities/supabaseProvision'
+import {
+  inviteClinicSupabaseAccount,
+  setClinicSupabaseAccountAccess,
+  reconcileExistingClinicSupabaseAccount,
+} from '@/auth/utilities/supabaseProvision'
 import { hashLogValue } from '@/utilities/logging/shared'
 import { slugify } from '@/utilities/slugify'
-import { randomUUID } from 'node:crypto'
-import type { Payload } from 'payload'
+import { createHash, randomUUID } from 'node:crypto'
+import type { Payload, PayloadRequest } from 'payload'
 
 export const CLINIC_ONBOARDING_ERROR_CODES = ['record_failed', 'auth_failed', 'binding_failed'] as const
 
@@ -48,7 +52,11 @@ const readRequiredText = (value: string, field: string): string => {
   return normalized
 }
 
-const createClinic = async (payload: Payload, command: ClinicOnboardingCommand): Promise<Clinic> => {
+const createClinic = async (
+  payload: Payload,
+  command: ClinicOnboardingCommand,
+  req?: PayloadRequest,
+): Promise<Clinic> => {
   try {
     return await payload.create({
       collection: 'clinics',
@@ -63,11 +71,14 @@ const createClinic = async (payload: Payload, command: ClinicOnboardingCommand):
         },
         name: command.clinicName,
         onboardingKey: command.onboardingKey,
+        provisioningIdentity: createHash('sha256').update(command.onboardingKey).digest('hex'),
+        participationStatus: 'approved',
         slug: `${slugify(command.clinicName) || 'clinic'}-${randomUUID().slice(0, 8)}`,
         status: 'pending',
       },
       depth: 0,
       overrideAccess: true,
+      req,
     })
   } catch (error) {
     throw new ClinicOnboardingError('record_failed', 'Clinic record could not be created', {
@@ -80,6 +91,7 @@ const createClinicStaff = async (
   payload: Payload,
   command: ClinicOnboardingCommand,
   clinic: Clinic,
+  req?: PayloadRequest,
 ): Promise<ClinicStaff> => {
   try {
     return await payload.create({
@@ -92,10 +104,12 @@ const createClinicStaff = async (
         firstName: command.contactFirstName,
         lastName: command.contactLastName,
         onboardingKey: command.onboardingKey,
-        status: 'pending',
+        provisioningIdentity: createHash('sha256').update(command.onboardingKey).digest('hex'),
+        status: 'approved',
       },
       depth: 0,
       overrideAccess: true,
+      req,
     })
   } catch (error) {
     throw new ClinicOnboardingError('record_failed', 'Clinic staff record could not be created', {
@@ -104,55 +118,54 @@ const createClinicStaff = async (
   }
 }
 
-const logDuplicateOnboardingRecords = async (payload: Payload, onboardingKey: string): Promise<void> => {
-  try {
-    const [clinics, clinicStaff] = await Promise.all([
-      payload.find({
-        collection: 'clinics',
-        depth: 0,
-        limit: 100,
-        overrideAccess: true,
-        pagination: false,
-        trash: true,
-        where: { onboardingKey: { equals: onboardingKey } },
-      }),
-      payload.find({
-        collection: 'clinicStaff',
-        depth: 0,
-        limit: 100,
-        overrideAccess: true,
-        pagination: false,
-        where: { onboardingKey: { equals: onboardingKey } },
-      }),
-    ])
-
-    if (clinics.docs.length <= 1 && clinicStaff.docs.length <= 1) return
-
-    payload.logger.warn(
-      {
-        clinicIds: clinics.docs.map(({ id }) => id),
-        clinicStaffIds: clinicStaff.docs.map(({ id }) => id),
-        event: 'clinic_onboarding.duplicate_records_detected',
-        onboardingKeyHash: hashLogValue(onboardingKey),
-      },
-      'Multiple onboarding records were created for the same source',
-    )
-  } catch (error) {
-    payload.logger.error(
-      {
-        err: error instanceof Error ? error : new Error(String(error)),
-        event: 'clinic_onboarding.duplicate_check_failed',
-        onboardingKeyHash: hashLogValue(onboardingKey),
-      },
-      'Clinic onboarding duplicate check failed',
+const findExisting = async (payload: Payload, command: ClinicOnboardingCommand, req?: PayloadRequest) => {
+  const [clinics, staff] = await Promise.all([
+    payload.find({
+      collection: 'clinics',
+      depth: 0,
+      limit: 2,
+      overrideAccess: true,
+      req,
+      trash: true,
+      where: { onboardingKey: { equals: command.onboardingKey } },
+    }),
+    payload.find({
+      collection: 'clinicStaff',
+      depth: 0,
+      limit: 2,
+      overrideAccess: true,
+      req,
+      where: { onboardingKey: { equals: command.onboardingKey } },
+    }),
+  ])
+  if (clinics.docs.length > 1 || staff.docs.length > 1)
+    throw new ClinicOnboardingError('record_failed', 'Ambiguous onboarding records require operator repair')
+  const clinic = clinics.docs[0]
+  const principal = staff.docs[0]
+  if (clinic && (clinic.deletedAt || clinic.status === 'rejected' || clinic.participationStatus !== 'approved')) {
+    throw new ClinicOnboardingError('record_failed', 'The clinic is not eligible for provisioning recovery')
+  }
+  const clinicId = typeof principal?.clinic === 'object' ? principal.clinic?.id : principal?.clinic
+  if (
+    principal &&
+    (!clinic ||
+      String(clinicId) !== String(clinic.id) ||
+      principal.status !== 'approved' ||
+      normalizeEmail(principal.email) !== command.contactEmail)
+  ) {
+    throw new ClinicOnboardingError(
+      'record_failed',
+      'The initial participant is not eligible for provisioning recovery',
     )
   }
+  return { clinic, principal }
 }
 
 const bindSupabaseIdentity = async (
   payload: Payload,
   command: ClinicOnboardingCommand,
   staff: ClinicStaff,
+  req?: PayloadRequest,
 ): Promise<ClinicStaff> => {
   if (staff.supabaseUserId && staff.authSync?.status === 'synced') return staff
 
@@ -161,9 +174,25 @@ const bindSupabaseIdentity = async (
   try {
     if (supabaseUserId) {
       await setClinicSupabaseAccountAccess({ enabled: true, supabaseUserId }, payload.logger)
+    } else if (staff.invitationAttemptedAt) {
+      supabaseUserId = await reconcileExistingClinicSupabaseAccount(
+        { email: command.contactEmail, onboardingKey: command.onboardingKey },
+        payload.logger,
+      )
     } else {
       supabaseUserId = await inviteClinicSupabaseAccount(
         {
+          beforeInvite: async () => {
+            await payload.update({
+              collection: 'clinicStaff',
+              id: staff.id,
+              context: { skipClinicStaffAuthSync: true },
+              data: { invitationAttemptedAt: new Date().toISOString() },
+              depth: 0,
+              overrideAccess: true,
+              req,
+            })
+          },
           email: command.contactEmail,
           onboardingKey: command.onboardingKey,
           userMetadata: {
@@ -191,6 +220,7 @@ const bindSupabaseIdentity = async (
       },
       depth: 0,
       overrideAccess: true,
+      req,
     })
   } catch (error) {
     throw new ClinicOnboardingError('binding_failed', 'Supabase identity could not be bound to clinic staff', {
@@ -202,6 +232,7 @@ const bindSupabaseIdentity = async (
 export async function provisionClinicOnboarding(
   payload: Payload,
   input: ClinicOnboardingCommand,
+  req?: PayloadRequest,
 ): Promise<ClinicOnboardingResult> {
   const command: ClinicOnboardingCommand = {
     ...input,
@@ -217,11 +248,10 @@ export async function provisionClinicOnboarding(
     throw new ClinicOnboardingError('record_failed', 'contactEmail is invalid for clinic onboarding')
   }
 
-  const clinic = await createClinic(payload, command)
-  const staff = await createClinicStaff(payload, command, clinic).finally(() =>
-    logDuplicateOnboardingRecords(payload, command.onboardingKey),
-  )
-  const boundStaff = await bindSupabaseIdentity(payload, command, staff)
+  const existing = await findExisting(payload, command, req)
+  const clinic = existing.clinic ?? (await createClinic(payload, command, req))
+  const staff = existing.principal ?? (await createClinicStaff(payload, command, clinic, req))
+  const boundStaff = await bindSupabaseIdentity(payload, command, staff, req)
 
   payload.logger.info(
     {

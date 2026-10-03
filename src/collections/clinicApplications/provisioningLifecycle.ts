@@ -122,9 +122,10 @@ export const getClinicApplicationLifecyclePresentation = ({
             ]
           : []),
       ],
-      guidance: 'The linked clinic and clinic staff records are available for the remaining review steps.',
+      guidance:
+        'Participation is approved. Dashboard access still requires verified account completion; public publication is separate.',
       stateLabel: 'Completed',
-      summary: 'Automatic clinic and clinic staff creation completed.',
+      summary: 'Clinic and initial staff participation are approved.',
       tone: 'success',
     }
   }

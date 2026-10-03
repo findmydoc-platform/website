@@ -1,3 +1,4 @@
+import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import { createHash, randomUUID } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 
@@ -392,21 +393,11 @@ const resolveCurrentActor = async (req: PayloadRequest): Promise<InquiryActor> =
   }
 
   if (req.user.collection === 'clinicStaff') {
-    const staff = await findOne(req, 'clinicStaff', {
-      and: [
-        { id: { equals: req.user.id } },
-        { status: { equals: 'approved' } },
-        { 'authSync.status': { equals: 'synced' } },
-      ],
-    })
-    const clinicId = relationId(staff?.clinic)
-    if (!staff || clinicId === null) {
+    const access = await readClinicAccessState(req.payload, req.user.id, req)
+    if (!access)
       throw new InquiryCommunicationServiceError('access-denied', 'The clinic principal is not access-ready.')
-    }
-    const clinic = await findOne(req, 'clinics', {
-      and: [{ id: { equals: clinicId } }, { status: { equals: 'approved' } }],
-    })
-    if (!clinic) throw new InquiryCommunicationServiceError('access-denied', 'The clinic is not access-ready.')
+    const { clinic, staff } = access
+    const clinicId = clinic.id
     const displayName = [text(staff.firstName), text(staff.lastName)].filter(Boolean).join(' ') || text(staff.email)
     return {
       clinicDisplayName: text(clinic.name),

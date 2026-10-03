@@ -27,6 +27,14 @@ export const mockUsers = {
     clinic: clinicId,
     status: 'approved',
     authSync: { status: 'synced' },
+    supabaseUserId: `subject-${id}`,
+    accountCompletion: {
+      source: 'initial-password',
+      subject: `subject-${id}`,
+      clinicId: String(clinicId),
+      evidenceAt: '2026-10-03T07:00:00.000Z',
+      observedAt: '2026-10-03T07:00:00.000Z',
+    },
   }),
 
   /**

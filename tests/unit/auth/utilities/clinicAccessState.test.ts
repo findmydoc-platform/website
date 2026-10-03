@@ -15,11 +15,20 @@ const readyStaff = {
   email: 'clinic@example.com',
   status: 'approved',
   authSync: { status: 'synced' },
+  supabaseUserId: 'subject-22',
+  accountCompletion: {
+    source: 'initial-password',
+    subject: 'subject-22',
+    clinicId: '8',
+    evidenceAt: '2026-10-03T07:00:00.000Z',
+    observedAt: '2026-10-03T07:00:00.000Z',
+  },
 } as ClinicStaff
 
 const readyClinic = {
   id: 8,
   name: 'Example Clinic',
+  participationStatus: 'approved',
   status: 'approved',
 } as Clinic
 
@@ -45,7 +54,7 @@ describe('clinic access state', () => {
 
   it.each([
     ['approved', readyClinic, true],
-    ['pending', { ...readyClinic, status: 'pending' }, false],
+    ['unpublished', { ...readyClinic, status: 'pending' }, true],
     ['rejected', { ...readyClinic, status: 'rejected' }, false],
     ['deleted', { ...readyClinic, deletedAt: '2026-07-20T00:00:00.000Z' }, false],
   ])('classifies clinic state: %s', (_label, clinic, expected) => {
@@ -84,7 +93,17 @@ describe('clinic access state', () => {
       pagination: false,
       req: undefined,
       where: {
-        and: [{ id: { equals: 8 } }, { status: { equals: 'approved' } }, { deletedAt: { exists: false } }],
+        and: [
+          { id: { equals: 8 } },
+          {
+            or: [
+              { participationStatus: { equals: 'approved' } },
+              { and: [{ participationStatus: { exists: false } }, { status: { equals: 'approved' } }] },
+            ],
+          },
+          { status: { not_equals: 'rejected' } },
+          { deletedAt: { exists: false } },
+        ],
       },
     })
   })
@@ -94,7 +113,7 @@ describe('clinic access state', () => {
     await expect(readClinicAccessState(payload as unknown as Payload, 22)).resolves.toBeNull()
 
     payload.find.mockResolvedValueOnce({ docs: [readyStaff] }).mockResolvedValueOnce({
-      docs: [{ ...readyClinic, status: 'pending' }],
+      docs: [{ ...readyClinic, participationStatus: 'pending' }],
     })
     await expect(readClinicAccessState(payload as unknown as Payload, 22)).resolves.toBeNull()
   })

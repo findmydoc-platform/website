@@ -42,15 +42,19 @@ export const provisionApprovedClinicApplication: CollectionAfterChangeHook<Clini
   if (!transitionedToApproved && !shouldRetryFailedProvisioning) return doc
 
   try {
-    const result = await provisionClinicOnboarding(req.payload, {
-      onboardingKey: `clinic-application:${doc.id}`,
-      clinicName: doc.clinicName,
-      website: doc.clinicWebsite,
-      contactFirstName: doc.contactFirstName ?? undefined,
-      contactLastName: doc.contactLastName,
-      contactEmail: doc.contactEmail,
-      contactRole: doc.contactRole,
-    })
+    const result = await provisionClinicOnboarding(
+      req.payload,
+      {
+        onboardingKey: `clinic-application:${doc.id}`,
+        clinicName: doc.clinicName,
+        website: doc.clinicWebsite,
+        contactFirstName: doc.contactFirstName ?? undefined,
+        contactLastName: doc.contactLastName,
+        contactEmail: doc.contactEmail,
+        contactRole: doc.contactRole,
+      },
+      req,
+    )
 
     await updateProvisioningState(req, doc.id, {
       linkedRecords: {

@@ -1,4 +1,9 @@
-import type { Payload } from 'payload'
+import { createLocalReq, type Payload } from 'payload'
+import { createHmac, randomBytes, randomUUID } from 'node:crypto'
+import {
+  importLegacyClinicPasswordEvidence,
+  snapshotLegacyClinicAccess,
+} from '@/auth/utilities/clinicAccountCompletion'
 import type { ClinicStaff, Patient, PlatformStaff } from '@/payload-types'
 
 export type PayloadRequestUser = NonNullable<Parameters<Payload['create']>[0]['user']>
@@ -69,7 +74,62 @@ export async function asClinicScopedPayloadUser(
     depth: 0,
   })) as ClinicStaff
 
-  return withCollection(accessReady)
+  return withCollection(await completeLegacyClinicFixture(payload, accessReady, clinicId))
+}
+
+/** Synthetic legacy cohort, using native hooks and the signed offline import boundary. */
+export async function completeLegacyClinicFixture(
+  payload: Payload,
+  staff: ClinicStaff,
+  clinicId: number,
+): Promise<ClinicStaff> {
+  await payload.update({
+    collection: 'clinics',
+    id: clinicId,
+    data: { participationStatus: 'approved' },
+    overrideAccess: true,
+    depth: 0,
+  })
+  const req = await createLocalReq({}, payload)
+  // Scope the migration scan to this fixture; all reads and writes still use native Payload and hooks.
+  req.payload = new Proxy(payload, {
+    get(target, key) {
+      if (key === 'find')
+        return ((args: Parameters<Payload['find']>[0]) =>
+          target.find(
+            args.collection === 'clinicStaff'
+              ? { ...args, where: { and: [args.where ?? {}, { id: { equals: staff.id } }] } }
+              : args,
+          )) as Payload['find']
+      const value = Reflect.get(target, key)
+      return typeof value === 'function' ? value.bind(target) : value
+    },
+  })
+  await snapshotLegacyClinicAccess(req)
+  const verificationKey = randomBytes(32)
+  const manifest = JSON.stringify({
+    version: 1,
+    environment: 'test',
+    authVersion: 'synthetic-integration-fixture',
+    clinicStaffId: staff.id,
+    clinicId,
+    subject: staff.supabaseUserId,
+    actorSubject: staff.supabaseUserId,
+    eventId: randomUUID(),
+    event: 'user_updated_password',
+    context: 'authenticated-user',
+    identityCreatedAt: staff.createdAt,
+    eventAt: staff.createdAt,
+    reviewedAt: new Date().toISOString(),
+  })
+  return importLegacyClinicPasswordEvidence(
+    req,
+    {
+      manifest,
+      signature: createHmac('sha256', verificationKey).update(manifest).digest('hex'),
+    },
+    { environment: 'test', authVersion: 'synthetic-integration-fixture', verificationKey },
+  )
 }
 
 export async function createPlatformTestUser(payload: Payload, options: CreateRoleUserOptions): Promise<PlatformStaff> {
@@ -98,7 +158,7 @@ export async function createClinicTestUser(payload: Payload, options: CreateRole
       firstName: options.firstName ?? 'Clinic',
       lastName: options.lastName ?? 'Tester',
       status: 'pending',
-      supabaseUserId: options.supabaseUserId ?? `sb-${options.emailPrefix}`,
+      supabaseUserId: options.supabaseUserId ?? randomUUID(),
     },
     overrideAccess: true,
     depth: 0,

@@ -13,20 +13,20 @@ sequenceDiagram
 
     Platform->>Application: Approve registration request
     Application->>Payload: Provision with stable onboarding key
-    Payload->>Collections: Create pending clinic and clinicStaff through Local API
-    Payload->>Collections: Check key after creation and warn on duplicates
+    Payload->>Collections: Create private clinic and approved initial clinicStaff through Local API
+    Payload->>Collections: Resolve key before creation and enforce unique provisioning IDs
     Payload->>Supabase: Invite or reconcile clinic identity
     Supabase-->>Dashboard: Invitation callback target
     Payload->>Collections: Bind Supabase id and mark auth sync as synced
     Payload->>Application: Store completed links or retryable failure
-    Note over Dashboard,DB: Authentication may complete, but business access remains denied
-    Platform->>Collections: Complete and approve clinic and clinicStaff
+    Note over Dashboard,Collections: Participation approved and verified password completion still required
+    Platform->>Collections: Public publication remains a separate quality decision
     Collections-->>Dashboard: Access becomes eligible on the next fresh Payload check
 ```
 
 `clinicApplications` is the current trigger and audit record, not a permanent relationship on the clinic. A future CRM
-can replace the trigger by sending the same stable onboarding command. Partial and repeated records retain that key;
-Payload emits a structured warning when one execution source resolves to multiple clinics or staff principals.
+can replace the trigger by sending the same stable onboarding command. Partial records retain that key. Retries reuse the same participants and refuse ambiguous historical records.
+Private password evidence is governed by the [clinic participation contract](clinic-participation.md).
 
 ## Clinic Dashboard
 

@@ -6,7 +6,7 @@ Security-focused reference for roles and collection access; business narrative i
 
 ## 👥 Roles (Condensed)
 * Platform Staff: Global administrative & moderation authority (RWDA all collections; approval + master data control).
-* Clinic Staff: After staff approval, successful auth synchronization, and clinic approval, manage only their clinic's operational data; scoped staff/doctor reads; self profile update.
+* Clinic Staff: After staff approval, successful auth synchronization, verified password evidence, and clinic participation approval, manage only their clinic's operational data; scoped staff/doctor reads; self profile update.
 * Patients: Read public data; manage own reviews (create-only), favorites, and profile updates.
 * Anonymous: Read-only approved public content.
 
@@ -63,7 +63,7 @@ If you need to change permissions, update `src/security/permission-matrix.config
 
 ### Notes on Specific Rows
 * PlatformStaff: Platform Staff can review safe identity fields and manage roles. The Supabase identity binding remains hidden, and Create/Delete operations use the trusted provisioning path instead of direct Admin forms †.
-* ClinicStaff: Business access is denied until the direct staff principal is approved, its Supabase synchronization is successful, and its assigned clinic is approved and not deleted. Platform Staff can review safe identity fields and manage clinic assignment and lifecycle status. Eligible Clinic Staff can read staff in their own clinic and target only their own principal for updates; identity and synchronization fields remain system-owned. Create/Delete operations occur exclusively through the trusted provisioning path †‡.
+* ClinicStaff: Business access is denied until the direct staff principal is approved, its Supabase synchronization is successful, and its assigned clinic has approved participation and is neither rejected nor deleted. Public publication is separate. Platform Staff can review safe identity fields and manage clinic assignment and lifecycle status. Eligible Clinic Staff can read staff in their own clinic and target only their own principal for updates; identity and synchronization fields remain system-owned. Create/Delete operations occur exclusively through the trusted provisioning path †‡.
 * Patients: Patients can update their own profile but cannot create or delete their patient record (provisioned via Supabase/Auth).
 * AuthActions: Platform reads only lifecycle diagnostics. Generic writes are denied for every role; internal Auth commands own creation, state changes and hard deletion 42 days after the first terminal timestamp. Principal and fixed destinations stay private. See [the AuthAction contract](auth-actions.md).
 * RecoveryRequestEvents: No generic read, write or Admin access, including Platform Staff. Owned Auth commands store separate short-lived target and IP HMAC events; the existing Website scheduler deletes them after their one-hour counting window. See [recovery admission](auth-actions.md#recovery-request-admission).
@@ -81,7 +81,7 @@ If you need to change permissions, update `src/security/permission-matrix.config
 ## 🛡️ Security Notes
 * Cross-clinic isolation enforced in access functions (Clinic Staff never read other clinics' protected data).
 * Staff principal create/delete only through the trusted provisioning path (no direct CRUD endpoints/forms).
-* Clinic Staff business access is denied until staff approval, successful auth synchronization, and clinic approval (no partial API access).
+* Clinic Staff business access is denied until staff approval, successful auth synchronization, verified password evidence, and clinic participation approval (no partial API access).
 * Platform Staff are sole moderators (reviews, master data, approvals).
 * Patients cannot self-create/delete patient record; identity originates in Supabase.
 
@@ -103,11 +103,11 @@ Create/update/delete + provisioning events logged (basic logs only; advanced met
 ## 🔄 **Permission Workflows & User Journeys**
 
 ### **Clinic Onboarding Process**
-1. **Clinic** submits a public registration request
-2. **Platform Staff** approves the request; the system creates the pending clinic and initial pending ClinicStaff principal
-3. **Clinic Staff** receives a Dashboard invitation; authentication can complete, while business access remains denied
-4. **Platform Staff** completes and approves the clinic and approves the staff principal
-5. **Clinic Staff** gains scoped access after the current Payload checks also confirm successful auth synchronization
+1. **Clinic** submits a public registration request.
+2. **Platform Staff** approves the request, authorizing the resulting clinic and its named initial staff member for Dashboard participation.
+3. **Clinic Staff** receives the existing Dashboard invitation. Usable access still requires verified account completion and synchronized identity.
+4. **Clinic Staff** gains tenant-scoped access after current Payload checks confirm participation and private password evidence.
+5. **Platform Staff** decides public publication separately after profile completeness and quality review.
 
 ### Review Moderation
 1. Patient submits review (pending)

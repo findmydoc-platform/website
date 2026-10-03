@@ -702,6 +702,11 @@ export interface Tag {
  */
 export interface Clinic {
   id: number;
+  /**
+   * Dashboard participation. Public publication is a separate decision.
+   */
+  participationStatus?: ('pending' | 'approved' | 'disabled' | 'rejected') | null;
+  provisioningIdentity?: string | null;
   stableId?: string | null;
   profileRevision?: number | null;
   onboardingKey?: string | null;
@@ -933,7 +938,7 @@ export interface Clinic {
    */
   accreditations?: (number | Accreditation)[] | null;
   /**
-   * Clinic approval status
+   * Public publication status
    */
   status?: ('draft' | 'pending' | 'approved' | 'rejected') | null;
   /**
@@ -1380,6 +1385,22 @@ export interface UserProfileMedia {
  */
 export interface ClinicStaff {
   id: number;
+  accountCompletion?: {
+    source?: ('initial-password' | 'legacy-password-login' | 'legacy-audit') | null;
+    subject?: string | null;
+    clinicId?: string | null;
+    evidenceAt?: string | null;
+    observedAt?: string | null;
+    authActionId?: string | null;
+  };
+  legacyAccess?: {
+    eligibleAt?: string | null;
+    subject?: string | null;
+    clinicId?: string | null;
+    initialParticipant?: boolean | null;
+  };
+  invitationAttemptedAt?: string | null;
+  provisioningIdentity?: string | null;
   stableId?: string | null;
   supabaseUserId?: string | null;
   onboardingKey?: string | null;
@@ -4913,6 +4934,26 @@ export interface PatientsSelect<T extends boolean = true> {
  * via the `definition` "clinicStaff_select".
  */
 export interface ClinicStaffSelect<T extends boolean = true> {
+  accountCompletion?:
+    | T
+    | {
+        source?: T;
+        subject?: T;
+        clinicId?: T;
+        evidenceAt?: T;
+        observedAt?: T;
+        authActionId?: T;
+      };
+  legacyAccess?:
+    | T
+    | {
+        eligibleAt?: T;
+        subject?: T;
+        clinicId?: T;
+        initialParticipant?: T;
+      };
+  invitationAttemptedAt?: T;
+  provisioningIdentity?: T;
   stableId?: T;
   supabaseUserId?: T;
   onboardingKey?: T;
@@ -5370,6 +5411,8 @@ export interface InquiryCommandLocksSelect<T extends boolean = true> {
  * via the `definition` "clinics_select".
  */
 export interface ClinicsSelect<T extends boolean = true> {
+  participationStatus?: T;
+  provisioningIdentity?: T;
   stableId?: T;
   profileRevision?: T;
   onboardingKey?: T;

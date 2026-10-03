@@ -41,6 +41,14 @@ const createRequest = (counts: number[], events: string[] = []) => {
         docs: [
           {
             authSync: { status: 'synced' },
+            supabaseUserId: 'subject-5',
+            accountCompletion: {
+              source: 'initial-password',
+              subject: 'subject-5',
+              clinicId: '8',
+              evidenceAt: '2026-10-03T07:00:00.000Z',
+              observedAt: '2026-10-03T07:00:00.000Z',
+            },
             clinic: 8,
             email: 'staff@example.invalid',
             firstName: 'Synthetic',

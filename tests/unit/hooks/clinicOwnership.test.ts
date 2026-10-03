@@ -36,7 +36,24 @@ describe('clinic ownership hooks', () => {
     it('assigns clinic on create for clinic users when clinic is omitted', async () => {
       const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
       payload.find
-        .mockResolvedValueOnce({ docs: [{ id: 10, clinic: 44, status: 'approved', authSync: { status: 'synced' } }] })
+        .mockResolvedValueOnce({
+          docs: [
+            {
+              id: 10,
+              clinic: 44,
+              status: 'approved',
+              authSync: { status: 'synced' },
+              supabaseUserId: 'clinic-subject',
+              accountCompletion: {
+                source: 'initial-password',
+                subject: 'clinic-subject',
+                clinicId: '44',
+                evidenceAt: '2026-01-01T00:00:00.000Z',
+                observedAt: '2026-01-01T00:00:00.000Z',
+              },
+            },
+          ],
+        })
         .mockResolvedValueOnce({ docs: [{ id: 44, status: 'approved' }] })
       const hook = beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })
 
@@ -55,7 +72,24 @@ describe('clinic ownership hooks', () => {
     it('throws when clinic users submit a foreign clinic', async () => {
       const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
       payload.find
-        .mockResolvedValueOnce({ docs: [{ id: 10, clinic: 44, status: 'approved', authSync: { status: 'synced' } }] })
+        .mockResolvedValueOnce({
+          docs: [
+            {
+              id: 10,
+              clinic: 44,
+              status: 'approved',
+              authSync: { status: 'synced' },
+              supabaseUserId: 'clinic-subject',
+              accountCompletion: {
+                source: 'initial-password',
+                subject: 'clinic-subject',
+                clinicId: '44',
+                evidenceAt: '2026-01-01T00:00:00.000Z',
+                observedAt: '2026-01-01T00:00:00.000Z',
+              },
+            },
+          ],
+        })
         .mockResolvedValueOnce({ docs: [{ id: 44, status: 'approved' }] })
       const hook = beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })
 
@@ -110,7 +144,24 @@ describe('clinic ownership hooks', () => {
     it('allows clinic users when doctor belongs to assigned clinic', async () => {
       const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
       payload.find
-        .mockResolvedValueOnce({ docs: [{ id: 10, clinic: 44, status: 'approved', authSync: { status: 'synced' } }] })
+        .mockResolvedValueOnce({
+          docs: [
+            {
+              id: 10,
+              clinic: 44,
+              status: 'approved',
+              authSync: { status: 'synced' },
+              supabaseUserId: 'clinic-subject',
+              accountCompletion: {
+                source: 'initial-password',
+                subject: 'clinic-subject',
+                clinicId: '44',
+                evidenceAt: '2026-01-01T00:00:00.000Z',
+                observedAt: '2026-01-01T00:00:00.000Z',
+              },
+            },
+          ],
+        })
         .mockResolvedValueOnce({ docs: [{ id: 44, status: 'approved' }] })
       payload.findByID.mockResolvedValueOnce({ clinic: 44 })
 
@@ -131,7 +182,24 @@ describe('clinic ownership hooks', () => {
     it('blocks clinic users when doctor belongs to a foreign clinic', async () => {
       const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
       payload.find
-        .mockResolvedValueOnce({ docs: [{ id: 10, clinic: 44, status: 'approved', authSync: { status: 'synced' } }] })
+        .mockResolvedValueOnce({
+          docs: [
+            {
+              id: 10,
+              clinic: 44,
+              status: 'approved',
+              authSync: { status: 'synced' },
+              supabaseUserId: 'clinic-subject',
+              accountCompletion: {
+                source: 'initial-password',
+                subject: 'clinic-subject',
+                clinicId: '44',
+                evidenceAt: '2026-01-01T00:00:00.000Z',
+                observedAt: '2026-01-01T00:00:00.000Z',
+              },
+            },
+          ],
+        })
         .mockResolvedValueOnce({ docs: [{ id: 44, status: 'approved' }] })
       payload.findByID.mockResolvedValueOnce({ clinic: 99 })
 
@@ -152,7 +220,24 @@ describe('clinic ownership hooks', () => {
     it('blocks clinic users when doctor is missing', async () => {
       const { req, payload } = createReq({ id: 10, collection: 'clinicStaff' })
       payload.find
-        .mockResolvedValueOnce({ docs: [{ id: 10, clinic: 44, status: 'approved', authSync: { status: 'synced' } }] })
+        .mockResolvedValueOnce({
+          docs: [
+            {
+              id: 10,
+              clinic: 44,
+              status: 'approved',
+              authSync: { status: 'synced' },
+              supabaseUserId: 'clinic-subject',
+              accountCompletion: {
+                source: 'initial-password',
+                subject: 'clinic-subject',
+                clinicId: '44',
+                evidenceAt: '2026-01-01T00:00:00.000Z',
+                observedAt: '2026-01-01T00:00:00.000Z',
+              },
+            },
+          ],
+        })
         .mockResolvedValueOnce({ docs: [{ id: 44, status: 'approved' }] })
       const hook = beforeChangeEnforceDoctorInAssignedClinic({ doctorField: 'doctor' })
 

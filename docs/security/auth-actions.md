@@ -84,3 +84,17 @@ Every system read and write, including the retention selection and final delete 
 Cache impact is `no-public-impact`. The catalog classifies this collection as `private-live`, owned by `auth-owner`, with no public cache tags, routes or invalidation hooks.
 
 The additive Payload-generated migrations create AuthAction storage and native principal relationship storage, then add the nullable binding timestamp. The product-binding migration adds nullable subject fields and the Dashboard callback enum value; the correlation migration adds two nullable indexed text fields. Keep the expanded schema during an application rollback: generated down migrations drop stored bindings or correlation data and cannot retain Dashboard callback values. New Dashboard actions are not writable through the prior application's Website-only policy. Unit tests cover command/hook boundaries and owner failure handling against the installed transaction controls without a database. The collection registry assigns its real Local API lifecycle, principal deletion, privacy and coordinated concurrency contract to `tests/integration/authActions.lifecycle.test.ts`. Integration and E2E execution remains CI-only for this change.
+
+## Durable clinic password evidence
+
+`recordClinicInitialPasswordCompletion` is the internal Website completion boundary. It requires a completed
+`clinic-invitation` bound to the exact current Supabase subject and principal, fresh server-verified password
+authentication, synchronized staff identity, approved participation, and a non-rejected, non-deleted assigned clinic.
+It retains private source, subject, clinic, evidence time, observation time, and a non-relational action ID on
+`clinicStaff`. Terminal AuthAction deletion therefore cannot erase completion proof. Generic Local API access overrides
+and editable Admin inputs cannot write or replace this evidence.
+
+The current clinic AuthAction lifecycle does not yet bind a subject. #1986 must supply that immutable binding, and
+#1995 must verify the actual password operation before completing the action and calling this boundary. No public
+completion route calls it today. An action state, email outcome, or mock alone does not prove account completion.
+The [clinic participation contract](clinic-participation.md) owns the legacy import and password-usability fallback.

@@ -158,8 +158,23 @@ export const createMockReq = (
     effectivePayload.find.mockImplementation(async ({ collection }: { collection: string }) => ({
       docs: clinicId
         ? collection === 'clinicStaff'
-          ? [{ id: userId, clinic: clinicId, status: 'approved', authSync: { status: 'synced' } }]
-          : [{ id: clinicId, name: 'Mock Clinic', status: 'approved' }]
+          ? [
+              {
+                id: userId,
+                clinic: clinicId,
+                status: 'approved',
+                authSync: { status: 'synced' },
+                supabaseUserId: `subject-${userId}`,
+                accountCompletion: {
+                  source: 'initial-password',
+                  subject: `subject-${userId}`,
+                  clinicId: String(clinicId),
+                  evidenceAt: '2026-10-03T07:00:00.000Z',
+                  observedAt: '2026-10-03T07:00:00.000Z',
+                },
+              },
+            ]
+          : [{ id: clinicId, name: 'Mock Clinic', status: 'approved', participationStatus: 'approved' }]
         : [],
     }))
     effectivePayload.findByID.mockResolvedValue({ clinic: clinicId })

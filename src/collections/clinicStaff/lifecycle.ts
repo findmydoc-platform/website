@@ -72,7 +72,7 @@ const getTransitionSummary = (
   if (selectedStatus === 'approved') {
     return {
       guidance:
-        'Clinic Dashboard access still requires a successful authentication sync and an assigned approved clinic.',
+        'Clinic Dashboard access still requires a successful authentication sync, verified password completion, and clinic participation approval.',
       stateLabel: persistedStatus === 'disabled' ? 'Reactivation selected' : 'Activation selected',
       summary:
         persistedStatus === 'disabled'

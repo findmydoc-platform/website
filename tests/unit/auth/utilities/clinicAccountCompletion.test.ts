@@ -150,6 +150,68 @@ describe('clinic password evidence boundary', () => {
     expect(writtenData).not.toHaveProperty('password')
   })
 
+  it.each([
+    { accountCompletion: {}, legacyAccess: { initialParticipant: false } },
+    {
+      accountCompletion: { source: null, subject: null, clinicId: null },
+      legacyAccess: { eligibleAt: null, initialParticipant: false },
+    },
+  ])('accepts empty Payload create groups without granting account completion', (data) => {
+    const result = guardClinicAccountEvidence({ data, originalDoc: {}, operation: 'create', req: request() } as never)
+    expect(result).toEqual(data)
+    expect('source' in data.accountCompletion ? data.accountCompletion.source : undefined).toBeFalsy()
+  })
+
+  it('allows empty default materialization on unrelated updates', () => {
+    const data = { firstName: 'Changed', accountCompletion: {}, legacyAccess: { initialParticipant: false } }
+    expect(
+      guardClinicAccountEvidence({
+        data,
+        originalDoc: { ...staff, legacyAccess: null },
+        operation: 'update',
+        req: request(),
+      } as never),
+    ).toEqual(data)
+  })
+
+  it.each([
+    { accountCompletion: { source: 'initial-password', subject } },
+    { legacyAccess: { initialParticipant: true } },
+    { accountCompletion: [] },
+    { legacyAccess: 'not-a-group' },
+  ])('rejects caller-supplied evidence on create even with access overrides: %j', (data) => {
+    const req = request()
+    req.context = { overrideAccess: true, trustedPlatformStaffOps: true, clinicAccountEvidenceCapability: {} }
+    expect(() => guardClinicAccountEvidence({ data, originalDoc: {}, operation: 'create', req } as never)).toThrow()
+  })
+
+  it('does not copy protected proof or legacy eligibility when duplicating a staff record', () => {
+    const originalDoc = { ...staff, accountCompletion: { source: 'initial-password', subject, clinicId: '8' } }
+    expect(() =>
+      guardClinicAccountEvidence({
+        data: { ...originalDoc },
+        originalDoc,
+        operation: 'create',
+        req: request(),
+      } as never),
+    ).toThrow()
+  })
+
+  it.each([null, {}, { source: 'legacy-audit', subject: 'other' }])(
+    'rejects removal or replacement of existing proof: %j',
+    (accountCompletion) => {
+      const originalDoc = { ...staff, accountCompletion: { source: 'initial-password', subject, clinicId: '8' } }
+      expect(() =>
+        guardClinicAccountEvidence({
+          data: { accountCompletion },
+          originalDoc,
+          operation: 'update',
+          req: request(),
+        } as never),
+      ).toThrow()
+    },
+  )
+
   it('rejects editable Admin input and arbitrary Local API flags', async () => {
     const req = request()
     req.context = { overrideAccess: true, passwordCompleted: true, clinicAccountEvidenceCapability: {} }

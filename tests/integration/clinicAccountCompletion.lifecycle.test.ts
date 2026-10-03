@@ -44,6 +44,16 @@ describe('native clinic account evidence boundary', () => {
     })
     expect(stored.legacyAccess?.initialParticipant).toBe(false)
     expect(await readClinicAccessState(payload, staff.id)).not.toBeNull()
+    const updated = await payload.update({
+      collection: 'clinicStaff',
+      id: staff.id,
+      data: { firstName: 'Updated' },
+      context: { skipClinicStaffAuthSync: true },
+      overrideAccess: true,
+      depth: 0,
+    })
+    expect(updated.accountCompletion).toEqual(stored.accountCompletion)
+    expect(updated.legacyAccess).toEqual(stored.legacyAccess)
     await expect(
       payload.update({
         collection: 'clinicStaff',

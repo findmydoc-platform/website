@@ -5,6 +5,7 @@ import {
 } from '@/features/clinicOnboarding/provisionClinicOnboarding'
 import type { Clinic, ClinicStaff } from '@/payload-types'
 import type { Payload } from 'payload'
+import { guardClinicAccountEvidence } from '@/auth/utilities/clinicAccountCompletion'
 
 const authMocks = vi.hoisted(() => ({
   inviteClinicSupabaseAccount: vi.fn(),
@@ -57,8 +58,24 @@ const createPayload = ({ failClinicStaffCreate = false }: { failClinicStaffCreat
 
       if (failClinicStaffCreate) throw new Error('Clinic staff create failed')
 
-      const staff = {
+      // Payload 3.88 create passes an empty original document and materializes group defaults.
+      const normalizedData: Record<string, unknown> = {
+        accountCompletion: {},
+        legacyAccess: { initialParticipant: false },
         ...data,
+      }
+      if (data.legacyAccess && typeof data.legacyAccess === 'object' && !Array.isArray(data.legacyAccess)) {
+        normalizedData.legacyAccess = { initialParticipant: false, ...data.legacyAccess }
+      }
+      guardClinicAccountEvidence({
+        data: normalizedData,
+        originalDoc: {},
+        operation: 'create',
+        req: { context: {} },
+      } as never)
+
+      const staff = {
+        ...normalizedData,
         id: 4 + clinicStaff.length,
         collection: 'clinicStaff',
         createdAt: '2026-01-01T00:00:00.000Z',
@@ -114,7 +131,7 @@ describe('provisionClinicOnboarding', () => {
     expect(state.clinicStaff).toHaveLength(1)
     expect(authMocks.inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
     expect(state.clinics[0]).toMatchObject({ participationStatus: 'approved', status: 'pending' })
-    expect(state.clinicStaff[0]?.accountCompletion).toBeUndefined()
+    expect(state.clinicStaff[0]?.accountCompletion?.source).toBeUndefined()
   })
 
   it('reconciles an uncertain invitation without dispatching another email', async () => {

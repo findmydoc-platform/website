@@ -47,7 +47,8 @@ the directory. No global Supabase identity list is cached or exposed.
 It accepts no resend authority, recipient, action URL, template or provider setting. `requestPatientVerification`
 prepares the identity without native mail, activates the same action and accepts only its `auth.email-verification`
 command. Names become Supabase user metadata only when creating a new identity. Reconciliation does not replace
-an existing password or profile. An authorized internal Auth resend uses `resendOf`; no new public resend route exists.
+an existing password or profile. An authorized internal Auth resend uses `resendOf`. The email-only public adapter
+resolves that authority inside Auth, as described below.
 Confirmed identities and other account types return the same neutral registration response without a mail command.
 Infrastructure or configuration failures return a generic 503. Logs contain a safe event and email hash, not passwords,
 provider exceptions or raw recipient addresses.
@@ -64,8 +65,8 @@ each attempt. It requires the same environment, 24-hour expiry, patient role, un
 email correlation. A changed address, missing identity, ban, confirmation or lost action eligibility suppresses the
 operation rather than redirecting it. Supabase `generateLink` generates only a `magiclink`; its returned subject,
 address and token type must still match. The Website callback URL contains `authActionId`, `token_hash` and
-`type=magiclink`. Fixed origins come from the deployment environment, never request input. The callback consumer must
-validate the action and subject before consuming that token; its implementation and activation are separate work.
+`type=magiclink`. Fixed origins come from the deployment environment, never request input. The callback consumer
+validates the current action and bound identity before token consumption. Hosted activation remains separate.
 
 The renderer uses only `PatientEmailVerificationEmail` and its subject from the exact pinned package, with the single
 `actionUrl` prop. The existing worker saves the prepared content once and reuses it and the provider idempotency key
@@ -73,6 +74,45 @@ for delivery retries. Preparation interrupted before that storage commit may gen
 not represent a completed delivery. AuthAction storage never receives a token hash, URL or rendered content.
 Offline unit contracts cross the public registration handler, production Auth commands and catalog, guarded private
 Local API storage and Fake delivery. They prove this source behavior, not live Supabase configuration or actual mail arrival.
+
+## Patient verification completion
+
+`GET /auth/callback` accepts only one `authActionId`, `token_hash` and `type=magiclink`, with no `code`, `next` or
+additional parameter. It checks the current active action, fixed policy, environment, expiry and correlated
+unconfirmed patient identity without calling `verifyOtp`. Every rejected link redirects to the same token-free
+`/auth/confirm?type=patient-verification` state. A valid link receives a signed ten-minute `HttpOnly`, same-site cookie
+scoped to `/auth`. The cookie contains the action, subject, fixed flow and destination, expiry, a random CSRF value
+and the pending token hash. It contains no email. HMAC signing uses the existing environment key ring with a separate
+message purpose, preserving rotation without adding configuration.
+
+Only same-origin JSON `POST /auth/callback` with the matching CSRF value consumes the token. It rechecks current
+Auth authority and uses an isolated Supabase client whose cookies remain buffered until the verified subject,
+confirmed email and authoritative patient role match. A mismatched provider identity cannot install a session.
+The confirmed session remains available while the action advances to `confirmed`. `ensurePatientOnAuth` reuses the
+existing unique-subject provisioning boundary, including concurrent-create conflict recovery. Principal binding
+checks the patient subject, and `completed` requires that binding. Success returns only `/patient/inquiries`.
+The initial confirmation UI exposes the CSRF value, never the pending token or identity.
+
+A successful token confirmation replaces the pending cookie with a signed token-free receipt bounded by the
+AuthAction expiry. A temporary lifecycle or provisioning failure keeps that receipt and session for completion
+retry, including after the original ten-minute pending window. Retry checks the current authoritative identity
+and validates the session with Supabase `getUser`; it does not consume the token again. Invalid, expired, replayed,
+mismatched, superseded and revoked links share the same public error. No token, link or receipt enters an AuthAction
+or patient record. Next development request logging excludes `/auth/callback` queries.
+
+The existing `/register/patient` page includes an email-only resend form. Its same-origin
+`POST /api/auth/register/patient/resend` accepts only an email and returns the same no-store success for every valid
+address, including unknown identities, confirmed accounts, throttling and unavailable infrastructure. Auth performs
+bounded identity reconciliation and authorizes the current correlation's replacement through the existing
+five-minute cooldown and five-per-day reservation boundary. It never creates a Supabase identity or changes a
+password. An unbound pending reservation can resume identity binding. Preview Guard suppresses the operation.
+The form clears its input after acceptance and stores no address in a URL or cookie. Delivery continues through the
+existing catalog, Outbox and pinned template. Preview and Production sending remain fail-closed.
+
+Offline HTTP and UI units cover GET/POST separation, CSRF, policy and identity mismatch, expiry, replay, provisioning
+reuse, provider rejection, neutral resend and confirmed completion retry. They do not prove native database
+concurrency or live Supabase delivery. Cache impact is `no-public-impact`; all Auth and patient reads remain private
+and live. Clinic invitation and recovery completion paths retain their existing behavior.
 
 ## Initial clinic invitation admission
 

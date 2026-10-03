@@ -51,6 +51,18 @@ export function bindPendingPatientVerification(
 ) {
   const actions = bindAuthActions(req, options)
   return Object.freeze({
+    async prepareResend(input: { email: string }) {
+      const email = normalizeEmail(input.email)
+      const current = await actions.reservePatientVerification({ email })
+      if (!['pending', 'active'].includes(current.state)) unavailable()
+      // Email-only requests never create an identity or replace its password.
+      const user = await reconcile(options.admin, email).catch(() => unavailable())
+      if (current.supabaseSubject && current.supabaseSubject !== user.id) unavailable()
+      if (!current.supabaseSubject && current.state === 'pending')
+        return actions.bindSubject({ id: current.id, supabaseSubject: user.id })
+      const action = await actions.reservePatientVerification({ email, resendOf: current.id })
+      return actions.bindSubject({ id: action.id, supabaseSubject: user.id })
+    },
     async prepare(input: z.infer<typeof commandSchema>) {
       const parsed = commandSchema.safeParse(input)
       if (!parsed.success) throw new APIError('invalid-command', 400)

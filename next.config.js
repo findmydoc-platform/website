@@ -37,6 +37,8 @@ const allowedDevOrigins = getAllowedDevOrigins({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Authentication callbacks arrive with one-time link material; never print their request query.
+  logging: { incomingRequests: { ignore: [/^\/auth\/callback(?:\?|$)/] } },
   ...(allowedDevOrigins.length > 0 ? { allowedDevOrigins } : {}),
   async headers() {
     return blockSearchIndexing

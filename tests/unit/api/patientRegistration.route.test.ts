@@ -48,6 +48,7 @@ describe('patient registration through Auth, catalog, Outbox and offline deliver
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-10-03T12:00:00.000Z'))
+    vi.stubEnv('CI', 'false')
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', 'test')
     vi.stubEnv('AUTH_VERIFICATION_CORRELATION_KEYS_JSON', JSON.stringify({ environment: 'test', keys: [key] }))

@@ -131,7 +131,9 @@ export function createEmailCommandStorage() {
       docs.sort((a, b) =>
         options.sort === '-createdAt'
           ? String(b.createdAt).localeCompare(String(a.createdAt))
-          : Number(a.id) - Number(b.id),
+          : options.sort === '-id'
+            ? Number(b.id) - Number(a.id)
+            : Number(a.id) - Number(b.id),
       )
       return { docs: await Promise.all(docs.slice(0, options.limit ?? docs.length).map((doc) => read(doc, options))) }
     }),

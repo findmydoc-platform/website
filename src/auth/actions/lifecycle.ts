@@ -763,11 +763,11 @@ export function bindAuthActions(
         return result.docs
       })
     },
-    liveRecoveries(input: { afterId?: number; limit?: number } = {}): Promise<AuthAction[]> {
+    liveRecoveries(input: { beforeId?: number; limit?: number } = {}): Promise<AuthAction[]> {
       const command = parsed(
         z
           .object({
-            afterId: z.number().int().nonnegative().optional(),
+            beforeId: z.number().int().positive().optional(),
             limit: z.number().int().min(1).max(25).optional(),
           })
           .strict(),
@@ -781,10 +781,10 @@ export function bindAuthActions(
           depth: 0,
           pagination: false,
           limit: command.limit ?? 25,
-          sort: 'id',
+          sort: '-id',
           where: {
             and: [
-              { id: { greater_than: command.afterId ?? 0 } },
+              ...(command.beforeId ? [{ id: { less_than: command.beforeId } }] : []),
               { environment: { equals: environment } },
               { actionType: { in: [...recoveryActionTypes] } },
               { state: { in: ['pending', 'active'] } },

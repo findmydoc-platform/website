@@ -5,8 +5,9 @@ import type { RecoveryPrincipal } from '@/auth/actions/recoveryPrincipal'
 import type { EmailEnvironment } from './environment'
 
 /** Offline recovery uses synthetic identity/link evidence and never constructs the live SDK. */
-export async function recoveryAdmin(environment: EmailEnvironment, principal: RecoveryPrincipal) {
-  if (environment === 'preview' || environment === 'production') return (await createAdminClient()).auth.admin
+export async function recoveryAdmin(environment: EmailEnvironment, principal: RecoveryPrincipal, signal?: AbortSignal) {
+  signal?.throwIfAborted()
+  if (environment === 'preview' || environment === 'production') return (await createAdminClient(signal)).auth.admin
   const user = {
     id: principal.document.supabaseUserId!,
     email: principal.document.email ?? undefined,

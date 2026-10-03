@@ -9,7 +9,7 @@ const now = Date.parse('2026-10-03T12:00:00.000Z')
 const email = 'patient@example.test'
 const subject = '3525d8e2-0ff0-44cc-9f14-ad8a783a57dd'
 const key = { version: 'offline-v1', secret: 'offline-only-recovery-correlation-material' } // pragma: allowlist secret
-function fixture() {
+function fixture(signal?: AbortSignal) {
   const correlation = recoveryCorrelations(email, '', 'test', [key])[0]!.correlations[0]!
   const action = {
     id: 45,
@@ -48,6 +48,7 @@ function fixture() {
   }
   const entry = createPasswordRecoveryCatalogEntry({
     environment: 'test',
+    signal,
     now: () => now,
     recoveryKeys: [key],
     actions: { read: async () => action },
@@ -64,6 +65,18 @@ function fixture() {
 }
 
 describe('password recovery through the authorized command catalog', () => {
+  it('stops acceptance when its lookup completes after the scheduler aborts', async () => {
+    const controller = new AbortController()
+    const { catalog, admin, user } = fixture(controller.signal)
+    admin.getUserById.mockImplementationOnce(async () => {
+      controller.abort(new Error('Recovery command acceptance unavailable.'))
+      return { data: { user }, error: null }
+    })
+    await expect(
+      catalog['auth.password-recovery'].authorizeAndResolve({ type: 'auth.password-recovery', authActionId: 45 }, null),
+    ).rejects.toThrow('Recovery command acceptance unavailable.')
+    expect(admin.generateLink).not.toHaveBeenCalled()
+  })
   it('renders a usable action-owned patient recovery link with only the package actionUrl prop', async () => {
     const { catalog, admin } = fixture()
     const command = { type: 'auth.password-recovery', authActionId: 45 } as const

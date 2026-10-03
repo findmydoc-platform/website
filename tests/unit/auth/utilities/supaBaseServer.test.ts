@@ -42,4 +42,30 @@ describe('createAdminClient', () => {
       }),
     )
   })
+  it('aborts a scoped admin request when the recovery scheduler deadline expires', async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key'
+    const controller = new AbortController()
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init!.signal!.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), {
+            once: true,
+          })
+        }),
+    )
+    try {
+      const { createAdminClient } = await import('@/auth/utilities/supaBaseServer')
+      await createAdminClient(controller.signal)
+      const options = createServerClientMock.mock.calls[0]![2] as { global: { fetch: typeof fetch } }
+      const pending = options.global.fetch('https://example.supabase.co/auth/v1/admin/users', { method: 'GET' })
+      controller.abort()
+      await expect(pending).rejects.toThrow('Aborted')
+      expect(fetchSpy).toHaveBeenCalledWith('https://example.supabase.co/auth/v1/admin/users', {
+        method: 'GET',
+        signal: controller.signal,
+      })
+    } finally {
+      fetchSpy.mockRestore()
+    }
+  })
 })

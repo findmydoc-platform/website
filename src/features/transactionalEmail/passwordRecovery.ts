@@ -18,6 +18,7 @@ type Command = Extract<TransactionalEmailCommand, { type: 'auth.password-recover
 type Admin = Pick<SupabaseClient['auth']['admin'], 'getUserById' | 'generateLink'>
 type Dependencies = {
   environment: EmailEnvironment
+  signal?: AbortSignal
   now?: () => number
   recoveryKeys: readonly RecoveryKey[] | (() => readonly RecoveryKey[])
   actions: { read(id: number): Promise<AuthAction | null> }
@@ -42,7 +43,9 @@ function sameIdentity(user: User | null, action: AuthAction, principal: Recovery
 export function createPasswordRecoveryCatalogEntry(dependencies: Dependencies): CatalogEntry<Command> {
   const now = dependencies.now ?? Date.now
   async function load(command: Command) {
+    dependencies.signal?.throwIfAborted()
     const action = await dependencies.actions.read(command.authActionId)
+    dependencies.signal?.throwIfAborted()
     if (!action || !recoveryActionTypes.includes(action.actionType as never)) return null
     const actionType = action.actionType as (typeof recoveryActionTypes)[number]
     const policy = authActionPolicies[actionType]
@@ -68,6 +71,7 @@ export function createPasswordRecoveryCatalogEntry(dependencies: Dependencies): 
     )
       return null
     const principal = await dependencies.findPrincipal(policy.principalCollection, Number(principalId))
+    dependencies.signal?.throwIfAborted()
     if (
       !principal ||
       principal.actionType !== actionType ||
@@ -86,7 +90,9 @@ export function createPasswordRecoveryCatalogEntry(dependencies: Dependencies): 
     )
       return null
     const admin = await dependencies.admin(principal)
+    dependencies.signal?.throwIfAborted()
     const result = await admin.getUserById(action.supabaseSubject!)
+    dependencies.signal?.throwIfAborted()
     if (result.error) throw new TransactionalEmailError('source-missing')
     if (!sameIdentity(result.data.user, action, principal, now())) return null
     return { action, principal, email, admin, policy }

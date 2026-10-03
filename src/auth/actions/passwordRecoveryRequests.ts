@@ -7,6 +7,7 @@ import {
   selectTransactionalEmailCommandAcceptance,
 } from '@/features/transactionalEmail/payloadIntegration'
 import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
+import { bindPayloadCommandCatalog } from '@/features/transactionalEmail/payloadCatalog'
 import { bindAuthActions } from './lifecycle'
 import { resolveRecoveryKeys } from './recoveryConfiguration'
 import type { RecoveryContext } from './recoveryContext'
@@ -16,11 +17,18 @@ async function acceptRecovery(
   action: AuthAction,
   environment: ReturnType<typeof resolveTransactionalEmailEnvironment>,
   now?: () => number,
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted()
   const actions = bindAuthActions(req, { environment, now })
   const active = action.state === 'pending' ? await actions.transition({ id: action.id, to: 'active' }) : action
+  signal?.throwIfAborted()
   if (active.state !== 'active') return false
-  const receipt = await bindTransactionalEmail({ ...req, user: null }, undefined, now).accept({
+  const receipt = await bindTransactionalEmail(
+    { ...req, user: null },
+    signal ? bindPayloadCommandCatalog(req, { recoverySignal: signal }) : undefined,
+    now,
+  ).accept({
     type: 'auth.password-recovery',
     authActionId: active.id,
   })
@@ -46,7 +54,7 @@ export async function requestPasswordRecovery(
   if (action) await acceptRecovery(sourceReq, action, environment)
 }
 
-/** Keyset paging and the deadline bound recovery. Duplicate receipts do not consume the new acceptance cap. */
+/** Newest-first paging prevents older receipts from starving new interruptions. Each await shares one deadline. */
 export async function prepareCommittedRecoveries(
   req: PayloadRequest,
   options: { deadline: number; now?: () => number },
@@ -56,26 +64,50 @@ export async function prepareCommittedRecoveries(
   const now = options.now ?? Date.now
   const stop = Math.min(options.deadline, now() + 30000)
   const actions = bindAuthActions(req, { environment, now })
-  let afterId = 0
+  const controller = new AbortController()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const expiration = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => {
+        controller.abort(new Error('Recovery command acceptance unavailable.'))
+        reject(controller.signal.reason)
+      },
+      Math.max(0, stop - now()),
+    )
+  })
+  void expiration.catch(() => {})
+  async function wait<Result>(work: () => Promise<Result>) {
+    controller.signal.throwIfAborted()
+    const result = await Promise.race([work(), expiration])
+    if (now() >= stop) controller.abort(new Error('Recovery command acceptance unavailable.'))
+    controller.signal.throwIfAborted()
+    return result
+  }
+  let beforeId: number | undefined
   let prepared = 0
   let failed = false
-  while (now() < stop && prepared < 25) {
-    const live = await actions.liveRecoveries({ afterId, limit: 25 })
-    if (!live.length) break
-    for (const action of live) {
-      if (now() >= stop || prepared >= 25) break
-      afterId = action.id
-      try {
-        if (await acceptRecovery(req, action, environment, now)) prepared++
-      } catch {
-        failed = true
-        req.payload.logger.error(
-          { event: 'auth.recovery_command_acceptance_failed', authActionId: action.id },
-          'Recovery command acceptance failed.',
-        )
+  try {
+    while (!controller.signal.aborted && now() < stop && prepared < 25) {
+      const live = await wait(() => actions.liveRecoveries({ beforeId, limit: 25 }))
+      if (!live.length) break
+      for (const action of live) {
+        if (controller.signal.aborted || now() >= stop || prepared >= 25) break
+        beforeId = action.id
+        try {
+          if (await wait(() => acceptRecovery(req, action, environment, now, controller.signal))) prepared++
+        } catch {
+          failed = true
+          req.payload.logger.error(
+            { event: 'auth.recovery_command_acceptance_failed', authActionId: action.id },
+            'Recovery command acceptance failed.',
+          )
+        }
       }
+      if (live.length < 25) break
     }
-    if (live.length < 25) break
+    if (failed) throw new Error('Recovery command acceptance unavailable.')
+  } finally {
+    controller.abort(new Error('Recovery command acceptance unavailable.'))
+    clearTimeout(timer)
   }
-  if (failed) throw new Error('Recovery command acceptance unavailable.')
 }

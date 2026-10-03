@@ -13,7 +13,7 @@ import { createClinicInvitationCatalogEntry } from './clinicInvitation'
 import { createPatientVerificationCatalogEntry } from './patientVerification'
 import { findClinicInvitationPrincipal } from '@/auth/actions/clinicInvitationPrincipal'
 
-export function bindPayloadCommandCatalog(req: PayloadRequest) {
+export function bindPayloadCommandCatalog(req: PayloadRequest, options: { recoverySignal?: AbortSignal } = {}) {
   const environment = resolveTransactionalEmailEnvironment()
   return Object.freeze({
     ...createCommandCatalog({ findClinicApplication: (id) => findClinicApplication(req, id) }),
@@ -30,6 +30,7 @@ export function bindPayloadCommandCatalog(req: PayloadRequest) {
     }),
     'auth.password-recovery': createPasswordRecoveryCatalogEntry({
       environment,
+      signal: options.recoverySignal,
       recoveryKeys: () => resolveRecoveryKeys(environment),
       actions: {
         async read(id) {
@@ -41,7 +42,7 @@ export function bindPayloadCommandCatalog(req: PayloadRequest) {
         const sourceReq = await createLocalReq({}, req.payload)
         return readRecoveryPrincipal(sourceReq, collection, id)
       },
-      admin: (principal) => recoveryAdmin(environment, principal),
+      admin: (principal) => recoveryAdmin(environment, principal, options.recoverySignal),
     }),
     'auth.invitation': createClinicInvitationCatalogEntry({
       environment,

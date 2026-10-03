@@ -207,8 +207,10 @@ action; completion UI and Dashboard protocol are separate work.
 
 The shared worker preserves the prepared bytes, generated link, operation and provider idempotency key on technical
 retry, and suppresses changed or missing recipients and lost authority. The existing scheduler reaccepts interrupted
-pending/active actions with keyset pages of at most 25 and a 30-second deadline. Duplicate receipts do not consume its
-25-new-acceptance cap. Supabase directory scans are absent.
+pending/active actions with newest-first keyset pages of at most 25, so older duplicate receipts cannot prevent a new
+interruption from being examined. Duplicate receipts do not consume its 25-new-acceptance cap. One deadline bounds
+all awaited steps to the remaining invocation budget, at most 30 seconds. Expiration aborts scoped Supabase requests;
+late source reads or transitions cannot start another acceptance. Supabase directory scans are absent.
 
 Local, test and CI use synthetic identity/link evidence and the shared Fake transport without constructing the live
 Supabase SDK. The lazily resolved `AUTH_RECOVERY_CORRELATION_KEYS_JSON` contains the exact environment and a current-first

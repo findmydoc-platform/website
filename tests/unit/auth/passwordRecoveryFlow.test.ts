@@ -1,4 +1,4 @@
-import { createHash, createHmac } from 'node:crypto'
+import { createHash, createHmac, randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Payload } from 'payload'
 import { createEmailCommandStorage } from '../../helpers/emailCommandStorage'
@@ -38,6 +38,28 @@ const variants = [
     'platform-administration',
   ],
 ] as const
+function signedContext(email: string, environment: 'test' | 'ci', clientIP: string, now: number) {
+  const body = JSON.stringify({ email, clientIP })
+  const timestamp = new Date(now).toISOString()
+  const requestId = randomUUID()
+  const signature = createHmac('sha256', key.secret)
+    .update(
+      JSON.stringify([
+        'auth-recovery-request-v1',
+        environment,
+        'POST',
+        'requestRecovery',
+        timestamp,
+        requestId,
+        createHash('sha256').update(body).digest('hex'),
+      ]),
+    )
+    .digest('hex')
+  return dashboardRecoveryContext(
+    { method: 'POST', operation: 'requestRecovery', timestamp, requestId, body, keyVersion: key.version, signature },
+    { environment, keys: [key], now: () => now },
+  )!
+}
 function fixture(collection: (typeof variants)[number][0], ci = false) {
   vi.stubEnv('CI', String(ci))
   vi.stubEnv('NODE_ENV', 'test')
@@ -300,6 +322,54 @@ describe('recovery from Auth request through the real static catalog and shared 
     expect(store.rows.authActions!.size).toBe(1)
     expect(store.rows.transactionalEmailOutbox!.size).toBe(1)
     expect(store.rows.recoveryRequestEvents!.size).toBe(2)
+  })
+  it('recovers new interruptions ahead of 25 older real receipts across two time-limited invocations', async () => {
+    const store = fixture('patients', true)
+    const oldActionIds = new Set<number>()
+    for (let index = 0; index < 25; index++) {
+      const target = `older-${index}@example.test`
+      store.rows.patients!.set(100 + index, {
+        ...store.principal,
+        id: 100 + index,
+        email: target,
+        supabaseUserId: randomUUID(),
+      })
+      await requestPasswordRecovery(store.req, {
+        email: target,
+        context: signedContext(target, 'ci', `198.51.100.${index + 20}`, store.now()),
+      })
+    }
+    for (const id of store.rows.authActions!.keys()) oldActionIds.add(id)
+    expect(store.rows.transactionalEmailOutbox!.size).toBe(25)
+    const read = vi.mocked(store.payload.findByID).getMockImplementation()!
+    vi.mocked(store.payload.findByID).mockImplementation(async (options) => {
+      if (options.collection === 'authActions' && oldActionIds.has(Number(options.id))) store.advance(1500)
+      return read(options)
+    })
+    const interruptions: number[] = []
+    for (let index = 0; index < 2; index++) {
+      const target = `interrupted-${index}@example.test`
+      store.rows.patients!.set(200 + index, {
+        ...store.principal,
+        id: 200 + index,
+        email: target,
+        supabaseUserId: randomUUID(),
+      })
+      const action = await store.actions.reserveRecovery({
+        email: target,
+        context: signedContext(target, 'ci', `198.51.100.${index + 100}`, store.now()),
+      })
+      interruptions.push(action!.id)
+      await expect(
+        prepareCommittedRecoveries(store.req, { deadline: store.now() + 100000, now: store.now }),
+      ).rejects.toThrow('Recovery command acceptance unavailable.')
+    }
+    const sources = [...store.rows.transactionalEmailOutbox!.values()].map(
+      (row) => (row.commandPayload as { authActionId: number }).authActionId,
+    )
+    expect(sources).toEqual(expect.arrayContaining(interruptions))
+    expect(store.rows.transactionalEmailOutbox!.size).toBe(27)
+    expect(mocks.liveAdmin).not.toHaveBeenCalled()
   })
   it.each(['preview', 'production'])(
     'keeps the real %s command fail-closed before environment approval',

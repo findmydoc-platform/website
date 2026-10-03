@@ -76,6 +76,10 @@ environment.
 
 Invite and recovery email templates use `TokenHash`, not browser hash tokens. The callback `GET` validates the fixed
 flow and internal destination but does not consume the token. A same-origin confirmation `POST` performs `verifyOtp`.
+Website patient and platform recovery require the matching private AuthAction and a signed ten-minute context.
+Password completion updates Supabase before completing the action, then revokes all refresh-token sessions and clears
+the Website session. It returns the fixed patient or platform sign-in route. Already-issued access JWTs can remain
+valid until expiry. [The completion contract](auth-actions.md#website-recovery-completion) describes technical retries.
 The website authorization-code, TokenHash, and browser-hash callback paths serve its Platform and Patient flows.
 Clinic invite and recovery callbacks use the Clinic Dashboard. Template snapshot, rollback, staging-first activation,
 and production gates are documented in `supabase-email-template-rollout.md`.

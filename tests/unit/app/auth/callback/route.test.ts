@@ -53,24 +53,24 @@ describe('GET /auth/callback', () => {
     )
   })
 
-  it.each([
-    ['invite', '/auth/invite/complete'],
-    ['recovery', '/auth/password/reset/complete'],
-  ] as const)('stages %s TokenHash confirmation with an action id without consuming the token', async (type, next) => {
-    const request = new NextRequest(
-      `http://localhost/auth/callback?authActionId=45&token_hash=secret-token&type=${type}&next=${next}`,
-    )
+  it.each([['invite', '/auth/invite/complete']] as const)(
+    'stages %s TokenHash confirmation with an action id without consuming the token',
+    async (type, next) => {
+      const request = new NextRequest(
+        `http://localhost/auth/callback?authActionId=45&token_hash=secret-token&type=${type}&next=${next}`,
+      )
 
-    const response = await GET(request)
+      const response = await GET(request)
 
-    expect(response.status).toBe(303)
-    expect(response.headers.get('location')).toBe(`http://localhost/auth/confirm?type=${type}`)
-    expect(response.headers.get('location')).not.toContain('secret-token')
-    expect(response.headers.get('set-cookie')).toContain('findmydoc_auth_token_hash=')
-    expect(response.headers.get('set-cookie')).toContain('HttpOnly')
-    expect(response.headers.get('cache-control')).toBe('private, no-store')
-    expect(exchangeCodeForSessionMock).not.toHaveBeenCalled()
-  })
+      expect(response.status).toBe(303)
+      expect(response.headers.get('location')).toBe(`http://localhost/auth/confirm?type=${type}`)
+      expect(response.headers.get('location')).not.toContain('secret-token')
+      expect(response.headers.get('set-cookie')).toContain('findmydoc_auth_token_hash=')
+      expect(response.headers.get('set-cookie')).toContain('HttpOnly')
+      expect(response.headers.get('cache-control')).toBe('private, no-store')
+      expect(exchangeCodeForSessionMock).not.toHaveBeenCalled()
+    },
+  )
 
   it('preserves code exchange and its internal destination when an action id is present', async () => {
     const response = await GET(

@@ -34,6 +34,52 @@ A technical retry returns the same nonterminal action across all supplied key ve
 
 The retention sweep removes both correlation fields at `createdAt + 24 hours`, including completed actions whose patient relationship has been deleted, while retaining the established lifecycle metadata. This narrowly scoped deletion does not change the subject, binding timestamps, state or original terminal timestamp. It expires due live actions and deletes terminal history at the existing 42-day boundary. Deployment activation and the hosted sweep schedule are separate from this internal preparation boundary.
 
+## Initial clinic invitation admission
+
+`reserveClinicInvitation` accepts only a positive `clinicStaffId` and an optional authorized `resendOf`.
+It reads current staff, assigned clinic and the originating application inside its owned Serializable transaction.
+The initial staff member must be approved, synchronized with a valid Supabase UUID, and linked to a completed
+approved application through the same onboarding key. The application must name this clinic and staff member,
+and its contact email must match the staff email. Clinic participation must remain approved without rejection
+or deletion. Password-completion evidence, a legacy eligibility marker, or an earlier native invitation attempt
+excludes the initial-invitation path. Missing historical password evidence is not evidence of an incomplete account.
+
+Reservation creates one private pending 24-hour action with the current subject bound immutably and the fixed
+Dashboard callback and completion destinations. It accepts no recipient or redirect. Technical retries reuse the
+live action. An explicitly authorized resend can supersede only the current pending or active action, after
+15 minutes and with fewer than three creations in the preceding rolling 24 hours. Confirmed actions cannot be
+superseded. Expiry and replacement commit together. Progress to active, confirmed or completed rechecks the
+current eligibility and subject. Revocation and expiry remain possible after source removal.
+
+The private `clinicStaff.invitationAuthorizedAt` records the first committed reservation in the same transaction.
+It survives AuthAction retention, so cleanup cannot turn an old initial invitation into a new automatic invitation.
+It is distinct from `invitationAttemptedAt`, which belongs to native identity provisioning. Neither timestamp
+proves password completion. Generic collection writes and copied records cannot set, replace or clear the new
+marker, even with Local API access overrides. Its field is hidden from every role.
+
+The approval hook calls the internal request boundary after storing its provisioning result. A borrowed approval
+transaction is deferred rather than read from a separate transaction before commit. The existing one-minute
+mail scheduler reads committed, unmarked initial staff in ID pages and prepares at most 25 actions within a
+30-second budget. Ineligible sources do not prevent later IDs in that scan from being examined. Failed preparation
+leaves approval, identity and business access unchanged, and reports only a safe event and staff ID. Independent
+mail work still runs within the remaining invocation budget. No additional queue, scheduler or public resend route
+exists. Both paths remain inactive until `auth.invitation` is declared for their hosted environment; this change
+adds no Preview or Production activation. Native invitation cohorts are never automatically reinvited.
+
+The scan restarts at the lowest ID each invocation. A sufficiently large or slow set of permanently ineligible
+sources can consume the budget before later eligible sources are reached. This conditional liveness risk is a
+documented low-severity follow-up, not an authorization bypass. Before hosted invitation activation, inspect the
+actual candidate inventory and preparation throughput. Unit tests do not prove fairness across invocations.
+
+The Payload-generated migration is additive: one nullable date column and its index. Both application versions
+can run against the expanded schema. Keep the column during application rollback; the generated down operation
+drops the durable marker and is not a rollout step. Unit tests cover eligibility, owned rollback and retry,
+cooldown, rolling limits, immutable identity, safe handoff and failure isolation. Native storage and concurrency
+contracts run in CI, not locally. Cache impact remains `no-public-impact` with private live reads only.
+The preceding participation migration freezes its legacy backfill in migration-local SQL. It never reads the
+current runtime collection schema, so installations with that migration still pending do not require the later
+invitation column. Already recorded migration rows and installed legacy evidence remain unchanged.
+
 ## Recovery request admission
 
 `reserveRecovery` accepts a normalized email and an opaque client context. It counts admitted requests before checking account eligibility. Target and IP each allow at most five admissions in the preceding rolling hour and require five minutes since their last admission. A denial writes neither dimension and does not extend either cooldown. Unknown, ambiguous or ineligible addresses consume an admitted allowance but create no AuthAction or delivery command.
@@ -94,7 +140,7 @@ It retains private source, subject, clinic, evidence time, observation time, and
 `clinicStaff`. Terminal AuthAction deletion therefore cannot erase completion proof. Generic Local API access overrides
 and editable Admin inputs cannot write or replace this evidence.
 
-The current clinic AuthAction lifecycle does not yet bind a subject. #1986 must supply that immutable binding, and
-#1995 must verify the actual password operation before completing the action and calling this boundary. No public
+Clinic invitation reservation binds the current subject immutably. The Dashboard protocol must verify the actual
+password operation before completing the action and calling this boundary. No public
 completion route calls it today. An action state, email outcome, or mock alone does not prove account completion.
 The [clinic participation contract](clinic-participation.md) owns the legacy import and password-usability fallback.

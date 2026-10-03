@@ -66,7 +66,7 @@
 - **Form Submissions**: Public create path with platform-only read and delete access; direct updates are disabled
 - **Redirects**: Public redirect rules with platform-only management
 - **PlatformStaff**: Platform staff review safe identity fields and manage roles; identity bindings and create/delete remain provisioning-only
-- **ClinicStaff**: Platform staff manage clinic assignment and lifecycle; approved and synced staff with private password evidence read their participation-approved clinic; identity binding, auth sync, and create/delete remain provisioning-only
+- **ClinicStaff**: Platform staff manage clinic assignment and lifecycle; approved and synced staff with private password evidence read their participation-approved clinic; invitation authorization is private and immutable; identity binding, auth sync, and create/delete remain provisioning-only
 - **Patients**: Patients can update own profile; no self-create/delete
 - **Posts**: Blog content - platform write, published content readable by all
 - **Pages**: Static pages - platform write, published content readable by all

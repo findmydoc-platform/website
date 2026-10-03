@@ -7,6 +7,7 @@ import {
 import { getCurrentIsoTimestampString } from '@/utilities/timestamps'
 import { hasClinicApplicationProvisioningInputChanged } from '@/collections/clinicApplications/provisioningLifecycle'
 import type { CollectionAfterChangeHook } from 'payload'
+import { requestInitialClinicInvitation } from '@/auth/actions/clinicInvitationRequests'
 
 const updateProvisioningState = async (
   req: Parameters<CollectionAfterChangeHook<ClinicApplication>>[0]['req'],
@@ -65,6 +66,17 @@ export const provisionApprovedClinicApplication: CollectionAfterChangeHook<Clini
       provisioningErrorCode: null,
       provisioningStatus: 'completed',
     })
+    try {
+      await requestInitialClinicInvitation(req, result.clinicStaffId)
+    } catch {
+      req.payload.logger.error(
+        {
+          event: 'auth.clinic_invitation_preparation_failed',
+          clinicStaffId: result.clinicStaffId,
+        },
+        'Clinic invitation preparation failed; approval remains unchanged.',
+      )
+    }
   } catch (error) {
     const errorCode: ClinicOnboardingErrorCode = isClinicOnboardingError(error) ? error.code : 'record_failed'
 

@@ -1399,6 +1399,7 @@ export interface ClinicStaff {
     clinicId?: string | null;
     initialParticipant?: boolean | null;
   };
+  invitationAuthorizedAt?: string | null;
   invitationAttemptedAt?: string | null;
   provisioningIdentity?: string | null;
   stableId?: string | null;
@@ -4952,6 +4953,7 @@ export interface ClinicStaffSelect<T extends boolean = true> {
         clinicId?: T;
         initialParticipant?: T;
       };
+  invitationAuthorizedAt?: T;
   invitationAttemptedAt?: T;
   provisioningIdentity?: T;
   stableId?: T;

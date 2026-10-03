@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createHmac } from 'node:crypto'
+import { createHmac, randomUUID } from 'node:crypto'
 import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
 import type { ClinicStaff } from '@/payload-types'
+import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import {
   establishLegacyClinicPasswordEvidence,
   guardClinicAccountEvidence,
@@ -58,13 +59,16 @@ describe('clinic password evidence boundary', () => {
   it('records current password usability for a snapshotted initial legacy participant', async () => {
     const req = request()
     const result = await establishLegacyClinicPasswordEvidence(req, staff, 'verified-token')
-    expect(result?.accountCompletion).toMatchObject({
+    expect(result).toBe(true)
+    const data = vi.mocked(req.payload.update).mock.calls[0]![0].data
+    const completion = 'accountCompletion' in data ? data.accountCompletion : undefined
+    expect(completion).toMatchObject({
       source: 'legacy-password-login',
       subject,
       clinicId: '8',
       evidenceAt: '2026-10-03T10:00:00.000Z',
     })
-    expect(result?.accountCompletion?.evidenceAt).not.toBe(snapshotAt)
+    expect(completion?.evidenceAt).not.toBe(snapshotAt)
   })
 
   it.each(['magiclink', 'otp', 'email/signup', 'oauth'])(
@@ -75,7 +79,7 @@ describe('clinic password evidence boundary', () => {
         data: { claims: { sub: subject, amr: [{ method, timestamp: Date.now() / 1000 }] } },
         error: null,
       })
-      expect(await establishLegacyClinicPasswordEvidence(req, staff, 'verified-token')).toBeNull()
+      expect(await establishLegacyClinicPasswordEvidence(req, staff, 'verified-token')).toBe(false)
       expect(req.payload.update).not.toHaveBeenCalled()
     },
   )
@@ -91,7 +95,7 @@ describe('clinic password evidence boundary', () => {
     const req = request()
     expect(
       await establishLegacyClinicPasswordEvidence(req, { ...staff, ...change } as ClinicStaff, 'verified-token'),
-    ).toBeNull()
+    ).toBe(false)
     expect(req.payload.update).not.toHaveBeenCalled()
   })
 
@@ -101,13 +105,49 @@ describe('clinic password evidence boundary', () => {
       data: { claims: { sub: 'other', amr: [{ method: 'password', timestamp: Date.now() / 1000 }] } },
       error: null,
     })
-    expect(await establishLegacyClinicPasswordEvidence(req, staff, 'verified-token')).toBeNull()
+    expect(await establishLegacyClinicPasswordEvidence(req, staff, 'verified-token')).toBe(false)
     provider.getClaims.mockResolvedValueOnce({
       data: { claims: { sub: subject, amr: [{ method: 'password', timestamp: Date.now() / 1000 - 3600 }] } },
       error: null,
     })
-    expect(await establishLegacyClinicPasswordEvidence(req, staff, 'verified-token')).toBeNull()
+    expect(await establishLegacyClinicPasswordEvidence(req, staff, 'verified-token')).toBe(false)
     expect(req.payload.update).not.toHaveBeenCalled()
+  })
+
+  it('reloads the principal without forwarding credential fields from the evidence write response', async () => {
+    const req = request()
+    const currentStaff = {
+      ...staff,
+      accountCompletion: {
+        source: 'legacy-password-login',
+        subject,
+        clinicId: '8',
+        evidenceAt: '2026-10-03T10:00:00.000Z',
+        observedAt: '2026-10-03T10:00:00.000Z',
+      },
+    }
+    const credentialValue = randomUUID()
+    vi.mocked(req.payload.find)
+      .mockResolvedValueOnce({ docs: [staff] } as never)
+      .mockResolvedValueOnce({ docs: [clinic] } as never)
+    vi.mocked(req.payload.update).mockImplementationOnce(
+      async () => ({ ...currentStaff, id: 999, password: credentialValue }) as never,
+    )
+    vi.mocked(req.payload.findByID).mockImplementation(
+      async ({ collection }) => (collection === 'clinicStaff' ? currentStaff : clinic) as never,
+    )
+    req.data = { text: 'unrelated inquiry body' }
+    const state = await readClinicAccessState(req.payload, staff.id, req)
+    expect(state?.staff.id).toBe(staff.id)
+    expect(state?.staff).not.toHaveProperty('password')
+    expect(JSON.stringify(state)).not.toContain(credentialValue)
+    expect(req.data).toEqual({ text: 'unrelated inquiry body' })
+    expect(req.payload.findByID).toHaveBeenCalledWith(
+      expect.objectContaining({ collection: 'clinicStaff', id: staff.id, req }),
+    )
+    const writtenData = vi.mocked(req.payload.update).mock.calls[0]![0].data
+    expect(JSON.stringify(writtenData)).not.toContain('verified-token')
+    expect(writtenData).not.toHaveProperty('password')
   })
 
   it('rejects editable Admin input and arbitrary Local API flags', async () => {

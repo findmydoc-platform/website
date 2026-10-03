@@ -218,7 +218,11 @@ export async function importLegacyClinicPasswordEvidence(
 }
 
 /** Password usability is observed now; this never asserts a historical initial completion time. */
-export async function establishLegacyClinicPasswordEvidence(req: PayloadRequest, staff: ClinicStaff, token: string) {
+export async function establishLegacyClinicPasswordEvidence(
+  req: PayloadRequest,
+  staff: ClinicStaff,
+  token: string,
+): Promise<boolean> {
   const legacy = staff.legacyAccess
   const clinicId = typeof staff.clinic === 'object' ? staff.clinic?.id : staff.clinic
   if (
@@ -229,7 +233,7 @@ export async function establishLegacyClinicPasswordEvidence(req: PayloadRequest,
     staff.status !== 'approved' ||
     staff.authSync?.status !== 'synced'
   )
-    return null
+    return false
   const clinic = await req.payload.findByID({
     collection: 'clinics',
     id: clinicId!,
@@ -237,16 +241,17 @@ export async function establishLegacyClinicPasswordEvidence(req: PayloadRequest,
     overrideAccess: true,
     req,
   })
-  if (!isClinicParticipationApproved(clinic)) return null
+  if (!isClinicParticipationApproved(clinic)) return false
   const evidenceAt = await verifiedPasswordEvent(staff, token)
-  if (!evidenceAt || Date.parse(evidenceAt) < Date.parse(legacy.eligibleAt)) return null
-  return writeEvidence(req, staff.id, 'accountCompletion', {
+  if (!evidenceAt || Date.parse(evidenceAt) < Date.parse(legacy.eligibleAt)) return false
+  await writeEvidence(req, staff.id, 'accountCompletion', {
     source: 'legacy-password-login',
     subject: staff.supabaseUserId,
     clinicId: String(clinicId),
     evidenceAt,
     observedAt: new Date().toISOString(),
   } satisfies Completion)
+  return true
 }
 
 /** Internal Auth integration. A completed identity-bound invitation and verified password authentication are both required. */

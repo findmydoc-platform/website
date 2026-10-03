@@ -48,7 +48,9 @@ export async function readClinicAccessState(
   let staff = staffResult.docs[0] as ClinicStaff | undefined
   const token = req ? extractTokenFromHeader(req.headers) : undefined
   if (staff && !hasClinicAccountCompletion(staff) && req && token) {
-    staff = (await establishLegacyClinicPasswordEvidence(req, staff, token)) ?? staff
+    if (await establishLegacyClinicPasswordEvidence(req, staff, token)) {
+      staff = await payload.findByID({ collection: 'clinicStaff', id: staff.id, depth: 0, overrideAccess: true, req })
+    }
   }
   const clinicId = staff ? readRelationId(staff.clinic) : null
   if (!staff || !isClinicStaffAccessReady(staff) || clinicId === null) return null

@@ -34,6 +34,7 @@ export interface DirectProvisionArgs extends BaseProvisionArgs {
 }
 
 export interface ClinicInviteProvisionArgs {
+  beforeInvite?: () => Promise<void>
   email: string
   onboardingKey: string
   userMetadata?: SupabaseProvisionMetadata
@@ -247,7 +248,7 @@ const findClinicSupabaseUser = async (
   onboardingKey: string,
 ): Promise<User | null> => {
   const matches = (await findSupabaseUsersByEmail(supabase, email)).filter(
-    (user) => user.user_metadata?.onboarding_key === onboardingKey,
+    (user) => user.app_metadata?.user_type === 'clinic' && user.app_metadata?.onboarding_key === onboardingKey,
   )
 
   if (matches.length > 1) {
@@ -271,7 +272,11 @@ const repairClinicSupabaseUser = async ({
   user: User
 }): Promise<void> => {
   const { error } = await supabase.auth.admin.updateUserById(user.id, {
-    app_metadata: { ...user.app_metadata, user_type: 'clinic' },
+    app_metadata: {
+      ...user.app_metadata,
+      user_type: 'clinic',
+      ...(onboardingKey ? { onboarding_key: onboardingKey } : {}),
+    },
     user_metadata: {
       ...user.user_metadata,
       first_name: firstName ?? user.user_metadata?.first_name,
@@ -289,7 +294,7 @@ const repairClinicSupabaseUser = async ({
  * Invites the initial clinic principal and reconciles unknown invite responses by email and onboarding key.
  */
 export async function inviteClinicSupabaseAccount(
-  { email, onboardingKey, userMetadata }: ClinicInviteProvisionArgs,
+  { email, onboardingKey, userMetadata, beforeInvite }: ClinicInviteProvisionArgs,
   logger?: ServerLogger,
 ): Promise<string> {
   const normalizedEmail = normalizeEmail(email)
@@ -313,6 +318,23 @@ export async function inviteClinicSupabaseAccount(
     last_name: userMetadata?.lastName ?? '',
     onboarding_key: normalizedOnboardingKey,
   }
+
+  // Reconcile before sending. An existing ambiguous or unclassified identity must never trigger another invite.
+  const existing = await findSupabaseUsersByEmail(supabase, normalizedEmail)
+  if (existing.length) {
+    const candidate = existing[0]
+    if (
+      existing.length !== 1 ||
+      !candidate ||
+      candidate.app_metadata?.user_type !== 'clinic' ||
+      candidate.app_metadata?.onboarding_key !== normalizedOnboardingKey
+    ) {
+      throw new Error('Supabase clinic invitation requires operator identity reconciliation')
+    }
+    return candidate.id
+  }
+
+  await beforeInvite?.()
 
   let invitedUser: User | null = null
   let inviteError: unknown = null
@@ -402,6 +424,9 @@ export async function reconcileExistingClinicSupabaseAccount(
   }
   if (normalizedOnboardingKey && existingOnboardingKey && existingOnboardingKey !== normalizedOnboardingKey) {
     throw new Error('Supabase clinic reconciliation found a different onboarding identity')
+  }
+  if (normalizedOnboardingKey && user.app_metadata?.onboarding_key !== normalizedOnboardingKey) {
+    throw new Error('Supabase clinic reconciliation requires the trusted onboarding identity')
   }
   if (
     existingUserType !== 'clinic' &&

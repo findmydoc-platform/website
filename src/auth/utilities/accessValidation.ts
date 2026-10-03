@@ -5,7 +5,7 @@
 
 import type { AuthData, UserResult } from '@/auth/types/authTypes'
 import { VALID_USER_TYPES } from '@/auth/config/authConfig'
-import type { Payload } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 import { createScopedLogger, getRequestLogContext, type ServerLogger } from '@/utilities/logging/shared'
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 
@@ -22,6 +22,7 @@ export async function validateClinicAccess(
   authData: AuthData,
   userResult: UserResult,
   logger?: ServerLogger,
+  req?: PayloadRequest,
 ): Promise<boolean> {
   const activeLogger = createScopedLogger((logger ?? payload.logger) as ServerLogger, {
     scope: 'auth.supabase',
@@ -35,7 +36,7 @@ export async function validateClinicAccess(
   const userId = userResult.user.id
 
   try {
-    const isApproved = Boolean(await readClinicAccessState(payload, userId))
+    const isApproved = Boolean(await readClinicAccessState(payload, userId, req))
 
     if (!isApproved) {
       activeLogger.warn(
@@ -87,6 +88,7 @@ export async function validateUserAccess(
   authData: AuthData,
   userResult: UserResult,
   logger?: ServerLogger,
+  req?: PayloadRequest,
 ): Promise<boolean> {
   // Basic user type validation
   if (!validateUserTypePermissions(authData)) {
@@ -94,7 +96,7 @@ export async function validateUserAccess(
   }
 
   // Clinic-specific access validation
-  if (!(await validateClinicAccess(payload, authData, userResult, logger))) {
+  if (!(await validateClinicAccess(payload, authData, userResult, logger, req))) {
     return false
   }
 

@@ -7,6 +7,7 @@ import { platformOnlyFieldAccess, staffProfileFieldReadAccess } from '@/access/f
 import { synchronizeClinicStaffAuthState, validateClinicStaffStatusTransition } from '@/hooks/clinicStaffLifecycle'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { clinicStaffStatusOptions } from './clinicStaff/lifecycle'
+import { guardClinicAccountEvidence } from '@/auth/utilities/clinicAccountCompletion'
 
 // Direct authentication principal for clinic dashboard and API access, never Payload Admin.
 export const ClinicStaff: CollectionConfig = {
@@ -50,6 +51,7 @@ export const ClinicStaff: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
+      guardClinicAccountEvidence,
       validateClinicStaffStatusTransition,
       beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
       enforceSupabaseIdentityInvariant,
@@ -57,6 +59,45 @@ export const ClinicStaff: CollectionConfig = {
     afterChange: [synchronizeClinicStaffAuthState],
   },
   fields: [
+    {
+      name: 'accountCompletion',
+      type: 'group',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+      fields: [
+        { name: 'source', type: 'select', options: ['initial-password', 'legacy-password-login', 'legacy-audit'] },
+        { name: 'subject', type: 'text' },
+        { name: 'clinicId', type: 'text' },
+        { name: 'evidenceAt', type: 'date' },
+        { name: 'observedAt', type: 'date' },
+        { name: 'authActionId', type: 'text' },
+      ],
+    },
+    {
+      name: 'legacyAccess',
+      type: 'group',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+      fields: [
+        { name: 'eligibleAt', type: 'date' },
+        { name: 'subject', type: 'text' },
+        { name: 'clinicId', type: 'text' },
+        { name: 'initialParticipant', type: 'checkbox', defaultValue: false },
+      ],
+    },
+    {
+      name: 'invitationAttemptedAt',
+      type: 'date',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+    },
+    {
+      name: 'provisioningIdentity',
+      type: 'text',
+      unique: true,
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+    },
     {
       name: 'provisioningGuidance',
       type: 'ui',

@@ -8,7 +8,7 @@ application surface establishes its own session boundary and then relies on Payl
 | Principal | Payload collection | Payload Admin | Runtime behavior |
 | --- | --- | --- | --- |
 | Platform staff | `platformStaff` | Allowed | Existing principal required; role is read from Payload on every request. |
-| Clinic staff | `clinicStaff` | Denied | Existing approved and synchronized principal assigned to an approved, non-deleted clinic. Dashboard requests arrive through the Dashboard BFF. |
+| Clinic staff | `clinicStaff` | Denied | Approved, synchronized principal with private password evidence assigned to a participation-approved, non-deleted clinic. Dashboard requests arrive through the Dashboard BFF. |
 | Patient | `patients` | Denied | The strategy may idempotently ensure the patient principal after authentication. |
 
 All three are direct Payload auth collections. Payload local passwords and Payload sessions are disabled. The shared Supabase strategy is registered once on `platformStaff`; Payload makes that strategy available across the auth collections.
@@ -40,7 +40,7 @@ requests are server-to-server.
 
 `app_metadata.user_type` selects only `platform`, `clinic`, or `patient`. It never grants role, clinic, or approval. Payload reads those facts from the resolved principal for every request and rejects missing, duplicate, conflicting, or ineligible staff principals.
 
-Platform roles are `admin`, `support`, and `content-manager`; new platform principals default to `support`. Only the trusted operations path or an existing administrator can assign a platform role. Clinic access additionally requires staff `status: approved`, staff `authSync.status: synced`, a clinic relation, and a clinic that is approved and not deleted. Request clients cannot supply the acting principal, platform role, or clinic scope.
+Platform roles are `admin`, `support`, and `content-manager`; new platform principals default to `support`. Only the trusted operations path or an existing administrator can assign a platform role. Clinic access additionally requires staff `status: approved`, staff `authSync.status: synced`, identity-bound private password evidence, a clinic relation, and approved clinic participation. Rejected or deleted clinics remain denied. Public publication is independent. Request clients cannot supply the acting principal, platform role, or clinic scope.
 
 An identity invariant checks all three auth collections through the Payload Local API for every non-empty Supabase user id. Collection-local unique constraints remain the final backstop inside each collection. Staff principals are never created by login. A Supabase identity without its matching Payload principal is unauthorized.
 
@@ -50,11 +50,11 @@ Supabase refresh-token revocation does not invalidate already-issued access toke
 
 Platform staff are provisioned only through the trusted `ops` workflow and must use `@findmydoc.eu` addresses. The website never offers public first-admin bootstrap. Staff category changes require explicit reprovisioning; automatic conversion between patient, clinic, and platform principals is not permitted.
 
-Approving a clinic application currently creates a pending clinic and a pending initial clinic staff principal and sends
-the staff invitation to the Dashboard. The resulting Supabase account is prepared but not authorized for business
-access. Platform staff separately complete and approve the clinic and approve the staff principal. This application
-trigger is a temporary simulation of a future CRM decision; the reusable provisioning service accepts a stable
-onboarding command so a CRM can replace the application collection later.
+Approving a clinic application authorizes the resulting clinic and its named initial staff member to participate in the
+Dashboard. It does not publish the clinic or complete the account. The existing invitation targets the Dashboard.
+The reusable provisioning service resumes the same participants after technical failures. Public publication still
+requires the existing clinic profile and quality checks. The [private completion contract](clinic-participation.md)
+describes durable evidence and the bounded transition for existing authorized principals.
 
 Clinic staff transitions are enforced server-side. Rejected and disabled identities are banned in Supabase, approved
 and reactivated identities are unbanned, and offboarded identities are deleted from Supabase while the Payload row is

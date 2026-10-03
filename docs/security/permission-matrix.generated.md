@@ -66,7 +66,7 @@
 - **Form Submissions**: Public create path with platform-only read and delete access; direct updates are disabled
 - **Redirects**: Public redirect rules with platform-only management
 - **PlatformStaff**: Platform staff review safe identity fields and manage roles; identity bindings and create/delete remain provisioning-only
-- **ClinicStaff**: Platform staff manage clinic assignment and lifecycle; approved and synced staff read their approved clinic; identity binding, auth sync, and create/delete remain provisioning-only
+- **ClinicStaff**: Platform staff manage clinic assignment and lifecycle; approved and synced staff with private password evidence read their participation-approved clinic; identity binding, auth sync, and create/delete remain provisioning-only
 - **Patients**: Patients can update own profile; no self-create/delete
 - **Posts**: Blog content - platform write, published content readable by all
 - **Pages**: Static pages - platform write, published content readable by all
@@ -92,7 +92,7 @@
 - **Tags**: Supporting data - platform write, everyone read
 - **Categories**: Supporting data - platform write, everyone read
 - **Accreditation**: Supporting data - platform write, everyone read
-- **ClinicApplications**: Public submissions use the controlled API route; platform approval creates a pending clinic and initial clinic staff principal with duplicate-write observability
+- **ClinicApplications**: Public submissions use the controlled API route; platform approval authorizes private clinic participation and the named initial staff member; recoverable provisioning reuses both records without automatic reinvitation
 - **ClinicProfileDrafts**: Private active clinic profile drafts; Clinic Dashboard access is authorized and tenant-scoped through dedicated API endpoints
 - **PatientClinicInquiries**: Inquiry aggregate; patient and clinic access uses actor-bound, tenant-checked commands instead of generic collection routes
 - **InquiryConversations**: Private inquiry grouping; all access uses checked inquiry communication commands

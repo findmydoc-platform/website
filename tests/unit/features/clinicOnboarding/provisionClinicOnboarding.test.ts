@@ -9,6 +9,7 @@ import type { Payload } from 'payload'
 const authMocks = vi.hoisted(() => ({
   inviteClinicSupabaseAccount: vi.fn(),
   setClinicSupabaseAccountAccess: vi.fn(),
+  reconcileExistingClinicSupabaseAccount: vi.fn(),
 }))
 
 vi.mock('@/auth/utilities/supabaseProvision', () => authMocks)
@@ -79,13 +80,14 @@ const createPayload = ({ failClinicStaffCreate = false }: { failClinicStaffCreat
 describe('provisionClinicOnboarding', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    authMocks.inviteClinicSupabaseAccount.mockImplementation(
-      async () => `supabase-${authMocks.inviteClinicSupabaseAccount.mock.calls.length}`,
-    )
+    authMocks.inviteClinicSupabaseAccount.mockImplementation(async ({ beforeInvite }) => {
+      await beforeInvite?.()
+      return `supabase-${authMocks.inviteClinicSupabaseAccount.mock.calls.length}`
+    })
     authMocks.setClinicSupabaseAccountAccess.mockResolvedValue(undefined)
   })
 
-  it('creates and binds one pending clinic principal', async () => {
+  it('authorizes one private clinic and its initial principal without completing the password', async () => {
     const state = createPayload()
 
     const result = await provisionClinicOnboarding(state.payload, command)
@@ -95,7 +97,7 @@ describe('provisionClinicOnboarding', () => {
     expect(state.clinicStaff).toHaveLength(1)
     expect(state.clinicStaff[0]).toMatchObject({
       email: 'clinic@example.com',
-      status: 'pending',
+      status: 'approved',
       supabaseUserId: 'supabase-1',
       authSync: { status: 'synced' },
     })
@@ -103,24 +105,41 @@ describe('provisionClinicOnboarding', () => {
     expect(state.payload.logger.warn).not.toHaveBeenCalled()
   })
 
-  it('allows repeated writes and logs the resulting record ids', async () => {
+  it('reuses the same participants and invitation after repeated approval', async () => {
     const state = createPayload()
-
     const first = await provisionClinicOnboarding(state.payload, command)
     const second = await provisionClinicOnboarding(state.payload, command)
+    expect(first).toEqual(second)
+    expect(state.clinics).toHaveLength(1)
+    expect(state.clinicStaff).toHaveLength(1)
+    expect(authMocks.inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
+    expect(state.clinics[0]).toMatchObject({ participationStatus: 'approved', status: 'pending' })
+    expect(state.clinicStaff[0]?.accountCompletion).toBeUndefined()
+  })
 
-    expect(first).toEqual({ clinicId: 8, clinicStaffId: 4 })
-    expect(second).toEqual({ clinicId: 9, clinicStaffId: 5 })
-    expect(state.clinics).toHaveLength(2)
-    expect(state.clinicStaff).toHaveLength(2)
-    expect(state.payload.logger.warn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        clinicIds: [8, 9],
-        clinicStaffIds: [4, 5],
-        event: 'clinic_onboarding.duplicate_records_detected',
-      }),
-      'Multiple onboarding records were created for the same source',
-    )
+  it('reconciles an uncertain invitation without dispatching another email', async () => {
+    const state = createPayload()
+    authMocks.inviteClinicSupabaseAccount.mockImplementationOnce(async ({ beforeInvite }) => {
+      await beforeInvite()
+      throw new Error('Uncertain provider response')
+    })
+    await expect(provisionClinicOnboarding(state.payload, command)).rejects.toMatchObject({ code: 'auth_failed' })
+    authMocks.reconcileExistingClinicSupabaseAccount.mockResolvedValueOnce('recovered-subject')
+    await expect(provisionClinicOnboarding(state.payload, command)).resolves.toEqual({ clinicId: 8, clinicStaffId: 4 })
+    expect(state.clinics).toHaveLength(1)
+    expect(state.clinicStaff).toHaveLength(1)
+    expect(authMocks.inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
+  })
+
+  it('retries a failed provider lookup without marking an invitation attempt', async () => {
+    const state = createPayload()
+    authMocks.inviteClinicSupabaseAccount.mockRejectedValueOnce(new Error('Lookup unavailable'))
+    await expect(provisionClinicOnboarding(state.payload, command)).rejects.toMatchObject({ code: 'auth_failed' })
+    expect(state.clinicStaff[0]?.invitationAttemptedAt).toBeUndefined()
+    await expect(provisionClinicOnboarding(state.payload, command)).resolves.toEqual({ clinicId: 8, clinicStaffId: 4 })
+    expect(authMocks.inviteClinicSupabaseAccount).toHaveBeenCalledTimes(2)
+    expect(authMocks.reconcileExistingClinicSupabaseAccount).not.toHaveBeenCalled()
+    expect(state.clinicStaff).toHaveLength(1)
   })
 
   it('preserves partial records and returns a controlled auth failure', async () => {
@@ -135,23 +154,15 @@ describe('provisionClinicOnboarding', () => {
     expect(state.clinicStaff[0]?.authSync).toEqual({ status: 'pending' })
   })
 
-  it('logs duplicate clinics when clinic staff creation leaves a partial write', async () => {
-    const state = createPayload({ failClinicStaffCreate: true })
-    state.clinics.push({ id: 7, onboardingKey: command.onboardingKey } as Clinic)
-
-    await expect(provisionClinicOnboarding(state.payload, command)).rejects.toMatchObject({
-      code: 'record_failed',
-    })
-
-    expect(state.clinics.map(({ id }) => id)).toEqual([7, 9])
-    expect(state.payload.logger.warn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        clinicIds: [7, 9],
-        clinicStaffIds: [],
-        event: 'clinic_onboarding.duplicate_records_detected',
-      }),
-      'Multiple onboarding records were created for the same source',
+  it('refuses ambiguous historical records without creating or inviting participants', async () => {
+    const state = createPayload()
+    state.clinics.push(
+      { id: 7, onboardingKey: command.onboardingKey } as Clinic,
+      { id: 9, onboardingKey: command.onboardingKey } as Clinic,
     )
+    await expect(provisionClinicOnboarding(state.payload, command)).rejects.toMatchObject({ code: 'record_failed' })
+    expect(state.payload.create).not.toHaveBeenCalled()
+    expect(authMocks.inviteClinicSupabaseAccount).not.toHaveBeenCalled()
   })
 
   it('rejects invalid command input before creating records', async () => {

@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+import { asClinicScopedPayloadUser } from '../fixtures/testUsers'
 import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload, File, PayloadRequest } from 'payload'
@@ -46,7 +48,7 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
         firstName: 'Clinic',
         lastName: `User-${suffix}`,
         status: 'pending',
-        supabaseUserId: `sb-${slugPrefix}-clinic-${suffix}`,
+        supabaseUserId: randomUUID(),
       },
       overrideAccess: true,
       depth: 0,
@@ -58,13 +60,13 @@ describe('ClinicGalleryEntries integration - lifecycle', () => {
   }
 
   const approveClinicStaff = async (clinicStaffId: number, clinicId: number) => {
-    return (await payload.update({
+    const staff = await payload.findByID({
       collection: 'clinicStaff',
       id: clinicStaffId,
-      data: { clinic: clinicId, status: 'approved' },
       overrideAccess: true,
       depth: 0,
-    } as PayloadUpdateArgs)) as ClinicStaff
+    })
+    return (await asClinicScopedPayloadUser(payload, staff, clinicId)) as ClinicStaff
   }
 
   const createGalleryMedia = async (

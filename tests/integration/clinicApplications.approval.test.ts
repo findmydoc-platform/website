@@ -6,7 +6,8 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { runBaselineContract } from './contracts/baselineContract'
 import type { Clinic, ClinicApplication, ClinicStaff, PlatformStaff } from '@/payload-types'
-import { inviteClinicSupabaseAccount } from '@/auth/utilities/supabaseProvision'
+import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
+import { inviteClinicSupabaseAccount, reconcileExistingClinicSupabaseAccount } from '@/auth/utilities/supabaseProvision'
 import { provisionClinicOnboarding } from '@/features/clinicOnboarding/provisionClinicOnboarding'
 
 type PayloadUser = NonNullable<Parameters<Payload['create']>[0]['user']>
@@ -121,7 +122,10 @@ describe('ClinicApplications approval integration', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(inviteClinicSupabaseAccount).mockImplementation(async ({ onboardingKey }) => `sb-clinic-${onboardingKey}`)
+    vi.mocked(inviteClinicSupabaseAccount).mockImplementation(async ({ onboardingKey, beforeInvite }) => {
+      await beforeInvite?.()
+      return `sb-clinic-${onboardingKey}`
+    })
   })
 
   afterEach(async () => {
@@ -192,7 +196,7 @@ describe('ClinicApplications approval integration', () => {
     }
   }, 30000)
 
-  it('materializes a pending clinic and initial staff principal after approval', async () => {
+  it('authorizes private participation without publishing or completing the account', async () => {
     const email = `${slugPrefix}-approval@example.com`
     const app = (await payload.create({
       collection: 'clinicApplications',
@@ -240,10 +244,27 @@ describe('ClinicApplications approval integration', () => {
       payload.findByID({ collection: 'clinicStaff', id: clinicStaffId!, overrideAccess: true, depth: 0 }),
     ])
     expect((clinic as Clinic).status).toBe('pending')
+    expect((clinic as Clinic).participationStatus).toBe('approved')
+    expect(await readClinicAccessState(payload, clinicStaffId!)).toBeNull()
+    const publicRead = await payload.find({
+      collection: 'clinics',
+      overrideAccess: false,
+      depth: 0,
+      where: { id: { equals: clinicId } },
+    })
+    expect(publicRead.docs).toHaveLength(0)
+    await expect(
+      payload.update({
+        collection: 'clinicStaff',
+        id: clinicStaffId!,
+        overrideAccess: true,
+        data: { accountCompletion: { source: 'initial-password', subject: 'forged', clinicId: String(clinicId) } },
+      }),
+    ).rejects.toThrow(/trusted Auth boundary/i)
     expect((clinic as Clinic).internalPrimaryContact?.email).toBe(email)
     expect(clinicStaff as ClinicStaff).toMatchObject({
       email,
-      status: 'pending',
+      status: 'approved',
       authSync: { status: 'synced' },
     })
 
@@ -278,7 +299,7 @@ describe('ClinicApplications approval integration', () => {
     expect(inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
   }, 45000)
 
-  it('keeps retry-created records traceable after an invite failure', async () => {
+  it('recovers existing participants without another invitation after an uncertain provider failure', async () => {
     const email = `${slugPrefix}-resume@example.com`
     const app = (await payload.create({
       collection: 'clinicApplications',
@@ -287,7 +308,10 @@ describe('ClinicApplications approval integration', () => {
       depth: 0,
     } as PayloadCreateArgs)) as ClinicApplication
     createdApplicationIds.push(app.id)
-    vi.mocked(inviteClinicSupabaseAccount).mockRejectedValueOnce(new Error('temporary auth failure'))
+    vi.mocked(inviteClinicSupabaseAccount).mockImplementationOnce(async ({ beforeInvite }) => {
+      await beforeInvite?.()
+      throw new Error('temporary auth failure')
+    })
 
     await payload.update({
       collection: 'clinicApplications',
@@ -323,6 +347,7 @@ describe('ClinicApplications approval integration', () => {
     expect(stillFailed.provisioningStatus).toBe('failed')
     expect(inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
 
+    vi.mocked(reconcileExistingClinicSupabaseAccount).mockResolvedValueOnce(`sb-clinic-clinic-application:${app.id}`)
     await payload.update({
       collection: 'clinicApplications',
       id: app.id,
@@ -358,12 +383,12 @@ describe('ClinicApplications approval integration', () => {
         where: { onboardingKey: { equals: `clinic-application:${app.id}` } },
       }),
     ])
-    expect(clinics.docs).toHaveLength(2)
-    expect(staff.docs).toHaveLength(2)
-    expect(inviteClinicSupabaseAccount).toHaveBeenCalledTimes(2)
+    expect(clinics.docs).toHaveLength(1)
+    expect(staff.docs).toHaveLength(1)
+    expect(inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
   }, 45000)
 
-  it('allows repeated generic onboarding commands to leave traceable duplicate records', async () => {
+  it('reuses records for repeated generic onboarding commands', async () => {
     const onboardingKey = `${slugPrefix}:duplicate`
     createdOnboardingKeys.push(onboardingKey)
     const command = {
@@ -377,7 +402,9 @@ describe('ClinicApplications approval integration', () => {
     }
 
     await provisionClinicOnboarding(payload, command)
-    await expect(provisionClinicOnboarding(payload, command)).rejects.toMatchObject({ code: 'binding_failed' })
+    await expect(provisionClinicOnboarding(payload, command)).resolves.toEqual(
+      expect.objectContaining({ clinicId: expect.any(Number), clinicStaffId: expect.any(Number) }),
+    )
 
     const [clinics, staff] = await Promise.all([
       payload.find({
@@ -398,9 +425,9 @@ describe('ClinicApplications approval integration', () => {
       }),
     ])
 
-    expect(clinics.docs).toHaveLength(2)
-    expect(staff.docs).toHaveLength(2)
-    expect(inviteClinicSupabaseAccount).toHaveBeenCalledTimes(2)
+    expect(clinics.docs).toHaveLength(1)
+    expect(staff.docs).toHaveLength(1)
+    expect(inviteClinicSupabaseAccount).toHaveBeenCalledOnce()
   }, 45000)
 
   it('blocks public collection create outside the controlled API route', async () => {

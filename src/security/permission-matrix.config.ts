@@ -240,7 +240,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform staff manage clinic assignment and lifecycle; approved and synced staff read their approved clinic; identity binding, auth sync, and create/delete remain provisioning-only',
+        'Platform staff manage clinic assignment and lifecycle; approved and synced staff with private password evidence read their participation-approved clinic; identity binding, auth sync, and create/delete remain provisioning-only',
     },
     patients: {
       slug: 'patients',
@@ -692,7 +692,7 @@ export const permissionMatrix: PermissionMatrix = {
         admin: { type: 'platform' },
       },
       notes:
-        'Public submissions use the controlled API route; platform approval creates a pending clinic and initial clinic staff principal with duplicate-write observability',
+        'Public submissions use the controlled API route; platform approval authorizes private clinic participation and the named initial staff member; recoverable provisioning reuses both records without automatic reinvitation',
     },
     clinicProfileDrafts: {
       slug: 'clinicProfileDrafts',

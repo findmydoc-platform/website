@@ -1,5 +1,8 @@
 import type { Clinic, ClinicStaff } from '@/payload-types'
 import type { Payload, PayloadRequest } from 'payload'
+import { establishLegacyClinicPasswordEvidence, hasClinicAccountCompletion } from './clinicAccountCompletion'
+import { extractTokenFromHeader } from './supabaseAuthPolicy'
+import { isClinicParticipationApproved } from './clinicParticipation'
 
 export type ClinicAccessState = {
   clinic: Clinic
@@ -13,9 +16,12 @@ export const readRelationId = (value: ClinicStaff['clinic']): number | string | 
 }
 
 export const isClinicStaffAccessReady = (staff: ClinicStaff): boolean =>
-  staff.status === 'approved' && staff.authSync?.status === 'synced' && readRelationId(staff.clinic) !== null
+  staff.status === 'approved' &&
+  staff.authSync?.status === 'synced' &&
+  readRelationId(staff.clinic) !== null &&
+  hasClinicAccountCompletion(staff)
 
-export const isClinicAccessReady = (clinic: Clinic): boolean => clinic.status === 'approved' && !clinic.deletedAt
+export const isClinicAccessReady = isClinicParticipationApproved
 
 export async function readClinicAccessState(
   payload: Payload,
@@ -39,7 +45,13 @@ export async function readClinicAccessState(
     },
   })
 
-  const staff = staffResult.docs[0] as ClinicStaff | undefined
+  let staff = staffResult.docs[0] as ClinicStaff | undefined
+  const token = req ? extractTokenFromHeader(req.headers) : undefined
+  if (staff && !hasClinicAccountCompletion(staff) && req && token) {
+    if (await establishLegacyClinicPasswordEvidence(req, staff, token)) {
+      staff = await payload.findByID({ collection: 'clinicStaff', id: staff.id, depth: 0, overrideAccess: true, req })
+    }
+  }
   const clinicId = staff ? readRelationId(staff.clinic) : null
   if (!staff || !isClinicStaffAccessReady(staff) || clinicId === null) return null
 
@@ -51,7 +63,17 @@ export async function readClinicAccessState(
     pagination: false,
     req,
     where: {
-      and: [{ id: { equals: clinicId } }, { status: { equals: 'approved' } }, { deletedAt: { exists: false } }],
+      and: [
+        { id: { equals: clinicId } },
+        {
+          or: [
+            { participationStatus: { equals: 'approved' } },
+            { and: [{ participationStatus: { exists: false } }, { status: { equals: 'approved' } }] },
+          ],
+        },
+        { status: { not_equals: 'rejected' } },
+        { deletedAt: { exists: false } },
+      ],
     },
   })
 

@@ -72,6 +72,7 @@ describe('provisionApprovedClinicApplication', () => {
     expect(onboardingMocks.provisionClinicOnboarding).toHaveBeenCalledWith(
       req.payload,
       expect.objectContaining({ onboardingKey: 'clinic-application:42' }),
+      req,
     )
     expect(req.payload.update).toHaveBeenCalledWith(
       expect.objectContaining({

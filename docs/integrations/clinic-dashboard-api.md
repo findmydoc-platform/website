@@ -87,7 +87,8 @@ type ClinicDashboardBootstrapDTO = {
 ```
 
 The historical six capabilities are returned exactly once in the order shown above for every approved clinic principal
-with a current clinic assignment. The negotiated inquiry contract appends inquiry view and edit in that order. Existing
+with synchronized identity, private password evidence, and a current assignment to a participation-approved clinic.
+Public publication is independent. The negotiated inquiry contract appends inquiry view and edit in that order. Existing
 profile view and edit access respectively grant treatment and gallery view and edit access while those workspaces are
 introduced. Inquiry view and edit remain explicit because each inquiry endpoint checks the current capability again. A
 successful bootstrap implies Dashboard access, so there is no separate `dashboard:access` capability.
@@ -96,6 +97,12 @@ successful bootstrap implies Dashboard access, so there is no separate `dashboar
 Payload collection names or field-level access details. It is a UI projection and never replaces Payload authorization:
 each later read or mutation must authorize the current principal, clinic, document, and fields again. New capability
 values require synchronized type, endpoint, Dashboard behavior, and permission tests.
+
+The DTO's `status: approved` means authorized Dashboard participation, including unpublished clinics. It is not the
+clinic's public publication status. Its shape remains compatible with existing Dashboard readers. Website Auth owns
+private completion evidence and its trusted command contract in
+[clinic participation](../security/clinic-participation.md). The later authenticated completion protocol belongs to
+Website #1995 and Dashboard #160; this process change does not activate it.
 
 The DTO deliberately omits Supabase identifiers, tokens, internal roles, access-control metadata, Payload timestamps,
 and unrelated clinic fields. Later capability endpoints may add their own DTOs without expanding this bootstrap into a

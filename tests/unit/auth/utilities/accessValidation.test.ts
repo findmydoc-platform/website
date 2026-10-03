@@ -73,7 +73,7 @@ describe('accessValidation utilities', () => {
 
       const result = await validateClinicAccess(mockPayload as unknown as Payload, authData, userResult)
       expect(result).toBe(true)
-      expect(accessStateMocks.readClinicAccessState).toHaveBeenCalledWith(mockPayload, 123)
+      expect(accessStateMocks.readClinicAccessState).toHaveBeenCalledWith(mockPayload, 123, undefined)
     })
 
     it('should return true for non-clinic users', async () => {
@@ -154,7 +154,7 @@ describe('accessValidation utilities', () => {
 
       const result = await validateUserAccess(mockPayload as unknown as Payload, authData, userResult)
       expect(result).toBe(true)
-      expect(accessStateMocks.readClinicAccessState).toHaveBeenCalledWith(mockPayload, 123)
+      expect(accessStateMocks.readClinicAccessState).toHaveBeenCalledWith(mockPayload, 123, undefined)
     })
 
     it('should fail validation for invalid user type', async () => {

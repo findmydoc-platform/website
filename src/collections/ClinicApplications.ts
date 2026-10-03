@@ -9,7 +9,7 @@ import { clinicApplicationProvisioningErrorLabels } from './clinicApplications/p
 // Platform-controlled application intake for clinics.
 // Public submissions are accepted only through /api/auth/register/clinic.
 // Only platform staff can create/read/update/delete records directly.
-// Approval workflow: platform sets status to approved; provisioning creates the pending clinic and initial staff access.
+// Approval workflow: platform sets status to approved; provisioning authorizes private clinic participation and the initial staff member.
 
 export const ClinicApplications: CollectionConfig = {
   slug: 'clinicApplications',

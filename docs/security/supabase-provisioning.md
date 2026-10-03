@@ -6,21 +6,27 @@ Supabase creates and manages external identities. Payload stores the direct appl
 
 The trusted operations workflow creates, repairs, and deletes platform staff. It first verifies that the Supabase id is not assigned to a patient or clinic staff principal, ensures Supabase metadata identifies the account as `platform`, then creates or updates the matching `platformStaff` document. New platform staff default to `support`; an elevated role is always explicit.
 
-Clinic onboarding currently uses an approved `clinicApplications` record as its trigger. The trigger passes a stable
-onboarding key and the application data to a reusable provisioning service. Each execution creates a pending `clinics`
-record and a pending initial `clinicStaff` principal, sends the invitation to the configured Clinic Dashboard origin,
-and stores the Supabase user id on the staff principal. Login never creates clinic staff.
+An approved `clinicApplications` record authorizes Dashboard participation for the resulting clinic and its named
+initial `clinicStaff` principal. The reusable provisioning service creates the clinic with `status: pending` and
+`participationStatus: approved`, and the initial staff member with `status: approved`. Public publication remains the
+separate completeness and quality decision on `clinics.status`. Additional staff retain their existing manual lifecycle.
 
-The application remains a review and audit record; the resulting clinic and staff ids are stored on its
-`linkedRecords` group. The clinic does not keep a `sourceApplication` relationship. This keeps the materialization
-service independent from the temporary application collection so a later CRM adapter can call the same service and
-fully replace `clinicApplications` without changing the resulting clinic or staff model.
+The application stores resulting IDs in `linkedRecords`. The clinic has no `sourceApplication` relationship; a CRM
+can replace the application trigger with the same stable onboarding command. New participants carry a private unique
+`provisioningIdentity` derived from that command. Retries first resolve the existing onboarding key and refuse ambiguous,
+rejected, deleted, disabled, offboarded, reassigned, or changed-email participants. Historical failed or waiting records
+are not promoted automatically.
 
-The initial staff account exists in Supabase after a successful invitation, but it is only prepared for onboarding.
-Business access remains denied until the staff principal is `approved`, its `authSync.status` is `synced`, and its
-assigned clinic is approved and not deleted.
+The existing native invitation path remains active. The service records its first attempt before dispatch. Later retries
+only reconcile the intended existing identity; they do not authorize another invitation. The provider's server-controlled
+`app_metadata.onboarding_key` binds recovery to the source. User-editable metadata cannot establish ownership. An uncertain
+response without this binding requires operator repair. An existing identity is checked before invitation dispatch,
+including recovery after a request rollback. Business approval remains recorded when provider or binding preparation fails.
 
-All staff writes use the shared identity invariant, which checks all auth collections through the Payload Local API before committing. Clinic onboarding does not lock or deduplicate its onboarding key. After creating records, it queries Payload for the same key and logs a structured warning with the affected ids when duplicates exist.
+Usable access additionally requires synchronized identity and private password evidence bound to the current staff
+subject and clinic. Delivery and invitation acceptance do not establish that evidence. The
+[clinic participation contract](clinic-participation.md) defines completion, the bounded legacy transition, and the
+Website-owned integration boundary. Authentication never creates staff or grants additional participants.
 
 ## Clinic Staff Lifecycle
 
@@ -42,11 +48,10 @@ Patients retain ensure-on-auth. After Supabase confirms the browser identity, th
 
 ## Failure Behavior
 
-Clinic application provisioning records `not_started`, `failed`, or `completed` and exposes only a stable failure
-category. Partial clinic and staff records are retained after a failure. Saving the failed approved application starts
-another provisioning attempt with the same onboarding key and may create additional records. Those records remain
-traceable through the shared key and the duplicate warning log. Unknown invite responses are reconciled by normalized
-email and onboarding key before another identity is accepted.
+Clinic application provisioning records `not_started`, `failed`, or `completed` with a stable failure category.
+Partial records retain their onboarding key. A changed provisioning input on a failed approved application retries
+preparation against the same records. A changed contact email cannot replace the approved initial participant through
+this technical retry. A new invitation or identity repair requires the owning trusted workflow.
 
 Clinic staff auth synchronization records `pending`, `synced`, `failed`, or `deleted`. Saving a failed non-terminal
 lifecycle state retries the same Supabase operation. Authorization fails closed whenever Supabase and Payload do not

@@ -259,7 +259,7 @@ describe('clinic Supabase provisioning', () => {
       redirectTo: 'https://dashboard.example.com/auth/callback?next=/auth/invite/complete',
     })
     expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith('clinic-user-id', {
-      app_metadata: { user_type: 'clinic' },
+      app_metadata: { user_type: 'clinic', onboarding_key: 'clinic-application:42' },
       user_metadata: {
         first_name: 'Ada',
         last_name: 'Lovelace',
@@ -268,17 +268,16 @@ describe('clinic Supabase provisioning', () => {
     })
   })
 
-  it('reconciles an unknown invite result by normalized email and onboarding key', async () => {
+  it('reuses a trusted pre-existing onboarding identity without inviting again', async () => {
     const { inviteClinicSupabaseAccount } = await actualModulePromise
-    adminClient.auth.admin.inviteUserByEmail.mockRejectedValueOnce(new Error('connection closed'))
     adminClient.auth.admin.listUsers.mockResolvedValueOnce({
       data: {
         users: [
           {
             id: 'reconciled-id',
             email: 'CLINIC@example.com',
-            app_metadata: {},
-            user_metadata: { onboarding_key: 'clinic-application:42' },
+            app_metadata: { user_type: 'clinic', onboarding_key: 'clinic-application:42' },
+            user_metadata: {},
           },
         ],
         nextPage: null,
@@ -292,6 +291,7 @@ describe('clinic Supabase provisioning', () => {
         onboardingKey: 'clinic-application:42',
       }),
     ).resolves.toBe('reconciled-id')
+    expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled()
   })
 
   it('fails closed when invite reconciliation finds no matching identity', async () => {
@@ -317,7 +317,7 @@ describe('clinic Supabase provisioning', () => {
           {
             id: 'reconciled-id',
             email: 'CLINIC@example.com',
-            app_metadata: { user_type: 'clinic' },
+            app_metadata: { user_type: 'clinic', onboarding_key: 'clinic-application:42' },
             user_metadata: {},
           },
         ],
@@ -336,7 +336,7 @@ describe('clinic Supabase provisioning', () => {
 
     expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled()
     expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith('reconciled-id', {
-      app_metadata: { user_type: 'clinic' },
+      app_metadata: { user_type: 'clinic', onboarding_key: 'clinic-application:42' },
       user_metadata: {
         first_name: 'Ada',
         last_name: 'Lovelace',
@@ -370,6 +370,21 @@ describe('clinic Supabase provisioning', () => {
     ).rejects.toThrow('Supabase clinic reconciliation found a non-clinic identity')
 
     expect(adminClient.auth.admin.updateUserById).not.toHaveBeenCalled()
+  })
+
+  it('does not mark a failed provider lookup as an invitation attempt', async () => {
+    const { inviteClinicSupabaseAccount } = await actualModulePromise
+    const beforeInvite = vi.fn()
+    adminClient.auth.admin.listUsers.mockResolvedValueOnce({ data: null, error: { message: 'Lookup unavailable' } })
+    await expect(
+      inviteClinicSupabaseAccount({
+        email: 'clinic@example.com',
+        onboardingKey: 'clinic-application:42',
+        beforeInvite,
+      }),
+    ).rejects.toThrow()
+    expect(beforeInvite).not.toHaveBeenCalled()
+    expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled()
   })
 
   it('synchronizes clinic access with explicit ban and unban durations', async () => {

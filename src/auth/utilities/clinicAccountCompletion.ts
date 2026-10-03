@@ -26,16 +26,32 @@ function canonical(value: unknown): string {
   )
 }
 
-export const guardClinicAccountEvidence: CollectionBeforeChangeHook<ClinicStaff> = ({ data, originalDoc, req }) => {
+function isEmptyEvidenceGroup(field: ProtectedWrite['field'], value: unknown): boolean {
+  if (value == null) return true
+  if (typeof value !== 'object' || Array.isArray(value)) return false
+  return Object.entries(value).every(
+    ([key, item]) => item == null || (field === 'legacyAccess' && key === 'initialParticipant' && item === false),
+  )
+}
+
+export const guardClinicAccountEvidence: CollectionBeforeChangeHook<ClinicStaff> = ({
+  data,
+  originalDoc,
+  operation,
+  req,
+}) => {
   for (const field of ['accountCompletion', 'legacyAccess'] as const) {
-    if (!(field in data) || canonical(data[field]) === canonical(originalDoc?.[field])) continue
+    if (!(field in data)) continue
+    const empty = isEmptyEvidenceGroup(field, data[field])
+    // Payload passes an empty originalDoc on ordinary create and may materialize empty/default groups.
+    // A duplicate is also a create: it must never inherit another principal's evidence.
+    if (operation === 'create') {
+      if (empty) continue
+      throw new APIError('Clinic account evidence is managed by the trusted Auth boundary.', 403)
+    }
     if (
-      !originalDoc &&
-      (!data[field] ||
-        Object.entries(data[field]).every(
-          ([key, value]) =>
-            value == null || (field === 'legacyAccess' && key === 'initialParticipant' && value === false),
-        ))
+      (empty && isEmptyEvidenceGroup(field, originalDoc?.[field])) ||
+      canonical(data[field]) === canonical(originalDoc?.[field])
     )
       continue
     if (

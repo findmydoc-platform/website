@@ -10,6 +10,7 @@ const dependencies = vi.hoisted(() => ({
   createLocalReq: vi.fn(),
   createWorker: vi.fn(),
   selectRuntime: vi.fn(),
+  selectAcceptanceRuntime: vi.fn(),
 }))
 
 vi.mock('payload', async (load) => ({
@@ -20,6 +21,7 @@ vi.mock('payload', async (load) => ({
 vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('@/features/transactionalEmail/environment', () => ({
   selectTransactionalEmailRuntime: dependencies.selectRuntime,
+  selectTransactionalEmailAcceptanceRuntime: dependencies.selectAcceptanceRuntime,
   resolveTransactionalEmailEnvironment: () => process.env.VERCEL_ENV,
 }))
 vi.mock('@/features/transactionalEmail/worker', () => ({
@@ -160,6 +162,7 @@ describe('scheduler request through hosted composition', () => {
     expect(response.status).toBe(200)
     expect(dependencies.createWorker).toHaveBeenCalledTimes(1)
     expect(order[0]).toBe('sweep')
+    expect(dependencies.selectAcceptanceRuntime).not.toHaveBeenCalled()
     expect(worker.claimForBatch).toHaveBeenCalledTimes(5)
     expect(worker.processClaimForBatch).toHaveBeenCalledTimes(5)
     expect(peak).toBe(2)

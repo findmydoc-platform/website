@@ -1,83 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/auth/utilities/supaBaseServer'
-import { getSupabaseLogger } from '@/auth/utilities/supabaseLogger'
-import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
-import { resolvePasswordResetTarget } from '@/auth/utilities/passwordResetTarget'
-import { hashLogValue, toLoggedError } from '@/utilities/logging/shared'
+import { createLocalReq, getPayload } from 'payload'
 import configPromise from '@/payload.config'
-import { getPayload } from 'payload'
+import { requestPasswordRecovery } from '@/auth/actions/passwordRecoveryRequests'
+import { websiteRecoveryContext } from '@/auth/actions/recoveryContext'
 
-const requestSchema = z.object({
-  email: z.string().email(),
-})
+const requestSchema = z.object({ email: z.string().trim().email().max(254) }).strict()
 
 export async function POST(request: NextRequest) {
-  const logger = await getSupabaseLogger({
-    headers: request.headers,
-    request,
-    bindings: {
-      component: 'password-reset',
-    },
-  })
-  let requestedEmail: string | null = null
-
+  const headers = { 'Cache-Control': 'no-store' }
+  const validation = requestSchema.safeParse(await request.json().catch(() => null))
+  if (!validation.success)
+    return Response.json({ error: 'Please provide a valid email address.' }, { status: 400, headers })
   try {
-    const body = await request.json().catch(() => null)
-    const validation = requestSchema.safeParse(body)
-
-    if (!validation.success) {
-      return NextResponse.json({ error: 'Please provide a valid email address.' }, { status: 400 })
-    }
-
-    requestedEmail = validation.data.email
     const payload = await getPayload({ config: configPromise })
-    const resetTarget = await resolvePasswordResetTarget(payload, validation.data.email)
-    if (resetTarget === 'suppress') {
-      return NextResponse.json({ success: true })
-    }
-
-    const baseUrl =
-      resetTarget === 'dashboard'
-        ? getClinicDashboardOrigin()
-        : process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
-    // Redirect to the callback route that stages the confirmed recovery flow.
-    const redirectTo = `${baseUrl}/auth/callback?next=/auth/password/reset/complete`
-
-    const supabase = await createClient()
-    let resetError: unknown = null
-
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(validation.data.email, {
-        redirectTo,
-      })
-      resetError = error
-    } catch (error) {
-      resetError = error
-    }
-
-    if (resetError) {
-      logger.warn(
-        {
-          emailHash: hashLogValue(validation.data.email),
-          err: toLoggedError(resetError),
-          event: 'auth.supabase.password_reset.rejected',
-        },
-        'Password reset request was rejected by Supabase',
-      )
-      return NextResponse.json({ success: true })
-    }
-
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    logger.error(
-      {
-        emailHash: requestedEmail ? hashLogValue(requestedEmail) : undefined,
-        err: toLoggedError(error),
-        event: 'auth.supabase.password_reset.failed',
-      },
-      'Password reset request failed',
-    )
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const req = await createLocalReq({}, payload)
+    await requestPasswordRecovery(req, { email: validation.data.email, context: websiteRecoveryContext(request) })
+  } catch {
+    // Eligibility, limits, inactive environments and infrastructure failures share one public response.
   }
+  return Response.json({ success: true }, { headers })
 }

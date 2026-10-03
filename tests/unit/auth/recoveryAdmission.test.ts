@@ -26,7 +26,16 @@ function matches(doc: Record<string, unknown>, where: Record<string, unknown>): 
       return field === 'and' ? clauses.every((part) => matches(doc, part)) : clauses.some((part) => matches(doc, part))
     }
     return Object.entries(clause as Record<string, unknown>).every(([op, value]) => {
-      if (op === 'equals') return doc[field] === value
+      if (op === 'in') return (value as unknown[]).includes(doc[field])
+      if (op === 'equals')
+        return (
+          field
+            .split('.')
+            .reduce<unknown>(
+              (current, part) => (current && typeof current === 'object' ? Reflect.get(current, part) : undefined),
+              doc,
+            ) === value
+        )
       if (op === 'not_in') return !(value as unknown[]).includes(doc[field])
       if (op === 'greater_than') return String(doc[field]) > String(value)
       if (op === 'less_than_equal') return String(doc[field]) <= String(value)
@@ -86,6 +95,15 @@ function storage() {
       await operation('read', options)
       const doc = rows[options.collection]!.find((doc) => doc.id === options.id)
       return doc ? read(doc, options) : null
+    }),
+    update: vi.fn(async (options) => {
+      await operation('update', options)
+      const originalDoc = rows[options.collection]!.find((doc) => doc.id === options.id)!
+      let data = structuredClone(options.data)
+      for (const hook of configs[options.collection]?.hooks?.beforeChange ?? [])
+        data = await hook({ data, originalDoc, operation: 'update', req: options.req } as never)
+      Object.assign(originalDoc, data)
+      return read(originalDoc, options)
     }),
     create: vi.fn(async (options) => {
       await operation('create', options)
@@ -310,10 +328,39 @@ describe('recovery admission through the owned Auth command', () => {
         actionType,
         principal: { relationTo: collection, value: 75 },
         state: 'pending',
+        supabaseSubject: 'ddbbd37e-d44b-4d56-8038-234b8e6fa6d0',
+        subjectBoundAt: new Date(start).toISOString(),
+        correlationKeyVersion: 'v1',
+        correlationDigest: expect.stringMatching(/^[a-f0-9]{64}$/),
       })
       expect(fixture.rows.recoveryRequestEvents).toHaveLength(2)
     },
   )
+  it('supersedes the prior action after a new admitted request while retaining immutable recipient evidence', async () => {
+    const fixture = storage()
+    fixture.rows.patients!.push({
+      id: 75,
+      email: 'person@example.test',
+      supabaseUserId: 'ddbbd37e-d44b-4d56-8038-234b8e6fa6d0',
+    })
+    let now = start
+    const actions = bindAuthActions(fixture.req, { environment: 'preview', now: () => now, recoveryKeys: [key] })
+    const input = { email: 'person@example.test', context: fixture.context() }
+    const first = await actions.reserveRecovery(input)
+    now += 300000
+    const second = await actions.reserveRecovery(input)
+    expect(first?.id).not.toBe(second?.id)
+    expect(fixture.rows.authActions!.find((action) => action.id === first?.id)).toMatchObject({
+      state: 'superseded',
+      outcomeCode: 'superseded',
+    })
+    expect(second).toMatchObject({
+      state: 'pending',
+      supabaseSubject: first!.supabaseSubject,
+      correlationDigest: first!.correlationDigest,
+    })
+  })
+
   it('counts unknown targets privately and does not extend either cooldown after a denied request', async () => {
     const fixture = storage()
     let now = start

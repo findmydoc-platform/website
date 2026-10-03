@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { inspectRecoveryContext, type RecoveryContext, type RecoveryKey } from './recoveryContext'
 import { recoveryCorrelations, recoveryWindowMs, recoveryCooldownMs, recoveryHourlyLimit } from './recoveryCorrelation'
+import { findRecoveryPrincipal, recoveryActionTypes } from './recoveryPrincipal'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { findClinicInvitationPrincipal } from './clinicInvitationPrincipal'
 import type { AuthAction, ClinicStaff } from '@/payload-types'
@@ -294,7 +295,7 @@ function validatePolicy(doc: Record<string, unknown>, scope: Scope) {
   const createdAt = Date.parse(String(doc.createdAt))
   if (doc.correlationDigest != null || doc.correlationKeyVersion != null) {
     if (
-      actionType !== 'patient-verification' ||
+      (actionType !== 'patient-verification' && !recoveryActionTypes.includes(actionType as never)) ||
       !z
         .string()
         .regex(/^[a-f0-9]{64}$/)
@@ -330,7 +331,7 @@ function validatePolicy(doc: Record<string, unknown>, scope: Scope) {
   if (doc.supabaseSubject != null) {
     parsed(subjectSchema, doc.supabaseSubject)
     if (
-      !['patient-verification', 'clinic-invitation'].includes(actionType) ||
+      !['patient-verification', 'clinic-invitation', ...recoveryActionTypes].includes(actionType) ||
       !Number.isFinite(Date.parse(String(doc.subjectBoundAt)))
     )
       throw new AuthActionError('invalid-command')
@@ -371,10 +372,13 @@ export const guardAuthActionWrite: CollectionBeforeChangeHook = async ({ data, o
       !originalDoc ||
       originalDoc.id !== write.id ||
       originalDoc.environment !== scope.environment ||
-      originalDoc.actionType !== 'patient-verification' ||
+      (originalDoc.actionType !== 'patient-verification' &&
+        !recoveryActionTypes.includes(originalDoc.actionType as never)) ||
       originalDoc.correlationDigest == null ||
       !Number.isFinite(Date.parse(originalDoc.createdAt)) ||
-      Date.parse(originalDoc.createdAt) > scope.now - verificationCorrelationWindowMs ||
+      Date.parse(originalDoc.createdAt) >
+        scope.now -
+          (originalDoc.actionType === 'patient-verification' ? verificationCorrelationWindowMs : recoveryWindowMs) ||
       doc.correlationDigest !== null ||
       doc.correlationKeyVersion !== null ||
       Object.keys(data).some((field) => !['correlationDigest', 'correlationKeyVersion', 'updatedAt'].includes(field))
@@ -389,7 +393,7 @@ export const guardAuthActionWrite: CollectionBeforeChangeHook = async ({ data, o
       doc.state !== 'pending' ||
       doc.terminalAt != null ||
       doc.outcomeCode != null ||
-      (doc.actionType === 'clinic-invitation'
+      (['clinic-invitation', ...recoveryActionTypes].includes(doc.actionType)
         ? doc.supabaseSubject == null
           ? doc.subjectBoundAt != null
           : Date.parse(doc.subjectBoundAt) !== scope.now
@@ -624,7 +628,7 @@ export function bindAuthActions(
     scope: Scope,
     command: CreateInput,
     correlation?: { correlationDigest: string; correlationKeyVersion: string },
-    clinicSubject?: string,
+    boundSubject?: string,
   ) {
     await principalExists(internalReq, command.actionType, command.principal)
     const policy = authActionPolicies[command.actionType]
@@ -634,8 +638,8 @@ export function bindAuthActions(
       state: 'pending' as const,
       principal: command.principal ?? null,
       principalBoundAt: command.principal ? new Date(scope.now).toISOString() : null,
-      supabaseSubject: clinicSubject ?? null,
-      subjectBoundAt: clinicSubject ? new Date(scope.now).toISOString() : null,
+      supabaseSubject: boundSubject ?? null,
+      subjectBoundAt: boundSubject ? new Date(scope.now).toISOString() : null,
       correlationDigest: correlation?.correlationDigest ?? null,
       correlationKeyVersion: correlation?.correlationKeyVersion ?? null,
       supabaseTokenType: policy.supabaseTokenType,
@@ -759,6 +763,38 @@ export function bindAuthActions(
         return result.docs
       })
     },
+    liveRecoveries(input: { afterId?: number; limit?: number } = {}): Promise<AuthAction[]> {
+      const command = parsed(
+        z
+          .object({
+            afterId: z.number().int().nonnegative().optional(),
+            limit: z.number().int().min(1).max(25).optional(),
+          })
+          .strict(),
+        input,
+      )
+      return transaction(async (internalReq, scope) => {
+        const result = await req.payload.find({
+          collection: 'authActions',
+          req: internalReq,
+          overrideAccess: true,
+          depth: 0,
+          pagination: false,
+          limit: command.limit ?? 25,
+          sort: 'id',
+          where: {
+            and: [
+              { id: { greater_than: command.afterId ?? 0 } },
+              { environment: { equals: environment } },
+              { actionType: { in: [...recoveryActionTypes] } },
+              { state: { in: ['pending', 'active'] } },
+              { expiresAt: { greater_than: new Date(scope.now).toISOString() } },
+            ],
+          },
+        })
+        return result.docs
+      })
+    },
     async reserveRecovery(input: { email: string; context: RecoveryContext | null }): Promise<AuthAction | null> {
       const email = normalizeEmail(input.email)
       if (!isValidEmail(email) || email.length > 254) throw new AuthActionError('invalid-command')
@@ -829,42 +865,39 @@ export function bindAuthActions(
             data,
           })
         }
-        const candidates: {
-          principal: Principal
-          actionType: 'patient-recovery' | 'clinic-recovery' | 'platform-recovery'
-          eligible: boolean
-        }[] = []
-        for (const collection of ['patients', 'clinicStaff', 'platformStaff'] as const) {
-          const matches = await req.payload.find({
-            collection,
-            req: internalReq,
-            overrideAccess: true,
-            depth: 0,
-            pagination: false,
-            limit: 2,
-            where: { email: { equals: email } },
-          })
-          for (const principal of matches.docs) {
-            const clinicEligible =
-              collection !== 'clinicStaff' ||
-              ('status' in principal &&
-                ['pending', 'approved'].includes(String(principal.status)) &&
-                'authSync' in principal &&
-                principal.authSync?.status === 'synced')
-            candidates.push({
-              principal: { relationTo: collection, value: principal.id },
-              actionType:
-                collection === 'patients'
-                  ? 'patient-recovery'
-                  : collection === 'clinicStaff'
-                    ? 'clinic-recovery'
-                    : 'platform-recovery',
-              eligible: clinicEligible && z.string().uuid().safeParse(principal.supabaseUserId).success,
-            })
-          }
-        }
-        if (candidates.length !== 1 || !candidates[0]!.eligible) return null
-        return createPending(internalReq, scope, candidates[0]!)
+        const principal = await findRecoveryPrincipal(internalReq, email)
+        if (!principal) return null
+        const prior = await req.payload.find({
+          collection: 'authActions',
+          req: internalReq,
+          overrideAccess: true,
+          depth: 0,
+          pagination: false,
+          limit: 6,
+          where: {
+            and: [
+              { environment: { equals: environment } },
+              { actionType: { equals: principal.actionType } },
+              { 'principal.relationTo': { equals: principal.collection } },
+              { 'principal.value': { equals: principal.document.id } },
+              { state: { in: ['pending', 'active'] } },
+              { expiresAt: { greater_than: new Date(scope.now).toISOString() } },
+            ],
+          },
+        })
+        if (prior.docs.length > recoveryHourlyLimit) throw new AuthActionError('invalid-transition')
+        for (const action of prior.docs) await transition(internalReq, scope, { id: action.id, to: 'superseded' })
+        const correlation = dimensions[0]!.correlations[0]!
+        return createPending(
+          internalReq,
+          scope,
+          {
+            actionType: principal.actionType,
+            principal: { relationTo: principal.collection, value: principal.document.id },
+          },
+          { correlationDigest: correlation.digest, correlationKeyVersion: correlation.keyVersion },
+          principal.document.supabaseUserId!,
+        )
       })
     },
     sweepRecovery() {
@@ -1072,12 +1105,20 @@ export function bindAuthActions(
                   },
                   {
                     and: [
+                      { actionType: { equals: 'patient-verification' } },
                       { correlationDigest: { exists: true } },
                       {
                         createdAt: {
                           less_than_equal: new Date(scope.now - verificationCorrelationWindowMs).toISOString(),
                         },
                       },
+                    ],
+                  },
+                  {
+                    and: [
+                      { actionType: { in: [...recoveryActionTypes] } },
+                      { correlationDigest: { exists: true } },
+                      { createdAt: { less_than_equal: new Date(scope.now - recoveryWindowMs).toISOString() } },
                     ],
                   },
                 ],
@@ -1107,7 +1148,12 @@ export function bindAuthActions(
             await transition(internalReq, scope, { id: action.id, to: 'expired' })
             expired++
           }
-          if (action.correlationDigest && Date.parse(action.createdAt) <= scope.now - verificationCorrelationWindowMs) {
+          if (
+            action.correlationDigest &&
+            Date.parse(action.createdAt) <=
+              scope.now -
+                (action.actionType === 'patient-verification' ? verificationCorrelationWindowMs : recoveryWindowMs)
+          ) {
             const data = { correlationDigest: null, correlationKeyVersion: null }
             scope.write = { kind: 'clear-correlation', id: action.id, data }
             await req.payload.update({

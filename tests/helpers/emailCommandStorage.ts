@@ -1,5 +1,6 @@
 import type { CollectionConfig, Payload, PayloadRequest } from 'payload'
 import { vi } from 'vitest'
+import { RecoveryRequestEvents } from '@/collections/RecoveryRequestEvents'
 import { AuthActions } from '@/collections/AuthActions'
 import { TransactionalEmailOutbox } from '@/collections/TransactionalEmailOutbox'
 import { TransactionalEmailEvents } from '@/collections/TransactionalEmailEvents'
@@ -16,6 +17,7 @@ type Options = {
 }
 const collections: Record<string, CollectionConfig> = {
   authActions: AuthActions,
+  recoveryRequestEvents: RecoveryRequestEvents,
   transactionalEmailOutbox: TransactionalEmailOutbox,
   transactionalEmailEvents: TransactionalEmailEvents,
 }
@@ -59,7 +61,7 @@ function matches(doc: Document, where: Document): boolean {
 /** Offline Local API adapter. Production collection hooks still authorize and validate every operation. */
 export function createEmailCommandStorage() {
   const rows: Record<string, Map<number, Document>> = Object.fromEntries(
-    Object.keys(collections).map((slug) => [slug, new Map()]),
+    [...Object.keys(collections), 'patients', 'clinicStaff', 'platformStaff'].map((slug) => [slug, new Map()]),
   )
   const sessions: Record<string, object> = {}
   const snapshots = new Map<string, typeof rows>()
@@ -85,13 +87,13 @@ export function createEmailCommandStorage() {
     },
   }
   async function guard(operation: string, options: Options) {
-    const collection = collections[options.collection]!
-    for (const hook of collection.hooks?.beforeOperation ?? [])
+    const collection = collections[options.collection]
+    for (const hook of collection?.hooks?.beforeOperation ?? [])
       await hook({ operation, collection, args: options, req: options.req } as never)
   }
   async function read(doc: Document, options: Options) {
     let result = structuredClone(doc)
-    for (const hook of collections[options.collection]!.hooks?.afterRead ?? [])
+    for (const hook of collections[options.collection]?.hooks?.afterRead ?? [])
       result = await hook({ doc: result, req: options.req } as never)
     return result
   }
@@ -99,7 +101,7 @@ export function createEmailCommandStorage() {
     await guard(operation, options)
     const originalDoc = options.id ? rows[options.collection]!.get(options.id) : undefined
     let data = structuredClone(options.data!)
-    for (const hook of collections[options.collection]!.hooks?.beforeChange ?? [])
+    for (const hook of collections[options.collection]?.hooks?.beforeChange ?? [])
       data = await hook({ data, originalDoc, operation, req: options.req } as never)
     const timestamp = new Date().toISOString()
     const doc = {
@@ -135,7 +137,7 @@ export function createEmailCommandStorage() {
     }),
     delete: vi.fn(async (options: Options) => {
       await guard('delete', options)
-      for (const hook of collections[options.collection]!.hooks?.beforeDelete ?? [])
+      for (const hook of collections[options.collection]?.hooks?.beforeDelete ?? [])
         await hook({ id: options.id, req: options.req } as never)
       rows[options.collection]!.delete(options.id!)
     }),

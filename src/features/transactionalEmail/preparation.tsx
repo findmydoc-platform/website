@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import {
   CLINIC_REGISTRATION_RECEIPT_SUBJECT,
+  CLINIC_STAFF_INVITATION_SUBJECT,
+  ClinicStaffInvitationEmail,
   ClinicRegistrationReceiptEmail,
   type ClinicRegistrationReceiptEmailProps,
   PATIENT_EMAIL_VERIFICATION_SUBJECT,
@@ -56,4 +58,12 @@ export async function renderPatientEmailVerification(
 ): Promise<PreparedMessage> {
   const html = await render(<PatientEmailVerificationEmail actionUrl={actionUrl} />)
   return { recipientAddress, subject: PATIENT_EMAIL_VERIFICATION_SUBJECT, html, text: toPlainText(html) }
+}
+
+export async function renderClinicStaffInvitation(
+  recipientAddress: string,
+  actionUrl: string,
+): Promise<PreparedMessage> {
+  const html = await render(<ClinicStaffInvitationEmail actionUrl={actionUrl} />)
+  return { recipientAddress, subject: CLINIC_STAFF_INVITATION_SUBJECT, html, text: toPlainText(html) }
 }

@@ -232,11 +232,11 @@ describe('AuthAction lifecycle through the system command boundary', () => {
     await expect(actions().reserveClinicInvitation({ clinicStaffId: 61, resendOf: third.id })).rejects.toMatchObject({
       code: 'rate-limited',
     })
-    expect(
-      (await bindAuthActions(fixture.req, { environment: 'local', now: () => now }).reserveClinicInvitation({
+    await expect(
+      bindAuthActions(fixture.req, { environment: 'local', now: () => now }).reserveClinicInvitation({
         clinicStaffId: 61,
-      }))!.environment,
-    ).toBe('local')
+      }),
+    ).resolves.toBeNull()
     await actions().transition({ id: third.id, to: 'active' })
     await actions().transition({ id: third.id, to: 'confirmed' })
     await expect(actions().reserveClinicInvitation({ clinicStaffId: 61, resendOf: third.id })).rejects.toMatchObject({
@@ -260,12 +260,11 @@ describe('AuthAction lifecycle through the system command boundary', () => {
     expect(await actions().read(action.id)).toMatchObject({ state: 'active', supabaseSubject: clinicSubject })
   })
 
-  it('expires the predecessor at exactly 24 hours without moving its initial invitation marker', async () => {
+  it('does not create another automatic initial invitation after the durable marker exists', async () => {
     approvedClinic()
     const first = (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
     now += day
-    const next = (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
-    expect(next.id).not.toBe(first.id)
+    expect(await actions().reserveClinicInvitation({ clinicStaffId: 61 })).toBeNull()
     expect(await actions().read(first.id)).toMatchObject({ state: 'expired', terminalAt: new Date(now).toISOString() })
     expect(fixture.sources.get('clinicStaff:61')?.invitationAuthorizedAt).toBe(new Date(start).toISOString())
     expect(fixture.payload.update).toHaveBeenCalledTimes(2)

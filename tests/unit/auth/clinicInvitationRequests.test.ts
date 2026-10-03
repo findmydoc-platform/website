@@ -5,7 +5,16 @@ import {
   requestInitialClinicInvitation,
 } from '@/auth/actions/clinicInvitationRequests'
 
-const mocks = vi.hoisted(() => ({ environment: vi.fn(), activation: vi.fn(), reserve: vi.fn(), bind: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  environment: vi.fn(),
+  activation: vi.fn(),
+  reserve: vi.fn(),
+  transition: vi.fn(),
+  live: vi.fn(),
+  bind: vi.fn(),
+  bindEmail: vi.fn(),
+  accept: vi.fn(),
+}))
 vi.mock('@/features/transactionalEmail/environment', () => ({
   resolveTransactionalEmailEnvironment: mocks.environment,
 }))
@@ -13,6 +22,9 @@ vi.mock('@/features/transactionalEmail/activationPolicy', () => ({
   isTransactionalEmailCommandActivationDeclared: mocks.activation,
 }))
 vi.mock('@/auth/actions/lifecycle', () => ({ bindAuthActions: mocks.bind }))
+vi.mock('@/features/transactionalEmail/payloadIntegration', () => ({
+  bindTransactionalEmail: mocks.bindEmail,
+}))
 
 function request() {
   return { context: {}, payload: { find: vi.fn().mockResolvedValue({ docs: [] }), logger: { error: vi.fn() } } }
@@ -21,8 +33,19 @@ beforeEach(() => {
   vi.resetAllMocks()
   mocks.environment.mockReturnValue('preview')
   mocks.activation.mockReturnValue(true)
-  mocks.bind.mockReturnValue({ reserveClinicInvitation: mocks.reserve })
-  mocks.reserve.mockImplementation(async ({ clinicStaffId }) => ({ id: clinicStaffId }))
+  mocks.bind.mockReturnValue({
+    reserveClinicInvitation: mocks.reserve,
+    transition: mocks.transition,
+    liveClinicInvitations: mocks.live,
+  })
+  mocks.reserve.mockImplementation(async ({ clinicStaffId }) => ({
+    id: clinicStaffId,
+    state: 'pending',
+  }))
+  mocks.transition.mockImplementation(async ({ id }) => ({ id, state: 'active' }))
+  mocks.live.mockResolvedValue([])
+  mocks.bindEmail.mockReturnValue({ accept: mocks.accept })
+  mocks.accept.mockResolvedValue({ operationId: 'mail-1', acceptedAt: '2026-01-01T00:00:00.000Z', deduplicated: false })
 })
 
 describe('committed clinic invitation preparation', () => {
@@ -40,10 +63,17 @@ describe('committed clinic invitation preparation', () => {
   })
 
   it('reserves through the current environment with IDs only after commit', async () => {
-    const req = request() as unknown as PayloadRequest
+    const req = { ...request(), user: { collection: 'platformStaff', id: 11 } } as unknown as PayloadRequest
     expect(await requestInitialClinicInvitation(req, 61)).toBe('prepared')
     expect(mocks.bind).toHaveBeenCalledWith(req, { environment: 'preview' })
     expect(mocks.reserve).toHaveBeenCalledWith({ clinicStaffId: 61 })
+    expect(mocks.transition).toHaveBeenCalledWith({ id: 61, to: 'active' })
+    expect(mocks.bindEmail).toHaveBeenCalledWith(
+      expect.not.objectContaining({ user: expect.anything() }),
+      undefined,
+      undefined,
+    )
+    expect(mocks.accept).toHaveBeenCalledWith({ type: 'auth.invitation', authActionId: 61 })
     mocks.reserve.mockResolvedValue(null)
     expect(await requestInitialClinicInvitation(req, 61)).toBe('ineligible')
   })
@@ -73,6 +103,7 @@ describe('committed clinic invitation preparation', () => {
       now: () => 0,
     })
     expect(mocks.reserve).not.toHaveBeenCalled()
+    expect(mocks.accept).not.toHaveBeenCalled()
   })
 
   it('pages past ineligible sources and continues independent sources after a safe failure', async () => {
@@ -89,6 +120,7 @@ describe('committed clinic invitation preparation', () => {
       }),
     ).rejects.toThrow('Clinic invitation preparation unavailable.')
     expect(mocks.reserve).toHaveBeenLastCalledWith({ clinicStaffId: 27 })
+    expect(mocks.accept).not.toHaveBeenCalled()
     expect(req.payload.find.mock.calls[1]?.[0]).toMatchObject({
       where: { and: expect.arrayContaining([{ id: { greater_than: 25 } }]) },
     })
@@ -100,6 +132,7 @@ describe('committed clinic invitation preparation', () => {
     req.payload.find.mockResolvedValue({ docs: Array.from({ length: 25 }, (_, i) => ({ id: i + 1 })) })
     await prepareCommittedClinicInvitations(req as unknown as PayloadRequest, { deadline: 100000, now: () => 0 })
     expect(mocks.reserve).toHaveBeenCalledTimes(25)
+    expect(mocks.accept).toHaveBeenCalledTimes(25)
     expect(req.payload.find).toHaveBeenCalledOnce()
     vi.clearAllMocks()
     let now = 0
@@ -109,5 +142,16 @@ describe('committed clinic invitation preparation', () => {
     })
     await prepareCommittedClinicInvitations(req as unknown as PayloadRequest, { deadline: 100000, now: () => now })
     expect(mocks.reserve).not.toHaveBeenCalled()
+  })
+
+  it('recovers live reserved actions whose command acceptance was interrupted', async () => {
+    const req = request()
+    req.payload.find.mockResolvedValue({ docs: [] })
+    mocks.live.mockResolvedValueOnce([{ id: 91, state: 'pending' }]).mockResolvedValueOnce([])
+
+    await prepareCommittedClinicInvitations(req as unknown as PayloadRequest, { deadline: 100000, now: () => 0 })
+
+    expect(mocks.transition).toHaveBeenCalledWith({ id: 91, to: 'active' })
+    expect(mocks.accept).toHaveBeenCalledWith({ type: 'auth.invitation', authActionId: 91 })
   })
 })

@@ -12,6 +12,7 @@ const registrationMock = vi.hoisted(() => ({
 const adminClient = vi.hoisted(() => ({
   auth: {
     admin: {
+      createUser: vi.fn(),
       deleteUser: vi.fn(),
       inviteUserByEmail: vi.fn(),
       listUsers: vi.fn(),
@@ -218,7 +219,7 @@ describe('clinic Supabase provisioning', () => {
     vi.clearAllMocks()
     vi.mocked(getServerLogger).mockResolvedValue(logger)
     process.env.CLINIC_DASHBOARD_URL = 'https://dashboard.example.com'
-    adminClient.auth.admin.inviteUserByEmail.mockResolvedValue({
+    adminClient.auth.admin.createUser.mockResolvedValue({
       data: {
         user: {
           id: 'clinic-user-id',
@@ -239,25 +240,31 @@ describe('clinic Supabase provisioning', () => {
     else process.env.CLINIC_DASHBOARD_URL = originalDashboardUrl
   })
 
-  it('sends clinic invites to the Dashboard and binds reconciliation metadata', async () => {
-    const { inviteClinicSupabaseAccount } = await actualModulePromise
+  it('creates initial clinic identities without sending native invitation mail', async () => {
+    const { createInitialClinicSupabaseAccount } = await actualModulePromise
 
     await expect(
-      inviteClinicSupabaseAccount({
+      createInitialClinicSupabaseAccount({
         email: ' Clinic@Example.com ',
         onboardingKey: 'clinic-application:42',
         userMetadata: { firstName: 'Ada', lastName: 'Lovelace' },
       }),
     ).resolves.toBe('clinic-user-id')
 
-    expect(adminClient.auth.admin.inviteUserByEmail).toHaveBeenCalledWith('clinic@example.com', {
-      data: {
+    expect(adminClient.auth.admin.createUser).toHaveBeenCalledWith({
+      email: 'clinic@example.com',
+      email_confirm: false,
+      app_metadata: {
+        user_type: 'clinic',
+        onboarding_key: 'clinic-application:42',
+      },
+      user_metadata: {
         first_name: 'Ada',
         last_name: 'Lovelace',
         onboarding_key: 'clinic-application:42',
       },
-      redirectTo: 'https://dashboard.example.com/auth/callback?next=/auth/invite/complete',
     })
+    expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled()
     expect(adminClient.auth.admin.updateUserById).toHaveBeenCalledWith('clinic-user-id', {
       app_metadata: { user_type: 'clinic', onboarding_key: 'clinic-application:42' },
       user_metadata: {
@@ -269,7 +276,7 @@ describe('clinic Supabase provisioning', () => {
   })
 
   it('reuses a trusted pre-existing onboarding identity without inviting again', async () => {
-    const { inviteClinicSupabaseAccount } = await actualModulePromise
+    const { createInitialClinicSupabaseAccount } = await actualModulePromise
     adminClient.auth.admin.listUsers.mockResolvedValueOnce({
       data: {
         users: [
@@ -286,27 +293,28 @@ describe('clinic Supabase provisioning', () => {
     })
 
     await expect(
-      inviteClinicSupabaseAccount({
+      createInitialClinicSupabaseAccount({
         email: 'clinic@example.com',
         onboardingKey: 'clinic-application:42',
       }),
     ).resolves.toBe('reconciled-id')
     expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled()
+    expect(adminClient.auth.admin.createUser).not.toHaveBeenCalled()
   })
 
-  it('fails closed when invite reconciliation finds no matching identity', async () => {
-    const { inviteClinicSupabaseAccount } = await actualModulePromise
-    adminClient.auth.admin.inviteUserByEmail.mockResolvedValueOnce({
+  it('fails closed when creation reconciliation finds no matching identity', async () => {
+    const { createInitialClinicSupabaseAccount } = await actualModulePromise
+    adminClient.auth.admin.createUser.mockResolvedValueOnce({
       data: { user: null },
       error: { message: 'already registered' },
     })
 
     await expect(
-      inviteClinicSupabaseAccount({
+      createInitialClinicSupabaseAccount({
         email: 'clinic@example.com',
         onboardingKey: 'clinic-application:42',
       }),
-    ).rejects.toThrow('Supabase clinic invite failed: already registered')
+    ).rejects.toThrow('Supabase clinic identity creation failed: already registered')
   })
 
   it('reconciles one existing clinic-tagged identity without sending another invite', async () => {
@@ -373,17 +381,15 @@ describe('clinic Supabase provisioning', () => {
   })
 
   it('does not mark a failed provider lookup as an invitation attempt', async () => {
-    const { inviteClinicSupabaseAccount } = await actualModulePromise
-    const beforeInvite = vi.fn()
+    const { createInitialClinicSupabaseAccount } = await actualModulePromise
     adminClient.auth.admin.listUsers.mockResolvedValueOnce({ data: null, error: { message: 'Lookup unavailable' } })
     await expect(
-      inviteClinicSupabaseAccount({
+      createInitialClinicSupabaseAccount({
         email: 'clinic@example.com',
         onboardingKey: 'clinic-application:42',
-        beforeInvite,
       }),
     ).rejects.toThrow()
-    expect(beforeInvite).not.toHaveBeenCalled()
+    expect(adminClient.auth.admin.createUser).not.toHaveBeenCalled()
     expect(adminClient.auth.admin.inviteUserByEmail).not.toHaveBeenCalled()
   })
 

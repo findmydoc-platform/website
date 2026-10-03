@@ -54,7 +54,7 @@ export function PatientVerificationResendForm({
         <Heading as="h2" size="h5" align="left" id="patient-verification-resend" tabIndex={-1}>
           Need another verification email?
         </Heading>
-        <CardDescription>Enter the email you used to register.</CardDescription>
+        <CardDescription className="text-foreground">Enter the email you used to register.</CardDescription>
       </CardHeader>
       <CardContent>
         <form

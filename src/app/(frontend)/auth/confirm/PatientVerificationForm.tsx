@@ -42,7 +42,9 @@ export function PatientVerificationView({
         <Heading as="h1" size="h4" align="center">
           Verify your email
         </Heading>
-        <CardDescription className="text-center">Confirm your email to open your patient account.</CardDescription>
+        <CardDescription className="text-center text-foreground">
+          Confirm your email to open your patient account.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {state === 'pending' ? (
@@ -70,7 +72,10 @@ export function PatientVerificationView({
             {state === 'pending' ? 'Confirming...' : state === 'retry' ? 'Try again' : 'Confirm email'}
           </Button>
         ) : null}
-        <UiLink href="/register/patient#patient-verification-resend" className="flex min-h-11 items-center">
+        <UiLink
+          href="/register/patient#patient-verification-resend"
+          className="flex min-h-11 items-center text-primary underline underline-offset-4"
+        >
           Request a verification email
         </UiLink>
       </CardContent>

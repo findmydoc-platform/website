@@ -8,6 +8,7 @@ import { synchronizeClinicStaffAuthState, validateClinicStaffStatusTransition } 
 import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { clinicStaffStatusOptions } from './clinicStaff/lifecycle'
 import { guardClinicAccountEvidence } from '@/auth/utilities/clinicAccountCompletion'
+import { guardClinicInvitationAuthorization } from '@/auth/actions/lifecycle'
 
 // Direct authentication principal for clinic dashboard and API access, never Payload Admin.
 export const ClinicStaff: CollectionConfig = {
@@ -52,6 +53,7 @@ export const ClinicStaff: CollectionConfig = {
   hooks: {
     beforeChange: [
       guardClinicAccountEvidence,
+      guardClinicInvitationAuthorization,
       validateClinicStaffStatusTransition,
       beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
       enforceSupabaseIdentityInvariant,
@@ -84,6 +86,13 @@ export const ClinicStaff: CollectionConfig = {
         { name: 'clinicId', type: 'text' },
         { name: 'initialParticipant', type: 'checkbox', defaultValue: false },
       ],
+    },
+    {
+      name: 'invitationAuthorizedAt',
+      type: 'date',
+      index: true,
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
     },
     {
       name: 'invitationAttemptedAt',

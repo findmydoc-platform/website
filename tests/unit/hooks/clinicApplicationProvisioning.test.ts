@@ -4,6 +4,11 @@ import type { ClinicApplication } from '@/payload-types'
 
 const onboardingMocks = vi.hoisted(() => ({
   provisionClinicOnboarding: vi.fn(),
+  requestInitialClinicInvitation: vi.fn(),
+}))
+
+vi.mock('@/auth/actions/clinicInvitationRequests', () => ({
+  requestInitialClinicInvitation: onboardingMocks.requestInitialClinicInvitation,
 }))
 
 vi.mock('@/features/clinicOnboarding/provisionClinicOnboarding', async (importOriginal) => ({
@@ -47,6 +52,7 @@ describe('provisionApprovedClinicApplication', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     onboardingMocks.provisionClinicOnboarding.mockResolvedValue({ clinicId: 8, clinicStaffId: 4 })
+    onboardingMocks.requestInitialClinicInvitation.mockResolvedValue('deferred')
   })
 
   it('does not materialize a historical approved application on an unrelated edit', async () => {
@@ -82,6 +88,24 @@ describe('provisionApprovedClinicApplication', () => {
         }),
       }),
     )
+    expect(onboardingMocks.requestInitialClinicInvitation).toHaveBeenCalledWith(req, 4)
+    expect(req.payload.update.mock.invocationCallOrder[0]).toBeLessThan(
+      onboardingMocks.requestInitialClinicInvitation.mock.invocationCallOrder[0]!,
+    )
+  })
+
+  it('keeps completed approval when invitation preparation fails, without logging provider details', async () => {
+    const req = request()
+    const doc = application()
+    onboardingMocks.requestInitialClinicInvitation.mockRejectedValue(new Error('private-provider-response'))
+    await provisionApprovedClinicApplication({ doc, previousDoc: application({ status: 'submitted' }), req } as never)
+    expect(req.payload.update).toHaveBeenCalledOnce()
+    expect(req.payload.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ provisioningStatus: 'completed' }),
+      }),
+    )
+    expect(JSON.stringify(req.payload.logger.error.mock.calls)).not.toContain('private-provider-response')
   })
 
   it('does not retry a failed approved application after an unrelated edit', async () => {

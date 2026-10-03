@@ -240,7 +240,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform staff manage clinic assignment and lifecycle; approved and synced staff with private password evidence read their participation-approved clinic; identity binding, auth sync, and create/delete remain provisioning-only',
+        'Platform staff manage clinic assignment and lifecycle; approved and synced staff with private password evidence read their participation-approved clinic; invitation authorization is private and immutable; identity binding, auth sync, and create/delete remain provisioning-only',
     },
     patients: {
       slug: 'patients',

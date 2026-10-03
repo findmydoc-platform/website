@@ -13,7 +13,8 @@ import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalizatio
 import { inspectRecoveryContext, type RecoveryContext, type RecoveryKey } from './recoveryContext'
 import { recoveryCorrelations, recoveryWindowMs, recoveryCooldownMs, recoveryHourlyLimit } from './recoveryCorrelation'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
-import type { AuthAction } from '@/payload-types'
+import { findClinicInvitationPrincipal } from './clinicInvitationPrincipal'
+import type { AuthAction, ClinicStaff } from '@/payload-types'
 import {
   authActionDiagnosticFields,
   authActionEnvironments,
@@ -84,6 +85,7 @@ type Write =
   | { kind: 'delete'; id: number }
   | { kind: 'recovery-create'; data: Record<string, unknown> }
   | { kind: 'recovery-delete'; id: number }
+  | { kind: 'clinic-invitation-mark'; id: number; data: Record<string, unknown> }
 type Scope = { transactionID: string | number; environment: Environment; now: number; write?: Write; recovery?: true }
 
 // Server bundles can load this module more than once. Identity remains process-local and cannot be supplied as JSON.
@@ -145,7 +147,11 @@ export const guardAuthActionOperation: CollectionBeforeOperationHook = async ({ 
   if (operation === 'read' || operation === 'count') {
     if (scope || (await isPlatformStaff({ req }))) return
   } else if (scope?.write) {
-    if (scope.write.kind === 'recovery-create' || scope.write.kind === 'recovery-delete')
+    if (
+      scope.write.kind === 'recovery-create' ||
+      scope.write.kind === 'recovery-delete' ||
+      scope.write.kind === 'clinic-invitation-mark'
+    )
       throw new AuthActionError('access-denied')
     const expectedOperation = ['bind', 'bind-subject', 'transition', 'clear-correlation'].includes(scope.write.kind)
       ? 'update'
@@ -170,6 +176,30 @@ export const readAuthActionDiagnostics: CollectionAfterReadHook = async ({ doc, 
   return Object.fromEntries(
     authActionDiagnosticFields.filter((field) => Object.hasOwn(doc, field)).map((field) => [field, doc[field]]),
   )
+}
+
+export const guardClinicInvitationAuthorization: CollectionBeforeChangeHook<ClinicStaff> = async ({
+  data,
+  originalDoc,
+  operation,
+  req,
+}) => {
+  if (!Object.hasOwn(data, 'invitationAuthorizedAt')) return data
+  if (operation === 'create') {
+    if (data.invitationAuthorizedAt == null) return data
+    throw new AuthActionError('access-denied')
+  }
+  if (sameValue(data.invitationAuthorizedAt, originalDoc?.invitationAuthorizedAt)) return data
+  const scope = await requireScope(req)
+  if (
+    originalDoc?.invitationAuthorizedAt ||
+    scope.write?.kind !== 'clinic-invitation-mark' ||
+    scope.write.id !== originalDoc?.id ||
+    !sameValue(scope.write.data.invitationAuthorizedAt, data.invitationAuthorizedAt) ||
+    Date.parse(data.invitationAuthorizedAt ?? '') !== scope.now
+  )
+    throw new AuthActionError('access-denied')
+  return data
 }
 
 export const guardRecoveryEventOperation: CollectionBeforeOperationHook = async ({ operation, req, args }) => {
@@ -299,7 +329,10 @@ function validatePolicy(doc: Record<string, unknown>, scope: Scope) {
   }
   if (doc.supabaseSubject != null) {
     parsed(subjectSchema, doc.supabaseSubject)
-    if (actionType !== 'patient-verification' || !Number.isFinite(Date.parse(String(doc.subjectBoundAt))))
+    if (
+      !['patient-verification', 'clinic-invitation'].includes(actionType) ||
+      !Number.isFinite(Date.parse(String(doc.subjectBoundAt)))
+    )
       throw new AuthActionError('invalid-command')
   } else if (doc.subjectBoundAt != null) throw new AuthActionError('invalid-command')
   if (doc.principalBoundAt != null && !Number.isFinite(Date.parse(String(doc.principalBoundAt))))
@@ -356,8 +389,11 @@ export const guardAuthActionWrite: CollectionBeforeChangeHook = async ({ data, o
       doc.state !== 'pending' ||
       doc.terminalAt != null ||
       doc.outcomeCode != null ||
-      doc.supabaseSubject != null ||
-      doc.subjectBoundAt != null
+      (doc.actionType === 'clinic-invitation'
+        ? doc.supabaseSubject == null
+          ? doc.subjectBoundAt != null
+          : Date.parse(doc.subjectBoundAt) !== scope.now
+        : doc.supabaseSubject != null || doc.subjectBoundAt != null)
     )
       throw new AuthActionError('invalid-command')
     if (
@@ -558,6 +594,14 @@ export function bindAuthActions(
         )
         if (action.supabaseSubject && principal?.supabaseUserId !== action.supabaseSubject)
           throw new AuthActionError('invalid-transition')
+        if (action.actionType === 'clinic-invitation') {
+          const eligible = await findClinicInvitationPrincipal(
+            internalReq,
+            parsed(principalSchema, action.principal).value,
+          )
+          if (!eligible || !action.supabaseSubject || eligible.supabaseUserId !== action.supabaseSubject)
+            throw new AuthActionError('invalid-transition')
+        }
       }
     }
     const data = {
@@ -580,6 +624,7 @@ export function bindAuthActions(
     scope: Scope,
     command: CreateInput,
     correlation?: { correlationDigest: string; correlationKeyVersion: string },
+    clinicSubject?: string,
   ) {
     await principalExists(internalReq, command.actionType, command.principal)
     const policy = authActionPolicies[command.actionType]
@@ -589,8 +634,8 @@ export function bindAuthActions(
       state: 'pending' as const,
       principal: command.principal ?? null,
       principalBoundAt: command.principal ? new Date(scope.now).toISOString() : null,
-      supabaseSubject: null,
-      subjectBoundAt: null,
+      supabaseSubject: clinicSubject ?? null,
+      subjectBoundAt: clinicSubject ? new Date(scope.now).toISOString() : null,
       correlationDigest: correlation?.correlationDigest ?? null,
       correlationKeyVersion: correlation?.correlationKeyVersion ?? null,
       supabaseTokenType: policy.supabaseTokenType,
@@ -609,6 +654,77 @@ export function bindAuthActions(
     async create(input: CreateInput) {
       const command = parsed(createSchema, input)
       return transaction((internalReq, scope) => createPending(internalReq, scope, command))
+    },
+    async reserveClinicInvitation(input: { clinicStaffId: number; resendOf?: number }): Promise<AuthAction | null> {
+      const command = parsed(z.object({ clinicStaffId: idSchema, resendOf: idSchema.optional() }).strict(), input)
+      return transaction(async (internalReq, scope) => {
+        const staff = await findClinicInvitationPrincipal(internalReq, command.clinicStaffId)
+        if (!staff) return null
+        const matches = await req.payload.find({
+          collection: 'authActions',
+          req: internalReq,
+          overrideAccess: true,
+          depth: 0,
+          pagination: false,
+          limit: 4,
+          sort: '-createdAt',
+          where: {
+            and: [
+              { environment: { equals: environment } },
+              { actionType: { equals: 'clinic-invitation' } },
+              { 'principal.relationTo': { equals: 'clinicStaff' } },
+              { 'principal.value': { equals: staff.id } },
+              {
+                or: [
+                  { createdAt: { greater_than: new Date(scope.now - 86400000).toISOString() } },
+                  { state: { not_in: [...terminalAuthActionStates] } },
+                ],
+              },
+            ],
+          },
+        })
+        const live = matches.docs.filter(
+          (action) => !terminal(action.state) && Date.parse(action.expiresAt) > scope.now,
+        )
+        if (live.length > 1) throw new AuthActionError('invalid-transition')
+        const current = live[0]
+        if (current && current.supabaseSubject !== staff.supabaseUserId) throw new AuthActionError('invalid-transition')
+        if (
+          command.resendOf != null &&
+          (!current || current.id !== command.resendOf || !['pending', 'active'].includes(current.state))
+        )
+          throw new AuthActionError('invalid-transition')
+        if (current && command.resendOf == null) return current
+        const recent = matches.docs.filter((action) => Date.parse(action.createdAt) > scope.now - 86400000)
+        if (recent.length >= 3 || recent.some((action) => Date.parse(action.createdAt) > scope.now - 900000))
+          throw new AuthActionError('rate-limited')
+        for (const action of matches.docs) {
+          if (!terminal(action.state) && Date.parse(action.expiresAt) <= scope.now)
+            await transition(internalReq, scope, { id: action.id, to: 'expired' })
+        }
+        if (current) await transition(internalReq, scope, { id: current.id, to: 'superseded' })
+        const action = await createPending(
+          internalReq,
+          scope,
+          { actionType: 'clinic-invitation', principal: { relationTo: 'clinicStaff', value: staff.id } },
+          undefined,
+          staff.supabaseUserId!,
+        )
+        if (!staff.invitationAuthorizedAt) {
+          const data = { invitationAuthorizedAt: new Date(scope.now).toISOString() }
+          scope.write = { kind: 'clinic-invitation-mark', id: staff.id, data }
+          await req.payload.update({
+            collection: 'clinicStaff',
+            id: staff.id,
+            req: internalReq,
+            overrideAccess: true,
+            depth: 0,
+            context: { ...internalReq.context, skipClinicStaffAuthSync: true },
+            data,
+          })
+        }
+        return action
+      })
     },
     async reserveRecovery(input: { email: string; context: RecoveryContext | null }): Promise<AuthAction | null> {
       const email = normalizeEmail(input.email)

@@ -4,6 +4,7 @@ import { runBoundedTransactionalEmailWorker } from './scheduler'
 import { createTransactionalEmailWorker } from './worker'
 import { selectTransactionalEmailRuntime } from './environment'
 import { TransactionalEmailError } from './errors'
+import { prepareCommittedClinicInvitations } from '@/auth/actions/clinicInvitationRequests'
 
 export async function runHostedTransactionalEmailWorker(deadline: number) {
   const environment = process.env.VERCEL_ENV
@@ -16,8 +17,13 @@ export async function runHostedTransactionalEmailWorker(deadline: number) {
   const req = await createLocalReq({}, payload)
   const now = Date.now
   const worker = createTransactionalEmailWorker(req)
-
-  return runBoundedTransactionalEmailWorker(
+  let preparationFailed = false
+  try {
+    await prepareCommittedClinicInvitations(req, { deadline, now })
+  } catch {
+    preparationFailed = true
+  }
+  const result = await runBoundedTransactionalEmailWorker(
     {
       sweep: worker.sweepForBatch,
       candidates: worker.candidatesForBatch,
@@ -27,4 +33,6 @@ export async function runHostedTransactionalEmailWorker(deadline: number) {
     now,
     deadline,
   )
+  if (preparationFailed) throw new Error('Clinic invitation preparation unavailable.')
+  return result
 }

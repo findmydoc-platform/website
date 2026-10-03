@@ -29,7 +29,7 @@ export const collectionContractRegistry = {
   },
   authActions: {
     baseline: ['tests/integration/authActions.lifecycle.test.ts'],
-    deep: ['tests/integration/authActions.lifecycle.test.ts'],
+    deep: ['tests/integration/authActions.lifecycle.test.ts', 'tests/integration/clinicInvitation.lifecycle.test.ts'],
   },
   cities: {
     baseline: ['tests/integration/cities.creation.test.ts'],
@@ -114,7 +114,11 @@ export const collectionContractRegistry = {
   },
   clinicStaff: {
     baseline: ['tests/integration/clinicStaff.lifecycle.test.ts'],
-    deep: ['tests/integration/clinicStaff.lifecycle.test.ts', 'tests/integration/access/clinicStaff-access.test.ts'],
+    deep: [
+      'tests/integration/clinicStaff.lifecycle.test.ts',
+      'tests/integration/access/clinicStaff-access.test.ts',
+      'tests/integration/clinicInvitation.lifecycle.test.ts',
+    ],
   },
   clinictreatments: {
     baseline: ['tests/integration/clinicTreatments.creation.test.ts'],

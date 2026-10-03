@@ -20,6 +20,7 @@ vi.mock('payload', async (load) => ({
 vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('@/features/transactionalEmail/environment', () => ({
   selectTransactionalEmailRuntime: dependencies.selectRuntime,
+  resolveTransactionalEmailEnvironment: () => process.env.VERCEL_ENV,
 }))
 vi.mock('@/features/transactionalEmail/worker', () => ({
   createTransactionalEmailWorker: dependencies.createWorker,

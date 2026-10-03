@@ -92,6 +92,7 @@ import * as migration_20261002_112214_auth_action_product_bindings from './20261
 import * as migration_20261002_115916_patient_verification_correlation from './20261002_115916_patient_verification_correlation'
 import * as migration_20261002_150524_recovery_request_limits from './20261002_150524_recovery_request_limits'
 import * as migration_20261003_075837_clinic_participation_completion from './20261003_075837_clinic_participation_completion'
+import * as migration_20261003_104659_clinic_invitation_authorization from './20261003_104659_clinic_invitation_authorization'
 
 export const migrations = [
   {
@@ -563,5 +564,10 @@ export const migrations = [
     up: migration_20261003_075837_clinic_participation_completion.up,
     down: migration_20261003_075837_clinic_participation_completion.down,
     name: '20261003_075837_clinic_participation_completion',
+  },
+  {
+    up: migration_20261003_104659_clinic_invitation_authorization.up,
+    down: migration_20261003_104659_clinic_invitation_authorization.down,
+    name: '20261003_104659_clinic_invitation_authorization',
   },
 ]

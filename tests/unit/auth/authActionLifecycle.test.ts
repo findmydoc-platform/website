@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Payload, PayloadRequest } from 'payload'
 import { AuthActions } from '@/collections/AuthActions'
-import { bindAuthActions } from '@/auth/actions/lifecycle'
+import { bindAuthActions, guardClinicInvitationAuthorization } from '@/auth/actions/lifecycle'
 import { bindPendingPatientVerification } from '@/auth/actions/pendingPatientVerification'
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 
@@ -27,7 +27,12 @@ function matchesWhere(doc: Record<string, unknown>, where: Record<string, unknow
         : clauses.some((item) => matchesWhere(doc, item))
     }
     return Object.entries(value as Record<string, unknown>).every(([operator, expected]) => {
-      const actual = doc[field]
+      const actual = field
+        .split('.')
+        .reduce<unknown>(
+          (value, key) => (value && typeof value === 'object' ? Reflect.get(value, key) : undefined),
+          doc,
+        )
       switch (operator) {
         case 'equals':
           return actual === expected
@@ -52,6 +57,7 @@ function matchesWhere(doc: Record<string, unknown>, where: Record<string, unknow
 function storage() {
   const rows = new Map<number, Record<string, unknown>>()
   const principals = new Map<number, Record<string, unknown>>()
+  const sources = new Map<string, Record<string, unknown>>()
   let nextID = 1
   const db = {
     beginTransaction: vi.fn(async () => 'owned'),
@@ -82,9 +88,24 @@ function storage() {
   const payload = {
     db,
     create: vi.fn((options) => write('create', options)),
-    update: vi.fn((options) => write('update', options)),
+    update: vi.fn(async (options) => {
+      if (options.collection === 'clinicStaff') {
+        const key = `clinicStaff:${options.id}`
+        await guardClinicInvitationAuthorization({
+          data: options.data,
+          originalDoc: sources.get(key),
+          operation: 'update',
+          req: options.req,
+        } as never)
+        const doc = { ...sources.get(key), ...options.data }
+        sources.set(key, doc)
+        return Promise.resolve(doc)
+      }
+      return write('update', options)
+    }),
     findByID: vi.fn(async (options) => {
-      if (options.collection !== 'authActions') return principals.get(options.id) ?? { id: options.id }
+      if (options.collection !== 'authActions')
+        return sources.get(`${options.collection}:${options.id}`) ?? principals.get(options.id) ?? { id: options.id }
       await operation('read', options)
       const doc = rows.get(options.id)
       return doc ? read(doc, options.req) : null
@@ -111,7 +132,7 @@ function storage() {
     }),
   } as unknown as Payload
   const req = { payload, context: {}, user: null } as PayloadRequest
-  return { payload, req, rows, db, principals }
+  return { payload, req, rows, db, principals, sources }
 }
 
 describe('AuthAction lifecycle through the system command boundary', () => {
@@ -121,6 +142,206 @@ describe('AuthAction lifecycle through the system command boundary', () => {
   beforeEach(() => {
     fixture = storage()
     now = start
+  })
+
+  const clinicSubject = '26b71580-16be-4f29-9d60-9ec6adc935ce'
+  function approvedClinic() {
+    fixture.sources.set('clinicStaff:61', {
+      id: 61,
+      email: 'staff@example.test',
+      status: 'approved',
+      clinic: 71,
+      onboardingKey: 'clinic-application:81',
+      supabaseUserId: clinicSubject,
+      authSync: { status: 'synced' },
+    })
+    fixture.sources.set('clinics:71', {
+      id: 71,
+      status: 'pending',
+      participationStatus: 'approved',
+      onboardingKey: 'clinic-application:81',
+    })
+    fixture.sources.set('clinicApplications:81', {
+      id: 81,
+      status: 'approved',
+      provisioningStatus: 'completed',
+      contactEmail: 'staff@example.test',
+      linkedRecords: { clinic: 71, clinicStaff: 61 },
+    })
+  }
+
+  it('reserves the approved initial staff invitation with immutable identity and Dashboard destinations', async () => {
+    approvedClinic()
+    const action = await actions().reserveClinicInvitation({ clinicStaffId: 61 })
+    expect(action).toMatchObject({
+      actionType: 'clinic-invitation',
+      state: 'pending',
+      environment: 'test',
+      principal: { relationTo: 'clinicStaff', value: 61 },
+      supabaseSubject: clinicSubject,
+      subjectBoundAt: new Date(start).toISOString(),
+      expiresAt: new Date(start + day).toISOString(),
+      callbackDestination: 'clinic-dashboard-auth-callback',
+      completionRoute: '/auth/invite/complete',
+    })
+    now += 1000
+    expect(await actions().reserveClinicInvitation({ clinicStaffId: 61 })).toEqual(action)
+    expect(fixture.rows.size).toBe(1)
+    expect(JSON.stringify(action)).not.toContain('staff@example.test')
+    expect(fixture.payload.update).toHaveBeenCalledOnce()
+    expect(fixture.sources.get('clinicStaff:61')?.invitationAuthorizedAt).toBe(new Date(start).toISOString())
+  })
+
+  it.each([
+    ['clinicStaff:61', { status: 'pending' }],
+    ['clinicStaff:61', { authSync: { status: 'pending' } }],
+    ['clinicStaff:61', { supabaseUserId: null }],
+    ['clinicStaff:61', { accountCompletion: { source: 'initial-password' } }],
+    ['clinicStaff:61', { legacyAccess: { eligibleAt: new Date(start).toISOString() } }],
+    ['clinicStaff:61', { invitationAttemptedAt: new Date(start).toISOString() }],
+    ['clinicStaff:61', { clinic: 72 }],
+    ['clinicStaff:61', { onboardingKey: 'manual-staff' }],
+    ['clinics:71', { participationStatus: 'pending' }],
+    ['clinics:71', { status: 'rejected' }],
+    ['clinics:71', { deletedAt: new Date(start).toISOString() }],
+    ['clinicApplications:81', { status: 'submitted' }],
+    ['clinicApplications:81', { contactEmail: 'other@example.test' }],
+    ['clinicApplications:81', { linkedRecords: { clinic: 71, clinicStaff: 62 } }],
+  ] as const)('denies ineligible clinic invitation without changing approval: %s %j', async (key, changed) => {
+    approvedClinic()
+    fixture.sources.set(key, { ...fixture.sources.get(key), ...changed })
+    const before = structuredClone([...fixture.sources])
+    expect(await actions().reserveClinicInvitation({ clinicStaffId: 61 })).toBeNull()
+    expect(fixture.rows.size).toBe(0)
+    expect([...fixture.sources]).toEqual(before)
+  })
+
+  it('limits authorized invitation replacement, preserves confirmed actions and isolates environments', async () => {
+    approvedClinic()
+    const first = (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
+    now += 899999
+    await expect(actions().reserveClinicInvitation({ clinicStaffId: 61, resendOf: first.id })).rejects.toMatchObject({
+      code: 'rate-limited',
+    })
+    now++
+    const second = (await actions().reserveClinicInvitation({ clinicStaffId: 61, resendOf: first.id }))!
+    expect(await actions().read(first.id)).toMatchObject({ state: 'superseded' })
+    now += 900000
+    const third = (await actions().reserveClinicInvitation({ clinicStaffId: 61, resendOf: second.id }))!
+    now += 900000
+    await expect(actions().reserveClinicInvitation({ clinicStaffId: 61, resendOf: third.id })).rejects.toMatchObject({
+      code: 'rate-limited',
+    })
+    expect(
+      (await bindAuthActions(fixture.req, { environment: 'local', now: () => now }).reserveClinicInvitation({
+        clinicStaffId: 61,
+      }))!.environment,
+    ).toBe('local')
+    await actions().transition({ id: third.id, to: 'active' })
+    await actions().transition({ id: third.id, to: 'confirmed' })
+    await expect(actions().reserveClinicInvitation({ clinicStaffId: 61, resendOf: third.id })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+  })
+
+  it('checks the current clinic identity and approval before progressing an invitation', async () => {
+    approvedClinic()
+    const action = (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
+    fixture.sources.get('clinicStaff:61')!.supabaseUserId = '9edb6591-3115-4f1e-a09e-315951ca3628'
+    await expect(actions().transition({ id: action.id, to: 'active' })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+    fixture.sources.get('clinicStaff:61')!.supabaseUserId = clinicSubject
+    await actions().transition({ id: action.id, to: 'active' })
+    fixture.sources.get('clinics:71')!.participationStatus = 'pending'
+    await expect(actions().transition({ id: action.id, to: 'confirmed' })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+    expect(await actions().read(action.id)).toMatchObject({ state: 'active', supabaseSubject: clinicSubject })
+  })
+
+  it('expires the predecessor at exactly 24 hours without moving its initial invitation marker', async () => {
+    approvedClinic()
+    const first = (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
+    now += day
+    const next = (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
+    expect(next.id).not.toBe(first.id)
+    expect(await actions().read(first.id)).toMatchObject({ state: 'expired', terminalAt: new Date(now).toISOString() })
+    expect(fixture.sources.get('clinicStaff:61')?.invitationAuthorizedAt).toBe(new Date(start).toISOString())
+    expect(fixture.payload.update).toHaveBeenCalledTimes(2)
+  })
+
+  it('rejects unbound clinic actions and caller-supplied recipients or redirects', async () => {
+    approvedClinic()
+    const unbound = await actions().create({
+      actionType: 'clinic-invitation',
+      principal: { relationTo: 'clinicStaff', value: 61 },
+    })
+    await expect(actions().transition({ id: unbound.id, to: 'active' })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+    await expect(
+      actions().reserveClinicInvitation({ clinicStaffId: 61, email: 'other@example.test' } as never),
+    ).rejects.toMatchObject({ code: 'invalid-command' })
+    await expect(
+      actions().reserveClinicInvitation({ clinicStaffId: 61, callbackDestination: 'https://other.example' } as never),
+    ).rejects.toMatchObject({ code: 'invalid-command' })
+  })
+
+  it('rejects forged or copied authorization markers, while preserving ordinary empty groups and retries', async () => {
+    const req = fixture.req
+    for (const operation of ['create', 'update'] as const) {
+      await expect(
+        guardClinicInvitationAuthorization({
+          operation,
+          req,
+          data: { invitationAuthorizedAt: new Date(start).toISOString() },
+          originalDoc: { id: 61 },
+        } as never),
+      ).rejects.toMatchObject({ code: 'access-denied' })
+    }
+    expect(
+      await guardClinicInvitationAuthorization({
+        operation: 'create',
+        req,
+        data: { invitationAuthorizedAt: null },
+      } as never),
+    ).toEqual({ invitationAuthorizedAt: null })
+    const marker = new Date(start).toISOString()
+    expect(
+      await guardClinicInvitationAuthorization({
+        operation: 'update',
+        req,
+        originalDoc: { id: 61, invitationAuthorizedAt: marker },
+        data: { firstName: 'Updated', invitationAuthorizedAt: marker },
+      } as never),
+    ).toMatchObject({ invitationAuthorizedAt: marker })
+    await expect(
+      guardClinicInvitationAuthorization({
+        operation: 'update',
+        req,
+        originalDoc: { id: 61, invitationAuthorizedAt: marker },
+        data: { invitationAuthorizedAt: null },
+      } as never),
+    ).rejects.toMatchObject({ code: 'access-denied' })
+  })
+
+  it('rechecks the committed approval after a serialization conflict and propagates marker failure', async () => {
+    approvedClinic()
+    vi.mocked(fixture.payload.find).mockRejectedValueOnce(Object.assign(new Error('conflict'), { code: '40001' }))
+    expect(await actions().reserveClinicInvitation({ clinicStaffId: 61 })).toMatchObject({ state: 'pending' })
+    expect(fixture.db.rollbackTransaction).toHaveBeenCalledOnce()
+    expect(fixture.db.beginTransaction).toHaveBeenCalledTimes(2)
+    expect(fixture.payload.findByID).toHaveBeenCalledTimes(7)
+
+    fixture = storage()
+    approvedClinic()
+    const before = structuredClone([...fixture.sources])
+    vi.mocked(fixture.payload.update).mockRejectedValueOnce(new Error('marker unavailable'))
+    await expect(actions().reserveClinicInvitation({ clinicStaffId: 61 })).rejects.toThrow('marker unavailable')
+    expect(fixture.db.commitTransaction).not.toHaveBeenCalled()
+    expect(fixture.db.rollbackTransaction).toHaveBeenCalledOnce()
+    expect([...fixture.sources]).toEqual(before)
   })
 
   it('resumes one private pending verification for normalized email before any subject exists', async () => {
@@ -412,7 +633,11 @@ describe('AuthAction lifecycle through the system command boundary', () => {
   it.each(['clinic-invitation', 'clinic-recovery'] as const)(
     'keeps %s callback ownership in the Clinic Dashboard',
     async (actionType) => {
-      const action = await actions().create({ actionType, principal: { relationTo: 'clinicStaff', value: 9 } })
+      approvedClinic()
+      const action =
+        actionType === 'clinic-invitation'
+          ? (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
+          : await actions().create({ actionType, principal: { relationTo: 'clinicStaff', value: 9 } })
       expect(action.callbackDestination).toBe('clinic-dashboard-auth-callback')
       expect((await actions().transition({ id: action.id, to: 'active' })).callbackDestination).toBe(
         'clinic-dashboard-auth-callback',

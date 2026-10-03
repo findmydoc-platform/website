@@ -1,162 +1,76 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { AUTH_FLASH_STORAGE_KEY } from '@/auth/utilities/authFlash'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { ResetPasswordCompleteForm } from '@/app/(frontend)/auth/password/reset/complete/ResetPasswordCompleteForm'
-
-const resetPassword = 'RecoveredPass123' // pragma: allowlist secret
-const clinicLoginHref = 'https://clinics.example.com/login'
-
-const routerMock = vi.hoisted(() => ({
-  refresh: vi.fn(),
-  replace: vi.fn(),
-}))
-
-const supabaseAuthMock = vi.hoisted(() => ({
-  getSession: vi.fn(),
-  signOut: vi.fn(),
-  updateUser: vi.fn(),
-}))
-
-const resetPostHogBrowserIdentityMock = vi.hoisted(() => vi.fn())
-
-vi.mock('next/navigation', () => ({
-  useRouter: () => routerMock,
-}))
-
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }) }))
 vi.mock('@/auth/utilities/supaBaseClient', () => ({
-  createClient: () => ({
-    auth: supabaseAuthMock,
-  }),
+  createClient: () => ({ auth: { getSession: async () => ({ data: { session: null } }) } }),
 }))
 
-vi.mock('@/posthog/client-api', () => ({
-  resetPostHogBrowserIdentity: resetPostHogBrowserIdentityMock,
-}))
-
-const mockRecoverySession = (userType: unknown) => {
-  supabaseAuthMock.getSession.mockResolvedValue({
-    data: {
-      session: {
-        user: {
-          app_metadata: {
-            user_type: userType,
-          },
-        },
-      },
-    },
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
+describe('Website recovery password completion form', () => {
+  test('shows the same safe error without a completion grant', () => {
+    render(<ResetPasswordCompleteForm csrf={null} />)
+    expect(screen.getByRole('alert')).toHaveTextContent('This link is invalid or has expired')
+    expect(screen.queryByLabelText('New password')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Request a recovery email' })).toHaveAttribute(
+      'href',
+      '/auth/password/reset',
+    )
   })
-}
-
-async function submitResetForm(configuredClinicLoginHref?: string) {
-  render(<ResetPasswordCompleteForm clinicLoginHref={configuredClinicLoginHref} />)
-
-  const passwordInput = await screen.findByLabelText('New password')
-  const confirmPasswordInput = screen.getByLabelText('Confirm password')
-
-  await waitFor(() => {
-    expect(passwordInput).toBeEnabled()
+  test('validates inline, keeps retry on this page, and submits only the bound completion request', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValue({ ok: false, status: 503, json: async () => ({ code: 'RECOVERY_TEMPORARILY_UNAVAILABLE' }) })
+    vi.stubGlobal('fetch', fetch)
+    render(<ResetPasswordCompleteForm csrf="offline-csrf" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Update password' }))
+    const password = screen.getByLabelText('New password')
+    expect(password).toHaveAttribute('aria-invalid', 'true')
+    expect(password).toHaveFocus()
+    expect(fetch).not.toHaveBeenCalled()
+    fireEvent.change(password, { target: { value: 'OfflinePassword123' } }) // pragma: allowlist secret
+    fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'DifferentPassword123' } }) // pragma: allowlist secret
+    fireEvent.click(screen.getByRole('button', { name: 'Update password' }))
+    expect(screen.getByLabelText('Confirm password')).toHaveFocus()
+    expect(screen.getByText('Passwords do not match.')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'OfflinePassword123' } }) // pragma: allowlist secret
+    fireEvent.click(screen.getByRole('button', { name: 'Update password' }))
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('you do not need another link'))
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
+    expect(fetch).toHaveBeenLastCalledWith(
+      '/auth/password/complete',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          csrf: 'offline-csrf',
+          password: 'OfflinePassword123',
+          confirmPassword: 'OfflinePassword123',
+        }),
+        redirect: 'error',
+      }),
+    ) // pragma: allowlist secret
   })
-
-  fireEvent.change(passwordInput, { target: { value: resetPassword } })
-  fireEvent.change(confirmPasswordInput, { target: { value: resetPassword } })
-  fireEvent.click(screen.getByRole('button', { name: 'Update password' }))
-}
-
-describe('ResetPasswordCompleteForm', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    window.sessionStorage.clear()
-    mockRecoverySession('patient')
-    supabaseAuthMock.updateUser.mockResolvedValue({ error: null })
-    supabaseAuthMock.signOut.mockResolvedValue({ error: null })
-  })
-
-  it.each([
-    ['patient', undefined, '/login/patient'],
-    ['clinic', clinicLoginHref, clinicLoginHref],
-    ['platform', undefined, '/admin/login'],
-  ] as const)(
-    'redirects %s users with clinic target %s to %s after updating the password',
-    async (userType, configuredClinicLoginHref, href) => {
-      mockRecoverySession(userType)
-      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
-
-      await submitResetForm(configuredClinicLoginHref)
-
-      await waitFor(() => {
-        expect(routerMock.replace).toHaveBeenCalledWith(href)
-      })
-
-      expect(supabaseAuthMock.updateUser).toHaveBeenCalledWith({ password: resetPassword })
-      expect(supabaseAuthMock.signOut).toHaveBeenCalledWith({ scope: 'global' })
-      expect(resetPostHogBrowserIdentityMock).toHaveBeenCalled()
-      expect(routerMock.refresh).toHaveBeenCalled()
-
-      const rawFlash = window.sessionStorage.getItem(AUTH_FLASH_STORAGE_KEY)
-      expect(rawFlash).not.toBeNull()
-      expect(JSON.parse(rawFlash ?? '{}')).toMatchObject({
-        kind: 'password-reset-complete',
-      })
-
-      const updateUserCallOrder = supabaseAuthMock.updateUser.mock.invocationCallOrder[0]
-      const signOutCallOrder = supabaseAuthMock.signOut.mock.invocationCallOrder[0]
-      const flashWriteCallOrder = setItemSpy.mock.invocationCallOrder[0]
-      const redirectCallOrder = routerMock.replace.mock.invocationCallOrder[0]
-
-      expect(updateUserCallOrder).toEqual(expect.any(Number))
-      expect(signOutCallOrder).toEqual(expect.any(Number))
-      expect(flashWriteCallOrder).toEqual(expect.any(Number))
-      expect(redirectCallOrder).toEqual(expect.any(Number))
-
-      expect(updateUserCallOrder!).toBeLessThan(signOutCallOrder!)
-      expect(signOutCallOrder!).toBeLessThan(flashWriteCallOrder!)
-      expect(flashWriteCallOrder!).toBeLessThan(redirectCallOrder!)
-
-      setItemSpy.mockRestore()
-    },
-  )
-
-  it('redirects to the reset request page when the recovery link did not create a session', async () => {
-    supabaseAuthMock.getSession.mockResolvedValue({ data: { session: null } })
-
-    render(<ResetPasswordCompleteForm clinicLoginHref={clinicLoginHref} />)
-
-    await waitFor(() => {
-      expect(routerMock.replace).toHaveBeenCalledWith('/auth/password/reset?reason=expired')
-    })
-    expect(screen.getByRole('button', { name: 'Update password' })).toBeDisabled()
-  })
-
-  it('redirects callback errors to the reset request page without exposing the raw error', async () => {
-    render(<ResetPasswordCompleteForm clinicLoginHref={clinicLoginHref} error="otp_expired" />)
-
-    await waitFor(() => {
-      expect(routerMock.replace).toHaveBeenCalledWith('/auth/password/reset?reason=expired')
-    })
-
-    expect(supabaseAuthMock.getSession).not.toHaveBeenCalled()
-    expect(screen.queryByText('otp_expired')).not.toBeInTheDocument()
-  })
-
-  it('does not show a success flash when only local sign-out succeeds after global sign-out fails', async () => {
-    supabaseAuthMock.signOut
-      .mockResolvedValueOnce({ error: { message: 'global sign-out failed' } })
-      .mockResolvedValueOnce({ error: null })
-
-    await submitResetForm()
-
-    await waitFor(() => {
-      expect(screen.getByText(/Password updated, but we could not sign out all active sessions/)).toBeInTheDocument()
-    })
-
-    expect(supabaseAuthMock.signOut).toHaveBeenNthCalledWith(1, { scope: 'global' })
-    expect(supabaseAuthMock.signOut).toHaveBeenNthCalledWith(2, { scope: 'local' })
-    expect(resetPostHogBrowserIdentityMock).toHaveBeenCalled()
-    expect(routerMock.replace).not.toHaveBeenCalled()
-    expect(window.sessionStorage.getItem(AUTH_FLASH_STORAGE_KEY)).toBeNull()
-    expect(screen.getByRole('link', { name: 'Continue to sign in' })).toHaveAttribute('href', '/login/patient')
+  test('discards password fields and provider details after a definitive link rejection', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ code: 'INVALID_OR_EXPIRED_LINK', message: 'private-provider-detail' }),
+      }),
+    )
+    render(<ResetPasswordCompleteForm csrf="offline-csrf" />)
+    for (const label of ['New password', 'Confirm password'])
+      fireEvent.change(screen.getByLabelText(label), { target: { value: 'OfflinePassword123' } }) // pragma: allowlist secret
+    fireEvent.click(screen.getByRole('button', { name: 'Update password' }))
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('This link is invalid or has expired'))
+    expect(screen.queryByLabelText('New password')).not.toBeInTheDocument()
+    expect(screen.queryByText('private-provider-detail')).not.toBeInTheDocument()
   })
 })

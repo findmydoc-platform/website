@@ -1,38 +1,37 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { ResetPasswordCompleteForm } from './ResetPasswordCompleteForm'
-import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
+import { PublicAuthRouteShell } from '@/app/(frontend)/_components/PublicAuthRouteShell'
 import { createSiteMetadata } from '@/utilities/generateMeta'
+import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
+import { resolveRecoveryKeys } from '@/auth/actions/recoveryConfiguration'
+import { readWebsiteRecoveryContext, WEBSITE_RECOVERY_COOKIE } from '@/auth/actions/websiteRecoveryContext'
 
 export const dynamic = 'force-dynamic'
-
-export const metadata: Metadata = createSiteMetadata({
-  title: 'Complete password reset',
-  path: '/auth/password/reset/complete',
-})
-
-const signInOptionLinkClassName =
-  'inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-
-export default async function CompleteResetPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const params = await searchParams
-  const clinicLoginHref = process.env.CLINIC_DASHBOARD_URL?.trim() ? `${getClinicDashboardOrigin()}/login` : undefined
-
+export const metadata: Metadata = {
+  ...createSiteMetadata({ title: 'Complete password recovery', path: '/auth/password/reset/complete' }),
+  robots: { index: false, follow: false },
+}
+export default async function CompleteResetPage() {
+  let csrf: string | null = null
+  let resume = false
+  try {
+    const environment = resolveTransactionalEmailEnvironment()
+    const context = readWebsiteRecoveryContext(
+      (await cookies()).get(WEBSITE_RECOVERY_COOKIE)?.value,
+      environment,
+      resolveRecoveryKeys(environment),
+    )
+    if (context && context.stage !== 'pending') {
+      csrf = context.csrf
+      resume = context.stage !== 'confirmed'
+    }
+  } catch {
+    /* Missing authority shares the safe invalid-link state. */
+  }
   return (
-    <main className="min-h-svh bg-site-canvas py-6 sm:py-12">
-      <div className="mx-auto max-w-4xl px-4">
-        <div className="mb-2 sm:mb-6">
-          <nav aria-label="Sign in options" className="-mx-3 flex flex-wrap gap-1">
-            <Link href="/login/patient" className={signInOptionLinkClassName}>
-              Patient sign in
-            </Link>
-            <Link href="/admin/login" className={signInOptionLinkClassName}>
-              Staff sign in
-            </Link>
-          </nav>
-        </div>
-        <ResetPasswordCompleteForm clinicLoginHref={clinicLoginHref} error={params.error} />
-      </div>
-    </main>
+    <PublicAuthRouteShell>
+      <ResetPasswordCompleteForm csrf={csrf} resume={resume} />
+    </PublicAuthRouteShell>
   )
 }

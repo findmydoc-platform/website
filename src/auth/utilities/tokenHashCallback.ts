@@ -38,7 +38,7 @@ export function decodePendingTokenHash(value: string | undefined): PendingTokenH
     const parsed: unknown = JSON.parse(Buffer.from(value, 'base64url').toString('utf8'))
     if (!parsed || typeof parsed !== 'object') return null
     const candidate = parsed as Record<string, unknown>
-    if (candidate.type !== 'invite' && candidate.type !== 'recovery') return null
+    if (candidate.type !== 'invite') return null
     if (candidate.next !== destinations[candidate.type] || typeof candidate.tokenHash !== 'string') return null
     if (!candidate.tokenHash) return null
     return {

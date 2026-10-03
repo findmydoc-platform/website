@@ -248,7 +248,7 @@ immutable action policy. The exact `@findmydoc-platform/email-templates@0.3.0` r
 `PatientPasswordRecoveryEmail`, `ClinicPasswordRecoveryEmail` and `PlatformPasswordRecoveryEmail`; each receives only
 `actionUrl`. Hosted `generateLink({ type: 'recovery' })` supplies a token hash without native mail. The rendered callback
 contains `authActionId`, the fixed completion `next`, `token_hash` and `type=recovery`. Final destinations remain on the
-action; completion UI and Dashboard protocol are separate work.
+action. Website completion consumes patient and platform recovery; the Dashboard owns clinic completion.
 
 The shared worker preserves the prepared bytes, generated link, operation and provider idempotency key on technical
 retry, and suppresses changed or missing recipients and lost authority. The existing scheduler reaccepts interrupted
@@ -262,3 +262,54 @@ Supabase SDK. The lazily resolved `AUTH_RECOVERY_CORRELATION_KEYS_JSON` contains
 `keys` array of `{ version, secret }`. Keep prior keys while their recovery window remains live. Hosted recovery remains
 inactive because Preview and Production have no `auth.password-recovery` activation declaration. Source validation
 establishes no hosted configuration, email delivery or completion evidence.
+
+## Website recovery completion
+
+The existing Website reset request acknowledges every valid email neutrally. Patient and platform recovery URLs come
+from the pinned catalog described above. `GET /auth/callback` accepts exactly one `authActionId`, fixed completion
+`next`, 64-character token hash and `type=recovery`. It validates current action policy, environment, expiry, original
+recipient correlation, unique Payload principal and authoritative Supabase subject, email, role and ban status without
+consuming the token. It strips the bearer fields through a 303 redirect to `/auth/confirm?type=recovery`.
+
+Every syntactically valid URL receives a fixed-size encrypted, signed ten-minute `HttpOnly` context scoped to `/auth`.
+The context binds action, environment, flow, subject and fixed finish destination, plus a random CSRF value. Invalid
+authority receives an equally sized decoy. Separate AES-GCM and HMAC purposes derive from the existing recovery key
+ring, including retained rotation keys. No new configuration, recipient cookie or AuthAction field exists.
+
+Only same-origin JSON `POST /auth/callback?flow=recovery` with the matching CSRF value consumes the token. An isolated
+Supabase verification client buffers cookies until its returned session subject, email and authoritative role match.
+A second current-authority check rejects revocation or changed principals before installing the session. A temporary
+recheck failure preserves the verified session and token-free receipt for retry. Confirmation advances `active` to
+`confirmed` idempotently. It replaces the pending context with a token-free completion grant valid for ten minutes;
+later retries do not renew its expiry or consume the token again.
+
+`POST /auth/password/complete` requires the matching grant, CSRF, current action, principal and server-verified session.
+It updates the Supabase password before advancing `confirmed` to `completed`. A signed `password-updated` receipt
+preserves a known successful password operation across a temporary lifecycle failure. A `completed` receipt resumes
+global sign-out after a temporary provider failure. A `signed-out` receipt resumes local cleanup without requiring a
+session that the successful global logout has revoked. These receipts keep the original grant expiry, and a refreshed
+completion page shows a password-free finish action. A password operation whose provider response was lost is not
+proved successful by a receipt; Supabase and Payload do not share a transaction.
+
+Success uses Supabase's stateless Admin `signOut` with the server-verified session JWT and `global` scope, clears local
+Supabase cookie chunks and the recovery context, then performs
+a full document navigation to `/login/patient?status=recovery-complete` or `/admin/login?status=recovery-complete`.
+Supabase revokes refresh-token sessions; already-issued access JWTs can remain valid until expiry, as documented in
+[the Supabase sign-out contract](https://supabase.com/docs/reference/javascript/auth-signout). Payload still checks the
+current principal for each authenticated request. The private action policy's destination identifiers remain unchanged.
+The Admin logout API does not remove Website cookies on a provider error. The ordinary session client's `signOut`
+removes its local session even when global logout fails, so that client method is unsuitable for this retry contract.
+
+Malformed, expired, replayed, revoked, superseded, cross-flow, cross-environment and identity-mismatched links share the
+same public error and request-again path. Temporary completion failures keep the grant and offer retry without another
+email. The legacy unsigned recovery-cookie confirmation path is rejected. Existing invite and patient-verification
+paths keep their own contracts. All callback responses use private no-store and no-referrer headers; no link, provider
+detail or password enters logs, AuthActions or principal records.
+
+Offline HTTP contracts consume the actual Fake-transport catalog URLs for both Website principal types. They cover
+GET/POST separation, CSRF, authority changes, key rotation, expiry, replay, update ordering and retry after provider or
+lifecycle failure. Form units and isolated stories cover validation, focus, safe errors and retry. Synthetic local
+Chromium rendering checks the composed pages at 320, 375, 640, 768 and 1024 pixels, plus a 375-by-320 password cycle.
+This evidence does not prove hosted Supabase behavior, native database races, real mobile keyboard behavior or email
+arrival. Preview and Production recovery remain inactive. Cache impact is `no-public-impact`, with private live reads
+and no public invalidation.

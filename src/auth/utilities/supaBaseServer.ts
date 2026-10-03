@@ -34,6 +34,27 @@ export async function createClient() {
   })
 }
 
+/** Remove every chunk of the local SSR session after global recovery sign-out. */
+export async function clearLocalAuthSession() {
+  const { url } = getSupabaseConfig()
+  const storageKey = `sb-${new URL(url).hostname.split('.')[0]}-auth-token`
+  const store = await cookies()
+  await clearAuthCookiesAtScopes({
+    storageKey,
+    getAll: () => store.getAll(),
+    setAll: (values) => {
+      values.forEach(({ name, value, options }) => store.set(name, value, options))
+    },
+    scopes: [{ path: '/' }],
+  })
+}
+
+/** Revoke the verified recovery session globally without removing local cookies on a provider error. */
+export async function signOutRecoverySession(accessToken: string) {
+  const admin = await createAdminClient()
+  return admin.auth.admin.signOut(accessToken, 'global')
+}
+
 /** Verify a callback token before allowing its returned identity to write browser session cookies. */
 export function createVerificationClient() {
   const { url, key } = getSupabaseConfig()

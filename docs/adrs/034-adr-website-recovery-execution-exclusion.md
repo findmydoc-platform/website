@@ -7,7 +7,7 @@
 | Author | Sebastian Schütze |
 | Version | 1.0 |
 | Date | 04.10.2026 |
-| Status | Draft |
+| Status | Approved |
 
 ## Background
 
@@ -93,6 +93,12 @@ writer, so this read establishes that specific write's commit. The subject guard
 the old request from starting later work. A signed initializing receipt
 can observe a completed initialization, but never replay an uncertain PUT. A missing or foreign marker cannot restore
 a previously initialized grant. Confirmation does not consume the recovery token again on its signed technical retry.
+
+A lost Payload claim-commit acknowledgement is reconciled inside the same guarded invocation. It read `active` while
+holding both locks and has not issued a metadata PUT. If a fresh guarded Local API read now returns `confirmed` under
+those continuously held locks, that record proves this invocation's claim committed. Initialize once without replaying
+the command. A rolled-back claim remains active and permits a token-free technical retry. If execution ownership is
+also lost, that proof is unavailable; no later browser flag, timestamp or fresh read alone can recreate the owner.
 
 Only a matching `ready` marker and signed attempt version permit the current request to persist `started` and confirm
 it through a fresh read. An existing `started` never grants another request that permission. Exactly one ordinary

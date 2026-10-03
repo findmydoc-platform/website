@@ -39,7 +39,7 @@ function fixture() {
     callbackDestination: 'clinic-dashboard-auth-callback',
     completionRoute: '/auth/invite/complete',
     createdAt,
-    environment: 'test',
+    environment: 'ci',
     expiresAt,
     finalDestination: 'clinic-dashboard',
     principal: { relationTo: 'clinicStaff', value: 61 },
@@ -83,7 +83,7 @@ describe('payload transactional email catalog wiring', () => {
   })
 
   it('routes auth.invitation through the static Payload catalog and prepares the clinic invitation', async () => {
-    vi.stubEnv('NODE_ENV', 'test')
+    vi.stubEnv('CI', 'true')
     vi.stubEnv('CLINIC_DASHBOARD_URL', 'https://dashboard.findmydoc.test')
     const { action, admin, payload, sourceReq } = fixture()
     const catalog = bindPayloadCommandCatalog({ payload } as never)
@@ -104,7 +104,7 @@ describe('payload transactional email catalog wiring', () => {
     expect(prepared.recipientAddress).toBe(email)
     expect(prepared.subject).toBe('Complete your findmydoc clinic invitation')
     expect(mocks.createLocalReq).toHaveBeenCalledWith({}, payload)
-    expect(mocks.bindAuthActions).toHaveBeenCalledWith(sourceReq, { environment: 'test' })
+    expect(mocks.bindAuthActions).toHaveBeenCalledWith(sourceReq, { environment: 'ci' })
     expect(mocks.findClinicInvitationPrincipal).toHaveBeenCalledWith(sourceReq, 61)
     expect(admin.generateLink).toHaveBeenCalledWith({
       email,

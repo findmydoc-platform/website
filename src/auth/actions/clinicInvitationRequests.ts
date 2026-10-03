@@ -30,19 +30,20 @@ export async function requestInitialClinicInvitation(req: PayloadRequest, clinic
 async function acceptClinicInvitationCommand(
   req: PayloadRequest,
   input: { action: AuthAction; environment: 'preview' | 'production'; now?: () => number },
-) {
+): Promise<boolean> {
   const { action, environment, now } = input
   let acceptedAction = action
   const actions = bindAuthActions(req, { environment, now })
   if (acceptedAction.state === 'pending') {
     acceptedAction = await actions.transition({ id: action.id, to: 'active' })
   }
-  if (acceptedAction.state !== 'active') return
+  if (acceptedAction.state !== 'active') return false
   const systemReq = { ...req, user: null }
-  await bindTransactionalEmail(systemReq, undefined, now).accept({
+  const acceptance = await bindTransactionalEmail(systemReq, undefined, now).accept({
     type: 'auth.invitation',
     authActionId: acceptedAction.id,
   })
+  return !acceptance.deduplicated
 }
 
 /** Reads committed candidates only. Failed preparation leaves approval and its retry marker untouched. */
@@ -87,9 +88,9 @@ export async function prepareCommittedClinicInvitations(
       try {
         const action: AuthAction | null = await actions.reserveClinicInvitation({ clinicStaffId: staff.id })
         if (action) {
-          await acceptClinicInvitationCommand(req, { action, environment, now })
+          const accepted = await acceptClinicInvitationCommand(req, { action, environment, now })
           acceptedActionIds.add(action.id)
-          prepared++
+          if (accepted) prepared++
         }
       } catch {
         failed = true
@@ -110,8 +111,8 @@ export async function prepareCommittedClinicInvitations(
       afterId = action.id
       if (acceptedActionIds.has(action.id)) continue
       try {
-        await acceptClinicInvitationCommand(req, { action, environment, now })
-        prepared++
+        const accepted = await acceptClinicInvitationCommand(req, { action, environment, now })
+        if (accepted) prepared++
       } catch {
         failed = true
         req.payload.logger.error(

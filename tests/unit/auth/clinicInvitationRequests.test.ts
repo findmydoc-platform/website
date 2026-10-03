@@ -154,4 +154,24 @@ describe('committed clinic invitation preparation', () => {
     expect(mocks.transition).toHaveBeenCalledWith({ id: 91, to: 'active' })
     expect(mocks.accept).toHaveBeenCalledWith({ type: 'auth.invitation', authActionId: 91 })
   })
+
+  it('does not let deduplicated recovery actions exhaust the new acceptance cap', async () => {
+    const req = request()
+    req.payload.find.mockResolvedValue({ docs: [] })
+    mocks.live
+      .mockResolvedValueOnce(Array.from({ length: 25 }, (_, i) => ({ id: i + 1, state: 'active' })))
+      .mockResolvedValueOnce([{ id: 26, state: 'active' }])
+      .mockResolvedValueOnce([])
+    mocks.accept.mockImplementation(async ({ authActionId }) => ({
+      operationId: `mail-${authActionId}`,
+      acceptedAt: '2026-01-01T00:00:00.000Z',
+      deduplicated: authActionId <= 25,
+    }))
+
+    await prepareCommittedClinicInvitations(req as unknown as PayloadRequest, { deadline: 100000, now: () => 0 })
+
+    expect(mocks.live).toHaveBeenNthCalledWith(1, { afterId: 0, limit: 25 })
+    expect(mocks.live).toHaveBeenNthCalledWith(2, { afterId: 25, limit: 25 })
+    expect(mocks.accept).toHaveBeenCalledWith({ type: 'auth.invitation', authActionId: 26 })
+  })
 })

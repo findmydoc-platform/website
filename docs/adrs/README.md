@@ -95,3 +95,4 @@ When adding a new ADR:
 - [031 — Transactional email technical activation gates](./031-adr-transactional-email-technical-activation-gates.md)
 - [032 — Supabase native-mail suppression](./032-adr-supabase-native-mail-suppression.md) _(narrow exception to ADR 028's hook rejection; ADR 031 remains in force)_
 - [033 — Bounded Auth transaction-control exceptions](./033-adr-auth-actions-owned-transactions.md)
+- [034 — Bounded Website recovery execution exclusion](./034-adr-website-recovery-execution-exclusion.md)

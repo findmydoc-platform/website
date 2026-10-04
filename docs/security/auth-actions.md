@@ -305,6 +305,8 @@ most three seconds, control statements one second each, and reserved execution t
 deadline aborts scoped provider requests and prevents later steps from starting. Healthy failure rolls back; uncertain
 control or cleanup failure destroys the connection. No provider effect is automatically replayed. Every Payload data
 operation remains guarded Local API; the reserved connection runs only transaction control and the advisory function.
+The closed execution and provider-progress exception is recorded in
+[ADR 034](../adrs/034-adr-website-recovery-execution-exclusion.md).
 
 One server-written `findmydoc_recovery_progress_v1_<environment>` app-metadata slot contains an opaque purpose HMAC,
 original action expiry, bounded attempt counter and `ready`, `started` or `password-updated`. Admin PUTs contain only

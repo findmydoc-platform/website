@@ -43,13 +43,36 @@ defaults:
     shell: bash
 
 jobs:
+  paths:
+    name: Preview scope
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    outputs:
+      deployable: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.deployable == 'true' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect build-relevant changes
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          predicate-quantifier: every
+          filters: .github/filters/build.yml
+
   deploy-preview:
     name: Deploy Preview
+    needs: paths
     # Preview deploys need Vercel secrets, so only trusted sources may run them.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      needs.paths.outputs.deployable == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && github.ref_name == 'main') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -87,6 +110,16 @@ jobs:
         run: |
           bash ./.github/scripts/deploy/assert-vercel-project-binding.sh
           pnpm dlx vercel@canary pull --yes --environment=preview
+
+      - name: Cache Next.js compiler output
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            .next/cache/webpack
+            .next/cache/swc
+          key: next-webpack-v1-${{ runner.os }}-node-${{ env.NODE_VERSION }}-vercel-preview-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'next.config.js', 'tsconfig.json', 'postcss.config.js', 'tailwind.config.*', '.npmrc', 'vercel.json') }}-${{ hashFiles('src/**', 'public/**', 'apps/**', 'scripts/**', 'config/**', 'redirects.js', 'next-sitemap.config.cjs') }}
+          restore-keys: |
+            next-webpack-v1-${{ runner.os }}-node-${{ env.NODE_VERSION }}-vercel-preview-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'next.config.js', 'tsconfig.json', 'postcss.config.js', 'tailwind.config.*', '.npmrc', 'vercel.json') }}-
 
       - name: Deploy to Vercel (Preview)
         id: vercel_preview

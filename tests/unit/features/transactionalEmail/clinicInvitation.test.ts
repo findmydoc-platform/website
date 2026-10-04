@@ -4,12 +4,19 @@ import type { AuthAction, ClinicStaff } from '@/payload-types'
 import { createCommandPort } from '@/features/transactionalEmail/acceptance'
 import { dispatchCommandPreparation } from '@/features/transactionalEmail/catalog'
 import { createClinicInvitationCatalogEntry } from '@/features/transactionalEmail/clinicInvitation'
+import { randomBytes } from 'node:crypto'
+import { readActionReference, type AuthActionProtocolKeys } from '@/auth/actions/protocol/credentials'
 
 const subject = '3525d8e2-0ff0-44cc-9f14-ad8a783a57dd'
 const now = Date.parse('2026-10-03T12:00:00.000Z')
 const email = 'clinic@example.test'
 
 function fixture() {
+  const keys: AuthActionProtocolKeys = {
+    environment: 'test',
+    service: [{ version: 'offline', secret: randomBytes(32).toString('hex') }],
+    reference: [{ version: 'offline', secret: randomBytes(32).toString('hex') }],
+  }
   const action = {
     id: 43,
     actionType: 'clinic-invitation',
@@ -52,8 +59,9 @@ function fixture() {
     findPrincipal: async () => staff,
     admin: async () => admin as never,
     dashboardOrigin: () => 'https://dashboard.example.test',
+    actionReferenceKeys: keys,
   })
-  return { action, staff, user, admin, catalog: { 'auth.invitation': entry } }
+  return { action, staff, user, admin, keys, catalog: { 'auth.invitation': entry } }
 }
 
 describe('clinic invitation command through the production catalog', () => {
@@ -101,7 +109,7 @@ describe('clinic invitation command through the production catalog', () => {
   )
 
   it('accepts one action identity and renders the pinned clinic invitation template without native sending', async () => {
-    const { catalog, admin } = fixture()
+    const { catalog, admin, keys } = fixture()
     const created: unknown[] = []
     const commands = createCommandPort({
       actor: null,
@@ -148,14 +156,24 @@ describe('clinic invitation command through the production catalog', () => {
     expect(callback.origin).toBe('https://dashboard.example.test')
     expect([...callback.searchParams.entries()]).toEqual([
       ['authActionId', '43'],
+      ['actionRef', callback.searchParams.get('actionRef')!],
       ['token_hash', 'b'.repeat(64)],
       ['type', 'invite'],
     ])
     expect(prepared.text).toContain(callback.toString())
+    expect(readActionReference(callback.searchParams.get('actionRef')!, keys)).toEqual({
+      version: 1,
+      environment: 'test',
+      actionId: 43,
+      flow: 'clinic-invitation',
+    })
+    const redirect = new URL(callback)
+    redirect.searchParams.delete('token_hash')
+    redirect.searchParams.delete('type')
     expect(admin.generateLink).toHaveBeenCalledWith({
       type: 'invite',
       email,
-      options: { redirectTo: 'https://dashboard.example.test/auth/callback?authActionId=43' },
+      options: { redirectTo: redirect.toString() },
     })
   })
 })

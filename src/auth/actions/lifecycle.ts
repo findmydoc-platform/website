@@ -15,6 +15,8 @@ import { recoveryCorrelations, recoveryWindowMs, recoveryCooldownMs, recoveryHou
 import { findRecoveryPrincipal, recoveryActionTypes } from './recoveryPrincipal'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { findClinicInvitationPrincipal } from './clinicInvitationPrincipal'
+import { readRecoveryPrincipal } from './recoveryPrincipal'
+import type { DashboardActionFlow } from './protocol/credentials'
 import type { AuthAction, ClinicStaff } from '@/payload-types'
 import {
   authActionDiagnosticFields,
@@ -795,7 +797,11 @@ export function bindAuthActions(
         return result.docs
       })
     },
-    async reserveRecovery(input: { email: string; context: RecoveryContext | null }): Promise<AuthAction | null> {
+    async reserveRecovery(input: {
+      email: string
+      context: RecoveryContext | null
+      actionType?: 'clinic-recovery'
+    }): Promise<AuthAction | null> {
       const email = normalizeEmail(input.email)
       if (!isValidEmail(email) || email.length > 254) throw new AuthActionError('invalid-command')
       return transaction(async (internalReq, scope) => {
@@ -866,7 +872,7 @@ export function bindAuthActions(
           })
         }
         const principal = await findRecoveryPrincipal(internalReq, email)
-        if (!principal) return null
+        if (!principal || (input.actionType && principal.actionType !== input.actionType)) return null
         const prior = await req.payload.find({
           collection: 'authActions',
           req: internalReq,
@@ -1017,6 +1023,76 @@ export function bindAuthActions(
     },
     read(id: number) {
       return transaction((internalReq) => find(internalReq, parsed(idSchema, id)))
+    },
+    /** Dashboard commands keep the reference and verified subject checks inside the owned lifecycle transaction. */
+    inspectDashboardAction(input: {
+      id: number
+      flow: DashboardActionFlow
+      subject?: string
+      email?: string
+      to?: 'confirmed' | 'completed'
+      state?: 'confirmed' | 'completed'
+    }) {
+      const command = parsed(
+        z
+          .object({
+            id: idSchema,
+            flow: z.enum(['clinic-invitation', 'clinic-recovery']),
+            subject: subjectSchema.optional(),
+            email: z.string().max(254).optional(),
+            to: z.enum(['confirmed', 'completed']).optional(),
+            state: z.enum(['confirmed', 'completed']).optional(),
+          })
+          .strict(),
+        input,
+      )
+      return transaction(async (internalReq, scope) => {
+        const action = await requireAction(internalReq, command.id)
+        validatePolicy(action as unknown as Record<string, unknown>, scope)
+        const expectedState = command.state ?? (command.to === 'completed' ? 'confirmed' : 'active')
+        const confirmingRetry = command.to === 'confirmed' && action.state === 'confirmed'
+        if (
+          action.actionType !== command.flow ||
+          (action.state !== expectedState && !confirmingRetry) ||
+          Date.parse(action.createdAt) > scope.now ||
+          Date.parse(action.expiresAt) <= scope.now ||
+          !action.supabaseSubject ||
+          !action.principal ||
+          action.principal.relationTo !== 'clinicStaff' ||
+          ((command.to || command.state) && (!command.subject || !command.email)) ||
+          (command.subject && action.supabaseSubject !== command.subject)
+        )
+          throw new AuthActionError('invalid-transition')
+        const principalId =
+          typeof action.principal.value === 'number' ? action.principal.value : action.principal.value.id
+        const principal =
+          command.flow === 'clinic-invitation'
+            ? await findClinicInvitationPrincipal(internalReq, principalId)
+            : (await readRecoveryPrincipal(internalReq, 'clinicStaff', principalId))?.document
+        if (
+          !principal ||
+          principal.supabaseUserId !== action.supabaseSubject ||
+          (command.email && normalizeEmail(principal.email) !== normalizeEmail(command.email))
+        )
+          throw new AuthActionError('invalid-transition')
+        if (command.flow === 'clinic-recovery') {
+          const correlations = recoveryCorrelations(
+            principal.email ?? '',
+            '192.0.2.1',
+            environment,
+            options.recoveryKeys ?? [],
+          )[0]!.correlations
+          if (
+            !correlations.some(
+              (key) => key.keyVersion === action.correlationKeyVersion && key.digest === action.correlationDigest,
+            )
+          )
+            throw new AuthActionError('invalid-transition')
+        }
+        return command.to && !confirmingRetry
+          ? transition(internalReq, scope, { id: action.id, to: command.to })
+          : action
+      })
     },
     async bindSubject(input: z.infer<typeof bindSubjectSchema>) {
       const command = parsed(bindSubjectSchema, input)

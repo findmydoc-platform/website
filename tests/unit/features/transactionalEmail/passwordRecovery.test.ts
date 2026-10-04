@@ -1,12 +1,15 @@
+import { randomBytes } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import type { User } from '@supabase/supabase-js'
-import type { AuthAction, Patient } from '@/payload-types'
+import type { AuthAction, Patient, ClinicStaff } from '@/payload-types'
+import type { RecoveryPrincipal } from '@/auth/actions/recoveryPrincipal'
 import { recoveryCorrelations } from '@/auth/actions/recoveryCorrelation'
 import { dispatchCommandPreparation } from '@/features/transactionalEmail/catalog'
 import { createPasswordRecoveryCatalogEntry } from '@/features/transactionalEmail/passwordRecovery'
 import { GET } from '@/app/auth/callback/route'
 import { TOKEN_HASH_CALLBACK_COOKIE } from '@/auth/utilities/tokenHashCallback'
+import { readActionReference, type AuthActionProtocolKeys } from '@/auth/actions/protocol/credentials'
 
 const callbackBoundary = vi.hoisted(() => ({ createClient: vi.fn(), createVerificationClient: vi.fn() }))
 vi.mock('@/auth/utilities/supaBaseServer', () => callbackBoundary)
@@ -15,22 +18,27 @@ const now = Date.parse('2026-10-03T12:00:00.000Z')
 const email = 'patient@example.test'
 const subject = '3525d8e2-0ff0-44cc-9f14-ad8a783a57dd'
 const key = { version: 'offline-v1', secret: 'offline-only-recovery-correlation-material' } // pragma: allowlist secret
-function fixture(signal?: AbortSignal) {
+function fixture(signal?: AbortSignal, clinic = false) {
+  const actionReferenceKeys: AuthActionProtocolKeys = {
+    environment: 'test',
+    service: [{ version: 'current', secret: randomBytes(32).toString('hex') }],
+    reference: [{ version: 'current', secret: randomBytes(32).toString('hex') }],
+  }
   const correlation = recoveryCorrelations(email, '', 'test', [key])[0]!.correlations[0]!
   const action = {
     id: 45,
-    actionType: 'patient-recovery',
+    actionType: clinic ? 'clinic-recovery' : 'patient-recovery',
     state: 'active',
     environment: 'test',
-    principal: { relationTo: 'patients', value: 61 },
+    principal: { relationTo: clinic ? 'clinicStaff' : 'patients', value: 61 },
     principalBoundAt: new Date(now).toISOString(),
     supabaseSubject: subject,
     subjectBoundAt: new Date(now).toISOString(),
     correlationDigest: correlation.digest,
     correlationKeyVersion: correlation.keyVersion,
-    callbackDestination: 'website-auth-callback',
+    callbackDestination: clinic ? 'clinic-dashboard-auth-callback' : 'website-auth-callback',
     completionRoute: '/auth/password/reset/complete',
-    finalDestination: 'patient-inquiries',
+    finalDestination: clinic ? 'clinic-dashboard' : 'patient-inquiries',
     supabaseTokenType: 'recovery',
     createdAt: new Date(now).toISOString(),
     expiresAt: new Date(now + 3600000).toISOString(),
@@ -40,7 +48,7 @@ function fixture(signal?: AbortSignal) {
     id: subject,
     email,
     email_confirmed_at: new Date(now).toISOString(),
-    app_metadata: { user_type: 'patient' },
+    app_metadata: { user_type: clinic ? 'clinic' : 'patient' },
     user_metadata: {},
     aud: 'authenticated',
     created_at: new Date(now).toISOString(),
@@ -57,20 +65,52 @@ function fixture(signal?: AbortSignal) {
     signal,
     now: () => now,
     recoveryKeys: [key],
+    actionReferenceKeys,
     actions: { read: async () => action },
-    findPrincipal: async () => ({
-      collection: 'patients',
-      actionType: 'patient-recovery',
-      userType: 'patient',
-      document: principal,
-    }),
+    findPrincipal: async (): Promise<RecoveryPrincipal> =>
+      clinic
+        ? {
+            collection: 'clinicStaff',
+            actionType: 'clinic-recovery',
+            userType: 'clinic',
+            document: principal as unknown as ClinicStaff,
+          }
+        : { collection: 'patients', actionType: 'patient-recovery', userType: 'patient', document: principal },
     admin: async () => admin as never,
     dashboardOrigin: () => 'https://dashboard.example.test',
   })
-  return { action, principal, user, admin, catalog: { 'auth.password-recovery': entry } }
+  return { action, principal, user, admin, actionReferenceKeys, catalog: { 'auth.password-recovery': entry } }
 }
 
 describe('password recovery through the authorized command catalog', () => {
+  it('renders a Website-signed clinic action reference through the existing catalog and pinned recovery template', async () => {
+    const { catalog, admin, actionReferenceKeys } = fixture(undefined, true)
+    const decision = await catalog['auth.password-recovery'].revalidate({
+      type: 'auth.password-recovery',
+      authActionId: 45,
+    })
+    if (decision.status !== 'eligible') throw new Error('Expected eligible clinic recovery.')
+    const message = await decision.prepare()
+    const callback = [...message.html.matchAll(/href="([^"]+)"/g)]
+      .map((match) => new URL(match[1]!.replaceAll('&amp;', '&')))
+      .find((link) => link.pathname === '/auth/callback')!
+    expect(callback.origin).toBe('https://dashboard.example.test')
+    expect(readActionReference(callback.searchParams.get('actionRef')!, actionReferenceKeys)).toEqual({
+      version: 1,
+      actionId: 45,
+      flow: 'clinic-recovery',
+      environment: 'test',
+    })
+    expect(callback.searchParams.get('type')).toBe('recovery')
+    expect(callback.searchParams.get('next')).toBe('/auth/password/reset/complete')
+    callback.searchParams.delete('token_hash')
+    callback.searchParams.delete('type')
+    expect(admin.generateLink).toHaveBeenCalledWith({
+      type: 'recovery',
+      email,
+      options: { redirectTo: callback.toString() },
+    })
+  })
   it('stops acceptance when its lookup completes after the scheduler aborts', async () => {
     const controller = new AbortController()
     const { catalog, admin, user } = fixture(controller.signal)

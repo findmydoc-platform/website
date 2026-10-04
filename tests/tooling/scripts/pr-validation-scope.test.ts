@@ -175,6 +175,29 @@ describe('PR application validation workflow filters', () => {
     ).not.toContain('--changed')
   })
 
+  it('keeps nightly integration runs outside Main push cancellation', () => {
+    const group = (event: string) =>
+      workflow.concurrency.group.replace(/\$\{\{\s*([\s\S]+?)\s*\}\}/g, (_match: string, expression: string) =>
+        String(
+          runInNewContext(expression, {
+            github: { workflow: 'PR Validation', event_name: event, ref: 'refs/heads/main' },
+          }),
+        ),
+      )
+    expect(group('schedule')).not.toBe(group('push'))
+  })
+
+  it('does not start an independent build when the run is cancelled', () => {
+    expect(
+      runInNewContext(workflow.jobs.build.if, {
+        always: () => true,
+        cancelled: () => true,
+        github: { event_name: 'pull_request' },
+        needs: { paths: { result: 'failure', outputs: {} } },
+      }),
+    ).toBe(false)
+  })
+
   it.each([
     ['schedule', 'false', 'false', 'false', 'true'],
     ['workflow_dispatch', '', '', 'true', 'true'],

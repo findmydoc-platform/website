@@ -39,7 +39,13 @@ async function submitRequest(data: ParsedData) {
   }
 }
 
-export function ResetPasswordRequestForm({ reason }: { reason?: ResetPasswordReason | null }) {
+export function ResetPasswordRequestForm({
+  reason,
+  onRequest = submitRequest,
+}: {
+  reason?: ResetPasswordReason | null
+  onRequest?: (data: ParsedData) => Promise<void>
+}) {
   const [formState, setFormState] = useState<FormState>({ status: 'idle', error: null })
   const formValidation = usePublicFormValidation({
     messages: {
@@ -71,7 +77,8 @@ export function ResetPasswordRequestForm({ reason }: { reason?: ResetPasswordRea
     }
 
     try {
-      await submitRequest(result.data)
+      await onRequest(result.data)
+      form.reset()
       formValidation.clearAllFieldErrors()
       setFormState({ status: 'success', error: null })
     } catch (error) {
@@ -90,7 +97,7 @@ export function ResetPasswordRequestForm({ reason }: { reason?: ResetPasswordRea
           <Heading as="h1" align="center" size="h4" className="font-semibold">
             Reset your password
           </Heading>
-          <CardDescription className="text-center">
+          <CardDescription className="text-center text-foreground">
             Enter the email associated with your account and we&apos;ll send instructions to reset your password.
           </CardDescription>
         </CardHeader>

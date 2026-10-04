@@ -16,11 +16,12 @@ const getSupabaseConfig = () => {
   return { url, key }
 }
 
-export async function createClient() {
+export async function createClient(signal?: AbortSignal) {
   const { url, key } = getSupabaseConfig()
   const cookieStore = await cookies()
   // console.debug('createClient cookies:', cookieStore.getAll().map(c => c.name))
   return createServerClient(url, key, {
+    ...(signal ? { global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store', signal }) } } : {}),
     cookies: {
       getAll() {
         return cookieStore.getAll()
@@ -34,12 +35,34 @@ export async function createClient() {
   })
 }
 
+/** Remove every chunk of the local SSR session after global recovery sign-out. */
+export async function clearLocalAuthSession() {
+  const { url } = getSupabaseConfig()
+  const storageKey = `sb-${new URL(url).hostname.split('.')[0]}-auth-token`
+  const store = await cookies()
+  await clearAuthCookiesAtScopes({
+    storageKey,
+    getAll: () => store.getAll(),
+    setAll: (values) => {
+      values.forEach(({ name, value, options }) => store.set(name, value, options))
+    },
+    scopes: [{ path: '/' }],
+  })
+}
+
+/** Revoke the verified recovery session globally without removing local cookies on a provider error. */
+export async function signOutRecoverySession(accessToken: string, signal?: AbortSignal) {
+  const admin = await createAdminClient(signal)
+  return admin.auth.admin.signOut(accessToken, 'global')
+}
+
 /** Verify a callback token before allowing its returned identity to write browser session cookies. */
-export function createVerificationClient() {
+export function createVerificationClient(signal?: AbortSignal) {
   const { url, key } = getSupabaseConfig()
   const storageKey = `sb-${new URL(url).hostname.split('.')[0]}-auth-token`
   let pendingCookies: { name: string; value: string; options: CookieOptions }[] = []
   const client = createServerClient(url, key, {
+    ...(signal ? { global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store', signal }) } } : {}),
     cookieOptions: { name: storageKey },
     cookies: {
       getAll: () => [],
@@ -77,7 +100,7 @@ export async function createAdminClient(signal?: AbortSignal) {
   }
 
   return createServerClient(url, serviceRoleKey, {
-    ...(signal ? { global: { fetch: (input, init) => fetch(input, { ...init, signal }) } } : {}),
+    global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store', ...(signal ? { signal } : {}) }) },
     cookies: {
       getAll() {
         return []

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
+import { openWebsiteRecovery, confirmWebsiteRecovery } from '@/auth/actions/websiteRecoveryHttp'
 import { createClient } from '@/auth/utilities/supaBaseServer'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 import { InvalidPatientVerification, patientVerificationAuthority } from '@/auth/actions/patientVerificationCompletion'
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest) {
     }
     return applyPrivateAuthHeaders(response)
   }
+  if (requestUrl.searchParams.getAll('type').includes('recovery')) return openWebsiteRecovery(request)
   const next = sanitizeInternalRedirectPath({
     nextPath: requestUrl.searchParams.get('next'),
     fallbackPath: '/auth/password/reset/complete',
@@ -91,6 +93,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (request.nextUrl.searchParams.get('flow') === 'recovery') return confirmWebsiteRecovery(request)
   const response = applyPrivateAuthHeaders(NextResponse.json({ code: 'INVALID_OR_EXPIRED_LINK' }, { status: 400 }))
   if (
     request.headers.get('origin') !== request.nextUrl.origin ||

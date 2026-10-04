@@ -208,7 +208,7 @@ The schema and strict commands exclude plaintext email, name, clinic content, pa
 
 ## Retention and concurrency
 
-`sweep()` expires due nonterminal actions and hard-deletes terminal records once `terminalAt + 42 days` is reached. It processes at most 100 records per invocation in ID order. No Trash, retained content or deletion receipt is created. A repeated sweep returns committed counts and cannot extend retention. The callable sweep is ready for the platform's existing execution owner; this ticket does not activate a hosted scheduler.
+`sweep()` expires due nonterminal actions and hard-deletes terminal records once `terminalAt + 42 days` is reached. Confirmed patient/platform recovery claims remain nonterminal until completion, proven replacement or explicit operational resolution. Expiry cannot prove that a previously issued provider write stopped. Correlation cleanup still applies to these claims. The sweep processes at most 100 records per invocation in ID order. No Trash, retained content or deletion receipt is created. A repeated sweep returns committed counts and cannot extend terminal retention. The callable sweep is ready for the platform's existing execution owner; this ticket does not activate a hosted scheduler.
 
 Every system read and write, including the retention selection and final delete check, runs inside a fresh owned Serializable transaction. Borrowed transactions are rejected. Only SQLSTATE `40001` and `40P01`, including nested causes, repeat the entire command with fresh reads and hook validation, at most three attempts. There are no external effects in retry work. Commit errors propagate; rollback errors propagate together with the original failure and stop retries. The repository's Drizzle transaction-error patch preserves commit and rollback failures. [ADR 033](../adrs/033-adr-auth-actions-owned-transactions.md) records the human-approved exception; [the concurrency research](../research/issue-1974-auth-action-concurrency.md) provides its evidence and rejected alternatives.
 
@@ -248,7 +248,7 @@ immutable action policy. The exact `@findmydoc-platform/email-templates@0.3.0` r
 `PatientPasswordRecoveryEmail`, `ClinicPasswordRecoveryEmail` and `PlatformPasswordRecoveryEmail`; each receives only
 `actionUrl`. Hosted `generateLink({ type: 'recovery' })` supplies a token hash without native mail. The rendered callback
 contains `authActionId`, the fixed completion `next`, `token_hash` and `type=recovery`. Final destinations remain on the
-action; completion UI and Dashboard protocol are separate work.
+action. Website completion consumes patient and platform recovery; the Dashboard owns clinic completion.
 
 The shared worker preserves the prepared bytes, generated link, operation and provider idempotency key on technical
 retry, and suppresses changed or missing recipients and lost authority. The existing scheduler reaccepts interrupted
@@ -262,3 +262,102 @@ Supabase SDK. The lazily resolved `AUTH_RECOVERY_CORRELATION_KEYS_JSON` contains
 `keys` array of `{ version, secret }`. Keep prior keys while their recovery window remains live. Hosted recovery remains
 inactive because Preview and Production have no `auth.password-recovery` activation declaration. Source validation
 establishes no hosted configuration, email delivery or completion evidence.
+
+## Website recovery completion
+
+The existing Website reset request acknowledges every valid email neutrally. Patient and platform recovery URLs come
+from the pinned catalog described above. `GET /auth/callback` accepts exactly one `authActionId`, fixed completion
+`next`, 64-character token hash and `type=recovery`. It validates current action policy, environment, expiry, original
+recipient correlation, unique Payload principal and authoritative Supabase subject, email, role and ban status without
+consuming the token. It strips the bearer fields through a 303 redirect to `/auth/confirm?type=recovery`.
+
+Every syntactically valid URL receives a fixed-size encrypted, signed ten-minute `HttpOnly` context scoped to `/auth`.
+The context binds action, environment, flow, subject and fixed finish destination, plus a random CSRF value. Invalid
+authority receives an equally sized decoy. Separate AES-GCM and HMAC purposes derive from the existing recovery key
+ring, including retained rotation keys. No new configuration, recipient cookie or AuthAction field exists.
+
+Only same-origin JSON `POST /auth/callback?flow=recovery` with the matching CSRF value consumes the token. An isolated
+Supabase verification client buffers cookies until its returned session subject, email and authoritative role match.
+A second current-authority check rejects revocation or changed principals before installing the session. A temporary
+recheck failure preserves the verified session and token-free receipt for retry. Confirmation takes an owned
+non-idempotent `active` to `confirmed` claim before initializing provider progress. Only its winner can initialize the
+marker; signed technical retries observe existing progress. It replaces the pending context with a token-free
+completion grant valid for ten minutes. Later retries do not renew its expiry or consume the token again.
+
+If the claim commits but its acknowledgement is lost, the same invocation reconciles it with a fresh guarded read
+while retaining its original action/subject guards. It had read active and has not emitted a metadata PUT, so a current
+confirmed record proves its own claim. It can initialize once without repeating the claim. A rolled-back claim remains
+active and retryable with the token-free grant. Losing the execution guard as well removes that ownership proof;
+subsequent browser receipts cannot reconstruct it or reinitialize a missing marker.
+
+`POST /auth/password/complete` requires the matching grant, CSRF, current action, principal and server-verified session.
+It updates the Supabase password before advancing `confirmed` to `completed`. A signed `password-updated` receipt
+preserves a known successful password operation across a temporary lifecycle failure. A `completed` receipt resumes
+global sign-out after a temporary provider failure. A `signed-out` receipt resumes local cleanup without requiring a
+session that the successful global logout has revoked. These receipts keep the original grant expiry, and a refreshed
+completion page shows a password-free finish action. A password operation whose provider response was lost is not
+proved successful by a receipt; Supabase and Payload do not share a transaction.
+
+Confirmation and completion reserve one connection from the existing Payload pool and hold purpose-separated
+environment/action and environment/subject transaction-scoped advisory try-locks through authority checks, password update, lifecycle completion, logout and local
+cleanup. A competing request returns the same safe 503 without starting another password effect. Acquisition takes at
+most three seconds, control statements one second each, and reserved execution thirty seconds. Connection loss or the
+deadline aborts scoped provider requests and prevents later steps from starting. Healthy failure rolls back; uncertain
+control or cleanup failure destroys the connection. No provider effect is automatically replayed. Every Payload data
+operation remains guarded Local API; the reserved connection runs only transaction control and the advisory function.
+The closed execution and provider-progress exception is recorded in
+[ADR 034](../adrs/034-adr-website-recovery-execution-exclusion.md).
+
+One server-written `findmydoc_recovery_progress_v1_<environment>` app-metadata slot contains an opaque purpose HMAC,
+original action expiry, bounded attempt counter and `ready`, `started` or `password-updated`. Admin PUTs contain only
+that reserved top-level field; fresh no-store Admin reads verify persisted progress. Other metadata and roles are not
+sent. The normal session password endpoint retains its MFA, reauthentication, current-password and SSO policies.
+
+A matching ready marker and signed attempt version authorize one request to persist and freshly observe started,
+then attempt the password once. Existing started progress cannot grant another writer permission. Known success is
+saved immediately in the signed receipt before success-marker persistence. The receipt and current success marker
+authorize only completion, so a copied original grant cannot replace a known successful password after Payload failure.
+Only status 422 with `weak_password` or `same_password` permits a freshly persisted next attempt and replacement signed
+grant, without renewing expiry. A failed or uncertain reset never publishes that next attempt. Missing or foreign
+progress cannot reinitialize an old confirmed grant. A new confirmed recovery revokes older live pending/active actions
+through the guarded Local API. It can replace an older confirmed claim only when the freshly fetched marker matches
+that exact predecessor in ready. The non-idempotent initialization claim and signed attempt counter make each ready
+write unique; a matching read establishes that write's commit, while the subject guard and authority checkpoints stop
+the older request from starting later work. A missing, foreign, started or success marker leaves the older confirmed
+claim fenced. Known success completes its own action first. A matching success marker skips redundant success PUTs.
+
+An unresolved started attempt remains blocked even after its marker expiry, and a newer recovery cannot overwrite it.
+An unresolved initialization or reset also remains fenced after expiry and sweep. A delayed old started/success PUT
+cannot grant authority to the new action; its retained confirmed claim prevents a third recovery from replacing that
+foreign marker. These unresolved claims retain their minimal lifecycle record until trustworthy operational resolution;
+the normal 42-day terminal deletion starts only after that resolution.
+Generic provider errors, malformed results and transport loss do not prove that no password was changed. They require
+trustworthy reconciliation rather than an automatic reset or another password effect. This can leave recovery
+temporarily unavailable pending operational investigation. Transport cancellation cannot retract an already committed
+operation; Supabase and Payload still provide no distributed exactly-once proof.
+
+Success uses Supabase's stateless Admin `signOut` with the server-verified session JWT and `global` scope, clears local
+Supabase cookie chunks and the recovery context, then performs
+a full document navigation to `/login/patient?status=recovery-complete` or `/admin/login?status=recovery-complete`.
+Supabase revokes refresh-token sessions; already-issued access JWTs can remain valid until expiry, as documented in
+[the Supabase sign-out contract](https://supabase.com/docs/reference/javascript/auth-signout). Payload still checks the
+current principal for each authenticated request. The private action policy's destination identifiers remain unchanged.
+The Admin logout API does not remove Website cookies on a provider error. The ordinary session client's `signOut`
+removes its local session even when global logout fails, so that client method is unsuitable for this retry contract.
+
+Malformed, expired, replayed, revoked, superseded, cross-flow, cross-environment and identity-mismatched links share the
+same public error and request-again path. Temporary completion failures keep the grant and offer retry without another
+email. The legacy unsigned recovery-cookie confirmation path is rejected. Existing invite and patient-verification
+paths keep their own contracts. All callback responses use private no-store and no-referrer headers; no link, provider
+detail or password enters logs, AuthActions or principal records.
+
+Offline HTTP contracts consume the actual Fake-transport catalog URLs for both Website principal types. They cover
+GET/POST separation, CSRF, authority changes, key rotation, expiry, replay, update ordering and retry after provider or
+lifecycle failure. Synthetic pool boundaries cover competing completion, acquisition/control/execution deadlines,
+connection loss, late results and commit/rollback cleanup. Real installed SDK contracts check logout preservation and
+abort propagation. They establish no native PostgreSQL scheduling. Form units and isolated stories cover validation,
+focus, safe errors and retry. Synthetic local
+Chromium rendering checks the composed pages at 320, 375, 640, 768 and 1024 pixels, plus a 375-by-320 password cycle.
+This evidence does not prove hosted Supabase behavior, native database races, real mobile keyboard behavior or email
+arrival. Preview and Production recovery remain inactive. Cache impact is `no-public-impact`, with private live reads
+and no public invalidation.

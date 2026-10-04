@@ -6,7 +6,7 @@ import { recoveryCorrelations } from '@/auth/actions/recoveryCorrelation'
 import { dispatchCommandPreparation } from '@/features/transactionalEmail/catalog'
 import { createPasswordRecoveryCatalogEntry } from '@/features/transactionalEmail/passwordRecovery'
 import { GET } from '@/app/auth/callback/route'
-import { decodePendingTokenHash, TOKEN_HASH_CALLBACK_COOKIE } from '@/auth/utilities/tokenHashCallback'
+import { TOKEN_HASH_CALLBACK_COOKIE } from '@/auth/utilities/tokenHashCallback'
 
 const callbackBoundary = vi.hoisted(() => ({ createClient: vi.fn(), createVerificationClient: vi.fn() }))
 vi.mock('@/auth/utilities/supaBaseServer', () => callbackBoundary)
@@ -114,11 +114,7 @@ describe('password recovery through the authorized command catalog', () => {
     expect(response.status).toBe(303)
     expect(response.headers.get('location')).toBe('https://example.test/auth/confirm?type=recovery')
     expect(response.headers.get('cache-control')).toBe('private, no-store')
-    expect(decodePendingTokenHash(response.cookies.get(TOKEN_HASH_CALLBACK_COOKIE)?.value)).toEqual({
-      type: 'recovery',
-      next: '/auth/password/reset/complete',
-      tokenHash: 'c'.repeat(64),
-    })
+    expect(response.cookies.get(TOKEN_HASH_CALLBACK_COOKIE)).toBeUndefined()
     expect(response.cookies.get('findmydoc_patient_verification')).toBeUndefined()
     expect(callbackBoundary.createClient).not.toHaveBeenCalled()
     expect(callbackBoundary.createVerificationClient).not.toHaveBeenCalled()

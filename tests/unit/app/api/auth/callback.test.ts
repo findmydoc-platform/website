@@ -36,7 +36,7 @@ function request(type: 'invite' | 'recovery', origin = 'http://localhost') {
 describe('POST /api/auth/callback', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it.each(['invite', 'recovery'] as const)('verifies %s only after same-origin POST', async (type) => {
+  it.each(['invite'] as const)('verifies %s only after same-origin POST', async (type) => {
     const input = request(type)
     const response = await POST(input.request)
 
@@ -45,6 +45,12 @@ describe('POST /api/auth/callback', () => {
     expect(verifyOtpMock).toHaveBeenCalledWith({ token_hash: 'secret-token-hash', type })
     expect(response.headers.get('set-cookie')).toContain('findmydoc_auth_token_hash=;')
     expect(response.headers.get('cache-control')).toBe('private, no-store')
+  })
+  it('rejects legacy unbound recovery before consuming a token', async () => {
+    const response = await POST(request('recovery').request)
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ code: 'INVALID_OR_EXPIRED_LINK' })
+    expect(verifyOtpMock).not.toHaveBeenCalled()
   })
 
   it('rejects cross-origin requests without calling Supabase', async () => {
@@ -58,7 +64,7 @@ describe('POST /api/auth/callback', () => {
     verifyOtpMock.mockResolvedValueOnce({
       error: { message: 'provider details', status: 400 },
     })
-    const response = await POST(request('recovery').request)
+    const response = await POST(request('invite').request)
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toEqual({ code: 'INVALID_OR_EXPIRED_LINK' })
     expect(response.headers.get('set-cookie')).toContain('findmydoc_auth_token_hash=;')
@@ -79,7 +85,7 @@ describe('POST /api/auth/callback', () => {
     },
   ])('retains the pending callback after $label', async ({ error }) => {
     verifyOtpMock.mockResolvedValueOnce({ error })
-    const response = await POST(request('recovery').request)
+    const response = await POST(request('invite').request)
 
     expect(response.status).toBe(503)
     await expect(response.json()).resolves.toEqual({

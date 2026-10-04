@@ -384,7 +384,11 @@ export const guardAuthActionWrite: CollectionBeforeChangeHook = async ({ data, o
           (originalDoc.actionType === 'patient-verification' ? verificationCorrelationWindowMs : recoveryWindowMs) ||
       doc.correlationDigest !== null ||
       doc.correlationKeyVersion !== null ||
-      Object.keys(data).some((field) => !['correlationDigest', 'correlationKeyVersion', 'updatedAt'].includes(field))
+      Object.keys(data).some(
+        (field) =>
+          !['correlationDigest', 'correlationKeyVersion', 'updatedAt'].includes(field) &&
+          !sameValue(data[field], originalDoc[field as keyof typeof originalDoc]),
+      )
     )
       throw new AuthActionError('invalid-transition')
     return data

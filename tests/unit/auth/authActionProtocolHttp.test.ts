@@ -123,6 +123,8 @@ function fixture(flow: DashboardActionFlow = 'clinic-invitation') {
             Object.entries(conditions as Record<string, unknown>).every(([operator, value]) => {
               if (operator === 'equals') return doc[field] === value
               if (operator === 'like') return String(doc[field]).includes(String(value))
+              if (operator === 'in') return (value as unknown[]).includes(doc[field])
+              if (operator === 'not_equals') return doc[field] !== value
               throw new Error('Unsupported fake storage predicate.')
             }),
           ),
@@ -519,12 +521,11 @@ describe('Website auth-action HTTP protocol', () => {
       await pending
       return { data: { user: f.user }, error: null }
     })
+    const competingRequest = f.request('completeAction', { ...recoveryBody, password })
     const first = f.handle(f.request('completeAction', f.completeBody), 'completeAction')
     await started
     try {
-      expect(
-        (await f.handle(f.request('completeAction', { ...recoveryBody, password }), 'completeAction')).status,
-      ).toBe(503)
+      expect((await f.handle(competingRequest.clone(), 'completeAction')).status).toBe(503)
       expect(recovery.state).toBe('confirmed')
       expect(f.updatePassword).toHaveBeenCalledOnce()
     } finally {
@@ -532,7 +533,105 @@ describe('Website auth-action HTTP protocol', () => {
     }
     expect((await first).status).toBe(200)
     expect(f.action.state).toBe('completed')
-    expect(recovery.state).toBe('confirmed')
+    expect(recovery.state).toBe('revoked')
+    expect(await (await f.handle(competingRequest, 'completeAction')).json()).toEqual(safeInvalid)
+    expect(f.updatePassword).toHaveBeenCalledOnce()
+  })
+
+  it.each(['clinic-invitation', 'clinic-recovery'] as const)(
+    'revokes a previously confirmed %s when the other flow completes, while allowing later recovery',
+    async (staleFlow) => {
+      const f = fixture(staleFlow)
+      const successfulFlow = staleFlow === 'clinic-invitation' ? 'clinic-recovery' : 'clinic-invitation'
+      const other = {
+        ...f.action,
+        id: 43,
+        actionType: successfulFlow,
+        supabaseTokenType: successfulFlow === 'clinic-recovery' ? 'recovery' : 'invite',
+        completionRoute:
+          successfulFlow === 'clinic-recovery' ? '/auth/password/reset/complete' : '/auth/invite/complete',
+        expiresAt: new Date(start + (successfulFlow === 'clinic-recovery' ? 3600000 : 86400000)).toISOString(),
+        correlationDigest:
+          successfulFlow === 'clinic-recovery'
+            ? recoveryCorrelations(email, '', 'test', recoveryKeys)[0]!.correlations[0]!.digest
+            : undefined,
+        correlationKeyVersion: successfulFlow === 'clinic-recovery' ? 'current' : undefined,
+      }
+      f.records.set('authActions:43', other)
+      const otherBody = {
+        actionRef: createActionReference({ actionId: 43, flow: successfulFlow }, keys),
+        flow: successfulFlow,
+        accessToken: token,
+      }
+      const staleConfirmation = f.request('confirmAction', f.authenticatedBody)
+      expect((await f.handle(staleConfirmation.clone(), 'confirmAction')).status).toBe(200)
+      expect((await f.handle(f.request('confirmAction', otherBody), 'confirmAction')).status).toBe(200)
+      const completedRequest = f.request('completeAction', { ...otherBody, password })
+      expect((await f.handle(completedRequest.clone(), 'completeAction')).status).toBe(200)
+      expect(f.action.state).toBe('revoked')
+      expect(other.state).toBe('completed')
+      expect(await (await f.handle(staleConfirmation, 'confirmAction')).json()).toEqual(safeInvalid)
+      expect(await (await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).json()).toEqual(
+        safeInvalid,
+      )
+      expect((await f.handle(completedRequest, 'completeAction')).status).toBe(200)
+      expect(f.updatePassword).toHaveBeenCalledOnce()
+
+      f.setNow(start + 1000)
+      const later = {
+        ...other,
+        id: 44,
+        actionType: 'clinic-recovery',
+        supabaseTokenType: 'recovery',
+        completionRoute: '/auth/password/reset/complete',
+        state: 'active',
+        createdAt: new Date(start + 1000).toISOString(),
+        expiresAt: new Date(start + 3601000).toISOString(),
+        terminalAt: null,
+        correlationDigest: recoveryCorrelations(email, '', 'test', recoveryKeys)[0]!.correlations[0]!.digest,
+        correlationKeyVersion: 'current',
+      }
+      f.records.set('authActions:44', later)
+      const laterBody = {
+        actionRef: createActionReference({ actionId: 44, flow: 'clinic-recovery' }, keys),
+        flow: 'clinic-recovery',
+        accessToken: token,
+      }
+      expect(
+        (await f.handle(f.request('confirmAction', laterBody, { timestamp: start + 1000 }), 'confirmAction')).status,
+      ).toBe(200)
+      expect(
+        (
+          await f.handle(
+            f.request('completeAction', { ...laterBody, password }, { timestamp: start + 1000 }),
+            'completeAction',
+          )
+        ).status,
+      ).toBe(200)
+      expect(f.updatePassword).toHaveBeenCalledTimes(2)
+    },
+  )
+
+  it('revokes only outstanding clinic actions for the completed subject in its environment', async () => {
+    const f = fixture()
+    const outstanding = ['pending', 'active', 'confirmed'].map((state, index) => {
+      const action = { ...f.action, id: 51 + index, state }
+      f.records.set(`authActions:${action.id}`, action)
+      return action
+    })
+    const unrelated = [
+      { ...f.action, id: 54, supabaseSubject: randomUUID() },
+      { ...f.action, id: 55, environment: 'preview' },
+      { ...f.action, id: 56, actionType: 'patient-recovery' },
+      { ...f.action, id: 57, state: 'completed', terminalAt: new Date(start).toISOString() },
+    ]
+    const originals = structuredClone(unrelated)
+    for (const action of unrelated) f.records.set(`authActions:${action.id}`, action)
+    expect((await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')).status).toBe(200)
+    expect((await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).status).toBe(200)
+    expect(outstanding.map((action) => action.state)).toEqual(['revoked', 'revoked', 'revoked'])
+    expect(unrelated).toEqual(originals)
+    expect(f.updatePassword).toHaveBeenCalledOnce()
   })
 
   it('protects protocol KV claims from a caller-supplied capability and preserves other KV namespaces', async () => {

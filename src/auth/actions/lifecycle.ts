@@ -27,6 +27,7 @@ import {
   authActionStates,
   authActionTransitions,
   authActionTypes,
+  dashboardActionFlows,
   terminalAuthActionStates,
 } from './contracts'
 import {
@@ -1088,6 +1089,28 @@ export function bindAuthActions(
             )
           )
             throw new AuthActionError('invalid-transition')
+        }
+        if (command.to === 'completed') {
+          // The protocol still holds the subject's password claim. Commit revocation with completion before
+          // releasing that claim, so an earlier invitation or recovery cannot become the next password writer.
+          const competing = await req.payload.find({
+            collection: 'authActions',
+            req: internalReq,
+            overrideAccess: true,
+            depth: 0,
+            pagination: false,
+            limit: 101,
+            where: {
+              environment: { equals: environment },
+              actionType: { in: [...dashboardActionFlows] },
+              supabaseSubject: { equals: action.supabaseSubject },
+              state: { in: ['pending', 'active', 'confirmed'] },
+              id: { not_equals: action.id },
+            },
+          })
+          if (competing.docs.length > 100) throw new AuthActionError('invalid-transition')
+          for (const candidate of competing.docs)
+            await transition(internalReq, scope, { id: candidate.id, to: 'revoked' })
         }
         return command.to && !confirmingRetry
           ? transition(internalReq, scope, { id: action.id, to: command.to })

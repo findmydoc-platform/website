@@ -186,6 +186,7 @@ export function bindAuthActionProtocol(
         source.actionType !== reference.flow ||
         source.environment !== keys.environment ||
         source.supabaseSubject !== user.id ||
+        !['active', 'confirmed', 'completed'].includes(source.state) ||
         Date.parse(source.expiresAt) <= now()
       )
         return authActionProtocolResponse('invalid')

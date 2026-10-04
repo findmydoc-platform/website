@@ -99,6 +99,14 @@ AMR claim, browser boolean or Dashboard assertion as password-change evidence. P
 exist only in the bounded request and provider call. They are never persisted or logged. Dashboard remains
 responsible for its session cookies and post-recovery session invalidation in its separate integration.
 
+The same Serializable lifecycle command that completes the action revokes other pending, active or
+confirmed Clinic invitation and recovery actions for its bound subject in that environment. The subject
+password claim remains held until that commit succeeds. An earlier link therefore cannot perform another
+password update after completion, including an exact retry of a competing request. Actions created after
+that commit can authorize a later recovery. Other subjects, environments, flows and terminal actions are
+outside the revocation scope. The command fails closed if more than 100 competing actions exist; it does
+not commit a partial revocation or release the password claim.
+
 ## Retries and uncertainty
 
 An exact retry preserves the request ID, timestamp, key version and raw body. A changed signed body or
@@ -139,7 +147,8 @@ cannot make an expired envelope valid again.
 
 Offline HTTP contracts run the production handler, native lifecycle decisions and collection guards over
 fake native persistence. They cover both flows, tampering, clock bounds, subject and environment mismatch,
-illegal transitions, exact retries, competing completion and uncertain provider responses. Provider tests
+illegal transitions, exact retries, concurrent writers, sequential stale-link attempts and uncertain provider
+responses. Scope contracts check that revocation preserves unrelated actions and permits later recovery. Provider tests
 stub every network call and assert the ordinary GET/PUT boundary. Catalog tests render signed references
 through the unchanged pinned templates. These tests do not prove native database scheduling, live Supabase
 configuration, Dashboard callback behavior or mail arrival.

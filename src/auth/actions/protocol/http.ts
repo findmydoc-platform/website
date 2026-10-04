@@ -5,10 +5,10 @@ import { bindAuthActions } from '../lifecycle'
 import { dashboardRecoveryContext } from '../recoveryContext'
 import { requestPasswordRecovery } from '../passwordRecoveryRequests'
 import { resolveRecoveryKeys } from '../recoveryConfiguration'
+import { dashboardActionFlows } from '../contracts'
 import {
   authenticateAuthActionRequest,
   readActionReference,
-  dashboardActionFlows,
   authActionRequestBodyLimit,
   type AuthActionProtocolKeys,
   type AuthActionRequestEnvelope,
@@ -52,7 +52,7 @@ async function boundedBody(request: Request): Promise<string> {
       }
       chunks.push(chunk.value)
     }
-    return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks))
+    return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(Buffer.concat(chunks))
   } catch {
     // A cloned request uses a tee: waiting for cancellation could wait forever for its unread sibling.
     void reader.cancel().catch(() => {})

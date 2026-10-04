@@ -1,6 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
-import { authActionEnvironments } from '../contracts'
+import { authActionEnvironments, dashboardActionFlows, type DashboardActionFlow } from '../contracts'
 import { validatedRecoveryKeys, type RecoveryKey } from '../recoveryContext'
 
 export const authActionProtocolVersion = 1
@@ -10,7 +10,6 @@ export const authActionProtocolOperations = [
   'confirmAction',
   'completeAction',
 ] as const
-export const dashboardActionFlows = ['clinic-invitation', 'clinic-recovery'] as const
 export const authActionRequestWindowMs = 300_000
 export const authActionRequestBodyLimit = 16_384
 
@@ -28,7 +27,6 @@ export type AuthActionRequestEnvelope = {
   keyVersion: string
   signature: string
 }
-export type DashboardActionFlow = (typeof dashboardActionFlows)[number]
 
 const referenceSchema = z
   .object({

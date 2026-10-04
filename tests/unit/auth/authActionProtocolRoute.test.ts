@@ -20,7 +20,7 @@ const keys = {
 }
 const now = Date.parse('2026-10-04T12:00:00.000Z')
 const context = { params: Promise.resolve({ operation: 'validateAction' }) }
-function request(body = '{}', signed = true) {
+function request(body = '{}', signed = true, transportBody = body) {
   const requestId = randomUUID()
   const timestamp = new Date(now).toISOString()
   const signature = createHmac('sha256', keys.service[0]!.secret)
@@ -45,7 +45,7 @@ function request(body = '{}', signed = true) {
       'x-auth-action-key-version': 'current',
       'x-auth-action-signature': signed ? signature : 'invalid',
     },
-    body,
+    body: transportBody,
   })
 }
 beforeEach(() => {
@@ -65,6 +65,11 @@ afterEach(() => {
 })
 
 describe('native auth-action route authentication', () => {
+  it('rejects additional UTF-8 BOM bytes instead of authenticating a normalized body', async () => {
+    expect((await POST(request('{}', true, '\uFEFF{}'), context)).status).toBe(400)
+    expect(boundary.getPayload).not.toHaveBeenCalled()
+    expect(boundary.handle).not.toHaveBeenCalled()
+  })
   it('rejects unsigned and oversized cloned requests before Payload initialization', async () => {
     expect((await POST(request('{}', false), context)).status).toBe(400)
     expect((await POST(request('x'.repeat(16385)), context)).status).toBe(400)

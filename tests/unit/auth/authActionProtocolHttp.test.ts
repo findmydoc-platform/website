@@ -5,11 +5,8 @@ import type { User } from '@supabase/supabase-js'
 import { AuthActions } from '@/collections/AuthActions'
 import { bindAuthActions } from '@/auth/actions/lifecycle'
 import { bindAuthActionProtocol } from '@/auth/actions/protocol/http'
-import {
-  createActionReference,
-  type AuthActionProtocolKeys,
-  type DashboardActionFlow,
-} from '@/auth/actions/protocol/credentials'
+import { createActionReference, type AuthActionProtocolKeys } from '@/auth/actions/protocol/credentials'
+import type { DashboardActionFlow } from '@/auth/actions/contracts'
 import { protectAuthActionProtocolStorage } from '@/auth/actions/protocol/storage'
 import { recoveryCorrelations } from '@/auth/actions/recoveryCorrelation'
 
@@ -342,15 +339,24 @@ describe('Website auth-action HTTP protocol', () => {
     },
   )
 
-  it('rejects a reused request ID with different signed content and rechecks active state for exact validation retries', async () => {
+  it('rejects a different otherwise valid body under the same request ID', async () => {
+    const f = fixture()
+    const id = randomUUID()
+    expect((await f.handle(f.request('confirmAction', f.authenticatedBody, { id }), 'confirmAction')).status).toBe(200)
+    const different = { ...f.authenticatedBody, accessToken: 'another-valid-offline-session' }
+    expect(await (await f.handle(f.request('confirmAction', different, { id }), 'confirmAction')).json()).toEqual(
+      safeInvalid,
+    )
+    // The same changed body is a valid confirmation retry when it has its own request ID.
+    expect((await f.handle(f.request('confirmAction', different), 'confirmAction')).status).toBe(200)
+    expect(f.req.payload.update).toHaveBeenCalledOnce()
+  })
+
+  it('rechecks active state on exact validation retries after confirmation', async () => {
     const f = fixture()
     const id = randomUUID()
     expect((await f.handle(f.request('validateAction', f.body, { id }), 'validateAction')).status).toBe(200)
-    const different = { ...f.body, flow: 'clinic-recovery' }
-    expect(await (await f.handle(f.request('validateAction', different, { id }), 'validateAction')).json()).toEqual(
-      safeInvalid,
-    )
-    f.action.state = 'confirmed'
+    expect((await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')).status).toBe(200)
     expect(await (await f.handle(f.request('validateAction', f.body, { id }), 'validateAction')).json()).toEqual(
       safeInvalid,
     )
@@ -478,6 +484,55 @@ describe('Website auth-action HTTP protocol', () => {
     release()
     expect((await first).status).toBe(200)
     expect(f.updatePassword).toHaveBeenCalledOnce()
+  })
+
+  it('excludes parallel invitation and recovery password writers for the same subject', async () => {
+    const f = fixture()
+    const recovery = {
+      ...f.action,
+      id: 43,
+      actionType: 'clinic-recovery',
+      supabaseTokenType: 'recovery',
+      completionRoute: '/auth/password/reset/complete',
+      expiresAt: new Date(start + 3600000).toISOString(),
+      correlationDigest: recoveryCorrelations(email, '', 'test', recoveryKeys)[0]!.correlations[0]!.digest,
+      correlationKeyVersion: 'current',
+    }
+    f.records.set('authActions:43', recovery)
+    const recoveryBody = {
+      actionRef: createActionReference({ actionId: 43, flow: 'clinic-recovery' }, keys),
+      flow: 'clinic-recovery',
+      accessToken: token,
+    }
+    expect((await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')).status).toBe(200)
+    expect((await f.handle(f.request('confirmAction', recoveryBody), 'confirmAction')).status).toBe(200)
+    let release!: () => void
+    const pending = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let began!: () => void
+    const started = new Promise<void>((resolve) => {
+      began = resolve
+    })
+    f.updatePassword.mockImplementationOnce(async () => {
+      began()
+      await pending
+      return { data: { user: f.user }, error: null }
+    })
+    const first = f.handle(f.request('completeAction', f.completeBody), 'completeAction')
+    await started
+    try {
+      expect(
+        (await f.handle(f.request('completeAction', { ...recoveryBody, password }), 'completeAction')).status,
+      ).toBe(503)
+      expect(recovery.state).toBe('confirmed')
+      expect(f.updatePassword).toHaveBeenCalledOnce()
+    } finally {
+      release()
+    }
+    expect((await first).status).toBe(200)
+    expect(f.action.state).toBe('completed')
+    expect(recovery.state).toBe('confirmed')
   })
 
   it('protects protocol KV claims from a caller-supplied capability and preserves other KV namespaces', async () => {

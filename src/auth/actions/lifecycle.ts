@@ -16,7 +16,7 @@ import { findRecoveryPrincipal, recoveryActionTypes } from './recoveryPrincipal'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { findClinicInvitationPrincipal } from './clinicInvitationPrincipal'
 import { readRecoveryPrincipal } from './recoveryPrincipal'
-import type { DashboardActionFlow } from './protocol/credentials'
+import type { DashboardActionFlow } from './contracts'
 import type { AuthAction, ClinicStaff } from '@/payload-types'
 import {
   authActionDiagnosticFields,

@@ -104,8 +104,10 @@ responsible for its session cookies and post-recovery session invalidation in it
 An exact retry preserves the request ID, timestamp, key version and raw body. A changed signed body or
 timestamp under the same ID is invalid. Immutable unique native Local API creates in the existing private
 `payload-kv` collection claim execution across instances. A separate immutable result receipt records the
-closed outcome. Receipt binding uses a purpose-separated HMAC; storage contains neither raw body nor
-transport HMAC. Namespace hooks reject generic writes and deletions even with access overrides.
+closed outcome after execution. Early invalid body or reference checks return the same invalid result on
+every exact retry without storing a result receipt. Receipt binding uses a purpose-separated HMAC.
+Storage contains neither raw body nor transport HMAC. Namespace hooks reject generic writes and deletions
+even with access overrides.
 No schema, migration, SQL escape hatch or new transaction owner is introduced.
 
 Exact validation retries recheck active state. Confirmation retries recheck current user and principal,

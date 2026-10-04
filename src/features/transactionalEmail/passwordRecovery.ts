@@ -7,6 +7,7 @@ import { recoveryActionTypes, type RecoveryPrincipal } from '@/auth/actions/reco
 import { recoveryCorrelations } from '@/auth/actions/recoveryCorrelation'
 import type { RecoveryKey } from '@/auth/actions/recoveryContext'
 import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
+import { createConfiguredActionReference, type AuthActionProtocolKeys } from '@/auth/actions/protocol/credentials'
 import type { EmailEnvironment } from './environment'
 import type { CatalogEntry, CatalogRevalidation } from './catalog'
 import type { TransactionalEmailCommand } from './commands'
@@ -25,6 +26,7 @@ type Dependencies = {
   findPrincipal(collection: RecoveryPrincipal['collection'], id: number): Promise<RecoveryPrincipal | null>
   admin(principal: RecoveryPrincipal): Promise<Admin>
   dashboardOrigin?: () => string
+  actionReferenceKeys?: AuthActionProtocolKeys
 }
 
 function sameIdentity(user: User | null, action: AuthAction, principal: RecoveryPrincipal, now: number): user is User {
@@ -131,6 +133,15 @@ export function createPasswordRecoveryCatalogEntry(dependencies: Dependencies): 
             ? new URL('/auth/callback', (dependencies.dashboardOrigin ?? getClinicDashboardOrigin)())
             : patientVerificationCallback(dependencies.environment, current.action.id)
         callback.searchParams.set('authActionId', String(current.action.id))
+        if (current.action.actionType === 'clinic-recovery')
+          callback.searchParams.set(
+            'actionRef',
+            createConfiguredActionReference(
+              { actionId: current.action.id, flow: 'clinic-recovery' },
+              dependencies.environment,
+              dependencies.actionReferenceKeys,
+            ),
+          )
         callback.searchParams.set('next', current.action.completionRoute)
         const generated = await current.admin.generateLink({
           type: 'recovery',

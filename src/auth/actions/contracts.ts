@@ -6,6 +6,8 @@ export const authActionTypes = [
   'platform-recovery',
 ] as const
 export const authActionEnvironments = ['local', 'test', 'ci', 'preview', 'production'] as const
+export const dashboardActionFlows = ['clinic-invitation', 'clinic-recovery'] as const
+export type DashboardActionFlow = (typeof dashboardActionFlows)[number]
 export const authActionStates = [
   'pending',
   'active',

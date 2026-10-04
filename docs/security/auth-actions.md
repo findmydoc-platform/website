@@ -175,7 +175,15 @@ The resolver reads current `patients`, `clinicStaff` and `platformStaff` records
 
 `websiteRecoveryContext` accepts only `x-vercel-forwarded-for` while running on Vercel in Preview or Production. Arbitrary forwarded headers, IP chains and local fallback input are rejected. [Vercel's request header contract](https://vercel.com/docs/headers/request-headers#x-vercel-forwarded-for) supplies that deployment boundary. IPv6 spelling and IPv4-mapped IPv6 normalize to one counter identity.
 
-`dashboardRecoveryContext` is the authentication primitive for the Dashboard `requestRecovery` adapter, not a published endpoint. It verifies HMAC-SHA-256 over the UTF-8 JSON array `["auth-recovery-request-v1", environment, method, operation, timestamp, requestId, sha256(rawBody)]`. The method is `POST`, the operation is `requestRecovery`, and `requestId` is a UUID. The timestamp is not in the future and is less than five minutes old. The strictly parsed signed body contains only `email` and `clientIP`. Its email and environment must still match at admission, and the context expires at the end of the signed window. A replay cannot outlive the five-minute cooldown. The complete protocol's request-ID idempotency and remaining operations belong to its Website/Dashboard integration. JSON flags or serialized context objects grant no authority.
+`dashboardRecoveryContext` verifies the Dashboard recovery envelope before creating an opaque IP context.
+The versioned [Website auth-action protocol](../integrations/auth-action-protocol.md) uses the
+`auth-action-protocol-v1` HMAC purpose and durable request-ID claims for its four operations. The original
+internal context adapter retains its `auth-recovery-request-v1` purpose for existing callers. Both require
+`POST`, operation `requestRecovery`, a UUID request ID and a timestamp less than five minutes old that is
+not in the future. The strictly parsed signed body contains only `email` and `clientIP`. Its email and
+environment must still match at admission, and the context expires at the end of the signed window.
+JSON flags or serialized context objects grant no authority. Protocol recovery restricts eligible action
+creation to Clinic principals without changing the existing non-enumerating rate-limit policy.
 
 Recovery counting and Dashboard authentication use separate server-side key rings, each with distinct Preview and Production secret material. Current counting key comes first; keep previous versions until their events expire. HMAC counting covers `["auth-recovery-correlation-v1", environment, dimension, normalizedValue]`. Missing live versions fail closed instead of resetting limits. A `recoveryRequestEvents` row contains only `environment`, one `dimension`, `keyVersion`, `digest`, `observedAt` and Payload's ID. It has no principal, action, request-ID or opposite-dimension relationship. HMACs are pseudonyms, not anonymization; privileged database access can still correlate timestamps. No plaintext email, IP or digest enters Auth logs or responses.
 

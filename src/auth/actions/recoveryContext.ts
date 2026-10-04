@@ -86,7 +86,12 @@ export function dashboardRecoveryContext(
     keyVersion: string
     signature: string
   },
-  options: { environment: Environment; keys: readonly RecoveryKey[]; now?: () => number },
+  options: {
+    environment: Environment
+    keys: readonly RecoveryKey[]
+    now?: () => number
+    protocolVersion?: 1
+  },
 ): RecoveryContext | null {
   try {
     const keys = validatedRecoveryKeys(options.keys)
@@ -110,7 +115,7 @@ export function dashboardRecoveryContext(
     const expected = createHmac('sha256', key.secret)
       .update(
         JSON.stringify([
-          'auth-recovery-request-v1',
+          options.protocolVersion === 1 ? 'auth-action-protocol-v1' : 'auth-recovery-request-v1',
           options.environment,
           input.method,
           input.operation,

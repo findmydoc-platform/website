@@ -1,5 +1,6 @@
 import { transactionalEmailEventSchema } from './features/transactionalEmail/eventSchema'
 import { validateTransactionalEmailStartup } from './features/transactionalEmail/environment'
+import { protectAuthActionProtocolStorage } from './auth/actions/protocol/storage'
 // storage-adapter-import-placeholder
 import { postgresAdapter } from '@payloadcms/db-postgres'
 
@@ -595,6 +596,7 @@ export default buildConfig({
   },
   logger: createPayloadLoggerConfig(process.env),
   onInit: async (payload) => {
+    protectAuthActionProtocolStorage(payload)
     if (process.env.NEXT_PHASE === 'phase-production-build') {
       return
     }

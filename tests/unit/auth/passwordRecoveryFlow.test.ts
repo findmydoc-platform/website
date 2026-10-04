@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomUUID } from 'node:crypto'
+import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Payload } from 'payload'
 import { createEmailCommandStorage } from '../../helpers/emailCommandStorage'
@@ -9,6 +9,8 @@ import { bindAuthActions } from '@/auth/actions/lifecycle'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { createFakeDeliveryAdapter } from '@/features/transactionalEmail/delivery'
+import { bindAuthActionProtocol } from '@/auth/actions/protocol/http'
+import { resolveAuthActionProtocolKeys, readActionReference } from '@/auth/actions/protocol/credentials'
 
 const mocks = vi.hoisted(() => ({ liveAdmin: vi.fn() }))
 vi.mock('@/auth/utilities/supaBaseServer', () => ({ createAdminClient: mocks.liveAdmin }))
@@ -69,6 +71,14 @@ function fixture(collection: (typeof variants)[number][0], ci = false) {
   const environment = resolveTransactionalEmailEnvironment()
   expect(environment).toBe(ci ? 'ci' : 'test')
   vi.stubEnv('AUTH_RECOVERY_CORRELATION_KEYS_JSON', JSON.stringify({ environment, keys: [key] }))
+  vi.stubEnv(
+    'AUTH_ACTION_PROTOCOL_KEYS_JSON',
+    JSON.stringify({
+      environment,
+      service: [{ version: 'current', secret: randomBytes(32).toString('hex') }],
+      reference: [{ version: 'current', secret: randomBytes(32).toString('hex') }],
+    }),
+  )
   let now = start
   vi.setSystemTime(start)
   const store = createEmailCommandStorage()
@@ -131,7 +141,42 @@ describe('recovery from Auth request through the real static catalog and shared 
       const store = fixture(collection, true)
       const blockedFetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('External network forbidden'))
       try {
-        await requestPasswordRecovery(store.req, { email, context: store.context })
+        if (collection === 'clinicStaff') {
+          const keys = resolveAuthActionProtocolKeys(store.environment)
+          const body = JSON.stringify({ email, clientIP: '198.51.100.8' })
+          const timestamp = new Date(start).toISOString()
+          const requestId = randomUUID()
+          const signature = createHmac('sha256', keys.service[0]!.secret)
+            .update(
+              JSON.stringify([
+                'auth-action-protocol-v1',
+                store.environment,
+                'POST',
+                'requestRecovery',
+                timestamp,
+                requestId,
+                createHash('sha256').update(body).digest('hex'),
+              ]),
+            )
+            .digest('hex')
+          const request = new Request('https://website.example.invalid/api/internal/auth-actions/v1/requestRecovery', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-action-timestamp': timestamp,
+              'x-auth-action-request-id': requestId,
+              'x-auth-action-key-version': 'current',
+              'x-auth-action-signature': signature,
+            },
+            body,
+          })
+          const handle = bindAuthActionProtocol(store.req, { keys, now: store.now })
+          expect((await handle(request.clone(), 'requestRecovery')).status).toBe(202)
+          expect((await handle(request, 'requestRecovery')).status).toBe(202)
+          expect(store.rows.authActions!.size).toBe(1)
+          expect(store.rows.recoveryRequestEvents!.size).toBe(2)
+          expect(store.rows.transactionalEmailOutbox!.size).toBe(1)
+        } else await requestPasswordRecovery(store.req, { email, context: store.context })
         const action = [...store.rows.authActions!.values()][0]!
         const operation = [...store.rows.transactionalEmailOutbox!.values()][0]!
         expect(action).toMatchObject({ state: 'active', finalDestination: destination, supabaseSubject: subject })
@@ -160,6 +205,13 @@ describe('recovery from Auth request through the real static catalog and shared 
         expect(callback.searchParams.get('next')).toBe('/auth/password/reset/complete')
         expect(callback.searchParams.get('type')).toBe('recovery')
         expect(callback.searchParams.get('token_hash')).toMatch(/^[a-f0-9]{64}$/)
+        if (collection === 'clinicStaff')
+          expect(
+            readActionReference(
+              callback.searchParams.get('actionRef')!,
+              resolveAuthActionProtocolKeys(store.environment),
+            ),
+          ).toEqual({ version: 1, actionId: action.id, flow: 'clinic-recovery', environment: store.environment })
         expect(String(delivered.preparedText)).toContain(callback.toString())
         expect(mocks.liveAdmin).not.toHaveBeenCalled()
         expect(blockedFetch).not.toHaveBeenCalled()

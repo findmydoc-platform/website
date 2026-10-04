@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { authActionPolicies } from '@/auth/actions/contracts'
 import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
+import { createConfiguredActionReference, type AuthActionProtocolKeys } from '@/auth/actions/protocol/credentials'
 import type { EmailEnvironment } from './environment'
 import type { CatalogEntry, CatalogRevalidation } from './catalog'
 import type { TransactionalEmailCommand } from './commands'
@@ -20,6 +21,7 @@ type Dependencies = {
   findPrincipal(clinicStaffId: number): Promise<ClinicStaff | null>
   admin(): Promise<Admin>
   dashboardOrigin?: () => string
+  actionReferenceKeys?: AuthActionProtocolKeys
 }
 
 export function clinicInvitationCallback(origin: string, id: number): URL {
@@ -111,6 +113,14 @@ export function createClinicInvitationCatalogEntry(dependencies: Dependencies): 
         const callback = clinicInvitationCallback(
           (dependencies.dashboardOrigin ?? getClinicDashboardOrigin)(),
           current.action.id,
+        )
+        callback.searchParams.set(
+          'actionRef',
+          createConfiguredActionReference(
+            { actionId: current.action.id, flow: 'clinic-invitation' },
+            dependencies.environment,
+            dependencies.actionReferenceKeys,
+          ),
         )
         const generated = await current.admin.generateLink({
           type: policy.supabaseTokenType,

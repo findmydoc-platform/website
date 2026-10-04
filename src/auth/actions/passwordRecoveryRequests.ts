@@ -38,7 +38,7 @@ async function acceptRecovery(
 /** The public adapter catches all admission/acceptance outcomes into the same neutral response. */
 export async function requestPasswordRecovery(
   req: PayloadRequest,
-  input: { email: string; context: RecoveryContext | null },
+  input: { email: string; context: RecoveryContext | null; actionType?: 'clinic-recovery' },
 ) {
   const email = normalizeEmail(input.email)
   if (!isValidEmail(email) || email.length > 254) throw new Error('Invalid recovery request.')
@@ -50,6 +50,7 @@ export async function requestPasswordRecovery(
   const action = await bindAuthActions(sourceReq, { environment, recoveryKeys }).reserveRecovery({
     email,
     context: input.context,
+    ...(input.actionType ? { actionType: input.actionType } : {}),
   })
   if (action) await acceptRecovery(sourceReq, action, environment)
 }

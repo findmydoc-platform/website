@@ -4,6 +4,7 @@ import { RecoveryRequestEvents } from '@/collections/RecoveryRequestEvents'
 import { AuthActions } from '@/collections/AuthActions'
 import { TransactionalEmailOutbox } from '@/collections/TransactionalEmailOutbox'
 import { TransactionalEmailEvents } from '@/collections/TransactionalEmailEvents'
+import { protectAuthActionProtocolStorage } from '@/auth/actions/protocol/storage'
 
 type Document = Record<string, unknown>
 type Options = {
@@ -37,6 +38,8 @@ function matches(doc: Document, where: Document): boolean {
       switch (operator) {
         case 'equals':
           return value === expected
+        case 'like':
+          return typeof value === 'string' && value.includes(String(expected))
         case 'in':
           return (expected as unknown[]).includes(value)
         case 'not_in':
@@ -60,8 +63,12 @@ function matches(doc: Document, where: Document): boolean {
 
 /** Offline Local API adapter. Production collection hooks still authorize and validate every operation. */
 export function createEmailCommandStorage() {
+  const collectionConfigs: Record<string, CollectionConfig> = {
+    ...collections,
+    'payload-kv': { slug: 'payload-kv', fields: [], hooks: {} },
+  }
   const rows: Record<string, Map<number, Document>> = Object.fromEntries(
-    [...Object.keys(collections), 'patients', 'clinicStaff', 'platformStaff'].map((slug) => [slug, new Map()]),
+    [...Object.keys(collectionConfigs), 'patients', 'clinicStaff', 'platformStaff'].map((slug) => [slug, new Map()]),
   )
   const sessions: Record<string, object> = {}
   const snapshots = new Map<string, typeof rows>()
@@ -87,13 +94,13 @@ export function createEmailCommandStorage() {
     },
   }
   async function guard(operation: string, options: Options) {
-    const collection = collections[options.collection]
+    const collection = collectionConfigs[options.collection]
     for (const hook of collection?.hooks?.beforeOperation ?? [])
       await hook({ operation, collection, args: options, req: options.req } as never)
   }
   async function read(doc: Document, options: Options) {
     let result = structuredClone(doc)
-    for (const hook of collections[options.collection]?.hooks?.afterRead ?? [])
+    for (const hook of collectionConfigs[options.collection]?.hooks?.afterRead ?? [])
       result = await hook({ doc: result, req: options.req } as never)
     return result
   }
@@ -101,8 +108,14 @@ export function createEmailCommandStorage() {
     await guard(operation, options)
     const originalDoc = options.id ? rows[options.collection]!.get(options.id) : undefined
     let data = structuredClone(options.data!)
-    for (const hook of collections[options.collection]?.hooks?.beforeChange ?? [])
+    for (const hook of collectionConfigs[options.collection]?.hooks?.beforeChange ?? [])
       data = await hook({ data, originalDoc, operation, req: options.req } as never)
+    if (
+      operation === 'create' &&
+      options.collection === 'payload-kv' &&
+      [...rows['payload-kv']!.values()].some((row) => row.key === data.key)
+    )
+      throw new Error('Unique KV key conflict.')
     const timestamp = new Date().toISOString()
     const doc = {
       ...(options.collection === 'transactionalEmailOutbox' ? { attemptCount: 0 } : {}),
@@ -116,6 +129,7 @@ export function createEmailCommandStorage() {
     return read(doc, options)
   }
   const payload = {
+    collections: Object.fromEntries(Object.entries(collectionConfigs).map(([slug, config]) => [slug, { config }])),
     db,
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     create: vi.fn((options: Options) => write('create', options)),
@@ -139,10 +153,11 @@ export function createEmailCommandStorage() {
     }),
     delete: vi.fn(async (options: Options) => {
       await guard('delete', options)
-      for (const hook of collections[options.collection]?.hooks?.beforeDelete ?? [])
+      for (const hook of collectionConfigs[options.collection]?.hooks?.beforeDelete ?? [])
         await hook({ id: options.id, req: options.req } as never)
       rows[options.collection]!.delete(options.id!)
     }),
   } as unknown as Payload
+  protectAuthActionProtocolStorage(payload)
   return { payload, rows, req: { payload, context: {}, user: null } as PayloadRequest }
 }

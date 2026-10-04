@@ -1,8 +1,10 @@
+import { randomBytes } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { User } from '@supabase/supabase-js'
 import type { AuthAction, ClinicStaff } from '@/payload-types'
 import { dispatchCommandPreparation } from '@/features/transactionalEmail/catalog'
 import { bindPayloadCommandCatalog } from '@/features/transactionalEmail/payloadCatalog'
+import { readActionReference } from '@/auth/actions/protocol/credentials'
 
 const subject = '3525d8e2-0ff0-44cc-9f14-ad8a783a57dd'
 const email = 'clinic@example.test'
@@ -63,7 +65,7 @@ function fixture() {
   } as User
   const admin = {
     getUserById: vi.fn(async () => ({ data: { user }, error: null })),
-    generateLink: vi.fn(async () => ({
+    generateLink: vi.fn(async (_input: unknown) => ({
       data: { user, properties: { hashed_token: 'd'.repeat(64), verification_type: 'invite' } },
       error: null,
     })),
@@ -84,6 +86,12 @@ describe('payload transactional email catalog wiring', () => {
 
   it('routes auth.invitation through the static Payload catalog and prepares the clinic invitation', async () => {
     vi.stubEnv('CI', 'true')
+    const keys = {
+      environment: 'ci' as const,
+      service: [{ version: 'current', secret: randomBytes(32).toString('hex') }],
+      reference: [{ version: 'current', secret: randomBytes(32).toString('hex') }],
+    }
+    vi.stubEnv('AUTH_ACTION_PROTOCOL_KEYS_JSON', JSON.stringify(keys))
     vi.stubEnv('CLINIC_DASHBOARD_URL', 'https://dashboard.findmydoc.test')
     const { action, admin, payload, sourceReq } = fixture()
     const catalog = bindPayloadCommandCatalog({ payload } as never)
@@ -106,10 +114,20 @@ describe('payload transactional email catalog wiring', () => {
     expect(mocks.createLocalReq).toHaveBeenCalledWith({}, payload)
     expect(mocks.bindAuthActions).toHaveBeenCalledWith(sourceReq, { environment: 'ci' })
     expect(mocks.findClinicInvitationPrincipal).toHaveBeenCalledWith(sourceReq, 61)
-    expect(admin.generateLink).toHaveBeenCalledWith({
-      email,
-      options: { redirectTo: `https://dashboard.findmydoc.test/auth/callback?authActionId=${action.id}` },
-      type: 'invite',
+    const generated = admin.generateLink.mock.calls[0]![0] as unknown as {
+      type: string
+      email: string
+      options: { redirectTo: string }
+    }
+    const callback = new URL(generated.options.redirectTo)
+    expect(generated).toMatchObject({ type: 'invite', email })
+    expect(callback.origin).toBe('https://dashboard.findmydoc.test')
+    expect(callback.searchParams.get('authActionId')).toBe(String(action.id))
+    expect(readActionReference(callback.searchParams.get('actionRef')!, keys)).toEqual({
+      version: 1,
+      actionId: action.id,
+      flow: 'clinic-invitation',
+      environment: 'ci',
     })
   })
 })

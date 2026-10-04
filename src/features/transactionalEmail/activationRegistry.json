@@ -119,6 +119,24 @@
       "environment": "preview"
     },
     {
+      "commandType": "auth.email-verification",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "preview-preflight-v1",
+      "environment": "preview"
+    },
+    {
+      "commandType": "auth.invitation",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "preview-preflight-v1",
+      "environment": "preview"
+    },
+    {
+      "commandType": "auth.password-recovery",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "preview-preflight-v1",
+      "environment": "preview"
+    },
+    {
       "commandType": "clinic.registration-received",
       "registryVersion": "activation-v1",
       "preflightVersion": "production-preflight-v2",

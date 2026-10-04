@@ -144,13 +144,21 @@ describe('committed transactional email activation', () => {
     }
   })
 
-  it('activates only the clinic registration receipt in each hosted environment', () => {
-    for (const environment of hostedEnvironments) {
-      for (const command of commandTypes) {
-        expect(isTransactionalEmailCommandActivationDeclared(environment, command, activationRegistry)).toBe(
-          command === 'clinic.registration-received',
-        )
-      }
+  it('activates the reviewed auth commands only in Preview and preserves clinic registration in both environments', () => {
+    const previewCommands = new Set([
+      'auth.email-verification',
+      'auth.invitation',
+      'auth.password-recovery',
+      'clinic.registration-received',
+    ])
+
+    for (const command of commandTypes) {
+      expect(isTransactionalEmailCommandActivationDeclared('preview', command, activationRegistry)).toBe(
+        previewCommands.has(command),
+      )
+      expect(isTransactionalEmailCommandActivationDeclared('production', command, activationRegistry)).toBe(
+        command === 'clinic.registration-received',
+      )
     }
 
     expect(activationRegistry.records.find(({ environment }) => environment === 'production')?.release).toEqual({

@@ -111,16 +111,6 @@ jobs:
           bash ./.github/scripts/deploy/assert-vercel-project-binding.sh
           pnpm dlx vercel@canary pull --yes --environment=preview
 
-      - name: Cache Next.js compiler output
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: |
-            .next/cache/webpack
-            .next/cache/swc
-          key: next-webpack-v1-${{ runner.os }}-node-${{ env.NODE_VERSION }}-vercel-preview-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'next.config.js', 'tsconfig.json', 'postcss.config.js', 'tailwind.config.*', '.npmrc', 'vercel.json') }}-${{ hashFiles('src/**', 'public/**', 'apps/**', 'scripts/**', 'config/**', 'redirects.js', 'next-sitemap.config.cjs') }}
-          restore-keys: |
-            next-webpack-v1-${{ runner.os }}-node-${{ env.NODE_VERSION }}-vercel-preview-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'next.config.js', 'tsconfig.json', 'postcss.config.js', 'tailwind.config.*', '.npmrc', 'vercel.json') }}-
-
       - name: Deploy to Vercel (Preview)
         id: vercel_preview
         env:

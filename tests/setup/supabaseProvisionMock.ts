@@ -10,6 +10,9 @@ vi.mock('@/auth/utilities/supabaseProvision', () => ({
   createInitialClinicSupabaseAccount: vi.fn(
     async ({ onboardingKey }: { onboardingKey: string }) => `sb-clinic-${onboardingKey}`,
   ),
+  reconcileExistingClinicSupabaseAccount: vi.fn(
+    async ({ onboardingKey }: { onboardingKey: string }) => `sb-clinic-${onboardingKey}`,
+  ),
   createSupabaseAccountWithPassword: vi.fn(async () => 'sb-direct-1'),
   deleteSupabaseAccount: vi.fn(async () => true),
   deleteClinicSupabaseAccount: vi.fn(async () => undefined),

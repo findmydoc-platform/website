@@ -1,7 +1,10 @@
 import { appendFileSync } from 'node:fs'
 import path from 'node:path'
-import { performance } from 'node:perf_hooks'
 import { VitestTestRunner } from 'vitest/runners'
+
+// Capture native references before tests install clock spies or fake timers.
+const monotonicNow = process.hrtime.bigint
+const workingDirectory = process.cwd()
 
 const phases = {
   'suite.beforeAll': 'beforeAll',
@@ -16,7 +19,7 @@ export default class DiagnosticWorker extends VitestTestRunner {
     const originalTrace = this.trace
     this.trace = (name, attributes, callback) => {
       if (!phases[name]) return originalTrace(name, attributes, callback)
-      const started = performance.now()
+      const started = monotonicNow()
       const filename = this.currentFile
       const record = () => {
         const output = process.env.CI_SHARD_HOOKS
@@ -24,9 +27,9 @@ export default class DiagnosticWorker extends VitestTestRunner {
         appendFileSync(
           output,
           JSON.stringify({
-            filename: path.relative(process.cwd(), filename).split(path.sep).join('/'),
+            filename: path.relative(workingDirectory, filename).split(path.sep).join('/'),
             name: phases[name],
-            durationMs: performance.now() - started,
+            durationMs: Number(monotonicNow() - started) / 1e6,
           }) + '\n',
         )
       }

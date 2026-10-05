@@ -294,7 +294,7 @@ export async function runDiagnostic(options) {
         if (options.stage === 'smoke')
           writeFileSync(
             path.join(directory, 'smoke.test.ts'),
-            "import { beforeAll, describe, expect, it } from 'vitest'; describe('reporter smoke', () => { beforeAll(() => { const until = performance.now() + 60; while (performance.now() < until) {} }); it.each([2, 3])('passes', value => expect(value + value).toBe(value * 2)); });",
+            "import { performance as nativePerformance } from 'node:perf_hooks'; import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'; describe('reporter smoke', () => { beforeAll(() => { const until = performance.now() + 60; while (performance.now() < until) {} }); beforeEach(() => vi.useFakeTimers({ toFake: ['performance', 'hrtime'] })); afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); }); it.each([2, 3])('passes', value => { vi.advanceTimersByTime(60000); const clock = nativePerformance.now.bind(nativePerformance); vi.spyOn(nativePerformance, 'now').mockImplementation(() => clock() + 60000); expect(value + value).toBe(value * 2); }); });",
           )
         const args = [path.join(root, 'node_modules/vitest/vitest.mjs'), 'run', '--config', config]
         if (options.stage !== 'smoke') {

@@ -21,6 +21,7 @@ const PREVIEW_GUARD_EXEMPT_PATHS = new Set([
   '/auth/invite/complete',
   '/auth/password/reset',
   '/auth/password/reset/complete',
+  '/auth/password/complete',
   '/login/patient',
   '/logout',
 ])

@@ -284,6 +284,43 @@ describe('preview lock proxy', () => {
     expect(location).toContain('next=%2Fregister%2Fpatient')
   })
 
+  it.each(['preview', 'production'] as const)(
+    'forwards the password completion POST to its recovery handler in %s',
+    async (environment) => {
+      process.env.VERCEL_ENV = environment
+      mockGuardFlags({ 'preview-guard-enabled': true })
+
+      const response = await proxy(
+        new NextRequest('https://preview.findmydoc.eu/auth/password/complete', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ csrf: 'invalid' }),
+        }),
+      )
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('x-middleware-next')).toBe('1')
+      expect(response.headers.get('location')).toBeNull()
+      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+      expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+      expect(mocks.getUser).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(['/auth/password/complete-help', '/auth/password/complete/extra'])(
+    'keeps the unimplemented password completion lookalike %s blocked',
+    async (path) => {
+      process.env.VERCEL_ENV = 'preview'
+
+      const response = await proxy(new NextRequest(`https://preview.findmydoc.eu${path}`, { method: 'POST' }))
+
+      expect(response.status).toBe(404)
+      expect(response.headers.get('x-middleware-next')).toBeNull()
+      expect(response.headers.get('location')).toBeNull()
+      expect(mocks.getUser).not.toHaveBeenCalled()
+    },
+  )
+
   it('forwards the active guard state to staff opening patient registration', async () => {
     process.env.VERCEL_ENV = 'production'
     mockGuardFlags({ 'preview-guard-enabled': true })

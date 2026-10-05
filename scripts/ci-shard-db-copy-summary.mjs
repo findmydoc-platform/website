@@ -147,7 +147,7 @@ export function renderCopySummary(rounds) {
   const lines = [
     '# Serial baseline database copy comparison',
     '',
-    `Commit: \`${rounds[0].commit}\`. Matched files: ${rounds[0].variants.D.selection.files.length}. Matched cases per variant: ${rounds[0].variants.D.selection.tests.length}.`,
+    `Commit: \`${rounds[0].commit}\`. Repetitions: ${rounds.length}. Matched files: ${rounds[0].variants.D.selection.files.length}. Matched cases per variant: ${rounds[0].variants.D.selection.tests.length}.`,
     '',
     '| Round | Empty + file seeds, s | Baseline + file copies, s | Saved, s | Copies, s |',
     '| --- | ---: | ---: | ---: | ---: |',
@@ -193,7 +193,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     if (!values.input || (!values.partial && !values.output))
       throw new Error('--input and final --output are required.')
     const rounds = analyzeCopyRounds(path.resolve(values.input), values.partial)
-    if (!values.partial) {
+    if (values.output) {
       writeFileSync(values.output, renderCopySummary(rounds))
       writeFileSync(`${values.output}.json`, JSON.stringify(rounds, null, 2))
     }

@@ -205,27 +205,78 @@ jobs:
           set -euo pipefail
           node scripts/assert-email-template-package-access.mjs
           pnpm install --frozen-lockfile --strict-peer-dependencies
-      - name: Measure three serial database copy pairs
+      - name: Measure serial database copy pair 1
+        id: copy-round-1
         env:
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
           PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
         run: |
           set -euo pipefail
-          for diagnostic_round in 1 2 3; do
-            node scripts/ci-shard-diagnostics.mjs --stage db-copy-mixed --round "$diagnostic_round" --variant pair --output "tmp/ci-diagnostics/db-copy-mixed/round-$diagnostic_round" --execute
-            node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-mixed --partial
-          done
-          node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-mixed --output tmp/ci-diagnostics/db-copy-mixed/summary.md
+          node scripts/ci-shard-diagnostics.mjs --stage db-copy-mixed --round 1 --variant pair --output tmp/ci-diagnostics/db-copy-mixed/round-1 --execute
+          node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-mixed --partial --output tmp/ci-diagnostics/db-copy-mixed/summary.md
           cat tmp/ci-diagnostics/db-copy-mixed/summary.md >> "$GITHUB_STEP_SUMMARY"
-      - name: Preserve database copy measurements
-        if: always()
+      - name: Preserve database copy pair 1
+        if: always() && steps.copy-round-1.outcome != 'skipped'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
         with:
-          name: ci-shard-${{ github.run_id }}-db-copy-mixed
+          name: ci-shard-${{ github.run_id }}-db-copy-mixed-round-1
           path: |
-            tmp/ci-diagnostics/db-copy-mixed
+            tmp/ci-diagnostics/db-copy-mixed/round-1
+            tmp/ci-diagnostics/db-copy-mixed/summary.md
+            tmp/ci-diagnostics/db-copy-mixed/summary.md.json
             !tmp/ci-diagnostics/db-copy-mixed/**/cache/**
             !tmp/ci-diagnostics/db-copy-mixed/**/*.mjs
+            !tmp/ci-diagnostics/db-copy-mixed/**/blob.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Measure serial database copy pair 2
+        id: copy-round-2
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+        run: |
+          set -euo pipefail
+          node scripts/ci-shard-diagnostics.mjs --stage db-copy-mixed --round 2 --variant pair --output tmp/ci-diagnostics/db-copy-mixed/round-2 --execute
+          node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-mixed --partial --output tmp/ci-diagnostics/db-copy-mixed/summary.md
+          cat tmp/ci-diagnostics/db-copy-mixed/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve database copy pair 2
+        if: always() && steps.copy-round-2.outcome != 'skipped'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: ci-shard-${{ github.run_id }}-db-copy-mixed-round-2
+          path: |
+            tmp/ci-diagnostics/db-copy-mixed/round-2
+            tmp/ci-diagnostics/db-copy-mixed/summary.md
+            tmp/ci-diagnostics/db-copy-mixed/summary.md.json
+            !tmp/ci-diagnostics/db-copy-mixed/**/cache/**
+            !tmp/ci-diagnostics/db-copy-mixed/**/*.mjs
+            !tmp/ci-diagnostics/db-copy-mixed/**/blob.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Measure serial database copy pair 3
+        id: copy-round-3
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+        run: |
+          set -euo pipefail
+          node scripts/ci-shard-diagnostics.mjs --stage db-copy-mixed --round 3 --variant pair --output tmp/ci-diagnostics/db-copy-mixed/round-3 --execute
+          node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-mixed --output tmp/ci-diagnostics/db-copy-mixed/summary.md
+          cat tmp/ci-diagnostics/db-copy-mixed/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve database copy pair 3
+        if: always() && steps.copy-round-3.outcome != 'skipped'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: ci-shard-${{ github.run_id }}-db-copy-mixed-round-3
+          path: |
+            tmp/ci-diagnostics/db-copy-mixed/round-3
+            tmp/ci-diagnostics/db-copy-mixed/summary.md
+            tmp/ci-diagnostics/db-copy-mixed/summary.md.json
+            !tmp/ci-diagnostics/db-copy-mixed/**/cache/**
+            !tmp/ci-diagnostics/db-copy-mixed/**/*.mjs
+            !tmp/ci-diagnostics/db-copy-mixed/**/blob.json
           if-no-files-found: error
           retention-days: 7
 
@@ -252,27 +303,78 @@ jobs:
           set -euo pipefail
           node scripts/assert-email-template-package-access.mjs
           pnpm install --frozen-lockfile --strict-peer-dependencies
-      - name: Measure three serial database copy pairs
+      - name: Measure serial database copy pair 1
+        id: copy-round-1
         env:
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
           PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
         run: |
           set -euo pipefail
-          for diagnostic_round in 1 2 3; do
-            node scripts/ci-shard-diagnostics.mjs --stage db-copy-suite --round "$diagnostic_round" --variant pair --output "tmp/ci-diagnostics/db-copy-suite/round-$diagnostic_round" --execute
-            node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-suite --partial
-          done
-          node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-suite --output tmp/ci-diagnostics/db-copy-suite/summary.md
+          node scripts/ci-shard-diagnostics.mjs --stage db-copy-suite --round 1 --variant pair --output tmp/ci-diagnostics/db-copy-suite/round-1 --execute
+          node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-suite --partial --output tmp/ci-diagnostics/db-copy-suite/summary.md
           cat tmp/ci-diagnostics/db-copy-suite/summary.md >> "$GITHUB_STEP_SUMMARY"
-      - name: Preserve database copy measurements
-        if: always()
+      - name: Preserve database copy pair 1
+        if: always() && steps.copy-round-1.outcome != 'skipped'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
         with:
-          name: ci-shard-${{ github.run_id }}-db-copy-suite
+          name: ci-shard-${{ github.run_id }}-db-copy-suite-round-1
           path: |
-            tmp/ci-diagnostics/db-copy-suite
+            tmp/ci-diagnostics/db-copy-suite/round-1
+            tmp/ci-diagnostics/db-copy-suite/summary.md
+            tmp/ci-diagnostics/db-copy-suite/summary.md.json
             !tmp/ci-diagnostics/db-copy-suite/**/cache/**
             !tmp/ci-diagnostics/db-copy-suite/**/*.mjs
+            !tmp/ci-diagnostics/db-copy-suite/**/blob.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Measure serial database copy pair 2
+        id: copy-round-2
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+        run: |
+          set -euo pipefail
+          node scripts/ci-shard-diagnostics.mjs --stage db-copy-suite --round 2 --variant pair --output tmp/ci-diagnostics/db-copy-suite/round-2 --execute
+          node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-suite --partial --output tmp/ci-diagnostics/db-copy-suite/summary.md
+          cat tmp/ci-diagnostics/db-copy-suite/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve database copy pair 2
+        if: always() && steps.copy-round-2.outcome != 'skipped'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: ci-shard-${{ github.run_id }}-db-copy-suite-round-2
+          path: |
+            tmp/ci-diagnostics/db-copy-suite/round-2
+            tmp/ci-diagnostics/db-copy-suite/summary.md
+            tmp/ci-diagnostics/db-copy-suite/summary.md.json
+            !tmp/ci-diagnostics/db-copy-suite/**/cache/**
+            !tmp/ci-diagnostics/db-copy-suite/**/*.mjs
+            !tmp/ci-diagnostics/db-copy-suite/**/blob.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Measure serial database copy pair 3
+        id: copy-round-3
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+        run: |
+          set -euo pipefail
+          node scripts/ci-shard-diagnostics.mjs --stage db-copy-suite --round 3 --variant pair --output tmp/ci-diagnostics/db-copy-suite/round-3 --execute
+          node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-suite --output tmp/ci-diagnostics/db-copy-suite/summary.md
+          cat tmp/ci-diagnostics/db-copy-suite/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve database copy pair 3
+        if: always() && steps.copy-round-3.outcome != 'skipped'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: ci-shard-${{ github.run_id }}-db-copy-suite-round-3
+          path: |
+            tmp/ci-diagnostics/db-copy-suite/round-3
+            tmp/ci-diagnostics/db-copy-suite/summary.md
+            tmp/ci-diagnostics/db-copy-suite/summary.md.json
+            !tmp/ci-diagnostics/db-copy-suite/**/cache/**
+            !tmp/ci-diagnostics/db-copy-suite/**/*.mjs
+            !tmp/ci-diagnostics/db-copy-suite/**/blob.json
           if-no-files-found: error
           retention-days: 7
 

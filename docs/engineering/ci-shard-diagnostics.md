@@ -91,4 +91,6 @@ The copy variant builds its template through one explicitly included Vitest diag
 
 Before every selected copy test file, a SQL probe verifies that the previous file's marker table did not survive the restore, then writes a new marker. PostgreSQL copies and SQL isolation checks are timed together. Existing per-test cleanup still handles S3Mock objects.
 
+Each expanded pair uploads its evidence immediately after validation, so earlier results remain available while later pairs run. Partial reports state their repetition count.
+
 The complete-suite job starts only after all mixed pairs pass. It runs three full serial pairs on one VM, with a 360-minute job limit and a 90-minute limit per test process. Any failed test, retry, missing copy, coverage regression or invalid native merge stops later pairs. A failed run's measurements remain diagnostic evidence, but cannot serve as an accepted correctness comparison. Normal CI, integration assertions and coverage thresholds are unchanged.

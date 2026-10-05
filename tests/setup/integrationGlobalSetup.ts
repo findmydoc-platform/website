@@ -5,7 +5,7 @@ loadLocalAndTestEnv()
 
 export async function setup() {
   try {
-    await setupTestDatabase({ templateKind: 'empty' })
+    await setupTestDatabase({ templateKind: process.env.CI_DB_COPY === '1' ? 'baseline' : 'empty' })
   } catch (error) {
     console.error('❌ Failed to start test database:', error)
     throw error

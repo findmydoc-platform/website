@@ -695,3 +695,33 @@ export async function teardownTestDatabase() {
   managesLocalTestStorageContainer = false
   console.log('✅ Test services stopped; matching database templates and S3Mock state preserved')
 }
+
+/** Verify a copied baseline before allowing integration tests to bypass seeding. */
+export async function assertBaselineWorkingDatabase() {
+  if (process.env.NODE_ENV !== 'test' || process.env.CI_DB_COPY !== '1')
+    throw new Error('Baseline copy is restricted to the explicit test experiment.')
+  const { connectionString } = deriveDatabaseConfig(process.env.DATABASE_URI || DEFAULT_CONN)
+  const fingerprint = computeTestDatabaseFingerprint({ templateKind: 'baseline' })
+  const metadata = await readTemplateMetadata(connectionString)
+  if (!isTemplateMetadataCurrent(metadata, { fingerprint, templateKind: 'baseline' }))
+    throw new Error('Working database is not a current baseline copy.')
+}
+
+/** Restore only the isolated local working database, keeping the seeded template and storage. */
+export async function copyBaselineWorkingDatabase() {
+  if (process.env.NODE_ENV !== 'test' || process.env.CI_DB_COPY !== '1')
+    throw new Error('Baseline copy is restricted to the explicit test experiment.')
+  const config = deriveDatabaseConfig(process.env.DATABASE_URI || DEFAULT_CONN)
+  const fingerprint = computeTestDatabaseFingerprint({ templateKind: 'baseline' })
+  const metadata = await readTemplateMetadata(
+    buildConnectionStringForDatabase(config.connectionString, config.templateDatabaseNames.baseline),
+  )
+  if (!isTemplateMetadataCurrent(metadata, { fingerprint, templateKind: 'baseline' }))
+    throw new Error('Baseline template is missing or stale; refusing to copy.')
+  await rebuildWorkingDatabaseFromTemplate({
+    adminConnectionString: config.adminConnectionString,
+    targetDatabaseName: config.targetDatabaseName,
+    templateDatabaseName: config.templateDatabaseNames.baseline,
+  })
+  await assertBaselineWorkingDatabase()
+}

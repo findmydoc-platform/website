@@ -2,6 +2,8 @@ import type { Payload } from 'payload'
 import { runBaselineSeeds } from '@/endpoints/seed/baseline'
 import { measureBaselineSeed, recordBaselineCacheHit } from '../../scripts/ci-shard-hook-phases.mjs'
 
+import { assertBaselineWorkingDatabase } from '../../scripts/test-database-harness.mjs'
+
 let baselineSeeded = false
 
 /**
@@ -9,6 +11,10 @@ let baselineSeeded = false
  * Returns the result of seeding or cached result if already run.
  */
 export async function ensureBaseline(payload: Payload) {
+  if (process.env.CI_DB_COPY === '1' && !baselineSeeded) {
+    await assertBaselineWorkingDatabase()
+    baselineSeeded = true
+  }
   if (baselineSeeded) {
     recordBaselineCacheHit()
     return

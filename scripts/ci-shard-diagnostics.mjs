@@ -40,10 +40,18 @@ export function pilotFiles(repositoryRoot = root) {
 }
 
 export function makePlan({ stage = 'smoke', variant = 'pair', round = 1, shard = 1 } = {}) {
-  if (!['smoke', 'pilot', 'full', 'hooks'].includes(stage) || !['pair', 'shard'].includes(variant))
+  if (!['smoke', 'pilot', 'full', 'hooks', 'db-copy'].includes(stage) || !['pair', 'shard'].includes(variant))
     throw new Error('Invalid stage or variant.')
   if (![1, 2, 3].includes(round) || ![1, 2, 3, 4].includes(shard)) throw new Error('Invalid round or shard.')
   if (stage === 'smoke') return [{ variant: 'smoke', shard: 0 }]
+  if (stage === 'db-copy') {
+    if (variant !== 'pair') throw new Error('DB copy diagnostics require paired serial processes.')
+    const pair = [
+      { variant: 'D', shard: 0 },
+      { variant: 'E', shard: 0 },
+    ]
+    return round === 2 ? pair.reverse() : pair
+  }
   if (stage === 'hooks') {
     if (variant !== 'pair') throw new Error('Hook diagnostics require a single serial process.')
     return [{ variant: 'H', shard: 0 }]
@@ -169,8 +177,8 @@ const markers = [
   ['database-wait', /Waiting for test database/],
   ['storage-wait', /Waiting for test S3 storage/],
   ['template-build', /Building empty test DB template/],
-  ['database-restore', /Restoring .* from the empty template/],
-  ['database-ready', /Test database ready from empty template/],
+  ['database-restore', /Restoring .* from the (?:empty|baseline) template/],
+  ['database-ready', /Test database ready from (?:empty|baseline) template/],
   ['teardown', /Stopping test services while preserving/],
   ['teardown-end', /Test services stopped/],
 ]
@@ -248,7 +256,7 @@ export function configSource(directory, smoke = false, merge = false, hookRound 
 ${hookRound ? `import HookSequencer from ${JSON.stringify(path.join(root, 'scripts/ci-shard-hook-sequencer.mjs'))};` : ''}
 export default { ...base, cacheDir: ${JSON.stringify(path.join(directory, 'cache'))}, test: { ...base.test,
 ${hookRound ? 'sequence: { ...base.test.sequence, sequencer: HookSequencer },' : ''}
-projects: base.test.projects.filter(p => p.test?.name === 'integration').map(p => ({ ...p, cacheDir: ${JSON.stringify(path.join(directory, 'cache'))}, test: { ...p.test, runner: ${JSON.stringify(worker)} ${hookRound ? `, include: ${JSON.stringify(hookFiles(hookRound))}` : ''} } })),
+projects: base.test.projects.filter(p => p.test?.name === 'integration').map(p => ({ ...p, cacheDir: ${JSON.stringify(path.join(directory, 'cache'))}, test: { ...p.test, setupFiles: [...p.test.setupFiles, ...(process.env.CI_DB_COPY === '1' ? ['tests/setup/integrationBaselineCopy.ts'] : [])], runner: ${JSON.stringify(worker)} ${hookRound ? `, include: ${JSON.stringify(hookFiles(hookRound))}` : ''} } })),
 reporters: ${merge ? "['dot']" : `[["blob", { outputFile: ${JSON.stringify(path.join(directory, 'blob.json'))} }], ${JSON.stringify(reporter)}]`},
 coverage: { ...base.test.coverage, thresholds: ${JSON.stringify(zeroThresholds)}, reporter: ['json-summary', 'json'], reportsDirectory: ${JSON.stringify(path.join(directory, 'coverage'))} }
 } }`
@@ -259,12 +267,11 @@ export async function runDiagnostic(options) {
   if (!options.execute)
     return {
       plan,
-      files:
-        options.stage === 'hooks'
-          ? hookFiles(options.round)
-          : options.stage === 'pilot'
-            ? pilotFiles()
-            : 'all integration files',
+      files: ['hooks', 'db-copy'].includes(options.stage)
+        ? hookFiles(options.round)
+        : options.stage === 'pilot'
+          ? pilotFiles()
+          : 'all integration files',
       dryRun: true,
       valid: null,
     }
@@ -307,7 +314,12 @@ export async function runDiagnostic(options) {
         const config = path.join(directory, 'vitest.config.mjs')
         writeFileSync(
           config,
-          configSource(directory, options.stage === 'smoke', false, options.stage === 'hooks' ? options.round : null),
+          configSource(
+            directory,
+            options.stage === 'smoke',
+            false,
+            ['hooks', 'db-copy'].includes(options.stage) ? options.round : null,
+          ),
         )
         if (options.stage === 'smoke')
           writeFileSync(
@@ -319,7 +331,7 @@ export async function runDiagnostic(options) {
           args.push('--project', 'integration', '--coverage')
           if (item.shard) args.push('--shard', `${item.shard}/4`)
           if (options.stage === 'pilot') args.push(...pilotFiles())
-          if (options.stage === 'hooks') args.push(...hookFiles(options.round))
+          if (['hooks', 'db-copy'].includes(options.stage)) args.push(...hookFiles(options.round))
         }
         const samples = []
         let sampling = false
@@ -342,21 +354,26 @@ export async function runDiagnostic(options) {
             linux ? ['--format=%U %S %M', '--output', timeFile, process.execPath, ...args] : args,
             {
               signal: controller.signal,
-              timeoutMs:
-                options.stage === 'hooks'
-                  ? 15 * 60 * 1000
-                  : options.stage === 'full' && item.variant === 'A'
-                    ? 90 * 60 * 1000
-                    : 45 * 60 * 1000,
+              timeoutMs: ['hooks', 'db-copy'].includes(options.stage)
+                ? 15 * 60 * 1000
+                : options.stage === 'full' && item.variant === 'A'
+                  ? 90 * 60 * 1000
+                  : 45 * 60 * 1000,
               env: {
                 ...process.env,
                 NODE_ENV: 'test',
                 NODE_OPTIONS: '--no-deprecation',
                 TEST_DB_REBUILD_TEMPLATES: '1',
+                CI_DB_COPY: options.stage === 'db-copy' && item.variant === 'E' ? '1' : '',
+                CI_DB_COPY_REPORT: path.join(directory, 'copies.jsonl'),
                 CI_SHARD_REPORT: path.join(directory, 'metrics.json'),
                 CI_SHARD_HOOKS: path.join(directory, 'hooks.jsonl'),
-                CI_SHARD_PHASES: options.stage === 'hooks' ? path.join(directory, 'phases.jsonl') : '',
-                CI_SHARD_FILE_ORDER: options.stage === 'hooks' ? JSON.stringify(hookFiles(options.round)) : '',
+                CI_SHARD_PHASES: ['hooks', 'db-copy'].includes(options.stage)
+                  ? path.join(directory, 'phases.jsonl')
+                  : '',
+                CI_SHARD_FILE_ORDER: ['hooks', 'db-copy'].includes(options.stage)
+                  ? JSON.stringify(hookFiles(options.round))
+                  : '',
               },
               onLine: (line, atMs) => {
                 for (const [phase, pattern] of markers) if (pattern.test(line)) phases.push({ phase, atMs })
@@ -386,8 +403,8 @@ export async function runDiagnostic(options) {
         else {
           try {
             requireCompleteHookTimings(JSON.parse(readFileSync(path.join(directory, 'metrics.json'), 'utf8')))
-            if (options.stage === 'hooks') {
-              validateHookMeasurement(
+            if (['hooks', 'db-copy'].includes(options.stage)) {
+              const hookMeasurements = validateHookMeasurement(
                 JSON.parse(readFileSync(path.join(directory, 'metrics.json'), 'utf8')),
                 readFileSync(path.join(directory, 'phases.jsonl'), 'utf8')
                   .trim()
@@ -396,6 +413,11 @@ export async function runDiagnostic(options) {
                   .map((line) => JSON.parse(line)),
                 hookFiles(options.round),
               )
+              if (options.stage === 'db-copy') {
+                const expectedSeeds = item.variant === 'D' ? 3 : 0
+                if (hookMeasurements.reduce((sum, file) => sum + file.seedCalls, 0) !== expectedSeeds)
+                  throw new Error('Unexpected seed execution in the database copy comparison.')
+              }
             }
           } catch (error) {
             rmSync(path.join(directory, 'blob.json'), { force: true })
@@ -426,7 +448,8 @@ export async function runDiagnostic(options) {
         },
       },
     )
-    if (options.variant === 'pair' && !['smoke', 'hooks'].includes(options.stage)) await mergeReports(output, 'B')
+    if (options.variant === 'pair' && !['smoke', 'hooks', 'db-copy'].includes(options.stage))
+      await mergeReports(output, 'B')
     if (options.variant === 'pair') {
       for (const item of plan) rmSync(path.join(output, `${item.variant}-${item.shard}`, 'blob.json'), { force: true })
     }

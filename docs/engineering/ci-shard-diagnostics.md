@@ -58,3 +58,13 @@ Module duration includes tests and hooks; collection includes imports and suite 
 The report compares median, minimum, and maximum across three rounds, paired B/A ratios, and file-level differences. Process time includes explicit service cleanup and native merge; it excludes VM startup and dependency installation. Collect GitHub job timestamps separately for actual runner-minute totals. C feedback spans the first measured C process through native merge completion, including report transfer and the collector's setup.
 
 A successful comparison requires complete worker hook measurements, identical file and case selections with no duplicates, skipped or retried cases, matching covered and total coverage counts and coverage file sets, and passing aggregate thresholds. A timing difference alone does not establish its cause. Targeted follow-up measurements must isolate any remaining hypothesis before calling it proven.
+
+## Serial baseline database copy experiment
+
+The manual `db-copy` stage compares the existing empty-template setup and per-file seeds (D) with a prepared baseline template and a fresh PostgreSQL working database copy before each selected file (E). Both variants execute the same 37 cases used by the hook diagnostics, serially with existing file isolation and fixture cleanup. Three pairs run on one VM; pair order reverses in round 2 and file order rotates.
+
+The seeded template exists in the job's local Postgres container. Its fingerprint must match before copying; the copied metadata must match before `ensureBaseline` skips seeding. Each copy drops only the isolated working test database. S3Mock persists within a variant, so fixture cleanup remains necessary. Normal integration runs still use the empty template and execute the seed helper.
+
+Process times include cold services, migrations, template construction, seed execution, per-file copies, coverage reporting and cleanup. Coverage reports remain available. Moving seeding outside Vitest changes incidental coverage, so the report shows cross-variant deltas and checks repeatability within each variant. It does not claim identical coverage or whole-suite compatibility. A rollout needs broader integration validation and a decision about seed-related coverage.
+
+Dispatch `ci-shard-diagnostics.yml` with stage `db-copy`. The job validates each completed pair before continuing and publishes `summary.md` with paired savings and copy times. A failed process, stale template, missing copy, changed cases or inconsistent repeated coverage invalidates the measurement.

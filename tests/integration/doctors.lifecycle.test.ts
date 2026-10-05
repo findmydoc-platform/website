@@ -1,3 +1,4 @@
+import { measureHookPhase } from '../../scripts/ci-shard-hook-phases.mjs'
 import { describe, it, expect, beforeAll, afterEach } from 'vitest'
 import { getPayload, ValidationError } from 'payload'
 import type { Payload } from 'payload'
@@ -48,13 +49,18 @@ describe('Doctors lifecycle integration', () => {
   }
 
   beforeAll(async () => {
-    payload = await getPayload({ config })
-    await ensureBaseline(payload)
-
-    const cityRes = await payload.find({ collection: 'cities', limit: 1, overrideAccess: true, depth: 0 })
-    const cityDoc = cityRes.docs[0]
-    if (!cityDoc) throw new Error('Expected baseline city for doctor lifecycle tests')
-    cityId = cityDoc.id as number
+    payload = await measureHookPhase('tests/integration/doctors.lifecycle.test.ts', 'payload-init', () =>
+      getPayload({ config }),
+    )
+    await measureHookPhase('tests/integration/doctors.lifecycle.test.ts', 'baseline-check', () =>
+      ensureBaseline(payload),
+    )
+    await measureHookPhase('tests/integration/doctors.lifecycle.test.ts', 'fixtures', async () => {
+      const cityRes = await payload.find({ collection: 'cities', limit: 1, overrideAccess: true, depth: 0 })
+      const cityDoc = cityRes.docs[0]
+      if (!cityDoc) throw new Error('Expected baseline city for doctor lifecycle tests')
+      cityId = cityDoc.id as number
+    })
   }, 60000)
 
   afterEach(async () => {

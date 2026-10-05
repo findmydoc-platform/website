@@ -1,3 +1,4 @@
+import { measureHookPhase } from '../../scripts/ci-shard-hook-phases.mjs'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 
@@ -51,59 +52,65 @@ describe('inquiry retention lifecycle', () => {
   const slugPrefix = testSlug('inquiryRetention.lifecycle.test.ts')
 
   beforeAll(async () => {
-    payload = await getPayload({ config })
-    await ensureBaseline(payload)
-    const city = (await payload.find({ collection: 'cities', depth: 0, limit: 1, overrideAccess: true })).docs[0]
-    if (!city) throw new Error('Expected a baseline city for retention tests.')
-    const fixture = await createClinicFixture(payload, city.id, { slugPrefix })
-    clinicId = fixture.clinic.id
-    doctorId = fixture.doctor.id
-    await payload.update({
-      collection: 'clinics',
-      data: { status: 'approved' },
-      depth: 0,
-      id: clinicId,
-      overrideAccess: true,
-    })
+    payload = await measureHookPhase('tests/integration/inquiryRetention.lifecycle.test.ts', 'payload-init', () =>
+      getPayload({ config }),
+    )
+    await measureHookPhase('tests/integration/inquiryRetention.lifecycle.test.ts', 'baseline-check', () =>
+      ensureBaseline(payload),
+    )
+    await measureHookPhase('tests/integration/inquiryRetention.lifecycle.test.ts', 'fixtures', async () => {
+      const city = (await payload.find({ collection: 'cities', depth: 0, limit: 1, overrideAccess: true })).docs[0]
+      if (!city) throw new Error('Expected a baseline city for retention tests.')
+      const fixture = await createClinicFixture(payload, city.id, { slugPrefix })
+      clinicId = fixture.clinic.id
+      doctorId = fixture.doctor.id
+      await payload.update({
+        collection: 'clinics',
+        data: { status: 'approved' },
+        depth: 0,
+        id: clinicId,
+        overrideAccess: true,
+      })
 
-    const operator = await payload.create({
-      collection: 'platformStaff',
-      context: { trustedPlatformStaffOps: true },
-      data: {
-        capabilities: ['conversation-moderation', 'inquiry-retention'],
-        email: `${slugPrefix}-operator@findmydoc.eu`,
-        firstName: 'Retention',
-        lastName: 'Operator',
-        role: 'support',
-        supabaseUserId: `${slugPrefix}-operator`,
-      },
-      depth: 0,
-      overrideAccess: true,
-    })
-    operatorId = operator.id
-    operatorReq = await createLocalReq({}, payload)
-    operatorReq.user = { ...operator, collection: 'platformStaff' }
+      const operator = await payload.create({
+        collection: 'platformStaff',
+        context: { trustedPlatformStaffOps: true },
+        data: {
+          capabilities: ['conversation-moderation', 'inquiry-retention'],
+          email: `${slugPrefix}-operator@findmydoc.eu`,
+          firstName: 'Retention',
+          lastName: 'Operator',
+          role: 'support',
+          supabaseUserId: `${slugPrefix}-operator`,
+        },
+        depth: 0,
+        overrideAccess: true,
+      })
+      operatorId = operator.id
+      operatorReq = await createLocalReq({}, payload)
+      operatorReq.user = { ...operator, collection: 'platformStaff' }
 
-    const legacy = await payload.create({
-      collection: 'patientClinicInquiries',
-      context: { inquiryCommunicationCommand: true },
-      data: {
-        clinic: clinicId,
-        consent: { accepted: true, acceptedAt: '2024-01-15T12:00:00.000Z', text: 'Synthetic consent.' },
-        createdAt: '2024-01-15T12:00:00.000Z',
-        creationActorKey: `guest:${slugPrefix}`,
-        creationRequestHash: slugPrefix,
-        email: `${slugPrefix}-legacy@example.com`,
-        fullName: 'Synthetic Legacy Patient',
-        message: 'Synthetic legacy inquiry.',
-        phoneNumber: '+493000000099',
-        status: 'closed',
-      },
-      depth: 0,
-      overrideAccess: true,
+      const legacy = await payload.create({
+        collection: 'patientClinicInquiries',
+        context: { inquiryCommunicationCommand: true },
+        data: {
+          clinic: clinicId,
+          consent: { accepted: true, acceptedAt: '2024-01-15T12:00:00.000Z', text: 'Synthetic consent.' },
+          createdAt: '2024-01-15T12:00:00.000Z',
+          creationActorKey: `guest:${slugPrefix}`,
+          creationRequestHash: slugPrefix,
+          email: `${slugPrefix}-legacy@example.com`,
+          fullName: 'Synthetic Legacy Patient',
+          message: 'Synthetic legacy inquiry.',
+          phoneNumber: '+493000000099',
+          status: 'closed',
+        },
+        depth: 0,
+        overrideAccess: true,
+      })
+      inquiryId = legacy.id
+      createdInquiryIds.push(legacy.id)
     })
-    inquiryId = legacy.id
-    createdInquiryIds.push(legacy.id)
   }, 60_000)
 
   afterAll(async () => {

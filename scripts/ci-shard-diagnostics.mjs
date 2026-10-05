@@ -7,6 +7,7 @@ import { parseArgs } from 'node:util'
 import { performance } from 'node:perf_hooks'
 import os from 'node:os'
 import { requireCompleteHookTimings } from './ci-shard-reporter.mjs'
+import { hookFiles, validateHookMeasurement } from './ci-shard-hook-validation.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const compose = ['compose', '-p', 'findmydoc-test', '-f', 'docker-compose.test.yml']
@@ -39,10 +40,14 @@ export function pilotFiles(repositoryRoot = root) {
 }
 
 export function makePlan({ stage = 'smoke', variant = 'pair', round = 1, shard = 1 } = {}) {
-  if (!['smoke', 'pilot', 'full'].includes(stage) || !['pair', 'shard'].includes(variant))
+  if (!['smoke', 'pilot', 'full', 'hooks'].includes(stage) || !['pair', 'shard'].includes(variant))
     throw new Error('Invalid stage or variant.')
   if (![1, 2, 3].includes(round) || ![1, 2, 3, 4].includes(shard)) throw new Error('Invalid round or shard.')
   if (stage === 'smoke') return [{ variant: 'smoke', shard: 0 }]
+  if (stage === 'hooks') {
+    if (variant !== 'pair') throw new Error('Hook diagnostics require a single serial process.')
+    return [{ variant: 'H', shard: 0 }]
+  }
   if (variant === 'shard') {
     if (stage !== 'full') throw new Error('Parallel shards require the full stage.')
     return [{ variant: 'C', shard }]
@@ -60,6 +65,7 @@ export function sourceFingerprint(repositoryRoot = root) {
       '-z',
       'src',
       'tests/integration',
+      'tests/fixtures',
       'config/coverage',
       'package.json',
       'pnpm-lock.yaml',
@@ -234,12 +240,15 @@ export async function executePlan(plan, run, { before = async () => {}, after = 
   return results
 }
 
-export function configSource(directory, smoke = false, merge = false) {
+/** @param {number | null} hookRound */
+export function configSource(directory, smoke = false, merge = false, hookRound = null) {
   if (smoke)
     return `export default { test: { include: [${JSON.stringify(path.join(directory, 'smoke.test.ts'))}], runner: ${JSON.stringify(worker)}, reporters: [${JSON.stringify(reporter)}] } }`
   return `import base from ${JSON.stringify(path.join(root, 'vitest.config.ts'))};
+${hookRound ? `import HookSequencer from ${JSON.stringify(path.join(root, 'scripts/ci-shard-hook-sequencer.mjs'))};` : ''}
 export default { ...base, cacheDir: ${JSON.stringify(path.join(directory, 'cache'))}, test: { ...base.test,
-projects: base.test.projects.filter(p => p.test?.name === 'integration').map(p => ({ ...p, cacheDir: ${JSON.stringify(path.join(directory, 'cache'))}, test: { ...p.test, runner: ${JSON.stringify(worker)} } })),
+${hookRound ? 'sequence: { ...base.test.sequence, sequencer: HookSequencer },' : ''}
+projects: base.test.projects.filter(p => p.test?.name === 'integration').map(p => ({ ...p, cacheDir: ${JSON.stringify(path.join(directory, 'cache'))}, test: { ...p.test, runner: ${JSON.stringify(worker)} ${hookRound ? `, include: ${JSON.stringify(hookFiles(hookRound))}` : ''} } })),
 reporters: ${merge ? "['dot']" : `[["blob", { outputFile: ${JSON.stringify(path.join(directory, 'blob.json'))} }], ${JSON.stringify(reporter)}]`},
 coverage: { ...base.test.coverage, thresholds: ${JSON.stringify(zeroThresholds)}, reporter: ['json-summary', 'json'], reportsDirectory: ${JSON.stringify(path.join(directory, 'coverage'))} }
 } }`
@@ -250,7 +259,12 @@ export async function runDiagnostic(options) {
   if (!options.execute)
     return {
       plan,
-      files: options.stage === 'pilot' ? pilotFiles() : 'all integration files',
+      files:
+        options.stage === 'hooks'
+          ? hookFiles(options.round)
+          : options.stage === 'pilot'
+            ? pilotFiles()
+            : 'all integration files',
       dryRun: true,
       valid: null,
     }
@@ -291,7 +305,10 @@ export async function runDiagnostic(options) {
         const directory = path.join(output, `${item.variant}-${item.shard}`)
         mkdirSync(directory)
         const config = path.join(directory, 'vitest.config.mjs')
-        writeFileSync(config, configSource(directory, options.stage === 'smoke'))
+        writeFileSync(
+          config,
+          configSource(directory, options.stage === 'smoke', false, options.stage === 'hooks' ? options.round : null),
+        )
         if (options.stage === 'smoke')
           writeFileSync(
             path.join(directory, 'smoke.test.ts'),
@@ -302,6 +319,7 @@ export async function runDiagnostic(options) {
           args.push('--project', 'integration', '--coverage')
           if (item.shard) args.push('--shard', `${item.shard}/4`)
           if (options.stage === 'pilot') args.push(...pilotFiles())
+          if (options.stage === 'hooks') args.push(...hookFiles(options.round))
         }
         const samples = []
         let sampling = false
@@ -324,7 +342,12 @@ export async function runDiagnostic(options) {
             linux ? ['--format=%U %S %M', '--output', timeFile, process.execPath, ...args] : args,
             {
               signal: controller.signal,
-              timeoutMs: options.stage === 'full' && item.variant === 'A' ? 90 * 60 * 1000 : 45 * 60 * 1000,
+              timeoutMs:
+                options.stage === 'hooks'
+                  ? 15 * 60 * 1000
+                  : options.stage === 'full' && item.variant === 'A'
+                    ? 90 * 60 * 1000
+                    : 45 * 60 * 1000,
               env: {
                 ...process.env,
                 NODE_ENV: 'test',
@@ -332,6 +355,8 @@ export async function runDiagnostic(options) {
                 TEST_DB_REBUILD_TEMPLATES: '1',
                 CI_SHARD_REPORT: path.join(directory, 'metrics.json'),
                 CI_SHARD_HOOKS: path.join(directory, 'hooks.jsonl'),
+                CI_SHARD_PHASES: options.stage === 'hooks' ? path.join(directory, 'phases.jsonl') : '',
+                CI_SHARD_FILE_ORDER: options.stage === 'hooks' ? JSON.stringify(hookFiles(options.round)) : '',
               },
               onLine: (line, atMs) => {
                 for (const [phase, pattern] of markers) if (pattern.test(line)) phases.push({ phase, atMs })
@@ -361,6 +386,17 @@ export async function runDiagnostic(options) {
         else {
           try {
             requireCompleteHookTimings(JSON.parse(readFileSync(path.join(directory, 'metrics.json'), 'utf8')))
+            if (options.stage === 'hooks') {
+              validateHookMeasurement(
+                JSON.parse(readFileSync(path.join(directory, 'metrics.json'), 'utf8')),
+                readFileSync(path.join(directory, 'phases.jsonl'), 'utf8')
+                  .trim()
+                  .split('\n')
+                  .filter(Boolean)
+                  .map((line) => JSON.parse(line)),
+                hookFiles(options.round),
+              )
+            }
           } catch (error) {
             rmSync(path.join(directory, 'blob.json'), { force: true })
             throw error
@@ -390,7 +426,7 @@ export async function runDiagnostic(options) {
         },
       },
     )
-    if (options.variant === 'pair' && options.stage !== 'smoke') await mergeReports(output, 'B')
+    if (options.variant === 'pair' && !['smoke', 'hooks'].includes(options.stage)) await mergeReports(output, 'B')
     if (options.variant === 'pair') {
       for (const item of plan) rmSync(path.join(output, `${item.variant}-${item.shard}`, 'blob.json'), { force: true })
     }

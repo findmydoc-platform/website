@@ -7,12 +7,14 @@ on:
       - '.github/workflows/ci-shard-diagnostics.yml'
       - 'scripts/ci-shard-*.mjs'
       - 'tests/tooling/scripts/ci-shard-diagnostics.test.ts'
+      - 'tests/tooling/scripts/ci-shard-hook-diagnostics.test.ts'
+      - 'tests/fixtures/ensureBaseline.ts'
   workflow_dispatch:
     inputs:
       stage:
         description: Measurement stage
         type: choice
-        options: [smoke, pilot, full]
+        options: [smoke, pilot, full, hooks]
         default: smoke
       round:
         description: Measurement round, 1 through 3
@@ -41,7 +43,7 @@ defaults:
 jobs:
   pair:
     name: Paired A and B
-    if: github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    if: inputs.stage != 'hooks' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -63,7 +65,7 @@ jobs:
           pnpm install --frozen-lockfile --strict-peer-dependencies
       - name: Exercise diagnostic tooling
         if: env.MEASUREMENT_STAGE == 'smoke'
-        run: pnpm vitest run --project tooling tests/tooling/scripts/ci-shard-diagnostics.test.ts
+        run: pnpm vitest run --project tooling tests/tooling/scripts/ci-shard-diagnostics.test.ts tests/tooling/scripts/ci-shard-hook-diagnostics.test.ts
       - name: Measure paired variants
         env:
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
@@ -80,6 +82,52 @@ jobs:
             tmp/ci-diagnostics/round
             !tmp/ci-diagnostics/round/**/cache/**
             !tmp/ci-diagnostics/round/**/*.mjs
+          if-no-files-found: error
+          retention-days: 7
+
+  hooks:
+    name: Serial beforeAll phase diagnostics
+    if: inputs.stage == 'hooks' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          cache: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Install frozen dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          node scripts/assert-email-template-package-access.mjs
+          pnpm install --frozen-lockfile --strict-peer-dependencies
+      - name: Measure three serial repetitions
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+        run: |
+          set -euo pipefail
+          for diagnostic_round in 1 2 3; do
+            node scripts/ci-shard-diagnostics.mjs --stage hooks --round "$diagnostic_round" --variant pair --output "tmp/ci-diagnostics/hooks/round-$diagnostic_round" --execute
+            node scripts/ci-shard-hook-summary.mjs --input tmp/ci-diagnostics/hooks --partial
+          done
+          node scripts/ci-shard-hook-summary.mjs --input tmp/ci-diagnostics/hooks --output tmp/ci-diagnostics/hooks/summary.md
+          cat tmp/ci-diagnostics/hooks/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve hook measurements
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: ci-shard-${{ github.run_id }}-hooks
+          path: |
+            tmp/ci-diagnostics/hooks
+            !tmp/ci-diagnostics/hooks/**/cache/**
+            !tmp/ci-diagnostics/hooks/**/*.mjs
           if-no-files-found: error
           retention-days: 7
 

@@ -1,3 +1,4 @@
+import { measureHookPhase } from '../../scripts/ci-shard-hook-phases.mjs'
 import http from 'node:http'
 import https from 'node:https'
 import { NextRequest } from 'next/server'
@@ -58,18 +59,24 @@ describe('public clinic registration transaction', () => {
   const prefix = testSlug('clinicRegistration.atomic.test.ts')
 
   beforeAll(async () => {
-    payload = await getPayload({ config })
-    await ensureBaseline(payload)
-    const specialties = await payload.find({
-      collection: 'medical-specialties',
-      depth: 0,
-      limit: 1,
-      pagination: false,
-      where: { parentSpecialty: { exists: false } },
+    payload = await measureHookPhase('tests/integration/clinicRegistration.atomic.test.ts', 'payload-init', () =>
+      getPayload({ config }),
+    )
+    await measureHookPhase('tests/integration/clinicRegistration.atomic.test.ts', 'baseline-check', () =>
+      ensureBaseline(payload),
+    )
+    await measureHookPhase('tests/integration/clinicRegistration.atomic.test.ts', 'fixtures', async () => {
+      const specialties = await payload.find({
+        collection: 'medical-specialties',
+        depth: 0,
+        limit: 1,
+        pagination: false,
+        where: { parentSpecialty: { exists: false } },
+      })
+      specialtyId = specialties.docs[0]!.id
+      observer = new pg.Client({ connectionString: process.env.DATABASE_URI })
+      await observer.connect()
     })
-    specialtyId = specialties.docs[0]!.id
-    observer = new pg.Client({ connectionString: process.env.DATABASE_URI })
-    await observer.connect()
   }, 60_000)
 
   beforeEach(() => {

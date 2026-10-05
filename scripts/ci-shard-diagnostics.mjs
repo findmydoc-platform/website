@@ -10,6 +10,7 @@ import os from 'node:os'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const compose = ['compose', '-p', 'findmydoc-test', '-f', 'docker-compose.test.yml']
 const reporter = path.join(root, 'scripts/ci-shard-reporter.mjs')
+const worker = path.join(root, 'scripts/ci-shard-worker.mjs')
 const zeroThresholds = { statements: 0, branches: 0, functions: 0, lines: 0 }
 
 export function filesUnder(directory) {
@@ -234,10 +235,10 @@ export async function executePlan(plan, run, { before = async () => {}, after = 
 
 export function configSource(directory, smoke = false, merge = false) {
   if (smoke)
-    return `export default { test: { include: [${JSON.stringify(path.join(directory, 'smoke.test.ts'))}], reporters: [${JSON.stringify(reporter)}] } }`
+    return `export default { test: { include: [${JSON.stringify(path.join(directory, 'smoke.test.ts'))}], runner: ${JSON.stringify(worker)}, reporters: [${JSON.stringify(reporter)}] } }`
   return `import base from ${JSON.stringify(path.join(root, 'vitest.config.ts'))};
 export default { ...base, cacheDir: ${JSON.stringify(path.join(directory, 'cache'))}, test: { ...base.test,
-projects: base.test.projects.filter(p => p.test?.name === 'integration').map(p => ({ ...p, cacheDir: ${JSON.stringify(path.join(directory, 'cache'))} })),
+projects: base.test.projects.filter(p => p.test?.name === 'integration').map(p => ({ ...p, cacheDir: ${JSON.stringify(path.join(directory, 'cache'))}, test: { ...p.test, runner: ${JSON.stringify(worker)} } })),
 reporters: ${merge ? "['dot']" : `[["blob", { outputFile: ${JSON.stringify(path.join(directory, 'blob.json'))} }], ${JSON.stringify(reporter)}]`},
 coverage: { ...base.test.coverage, thresholds: ${JSON.stringify(zeroThresholds)}, reporter: ['json-summary', 'json'], reportsDirectory: ${JSON.stringify(path.join(directory, 'coverage'))} }
 } }`
@@ -293,7 +294,7 @@ export async function runDiagnostic(options) {
         if (options.stage === 'smoke')
           writeFileSync(
             path.join(directory, 'smoke.test.ts'),
-            "import { beforeAll, describe, expect, it } from 'vitest'; describe('reporter smoke', () => { beforeAll(() => {}); it('passes', () => expect(2 + 2).toBe(4)); });",
+            "import { beforeAll, describe, expect, it } from 'vitest'; describe('reporter smoke', () => { beforeAll(() => { const until = performance.now() + 60; while (performance.now() < until) {} }); it('passes', () => expect(2 + 2).toBe(4)); });",
           )
         const args = [path.join(root, 'node_modules/vitest/vitest.mjs'), 'run', '--config', config]
         if (options.stage !== 'smoke') {
@@ -328,6 +329,7 @@ export async function runDiagnostic(options) {
                 NODE_OPTIONS: '--no-deprecation',
                 TEST_DB_REBUILD_TEMPLATES: '1',
                 CI_SHARD_REPORT: path.join(directory, 'metrics.json'),
+                CI_SHARD_HOOKS: path.join(directory, 'hooks.jsonl'),
               },
               onLine: (line, atMs) => {
                 for (const [phase, pattern] of markers) if (pattern.test(line)) phases.push({ phase, atMs })

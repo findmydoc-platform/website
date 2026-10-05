@@ -18,7 +18,6 @@ import {
   validateReports,
 } from '../../../scripts/ci-shard-summary.mjs'
 import { parse } from 'yaml'
-import ShardDiagnosticReporter from '../../../scripts/ci-shard-reporter.mjs'
 
 const directories: string[] = []
 afterEach(() => {
@@ -139,39 +138,6 @@ describe('integration shard measurement orchestration', () => {
     expect(result.code).toBe(0)
   })
 
-  it('includes a hook whose end arrives after the module-end callback', async () => {
-    const directory = mkdtempSync(path.join(tmpdir(), 'ci-shard-late-hook-'))
-    directories.push(directory)
-    const output = path.join(directory, 'metrics.json')
-    vi.stubEnv('CI_SHARD_REPORT', output)
-    const reporter = new ShardDiagnosticReporter()
-    reporter.onInit({ config: { root: directory } })
-    const testModule = {
-      id: 'file',
-      type: 'module',
-      moduleId: path.join(directory, 'example.test.ts'),
-      diagnostic: () => ({
-        duration: 30,
-        collectDuration: 1,
-        setupDuration: 1,
-        prepareDuration: 1,
-        environmentSetupDuration: 0,
-      }),
-      children: { allTests: () => [] },
-    }
-    const hook = { name: 'beforeAll', entity: { id: 'suite', type: 'suite', module: testModule } }
-    reporter.onHookStart(hook)
-    reporter.onTestModuleEnd(testModule)
-    await new Promise((resolve) => setTimeout(resolve, 5))
-    reporter.onHookEnd(hook)
-    reporter.onTestRunEnd([], [], 'passed')
-    const metrics = JSON.parse(readFileSync(output, 'utf8'))
-    expect(metrics.hookTimingComplete).toBe(true)
-    expect(metrics.modules[0].hookMs).toBeGreaterThan(0)
-    expect(metrics.modules[0].hookMsByName.beforeAll).toBe(metrics.modules[0].hookMs)
-    expect(() => validateReports([{ ...report(), hookTimingComplete: false }])).toThrow('incomplete')
-  })
-
   it('records exit codes and drains output without storing raw logs', async () => {
     const result = await measuredProcess(
       process.execPath,
@@ -212,7 +178,8 @@ describe('integration shard measurement orchestration', () => {
     const metrics = JSON.parse(readFileSync(path.join(directory, 'smoke-0/metrics.json'), 'utf8'))
     const selection = validateReports([metrics])
     expect(selection.tests).toHaveLength(1)
-    expect(metrics.modules[0].hookMs).toBeGreaterThanOrEqual(0)
+    expect(metrics.hookTimingComplete).toBe(true)
+    expect(metrics.modules[0].hookMsByName.beforeAll).toBeGreaterThanOrEqual(50)
     expect(JSON.stringify(metrics)).not.toContain('reporter smoke')
   }, 20000)
 })
@@ -253,6 +220,7 @@ describe('integration shard comparison validity', () => {
     retried.modules[0]!.tests[0]!.retries = 1
     expect(() => validateReports([retried])).toThrow('retry')
     expect(() => validateReports([{ ...report(), unhandledErrors: 1 }])).toThrow('unsuccessful')
+    expect(() => validateReports([{ ...report(), hookTimingComplete: false }])).toThrow('incomplete')
   })
 
   it('calculates medians and spread without silently accepting missing values', () => {

@@ -192,7 +192,7 @@ export function renderSummary(rounds) {
     '',
     'Process time includes measured test processes, service cleanup and native merge. It excludes dependency installation and VM startup. CPU time covers the test process tree, not Docker containers. GitHub job timestamps are required for total runner usage.',
     '',
-    'Module time includes tests and hooks. Collection includes imports and suite callbacks. Reporter hook intervals include event-delivery overhead and overlap module time; these columns must not be added together.',
+    'Module time includes tests and hooks. Collection includes imports and suite callbacks. Worker hook phases include empty-hook bookkeeping and overlap module time; these columns must not be added together.',
     '',
     '| Variant | Module median, seconds | Collection median | Hooks median | CPU median, seconds |',
     '| --- | ---: | ---: | ---: | ---: |',

@@ -1,36 +1,11 @@
 import { createHash } from 'node:crypto'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { performance } from 'node:perf_hooks'
 
 export default class ShardDiagnosticReporter {
   modules = []
-  hooks = []
-  pendingHooks = new Map()
-  unmatchedHookEnds = 0
-
   onInit(ctx) {
     this.root = ctx.config.root
-  }
-
-  onHookStart(hook) {
-    this.pendingHooks.set(`${hook.entity.id}:${hook.name}`, performance.now())
-  }
-
-  onHookEnd(hook) {
-    const key = `${hook.entity.id}:${hook.name}`
-    const started = this.pendingHooks.get(key)
-    if (started === undefined) {
-      this.unmatchedHookEnds++
-      return
-    }
-    const testModule = hook.entity.type === 'module' ? hook.entity : hook.entity.module
-    this.hooks.push({
-      filename: path.relative(this.root, testModule.moduleId).split(path.sep).join('/'),
-      name: hook.name,
-      durationMs: performance.now() - started,
-    })
-    this.pendingHooks.delete(key)
   }
 
   onTestModuleEnd(testModule) {
@@ -57,8 +32,17 @@ export default class ShardDiagnosticReporter {
     const output = process.env.CI_SHARD_REPORT
     if (!output) throw new Error('CI_SHARD_REPORT is required for the diagnostic reporter.')
     mkdirSync(path.dirname(output), { recursive: true })
+    const filename = process.env.CI_SHARD_HOOKS
+    const workerHooks =
+      filename && existsSync(filename)
+        ? readFileSync(filename, 'utf8')
+            .trim()
+            .split('\n')
+            .filter(Boolean)
+            .map((line) => JSON.parse(line))
+        : []
     for (const testModule of this.modules) {
-      const hooks = this.hooks.filter((hook) => hook.filename === testModule.filename)
+      const hooks = workerHooks.filter((hook) => hook.filename === testModule.filename)
       testModule.hookMs = hooks.reduce((sum, hook) => sum + hook.durationMs, 0)
       testModule.hookMsByName = Object.fromEntries(
         ['beforeAll', 'afterAll', 'beforeEach', 'afterEach'].map((name) => [
@@ -74,7 +58,9 @@ export default class ShardDiagnosticReporter {
           version: 1,
           reason,
           unhandledErrors: errors.length,
-          hookTimingComplete: this.pendingHooks.size === 0 && this.unmatchedHookEnds === 0,
+          hookTimingComplete:
+            workerHooks.every((hook) => Number.isFinite(hook.durationMs) && hook.durationMs >= 0) &&
+            this.modules.every((testModule) => workerHooks.some((hook) => hook.filename === testModule.filename)),
           modules: this.modules,
         },
         null,

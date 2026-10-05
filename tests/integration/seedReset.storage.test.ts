@@ -1,6 +1,6 @@
 import { loadSeedFile, loadSeedGlobals } from '@/endpoints/seed/utils/load-json'
 import { prepareLandingPagesSeedData } from '@/endpoints/seed/utils/landing-pages'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { posix } from 'node:path'
 import sharp from 'sharp'
 import {
@@ -8,6 +8,7 @@ import {
   createLocalReq,
   getPayload,
   initTransaction,
+  killTransaction,
   type Payload,
   type RequiredDataFromCollectionSlug,
 } from 'payload'
@@ -42,6 +43,20 @@ import {
 
 describe('complete seed reset with PostgreSQL and test storage', () => {
   let payload: Payload
+  let preservedLockId: number | undefined
+
+  afterAll(async () => {
+    if (preservedLockId === undefined) return
+    const req = await createLocalReq({ context: { inquiryCommandLock: true } }, payload)
+    await initTransaction(req)
+    try {
+      await payload.delete({ collection: 'inquiryCommandLocks', id: preservedLockId, overrideAccess: true, req })
+      await commitTransaction(req)
+    } catch (error) {
+      await killTransaction(req)
+      throw error
+    }
+  })
 
   beforeAll(async () => {
     if (process.env.DEPLOYMENT_ENV !== 'test') throw new Error('Seed reset tests require the isolated test runtime.')
@@ -279,6 +294,7 @@ describe('complete seed reset with PostgreSQL and test storage', () => {
       req: lockReq,
     })
     await commitTransaction(lockReq)
+    preservedLockId = lock.id
     const policies = (
       await payload.find({ collection: 'inquiryRetentionPolicies', pagination: false, overrideAccess: true })
     ).docs

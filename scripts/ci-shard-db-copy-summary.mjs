@@ -4,10 +4,33 @@ import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { filesUnder } from './ci-shard-diagnostics.mjs'
 import { compareVariants, distribution, validateReports } from './ci-shard-summary.mjs'
+import thresholds from '../config/coverage/vitest.thresholds.integration.js'
+import { extendedCopyStages, validateCopySelection } from './ci-shard-db-copy-selection.mjs'
 import { hookFiles, validateHookMeasurement } from './ci-shard-hook-validation.mjs'
 import { readPhaseEvents } from './ci-shard-hook-summary.mjs'
 
 const read = (filename) => JSON.parse(readFileSync(filename, 'utf8'))
+
+export function validateCopyCoverage(baseline, candidate, full = false) {
+  const names = (report) =>
+    Object.keys(report)
+      .filter((key) => key !== 'total')
+      .map((key) => key.replace(/^.*\/(src\/|apps\/)/, '$1'))
+      .sort()
+  if (JSON.stringify(names(baseline)) !== JSON.stringify(names(candidate)))
+    throw new Error('Coverage file selection differs.')
+  for (const category of ['lines', 'statements', 'functions', 'branches']) {
+    const a = baseline.total[category],
+      b = candidate.total[category]
+    if (a.total !== b.total || b.covered < a.covered || b.skipped !== a.skipped)
+      throw new Error(`Instrumented baseline copy coverage regresses for ${category}.`)
+    if (
+      full &&
+      (a.pct < thresholds.test.coverage.thresholds[category] || b.pct < thresholds.test.coverage.thresholds[category])
+    )
+      throw new Error('Existing full-suite integration coverage threshold failed.')
+  }
+}
 
 export function analyzeCopyRounds(directory, partial = false) {
   const runs = filesUnder(directory)
@@ -22,7 +45,7 @@ export function analyzeCopyRounds(directory, partial = false) {
       JSON.stringify(Array.from({ length: count }, (_, index) => index + 1))
   )
     throw new Error('Complete consecutive database copy pairs are required.')
-  for (const field of ['commit', 'sourceFingerprint', 'node', 'cpus', 'totalMemoryBytes']) {
+  for (const field of ['stage', 'commit', 'sourceFingerprint', 'node', 'cpus', 'totalMemoryBytes']) {
     if (new Set(runs.map(({ data }) => JSON.stringify(data[field]))).size !== 1)
       throw new Error(`Database copy measurements disagree on ${field}.`)
   }
@@ -31,7 +54,7 @@ export function analyzeCopyRounds(directory, partial = false) {
     const order = data.round === 2 ? ['E', 'D'] : ['D', 'E']
     if (
       !data.valid ||
-      data.stage !== 'db-copy' ||
+      !['db-copy', ...extendedCopyStages].includes(data.stage) ||
       JSON.stringify(data.results.map((item) => item.variant)) !== JSON.stringify(order)
     )
       throw new Error('Database copy pair is invalid or out of order.')
@@ -49,22 +72,50 @@ export function analyzeCopyRounds(directory, partial = false) {
         throw new Error('A database copy process failed or lacks complete timings.')
       const target = path.join(path.dirname(filename), `${variant}-0`)
       const metrics = read(path.join(target, 'metrics.json'))
-      const coverage = read(path.join(target, 'coverage/coverage-summary.json'))
-      const files = validateHookMeasurement(
-        metrics,
-        readPhaseEvents(path.join(target, 'phases.jsonl')),
-        hookFiles(data.round),
+      const extended = extendedCopyStages.includes(data.stage)
+      const coverage = read(
+        path.join(
+          target,
+          extended && variant === 'E' ? 'seed-merged/coverage/coverage-summary.json' : 'coverage/coverage-summary.json',
+        ),
       )
+      if (extended) validateCopySelection(metrics, data.stage, data.round)
+      const files = extended
+        ? []
+        : validateHookMeasurement(metrics, readPhaseEvents(path.join(target, 'phases.jsonl')), hookFiles(data.round))
       const selection = validateReports([metrics])
-      if (files.reduce((sum, file) => sum + file.seedCalls, 0) !== (variant === 'D' ? 3 : 0))
+      if (!extended && files.reduce((sum, file) => sum + file.seedCalls, 0) !== (variant === 'D' ? 3 : 0))
         throw new Error('Database copy seed decisions differ from the protocol.')
       const copies = variant === 'E' ? readPhaseEvents(path.join(target, 'copies.jsonl')) : []
       if (
         variant === 'E' &&
-        (copies.length !== 3 ||
-          copies.some((item) => item.status !== 'passed' || !Number.isFinite(item.durationMs) || item.durationMs < 0))
+        (copies.length !== metrics.modules.length ||
+          copies.some(
+            (item) =>
+              item.status !== 'passed' ||
+              (extended && item.isolationVerified !== true) ||
+              !Number.isFinite(item.durationMs) ||
+              item.durationMs < 0,
+          ))
       )
-        throw new Error('Three successful per-file database copies are required.')
+        throw new Error(
+          'Three successful per-file database copies are required for the original sample; expanded runs require one verified copy per selected file.',
+        )
+      if (extended && variant === 'E') {
+        const seed = read(path.join(target, 'template-seed/metrics.json'))
+        validateReports([seed])
+        if (seed.modules.length !== 1 || seed.modules[0].tests.length !== 1)
+          throw new Error('Exactly one instrumented template seed case is required.')
+        const merge = read(path.join(target, 'seed-merged/process.json'))
+        if (
+          merge.code !== 0 ||
+          merge.timedOut ||
+          merge.aborted ||
+          !Number.isFinite(process.mergeMs) ||
+          merge.wallMs !== process.mergeMs
+        )
+          throw new Error('Native seed coverage merge is missing or invalid.')
+      }
       if (previous[variant])
         compareVariants([previous[variant].metrics], [metrics], previous[variant].coverage, coverage, false)
       previous[variant] = { metrics, coverage }
@@ -73,13 +124,21 @@ export function analyzeCopyRounds(directory, partial = false) {
         files,
         process,
         coverage,
-        totalMs: process.wallMs + process.cleanupMs,
+        totalMs: process.wallMs + process.cleanupMs + (process.mergeMs ?? 0),
         copyMs: copies.reduce((sum, copy) => sum + copy.durationMs, 0),
       }
     }
     if (JSON.stringify(variants.D.selection) !== JSON.stringify(variants.E.selection))
       throw new Error('Test selection differs between database copy variants.')
-    return { round: data.round, commit: data.commit, variants, savedMs: variants.D.totalMs - variants.E.totalMs }
+    if (extendedCopyStages.includes(data.stage))
+      validateCopyCoverage(variants.D.coverage, variants.E.coverage, data.stage === 'db-copy-suite')
+    return {
+      stage: data.stage,
+      round: data.round,
+      commit: data.commit,
+      variants,
+      savedMs: variants.D.totalMs - variants.E.totalMs,
+    }
   })
 }
 
@@ -88,7 +147,7 @@ export function renderCopySummary(rounds) {
   const lines = [
     '# Serial baseline database copy comparison',
     '',
-    `Commit: \`${rounds[0].commit}\`. Matched cases per variant: 37.`,
+    `Commit: \`${rounds[0].commit}\`. Matched files: ${rounds[0].variants.D.selection.files.length}. Matched cases per variant: ${rounds[0].variants.D.selection.tests.length}.`,
     '',
     '| Round | Empty + file seeds, s | Baseline + file copies, s | Saved, s | Copies, s |',
     '| --- | ---: | ---: | ---: | ---: |',
@@ -103,7 +162,9 @@ export function renderCopySummary(rounds) {
     '',
     'Times include cold service startup, migrations, template preparation, baseline seeding, all per-file copies, V8-instrumented test execution, reporting and service cleanup. Dependencies and Docker images remain on the same VM. Pair order reverses in round 2; file order rotates.',
     '',
-    'Coverage is retained and must repeat within each variant. Seeding outside Vitest removes incidental seed-triggered coverage from the copy variant; coverage deltas below are reported, not treated as equivalence. Normal integration CI and its thresholds remain unchanged.',
+    rounds[0].stage !== 'db-copy'
+      ? 'Template seeding runs once under Vitest. Its native blob and the copy test blob are merged, with merge time included. Coverage must repeat within each variant and must not decrease against the baseline; complete-suite runs also enforce the existing integration thresholds.'
+      : 'Coverage is retained and must repeat within each variant. Seeding outside Vitest removes incidental seed-triggered coverage from the copy variant; coverage deltas below are reported, not treated as equivalence. Normal integration CI and its thresholds remain unchanged.',
     '',
     '| Round | Metric | Empty covered / total | Copy covered / total |',
     '| --- | --- | ---: | ---: |',
@@ -116,7 +177,9 @@ export function renderCopySummary(rounds) {
     }
   lines.push(
     '',
-    'This three-file sample does not establish whole-suite compatibility or savings. Database copies isolate SQL rows; S3Mock remains shared within each variant and existing fixture cleanup still runs.',
+    rounds[0].stage === 'db-copy-suite'
+      ? 'This complete-suite comparison measures serial compatibility and paired savings at the recorded commit. SQL isolation is verified per file; S3Mock remains shared and existing fixture cleanup still runs.'
+      : 'This sample does not establish whole-suite compatibility or savings. Database copies isolate SQL rows; S3Mock remains shared within each variant and existing fixture cleanup still runs.',
     '',
   )
   return lines.join('\n')

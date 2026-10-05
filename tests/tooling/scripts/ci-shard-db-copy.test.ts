@@ -1,14 +1,28 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { analyzeCopyRounds, renderCopySummary } from '../../../scripts/ci-shard-db-copy-summary.mjs'
+import {
+  analyzeCopyRounds,
+  renderCopySummary,
+  validateCopyCoverage,
+} from '../../../scripts/ci-shard-db-copy-summary.mjs'
+import { copyFiles, validateCopySelection } from '../../../scripts/ci-shard-db-copy-selection.mjs'
+import counts from '../../../scripts/ci-shard-db-copy-selection.json'
+import { parse } from 'yaml'
 import { hookFiles, hookTestCounts } from '../../../scripts/ci-shard-hook-validation.mjs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { makePlan, runDiagnostic } from '../../../scripts/ci-shard-diagnostics.mjs'
+import {
+  makePlan,
+  runDiagnostic,
+  prepareSeedConfig,
+  mergeSeedCoverage,
+  measuredProcess,
+} from '../../../scripts/ci-shard-diagnostics.mjs'
 import {
   assertBaselineWorkingDatabase,
   computeTestDatabaseFingerprint,
   copyBaselineWorkingDatabase,
+  verifyBaselineCopyIsolation,
 } from '../../../scripts/test-database-harness.mjs'
 
 const database = vi.hoisted(() => ({ query: vi.fn(), end: vi.fn(), connect: vi.fn() }))
@@ -229,4 +243,109 @@ it('validates matched pairs, includes preparation and cleanup, and exposes cover
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
+})
+
+describe('expanded serial comparison acceptance', () => {
+  it('requires every manifest file and case, with matched deterministic ordering', () => {
+    const files = copyFiles('db-copy-suite', 1)
+    expect(files).toHaveLength(98)
+    expect(Object.values(counts).reduce((sum, count) => sum + count, 0)).toBe(877)
+    expect(copyFiles('db-copy-mixed', 1)).toHaveLength(12)
+    expect(copyFiles('db-copy-mixed', 2)).toEqual(copyFiles('db-copy-mixed', 1).reverse())
+    const metrics = {
+      modules: files.map((filename) => ({
+        filename,
+        tests: Array.from({ length: counts[filename as keyof typeof counts] }),
+      })),
+    }
+    expect(validateCopySelection(metrics, 'db-copy-suite', 1)).toEqual(files)
+    metrics.modules[0]!.tests.pop()
+    expect(() => validateCopySelection(metrics, 'db-copy-suite', 1)).toThrow('case counts')
+  })
+
+  it('rejects coverage loss and retains existing full-suite thresholds', () => {
+    const report = (covered: number) => ({
+      total: Object.fromEntries(
+        ['lines', 'statements', 'functions', 'branches'].map((name) => [
+          name,
+          { total: 100, covered, skipped: 0, pct: covered },
+        ]),
+      ),
+      '/runner/src/example.ts': {},
+    })
+    expect(() => validateCopyCoverage(report(80), report(81), true)).not.toThrow()
+    expect(() => validateCopyCoverage(report(80), report(79))).toThrow('regresses')
+    expect(() => validateCopyCoverage(report(40), report(40), true)).toThrow('threshold')
+  })
+
+  it('detects leaked SQL state before writing a new isolation marker', async () => {
+    await verifyBaselineCopyIsolation()
+    expect(database.query.mock.calls.map(([sql]) => sql)).toContain(
+      'INSERT INTO public.codex_copy_isolation_probe VALUES (1)',
+    )
+    database.query.mockClear()
+    database.query.mockImplementation(async (sql: string) => ({
+      rows: sql.startsWith('SELECT template_kind')
+        ? [{ template_kind: 'baseline', fingerprint: computeTestDatabaseFingerprint({ templateKind: 'baseline' }) }]
+        : [{ probe: 'codex_copy_isolation_probe' }],
+    }))
+    await expect(verifyBaselineCopyIsolation()).rejects.toThrow('leaked SQL state')
+    expect(database.query.mock.calls.some(([sql]) => sql.startsWith('CREATE TABLE'))).toBe(false)
+  })
+
+  it('gates full-suite execution on the mixed comparison with no parallel test jobs', () => {
+    const workflow = parse(readFileSync('.github/workflows/ci-shard-diagnostics.yml', 'utf8'))
+    expect(workflow.jobs['db-copy-suite'].needs).toBe('db-copy-mixed')
+    expect(workflow.jobs['db-copy-suite'].if).toContain("needs.db-copy-mixed.result == 'success'")
+    expect(workflow.jobs['db-copy-suite'].strategy).toBeUndefined()
+    expect(workflow.jobs.pair.if).toContain("inputs.stage != 'db-copy-expanded'")
+  })
+
+  it('merges coverage from a separately instrumented seed-like process without a database', async () => {
+    const directory = path.resolve(`tmp/ci-diagnostics/native-seed-merge-${Date.now()}`)
+    mkdirSync(directory, { recursive: true })
+    const hook = path.resolve('src/hooks/immutability.ts')
+    try {
+      prepareSeedConfig(directory)
+      const seedConfig = readFileSync(path.join(directory, 'template-seed/vitest.config.mjs'), 'utf8')
+      expect(seedConfig).toContain('globalSetup: undefined')
+      expect(seedConfig).toContain('baselineTemplate.diagnostic.ts')
+      expect(seedConfig).not.toContain('include: ["tests/integration/')
+      for (const [position, target] of [directory, path.join(directory, 'template-seed')].entries()) {
+        const test = path.join(target, 'fixture.test.ts')
+        writeFileSync(
+          test,
+          `import { it, expect } from 'vitest'; import { beforeChangeImmutableField } from ${JSON.stringify(hook)}; it('exercises a distinct product hook branch', async () => { const fn = beforeChangeImmutableField({field: 'slug'}); ${position === 0 ? "expect(await fn({data: {slug: 'new'}, operation: 'create'})).toEqual({slug: 'new'})" : "await expect(fn({data: {slug: 'changed'}, originalDoc: {slug: 'original'}, operation: 'update'})).rejects.toThrow('cannot be changed')"} });`,
+        )
+        const config = path.join(target, 'fixture.config.mjs')
+        writeFileSync(
+          config,
+          `export default { test: { projects: [{ test: { name: 'integration', include: [${JSON.stringify(test)}] } }], reporters: [['blob', { outputFile: ${JSON.stringify(path.join(target, 'blob.json'))} }]], coverage: { provider: 'v8', include: [${JSON.stringify(hook)}], reporter: ['json-summary'], reportsDirectory: ${JSON.stringify(path.join(target, 'coverage'))} } } }`,
+        )
+        const result = await measuredProcess(
+          process.execPath,
+          [
+            path.resolve('node_modules/vitest/vitest.mjs'),
+            'run',
+            '--config',
+            config,
+            '--project',
+            'integration',
+            '--coverage',
+          ],
+          { timeoutMs: 15000 },
+        )
+        expect(result.code).toBe(0)
+      }
+      const original = JSON.parse(readFileSync(path.join(directory, 'coverage/coverage-summary.json'), 'utf8'))[hook]
+      expect(await mergeSeedCoverage(directory)).toBeGreaterThan(0)
+      const merged = JSON.parse(
+        readFileSync(path.join(directory, 'seed-merged/coverage/coverage-summary.json'), 'utf8'),
+      )[hook]
+      expect(merged.branches.covered).toBeGreaterThan(original.branches.covered)
+      expect(merged.lines.covered).toBeGreaterThanOrEqual(original.lines.covered)
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
+  }, 45000)
 })

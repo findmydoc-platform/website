@@ -82,3 +82,13 @@ Dispatch `ci-shard-diagnostics.yml` with stage `db-copy`. The job validates each
 Median paired savings are 45.476 seconds, about 32 percent for this sample, including template preparation and service cleanup. The three per-file copies cost 1.524 to 1.548 seconds combined. The complete comparison job consumes 12 minutes 46 seconds of physical runner time, including all six processes and shared job setup.
 
 Each normal variant invokes the seed helper three times; each copy variant records three verified cache hits and no worker-side seed execution. Coverage repeats within each variant. Moving baseline seeding outside Vitest reduces covered lines from 1023 to 921 of 2490 in this sample. This is a measured coverage difference that must be addressed before changing normal integration CI. Whole-suite savings and compatibility remain unmeasured.
+
+## Expanded serial copy comparison
+
+The manual `db-copy-expanded` stage runs three mixed-file pairs before enabling the complete-suite job. The mixed selection contains 12 files covering the original lifecycle sample, mutable reference data, seed reset and Globals, storage recovery, content media, access and AuthActions. A checked-in manifest from the verified 98-file, 877-case run guards file and case counts. Each round uses matching file order in both variants; round 2 reverses the order and round 3 rotates it.
+
+The copy variant builds its template through one explicitly included Vitest diagnostic seed case. That case asserts successful baseline seeding and populated reference collections. It does not run in normal integration discovery. Vitest's native blob merge combines seed and suite coverage; merge time is included in the copy total. Both repeated coverage and coverage file sets must match within each variant. Candidate coverage totals cannot decrease against the normal variant. Complete-suite results additionally enforce the existing integration thresholds. Coverage differences remain visible in the report.
+
+Before every selected copy test file, a SQL probe verifies that the previous file's marker table did not survive the restore, then writes a new marker. PostgreSQL copies and SQL isolation checks are timed together. Existing per-test cleanup still handles S3Mock objects.
+
+The complete-suite job starts only after all mixed pairs pass. It runs three full serial pairs on one VM, with a 360-minute job limit and a 90-minute limit per test process. Any failed test, retry, missing copy, coverage regression or invalid native merge stops later pairs. A failed run's measurements remain diagnostic evidence, but cannot serve as an accepted correctness comparison. Normal CI, integration assertions and coverage thresholds are unchanged.

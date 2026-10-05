@@ -13,12 +13,14 @@ on:
       - 'tests/setup/integrationBaselineCopy.ts'
       - 'tests/setup/integrationGlobalSetup.ts'
       - 'tests/tooling/scripts/ci-shard-db-copy.test.ts'
+      - 'scripts/ci-shard-db-copy-selection.json'
+      - 'tests/diagnostics/**'
   workflow_dispatch:
     inputs:
       stage:
         description: Measurement stage
         type: choice
-        options: [smoke, pilot, full, hooks, db-copy]
+        options: [smoke, pilot, full, hooks, db-copy, db-copy-expanded]
         default: smoke
       round:
         description: Measurement round, 1 through 3
@@ -47,7 +49,7 @@ defaults:
 jobs:
   pair:
     name: Paired A and B
-    if: inputs.stage != 'hooks' && inputs.stage != 'db-copy' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    if: inputs.stage != 'hooks' && inputs.stage != 'db-copy' && inputs.stage != 'db-copy-expanded' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -178,6 +180,99 @@ jobs:
             tmp/ci-diagnostics/db-copy
             !tmp/ci-diagnostics/db-copy/**/cache/**
             !tmp/ci-diagnostics/db-copy/**/*.mjs
+          if-no-files-found: error
+          retention-days: 7
+
+  db-copy-mixed:
+    name: Mixed serial baseline database copy
+    if: inputs.stage == 'db-copy-expanded' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          cache: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Install frozen dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          node scripts/assert-email-template-package-access.mjs
+          pnpm install --frozen-lockfile --strict-peer-dependencies
+      - name: Measure three serial database copy pairs
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+        run: |
+          set -euo pipefail
+          for diagnostic_round in 1 2 3; do
+            node scripts/ci-shard-diagnostics.mjs --stage db-copy-mixed --round "$diagnostic_round" --variant pair --output "tmp/ci-diagnostics/db-copy-mixed/round-$diagnostic_round" --execute
+            node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-mixed --partial
+          done
+          node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-mixed --output tmp/ci-diagnostics/db-copy-mixed/summary.md
+          cat tmp/ci-diagnostics/db-copy-mixed/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve database copy measurements
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: ci-shard-${{ github.run_id }}-db-copy-mixed
+          path: |
+            tmp/ci-diagnostics/db-copy-mixed
+            !tmp/ci-diagnostics/db-copy-mixed/**/cache/**
+            !tmp/ci-diagnostics/db-copy-mixed/**/*.mjs
+          if-no-files-found: error
+          retention-days: 7
+
+  db-copy-suite:
+    needs: db-copy-mixed
+    name: Complete serial baseline database copy
+    if: needs.db-copy-mixed.result == 'success' && inputs.stage == 'db-copy-expanded' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          cache: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Install frozen dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          node scripts/assert-email-template-package-access.mjs
+          pnpm install --frozen-lockfile --strict-peer-dependencies
+      - name: Measure three serial database copy pairs
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+        run: |
+          set -euo pipefail
+          for diagnostic_round in 1 2 3; do
+            node scripts/ci-shard-diagnostics.mjs --stage db-copy-suite --round "$diagnostic_round" --variant pair --output "tmp/ci-diagnostics/db-copy-suite/round-$diagnostic_round" --execute
+            node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-suite --partial
+          done
+          node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-suite --output tmp/ci-diagnostics/db-copy-suite/summary.md
+          cat tmp/ci-diagnostics/db-copy-suite/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve database copy measurements
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: ci-shard-${{ github.run_id }}-db-copy-suite
+          path: |
+            tmp/ci-diagnostics/db-copy-suite
+            !tmp/ci-diagnostics/db-copy-suite/**/cache/**
+            !tmp/ci-diagnostics/db-copy-suite/**/*.mjs
           if-no-files-found: error
           retention-days: 7
 

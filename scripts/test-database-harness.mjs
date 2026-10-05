@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
-import { execSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { setTimeout as sleep } from 'node:timers/promises'
 import pg from 'pg'
 
@@ -460,7 +460,41 @@ async function runPayloadMigrateFresh({ attempts = 3, connectionString, delayMs 
   }
 }
 
-function runBaselineSeed(connectionString) {
+export function runBaselineSeed(connectionString) {
+  if (process.env.CI_DB_SEED_CONFIG) {
+    if (process.env.CI_DB_COPY !== '1' || process.env.NODE_ENV !== 'test')
+      throw new Error('Instrumented template seeding requires the explicit copy experiment.')
+    const { targetDatabaseName } = deriveDatabaseConfig(connectionString)
+    if (!targetDatabaseName.endsWith('_template_baseline'))
+      throw new Error('Instrumented seeding requires a baseline template database.')
+    execFileSync(
+      process.execPath,
+      [
+        'node_modules/vitest/vitest.mjs',
+        'run',
+        '--config',
+        process.env.CI_DB_SEED_CONFIG,
+        '--project',
+        'integration',
+        '--coverage',
+      ],
+      {
+        env: {
+          ...process.env,
+          DATABASE_URI: connectionString,
+          CI_DB_SEED_ACTIVE: '1',
+          CI_DB_COPY: '',
+          CI_DB_SEED_CONFIG: '',
+          CI_SHARD_PHASES: '',
+          CI_SHARD_FILE_ORDER: '',
+          CI_SHARD_REPORT: process.env.CI_DB_SEED_REPORT,
+          CI_SHARD_HOOKS: process.env.CI_DB_SEED_HOOKS,
+        },
+        stdio: 'inherit',
+      },
+    )
+    return
+  }
   execSync('pnpm run seed:run -- --type baseline --runtime-env test', {
     env: { ...process.env, DATABASE_URI: connectionString, DEPLOYMENT_ENV: 'test', NODE_ENV: 'development' },
     stdio: 'inherit',
@@ -724,4 +758,16 @@ export async function copyBaselineWorkingDatabase() {
     templateDatabaseName: config.templateDatabaseNames.baseline,
   })
   await assertBaselineWorkingDatabase()
+}
+
+/** Prove that a previous file's SQL marker cannot survive a new copy. */
+export async function verifyBaselineCopyIsolation() {
+  await assertBaselineWorkingDatabase()
+  const { connectionString } = deriveDatabaseConfig(process.env.DATABASE_URI || DEFAULT_CONN)
+  await withClient(connectionString, async (client) => {
+    const result = await client.query("SELECT to_regclass('public.codex_copy_isolation_probe') AS probe")
+    if (result.rows[0]?.probe) throw new Error('A previous integration file leaked SQL state into the new copy.')
+    await client.query('CREATE TABLE public.codex_copy_isolation_probe (sentinel integer PRIMARY KEY)')
+    await client.query('INSERT INTO public.codex_copy_isolation_probe VALUES (1)')
+  })
 }

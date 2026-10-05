@@ -18,6 +18,7 @@ import {
   validateReports,
 } from '../../../scripts/ci-shard-summary.mjs'
 import { parse } from 'yaml'
+import { failureLocations } from '../../../scripts/ci-shard-reporter.mjs'
 
 const directories: string[] = []
 afterEach(() => {
@@ -53,6 +54,58 @@ const coverage = (pct = 80) => ({
 })
 
 describe('integration shard measurement orchestration', () => {
+  it('records assertion locations from a real failing worker without retaining error content', async () => {
+    const directory = path.resolve(`tmp/ci-diagnostics/failure-local-${Date.now()}`)
+    directories.push(directory)
+    mkdirSync(directory, { recursive: true })
+    const testFile = path.join(directory, 'failure.test.ts')
+    const config = path.join(directory, 'vitest.config.mjs')
+    const metricsFile = path.join(directory, 'metrics.json')
+    writeFileSync(
+      testFile,
+      'import { it, expect } from "vitest";\nit("private failure marker", () => { expect("private assertion value").toBe("different"); });\n',
+    )
+    writeFileSync(
+      config,
+      `export default { test: { include: [${JSON.stringify(testFile)}], reporters: [${JSON.stringify(path.resolve('scripts/ci-shard-reporter.mjs'))}] } }`,
+    )
+    const result = await measuredProcess(
+      process.execPath,
+      ['node_modules/vitest/vitest.mjs', 'run', '--config', config],
+      {
+        timeoutMs: 10000,
+        env: { ...process.env, CI_SHARD_REPORT: metricsFile, CI_SHARD_HOOKS: '' },
+      },
+    )
+    expect(result.code).toBe(1)
+    const metrics = JSON.parse(readFileSync(metricsFile, 'utf8'))
+    expect(metrics.modules[0].tests[0]).toMatchObject({
+      state: 'failed',
+      failureLocations: [{ line: 2, column: expect.any(Number) }],
+    })
+    expect(JSON.stringify(metrics)).not.toContain('private')
+    expect(JSON.stringify(metrics)).not.toContain(directory)
+  }, 15000)
+
+  it('retains only positive source positions for the exact failed test module', () => {
+    const moduleId = path.resolve('tests/integration/example.test.ts')
+    expect(
+      failureLocations(
+        [
+          {
+            message: 'private content',
+            stacks: [
+              { file: moduleId, line: 42, column: 3 },
+              { file: '/outside/private.ts', line: 1, column: 1 },
+              { file: moduleId, line: -1, column: 2 },
+            ],
+            stackStr: `private content\n at ${moduleId}:42:3`,
+          },
+        ],
+        moduleId,
+      ),
+    ).toEqual([{ line: 42, column: 3 }])
+  })
   it('alternates paired run order without running shards concurrently', async () => {
     const calls: string[] = []
     await executePlan(makePlan({ stage: 'full', round: 2 }), async (item: { variant: string; shard: number }) => {

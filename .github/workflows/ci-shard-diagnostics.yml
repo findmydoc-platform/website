@@ -20,7 +20,7 @@ on:
       stage:
         description: Measurement stage
         type: choice
-        options: [smoke, pilot, full, hooks, db-copy, db-copy-expanded]
+        options: [smoke, pilot, full, hooks, db-copy, db-copy-expanded, db-copy-order-check]
         default: smoke
       round:
         description: Measurement round, 1 through 3
@@ -49,7 +49,7 @@ defaults:
 jobs:
   pair:
     name: Paired A and B
-    if: inputs.stage != 'hooks' && inputs.stage != 'db-copy' && inputs.stage != 'db-copy-expanded' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    if: inputs.stage != 'hooks' && inputs.stage != 'db-copy' && inputs.stage != 'db-copy-expanded' && inputs.stage != 'db-copy-order-check' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -185,7 +185,7 @@ jobs:
 
   db-copy-mixed:
     name: Mixed serial baseline database copy
-    if: inputs.stage == 'db-copy-expanded' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    if: (inputs.stage == 'db-copy-expanded' || inputs.stage == 'db-copy-order-check') && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -207,6 +207,7 @@ jobs:
           pnpm install --frozen-lockfile --strict-peer-dependencies
       - name: Measure serial database copy pair 1
         id: copy-round-1
+        if: inputs.stage == 'db-copy-expanded'
         env:
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
           PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
@@ -238,6 +239,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/ci-shard-diagnostics.mjs --stage db-copy-mixed --round 2 --variant pair --output tmp/ci-diagnostics/db-copy-mixed/round-2 --execute
+          if [ "$MEASUREMENT_STAGE" = 'db-copy-order-check' ]; then exit 0; fi
           node scripts/ci-shard-db-copy-summary.mjs --input tmp/ci-diagnostics/db-copy-mixed --partial --output tmp/ci-diagnostics/db-copy-mixed/summary.md
           cat tmp/ci-diagnostics/db-copy-mixed/summary.md >> "$GITHUB_STEP_SUMMARY"
       - name: Preserve database copy pair 2
@@ -257,6 +259,7 @@ jobs:
 
       - name: Measure serial database copy pair 3
         id: copy-round-3
+        if: inputs.stage == 'db-copy-expanded'
         env:
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
           PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}

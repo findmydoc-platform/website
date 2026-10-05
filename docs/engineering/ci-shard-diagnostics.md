@@ -94,3 +94,11 @@ Before every selected copy test file, a SQL probe verifies that the previous fil
 Each expanded pair uploads its evidence immediately after validation, so earlier results remain available while later pairs run. Partial reports state their repetition count.
 
 The complete-suite job starts only after all mixed pairs pass. It runs three full serial pairs on one VM, with a 360-minute job limit and a 90-minute limit per test process. Any failed test, retry, missing copy, coverage regression or invalid native merge stops later pairs. A failed run's measurements remain diagnostic evidence, but cannot serve as an accepted correctness comparison. Normal CI, integration assertions and coverage thresholds are unchanged.
+
+### Measured mixed-file result
+
+[Actions run 37330179732](https://github.com/findmydoc-platform/website/actions/runs/37330179732) executes the expanded experiment at commit `59bb87163449fb0856079528b15bab391acd0737`. Round 1 passes the same 85 cases in 12 files in both variants. Including preparation, cleanup and native coverage merge, the normal variant takes 308.950 seconds and the copy variant 137.865 seconds. This pair saves 171.085 seconds, about 55 percent. Coverage is identical across all four categories, including 1454 covered lines of 2490. The instrumented seed and native merge close the coverage loss observed in the earlier three-file experiment.
+
+In reversed round 2, the copy variant passes all 85 cases, while the normal variant fails three cases in `inquiryRetention.lifecycle.test.ts`. This pair is invalid for the accepted performance comparison. Round 3 and the complete-suite job are skipped. The mixed job consumes 14 minutes 54 seconds of physical runner time. Whole-suite savings remain unmeasured.
+
+The manual `db-copy-order-check` stage reruns only the reversed mixed pair, without enabling the complete-suite job or accepting an incomplete series. Failed-case metrics contain positive line and column positions from the exact test module only. Error messages, assertion values, absolute paths and raw stacks remain excluded. This supports diagnosing order-dependent failures without weakening assertions or silently retrying failed measurements.

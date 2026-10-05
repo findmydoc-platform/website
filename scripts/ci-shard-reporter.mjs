@@ -6,6 +6,27 @@ export function requireCompleteHookTimings(report) {
   if (report.hookTimingComplete !== true) throw new Error('Hook timing events are incomplete.')
 }
 
+export function failureLocations(errors, moduleId) {
+  const escaped = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const pattern = new RegExp(`${escaped}:(\\d+):(\\d+)`, 'g')
+  const locations = (errors ?? []).flatMap((error) => [
+    ...(error.stacks ?? []).filter((frame) => frame.file === moduleId).map(({ line, column }) => ({ line, column })),
+    ...[...String(error.stackStr ?? error.stack ?? '').matchAll(pattern)].map((match) => ({
+      line: Number(match[1]),
+      column: Number(match[2]),
+    })),
+  ])
+  return [
+    ...new Map(
+      locations
+        .filter(
+          ({ line, column }) => Number.isSafeInteger(line) && line > 0 && Number.isSafeInteger(column) && column > 0,
+        )
+        .map((location) => [`${location.line}:${location.column}`, location]),
+    ).values(),
+  ]
+}
+
 export default class ShardDiagnosticReporter {
   modules = []
   onInit(ctx) {
@@ -20,6 +41,9 @@ export default class ShardDiagnosticReporter {
       state: test.result().state,
       durationMs: test.diagnostic()?.duration ?? 0,
       retries: test.diagnostic()?.retryCount ?? 0,
+      ...(test.result().state === 'failed'
+        ? { failureLocations: failureLocations(test.result().errors, testModule.moduleId) }
+        : {}),
     }))
     this.modules.push({
       filename,

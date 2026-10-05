@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { NextResponse } from 'next/server'
 import { authActionEnvironments } from './contracts'
 import type { VerificationCorrelationKey } from './verificationCorrelation'
+import { supabaseEmailTokenHashSchema } from '@/auth/utilities/supabaseEmailTokenHash'
 
 export const PATIENT_VERIFICATION_COOKIE = 'findmydoc_patient_verification'
 const lifetime = 10 * 60 * 1000
@@ -17,10 +18,7 @@ const schema = z
     issuedAt: z.number().int(),
     expiresAt: z.number().int(),
     stage: z.enum(['pending', 'confirmed']),
-    tokenHash: z
-      .string()
-      .regex(/^[a-f0-9]{64}$/)
-      .optional(),
+    tokenHash: supabaseEmailTokenHashSchema.optional(),
   })
   .strict()
 export type PatientVerificationContext = z.infer<typeof schema>

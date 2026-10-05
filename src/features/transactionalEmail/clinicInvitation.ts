@@ -2,6 +2,7 @@ import type { SupabaseClient, User } from '@supabase/supabase-js'
 import type { AuthAction, ClinicStaff } from '@/payload-types'
 import { z } from 'zod'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { supabaseEmailTokenHashSchema } from '@/auth/utilities/supabaseEmailTokenHash'
 import { authActionPolicies } from '@/auth/actions/contracts'
 import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
 import { createConfiguredActionReference, type AuthActionProtocolKeys } from '@/auth/actions/protocol/credentials'
@@ -131,10 +132,7 @@ export function createClinicInvitationCatalogEntry(dependencies: Dependencies): 
           generated.error ||
           !sameIdentity(generated.data.user, current.staff, current.action, now()) ||
           generated.data.properties?.verification_type !== policy.supabaseTokenType ||
-          !z
-            .string()
-            .regex(/^[a-f0-9]{64}$/)
-            .safeParse(generated.data.properties?.hashed_token).success
+          !supabaseEmailTokenHashSchema.safeParse(generated.data.properties?.hashed_token).success
         )
           throw new TransactionalEmailError('source-missing')
         callback.searchParams.set('token_hash', generated.data.properties.hashed_token)

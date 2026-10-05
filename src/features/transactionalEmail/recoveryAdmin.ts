@@ -29,7 +29,7 @@ export async function recoveryAdmin(environment: EmailEnvironment, principal: Re
             email_otp: '',
             redirect_to: '',
             verification_type: 'recovery' as const,
-            hashed_token: createHash('sha256').update(randomUUID()).digest('hex'),
+            hashed_token: createHash('sha224').update(randomUUID()).digest('hex'),
           },
         },
         error: null,

@@ -204,7 +204,7 @@ describe('recovery from Auth request through the real static catalog and shared 
         expect(callback.searchParams.get('authActionId')).toBe(String(action.id))
         expect(callback.searchParams.get('next')).toBe('/auth/password/reset/complete')
         expect(callback.searchParams.get('type')).toBe('recovery')
-        expect(callback.searchParams.get('token_hash')).toMatch(/^[a-f0-9]{64}$/)
+        expect(callback.searchParams.get('token_hash')).toMatch(/^[a-f0-9]{56}$/)
         if (collection === 'clinicStaff')
           expect(
             readActionReference(

@@ -66,7 +66,7 @@ function fixture() {
   const admin = {
     getUserById: vi.fn(async () => ({ data: { user }, error: null })),
     generateLink: vi.fn(async (_input: unknown) => ({
-      data: { user, properties: { hashed_token: 'd'.repeat(64), verification_type: 'invite' } },
+      data: { user, properties: { hashed_token: 'd'.repeat(56), verification_type: 'invite' } },
       error: null,
     })),
   }

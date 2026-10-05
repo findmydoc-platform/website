@@ -18,6 +18,7 @@ import {
   validateReports,
 } from '../../../scripts/ci-shard-summary.mjs'
 import { parse } from 'yaml'
+import ShardDiagnosticReporter from '../../../scripts/ci-shard-reporter.mjs'
 
 const directories: string[] = []
 afterEach(() => {
@@ -28,6 +29,7 @@ afterEach(() => {
 const report = (filename = 'tests/integration/example.test.ts', id = 'case-1') => ({
   reason: 'passed',
   unhandledErrors: 0,
+  hookTimingComplete: true,
   modules: [
     {
       filename,
@@ -137,6 +139,39 @@ describe('integration shard measurement orchestration', () => {
     expect(result.code).toBe(0)
   })
 
+  it('includes a hook whose end arrives after the module-end callback', async () => {
+    const directory = mkdtempSync(path.join(tmpdir(), 'ci-shard-late-hook-'))
+    directories.push(directory)
+    const output = path.join(directory, 'metrics.json')
+    vi.stubEnv('CI_SHARD_REPORT', output)
+    const reporter = new ShardDiagnosticReporter()
+    reporter.onInit({ config: { root: directory } })
+    const testModule = {
+      id: 'file',
+      type: 'module',
+      moduleId: path.join(directory, 'example.test.ts'),
+      diagnostic: () => ({
+        duration: 30,
+        collectDuration: 1,
+        setupDuration: 1,
+        prepareDuration: 1,
+        environmentSetupDuration: 0,
+      }),
+      children: { allTests: () => [] },
+    }
+    const hook = { name: 'beforeAll', entity: { id: 'suite', type: 'suite', module: testModule } }
+    reporter.onHookStart(hook)
+    reporter.onTestModuleEnd(testModule)
+    await new Promise((resolve) => setTimeout(resolve, 5))
+    reporter.onHookEnd(hook)
+    reporter.onTestRunEnd([], [], 'passed')
+    const metrics = JSON.parse(readFileSync(output, 'utf8'))
+    expect(metrics.hookTimingComplete).toBe(true)
+    expect(metrics.modules[0].hookMs).toBeGreaterThan(0)
+    expect(metrics.modules[0].hookMsByName.beforeAll).toBe(metrics.modules[0].hookMs)
+    expect(() => validateReports([{ ...report(), hookTimingComplete: false }])).toThrow('incomplete')
+  })
+
   it('records exit codes and drains output without storing raw logs', async () => {
     const result = await measuredProcess(
       process.execPath,
@@ -193,7 +228,9 @@ describe('integration shard comparison validity', () => {
   it('rejects duplicated files, duplicated cases, and empty reports', () => {
     expect(() => validateReports([report(), report()])).toThrow('file')
     expect(() => validateReports([report('a'), report('b')])).toThrow('case')
-    expect(() => validateReports([{ reason: 'passed', unhandledErrors: 0, modules: [] }])).toThrow('empty')
+    expect(() =>
+      validateReports([{ reason: 'passed', unhandledErrors: 0, hookTimingComplete: true, modules: [] }]),
+    ).toThrow('empty')
   })
 
   it('rejects missing tests and unequal coverage', () => {

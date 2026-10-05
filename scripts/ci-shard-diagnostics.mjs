@@ -168,6 +168,18 @@ const markers = [
 ]
 
 function resourceSample() {
+  const host = {
+    at: new Date().toISOString(),
+    hostLoad: os.loadavg(),
+    freeMemoryBytes: os.freemem(),
+    cpuTicks: os.cpus().reduce(
+      (sum, cpu) => ({
+        idle: sum.idle + cpu.times.idle,
+        total: sum.total + Object.values(cpu.times).reduce((total, ticks) => total + ticks, 0),
+      }),
+      { idle: 0, total: 0 },
+    ),
+  }
   const docker = spawn(
     'docker',
     [
@@ -188,14 +200,12 @@ function resourceSample() {
   return new Promise((resolve) => {
     docker.once('error', () => {
       clearTimeout(timeout)
-      resolve({ at: new Date().toISOString(), hostLoad: os.loadavg(), freeMemoryBytes: os.freemem(), docker: [] })
+      resolve({ ...host, docker: [] })
     })
     docker.once('close', () => {
       clearTimeout(timeout)
       resolve({
-        at: new Date().toISOString(),
-        hostLoad: os.loadavg(),
-        freeMemoryBytes: os.freemem(),
+        ...host,
         docker: output
           .trim()
           .split('\n')

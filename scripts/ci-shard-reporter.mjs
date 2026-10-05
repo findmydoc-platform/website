@@ -7,6 +7,7 @@ export default class ShardDiagnosticReporter {
   modules = []
   hooks = []
   pendingHooks = new Map()
+  unmatchedHookEnds = 0
 
   onInit(ctx) {
     this.root = ctx.config.root
@@ -19,8 +20,16 @@ export default class ShardDiagnosticReporter {
   onHookEnd(hook) {
     const key = `${hook.entity.id}:${hook.name}`
     const started = this.pendingHooks.get(key)
-    if (started === undefined) return
-    this.hooks.push({ entity: hook.entity.id, name: hook.name, durationMs: performance.now() - started })
+    if (started === undefined) {
+      this.unmatchedHookEnds++
+      return
+    }
+    const testModule = hook.entity.type === 'module' ? hook.entity : hook.entity.module
+    this.hooks.push({
+      filename: path.relative(this.root, testModule.moduleId).split(path.sep).join('/'),
+      name: hook.name,
+      durationMs: performance.now() - started,
+    })
     this.pendingHooks.delete(key)
   }
 
@@ -40,14 +49,6 @@ export default class ShardDiagnosticReporter {
       setupMs: diagnostic.setupDuration,
       prepareMs: diagnostic.prepareDuration,
       environmentMs: diagnostic.environmentSetupDuration,
-      hookMs: this.hooks
-        .filter(
-          (hook) =>
-            hook.entity === testModule.id ||
-            [...testModule.children.allTests()].some((test) => test.id === hook.entity) ||
-            [...testModule.children.allSuites()].some((suite) => suite.id === hook.entity),
-        )
-        .reduce((sum, hook) => sum + hook.durationMs, 0),
       tests,
     })
   }
@@ -56,9 +57,29 @@ export default class ShardDiagnosticReporter {
     const output = process.env.CI_SHARD_REPORT
     if (!output) throw new Error('CI_SHARD_REPORT is required for the diagnostic reporter.')
     mkdirSync(path.dirname(output), { recursive: true })
+    for (const testModule of this.modules) {
+      const hooks = this.hooks.filter((hook) => hook.filename === testModule.filename)
+      testModule.hookMs = hooks.reduce((sum, hook) => sum + hook.durationMs, 0)
+      testModule.hookMsByName = Object.fromEntries(
+        ['beforeAll', 'afterAll', 'beforeEach', 'afterEach'].map((name) => [
+          name,
+          hooks.filter((hook) => hook.name === name).reduce((sum, hook) => sum + hook.durationMs, 0),
+        ]),
+      )
+    }
     writeFileSync(
       output,
-      JSON.stringify({ version: 1, reason, unhandledErrors: errors.length, modules: this.modules }, null, 2),
+      JSON.stringify(
+        {
+          version: 1,
+          reason,
+          unhandledErrors: errors.length,
+          hookTimingComplete: this.pendingHooks.size === 0 && this.unmatchedHookEnds === 0,
+          modules: this.modules,
+        },
+        null,
+        2,
+      ),
     )
   }
 }

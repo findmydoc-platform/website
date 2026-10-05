@@ -13,6 +13,7 @@ export function validateReports(reports) {
   const tests = new Set()
   for (const report of reports) {
     if (report.reason !== 'passed' || report.unhandledErrors !== 0) throw new Error('A test report is unsuccessful.')
+    if (report.hookTimingComplete !== true) throw new Error('Hook timing events are incomplete.')
     for (const testModule of report.modules) {
       if (files.has(testModule.filename)) throw new Error('A test file was executed more than once.')
       files.add(testModule.filename)

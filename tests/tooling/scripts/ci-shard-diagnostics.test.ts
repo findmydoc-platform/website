@@ -18,7 +18,7 @@ import {
   validateReports,
 } from '../../../scripts/ci-shard-summary.mjs'
 import { parse } from 'yaml'
-import { failureLocations } from '../../../scripts/ci-shard-reporter.mjs'
+import { authActionProbe, failureLocations } from '../../../scripts/ci-shard-reporter.mjs'
 
 const directories: string[] = []
 afterEach(() => {
@@ -54,6 +54,23 @@ const coverage = (pct = 80) => ({
 })
 
 describe('integration shard measurement orchestration', () => {
+  it('filters AuthAction probe metadata to bounded counters and boolean observations', () => {
+    expect(
+      authActionProbe({
+        authActionProbe: {
+          ownedStarts: 4,
+          serializableStarts: 4,
+          firstReadable: true,
+          sameIdentity: false,
+          failedCommits: -1,
+          successfulCommits: 1001,
+          secondReadable: 'private content',
+          unlisted: 'private content',
+        },
+      }),
+    ).toEqual({ ownedStarts: 4, serializableStarts: 4, firstReadable: true, sameIdentity: false })
+    expect(authActionProbe({})).toBeUndefined()
+  })
   it('records assertion locations from a real failing worker without retaining error content', async () => {
     const directory = path.resolve(`tmp/ci-diagnostics/failure-local-${Date.now()}`)
     directories.push(directory)

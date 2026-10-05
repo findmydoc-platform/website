@@ -27,6 +27,30 @@ export function failureLocations(errors, moduleId) {
   ]
 }
 
+export function authActionProbe(meta) {
+  const probe = meta?.authActionProbe
+  if (!probe || typeof probe !== 'object') return undefined
+  return Object.fromEntries(
+    [
+      'ownedStarts',
+      'serializableStarts',
+      'successfulCommits',
+      'failedCommits',
+      'firstReadable',
+      'secondReadable',
+      'firstLive',
+      'secondLive',
+      'sameIdentity',
+    ]
+      .filter(
+        (key) =>
+          typeof probe[key] === 'boolean' ||
+          (Number.isSafeInteger(probe[key]) && probe[key] >= 0 && probe[key] <= 1000),
+      )
+      .map((key) => [key, probe[key]]),
+  )
+}
+
 export default class ShardDiagnosticReporter {
   modules = []
   onInit(ctx) {
@@ -41,6 +65,7 @@ export default class ShardDiagnosticReporter {
       state: test.result().state,
       durationMs: test.diagnostic()?.duration ?? 0,
       retries: test.diagnostic()?.retryCount ?? 0,
+      ...(authActionProbe(test.meta()) ? { authActionProbe: authActionProbe(test.meta()) } : {}),
       ...(test.result().state === 'failed'
         ? { failureLocations: failureLocations(test.result().errors, testModule.moduleId) }
         : {}),

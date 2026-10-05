@@ -122,7 +122,9 @@ describe('AuthActions private Local API lifecycle contract', () => {
     expect(await system.read(action.id)).toEqual(original)
   })
 
-  it('serializes concurrent pending reservations into one action and removes correlation at the deadline', async () => {
+  it('serializes concurrent pending reservations into one action and removes correlation at the deadline', async ({
+    task,
+  }) => {
     const keys = [{ version: 'ci-v1', secret: 'synthetic-ci-correlation-material-for-tests-only' }]
     const reserve = async () =>
       bindAuthActions(await createLocalReq({}, payload), {
@@ -138,10 +140,36 @@ describe('AuthActions private Local API lifecycle contract', () => {
       return data
     }
     hooks.push(synchronize)
+    const begin = vi.spyOn(payload.db, 'beginTransaction')
+    const commit = payload.db.commitTransaction.bind(payload.db)
+    let failedCommits = 0
+    let successfulCommits = 0
+    const commitSpy = vi.spyOn(payload.db, 'commitTransaction').mockImplementation(async (...args) => {
+      try {
+        await commit(...args)
+        successfulCommits++
+      } catch (error) {
+        failedCommits++
+        throw error
+      }
+    })
     try {
       const contenders = await Promise.all([reserve(), reserve()])
       const results = await Promise.all(contenders.map((system) => system.reservePatientVerification({ email })))
       for (const action of results) actionIDs.add(action.id)
+      const persisted = await Promise.all(contenders.map((system, index) => system.read(results[index]!.id)))
+      Reflect.set(task.meta, 'authActionProbe', {
+        ownedStarts: begin.mock.calls.length,
+        serializableStarts: begin.mock.calls.filter(([options]) => options?.isolationLevel === 'serializable').length,
+        successfulCommits,
+        failedCommits,
+        firstReadable: persisted[0] !== null,
+        secondReadable: persisted[1] !== null,
+        firstLive: persisted[0]?.state === 'pending' && Date.parse(persisted[0].expiresAt) > now,
+        secondLive: persisted[1]?.state === 'pending' && Date.parse(persisted[1].expiresAt) > now,
+        sameIdentity: results[0]!.id === results[1]!.id,
+      })
+      expect(persisted.every((action) => action !== null)).toBe(true)
       expect(results[0]!.id).toBe(results[1]!.id)
       const system = await reserve()
       const action = results[0]!
@@ -154,6 +182,8 @@ describe('AuthActions private Local API lifecycle contract', () => {
       expect(await system.read(action.id)).toMatchObject({ correlationDigest: null, correlationKeyVersion: null })
       expect((await system.read(resent.id))!.correlationDigest).toMatch(/^[a-f0-9]{64}$/)
     } finally {
+      commitSpy.mockRestore()
+      begin.mockRestore()
       hooks.splice(hooks.indexOf(synchronize), 1)
       barrier.close()
     }

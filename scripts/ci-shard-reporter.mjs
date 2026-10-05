@@ -11,8 +11,8 @@ export default class ShardDiagnosticReporter {
   onTestModuleEnd(testModule) {
     const diagnostic = testModule.diagnostic()
     const filename = path.relative(this.root, testModule.moduleId).split(path.sep).join('/')
-    const tests = [...testModule.children.allTests()].map((test) => ({
-      id: createHash('sha256').update(`${filename}\0${test.fullName}`).digest('hex'),
+    const tests = [...testModule.children.allTests()].map((test, index) => ({
+      id: createHash('sha256').update(`${filename}\0${index}\0${test.fullName}`).digest('hex'),
       state: test.result().state,
       durationMs: test.diagnostic()?.duration ?? 0,
       retries: test.diagnostic()?.retryCount ?? 0,

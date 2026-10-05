@@ -294,7 +294,7 @@ export async function runDiagnostic(options) {
         if (options.stage === 'smoke')
           writeFileSync(
             path.join(directory, 'smoke.test.ts'),
-            "import { beforeAll, describe, expect, it } from 'vitest'; describe('reporter smoke', () => { beforeAll(() => { const until = performance.now() + 60; while (performance.now() < until) {} }); it('passes', () => expect(2 + 2).toBe(4)); });",
+            "import { beforeAll, describe, expect, it } from 'vitest'; describe('reporter smoke', () => { beforeAll(() => { const until = performance.now() + 60; while (performance.now() < until) {} }); it.each([2, 3])('passes', value => expect(value + value).toBe(value * 2)); });",
           )
         const args = [path.join(root, 'node_modules/vitest/vitest.mjs'), 'run', '--config', config]
         if (options.stage !== 'smoke') {
@@ -323,6 +323,7 @@ export async function runDiagnostic(options) {
             linux ? ['--format=%U %S %M', '--output', timeFile, process.execPath, ...args] : args,
             {
               signal: controller.signal,
+              timeoutMs: options.stage === 'full' && item.variant === 'A' ? 90 * 60 * 1000 : 45 * 60 * 1000,
               env: {
                 ...process.env,
                 NODE_ENV: 'test',

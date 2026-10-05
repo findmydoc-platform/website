@@ -23,7 +23,7 @@ Tooling tests exercise child-process ordering, failure, timeout, interruption, c
 
 ## Actions execution
 
-Pushing diagnostic changes to the experiment branch runs smoke only. After registration, GitHub CLI dispatches pilot and full rounds against the branch. Wait for each run to finish successfully before dispatching the next; stop on any failed, interrupted, or incomplete round. A full paired job has a 180-minute timeout, each parallel shard 45 minutes, and report validation 10 minutes.
+Pushing diagnostic changes to the experiment branch runs smoke only. After registration, GitHub CLI dispatches pilot and full rounds against the branch. Wait for each run to finish successfully before dispatching the next; stop on any failed, interrupted, or incomplete round. A full paired job has a 180-minute timeout, the full A process 90 minutes, each shard process 45 minutes, and report validation 10 minutes.
 
 ```sh
 gh workflow run ci-shard-diagnostics.yml --ref agent/ci-shard-diagnostics --field stage=pilot --field round=1
@@ -34,7 +34,7 @@ Repeat full dispatch for rounds two and three only after the preceding round suc
 
 ## Interpreting results
 
-JSON measurements contain relative file paths, hashed case identities, module diagnostics, worker-side hook durations, lifecycle markers, GNU time process metrics, and five-second host/Docker samples. They omit environment values, raw debug logs, test failure bodies, and package source files. Native C blobs are transferred for coverage merging; they contain Vitest result metadata and must not be treated as a reusable dependency cache.
+JSON measurements contain relative file paths, hashed case identities including their file-local positions, module diagnostics, worker-side hook durations, lifecycle markers, GNU time process metrics, and five-second host/Docker samples. They omit environment values, raw debug logs, test failure bodies, and package source files. Native C blobs are transferred for coverage merging; they contain Vitest result metadata and must not be treated as a reusable dependency cache.
 
 Module duration includes tests and hooks; collection includes imports and suite callbacks. A diagnostic Vitest runner times hook phases inside each worker and preserves the original runner callbacks. These phases include empty-hook bookkeeping. Reporter delivery timestamps are unsuitable because Vitest can batch hook events. These overlapping metrics cannot be summed as independent costs. Payload initialization remains within collection or hooks until a targeted follow-up instruments it separately. GNU time covers the test process tree, while Docker samples describe container usage separately.
 

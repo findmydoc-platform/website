@@ -169,7 +169,7 @@ describe('integration shard measurement orchestration', () => {
     await expect(measuredProcess('nonexistent-ci-shard-diagnostic-command', [], { timeoutMs: 5000 })).rejects.toThrow()
   })
 
-  it('runs the actual reporter through a database-free Vitest process', async () => {
+  it('distinguishes identically named parameterized cases and measures blocked hooks in a real Vitest worker', async () => {
     const output = `tmp/ci-diagnostics/smoke-local-${Date.now()}`
     const directory = path.resolve(output)
     directories.push(directory)
@@ -177,7 +177,7 @@ describe('integration shard measurement orchestration', () => {
     expect(result.valid).toBe(true)
     const metrics = JSON.parse(readFileSync(path.join(directory, 'smoke-0/metrics.json'), 'utf8'))
     const selection = validateReports([metrics])
-    expect(selection.tests).toHaveLength(1)
+    expect(selection.tests).toHaveLength(2)
     expect(metrics.hookTimingComplete).toBe(true)
     expect(metrics.modules[0].hookMsByName.beforeAll).toBeGreaterThanOrEqual(50)
     expect(JSON.stringify(metrics)).not.toContain('reporter smoke')

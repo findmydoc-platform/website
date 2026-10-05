@@ -924,6 +924,76 @@ describe('preview lock proxy', () => {
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 
+  it('allows a verified platform principal to submit patient registration in Preview', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'platform-registration-1',
+          email: 'platform-registration@example.test',
+          app_metadata: { user_type: 'platform' },
+        },
+      },
+      error: null,
+    })
+
+    const response = await proxy(
+      new NextRequest(`https://preview.findmydoc.eu${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}`, {
+        method: 'POST',
+        headers: { authorization: 'Bearer verified-platform-registration-token' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBeNull()
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBeNull()
+    expect(mocks.getUser).toHaveBeenCalledWith('verified-platform-registration-token')
+  })
+
+  it('keeps non-platform patient-registration requests behind Preview Guard', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'clinic-registration-1',
+          email: 'clinic-registration@example.test',
+          app_metadata: { user_type: 'clinic' },
+        },
+      },
+      error: null,
+    })
+
+    const response = await proxy(
+      new NextRequest(`https://preview.findmydoc.eu${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}`, {
+        method: 'POST',
+        headers: { authorization: 'Bearer verified-clinic-registration-token' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
+    expect(mocks.getUser).toHaveBeenCalledWith('verified-clinic-registration-token')
+  })
+
+  it('keeps patient-registration resend behind Preview Guard for platform principals', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValueOnce({
+      data: { user: { id: 'platform-registration-2', app_metadata: { user_type: 'platform' } } },
+      error: null,
+    })
+
+    const response = await proxy(
+      new NextRequest(`https://preview.findmydoc.eu${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}/resend`, {
+        method: 'POST',
+        headers: { authorization: 'Bearer verified-platform-resend-token' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
   it('removes spoofed guard headers when Preview Guard is inactive', async () => {
     const request = new NextRequest(`https://preview.findmydoc.eu${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}`, {
       method: 'POST',

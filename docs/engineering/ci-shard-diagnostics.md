@@ -68,3 +68,17 @@ The seeded template exists in the job's local Postgres container. Its fingerprin
 Process times include cold services, migrations, template construction, seed execution, per-file copies, coverage reporting and cleanup. Coverage reports remain available. Moving seeding outside Vitest changes incidental coverage, so the report shows cross-variant deltas and checks repeatability within each variant. It does not claim identical coverage or whole-suite compatibility. A rollout needs broader integration validation and a decision about seed-related coverage.
 
 Dispatch `ci-shard-diagnostics.yml` with stage `db-copy`. The job validates each completed pair before continuing and publishes `summary.md` with paired savings and copy times. A failed process, stale template, missing copy, changed cases or inconsistent repeated coverage invalidates the measurement.
+
+### Measured three-file result
+
+[Actions run 37315229150](https://github.com/findmydoc-platform/website/actions/runs/37315229150) validates three serial pairs at commit `988387c2a1b8c5da62cde8c147b7370a677ff785`. Each process passes the same 37 cases without skips or retries.
+
+| Round | Empty template and file seeds | Baseline template and file copies | Savings |
+| --- | ---: | ---: | ---: |
+| 1 | 153.625 s | 98.836 s | 54.789 s |
+| 2 | 142.532 s | 97.300 s | 45.232 s |
+| 3 | 143.128 s | 97.652 s | 45.476 s |
+
+Median paired savings are 45.476 seconds, about 32 percent for this sample, including template preparation and service cleanup. The three per-file copies cost 1.524 to 1.548 seconds combined. The complete comparison job consumes 12 minutes 46 seconds of physical runner time, including all six processes and shared job setup.
+
+Each normal variant invokes the seed helper three times; each copy variant records three verified cache hits and no worker-side seed execution. Coverage repeats within each variant. Moving baseline seeding outside Vitest reduces covered lines from 1023 to 921 of 2490 in this sample. This is a measured coverage difference that must be addressed before changing normal integration CI. Whole-suite savings and compatibility remain unmeasured.

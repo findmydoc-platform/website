@@ -2,6 +2,10 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
+export function requireCompleteHookTimings(report) {
+  if (report.hookTimingComplete !== true) throw new Error('Hook timing events are incomplete.')
+}
+
 export default class ShardDiagnosticReporter {
   modules = []
   onInit(ctx) {

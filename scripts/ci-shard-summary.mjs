@@ -3,6 +3,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { filesUnder } from './ci-shard-diagnostics.mjs'
+import { requireCompleteHookTimings } from './ci-shard-reporter.mjs'
 import thresholds from '../config/coverage/vitest.thresholds.integration.js'
 
 const read = (filename) => JSON.parse(readFileSync(filename, 'utf8'))
@@ -13,7 +14,7 @@ export function validateReports(reports) {
   const tests = new Set()
   for (const report of reports) {
     if (report.reason !== 'passed' || report.unhandledErrors !== 0) throw new Error('A test report is unsuccessful.')
-    if (report.hookTimingComplete !== true) throw new Error('Hook timing events are incomplete.')
+    requireCompleteHookTimings(report)
     for (const testModule of report.modules) {
       if (files.has(testModule.filename)) throw new Error('A test file was executed more than once.')
       files.add(testModule.filename)

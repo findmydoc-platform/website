@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { performance } from 'node:perf_hooks'
 import os from 'node:os'
+import { requireCompleteHookTimings } from './ci-shard-reporter.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const compose = ['compose', '-p', 'findmydoc-test', '-f', 'docker-compose.test.yml']
@@ -357,6 +358,14 @@ export async function runDiagnostic(options) {
         writeFileSync(path.join(directory, 'process.json'), JSON.stringify(record, null, 2))
         console.log(`${item.variant}/${item.shard}: exit=${result.code}, elapsed=${Math.round(result.wallMs / 1000)}s`)
         if (result.code !== 0) rmSync(path.join(directory, 'blob.json'), { force: true })
+        else {
+          try {
+            requireCompleteHookTimings(JSON.parse(readFileSync(path.join(directory, 'metrics.json'), 'utf8')))
+          } catch (error) {
+            rmSync(path.join(directory, 'blob.json'), { force: true })
+            throw error
+          }
+        }
         return record
       },
       {

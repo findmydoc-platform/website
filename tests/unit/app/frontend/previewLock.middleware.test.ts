@@ -866,6 +866,48 @@ describe('preview lock proxy', () => {
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 
+  it.each(['requestRecovery', 'validateAction', 'confirmAction', 'completeAction'])(
+    'delegates Dashboard %s to its service authentication without requiring a user session',
+    async (operation) => {
+      process.env.VERCEL_ENV = 'preview'
+      const response = await proxy(
+        new NextRequest(`https://preview.findmydoc.eu/api/internal/auth-actions/v1/${operation}`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-auth-action-signature': 'unverified-service-signature' },
+          body: '{}',
+        }),
+      )
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('x-middleware-next')).toBe('1')
+      expect(response.headers.get('x-middleware-request-x-auth-action-signature')).toBe('unverified-service-signature')
+      expect(response.headers.get('location')).toBeNull()
+      expect(mocks.createServerClient).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each([
+    '/api/internal/auth-actions/v1',
+    '/api/internal/auth-actions/v1/unknown',
+    '/api/internal/auth-actions/v1/validateAction/extra',
+    '/api/internal/auth-actions/v1/requestRecoveryExtra',
+    '/api/internal/auth-actions/v2/validateAction',
+  ])('keeps unregistered Auth action path %s behind the Preview session guard', async (path) => {
+    process.env.VERCEL_ENV = 'preview'
+    const response = await proxy(
+      new NextRequest(`https://preview.findmydoc.eu${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-auth-action-signature': 'unverified-service-signature' },
+        body: '{}',
+      }),
+    )
+
+    expect(response.status).toBe(401)
+    await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' })
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
   it('passes API preflight requests through without authentication', async () => {
     process.env.VERCEL_ENV = 'preview'
 

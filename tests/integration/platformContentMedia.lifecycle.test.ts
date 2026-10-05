@@ -259,6 +259,35 @@ describe('PlatformContentMedia integration - lifecycle', () => {
 
     expect(updated.createdBy).toBe(platformUser.id)
     expect(updated.storagePath).toMatch(/^platform\/[a-f0-9]{10}-.*\.png$/)
+
+    // Deleting an uploader clears the relationship through the native foreign key.
+    // Exercise attribution recovery explicitly instead of relying on another file's cleanup.
+    await payload.delete({ collection: 'platformStaff', id: platformUser.id, overrideAccess: true })
+    createdPlatformStaffIds.splice(createdPlatformStaffIds.indexOf(platformUser.id), 1)
+
+    const orphaned = await payload.findByID({
+      collection: 'platformContentMedia',
+      id: created.id,
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(orphaned.createdBy).toBeNull()
+    expect(orphaned.storagePath).toBe(updated.storagePath)
+
+    const replacementUser = await createPlatformUser('update-recovery')
+    const recovered = await payload.update({
+      collection: 'platformContentMedia',
+      id: created.id,
+      data: { alt: 'Recovered attribution', createdBy: replacementUser.id },
+      user: asStaffPayloadUser(replacementUser),
+      depth: 0,
+      overrideAccess: false,
+    })
+
+    expect(recovered.createdBy).toBe(replacementUser.id)
+    expect(recovered.alt).toBe('Recovered attribution')
+    expect(recovered.storagePath).toBe(updated.storagePath)
+    expect(recovered.filename).toBe(updated.filename)
   })
 
   it('allows public reads but blocks clinic, patient, and anonymous writes', async () => {

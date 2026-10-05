@@ -9,8 +9,11 @@ import { createActionReference, type AuthActionProtocolKeys } from '@/auth/actio
 import type { DashboardActionFlow } from '@/auth/actions/contracts'
 import { protectAuthActionProtocolStorage } from '@/auth/actions/protocol/storage'
 import { recoveryCorrelations } from '@/auth/actions/recoveryCorrelation'
+import { guardClinicAccountEvidence, hasClinicAccountCompletion } from '@/auth/utilities/clinicAccountCompletion'
 
 const admission = vi.hoisted(() => ({ request: vi.fn() }))
+const passwordAuthority = vi.hoisted(() => ({ getUser: vi.fn(), getClaims: vi.fn() }))
+vi.mock('@/auth/utilities/supaBaseServer', () => ({ createClient: async () => ({ auth: passwordAuthority }) }))
 vi.mock('@/auth/actions/passwordRecoveryRequests', () => ({ requestPasswordRecovery: admission.request }))
 vi.mock('payload', async (load) => ({
   ...(await load<typeof import('payload')>()),
@@ -145,6 +148,17 @@ function fixture(flow: DashboardActionFlow = 'clinic-invitation') {
       await operation('update', input)
       const originalDoc = records.get(`${input.collection}:${input.id}`)!
       let data = clone(input.data) as Record<string, unknown>
+      if (input.collection === 'clinicStaff') {
+        data = guardClinicAccountEvidence({
+          operation: 'update',
+          data,
+          originalDoc,
+          req: { ...input.req, context: input.context },
+        } as never) as Record<string, unknown>
+        Object.assign(originalDoc, data)
+        calls.push('account-completion')
+        return clone(originalDoc)
+      }
       for (const hook of AuthActions.hooks!.beforeChange!)
         data = await hook({ operation: 'update', data, originalDoc, req: input.req } as never)
       Object.assign(originalDoc, data)
@@ -172,7 +186,20 @@ function fixture(flow: DashboardActionFlow = 'clinic-invitation') {
     calls.push('password')
     return { data: { user }, error: null }
   })
-  const handle = bindAuthActionProtocol(req, { keys, now: () => clock, recoveryKeys, verifyUser, updatePassword })
+  passwordAuthority.getUser.mockResolvedValue({ data: { user }, error: null })
+  passwordAuthority.getClaims.mockImplementation(async () => ({
+    data: { claims: { sub: subject, amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) }] } },
+    error: null,
+  }))
+  const authenticatePassword = vi.fn(async () => ({ accessToken: 'offline-fresh-password-session', subject }))
+  const handle = bindAuthActionProtocol(req, {
+    keys,
+    now: () => clock,
+    recoveryKeys,
+    verifyUser,
+    updatePassword,
+    authenticatePassword,
+  })
   const actionRef = createActionReference({ actionId: 42, flow }, keys)
   const body = { actionRef, flow }
   const authenticatedBody = { ...body, accessToken: token }
@@ -220,6 +247,7 @@ function fixture(flow: DashboardActionFlow = 'clinic-invitation') {
     calls,
     verifyUser,
     updatePassword,
+    authenticatePassword,
     handle,
     request,
     body,
@@ -238,6 +266,115 @@ beforeEach(() => {
 })
 const safeInvalid = { version: 1, ok: false, code: 'INVALID_OR_EXPIRED_ACTION' }
 describe('Website auth-action HTTP protocol', () => {
+  it('records guarded initial account completion before acknowledging an invitation password', async () => {
+    const f = fixture()
+    await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')
+    expect((await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).status).toBe(200)
+    expect(hasClinicAccountCompletion(f.staff as never)).toBe(true)
+    expect(f.authenticatePassword).toHaveBeenCalledWith(email, password)
+    expect(passwordAuthority.getUser).toHaveBeenCalledWith('offline-fresh-password-session')
+    expect(passwordAuthority.getClaims).toHaveBeenCalledWith('offline-fresh-password-session')
+    expect(JSON.stringify([...f.records.values()])).not.toContain('offline-fresh-password-session')
+  })
+
+  it('resumes initial evidence after fresh password authentication fails without repeating password persistence', async () => {
+    const f = fixture()
+    await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')
+    f.authenticatePassword.mockRejectedValueOnce(new Error('Synthetic password authentication outage.'))
+    const completion = f.request('completeAction', f.completeBody)
+    const unavailable = await f.handle(completion.clone(), 'completeAction')
+    expect(unavailable.status).toBe(503)
+    expect(unavailable.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(f.action.state).toBe('completed')
+    expect(hasClinicAccountCompletion(f.staff as never)).toBe(false)
+    expect(
+      [...f.records.values()].some((doc) => String(doc.key).includes('auth-action-password:v1:test:subject:')),
+    ).toBe(true)
+    expect((await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).status).toBe(200)
+    expect((await f.handle(completion, 'completeAction')).status).toBe(200)
+    expect(hasClinicAccountCompletion(f.staff as never)).toBe(true)
+    expect(f.updatePassword).toHaveBeenCalledOnce()
+    expect(
+      [...f.records.values()].some((doc) => String(doc.key).includes('auth-action-password:v1:test:subject:')),
+    ).toBe(false)
+  })
+
+  it.each(['login-subject', 'verified-subject', 'email-session', 'tenant-change', 'synchronization-change'] as const)(
+    'does not acknowledge invitation evidence for %s',
+    async (condition) => {
+      const f = fixture()
+      await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')
+      if (condition === 'login-subject')
+        f.authenticatePassword.mockResolvedValueOnce({
+          accessToken: 'offline-fresh-password-session',
+          subject: randomUUID(),
+        })
+      if (condition === 'verified-subject')
+        passwordAuthority.getUser.mockResolvedValueOnce({
+          data: { user: { ...f.user, id: randomUUID() } },
+          error: null,
+        })
+      if (condition === 'email-session')
+        passwordAuthority.getClaims.mockResolvedValueOnce({
+          data: { claims: { sub: subject, amr: [{ method: 'otp', timestamp: Math.floor(Date.now() / 1000) }] } },
+          error: null,
+        })
+      if (condition === 'tenant-change' || condition === 'synchronization-change')
+        f.authenticatePassword.mockImplementationOnce(async () => {
+          if (condition === 'tenant-change') {
+            f.records.set('clinics:999', {
+              id: 999,
+              status: 'pending',
+              participationStatus: 'approved',
+              onboardingKey: f.staff.onboardingKey,
+            })
+            f.staff.clinic = 999
+          } else f.staff.authSync.status = 'failed'
+          return { accessToken: 'offline-fresh-password-session', subject }
+        })
+      expect((await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).status).toBe(503)
+      expect(hasClinicAccountCompletion(f.staff as never)).toBe(false)
+      expect(f.updatePassword).toHaveBeenCalledOnce()
+    },
+  )
+
+  it('never creates initial completion proof through password recovery', async () => {
+    const f = fixture('clinic-recovery')
+    await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')
+    expect((await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).status).toBe(200)
+    expect(f.authenticatePassword).not.toHaveBeenCalled()
+    expect(passwordAuthority.getClaims).not.toHaveBeenCalled()
+    expect(hasClinicAccountCompletion(f.staff as never)).toBe(false)
+  })
+
+  it('keeps initial evidence bound to its action on completed retries', async () => {
+    const f = fixture()
+    await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')
+    const completion = f.request('completeAction', f.completeBody)
+    expect((await f.handle(completion.clone(), 'completeAction')).status).toBe(200)
+    Object.assign(f.staff, { accountCompletion: { ...Reflect.get(f.staff, 'accountCompletion'), authActionId: '999' } })
+    expect((await f.handle(completion, 'completeAction')).status).toBe(400)
+    expect(f.updatePassword).toHaveBeenCalledOnce()
+  })
+
+  it('retains password success through an evidence write outage and resumes its guarded write', async () => {
+    const f = fixture()
+    await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')
+    const originalUpdate = vi.mocked(f.req.payload.update).getMockImplementation()!
+    let failEvidence = true
+    vi.mocked(f.req.payload.update).mockImplementation(async (input) => {
+      if (input.collection === 'clinicStaff' && failEvidence) {
+        failEvidence = false
+        throw new Error('Synthetic evidence storage outage.')
+      }
+      return originalUpdate(input)
+    })
+    expect((await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).status).toBe(503)
+    expect(hasClinicAccountCompletion(f.staff as never)).toBe(false)
+    expect((await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).status).toBe(200)
+    expect(hasClinicAccountCompletion(f.staff as never)).toBe(true)
+    expect(f.updatePassword).toHaveBeenCalledOnce()
+  })
   it.each(['clinic-invitation', 'clinic-recovery'] as const)(
     'reads, confirms and completes %s only after the Website observes password success',
     async (flow) => {
@@ -253,7 +390,12 @@ describe('Website auth-action HTTP protocol', () => {
       const retry = f.request('completeAction', f.completeBody)
       expect(await (await f.handle(retry.clone(), 'completeAction')).json()).toMatchObject({ outcome: 'completed' })
       expect(await (await f.handle(retry, 'completeAction')).json()).toMatchObject({ outcome: 'completed' })
-      expect(f.calls).toEqual(['action:confirmed', 'password', 'action:completed'])
+      expect(f.calls).toEqual([
+        'action:confirmed',
+        'password',
+        'action:completed',
+        ...(flow === 'clinic-invitation' ? ['account-completion'] : []),
+      ])
       expect(f.updatePassword).toHaveBeenCalledOnce()
       expect(JSON.stringify([...f.records.values()])).not.toContain(password)
       expect(JSON.stringify([...f.records.values()])).not.toContain(token)
@@ -429,7 +571,7 @@ describe('Website auth-action HTTP protocol', () => {
     const complete = f.request('completeAction', f.completeBody)
     expect((await f.handle(complete.clone(), 'completeAction')).status).toBe(503)
     expect((await f.handle(complete, 'completeAction')).status).toBe(200)
-    expect(f.calls).toEqual(['action:confirmed', 'password', 'action:completed'])
+    expect(f.calls).toEqual(['action:confirmed', 'password', 'action:completed', 'account-completion'])
     expect(f.updatePassword).toHaveBeenCalledOnce()
   })
 

@@ -33,9 +33,26 @@ const staff = {
 } as ClinicStaff
 const clinic = { id: 8, name: 'Example Clinic', status: 'pending', participationStatus: 'approved' }
 
-function request() {
+function request(initial = false) {
   const payload = createMockPayload()
-  payload.findByID.mockImplementation(async ({ collection }) => (collection === 'clinics' ? clinic : staff))
+  const initialStaff = { ...staff, legacyAccess: undefined, onboardingKey: 'clinic-application:10' }
+  payload.findByID.mockImplementation(async ({ collection }) =>
+    initial
+      ? collection === 'clinics'
+        ? { ...clinic, onboardingKey: initialStaff.onboardingKey }
+        : collection === 'clinicApplications'
+          ? {
+              id: 10,
+              status: 'approved',
+              provisioningStatus: 'completed',
+              contactEmail: staff.email,
+              linkedRecords: { clinic: 8, clinicStaff: 22 },
+            }
+          : initialStaff
+      : collection === 'clinics'
+        ? clinic
+        : staff,
+  )
   payload.update.mockImplementation(async ({ data }) => ({ ...staff, ...data }))
   return createMockReq(null, payload, { headers: new Headers({ Authorization: 'Bearer verified-token' }) })
 }
@@ -241,7 +258,7 @@ describe('clinic password evidence boundary', () => {
   })
 
   it('retains successful new completion evidence without a mutable AuthAction relationship', async () => {
-    const req = request()
+    const req = request(true)
     provider.readAction.mockResolvedValue({
       id: 1,
       actionType: 'clinic-invitation',
@@ -257,6 +274,57 @@ describe('clinic password evidence boundary', () => {
     )
     expect(result.accountCompletion).toMatchObject({ source: 'initial-password', authActionId: '1', subject })
   })
+
+  it.each(['password-verification', 'protected-write'] as const)(
+    'rejects a real approved tenant switch during %s',
+    async (window) => {
+      const req = request(true)
+      const currentStaff = { ...staff, legacyAccess: undefined, onboardingKey: 'clinic-application:10' }
+      vi.mocked(req.payload.findByID).mockImplementation(async ({ collection, id }) => {
+        if (collection === 'clinicStaff') return structuredClone(currentStaff)
+        if (collection === 'clinics') return { ...clinic, id, onboardingKey: currentStaff.onboardingKey } as never
+        return {
+          id: 10,
+          status: 'approved',
+          provisioningStatus: 'completed',
+          contactEmail: staff.email,
+          linkedRecords: { clinic: 8, clinicStaff: 22 },
+        } as never
+      })
+      provider.readAction.mockResolvedValue({
+        id: 1,
+        actionType: 'clinic-invitation',
+        state: 'completed',
+        principal: { relationTo: 'clinicStaff', value: 22 },
+        supabaseSubject: subject,
+        createdAt: '2026-10-03T09:00:00.000Z',
+      })
+      if (window === 'password-verification')
+        provider.getClaims.mockImplementationOnce(async () => {
+          currentStaff.clinic = 9
+          return {
+            data: { claims: { sub: subject, amr: [{ method: 'password', timestamp: Date.now() / 1000 }] } },
+            error: null,
+          }
+        })
+      else
+        vi.mocked(req.payload.update).mockImplementation(async ({ data, context }) => {
+          currentStaff.clinic = 9
+          guardClinicAccountEvidence({
+            operation: 'update',
+            data,
+            originalDoc: currentStaff,
+            req: { ...req, context },
+          } as never)
+          return { ...currentStaff, ...data } as ClinicStaff
+        })
+      await expect(
+        recordClinicInitialPasswordCompletion(req, { authActionId: 1, token: 'verified-token' }, 'test'),
+      ).rejects.toThrow()
+      expect(currentStaff).not.toHaveProperty('accountCompletion')
+      if (window === 'password-verification') expect(req.payload.update).not.toHaveBeenCalled()
+    },
+  )
 
   it('rejects unsigned historical assertions and mismatched deployment signatures', async () => {
     const req = request()

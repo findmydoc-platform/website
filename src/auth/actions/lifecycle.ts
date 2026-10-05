@@ -1068,7 +1068,11 @@ export function bindAuthActions(
           typeof action.principal.value === 'number' ? action.principal.value : action.principal.value.id
         const principal =
           command.flow === 'clinic-invitation'
-            ? await findClinicInvitationPrincipal(internalReq, principalId)
+            ? await findClinicInvitationPrincipal(
+                internalReq,
+                principalId,
+                action.state === 'completed' ? action.id : undefined,
+              )
             : (await readRecoveryPrincipal(internalReq, 'clinicStaff', principalId))?.document
         if (
           !principal ||

@@ -1,4 +1,5 @@
 import React from 'react'
+import gsap from 'gsap'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 
@@ -105,6 +106,13 @@ export const UpdatesMetricValues: Story = {
     await waitFor(
       () => {
         expect(visibleValue).toHaveTextContent('1,200+')
+      },
+      { timeout: 2000 },
+    )
+    // Rounded display text can reach the target before the tween's completion callback.
+    await waitFor(
+      () => {
+        expect(gsap.globalTimeline.getChildren().some((animation) => animation.isActive())).toBe(false)
       },
       { timeout: 2000 },
     )

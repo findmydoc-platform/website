@@ -174,6 +174,9 @@ function selectTransactionalEmailCommandAcceptanceWithRuntime(
   const runtime = selectRuntime()
   return Object.freeze({
     kind: 'active' as const,
+    bind(req: PayloadRequest) {
+      return bindTransactionalEmailWithRuntime(req, undefined, Date.now, runtime)
+    },
     run<Result>(
       req: PayloadRequest,
       work: (transactionReq: PayloadRequest, commands: TransactionalEmailCommands) => Promise<Result>,

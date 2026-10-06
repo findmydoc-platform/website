@@ -12,7 +12,7 @@ import { TransactionalEmailError } from './errors'
 
 type Command = Extract<TransactionalEmailCommand, { type: 'moderation.appeal-received' }>
 type RecordSource = Record<string, unknown> & { id: number | string }
-type Outcome = 'ineligible' | 'source-unavailable' | 'recipient-changed'
+type Outcome = 'ineligible' | 'source-unavailable' | 'recipient-changed' | 'superseded'
 
 const categories = {
   'harassment-threats': 'Harassment, threats, or inappropriate conduct',
@@ -104,6 +104,22 @@ export function createModerationAppealReceivedCatalogEntry(req: PayloadRequest):
       id(kind === 'patient' ? appeal.affectedPatient : appeal.affectedClinicStaff) !== recipientId
     )
       return terminal('recipient-changed')
+    const laterDecision = await req.payload.find({
+      collection: 'inquiryModerationEvents',
+      depth: 0,
+      limit: 1,
+      pagination: false,
+      overrideAccess: true,
+      req,
+      where: {
+        and: [
+          { moderationCase: { equals: appeal.id } },
+          { eventType: { equals: 'appeal-decided' } },
+          { sequence: { greater_than: event.sequence } },
+        ],
+      },
+    })
+    if (laterDecision.docs.length) return terminal('superseded')
     const inquiry = await find(req, 'patientClinicInquiries', event.inquiry)
     const conversation = await find(req, 'inquiryConversations', event.conversation)
     if (!inquiry || !conversation) return terminal('source-unavailable')

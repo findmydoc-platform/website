@@ -8,7 +8,6 @@
 ## Repo-Local Skills
 
 - Joint Website and Clinic Dashboard releases are operated through the private Operations repository's `platform-release` skill. Do not publish an independent Website product release.
-- Use `.codex/skills/gh-ui-screenshots` after creating or updating a UI/frontend PR when existing screenshots should be attached to the PR body; keep screenshot evidence in `UI/mobile QA`, not in a standalone screenshots section.
 
 ## Repo-Local Codex Config
 
@@ -150,7 +149,3 @@ Issues and specs live in this repository's GitHub Issues. See `docs/agents/issue
 ### Triage labels
 
 The canonical triage labels are configured for GitHub Issues. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-This repository uses a single-context domain-doc layout. See `docs/agents/domain.md`.

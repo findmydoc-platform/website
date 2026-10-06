@@ -9,6 +9,7 @@ Use this index as the main entry point for project documentation.
 
 ## Core Docs
 
+- [Domain Glossary](../GLOSSARY.md)
 - [Shared Platform Architecture](https://github.com/findmydoc-platform/platform-architecture) (private repository; GitHub access required)
 - [Setup & Development](./setup.md)
 - [Features & Integrations](./features.md)
@@ -25,4 +26,3 @@ Use this index as the main entry point for project documentation.
 - [Security Documentation](./security/README.md)
 - [Testing Documentation](./testing/README.md)
 - [Architecture Decision Records (ADRs)](./adrs/README.md)
-- [Roadmaps](./roadmap/README.md)

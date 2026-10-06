@@ -1,4 +1,4 @@
 interface:
   display_name: 'findmydoc Design Handoff'
-  short_description: 'Turn selected designs into build handoffs'
-  default_prompt: 'Use $findmydoc-design-handoff to turn the selected Product Design direction into a repo-grounded implementation handoff.'
+  short_description: 'Ground selected designs for PRDs and specs'
+  default_prompt: 'Use $findmydoc-design-handoff to ground the selected visual direction as input to the canonical PRD or spec.'

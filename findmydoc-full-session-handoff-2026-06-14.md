@@ -234,7 +234,7 @@ Do not solve these broadly without user approval. The user's preferred mode is o
 - `github:gh-address-comments` for PR review comments on the active PRs.
 - `gh-fix-ci` for failing GitHub Actions checks.
 - `browser:control-in-app-browser` for local route or Storybook UI verification.
-- `gh-ui-screenshots` for attaching UI screenshots to PR descriptions.
+- `pr` for PR descriptions and attaching UI screenshots with native GitHub CLI uploads and release metadata.
 - `notion-research-documentation` if the Notion guardrails need to be re-read or reconciled with the findings file.
 
 ## Sensitive Data

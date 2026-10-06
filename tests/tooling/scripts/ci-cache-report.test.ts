@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { parse } from 'yaml'
 import {
   cacheIdentity,
   median,
@@ -99,6 +101,22 @@ describe('cache experiment evidence gates', () => {
     expect(() =>
       validateSupplementaryMeasurements(results, [{ ...jobs[0], conclusion: 'failure' }, ...jobs.slice(1)]),
     ).toThrow('supplementary job')
+  })
+
+  it.each(['combined-seed', 'combined-restore'])('retains original failed measurement evidence in %s', (job) => {
+    const workflow = parse(
+      readFileSync(new URL('../../../.github/workflows/ci-cache-diagnostics.yml', import.meta.url), 'utf8'),
+    ) as {
+      jobs: Record<string, { steps: Array<{ uses?: string; if?: string; with?: { path?: string } }> }>
+    }
+    const upload = workflow.jobs[job]?.steps.find((step) => step.uses?.startsWith('actions/upload-artifact@'))
+    expect(upload?.if).toBe('always()')
+    expect(
+      upload?.with?.path
+        ?.trim()
+        .split('\n')
+        .map((line) => line.trim()),
+    ).toEqual(['tmp/ci-cache/pnpm/**/*.json', 'tmp/ci-cache/compiler/**/*.json', 'tmp/ci-cache/combined/**/*.json'])
   })
 
   it('invalidates lockfile and tool changes without tying cache identity to a workflow run', () => {

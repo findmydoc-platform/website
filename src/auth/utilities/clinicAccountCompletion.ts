@@ -6,9 +6,18 @@ import { bindAuthActions } from '@/auth/actions/lifecycle'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
 import { isClinicParticipationApproved } from './clinicParticipation'
+import { hasClinicAccountCompletion } from './clinicAccountCompletionState'
+import { findClinicInvitationPrincipal } from '@/auth/actions/clinicInvitationPrincipal'
+export { hasClinicAccountCompletion } from './clinicAccountCompletionState'
 
 type Completion = NonNullable<ClinicStaff['accountCompletion']>
-type ProtectedWrite = { id: number; field: 'accountCompletion' | 'legacyAccess'; value: unknown }
+type StaffBinding = { subject: string; clinicId: number; email: string; onboardingKey: string }
+type ProtectedWrite = {
+  id: number
+  field: 'accountCompletion' | 'legacyAccess'
+  value: unknown
+  staffBinding?: StaffBinding
+}
 const brokerKey = Symbol.for('findmydoc.clinic-account-evidence.v1')
 const existingBroker: unknown = Reflect.get(globalThis, brokerKey)
 const writes = (existingBroker ?? new WeakMap<object, ProtectedWrite>()) as WeakMap<object, ProtectedWrite>
@@ -70,13 +79,33 @@ export const guardClinicAccountEvidence: CollectionBeforeChangeHook<ClinicStaff>
     ) {
       throw new APIError('Clinic account evidence is managed by the trusted Auth boundary.', 403)
     }
+    const binding = write.staffBinding
+    const clinicId = typeof originalDoc?.clinic === 'object' ? originalDoc.clinic?.id : originalDoc?.clinic
+    if (
+      binding &&
+      (originalDoc?.status !== 'approved' ||
+        originalDoc.authSync?.status !== 'synced' ||
+        originalDoc.supabaseUserId !== binding.subject ||
+        clinicId !== binding.clinicId ||
+        normalizeEmail(originalDoc.email) !== binding.email ||
+        originalDoc.onboardingKey !== binding.onboardingKey ||
+        ('clinic' in data && data.clinic !== originalDoc.clinic) ||
+        ('supabaseUserId' in data && data.supabaseUserId !== originalDoc.supabaseUserId))
+    )
+      throw new APIError('Clinic account binding changed during completion.', 403)
   }
   return data
 }
 
-async function writeEvidence(req: PayloadRequest, id: number, field: ProtectedWrite['field'], value: unknown) {
+async function writeEvidence(
+  req: PayloadRequest,
+  id: number,
+  field: ProtectedWrite['field'],
+  value: unknown,
+  staffBinding?: StaffBinding,
+) {
   const capability = Object.freeze({})
-  writes.set(capability, { id, field, value })
+  writes.set(capability, { id, field, value, staffBinding })
   try {
     return await req.payload.update({
       collection: 'clinicStaff',
@@ -90,21 +119,6 @@ async function writeEvidence(req: PayloadRequest, id: number, field: ProtectedWr
   } finally {
     writes.delete(capability)
   }
-}
-
-export function hasClinicAccountCompletion(staff: ClinicStaff): boolean {
-  const proof = staff.accountCompletion
-  const clinicId = typeof staff.clinic === 'object' ? staff.clinic?.id : staff.clinic
-  return Boolean(
-    staff.supabaseUserId?.trim() &&
-    proof?.source &&
-    proof.subject === staff.supabaseUserId &&
-    proof.clinicId === String(clinicId) &&
-    proof.evidenceAt &&
-    Number.isFinite(Date.parse(proof.evidenceAt)) &&
-    proof.observedAt &&
-    Number.isFinite(Date.parse(proof.observedAt)),
-  )
 }
 
 async function verifiedPasswordEvent(staff: ClinicStaff, token: string): Promise<string | null> {
@@ -293,8 +307,9 @@ export async function recordClinicInitialPasswordCompletion(
   )
     throw new APIError('Account completion is unavailable.', 403)
   const id = typeof action.principal.value === 'object' ? action.principal.value.id : action.principal.value
-  const staff = await req.payload.findByID({ collection: 'clinicStaff', id, depth: 0, overrideAccess: true, req })
+  const staff = await findClinicInvitationPrincipal(req, id, action.id)
   if (
+    !staff ||
     staff.status !== 'approved' ||
     staff.authSync?.status !== 'synced' ||
     staff.supabaseUserId !== action.supabaseSubject ||
@@ -314,15 +329,36 @@ export async function recordClinicInitialPasswordCompletion(
   const evidenceAt = await verifiedPasswordEvent(staff, input.token)
   if (!evidenceAt || Date.parse(evidenceAt) < Date.parse(action.createdAt))
     throw new APIError('Password verification is required.', 403)
-  if (hasClinicAccountCompletion(staff)) return staff
-  return writeEvidence(req, staff.id, 'accountCompletion', {
-    source: 'initial-password',
-    subject: action.supabaseSubject,
-    clinicId: String(clinicId),
-    evidenceAt,
-    observedAt: new Date().toISOString(),
-    authActionId: String(action.id),
-  } satisfies Completion)
+  const current = await findClinicInvitationPrincipal(req, id, action.id)
+  const currentClinicId = typeof current?.clinic === 'object' ? current.clinic?.id : current?.clinic
+  if (
+    !current ||
+    currentClinicId !== clinicId ||
+    current.supabaseUserId !== action.supabaseSubject ||
+    normalizeEmail(current.email) !== normalizeEmail(staff.email) ||
+    current.onboardingKey !== staff.onboardingKey
+  )
+    throw new APIError('Clinic account binding changed during completion.', 403)
+  if (hasClinicAccountCompletion(current)) return current
+  return writeEvidence(
+    req,
+    current.id,
+    'accountCompletion',
+    {
+      source: 'initial-password',
+      subject: action.supabaseSubject,
+      clinicId: String(clinicId),
+      evidenceAt,
+      observedAt: new Date().toISOString(),
+      authActionId: String(action.id),
+    } satisfies Completion,
+    {
+      subject: action.supabaseSubject,
+      clinicId,
+      email: normalizeEmail(current.email),
+      onboardingKey: current.onboardingKey!,
+    },
+  )
 }
 
 /** Migration-only snapshot. No completion proof is created and newly approved rows are never enrolled later. */

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { NextRequest, NextResponse } from 'next/server'
 import { applyPrivateAuthHeaders } from '@/auth/utilities/tokenHashCallback'
+import { supabaseEmailTokenHashSchema } from '@/auth/utilities/supabaseEmailTokenHash'
 import { InvalidWebsiteRecovery, RecoveryPasswordRejected, websiteRecoveryAuthority } from './websiteRecoveryCompletion'
 import {
   WEBSITE_RECOVERY_COOKIE,
@@ -25,7 +26,7 @@ export async function openWebsiteRecovery(request: NextRequest) {
     params.get('next') !== '/auth/password/reset/complete' ||
     !/^[1-9]\d*$/.test(id) ||
     !Number.isSafeInteger(Number(id)) ||
-    !/^[a-f0-9]{64}$/.test(token) ||
+    !supabaseEmailTokenHashSchema.safeParse(token).success ||
     [...params.keys()].some((key) => !['authActionId', 'token_hash', 'type', 'next'].includes(key)) ||
     ['authActionId', 'token_hash', 'type', 'next'].some((key) => params.getAll(key).length !== 1)
   )

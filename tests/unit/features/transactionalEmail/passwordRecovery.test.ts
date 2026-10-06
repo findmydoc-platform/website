@@ -13,6 +13,12 @@ import { readActionReference, type AuthActionProtocolKeys } from '@/auth/actions
 
 const callbackBoundary = vi.hoisted(() => ({ createClient: vi.fn(), createVerificationClient: vi.fn() }))
 vi.mock('@/auth/utilities/supaBaseServer', () => callbackBoundary)
+vi.mock('payload', async (load) => ({
+  ...(await load<typeof import('payload')>()),
+  getPayload: async () => {
+    throw new Error('Offline callback storage unavailable.')
+  },
+}))
 
 const now = Date.parse('2026-10-03T12:00:00.000Z')
 const email = 'patient@example.test'
@@ -56,7 +62,7 @@ function fixture(signal?: AbortSignal, clinic = false) {
   const admin = {
     getUserById: vi.fn(async () => ({ data: { user }, error: null })),
     generateLink: vi.fn(async () => ({
-      data: { user, properties: { hashed_token: 'c'.repeat(64), verification_type: 'recovery' } },
+      data: { user, properties: { hashed_token: 'c'.repeat(56), verification_type: 'recovery' } },
       error: null,
     })),
   }
@@ -83,6 +89,39 @@ function fixture(signal?: AbortSignal, clinic = false) {
 }
 
 describe('password recovery through the authorized command catalog', () => {
+  it('renders the recovery link with the SHA-224 token hash returned by Supabase Auth', async () => {
+    const { catalog, admin, user } = fixture()
+    // Supabase Auth v2.197.0 GenerateTokenHash emits SHA-224, not SHA-256.
+    const tokenHash = '0123456789abcdef0123456789abcdef0123456789abcdef01234567'
+    admin.generateLink.mockResolvedValueOnce({
+      data: { user, properties: { hashed_token: tokenHash, verification_type: 'recovery' } },
+      error: null,
+    })
+    const decision = await catalog['auth.password-recovery'].revalidate({
+      type: 'auth.password-recovery',
+      authActionId: 45,
+    })
+    if (decision.status !== 'eligible') throw new Error('Expected eligible recovery.')
+    const message = await decision.prepare()
+    const callback = [...message.html.matchAll(/href="([^"]+)"/g)]
+      .map((match) => new URL(match[1]!.replaceAll('&amp;', '&')))
+      .find((link) => link.pathname === '/auth/callback')!
+    expect(callback.searchParams.get('token_hash')).toBe(tokenHash)
+    expect(callback.searchParams.get('type')).toBe('recovery')
+  })
+  it.each([55, 57, 64])('rejects a generated email token hash with %i characters before rendering', async (length) => {
+    const { catalog, admin, user } = fixture()
+    admin.generateLink.mockResolvedValueOnce({
+      data: { user, properties: { hashed_token: 'c'.repeat(length), verification_type: 'recovery' } },
+      error: null,
+    })
+    const decision = await catalog['auth.password-recovery'].revalidate({
+      type: 'auth.password-recovery',
+      authActionId: 45,
+    })
+    if (decision.status !== 'eligible') throw new Error('Expected eligible recovery.')
+    await expect(decision.prepare()).rejects.toMatchObject({ code: 'source-missing' })
+  })
   it('renders a Website-signed clinic action reference through the existing catalog and pinned recovery template', async () => {
     const { catalog, admin, actionReferenceKeys } = fixture(undefined, true)
     const decision = await catalog['auth.password-recovery'].revalidate({
@@ -123,7 +162,7 @@ describe('password recovery through the authorized command catalog', () => {
     ).rejects.toThrow('Recovery command acceptance unavailable.')
     expect(admin.generateLink).not.toHaveBeenCalled()
   })
-  it('renders and stages an action-owned patient recovery link without consuming its token', async () => {
+  it('renders an action-owned recovery link and rejects its callback safely when storage is unavailable', async () => {
     const { catalog, admin } = fixture()
     const command = { type: 'auth.password-recovery', authActionId: 45 } as const
     const recipient = await catalog[command.type].authorizeAndResolve(command, null)
@@ -146,7 +185,7 @@ describe('password recovery through the authorized command catalog', () => {
     expect([...callback.searchParams.entries()]).toEqual([
       ['authActionId', '45'],
       ['next', '/auth/password/reset/complete'],
-      ['token_hash', 'c'.repeat(64)],
+      ['token_hash', 'c'.repeat(56)],
       ['type', 'recovery'],
     ])
     expect(message.text).toContain(callback.toString())
@@ -222,7 +261,7 @@ describe('password recovery through the authorized command catalog', () => {
           },
           properties: {
             verification_type: reason === 'token-type' ? 'invite' : 'recovery',
-            hashed_token: reason === 'token-hash' ? 'invalid' : 'c'.repeat(64),
+            hashed_token: reason === 'token-hash' ? 'invalid' : 'c'.repeat(56),
           },
         },
         error: null,

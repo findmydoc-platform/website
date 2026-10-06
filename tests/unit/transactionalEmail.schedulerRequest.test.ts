@@ -66,16 +66,29 @@ describe('scheduler request through hosted composition', () => {
     vi.stubEnv('CRON_SECRET', secret)
     let clock = 0
     vi.spyOn(Date, 'now').mockImplementation(() => clock)
+    const retentionEvents = Array.from({ length: 100 }, (_, index) => ({ id: index + 1 }))
+    const find = vi.fn(async (input: { collection: string; limit?: number; pagination?: boolean }) => {
+      if (input.collection === 'recoveryRequestEvents') {
+        expect(input.limit).toBe(100)
+        expect(input.pagination).toBe(false)
+        clock = 30000
+        return { docs: retentionEvents }
+      }
+      if (input.collection === 'authActions') {
+        expect(input.limit).toBe(25)
+        expect(input.pagination).toBe(false)
+        return { docs: [] }
+      }
+      throw new Error(`Unexpected Payload collection: ${input.collection}`)
+    })
     const payload = {
       ...emptyPayload(),
-      find: async () => {
-        clock = 30000
-        return { docs: Array.from({ length: 100 }, (_, id) => ({ id })) }
-      },
+      find,
       delete: async () => undefined,
     }
     dependencies.getPayload.mockResolvedValue(payload)
     dependencies.selectRuntime.mockReturnValue({ environment: 'preview' })
+    dependencies.selectAcceptanceRuntime.mockReturnValue({ environment: 'preview', digestRecipient: 'digest-preview' })
     dependencies.createWorker.mockReturnValue({
       sweepForBatch: async () => true,
       candidatesForBatch: async () => [],
@@ -86,6 +99,7 @@ describe('scheduler request through hosted composition', () => {
     expect(response.status).toBe(503)
     expect(await response.json()).toEqual({ ok: false })
     expect(dependencies.createWorker).toHaveBeenCalledTimes(1)
+    expect(find).toHaveBeenCalledTimes(3)
   })
   it('rejects an unauthenticated request before Payload or worker resolution', async () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
@@ -162,7 +176,7 @@ describe('scheduler request through hosted composition', () => {
     expect(response.status).toBe(200)
     expect(dependencies.createWorker).toHaveBeenCalledTimes(1)
     expect(order[0]).toBe('sweep')
-    expect(dependencies.selectAcceptanceRuntime).not.toHaveBeenCalled()
+    expect(dependencies.selectAcceptanceRuntime).toHaveBeenCalledTimes(1)
     expect(worker.claimForBatch).toHaveBeenCalledTimes(5)
     expect(worker.processClaimForBatch).toHaveBeenCalledTimes(5)
     expect(peak).toBe(2)

@@ -284,6 +284,43 @@ describe('preview lock proxy', () => {
     expect(location).toContain('next=%2Fregister%2Fpatient')
   })
 
+  it.each(['preview', 'production'] as const)(
+    'forwards the password completion POST to its recovery handler in %s',
+    async (environment) => {
+      process.env.VERCEL_ENV = environment
+      mockGuardFlags({ 'preview-guard-enabled': true })
+
+      const response = await proxy(
+        new NextRequest('https://preview.findmydoc.eu/auth/password/complete', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ csrf: 'invalid' }),
+        }),
+      )
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('x-middleware-next')).toBe('1')
+      expect(response.headers.get('location')).toBeNull()
+      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+      expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+      expect(mocks.getUser).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(['/auth/password/complete-help', '/auth/password/complete/extra'])(
+    'keeps the unimplemented password completion lookalike %s blocked',
+    async (path) => {
+      process.env.VERCEL_ENV = 'preview'
+
+      const response = await proxy(new NextRequest(`https://preview.findmydoc.eu${path}`, { method: 'POST' }))
+
+      expect(response.status).toBe(404)
+      expect(response.headers.get('x-middleware-next')).toBeNull()
+      expect(response.headers.get('location')).toBeNull()
+      expect(mocks.getUser).not.toHaveBeenCalled()
+    },
+  )
+
   it('forwards the active guard state to staff opening patient registration', async () => {
     process.env.VERCEL_ENV = 'production'
     mockGuardFlags({ 'preview-guard-enabled': true })
@@ -829,6 +866,48 @@ describe('preview lock proxy', () => {
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 
+  it.each(['requestRecovery', 'validateAction', 'confirmAction', 'completeAction'])(
+    'delegates Dashboard %s to its service authentication without requiring a user session',
+    async (operation) => {
+      process.env.VERCEL_ENV = 'preview'
+      const response = await proxy(
+        new NextRequest(`https://preview.findmydoc.eu/api/internal/auth-actions/v1/${operation}`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-auth-action-signature': 'unverified-service-signature' },
+          body: '{}',
+        }),
+      )
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('x-middleware-next')).toBe('1')
+      expect(response.headers.get('x-middleware-request-x-auth-action-signature')).toBe('unverified-service-signature')
+      expect(response.headers.get('location')).toBeNull()
+      expect(mocks.createServerClient).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each([
+    '/api/internal/auth-actions/v1',
+    '/api/internal/auth-actions/v1/unknown',
+    '/api/internal/auth-actions/v1/validateAction/extra',
+    '/api/internal/auth-actions/v1/requestRecoveryExtra',
+    '/api/internal/auth-actions/v2/validateAction',
+  ])('keeps unregistered Auth action path %s behind the Preview session guard', async (path) => {
+    process.env.VERCEL_ENV = 'preview'
+    const response = await proxy(
+      new NextRequest(`https://preview.findmydoc.eu${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-auth-action-signature': 'unverified-service-signature' },
+        body: '{}',
+      }),
+    )
+
+    expect(response.status).toBe(401)
+    await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' })
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
   it('passes API preflight requests through without authentication', async () => {
     process.env.VERCEL_ENV = 'preview'
 
@@ -921,6 +1000,76 @@ describe('preview lock proxy', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
     expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
+    expect(mocks.createServerClient).not.toHaveBeenCalled()
+  })
+
+  it('allows a verified platform principal to submit patient registration in Preview', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'platform-registration-1',
+          email: 'platform-registration@example.test',
+          app_metadata: { user_type: 'platform' },
+        },
+      },
+      error: null,
+    })
+
+    const response = await proxy(
+      new NextRequest(`https://preview.findmydoc.eu${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}`, {
+        method: 'POST',
+        headers: { authorization: 'Bearer verified-platform-registration-token' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBeNull()
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBeNull()
+    expect(mocks.getUser).toHaveBeenCalledWith('verified-platform-registration-token')
+  })
+
+  it('keeps non-platform patient-registration requests behind Preview Guard', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'clinic-registration-1',
+          email: 'clinic-registration@example.test',
+          app_metadata: { user_type: 'clinic' },
+        },
+      },
+      error: null,
+    })
+
+    const response = await proxy(
+      new NextRequest(`https://preview.findmydoc.eu${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}`, {
+        method: 'POST',
+        headers: { authorization: 'Bearer verified-clinic-registration-token' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
+    expect(mocks.getUser).toHaveBeenCalledWith('verified-clinic-registration-token')
+  })
+
+  it('keeps patient-registration resend behind Preview Guard for platform principals', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mocks.getUser.mockResolvedValueOnce({
+      data: { user: { id: 'platform-registration-2', app_metadata: { user_type: 'platform' } } },
+      error: null,
+    })
+
+    const response = await proxy(
+      new NextRequest(`https://preview.findmydoc.eu${PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH}/resend`, {
+        method: 'POST',
+        headers: { authorization: 'Bearer verified-platform-resend-token' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBe('1')
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 

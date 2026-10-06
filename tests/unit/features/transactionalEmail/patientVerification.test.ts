@@ -37,7 +37,7 @@ function fixture() {
   const admin = {
     getUserById: vi.fn(async () => ({ data: { user }, error: null })),
     generateLink: vi.fn(async () => ({
-      data: { user, properties: { hashed_token: 'a'.repeat(64), verification_type: 'magiclink' } },
+      data: { user, properties: { hashed_token: 'a'.repeat(56), verification_type: 'magiclink' } },
       error: null,
     })),
   }
@@ -83,7 +83,7 @@ describe('patient verification command through the production catalog', () => {
           },
           properties: {
             verification_type: change === 'token-type' ? 'recovery' : 'magiclink',
-            hashed_token: change === 'token-hash' ? 'invalid' : 'a'.repeat(64),
+            hashed_token: change === 'token-hash' ? 'invalid' : 'a'.repeat(56),
           },
         },
         error: null,
@@ -145,7 +145,7 @@ describe('patient verification command through the production catalog', () => {
     expect(callback.origin).toBe('https://example.test')
     expect([...callback.searchParams.entries()]).toEqual([
       ['authActionId', '41'],
-      ['token_hash', 'a'.repeat(64)],
+      ['token_hash', 'a'.repeat(56)],
       ['type', 'magiclink'],
     ])
     expect(prepared.text).toContain(callback.toString())

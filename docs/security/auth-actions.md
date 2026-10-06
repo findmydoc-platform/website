@@ -234,8 +234,12 @@ It retains private source, subject, clinic, evidence time, observation time, and
 and editable Admin inputs cannot write or replace this evidence.
 
 Clinic invitation reservation binds the current subject immutably. The Dashboard protocol must verify the actual
-password operation before completing the action and calling this boundary. No public
-completion route calls it today. An action state, email outcome, or mock alone does not prove account completion.
+password operation before completing the action and calling this boundary. Invitation completion now performs one
+ordinary password login after the durable password-success result and completed action. The boundary verifies the
+fresh session's current user and password AMR before writing protected evidence. Passwords and session tokens remain
+ephemeral. The protocol acknowledges completion and releases its subject claim only after evidence succeeds.
+A temporary evidence failure can resume from durable password success without repeating the password write. Recovery
+does not create initial invitation evidence. An action state, email outcome, or mock alone does not prove account completion.
 The [clinic participation contract](clinic-participation.md) owns the legacy import and password-usability fallback.
 
 ## Recovery email command
@@ -275,9 +279,14 @@ establishes no hosted configuration, email delivery or completion evidence.
 
 The existing Website reset request acknowledges every valid email neutrally. Patient and platform recovery URLs come
 from the pinned catalog described above. `GET /auth/callback` accepts exactly one `authActionId`, fixed completion
-`next`, 64-character token hash and `type=recovery`. It validates current action policy, environment, expiry, original
+`next`, 56-character lowercase hexadecimal token hash and `type=recovery`. It validates current action policy, environment, expiry, original
 recipient correlation, unique Payload principal and authoritative Supabase subject, email, role and ban status without
 consuming the token. It strips the bearer fields through a 303 redirect to `/auth/confirm?type=recovery`.
+
+Supabase Auth generates email token hashes with SHA-224, producing 56 hexadecimal characters. The invitation,
+verification and recovery catalogs and Website callback contexts share that format check. Application HMACs,
+recipient digests and CSRF values keep their separate SHA-256 or 32-byte formats. See the
+[Supabase Auth v2.197.0 implementation](https://github.com/supabase/auth/blob/4eee58f296d9698a1c2c0ae14d7a0b379c7622d3/internal/crypto/crypto.go#L42).
 
 Every syntactically valid URL receives a fixed-size encrypted, signed ten-minute `HttpOnly` context scoped to `/auth`.
 The context binds action, environment, flow, subject and fixed finish destination, plus a random CSRF value. Invalid

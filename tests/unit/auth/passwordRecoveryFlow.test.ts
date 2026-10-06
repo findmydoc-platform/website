@@ -204,7 +204,7 @@ describe('recovery from Auth request through the real static catalog and shared 
         expect(callback.searchParams.get('authActionId')).toBe(String(action.id))
         expect(callback.searchParams.get('next')).toBe('/auth/password/reset/complete')
         expect(callback.searchParams.get('type')).toBe('recovery')
-        expect(callback.searchParams.get('token_hash')).toMatch(/^[a-f0-9]{64}$/)
+        expect(callback.searchParams.get('token_hash')).toMatch(/^[a-f0-9]{56}$/)
         if (collection === 'clinicStaff')
           expect(
             readActionReference(
@@ -424,7 +424,7 @@ describe('recovery from Auth request through the real static catalog and shared 
     expect(mocks.liveAdmin).not.toHaveBeenCalled()
   })
   it.each(['preview', 'production'])(
-    'keeps the real %s command fail-closed before environment approval',
+    'keeps the real %s command fail-closed without a verified environment binding',
     async (environment) => {
       const store = fixture('patients')
       vi.stubEnv('NODE_ENV', 'production')
@@ -432,8 +432,19 @@ describe('recovery from Auth request through the real static catalog and shared 
       vi.stubEnv('VERCEL_ENV', environment)
       vi.stubEnv('DEPLOYMENT_ENV', environment)
       vi.stubEnv('AUTH_RECOVERY_CORRELATION_KEYS_JSON', '')
-      await requestPasswordRecovery(store.req, { email, context: store.context })
-      await prepareCommittedRecoveries(store.req, { deadline: start + 30000, now: store.now })
+      if (environment === 'preview') {
+        await expect(requestPasswordRecovery(store.req, { email, context: store.context })).rejects.toThrow(
+          'environment-unavailable',
+        )
+        await expect(
+          prepareCommittedRecoveries(store.req, { deadline: start + 30000, now: store.now }),
+        ).rejects.toThrow('environment-unavailable')
+      } else {
+        await expect(requestPasswordRecovery(store.req, { email, context: store.context })).resolves.toBeUndefined()
+        await expect(
+          prepareCommittedRecoveries(store.req, { deadline: start + 30000, now: store.now }),
+        ).resolves.toBeUndefined()
+      }
       expect(store.rows.authActions!.size).toBe(0)
       expect(store.rows.recoveryRequestEvents!.size).toBe(0)
       expect(store.rows.transactionalEmailOutbox!.size).toBe(0)

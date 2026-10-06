@@ -2,6 +2,7 @@ import type { SupabaseClient, User } from '@supabase/supabase-js'
 import type { AuthAction } from '@/payload-types'
 import { z } from 'zod'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { supabaseEmailTokenHashSchema } from '@/auth/utilities/supabaseEmailTokenHash'
 import { authActionPolicies } from '@/auth/actions/contracts'
 import { recoveryActionTypes, type RecoveryPrincipal } from '@/auth/actions/recoveryPrincipal'
 import { recoveryCorrelations } from '@/auth/actions/recoveryCorrelation'
@@ -152,10 +153,7 @@ export function createPasswordRecoveryCatalogEntry(dependencies: Dependencies): 
           generated.error ||
           !sameIdentity(generated.data.user, current.action, current.principal, now()) ||
           generated.data.properties?.verification_type !== 'recovery' ||
-          !z
-            .string()
-            .regex(/^[a-f0-9]{64}$/)
-            .safeParse(generated.data.properties?.hashed_token).success
+          !supabaseEmailTokenHashSchema.safeParse(generated.data.properties?.hashed_token).success
         )
           throw new TransactionalEmailError('source-missing')
         callback.searchParams.set('token_hash', generated.data.properties.hashed_token)

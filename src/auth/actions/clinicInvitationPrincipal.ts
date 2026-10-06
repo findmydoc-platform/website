@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { isClinicParticipationApproved } from '@/auth/utilities/clinicParticipation'
 import type { ClinicStaff } from '@/payload-types'
+import { hasClinicAccountCompletion } from '@/auth/utilities/clinicAccountCompletionState'
 
 function relationshipId(value: unknown): number | undefined {
   const id = typeof value === 'object' && value !== null ? Reflect.get(value, 'id') : value
@@ -13,6 +14,7 @@ function relationshipId(value: unknown): number | undefined {
 export async function findClinicInvitationPrincipal(
   req: PayloadRequest,
   clinicStaffId: number,
+  completedActionId?: number,
 ): Promise<ClinicStaff | null> {
   const staff = await req.payload.findByID({
     collection: 'clinicStaff',
@@ -27,7 +29,13 @@ export async function findClinicInvitationPrincipal(
     staff.status !== 'approved' ||
     staff.authSync?.status !== 'synced' ||
     !z.string().uuid().safeParse(staff.supabaseUserId).success ||
-    staff.accountCompletion?.source ||
+    (staff.accountCompletion?.source &&
+      !(
+        completedActionId &&
+        hasClinicAccountCompletion(staff) &&
+        staff.accountCompletion.source === 'initial-password' &&
+        staff.accountCompletion.authActionId === String(completedActionId)
+      )) ||
     staff.legacyAccess?.eligibleAt ||
     staff.invitationAttemptedAt
   )

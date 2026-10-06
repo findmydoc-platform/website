@@ -21,6 +21,7 @@ import {
   submitInquiryModerationAppeal,
   decideInquiryModerationAppeal,
 } from '@/features/inquiryModeration/service'
+import { anonymizeInquiryPackage } from '@/features/inquiryRetention/service'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import type { DeliveryAdapter, DeliveryLog } from '@/features/transactionalEmail/delivery'
@@ -76,7 +77,7 @@ describe('authoritative initial moderation decision mail', () => {
     const authorized = await payload.update({
       collection: 'platformStaff',
       id: moderator.id,
-      data: { capabilities: ['conversation-moderation'] },
+      data: { capabilities: ['conversation-moderation', 'inquiry-retention'] },
       context: { trustedPlatformStaffOps: true },
       overrideAccess: true,
     })
@@ -124,6 +125,11 @@ describe('authoritative initial moderation decision mail', () => {
       for (const slot of ['reporter', 'affected', 'appellant'])
         references.push(`v1|moderation-event|${event.id}|${slot}`)
     await cleanupTransactionalEmailFixtures(payload, references)
+    await payload.delete({
+      collection: 'inquiryDeletionProofs',
+      overrideAccess: true,
+      where: { inquiryId: { in: inquiryIds } },
+    })
     for (const collection of [
       'inquiryModerationEvents',
       'inquiryModerationCases',
@@ -680,6 +686,137 @@ describe('authoritative initial moderation decision mail', () => {
       })
     }
   })
+
+  it('commits a decision after proven patient reporter anonymization with one scrubbed ineligible operation', async () => {
+    const source = await report()
+    await anonymizeInquiryPackage(moderatorReq, {
+      inquiryId: source.inquiryId,
+      reasonCategory: 'authorized-erasure',
+    })
+    await expect(
+      decideInquiryModerationCase(moderatorReq, {
+        caseId: source.caseId,
+        category: 'privacy-concern',
+        outcome: 'no-action',
+        reason: 'ForbiddenInternalReason',
+      }),
+    ).resolves.toEqual({ decided: true })
+    const event = await decisionEvent(source.caseId)
+    const outbox = (await operations(event.id)).docs
+    expect(outbox).toHaveLength(1)
+    expect(outbox[0]).toMatchObject({
+      state: 'suppressed',
+      attemptCount: 0,
+      latestEventSequence: 3,
+      recipientAddress: null,
+      commandPayload: null,
+      preparedHtml: null,
+      preparedText: null,
+      preparedSubject: null,
+    })
+    const state = await committedState(source.inquiryId)
+    expect(state.cases[0]).toMatchObject({
+      status: 'resolved',
+      patient: null,
+      reporterPatient: null,
+      reporterKey: null,
+    })
+    expect(state.inquiry).toMatchObject({ retentionState: 'anonymized', patient: null, email: null })
+    expect(
+      state.mailEvents
+        .filter((entry) => entry.outbox === outbox[0]!.id)
+        .sort((left, right) => left.sequence - right.sequence)
+        .map(({ type, outcomeCode }) => ({ type, outcomeCode })),
+    ).toEqual([
+      { type: 'command.accepted', outcomeCode: null },
+      { type: 'delivery.suppressed', outcomeCode: 'ineligible' },
+      { type: 'payload.scrubbed', outcomeCode: null },
+    ])
+    await expect(bindTransactionalEmail(otherClinicReq).accept(commandFor(event.id))).rejects.toMatchObject({
+      code: 'access-denied',
+    })
+    const { delivery } = await deliver(String(outbox[0]!.id))
+    expect(delivery.deliver).not.toHaveBeenCalled()
+    const replay = await bindTransactionalEmail(moderatorReq).accept(commandFor(event.id))
+    expect(replay).toMatchObject({ operationId: String(outbox[0]!.id), deduplicated: true })
+    expect((await operations(event.id)).docs).toHaveLength(1)
+  })
+
+  it('rejects an anonymized reporter without its authoritative proof and rolls the complete decision back', async () => {
+    const source = await report()
+    await anonymizeInquiryPackage(moderatorReq, {
+      inquiryId: source.inquiryId,
+      reasonCategory: 'authorized-erasure',
+    })
+    await payload.delete({
+      collection: 'inquiryDeletionProofs',
+      overrideAccess: true,
+      where: { inquiryId: { equals: source.inquiryId } },
+    })
+    const before = await committedState(source.inquiryId)
+    await expect(
+      decideInquiryModerationCase(moderatorReq, {
+        caseId: source.caseId,
+        category: 'privacy-concern',
+        outcome: 'no-action',
+        reason: 'ForbiddenInternalReason',
+      }),
+    ).rejects.toMatchObject({ kind: 'unavailable' })
+    expect(await committedState(source.inquiryId)).toEqual(before)
+  })
+
+  it('rejects forged missing patient reporter bindings while the Inquiry still has its live identity', async () => {
+    const source = await report()
+    await decideInquiryModerationCase(moderatorReq, {
+      caseId: source.caseId,
+      category: 'privacy-concern',
+      outcome: 'no-action',
+      reason: 'ForbiddenInternalReason',
+    })
+    const event = await decisionEvent(source.caseId)
+    await payload.update({
+      collection: 'inquiryModerationCases',
+      id: source.caseId,
+      data: { reporterPatient: null, reporterKey: null },
+      context: { inquiryRetentionCommand: true, inquiryRetentionScrub: true, inquiryIdentityScrub: true },
+      overrideAccess: true,
+    })
+    const before = await committedState(source.inquiryId)
+    await expect(bindTransactionalEmail(moderatorReq).accept(commandFor(event.id))).rejects.toMatchObject({
+      code: 'source-missing',
+    })
+    expect(await committedState(source.inquiryId)).toEqual(before)
+  })
+
+  it.each(['delivery.suppressed', 'payload.scrubbed'] as const)(
+    'rolls the anonymized reporter decision back if atomic %s storage fails',
+    async (eventType) => {
+      const source = await report()
+      await anonymizeInquiryPackage(moderatorReq, {
+        inquiryId: source.inquiryId,
+        reasonCategory: 'authorized-erasure',
+      })
+      const before = await committedState(source.inquiryId)
+      await withBeforeHook(
+        'transactionalEmailEvents',
+        ({ data }) => {
+          if (data.type === eventType) throw new Error('Synthetic anonymized reporter suppression failure')
+          return data
+        },
+        async () => {
+          await expect(
+            decideInquiryModerationCase(moderatorReq, {
+              caseId: source.caseId,
+              category: 'privacy-concern',
+              outcome: 'no-action',
+              reason: 'ForbiddenInternalReason',
+            }),
+          ).rejects.toMatchObject({ kind: 'unavailable' })
+        },
+      )
+      expect(await committedState(source.inquiryId)).toEqual(before)
+    },
+  )
 
   it('revalidates the current address on retry without redirecting prepared decision bytes', async () => {
     const source = await report()

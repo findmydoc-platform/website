@@ -9,7 +9,7 @@ import { render, toPlainText } from '@react-email/render'
 import { isClinicStaffAccessReady, readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
-import { hasInquiryPackageHardDeleteBarrier } from '@/features/inquiryAggregate/tombstones'
+import { hasInquiryPackageHardDeleteBarrier, inquiryPackageTombstoneKey } from '@/features/inquiryAggregate/tombstones'
 import type { ClinicStaff } from '@/payload-types'
 import type { CatalogEntry, CatalogRevalidation } from './catalog'
 import type { TransactionalEmailCommand } from './commands'
@@ -66,6 +66,46 @@ function patientInquiryUrl(inquiryId: string) {
 }
 
 export function createModerationReportDecidedCatalogEntry(req: PayloadRequest): CatalogEntry<Command> {
+  async function hasAnonymizedPatientReporter(report: Source): Promise<boolean> {
+    if (
+      report.reporterKind !== 'patient' ||
+      id(report.reporterPatient) !== null ||
+      id(report.reporterClinicStaff) !== null ||
+      report.reporterKey != null ||
+      id(report.patient) !== null
+    )
+      return false
+    const inquiry = await find(req, 'patientClinicInquiries', report.inquiry)
+    const conversation = await find(req, 'inquiryConversations', report.conversation)
+    if (
+      !inquiry ||
+      !conversation ||
+      inquiry.retentionState !== 'anonymized' ||
+      id(inquiry.patient) !== null ||
+      id(conversation.patient) !== null ||
+      id(inquiry.clinic) !== id(report.clinic) ||
+      id(conversation.clinic) !== id(report.clinic) ||
+      id(conversation.inquiry) !== id(inquiry.id)
+    )
+      return false
+    const proof = await req.payload.find({
+      collection: 'inquiryDeletionProofs',
+      depth: 0,
+      limit: 1,
+      pagination: false,
+      overrideAccess: true,
+      req,
+      where: {
+        and: [
+          { inquiryId: { equals: String(inquiry.id) } },
+          { tombstoneKey: { equals: inquiryPackageTombstoneKey(inquiry.id, 'anonymized') } },
+          { operation: { equals: 'anonymized' } },
+        ],
+      },
+    })
+    return proof.docs.length > 0
+  }
+
   async function load(command: Command, actor?: string | null) {
     const event = await find(req, 'inquiryModerationEvents', command.moderationEventId)
     if (!event || event.eventType !== 'decision-recorded' || event.actorKind !== 'platform')
@@ -83,14 +123,17 @@ export function createModerationReportDecidedCatalogEntry(req: PayloadRequest): 
       !report ||
       !category ||
       !reporterCollection ||
-      !reporterId ||
       !['no-action', 'content-restricted', 'conversation-restricted', 'identity-messaging-suspended'].includes(
         String(event.toValue),
       ) ||
       report.decisionOutcome !== event.toValue ||
       id(event.actorId) !== id(report.decisionBy) ||
-      report.reporterKey !== `${reporterCollection}:${reporterId}` ||
       ['inquiry', 'clinic', 'patient', 'conversation'].some((field) => id(event[field]) !== id(report[field]))
+    )
+      return suppressed('source-unavailable')
+    if (
+      (!reporterId || report.reporterKey !== `${reporterCollection}:${reporterId}`) &&
+      !(await hasAnonymizedPatientReporter(report))
     )
       return suppressed('source-unavailable')
     if (actor !== undefined) {

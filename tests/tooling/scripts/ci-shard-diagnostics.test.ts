@@ -364,6 +364,9 @@ describe('integration shard comparison validity', () => {
     expect(workflow.on.schedule).toBeUndefined()
     expect(workflow.permissions).toEqual({ contents: 'read' })
     expect(workflow.concurrency['cancel-in-progress']).toBe(false)
+    expect(workflow.concurrency.group).toBe(
+      "ci-shard-diagnostics-${{ inputs.stage == 'build-diagnostics' && github.run_id || github.ref }}",
+    )
     expect(workflow.jobs.pair.if).toContain("github.ref == 'refs/heads/agent/ci-shard-diagnostics'")
     expect(workflow.jobs.shards.needs).toBe('pair')
     expect(workflow.jobs.shards.if).toContain("inputs.stage == 'full'")

@@ -40,21 +40,15 @@ The linked Actions runs retain individual comparisons and diagnostic artifacts. 
 
 ## Isolated build experiments
 
-The manual build diagnosis measures two independent changes. The filter experiment changes only build relevance and keeps the existing late start. The scheduling experiment always builds and changes only when Build starts. Package and compiler caches remain disabled in both; the normal database setup stays unchanged.
+The build diagnosis compares two independent changes: requiring a build only for relevant files, and starting the same build alongside independent checks. Package and compiler caches stay disabled; database setup and test requirements stay unchanged within each comparison.
 
-Each filter change class has three pairs, including a runtime control. The scheduling comparison has three full pairs with integration and coverage merge, plus separate classification and static-check failure probes. Sources and workload stay fixed within each series. Pure Markdown changes already skip validation and the late build, so that class can show zero saving.
+This is a directional POC. Successful measurements remain useful across test-only fixes. Commits, runner variation and observed coverage differences stay visible in the evidence. Failed tests, missing cases and changed coverage scope do not count as successful comparisons. Small differences in covered animation branches are recorded rather than causing a complete restart. Repeated, clear direction is enough to stop adding samples; small timing differences remain inconclusive.
 
-The initial unsuccessful functionality run adds 10:01 physical runner minutes of investigation cost and stays excluded from savings. [Diagnostic evidence](https://github.com/findmydoc-platform/website/actions/runs/37442237471).
+Existing runtime-control pairs are retained. The remaining investigation uses two pairs each for test-only and metadata filtering, one documentation control, and two full scheduling pairs with 98 integration files and 877 test cases. Independent comparison groups run in parallel, with opposite variant order across repetitions. Classification and static-check failure probes remain separate from savings samples.
 
-The next partial series costs 36:46 runner minutes, including 10:11 for a failed unit-test run. Its first runtime-control pair has identical test cases, coverage and build routes. The series stops at a focus assertion that runs before React's effect settles; the test now waits for the same required focus. A fresh frozen series keeps both variants on the corrected test. The partial series remains diagnostic evidence rather than a completed savings result. [Failed measurement](https://github.com/findmydoc-platform/website/actions/runs/37446350609).
+Pure Markdown already skips the late build in the reference, so documentation can show no avoided build work. Earlier build feedback does not automatically shorten full validation. Physical runner use, workflow completion and investigation costs remain separate. Failed and superseded measurements stay in the diagnosis evidence; their costs remain part of the investigation.
 
-A further successful pair costs 28:59 runner minutes but fails the strict coverage comparison: a Storybook metric update sometimes interrupts an animation before its completion callback. The story now waits for completion before updating the metric, preserving its existing assertions. Both successful runs remain excluded from savings. [Reference](https://github.com/findmydoc-platform/website/actions/runs/37448302605), [candidate](https://github.com/findmydoc-platform/website/actions/runs/37449369435).
-
-The following six-run runtime-control series costs 78:26 runner minutes. Two pairs match exactly; the third differs by one covered animation branch in the scroll story. Waiting for animation frames at the intermediate scroll state makes its three targeted local coverage runs identical without removing assertions. The superseded series remains excluded from completed savings results. [Non-comparable reference](https://github.com/findmydoc-platform/website/actions/runs/37455826084), [candidate](https://github.com/findmydoc-platform/website/actions/runs/37456815131).
-
-The runner script resumes a recorded run instead of dispatching it again, stops on unexpected failures, and preserves rejected evidence. Reports keep queue time, build readiness, validation completion, total elapsed time and physical runner consumption separate. These experiments have no accepted savings until all comparisons and correctness checks pass.
-
-Run `node scripts/ci-build-experiment.mjs --commit <full-commit> --stage smoke` to inspect the initial pair without dispatch. Add `--execute` to run it on Actions. Use `--stage all --execute` with the same commit and output directory to complete the remaining comparisons. Normal workflows and deployments are unchanged. The POC provides evidence for a later fresh implementation.
+No new build savings are claimed until these observations are assessed. Normal CI and deployments remain unchanged. The POC informs a later fresh implementation.
 
 ## Remaining opportunities
 

@@ -17,7 +17,8 @@ export type CatalogPreparationDecision =
   | EligibleCatalogPreparation
   | Readonly<{ status: 'suppressed'; outcomeCode: CatalogSuppressionOutcome | 'recipient-changed' }>
 export type CatalogRevalidation =
-  EligibleCatalogPreparation | Readonly<{ status: 'suppressed'; outcomeCode: CatalogSuppressionOutcome }>
+  | EligibleCatalogPreparation
+  | Readonly<{ status: 'suppressed'; outcomeCode: CatalogSuppressionOutcome | 'recipient-changed' }>
 export type ClinicApplicationSource = Readonly<{
   id: number
   clinicName: string

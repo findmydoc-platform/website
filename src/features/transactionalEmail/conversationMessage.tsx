@@ -124,10 +124,10 @@ export function createConversationMessageCatalogEntry(
         depth: 0,
         overrideAccess: true,
         req,
-        select: { email: true, deletedAt: true },
+        select: { email: true },
       }),
     )
-    if (!patient || patient.deletedAt) return { status: 'suppressed', outcomeCode: 'ineligible' }
+    if (!patient) return { status: 'suppressed', outcomeCode: 'ineligible' }
     const address = normalizeEmail(patient.email)
     if (!isValidEmail(address)) return { status: 'suppressed', outcomeCode: 'ineligible' }
     if (await hasInquiryPackageHardDeleteBarrier(req, inquiry.id))

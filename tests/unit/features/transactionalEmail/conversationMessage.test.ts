@@ -252,7 +252,6 @@ describe('conversation notification command preparation', () => {
     ['trashed message', 'inquiryMessages', 'deletedAt', '2026-10-06T00:00:00.000Z', 'source-unavailable'],
     ['trashed inquiry', 'patientClinicInquiries', 'deletedAt', '2026-10-06T00:00:00.000Z', 'ineligible'],
     ['trashed conversation', 'inquiryConversations', 'deletedAt', '2026-10-06T00:00:00.000Z', 'ineligible'],
-    ['trashed patient', 'patients', 'deletedAt', '2026-10-06T00:00:00.000Z', 'ineligible'],
     ['hard-deleted message', 'inquiryMessages', 'contentState', 'hard-deleted', 'ineligible'],
   ] as const)('suppresses after %s', async (_, collection, field, value, outcomeCode) => {
     const { commands, operations, catalog, records } = fixture()

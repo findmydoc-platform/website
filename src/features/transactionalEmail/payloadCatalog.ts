@@ -16,6 +16,7 @@ import { createConversationMessageCatalogEntry } from './conversationMessage'
 import { createModerationReportReceivedCatalogEntry } from './moderationReportReceived'
 import { createModerationReportDecidedCatalogEntry } from './moderationReportDecided'
 import { createModerationAppealReceivedCatalogEntry } from './moderationAppealReceived'
+import { createModerationAppealDecidedCatalogEntry } from './moderationAppealDecided'
 
 export function bindPayloadCommandCatalog(req: PayloadRequest, options: { recoverySignal?: AbortSignal } = {}) {
   const environment = resolveTransactionalEmailEnvironment()
@@ -25,6 +26,7 @@ export function bindPayloadCommandCatalog(req: PayloadRequest, options: { recove
     'moderation.report-received': createModerationReportReceivedCatalogEntry(req),
     'moderation.report-decided': createModerationReportDecidedCatalogEntry(req),
     'moderation.appeal-received': createModerationAppealReceivedCatalogEntry(req),
+    'moderation.appeal-decided': createModerationAppealDecidedCatalogEntry(req),
     'auth.email-verification': createPatientVerificationCatalogEntry({
       environment,
       verificationKeys: () => resolveVerificationKeys(environment),

@@ -1033,7 +1033,8 @@ export const decideInquiryModerationAppeal = async (
   if (!parsed.success) throw new InquiryModerationServiceError('invalid-input', 'The appeal decision is invalid.')
   const input = parsed.data
   const initialModerator = await resolveModerator(req)
-  await runCommandTransaction(req, async () => {
+  const acceptance = selectTransactionalEmailCommandAcceptance('moderation.appeal-decided')
+  const decide = async (req: PayloadRequest, commands?: TransactionalEmailCommands) => {
     const moderator = await resolveModerator(req)
     if (moderator.key !== initialModerator.key) {
       throw new InquiryModerationServiceError('access-denied', 'The moderation actor changed.')
@@ -1079,7 +1080,62 @@ export const decideInquiryModerationAppeal = async (
     ) {
       await updateInquiryModerationActivity(req, updatedCase, moderator, 'moderation-restored', 'available')
     }
-  })
+    if (commands) {
+      const event = await findOne(req, 'inquiryModerationEvents', {
+        and: [
+          { moderationCase: { equals: updatedCase.id } },
+          { eventType: { equals: 'appeal-decided' } },
+          { sequence: { equals: updatedCase.eventSequence } },
+        ],
+      })
+      if (!event) throw new InquiryModerationServiceError('unavailable', 'The appeal decision event is unavailable.')
+      const submitted = await findOne(req, 'inquiryModerationEvents', {
+        and: [
+          { moderationCase: { equals: updatedCase.id } },
+          { eventType: { equals: 'appeal-submitted' } },
+          { sequence: { less_than: event.sequence } },
+        ],
+      })
+      if (!submitted || !['patient', 'clinic'].includes(String(submitted.actorKind)) || !text(submitted.actorId))
+        throw new InquiryModerationServiceError('unavailable', 'The appeal participant is unavailable.')
+      const appellantKey = `${submitted.actorKind === 'patient' ? 'patients' : 'clinicStaff'}:${text(submitted.actorId)}`
+      await commands.accept({
+        type: 'moderation.appeal-decided',
+        moderationEventId: Number(event.id),
+        recipientSlot: 'appellant',
+      })
+      if (appellantKey !== text(moderationCase.reporterKey))
+        await commands.accept({
+          type: 'moderation.appeal-decided',
+          moderationEventId: Number(event.id),
+          recipientSlot: 'reporter',
+        })
+    }
+  }
+  if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => decide(req))
+  else {
+    let domainError: InquiryModerationServiceError | undefined
+    try {
+      await acceptance.run(req, async (transactionReq, commands) => {
+        domainError = undefined
+        transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+        try {
+          await decide(transactionReq, commands)
+        } catch (error) {
+          if (error instanceof InquiryModerationServiceError) domainError = error
+          throw error
+        }
+      })
+    } catch (error) {
+      if (domainError) throw domainError
+      if (error instanceof TransactionalEmailError)
+        throw new InquiryModerationServiceError(
+          error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
+          'The appeal decision could not be committed.',
+        )
+      throw error
+    }
+  }
   return { decided: true }
 }
 

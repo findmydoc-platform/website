@@ -1,6 +1,6 @@
 # Integration shard diagnostics
 
-The experiment compares one full integration process, four sequential shards on the same VM, and four parallel shards on separate VMs. Diagnostic code lives on `agent/ci-shard-diagnostics`; existing validation and deployment workflows are unchanged.
+The experiments compare serial and sharded integration execution, then serial execution with a seeded PostgreSQL template copied before each file. The completed copy comparison saves a median 1283.864 seconds, or 62.25 percent, across three full pairs of 98 files and 877 cases. Diagnostic code lives on `agent/ci-shard-diagnostics`; existing validation and deployment workflows are unchanged.
 
 ## Measurement protocol
 
@@ -81,7 +81,7 @@ Dispatch `ci-shard-diagnostics.yml` with stage `db-copy`. The job validates each
 
 Median paired savings are 45.476 seconds, about 32 percent for this sample, including template preparation and service cleanup. The three per-file copies cost 1.524 to 1.548 seconds combined. The complete comparison job consumes 12 minutes 46 seconds of physical runner time, including all six processes and shared job setup.
 
-Each normal variant invokes the seed helper three times; each copy variant records three verified cache hits and no worker-side seed execution. Coverage repeats within each variant. Moving baseline seeding outside Vitest reduces covered lines from 1023 to 921 of 2490 in this sample. This is a measured coverage difference that must be addressed before changing normal integration CI. Whole-suite savings and compatibility remain unmeasured.
+Each normal variant invokes the seed helper three times; each copy variant records three verified cache hits and no worker-side seed execution. Coverage repeats within each variant. Moving baseline seeding outside Vitest reduces covered lines from 1023 to 921 of 2490 in this sample. The expanded experiment below retains seed coverage through an instrumented preparation process and native Vitest merging. This earlier three-file run alone establishes neither whole-suite savings nor compatibility.
 
 ## Expanded serial copy comparison
 
@@ -93,17 +93,45 @@ Before every selected copy test file, a SQL probe verifies that the previous fil
 
 Each expanded pair uploads its evidence immediately after validation, so earlier results remain available while later pairs run. Partial reports state their repetition count.
 
-The complete-suite job starts only after all mixed pairs pass. It runs three full serial pairs on one VM, with a 360-minute job limit and a 90-minute limit per test process. Any failed test, retry, missing copy, coverage regression or invalid native merge stops later pairs. A failed run's measurements remain diagnostic evidence, but cannot serve as an accepted correctness comparison. Normal CI, integration assertions and coverage thresholds are unchanged.
+The complete-suite job starts only after all mixed pairs pass. It runs three full serial pairs on one VM, with a 360-minute job limit and a 90-minute limit per test process. Any failed test, retry, missing copy, coverage regression or invalid native merge stops later pairs. A failed run's measurements remain diagnostic evidence, but cannot serve as an accepted correctness comparison. Normal CI and coverage thresholds are unchanged. Existing assertions are retained; the media metadata case additionally exercises attribution recovery after its uploader is deleted.
 
-### Measured mixed-file result
+### Completed serial copy measurements
+
+[Actions run 37386841643](https://github.com/findmydoc-platform/website/actions/runs/37386841643) completes all three mixed pairs and all three full pairs at immutable commit `776fbe69e1665e42e0bd0cd60ee336fe687845e2`. The downloaded artifacts pass the standalone verifier separately for each stage. Every full process passes the same 877 case identities in 98 files, with no skips, retries or unhandled errors. Round 2 reverses both variant and file order; round 3 rotates file order. Each stage retains the same source fingerprint, Node version, CPU and memory configuration across its three pairs.
+
+| Full round | Empty template and file seeds | Baseline template and file copies | Savings | Per-file copies combined |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 2083.285 s | 773.935 s | 1309.350 s | 58.288 s |
+| 2 | 2057.056 s | 781.426 s | 1275.630 s | 60.638 s |
+| 3 | 2062.363 s | 778.499 s | 1283.864 s | 59.068 s |
+
+Median paired savings are **1283.864 seconds, or 21 minutes 24 seconds**, with a range of 21 minutes 16 seconds to 21 minutes 49 seconds. The median paired reduction is **62.25 percent**. Median normal execution is 34 minutes 22 seconds; median copy execution is 12 minutes 58 seconds. Both remain serial. Totals include fresh services, migrations, template preparation, baseline seeding, all copies, coverage reporting, native seed coverage merge and cleanup. Shared dependency installation and VM startup are outside these process totals.
+
+Coverage is identical between variants in every full pair, including a separate comparison of every file's four coverage categories. Covered counts are 2012 of 2490 lines, 2176 of 2817 statements, 434 of 580 functions and 1833 of 2569 branches. Both variants pass the existing integration thresholds. All 294 full-suite copies pass the SQL isolation probe. The three mixed pairs pass 85 cases in 12 files per variant with identical coverage; their median savings are 149.333 seconds, or 52.26 percent. Their 36 copies also pass isolation checks.
+
+GitHub job timestamps record 22 minutes 4 seconds for the mixed job and 142 minutes 54 seconds for the full job, totaling **164 minutes 58 seconds of physical runner time** for this successful measurement series. This includes both variants and all repetitions, installation and job cleanup. It excludes earlier diagnostic runs and does not claim an invoice total or the cost of one production CI run. A single serial copy process avoids about 21 minutes of measured runner work at this commit; its complete CI job cost still depends on that job's setup.
+
+The result establishes serial compatibility and savings for this suite at the recorded commit. The normal integration workflow still uses the existing setup; the template-copy path is opt-in diagnostic tooling. S3Mock remains shared within each variant, so fixture cleanup is still required. VM performance and page caches are uncontrolled; paired measurements and reversed order reduce that uncertainty. The measurements do not cover build performance, parallel execution, future changes or a rollout to normal PR validation.
+
+### Coverage gap diagnosed before acceptance
+
+[Run 37360437509](https://github.com/findmydoc-platform/website/actions/runs/37360437509) at commit `d2278625710101dbcf5228acf1843990618279d3` passes three mixed pairs. Its full job fails to acquire a hosted runner twice, then executes after runner availability recovers. Those two attempts execute no full-suite tests.
+
+The executed full pair passes all 877 cases in both variants, but the verifier rejects the copy result because merged branch coverage is 1832 of 2569 versus 1833 in the normal variant. Lines, statements and functions match. The missing branch is the update path with no existing creator in `beforeChangePlatformContentMedia.ts`, line 20. These rejected timings remain diagnosis evidence and are excluded from the accepted series.
+
+Deleting a platform staff uploader clears its media creator relationship through the migration's native `ON DELETE SET NULL` constraint. The existing media metadata case now deletes only its own uploader, asserts the cleared relationship, and repairs attribution through an authenticated Payload update. It verifies the new creator, metadata and unchanged filename and storage path. Its original assertions and case identity remain intact. This makes the recovery path explicit within a file instead of depending on another file's cleanup. The accepted series confirms the missing branch is covered in both variants without reducing coverage requirements.
+
+SeedReset's preserved-lock cleanup also passes in the reversed mixed and full orders. All concurrent AuthActions probes in the accepted series report readable, live reservations with matching identities after commit. This confirms those observations in the measured runs; it does not establish the root cause of the earlier intermittent AuthActions failure or introduce an Auth runtime fix.
+
+### Earlier mixed-file diagnostics
 
 [Actions run 37330179732](https://github.com/findmydoc-platform/website/actions/runs/37330179732) executes the expanded experiment at commit `59bb87163449fb0856079528b15bab391acd0737`. Round 1 passes the same 85 cases in 12 files in both variants. Including preparation, cleanup and native coverage merge, the normal variant takes 308.950 seconds and the copy variant 137.865 seconds. This pair saves 171.085 seconds, about 55 percent. Coverage is identical across all four categories, including 1454 covered lines of 2490. The instrumented seed and native merge close the coverage loss observed in the earlier three-file experiment.
 
-In reversed round 2, the copy variant passes all 85 cases, while the normal variant fails three cases in `inquiryRetention.lifecycle.test.ts`. This pair is invalid for the accepted performance comparison. Round 3 and the complete-suite job are skipped. The mixed job consumes 14 minutes 54 seconds of physical runner time. Whole-suite savings remain unmeasured.
+In reversed round 2, the copy variant passes all 85 cases, while the normal variant fails three cases in `inquiryRetention.lifecycle.test.ts`. This pair is invalid for the accepted performance comparison. Round 3 and the complete-suite job are skipped. The mixed job consumes 14 minutes 54 seconds of physical runner time. This run provides no whole-suite measurement.
 
 The manual `db-copy-order-check` stage reruns only the reversed mixed pair, without enabling the complete-suite job or accepting an incomplete series. Failed-case metrics contain positive line and column positions from the exact test module only. Error messages, assertion values, absolute paths and raw stacks remain excluded. This supports diagnosing order-dependent failures without weakening assertions or silently retrying failed measurements.
 
-[Order-check run 37334117467](https://github.com/findmydoc-platform/website/actions/runs/37334117467) reproduces the three normal-variant failures at commit `6460299b596e6ee7ec4691717a414c44764cee4a`. The first two fail at the global zero-lock assertions, lines 336 and 658. The third fails at the patient reply restriction, line 1215. The copy variant again passes all 85 cases. SeedReset leaves its deliberately preserved command lock in the shared database; the failed hard-delete case then exits before offboarding its clinic staff fixture. SeedReset now tracks and deletes only its own preserved lock in `afterAll`, using the required domain transaction. Existing reset-preservation assertions remain unchanged. A fresh expanded series must validate this cleanup before whole-suite timing can be accepted.
+[Order-check run 37334117467](https://github.com/findmydoc-platform/website/actions/runs/37334117467) reproduces the three normal-variant failures at commit `6460299b596e6ee7ec4691717a414c44764cee4a`. The first two fail at the global zero-lock assertions, lines 336 and 658. The third fails at the patient reply restriction, line 1215. The copy variant again passes all 85 cases. SeedReset leaves its deliberately preserved command lock in the shared database; the failed hard-delete case then exits before offboarding its clinic staff fixture. SeedReset now tracks and deletes only its own preserved lock in `afterAll`, using the required domain transaction. Existing reset-preservation assertions remain unchanged. The completed expanded series above validates this cleanup in reversed order.
 
 [Expanded run 37336248241](https://github.com/findmydoc-platform/website/actions/runs/37336248241) stops during the first normal variant at commit `31b18fa0958d1abe82741aead1258dda2abcc486`. All eight Retention cases pass in this order, but the AuthActions reservation identity assertion and the following sweep counter assertion fail. The result is 83 passing cases of 85. No copy variant or complete-suite timing is available from this run. This does not establish the lock cleanup in reversed order.
 

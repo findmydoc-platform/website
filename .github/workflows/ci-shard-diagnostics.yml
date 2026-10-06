@@ -17,6 +17,7 @@ on:
             db-copy-order-check,
             cache-diagnostics,
             build-diagnostics,
+            domain-poc,
           ]
         default: smoke
       round:
@@ -46,6 +47,12 @@ on:
         options: [none, classification, static]
         default: none
 
+      domain_case:
+        description: Independent domain POC case
+        type: choice
+        options: [config-location, config-gallery, selection-country, selection-gallery]
+        default: config-location
+
       cache_experiment:
         description: Fresh cache experiment identifier
         type: string
@@ -55,7 +62,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-shard-diagnostics-${{ inputs.stage == 'build-diagnostics' && github.run_id || github.ref }}
+  group: ci-shard-diagnostics-${{ (inputs.stage == 'build-diagnostics' || inputs.stage == 'domain-poc') && github.run_id || github.ref }}
   cancel-in-progress: false
 
 env:
@@ -72,7 +79,7 @@ defaults:
 jobs:
   pair:
     name: Paired A and B
-    if: inputs.stage != 'build-diagnostics' && inputs.stage != 'cache-diagnostics' && inputs.stage != 'hooks' && inputs.stage != 'db-copy' && inputs.stage != 'db-copy-expanded' && inputs.stage != 'db-copy-order-check' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    if: inputs.stage != 'domain-poc' && inputs.stage != 'build-diagnostics' && inputs.stage != 'cache-diagnostics' && inputs.stage != 'hooks' && inputs.stage != 'db-copy' && inputs.stage != 'db-copy-expanded' && inputs.stage != 'db-copy-order-check' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -519,6 +526,21 @@ jobs:
       scenario: ${{ inputs.build_scenario }}
       round: ${{ inputs.round }}
       failure: ${{ inputs.build_failure }}
+    secrets:
+      GH_PACKAGES_READ_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+      PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+      PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+
+  domain-poc:
+    name: Independent domain POC
+    if: inputs.stage == 'domain-poc' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    uses: ./.github/workflows/integration-domain-poc.yml
+    with:
+      experiment: ${{ startsWith(inputs.domain_case, 'config-') && 'config' || 'selection' }}
+      variant: ${{ inputs.build_variant }}
+      group: ${{ inputs.domain_case == 'config-gallery' && 'gallery' || 'location' }}
+      scenario: ${{ inputs.domain_case == 'selection-gallery' && 'gallery' || 'country' }}
+      round: ${{ inputs.round }}
     secrets:
       GH_PACKAGES_READ_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
       PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}

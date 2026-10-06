@@ -64,3 +64,11 @@ Adopt the filter approach in the later fresh implementation. Choose early Build 
 | Reconsider Turbopack | Shorter builds | Resolve the known compatibility issue before comparison; [issue 777](https://github.com/findmydoc-platform/website/issues/777) |
 
 These opportunities have no measured savings yet. Moving tests to a nightly run only reduces PR work if PR selection also changes; the scheduled runs add their own cost.
+
+## Domain integration POC
+
+A separate manual workflow compares smaller Payload configurations and affected-group selection as independent factors. The existing suite and the measurements above remain unchanged. The sample contains five country cases and nineteen gallery cases, using production collection definitions and isolated copies of the full baseline database.
+
+The dependency inventory retains 37 of 47 declared collections in both groups. Relationships, shared role fixtures and unchanged plugins create substantial overlap. Both source-change fixtures currently select both groups; no avoided test work is established. Local database compatibility passes for both groups, with identical gallery coverage against the complete configuration. Local timing differences are not counted as proven savings.
+
+A replay of fifty merged non-bot PR file lists selects no POC group for seven PRs and both groups for forty-three. Forty-three selections use a conservative fallback for other changed paths. This current-graph sample does not establish historical correctness or savings across the complete integration suite. Actions comparisons and investigation costs are reported after collection.

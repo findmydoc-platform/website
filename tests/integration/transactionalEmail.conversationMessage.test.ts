@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import config from '@payload-config'
 import {
@@ -60,7 +60,14 @@ describe('conversation command through the existing delivery worker', () => {
     clinicReq.user = await asClinicScopedPayloadUser(payload, staff, clinicId)
   }, 60000)
 
-  afterEach(() => deliveryEdgeNetworkGuard.assertNoAttempts())
+  beforeEach(() => vi.stubEnv('CI', 'false'))
+  afterEach(() => {
+    try {
+      deliveryEdgeNetworkGuard.assertNoAttempts()
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
   afterAll(async () => {
     try {
       if (!payload) return

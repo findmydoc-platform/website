@@ -119,6 +119,7 @@ export const ScrollBehavior: Story = {
       win.dispatchEvent(new win.Event('scroll'))
 
       await waitFor(() => expect(secondCard).toHaveAttribute('data-active', 'true'))
+      await nextFrames()
 
       win.scrollTo(0, storyTop + maxScroll * 0.96)
       win.dispatchEvent(new win.Event('scroll'))

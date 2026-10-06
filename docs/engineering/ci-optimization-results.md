@@ -67,8 +67,23 @@ These opportunities have no measured savings yet. Moving tests to a nightly run 
 
 ## Domain integration POC
 
-A separate manual workflow compares smaller Payload configurations and affected-group selection as independent factors. The existing suite and the measurements above remain unchanged. The sample contains five country cases and nineteen gallery cases, using production collection definitions and isolated copies of the full baseline database.
+The separate manual POC completed sixteen fresh-runner jobs and eight valid pairs on [fixed sources](https://github.com/findmydoc-platform/website/commit/0587fe0cd589fa61bbebc0b54de462e3f664eeb5). Each scenario has two pairs with reversed order. All cases pass and retained case identities and scoped coverage match. The existing suite and earlier optimizations remain unchanged.
 
-The dependency inventory retains 37 of 47 declared collections in both groups. Relationships, shared role fixtures and unchanged plugins create substantial overlap. Both source-change fixtures currently select both groups; no avoided test work is established. Local database compatibility passes for both groups, with identical gallery coverage against the complete configuration. Local timing differences are not counted as proven savings.
+Smaller Payload configurations retain production collections, hooks, permissions, plugins and baseline database copies. Both domain configurations retain 37 of 47 declared collections under a conservative dependency policy with all production plugins. The affected-group experiment keeps those configurations fixed and changes only whether the conservative selection is applied.
 
-A replay of fifty merged non-bot PR file lists selects no POC group for seven PRs and both groups for forty-three. Forty-three selections use a conservative fallback for other changed paths. This current-graph sample does not establish historical correctness or savings across the complete integration suite. Actions comparisons and investigation costs are reported after collection.
+Positive values below mean seconds saved; negative values mean a longer workflow or more runner work. Each cell gives the paired median and range. Workflow time starts at the first physical runner; initial queue delay is reported separately.
+
+| Approach and sample | Workflow seconds saved | Physical runner seconds saved | Conclusion |
+| --- | --- | --- | --- |
+| Smaller config, five country cases | -23.5; -24 to -23 | -21; -22 to -20 | No saving demonstrated |
+| Smaller config, nineteen gallery cases | +4.5; -20 to +29 | +7; -20 to +34 | Opposite directions across repetitions; no repeated saving demonstrated |
+| Affected groups, Country change | -19; -28 to -10 | -18.5; -27 to -10 | Both groups selected; zero cases avoided |
+| Affected groups, Gallery change | +3.5; -4 to +11 | +4; -3 to +11 | Both groups selected; zero cases avoided; timing differences are control variation |
+
+End-to-end completion including the initial queue has paired medians of -28.5, +2.5, -18 and -14 seconds in the same row order. Queue delays range from 4 to 40 seconds. Runner hardware spans three AMD EPYC models with four CPUs and about 16 GB RAM. Full baseline preparation takes a median 73.2 seconds, ranging from 57.2 to 80.6 seconds, and remains common to both variants. These observations do not establish that smaller configurations cause a slowdown.
+
+A current-graph replay of fifty merged non-bot PR file lists selects no POC group for seven PRs and both groups for forty-three. The latter use conservative fallbacks for other changed paths. An execution-only projection for these two groups estimates a median 1.28-second loss after selection overhead and a mean 1.59-second saving. It excludes installation, database preparation and runner setup, assumes empty selections avoid test execution, and does not reproduce historical application execution. It establishes no whole-pipeline or monthly saving.
+
+Investigation cost is **31:59 physical runner minutes across sixteen unique Actions runs**, including installation, preparation, reporting, upload and cleanup. There are no failed Actions attempts or replacement runs. Skipped jobs do not count as physical runner work. The runner and queue accounting corrections reuse the original receipts and run IDs.
+
+The POC demonstrates functional isolation and compatibility with the complete baseline database, but adds no proven saving to the table above. Shared dependencies prevent useful separation in these two groups. Narrower plugin profiles and other domain boundaries remain untested. Normal CI adoption is not recommended from these results. Test, architecture and workflow security reviews remain recommendations and have not been run.

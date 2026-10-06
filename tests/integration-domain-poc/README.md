@@ -21,3 +21,7 @@ Safe receipts record case identity, phases, copied-database verification, source
 Workflow completion and physical runner time come from the Actions API and include installation, preparation, reporting, artifact transfer and cleanup. Failed runs retain evidence and count toward investigation costs. The local compatibility runs establish functionality only, not runner savings.
 
 Historical analysis uses the current conservative dependency graph against the last fifty merged non-bot PR file lists. It does not reproduce historical application execution or extrapolate to the other integration groups.
+
+## Completed result
+
+Sixteen fresh Actions jobs produced eight valid pairs on commit `0587fe0cd589fa61bbebc0b54de462e3f664eeb5`. Country and gallery changes selected both groups in every selection run. No repeated workflow and runner saving is demonstrated. The investigation used 31:59 physical runner minutes with no failed or replacement Actions attempts. The optimization overview contains the concise results; raw receipts, history replay and corrected timing provenance remain in ignored evidence.

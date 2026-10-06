@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { setTimeout as delay } from 'node:timers/promises'
-import { summarize } from './ci-domain-poc-summary.mjs'
+import { summarize, actionDurations } from './ci-domain-poc-summary.mjs'
 
 const output = process.argv[2],
   commit = process.argv[3]
@@ -132,10 +132,7 @@ async function collect(entry) {
         created_at: run.created_at,
         run_started_at: run.run_started_at,
         updated_at: run.updated_at,
-        queueSeconds: (Date.parse(run.run_started_at) - Date.parse(run.created_at)) / 1000,
-        runnerSeconds: jobs
-          .filter((job) => job.started_at && job.completed_at)
-          .reduce((sum, job) => sum + (Date.parse(job.completed_at) - Date.parse(job.started_at)) / 1000, 0),
+        ...actionDurations(run, jobs),
         jobs: jobs.map((job) => ({
           name: job.name,
           conclusion: job.conclusion,

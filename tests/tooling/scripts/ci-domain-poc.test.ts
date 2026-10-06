@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { comparePair, distribution } from '../../../scripts/ci-domain-poc-summary.mjs'
+import {
+  comparePair,
+  distribution,
+  physicalRunnerSeconds,
+  actionDurations,
+} from '../../../scripts/ci-domain-poc-summary.mjs'
 import { groups, runtimeGraph, selectGroups, validateMeasurement } from '../../../scripts/ci-domain-poc.mjs'
 
 const manifests = {
@@ -68,6 +73,28 @@ describe('domain POC selection and evidence', () => {
       expect(() => validateMeasurement({ ...validReceipt(), status })).toThrow()
     expect(() => validateMeasurement({ ...validReceipt(), cleanup: 'failed' })).toThrow()
     expect(() => validateMeasurement({ ...validReceipt(), groups: [] })).toThrow()
+  })
+  it('counts physical runner time and retains failed-job costs without counting skipped timestamps', () => {
+    const job = {
+      runner_id: 1,
+      conclusion: 'success',
+      started_at: '2026-10-06T10:00:00Z',
+      completed_at: '2026-10-06T10:00:10Z',
+    }
+    expect(
+      physicalRunnerSeconds([
+        job,
+        { ...job, conclusion: 'failure' },
+        { ...job, runner_id: 0, conclusion: 'skipped', completed_at: '2026-10-06T09:00:00Z' },
+      ]),
+    ).toBe(20)
+    expect(() => physicalRunnerSeconds([{ ...job, completed_at: 'invalid' }])).toThrow()
+  })
+  it('separates initial queue delay from workflow and physical runner duration', () => {
+    const timings = actionDurations({ created_at: '2026-10-06T10:00:00Z', updated_at: '2026-10-06T10:00:20Z' }, [
+      { runner_id: 1, conclusion: 'success', started_at: '2026-10-06T10:00:05Z', completed_at: '2026-10-06T10:00:18Z' },
+    ])
+    expect(timings).toEqual({ queueSeconds: 5, workflowSeconds: 15, totalCompletionSeconds: 20, runnerSeconds: 13 })
   })
   it('preserves the original test bodies and assertions', () => {
     const canonical = (filename: string) => {

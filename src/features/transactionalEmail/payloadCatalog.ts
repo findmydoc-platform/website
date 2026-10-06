@@ -12,11 +12,13 @@ import { resolveTransactionalEmailEnvironment } from './environment'
 import { createClinicInvitationCatalogEntry } from './clinicInvitation'
 import { createPatientVerificationCatalogEntry } from './patientVerification'
 import { findClinicInvitationPrincipal } from '@/auth/actions/clinicInvitationPrincipal'
+import { createConversationMessageCatalogEntry } from './conversationMessage'
 
 export function bindPayloadCommandCatalog(req: PayloadRequest, options: { recoverySignal?: AbortSignal } = {}) {
   const environment = resolveTransactionalEmailEnvironment()
   return Object.freeze({
     ...createCommandCatalog({ findClinicApplication: (id) => findClinicApplication(req, id) }),
+    'conversation.external-message-received': createConversationMessageCatalogEntry(req, environment),
     'auth.email-verification': createPatientVerificationCatalogEntry({
       environment,
       verificationKeys: () => resolveVerificationKeys(environment),

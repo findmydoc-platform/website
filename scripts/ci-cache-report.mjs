@@ -218,6 +218,8 @@ async function main() {
         conclusion: s.conclusion,
       })),
     }))
+    mkdirSync(dirname(values.output), { recursive: true })
+    writeFileSync(`${values.output}.audit.json`, `${JSON.stringify({ accepted: false, jobs, results }, null, 2)}\n`)
     const summaries =
       values.mode === 'combined'
         ? [summarize(results, jobs, 'combined')]

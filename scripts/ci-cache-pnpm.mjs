@@ -157,9 +157,8 @@ export function prepareLockChange({ repositoryRoot = root, env = process.env } =
 }
 
 function storeBytes(directory) {
-  if (!existsSync(directory)) return 0
   const stat = lstatSync(directory)
-  if (stat.isSymbolicLink()) throw new Error('Store must not contain symbolic links.')
+  // Count link metadata, including dangling links; never inspect targets outside the store.
   if (!stat.isDirectory()) return stat.size
   return readdirSync(directory).reduce((total, name) => total + storeBytes(path.join(directory, name)), 0)
 }
@@ -205,27 +204,34 @@ export async function runDiagnostic(options, { repositoryRoot = root, env = proc
       memoryBytes: os.totalmem(),
     },
     success: false,
+    // First failing stage only; exception text, paths and child output are excluded.
+    failureReason: null,
     phases: [],
     packages: { resolved: 0, reused: 0, downloaded: 0, added: 0 },
     storeBytes: 0,
     lockDigest: digest(readFileSync(lock)),
     cleanupSucceeded: false,
   }
+  let stage = 'metadata'
   try {
     result.commit = version('git', ['rev-parse', 'HEAD'], repositoryRoot, /^[a-f0-9]{40,64}$/)
     result.pnpm = version('pnpm', ['--version'], repositoryRoot, /^\d+\.\d+\.\d+$/)
+    stage = 'access'
     const access = await run(
       process.execPath,
       [path.join(repositoryRoot, 'scripts/assert-email-template-package-access.mjs')],
       { cwd: repositoryRoot, env },
     )
     if (access.exitCode === 0) {
+      stage = 'install'
       const install = await run(
         'pnpm',
         ['install', '--store-dir', store, '--frozen-lockfile', '--strict-peer-dependencies', '--reporter', 'ndjson'],
         { cwd: repositoryRoot, env },
       )
       result.phases.push({ name: 'install', durationMs: install.durationMs, exitCode: install.exitCode })
+      if (install.exitCode !== 0) result.failureReason = 'install'
+      stage = 'reporter'
       // Explicit allowlist: raw reporter records and package identities cannot reach the artifact.
       for (const key of Object.keys(result.packages)) {
         const count = install.packages[key]
@@ -233,9 +239,11 @@ export async function runDiagnostic(options, { repositoryRoot = root, env = proc
         result.packages[key] = count
       }
       result.success = install.exitCode === 0
-    }
-    result.storeBytes = storeBytes(store)
+    } else result.failureReason = 'access'
+    stage = 'store-stat'
+    result.storeBytes = existsSync(store) ? storeBytes(store) : 0
   } catch {
+    result.failureReason ??= stage
     result.success = false
   } finally {
     try {
@@ -248,6 +256,7 @@ export async function runDiagnostic(options, { repositoryRoot = root, env = proc
       }
       result.cleanupSucceeded = true
     } catch {
+      result.failureReason ??= 'cleanup'
       result.success = false
     }
     mkdirSync(output, { recursive: true })

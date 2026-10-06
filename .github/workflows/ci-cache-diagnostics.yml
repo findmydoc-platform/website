@@ -253,7 +253,7 @@ jobs:
 
   compiler-seed:
     name: compiler ${{ matrix.variant }} r${{ matrix.round }}
-    needs: compiler-diagnose
+    needs: [compiler-diagnose, pnpm-seed]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -467,6 +467,7 @@ jobs:
 
   separate-summary:
     name: Separate cache evidence
+    if: always() && !cancelled()
     needs: [pnpm-seed, pnpm-restore, compiler-seed, compiler-restore]
     runs-on: ubuntu-latest
     timeout-minutes: 10

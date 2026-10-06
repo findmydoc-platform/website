@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createHash } from 'node:crypto'
 import {
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -22,6 +23,11 @@ import {
   validateEnvironment,
   validateOptions,
 } from '../../../scripts/ci-cache-pnpm.mjs'
+
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  return { ...actual, readdirSync: vi.fn(actual.readdirSync) }
+})
 
 const directories: string[] = []
 afterEach(() => {
@@ -159,6 +165,7 @@ describe('pnpm experiment isolation', () => {
         kind: 'pnpm',
         variant,
         success: true,
+        failureReason: null,
         phases: [{ name: 'install', durationMs: 42, exitCode: 0 }],
         storeBytes: 3,
         cleanupSucceeded: true,
@@ -170,12 +177,116 @@ describe('pnpm experiment isolation', () => {
       expect(readdirSync(path.join(repositoryRoot, options.output))).toEqual(['result.json'])
     },
   )
+  it('counts pnpm-shaped store metadata symlinks without following live, dangling or cyclic targets', async () => {
+    const { env, repositoryRoot, options } = fixture()
+    const files = path.join(env.CI_CACHE_STORE, 'v10/files/ab')
+    const modules = path.join(files, 'side-effects/node_modules')
+    const index = path.join(env.CI_CACHE_STORE, 'v10/index/ab')
+    mkdirSync(modules, { recursive: true })
+    mkdirSync(index, { recursive: true })
+    writeFileSync(path.join(files, 'package-content'), 'abc')
+    writeFileSync(path.join(index, 'package-index.json'), '{}')
+    const outside = path.join(repositoryRoot, 'outside-store')
+    mkdirSync(outside)
+    writeFileSync(path.join(outside, 'private-package-body'), 'x'.repeat(4096))
+    const links = [
+      [path.join(modules, 'react'), outside],
+      [path.join(modules, 'missing-dependency'), '../missing'],
+      [path.join(modules, 'cycle'), '.'],
+    ]
+    for (const [link, target] of links) symlinkSync(target!, link!)
+    const expectedBytes = 5 + links.reduce((total, [link]) => total + lstatSync(link!).size, 0)
+    const run = vi
+      .fn()
+      .mockResolvedValueOnce({ exitCode: 0 })
+      .mockResolvedValueOnce({
+        exitCode: 0,
+        durationMs: 42,
+        packages: parsePnpmReporter(log('resolved', 'fetched', 'imported')),
+      })
+    const result = await runDiagnostic(options, { env, repositoryRoot, run })
+    expect(result).toMatchObject({
+      success: true,
+      failureReason: null,
+      storeBytes: expectedBytes,
+      cleanupSucceeded: true,
+    })
+    expect(result.storeBytes).toBeLessThan(4096)
+    expect(readFileSync(path.join(repositoryRoot, options.output, 'result.json'), 'utf8')).not.toMatch(
+      /outside-store|private-package-body|missing-dependency/,
+    )
+  })
+  it('identifies a store traversal failure after a successful installation without exposing the exception', async () => {
+    const { env, repositoryRoot, options } = fixture()
+    const run = vi
+      .fn()
+      .mockResolvedValueOnce({ exitCode: 0 })
+      .mockImplementationOnce(async () => {
+        mkdirSync(env.CI_CACHE_STORE)
+        return { exitCode: 0, durationMs: 42, packages: parsePnpmReporter(log('resolved', 'fetched')) }
+      })
+    const readDirectory = vi.mocked(readdirSync).mockImplementationOnce(() => {
+      throw new Error('private-path token secret')
+    })
+    try {
+      const result = await runDiagnostic(options, { env, repositoryRoot, run })
+      expect(result).toMatchObject({
+        success: false,
+        failureReason: 'store-stat',
+        phases: [{ name: 'install', exitCode: 0 }],
+        cleanupSucceeded: true,
+      })
+      expect(readFileSync(path.join(repositoryRoot, options.output, 'result.json'), 'utf8')).not.toMatch(
+        /private-path|token|secret/,
+      )
+    } finally {
+      readDirectory.mockRestore()
+    }
+  })
+  it('identifies invalid reporter counters while retaining the successful install exit code', async () => {
+    const { env, repositoryRoot, options } = fixture()
+    const run = vi
+      .fn()
+      .mockResolvedValueOnce({ exitCode: 0 })
+      .mockResolvedValueOnce({
+        exitCode: 0,
+        durationMs: 42,
+        packages: { resolved: -1, reused: 0, downloaded: 0, added: 0 },
+      })
+    const result = await runDiagnostic(options, { env, repositoryRoot, run })
+    expect(result).toMatchObject({
+      success: false,
+      failureReason: 'reporter',
+      phases: [{ name: 'install', exitCode: 0 }],
+      cleanupSucceeded: true,
+    })
+  })
+  it('identifies missing repository metadata before running package access or installation', async () => {
+    const { env, repositoryRoot, options } = fixture()
+    const standaloneRoot = path.join(env.RUNNER_TEMP, 'standalone-repository')
+    mkdirSync(standaloneRoot)
+    for (const filename of ['package.json', 'pnpm-lock.yaml'])
+      writeFileSync(path.join(standaloneRoot, filename), readFileSync(path.join(repositoryRoot, filename)))
+    const run = vi.fn()
+    const result = await runDiagnostic(options, { env, repositoryRoot: standaloneRoot, run })
+    expect(result).toMatchObject({ success: false, failureReason: 'metadata', phases: [], cleanupSucceeded: true })
+    expect(run).not.toHaveBeenCalled()
+  })
+  it.each(['access', 'install'])('identifies a thrown %s process error without exposing its text', async (stage) => {
+    const { env, repositoryRoot, options } = fixture()
+    const run = vi.fn()
+    if (stage === 'install') run.mockResolvedValueOnce({ exitCode: 0 })
+    run.mockRejectedValueOnce(new Error('private token in child exception'))
+    const result = await runDiagnostic(options, { env, repositoryRoot, run })
+    expect(result).toMatchObject({ success: false, failureReason: stage, cleanupSucceeded: true })
+    expect(JSON.stringify(result)).not.toMatch(/private|token|exception/)
+  })
   it('stops before installation when package access fails', async () => {
     const { env, repositoryRoot, options } = fixture()
     const run = vi.fn().mockResolvedValue({ exitCode: 1 })
     const result = await runDiagnostic(options, { env, repositoryRoot, run })
     expect(run).toHaveBeenCalledTimes(1)
-    expect(result).toMatchObject({ success: false, phases: [], cleanupSucceeded: true })
+    expect(result).toMatchObject({ success: false, failureReason: 'access', phases: [], cleanupSucceeded: true })
   })
   it('keeps partial package counts on install failure', async () => {
     const { env, repositoryRoot, options } = fixture()
@@ -185,6 +296,7 @@ describe('pnpm experiment isolation', () => {
       .mockResolvedValueOnce({ exitCode: 9, durationMs: 50, packages: parsePnpmReporter(log('resolved', 'fetched')) })
     expect(await runDiagnostic(options, { env, repositoryRoot, run })).toMatchObject({
       success: false,
+      failureReason: 'install',
       phases: [{ name: 'install', exitCode: 9 }],
       packages: { resolved: 1, reused: 0, downloaded: 1, added: 0 },
       cleanupSucceeded: true,
@@ -243,6 +355,7 @@ describe('reversible React lock input sample', () => {
       })
     expect(await runDiagnostic({ ...options, variant: 'lock-change' }, { env, repositoryRoot, run })).toMatchObject({
       success: false,
+      failureReason: 'cleanup',
       cleanupSucceeded: false,
     })
     expect(readFileSync(path.join(repositoryRoot, 'pnpm-lock.yaml'), 'utf8')).toBe('concurrent edit')

@@ -23,7 +23,7 @@ Tooling tests exercise child-process ordering, failure, timeout, interruption, c
 
 ## Actions execution
 
-Pushing diagnostic changes to the experiment branch runs smoke only. After registration, GitHub CLI dispatches pilot and full rounds against the branch. Each successful test process must also have complete hook timings before the next measurement starts. Wait for each run to finish successfully before dispatching the next; stop on any failed, interrupted, or incomplete round. A full paired job has a 180-minute timeout, the full A process 90 minutes, each shard process 45 minutes, and report validation 10 minutes.
+Diagnostic runs start only through manual dispatch on the experiment branch. GitHub CLI dispatches smoke, pilot and full rounds against that branch. Each successful test process must also have complete hook timings before the next measurement starts. Wait for each run to finish successfully before dispatching the next; stop on any failed, interrupted, or incomplete round. A full paired job has a 180-minute timeout, the full A process 90 minutes, each shard process 45 minutes, and report validation 10 minutes.
 
 ```sh
 gh workflow run ci-shard-diagnostics.yml --ref agent/ci-shard-diagnostics --field stage=pilot --field round=1

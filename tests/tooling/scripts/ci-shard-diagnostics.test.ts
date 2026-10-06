@@ -357,7 +357,9 @@ describe('integration shard comparison validity', () => {
 
   it('limits the real workflow to the diagnostic branch and gates C on a successful pair', () => {
     const workflow = parse(readFileSync('.github/workflows/ci-shard-diagnostics.yml', 'utf8'))
-    expect(workflow.on.push.branches).toEqual(['agent/ci-shard-diagnostics'])
+    expect(workflow.on.push).toBeUndefined()
+    expect(Object.keys(workflow.on)).toEqual(['workflow_dispatch'])
+    expect(workflow.on.workflow_dispatch.inputs.stage.options).toContain('build-diagnostics')
     expect(workflow.on.pull_request).toBeUndefined()
     expect(workflow.on.schedule).toBeUndefined()
     expect(workflow.permissions).toEqual({ contents: 'read' })

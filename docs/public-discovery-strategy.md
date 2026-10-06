@@ -71,8 +71,6 @@ Use an ADR when a decision changes the architecture of public discovery, such as
 Relevant docs:
 
 - [ADR 018 - Native Payload CMS localization strategy](./adrs/018-adr-native-payload-localization-strategy.md)
-- [Localization ADR decision backlog](./roadmap/localization/localization-adr-questions.md)
-- [Payload content localization roadmap](./roadmap/localization/payload-content-localization.md)
 - [Trust claim process requirements](../trust-claim-process-requirements-task.md)
 - [Trust claim review evidence requirements](../trust-claim-review-evidence-requirements-task.md)
 

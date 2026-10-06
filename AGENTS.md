@@ -103,7 +103,6 @@ For review outputs:
 
 - Title format: `<type>(optional-scope)?: short summary`; use only the types/scopes accepted by `.github/workflows/pr-gates.yml`; summary starts lowercase, imperative, and <= 72 chars.
 - Treat `.github/pull_request_template.md` as the authoritative PR body contract.
-- For visible UI changes, use the global `pr` skill's native `gh pr edit --attach` workflow and release metadata; place reviewed screenshots in `UI/UX` and reference them from `UI/mobile QA`.
 - Build PR descriptions in a temporary markdown file or heredoc, pass them with `gh pr create --body-file` or `gh pr edit --body-file`, never inline multiline bodies through shell quoting, and verify the rendered body with `gh pr view --json body`.
 
 ## Issue Workflow

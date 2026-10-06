@@ -6,13 +6,45 @@ on:
       stage:
         description: Measurement stage
         type: choice
-        options: [smoke, pilot, full, hooks, db-copy, db-copy-expanded, db-copy-order-check, cache-diagnostics]
+        options:
+          [
+            smoke,
+            pilot,
+            full,
+            hooks,
+            db-copy,
+            db-copy-expanded,
+            db-copy-order-check,
+            cache-diagnostics,
+            build-diagnostics,
+          ]
         default: smoke
       round:
         description: Measurement round, 1 through 3
         type: choice
         options: ['1', '2', '3']
         default: '1'
+
+      build_experiment:
+        description: Isolated build experiment
+        type: choice
+        options: [filter, schedule]
+        default: filter
+      build_variant:
+        description: Compared variant
+        type: choice
+        options: [baseline, candidate]
+        default: baseline
+      build_scenario:
+        description: Fixed changed-path fixture
+        type: choice
+        options: [docs, tests, metadata, runtime]
+        default: tests
+      build_failure:
+        description: Controlled failure probe, excluded from savings
+        type: choice
+        options: [none, classification, static]
+        default: none
 
       cache_experiment:
         description: Fresh cache experiment identifier
@@ -40,7 +72,7 @@ defaults:
 jobs:
   pair:
     name: Paired A and B
-    if: inputs.stage != 'cache-diagnostics' && inputs.stage != 'hooks' && inputs.stage != 'db-copy' && inputs.stage != 'db-copy-expanded' && inputs.stage != 'db-copy-order-check' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    if: inputs.stage != 'build-diagnostics' && inputs.stage != 'cache-diagnostics' && inputs.stage != 'hooks' && inputs.stage != 'db-copy' && inputs.stage != 'db-copy-expanded' && inputs.stage != 'db-copy-order-check' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -476,3 +508,18 @@ jobs:
     with:
       experiment: ${{ inputs.cache_experiment }}
     secrets: inherit # pragma: allowlist secret
+
+  build-diagnostics:
+    name: Build diagnostics
+    if: inputs.stage == 'build-diagnostics' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    uses: ./.github/workflows/ci-build-diagnostics.yml
+    with:
+      experiment: ${{ inputs.build_experiment }}
+      variant: ${{ inputs.build_variant }}
+      scenario: ${{ inputs.build_scenario }}
+      round: ${{ inputs.round }}
+      failure: ${{ inputs.build_failure }}
+    secrets:
+      GH_PACKAGES_READ_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+      PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+      PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}

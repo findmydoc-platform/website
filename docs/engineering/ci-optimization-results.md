@@ -38,6 +38,16 @@ The successful database-copy series costs 164:58 physical runner minutes, plus e
 
 The linked Actions runs retain individual comparisons and diagnostic artifacts. [Integration diagnostics](ci-shard-diagnostics.md) retain the integration experiment details. This report is the basis for choosing the later implementation; Test, Architecture and Security reviews remain appropriate before adoption.
 
+## Isolated build experiments
+
+The manual build diagnosis measures two independent changes. The filter experiment changes only build relevance and keeps the existing late start. The scheduling experiment always builds and changes only when Build starts. Package and compiler caches remain disabled in both; the normal database setup stays unchanged.
+
+Each filter change class has three pairs, including a runtime control. The scheduling comparison has three full pairs with integration and coverage merge, plus separate classification and static-check failure probes. Sources and workload stay fixed within each series. Pure Markdown changes already skip validation and the late build, so that class can show zero saving.
+
+The runner script resumes a recorded run instead of dispatching it again, stops on unexpected failures, and preserves rejected evidence. Reports keep queue time, build readiness, validation completion, total elapsed time and physical runner consumption separate. These experiments have no accepted savings until all comparisons and correctness checks pass.
+
+Run `node scripts/ci-build-experiment.mjs --commit <full-commit> --stage smoke` to inspect the initial pair without dispatch. Add `--execute` to run it on Actions. Use `--stage all --execute` with the same commit and output directory to complete the remaining comparisons. Normal workflows and deployments are unchanged. The POC provides evidence for a later fresh implementation.
+
 ## Remaining opportunities
 
 | General approach | Expected benefit to investigate | Open condition |

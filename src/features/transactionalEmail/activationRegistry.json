@@ -151,6 +151,30 @@
       "environment": "preview"
     },
     {
+      "commandType": "moderation.report-received",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "preview-preflight-v1",
+      "environment": "preview"
+    },
+    {
+      "commandType": "moderation.report-decided",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "preview-preflight-v1",
+      "environment": "preview"
+    },
+    {
+      "commandType": "moderation.appeal-received",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "preview-preflight-v1",
+      "environment": "preview"
+    },
+    {
+      "commandType": "moderation.appeal-decided",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "preview-preflight-v1",
+      "environment": "preview"
+    },
+    {
       "commandType": "clinic.registration-received",
       "registryVersion": "activation-v1",
       "preflightVersion": "production-preflight-v2",

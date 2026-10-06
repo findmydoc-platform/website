@@ -43,6 +43,24 @@ const targetIdentity = ({
 }) => ({ projectId, routeId, routeSlug, teamId })
 
 describe('committed transactional email activation', () => {
+  it.each([
+    'moderation.report-received',
+    'moderation.report-decided',
+    'moderation.appeal-received',
+    'moderation.appeal-decided',
+  ] as const)('declares %s only in Preview with the existing preflight', (commandType) => {
+    expect(isTransactionalEmailCommandActivationDeclared('preview', commandType, activationRegistry)).toBe(true)
+    expect(isTransactionalEmailCommandActivationDeclared('production', commandType, activationRegistry)).toBe(false)
+    expect(activationRegistry.records.filter((record) => record.commandType === commandType)).toEqual([
+      {
+        commandType,
+        registryVersion: 'activation-v1',
+        preflightVersion: 'preview-preflight-v1',
+        environment: 'preview',
+      },
+    ])
+  })
+
   it('declares conversation notifications only in Preview with the existing preflight', () => {
     expect(
       isTransactionalEmailCommandActivationDeclared(
@@ -151,20 +169,23 @@ describe('committed transactional email activation', () => {
   })
 
   it('preserves every existing Preview record and the Production clinic registration declaration', () => {
-    expect(
-      activationRegistry.records.filter(
-        ({ environment, commandType }) =>
-          environment === 'preview' && commandType !== 'conversation.external-message-received',
-      ),
-    ).toEqual(
-      ['clinic.registration-received', 'auth.email-verification', 'auth.invitation', 'auth.password-recovery'].map(
-        (commandType) => ({
-          commandType,
-          registryVersion: 'activation-v1',
-          preflightVersion: 'preview-preflight-v1',
-          environment: 'preview',
-        }),
-      ),
+    expect(activationRegistry.records.filter(({ environment }) => environment === 'preview')).toEqual(
+      [
+        'clinic.registration-received',
+        'auth.email-verification',
+        'auth.invitation',
+        'auth.password-recovery',
+        'conversation.external-message-received',
+        'moderation.report-received',
+        'moderation.report-decided',
+        'moderation.appeal-received',
+        'moderation.appeal-decided',
+      ].map((commandType) => ({
+        commandType,
+        registryVersion: 'activation-v1',
+        preflightVersion: 'preview-preflight-v1',
+        environment: 'preview',
+      })),
     )
     expect(
       activationRegistry.records.find(
@@ -298,7 +319,14 @@ describe('committed transactional email activation', () => {
       'auth.password-recovery',
       'clinic.registration-received',
     ])
-    const previewCommands = new Set([...productionCommands, 'conversation.external-message-received'])
+    const previewCommands = new Set([
+      ...productionCommands,
+      'conversation.external-message-received',
+      'moderation.report-received',
+      'moderation.report-decided',
+      'moderation.appeal-received',
+      'moderation.appeal-decided',
+    ])
 
     for (const command of commandTypes) {
       expect(isTransactionalEmailCommandActivationDeclared('preview', command, activationRegistry)).toBe(

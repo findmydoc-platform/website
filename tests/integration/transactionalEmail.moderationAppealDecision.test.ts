@@ -791,20 +791,17 @@ describe('authoritative moderation appeal decision', () => {
     expect((await deliver(result.reporter.operations[0]!.id)).deliver).toHaveBeenCalledOnce()
   })
 
-  it.each(['preview', 'production'] as const)(
-    'preserves the normal domain decision while %s moderation activation is undeclared',
-    async (environment) => {
-      const source = await pendingCase()
-      vi.stubEnv('NODE_ENV', 'production')
-      vi.stubEnv('VERCEL_ENV', environment)
-      vi.stubEnv('DEPLOYMENT_ENV', environment)
-      vi.stubEnv('CI', 'false')
-      const result = await decide(source)
-      expect((await snapshot(source)).moderationCase.status).toBe('resolved')
-      expect(result.appellant.operations).toHaveLength(0)
-      expect(result.reporter.operations).toHaveLength(0)
-    },
-  )
+  it('preserves the normal domain decision while Production moderation activation is undeclared', async () => {
+    const source = await pendingCase()
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('CI', 'false')
+    const result = await decide(source)
+    expect((await snapshot(source)).moderationCase.status).toBe('resolved')
+    expect(result.appellant.operations).toHaveLength(0)
+    expect(result.reporter.operations).toHaveLength(0)
+  })
 
   it('commits a final decision after its exact clinic appellant is deleted without inventing a replacement recipient', async () => {
     const staff = await createClinicTestUser(payload, {

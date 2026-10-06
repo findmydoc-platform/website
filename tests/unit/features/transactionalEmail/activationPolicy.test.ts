@@ -23,7 +23,14 @@ describe('transactional email activation policy', () => {
       'auth.password-recovery',
       'clinic.registration-received',
     ])
-    const previewCommands = new Set([...productionCommands, 'conversation.external-message-received'])
+    const previewCommands = new Set([
+      ...productionCommands,
+      'conversation.external-message-received',
+      'moderation.report-received',
+      'moderation.report-decided',
+      'moderation.appeal-received',
+      'moderation.appeal-decided',
+    ])
 
     for (const command of commandTypes) {
       expect(isTransactionalEmailCommandActivationDeclared('preview', command, committedRegistry)).toBe(

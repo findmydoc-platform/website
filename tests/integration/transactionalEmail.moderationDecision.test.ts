@@ -832,25 +832,22 @@ describe('authoritative initial moderation decision mail', () => {
     expect((await operations(event.id)).docs).toHaveLength(1)
   })
 
-  it.each(['preview', 'production'] as const)(
-    'preserves normal domain decision without mail while %s activation is undeclared',
-    async (environment) => {
-      const source = await report()
-      vi.stubEnv('NODE_ENV', 'production')
-      vi.stubEnv('DEPLOYMENT_ENV', environment)
-      vi.stubEnv('VERCEL_ENV', environment)
-      await expect(
-        decideInquiryModerationCase(moderatorReq, {
-          caseId: source.caseId,
-          category: 'other',
-          outcome: 'no-action',
-          reason: 'ForbiddenInternalReason',
-        }),
-      ).resolves.toEqual({ decided: true })
-      const event = await decisionEvent(source.caseId)
-      expect((await operations(event.id)).docs).toHaveLength(0)
-    },
-  )
+  it('preserves normal domain decision without mail while Production activation is undeclared', async () => {
+    const source = await report()
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    await expect(
+      decideInquiryModerationCase(moderatorReq, {
+        caseId: source.caseId,
+        category: 'other',
+        outcome: 'no-action',
+        reason: 'ForbiddenInternalReason',
+      }),
+    ).resolves.toEqual({ decided: true })
+    const event = await decisionEvent(source.caseId)
+    expect((await operations(event.id)).docs).toHaveLength(0)
+  })
 
   it('rolls the first recipient operation and all domain effects back if accepting the second fanout slot fails', async () => {
     const source = await report(clinicReq)

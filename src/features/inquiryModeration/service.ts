@@ -817,7 +817,8 @@ export const decideInquiryModerationCase = async (
   if (!parsed.success) throw new InquiryModerationServiceError('invalid-input', 'The moderation decision is invalid.')
   const input = parsed.data
   const initialModerator = await resolveModerator(req)
-  await runCommandTransaction(req, async () => {
+  const acceptance = selectTransactionalEmailCommandAcceptance('moderation.report-decided')
+  const decide = async (req: PayloadRequest, commands?: TransactionalEmailCommands) => {
     const moderator = await resolveModerator(req)
     if (moderator.key !== initialModerator.key) {
       throw new InquiryModerationServiceError('access-denied', 'The moderation actor changed.')
@@ -866,8 +867,59 @@ export const decideInquiryModerationCase = async (
     if (input.outcome !== 'no-action') {
       await updateInquiryModerationActivity(req, updatedCase, moderator, 'moderation-restricted', input.outcome)
     }
+    if (commands) {
+      const event = await findOne(req, 'inquiryModerationEvents', {
+        and: [
+          { moderationCase: { equals: updatedCase.id } },
+          { eventType: { equals: 'decision-recorded' } },
+          { sequence: { equals: updatedCase.eventSequence } },
+        ],
+      })
+      if (!event)
+        throw new InquiryModerationServiceError('unavailable', 'The moderation decision event is unavailable.')
+      const affectedKey =
+        affected?.id == null
+          ? null
+          : `${affected.kind === 'patient' ? 'patients' : 'clinicStaff'}:${String(affected.id)}`
+      if (!affected || affectedKey !== text(moderationCase.reporterKey))
+        await commands.accept({
+          type: 'moderation.report-decided',
+          moderationEventId: Number(event.id),
+          recipientSlot: 'reporter',
+        })
+      if (affected)
+        await commands.accept({
+          type: 'moderation.report-decided',
+          moderationEventId: Number(event.id),
+          recipientSlot: 'affected',
+        })
+    }
     return updatedCase
-  })
+  }
+  if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => decide(req))
+  else {
+    let domainError: InquiryModerationServiceError | undefined
+    try {
+      await acceptance.run(req, async (transactionReq, commands) => {
+        domainError = undefined
+        transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+        try {
+          return await decide(transactionReq, commands)
+        } catch (error) {
+          if (error instanceof InquiryModerationServiceError) domainError = error
+          throw error
+        }
+      })
+    } catch (error) {
+      if (domainError) throw domainError
+      if (error instanceof TransactionalEmailError)
+        throw new InquiryModerationServiceError(
+          error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
+          'The moderation decision could not be committed.',
+        )
+      throw error
+    }
+  }
   return { decided: true }
 }
 

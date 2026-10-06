@@ -59,12 +59,18 @@ async function withStorage<Result>(
         if (
           suppressed &&
           operation.command.type !== 'moderation.report-received' &&
+          operation.command.type !== 'moderation.report-decided' &&
+          operation.command.type !== 'moderation.appeal-received' &&
+          operation.command.type !== 'moderation.appeal-decided' &&
           operation.command.type !== 'conversation.external-message-received'
         )
           throw new TransactionalEmailError('invalid-command')
         const terminalCapability =
           suppressed &&
           (operation.command.type === 'moderation.report-received' ||
+            operation.command.type === 'moderation.report-decided' ||
+            operation.command.type === 'moderation.appeal-received' ||
+            operation.command.type === 'moderation.appeal-decided' ||
             operation.command.type === 'conversation.external-message-received')
             ? openSuppressedAcceptanceCapability(transactionID, {
                 command: operation.command,

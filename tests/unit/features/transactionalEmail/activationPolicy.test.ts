@@ -16,7 +16,7 @@ import { recipientAddressDigest } from '@/features/transactionalEmail/recipientB
 const previewDigest = 'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf'
 
 describe('transactional email activation policy', () => {
-  it('activates reviewed auth commands only in Preview and preserves production isolation', () => {
+  it('declares reviewed auth commands separately in Preview and Production', () => {
     const previewCommands = new Set([
       'auth.email-verification',
       'auth.invitation',
@@ -29,7 +29,7 @@ describe('transactional email activation policy', () => {
         previewCommands.has(command),
       )
       expect(isTransactionalEmailCommandActivationDeclared('production', command, committedRegistry)).toBe(
-        command === 'clinic.registration-received',
+        previewCommands.has(command),
       )
     }
   })

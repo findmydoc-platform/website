@@ -6,12 +6,30 @@ These are infrastructure controls without product logic. Their canonical impleme
 belong in the [Operations Supabase configuration runbook](https://github.com/findmydoc-platform/ops/blob/f3deafd54970e4fad48a1e59cc24e39e0b4c8b3f/docs/supabase-auth-mail-config.md).
 Website owns Auth product paths and command availability; its Transactional Email platform owns delivery.
 
-Website does not maintain a duplicate suppression migration, declaration or configuration validator. Removing those
+Website does not maintain a duplicate suppression migration, executable desired-state declaration or configuration validator. Removing those
 sources does not uninstall a function, alter grants or bindings, or repair migration history. Any existing objects
 and history entries remain intact. Operations accounts for that history when reconciling its desired state.
 Preview and Production require separate verification under ADR 032 and
 [ADR 031](../adrs/031-adr-transactional-email-technical-activation-gates.md). Repository checks alone establish no
 hosted binding or activation. Rollback keeps suppression enabled and disables affected Auth commands.
+
+## Production Auth staging
+
+`activationRegistry.json` declares the three Production Auth commands with distinct Website artifacts:
+patient verification uses PR #2040, clinic invitation uses PR #2043, and password recovery uses PR #2041.
+Existing Preview records and Production clinic registration remain unchanged.
+
+The Production preflight's `nativeMailSuppression` records expected configuration, not observed state.
+It identifies the Production Ops instance and project, enabled binding, and function, and pins Ops revision
+`f3deafd54970e4fad48a1e59cc24e39e0b4c8b3f`. `declarationSha256` is the SHA-256 of the exact UTF-8 Git blob at
+`config/supabase/native-mail-suppression.json` in that revision, including its trailing newline.
+That Ops-owned declaration covers the function signature, body, invoker security, search path, and permissions.
+Website validates declaration completeness and record/version uniqueness through its existing activation parser.
+It does not inspect Supabase or establish that the expected hook is installed or enabled.
+
+The shared Operations release must compare the pinned declaration and instance with actual hosted configuration
+and verify convergence before runtime cutover. Repository staging requires neither a currently enabled Production
+hook nor disabled Custom SMTP. It performs no hosted configuration write, deployment, provider call, or Production smoke.
 
 ## Native Auth call inventory
 

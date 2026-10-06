@@ -61,6 +61,8 @@ import {
   resolveInquiryRetentionPolicyVersion,
 } from '@/features/inquiryRetention/service'
 import { communicationReviewDueAt } from '@/features/inquiryRetention/policy'
+import { selectTransactionalEmailCommandAcceptance } from '@/features/transactionalEmail/payloadIntegration'
+import { TransactionalEmailError } from '@/features/transactionalEmail'
 
 export type InquiryCommunicationServiceErrorKind =
   | 'access-denied'
@@ -178,8 +180,10 @@ const isSerializationFailure = (error: unknown): boolean => {
   while (current !== null && typeof current !== 'undefined' && !visited.has(current)) {
     visited.add(current)
     if (typeof current !== 'object' && typeof current !== 'function') return false
+    if (current instanceof TransactionalEmailError && current.code === 'transaction-conflict') return true
     const record = current as Record<string, unknown>
-    if (record.code === '40001' || record.sqlState === '40001' || record.sqlstate === '40001') return true
+    if ([record.code, record.sqlState, record.sqlstate].some((code) => code === '40001' || code === '40P01'))
+      return true
     current = record.cause
   }
   return false
@@ -1542,10 +1546,12 @@ const runRetryableActorInquiryCommand = async <Result>(
   inquiryId: string,
   actor: InquiryActor,
   command: () => Promise<Result>,
+  beforeAttempt?: () => Promise<void>,
 ): Promise<Result> => {
   let lastError: unknown
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
+      await beforeAttempt?.()
       return await runCommandTransaction(req, command)
     } catch (error: unknown) {
       lastError = error
@@ -1704,6 +1710,21 @@ const sealedAttachmentArgs = (attachment: StoredRecord) => {
   }
 }
 
+const sealedAttachmentIdentity = (attachment: StoredRecord): string =>
+  requestHash({
+    id: attachment.id,
+    inquiry: relationId(attachment.inquiry),
+    clinic: relationId(attachment.clinic),
+    patient: relationId(attachment.patient),
+    actorKey: attachment.actorKey,
+    ownerKind: attachment.ownerKind,
+    ownerPatient: relationId(attachment.ownerPatient),
+    ownerClinicStaff: relationId(attachment.ownerClinicStaff),
+    objectCreatedAt: attachment.objectCreatedAt,
+    updatedAt: attachment.updatedAt,
+    ...sealedAttachmentArgs(attachment),
+  })
+
 const mapStorageError = (error: unknown): InquiryCommunicationServiceError => {
   const message = error instanceof Error ? error.message : ''
   if (/too large|size.*limit/iu.test(message)) {
@@ -1726,6 +1747,9 @@ const sendInquiryMessage = async (
 ): Promise<InquiryMutationResultDTO> => {
   const parsed = externalMessageInputSchema.safeParse(rawInput)
   if (!parsed.success) throw new InquiryCommunicationServiceError('invalid-input', 'The message input is invalid.')
+  if (requiredActor === 'clinic' && req.transactionID !== undefined) {
+    throw new InquiryCommunicationServiceError('unavailable', 'Inquiry commands cannot join another transaction.')
+  }
   const input = parsed.data
   const initialActor = await resolveCurrentActor(req)
   if (initialActor.kind !== requiredActor) {
@@ -1745,126 +1769,170 @@ const sendInquiryMessage = async (
 
   const initialInquiry = await readAuthorizedInquiry(req, input.inquiryId, initialActor)
   await assertExternalCommunicationOpen(req, initialInquiry, initialActor)
+  const emailAcceptance =
+    requiredActor === 'clinic'
+      ? selectTransactionalEmailCommandAcceptance('conversation.external-message-received')
+      : null
   const attachmentStorage = input.attachmentDraftId ? (storage ?? createS3InquiryAttachmentStorage()) : null
   let initialAttachment: StoredRecord | null = null
   if (input.attachmentDraftId) {
     initialAttachment = await verifiedAttachmentForActor(req, initialInquiry, initialActor, input.attachmentDraftId)
-    try {
-      await attachmentStorage?.verifySealed(sealedAttachmentArgs(initialAttachment))
-    } catch (error: unknown) {
-      throw mapStorageError(error)
+    if (requiredActor === 'patient') {
+      try {
+        await attachmentStorage?.verifySealed(sealedAttachmentArgs(initialAttachment))
+      } catch (error: unknown) {
+        throw mapStorageError(error)
+      }
     }
   }
 
-  try {
-    const updatedInquiry = await runRetryableActorInquiryCommand(req, input.inquiryId, initialActor, async () => {
-      const actor = await resolveCurrentActor(req)
-      if (actor.kind !== requiredActor || actor.key !== initialActor.key) {
-        throw new InquiryCommunicationServiceError('access-denied', 'The inquiry participant changed.')
-      }
-      const replay = await readMessageReplay(req, actor, input)
-      if (replay) return readAuthorizedInquiry(req, input.inquiryId, actor)
-
-      const inquiry = await readAuthorizedInquiry(req, input.inquiryId, actor)
-      const conversation = await assertExternalCommunicationOpen(req, inquiry, actor)
-      await assertExpectedRevision(req, inquiry, actor, input.expectedRevision)
-      const ownerId = relationId(inquiry.patient)
-      const clinicId = relationId(inquiry.clinic)
-      if (ownerId === null || clinicId === null) {
-        throw new InquiryCommunicationServiceError('invalid-state', 'The inquiry participants are unavailable.')
-      }
-      const attachment = input.attachmentDraftId
-        ? await verifiedAttachmentForActor(req, inquiry, actor, input.attachmentDraftId)
-        : null
-      if (attachment && initialAttachment && String(attachment.id) !== String(initialAttachment.id)) {
-        throw new InquiryCommunicationServiceError('conflict', 'The attachment changed concurrently.')
-      }
-      if (attachment && attachmentStorage) {
-        try {
-          await attachmentStorage.verifySealed(sealedAttachmentArgs(attachment))
-        } catch (error: unknown) {
-          throw mapStorageError(error)
+  const verifyClinicAttachment =
+    requiredActor === 'clinic' && input.attachmentDraftId && attachmentStorage
+      ? async () => {
+          initialAttachment = await verifiedAttachmentForActor(
+            req,
+            initialInquiry,
+            initialActor,
+            input.attachmentDraftId!,
+          )
+          try {
+            await attachmentStorage.verifySealed(sealedAttachmentArgs(initialAttachment))
+          } catch (error: unknown) {
+            throw mapStorageError(error)
+          }
         }
-      }
+      : undefined
 
-      const now = new Date().toISOString()
-      const policy = await resolveInquiryRetentionPolicyVersion(req, text(inquiry.retentionPolicyVersion))
-      const nextSequence = numberValue(inquiry.activitySequence, 1) + 1
-      const nextExternalSequence = numberValue(inquiry.externalSequence) + 1
-      const nextClinicNotificationSequence =
-        numberValue(inquiry.clinicNotificationSequence, 1) + (actor.kind === 'patient' ? 1 : 0)
-      const previousHandlingStatus = text(inquiry.handlingStatus) || 'submitted'
-      const nextHandlingStatus =
-        actor.kind === 'clinic' && (previousHandlingStatus === 'submitted' || previousHandlingStatus === 'in_review')
-          ? 'contacted'
-          : previousHandlingStatus
+  try {
+    const updatedInquiry = await runRetryableActorInquiryCommand(
+      req,
+      input.inquiryId,
+      initialActor,
+      async () => {
+        const actor = await resolveCurrentActor(req)
+        if (actor.kind !== requiredActor || actor.key !== initialActor.key) {
+          throw new InquiryCommunicationServiceError('access-denied', 'The inquiry participant changed.')
+        }
+        const replay = await readMessageReplay(req, actor, input)
+        if (replay) return readAuthorizedInquiry(req, input.inquiryId, actor)
 
-      const message = asRecord(
-        await req.payload.create({
-          collection: 'inquiryMessages' as never,
-          data: {
-            actorKey: actor.key,
-            attachment: attachment?.id ?? null,
-            authorClinicStaff: actor.kind === 'clinic' ? actor.id : null,
-            authorKind: actor.kind,
-            authorPatient: actor.kind === 'patient' ? actor.id : null,
-            clinic: clinicId,
-            clinicNotificationSequence: nextClinicNotificationSequence,
-            conversation: conversation.id,
-            externalSequence: nextExternalSequence,
-            idempotencyKey: input.idempotencyKey,
-            inquiry: inquiry.id,
-            patient: ownerId,
-            requestHash: messageRequestHash(input),
-            sequence: nextSequence,
-            text: input.text ?? null,
-          },
-          depth: 0,
-          overrideAccess: true,
-          req,
-        } as never),
-      )
+        const inquiry = await readAuthorizedInquiry(req, input.inquiryId, actor)
+        const conversation = await assertExternalCommunicationOpen(req, inquiry, actor)
+        await assertExpectedRevision(req, inquiry, actor, input.expectedRevision)
+        const ownerId = relationId(inquiry.patient)
+        const clinicId = relationId(inquiry.clinic)
+        if (ownerId === null || clinicId === null) {
+          throw new InquiryCommunicationServiceError('invalid-state', 'The inquiry participants are unavailable.')
+        }
+        const attachment = input.attachmentDraftId
+          ? await verifiedAttachmentForActor(req, inquiry, actor, input.attachmentDraftId)
+          : null
+        if (attachment && initialAttachment && String(attachment.id) !== String(initialAttachment.id)) {
+          throw new InquiryCommunicationServiceError('conflict', 'The attachment changed concurrently.')
+        }
+        if (
+          actor.kind === 'clinic' &&
+          attachment &&
+          initialAttachment &&
+          sealedAttachmentIdentity(attachment) !== sealedAttachmentIdentity(initialAttachment)
+        ) {
+          throw new InquiryCommunicationServiceError('conflict', 'The sealed attachment changed concurrently.')
+        }
+        if (actor.kind === 'patient' && attachment && attachmentStorage) {
+          try {
+            await attachmentStorage.verifySealed(sealedAttachmentArgs(attachment))
+          } catch (error: unknown) {
+            throw mapStorageError(error)
+          }
+        }
 
-      const current = await updateInquiry(req, inquiry, {
-        activitySequence: nextSequence,
-        clinicNotificationSequence: nextClinicNotificationSequence,
-        externalSequence: nextExternalSequence,
-        handlingStatus: nextHandlingStatus,
-        lastActivityAt: now,
-        lastExternalActivityAt: now,
-        retentionReviewBasisAt: now,
-        retentionReviewDueAt: communicationReviewDueAt(now, policy.communicationReviewMonths),
-        revision: numberValue(inquiry.revision) + 1,
-      })
-      if (attachment) {
-        await req.payload.update({
-          collection: 'inquiryAttachments' as never,
-          data: { boundMessage: message.id, state: 'bound' },
-          depth: 0,
-          id: attachment.id,
-          overrideAccess: true,
-          req,
-        } as never)
-      }
-      if (nextHandlingStatus !== previousHandlingStatus) {
-        await createAuditEvent(req, current, actor, 'handling-status-changed', nextSequence, {
-          fromValue: previousHandlingStatus,
-          targetId: String(current.id),
-          targetType: 'inquiry',
-          toValue: nextHandlingStatus,
+        const now = new Date().toISOString()
+        const policy = await resolveInquiryRetentionPolicyVersion(req, text(inquiry.retentionPolicyVersion))
+        const nextSequence = numberValue(inquiry.activitySequence, 1) + 1
+        const nextExternalSequence = numberValue(inquiry.externalSequence) + 1
+        const nextClinicNotificationSequence =
+          numberValue(inquiry.clinicNotificationSequence, 1) + (actor.kind === 'patient' ? 1 : 0)
+        const previousHandlingStatus = text(inquiry.handlingStatus) || 'submitted'
+        const nextHandlingStatus =
+          actor.kind === 'clinic' && (previousHandlingStatus === 'submitted' || previousHandlingStatus === 'in_review')
+            ? 'contacted'
+            : previousHandlingStatus
+
+        const message = asRecord(
+          await req.payload.create({
+            collection: 'inquiryMessages' as never,
+            data: {
+              actorKey: actor.key,
+              attachment: attachment?.id ?? null,
+              authorClinicStaff: actor.kind === 'clinic' ? actor.id : null,
+              authorKind: actor.kind,
+              authorPatient: actor.kind === 'patient' ? actor.id : null,
+              clinic: clinicId,
+              clinicNotificationSequence: nextClinicNotificationSequence,
+              conversation: conversation.id,
+              externalSequence: nextExternalSequence,
+              idempotencyKey: input.idempotencyKey,
+              inquiry: inquiry.id,
+              patient: ownerId,
+              requestHash: messageRequestHash(input),
+              sequence: nextSequence,
+              text: input.text ?? null,
+            },
+            depth: 0,
+            overrideAccess: true,
+            req,
+          } as never),
+        )
+
+        const current = await updateInquiry(req, inquiry, {
+          activitySequence: nextSequence,
+          clinicNotificationSequence: nextClinicNotificationSequence,
+          externalSequence: nextExternalSequence,
+          handlingStatus: nextHandlingStatus,
+          lastActivityAt: now,
+          lastExternalActivityAt: now,
+          retentionReviewBasisAt: now,
+          retentionReviewDueAt: communicationReviewDueAt(now, policy.communicationReviewMonths),
+          revision: numberValue(inquiry.revision) + 1,
         })
-      }
-      await createAuditEvent(req, current, actor, 'message-sent', nextSequence, {
-        targetId: String(message.id),
-        targetType: 'message',
-      })
-      await writeReadPosition(req, current, actor, {
-        forcedUnread: false,
-        lastReadActivityId: activityId('message', message.id),
-        lastReadSequence: actor.kind === 'patient' ? nextExternalSequence : nextClinicNotificationSequence,
-      })
-      return current
-    })
+        if (attachment) {
+          await req.payload.update({
+            collection: 'inquiryAttachments' as never,
+            data: { boundMessage: message.id, state: 'bound' },
+            depth: 0,
+            id: attachment.id,
+            overrideAccess: true,
+            req,
+          } as never)
+        }
+        if (nextHandlingStatus !== previousHandlingStatus) {
+          await createAuditEvent(req, current, actor, 'handling-status-changed', nextSequence, {
+            fromValue: previousHandlingStatus,
+            targetId: String(current.id),
+            targetType: 'inquiry',
+            toValue: nextHandlingStatus,
+          })
+        }
+        await createAuditEvent(req, current, actor, 'message-sent', nextSequence, {
+          targetId: String(message.id),
+          targetType: 'message',
+        })
+        await writeReadPosition(req, current, actor, {
+          forcedUnread: false,
+          lastReadActivityId: activityId('message', message.id),
+          lastReadSequence: actor.kind === 'patient' ? nextExternalSequence : nextClinicNotificationSequence,
+        })
+        if (actor.kind === 'clinic' && emailAcceptance?.kind === 'active') {
+          const messageId = Number(message.id)
+          if (!Number.isSafeInteger(messageId) || messageId <= 0) {
+            throw new InquiryCommunicationServiceError('unavailable', 'The clinic message could not be accepted.')
+          }
+          await emailAcceptance.bind(req).accept({ type: 'conversation.external-message-received', messageId })
+        }
+        return current
+      },
+      verifyClinicAttachment,
+    )
     const actor = await resolveCurrentActor(req)
     return { inquiry: await buildDetailForActor(req, updatedInquiry, actor), replayed: false }
   } catch (error: unknown) {

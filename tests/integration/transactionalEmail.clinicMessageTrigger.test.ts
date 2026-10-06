@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import config from '@payload-config'
 import {
@@ -64,6 +64,7 @@ describe('clinic message atomic email trigger', () => {
     clinicReq.user = await asClinicScopedPayloadUser(payload, staff, clinicId)
   }, 60000)
 
+  beforeEach(() => vi.stubEnv('CI', 'false'))
   afterEach(() => {
     try {
       deliveryEdgeNetworkGuard.assertNoAttempts()
@@ -144,6 +145,7 @@ describe('clinic message atomic email trigger', () => {
       text: 'Private reply selected for a normal moderation decision',
     })
     vi.unstubAllEnvs()
+    vi.stubEnv('CI', 'false')
     const message = sent.inquiry.timeline.find(
       (item) => item.kind === 'external-message' && item.actor.kind === 'clinic',
     )
@@ -554,6 +556,7 @@ describe('clinic message atomic email trigger', () => {
         ),
       ).toBe(true)
       vi.unstubAllEnvs()
+      vi.stubEnv('CI', 'false')
       expect(await worker.candidatesForBatch(0)).toEqual(before)
     },
   )

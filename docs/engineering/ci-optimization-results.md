@@ -46,6 +46,8 @@ Each filter change class has three pairs, including a runtime control. The sched
 
 The initial unsuccessful functionality run adds 10:01 physical runner minutes of investigation cost and stays excluded from savings. [Diagnostic evidence](https://github.com/findmydoc-platform/website/actions/runs/37442237471).
 
+The next partial series costs 36:46 runner minutes, including 10:11 for a failed unit-test run. Its first runtime-control pair has identical test cases, coverage and build routes. The series stops at a focus assertion that runs before React's effect settles; the test now waits for the same required focus. A fresh frozen series keeps both variants on the corrected test. The partial series remains diagnostic evidence rather than a completed savings result. [Failed measurement](https://github.com/findmydoc-platform/website/actions/runs/37446350609).
+
 The runner script resumes a recorded run instead of dispatching it again, stops on unexpected failures, and preserves rejected evidence. Reports keep queue time, build readiness, validation completion, total elapsed time and physical runner consumption separate. These experiments have no accepted savings until all comparisons and correctness checks pass.
 
 Run `node scripts/ci-build-experiment.mjs --commit <full-commit> --stage smoke` to inspect the initial pair without dispatch. Add `--execute` to run it on Actions. Use `--stage all --execute` with the same commit and output directory to complete the remaining comparisons. Normal workflows and deployments are unchanged. The POC provides evidence for a later fresh implementation.

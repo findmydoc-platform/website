@@ -43,6 +43,33 @@ const targetIdentity = ({
 }) => ({ projectId, routeId, routeSlug, teamId })
 
 describe('committed transactional email activation', () => {
+  it('declares conversation notifications only in Preview with the existing preflight', () => {
+    expect(
+      isTransactionalEmailCommandActivationDeclared(
+        'preview',
+        'conversation.external-message-received',
+        activationRegistry,
+      ),
+    ).toBe(true)
+    expect(
+      isTransactionalEmailCommandActivationDeclared(
+        'production',
+        'conversation.external-message-received',
+        activationRegistry,
+      ),
+    ).toBe(false)
+    expect(
+      activationRegistry.records.filter(({ commandType }) => commandType === 'conversation.external-message-received'),
+    ).toEqual([
+      {
+        commandType: 'conversation.external-message-received',
+        registryVersion: 'activation-v1',
+        preflightVersion: 'preview-preflight-v1',
+        environment: 'preview',
+      },
+    ])
+  })
+
   it('rejects Production auth declarations without the expected native-mail suppression identity', () => {
     const incomplete = structuredClone(activationRegistry)
     const production = incomplete.preflights.find(({ environment }) => environment === 'production')!
@@ -124,7 +151,12 @@ describe('committed transactional email activation', () => {
   })
 
   it('preserves every existing Preview record and the Production clinic registration declaration', () => {
-    expect(activationRegistry.records.filter(({ environment }) => environment === 'preview')).toEqual(
+    expect(
+      activationRegistry.records.filter(
+        ({ environment, commandType }) =>
+          environment === 'preview' && commandType !== 'conversation.external-message-received',
+      ),
+    ).toEqual(
       ['clinic.registration-received', 'auth.email-verification', 'auth.invitation', 'auth.password-recovery'].map(
         (commandType) => ({
           commandType,
@@ -260,19 +292,20 @@ describe('committed transactional email activation', () => {
   })
 
   it('declares the reviewed auth commands and preserves clinic registration in both environments', () => {
-    const previewCommands = new Set([
+    const productionCommands = new Set([
       'auth.email-verification',
       'auth.invitation',
       'auth.password-recovery',
       'clinic.registration-received',
     ])
+    const previewCommands = new Set([...productionCommands, 'conversation.external-message-received'])
 
     for (const command of commandTypes) {
       expect(isTransactionalEmailCommandActivationDeclared('preview', command, activationRegistry)).toBe(
         previewCommands.has(command),
       )
       expect(isTransactionalEmailCommandActivationDeclared('production', command, activationRegistry)).toBe(
-        previewCommands.has(command),
+        productionCommands.has(command),
       )
     }
 

@@ -16,20 +16,21 @@ import { recipientAddressDigest } from '@/features/transactionalEmail/recipientB
 const previewDigest = 'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf'
 
 describe('transactional email activation policy', () => {
-  it('declares reviewed auth commands separately in Preview and Production', () => {
-    const previewCommands = new Set([
+  it('declares reviewed commands separately in Preview and Production', () => {
+    const productionCommands = new Set([
       'auth.email-verification',
       'auth.invitation',
       'auth.password-recovery',
       'clinic.registration-received',
     ])
+    const previewCommands = new Set([...productionCommands, 'conversation.external-message-received'])
 
     for (const command of commandTypes) {
       expect(isTransactionalEmailCommandActivationDeclared('preview', command, committedRegistry)).toBe(
         previewCommands.has(command),
       )
       expect(isTransactionalEmailCommandActivationDeclared('production', command, committedRegistry)).toBe(
-        previewCommands.has(command),
+        productionCommands.has(command),
       )
     }
   })

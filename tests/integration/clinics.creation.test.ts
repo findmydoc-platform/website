@@ -6,6 +6,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTestEntities } from '../fixtures/cleanupTestEntities'
 import { createTinyPngFile } from '../fixtures/mediaFile'
 import { testSlug } from '../fixtures/testSlug'
+import { asClinicScopedPayloadUser, createClinicTestUser } from '../fixtures/testUsers'
 import type { Clinic, ClinicMedia, Accreditation, PlatformStaff } from '@/payload-types'
 
 const buildOpeningHours = (): NonNullable<Clinic['openingHours']> => ({
@@ -57,21 +58,9 @@ describe('Clinic Creation Integration Tests', () => {
   }
 
   const createClinicUser = async (emailPrefix: string, clinicId: number) => {
-    const clinicStaff = await payload.create({
-      collection: 'clinicStaff',
-      data: {
-        email: `${emailPrefix}@example.com`,
-        firstName: 'Clinic',
-        lastName: 'Tester',
-        supabaseUserId: `sb-${emailPrefix}`,
-        clinic: clinicId,
-        status: 'approved',
-      },
-      overrideAccess: true,
-    })
-
+    const clinicStaff = await createClinicTestUser(payload, { emailPrefix })
     createdClinicStaffIds.push(clinicStaff.id)
-    return { ...clinicStaff, collection: 'clinicStaff' as const }
+    return asClinicScopedPayloadUser(payload, clinicStaff, clinicId)
   }
 
   const buildInternalPrimaryContact = (suffix: string): NonNullable<Clinic['internalPrimaryContact']> => ({
@@ -773,9 +762,18 @@ describe('Clinic Creation Integration Tests', () => {
         internalPrimaryContact: buildInternalPrimaryContact('status'),
         supportedLanguages: ['english'],
         status: 'approved',
+        participationStatus: 'approved',
         slug: `${slugPrefix}-status-clinic`,
       },
       draft: false,
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    await payload.update({
+      collection: 'clinics',
+      id: clinic.id,
+      data: { participationStatus: 'approved' },
       overrideAccess: true,
       depth: 0,
     })

@@ -46,7 +46,9 @@ export function readPatientVerificationContext(
     if (!timingSafeEqual(signature(`${version}.${payload}`, key.secret), Buffer.from(mac, 'hex'))) return null
     const encrypted = Buffer.from(payload, 'base64url')
     if (encrypted.length <= 28) return null
-    const decipher = createDecipheriv('aes-256-gcm', encryptionKey(key.secret), encrypted.subarray(0, 12))
+    const decipher = createDecipheriv('aes-256-gcm', encryptionKey(key.secret), encrypted.subarray(0, 12), {
+      authTagLength: 16,
+    })
     decipher.setAuthTag(encrypted.subarray(12, 28))
     const plaintext = Buffer.concat([decipher.update(encrypted.subarray(28)), decipher.final()])
     const parsed = schema.parse(JSON.parse(plaintext.toString('utf8')))

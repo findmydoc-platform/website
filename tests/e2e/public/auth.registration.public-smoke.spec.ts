@@ -71,7 +71,7 @@ test.afterEach(() => {
 async function fillPatientRegistrationForm(page: Page, passwords: { password: string; confirmPassword?: string }) {
   await page.getByLabel('First Name').fill('John')
   await page.getByLabel('Last Name').fill('Doe')
-  await page.getByLabel('Email').fill('patient@example.com')
+  await page.getByPlaceholder('patient@example.com').fill('patient@example.com')
   await page.getByLabel(/^Password$/).fill(passwords.password)
   await page.getByLabel(/^Confirm Password$/).fill(passwords.confirmPassword ?? passwords.password)
 }

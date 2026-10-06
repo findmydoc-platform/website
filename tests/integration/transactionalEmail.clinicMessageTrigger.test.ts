@@ -135,8 +135,8 @@ describe('clinic message atomic email trigger', () => {
     const inquiry = await createInquiry()
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('CI', 'false')
-    vi.stubEnv('VERCEL_ENV', 'preview')
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENV', 'production')
     const sent = await sendClinicInquiryMessage(clinicReq, {
       inquiryId: inquiry.id,
       expectedRevision: 0,
@@ -528,7 +528,7 @@ describe('clinic message atomic email trigger', () => {
     expect(await worker.candidatesForBatch(0)).toEqual(before)
   })
 
-  it.each(['preview', 'production'])(
+  it.each(['production'])(
     'preserves normal clinic messaging with the hosted %s command inactive',
     async (environment) => {
       const inquiry = await createInquiry()

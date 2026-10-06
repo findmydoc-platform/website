@@ -145,6 +145,12 @@
       "environment": "preview"
     },
     {
+      "commandType": "conversation.external-message-received",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "preview-preflight-v1",
+      "environment": "preview"
+    },
+    {
       "commandType": "clinic.registration-received",
       "registryVersion": "activation-v1",
       "preflightVersion": "production-preflight-v2",

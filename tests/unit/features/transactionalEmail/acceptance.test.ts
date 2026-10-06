@@ -38,6 +38,26 @@ function acceptanceHarness(catalog: AcceptanceTestCatalog) {
 }
 
 describe('transactional email command acceptance', () => {
+  it.each([
+    { type: 'moderation.report-decided', moderationEventId: 46, recipientSlot: 'affected' },
+    { type: 'moderation.appeal-received', moderationEventId: 47, recipientSlot: 'appellant' },
+    { type: 'moderation.appeal-decided', moderationEventId: 48, recipientSlot: 'appellant' },
+  ] as const)('atomically suppresses unavailable $type without a substitute address', async (command) => {
+    const expected = async () => ({
+      status: 'suppressed' as const,
+      binding: 'exact-participant-source',
+      outcomeCode: 'ineligible' as const,
+    })
+    const { commands, created } = acceptanceHarness({
+      'moderation.report-decided': { authorizeAndResolve: expected },
+      'moderation.appeal-received': { authorizeAndResolve: expected },
+      'moderation.appeal-decided': { authorizeAndResolve: expected },
+    })
+    const receipt = await commands.accept(command)
+    await expect(commands.accept(command)).resolves.toEqual({ ...receipt, deduplicated: true })
+    expect(created).toHaveLength(1)
+    expect(created[0]).toMatchObject({ recipientAddress: null, suppressionOutcome: 'ineligible', command })
+  })
   it('records expected report ineligibility as a terminal operation without a substitute address', async () => {
     const { commands, created } = acceptanceHarness({
       'moderation.report-received': {

@@ -40,7 +40,17 @@ export type CatalogEntry<Command extends TransactionalEmailCommand = Transaction
     command: Command,
     actor: string | null,
   ): Promise<
-    Extract<Command, { type: 'moderation.report-received' | 'conversation.external-message-received' }> extends never
+    Extract<
+      Command,
+      {
+        type:
+          | 'moderation.report-received'
+          | 'moderation.report-decided'
+          | 'moderation.appeal-received'
+          | 'moderation.appeal-decided'
+          | 'conversation.external-message-received'
+      }
+    > extends never
       ? RecipientBinding
       : CatalogAcceptance
   >

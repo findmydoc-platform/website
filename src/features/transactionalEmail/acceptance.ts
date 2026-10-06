@@ -54,7 +54,13 @@ export function createCommandPort(dependencies: AcceptanceDependencies): Transac
           (!('status' in recipient) &&
             !(entry.isRecipientAllowed?.(recipient) ?? recipient.address.endsWith('@example.test'))) ||
           (suppressionOutcome &&
-            (!['moderation.report-received', 'conversation.external-message-received'].includes(command.type) ||
+            (![
+              'moderation.report-received',
+              'moderation.report-decided',
+              'moderation.appeal-received',
+              'moderation.appeal-decided',
+              'conversation.external-message-received',
+            ].includes(command.type) ||
               !['ineligible', 'source-unavailable', 'recipient-changed', 'superseded'].includes(suppressionOutcome)))
         ) {
           throw new TransactionalEmailError('invalid-command')

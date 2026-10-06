@@ -7,7 +7,14 @@ import type { SuppressedRecipientBinding } from './catalog'
 type SuppressedAcceptance = Readonly<{
   command: Extract<
     TransactionalEmailCommand,
-    { type: 'moderation.report-received' | 'conversation.external-message-received' }
+    {
+      type:
+        | 'moderation.report-received'
+        | 'moderation.report-decided'
+        | 'moderation.appeal-received'
+        | 'moderation.appeal-decided'
+        | 'conversation.external-message-received'
+    }
   >
   recipientDigest: string
   acceptedAt: string
@@ -225,7 +232,11 @@ export function openStorageCapability(transactionID: number | string, worker?: W
 export function openSuppressedAcceptanceCapability(transactionID: number | string, input: SuppressedAcceptance) {
   const command = validateCommand(input.command)
   if (
-    (command.type !== 'moderation.report-received' && command.type !== 'conversation.external-message-received') ||
+    (command.type !== 'moderation.report-received' &&
+      command.type !== 'moderation.report-decided' &&
+      command.type !== 'moderation.appeal-received' &&
+      command.type !== 'moderation.appeal-decided' &&
+      command.type !== 'conversation.external-message-received') ||
     !['ineligible', 'source-unavailable', 'recipient-changed', 'superseded'].includes(input.outcomeCode) ||
     !/^[A-Za-z0-9_-]{1,128}:[a-f0-9]{64}$/.test(input.recipientDigest) ||
     !Number.isFinite(Date.parse(input.acceptedAt))

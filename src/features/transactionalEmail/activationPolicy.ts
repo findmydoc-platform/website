@@ -59,6 +59,17 @@ const preflightSchema = z.strictObject({
     webhook: reference,
     tracking: reference,
   }),
+  // Expected Ops-owned configuration only; hosted convergence belongs to the release workflow.
+  nativeMailSuppression: z
+    .strictObject({
+      instance: z.literal('production'),
+      projectRef: z.string().regex(/^[a-z]{20}$/),
+      opsRevision: z.string().regex(/^[a-f0-9]{40}$/),
+      declarationSha256: z.string().regex(/^[a-f0-9]{64}$/),
+      enabled: z.literal(true),
+      hookFunction: z.literal('auth_mail_suppression.send_email_v1'),
+    })
+    .optional(),
 })
 const recordFields = {
   commandType: z.enum(commandTypes),
@@ -104,6 +115,7 @@ function parseActivationRegistry(input: unknown): z.infer<typeof registrySchema>
   if (new Set(cutovers).size !== cutovers.length) unavailable()
   for (const preflight of preflights) {
     if (
+      (preflight.environment !== 'production' && preflight.nativeMailSuppression !== undefined) ||
       preflight.registryVersion !== registry.version ||
       new Set(preflight.webhookEvents).size !== webhookEvents.length ||
       new Set(preflight.credentials.previousDigestKeys.map(({ version }) => version)).size !==
@@ -139,11 +151,15 @@ function parseActivationRegistry(input: unknown): z.infer<typeof registrySchema>
       unavailable()
   }
   for (const record of records) {
+    const preflight = preflights.find(
+      (entry) => entry.environment === record.environment && entry.version === record.preflightVersion,
+    )
     if (
       record.registryVersion !== registry.version ||
-      !preflights.some(
-        (preflight) => preflight.environment === record.environment && preflight.version === record.preflightVersion,
-      )
+      !preflight ||
+      (record.environment === 'production' &&
+        record.commandType.startsWith('auth.') &&
+        !preflight.nativeMailSuppression)
     )
       unavailable()
   }

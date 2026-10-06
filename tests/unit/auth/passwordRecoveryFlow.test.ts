@@ -432,19 +432,12 @@ describe('recovery from Auth request through the real static catalog and shared 
       vi.stubEnv('VERCEL_ENV', environment)
       vi.stubEnv('DEPLOYMENT_ENV', environment)
       vi.stubEnv('AUTH_RECOVERY_CORRELATION_KEYS_JSON', '')
-      if (environment === 'preview') {
-        await expect(requestPasswordRecovery(store.req, { email, context: store.context })).rejects.toThrow(
-          'environment-unavailable',
-        )
-        await expect(
-          prepareCommittedRecoveries(store.req, { deadline: start + 30000, now: store.now }),
-        ).rejects.toThrow('environment-unavailable')
-      } else {
-        await expect(requestPasswordRecovery(store.req, { email, context: store.context })).resolves.toBeUndefined()
-        await expect(
-          prepareCommittedRecoveries(store.req, { deadline: start + 30000, now: store.now }),
-        ).resolves.toBeUndefined()
-      }
+      await expect(requestPasswordRecovery(store.req, { email, context: store.context })).rejects.toThrow(
+        'environment-unavailable',
+      )
+      await expect(prepareCommittedRecoveries(store.req, { deadline: start + 30000, now: store.now })).rejects.toThrow(
+        'environment-unavailable',
+      )
       expect(store.rows.authActions!.size).toBe(0)
       expect(store.rows.recoveryRequestEvents!.size).toBe(0)
       expect(store.rows.transactionalEmailOutbox!.size).toBe(0)

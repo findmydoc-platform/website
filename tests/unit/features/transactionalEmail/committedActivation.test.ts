@@ -43,6 +43,121 @@ const targetIdentity = ({
 }) => ({ projectId, routeId, routeSlug, teamId })
 
 describe('committed transactional email activation', () => {
+  it('rejects Production auth declarations without the expected native-mail suppression identity', () => {
+    const incomplete = structuredClone(activationRegistry)
+    const production = incomplete.preflights.find(({ environment }) => environment === 'production')!
+    Reflect.deleteProperty(production, 'nativeMailSuppression')
+
+    expect(() =>
+      isTransactionalEmailCommandActivationDeclared('production', 'auth.email-verification', incomplete),
+    ).toThrow('environment-unavailable')
+  })
+
+  it.each(['release', 'preflightVersion', 'registryVersion'] as const)(
+    'rejects an incomplete Production auth record without %s',
+    (field) => {
+      const incomplete = structuredClone(activationRegistry)
+      const record = incomplete.records.find(
+        ({ environment, commandType }) => environment === 'production' && commandType === 'auth.invitation',
+      )!
+      Reflect.deleteProperty(record, field)
+      expect(() => isTransactionalEmailCommandActivationDeclared('production', 'auth.invitation', incomplete)).toThrow(
+        'environment-unavailable',
+      )
+    },
+  )
+
+  it.each(['duplicate', 'reused release', 'stale preflight', 'stale registry'] as const)(
+    'rejects %s Production auth declarations',
+    (drift) => {
+      const invalid = structuredClone(activationRegistry)
+      const record = invalid.records.find(
+        ({ environment, commandType }) => environment === 'production' && commandType === 'auth.invitation',
+      )!
+      if (drift === 'duplicate') invalid.records.push({ ...record })
+      else if (drift === 'reused release') record.release!.onePath = 'website-pr-2040'
+      else if (drift === 'stale preflight') record.preflightVersion = 'production-preflight-v1'
+      else record.registryVersion = 'activation-v0'
+      expect(() => isTransactionalEmailCommandActivationDeclared('production', 'auth.invitation', invalid)).toThrow(
+        'environment-unavailable',
+      )
+    },
+  )
+
+  it.each(['instance', 'projectRef', 'opsRevision', 'declarationSha256', 'enabled', 'hookFunction'] as const)(
+    'rejects missing expected suppression %s',
+    (field) => {
+      const incomplete = structuredClone(activationRegistry)
+      const production = incomplete.preflights.find(({ environment }) => environment === 'production')!
+      Reflect.deleteProperty(production.nativeMailSuppression!, field)
+      expect(() =>
+        isTransactionalEmailCommandActivationDeclared('production', 'auth.password-recovery', incomplete),
+      ).toThrow('environment-unavailable')
+    },
+  )
+
+  it.each([
+    ['instance', 'staging'],
+    ['projectRef', 'missing'],
+    ['opsRevision', 'main'],
+    ['declarationSha256', 'unverified'],
+    ['enabled', false],
+    ['hookFunction', 'public.send_email'],
+  ] as const)('rejects inconsistent expected suppression %s', (field, value) => {
+    const invalid = structuredClone(activationRegistry)
+    const production = invalid.preflights.find(({ environment }) => environment === 'production')!
+    Reflect.set(production.nativeMailSuppression!, field, value)
+    expect(() =>
+      isTransactionalEmailCommandActivationDeclared('production', 'auth.email-verification', invalid),
+    ).toThrow('environment-unavailable')
+  })
+
+  it('does not inherit a missing Production auth declaration from Preview', () => {
+    const incomplete = structuredClone(activationRegistry)
+    incomplete.records = incomplete.records.filter(
+      ({ environment, commandType }) => environment !== 'production' || commandType !== 'auth.password-recovery',
+    )
+    expect(isTransactionalEmailCommandActivationDeclared('production', 'auth.password-recovery', incomplete)).toBe(
+      false,
+    )
+    expect(isTransactionalEmailCommandActivationDeclared('preview', 'auth.password-recovery', incomplete)).toBe(true)
+  })
+
+  it('preserves every existing Preview record and the Production clinic registration declaration', () => {
+    expect(activationRegistry.records.filter(({ environment }) => environment === 'preview')).toEqual(
+      ['clinic.registration-received', 'auth.email-verification', 'auth.invitation', 'auth.password-recovery'].map(
+        (commandType) => ({
+          commandType,
+          registryVersion: 'activation-v1',
+          preflightVersion: 'preview-preflight-v1',
+          environment: 'preview',
+        }),
+      ),
+    )
+    expect(
+      activationRegistry.records.find(
+        ({ environment, commandType }) =>
+          environment === 'production' && commandType === 'clinic.registration-received',
+      ),
+    ).toEqual({
+      commandType: 'clinic.registration-received',
+      registryVersion: 'activation-v1',
+      preflightVersion: 'production-preflight-v2',
+      environment: 'production',
+      release: { onePath: 'website-pr-1943' },
+    })
+    expect(
+      activationRegistry.preflights.find(({ environment }) => environment === 'production')?.nativeMailSuppression,
+    ).toEqual({
+      instance: 'production',
+      projectRef: 'dnrtpjoxtiuqqsqpknwd',
+      opsRevision: 'f3deafd54970e4fad48a1e59cc24e39e0b4c8b3f',
+      declarationSha256: '34efccda94fcf87f1ad74365a308266c572f92c76424e779b6bc31e70377283b',
+      enabled: true,
+      hookFunction: 'auth_mail_suppression.send_email_v1',
+    })
+  })
+
   it('joins each hosted target, lock, preflight, and credential fingerprint', () => {
     expect(lettermintRegistry.targets.map(({ environment }) => environment)).toEqual(hostedEnvironments)
     expect(targetLocks.targets.map(({ environment }) => environment)).toEqual(hostedEnvironments)
@@ -144,7 +259,7 @@ describe('committed transactional email activation', () => {
     }
   })
 
-  it('activates the reviewed auth commands only in Preview and preserves clinic registration in both environments', () => {
+  it('declares the reviewed auth commands and preserves clinic registration in both environments', () => {
     const previewCommands = new Set([
       'auth.email-verification',
       'auth.invitation',
@@ -157,12 +272,23 @@ describe('committed transactional email activation', () => {
         previewCommands.has(command),
       )
       expect(isTransactionalEmailCommandActivationDeclared('production', command, activationRegistry)).toBe(
-        command === 'clinic.registration-received',
+        previewCommands.has(command),
       )
     }
 
     expect(activationRegistry.records.find(({ environment }) => environment === 'production')?.release).toEqual({
       onePath: 'website-pr-1943',
     })
+
+    expect(
+      activationRegistry.records
+        .filter(({ environment }) => environment === 'production')
+        .map(({ commandType, release }) => [commandType, release?.onePath]),
+    ).toEqual([
+      ['clinic.registration-received', 'website-pr-1943'],
+      ['auth.email-verification', 'website-pr-2040'],
+      ['auth.invitation', 'website-pr-2043'],
+      ['auth.password-recovery', 'website-pr-2041'],
+    ])
   })
 })

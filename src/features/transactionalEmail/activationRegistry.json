@@ -60,6 +60,14 @@
       "environment": "production",
       "version": "production-preflight-v2",
       "registryVersion": "activation-v1",
+      "nativeMailSuppression": {
+        "instance": "production",
+        "projectRef": "dnrtpjoxtiuqqsqpknwd",
+        "opsRevision": "f3deafd54970e4fad48a1e59cc24e39e0b4c8b3f",
+        "declarationSha256": "34efccda94fcf87f1ad74365a308266c572f92c76424e779b6bc31e70377283b",
+        "enabled": true,
+        "hookFunction": "auth_mail_suppression.send_email_v1"
+      },
       "target": {
         "teamId": "01a0da1e-cf71-7133-8495-9c11a0f4ec1d",
         "projectId": "01a0da21-7c43-73dc-bf11-2e73fa8c3c9a",
@@ -143,6 +151,33 @@
       "environment": "production",
       "release": {
         "onePath": "website-pr-1943"
+      }
+    },
+    {
+      "commandType": "auth.email-verification",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "production-preflight-v2",
+      "environment": "production",
+      "release": {
+        "onePath": "website-pr-2040"
+      }
+    },
+    {
+      "commandType": "auth.invitation",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "production-preflight-v2",
+      "environment": "production",
+      "release": {
+        "onePath": "website-pr-2043"
+      }
+    },
+    {
+      "commandType": "auth.password-recovery",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "production-preflight-v2",
+      "environment": "production",
+      "release": {
+        "onePath": "website-pr-2041"
       }
     }
   ]

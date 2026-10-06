@@ -77,6 +77,18 @@ export function createActivationFixture(
     environment,
     version: `${environment}-preflight-v1`,
     registryVersion: 'activation-v1',
+    ...(environment === 'production'
+      ? {
+          nativeMailSuppression: {
+            instance: 'production',
+            projectRef: 'abcdefghijklmnopqrst',
+            opsRevision: '1'.repeat(40),
+            declarationSha256: '2'.repeat(64),
+            enabled: true,
+            hookFunction: 'auth_mail_suppression.send_email_v1',
+          },
+        }
+      : {}),
     target: {
       teamId: target.teamId,
       projectId: target.projectId,

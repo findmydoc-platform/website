@@ -167,6 +167,31 @@ describe('conversation notification command preparation', () => {
     },
   )
 
+  it('accepts an authorized clinic notification as terminally ineligible without inventing a recipient address', async () => {
+    const { commands, records, operations } = fixture()
+    records.patients.email = ''
+    await expect(commands.accept(command)).resolves.toMatchObject({ operationId: '7', deduplicated: false })
+    expect(operations).toHaveLength(1)
+    expect(operations[0]).toMatchObject({ recipientAddress: null, suppressionOutcome: 'ineligible' })
+  })
+
+  it.each([null, 'patients:61', 'clinicStaff:10'])(
+    'denies terminal acceptance to %s before recipient eligibility is considered',
+    async (actor) => {
+      const { commands, records, operations } = fixture(actor)
+      records.patients.email = ''
+      await expect(commands.accept(command)).rejects.toMatchObject({ code: 'access-denied' })
+      expect(operations).toEqual([])
+    },
+  )
+
+  it('does not accept an unknown message as a terminal operation', async () => {
+    const { commands, operations, unavailable } = fixture()
+    unavailable.add('inquiryMessages')
+    await expect(commands.accept(command)).rejects.toMatchObject({ code: 'source-missing' })
+    expect(operations).toEqual([])
+  })
+
   it('suppresses an accepted message when the current patient no longer has an email address', async () => {
     const { commands, operations, catalog, records } = fixture()
     await commands.accept(command)

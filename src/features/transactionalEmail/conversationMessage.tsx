@@ -223,9 +223,42 @@ export function createConversationMessageCatalogEntry(
   return {
     isRecipientAllowed: () => true,
     async authorizeAndResolve(command, actor) {
+      const message = await available(() =>
+        req.payload.findByID({
+          collection: 'inquiryMessages',
+          id: command.messageId,
+          depth: 0,
+          overrideAccess: true,
+          req,
+          select: {
+            authorKind: true,
+            authorClinicStaff: true,
+            inquiry: true,
+            conversation: true,
+            clinic: true,
+            patient: true,
+          },
+        }),
+      )
+      if (!message) throw new TransactionalEmailError('source-missing')
+      const authorId = relationId(message.authorClinicStaff)
+      if (message.authorKind !== 'clinic' || authorId === null || actor !== `clinicStaff:${authorId}`)
+        throw new TransactionalEmailError('access-denied')
       const decision = await revalidate(command, actor)
-      if (decision.status !== 'eligible') throw new TransactionalEmailError('source-missing')
-      return decision.recipient
+      if (decision.status === 'eligible') return decision.recipient
+      return {
+        status: 'suppressed',
+        outcomeCode: decision.outcomeCode,
+        binding: JSON.stringify([
+          'conversation-message-ineligible-v1',
+          message.id,
+          relationId(message.inquiry),
+          relationId(message.conversation),
+          relationId(message.clinic),
+          relationId(message.patient),
+          authorId,
+        ]),
+      }
     },
     revalidate,
   }

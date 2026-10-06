@@ -946,7 +946,8 @@ export const submitInquiryModerationAppeal = async (
   if (!parsed.success) throw new InquiryModerationServiceError('invalid-input', 'The appeal input is invalid.')
   const input = parsed.data
   const initialParticipant = await resolveReporter(req)
-  await runCommandTransaction(req, async () => {
+  const acceptance = selectTransactionalEmailCommandAcceptance('moderation.appeal-received')
+  const submit = async (req: PayloadRequest, commands?: TransactionalEmailCommands) => {
     const participant = await resolveReporter(req)
     if (participant.key !== initialParticipant.key) {
       throw new InquiryModerationServiceError('access-denied', 'The appeal actor changed.')
@@ -962,7 +963,7 @@ export const submitInquiryModerationAppeal = async (
     ) {
       throw new InquiryModerationServiceError('invalid-state', 'An appeal is not available for this case.')
     }
-    await updateCaseAndCreateEvent(
+    const updated = await updateCaseAndCreateEvent(
       req,
       moderationCase,
       { id: participant.id, kind: participant.kind },
@@ -978,7 +979,49 @@ export const submitInquiryModerationAppeal = async (
         status: 'appealed',
       },
     )
-  })
+    if (commands) {
+      const event = await findOne(req, 'inquiryModerationEvents', {
+        and: [
+          { moderationCase: { equals: updated.id } },
+          { sequence: { equals: updated.eventSequence } },
+          { eventType: { equals: 'appeal-submitted' } },
+        ],
+      })
+      if (!event) throw new InquiryModerationServiceError('unavailable', 'The appeal event is unavailable.')
+      await commands.accept({
+        type: 'moderation.appeal-received',
+        moderationEventId: Number(event.id),
+        recipientSlot: 'appellant',
+      })
+    }
+  }
+  const lockKey = `moderation-appeal:${input.caseId}`
+  if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => submit(req), lockKey)
+  else {
+    let domainError: InquiryModerationServiceError | undefined
+    try {
+      await acceptance.run(req, async (transactionReq, commands) => {
+        domainError = undefined
+        transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+        try {
+          const releaseLock = await acquireInquiryCommandLock(transactionReq, lockKey)
+          await submit(transactionReq, commands)
+          await releaseLock()
+        } catch (error) {
+          if (error instanceof InquiryModerationServiceError) domainError = error
+          throw error
+        }
+      })
+    } catch (error) {
+      if (domainError) throw domainError
+      if (error instanceof TransactionalEmailError)
+        throw new InquiryModerationServiceError(
+          error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
+          'The appeal could not be committed.',
+        )
+      throw error
+    }
+  }
   return { submitted: true }
 }
 

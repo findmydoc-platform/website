@@ -14,6 +14,7 @@ import { createPatientVerificationCatalogEntry } from './patientVerification'
 import { findClinicInvitationPrincipal } from '@/auth/actions/clinicInvitationPrincipal'
 import { createConversationMessageCatalogEntry } from './conversationMessage'
 import { createModerationReportReceivedCatalogEntry } from './moderationReportReceived'
+import { createModerationReportDecidedCatalogEntry } from './moderationReportDecided'
 
 export function bindPayloadCommandCatalog(req: PayloadRequest, options: { recoverySignal?: AbortSignal } = {}) {
   const environment = resolveTransactionalEmailEnvironment()
@@ -21,6 +22,7 @@ export function bindPayloadCommandCatalog(req: PayloadRequest, options: { recove
     ...createCommandCatalog({ findClinicApplication: (id) => findClinicApplication(req, id) }),
     'conversation.external-message-received': createConversationMessageCatalogEntry(req, environment),
     'moderation.report-received': createModerationReportReceivedCatalogEntry(req),
+    'moderation.report-decided': createModerationReportDecidedCatalogEntry(req),
     'auth.email-verification': createPatientVerificationCatalogEntry({
       environment,
       verificationKeys: () => resolveVerificationKeys(environment),

@@ -6,16 +6,17 @@ Serial database copies reduce integration execution by a median 21 minutes 24 se
 
 Small measured gains stay in this record. Repeated observations, single comparisons and unmeasured opportunities have different evidence strength; they are not presented as equally established savings.
 
-| Broad approach | Repeated measurement | Evidence strength |
+| Broad approach | Measured effect | Evidence strength |
 | --- | --- | --- |
+| Run integration tests on four parallel runners | Complete job feedback 27:15 to 14:28, saving 12:47; runner consumption increases 20:07 | Parallel feedback improvement is demonstrated in the complete comparison and corroborated by the later shard diagnostics. Exact timings have different measurement boundaries and are kept separate. |
 | Prepare baseline data once and copy a fresh database per test file | Median 21:24 saved per serial integration execution, about 21.4 runner minutes | Three complete pairs, unchanged 98 files, 877 passing cases and per-file coverage. Shared dependency installation is excluded. |
 | Reuse compiled modules with stable compiler inputs | Median 32 seconds in the first three pairs and 23 seconds in the second three pairs | Reuse and faster compilation repeat in both same-runner diagnoses. Five of six complete fresh-runner pairs save time; one consumes 18 seconds more. |
 | Reuse package and compiler caches together | Median 24 seconds saved per complete job, 0.40 runner minutes | All three pairs save time, 23–81 seconds, with actual package and module reuse. Initial population adds a median 50 seconds. |
 | Reuse downloaded pnpm packages | Median 3 seconds saved per complete job, 0.05 runner minutes | Two of three pairs save 3 and 4 seconds; one saves zero. Package reuse is proven in every exact and fallback restore. The small complete-job gain is recorded, but these three pairs on heterogeneous runners do not establish that it is reliably distinguishable from runner variation. |
 
-Starting Build alongside independent checks saves 4:40 in one comparison. Four-way integration parallelism saves 12:47 of feedback time in one complete comparison but adds 20:07 runner minutes. Those exact gains need repeated complete comparisons before inclusion among repeatedly established savings. Build-change classification is verified, but its time saving is not measured.
+Starting Build alongside independent checks saves 4:40 in one comparison; that precise gain still needs repetition. Build-change classification is verified, but its time saving is not measured. Parallel integration execution is an established feedback improvement and is included independently of database copies.
 
-The remaining experiments are database copies with parallel tests, affected-test selection with full scheduled coverage, reduced cache transfer, reuse of compatible build output, and reduced TypeScript or page-generation work. Turbopack remains conditional on the known compatibility issue. No time estimate is assigned to these opportunities. Cache medians, database savings and scheduling gains must not be added without a combined comparison.
+The remaining optimization opportunities are affected-test selection with full scheduled coverage, reduced cache transfer, reuse of compatible build output, and reduced TypeScript or page-generation work. Database copies and parallel execution each have their own measured effect. They can be adopted independently or together; a combined experiment is optional and measures interactions and the total effect. It is not a prerequisite for accepting either individual result. Turbopack remains conditional on the known compatibility issue. No time estimate is assigned to these opportunities. Cache medians, database savings and scheduling gains must not be added without a combined comparison.
 
 ## Measured results
 

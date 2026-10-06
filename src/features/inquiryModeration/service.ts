@@ -3,6 +3,9 @@ import { createHash } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 
 import { acquireInquiryCommandLock } from '@/features/inquiryAggregate/commandLock'
+import type { TransactionalEmailCommands } from '@/features/transactionalEmail'
+import { selectTransactionalEmailCommandAcceptance } from '@/features/transactionalEmail/payloadIntegration'
+import { TransactionalEmailError } from '@/features/transactionalEmail/errors'
 import type {
   InquiryModerationAppealDecisionInput,
   InquiryModerationAppealInput,
@@ -304,69 +307,73 @@ export const createInquiryModerationReport = async (
   if (initialReplay) return { received: true, reportId: String(initialReplay.id) }
   const canonicalTargetKey = String(payloadId(normalizedTargetId(input.targetType, input.targetId)))
 
-  return runCommandTransaction(
-    req,
-    async () => {
-      const reporter = await resolveReporter(req)
-      if (reporter.key !== initialReporter.key) {
-        throw new InquiryModerationServiceError('access-denied', 'The report actor changed.')
-      }
-      const replay = await readReportReplay(req, reporter, input)
-      if (replay) return { received: true, reportId: String(replay.id) }
+  const acceptance = selectTransactionalEmailCommandAcceptance('moderation.report-received')
+  const lockKey = `moderation-report:${initialReporter.key}:${input.targetType}:${canonicalTargetKey}`
+  const submit = async (
+    req: PayloadRequest,
+    commands?: TransactionalEmailCommands,
+  ): Promise<InquiryModerationReportReceiptDTO> => {
+    const reporter = await resolveReporter(req)
+    if (reporter.key !== initialReporter.key) {
+      throw new InquiryModerationServiceError('access-denied', 'The report actor changed.')
+    }
+    const replay = await readReportReplay(req, reporter, input)
+    if (replay) return { received: true, reportId: String(replay.id) }
 
-      const scope = await readInquiryScope(req, reporter, input.inquiryId)
-      const target = await resolveReportTarget(req, reporter, scope, input)
-      const activeDuplicate = await findOne(req, 'inquiryModerationCases', {
-        and: [
-          { reporterKey: { equals: reporter.key } },
-          { targetType: { equals: input.targetType } },
-          { targetId: { equals: String(target.targetId) } },
-          { status: { in: ['open', 'decided', 'appealed'] } },
-        ],
-      })
-      if (activeDuplicate) {
-        throw new InquiryModerationServiceError('invalid-state', 'An active report already covers this target.')
-      }
-      const recentReports = await findMany(req, 'inquiryModerationCases', {
-        and: [
-          { reporterKey: { equals: reporter.key } },
-          { createdAt: { greater_than_equal: new Date(Date.now() - REPORT_WINDOW_MS).toISOString() } },
-        ],
-      })
-      if (recentReports.length >= REPORT_WINDOW_LIMIT) {
-        throw new InquiryModerationServiceError('rate-limited', 'Too many reports were submitted in this window.')
-      }
-      const retentionPolicy = await resolveActiveInquiryRetentionPolicy(req)
-      const moderationCase = asRecord(
-        await req.payload.create({
-          collection: 'inquiryModerationCases' as never,
-          context: { inquiryModerationCommand: true },
-          data: {
-            category: input.category,
-            clinic: scope.clinicId,
-            conversation: scope.conversation.id,
-            ...(typeof input.description === 'string' ? { description: input.description } : {}),
-            eventSequence: 1,
-            idempotencyKey: input.idempotencyKey,
-            inquiry: scope.inquiry.id,
-            ...(scope.patientId === null ? {} : { patient: scope.patientId }),
-            reporterClinicStaff: reporter.kind === 'clinic' ? reporter.id : null,
-            reporterKey: reporter.key,
-            reporterKind: reporter.kind,
-            reporterPatient: reporter.kind === 'patient' ? reporter.id : null,
-            requestHash: reportRequestHash(input),
-            retentionPolicyVersion: retentionPolicy.version,
-            status: 'open',
-            ...(target.targetAttachment ? { targetAttachment: target.targetAttachment } : {}),
-            targetId: String(target.targetId),
-            ...(target.targetMessage ? { targetMessage: target.targetMessage } : {}),
-            targetType: input.targetType,
-          },
-          depth: 0,
-          overrideAccess: true,
-          req,
-        } as never),
-      )
+    const scope = await readInquiryScope(req, reporter, input.inquiryId)
+    const target = await resolveReportTarget(req, reporter, scope, input)
+    const activeDuplicate = await findOne(req, 'inquiryModerationCases', {
+      and: [
+        { reporterKey: { equals: reporter.key } },
+        { targetType: { equals: input.targetType } },
+        { targetId: { equals: String(target.targetId) } },
+        { status: { in: ['open', 'decided', 'appealed'] } },
+      ],
+    })
+    if (activeDuplicate) {
+      throw new InquiryModerationServiceError('invalid-state', 'An active report already covers this target.')
+    }
+    const recentReports = await findMany(req, 'inquiryModerationCases', {
+      and: [
+        { reporterKey: { equals: reporter.key } },
+        { createdAt: { greater_than_equal: new Date(Date.now() - REPORT_WINDOW_MS).toISOString() } },
+      ],
+    })
+    if (recentReports.length >= REPORT_WINDOW_LIMIT) {
+      throw new InquiryModerationServiceError('rate-limited', 'Too many reports were submitted in this window.')
+    }
+    const retentionPolicy = await resolveActiveInquiryRetentionPolicy(req)
+    const moderationCase = asRecord(
+      await req.payload.create({
+        collection: 'inquiryModerationCases' as never,
+        context: { inquiryModerationCommand: true },
+        data: {
+          category: input.category,
+          clinic: scope.clinicId,
+          conversation: scope.conversation.id,
+          ...(typeof input.description === 'string' ? { description: input.description } : {}),
+          eventSequence: 1,
+          idempotencyKey: input.idempotencyKey,
+          inquiry: scope.inquiry.id,
+          ...(scope.patientId === null ? {} : { patient: scope.patientId }),
+          reporterClinicStaff: reporter.kind === 'clinic' ? reporter.id : null,
+          reporterKey: reporter.key,
+          reporterKind: reporter.kind,
+          reporterPatient: reporter.kind === 'patient' ? reporter.id : null,
+          requestHash: reportRequestHash(input),
+          retentionPolicyVersion: retentionPolicy.version,
+          status: 'open',
+          ...(target.targetAttachment ? { targetAttachment: target.targetAttachment } : {}),
+          targetId: String(target.targetId),
+          ...(target.targetMessage ? { targetMessage: target.targetMessage } : {}),
+          targetType: input.targetType,
+        },
+        depth: 0,
+        overrideAccess: true,
+        req,
+      } as never),
+    )
+    const event = asRecord(
       await req.payload.create({
         collection: 'inquiryModerationEvents' as never,
         context: { inquiryModerationCommand: true },
@@ -386,11 +393,41 @@ export const createInquiryModerationReport = async (
         depth: 0,
         overrideAccess: true,
         req,
-      } as never)
-      return { received: true, reportId: String(moderationCase.id) }
-    },
-    `moderation-report:${initialReporter.key}:${input.targetType}:${canonicalTargetKey}`,
-  )
+      } as never),
+    )
+    if (commands)
+      await commands.accept({
+        type: 'moderation.report-received',
+        moderationEventId: Number(event.id),
+        recipientSlot: 'reporter',
+      })
+    return { received: true, reportId: String(moderationCase.id) }
+  }
+  if (acceptance.kind === 'inactive') return runCommandTransaction(req, () => submit(req), lockKey)
+  let domainError: InquiryModerationServiceError | undefined
+  try {
+    return await acceptance.run(req, async (transactionReq, commands) => {
+      domainError = undefined
+      transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+      try {
+        const releaseLock = await acquireInquiryCommandLock(transactionReq, lockKey)
+        const receipt = await submit(transactionReq, commands)
+        await releaseLock()
+        return receipt
+      } catch (error) {
+        if (error instanceof InquiryModerationServiceError) domainError = error
+        throw error
+      }
+    })
+  } catch (error) {
+    if (domainError) throw domainError
+    if (error instanceof TransactionalEmailError)
+      throw new InquiryModerationServiceError(
+        error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
+        'The report could not be committed.',
+      )
+    throw error
+  }
 }
 
 type Moderator = { id: RelationId; key: string }

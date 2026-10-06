@@ -4,6 +4,9 @@ import {
   consumeEventAppend,
   requireStorageCapability,
   storageWorkerAuthority,
+  storageSuppressedAcceptance,
+  consumeSuppressedAcceptanceCreate,
+  consumeSuppressedAcceptanceEvent,
 } from './capability'
 import { needsScrubbing, outgoingTerminalStates, transientFields } from './retentionPolicy'
 import { commandOperationReference, validateCommand } from './commands'
@@ -163,13 +166,16 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
         if (field in data && data[field] !== originalDoc[field]) throw new TransactionalEmailError('access-denied')
       }
     }
-  } else if (
-    merged.state !== 'queued' ||
-    merged.preparedProviderRequest != null ||
-    providerBindingFields.some((field) => merged[field] != null) ||
-    merged.providerRecipientDigest != null
-  )
-    throw new TransactionalEmailError('access-denied')
+  } else {
+    if (storageSuppressedAcceptance(req)) consumeSuppressedAcceptanceCreate(req, merged)
+    else if (merged.state !== 'queued') throw new TransactionalEmailError('access-denied')
+    if (
+      merged.preparedProviderRequest != null ||
+      providerBindingFields.some((field) => merged[field] != null) ||
+      merged.providerRecipientDigest != null
+    )
+      throw new TransactionalEmailError('access-denied')
+  }
   if (
     terminal &&
     ([
@@ -194,7 +200,8 @@ export const guardOutboxWrite: CollectionBeforeChangeHook = async ({ data, origi
 export const guardEventWrite: CollectionBeforeChangeHook = async ({ data, operation, req }) => {
   await requireStorageCapability(req)
   if (operation !== 'create') throw new TransactionalEmailError('access-denied')
-  if (storageWorkerAuthority(req) || data.source !== 'command') {
+  if (storageSuppressedAcceptance(req)) consumeSuppressedAcceptanceEvent(req, data)
+  else if (storageWorkerAuthority(req) || data.source !== 'command') {
     if (data.source !== (storageWorkerAuthority(req)?.kind === 'provider' ? 'provider' : 'worker'))
       throw new TransactionalEmailError('access-denied')
     consumeEventAppend(req, data.outbox, data.sequence)

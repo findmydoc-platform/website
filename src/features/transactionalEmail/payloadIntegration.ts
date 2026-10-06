@@ -8,7 +8,12 @@ import {
 import type { CommandType } from './commands'
 import type { CommandCatalog } from './catalog'
 import { bindPayloadCommandCatalog } from './payloadCatalog'
-import { openStorageCapability } from './capability'
+import {
+  openStorageCapability,
+  openSuppressedAcceptanceCapability,
+  authorizeSuppressedAcceptanceEvents,
+} from './capability'
+import { transientFields } from './retentionPolicy'
 import {
   resolveTransactionalEmailEnvironment,
   selectTransactionalEmailAcceptanceRuntime,
@@ -50,33 +55,86 @@ async function withStorage<Result>(
         return result.docs[0] ?? null
       },
       async create(operation) {
-        const outbox = await req.payload.create({
-          collection: 'transactionalEmailOutbox',
-          req: internalReq,
-          overrideAccess: true,
-          depth: 0,
-          data: {
-            createdAt: operation.acceptedAt,
-            deliveryDeadline: operation.deliveryDeadline,
-            commandType: operation.command.type,
-            operationReference: operation.operationReference,
-            commandPayload: operation.command,
-            recipientAddress: operation.recipientAddress,
-            recipientDigest: operation.recipientDigest,
-            providerIdempotencyKey: operation.providerIdempotencyKey,
-            runtimeEnvironment: operation.runtimeEnvironment,
-            state: 'queued',
-            latestEventSequence: 1,
-          },
-        })
-        await req.payload.create({
-          collection: 'transactionalEmailEvents',
-          req: internalReq,
-          overrideAccess: true,
-          depth: 0,
-          data: { outbox: outbox.id, sequence: 1, type: 'command.accepted', source: 'command' },
-        })
-        return outbox
+        const suppressed = operation.suppressionOutcome
+        if (
+          suppressed &&
+          operation.command.type !== 'moderation.report-received' &&
+          operation.command.type !== 'conversation.external-message-received'
+        )
+          throw new TransactionalEmailError('invalid-command')
+        const terminalCapability =
+          suppressed &&
+          (operation.command.type === 'moderation.report-received' ||
+            operation.command.type === 'conversation.external-message-received')
+            ? openSuppressedAcceptanceCapability(transactionID, {
+                command: operation.command,
+                recipientDigest: operation.recipientDigest,
+                acceptedAt: operation.acceptedAt,
+                outcomeCode: suppressed,
+              })
+            : undefined
+        try {
+          const createReq = terminalCapability
+            ? await createLocalReq(
+                {
+                  context: terminalCapability.context,
+                  req: { transactionID: Promise.resolve(transactionID) },
+                },
+                req.payload,
+              )
+            : internalReq
+          const outbox = await req.payload.create({
+            collection: 'transactionalEmailOutbox',
+            req: createReq,
+            overrideAccess: true,
+            depth: 0,
+            data: {
+              createdAt: operation.acceptedAt,
+              deliveryDeadline: operation.deliveryDeadline,
+              commandType: operation.command.type,
+              operationReference: operation.operationReference,
+              commandPayload: operation.command,
+              recipientAddress: operation.recipientAddress,
+              recipientDigest: operation.recipientDigest,
+              providerIdempotencyKey: operation.providerIdempotencyKey,
+              runtimeEnvironment: operation.runtimeEnvironment,
+              state: suppressed ? 'suppressed' : 'queued',
+              latestEventSequence: suppressed ? 3 : 1,
+              ...(suppressed
+                ? {
+                    ...transientFields,
+                    attemptCount: 0,
+                    terminalAt: operation.acceptedAt,
+                    scrubbedAt: operation.acceptedAt,
+                  }
+                : {}),
+            },
+          })
+          if (suppressed) authorizeSuppressedAcceptanceEvents(createReq, outbox.id)
+          await req.payload.create({
+            collection: 'transactionalEmailEvents',
+            req: createReq,
+            overrideAccess: true,
+            depth: 0,
+            data: { outbox: outbox.id, sequence: 1, type: 'command.accepted', source: 'command' },
+          })
+          if (suppressed) {
+            for (const event of [
+              { sequence: 2, type: 'delivery.suppressed' as const, outcomeCode: suppressed },
+              { sequence: 3, type: 'payload.scrubbed' as const },
+            ])
+              await req.payload.create({
+                collection: 'transactionalEmailEvents',
+                req: createReq,
+                overrideAccess: true,
+                depth: 0,
+                data: { outbox: outbox.id, source: 'command', ...event },
+              })
+          }
+          return outbox
+        } finally {
+          terminalCapability?.close()
+        }
       },
     }
     return await work(storage)

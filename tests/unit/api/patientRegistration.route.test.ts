@@ -68,7 +68,7 @@ describe('patient registration through Auth, catalog, Outbox and offline deliver
       listUsers: vi.fn(async () => ({ data: { users: [user] }, error: null })),
       getUserById: vi.fn(async () => ({ data: { user }, error: null })),
       generateLink: vi.fn(async () => ({
-        data: { user, properties: { verification_type: 'magiclink', hashed_token: 'a'.repeat(64) } },
+        data: { user, properties: { verification_type: 'magiclink', hashed_token: 'a'.repeat(56) } },
         error: null,
       })),
       updateUserById: vi.fn(),
@@ -126,7 +126,7 @@ describe('patient registration through Auth, catalog, Outbox and offline deliver
     expect(callback.origin).toBe('https://example.test')
     expect([...callback.searchParams.entries()]).toEqual([
       ['authActionId', '1'],
-      ['token_hash', 'a'.repeat(64)],
+      ['token_hash', 'a'.repeat(56)],
       ['type', 'magiclink'],
     ])
     expect(message.text).toContain(callback.toString())

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { openWebsiteRecovery, confirmWebsiteRecovery } from '@/auth/actions/websiteRecoveryHttp'
 import { createClient } from '@/auth/utilities/supaBaseServer'
+import { supabaseEmailTokenHashSchema } from '@/auth/utilities/supabaseEmailTokenHash'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 import { InvalidPatientVerification, patientVerificationAuthority } from '@/auth/actions/patientVerificationCompletion'
 import {
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
       requestUrl.searchParams.get('type') !== 'magiclink' ||
       !/^[1-9]\d*$/.test(id) ||
       !Number.isSafeInteger(Number(id)) ||
-      !/^[a-f0-9]{64}$/.test(token) ||
+      !supabaseEmailTokenHashSchema.safeParse(token).success ||
       [...requestUrl.searchParams.keys()].some((key) => !['authActionId', 'token_hash', 'type'].includes(key)) ||
       ['authActionId', 'token_hash', 'type'].some((key) => requestUrl.searchParams.getAll(key).length !== 1)
     )

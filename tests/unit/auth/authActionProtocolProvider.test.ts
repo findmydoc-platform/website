@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { updateProtocolPassword, verifyProtocolUser } from '@/auth/actions/protocol/provider'
+import {
+  authenticateProtocolPassword,
+  updateProtocolPassword,
+  verifyProtocolUser,
+} from '@/auth/actions/protocol/provider'
 
 const subject = randomUUID()
 const token = 'offline-session'
@@ -18,6 +22,39 @@ afterEach(() => {
 })
 
 describe('auth-action ordinary Supabase boundary', () => {
+  it('authenticates a fresh password once without storing or returning refresh-token material', async () => {
+    fetchBoundary.mockResolvedValueOnce(
+      Response.json({ access_token: token, refresh_token: 'offline-refresh', user: { id: subject } }),
+    )
+    expect(await authenticateProtocolPassword('synthetic@example.invalid', password)).toEqual({
+      accessToken: token,
+      subject,
+    })
+    expect(fetchBoundary).toHaveBeenCalledOnce()
+    const [url, init] = fetchBoundary.mock.calls[0]!
+    expect(String(url)).toBe('https://auth.example.invalid/auth/v1/token?grant_type=password')
+    expect(init?.method).toBe('POST')
+    expect(init?.body).toBe(JSON.stringify({ email: 'synthetic@example.invalid', password }))
+    expect(new Headers(init?.headers).get('apikey')).toBe('offline-public-key')
+    expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+    expect(init?.cache).toBe('no-store')
+    expect(init?.signal).toBeInstanceOf(AbortSignal)
+  })
+
+  it.each(['rejected', 'malformed', 'lost'] as const)(
+    'fails closed without retrying %s password authentication',
+    async (condition) => {
+      if (condition === 'lost') fetchBoundary.mockRejectedValueOnce(new Error('Synthetic connection loss.'))
+      else
+        fetchBoundary.mockResolvedValueOnce(
+          condition === 'rejected'
+            ? Response.json({ message: password }, { status: 400 })
+            : Response.json({ access_token: token }),
+        )
+      await expect(authenticateProtocolPassword('synthetic@example.invalid', password)).rejects.toThrow()
+      expect(fetchBoundary).toHaveBeenCalledOnce()
+    },
+  )
   it('verifies current server authority using the supplied session and no stored client session', async () => {
     fetchBoundary.mockResolvedValueOnce(
       Response.json({ id: subject, email: 'synthetic@example.invalid', app_metadata: { user_type: 'clinic' } }),

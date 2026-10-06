@@ -34,7 +34,7 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
 const key = { version: 'offline-v1', secret: 'offline-only-verification-completion-key' } // pragma: allowlist secret
 const subject = '3525d8e2-0ff0-44cc-9f14-ad8a783a57dd'
 const origin = 'https://example.test'
-const token = 'a'.repeat(64)
+const token = 'a'.repeat(56)
 describe('patient verification at the callback HTTP boundary with offline Auth storage', () => {
   let storage: ReturnType<typeof createEmailCommandStorage>
   let user: User

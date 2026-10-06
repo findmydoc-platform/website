@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { NextResponse } from 'next/server'
 import { authActionEnvironments } from './contracts'
 import type { RecoveryKey } from './recoveryContext'
+import { supabaseEmailTokenHashSchema } from '@/auth/utilities/supabaseEmailTokenHash'
 
 export const WEBSITE_RECOVERY_COOKIE = 'findmydoc_website_recovery'
 export const recoveryFinish = {
@@ -24,10 +25,7 @@ const schema = z
     progressReady: z.boolean().optional(),
     progressInitializing: z.boolean().optional(),
     progressAttempt: z.number().int().nonnegative().max(100).optional(),
-    tokenHash: z
-      .string()
-      .regex(/^[a-f0-9]{64}$/)
-      .optional(),
+    tokenHash: supabaseEmailTokenHashSchema.optional(),
   })
   .strict()
 export type WebsiteRecoveryContext = z.infer<typeof schema>

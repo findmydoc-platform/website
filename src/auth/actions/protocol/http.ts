@@ -15,7 +15,8 @@ import {
 } from './credentials'
 import { bindProtocolReplay, type ProtocolOutcome } from './replay'
 import { bindProtocolPasswordCompletion } from './passwordCompletion'
-import { updateProtocolPassword, verifyProtocolUser } from './provider'
+import { authenticateProtocolPassword, updateProtocolPassword, verifyProtocolUser } from './provider'
+import { recordClinicInitialPasswordCompletion } from '@/auth/utilities/clinicAccountCompletion'
 
 const headers = { 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'no-referrer' }
 export function authActionProtocolResponse(outcome: ProtocolOutcome): Response {
@@ -107,6 +108,7 @@ export function bindAuthActionProtocol(
     now?: () => number
     verifyUser?: typeof verifyProtocolUser
     updatePassword?: typeof updateProtocolPassword
+    authenticatePassword?: typeof authenticateProtocolPassword
     recoveryKeys?: ReturnType<typeof resolveRecoveryKeys>
   },
 ) {
@@ -114,6 +116,7 @@ export function bindAuthActionProtocol(
   const now = options.now ?? Date.now
   const verifyUser = options.verifyUser ?? verifyProtocolUser
   const updatePassword = options.updatePassword ?? updateProtocolPassword
+  const authenticatePassword = options.authenticatePassword ?? authenticateProtocolPassword
   const replay = bindProtocolReplay(req, keys, now)
   const passwordCompletion = bindProtocolPasswordCompletion(req, keys.environment)
   function actions(flow: string) {
@@ -190,6 +193,22 @@ export function bindAuthActionProtocol(
         Date.parse(source.expiresAt) <= now()
       )
         return authActionProtocolResponse('invalid')
+      const completionFlow = reference.flow
+      const completionSubject = user.id
+      const completionEmail = user.email!
+      const completionActionId = source.id
+      const completionPassword = 'password' in parsed.data ? parsed.data.password : undefined
+      async function recordInitialCompletion() {
+        if (completionFlow !== 'clinic-invitation') return
+        if (typeof completionPassword !== 'string') throw new Error()
+        const session = await authenticatePassword(completionEmail, completionPassword)
+        if (session.subject !== completionSubject) throw new Error()
+        await recordClinicInitialPasswordCompletion(
+          req,
+          { authActionId: completionActionId, token: session.accessToken },
+          keys.environment,
+        )
+      }
       if (claim.kind === 'replay' && claim.outcome !== 'unavailable') {
         if (claim.outcome === 'confirmed' && source.state === 'confirmed') {
           await actionService.inspectDashboardAction({
@@ -211,6 +230,7 @@ export function bindAuthActionProtocol(
             email: user.email!,
             state: 'completed',
           })
+          await recordInitialCompletion()
           await passwordCompletion.releaseCompleted(source, user.id)
         } else if (claim.outcome !== 'invalid') return authActionProtocolResponse('invalid')
         return authActionProtocolResponse(claim.outcome)
@@ -240,7 +260,7 @@ export function bindAuthActionProtocol(
       if (!('password' in parsed.data) || typeof parsed.data.password !== 'string')
         return authActionProtocolResponse('invalid')
       const password = parsed.data.password
-      if (claim.kind === 'replay') {
+      if (claim.kind === 'replay' || (reference.flow === 'clinic-invitation' && source.state === 'completed')) {
         // A matching durable success may resume lifecycle work; an uncertain password call cannot resume execution.
         if (!(await passwordCompletion.succeeded(source, user.id))) return authActionProtocolResponse('unavailable')
         if (source.state === 'completed')
@@ -284,7 +304,7 @@ export function bindAuthActionProtocol(
         }
       }
       const completed =
-        source.state === 'completed' && claim.kind === 'replay'
+        source.state === 'completed'
           ? source
           : await actionService.inspectDashboardAction({
               id: source.id,
@@ -293,6 +313,7 @@ export function bindAuthActionProtocol(
               email: user.email!,
               to: 'completed',
             })
+      await recordInitialCompletion()
       await passwordCompletion.releaseCompleted(completed, user.id)
       if (claim.kind === 'owned') await claim.finish('completed')
       return authActionProtocolResponse('completed')

@@ -21,10 +21,11 @@ context, without introducing transaction-control exceptions.
 
 `recordClinicInitialPasswordCompletion` requires a completed identity-bound `clinic-invitation` plus server-verified
 current password authentication. It checks subject, normalized principal email, provider-owned clinic classification,
-staff synchronization, current lifecycle, and clinic participation. It is an internal command with no HTTP adapter.
-The later Website Auth integration must bind the invitation subject in #1986 and verify successful initial password
-completion before marking the action complete in #1995. Dashboard #160 owns the corresponding application protocol.
-The existing Dashboard completion route alone does not populate this record.
+staff synchronization, current lifecycle, approved application binding, and clinic participation. The existing Website
+Auth-action protocol calls this internal command after observing the password update and completing the bound action.
+It performs a fresh ordinary password login and records evidence before acknowledging Dashboard completion. The checked
+staff and tenant binding is revalidated after password verification and enforced by the protected write capability.
+No new public HTTP adapter is introduced. Recovery alone does not populate initial invitation evidence.
 
 The durable evidence survives the 42-day AuthAction retention sweep. Its observation timestamp records when Website
 verified and persisted the evidence. A password authentication timestamp establishes password usability at that time;

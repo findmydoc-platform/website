@@ -20,6 +20,7 @@ import {
   isPreviewGuardScannerPath,
   PREVIEW_GUARD_ACTIVE_REQUEST_HEADER,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
+  PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH,
   resolveDeploymentEnvironment,
 } from '@/features/previewGuard'
 import {
@@ -202,7 +203,25 @@ const previewApiError = (message: string, status: 401 | 503): NextResponse => {
 const handlePreviewApiRequest = async (request: NextRequest): Promise<NextResponse> => {
   const { pathname } = request.nextUrl
 
-  if (isPreviewGuardPatientRegistrationApiPath(pathname)) return nextWithGuardActiveHeader(request)
+  if (isPreviewGuardPatientRegistrationApiPath(pathname)) {
+    if (pathname !== PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH) return nextWithGuardActiveHeader(request)
+
+    const authorization = request.headers.get('authorization')
+    const accessToken = extractTokenFromHeader(request.headers)
+    if (
+      (authorization !== null && accessToken === undefined) ||
+      (authorization === null && !hasSupabaseSessionCookie(request))
+    ) {
+      return nextWithGuardActiveHeader(request)
+    }
+
+    const { unavailable, user } = await lookupPreviewUser(request, accessToken)
+    if (unavailable || !validateSupabaseUser(user) || !isAllowedPreviewUser(user)) {
+      return nextWithGuardActiveHeader(request)
+    }
+
+    return nextWithoutGuardHeaders(request)
+  }
 
   if (isPreviewGuardAnonymousApiPath(pathname) || isPreviewGuardEndpointAuthApiPath(pathname)) {
     return nextWithGuardActiveHeader(request)

@@ -49,3 +49,21 @@ export async function updateProtocolPassword(accessToken: string, password: stri
   if (!identity.success) throw new Error('Auth-action protocol unavailable.')
   return { data: { user: body as User }, error: null }
 }
+
+/** One ordinary password login. Its session exists only for server-verified initial completion evidence. */
+export async function authenticateProtocolPassword(email: string, password: string) {
+  const { url, key } = configuration()
+  const response = await fetch(new URL('/auth/v1/token?grant_type=password', url), {
+    method: 'POST',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(10_000),
+    headers: { apikey: key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  const body: unknown = await response.json()
+  const session = z
+    .object({ access_token: z.string().min(1).max(8192), user: z.object({ id: z.uuid() }) })
+    .safeParse(body)
+  if (!response.ok || !session.success) throw new Error('Auth-action protocol unavailable.')
+  return { accessToken: session.data.access_token, subject: session.data.user.id }
+}

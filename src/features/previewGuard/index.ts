@@ -21,6 +21,7 @@ const PREVIEW_GUARD_EXEMPT_PATHS = new Set([
   '/auth/invite/complete',
   '/auth/password/reset',
   '/auth/password/reset/complete',
+  '/auth/password/complete',
   '/login/patient',
   '/logout',
 ])
@@ -168,6 +169,10 @@ export const isPreviewGuardEndpointAuthApiPath = (pathname: string): boolean => 
     normalizedPath === '/api/mcp' ||
     normalizedPath === '/api/internal/transactional-email/lettermint/preview' ||
     normalizedPath === '/api/internal/transactional-email/lettermint/production' ||
+    normalizedPath === '/api/internal/auth-actions/v1/requestRecovery' ||
+    normalizedPath === '/api/internal/auth-actions/v1/validateAction' ||
+    normalizedPath === '/api/internal/auth-actions/v1/confirmAction' ||
+    normalizedPath === '/api/internal/auth-actions/v1/completeAction' ||
     normalizedPath === '/api/clinic-dashboard' ||
     normalizedPath.startsWith('/api/clinic-dashboard/')
   )

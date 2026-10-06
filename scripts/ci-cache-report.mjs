@@ -69,6 +69,25 @@ export function validateCacheReceipt(result, receipt) {
   return receipt
 }
 
+export function validateSupplementaryMeasurements(results, jobs) {
+  for (const [kind, variants] of [
+    ['pnpm', ['warm-fallback', 'lock-change']],
+    ['compiler', ['incremental']],
+  ]) {
+    for (const variant of variants) {
+      for (const round of [1, 2, 3]) {
+        const matches = results.filter((r) => r.kind === kind && r.variant === variant && Number(r.round) === round)
+        if (matches.length !== 1) throw new Error(`Missing or duplicate ${kind} ${round} ${variant}`)
+        const result = validateMeasurement(matches[0])
+        validateCacheReceipt(result, result.cache)
+        const completed = jobs.filter((j) => j.id === result.jobId || j.id.endsWith(` / ${result.jobId}`))
+        if (completed.length !== 1 || completed[0].conclusion !== 'success' || !completed[0].completedAt)
+          throw new Error('Missing successful supplementary job')
+      }
+    }
+  }
+}
+
 export function median(values) {
   if (!values.length || values.some((n) => !Number.isFinite(n))) throw new Error('Missing durations')
   const sorted = [...values].sort((a, b) => a - b)
@@ -224,10 +243,7 @@ async function main() {
       values.mode === 'combined'
         ? [summarize(results, jobs, 'combined')]
         : ['pnpm', 'compiler'].map((kind) => summarize(results, jobs, kind))
-    for (const result of results.filter((r) => ['warm-fallback', 'lock-change', 'incremental'].includes(r.variant))) {
-      validateMeasurement(result)
-      validateCacheReceipt(result, result.cache)
-    }
+    if (values.mode !== 'combined') validateSupplementaryMeasurements(results, jobs)
     const accepted = summaries.every((s) => s.medianSavedMs > 0)
     mkdirSync(dirname(values.output), { recursive: true })
     writeFileSync(`${values.output}.json`, `${JSON.stringify({ summaries, accepted, jobs, results }, null, 2)}\n`)

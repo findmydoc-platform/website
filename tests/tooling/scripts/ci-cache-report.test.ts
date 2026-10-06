@@ -5,6 +5,7 @@ import {
   summarize,
   validateCacheReceipt,
   validateMeasurement,
+  validateSupplementaryMeasurements,
 } from '../../../scripts/ci-cache-report.mjs'
 
 const commit = 'a'.repeat(40)
@@ -65,6 +66,39 @@ describe('cache experiment evidence gates', () => {
         builds: [{ exitCode: 0, compilers: [{ cachedModules: 2 }], sourceMarkerVerified: false }],
       }),
     ).toThrow('source')
+  })
+
+  it('rejects failed builds even when their restore and reuse counters look successful', () => {
+    expect(() =>
+      validateMeasurement({
+        ...sample(),
+        kind: 'compiler',
+        builds: [{ exitCode: 1, compilers: [{ cachedModules: 10 }] }],
+      }),
+    ).toThrow('successful instrumented build')
+  })
+
+  it('requires every fallback, invalidation and source-change repetition before combination', () => {
+    const results = [1, 2, 3].flatMap((round) =>
+      ['warm-fallback', 'lock-change', 'incremental'].map((variant) => ({
+        ...sample(variant, round),
+        kind: variant === 'incremental' ? 'compiler' : 'pnpm',
+        jobId: `${variant} r${round}`,
+        packages: { resolved: 10, reused: variant === 'warm-fallback' ? 10 : 0, downloaded: 0, added: 10 },
+        builds: [{ exitCode: 0, compilers: [{ cachedModules: 10 }], sourceMarkerVerified: true }],
+        cache: {
+          attempted: true,
+          state: variant === 'lock-change' ? 'miss' : 'fallback',
+          saveOutcome: variant === 'incremental' ? 'success' : 'skipped',
+        },
+      })),
+    )
+    const jobs = results.map((r) => ({ id: r.jobId, conclusion: 'success', completedAt: '2026-10-06T00:01:00Z' }))
+    expect(() => validateSupplementaryMeasurements(results, jobs)).not.toThrow()
+    expect(() => validateSupplementaryMeasurements(results.slice(1), jobs)).toThrow('Missing')
+    expect(() =>
+      validateSupplementaryMeasurements(results, [{ ...jobs[0], conclusion: 'failure' }, ...jobs.slice(1)]),
+    ).toThrow('supplementary job')
   })
 
   it('invalidates lockfile and tool changes without tying cache identity to a workflow run', () => {

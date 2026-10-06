@@ -1,6 +1,6 @@
 # CI optimization results and build cache evaluation
 
-Serial database copies reduce integration execution by a median 21 minutes 24 seconds. Parallel tests reduce feedback time, but the complete job comparison increases runner consumption. Build caching has no demonstrated saving: the earlier cache-hit sample is slower than the uncached build. These measurements describe experiments; they do not establish savings for the entire production workflow.
+Serial database copies reduce integration execution by a median 21 minutes 24 seconds. Parallel tests reduce feedback time, but the complete job comparison increases runner consumption. Compiler reuse now has a measured same-runner benefit, while complete fresh-runner cache savings remain under investigation. The earlier cache-hit sample is slower than the uncached build and does not demonstrate compiler reuse. These measurements describe experiments; they do not establish savings for the entire production workflow.
 
 ## Measured results
 
@@ -36,7 +36,11 @@ The manual cache experiment compares the complete pnpm package store and the Web
 
 The historical compiler comparison restores 162,414,003 bytes successfully, with an exact cache-key match. Compilation takes 51 seconds in the uncached baseline, 81 seconds while populating the cache and 83 seconds after restoration. TypeScript also takes longer in the cache comparisons, roughly 25 rather than 16 seconds. These measurements do not isolate compiler reuse from runner differences.
 
-The historical cache paths omit `.next/cache/.rscinfo`. Next includes the Server Actions encryption key in its Webpack cache version. A changed key is therefore a concrete invalidation hypothesis. The diagnostic builds measure version equality and cached versus rebuilt modules, first with the original cache paths and then with a stable diagnostic key. The key is derived privately for the frozen measurement commit; only equality indicators reach the report.
+The historical cache paths omit `.next/cache/.rscinfo`. Next includes the Server Actions encryption key in its Webpack cache version. The same-runner diagnosis now confirms that changing this key rejects the restored compiler cache. The diagnostic builds measure version equality and cached versus rebuilt modules, first with the original cache paths and then with a stable diagnostic key. The key is derived privately for the frozen measurement commit; only equality indicators reach the report.
+
+The same-runner diagnostic at commit `20ffb143` completes four successful builds: cold 152.2 seconds, restored historical paths 153.6 seconds, stable-key cold 152.0 seconds and stable-key warm 91.4 seconds. The historical-path restore records a cache-version mismatch and zero reused modules. The stable warm build records equal cache versions, 1,999 reused client modules and 15,455 reused server modules, with zero rebuilt modules. Compilation falls from 86.0 to 26.2 seconds; TypeScript and page generation remain similar. This proves compiler reuse and a 60.6-second build saving on one VM. It excludes cache transfer, encryption and fresh-runner differences, so it is not an accepted complete-job Actions saving. [Diagnostic run](https://github.com/findmydoc-platform/website/actions/runs/37425573941).
+
+The first pnpm measurement attempt completes its real installations, but all six baseline/population metric jobs fail afterward. The preserved first baseline records 1,397 downloaded packages, zero reused packages and a successful 14.6-second installation. The original report does not retain the exception category, so the precise cause remains unproven. A repair counts store symlink metadata without following targets and adds safe failure-stage reporting. These failed jobs stay in the experiment cost and are excluded from accepted savings; the repaired measurement uses a new namespace and frozen commit.
 
 The historical pnpm installs report zero reused packages and 1,397 downloads. Installation takes about 11 to 14 seconds. Package-store caching is disabled in those comparisons, so these values are expected and do not demonstrate a broken restore.
 

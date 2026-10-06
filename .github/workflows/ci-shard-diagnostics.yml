@@ -1,32 +1,23 @@
 name: Integration shard diagnostics
 
 on:
-  push:
-    branches: [agent/ci-shard-diagnostics]
-    paths:
-      - '.github/workflows/ci-shard-diagnostics.yml'
-      - 'scripts/ci-shard-*.mjs'
-      - 'tests/tooling/scripts/ci-shard-diagnostics.test.ts'
-      - 'tests/tooling/scripts/ci-shard-hook-diagnostics.test.ts'
-      - 'tests/fixtures/ensureBaseline.ts'
-      - 'scripts/test-database-harness.mjs'
-      - 'tests/setup/integrationBaselineCopy.ts'
-      - 'tests/setup/integrationGlobalSetup.ts'
-      - 'tests/tooling/scripts/ci-shard-db-copy.test.ts'
-      - 'scripts/ci-shard-db-copy-selection.json'
-      - 'tests/diagnostics/**'
   workflow_dispatch:
     inputs:
       stage:
         description: Measurement stage
         type: choice
-        options: [smoke, pilot, full, hooks, db-copy, db-copy-expanded, db-copy-order-check]
+        options: [smoke, pilot, full, hooks, db-copy, db-copy-expanded, db-copy-order-check, cache-diagnostics]
         default: smoke
       round:
         description: Measurement round, 1 through 3
         type: choice
         options: ['1', '2', '3']
         default: '1'
+
+      cache_experiment:
+        description: Fresh cache experiment identifier
+        type: string
+        default: cache-v1
 
 permissions:
   contents: read
@@ -49,7 +40,7 @@ defaults:
 jobs:
   pair:
     name: Paired A and B
-    if: inputs.stage != 'hooks' && inputs.stage != 'db-copy' && inputs.stage != 'db-copy-expanded' && inputs.stage != 'db-copy-order-check' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    if: inputs.stage != 'cache-diagnostics' && inputs.stage != 'hooks' && inputs.stage != 'db-copy' && inputs.stage != 'db-copy-expanded' && inputs.stage != 'db-copy-order-check' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -474,3 +465,14 @@ jobs:
             !tmp/ci-diagnostics/round/**/cache/**
             !tmp/ci-diagnostics/round/**/*.mjs
           retention-days: 7
+
+  cache-diagnostics:
+    name: Cache diagnostics
+    if: github.event_name == 'workflow_dispatch' && inputs.stage == 'cache-diagnostics' && github.repository == 'findmydoc-platform/website' && github.ref == 'refs/heads/agent/ci-shard-diagnostics'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/ci-cache-diagnostics.yml
+    with:
+      experiment: ${{ inputs.cache_experiment }}
+    secrets: inherit # pragma: allowlist secret

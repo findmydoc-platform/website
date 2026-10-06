@@ -1,0 +1,828 @@
+name: Cache experiment
+
+on:
+  workflow_call:
+    inputs:
+      experiment:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  NODE_VERSION: 24.14.0
+  PNPM_VERSION: 10.28.2
+  NEXT_TELEMETRY_DISABLED: '1'
+  CI_CACHE_EXPERIMENT: '1'
+  CACHE_EXPERIMENT: ${{ inputs.experiment }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  pnpm-seed:
+    name: pnpm ${{ matrix.variant }} r${{ matrix.round }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        round: [1, 2, 3]
+        variant: [baseline, populate]
+    env:
+      CACHE_ROUND: ${{ matrix.round }}
+      CACHE_VARIANT: ${{ matrix.variant }}
+      CACHE_JOB_ID: pnpm ${{ matrix.variant }} r${{ matrix.round }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          cache: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Locate the complete pnpm store
+        id: store
+        run: |
+          set -euo pipefail
+          echo "CI_CACHE_STORE=$RUNNER_TEMP/ci-cache-store" >> "$GITHUB_ENV"
+          cache_store_path=$(pnpm store path --store-dir "$RUNNER_TEMP/ci-cache-store")
+          echo "path=$cache_store_path" >> "$GITHUB_OUTPUT"
+      - name: Change a dependency specifier and lockfile
+        if: env.CACHE_VARIANT == 'lock-change'
+        run: node scripts/ci-cache-pnpm.mjs --prepare-lock-change
+      - name: Compute pnpm cache identity
+        id: pnpm-identity
+        run: node scripts/ci-cache-report.mjs --command identity --kind pnpm --round "$CACHE_ROUND"
+      - name: Restore pnpm cache
+        if: env.CACHE_VARIANT != 'baseline'
+        id: pnpm-restore
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ steps.store.outputs.path }}
+          key: ${{ steps.pnpm-identity.outputs.key }}
+          restore-keys: ${{ steps.pnpm-identity.outputs.restore }}
+      - name: Measure real frozen package installation
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+        run: node scripts/ci-cache-pnpm.mjs --variant "$CACHE_VARIANT" --round "$CACHE_ROUND" --output tmp/ci-cache/pnpm
+      - name: Save pnpm cache
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        id: pnpm-save
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ steps.store.outputs.path }}
+          key: ${{ steps.pnpm-identity.outputs.key }}
+      - name: Record pnpm restore and save receipts
+        if: always()
+        env:
+          CACHE_HIT: ${{ steps.pnpm-restore.outputs.cache-hit }}
+          CACHE_MATCHED: ${{ steps.pnpm-restore.outputs.cache-matched-key }}
+          CACHE_SAVE_OUTCOME: ${{ steps.pnpm-save.outcome }}
+        run: node scripts/ci-cache-report.mjs --command receipt --input tmp/ci-cache/pnpm
+      - name: Remove ephemeral caches and diagnostic secrets
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/ci-cache-store" "$RUNNER_TEMP/ci-cache-sealed" .next/cache
+      - name: Preserve safe measurement metrics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: cache-${{ github.run_id }}-pnpm-${{ matrix.variant }}-r${{ matrix.round }}
+          path: tmp/ci-cache/pnpm/**/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+  pnpm-restore:
+    name: pnpm ${{ matrix.variant }} r${{ matrix.round }}
+    needs: pnpm-seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        round: [1, 2, 3]
+        variant: [warm, warm-fallback, lock-change]
+    env:
+      CACHE_ROUND: ${{ matrix.round }}
+      CACHE_VARIANT: ${{ matrix.variant }}
+      CACHE_JOB_ID: pnpm ${{ matrix.variant }} r${{ matrix.round }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          cache: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Locate the complete pnpm store
+        id: store
+        run: |
+          set -euo pipefail
+          echo "CI_CACHE_STORE=$RUNNER_TEMP/ci-cache-store" >> "$GITHUB_ENV"
+          cache_store_path=$(pnpm store path --store-dir "$RUNNER_TEMP/ci-cache-store")
+          echo "path=$cache_store_path" >> "$GITHUB_OUTPUT"
+      - name: Change a dependency specifier and lockfile
+        if: env.CACHE_VARIANT == 'lock-change'
+        run: node scripts/ci-cache-pnpm.mjs --prepare-lock-change
+      - name: Compute pnpm cache identity
+        id: pnpm-identity
+        run: node scripts/ci-cache-report.mjs --command identity --kind pnpm --round "$CACHE_ROUND"
+      - name: Restore pnpm cache
+        if: env.CACHE_VARIANT != 'baseline'
+        id: pnpm-restore
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ steps.store.outputs.path }}
+          key: ${{ steps.pnpm-identity.outputs.key }}
+          restore-keys: ${{ steps.pnpm-identity.outputs.restore }}
+      - name: Measure real frozen package installation
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+        run: node scripts/ci-cache-pnpm.mjs --variant "$CACHE_VARIANT" --round "$CACHE_ROUND" --output tmp/ci-cache/pnpm
+      - name: Save pnpm cache
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        id: pnpm-save
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ steps.store.outputs.path }}
+          key: ${{ steps.pnpm-identity.outputs.key }}
+      - name: Record pnpm restore and save receipts
+        if: always()
+        env:
+          CACHE_HIT: ${{ steps.pnpm-restore.outputs.cache-hit }}
+          CACHE_MATCHED: ${{ steps.pnpm-restore.outputs.cache-matched-key }}
+          CACHE_SAVE_OUTCOME: ${{ steps.pnpm-save.outcome }}
+        run: node scripts/ci-cache-report.mjs --command receipt --input tmp/ci-cache/pnpm
+      - name: Remove ephemeral caches and diagnostic secrets
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/ci-cache-store" "$RUNNER_TEMP/ci-cache-sealed" .next/cache
+      - name: Preserve safe measurement metrics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: cache-${{ github.run_id }}-pnpm-${{ matrix.variant }}-r${{ matrix.round }}
+          path: tmp/ci-cache/pnpm/**/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+  compiler-diagnose:
+    name: compiler ${{ matrix.variant }} r${{ matrix.round }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        round: [1]
+        variant: [diagnose]
+    env:
+      CACHE_ROUND: ${{ matrix.round }}
+      CACHE_VARIANT: ${{ matrix.variant }}
+      CACHE_JOB_ID: compiler ${{ matrix.variant }} r${{ matrix.round }}
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        ports: ['5432:5432']
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: ci-cache-build
+        options: --health-cmd "pg_isready -U postgres -h localhost -d postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          cache: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Install frozen dependencies without a store cache
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          node scripts/assert-email-template-package-access.mjs
+          pnpm install --frozen-lockfile --strict-peer-dependencies
+      - name: Prepare disposable build database
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/ci-cache-build
+        run: |
+          set -euo pipefail
+          bash .github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
+          pnpm run migrate
+      - name: Measure instrumented application builds
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/ci-cache-build
+          DEPLOYMENT_ENV: development
+        run: node scripts/ci-cache-compiler.mjs --mode diagnose --variant "$CACHE_VARIANT" --round "$CACHE_ROUND" --output tmp/ci-cache/compiler
+      - name: Remove ephemeral caches and diagnostic secrets
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/ci-cache-store" "$RUNNER_TEMP/ci-cache-sealed" .next/cache
+      - name: Preserve safe measurement metrics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: cache-${{ github.run_id }}-compiler-${{ matrix.variant }}-r${{ matrix.round }}
+          path: tmp/ci-cache/compiler/**/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+  compiler-seed:
+    name: compiler ${{ matrix.variant }} r${{ matrix.round }}
+    needs: compiler-diagnose
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        round: [1, 2, 3]
+        variant: [baseline, populate]
+    env:
+      CACHE_ROUND: ${{ matrix.round }}
+      CACHE_VARIANT: ${{ matrix.variant }}
+      CACHE_JOB_ID: compiler ${{ matrix.variant }} r${{ matrix.round }}
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        ports: ['5432:5432']
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: ci-cache-build
+        options: --health-cmd "pg_isready -U postgres -h localhost -d postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          cache: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Install frozen dependencies without a store cache
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          node scripts/assert-email-template-package-access.mjs
+          pnpm install --frozen-lockfile --strict-peer-dependencies
+      - name: Compute compiler cache identity
+        id: compiler-identity
+        run: node scripts/ci-cache-report.mjs --command identity --kind compiler --round "$CACHE_ROUND"
+      - name: Restore compiler cache
+        if: env.CACHE_VARIANT != 'baseline'
+        id: compiler-restore
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ runner.temp }}/ci-cache-sealed
+          key: ${{ steps.compiler-identity.outputs.key }}
+          restore-keys: ${{ steps.compiler-identity.outputs.restore }}
+      - name: Unseal restored compiler cache
+        if: steps.compiler-restore.outputs.cache-matched-key != ''
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+        run: node scripts/ci-cache-seal.mjs --command unseal
+      - name: Prepare disposable build database
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/ci-cache-build
+        run: |
+          set -euo pipefail
+          bash .github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
+          pnpm run migrate
+      - name: Measure instrumented application builds
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/ci-cache-build
+          DEPLOYMENT_ENV: development
+        run: node scripts/ci-cache-compiler.mjs --mode measure --variant "$CACHE_VARIANT" --round "$CACHE_ROUND" --output tmp/ci-cache/compiler
+      - name: Seal compiler packs before cache upload
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+        run: node scripts/ci-cache-seal.mjs --command seal
+      - name: Save compiler cache
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        id: compiler-save
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ runner.temp }}/ci-cache-sealed
+          key: ${{ steps.compiler-identity.outputs.key }}
+      - name: Record compiler restore and save receipts
+        if: always()
+        env:
+          CACHE_HIT: ${{ steps.compiler-restore.outputs.cache-hit }}
+          CACHE_MATCHED: ${{ steps.compiler-restore.outputs.cache-matched-key }}
+          CACHE_SAVE_OUTCOME: ${{ steps.compiler-save.outcome }}
+        run: node scripts/ci-cache-report.mjs --command receipt --input tmp/ci-cache/compiler
+      - name: Remove ephemeral caches and diagnostic secrets
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/ci-cache-store" "$RUNNER_TEMP/ci-cache-sealed" .next/cache
+      - name: Preserve safe measurement metrics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: cache-${{ github.run_id }}-compiler-${{ matrix.variant }}-r${{ matrix.round }}
+          path: tmp/ci-cache/compiler/**/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+  compiler-restore:
+    name: compiler ${{ matrix.variant }} r${{ matrix.round }}
+    needs: compiler-seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        round: [1, 2, 3]
+        variant: [warm, incremental]
+    env:
+      CACHE_ROUND: ${{ matrix.round }}
+      CACHE_VARIANT: ${{ matrix.variant }}
+      CACHE_JOB_ID: compiler ${{ matrix.variant }} r${{ matrix.round }}
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        ports: ['5432:5432']
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: ci-cache-build
+        options: --health-cmd "pg_isready -U postgres -h localhost -d postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          cache: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Install frozen dependencies without a store cache
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          node scripts/assert-email-template-package-access.mjs
+          pnpm install --frozen-lockfile --strict-peer-dependencies
+      - name: Compute compiler cache identity
+        id: compiler-identity
+        run: node scripts/ci-cache-report.mjs --command identity --kind compiler --round "$CACHE_ROUND"
+      - name: Restore compiler cache
+        if: env.CACHE_VARIANT != 'baseline'
+        id: compiler-restore
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ runner.temp }}/ci-cache-sealed
+          key: ${{ steps.compiler-identity.outputs.key }}
+          restore-keys: ${{ steps.compiler-identity.outputs.restore }}
+      - name: Unseal restored compiler cache
+        if: steps.compiler-restore.outputs.cache-matched-key != ''
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+        run: node scripts/ci-cache-seal.mjs --command unseal
+      - name: Prepare disposable build database
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/ci-cache-build
+        run: |
+          set -euo pipefail
+          bash .github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
+          pnpm run migrate
+      - name: Measure instrumented application builds
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/ci-cache-build
+          DEPLOYMENT_ENV: development
+        run: node scripts/ci-cache-compiler.mjs --mode measure --variant "$CACHE_VARIANT" --round "$CACHE_ROUND" --output tmp/ci-cache/compiler
+      - name: Seal compiler packs before cache upload
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+        run: node scripts/ci-cache-seal.mjs --command seal
+      - name: Save compiler cache
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        id: compiler-save
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ runner.temp }}/ci-cache-sealed
+          key: ${{ steps.compiler-identity.outputs.key }}
+      - name: Record compiler restore and save receipts
+        if: always()
+        env:
+          CACHE_HIT: ${{ steps.compiler-restore.outputs.cache-hit }}
+          CACHE_MATCHED: ${{ steps.compiler-restore.outputs.cache-matched-key }}
+          CACHE_SAVE_OUTCOME: ${{ steps.compiler-save.outcome }}
+        run: node scripts/ci-cache-report.mjs --command receipt --input tmp/ci-cache/compiler
+      - name: Remove ephemeral caches and diagnostic secrets
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/ci-cache-store" "$RUNNER_TEMP/ci-cache-sealed" .next/cache
+      - name: Preserve safe measurement metrics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: cache-${{ github.run_id }}-compiler-${{ matrix.variant }}-r${{ matrix.round }}
+          path: tmp/ci-cache/compiler/**/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+  separate-summary:
+    name: Separate cache evidence
+    needs: [pnpm-seed, pnpm-restore, compiler-seed, compiler-restore]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      accepted: ${{ steps.summary.outputs.accepted }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Download measurement metrics
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: cache-${{ github.run_id }}-**
+          path: tmp/ci-cache/evidence
+      - name: Validate reuse and complete job timings
+        id: summary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node scripts/ci-cache-report.mjs --command summary --mode separate --input tmp/ci-cache/evidence --output tmp/ci-cache/summary.md
+          cat tmp/ci-cache/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve safe measurement metrics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: cache-${{ github.run_id }}-summary-separate
+          path: tmp/ci-cache/**/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+  combined-seed:
+    name: combined ${{ matrix.variant }} r${{ matrix.round }}
+    needs: separate-summary
+    if: needs.separate-summary.outputs.accepted == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        round: [1, 2, 3]
+        variant: [baseline, populate]
+    env:
+      CACHE_ROUND: ${{ matrix.round }}
+      CACHE_VARIANT: ${{ matrix.variant }}
+      CACHE_JOB_ID: combined ${{ matrix.variant }} r${{ matrix.round }}
+      CACHE_EXPERIMENT: ${{ inputs.experiment }}-combined
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        ports: ['5432:5432']
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: ci-cache-build
+        options: --health-cmd "pg_isready -U postgres -h localhost -d postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          cache: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Locate the complete pnpm store
+        id: store
+        run: |
+          set -euo pipefail
+          echo "CI_CACHE_STORE=$RUNNER_TEMP/ci-cache-store" >> "$GITHUB_ENV"
+          cache_store_path=$(pnpm store path --store-dir "$RUNNER_TEMP/ci-cache-store")
+          echo "path=$cache_store_path" >> "$GITHUB_OUTPUT"
+      - name: Change a dependency specifier and lockfile
+        if: env.CACHE_VARIANT == 'lock-change'
+        run: node scripts/ci-cache-pnpm.mjs --prepare-lock-change
+      - name: Compute pnpm cache identity
+        id: pnpm-identity
+        run: node scripts/ci-cache-report.mjs --command identity --kind pnpm --round "$CACHE_ROUND"
+      - name: Restore pnpm cache
+        if: env.CACHE_VARIANT != 'baseline'
+        id: pnpm-restore
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ steps.store.outputs.path }}
+          key: ${{ steps.pnpm-identity.outputs.key }}
+          restore-keys: ${{ steps.pnpm-identity.outputs.restore }}
+      - name: Measure real frozen package installation
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+        run: node scripts/ci-cache-pnpm.mjs --variant "$CACHE_VARIANT" --round "$CACHE_ROUND" --output tmp/ci-cache/pnpm
+      - name: Save pnpm cache
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        id: pnpm-save
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ steps.store.outputs.path }}
+          key: ${{ steps.pnpm-identity.outputs.key }}
+      - name: Record pnpm restore and save receipts
+        if: always()
+        env:
+          CACHE_HIT: ${{ steps.pnpm-restore.outputs.cache-hit }}
+          CACHE_MATCHED: ${{ steps.pnpm-restore.outputs.cache-matched-key }}
+          CACHE_SAVE_OUTCOME: ${{ steps.pnpm-save.outcome }}
+        run: node scripts/ci-cache-report.mjs --command receipt --input tmp/ci-cache/pnpm
+      - name: Compute compiler cache identity
+        id: compiler-identity
+        run: node scripts/ci-cache-report.mjs --command identity --kind compiler --round "$CACHE_ROUND"
+      - name: Restore compiler cache
+        if: env.CACHE_VARIANT != 'baseline'
+        id: compiler-restore
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ runner.temp }}/ci-cache-sealed
+          key: ${{ steps.compiler-identity.outputs.key }}
+          restore-keys: ${{ steps.compiler-identity.outputs.restore }}
+      - name: Unseal restored compiler cache
+        if: steps.compiler-restore.outputs.cache-matched-key != ''
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+        run: node scripts/ci-cache-seal.mjs --command unseal
+      - name: Prepare disposable build database
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/ci-cache-build
+        run: |
+          set -euo pipefail
+          bash .github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
+          pnpm run migrate
+      - name: Measure instrumented application builds
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/ci-cache-build
+          DEPLOYMENT_ENV: development
+        run: node scripts/ci-cache-compiler.mjs --mode measure --variant "$CACHE_VARIANT" --round "$CACHE_ROUND" --output tmp/ci-cache/compiler
+      - name: Seal compiler packs before cache upload
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+        run: node scripts/ci-cache-seal.mjs --command seal
+      - name: Save compiler cache
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        id: compiler-save
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ runner.temp }}/ci-cache-sealed
+          key: ${{ steps.compiler-identity.outputs.key }}
+      - name: Record compiler restore and save receipts
+        if: always()
+        env:
+          CACHE_HIT: ${{ steps.compiler-restore.outputs.cache-hit }}
+          CACHE_MATCHED: ${{ steps.compiler-restore.outputs.cache-matched-key }}
+          CACHE_SAVE_OUTCOME: ${{ steps.compiler-save.outcome }}
+        run: node scripts/ci-cache-report.mjs --command receipt --input tmp/ci-cache/compiler
+      - name: Combine installation and build metrics
+        if: always()
+        run: node scripts/ci-cache-report.mjs --command combine --input tmp/ci-cache --output tmp/ci-cache/combined/result.json
+      - name: Remove ephemeral caches and diagnostic secrets
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/ci-cache-store" "$RUNNER_TEMP/ci-cache-sealed" .next/cache
+      - name: Preserve safe measurement metrics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: cache-${{ github.run_id }}-combined-${{ matrix.variant }}-r${{ matrix.round }}
+          path: tmp/ci-cache/combined/**/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+  combined-restore:
+    name: combined ${{ matrix.variant }} r${{ matrix.round }}
+    needs: [separate-summary, combined-seed]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        round: [1, 2, 3]
+        variant: [warm]
+    env:
+      CACHE_ROUND: ${{ matrix.round }}
+      CACHE_VARIANT: ${{ matrix.variant }}
+      CACHE_JOB_ID: combined ${{ matrix.variant }} r${{ matrix.round }}
+      CACHE_EXPERIMENT: ${{ inputs.experiment }}-combined
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        ports: ['5432:5432']
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: ci-cache-build
+        options: --health-cmd "pg_isready -U postgres -h localhost -d postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          cache: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Locate the complete pnpm store
+        id: store
+        run: |
+          set -euo pipefail
+          echo "CI_CACHE_STORE=$RUNNER_TEMP/ci-cache-store" >> "$GITHUB_ENV"
+          cache_store_path=$(pnpm store path --store-dir "$RUNNER_TEMP/ci-cache-store")
+          echo "path=$cache_store_path" >> "$GITHUB_OUTPUT"
+      - name: Change a dependency specifier and lockfile
+        if: env.CACHE_VARIANT == 'lock-change'
+        run: node scripts/ci-cache-pnpm.mjs --prepare-lock-change
+      - name: Compute pnpm cache identity
+        id: pnpm-identity
+        run: node scripts/ci-cache-report.mjs --command identity --kind pnpm --round "$CACHE_ROUND"
+      - name: Restore pnpm cache
+        if: env.CACHE_VARIANT != 'baseline'
+        id: pnpm-restore
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ steps.store.outputs.path }}
+          key: ${{ steps.pnpm-identity.outputs.key }}
+          restore-keys: ${{ steps.pnpm-identity.outputs.restore }}
+      - name: Measure real frozen package installation
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+        run: node scripts/ci-cache-pnpm.mjs --variant "$CACHE_VARIANT" --round "$CACHE_ROUND" --output tmp/ci-cache/pnpm
+      - name: Save pnpm cache
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        id: pnpm-save
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ steps.store.outputs.path }}
+          key: ${{ steps.pnpm-identity.outputs.key }}
+      - name: Record pnpm restore and save receipts
+        if: always()
+        env:
+          CACHE_HIT: ${{ steps.pnpm-restore.outputs.cache-hit }}
+          CACHE_MATCHED: ${{ steps.pnpm-restore.outputs.cache-matched-key }}
+          CACHE_SAVE_OUTCOME: ${{ steps.pnpm-save.outcome }}
+        run: node scripts/ci-cache-report.mjs --command receipt --input tmp/ci-cache/pnpm
+      - name: Compute compiler cache identity
+        id: compiler-identity
+        run: node scripts/ci-cache-report.mjs --command identity --kind compiler --round "$CACHE_ROUND"
+      - name: Restore compiler cache
+        if: env.CACHE_VARIANT != 'baseline'
+        id: compiler-restore
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ runner.temp }}/ci-cache-sealed
+          key: ${{ steps.compiler-identity.outputs.key }}
+          restore-keys: ${{ steps.compiler-identity.outputs.restore }}
+      - name: Unseal restored compiler cache
+        if: steps.compiler-restore.outputs.cache-matched-key != ''
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+        run: node scripts/ci-cache-seal.mjs --command unseal
+      - name: Prepare disposable build database
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/ci-cache-build
+        run: |
+          set -euo pipefail
+          bash .github/scripts/ci/wait-for-postgres.sh "${{ job.services.postgres.id }}"
+          pnpm run migrate
+      - name: Measure instrumented application builds
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
+          DATABASE_URI: postgresql://postgres:password@localhost:5432/ci-cache-build
+          DEPLOYMENT_ENV: development
+        run: node scripts/ci-cache-compiler.mjs --mode measure --variant "$CACHE_VARIANT" --round "$CACHE_ROUND" --output tmp/ci-cache/compiler
+      - name: Seal compiler packs before cache upload
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+        run: node scripts/ci-cache-seal.mjs --command seal
+      - name: Save compiler cache
+        if: success() && (env.CACHE_VARIANT == 'populate' || env.CACHE_VARIANT == 'incremental')
+        id: compiler-save
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ runner.temp }}/ci-cache-sealed
+          key: ${{ steps.compiler-identity.outputs.key }}
+      - name: Record compiler restore and save receipts
+        if: always()
+        env:
+          CACHE_HIT: ${{ steps.compiler-restore.outputs.cache-hit }}
+          CACHE_MATCHED: ${{ steps.compiler-restore.outputs.cache-matched-key }}
+          CACHE_SAVE_OUTCOME: ${{ steps.compiler-save.outcome }}
+        run: node scripts/ci-cache-report.mjs --command receipt --input tmp/ci-cache/compiler
+      - name: Combine installation and build metrics
+        if: always()
+        run: node scripts/ci-cache-report.mjs --command combine --input tmp/ci-cache --output tmp/ci-cache/combined/result.json
+      - name: Remove ephemeral caches and diagnostic secrets
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/ci-cache-store" "$RUNNER_TEMP/ci-cache-sealed" .next/cache
+      - name: Preserve safe measurement metrics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: cache-${{ github.run_id }}-combined-${{ matrix.variant }}-r${{ matrix.round }}
+          path: tmp/ci-cache/combined/**/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+  combined-summary:
+    name: Combined cache evidence
+    needs: [combined-seed, combined-restore]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: always() && needs.combined-restore.result == 'success'
+    outputs:
+      accepted: ${{ steps.summary.outputs.accepted }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Download measurement metrics
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: cache-${{ github.run_id }}-combined*
+          path: tmp/ci-cache/evidence
+      - name: Validate reuse and complete job timings
+        id: summary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node scripts/ci-cache-report.mjs --command summary --mode combined --input tmp/ci-cache/evidence --output tmp/ci-cache/summary.md
+          cat tmp/ci-cache/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve safe measurement metrics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: cache-${{ github.run_id }}-summary-combined
+          path: tmp/ci-cache/**/*.json
+          if-no-files-found: error
+          retention-days: 7

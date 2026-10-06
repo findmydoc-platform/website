@@ -41,10 +41,10 @@ An Actions secret alone does not authorize Dependabot updates. The Dependabot se
 to GitHub Actions checks on Dependabot pull requests. Keep the package's GitHub Actions access grant disabled for
 this public repository; the dedicated token preserves the fork boundary.
 
-Website workflows disable package-manager caching and do not cache Next.js build output in GitHub Actions.
+Normal Website validation and deployment workflows disable package-manager caching and do not cache Next.js build output in GitHub Actions.
 Fork pull requests can read default-branch Actions caches, including private package files left in a cached pnpm
 store. The only explicit Actions cache contains Playwright browser binaries at `~/.cache/ms-playwright`; the cache
-contract test rejects package stores, build directories, and additional cache paths. The central Website release
+contract test rejects package stores, build directories, and additional cache paths in normal workflows. The manually invoked cache diagnostic workflow has a user-authorized exception for the complete pnpm store and encrypted archives of Webpack/SWC directories. This experiment excludes authentication configuration and protects compiler key material with authenticated encryption; see [cache measurements](ci-optimization-results.md). The central Website release
 workflow also disables package-manager caching and uses no Actions cache for the Website checkout.
 
 The `findmydoc-portal` Preview and Production builds and the `fmd-storybooks` Production build require

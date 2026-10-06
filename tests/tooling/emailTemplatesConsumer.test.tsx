@@ -198,8 +198,15 @@ describe('private package cache boundary', () => {
             expect(step.with?.['package-manager-cache'], context).toBe(false)
           }
           if (/^actions\/cache(?:\/(?:restore|save))?@/.test(step.uses ?? '')) {
-            expect(step.with?.path, context).toBe('~/.cache/ms-playwright')
-            expect(step.with?.key, context).toMatch(/^playwright-/)
+            if (file === 'ci-cache-diagnostics.yml') {
+              expect(String(step.with?.path).trim(), context).toMatch(
+                /^(?:\$\{\{ steps\.store\.outputs\.path \}\}|\$\{\{ runner\.temp \}\}\/ci-cache-sealed)$/,
+              )
+              expect(step.with?.key, context).toMatch(/^\$\{\{ steps\.(?:pnpm|compiler)-identity\.outputs\.key \}\}$/)
+            } else {
+              expect(step.with?.path, context).toBe('~/.cache/ms-playwright')
+              expect(step.with?.key, context).toMatch(/^playwright-/)
+            }
           }
         }
       }

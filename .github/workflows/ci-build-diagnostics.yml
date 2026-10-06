@@ -325,8 +325,10 @@ jobs:
         with:
           pattern: coverage-*
           path: coverage-artifacts
+        if: needs.classify.result == 'success' && needs.classify.outputs.validation == 'true'
       - name: Merge coverage summaries
         run: node scripts/coverage/merge-coverage.mjs --input-root coverage-artifacts --output-root coverage/combined
+        if: needs.classify.result == 'success' && needs.classify.outputs.validation == 'true'
       - name: Upload combined coverage artifact
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -361,7 +363,7 @@ jobs:
           header: combined-coverage-summary
           message: ${{ steps.combined_coverage_comment.outputs.message }}
       - name: Verify merged coverage sources
-        if: needs.classify.outputs.validation == 'true'
+        if: needs.classify.result == 'success' && needs.classify.outputs.validation == 'true'
         run: |-
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';

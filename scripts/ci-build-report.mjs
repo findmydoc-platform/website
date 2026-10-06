@@ -124,7 +124,18 @@ function coverageNumbers(value) {
   if (
     !entries.length ||
     entries.some(
-      ([key]) => !['lines', 'statements', 'functions', 'branches', 'total', 'covered', 'skipped', 'pct'].includes(key),
+      ([key]) =>
+        ![
+          'lines',
+          'statements',
+          'functions',
+          'branches',
+          'branchesTrue',
+          'total',
+          'covered',
+          'skipped',
+          'pct',
+        ].includes(key),
     )
   )
     return null

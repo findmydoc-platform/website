@@ -17,6 +17,8 @@ export function suiteEvidence(report, coverage, root = process.cwd()) {
     report.numFailedTestSuites
   )
     throw new Error('Suite is failed or incomplete')
+  const files = report.testResults.map((file) => file.name)
+  if (new Set(files).size !== files.length) throw new Error('Duplicate test file')
   const cases = report.testResults
     .flatMap((file) => {
       const relative = path.relative(root, file.name).split(path.sep).join('/')
@@ -46,7 +48,7 @@ export function suiteEvidence(report, coverage, root = process.cwd()) {
     .sort((a, b) => a[0].localeCompare(b[0]))
   return {
     success: true,
-    files: report.numPassedTestSuites,
+    files: files.length,
     cases: cases.length,
     casesDigest: digest(cases),
     coverageDigest: digest(metrics),

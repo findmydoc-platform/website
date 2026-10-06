@@ -47,6 +47,12 @@ describe('Build diagnostic correctness receipts', () => {
       ).casesDigest,
     ).not.toBe(suiteEvidence(report, coverage).casesDigest)
   })
+  it('counts physical files rather than nested describe suites', () => {
+    expect(suiteEvidence({ ...report, numPassedTestSuites: 12 }, coverage).files).toBe(1)
+    expect(() =>
+      suiteEvidence({ ...report, testResults: [...report.testResults, ...report.testResults] }, coverage),
+    ).toThrow('Duplicate test file')
+  })
   it('rejects failed, skipped and incomplete suites', () => {
     for (const change of [{ success: false }, { numPendingTests: 1 }, { numTotalTests: 2 }, { numFailedTests: 1 }])
       expect(() => suiteEvidence({ ...report, ...change }, coverage)).toThrow()

@@ -146,6 +146,18 @@ describe('measureBuildRun', () => {
     expect(result.jobs.filter((entry: { role: string }) => entry.role === 'build')).toHaveLength(2)
     expect(result.jobs.filter((entry: { role: string }) => entry.role === 'gate')).toHaveLength(1)
   })
+  it('accepts Vitest branchesTrue coverage without discarding the standard metrics', () => {
+    const input = fixture()
+    Object.assign(input.correctness.unit!.coverage, { branchesTrue: { total: 0, covered: 0, skipped: 0, pct: 100 } })
+    expect(measureBuildRun(input).accepted).toBe(true)
+    Object.assign(input.correctness.unit!.coverage, { arbitraryMetric: { total: 0 } })
+    expect(measureBuildRun(input).accepted).toBe(false)
+  })
+  it('reports avoided build work separately from unrelated job variation', () => {
+    const report = summarizeBuildRuns(pairs('filter', 'tests'))
+    expect(report.groups[0]?.gainBounds?.buildRunnerSavedMs?.medianMs).toBe(10000)
+    expect(report.groups[0]?.gainBounds?.buildStepSavedMs?.medianMs).toBe(8500)
+  })
   it('supports docs coverage work, skipped application builds and no Result job', () => {
     const input = fixture('filter', 'docs')
     expect(measureBuildRun(input)).toMatchObject({

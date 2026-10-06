@@ -44,6 +44,8 @@ The manual build diagnosis measures two independent changes. The filter experime
 
 Each filter change class has three pairs, including a runtime control. The scheduling comparison has three full pairs with integration and coverage merge, plus separate classification and static-check failure probes. Sources and workload stay fixed within each series. Pure Markdown changes already skip validation and the late build, so that class can show zero saving.
 
+The initial unsuccessful functionality run adds 10:01 physical runner minutes of investigation cost and stays excluded from savings. [Diagnostic evidence](https://github.com/findmydoc-platform/website/actions/runs/37442237471).
+
 The runner script resumes a recorded run instead of dispatching it again, stops on unexpected failures, and preserves rejected evidence. Reports keep queue time, build readiness, validation completion, total elapsed time and physical runner consumption separate. These experiments have no accepted savings until all comparisons and correctness checks pass.
 
 Run `node scripts/ci-build-experiment.mjs --commit <full-commit> --stage smoke` to inspect the initial pair without dispatch. Add `--execute` to run it on Actions. Use `--stage all --execute` with the same commit and output directory to complete the remaining comparisons. Normal workflows and deployments are unchanged. The POC provides evidence for a later fresh implementation.

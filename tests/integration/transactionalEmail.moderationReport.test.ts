@@ -1,7 +1,14 @@
 import http from 'node:http'
 import https from 'node:https'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
+import {
+  createLocalReq,
+  getPayload,
+  type CollectionAfterChangeHook,
+  type CollectionBeforeChangeHook,
+  type Payload,
+  type PayloadRequest,
+} from 'payload'
 import config from '@payload-config'
 import { createVerifiedPatientInquiry, updateClinicInquiryState } from '@/features/inquiryCommunication/service'
 import { createInquiryModerationReport } from '@/features/inquiryModeration/service'
@@ -62,7 +69,14 @@ describe('authoritative moderation report receipt', () => {
     otherClinicReq.user = await asClinicScopedPayloadUser(payload, other, clinicId)
   }, 60_000)
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    const patient = await createPatientTestUser(payload, {
+      createdPatientIds: patientIds,
+      emailPrefix: `${prefix}-patient-${patientIds.length}`,
+      firstName: 'ForbiddenPatientName',
+    })
+    patientReq = await createLocalReq({}, payload)
+    patientReq.user = asPayloadPatientUser(patient)
     vi.stubEnv('CI', 'false')
     vi.stubEnv('NEXT_PUBLIC_SERVER_URL', 'https://website.example.test')
     vi.stubEnv('CLINIC_DASHBOARD_URL', 'https://dashboard.example.test')
@@ -102,8 +116,7 @@ describe('authoritative moderation report receipt', () => {
     await payload.delete({ collection: 'clinics', id: clinicId, overrideAccess: true })
   })
 
-  async function report(
-    actorReq = patientReq,
+  async function reportInputFor(
     category:
       | 'privacy-concern'
       | 'other'
@@ -130,14 +143,19 @@ describe('authoritative moderation report receipt', () => {
       })
     ).docs[0]
     if (!conversation) throw new Error('Expected conversation')
-    const receipt = await createInquiryModerationReport(actorReq, {
+    return {
       category,
       description: 'ForbiddenReportDescription',
       inquiryId: created.inquiry.id,
       idempotencyKey: `${prefix}-report-${inquiryIds.length}`,
       targetId: String(conversation.id),
-      targetType: 'conversation',
-    })
+      targetType: 'conversation' as const,
+    }
+  }
+
+  async function report(actorReq = patientReq, category: Parameters<typeof reportInputFor>[0] = 'privacy-concern') {
+    const reportInput = await reportInputFor(category)
+    const receipt = await createInquiryModerationReport(actorReq, reportInput)
     const event = (
       await payload.find({
         collection: 'inquiryModerationEvents',
@@ -152,7 +170,7 @@ describe('authoritative moderation report receipt', () => {
     ).docs[0]
     if (!event) throw new Error('Expected report event')
     references.push(`v1|moderation-event|${event.id}|reporter`)
-    return { inquiryId: created.inquiry.id, eventId: event.id, caseId: receipt.reportId }
+    return { inquiryId: reportInput.inquiryId, eventId: event.id, caseId: receipt.reportId, reportInput, receipt }
   }
 
   it('delivers the authoritative neutral package receipt to its patient reporter through the normal command catalog', async () => {
@@ -217,6 +235,341 @@ describe('authoritative moderation report receipt', () => {
     return { delivery, logs }
   }
 
+  async function storedReceipt(eventId: number) {
+    return runOwnedTransaction(await createLocalReq({}, payload), async (_, transactionID) => {
+      const capability = openStorageCapability(transactionID)
+      try {
+        const req = await createLocalReq(
+          { context: capability.context, req: { transactionID: Promise.resolve(transactionID) } },
+          payload,
+        )
+        const outbox = await payload.find({
+          collection: 'transactionalEmailOutbox',
+          req,
+          overrideAccess: true,
+          pagination: false,
+          where: { operationReference: { equals: `v1|moderation-event|${eventId}|reporter` } },
+        })
+        const events = outbox.docs.length
+          ? await payload.find({
+              collection: 'transactionalEmailEvents',
+              overrideAccess: true,
+              depth: 0,
+              pagination: false,
+              req,
+              sort: 'sequence',
+              where: { outbox: { in: outbox.docs.map((doc) => doc.id) } },
+            })
+          : { docs: [] }
+        return { ...outbox, events: events.docs }
+      } finally {
+        capability.close()
+      }
+    })
+  }
+
+  async function committedState(inquiryId: string) {
+    const cases = await payload.find({
+      collection: 'inquiryModerationCases',
+      overrideAccess: true,
+      depth: 0,
+      pagination: false,
+      where: { inquiry: { equals: inquiryId } },
+    })
+    const audits = await payload.find({
+      collection: 'inquiryModerationEvents',
+      overrideAccess: true,
+      depth: 0,
+      pagination: false,
+      where: { inquiry: { equals: inquiryId } },
+    })
+    const mail = await runOwnedTransaction(await createLocalReq({}, payload), async (_, transactionID) => {
+      const capability = openStorageCapability(transactionID)
+      try {
+        const req = await createLocalReq(
+          { context: capability.context, req: { transactionID: Promise.resolve(transactionID) } },
+          payload,
+        )
+        const operations = await payload.find({
+          collection: 'transactionalEmailOutbox',
+          overrideAccess: true,
+          depth: 0,
+          pagination: false,
+          req,
+          where: { commandType: { equals: 'moderation.report-received' } },
+        })
+        const events = operations.docs.length
+          ? await payload.find({
+              collection: 'transactionalEmailEvents',
+              overrideAccess: true,
+              depth: 0,
+              pagination: false,
+              req,
+              where: { outbox: { in: operations.docs.map((doc) => doc.id) } },
+            })
+          : { docs: [] }
+        return { operations: operations.docs, events: events.docs }
+      } finally {
+        capability.close()
+      }
+    })
+    return { cases: cases.docs, audits: audits.docs, ...mail }
+  }
+
+  async function withBeforeHook<Result>(
+    collection: 'transactionalEmailOutbox' | 'transactionalEmailEvents' | 'inquiryModerationEvents',
+    hook: CollectionBeforeChangeHook,
+    work: () => Promise<Result>,
+  ): Promise<Result> {
+    const hooks = payload.collections[collection].config.hooks
+    const original = hooks.beforeChange
+    hooks.beforeChange = [...(original ?? []), hook]
+    try {
+      return await work()
+    } finally {
+      hooks.beforeChange = original
+    }
+  }
+
+  it('reuses one committed report, immutable audit and operation on a normal domain replay', async () => {
+    const source = await report()
+    const before = await committedState(source.inquiryId)
+    await expect(createInquiryModerationReport(patientReq, source.reportInput)).resolves.toEqual(source.receipt)
+    expect(Object.keys(source.receipt).sort()).toEqual(['received', 'reportId'])
+    expect(await committedState(source.inquiryId)).toEqual(before)
+    expect(before.cases).toHaveLength(1)
+    expect(before.audits).toHaveLength(1)
+    for (const audit of before.audits)
+      for (const forbidden of [
+        'recipientAddress',
+        'operationReference',
+        'operationId',
+        'actionUrl',
+        'description',
+        'ForbiddenPatientName',
+        'ForbiddenHealthDetails',
+        'ForbiddenReportDescription',
+      ])
+        expect(JSON.stringify(audit)).not.toContain(forbidden)
+  })
+
+  it.each(['catalog', 'operation', 'first-event', 'commit'] as const)(
+    'rolls the report, audit and mail back when %s fails unexpectedly',
+    async (boundary) => {
+      const input = await reportInputFor()
+      const before = await committedState(input.inquiryId)
+      const fail = async () => {
+        throw new Error('Synthetic storage failure')
+      }
+      const submit = () => createInquiryModerationReport(patientReq, input)
+      if (boundary === 'commit') {
+        const commitFailure = vi.spyOn(payload.db, 'commitTransaction').mockImplementationOnce(fail)
+        await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+        commitFailure.mockRestore()
+      } else if (boundary === 'catalog') {
+        const find = payload.find.bind(payload)
+        vi.spyOn(payload, 'find').mockImplementation(async (options) => {
+          if (options.collection === 'inquiryModerationEvents' && options.req?.transactionID)
+            throw new Error('Synthetic source read failure')
+          return find(options)
+        })
+        await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+        vi.mocked(payload.find).mockRestore()
+      } else {
+        await withBeforeHook(
+          boundary === 'operation' ? 'transactionalEmailOutbox' : 'transactionalEmailEvents',
+          fail,
+          async () => {
+            await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+          },
+        )
+      }
+      expect(await committedState(input.inquiryId)).toEqual(before)
+    },
+  )
+
+  it.each([1, 3] as const)(
+    'repeats the complete callback after a serialization conflict, bounded to %s injected failures',
+    async (failures) => {
+      const input = await reportInputFor()
+      const before = await committedState(input.inquiryId)
+      let attempted = 0
+      let attemptedCaseWrites = 0
+      const hooks = payload.collections.inquiryModerationCases.config.hooks
+      const original = hooks.afterChange
+      hooks.afterChange = [
+        ...(original ?? []),
+        async ({ doc }) => {
+          attemptedCaseWrites++
+          return doc
+        },
+      ]
+      try {
+        await withBeforeHook(
+          'transactionalEmailEvents',
+          async ({ data }) => {
+            if (data.type === 'command.accepted' && attempted++ < failures)
+              throw Object.assign(new Error('Synthetic serialization conflict'), { code: '40001' })
+            return data
+          },
+          async () => {
+            if (failures === 3)
+              await expect(createInquiryModerationReport(patientReq, input)).rejects.toMatchObject({ kind: 'conflict' })
+            else {
+              const receipt = await createInquiryModerationReport(patientReq, input)
+              const observed = await committedState(input.inquiryId)
+              expect(observed.cases.map((doc) => String(doc.id))).toEqual([receipt.reportId])
+              expect(observed.audits).toHaveLength(1)
+              references.push(`v1|moderation-event|${observed.audits[0]!.id}|reporter`)
+              expect(observed.operations).toHaveLength(before.operations.length + 1)
+              expect(observed.events).toHaveLength(before.events.length + 1)
+            }
+          },
+        )
+        expect(attemptedCaseWrites).toBe(failures === 3 ? 3 : 2)
+        expect(attempted).toBe(failures === 3 ? 3 : 2)
+        if (failures === 3) expect(await committedState(input.inquiryId)).toEqual(before)
+      } finally {
+        hooks.afterChange = original
+      }
+    },
+  )
+
+  it('keeps the public report receipt pending and all four records invisible until commit finishes', async () => {
+    const input = await reportInputFor()
+    const before = await committedState(input.inquiryId)
+    let release!: () => void
+    let entered!: () => void
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const reached = new Promise<void>((resolve) => {
+      entered = resolve
+    })
+    const commit = payload.db.commitTransaction.bind(payload.db)
+    vi.spyOn(payload.db, 'commitTransaction').mockImplementationOnce(async (transactionID) => {
+      entered()
+      await gate
+      await commit(transactionID)
+    })
+    let returned = false
+    const pending = createInquiryModerationReport(patientReq, input).then((receipt) => {
+      returned = true
+      return receipt
+    })
+    await reached
+    try {
+      expect(returned).toBe(false)
+      expect(await committedState(input.inquiryId)).toEqual(before)
+    } finally {
+      release()
+    }
+    const receipt = await pending
+    const after = await committedState(input.inquiryId)
+    expect(after.cases.map((doc) => String(doc.id))).toEqual([receipt.reportId])
+    expect(after.audits).toHaveLength(1)
+    references.push(`v1|moderation-event|${after.audits[0]!.id}|reporter`)
+    expect(after.operations).toHaveLength(before.operations.length + 1)
+    expect(after.events).toHaveLength(before.events.length + 1)
+  })
+
+  it('converges concurrent identical report submissions on one report, audit and logical operation', async () => {
+    const input = await reportInputFor()
+    const before = await committedState(input.inquiryId)
+    const otherReq = await createLocalReq({}, payload)
+    otherReq.user = patientReq.user
+    const [first, second] = await Promise.all([
+      createInquiryModerationReport(patientReq, input),
+      createInquiryModerationReport(otherReq, input),
+    ])
+    expect(first).toEqual(second)
+    const after = await committedState(input.inquiryId)
+    expect(after.cases).toHaveLength(1)
+    expect(after.audits).toHaveLength(1)
+    references.push(`v1|moderation-event|${after.audits[0]!.id}|reporter`)
+    expect(after.operations).toHaveLength(before.operations.length + 1)
+    expect(after.events).toHaveLength(before.events.length + 1)
+  })
+
+  it('atomically accepts the report receipt from the normal domain report command', async () => {
+    const source = await report()
+    const stored = await storedReceipt(source.eventId)
+    expect(stored.docs).toHaveLength(1)
+    expect(stored.docs[0]).toMatchObject({ state: 'queued', latestEventSequence: 1 })
+    const { delivery } = await deliver(String(stored.docs[0]!.id))
+    expect(delivery.deliver).toHaveBeenCalledOnce()
+    expect(vi.mocked(delivery.deliver).mock.calls[0]![0].recipientAddress).toBe(recipientEmail(patientReq))
+  })
+
+  it('commits a valid clinic report with terminal scrubbed suppression when delivery eligibility is lost', async () => {
+    const hooks = payload.collections.inquiryModerationEvents.config.hooks
+    const original = hooks.afterChange
+    const loseEligibility: CollectionAfterChangeHook = async ({ doc, req }) => {
+      if (doc.eventType === 'report-received')
+        await payload.update({
+          collection: 'clinicStaff',
+          id: clinicReq.user!.id,
+          data: { authSync: { status: 'failed' } },
+          overrideAccess: true,
+          context: { skipClinicStaffAuthSync: true },
+          req,
+        })
+      return doc
+    }
+    hooks.afterChange = [...(original ?? []), loseEligibility]
+    try {
+      const source = await report(clinicReq)
+      const stored = await storedReceipt(source.eventId)
+      expect(stored.docs).toHaveLength(1)
+      expect(stored.docs[0]).toMatchObject({
+        state: 'suppressed',
+        latestEventSequence: 3,
+        attemptCount: 0,
+        commandPayload: null,
+        recipientAddress: null,
+      })
+      expect(stored.docs[0]!.terminalAt).toBe(stored.docs[0]!.createdAt)
+      expect(stored.docs[0]!.scrubbedAt).toBe(stored.docs[0]!.createdAt)
+      for (const field of [
+        'commandPayload',
+        'recipientAddress',
+        'preparedSubject',
+        'preparedHtml',
+        'preparedText',
+        'preparedProviderRequest',
+        'nextAttemptAt',
+        'leaseToken',
+        'leaseExpiresAt',
+      ] as const)
+        expect(stored.docs[0]![field]).toBeNull()
+      expect(
+        stored.events.map(({ sequence, type, source, outcomeCode }) => ({ sequence, type, source, outcomeCode })),
+      ).toEqual([
+        { sequence: 1, type: 'command.accepted', source: 'command', outcomeCode: null },
+        { sequence: 2, type: 'delivery.suppressed', source: 'command', outcomeCode: 'ineligible' },
+        { sequence: 3, type: 'payload.scrubbed', source: 'command', outcomeCode: null },
+      ])
+      await expect(bindTransactionalEmail(otherClinicReq).accept(commandFor(source.eventId))).rejects.toMatchObject({
+        code: 'access-denied',
+      })
+      await expect(bindTransactionalEmail(clinicReq).accept(commandFor(source.eventId))).resolves.toMatchObject({
+        operationId: String(stored.docs[0]!.id),
+        deduplicated: true,
+      })
+      const { delivery } = await deliver(String(stored.docs[0]!.id))
+      expect(delivery.deliver).not.toHaveBeenCalled()
+    } finally {
+      hooks.afterChange = original
+      await payload.update({
+        collection: 'clinicStaff',
+        id: clinicReq.user!.id,
+        data: { authSync: { status: 'synced' } },
+        overrideAccess: true,
+        context: { skipClinicStaffAuthSync: true },
+      })
+    }
+  })
+
   it('rejects another access-ready staff member and anonymous callers instead of choosing a clinic-wide recipient', async () => {
     const source = await report(clinicReq)
     await expect(bindTransactionalEmail(otherClinicReq).accept(commandFor(source.eventId))).rejects.toMatchObject({
@@ -229,6 +582,112 @@ describe('authoritative moderation report receipt', () => {
       code: 'access-denied',
     })
   })
+
+  it('denies terminal initialization and terminal event appends under ordinary command storage authority', async () => {
+    const source = await report()
+    const stored = (await storedReceipt(source.eventId)).docs[0]!
+    const attempt = (work: (req: PayloadRequest) => Promise<unknown>) =>
+      runOwnedTransaction(patientReq, async (_, transactionID) => {
+        const capability = openStorageCapability(transactionID)
+        try {
+          const req = await createLocalReq(
+            { context: capability.context, req: { transactionID: Promise.resolve(transactionID) } },
+            payload,
+          )
+          return await work(req)
+        } finally {
+          capability.close()
+        }
+      })
+    await expect(
+      attempt((req) =>
+        payload.create({
+          collection: 'transactionalEmailOutbox',
+          overrideAccess: true,
+          req,
+          data: {
+            commandType: stored.commandType,
+            operationReference: stored.operationReference,
+            recipientDigest: stored.recipientDigest,
+            providerIdempotencyKey: stored.providerIdempotencyKey,
+            runtimeEnvironment: stored.runtimeEnvironment,
+            deliveryDeadline: stored.deliveryDeadline,
+            createdAt: stored.createdAt,
+            state: 'suppressed',
+            latestEventSequence: 3,
+            attemptCount: 0,
+            terminalAt: stored.createdAt,
+            scrubbedAt: stored.createdAt,
+            commandPayload: null,
+            recipientAddress: null,
+          },
+        }),
+      ),
+    ).rejects.toMatchObject({ code: 'access-denied' })
+    await expect(
+      attempt((req) =>
+        payload.create({
+          collection: 'transactionalEmailEvents',
+          overrideAccess: true,
+          req,
+          data: {
+            outbox: stored.id,
+            sequence: 2,
+            type: 'delivery.suppressed',
+            source: 'command',
+            outcomeCode: 'ineligible',
+          },
+        }),
+      ),
+    ).rejects.toMatchObject({ code: 'access-denied' })
+    const after = await storedReceipt(source.eventId)
+    expect(after.docs).toEqual([stored])
+    expect(after.events).toHaveLength(1)
+  })
+
+  it.each(['delivery.suppressed', 'payload.scrubbed'] as const)(
+    'rolls the valid report and all terminal storage back when %s fails',
+    async (type) => {
+      const input = await reportInputFor()
+      const before = await committedState(input.inquiryId)
+      const hooks = payload.collections.inquiryModerationEvents.config.hooks
+      const original = hooks.afterChange
+      hooks.afterChange = [
+        ...(original ?? []),
+        async ({ doc, req }) => {
+          if (doc.eventType === 'report-received')
+            await payload.update({
+              collection: 'clinicStaff',
+              id: clinicReq.user!.id,
+              data: { authSync: { status: 'failed' } },
+              overrideAccess: true,
+              context: { skipClinicStaffAuthSync: true },
+              req,
+            })
+          return doc
+        },
+      ]
+      try {
+        await withBeforeHook(
+          'transactionalEmailEvents',
+          async ({ data }) => {
+            if (data.type === type) throw new Error('Synthetic terminal event storage failure')
+            return data
+          },
+          async () => {
+            await expect(createInquiryModerationReport(clinicReq, input)).rejects.toMatchObject({ kind: 'unavailable' })
+          },
+        )
+        expect(await committedState(input.inquiryId)).toEqual(before)
+        expect(
+          (await payload.findByID({ collection: 'clinicStaff', id: clinicReq.user!.id, overrideAccess: true })).authSync
+            ?.status,
+        ).toBe('synced')
+      } finally {
+        hooks.afterChange = original
+      }
+    },
+  )
 
   it('delivers only to the exact stored clinic reporter using the existing protected Dashboard inquiry target', async () => {
     const source = await report(clinicReq, 'other')
@@ -380,7 +839,7 @@ describe('authoritative moderation report receipt', () => {
     }
   })
 
-  it('uses the borrowed transaction for current participant reads and rolls back participant changes and email acceptance together', async () => {
+  it('uses the borrowed transaction for current participant reads while rollback preserves the original atomically accepted operation', async () => {
     const source = await report()
     const original = recipientEmail(patientReq)
     const changed = `${prefix}-transaction@example.test`
@@ -400,6 +859,7 @@ describe('authoritative moderation report receipt', () => {
         const recipient = await bindPayloadCommandCatalog(transactionReq)[
           'moderation.report-received'
         ].authorizeAndResolve(commandFor(source.eventId), `patients:${String(patientReq.user!.id)}`)
+        if ('status' in recipient) throw new Error('Expected an eligible recipient')
         observedAddress = recipient.address
         throw new TransactionalEmailError('access-denied')
       }),
@@ -422,6 +882,7 @@ describe('authoritative moderation report receipt', () => {
           req,
           where: { operationReference: { equals: `v1|moderation-event|${source.eventId}|reporter` } },
           pagination: false,
+          depth: 0,
         })
         const events = await payload.find({
           collection: 'transactionalEmailEvents',
@@ -429,12 +890,13 @@ describe('authoritative moderation report receipt', () => {
           req,
           where: { outbox: { equals: operationId } },
           pagination: false,
+          depth: 0,
         })
         return { outbox: outbox.docs.length, events: events.docs.length }
       } finally {
         capability.close()
       }
     })
-    expect(counts).toEqual({ outbox: 0, events: 0 })
+    expect(counts).toEqual({ outbox: 1, events: 1 })
   })
 })

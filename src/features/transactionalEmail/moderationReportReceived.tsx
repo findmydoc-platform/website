@@ -3,7 +3,7 @@ import { REPORT_RECEIVED_SUBJECT, ReportReceivedEmail, type ReportCategory } fro
 import { render, toPlainText } from '@react-email/render'
 import { isClinicStaffAccessReady, readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
-import { normalizeEmail } from '@/auth/utilities/emailNormalization'
+import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { hasInquiryPackageHardDeleteBarrier } from '@/features/inquiryAggregate/tombstones'
 import type { ClinicStaff } from '@/payload-types'
 import type { CatalogEntry, CatalogRevalidation } from './catalog'
@@ -62,7 +62,7 @@ function patientInquiryUrl(inquiryId: string): string {
 
 /** The report event owns the recipient; current participant access owns delivery eligibility. */
 export function createModerationReportReceivedCatalogEntry(req: PayloadRequest): CatalogEntry<Command> {
-  async function load(command: Command) {
+  async function load(command: Command, actor?: string | null) {
     const event = await find(req, 'inquiryModerationEvents', command.moderationEventId)
     if (!event || event.eventType !== 'report-received' || event.sequence !== 1 || command.recipientSlot !== 'reporter')
       return suppressed('source-unavailable')
@@ -85,50 +85,55 @@ export function createModerationReportReceivedCatalogEntry(req: PayloadRequest):
       ['inquiry', 'clinic', 'patient', 'conversation'].some((field) => id(event[field]) !== id(report[field]))
     )
       return suppressed('source-unavailable')
+    const authorizedActor = `${collection}:${recipientId}`
+    if (actor !== undefined && actor !== authorizedActor) throw new TransactionalEmailError('access-denied')
+    const binding = JSON.stringify([
+      'moderation-report-v1',
+      event.id,
+      report.id,
+      id(report.inquiry),
+      id(report.conversation),
+      id(report.clinic),
+      id(report.patient),
+      collection,
+      recipientId,
+    ])
+    const terminal = (outcomeCode: Outcome) => ({ ...suppressed(outcomeCode), binding })
     const inquiry = await find(req, 'patientClinicInquiries', report.inquiry)
     const conversation = await find(req, 'inquiryConversations', report.conversation)
-    if (!inquiry || !conversation) return suppressed('source-unavailable')
+    if (!inquiry || !conversation) return terminal('source-unavailable')
     if (
       ['clinic', 'patient'].some((field) => id(inquiry[field]) !== id(report[field])) ||
       ['inquiry', 'clinic', 'patient'].some((field) => id(conversation[field]) !== id(report[field])) ||
       (kind === 'patient' && id(report.patient) !== recipientId)
     )
-      return suppressed('recipient-changed')
+      return terminal('recipient-changed')
     const recipient = await find(req, collection, recipientId)
     // A moved staff participant is a binding change, even if their new clinic is not eligible.
     if (recipient && kind === 'clinic' && id(recipient.clinic) !== id(report.clinic))
-      return suppressed('recipient-changed')
+      return terminal('recipient-changed')
     if (
       !recipient ||
       recipient.deletedAt ||
       typeof recipient.email !== 'string' ||
       !recipient.email.trim() ||
+      !isValidEmail(normalizeEmail(recipient.email)) ||
       inquiry.retentionState === 'hard-deleted' ||
       (await hasInquiryPackageHardDeleteBarrier(req, inquiry.id))
     )
-      return suppressed('ineligible')
-    if (kind === 'patient' && inquiry.retentionState !== 'available') return suppressed('ineligible')
+      return terminal('ineligible')
+    if (kind === 'patient' && inquiry.retentionState !== 'available') return terminal('ineligible')
     if (kind === 'clinic') {
       // Reject incomplete staff before the access reader's optional legacy evidence import path.
-      if (!isClinicStaffAccessReady(recipient as unknown as ClinicStaff)) return suppressed('ineligible')
+      if (!isClinicStaffAccessReady(recipient as unknown as ClinicStaff)) return terminal('ineligible')
       const access = await readClinicAccessState(req.payload, recipient.id, req)
-      if (!access || id(access.clinic.id) !== id(report.clinic)) return suppressed('ineligible')
+      if (!access || id(access.clinic.id) !== id(report.clinic)) return terminal('ineligible')
     }
     return {
       status: 'resolved' as const,
-      actor: `${collection}:${recipientId}`,
+      actor: authorizedActor,
       address: normalizeEmail(recipient.email),
-      binding: JSON.stringify([
-        'moderation-report-v1',
-        event.id,
-        report.id,
-        id(report.inquiry),
-        id(report.conversation),
-        id(report.clinic),
-        id(report.patient),
-        collection,
-        recipientId,
-      ]),
+      binding,
       category,
       inquiryId: String(inquiry.id),
       kind,
@@ -138,9 +143,12 @@ export function createModerationReportReceivedCatalogEntry(req: PayloadRequest):
   return {
     isRecipientAllowed: () => true,
     async authorizeAndResolve(command, actor) {
-      const source = await load(command)
-      if (source.status !== 'resolved') throw new TransactionalEmailError('source-missing')
-      if (actor !== source.actor) throw new TransactionalEmailError('access-denied')
+      const source = await load(command, actor)
+      if (source.status !== 'resolved') {
+        if (!('binding' in source) || typeof source.binding !== 'string')
+          throw new TransactionalEmailError('source-missing')
+        return { status: 'suppressed', binding: source.binding, outcomeCode: source.outcomeCode }
+      }
       return { address: source.address, binding: source.binding }
     },
     async revalidate(command): Promise<CatalogRevalidation> {

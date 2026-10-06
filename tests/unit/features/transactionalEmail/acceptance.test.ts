@@ -38,6 +38,26 @@ function acceptanceHarness(catalog: AcceptanceTestCatalog) {
 }
 
 describe('transactional email command acceptance', () => {
+  it('records expected report ineligibility as a terminal operation without a substitute address', async () => {
+    const { commands, created } = acceptanceHarness({
+      'moderation.report-received': {
+        authorizeAndResolve: async () => ({
+          status: 'suppressed' as const,
+          binding: 'moderation-report-v1:exact-reporter:45',
+          outcomeCode: 'ineligible' as const,
+        }),
+      },
+    })
+    const command = {
+      type: 'moderation.report-received' as const,
+      moderationEventId: 45,
+      recipientSlot: 'reporter' as const,
+    }
+    const receipt = await commands.accept(command)
+    await expect(commands.accept(command)).resolves.toEqual({ ...receipt, deduplicated: true })
+    expect(created).toHaveLength(1)
+    expect(created[0]).toMatchObject({ recipientAddress: null, suppressionOutcome: 'ineligible' })
+  })
   it('persists the versioned AuthAction identity for password recovery', async () => {
     const { commands, created } = acceptanceHarness({
       'auth.password-recovery': {

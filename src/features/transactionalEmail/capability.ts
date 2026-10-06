@@ -1,6 +1,18 @@
 import { createLocalReq, type CollectionBeforeOperationHook, type PayloadRequest } from 'payload'
 import { TransactionalEmailError } from './errors'
 import { isActiveTransaction } from './transactions'
+import { commandOperationReference, validateCommand, type TransactionalEmailCommand } from './commands'
+import type { SuppressedRecipientBinding } from './catalog'
+
+type SuppressedAcceptance = Readonly<{
+  command: Extract<
+    TransactionalEmailCommand,
+    { type: 'moderation.report-received' | 'conversation.external-message-received' }
+  >
+  recipientDigest: string
+  acceptedAt: string
+  outcomeCode: SuppressedRecipientBinding['outcomeCode']
+}>
 
 export type WorkerAuthority = {
   readonly kind: 'claim' | 'worker' | 'sweep' | 'provider'
@@ -13,6 +25,9 @@ type StorageCapability = {
   worker?: WorkerAuthority
   eventAppends?: Set<string>
   retentionDeletes?: Set<string>
+  suppressedAcceptance?: SuppressedAcceptance
+  initialCreateConsumed?: boolean
+  initialEvents?: Map<string, { type: string; outcomeCode?: string }>
 }
 type RetirementEvidenceCapability = {
   kind: 'outbox-retirement-evidence'
@@ -23,10 +38,24 @@ type CapabilitySnapshot = Readonly<{
   kind: CapabilityState['kind']
   transactionID: number | string
   worker?: WorkerAuthority
+  suppressedAcceptance?: SuppressedAcceptance
 }>
 type CapabilityBroker = Readonly<{
   version: 1
-  openStorage(transactionID: number | string, worker?: WorkerAuthority): object
+  openStorage(
+    transactionID: number | string,
+    worker?: WorkerAuthority,
+    suppressedAcceptance?: SuppressedAcceptance,
+  ): object
+  consumeSuppressedCreate(identity: object): boolean
+  authorizeSuppressedEvents(identity: object, outbox: number): boolean
+  consumeSuppressedEvent(
+    identity: object,
+    outbox: number,
+    sequence: number,
+    type: string,
+    outcomeCode?: string | null,
+  ): boolean
   openRetirementEvidence(transactionID: number | string): object
   close(identity: object): void
   inspect(identity: object): CapabilitySnapshot | undefined
@@ -41,11 +70,53 @@ function createCapabilityBroker(): CapabilityBroker {
   const states = new WeakMap<object, CapabilityState>()
   return Object.freeze({
     version: 1 as const,
-    openStorage(transactionID: number | string, worker?: WorkerAuthority) {
+    openStorage(transactionID: number | string, worker?: WorkerAuthority, suppressedAcceptance?: SuppressedAcceptance) {
       const identity = Object.freeze({})
       const authority = worker ? Object.freeze({ kind: worker.kind, now: worker.now, token: worker.token }) : undefined
-      states.set(identity, { kind: 'storage', transactionID, worker: authority })
+      states.set(identity, { kind: 'storage', transactionID, worker: authority, suppressedAcceptance })
       return identity
+    },
+    consumeSuppressedCreate(identity: object) {
+      const state = states.get(identity)
+      if (state?.kind !== 'storage' || !state.suppressedAcceptance || state.initialCreateConsumed) return false
+      state.initialCreateConsumed = true
+      return true
+    },
+    authorizeSuppressedEvents(identity: object, outbox: number) {
+      const state = states.get(identity)
+      if (
+        state?.kind !== 'storage' ||
+        !state.suppressedAcceptance ||
+        !state.initialCreateConsumed ||
+        state.initialEvents
+      )
+        return false
+      state.initialEvents = new Map([
+        [`${outbox}:1`, { type: 'command.accepted' }],
+        [`${outbox}:2`, { type: 'delivery.suppressed', outcomeCode: state.suppressedAcceptance.outcomeCode }],
+        [`${outbox}:3`, { type: 'payload.scrubbed' }],
+      ])
+      return true
+    },
+    consumeSuppressedEvent(
+      identity: object,
+      outbox: number,
+      sequence: number,
+      type: string,
+      outcomeCode?: string | null,
+    ) {
+      const state = states.get(identity)
+      if (state?.kind !== 'storage' || !state.suppressedAcceptance) return false
+      const key = `${outbox}:${sequence}`
+      const expected = state.initialEvents?.get(key)
+      if (
+        !expected ||
+        state.initialEvents?.keys().next().value !== key ||
+        expected.type !== type ||
+        (expected.outcomeCode ?? null) !== (outcomeCode ?? null)
+      )
+        return false
+      return Boolean(state.initialEvents?.delete(key))
     },
     openRetirementEvidence(transactionID: number | string) {
       const identity = Object.freeze({})
@@ -62,6 +133,9 @@ function createCapabilityBroker(): CapabilityBroker {
         kind: state.kind,
         transactionID: state.transactionID,
         ...(state.kind === 'storage' && state.worker ? { worker: state.worker } : {}),
+        ...(state.kind === 'storage' && state.suppressedAcceptance
+          ? { suppressedAcceptance: state.suppressedAcceptance }
+          : {}),
       })
     },
     authorizeEventAppends(identity: object, outbox: number, sequences: number[]) {
@@ -102,6 +176,9 @@ function isCapabilityBroker(value: unknown): value is CapabilityBroker {
     Reflect.get(value, 'version') === 1 &&
     [
       'openStorage',
+      'consumeSuppressedCreate',
+      'authorizeSuppressedEvents',
+      'consumeSuppressedEvent',
       'openRetirementEvidence',
       'close',
       'inspect',
@@ -142,6 +219,75 @@ export function openStorageCapability(transactionID: number | string, worker?: W
     context: { transactionalEmail: identity },
     close: () => capabilityBroker.close(identity),
   }
+}
+
+/** Only command acceptance can create an already-scrubbed, non-deliverable participant operation. */
+export function openSuppressedAcceptanceCapability(transactionID: number | string, input: SuppressedAcceptance) {
+  const command = validateCommand(input.command)
+  if (
+    (command.type !== 'moderation.report-received' && command.type !== 'conversation.external-message-received') ||
+    !['ineligible', 'source-unavailable', 'recipient-changed', 'superseded'].includes(input.outcomeCode) ||
+    !/^[A-Za-z0-9_-]{1,128}:[a-f0-9]{64}$/.test(input.recipientDigest) ||
+    !Number.isFinite(Date.parse(input.acceptedAt))
+  )
+    throw new TransactionalEmailError('access-denied')
+  const expected = Object.freeze({ ...input, command: Object.freeze(command) })
+  const identity = capabilityBroker.openStorage(transactionID, undefined, expected)
+  return { context: { transactionalEmail: identity }, close: () => capabilityBroker.close(identity) }
+}
+
+export function storageSuppressedAcceptance(req: PayloadRequest) {
+  const identity = capabilityIdentity(req)
+  return identity ? capabilityBroker.inspect(identity)?.suppressedAcceptance : undefined
+}
+
+export function consumeSuppressedAcceptanceCreate(req: PayloadRequest, record: Record<string, unknown>) {
+  const identity = capabilityIdentity(req)
+  const expected = storageSuppressedAcceptance(req)
+  if (
+    !identity ||
+    !expected ||
+    record.commandType !== expected.command.type ||
+    record.operationReference !== commandOperationReference(expected.command) ||
+    record.recipientDigest !== expected.recipientDigest ||
+    record.createdAt !== expected.acceptedAt ||
+    record.terminalAt !== expected.acceptedAt ||
+    record.scrubbedAt !== expected.acceptedAt ||
+    record.deliveryDeadline !== new Date(Date.parse(expected.acceptedAt) + 86_400_000).toISOString() ||
+    ['preparedAt', 'lastAttemptAt', 'firstAmbiguousAt', 'providerMessageId', 'providerAcceptedAt'].some(
+      (field) => record[field] != null,
+    ) ||
+    record.state !== 'suppressed' ||
+    record.latestEventSequence !== 3 ||
+    record.attemptCount !== 0 ||
+    !capabilityBroker.consumeSuppressedCreate(identity)
+  )
+    throw new TransactionalEmailError('access-denied')
+}
+
+export function authorizeSuppressedAcceptanceEvents(req: PayloadRequest, outbox: number) {
+  const identity = capabilityIdentity(req)
+  if (!identity || !capabilityBroker.authorizeSuppressedEvents(identity, outbox))
+    throw new TransactionalEmailError('access-denied')
+}
+
+export function consumeSuppressedAcceptanceEvent(req: PayloadRequest, event: Record<string, unknown>) {
+  const identity = capabilityIdentity(req)
+  if (
+    !identity ||
+    event.source !== 'command' ||
+    ['providerEventId', 'providerEventType', 'providerMessageId', 'sourceOccurredAt', 'attemptNumber'].some(
+      (field) => event[field] != null,
+    ) ||
+    !capabilityBroker.consumeSuppressedEvent(
+      identity,
+      Number(event.outbox),
+      Number(event.sequence),
+      String(event.type),
+      event.outcomeCode as string | null | undefined,
+    )
+  )
+    throw new TransactionalEmailError('access-denied')
 }
 
 async function capabilityState(req: PayloadRequest) {

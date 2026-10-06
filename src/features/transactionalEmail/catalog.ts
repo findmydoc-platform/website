@@ -8,6 +8,12 @@ export type RecipientBinding = Readonly<{
   binding: string
 }>
 export type CatalogSuppressionOutcome = 'ineligible' | 'source-unavailable' | 'superseded'
+export type SuppressedRecipientBinding = Readonly<{
+  status: 'suppressed'
+  binding: string
+  outcomeCode: CatalogSuppressionOutcome | 'recipient-changed'
+}>
+export type CatalogAcceptance = RecipientBinding | SuppressedRecipientBinding
 export type EligibleCatalogPreparation = Readonly<{
   status: 'eligible'
   recipient: RecipientBinding
@@ -30,7 +36,14 @@ export type CatalogEntry<Command extends TransactionalEmailCommand = Transaction
   authValidity?(command: Command): Promise<{ actionAt: string; lifetimeMilliseconds: number }>
   isRecipientAllowed?(recipient: RecipientBinding): boolean
   revalidate(command: Command): Promise<CatalogRevalidation>
-  authorizeAndResolve(command: Command, actor: string | null): Promise<RecipientBinding>
+  authorizeAndResolve(
+    command: Command,
+    actor: string | null,
+  ): Promise<
+    Extract<Command, { type: 'moderation.report-received' | 'conversation.external-message-received' }> extends never
+      ? RecipientBinding
+      : CatalogAcceptance
+  >
 }
 export type CommandCatalog = {
   readonly [Type in CommandType]?: CatalogEntry<Extract<TransactionalEmailCommand, { type: Type }>>
@@ -89,7 +102,7 @@ export function resolveCatalogEntry(catalog: CommandCatalog, command: Transactio
 export async function dispatchCommandPreparation(input: {
   catalog: CommandCatalog
   command: TransactionalEmailCommand
-  storedRecipientAddress: string
+  storedRecipientAddress: string | null
   storedRecipientDigest: string
   digestRecipient(recipient: RecipientBinding): string
 }): Promise<CatalogPreparationDecision> {

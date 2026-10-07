@@ -4,6 +4,10 @@ import { validateInput } from './common.mjs'
 
 const LANES = ['admin', 'public']
 const result = (mode, lanes, reason) => ({ mode, files: [], lanes, reasons: [reason], shadowFiles: [] })
+const isDocumentation = (filename) =>
+  !/(?:^|[/.])generated(?:[./-]|$)/i.test(filename) &&
+  ((filename.startsWith('docs/') && filename.endsWith('.md')) ||
+    ['AGENTS.md', 'README.md'].includes(path.posix.basename(filename)))
 
 const existingConfinedSpec = (root, spec) => {
   try {
@@ -24,7 +28,7 @@ export function selectE2e(input, { root = process.cwd() } = {}) {
   for (const change of validation.changes) {
     if (change.status !== 'M' || change.previousPath !== undefined)
       return result('full', [...LANES], 'non-modification-change')
-    if (change.path.endsWith('.md')) continue
+    if (isDocumentation(change.path)) continue
 
     const admin = /^tests\/e2e\/admin\/(?:[^/]+\/)*[^/]+\.(?:admin-smoke|admin-login|admin-regression)\.spec\.ts$/.test(
       change.path,

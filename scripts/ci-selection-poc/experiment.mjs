@@ -179,8 +179,9 @@ async function collect(slot) {
 }
 save()
 const outcomes = await Promise.allSettled(
-  ['integration', 'storybook'].map(async (topic) => {
-    for (const slot of journal.slots.filter((item) => item.topic === topic)) {
+  ['integration:1', 'integration:2', 'storybook:1', 'storybook:2'].map(async (group) => {
+    const [topic, round] = group.split(':')
+    for (const slot of journal.slots.filter((item) => item.topic === topic && item.round === Number(round))) {
       if (slot.state === 'complete') continue
       if (slot.state === 'failed') throw new Error(`Retained failure ${slot.runId}`)
       if (!slot.runId) await dispatch(slot)

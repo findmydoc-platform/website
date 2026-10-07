@@ -85,6 +85,12 @@ describe('complete PR change discovery', () => {
   })
 })
 
+describe('invalid modification provenance', () => {
+  it.each(['M', 'A', 'D', 'T'])('rejects a previous path on status %s', (status) => {
+    expect(validateInput({ changes: [{ status, path: 'new.ts', previousPath: 'old.ts' }] }).valid).toBe(false)
+  })
+})
+
 describe('measurement acceptance', () => {
   it('requires exact files and successful unretried assertions', () => {
     expect(() => validateRun(receipt())).not.toThrow()

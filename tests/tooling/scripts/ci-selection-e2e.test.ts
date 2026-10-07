@@ -119,6 +119,29 @@ describe('E2E relevance selection', () => {
     })
   })
 
+  it.each(['docs/testing/setup.md', 'AGENTS.md', 'README.md', 'src/components/README.md', 'tests/e2e/AGENTS.md'])(
+    'preserves the documentation exclusion for %s',
+    (filename) => {
+      expect(select(modified(filename))).toMatchObject({ mode: 'skip', lanes: [] })
+      expect(select(modified(adminPath, filename))).toMatchObject({ mode: 'selected', lanes: ['admin'] })
+    },
+  )
+
+  it.each([
+    'src/content/foo.md',
+    'config/runtime.md',
+    'unknown.md',
+    'docs/generated/routes.md',
+    'docs/generated/README.md',
+    'src/generated/AGENTS.md',
+    'src/generated-content/README.md',
+    'docs/routes.generated.md',
+    'docs/runtime.json',
+  ])('requires full execution for unknown or generated documentation-like input %s', (filename) => {
+    expect(select(modified(filename))).toEqual({ ...full, reasons: ['shared-or-unknown-input'] })
+    expect(select(modified(publicPath, filename))).toEqual({ ...full, reasons: ['shared-or-unknown-input'] })
+  })
+
   it.each([
     'playwright.config.ts',
     'src/payload.config.ts',

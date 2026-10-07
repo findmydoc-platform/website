@@ -17,6 +17,8 @@ export function validateInput(input) {
       return { valid: false, changes: [], reason: 'invalid-change-manifest' }
     if ((change.status === 'R' || change.status === 'C') && !safePath(change.previousPath))
       return { valid: false, changes: [], reason: 'missing-previous-path' }
+    if (change.previousPath !== undefined && !['R', 'C'].includes(change.status))
+      return { valid: false, changes: [], reason: 'unexpected-previous-path' }
     if (change.previousPath !== undefined && !safePath(change.previousPath))
       return { valid: false, changes: [], reason: 'invalid-previous-path' }
   }

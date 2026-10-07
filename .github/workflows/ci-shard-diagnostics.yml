@@ -60,7 +60,7 @@ jobs:
     needs: scope
     if: needs.scope.outputs.run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     env:
       PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
       PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}

@@ -75,3 +75,30 @@ Runner observations use frozen commit `d829c40860d34ff87c64e8bbdcc16c80dcc92873`
 All four runs pass exact file manifests, case identities and 102-file coverage source scope. Categories runner median is 152.5 seconds, range 150–155; Reviews median is 421 seconds, range 380–462. Workflow medians are 159.5 and 427.5 seconds. Total investigation runner cost is 1,147 seconds, or 19:07, with no failed attempts or extra repeats. These costs include all physical scope, worker and result jobs, including installation and cleanup. Initial queue is separate; workflow duration includes between-job waits.
 
 All runners use four vCPUs, Node 24.14.0 and pnpm 10.28.2. Both Categories workers use AMD EPYC 7763; Reviews workers use EPYC 9V45 and 9V74. Hardware variation limits interpretation of the Reviews range. Neither group has a fresh paired full reference or a measurement on the combined DB-copy/sharded topology. No saved-minute or production critical-path claim is derived from these standalone timings. Their independently successful execution supports a narrow test-only selection POC, not complete product dependency coverage.
+
+## Native selection counterexample
+
+Two separate agents test native discovery and a controlled source-contract mutation at frozen commit `ae16d936fb8cb5020333f51a22a3970a929e6184`, with Vitest 4.1.11 and Node 24.21.0. Discovery uses the actual `vitest.config.ts`, Integration project and native `createVitest` / `getRelevantTestSpecifications` API without starting tests or global setup.
+
+| Changed source | Native selected files | Relevant consumer result |
+| --- | --- | --- |
+| Seed Upsert implementation | 85 | Directly importing Upsert test included |
+| Categories collection | 85 | Categories lifecycle included |
+| ReviewWorkflow | 85 | ReviewResponses and ReviewAppeals included |
+| Clinic Profile Drafts migration | 0 | Its existing source-reading migration contract omitted |
+
+The first three complete selected lists are identical. Broad transitive import selection is observed; unnecessary execution is not established. The negative source is `src/migrations/20260730_205420_clinic_profile_drafts.ts`. Its consumer, `tests/integration/migrations/clinicProfileDrafts.test.ts`, uses `readFileSync` and asserts that `profile_revision` has SQL default `0`.
+
+An isolated copy changes exactly that default to `1`. A temporary native Node-environment configuration executes only the existing filesystem contract, with no database/global setup or new Payload configuration. The migration is never executed and test assertions remain byte-identical.
+
+| Contract execution | Result | Exit code |
+| --- | --- | --- |
+| Original source | 3 passed | 0 |
+| Default changed to 1 | Expected default assertion fails; 2 pass | 1 |
+| Original bytes restored | 3 passed | 0 |
+
+While the mutation exists, native `related` discovery and `vitest list --filesOnly --changed=<frozen-commit> --project integration` both select zero files using the actual repository configuration. The preserved diff contains only the single migration change. Case identities are unchanged, no retries or unhandled errors occur, and the failure points to the unchanged default assertion at line 10. The full verbose failure log preserves the SQL expectation where Vitest's serialized message truncates it. This evidence check required no extra mutation or test run.
+
+Source/test hashes and a clean Git diff confirm restoration. The temporary worktree is archived; detailed commands, complete native lists, raw reports, expected failure and hashes remain in ignored `native-selection-proof` evidence. There are exactly three contract executions, no DB operations, no Actions runs and zero additional Actions minutes. Normal CI remains unchanged.
+
+This counterexample disproves complete automatic affected-test detection for this filesystem-read edge. It does not establish a missed dynamic Payload relationship or certify every other dependency. Native selection remains useful for imports; source readers require explicit consumer inclusion or full-suite fallback. For migrations, retain full fallback as the smallest safe policy.

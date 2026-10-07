@@ -49,3 +49,29 @@ The bounded POC ends after eight attempts, seven successful runs and three valid
 Measurement sources stay frozen at `cb8043be`. Subsequent refinements reject contradictory status/previous-path manifests, restrict E2E Markdown exclusions and allow independent pairs to run concurrently. They do not alter product/test sources or relabel measurements. The original journal, parallel-continuation snapshot, run IDs, jobs, receipts, coverage and failed logs remain in ignored evidence.
 
 The valid Integration pair uses Intel Xeon Platinum 8573C on both workers. The unpaired second candidate uses AMD EPYC 9V45; both Storybook baseline workers use AMD EPYC 7763. Worker CPU types differ across groups, with four vCPUs and approximately 16 GiB memory in completed workers. Initial queue time is reported separately; diagnosis duration includes between-job waits. No production critical-path saving, monthly saving, cache gain or combined DB-copy/shard gain is inferred from these experiments.
+
+## Additional independent groups
+
+The manual workflow supports controlled Categories and Reviews manifests alongside the original Email manifest. Native Vitest file selection, the existing reporter and the original Payload/database setup are reused. No new configuration, test folder, database optimization or cache policy is introduced. Unknown/shared changes still require the full suite; these controlled test-only manifests do not implement product-impact selection.
+
+Categories executes its lifecycle file and the source-reading collection contract. Reviews executes twelve existing lifecycle, access, seed and migration-contract files plus the collection contract. Its two migration-contract files inspect source text rather than execute migrations. Each selected group retains all original cases in its approved files.
+
+| Local functional run | Files / cases | Process time including discovery, DB setup, coverage and cleanup |
+| --- | --- | --- |
+| Categories | 2 / 9 | 35.83 seconds |
+| Reviews | 13 / 44 | 226.77 seconds |
+
+Both local runs pass and match the historical full reference's case identities. Both retain the same 102-file coverage source scope, with partial diagnostic coverage. Local times are not GitHub runner savings. The local shared database requires serial execution; separate GitHub runners can execute independently.
+
+Runner observations use frozen commit `d829c40860d34ff87c64e8bbdcc16c80dcc92873`. Product/test sources, fixtures, setup, dependencies, coverage configuration and the reporter match the historical full reference at `cb8043be`. Historical receipts retain their original identities and supply case/source validation only. Two runs per group observe repeatability without restarting a full measurement series; the new timing contract is unpaired. Evidence is retained separately under ignored `selection-groups` diagnostics.
+
+| Group / run | Physical runner seconds | Workflow seconds excluding initial queue | Initial queue seconds | Test process seconds |
+| --- | --- | --- | --- | --- |
+| Categories / 37612086192 | 150 | 157 | 5 | 90.15 |
+| Categories / 37612090649 | 155 | 162 | 4 | 88.96 |
+| Reviews / 37612403302 | 380 | 387 | 5 | 323.66 |
+| Reviews / 37612406940 | 462 | 468 | 4 | 402.72 |
+
+All four runs pass exact file manifests, case identities and 102-file coverage source scope. Categories runner median is 152.5 seconds, range 150–155; Reviews median is 421 seconds, range 380–462. Workflow medians are 159.5 and 427.5 seconds. Total investigation runner cost is 1,147 seconds, or 19:07, with no failed attempts or extra repeats. These costs include all physical scope, worker and result jobs, including installation and cleanup. Initial queue is separate; workflow duration includes between-job waits.
+
+All runners use four vCPUs, Node 24.14.0 and pnpm 10.28.2. Both Categories workers use AMD EPYC 7763; Reviews workers use EPYC 9V45 and 9V74. Hardware variation limits interpretation of the Reviews range. Neither group has a fresh paired full reference or a measurement on the combined DB-copy/sharded topology. No saved-minute or production critical-path claim is derived from these standalone timings. Their independently successful execution supports a narrow test-only selection POC, not complete product dependency coverage.

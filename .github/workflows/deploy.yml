@@ -430,7 +430,7 @@ jobs:
         id: integration
         env:
           NODE_ENV: test
-        run: pnpm vitest --project integration --run --coverage --reporter=verbose
+        run: node scripts/integration-runner.mjs
 
       - name: Publish integration coverage
         if: ${{ steps.integration.outcome == 'success' || steps.integration.outcome == 'failure' }}

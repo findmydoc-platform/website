@@ -1,10 +1,18 @@
 import { loadLocalAndTestEnv } from '../../scripts/test-env.mjs'
-import { setupTestDatabase, teardownTestDatabase } from '../../scripts/test-database-harness.mjs'
+import {
+  assertIntegrationBaseline,
+  setupTestDatabase,
+  teardownTestDatabase,
+} from '../../scripts/test-database-harness.mjs'
 
 loadLocalAndTestEnv()
 
 export async function setup() {
   try {
+    if (process.env.INTEGRATION_BASELINE_COPY === '1') {
+      await assertIntegrationBaseline()
+      return
+    }
     await setupTestDatabase({ templateKind: 'empty' })
   } catch (error) {
     console.error('❌ Failed to start test database:', error)

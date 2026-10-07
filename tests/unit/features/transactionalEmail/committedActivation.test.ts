@@ -18,6 +18,12 @@ const expectedWebhookEvents = [
   'message.policy_rejected',
 ] as const
 type CredentialEvidence = { bindingId: string; sha256: string }
+const moderationCommands = [
+  'moderation.report-received',
+  'moderation.report-decided',
+  'moderation.appeal-received',
+  'moderation.appeal-decided',
+] as const
 type PreflightCredentials = {
   projectToken: CredentialEvidence
   webhookSecret: CredentialEvidence
@@ -43,6 +49,147 @@ const targetIdentity = ({
 }) => ({ projectId, routeId, routeSlug, teamId })
 
 describe('committed transactional email activation', () => {
+  it.each([
+    ['moderation.report-received', 'website-pr-2058'],
+    ['moderation.report-decided', 'website-pr-2060'],
+    ['moderation.appeal-received', 'website-pr-2061'],
+    ['moderation.appeal-decided', 'website-pr-2062'],
+  ] as const)('declares %s separately with its own reviewed Production release', (commandType, onePath) => {
+    expect(isTransactionalEmailCommandActivationDeclared('preview', commandType, activationRegistry)).toBe(true)
+    expect(isTransactionalEmailCommandActivationDeclared('production', commandType, activationRegistry)).toBe(true)
+    expect(activationRegistry.records.filter((record) => record.commandType === commandType)).toEqual([
+      {
+        commandType,
+        registryVersion: 'activation-v1',
+        preflightVersion: 'preview-preflight-v1',
+        environment: 'preview',
+      },
+      {
+        commandType,
+        registryVersion: 'activation-v1',
+        preflightVersion: 'production-preflight-v2',
+        environment: 'production',
+        release: { onePath },
+      },
+    ])
+  })
+
+  it.each(
+    moderationCommands.flatMap((commandType) =>
+      (['missing release', 'invalid release', 'reused release', 'Preview preflight', 'stale registry'] as const).map(
+        (drift) => [commandType, drift] as const,
+      ),
+    ),
+  )('rejects the %s Production declaration with %s', (commandType, drift) => {
+    const invalid = structuredClone(activationRegistry)
+    const record = invalid.records.find(
+      (record) => record.environment === 'production' && record.commandType === commandType,
+    )!
+    if (drift === 'missing release') Reflect.deleteProperty(record, 'release')
+    else if (drift === 'invalid release') record.release!.onePath = 'unreviewed-release'
+    else if (drift === 'reused release') record.release!.onePath = 'website-pr-2059'
+    else if (drift === 'Preview preflight') record.preflightVersion = 'preview-preflight-v1'
+    else record.registryVersion = 'activation-v0'
+
+    expect(() => isTransactionalEmailCommandActivationDeclared('production', commandType, invalid)).toThrow(
+      'environment-unavailable',
+    )
+  })
+
+  it.each(moderationCommands)('rolls back only the %s Production declaration without changing Preview', (removed) => {
+    const rolledBack = structuredClone(activationRegistry)
+    rolledBack.records = rolledBack.records.filter(
+      ({ environment, commandType }) => environment !== 'production' || commandType !== removed,
+    )
+
+    for (const environment of hostedEnvironments) {
+      for (const commandType of commandTypes) {
+        expect(isTransactionalEmailCommandActivationDeclared(environment, commandType, rolledBack)).toBe(
+          environment === 'production' && commandType === removed
+            ? false
+            : isTransactionalEmailCommandActivationDeclared(environment, commandType, activationRegistry),
+        )
+      }
+    }
+  })
+
+  it('declares conversation notifications separately with the reviewed Production release', () => {
+    expect(
+      isTransactionalEmailCommandActivationDeclared(
+        'preview',
+        'conversation.external-message-received',
+        activationRegistry,
+      ),
+    ).toBe(true)
+    expect(
+      isTransactionalEmailCommandActivationDeclared(
+        'production',
+        'conversation.external-message-received',
+        activationRegistry,
+      ),
+    ).toBe(true)
+    expect(
+      activationRegistry.records.filter(({ commandType }) => commandType === 'conversation.external-message-received'),
+    ).toEqual([
+      {
+        commandType: 'conversation.external-message-received',
+        registryVersion: 'activation-v1',
+        preflightVersion: 'preview-preflight-v1',
+        environment: 'preview',
+      },
+      {
+        commandType: 'conversation.external-message-received',
+        registryVersion: 'activation-v1',
+        preflightVersion: 'production-preflight-v2',
+        environment: 'production',
+        release: { onePath: 'website-pr-2059' },
+      },
+    ])
+  })
+
+  it.each([
+    'missing release',
+    'invalid release',
+    'reused release',
+    'Preview preflight',
+    'stale preflight',
+    'stale registry',
+  ] as const)('rejects a conversation Production declaration with %s', (drift) => {
+    const invalid = structuredClone(activationRegistry)
+    const record = invalid.records.find(
+      ({ environment, commandType }) =>
+        environment === 'production' && commandType === 'conversation.external-message-received',
+    )!
+    if (drift === 'missing release') Reflect.deleteProperty(record, 'release')
+    else if (drift === 'invalid release') record.release!.onePath = 'unreviewed-release'
+    else if (drift === 'reused release') record.release!.onePath = 'website-pr-2040'
+    else if (drift === 'Preview preflight') record.preflightVersion = 'preview-preflight-v1'
+    else if (drift === 'stale preflight') record.preflightVersion = 'production-preflight-v1'
+    else record.registryVersion = 'activation-v0'
+
+    expect(() =>
+      isTransactionalEmailCommandActivationDeclared('production', 'conversation.external-message-received', invalid),
+    ).toThrow('environment-unavailable')
+  })
+
+  it('removes only the conversation Production declaration during rollback', () => {
+    const rolledBack = structuredClone(activationRegistry)
+    rolledBack.records = rolledBack.records.filter(
+      ({ environment, commandType }) =>
+        environment !== 'production' || commandType !== 'conversation.external-message-received',
+    )
+
+    for (const environment of hostedEnvironments) {
+      for (const commandType of commandTypes) {
+        expect(isTransactionalEmailCommandActivationDeclared(environment, commandType, rolledBack)).toBe(
+          environment === 'production' && commandType === 'conversation.external-message-received'
+            ? false
+            : isTransactionalEmailCommandActivationDeclared(environment, commandType, activationRegistry),
+        )
+      }
+    }
+  })
+
   it('rejects Production auth declarations without the expected native-mail suppression identity', () => {
     const incomplete = structuredClone(activationRegistry)
     const production = incomplete.preflights.find(({ environment }) => environment === 'production')!
@@ -125,14 +272,22 @@ describe('committed transactional email activation', () => {
 
   it('preserves every existing Preview record and the Production clinic registration declaration', () => {
     expect(activationRegistry.records.filter(({ environment }) => environment === 'preview')).toEqual(
-      ['clinic.registration-received', 'auth.email-verification', 'auth.invitation', 'auth.password-recovery'].map(
-        (commandType) => ({
-          commandType,
-          registryVersion: 'activation-v1',
-          preflightVersion: 'preview-preflight-v1',
-          environment: 'preview',
-        }),
-      ),
+      [
+        'clinic.registration-received',
+        'auth.email-verification',
+        'auth.invitation',
+        'auth.password-recovery',
+        'conversation.external-message-received',
+        'moderation.report-received',
+        'moderation.report-decided',
+        'moderation.appeal-received',
+        'moderation.appeal-decided',
+      ].map((commandType) => ({
+        commandType,
+        registryVersion: 'activation-v1',
+        preflightVersion: 'preview-preflight-v1',
+        environment: 'preview',
+      })),
     )
     expect(
       activationRegistry.records.find(
@@ -259,20 +414,23 @@ describe('committed transactional email activation', () => {
     }
   })
 
-  it('declares the reviewed auth commands and preserves clinic registration in both environments', () => {
-    const previewCommands = new Set([
+  it('declares reviewed commands and preserves clinic registration in both environments', () => {
+    const productionCommands = new Set([
       'auth.email-verification',
       'auth.invitation',
       'auth.password-recovery',
       'clinic.registration-received',
+      'conversation.external-message-received',
+      ...moderationCommands,
     ])
+    const previewCommands = new Set(productionCommands)
 
     for (const command of commandTypes) {
       expect(isTransactionalEmailCommandActivationDeclared('preview', command, activationRegistry)).toBe(
         previewCommands.has(command),
       )
       expect(isTransactionalEmailCommandActivationDeclared('production', command, activationRegistry)).toBe(
-        previewCommands.has(command),
+        productionCommands.has(command),
       )
     }
 
@@ -289,6 +447,12 @@ describe('committed transactional email activation', () => {
       ['auth.email-verification', 'website-pr-2040'],
       ['auth.invitation', 'website-pr-2043'],
       ['auth.password-recovery', 'website-pr-2041'],
+      ['conversation.external-message-received', 'website-pr-2059'],
+      ['moderation.report-received', 'website-pr-2058'],
+      ['moderation.report-decided', 'website-pr-2060'],
+      ['moderation.appeal-received', 'website-pr-2061'],
+      ['moderation.appeal-decided', 'website-pr-2062'],
     ])
+    expect(activationRegistry.records).toHaveLength(18)
   })
 })

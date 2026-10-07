@@ -16,20 +16,26 @@ import { recipientAddressDigest } from '@/features/transactionalEmail/recipientB
 const previewDigest = 'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf'
 
 describe('transactional email activation policy', () => {
-  it('declares reviewed auth commands separately in Preview and Production', () => {
-    const previewCommands = new Set([
+  it('declares reviewed commands separately in Preview and Production', () => {
+    const productionCommands = new Set([
       'auth.email-verification',
       'auth.invitation',
       'auth.password-recovery',
       'clinic.registration-received',
+      'conversation.external-message-received',
+      'moderation.report-received',
+      'moderation.report-decided',
+      'moderation.appeal-received',
+      'moderation.appeal-decided',
     ])
+    const previewCommands = new Set(productionCommands)
 
     for (const command of commandTypes) {
       expect(isTransactionalEmailCommandActivationDeclared('preview', command, committedRegistry)).toBe(
         previewCommands.has(command),
       )
       expect(isTransactionalEmailCommandActivationDeclared('production', command, committedRegistry)).toBe(
-        previewCommands.has(command),
+        productionCommands.has(command),
       )
     }
   })
@@ -73,6 +79,58 @@ describe('transactional email activation policy', () => {
         expect(policy.evaluate(command, 'recipient@example.test')).toBe('command-not-enabled')
     }
   })
+
+  it('disables conversation acceptance after removing its Production record while preserving clinic registration', () => {
+    const fixture = createActivationFixture('production')
+    const conversationRecord = {
+      ...fixture.record,
+      commandType: 'conversation.external-message-received' as const,
+      release: { onePath: 'website-pr-2059' },
+    }
+    fixture.registry.records.push(conversationRecord)
+    const activated = resolveActivationPolicy(fixture.binding, fixture.registry)
+    expect(activated.evaluate('conversation.external-message-received', 'recipient@example.test')).toBeNull()
+
+    fixture.registry.records = fixture.registry.records.filter((record) => record !== conversationRecord)
+    const rolledBack = resolveActivationPolicy(fixture.binding, fixture.registry)
+    expect(rolledBack.evaluate('conversation.external-message-received', 'recipient@example.test')).toBe(
+      'command-not-enabled',
+    )
+    expect(rolledBack.evaluate('clinic.registration-received', 'recipient@example.test')).toBeNull()
+  })
+  it.each([
+    'moderation.report-received',
+    'moderation.report-decided',
+    'moderation.appeal-received',
+    'moderation.appeal-decided',
+  ] as const)('disables only %s acceptance when its Production record is removed', (removed) => {
+    const fixture = createActivationFixture('production')
+    const moderationRecords = [
+      ['moderation.report-received', 'website-pr-2058'],
+      ['moderation.report-decided', 'website-pr-2060'],
+      ['moderation.appeal-received', 'website-pr-2061'],
+      ['moderation.appeal-decided', 'website-pr-2062'],
+    ] as const
+    fixture.registry.records.push(
+      ...moderationRecords.map(([commandType, onePath]) => ({
+        ...fixture.record,
+        commandType,
+        release: { onePath },
+      })),
+    )
+    const activated = resolveActivationPolicy(fixture.binding, fixture.registry)
+    for (const [commandType] of moderationRecords)
+      expect(activated.evaluate(commandType, 'recipient@example.test')).toBeNull()
+
+    fixture.registry.records = fixture.registry.records.filter(({ commandType }) => commandType !== removed)
+    const rolledBack = resolveActivationPolicy(fixture.binding, fixture.registry)
+    for (const [commandType] of moderationRecords)
+      expect(rolledBack.evaluate(commandType, 'recipient@example.test')).toBe(
+        commandType === removed ? 'command-not-enabled' : null,
+      )
+    expect(rolledBack.evaluate('clinic.registration-received', 'recipient@example.test')).toBeNull()
+  })
+
   it('suppresses an unregistered command after validating its hosted credentials', () => {
     const input = createWebhookConfiguration()
     const binding = resolveHostedLettermintBinding(

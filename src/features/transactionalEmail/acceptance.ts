@@ -6,7 +6,12 @@ import {
   type CommandType,
   type TransactionalEmailCommand,
 } from './commands'
-import { resolveCatalogEntry, type CommandCatalog, type RecipientBinding } from './catalog'
+import {
+  resolveCatalogEntry,
+  type CatalogAcceptance,
+  type CatalogSuppressionOutcome,
+  type CommandCatalog,
+} from './catalog'
 import { TransactionalEmailError } from './errors'
 import type { EmailEnvironment } from './environment'
 
@@ -16,7 +21,8 @@ export type NewOperation = {
   operationReference: string
   acceptedAt: string
   deliveryDeadline: string
-  recipientAddress: string
+  recipientAddress: string | null
+  suppressionOutcome?: CatalogSuppressionOutcome | 'recipient-changed'
   recipientDigest: string
   providerIdempotencyKey: string
   runtimeEnvironment: EmailEnvironment
@@ -29,7 +35,7 @@ export type AcceptanceDependencies = {
   now?: () => number
   actor: string | null
   catalog: CommandCatalog
-  digestRecipient(recipient: RecipientBinding): string
+  digestRecipient(recipient: CatalogAcceptance): string
   environment: EmailEnvironment
   transaction<Result>(work: (storage: AcceptanceStorage) => Promise<Result>): Promise<Result>
 }
@@ -42,9 +48,20 @@ export function createCommandPort(dependencies: AcceptanceDependencies): Transac
       const entry = resolveCatalogEntry(dependencies.catalog, command)
       return dependencies.transaction(async (storage): Promise<TransactionalEmailAcceptance> => {
         const recipient = await entry.authorizeAndResolve(command, dependencies.actor)
+        const suppressionOutcome = 'status' in recipient ? recipient.outcomeCode : undefined
         if (
           !recipient.binding ||
-          !(entry.isRecipientAllowed?.(recipient) ?? recipient.address.endsWith('@example.test'))
+          (!('status' in recipient) &&
+            !(entry.isRecipientAllowed?.(recipient) ?? recipient.address.endsWith('@example.test'))) ||
+          (suppressionOutcome &&
+            (![
+              'moderation.report-received',
+              'moderation.report-decided',
+              'moderation.appeal-received',
+              'moderation.appeal-decided',
+              'conversation.external-message-received',
+            ].includes(command.type) ||
+              !['ineligible', 'source-unavailable', 'recipient-changed', 'superseded'].includes(suppressionOutcome)))
         ) {
           throw new TransactionalEmailError('invalid-command')
         }
@@ -69,7 +86,8 @@ export function createCommandPort(dependencies: AcceptanceDependencies): Transac
           operationReference,
           acceptedAt,
           deliveryDeadline: new Date(deadline).toISOString(),
-          recipientAddress: recipient.address,
+          recipientAddress: 'status' in recipient ? null : recipient.address,
+          ...(suppressionOutcome ? { suppressionOutcome } : {}),
           recipientDigest: dependencies.digestRecipient(recipient),
           providerIdempotencyKey: randomUUID(),
           runtimeEnvironment: dependencies.environment,

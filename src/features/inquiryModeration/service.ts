@@ -3,6 +3,9 @@ import { createHash } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 
 import { acquireInquiryCommandLock } from '@/features/inquiryAggregate/commandLock'
+import type { TransactionalEmailCommands } from '@/features/transactionalEmail'
+import { selectTransactionalEmailCommandAcceptance } from '@/features/transactionalEmail/payloadIntegration'
+import { TransactionalEmailError } from '@/features/transactionalEmail/errors'
 import type {
   InquiryModerationAppealDecisionInput,
   InquiryModerationAppealInput,
@@ -304,69 +307,73 @@ export const createInquiryModerationReport = async (
   if (initialReplay) return { received: true, reportId: String(initialReplay.id) }
   const canonicalTargetKey = String(payloadId(normalizedTargetId(input.targetType, input.targetId)))
 
-  return runCommandTransaction(
-    req,
-    async () => {
-      const reporter = await resolveReporter(req)
-      if (reporter.key !== initialReporter.key) {
-        throw new InquiryModerationServiceError('access-denied', 'The report actor changed.')
-      }
-      const replay = await readReportReplay(req, reporter, input)
-      if (replay) return { received: true, reportId: String(replay.id) }
+  const acceptance = selectTransactionalEmailCommandAcceptance('moderation.report-received')
+  const lockKey = `moderation-report:${initialReporter.key}:${input.targetType}:${canonicalTargetKey}`
+  const submit = async (
+    req: PayloadRequest,
+    commands?: TransactionalEmailCommands,
+  ): Promise<InquiryModerationReportReceiptDTO> => {
+    const reporter = await resolveReporter(req)
+    if (reporter.key !== initialReporter.key) {
+      throw new InquiryModerationServiceError('access-denied', 'The report actor changed.')
+    }
+    const replay = await readReportReplay(req, reporter, input)
+    if (replay) return { received: true, reportId: String(replay.id) }
 
-      const scope = await readInquiryScope(req, reporter, input.inquiryId)
-      const target = await resolveReportTarget(req, reporter, scope, input)
-      const activeDuplicate = await findOne(req, 'inquiryModerationCases', {
-        and: [
-          { reporterKey: { equals: reporter.key } },
-          { targetType: { equals: input.targetType } },
-          { targetId: { equals: String(target.targetId) } },
-          { status: { in: ['open', 'decided', 'appealed'] } },
-        ],
-      })
-      if (activeDuplicate) {
-        throw new InquiryModerationServiceError('invalid-state', 'An active report already covers this target.')
-      }
-      const recentReports = await findMany(req, 'inquiryModerationCases', {
-        and: [
-          { reporterKey: { equals: reporter.key } },
-          { createdAt: { greater_than_equal: new Date(Date.now() - REPORT_WINDOW_MS).toISOString() } },
-        ],
-      })
-      if (recentReports.length >= REPORT_WINDOW_LIMIT) {
-        throw new InquiryModerationServiceError('rate-limited', 'Too many reports were submitted in this window.')
-      }
-      const retentionPolicy = await resolveActiveInquiryRetentionPolicy(req)
-      const moderationCase = asRecord(
-        await req.payload.create({
-          collection: 'inquiryModerationCases' as never,
-          context: { inquiryModerationCommand: true },
-          data: {
-            category: input.category,
-            clinic: scope.clinicId,
-            conversation: scope.conversation.id,
-            ...(typeof input.description === 'string' ? { description: input.description } : {}),
-            eventSequence: 1,
-            idempotencyKey: input.idempotencyKey,
-            inquiry: scope.inquiry.id,
-            ...(scope.patientId === null ? {} : { patient: scope.patientId }),
-            reporterClinicStaff: reporter.kind === 'clinic' ? reporter.id : null,
-            reporterKey: reporter.key,
-            reporterKind: reporter.kind,
-            reporterPatient: reporter.kind === 'patient' ? reporter.id : null,
-            requestHash: reportRequestHash(input),
-            retentionPolicyVersion: retentionPolicy.version,
-            status: 'open',
-            ...(target.targetAttachment ? { targetAttachment: target.targetAttachment } : {}),
-            targetId: String(target.targetId),
-            ...(target.targetMessage ? { targetMessage: target.targetMessage } : {}),
-            targetType: input.targetType,
-          },
-          depth: 0,
-          overrideAccess: true,
-          req,
-        } as never),
-      )
+    const scope = await readInquiryScope(req, reporter, input.inquiryId)
+    const target = await resolveReportTarget(req, reporter, scope, input)
+    const activeDuplicate = await findOne(req, 'inquiryModerationCases', {
+      and: [
+        { reporterKey: { equals: reporter.key } },
+        { targetType: { equals: input.targetType } },
+        { targetId: { equals: String(target.targetId) } },
+        { status: { in: ['open', 'decided', 'appealed'] } },
+      ],
+    })
+    if (activeDuplicate) {
+      throw new InquiryModerationServiceError('invalid-state', 'An active report already covers this target.')
+    }
+    const recentReports = await findMany(req, 'inquiryModerationCases', {
+      and: [
+        { reporterKey: { equals: reporter.key } },
+        { createdAt: { greater_than_equal: new Date(Date.now() - REPORT_WINDOW_MS).toISOString() } },
+      ],
+    })
+    if (recentReports.length >= REPORT_WINDOW_LIMIT) {
+      throw new InquiryModerationServiceError('rate-limited', 'Too many reports were submitted in this window.')
+    }
+    const retentionPolicy = await resolveActiveInquiryRetentionPolicy(req)
+    const moderationCase = asRecord(
+      await req.payload.create({
+        collection: 'inquiryModerationCases' as never,
+        context: { inquiryModerationCommand: true },
+        data: {
+          category: input.category,
+          clinic: scope.clinicId,
+          conversation: scope.conversation.id,
+          ...(typeof input.description === 'string' ? { description: input.description } : {}),
+          eventSequence: 1,
+          idempotencyKey: input.idempotencyKey,
+          inquiry: scope.inquiry.id,
+          ...(scope.patientId === null ? {} : { patient: scope.patientId }),
+          reporterClinicStaff: reporter.kind === 'clinic' ? reporter.id : null,
+          reporterKey: reporter.key,
+          reporterKind: reporter.kind,
+          reporterPatient: reporter.kind === 'patient' ? reporter.id : null,
+          requestHash: reportRequestHash(input),
+          retentionPolicyVersion: retentionPolicy.version,
+          status: 'open',
+          ...(target.targetAttachment ? { targetAttachment: target.targetAttachment } : {}),
+          targetId: String(target.targetId),
+          ...(target.targetMessage ? { targetMessage: target.targetMessage } : {}),
+          targetType: input.targetType,
+        },
+        depth: 0,
+        overrideAccess: true,
+        req,
+      } as never),
+    )
+    const event = asRecord(
       await req.payload.create({
         collection: 'inquiryModerationEvents' as never,
         context: { inquiryModerationCommand: true },
@@ -386,11 +393,41 @@ export const createInquiryModerationReport = async (
         depth: 0,
         overrideAccess: true,
         req,
-      } as never)
-      return { received: true, reportId: String(moderationCase.id) }
-    },
-    `moderation-report:${initialReporter.key}:${input.targetType}:${canonicalTargetKey}`,
-  )
+      } as never),
+    )
+    if (commands)
+      await commands.accept({
+        type: 'moderation.report-received',
+        moderationEventId: Number(event.id),
+        recipientSlot: 'reporter',
+      })
+    return { received: true, reportId: String(moderationCase.id) }
+  }
+  if (acceptance.kind === 'inactive') return runCommandTransaction(req, () => submit(req), lockKey)
+  let domainError: InquiryModerationServiceError | undefined
+  try {
+    return await acceptance.run(req, async (transactionReq, commands) => {
+      domainError = undefined
+      transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+      try {
+        const releaseLock = await acquireInquiryCommandLock(transactionReq, lockKey)
+        const receipt = await submit(transactionReq, commands)
+        await releaseLock()
+        return receipt
+      } catch (error) {
+        if (error instanceof InquiryModerationServiceError) domainError = error
+        throw error
+      }
+    })
+  } catch (error) {
+    if (domainError) throw domainError
+    if (error instanceof TransactionalEmailError)
+      throw new InquiryModerationServiceError(
+        error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
+        'The report could not be committed.',
+      )
+    throw error
+  }
 }
 
 type Moderator = { id: RelationId; key: string }
@@ -780,7 +817,8 @@ export const decideInquiryModerationCase = async (
   if (!parsed.success) throw new InquiryModerationServiceError('invalid-input', 'The moderation decision is invalid.')
   const input = parsed.data
   const initialModerator = await resolveModerator(req)
-  await runCommandTransaction(req, async () => {
+  const acceptance = selectTransactionalEmailCommandAcceptance('moderation.report-decided')
+  const decide = async (req: PayloadRequest, commands?: TransactionalEmailCommands) => {
     const moderator = await resolveModerator(req)
     if (moderator.key !== initialModerator.key) {
       throw new InquiryModerationServiceError('access-denied', 'The moderation actor changed.')
@@ -829,8 +867,59 @@ export const decideInquiryModerationCase = async (
     if (input.outcome !== 'no-action') {
       await updateInquiryModerationActivity(req, updatedCase, moderator, 'moderation-restricted', input.outcome)
     }
+    if (commands) {
+      const event = await findOne(req, 'inquiryModerationEvents', {
+        and: [
+          { moderationCase: { equals: updatedCase.id } },
+          { eventType: { equals: 'decision-recorded' } },
+          { sequence: { equals: updatedCase.eventSequence } },
+        ],
+      })
+      if (!event)
+        throw new InquiryModerationServiceError('unavailable', 'The moderation decision event is unavailable.')
+      const affectedKey =
+        affected?.id == null
+          ? null
+          : `${affected.kind === 'patient' ? 'patients' : 'clinicStaff'}:${String(affected.id)}`
+      if (!affected || affectedKey !== text(moderationCase.reporterKey))
+        await commands.accept({
+          type: 'moderation.report-decided',
+          moderationEventId: Number(event.id),
+          recipientSlot: 'reporter',
+        })
+      if (affected)
+        await commands.accept({
+          type: 'moderation.report-decided',
+          moderationEventId: Number(event.id),
+          recipientSlot: 'affected',
+        })
+    }
     return updatedCase
-  })
+  }
+  if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => decide(req))
+  else {
+    let domainError: InquiryModerationServiceError | undefined
+    try {
+      await acceptance.run(req, async (transactionReq, commands) => {
+        domainError = undefined
+        transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+        try {
+          return await decide(transactionReq, commands)
+        } catch (error) {
+          if (error instanceof InquiryModerationServiceError) domainError = error
+          throw error
+        }
+      })
+    } catch (error) {
+      if (domainError) throw domainError
+      if (error instanceof TransactionalEmailError)
+        throw new InquiryModerationServiceError(
+          error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
+          'The moderation decision could not be committed.',
+        )
+      throw error
+    }
+  }
   return { decided: true }
 }
 
@@ -857,7 +946,8 @@ export const submitInquiryModerationAppeal = async (
   if (!parsed.success) throw new InquiryModerationServiceError('invalid-input', 'The appeal input is invalid.')
   const input = parsed.data
   const initialParticipant = await resolveReporter(req)
-  await runCommandTransaction(req, async () => {
+  const acceptance = selectTransactionalEmailCommandAcceptance('moderation.appeal-received')
+  const submit = async (req: PayloadRequest, commands?: TransactionalEmailCommands) => {
     const participant = await resolveReporter(req)
     if (participant.key !== initialParticipant.key) {
       throw new InquiryModerationServiceError('access-denied', 'The appeal actor changed.')
@@ -873,7 +963,7 @@ export const submitInquiryModerationAppeal = async (
     ) {
       throw new InquiryModerationServiceError('invalid-state', 'An appeal is not available for this case.')
     }
-    await updateCaseAndCreateEvent(
+    const updated = await updateCaseAndCreateEvent(
       req,
       moderationCase,
       { id: participant.id, kind: participant.kind },
@@ -889,7 +979,49 @@ export const submitInquiryModerationAppeal = async (
         status: 'appealed',
       },
     )
-  })
+    if (commands) {
+      const event = await findOne(req, 'inquiryModerationEvents', {
+        and: [
+          { moderationCase: { equals: updated.id } },
+          { sequence: { equals: updated.eventSequence } },
+          { eventType: { equals: 'appeal-submitted' } },
+        ],
+      })
+      if (!event) throw new InquiryModerationServiceError('unavailable', 'The appeal event is unavailable.')
+      await commands.accept({
+        type: 'moderation.appeal-received',
+        moderationEventId: Number(event.id),
+        recipientSlot: 'appellant',
+      })
+    }
+  }
+  const lockKey = `moderation-appeal:${input.caseId}`
+  if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => submit(req), lockKey)
+  else {
+    let domainError: InquiryModerationServiceError | undefined
+    try {
+      await acceptance.run(req, async (transactionReq, commands) => {
+        domainError = undefined
+        transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+        try {
+          const releaseLock = await acquireInquiryCommandLock(transactionReq, lockKey)
+          await submit(transactionReq, commands)
+          await releaseLock()
+        } catch (error) {
+          if (error instanceof InquiryModerationServiceError) domainError = error
+          throw error
+        }
+      })
+    } catch (error) {
+      if (domainError) throw domainError
+      if (error instanceof TransactionalEmailError)
+        throw new InquiryModerationServiceError(
+          error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
+          'The appeal could not be committed.',
+        )
+      throw error
+    }
+  }
   return { submitted: true }
 }
 
@@ -901,7 +1033,8 @@ export const decideInquiryModerationAppeal = async (
   if (!parsed.success) throw new InquiryModerationServiceError('invalid-input', 'The appeal decision is invalid.')
   const input = parsed.data
   const initialModerator = await resolveModerator(req)
-  await runCommandTransaction(req, async () => {
+  const acceptance = selectTransactionalEmailCommandAcceptance('moderation.appeal-decided')
+  const decide = async (req: PayloadRequest, commands?: TransactionalEmailCommands) => {
     const moderator = await resolveModerator(req)
     if (moderator.key !== initialModerator.key) {
       throw new InquiryModerationServiceError('access-denied', 'The moderation actor changed.')
@@ -947,7 +1080,62 @@ export const decideInquiryModerationAppeal = async (
     ) {
       await updateInquiryModerationActivity(req, updatedCase, moderator, 'moderation-restored', 'available')
     }
-  })
+    if (commands) {
+      const event = await findOne(req, 'inquiryModerationEvents', {
+        and: [
+          { moderationCase: { equals: updatedCase.id } },
+          { eventType: { equals: 'appeal-decided' } },
+          { sequence: { equals: updatedCase.eventSequence } },
+        ],
+      })
+      if (!event) throw new InquiryModerationServiceError('unavailable', 'The appeal decision event is unavailable.')
+      const submitted = await findOne(req, 'inquiryModerationEvents', {
+        and: [
+          { moderationCase: { equals: updatedCase.id } },
+          { eventType: { equals: 'appeal-submitted' } },
+          { sequence: { less_than: event.sequence } },
+        ],
+      })
+      if (!submitted || !['patient', 'clinic'].includes(String(submitted.actorKind)) || !text(submitted.actorId))
+        throw new InquiryModerationServiceError('unavailable', 'The appeal participant is unavailable.')
+      const appellantKey = `${submitted.actorKind === 'patient' ? 'patients' : 'clinicStaff'}:${text(submitted.actorId)}`
+      await commands.accept({
+        type: 'moderation.appeal-decided',
+        moderationEventId: Number(event.id),
+        recipientSlot: 'appellant',
+      })
+      if (appellantKey !== text(moderationCase.reporterKey))
+        await commands.accept({
+          type: 'moderation.appeal-decided',
+          moderationEventId: Number(event.id),
+          recipientSlot: 'reporter',
+        })
+    }
+  }
+  if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => decide(req))
+  else {
+    let domainError: InquiryModerationServiceError | undefined
+    try {
+      await acceptance.run(req, async (transactionReq, commands) => {
+        domainError = undefined
+        transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+        try {
+          await decide(transactionReq, commands)
+        } catch (error) {
+          if (error instanceof InquiryModerationServiceError) domainError = error
+          throw error
+        }
+      })
+    } catch (error) {
+      if (domainError) throw domainError
+      if (error instanceof TransactionalEmailError)
+        throw new InquiryModerationServiceError(
+          error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
+          'The appeal decision could not be committed.',
+        )
+      throw error
+    }
+  }
   return { decided: true }
 }
 

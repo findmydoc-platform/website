@@ -11,7 +11,7 @@ const topic = arg('--topic')
 const variant = arg('--variant')
 const output = path.resolve(arg('--output', 'tmp/ci-selection-poc/run'))
 mkdirSync(output, { recursive: true })
-const plan = createPlan(topic, variant)
+const plan = createPlan(topic, variant, undefined, { group: arg('--group') })
 if (topic === 'e2e' || plan.execution.mode === 'skip') throw new Error('No test worker required for this decision')
 const started = performance.now()
 const config = 'vitest.ci-selection-poc.config.ts'

@@ -1,5 +1,5 @@
 name: CI selection POC
-run-name: Selection ${{ inputs.topic }} ${{ inputs.variant }} round ${{ inputs.round }}
+run-name: Selection ${{ inputs.topic }} ${{ inputs.variant }} round ${{ inputs.round }}${{ inputs.group != 'email' && format(' group {0}', inputs.group) || '' }}
 
 on:
   workflow_dispatch:
@@ -16,18 +16,24 @@ on:
         type: choice
         required: true
         options: ['1', '2']
+      group:
+        type: choice
+        required: true
+        default: email
+        options: [email, categories, reviews]
 
 permissions:
   contents: read
 
 concurrency:
-  group: selection-poc-${{ github.ref }}-${{ inputs.topic }}-${{ inputs.variant }}-${{ inputs.round }}
+  group: selection-poc-${{ github.ref }}-${{ inputs.topic }}-${{ inputs.group }}-${{ inputs.variant }}-${{ inputs.round }}
   cancel-in-progress: false
 
 env:
   TOPIC: ${{ inputs.topic }}
   VARIANT: ${{ inputs.variant }}
   ROUND: ${{ inputs.round }}
+  GROUP: ${{ inputs.group }}
   NODE_VERSION: 24.14.0
   PNPM_VERSION: 10.28.2
 
@@ -48,7 +54,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           package-manager-cache: false
       - id: plan
-        run: node scripts/ci-selection-poc/cli.mjs --topic "$TOPIC" --variant "$VARIANT" --output "$RUNNER_TEMP/selection-scope/plan.json"
+        run: |
+          set -euo pipefail
+          args=()
+          if [[ "$TOPIC" == integration ]]; then args+=(--group "$GROUP"); fi
+          node scripts/ci-selection-poc/cli.mjs --topic "$TOPIC" --variant "$VARIANT" "${args[@]}" --output "$RUNNER_TEMP/selection-scope/plan.json"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: selection-scope
@@ -90,7 +100,11 @@ jobs:
         if: inputs.topic == 'storybook' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: mkdir -p ~/.cache/ms-playwright && pnpm exec playwright install chromium
       - name: Run selected experiment
-        run: node scripts/ci-selection-poc/run.mjs --topic "$TOPIC" --variant "$VARIANT" --round "$ROUND" --output "$RUNNER_TEMP/selection-worker"
+        run: |
+          set -euo pipefail
+          args=()
+          if [[ "$TOPIC" == integration ]]; then args+=(--group "$GROUP"); fi
+          node scripts/ci-selection-poc/run.mjs --topic "$TOPIC" --variant "$VARIANT" "${args[@]}" --round "$ROUND" --output "$RUNNER_TEMP/selection-worker"
       - name: Cleanup integration services
         if: always() && inputs.topic == 'integration'
         run: node --input-type=module -e "import {teardownTestDatabase} from './scripts/test-database-harness.mjs'; await teardownTestDatabase()"

@@ -62,3 +62,22 @@ The isolated [selection POC](ci-selection-poc.md) implements narrow test-only in
 Two Storybook pairs establish repeated savings. Integration has one valid time comparison and two successful subset runs; the second reference exceeds the POC job limit after 93 files and 864 cases pass in the log. It is excluded from savings. The diagnostic timeout is corrected to 75 minutes for future use, without weakening tests or restarting this bounded POC. A repeated integration timing claim remains open.
 
 E2E timing remains blocked by missing immutable deployment/source/fixture identity evidence. Local fixtures validate selection and outcome rules, including required Public success when Admin is excluded; standalone browser startup and complete Admin command coverage are not execution-proved. The primary checkout remains untouched. Normal CI adoption and formal reviews remain separate work.
+
+## Additional integration selection candidates
+
+The frozen successful reference executes 877 cases in 98 files. The complete `transactionalEmail.*` family contains 422 cases in 11 files, or 48.1% of cases. The measured delivery/retention/worker subset contains 134 cases, or 15.3%. The separate transactions file contains 16 cases, or 1.8%, and is not part of that subset. Case proportions do not predict duration.
+
+Read-only follow-up research identifies these additional execution candidates. Counts include the three-case collection contract that reads registered test sources.
+
+| Candidate | Cases / files | Recommended use and limits |
+| --- | --- | --- |
+| Categories | 9 / 2 | Smallest additional POC. Full Payload and baseline remain. Product changes also reach Posts and shared slug logic. |
+| Auth and Recovery | 14 / 3 | Small functional group with owned user fixtures. Product changes also reach clinic invitations and email commands. |
+| Countries and Cities | 17 / 3 | Small reference-data group. Product changes reach clinic relationships and shared revalidation. |
+| Patient, profile media and Favorites | 27 / 5 | Broader fixture/isolation exercise. Clinic, doctor, storage, review and inquiry consumers prevent treating it as a closed product boundary. |
+| Pages and Posts, including access | 27 / 4 | Content and permission group. Categories, tags, authors, versions and loader/cache dependencies require wider product selection. |
+| Reviews, Responses and Appeals, including seed and migration tests | 44 / 13 | Preferred complex POC. Ratings affect clinics, doctors and treatments. A product-trigger proposal for reviewWorkflow also needs seed reset and wider consumer checks; it remains advisory. |
+
+The Inquiry family contains 74 cases in 15 files before adding applicable contracts. Its shared communication/moderation/retention locks, PostgreSQL quota checks and storage dependencies make it a later candidate. The four clinic registration/application/invitation files contain 31 cases, but Auth and Email consumers prevent treating that set as a closed product boundary.
+
+No additional group is performance-tested, and no additional savings are demonstrated. Prefer Categories and Reviews as one small and one complex group over a new broad measurement series. Use native Vitest file lists, unchanged Payload/database setup, exact executed-case receipts and separate partial coverage. Test-only selection and product-driven selection are distinct contracts. Unknown consumers, shared setup or dependency changes require a full run. Measure incremental benefit against the intended optimized topology rather than transferring the older 38:40 serial result. Counts come from the successful full reference run 37599474222 at the frozen selection POC commit, not a newly discovered current-main inventory.

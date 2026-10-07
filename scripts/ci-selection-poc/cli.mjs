@@ -9,7 +9,7 @@ const topic = arg('--topic')
 const base = arg('--base')
 const head = arg('--head')
 const input = base || head ? collectChanges(base, head) : undefined
-const plan = createPlan(topic, arg('--variant', 'candidate'), input)
+const plan = createPlan(topic, arg('--variant', 'candidate'), input, { group: arg('--group') })
 const output = path.resolve(arg('--output', 'tmp/ci-selection-poc/plan.json'))
 mkdirSync(path.dirname(output), { recursive: true })
 writeFileSync(output, JSON.stringify(plan, null, 2))

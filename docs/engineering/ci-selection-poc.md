@@ -22,7 +22,7 @@ Two pairs per measurable topic use A/B then B/A, fixed source/toolchain within e
 
 E2E timing is blocked because no verified immutable browser deployment, source commit and fixture-database identity are supplied. Local fixtures validate lane selection and require Public success even when Admin is intentionally skipped. No replacement environment or deployment is created. Standalone Public startup and complete Admin smoke/regression command coverage are not execution-proved by classifier fixtures.
 
-[The optimization overview](ci-optimization-results.md) records measured gains, unproved opportunities and investigation costs. Detailed manifests, receipts and controller journals remain in ignored evidence. Formal Test, Architecture and Security review is recommended before clean CI adoption and has not run.
+[The optimization overview](../research/ci-optimization-poc.md) records measured gains, unproved opportunities and investigation costs. Detailed manifests, receipts and controller journals remain in ignored evidence. Formal Test, Architecture and Security review is recommended before clean CI adoption and has not run.
 
 ## Storybook observations
 

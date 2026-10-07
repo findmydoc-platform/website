@@ -31,7 +31,7 @@ Research wrote documentation only. It started no Actions runs and added no Actio
 
 ## Evidence and economics
 
-The [optimization results](ci-optimization-results.md) retain measured improvements. Research recommendations and calculated ceilings do not add new proven savings to that report.
+The [optimization results](../research/ci-optimization-poc.md) retain measured improvements. Research recommendations and calculated ceilings do not add new proven savings to that report.
 
 An integration selection can retain the complete Payload configuration and isolated database copies. Selecting fewer test files and initializing fewer collections are separate decisions. Their costs and correctness limits must be evaluated separately.
 

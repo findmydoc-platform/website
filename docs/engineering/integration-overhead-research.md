@@ -77,7 +77,7 @@ All copies and probes total 58–61 seconds. Removing every copy provides an app
 
 V8 coverage overhead is unmeasured because every accepted run collects coverage. [Official coverage documentation](https://vitest.dev/guide/coverage.html) explains that report include/exclude rules do not limit V8's runtime collection to those modules. Narrower report patterns therefore do not demonstrate cheaper collection. Keep seed coverage and the complete gate; omit any claimed coverage-provider saving without a same-input comparison.
 
-The domain POC in [CI optimization results](ci-optimization-results.md#domain-integration-poc) retains 37 of 47 collections and demonstrates no repeated smaller-config saving. A broad smaller-config rewrite has no economic support here.
+The domain POC in [CI optimization results](https://github.com/findmydoc-platform/website/blob/822c3f42265f721a0318398e3833b2430dfdd09f/docs/engineering/ci-optimization-results.md#domain-integration-poc) retains 37 of 47 collections and demonstrates no repeated smaller-config saving. A broad smaller-config rewrite has no economic support here.
 
 ## Decision and accounting limits
 

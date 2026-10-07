@@ -22,10 +22,10 @@ describe('transactional email activation policy', () => {
       'auth.invitation',
       'auth.password-recovery',
       'clinic.registration-received',
+      'conversation.external-message-received',
     ])
     const previewCommands = new Set([
       ...productionCommands,
-      'conversation.external-message-received',
       'moderation.report-received',
       'moderation.report-decided',
       'moderation.appeal-received',
@@ -80,6 +80,25 @@ describe('transactional email activation policy', () => {
       for (const command of commandTypes)
         expect(policy.evaluate(command, 'recipient@example.test')).toBe('command-not-enabled')
     }
+  })
+
+  it('disables conversation acceptance after removing its Production record while preserving clinic registration', () => {
+    const fixture = createActivationFixture('production')
+    const conversationRecord = {
+      ...fixture.record,
+      commandType: 'conversation.external-message-received' as const,
+      release: { onePath: 'website-pr-2059' },
+    }
+    fixture.registry.records.push(conversationRecord)
+    const activated = resolveActivationPolicy(fixture.binding, fixture.registry)
+    expect(activated.evaluate('conversation.external-message-received', 'recipient@example.test')).toBeNull()
+
+    fixture.registry.records = fixture.registry.records.filter((record) => record !== conversationRecord)
+    const rolledBack = resolveActivationPolicy(fixture.binding, fixture.registry)
+    expect(rolledBack.evaluate('conversation.external-message-received', 'recipient@example.test')).toBe(
+      'command-not-enabled',
+    )
+    expect(rolledBack.evaluate('clinic.registration-received', 'recipient@example.test')).toBeNull()
   })
   it('suppresses an unregistered command after validating its hosted credentials', () => {
     const input = createWebhookConfiguration()

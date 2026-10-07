@@ -23,6 +23,7 @@ import {
 } from '@/features/inquiryModeration/service'
 import { anonymizeInquiryPackage } from '@/features/inquiryRetention/service'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
+import activationRegistry from '@/features/transactionalEmail/activationRegistry.json'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import type { DeliveryAdapter, DeliveryLog } from '@/features/transactionalEmail/delivery'
 import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
@@ -41,6 +42,7 @@ import {
 } from '../fixtures/testUsers'
 
 vi.mock('@payloadcms/storage-s3', () => ({ s3Storage: () => (incoming: unknown) => incoming }))
+const declaredActivationRecords = activationRegistry.records
 
 describe('authoritative initial moderation decision mail', () => {
   let payload: Payload
@@ -105,6 +107,7 @@ describe('authoritative initial moderation decision mail', () => {
   })
 
   afterEach(() => {
+    activationRegistry.records = declaredActivationRecords
     expect(globalThis.fetch).not.toHaveBeenCalled()
     expect(http.request).not.toHaveBeenCalled()
     expect(https.request).not.toHaveBeenCalled()
@@ -974,6 +977,9 @@ describe('authoritative initial moderation decision mail', () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('DEPLOYMENT_ENV', 'production')
     vi.stubEnv('VERCEL_ENV', 'production')
+    activationRegistry.records = declaredActivationRecords.filter(
+      ({ environment, commandType }) => environment !== 'production' || commandType !== 'moderation.report-decided',
+    )
     await expect(
       decideInquiryModerationCase(moderatorReq, {
         caseId: source.caseId,

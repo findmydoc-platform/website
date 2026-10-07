@@ -14,6 +14,7 @@ import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
 import { openStorageCapability } from '@/features/transactionalEmail/capability'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
+import activationRegistry from '@/features/transactionalEmail/activationRegistry.json'
 import type { DeliveryAdapter } from '@/features/transactionalEmail/delivery'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
@@ -29,6 +30,7 @@ import {
 } from '../fixtures/testUsers'
 
 vi.mock('@payloadcms/storage-s3', () => ({ s3Storage: () => (incoming: unknown) => incoming }))
+const declaredActivationRecords = activationRegistry.records
 
 describe('authoritative moderation appeal decision', () => {
   let payload: Payload
@@ -95,6 +97,7 @@ describe('authoritative moderation appeal decision', () => {
   })
 
   afterEach(() => {
+    activationRegistry.records = declaredActivationRecords
     expect(globalThis.fetch).not.toHaveBeenCalled()
     expect(http.request).not.toHaveBeenCalled()
     expect(https.request).not.toHaveBeenCalled()
@@ -797,6 +800,9 @@ describe('authoritative moderation appeal decision', () => {
     vi.stubEnv('VERCEL_ENV', 'production')
     vi.stubEnv('DEPLOYMENT_ENV', 'production')
     vi.stubEnv('CI', 'false')
+    activationRegistry.records = declaredActivationRecords.filter(
+      ({ environment, commandType }) => environment !== 'production' || commandType !== 'moderation.appeal-decided',
+    )
     const result = await decide(source)
     expect((await snapshot(source)).moderationCase.status).toBe('resolved')
     expect(result.appellant.operations).toHaveLength(0)

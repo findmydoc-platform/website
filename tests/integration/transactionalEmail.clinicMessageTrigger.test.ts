@@ -14,6 +14,7 @@ import {
 import type { InquiryAttachmentStorageGateway } from '@/features/inquiryCommunication/storage'
 import { createInquiryModerationReport, decideInquiryModerationCase } from '@/features/inquiryModeration/service'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
+import activationRegistry from '@/features/transactionalEmail/activationRegistry.json'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import type { DeliveryAdapter } from '@/features/transactionalEmail/delivery'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
@@ -33,6 +34,7 @@ const { closeDeliveryEdgeNetworkBoundary, deliveryEdgeNetworkGuard } = await vi.
   () => import('../helpers/deliveryEdgeNetworkBoundary'),
 )
 vi.mock('@payloadcms/storage-s3', () => ({ s3Storage: () => (incomingConfig: unknown) => incomingConfig }))
+const declaredActivationRecords = activationRegistry.records
 
 describe('clinic message atomic email trigger', () => {
   let payload: Payload
@@ -66,6 +68,7 @@ describe('clinic message atomic email trigger', () => {
 
   beforeEach(() => vi.stubEnv('CI', 'false'))
   afterEach(() => {
+    activationRegistry.records = declaredActivationRecords
     try {
       deliveryEdgeNetworkGuard.assertNoAttempts()
     } finally {
@@ -138,6 +141,10 @@ describe('clinic message atomic email trigger', () => {
     vi.stubEnv('CI', 'false')
     vi.stubEnv('VERCEL_ENV', 'production')
     vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    activationRegistry.records = declaredActivationRecords.filter(
+      ({ environment, commandType }) =>
+        environment !== 'production' || commandType !== 'conversation.external-message-received',
+    )
     const sent = await sendClinicInquiryMessage(clinicReq, {
       inquiryId: inquiry.id,
       expectedRevision: 0,
@@ -146,6 +153,7 @@ describe('clinic message atomic email trigger', () => {
     })
     vi.unstubAllEnvs()
     vi.stubEnv('CI', 'false')
+    activationRegistry.records = declaredActivationRecords
     const message = sent.inquiry.timeline.find(
       (item) => item.kind === 'external-message' && item.actor.kind === 'clinic',
     )
@@ -543,6 +551,10 @@ describe('clinic message atomic email trigger', () => {
       vi.stubEnv('CI', 'false')
       vi.stubEnv('VERCEL_ENV', environment)
       vi.stubEnv('DEPLOYMENT_ENV', environment)
+      activationRegistry.records = declaredActivationRecords.filter(
+        ({ environment, commandType }) =>
+          environment !== 'production' || commandType !== 'conversation.external-message-received',
+      )
       const sent = await sendClinicInquiryMessage(clinicReq, {
         inquiryId: inquiry.id,
         expectedRevision: 0,

@@ -209,6 +209,15 @@
       "release": {
         "onePath": "website-pr-2041"
       }
+    },
+    {
+      "commandType": "conversation.external-message-received",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "production-preflight-v2",
+      "environment": "production",
+      "release": {
+        "onePath": "website-pr-2059"
+      }
     }
   ]
 }

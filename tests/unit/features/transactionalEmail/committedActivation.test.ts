@@ -61,7 +61,7 @@ describe('committed transactional email activation', () => {
     ])
   })
 
-  it('declares conversation notifications only in Preview with the existing preflight', () => {
+  it('declares conversation notifications separately with the reviewed Production release', () => {
     expect(
       isTransactionalEmailCommandActivationDeclared(
         'preview',
@@ -75,7 +75,7 @@ describe('committed transactional email activation', () => {
         'conversation.external-message-received',
         activationRegistry,
       ),
-    ).toBe(false)
+    ).toBe(true)
     expect(
       activationRegistry.records.filter(({ commandType }) => commandType === 'conversation.external-message-received'),
     ).toEqual([
@@ -85,7 +85,57 @@ describe('committed transactional email activation', () => {
         preflightVersion: 'preview-preflight-v1',
         environment: 'preview',
       },
+      {
+        commandType: 'conversation.external-message-received',
+        registryVersion: 'activation-v1',
+        preflightVersion: 'production-preflight-v2',
+        environment: 'production',
+        release: { onePath: 'website-pr-2059' },
+      },
     ])
+  })
+
+  it.each([
+    'missing release',
+    'invalid release',
+    'reused release',
+    'Preview preflight',
+    'stale preflight',
+    'stale registry',
+  ] as const)('rejects a conversation Production declaration with %s', (drift) => {
+    const invalid = structuredClone(activationRegistry)
+    const record = invalid.records.find(
+      ({ environment, commandType }) =>
+        environment === 'production' && commandType === 'conversation.external-message-received',
+    )!
+    if (drift === 'missing release') Reflect.deleteProperty(record, 'release')
+    else if (drift === 'invalid release') record.release!.onePath = 'unreviewed-release'
+    else if (drift === 'reused release') record.release!.onePath = 'website-pr-2040'
+    else if (drift === 'Preview preflight') record.preflightVersion = 'preview-preflight-v1'
+    else if (drift === 'stale preflight') record.preflightVersion = 'production-preflight-v1'
+    else record.registryVersion = 'activation-v0'
+
+    expect(() =>
+      isTransactionalEmailCommandActivationDeclared('production', 'conversation.external-message-received', invalid),
+    ).toThrow('environment-unavailable')
+  })
+
+  it('removes only the conversation Production declaration during rollback', () => {
+    const rolledBack = structuredClone(activationRegistry)
+    rolledBack.records = rolledBack.records.filter(
+      ({ environment, commandType }) =>
+        environment !== 'production' || commandType !== 'conversation.external-message-received',
+    )
+
+    for (const environment of hostedEnvironments) {
+      for (const commandType of commandTypes) {
+        expect(isTransactionalEmailCommandActivationDeclared(environment, commandType, rolledBack)).toBe(
+          environment === 'production' && commandType === 'conversation.external-message-received'
+            ? false
+            : isTransactionalEmailCommandActivationDeclared(environment, commandType, activationRegistry),
+        )
+      }
+    }
   })
 
   it('rejects Production auth declarations without the expected native-mail suppression identity', () => {
@@ -312,16 +362,16 @@ describe('committed transactional email activation', () => {
     }
   })
 
-  it('declares the reviewed auth commands and preserves clinic registration in both environments', () => {
+  it('declares reviewed commands and preserves clinic registration in both environments', () => {
     const productionCommands = new Set([
       'auth.email-verification',
       'auth.invitation',
       'auth.password-recovery',
       'clinic.registration-received',
+      'conversation.external-message-received',
     ])
     const previewCommands = new Set([
       ...productionCommands,
-      'conversation.external-message-received',
       'moderation.report-received',
       'moderation.report-decided',
       'moderation.appeal-received',
@@ -350,6 +400,7 @@ describe('committed transactional email activation', () => {
       ['auth.email-verification', 'website-pr-2040'],
       ['auth.invitation', 'website-pr-2043'],
       ['auth.password-recovery', 'website-pr-2041'],
+      ['conversation.external-message-received', 'website-pr-2059'],
     ])
   })
 })

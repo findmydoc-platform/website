@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process'
+import { readFileSync, writeFileSync } from 'node:fs'
 
 const formatExtensions = new Set([
   '.cjs',
@@ -56,7 +57,7 @@ if (stagedFiles.length === 0) {
 }
 
 const unstagedFiles = new Set(
-  git(['diff', '--name-only', '--diff-filter=ACMR'])
+  git(['diff', '--name-only'])
     .split('\n')
     .map((filePath) => filePath.trim())
     .filter(Boolean),
@@ -83,6 +84,40 @@ if (partiallyStagedFiles.length > 0) {
 if (stagedFiles.includes('package.json') && !stagedFiles.includes('pnpm-lock.yaml')) {
   console.error('pre-commit aborted because package.json is staged without pnpm-lock.yaml.')
   process.exit(1)
+}
+
+if (stagedFiles.some((filePath) => ['package.json', 'pnpm-lock.yaml'].includes(filePath))) {
+  // Dedupe reads the manifest and rewrites the lockfile, including when only the lockfile is staged.
+  const dirtyDependencyFiles = ['package.json', 'pnpm-lock.yaml'].filter((filePath) => unstagedFiles.has(filePath))
+  if (dirtyDependencyFiles.length > 0) {
+    console.error(
+      `pre-commit aborted because dedupe would use unstaged dependency changes: ${dirtyDependencyFiles.join(', ')}`,
+    )
+    process.exit(1)
+  }
+
+  const originalLockfile = readFileSync('pnpm-lock.yaml')
+  console.log('[pre-commit] checking dependency deduplication.')
+  try {
+    run('pnpm', ['deps:dedupe:check'])
+  } catch (error) {
+    const output = `${error.stdout ?? ''}\n${error.stderr ?? ''}`
+    const errorCodes = output.match(/\bERR_PNPM_[A-Z0-9_]+\b/g) ?? []
+    if (errorCodes.length === 0 || errorCodes.some((code) => code !== 'ERR_PNPM_DEDUPE_CHECK_ISSUES')) {
+      console.error('pre-commit aborted: dedupe check failed without a dedupe finding. No repair attempted.')
+      process.exit(1)
+    }
+
+    console.log('[pre-commit] deduplicating the staged lockfile.')
+    try {
+      run('pnpm', ['dedupe', '--lockfile-only', '--ignore-scripts'])
+    } catch {
+      writeFileSync('pnpm-lock.yaml', originalLockfile)
+      console.error('pre-commit aborted: dedupe failed. Original lockfile restored; index unchanged.')
+      process.exit(1)
+    }
+    git(['add', '--', 'pnpm-lock.yaml'])
+  }
 }
 
 const formatTargets = stagedFiles.filter((filePath) => formatExtensions.has(getExtension(filePath)))

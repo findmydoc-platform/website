@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+node scripts/deadcode-pre-push-check.mjs "$@"
 pnpm ai:slop-check:prepush

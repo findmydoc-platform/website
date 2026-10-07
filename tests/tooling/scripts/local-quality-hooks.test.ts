@@ -6,7 +6,6 @@ import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../../..')
-const zeroOid = '0'.repeat(40)
 let directory: string
 
 function git(...args: string[]) {
@@ -44,20 +43,12 @@ const calls = () =>
     .split('\n')
     .filter(Boolean)
     .map((line) => JSON.parse(line) as string[])
-const pushInput = (base: string, head = git('rev-parse', 'HEAD')) =>
-  `refs/heads/topic ${head} refs/heads/topic ${base}\n`
-
 beforeEach(() => {
   directory = mkdtempSync(path.join(tmpdir(), 'local-quality-hooks-'))
   git('init', '--quiet')
   git('config', 'user.email', 'hooks@example.test')
   git('config', 'user.name', 'Hook test')
-  for (const file of [
-    '.githooks/pre-commit',
-    '.githooks/pre-push',
-    'scripts/pre-commit-check.mjs',
-    'scripts/deadcode-pre-push-check.mjs',
-  ]) {
+  for (const file of ['.githooks/pre-commit', '.githooks/pre-push', 'scripts/pre-commit-check.mjs']) {
     mkdirSync(path.dirname(path.join(directory, file)), { recursive: true })
     copyFileSync(path.join(repositoryRoot, file), path.join(directory, file))
   }
@@ -66,8 +57,6 @@ beforeEach(() => {
   write('src/foreign.ts', 'export const foreignWork = false\n')
   git('add', '.')
   git('-c', 'core.hooksPath=/dev/null', 'commit', '--quiet', '--message', 'fixture base')
-  git('remote', 'add', 'origin', '.')
-  git('update-ref', 'refs/remotes/origin/main', git('rev-parse', 'HEAD'))
   write('calls.jsonl', '')
   write(
     'bin/pnpm',
@@ -180,86 +169,15 @@ describe('dependency commit hook', () => {
 })
 
 describe('dead-code push hook', () => {
-  it('skips documentation-only commits and keeps the AI-slop hook', () => {
-    const base = git('rev-parse', 'HEAD')
-    commit('docs/first.md', 'First\n')
-    commit('README.md', 'Second\n')
-    expect(runHook('pre-push', pushInput(base)).status).toBe(0)
-    expect(calls()).toEqual([['ai:slop-check:prepush']])
-  })
-
-  it('checks an earlier source commit when the latest commit is documentation', () => {
-    const base = git('rev-parse', 'HEAD')
-    commit('src/feature.ts', 'export const feature = true\n')
-    commit('docs/latest.md', 'Latest\n')
-    expect(runHook('pre-push', pushInput(base)).status).toBe(0)
+  it.each(['docs/latest.md', 'src/feature.ts'])('runs Knip on every push, including %s', (file) => {
+    commit(file, 'changed\n')
+    expect(runHook('pre-push').status).toBe(0)
     expect(calls()).toEqual([['deadcode:check'], ['ai:slop-check:prepush']])
   })
 
-  it.each([
-    'pnpm-lock.yaml',
-    'package.json',
-    'knip.jsonc',
-    'tsconfig.json',
-    '.npmrc',
-    'scripts/loader.mjs',
-    '.storybook/main.ts',
-  ])('checks pushed dependency or loader change %s', (file) => {
-    const base = git('rev-parse', 'HEAD')
-    commit(file, file === 'package.json' ? '{"dependencies":{"example":"2.0.0"}}\n' : 'changed\n')
-    expect(runHook('pre-push', pushInput(base)).status).toBe(0)
-    expect(calls()[0]).toEqual(['deadcode:check'])
-  })
-
-  it('uses the supplied remote ref even when tracking refs already point at HEAD', () => {
-    const base = git('rev-parse', 'HEAD')
-    commit('src/feature.ts', 'export const feature = true\n')
-    git('update-ref', 'refs/remotes/origin/topic', git('rev-parse', 'HEAD'))
-    git('branch', '--set-upstream-to=origin/topic')
-    expect(runHook('pre-push', pushInput(base)).status).toBe(0)
-    expect(calls()[0]).toEqual(['deadcode:check'])
-  })
-
-  it('checks new refs across all commits absent from the remote', () => {
-    commit('src/feature.ts', 'export const feature = true\n')
-    commit('docs/latest.md', 'Latest\n')
-    expect(runHook('pre-push', pushInput(zeroOid)).status).toBe(0)
-    expect(calls()[0]).toEqual(['deadcode:check'])
-  })
-
-  it('skips a new documentation-only ref based on known remote history', () => {
-    commit('docs/latest.md', 'Latest\n')
-    expect(runHook('pre-push', pushInput(zeroOid)).status).toBe(0)
-    expect(calls()).toEqual([['ai:slop-check:prepush']])
-  })
-
-  it('includes source deletions and renames into documentation', () => {
-    const base = commit('src/feature.ts', 'export const feature = true\n')
-    git('mv', 'src/feature.ts', 'feature.md')
-    git('-c', 'core.hooksPath=/dev/null', 'commit', '--quiet', '--message', 'rename source')
-    expect(runHook('pre-push', pushInput(base)).status).toBe(0)
-    expect(calls()[0]).toEqual(['deadcode:check'])
-  })
-
-  it('checks all ref updates once and ignores ref deletion', () => {
-    const base = git('rev-parse', 'HEAD')
-    const docsHead = commit('docs/latest.md', 'Latest\n')
-    const sourceHead = commit('src/feature.ts', 'export const feature = true\n')
-    const input = pushInput(base, docsHead) + pushInput(base, sourceHead) + pushInput(base, zeroOid)
-    expect(runHook('pre-push', input).status).toBe(0)
-    expect(calls()).toEqual([['deadcode:check'], ['ai:slop-check:prepush']])
-  })
-
-  it('blocks the push when Knip reports findings', () => {
-    const base = git('rev-parse', 'HEAD')
-    commit('src/feature.ts', 'export const feature = true\n')
-    expect(runHook('pre-push', pushInput(base), { KNIP_STATUS: '1' }).status).toBe(1)
+  it.each([1, 2])('blocks the push when Knip exits with status %s', (status) => {
+    expect(runHook('pre-push', '', { KNIP_STATUS: String(status) }).status).toBe(status)
     expect(calls()).toEqual([['deadcode:check']])
-  })
-
-  it('blocks the push if the advertised remote commit is unavailable', () => {
-    expect(runHook('pre-push', pushInput('1'.repeat(40))).status).toBe(1)
-    expect(calls()).toEqual([])
   })
 })
 

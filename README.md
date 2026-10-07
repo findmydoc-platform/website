@@ -36,7 +36,7 @@ All rights are reserved by findmydoc. See [LICENSE.md](./LICENSE.md) for the ful
 
 AI anti-slop and quality hygiene are enforced through local and CI lanes:
 
-- Local lane: staged-file `pre-commit` checks plus scoped `pre-push` dead-code and AI-slop checks.
+- Local lane: staged-file `pre-commit` checks plus a `pre-push` dead-code check and scoped AI-slop check.
 - Fast lane (PR blocking): merge-critical validation, tests, and build readiness.
 - Security lane: workflow and secret scanning for CI/security-relevant changes plus scheduled runs.
 - Semgrep lane: blocking SAST scans for application changes in pull requests and on `main`.
@@ -55,7 +55,7 @@ Hook setup:
 - `pnpm install` configures `.githooks` automatically in local Git worktrees.
 - `pnpm hooks:install` reapplies hook setup manually if needed.
 - `pre-commit` runs `pnpm deps:dedupe:check` when `package.json` or `pnpm-lock.yaml` is staged. Only an explicit pnpm dedupe finding triggers `pnpm dedupe --lockfile-only --ignore-scripts`; the cleaned lockfile joins the same commit. Authentication, network, and other check failures stop the commit without attempting a repair. Partially staged files and unstaged manifest or lockfile changes must be staged or stashed first.
-- `pre-push` runs `pnpm deadcode:check` for source, dependency, configuration, and loader changes across the ref updates supplied by Git. New refs check commits not already on the target remote. Deletions and renames participate; documentation-only changes skip Knip. A missing remote commit object stops the push because the scope cannot be determined.
+- `pre-push` runs `pnpm deadcode:check` on every push, including documentation-only changes. It does not inspect changed paths or remote refs first. Findings and configuration or loader errors stop the push.
 - Knip analyzes the Payload config and admin importmap statically to avoid executing server and JSX modules during configuration loading.
 
 Reference: [AI Anti-Slop Playbook](docs/engineering/ai-anti-slop-playbook.md)

@@ -226,9 +226,8 @@ const buildConnectionStringForDatabase = (connectionString, databaseName) => {
 
 async function withClient(connectionString, callback) {
   const client = new Client({ connectionString })
-  await client.connect()
-
   try {
+    await client.connect()
     return await callback(client)
   } finally {
     await client.end().catch(() => undefined)
@@ -496,7 +495,9 @@ function runDockerCompose(command, options = {}) {
       try {
         // Keep the stopped S3Mock container aligned with the preserved Postgres templates.
         execSync(teardownCommand, { stdio: 'pipe' })
-      } catch {}
+      } catch (error) {
+        if (options.strict) throw error
+      }
     }
     return
   }
@@ -539,6 +540,7 @@ async function ensureBaselineTemplate({
   fingerprint,
   targetConnectionString,
   templateDatabaseName,
+  seedBaseline = runBaselineSeed,
 }) {
   const baselineTemplateConnectionString = buildConnectionStringForDatabase(
     targetConnectionString,
@@ -553,7 +555,7 @@ async function ensureBaselineTemplate({
     await createDatabase(adminClient, templateDatabaseName, { templateName: emptyTemplateDatabaseName })
   })
 
-  runBaselineSeed(baselineTemplateConnectionString)
+  await seedBaseline(baselineTemplateConnectionString)
   await writeTemplateMetadata(baselineTemplateConnectionString, { fingerprint, templateKind: 'baseline' })
 
   await withClient(adminConnectionString, async (adminClient) => {
@@ -584,6 +586,7 @@ export async function setupTestDatabase(options = {}) {
   const databaseConfig = deriveDatabaseConfig(process.env.DATABASE_URI || DEFAULT_CONN, {
     allowRemote: process.env.TEST_DB_ALLOW_REMOTE === '1',
   })
+  if (options.seedBaseline) integrationBaselineDatabaseConfig()
   const fingerprints = Object.fromEntries(
     requiredTemplateKinds.map((requiredTemplateKind) => [
       requiredTemplateKind,
@@ -616,6 +619,11 @@ export async function setupTestDatabase(options = {}) {
       console.log('🚀 Starting local test S3Mock for the explicitly allowed remote test database...')
     }
 
+    if (options.seedBaseline) {
+      // The serial runner owns cleanup even when Docker starts only part of the requested services.
+      managesLocalTestDatabaseContainer = isLocalTarget
+      managesLocalTestStorageContainer = usesLocalTestStorage
+    }
     runDockerCompose('up', services)
     managesLocalTestDatabaseContainer = isLocalTarget
     managesLocalTestStorageContainer = usesLocalTestStorage
@@ -659,13 +667,14 @@ export async function setupTestDatabase(options = {}) {
     templateStates.empty = { current: true, exists: true, metadata: null }
   }
 
-  if (requiredTemplateKinds.includes('baseline') && !templateStates.baseline?.current) {
+  if (requiredTemplateKinds.includes('baseline') && (!templateStates.baseline?.current || options.seedBaseline)) {
     await ensureBaselineTemplate({
       adminConnectionString,
       emptyTemplateDatabaseName: templateDatabaseNames.empty,
       fingerprint: fingerprints.baseline,
       targetConnectionString: connectionString,
       templateDatabaseName: templateDatabaseNames.baseline,
+      seedBaseline: options.seedBaseline,
     })
     templateStates.baseline = { current: true, exists: true, metadata: null }
   }
@@ -680,7 +689,7 @@ export async function setupTestDatabase(options = {}) {
   console.log(`✅ Test database ready from ${templateKind} template in ${Date.now() - startedAt}ms`)
 }
 
-export async function teardownTestDatabase() {
+export async function teardownTestDatabase({ strict = false } = {}) {
   if (!managesLocalTestDatabaseContainer && !managesLocalTestStorageContainer) {
     console.log('✅ No local test services were managed for this run')
     return
@@ -690,8 +699,43 @@ export async function teardownTestDatabase() {
   runDockerCompose('stop', {
     includeDatabase: managesLocalTestDatabaseContainer,
     includeStorage: managesLocalTestStorageContainer,
+    strict,
   })
   managesLocalTestDatabaseContainer = false
   managesLocalTestStorageContainer = false
   console.log('✅ Test services stopped; matching database templates and S3Mock state preserved')
+}
+
+export function integrationBaselineDatabaseConfig() {
+  if (process.env.NODE_ENV !== 'test' || process.env.INTEGRATION_BASELINE_COPY !== '1')
+    throw new Error('Integration baseline copies require the isolated test runner.')
+  if (process.env.TEST_DB_REBUILD_TEMPLATES === '1')
+    throw new Error('Integration baseline copies do not permit a full service reset.')
+  if (!isLocalTestS3Endpoint()) throw new Error('Integration baseline copies require local test storage.')
+  return deriveDatabaseConfig(process.env.DATABASE_URI || DEFAULT_CONN)
+}
+
+export async function assertIntegrationBaseline() {
+  const config = integrationBaselineDatabaseConfig()
+  const fingerprint = computeTestDatabaseFingerprint({ templateKind: 'baseline' })
+  const metadata = await readTemplateMetadata(config.connectionString)
+  if (!isTemplateMetadataCurrent(metadata, { fingerprint, templateKind: 'baseline' }))
+    throw new Error('Working integration database is not a current baseline copy.')
+}
+
+/** Replace only the local test working database before an isolated integration file imports Payload. */
+export async function restoreIntegrationBaseline() {
+  const config = integrationBaselineDatabaseConfig()
+  const fingerprint = computeTestDatabaseFingerprint({ templateKind: 'baseline' })
+  const metadata = await readTemplateMetadata(
+    buildConnectionStringForDatabase(config.connectionString, config.templateDatabaseNames.baseline),
+  )
+  if (!isTemplateMetadataCurrent(metadata, { fingerprint, templateKind: 'baseline' }))
+    throw new Error('Integration baseline template is missing or stale; refusing to copy.')
+  await rebuildWorkingDatabaseFromTemplate({
+    adminConnectionString: config.adminConnectionString,
+    targetDatabaseName: config.targetDatabaseName,
+    templateDatabaseName: config.templateDatabaseNames.baseline,
+  })
+  await assertIntegrationBaseline()
 }

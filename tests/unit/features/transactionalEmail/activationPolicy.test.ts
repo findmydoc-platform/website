@@ -23,14 +23,12 @@ describe('transactional email activation policy', () => {
       'auth.password-recovery',
       'clinic.registration-received',
       'conversation.external-message-received',
-    ])
-    const previewCommands = new Set([
-      ...productionCommands,
       'moderation.report-received',
       'moderation.report-decided',
       'moderation.appeal-received',
       'moderation.appeal-decided',
     ])
+    const previewCommands = new Set(productionCommands)
 
     for (const command of commandTypes) {
       expect(isTransactionalEmailCommandActivationDeclared('preview', command, committedRegistry)).toBe(
@@ -100,6 +98,39 @@ describe('transactional email activation policy', () => {
     )
     expect(rolledBack.evaluate('clinic.registration-received', 'recipient@example.test')).toBeNull()
   })
+  it.each([
+    'moderation.report-received',
+    'moderation.report-decided',
+    'moderation.appeal-received',
+    'moderation.appeal-decided',
+  ] as const)('disables only %s acceptance when its Production record is removed', (removed) => {
+    const fixture = createActivationFixture('production')
+    const moderationRecords = [
+      ['moderation.report-received', 'website-pr-2058'],
+      ['moderation.report-decided', 'website-pr-2060'],
+      ['moderation.appeal-received', 'website-pr-2061'],
+      ['moderation.appeal-decided', 'website-pr-2062'],
+    ] as const
+    fixture.registry.records.push(
+      ...moderationRecords.map(([commandType, onePath]) => ({
+        ...fixture.record,
+        commandType,
+        release: { onePath },
+      })),
+    )
+    const activated = resolveActivationPolicy(fixture.binding, fixture.registry)
+    for (const [commandType] of moderationRecords)
+      expect(activated.evaluate(commandType, 'recipient@example.test')).toBeNull()
+
+    fixture.registry.records = fixture.registry.records.filter(({ commandType }) => commandType !== removed)
+    const rolledBack = resolveActivationPolicy(fixture.binding, fixture.registry)
+    for (const [commandType] of moderationRecords)
+      expect(rolledBack.evaluate(commandType, 'recipient@example.test')).toBe(
+        commandType === removed ? 'command-not-enabled' : null,
+      )
+    expect(rolledBack.evaluate('clinic.registration-received', 'recipient@example.test')).toBeNull()
+  })
+
   it('suppresses an unregistered command after validating its hosted credentials', () => {
     const input = createWebhookConfiguration()
     const binding = resolveHostedLettermintBinding(

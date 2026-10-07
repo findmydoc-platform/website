@@ -218,6 +218,42 @@
       "release": {
         "onePath": "website-pr-2059"
       }
+    },
+    {
+      "commandType": "moderation.report-received",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "production-preflight-v2",
+      "environment": "production",
+      "release": {
+        "onePath": "website-pr-2058"
+      }
+    },
+    {
+      "commandType": "moderation.report-decided",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "production-preflight-v2",
+      "environment": "production",
+      "release": {
+        "onePath": "website-pr-2060"
+      }
+    },
+    {
+      "commandType": "moderation.appeal-received",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "production-preflight-v2",
+      "environment": "production",
+      "release": {
+        "onePath": "website-pr-2061"
+      }
+    },
+    {
+      "commandType": "moderation.appeal-decided",
+      "registryVersion": "activation-v1",
+      "preflightVersion": "production-preflight-v2",
+      "environment": "production",
+      "release": {
+        "onePath": "website-pr-2062"
+      }
     }
   ]
 }

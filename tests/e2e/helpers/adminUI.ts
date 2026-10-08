@@ -28,7 +28,7 @@ export const loginToAdmin = async (page: Page, credentials: AdminSessionCredenti
   await page.goto('/admin/login', { waitUntil: 'domcontentloaded' })
   await page.getByLabel('Email').fill(credentials.email)
   await page.getByLabel('Password').fill(credentials.password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await page.waitForURL(/\/admin(?:\/)?$/)
 }
 

@@ -137,7 +137,7 @@ const GuestTrigger = React.forwardRef<HTMLButtonElement, AccountTriggerButtonPro
       'size-11 rounded-md p-0 font-bold text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-hidden md:size-auto md:gap-2.5 md:rounded-sm md:px-2 md:py-1.5 md:text-base',
       className,
     )}
-    aria-label="Open account menu"
+    aria-label="Sign in, open account menu"
     {...props}
   >
     <CircleUserRound aria-hidden className="size-5 shrink-0" />
@@ -158,7 +158,7 @@ const PatientTrigger = React.forwardRef<
       'size-10 rounded-full border-0 bg-transparent p-0 hover:bg-card focus-visible:bg-card focus-visible:ring-1 focus-visible:ring-border/70 focus-visible:ring-offset-0',
       className,
     )}
-    aria-label="Open account menu"
+    aria-label={`${getInitials(state.displayName)}, open account menu`}
     {...props}
   >
     <Avatar className="size-9 border border-border bg-muted">

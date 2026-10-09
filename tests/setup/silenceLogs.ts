@@ -5,6 +5,7 @@
  * on the test command (there is a package script `tests:show-logs` added).
  *
  * This file intentionally does not modify runtime logger policy.
+ * Shared setup keeps console output consistent across suites.
  */
 
 const SHOW_LOGS = (process.env.TEST_SHOW_LOGS || '').toLowerCase() === 'true' || process.env.TEST_SHOW_LOGS === '1'

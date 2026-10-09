@@ -68,7 +68,7 @@ Additional full-mode cleanup removed the unused `src/cssVariables.js` object and
 
 Dedicated Separator, Tabs, PageRange, DeveloperDashboard, before/after, and breadcrumb wrapper stories/tests were deleted. Shared molecule tests still cover PriceSummary and RatingSummary. Alert, Card, Command, Dialog, Select, and BlogListing stories now exercise only surviving APIs and live beside their implementation. Dialog stories retain cancel/reopen/Escape cycles and restore opener focus explicitly.
 
-Cache impact is `no-public-impact`: exported helper visibility and the CommonJS filename changed, while cache classes, keys, tags, invalidation policy, planner/executor behavior, data projections, sitemap output, and public freshness boundaries are unchanged. No schema migration or data-model change is included.
+Cache impact is `no-public-impact`: exported helper visibility and the CommonJS filename changed, while cache classes, keys, tags, invalidation policy, planner/executor behavior, data projections, sitemap output, and public freshness boundaries are unchanged. No schema migration file or data-model change is included.
 
 ## Remaining production findings
 
@@ -274,4 +274,4 @@ Report on 2026-10-09: **19 files and 163 exports**. The file rows name retained 
 
 Gate regressions cover report/check ordering in pre-push and Deep Quality, full findings and exit code 2 failures blocking, production findings remaining visible with exit code 0, malformed analysis configuration still failing, Payload/Next/operator entries, and test/story consumers counted only by full mode. Dedicated tests use the installed Knip version and the actual package-script flags.
 
-The existing local test database is healthy but its migration metadata lacks 79 of the 95 migrations expected by current main. The build was therefore not started. No database was created, reset, migrated, or modified, and no environment profile was changed. Build validation remains open until a compatible existing local test target is supplied or the permitted database workflow is changed explicitly.
+Build validation passes against a newly initialized, isolated local test database. All 95 existing migration names are present in its migration metadata. Initialization uses the existing local Postgres container and the repository migration helper, following the documented migration-based schema setup. The original database is preserved. Build and sitemap postbuild pass with Node.js 24 and process-local database/runtime overrides; environment profiles remain unchanged. Next.js reports compilation warnings without stopping the build.

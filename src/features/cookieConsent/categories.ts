@@ -186,18 +186,3 @@ export function toCookieConsentCategorySettings(
 export const DEFAULT_COOKIE_CONSENT_CATEGORY_SETTINGS = toCookieConsentCategorySettings(
   DEFAULT_COOKIE_CONSENT_CATEGORIES,
 )
-
-export function cloneCookieConsentCategorySettings(
-  settings: CookieConsentCategorySettings = DEFAULT_COOKIE_CONSENT_CATEGORY_SETTINGS,
-): CookieConsentCategorySettings {
-  return Object.fromEntries(
-    COOKIE_CONSENT_CATEGORY_ORDER.map((key) => [
-      key,
-      {
-        enabled: settings[key].enabled,
-        label: settings[key].label,
-        tools: [...settings[key].tools],
-      },
-    ]),
-  ) as CookieConsentCategorySettings
-}

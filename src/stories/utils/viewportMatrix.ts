@@ -1,7 +1,7 @@
 const VIEWPORT_HEIGHT = '900px'
 const SHORT_VIEWPORT_HEIGHT = '700px'
 
-export const PUBLIC_STORYBOOK_VIEWPORTS = {
+const PUBLIC_STORYBOOK_VIEWPORTS = {
   public320: {
     name: 'Public 320',
     styles: { width: '320px', height: VIEWPORT_HEIGHT },
@@ -57,13 +57,7 @@ const PUBLIC_STORYBOOK_VIEWPORT_WIDTHS: Record<PublicViewportKey, number> = {
   public375Short: 375,
 }
 
-export const FULL_VIEWPORT_MATRIX_PARAMETERS = {
-  chromatic: {
-    viewports: Object.values(PUBLIC_STORYBOOK_VIEWPORT_WIDTHS),
-  },
-}
-
-export const VIEWPORT_STORY_PARAMETERS: Record<
+const VIEWPORT_STORY_PARAMETERS: Record<
   PublicViewportKey,
   {
     chromatic: { viewports: [number] }

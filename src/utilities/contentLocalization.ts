@@ -11,8 +11,7 @@ export type ContentLocaleContext = {
 }
 export type ContentLocaleQueryOptions = ContentLocaleContext
 
-export const isContentLocale = (value: string): value is ContentLocale =>
-  CONTENT_LOCALES.includes(value as ContentLocale)
+const isContentLocale = (value: string): value is ContentLocale => CONTENT_LOCALES.includes(value as ContentLocale)
 
 const getFirstSearchParamValue = (value: SearchParamValue): string | null => {
   if (Array.isArray(value)) {
@@ -22,7 +21,7 @@ const getFirstSearchParamValue = (value: SearchParamValue): string | null => {
   return typeof value === 'string' ? value : null
 }
 
-export const getRequestedContentLocale = (value: SearchParamValue): ContentLocale | undefined => {
+const getRequestedContentLocale = (value: SearchParamValue): ContentLocale | undefined => {
   const rawValue = getFirstSearchParamValue(value)?.trim().toLowerCase()
 
   if (!rawValue || !isContentLocale(rawValue) || rawValue === DEFAULT_CONTENT_LOCALE) {
@@ -54,34 +53,4 @@ export const appendContentLocaleToPath = (path: string, locale?: ContentLocale |
   url.searchParams.set('locale', locale)
 
   return `${url.pathname}${url.search}${url.hash}`
-}
-
-export const getLocalizedStringValue = (
-  value: unknown,
-  locale: ContentLocale = DEFAULT_CONTENT_LOCALE,
-): string | undefined => {
-  if (typeof value === 'string') {
-    return value
-  }
-
-  if (!value || typeof value !== 'object') {
-    return undefined
-  }
-
-  const localizedValue = value as Partial<Record<ContentLocale, unknown>>
-  const requestedValue = localizedValue[locale]
-
-  if (typeof requestedValue === 'string') {
-    return requestedValue
-  }
-
-  for (const candidateLocale of CONTENT_LOCALES) {
-    const candidateValue = localizedValue[candidateLocale]
-
-    if (typeof candidateValue === 'string') {
-      return candidateValue
-    }
-  }
-
-  return undefined
 }

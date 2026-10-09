@@ -111,7 +111,7 @@ const mergeGroup = (
   return { ...original, ...incomingValue }
 }
 
-export const resolveClinicApprovalData = (data: Partial<Clinic>, originalDoc?: Clinic): Record<string, unknown> => {
+const resolveClinicApprovalData = (data: Partial<Clinic>, originalDoc?: Clinic): Record<string, unknown> => {
   const incoming = data as Record<string, unknown>
   const original = (originalDoc ?? {}) as Record<string, unknown>
 

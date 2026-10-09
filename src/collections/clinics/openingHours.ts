@@ -1,14 +1,6 @@
 import type { GroupField } from 'payload'
 
-export const openingHoursDayNames = [
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
-  'sunday',
-] as const
+const openingHoursDayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
 
 type OpeningHoursDayName = (typeof openingHoursDayNames)[number]
 

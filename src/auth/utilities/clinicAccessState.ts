@@ -9,7 +9,7 @@ export type ClinicAccessState = {
   staff: ClinicStaff
 }
 
-export const readRelationId = (value: ClinicStaff['clinic']): number | string | null => {
+const readRelationId = (value: ClinicStaff['clinic']): number | string | null => {
   if (typeof value === 'number' || typeof value === 'string') return value
   if (value && typeof value === 'object' && 'id' in value) return value.id
   return null

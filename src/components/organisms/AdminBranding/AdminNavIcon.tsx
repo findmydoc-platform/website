@@ -2,7 +2,7 @@ import React from 'react'
 
 type AdminNavIconProps = Record<string, unknown>
 
-export const AdminNavIcon: React.FC<AdminNavIconProps> = () => {
+const AdminNavIcon: React.FC<AdminNavIconProps> = () => {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img

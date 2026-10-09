@@ -14,7 +14,7 @@ export type ClientRuntimeEnvInput = {
   NODE_ENV?: string
 }
 
-export const normalizeEnvValue = (value: string | undefined): string | null => {
+const normalizeEnvValue = (value: string | undefined): string | null => {
   if (!value) return null
 
   const normalized = value.trim().toLowerCase()

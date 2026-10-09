@@ -9,7 +9,7 @@ import {
 } from '@/features/inquiryRequest/options'
 import type { PatientClinicInquiry } from '@/payload-types'
 
-export const patientClinicInquiryStatusOptions = [
+const patientClinicInquiryStatusOptions = [
   { label: 'Submitted', value: 'submitted' },
   { label: 'In Review', value: 'in_review' },
   { label: 'Contacted', value: 'contacted' },
@@ -17,14 +17,14 @@ export const patientClinicInquiryStatusOptions = [
   { label: 'Spam', value: 'spam' },
 ] as const
 
-export const patientClinicInquiryHandlingStatusOptions = [
+const patientClinicInquiryHandlingStatusOptions = [
   { label: 'Submitted', value: 'submitted' },
   { label: 'In Review', value: 'in_review' },
   { label: 'Contacted', value: 'contacted' },
   { label: 'Spam', value: 'spam' },
 ] as const
 
-export const patientClinicInquiryLifecycleOptions = [
+const patientClinicInquiryLifecycleOptions = [
   { label: 'Open', value: 'open' },
   { label: 'Closed', value: 'closed' },
 ] as const
@@ -55,7 +55,7 @@ const inquiryDomainFields = [
   'deletionTombstoneKey',
 ] as const
 
-export const patientClinicInquiryStatusTransitions = {
+const patientClinicInquiryStatusTransitions = {
   submitted: ['in_review', 'contacted', 'closed', 'spam'],
   in_review: ['contacted', 'closed', 'spam'],
   contacted: ['closed'],

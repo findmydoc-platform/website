@@ -20,14 +20,14 @@ export const clinicStaffStatusTransitions = {
   offboarded: [],
 } as const satisfies Record<ClinicStaffStatus, readonly ClinicStaffStatus[]>
 
-export const clinicStaffAuthSyncStatusLabels = {
+const clinicStaffAuthSyncStatusLabels = {
   pending: 'Pending',
   synced: 'Synced',
   failed: 'Failed',
   deleted: 'Deleted',
 } as const satisfies Record<ClinicStaffAuthSyncStatus, string>
 
-export const clinicStaffAuthSyncErrorLabels = {
+const clinicStaffAuthSyncErrorLabels = {
   missing_identity: 'Missing Supabase identity',
   account_update_failed: 'Account update failed',
   account_delete_failed: 'Account deletion failed',
@@ -36,7 +36,7 @@ export const clinicStaffAuthSyncErrorLabels = {
 export const isClinicStaffStatus = (value: unknown): value is ClinicStaffStatus =>
   clinicStaffStatusOptions.some((option) => option.value === value)
 
-export const getClinicStaffStatusLabel = (status: ClinicStaffStatus): string =>
+const getClinicStaffStatusLabel = (status: ClinicStaffStatus): string =>
   clinicStaffStatusOptions.find((option) => option.value === status)?.label ?? status
 
 export const getClinicStaffSelectableStatuses = (persistedStatus: ClinicStaffStatus): readonly ClinicStaffStatus[] => [

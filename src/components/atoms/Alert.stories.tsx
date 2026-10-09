@@ -1,6 +1,6 @@
 import type React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Alert, AlertDescription, AlertTitle } from '@/components/atoms/alert'
+import { Alert, AlertDescription } from '@/components/atoms/alert'
 
 const meta = {
   title: 'Shared/Atoms/Alert',
@@ -59,7 +59,6 @@ export const Default: Story = {
     variant: 'default',
     children: (
       <div>
-        <AlertTitle>Heads up!</AlertTitle>
         <AlertDescription>This is a generic alert message.</AlertDescription>
       </div>
     ),
@@ -71,7 +70,6 @@ export const Success: Story = {
     variant: 'success',
     children: (
       <div>
-        <AlertTitle>Success</AlertTitle>
         <AlertDescription>Your action completed without any issues.</AlertDescription>
       </div>
     ),
@@ -83,7 +81,6 @@ export const Info: Story = {
     variant: 'info',
     children: (
       <div>
-        <AlertTitle>Information</AlertTitle>
         <AlertDescription>This is useful context for the next step.</AlertDescription>
       </div>
     ),
@@ -95,7 +92,6 @@ export const Warning: Story = {
     variant: 'warning',
     children: (
       <div>
-        <AlertTitle>Warning</AlertTitle>
         <AlertDescription>Please double-check the information you entered.</AlertDescription>
       </div>
     ),
@@ -107,7 +103,6 @@ export const Error: Story = {
     variant: 'error',
     children: (
       <div>
-        <AlertTitle>Error</AlertTitle>
         <AlertDescription>Something needs attention before you continue.</AlertDescription>
       </div>
     ),
@@ -119,7 +114,6 @@ export const Destructive: Story = {
     variant: 'destructive',
     children: (
       <div>
-        <AlertTitle>Error</AlertTitle>
         <AlertDescription>Something went wrong. Please try again.</AlertDescription>
       </div>
     ),
@@ -131,7 +125,6 @@ export const AllVariants: Story = {
     <div className="mx-auto grid w-full max-w-2xl gap-4 p-6">
       {variants.map((item) => (
         <Alert key={item.variant} variant={item.variant}>
-          <AlertTitle>{item.label}</AlertTitle>
           <AlertDescription>{item.description}</AlertDescription>
         </Alert>
       ))}

@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/atoms/card'
-import { Button } from '@/components/atoms/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card'
 
 const meta = {
   title: 'Shared/Atoms/Card',
@@ -22,10 +21,6 @@ const SampleCard = () => (
         Premium listings include featured placement, richer doctor profiles, and priority support.
       </p>
     </CardContent>
-    <CardFooter className="justify-end gap-2">
-      <Button variant="ghost">Maybe later</Button>
-      <Button>Upgrade</Button>
-    </CardFooter>
   </Card>
 )
 

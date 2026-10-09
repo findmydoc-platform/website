@@ -15,12 +15,6 @@
  * ```
  */
 
-// Export compound components as namespace
-export { Overlay } from './Overlay'
-export { Simple } from './Simple'
-export { Enhanced } from './Enhanced'
-export { Overview } from './Overview'
-
 // Namespace object for dot-notation usage
 import { Overlay } from './Overlay'
 import { Simple } from './Simple'
@@ -38,10 +32,3 @@ export const BlogCard = {
 export type { BlogCardBaseProps, BlogCardImageProps, BlogCardAuthorProps } from '@/utilities/blog/normalizePost'
 export type { EnhancedVariant, EnhancedProps } from './Enhanced'
 export type { OverlayProps } from './Overlay'
-
-/**
- * Legacy default export for backward compatibility
- * @deprecated Use BlogCard.Simple or specific variants instead
- * This exists only to keep existing code working during migration
- */
-export default Simple

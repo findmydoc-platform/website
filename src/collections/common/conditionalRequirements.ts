@@ -22,7 +22,7 @@ export type ConditionalRequirementSet = Readonly<{
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value && typeof value === 'object' && !Array.isArray(value))
 
-export const readValueAtPath = (data: unknown, path: string): unknown => {
+const readValueAtPath = (data: unknown, path: string): unknown => {
   if (!isRecord(data)) return undefined
 
   return path.split('.').reduce<unknown>((value, segment) => {

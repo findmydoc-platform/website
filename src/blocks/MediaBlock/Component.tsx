@@ -18,7 +18,7 @@ type Props = MediaBlockPayload & {
   disableInnerContainer?: boolean
 }
 
-export const MediaBlockComponent: React.FC<Props> = (props) => {
+const MediaBlockComponent: React.FC<Props> = (props) => {
   const {
     captionClassName,
     className,

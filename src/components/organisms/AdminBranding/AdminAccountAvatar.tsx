@@ -110,7 +110,7 @@ const renderDefaultIcon = (isOnAccountPage: boolean): React.JSX.Element => (
   </svg>
 )
 
-export const AdminAccountAvatar: React.FC = () => {
+const AdminAccountAvatar: React.FC = () => {
   const { config } = useConfig()
   const { user } = useAuth<StaffUserLike>()
   const pathname = usePathname()

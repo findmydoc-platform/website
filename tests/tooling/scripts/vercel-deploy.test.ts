@@ -48,6 +48,13 @@ const runDeployHelper = (
   fs.mkdirSync(vercelDirectory)
   fs.writeFileSync(path.join(vercelDirectory, '.env.preview.local'), pulledPreviewEnvironment)
 
+  const rootEnvironmentFiles = ['.env', '.env.example', '.env.test', '.env.preview.local']
+  for (const file of rootEnvironmentFiles) {
+    fs.writeFileSync(path.join(temporaryDirectory, file), 'LOCAL_ONLY=fixture\n')
+  }
+  const buildEnvironmentLog = path.join(temporaryDirectory, 'build-environment.log')
+  fs.writeFileSync(buildEnvironmentLog, '')
+
   const commandLog = path.join(temporaryDirectory, 'commands.log')
   const tokenLog = path.join(temporaryDirectory, 'token-presence.log')
   const githubOutput = path.join(temporaryDirectory, 'github-output.txt')
@@ -59,6 +66,15 @@ const runDeployHelper = (
 set -euo pipefail
 printf '%s\n' "$*" >> "\${COMMAND_LOG}"
 printf '%s\n' "\${NODE_AUTH_TOKEN:+present}" >> "\${TOKEN_LOG}"
+if [[ "$*" == *" build "* ]]; then
+  for file in .env .env.*; do
+    if [[ -f "$file" || -L "$file" ]]; then
+      printf '%s\\n' "$file" >> "\${BUILD_ENVIRONMENT_LOG}"
+    fi
+  done
+  [[ -f .vercel/.env.preview.local ]]
+  exit "\${STUB_BUILD_EXIT_CODE:-0}"
+fi
 if [[ "$*" == *" deploy "* ]]; then
   echo "https://findmydoc-preview-test.vercel.app"
 fi
@@ -72,6 +88,7 @@ fi
     encoding: 'utf8',
     env: {
       ...environmentWithoutReleaseVersion,
+      BUILD_ENVIRONMENT_LOG: buildEnvironmentLog,
       COMMAND_LOG: commandLog,
       TOKEN_LOG: tokenLog,
       DATABASE_DIRECT_URI: 'postgresql://direct.example.test:5432/postgres',
@@ -92,6 +109,12 @@ fi
   })
 
   return {
+    buildEnvironmentFiles: fs.readFileSync(buildEnvironmentLog, 'utf8').trim().split('\n').filter(Boolean),
+    restoredEnvironmentContents: rootEnvironmentFiles.map((file) =>
+      fs.existsSync(path.join(temporaryDirectory, file))
+        ? fs.readFileSync(path.join(temporaryDirectory, file), 'utf8')
+        : null,
+    ),
     commands: fs.existsSync(commandLog) ? fs.readFileSync(commandLog, 'utf8').trim().split('\n').filter(Boolean) : [],
     tokenPresence: fs.existsSync(tokenLog) ? fs.readFileSync(tokenLog, 'utf8').split('\n').slice(0, -1) : [],
     result,
@@ -160,6 +183,23 @@ describe('Vercel deployment boundary', () => {
     expect(production.commands[0]).toContain('--env RELEASE_VERSION=v1.2.3')
     expect(production.commands[0]).toContain('--build-env PAYLOAD_SECRET=payload-test-secret')
     expect(production.commands[0]).toContain('--build-env DATABASE_URI=postgresql://runtime.example.test:6543/postgres')
+  })
+
+  it('packages Preview without root environment files and restores the checkout after success', () => {
+    const preview = runDeployHelper('preview')
+
+    expect(preview.result.status).toBe(0)
+    expect(preview.buildEnvironmentFiles).toEqual([])
+    expect(preview.restoredEnvironmentContents).toEqual(Array(4).fill('LOCAL_ONLY=fixture\n'))
+  })
+
+  it('restores root environment files and blocks upload when the Preview build fails', () => {
+    const preview = runDeployHelper('preview', { STUB_BUILD_EXIT_CODE: '42' })
+
+    expect(preview.result.status).toBe(42)
+    expect(preview.buildEnvironmentFiles).toEqual([])
+    expect(preview.restoredEnvironmentContents).toEqual(Array(4).fill('LOCAL_ONLY=fixture\n'))
+    expect(preview.commands).toEqual(['dlx vercel@canary build --target preview --yes'])
   })
 
   it('stops a contradictory contract before invoking Vercel', () => {

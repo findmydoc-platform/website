@@ -111,7 +111,7 @@ export async function findAllSpecialties(payload: Payload): Promise<MedicalSpeci
   })
 }
 
-export async function findAllApprovedClinics(payload: Payload): Promise<Clinic[]> {
+async function findAllApprovedClinics(payload: Payload): Promise<Clinic[]> {
   return collectAllPages<Clinic>(async (page) => {
     const result = await payload.find({
       collection: 'clinics',

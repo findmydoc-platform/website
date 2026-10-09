@@ -5,7 +5,7 @@ import { CircleCheck, CircleX, ExternalLink, Info, TriangleAlert, type LucideIco
 
 import './index.scss'
 
-export const ADMIN_NOTICE_VARIANTS = ['info', 'success', 'warning', 'error'] as const
+const ADMIN_NOTICE_VARIANTS = ['info', 'success', 'warning', 'error'] as const
 
 export type AdminNoticeVariant = (typeof ADMIN_NOTICE_VARIANTS)[number]
 

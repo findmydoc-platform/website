@@ -1,4 +1,5 @@
 // CommonJS mirror for tooling that cannot load the TypeScript ESM runtime policy.
+// Use a distinct basename so extensionless ./core imports resolve to core.ts in analysis tools.
 // Keep behavior aligned with core.ts; next-sitemap and runtime-policy tests cover both paths.
 const normalizeEnvValue = (value) => {
   if (!value) return null
@@ -33,38 +34,12 @@ const resolveServerRuntimeEnvironment = (env = process.env) => {
     : runtimeEnvironment
 }
 
-const resolveClientRuntimeEnvironment = (env = process.env) => {
-  const runtimeValue =
-    normalizeEnvValue(env.NEXT_PUBLIC_VERCEL_ENV) ?? normalizeEnvValue(env.NEXT_PUBLIC_DEPLOYMENT_ENV)
-
-  const runtimeEnvironment = toRuntimeEnvironment(runtimeValue)
-  return runtimeEnvironment === 'unknown'
-    ? toNodeRuntimeEnvironment(normalizeEnvValue(env.NODE_ENV))
-    : runtimeEnvironment
-}
-
 const resolveRuntimeClass = (env = process.env) => {
   return toRuntimeClass(resolveServerRuntimeEnvironment(env))
-}
-
-const resolveClientRuntimeClass = (env = process.env) => {
-  return toRuntimeClass(resolveClientRuntimeEnvironment(env))
 }
 
 const isPreviewRuntime = (env = process.env) => {
   return resolveRuntimeClass(env) === 'preview'
 }
 
-const isClientPreviewRuntime = (env = process.env) => {
-  return resolveClientRuntimeClass(env) === 'preview'
-}
-
-module.exports = {
-  isClientPreviewRuntime,
-  isPreviewRuntime,
-  normalizeEnvValue,
-  resolveClientRuntimeClass,
-  resolveClientRuntimeEnvironment,
-  resolveRuntimeClass,
-  resolveServerRuntimeEnvironment,
-}
+module.exports = { isPreviewRuntime }

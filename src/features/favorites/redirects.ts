@@ -1,7 +1,7 @@
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
 export const PATIENT_LOGIN_PATH = '/login/patient'
-export const PATIENT_LOGIN_FALLBACK_PATH = '/'
+const PATIENT_LOGIN_FALLBACK_PATH = '/'
 
 export function buildPatientLoginHref(nextPath: string): string {
   const safeNextPath = sanitizeInternalRedirectPath({

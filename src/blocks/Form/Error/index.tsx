@@ -2,7 +2,7 @@ import * as React from 'react'
 
 import { FieldError } from '@/components/atoms/field'
 
-export function getFormFieldErrorMessage(error: unknown): string | undefined {
+function getFormFieldErrorMessage(error: unknown): string | undefined {
   if (!error || typeof error !== 'object') return undefined
 
   const message = 'message' in error ? error.message : undefined

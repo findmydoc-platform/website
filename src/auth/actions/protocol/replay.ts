@@ -4,7 +4,7 @@ import { z } from 'zod'
 import type { AuthActionProtocolKeys, AuthActionRequestEnvelope } from './credentials'
 import { bindProtocolStorage } from './storage'
 
-export const protocolOutcomes = ['accepted', 'valid', 'confirmed', 'completed', 'invalid', 'unavailable'] as const
+const protocolOutcomes = ['accepted', 'valid', 'confirmed', 'completed', 'invalid', 'unavailable'] as const
 export type ProtocolOutcome = (typeof protocolOutcomes)[number]
 type Claim =
   { kind: 'owned'; finish(outcome: ProtocolOutcome): Promise<void> } | { kind: 'replay'; outcome: ProtocolOutcome }

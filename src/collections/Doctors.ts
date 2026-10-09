@@ -22,7 +22,7 @@ export const doctorTitles = [
   { label: 'Prof. Dr.', value: 'prof_dr' },
 ]
 
-export const doctorGenderOptions = [
+const doctorGenderOptions = [
   { label: 'Female', value: 'female' },
   { label: 'Male', value: 'male' },
 ]

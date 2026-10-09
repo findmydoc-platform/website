@@ -19,7 +19,7 @@ import {
 import { toLoggedError } from '@/utilities/logging/shared'
 import { CLINIC_DASHBOARD_ERROR_CODES, clinicDashboardPrivateJsonResponse } from './clinicDashboardBootstrap'
 
-export const CLINIC_PROFILE_ERROR_CODES = {
+const CLINIC_PROFILE_ERROR_CODES = {
   conflict: 'CLINIC_PROFILE_CONFLICT',
   invalidInput: 'CLINIC_PROFILE_INVALID_INPUT',
   notFound: 'CLINIC_PROFILE_DRAFT_NOT_FOUND',

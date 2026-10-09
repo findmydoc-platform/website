@@ -1,6 +1,6 @@
 export { JsonLdScript, type JsonLdScriptProps } from './JsonLdScript'
 export { buildArticlePageJsonLd, type ArticlePageJsonLdInput } from './articles'
-export { buildBreadcrumbListJsonLd, type BreadcrumbListJsonLd } from './breadcrumbs'
+export { type BreadcrumbListJsonLd } from './breadcrumbs'
 export { buildClinicDetailPageJsonLd, type ClinicDetailPageJsonLdInput } from './clinics'
 export {
   buildListingComparisonJsonLd,

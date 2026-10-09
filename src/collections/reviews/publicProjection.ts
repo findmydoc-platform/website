@@ -1,7 +1,7 @@
 import type { FieldAccess, Where } from 'payload'
 
-export const PUBLIC_REVIEW_MEASURES = ['none', 'context', 'redaction', 'placeholder'] as const
-export const REVIEW_MEASURES = [...PUBLIC_REVIEW_MEASURES, 'removed'] as const
+const PUBLIC_REVIEW_MEASURES = ['none', 'context', 'redaction', 'placeholder'] as const
+const REVIEW_MEASURES = [...PUBLIC_REVIEW_MEASURES, 'removed'] as const
 
 export type ReviewPublicMeasure = (typeof REVIEW_MEASURES)[number]
 export type ReviewWithdrawalState = 'active' | 'withdrawn'
@@ -63,9 +63,7 @@ export const isReviewPubliclyVisible = (review: ReviewProjectionRecord): boolean
   getReviewWithdrawalState(review) === 'active' &&
   getReviewPublicMeasure(review) !== 'removed'
 
-export const isReviewPubliclyCounted = isReviewPubliclyVisible
-
-export const isReviewResponsePubliclyVisible = (review: ReviewProjectionRecord): boolean => {
+const isReviewResponsePubliclyVisible = (review: ReviewProjectionRecord): boolean => {
   if (!isReviewPubliclyVisible(review)) return false
   return isVisibleReviewResponsePubliclyReadable(review)
 }
@@ -158,7 +156,7 @@ export type ReviewPublicCacheProjection = {
   responseVisible: boolean
 }
 
-export const createReviewPublicCacheProjection = (
+const createReviewPublicCacheProjection = (
   review: ReviewProjectionRecord | null | undefined,
 ): ReviewPublicCacheProjection => {
   if (!review || !isReviewPubliclyVisible(review)) {

@@ -49,7 +49,7 @@ export function canonicalizeFilterValues(values: string[], options: FilterOption
   return Array.from(resolved)
 }
 
-export function sortFilterOptions<T extends { label: string }>(options: T[]): T[] {
+function sortFilterOptions<T extends { label: string }>(options: T[]): T[] {
   return [...options].sort((a, b) => a.label.localeCompare(b.label))
 }
 

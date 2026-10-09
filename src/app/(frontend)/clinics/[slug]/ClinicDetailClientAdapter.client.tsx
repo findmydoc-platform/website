@@ -9,7 +9,7 @@ import {
 } from '@/features/clinicDetail/contracts'
 import { getConsentedPostHogSessionId, postHogBrowserEvents } from '@/posthog/client-api'
 
-export const clinicDetailAnalytics: ClinicDetailAnalyticsPort = {
+const clinicDetailAnalytics: ClinicDetailAnalyticsPort = {
   onCtaClicked: ({ clinicId, clinicSlug, ctaId, ctaLabel, ctaLocation, doctorId, pagePath, treatmentId }) => {
     postHogBrowserEvents.clinicCtaClicked({
       clinic_id: clinicId,

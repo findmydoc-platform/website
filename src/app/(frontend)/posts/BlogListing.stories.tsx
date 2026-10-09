@@ -2,12 +2,11 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Container } from '@/components/molecules/Container'
 import { BlogHero } from '@/components/organisms/Blog/BlogHero'
 import { BlogCard } from '@/components/organisms/Blog/BlogCard'
-import { PageRange } from '@/components/molecules/PageRange'
 import { Pagination } from '@/components/molecules/Pagination'
 import { collectionPosts } from '@/stories/organisms/fixtures'
 import type { BlogCardBaseProps } from '@/utilities/blog/normalizePost'
-import { getStoryImageSrc, storyPortraits } from '../fixtures/assets'
-import { withViewportStory } from '../utils/viewportMatrix'
+import { getStoryImageSrc, storyPortraits } from '@/stories/fixtures/assets'
+import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
 const meta: Meta = {
   title: 'Domain/Blog/Templates/BlogListing',
@@ -98,9 +97,6 @@ export const Default: StoryObj = {
 
         {/* Main Content */}
         <Container className="py-12 md:py-16">
-          {/* Page Range */}
-          <PageRange currentPage={1} totalDocs={24} limit={12} />
-
           {/* Featured Post - Large Overlay Card */}
           <div className="mb-8 md:mb-12">
             <BlogCard.Overlay {...featuredPost} />
@@ -132,8 +128,6 @@ export const WithoutFeaturedPost: StoryObj = {
       />
 
       <Container className="py-12 md:py-16">
-        <PageRange currentPage={1} totalDocs={24} limit={12} />
-
         {/* Grid of Posts - No Featured */}
         <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
           {extendedPosts.map((post, index) => (
@@ -158,8 +152,6 @@ export const SecondPage: StoryObj = {
       />
 
       <Container className="py-12 md:py-16">
-        <PageRange currentPage={2} totalDocs={24} limit={12} />
-
         {/* Grid Only - No Featured on Page 2+ */}
         <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
           {extendedPosts.map((post, index) => (

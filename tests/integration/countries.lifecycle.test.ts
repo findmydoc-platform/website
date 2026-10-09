@@ -63,6 +63,7 @@ describe('Countries integration - lifecycle and access', () => {
     })
 
   it('creates a country with required fields', async () => {
+    // Keep the complete country fields explicit in this lifecycle case.
     const created = await payload.create({
       collection: 'countries',
       data: {

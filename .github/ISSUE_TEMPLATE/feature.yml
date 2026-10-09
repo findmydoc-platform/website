@@ -1,5 +1,6 @@
 ---
 name: Feature
+# Capture the problem and outcome before implementation planning.
 description: Product feature request for implementation planning
 title: 'Feature: '
 labels: []

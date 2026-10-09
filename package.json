@@ -77,7 +77,7 @@
     "@payloadcms/db-postgres": "3.88.0",
     "@payloadcms/live-preview-react": "3.88.0",
     "@payloadcms/next": "3.88.0",
-    "@payloadcms/plugin-form-builder": "3.88.0",
+    "@payloadcms/plugin-form-builder": "3.90.0",
     "@payloadcms/plugin-import-export": "3.88.0",
     "@payloadcms/plugin-mcp": "3.88.0",
     "@payloadcms/plugin-nested-docs": "3.88.0",

@@ -56,6 +56,20 @@ pnpm tests --watch           # iterative feedback
 
 Use `pnpm tests --inspect-brk` for debugging with breakpoints.
 
+CI full integration uses `node scripts/integration-runner.mjs`. It prepares the seed baseline, runs isolated database copies serially, replays native Vitest coverage and performs strict cleanup. Main integration relevance is independent of the application build; `workflow_dispatch` preserves a full execution control. See [CI results and full integration](./strategy.md#ci-results-and-full-integration).
+
+Each executed coverage suite must produce both `coverage-summary.json` and `coverage-final.json`. PR Validation downloads each expected artifact by name, rejects missing transfers and passes the expected source list to the existing combined summary command. For example, merge unit and Storybook reports when integration was explicitly omitted:
+
+```bash
+node scripts/coverage/merge-coverage.mjs --input-root coverage-artifacts --output-root coverage/combined --expected-sources unit,storybook
+```
+
+Missing or incomplete expected summaries fail this command. Permitted report absences appear in the workflow summary. A combined report describes its available inputs and does not replace full-suite coverage validation. The focused tooling checks for these contracts are:
+
+```bash
+pnpm vitest --project tooling --run tests/tooling/scripts/pr-validation-scope.test.ts tests/tooling/scripts/merge-coverage.test.ts tests/tooling/scripts/integration-runner.test.ts
+```
+
 ## Collection Contract Gate
 
 Integration coverage for collections is tracked via `tests/integration/contracts/collectionContractRegistry.ts`.

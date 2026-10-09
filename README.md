@@ -60,6 +60,8 @@ Hook setup:
 
 Reference: [AI Anti-Slop Playbook](docs/engineering/ai-anti-slop-playbook.md)
 
+PR Validation records permitted omissions and rejects missing expected test and coverage results. Main full integration runs independently of the application-build decision. The seven required checks remain unchanged; Integration and Combined Coverage remain optional merge checks. See [CI results and full integration](docs/testing/strategy.md#ci-results-and-full-integration) for the result contract and frozen normal-CI reference.
+
 ## Production
 
 TBD

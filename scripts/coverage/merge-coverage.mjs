@@ -12,6 +12,7 @@ const readArg = (name, fallback) => {
 
 const inputRoot = path.resolve(ROOT, readArg('--input-root', '.'))
 const outputRoot = path.resolve(ROOT, readArg('--output-root', 'coverage/combined'))
+const expectedSources = readArg('--expected-sources', '').split(',').filter(Boolean)
 
 const METRIC_KEYS = ['lines', 'statements', 'functions', 'branches']
 
@@ -95,10 +96,7 @@ const main = async () => {
   const summaryFiles = await walk(inputRoot)
 
   if (summaryFiles.length === 0) {
-    console.log(
-      `No coverage-summary.json files found under ${toPosix(path.relative(ROOT, inputRoot))}. Skipping merge.`,
-    )
-    return
+    throw new Error(`No coverage-summary.json files found under ${toPosix(path.relative(ROOT, inputRoot))}.`)
   }
 
   const sourceSummaries = []
@@ -107,7 +105,13 @@ const main = async () => {
     const raw = await fs.readFile(filePath, 'utf8')
     const parsed = JSON.parse(raw)
     const total = parsed.total
-    if (!total) continue
+    if (
+      !METRIC_KEYS.every((key) =>
+        ['total', 'covered', 'skipped', 'pct'].every((field) => Number.isFinite(total?.[key]?.[field])),
+      )
+    ) {
+      throw new Error(`Incomplete coverage metrics in ${toPosix(path.relative(ROOT, filePath))}.`)
+    }
 
     sourceSummaries.push({
       name: detectSourceName(filePath),
@@ -116,9 +120,10 @@ const main = async () => {
     })
   }
 
-  if (sourceSummaries.length === 0) {
-    console.log('Coverage summary files were found, but none contained a total section. Skipping merge.')
-    return
+  for (const expectedSource of expectedSources) {
+    if (!sourceSummaries.some((source) => source.name === expectedSource)) {
+      throw new Error(`Missing expected coverage source: ${expectedSource}`)
+    }
   }
 
   const combinedTotal = {}

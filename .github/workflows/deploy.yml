@@ -80,23 +80,53 @@ jobs:
 
       - name: Set path outputs
         id: set-path-outputs
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGED: ${{ steps.filter.outputs.changed }}
+          NON_MARKDOWN: ${{ steps.filter.outputs.non_markdown }}
+          DEPLOYABLE: ${{ steps.filter.outputs.deployable }}
+          INTEGRATION: ${{ steps.filter.outputs.integration }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            {
-              echo "deployable=true"
-              echo "integration=true"
-            } >> "$GITHUB_OUTPUT"
-          else
-            {
-              echo "deployable=${{ steps.filter.outputs.deployable }}"
-              echo "integration=${{ steps.filter.outputs.integration }}"
-            } >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          for output in "$CHANGED" "$NON_MARKDOWN" "$DEPLOYABLE" "$INTEGRATION"; do
+            if [[ "$output" != true && "$output" != false ]]; then
+              echo "::error::Path classification is incomplete. No omission is approved."
+              exit 1
+            fi
+          done
+          validation=true
+          if [[ "$CHANGED" == true && "$NON_MARKDOWN" == false ]]; then validation=false; fi
+          if [[ "$EVENT_NAME" == workflow_dispatch || "$CHANGED" == false ]]; then
+            DEPLOYABLE=true
+            INTEGRATION=true
+          elif [[ "$EVENT_NAME" != pull_request ]]; then
+            # Main full integration follows validation relevance, independently of the build.
+            INTEGRATION="$validation"
           fi
+          {
+            echo "deployable=$DEPLOYABLE"
+            echo "integration=$INTEGRATION"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo '## Validation scope'
+            echo "- Application validation: $validation"
+            echo "- Application build: $DEPLOYABLE"
+            echo "- Integration: $INTEGRATION"
+            if [[ "$EVENT_NAME" == pull_request && "$validation" == false ]]; then
+              echo '- Static, unit and Storybook checks omitted: all changed files are Markdown documentation.'
+            fi
+            if [[ "$EVENT_NAME" == pull_request && "$DEPLOYABLE" == false ]]; then
+              echo '- Build omitted: no application-build inputs changed.'
+            fi
+            if [[ "$INTEGRATION" == false ]]; then
+              echo '- Integration report intentionally absent: no integration inputs changed on the PR, or documentation-only Main scope.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
   ci-static:
     name: Static Checks
     needs: paths
-    if: always() && (needs.paths.result != 'success' || github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true')
+    if: always() && (needs.paths.result != 'success' || github.event_name != 'pull_request' || needs.paths.outputs.validation != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -104,7 +134,11 @@ jobs:
       pull-requests: write
     steps:
       - name: Require successful scope classification
-        if: needs.paths.result != 'success'
+        if: >-
+          needs.paths.result != 'success' ||
+          (needs.paths.outputs.validation != 'true' && needs.paths.outputs.validation != 'false') ||
+          (needs.paths.outputs.deployable != 'true' && needs.paths.outputs.deployable != 'false') ||
+          (needs.paths.outputs.integration != 'true' && needs.paths.outputs.integration != 'false')
         run: exit 1
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -186,13 +220,21 @@ jobs:
   unit-tests:
     name: Unit Tests
     needs: paths
-    if: github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true'
+    if: always() && (needs.paths.result != 'success' || github.event_name != 'pull_request' || needs.paths.outputs.validation != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write
     steps:
+      - name: Require successful scope classification
+        if: >-
+          needs.paths.result != 'success' ||
+          (needs.paths.outputs.validation != 'true' && needs.paths.outputs.validation != 'false') ||
+          (needs.paths.outputs.deployable != 'true' && needs.paths.outputs.deployable != 'false') ||
+          (needs.paths.outputs.integration != 'true' && needs.paths.outputs.integration != 'false')
+        run: exit 1
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
@@ -216,8 +258,13 @@ jobs:
         id: unit
         run: pnpm vitest --project unit --run --coverage
 
+      - name: Require unit coverage reports
+        id: unit_reports
+        if: always() && (steps.unit.outcome == 'success' || steps.unit.outcome == 'failure')
+        run: test -s coverage/unit/coverage-summary.json && test -s coverage/unit/coverage-final.json
+
       - name: Publish Unit Test coverage
-        if: ${{ steps.unit.outcome == 'success' || steps.unit.outcome == 'failure' }}
+        if: always() && steps.unit_reports.outcome == 'success'
         uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -228,14 +275,14 @@ jobs:
           json-final-path: coverage/unit/coverage-final.json
 
       - name: Upload unit coverage artifacts
-        if: always()
+        if: always() && steps.unit_reports.outcome == 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-unit
           path: |
             coverage/unit/coverage-summary.json
             coverage/unit/coverage-final.json
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7
 
       - name: Generate job summary
@@ -249,13 +296,21 @@ jobs:
   storybook-tests:
     name: Storybook Tests
     needs: paths
-    if: github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true'
+    if: always() && (needs.paths.result != 'success' || github.event_name != 'pull_request' || needs.paths.outputs.validation != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write
     steps:
+      - name: Require successful scope classification
+        if: >-
+          needs.paths.result != 'success' ||
+          (needs.paths.outputs.validation != 'true' && needs.paths.outputs.validation != 'false') ||
+          (needs.paths.outputs.deployable != 'true' && needs.paths.outputs.deployable != 'false') ||
+          (needs.paths.outputs.integration != 'true' && needs.paths.outputs.integration != 'false')
+        run: exit 1
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
@@ -290,8 +345,13 @@ jobs:
         id: storybook
         run: pnpm vitest --project storybook --run --coverage
 
+      - name: Require Storybook coverage reports
+        id: storybook_reports
+        if: always() && (steps.storybook.outcome == 'success' || steps.storybook.outcome == 'failure')
+        run: test -s coverage/storybook/coverage-summary.json && test -s coverage/storybook/coverage-final.json
+
       - name: Publish Storybook coverage
-        if: ${{ steps.storybook.outcome == 'success' || steps.storybook.outcome == 'failure' }}
+        if: always() && steps.storybook_reports.outcome == 'success'
         uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -302,14 +362,14 @@ jobs:
           json-final-path: coverage/storybook/coverage-final.json
 
       - name: Upload storybook coverage artifacts
-        if: always()
+        if: always() && steps.storybook_reports.outcome == 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-storybook
           path: |
             coverage/storybook/coverage-summary.json
             coverage/storybook/coverage-final.json
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7
 
       - name: Generate job summary
@@ -327,7 +387,15 @@ jobs:
       - unit-tests
       - storybook-tests
       - paths
-    if: github.event_name != 'pull_request' || needs.paths.outputs.deployable == 'true'
+    if: >-
+      always() &&
+      (needs.paths.result != 'success' ||
+      needs.ci-static.result == 'failure' || needs.ci-static.result == 'cancelled' ||
+      needs.unit-tests.result == 'failure' || needs.unit-tests.result == 'cancelled' ||
+      needs.storybook-tests.result == 'failure' || needs.storybook-tests.result == 'cancelled' ||
+      ((github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true') &&
+      (needs.ci-static.result != 'success' || needs.unit-tests.result != 'success' || needs.storybook-tests.result != 'success')) ||
+      github.event_name != 'pull_request' || needs.paths.outputs.deployable != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -352,6 +420,19 @@ jobs:
           --health-retries 5
 
     steps:
+      - name: Require successful validation prerequisites
+        if: >-
+          needs.paths.result != 'success' ||
+          (needs.paths.outputs.validation != 'true' && needs.paths.outputs.validation != 'false') ||
+          (needs.paths.outputs.deployable != 'true' && needs.paths.outputs.deployable != 'false') ||
+          (needs.paths.outputs.integration != 'true' && needs.paths.outputs.integration != 'false') ||
+          needs.ci-static.result == 'failure' || needs.ci-static.result == 'cancelled' ||
+          needs.unit-tests.result == 'failure' || needs.unit-tests.result == 'cancelled' ||
+          needs.storybook-tests.result == 'failure' || needs.storybook-tests.result == 'cancelled' ||
+          ((github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true') &&
+          (needs.ci-static.result != 'success' || needs.unit-tests.result != 'success' || needs.storybook-tests.result != 'success'))
+        run: exit 1
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
@@ -394,9 +475,10 @@ jobs:
       - ci-static
       - paths
     if: >-
-      (github.event_name == 'pull_request' && needs.paths.outputs.integration == 'true') ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.paths.outputs.deployable == 'true') ||
-      github.event_name == 'workflow_dispatch'
+      always() && (needs.paths.result != 'success' ||
+      needs.ci-static.result == 'failure' || needs.ci-static.result == 'cancelled' ||
+      ((github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true') && needs.ci-static.result != 'success') ||
+      needs.paths.outputs.integration != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -407,6 +489,16 @@ jobs:
       PREVIEW_SECRET: ${{ secrets.PREVIEW_SECRET }}
 
     steps:
+      - name: Require successful integration prerequisites
+        if: >-
+          needs.paths.result != 'success' ||
+          (needs.paths.outputs.validation != 'true' && needs.paths.outputs.validation != 'false') ||
+          (needs.paths.outputs.deployable != 'true' && needs.paths.outputs.deployable != 'false') ||
+          (needs.paths.outputs.integration != 'true' && needs.paths.outputs.integration != 'false') ||
+          needs.ci-static.result == 'failure' || needs.ci-static.result == 'cancelled' ||
+          ((github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true') && needs.ci-static.result != 'success')
+        run: exit 1
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
@@ -432,8 +524,13 @@ jobs:
           NODE_ENV: test
         run: node scripts/integration-runner.mjs
 
+      - name: Require integration coverage reports
+        id: integration_reports
+        if: always() && (steps.integration.outcome == 'success' || steps.integration.outcome == 'failure')
+        run: test -s coverage/integration/coverage-summary.json && test -s coverage/integration/coverage-final.json
+
       - name: Publish integration coverage
-        if: ${{ steps.integration.outcome == 'success' || steps.integration.outcome == 'failure' }}
+        if: always() && steps.integration_reports.outcome == 'success'
         uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -444,14 +541,14 @@ jobs:
           json-final-path: coverage/integration/coverage-final.json
 
       - name: Upload integration coverage artifacts
-        if: always()
+        if: always() && steps.integration_reports.outcome == 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-integration
           path: |
             coverage/integration/coverage-summary.json
             coverage/integration/coverage-final.json
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7
 
       - name: Generate job summary
@@ -465,6 +562,7 @@ jobs:
   coverage-merge:
     name: Combined Coverage
     needs:
+      - paths
       - unit-tests
       - storybook-tests
       - integration-tests
@@ -476,30 +574,106 @@ jobs:
       issues: write
       pull-requests: write
     steps:
+      - name: Verify expected coverage results
+        id: coverage_inputs
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PATHS_RESULT: ${{ needs.paths.result }}
+          VALIDATION: ${{ needs.paths.outputs.validation }}
+          INTEGRATION: ${{ needs.paths.outputs.integration }}
+          UNIT_RESULT: ${{ needs.unit-tests.result }}
+          STORYBOOK_RESULT: ${{ needs.storybook-tests.result }}
+          INTEGRATION_RESULT: ${{ needs.integration-tests.result }}
+        run: |
+          set -euo pipefail
+          {
+            echo '## Coverage input results'
+            echo "- Unit: $UNIT_RESULT"
+            echo "- Storybook: $STORYBOOK_RESULT"
+            echo "- Integration: $INTEGRATION_RESULT"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$PATHS_RESULT" != success || ("$VALIDATION" != true && "$VALIDATION" != false) || ("$INTEGRATION" != true && "$INTEGRATION" != false) ]]; then
+            echo '::error::Coverage scope is unavailable. No absence is approved.'
+            exit 1
+          fi
+          validation_required=false
+          if [[ "$EVENT_NAME" != pull_request || "$VALIDATION" == true ]]; then validation_required=true; fi
+          sources=()
+          if [[ "$validation_required" == true ]]; then
+            if [[ "$UNIT_RESULT" != success || "$STORYBOOK_RESULT" != success ]]; then
+              echo '::error::Expected unit or Storybook validation did not succeed.'
+              exit 1
+            fi
+            sources+=(unit storybook)
+          elif [[ "$UNIT_RESULT" != skipped || "$STORYBOOK_RESULT" != skipped ]]; then
+            echo '::error::Documentation omission has unexpected validation results.'
+            exit 1
+          else
+            echo '- Unit and Storybook reports intentionally absent: documentation-only PR.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [[ "$INTEGRATION" == true ]]; then
+            if [[ "$INTEGRATION_RESULT" != success ]]; then
+              echo '::error::Expected integration validation did not succeed.'
+              exit 1
+            fi
+            sources+=(integration)
+          elif [[ "$INTEGRATION_RESULT" != skipped ]]; then
+            echo '::error::Integration omission has an unexpected result.'
+            exit 1
+          else
+            echo '- Integration report intentionally absent: successful scope classification requires no integration run.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          {
+            echo "validation=$validation_required"
+            echo "integration=$INTEGRATION"
+            echo "sources=$(IFS=,; echo "${sources[*]}")"
+            if [[ "${#sources[@]}" -gt 0 ]]; then echo 'required=true'; else echo 'required=false'; fi
+          } >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: steps.coverage_inputs.outputs.required == 'true'
 
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        if: steps.coverage_inputs.outputs.required == 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
           package-manager-cache: false
 
-      - name: Download coverage artifacts
-        continue-on-error: true
+      - name: Download unit coverage artifact
+        if: steps.coverage_inputs.outputs.validation == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          pattern: coverage-*
-          path: coverage-artifacts
+          name: coverage-unit
+          path: coverage-artifacts/unit
+
+      - name: Download Storybook coverage artifact
+        if: steps.coverage_inputs.outputs.validation == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: coverage-storybook
+          path: coverage-artifacts/storybook
+
+      - name: Download integration coverage artifact
+        if: steps.coverage_inputs.outputs.integration == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: coverage-integration
+          path: coverage-artifacts/integration
 
       - name: Merge coverage summaries
-        run: node scripts/coverage/merge-coverage.mjs --input-root coverage-artifacts --output-root coverage/combined
+        id: merge
+        if: steps.coverage_inputs.outputs.required == 'true'
+        env:
+          EXPECTED_SOURCES: ${{ steps.coverage_inputs.outputs.sources }}
+        run: node scripts/coverage/merge-coverage.mjs --input-root coverage-artifacts --output-root coverage/combined --expected-sources "$EXPECTED_SOURCES"
 
       - name: Upload combined coverage artifact
-        if: always()
+        if: always() && steps.merge.outcome == 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-combined
           path: coverage/combined/**
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7
 
       - name: Publish combined coverage summary
@@ -507,13 +681,16 @@ jobs:
         run: |
           if [ -f coverage/combined/summary.md ]; then
             cat coverage/combined/summary.md >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "${{ steps.coverage_inputs.outputs.required }}" == false ]]; then
+            echo 'Combined coverage intentionally absent: all coverage sources were permissibly omitted.' >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "Combined coverage summary not available." >> "$GITHUB_STEP_SUMMARY"
+            echo 'Combined coverage unavailable: expected validation, reports, transfer or merge failed.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
 
       - name: Prepare combined coverage PR comment
         id: combined_coverage_comment
-        if: github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request'
         run: |
           if [ -f coverage/combined/summary.md ]; then
             {
@@ -526,13 +703,17 @@ jobs:
               echo 'message<<EOF'
               echo '# Combined Coverage Summary'
               echo
-              echo 'Combined coverage summary not available.'
+              if [[ "${{ steps.coverage_inputs.outputs.required }}" == false ]]; then
+                echo 'Combined coverage intentionally absent: all coverage sources were permissibly omitted.'
+              else
+                echo 'Combined coverage unavailable: expected validation, reports, transfer or merge failed.'
+              fi
               echo EOF
             } >> "$GITHUB_OUTPUT"
           fi
 
       - name: Comment combined coverage on PR
-        if: github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && steps.combined_coverage_comment.outcome == 'success'
         uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
         with:
           header: combined-coverage-summary

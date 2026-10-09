@@ -68,6 +68,16 @@ For core medical-network collections (`clinics`, `doctors`, `medical-specialties
 - Use descriptive filenames (`clinics.permission.test.ts`, `patientProvisioning.hook.test.ts`) to make intent obvious when scanning `pnpm tests --watch` output.
 - Shared helpers live in `tests/unit/helpers`; if you need a new mock, add it there instead of duplicating code.
 
+## CI results and full integration
+
+PR Validation uses native job results and complete path-filter outputs. A documentation omission is permitted only after successful classification. The workflow summary records the reason. Failed classification, invalid outputs, failed or cancelled prerequisites, unexpected skips, missing expected coverage reports, artifact transfer failures and coverage merge failures remain errors.
+
+Main full integration follows validation relevance independently of the application build. Integration-test changes therefore run the full suite even when the build is omitted. Documentation-only omissions remain available, and `workflow_dispatch` runs the full build and integration suite. The serial database-copy runner preserves full Payload configuration, seed preparation, isolation, assertions and strict cleanup. Main and manual full-suite coverage retain the 50% thresholds for statements, branches, functions and lines.
+
+`Integration Tests` and `Combined Coverage` remain optional merge checks. Combined Coverage reports the available sources and explicitly identifies permitted absences; it cannot establish a missing suite's coverage or erase a failed test result. Integration failure is visible but does not guarantee a merge block under the existing ruleset. The seven required checks remain `lint pr title`, `Static Checks`, `Unit Tests`, `Storybook Tests`, `Build`, `Dependency Review` and `db-quality-gate`. DB Quality retains its separate schema and migration responsibility.
+
+The frozen normal-CI reference is [Main d9a92ee](https://github.com/findmydoc-platform/website/commit/d9a92ee015e17ec7cca5af144c9effab679c5533), with 104 integration suite files plus seed preparation. Its successful [PR Validation run](https://github.com/findmydoc-platform/website/actions/runs/37775132580), [Preview run](https://github.com/findmydoc-platform/website/actions/runs/37775132581) and [DB Quality run](https://github.com/findmydoc-platform/website/actions/runs/37775132576) are baseline controls. They do not prove optimization savings. Acceptance still requires the comparable normal-CI pairs defined in [spec #2075](https://github.com/findmydoc-platform/website/issues/2075#issuecomment-6080061658).
+
 ## Cross-References
 
 - [Access Control](./access-control.md) explains how metadata drives the permission matrix suites.

@@ -130,14 +130,38 @@ it.each(['complete', 'incomplete', 'partial'])(
 )
 
 it('confirms real native discovery of selected cases and the collection contract', async () => {
-  const selection = runner.discoverIntegrationSelection(['tests/integration/countries.lifecycle.test.ts'])
-  expect(selection).toEqual({
-    mode: 'partial',
-    files: [
-      'tests/integration/contracts/collectionContractCoverage.test.ts',
-      'tests/integration/countries.lifecycle.test.ts',
-    ],
-  })
+  const directory = mkdtempSync(path.join(tmpdir(), 'integration-discovery-contract-'))
+  const inventory = path.join(directory, 'files.json')
+  const collectionContract = 'tests/integration/contracts/collectionContractCoverage.test.ts'
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [
+        path.resolve('node_modules/vitest/vitest.mjs'),
+        'list',
+        '--config',
+        'vitest.config.ts',
+        '--project',
+        'integration',
+        '--filesOnly',
+        `--json=${inventory}`,
+      ],
+      { encoding: 'utf8' },
+    )
+    expect(result.status, `${result.stderr}\n${result.stdout}`).toBe(0)
+    const discovered: { projectName: string; file: string }[] = JSON.parse(readFileSync(inventory, 'utf8'))
+    const files = discovered.map((entry) => path.relative(process.cwd(), entry.file).split(path.sep).join('/'))
+    expect(files).toContain(collectionContract)
+    const selectedCase = files.find((file) => file !== collectionContract)
+    if (!selectedCase) throw new Error('Native integration inventory contains no ordinary test case')
+    const selection = runner.discoverIntegrationSelection([selectedCase])
+    expect(selection).toEqual({
+      mode: 'partial',
+      files: [collectionContract, selectedCase].sort(),
+    })
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
 }, 30_000)
 
 it.each([[[]], [['tests/integration/missing.test.ts']], [['countries']], [['--passWithNoTests']]])(

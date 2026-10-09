@@ -76,6 +76,10 @@ const nextConfig = {
       },
     ],
   },
+  // Deployments supply runtime environment values; local env files must not be packaged.
+  outputFileTracingExcludes: {
+    '*': ['**/.env', '**/.env.*'],
+  },
   outputFileTracingIncludes: {
     '/api/**/*': [SEED_ASSET_TRACING_INCLUDE],
   },

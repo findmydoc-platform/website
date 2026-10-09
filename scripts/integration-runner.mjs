@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { integrationBaselineDatabaseConfig, setupTestDatabase, teardownTestDatabase } from './test-database-harness.mjs'
@@ -12,8 +12,55 @@ const runVitest = (args, env = process.env) => {
   return result.status ?? 1
 }
 
-/** Native report replay cannot turn a failed suite into a successful job. */
-export async function runIntegrationCoverage({ run = runVitest, reportsDirectory }) {
+const collectionContract = 'tests/integration/contracts/collectionContractCoverage.test.ts'
+
+/** Vitest filters are substrings; only an exact native inventory authorizes partial coverage. */
+export function discoverIntegrationSelection(files) {
+  const full = { mode: 'full', files: [] }
+  if (!files.length || files.some((file) => typeof file !== 'string' || file.startsWith('-'))) return full
+  const intended = [...new Set([...files, collectionContract])].sort()
+  mkdirSync('tmp', { recursive: true })
+  const directory = mkdtempSync(path.resolve('tmp/integration-discovery-'))
+  const inventory = path.join(directory, 'files.json')
+  try {
+    const result = runVitest([
+      'list',
+      '--config',
+      'vitest.config.ts',
+      '--project',
+      'integration',
+      '--filesOnly',
+      `--json=${inventory}`,
+      ...intended,
+    ])
+    if (result !== 0 || !existsSync(inventory)) return full
+    const discovered = JSON.parse(readFileSync(inventory, 'utf8'))
+    if (
+      !Array.isArray(discovered) ||
+      discovered.some((entry) => entry.projectName !== 'integration' || typeof entry.file !== 'string')
+    )
+      return full
+    const actual = discovered
+      .map((entry) => path.relative(process.cwd(), path.resolve(entry.file)).split(path.sep).join('/'))
+      .sort()
+    if (actual.length !== intended.length || actual.some((file, index) => file !== intended[index])) return full
+    return { mode: 'partial', files: intended }
+  } catch {
+    return full
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Native report replay cannot turn a failed suite into a successful job.
+ * @param {{ run?: typeof runVitest, reportsDirectory: string, selection?: { mode: string, files: string[] } }} options
+ */
+export async function runIntegrationCoverage({
+  run = runVitest,
+  reportsDirectory,
+  selection = { mode: 'full', files: [] },
+}) {
   const suiteCode = run(
     [
       'run',
@@ -25,6 +72,7 @@ export async function runIntegrationCoverage({ run = runVitest, reportsDirectory
       '--reporter=verbose',
       '--reporter=blob',
       `--outputFile.blob=${path.join(reportsDirectory, 'suite.json')}`,
+      ...selection.files,
     ],
     { ...process.env, INTEGRATION_RUN_STAGE: 'suite' },
   )
@@ -44,13 +92,31 @@ export async function runIntegrationCoverage({ run = runVitest, reportsDirectory
       reportsDirectory,
       '--reporter=verbose',
     ],
-    { ...process.env, INTEGRATION_BASELINE_COPY: '', INTEGRATION_RUN_STAGE: '' },
+    {
+      ...process.env,
+      INTEGRATION_BASELINE_COPY: '',
+      INTEGRATION_RUN_STAGE: '',
+      INTEGRATION_COVERAGE_MODE: selection.mode,
+    },
   )
   return suiteCode || mergeCode
 }
 
-export async function runIntegrationTests() {
+export async function runIntegrationTests(files = []) {
   loadLocalAndTestEnv()
+  const selection = discoverIntegrationSelection(files)
+  console.log(
+    `Integration coverage mode: ${selection.mode}. ${selection.mode === 'partial' ? 'Incomplete suite coverage; global full-suite thresholds do not apply.' : 'Ordinary unfiltered full suite; unchanged global thresholds apply.'}`,
+  )
+  if (files.length && selection.mode === 'full')
+    console.log('Native selection could not be confirmed; running the full suite.')
+  if (selection.files.length) console.log(`Native integration files: ${JSON.stringify(selection.files)}`)
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `coverage_mode=${selection.mode}\n`)
+  if (process.env.GITHUB_STEP_SUMMARY)
+    appendFileSync(
+      process.env.GITHUB_STEP_SUMMARY,
+      `\n### Integration selection\n- Coverage mode: ${selection.mode}\n- Native selected files: ${JSON.stringify(selection.files)}\n- ${selection.mode === 'partial' ? 'Incomplete integration coverage; no full-suite compliance claimed.' : 'Unfiltered full suite with unchanged coverage thresholds.'}\n`,
+    )
   process.env.INTEGRATION_BASELINE_COPY = '1'
   integrationBaselineDatabaseConfig()
   mkdirSync('tmp', { recursive: true })
@@ -79,7 +145,10 @@ export async function runIntegrationTests() {
         if (code !== 0) throw new Error('Integration baseline preparation failed.')
       },
     })
-    return await runIntegrationCoverage({ reportsDirectory })
+    const result = await runIntegrationCoverage({ reportsDirectory, selection })
+    mkdirSync('coverage/integration', { recursive: true })
+    writeFileSync('coverage/integration/scope.json', `${JSON.stringify(selection, null, 2)}\n`)
+    return result
   } finally {
     try {
       await teardownTestDatabase({ strict: true })
@@ -92,7 +161,7 @@ export async function runIntegrationTests() {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  runIntegrationTests().then(
+  runIntegrationTests(process.argv.slice(2)).then(
     (code) => {
       process.exitCode = code
     },

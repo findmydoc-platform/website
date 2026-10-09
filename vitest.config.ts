@@ -164,7 +164,10 @@ export default defineConfig({
       reportOnFailure: true,
       reporter: ['text', 'html', 'json-summary', 'json'],
       reportsDirectory: reportsDirectoryByScope[resolvedScope],
-      thresholds: coverageThresholdConfig,
+      thresholds:
+        resolvedScope === 'integration' && process.env.INTEGRATION_COVERAGE_MODE === 'partial'
+          ? undefined
+          : coverageThresholdConfig,
     },
     projects: [
       defineProject({

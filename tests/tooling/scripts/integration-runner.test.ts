@@ -51,7 +51,7 @@ it('refuses successful acceptance when the seed or suite blob is missing', async
   }
 })
 
-it.each(['complete', 'incomplete'])(
+it.each(['complete', 'incomplete', 'partial'])(
   'checks actual %s seed and suite V8 coverage against unchanged final thresholds',
   async (coverageCase) => {
     const directory = mkdtempSync(path.join(tmpdir(), 'integration-coverage-contract-'))
@@ -79,16 +79,16 @@ it.each(['complete', 'incomplete'])(
       `export default { test: {
     projects: [{ test: { name: 'integration', globalSetup: 'global-setup.mjs', include: [process.env.FIXTURE_STAGE === 'seed' ? 'seed.test.ts' : 'suite.test.ts'] } }],
     coverage: { provider: 'v8', include: ['fixture.mjs'], reportsDirectory: ${JSON.stringify(output)}, reporter: ['json-summary'],
-      thresholds: process.env.FIXTURE_STAGE === 'merge' ? { lines: 100, statements: 100, functions: 100, branches: 100 } : undefined }
+      thresholds: process.env.FIXTURE_STAGE === 'merge' && process.env.INTEGRATION_COVERAGE_MODE !== 'partial' ? { lines: 100, statements: 100, functions: 100, branches: 100 } : undefined }
   } }`,
     )
-    const execute = (args: string[], stage: string) => {
+    const execute = (args: string[], stage: string, env = process.env) => {
       const command = [...args]
       const configIndex = command.indexOf('--config')
       command[configIndex + 1] = config
       const result = spawnSync(process.execPath, [vitest, ...command], {
         cwd: directory,
-        env: { ...process.env, FIXTURE_STAGE: stage },
+        env: { ...env, FIXTURE_STAGE: stage },
         encoding: 'utf8',
       })
       if (result.status !== 0 && stage !== 'merge')
@@ -111,15 +111,63 @@ it.each(['complete', 'incomplete'])(
       )
       const result = await runner.runIntegrationCoverage({
         reportsDirectory,
-        run: (args: string[]) => execute(args, args.includes('--merge-reports') ? 'merge' : 'suite'),
+        run: (args: string[], env = process.env) =>
+          execute(args, args.includes('--merge-reports') ? 'merge' : 'suite', env),
+        selection: {
+          mode: coverageCase === 'partial' ? 'partial' : 'full',
+          files: coverageCase === 'partial' ? ['suite.test.ts'] : [],
+        },
       })
-      expect(result).toBe(coverageCase === 'complete' ? 0 : 1)
+      expect(result).toBe(coverageCase === 'incomplete' ? 1 : 0)
       const coverage = JSON.parse(readFileSync(path.join(output, 'coverage-summary.json'), 'utf8'))
       expect(coverage.total.branches.pct).toBe(coverageCase === 'complete' ? 100 : 50)
       expect(coverage.total.lines.pct).toBe(100)
     } finally {
       rmSync(directory, { recursive: true, force: true })
     }
+  },
+  30_000,
+)
+
+it('confirms real native discovery of selected cases and the collection contract', async () => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'integration-discovery-contract-'))
+  const inventory = path.join(directory, 'files.json')
+  const collectionContract = 'tests/integration/contracts/collectionContractCoverage.test.ts'
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [
+        path.resolve('node_modules/vitest/vitest.mjs'),
+        'list',
+        '--config',
+        'vitest.config.ts',
+        '--project',
+        'integration',
+        '--filesOnly',
+        `--json=${inventory}`,
+      ],
+      { encoding: 'utf8' },
+    )
+    expect(result.status, `${result.stderr}\n${result.stdout}`).toBe(0)
+    const discovered: { projectName: string; file: string }[] = JSON.parse(readFileSync(inventory, 'utf8'))
+    const files = discovered.map((entry) => path.relative(process.cwd(), entry.file).split(path.sep).join('/'))
+    expect(files).toContain(collectionContract)
+    const selectedCase = files.find((file) => file !== collectionContract)
+    if (!selectedCase) throw new Error('Native integration inventory contains no ordinary test case')
+    const selection = runner.discoverIntegrationSelection([selectedCase])
+    expect(selection).toEqual({
+      mode: 'partial',
+      files: [collectionContract, selectedCase].sort(),
+    })
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+}, 30_000)
+
+it.each([[[]], [['tests/integration/missing.test.ts']], [['countries']], [['--passWithNoTests']]])(
+  'falls back to the ordinary full suite for unreliable native file filters %j',
+  (files) => {
+    expect(runner.discoverIntegrationSelection(files)).toEqual({ mode: 'full', files: [] })
   },
   30_000,
 )

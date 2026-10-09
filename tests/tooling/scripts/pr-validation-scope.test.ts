@@ -137,6 +137,7 @@ describe('PR application validation workflow filters', () => {
           'bash',
           ['-c', workflow.jobs.paths.steps.find((step: { id?: string }) => step.id === 'set-path-outputs').run],
           {
+            cwd: repositoryRoot,
             env: {
               ...process.env,
               EVENT_NAME: event,
@@ -171,6 +172,7 @@ const scopeOutputs = (workflow: typeof previewWorkflow, env: Record<string, stri
       'bash',
       ['-c', workflow.jobs.paths.steps.find((step: { id?: string }) => step.id === 'set-path-outputs').run],
       {
+        cwd: repositoryRoot,
         env: {
           ...process.env,
           EVENT_NAME: 'pull_request',

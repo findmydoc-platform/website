@@ -111,3 +111,36 @@ it('combines the expected suites without claiming coverage for an intentionally 
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+it('labels combined evidence incomplete when integration has partial coverage', () => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'combined-partial-contract-'))
+  try {
+    mkdirSync(path.join(directory, 'integration'))
+    const metric = { total: 4, covered: 1, skipped: 0, pct: 25 }
+    writeFileSync(
+      path.join(directory, 'integration/coverage-summary.json'),
+      JSON.stringify({ total: { lines: metric, statements: metric, functions: metric, branches: metric } }),
+    )
+    const result = spawnSync(
+      process.execPath,
+      [
+        'scripts/coverage/merge-coverage.mjs',
+        '--input-root',
+        directory,
+        '--output-root',
+        path.join(directory, 'output'),
+        '--expected-sources',
+        'integration',
+      ],
+      { env: { ...process.env, INTEGRATION_COVERAGE_MODE: 'partial' }, encoding: 'utf8' },
+    )
+    expect(result.status).toBe(0)
+    expect(readFileSync(path.join(directory, 'output/summary.md'), 'utf8')).toContain(
+      'Incomplete integration coverage; no full-suite compliance is claimed.',
+    )
+    const report = JSON.parse(readFileSync(path.join(directory, 'output/coverage-summary.json'), 'utf8'))
+    expect(report.integrationCoverageMode).toBe('partial')
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})

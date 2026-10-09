@@ -69,6 +69,8 @@ const detectSourceName = (filePath) => {
 const buildMarkdown = (sources, total) => {
   const lines = []
   lines.push('# Combined Coverage Summary')
+  if (process.env.INTEGRATION_COVERAGE_MODE === 'partial')
+    lines.push('Incomplete integration coverage; no full-suite compliance is claimed.')
   lines.push('')
   lines.push('| Source | Statements | Branches | Functions | Lines |')
   lines.push('| --- | --- | --- | --- | --- |')
@@ -133,6 +135,7 @@ const main = async () => {
 
   const outputPayload = {
     generatedAt: new Date().toISOString(),
+    integrationCoverageMode: process.env.INTEGRATION_COVERAGE_MODE || 'absent',
     sources: sourceSummaries.map((source) => ({
       name: source.name,
       filePath: source.filePath,

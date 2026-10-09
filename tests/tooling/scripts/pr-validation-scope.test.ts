@@ -163,7 +163,7 @@ describe('PR application validation workflow filters', () => {
   )
 })
 
-const scopeOutputs = (workflow: typeof previewWorkflow, env: Record<string, string>) => {
+const scopeOutputs = (workflow: typeof previewWorkflow, env: Record<string, string | undefined>) => {
   const directory = mkdtempSync(path.join(tmpdir(), 'ci-build-routing-'))
   const output = path.join(directory, 'output')
   try {
@@ -301,4 +301,119 @@ describe('shared native build routing', () => {
     expect(conditionDecision(previewWorkflow.jobs['deploy-preview'].if, event, needs)).toBe(false)
     expect(conditionDecision(workflow.jobs['integration-tests'].if, event, needs)).toBe(true)
   })
+})
+
+describe('native integration selection routing', () => {
+  it('allows only complete modified-existing-case evidence to reach native Vitest discovery', () => {
+    const result = scopeOutputs(workflow, {
+      INTEGRATION: 'true',
+      MODIFIED_INTEGRATION: 'true',
+      MODIFIED_INTEGRATION_COUNT: '1',
+      MODIFIED_INTEGRATION_FILES: '["tests/integration/countries.lifecycle.test.ts"]',
+    })
+    expect(result.status).toBe(0)
+    expect(result.output).toContain('integration_files=["tests/integration/countries.lifecycle.test.ts"]')
+  })
+
+  it.each([
+    { MODIFIED_INTEGRATION: 'false' },
+    { MODIFIED_INTEGRATION_COUNT: '0' },
+    { MODIFIED_INTEGRATION_COUNT: '2' },
+    { MODIFIED_INTEGRATION_COUNT: '' },
+    { MODIFIED_INTEGRATION_FILES: '[]' },
+    { MODIFIED_INTEGRATION_FILES: 'invalid' },
+    { CHANGED_COUNT: '2', PR_CHANGED_COUNT: '2' },
+    { CHANGED_COUNT: '2', PR_CHANGED_COUNT: '1' },
+    { TEST_SUPPORT: 'true' },
+    { EVENT_NAME: 'push' },
+    { EVENT_NAME: 'workflow_dispatch' },
+  ])('uses full integration when native selection evidence is unsafe %j', (outputs) => {
+    const result = scopeOutputs(workflow, {
+      INTEGRATION: 'true',
+      MODIFIED_INTEGRATION: 'true',
+      MODIFIED_INTEGRATION_COUNT: '1',
+      MODIFIED_INTEGRATION_FILES: '["tests/integration/countries.lifecycle.test.ts"]',
+      ...outputs,
+    })
+    expect(result.status).toBe(0)
+    expect(result.output).toContain('integration_files=[]')
+    expect(result.output).toContain('integration=true')
+  })
+
+  it.each([
+    'src/styles.css',
+    'unknown.txt',
+    'unknown.md',
+    'package.json',
+    'pnpm-lock.yaml',
+    'vitest.integration.config.ts',
+    'tests/integration/contracts/collectionContractRegistry.ts',
+    'tests/integration/README.md',
+    'tests/setup/README.md',
+  ])('runs full integration for shared or unknown input %s', (filename) => {
+    const result = scopeOutputs(workflow, {
+      INTEGRATION: String(matches('integration', filename)),
+      NON_MARKDOWN: String(matches('non_markdown', filename)),
+    })
+    expect(result.output).toContain('integration=true')
+    expect(result.output).toContain('integration_files=[]')
+  })
+
+  it('keeps Main integration required for Markdown inside full-suite inputs', () => {
+    const result = scopeOutputs(workflow, { EVENT_NAME: 'push', INTEGRATION: 'true', NON_MARKDOWN: 'false' })
+    expect(result.output).toContain('integration=true')
+  })
+})
+
+describe('integration coverage when other Markdown lanes are omitted', () => {
+  it.each([
+    ['success', 'full', 0],
+    ['success', 'partial', 0],
+    ['success', '', 1],
+    ['success', 'unknown', 1],
+    ['failure', 'partial', 1],
+    ['cancelled', 'full', 1],
+    ['skipped', '', 1],
+  ])(
+    'requires integration result %s and mode %s independently of validation=false',
+    (integrationResult, mode, expectedStatus) => {
+      const directory = mkdtempSync(path.join(tmpdir(), 'ci-markdown-integration-coverage-'))
+      const output = path.join(directory, 'output')
+      try {
+        const result = spawnSync(
+          'bash',
+          [
+            '-c',
+            workflow.jobs['coverage-merge'].steps.find((step: { id?: string }) => step.id === 'coverage_inputs').run,
+          ],
+          {
+            env: {
+              ...process.env,
+              EVENT_NAME: 'pull_request',
+              PATHS_RESULT: 'success',
+              VALIDATION: 'false',
+              INTEGRATION: 'true',
+              UNIT_RESULT: 'skipped',
+              STORYBOOK_RESULT: 'skipped',
+              INTEGRATION_RESULT: integrationResult,
+              INTEGRATION_MODE: mode,
+              GITHUB_OUTPUT: output,
+              GITHUB_STEP_SUMMARY: path.join(directory, 'summary'),
+            },
+            encoding: 'utf8',
+          },
+        )
+        expect(result.status).toBe(expectedStatus)
+        if (expectedStatus === 0) {
+          expect(readFileSync(output, 'utf8')).toContain('sources=integration')
+          expect(readFileSync(output, 'utf8')).toContain('required=true')
+          expect(readFileSync(path.join(directory, 'summary'), 'utf8')).toContain(
+            'Unit and Storybook reports intentionally absent',
+          )
+        }
+      } finally {
+        rmSync(directory, { recursive: true, force: true })
+      }
+    },
+  )
 })

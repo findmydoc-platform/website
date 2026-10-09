@@ -18,7 +18,8 @@ on:
       - '.secrets.baseline'
       - 'zizmor.yml'
       - '**/.github/dependabot.yml'
-      - '**/*.md'
+      - 'docs/**/*.md'
+      - 'README.md'
       - '**/.vscode/settings.json'
   workflow_dispatch:
 
@@ -42,6 +43,7 @@ jobs:
       validation: ${{ steps.filter.outputs.changed == 'false' || steps.filter.outputs.non_markdown == 'true' }}
       deployable: ${{ steps.set-path-outputs.outputs.deployable }}
       integration: ${{ steps.set-path-outputs.outputs.integration }}
+      integration_files: ${{ steps.set-path-outputs.outputs.integration_files }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -52,6 +54,7 @@ jobs:
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
           predicate-quantifier: every
+          list-files: json
           filters: .github/filters/validation.yml
 
       - name: Set path outputs
@@ -65,6 +68,9 @@ jobs:
           TEST_SUPPORT: ${{ steps.filter.outputs.test_support }}
           CHANGED_COUNT: ${{ steps.filter.outputs.changed_count }}
           PR_CHANGED_COUNT: ${{ github.event.pull_request.changed_files }}
+          MODIFIED_INTEGRATION: ${{ steps.filter.outputs.integration_modified }}
+          MODIFIED_INTEGRATION_COUNT: ${{ steps.filter.outputs.integration_modified_count }}
+          MODIFIED_INTEGRATION_FILES: ${{ steps.filter.outputs.integration_modified_files }}
         run: |
           set -euo pipefail
           for output in "$CHANGED" "$NON_MARKDOWN" "$DEPLOYABLE" "$INTEGRATION" "$TEST_SUPPORT"; do
@@ -88,7 +94,7 @@ jobs:
               exit 1
             fi
           fi
-          if [[ "$TEST_SUPPORT" == true ]]; then DEPLOYABLE=true; fi
+          if [[ "$TEST_SUPPORT" == true ]]; then DEPLOYABLE=true; INTEGRATION=true; fi
           validation=true
           if [[ "$CHANGED" == true && "$NON_MARKDOWN" == false ]]; then validation=false; fi
           if [[ "$EVENT_NAME" == workflow_dispatch || "$CHANGED" == false ]]; then
@@ -96,9 +102,18 @@ jobs:
             INTEGRATION=true
           elif [[ "$EVENT_NAME" != pull_request ]]; then
             # Main full integration follows validation relevance, independently of the build.
-            INTEGRATION="$validation"
+            if [[ "$validation" == true ]]; then INTEGRATION=true; fi
+          fi
+          integration_files='[]'
+          # Native modified-only evidence must cover every PR file; any mixed/status uncertainty runs full.
+          if [[ "$EVENT_NAME" == pull_request && "$INTEGRATION" == true && "$TEST_SUPPORT" == false && "${MODIFIED_INTEGRATION:-}" == true && "${MODIFIED_INTEGRATION_COUNT:-}" =~ ^[1-9][0-9]{0,8}$ ]] &&
+             (( MODIFIED_INTEGRATION_COUNT == CHANGED_COUNT && CHANGED_COUNT == PR_CHANGED_COUNT )); then
+            if jq --exit-status --argjson count "$CHANGED_COUNT" 'type == "array" and length == $count and all(.[]; type == "string")' <<< "$MODIFIED_INTEGRATION_FILES" > /dev/null; then
+              integration_files="$MODIFIED_INTEGRATION_FILES"
+            fi
           fi
           {
+            echo "integration_files=$integration_files"
             echo "deployable=$DEPLOYABLE"
             echo "integration=$INTEGRATION"
           } >> "$GITHUB_OUTPUT"
@@ -114,7 +129,7 @@ jobs:
               echo '- Build omitted: every changed path is an approved test case, repository metadata or documentation path.'
             fi
             if [[ "$INTEGRATION" == false ]]; then
-              echo '- Integration report intentionally absent: no integration inputs changed on the PR, or documentation-only Main scope.'
+              echo '- Integration report intentionally absent: only known non-integration cases, repository metadata or documentation changed.'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -476,6 +491,8 @@ jobs:
       needs.paths.outputs.integration != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      coverage_mode: ${{ steps.integration.outputs.coverage_mode }}
     permissions:
       contents: read
       pull-requests: write
@@ -517,15 +534,22 @@ jobs:
         id: integration
         env:
           NODE_ENV: test
-        run: node scripts/integration-runner.mjs
+          SELECTED_FILES: ${{ needs.paths.outputs.integration_files }}
+        run: |
+          set -euo pipefail
+          files=()
+          if [[ -n "$SELECTED_FILES" ]] && jq --exit-status 'type == "array" and all(.[]; type == "string")' <<< "$SELECTED_FILES" > /dev/null; then
+            mapfile -t files < <(jq --raw-output '.[]' <<< "$SELECTED_FILES")
+          fi
+          node scripts/integration-runner.mjs "${files[@]}"
 
       - name: Require integration coverage reports
         id: integration_reports
         if: always() && (steps.integration.outcome == 'success' || steps.integration.outcome == 'failure')
-        run: test -s coverage/integration/coverage-summary.json && test -s coverage/integration/coverage-final.json
+        run: test -s coverage/integration/coverage-summary.json && test -s coverage/integration/coverage-final.json && test -s coverage/integration/scope.json
 
-      - name: Publish integration coverage
-        if: always() && steps.integration_reports.outcome == 'success'
+      - name: Publish full integration coverage
+        if: always() && steps.integration_reports.outcome == 'success' && steps.integration.outputs.coverage_mode == 'full'
         uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -535,14 +559,24 @@ jobs:
           json-summary-path: coverage/integration/coverage-summary.json
           json-final-path: coverage/integration/coverage-final.json
 
+      - name: Report partial integration coverage
+        if: always() && steps.integration_reports.outcome == 'success' && steps.integration.outputs.coverage_mode == 'partial'
+        run: |
+          {
+            echo '### Incomplete integration coverage'
+            echo 'Selected files and the collection contract use native seed/suite report replay. No full-suite compliance is claimed.'
+            echo 'Coverage metrics and exact file identities are in the coverage-integration-partial artifact.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload integration coverage artifacts
         if: always() && steps.integration_reports.outcome == 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: coverage-integration
+          name: ${{ steps.integration.outputs.coverage_mode == 'partial' && 'coverage-integration-partial' || 'coverage-integration' }}
           path: |
             coverage/integration/coverage-summary.json
             coverage/integration/coverage-final.json
+            coverage/integration/scope.json
           if-no-files-found: error
           retention-days: 7
 
@@ -579,6 +613,7 @@ jobs:
           UNIT_RESULT: ${{ needs.unit-tests.result }}
           STORYBOOK_RESULT: ${{ needs.storybook-tests.result }}
           INTEGRATION_RESULT: ${{ needs.integration-tests.result }}
+          INTEGRATION_MODE: ${{ needs.integration-tests.outputs.coverage_mode }}
         run: |
           set -euo pipefail
           {
@@ -610,6 +645,13 @@ jobs:
             if [[ "$INTEGRATION_RESULT" != success ]]; then
               echo '::error::Expected integration validation did not succeed.'
               exit 1
+            fi
+            if [[ "$INTEGRATION_MODE" != full && "$INTEGRATION_MODE" != partial ]]; then
+              echo '::error::Expected integration coverage mode is missing.'
+              exit 1
+            fi
+            if [[ "$INTEGRATION_MODE" == partial ]]; then
+              echo '- Integration coverage is incomplete; Combined Coverage is reporting only and makes no full-suite assertion.' >> "$GITHUB_STEP_SUMMARY"
             fi
             sources+=(integration)
           elif [[ "$INTEGRATION_RESULT" != skipped ]]; then
@@ -652,7 +694,7 @@ jobs:
         if: steps.coverage_inputs.outputs.integration == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: coverage-integration
+          name: ${{ needs.integration-tests.outputs.coverage_mode == 'partial' && 'coverage-integration-partial' || 'coverage-integration' }}
           path: coverage-artifacts/integration
 
       - name: Merge coverage summaries
@@ -660,6 +702,7 @@ jobs:
         if: steps.coverage_inputs.outputs.required == 'true'
         env:
           EXPECTED_SOURCES: ${{ steps.coverage_inputs.outputs.sources }}
+          INTEGRATION_COVERAGE_MODE: ${{ needs.integration-tests.outputs.coverage_mode }}
         run: node scripts/coverage/merge-coverage.mjs --input-root coverage-artifacts --output-root coverage/combined --expected-sources "$EXPECTED_SOURCES"
 
       - name: Upload combined coverage artifact

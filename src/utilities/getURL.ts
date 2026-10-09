@@ -15,6 +15,7 @@ const toHttpsURL = (value?: string) => {
 
 /**
  * Gets the server-side URL for the application.
+ * URL normalization keeps deployment hostnames consistent.
  * Checks environment variables in order of preference and provides fallback.
  *
  * @returns Server-side URL string

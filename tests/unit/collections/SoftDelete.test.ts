@@ -26,7 +26,7 @@ describe('Soft Delete Collections', () => {
 
       for (const importCollection of collections) {
         const importedModule = await importCollection()
-        // Find the export that is a collection config (has fields and slug)
+        // Find the collection configuration export by its fields and slug.
         // Some files might export other constants (like options) before the collection config
         const collectionConfig = Object.values(importedModule).find(isCollectionConfig)
 

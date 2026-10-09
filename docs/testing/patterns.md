@@ -2,6 +2,8 @@
 
 This page maps the reusable helpers and conventions so you can jump from doc to code quickly.
 
+<!-- Known-documentation routing control for normal CI acceptance. -->
+
 ## Core Helpers
 
 - **`tests/unit/helpers/mockUsers.ts`** — factories for platform, clinic, patient, and anonymous users. Use them whenever you need a realistic `req.user` object.

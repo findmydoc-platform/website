@@ -68,7 +68,7 @@ node scripts/integration-runner.mjs tests/integration/countries.lifecycle.test.t
 
 This command checks native discovery but does not prove that a normal PR qualified for selection. Use the unfiltered command above for a full control. The runner records actual mode and file identities in `coverage/integration/scope.json`. Native report replay merges seed and suite coverage. Partial mode omits global full-suite thresholds and CI uploads `coverage-integration-partial`; full mode retains all four 50% thresholds and uploads `coverage-integration`. Both modes require complete reports and successful tests, artifact transfer and merging. A passing partial report makes no full-suite compliance claim.
 
-The [normal-CI evidence](./strategy.md#normal-ci-evidence-and-acceptance) records the full-suite controls and the outstanding candidate/Main comparisons. A manual control cannot establish normal PR selection or net savings.
+The [normal-CI evidence](./strategy.md#normal-ci-evidence-and-acceptance) separates the original investigation runs from renewed references on the current dependency baseline and their actual Main pushes. The owner authorized a separate activation and measurement phase. Normal pure-class candidate comparisons remain pending, and spec #2075 and tickets #2076 through #2079 remain open. A mixed activation run or manual control cannot establish normal PR selection or net savings.
 
 Each executed coverage suite must produce both `coverage-summary.json` and `coverage-final.json`. PR Validation downloads each expected artifact by name, rejects missing transfers and passes the expected source list to the existing combined summary command. For example, merge unit and Storybook reports when integration was explicitly omitted:
 

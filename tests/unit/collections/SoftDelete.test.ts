@@ -8,7 +8,7 @@ function isCollectionConfig(val: unknown): val is CollectionConfig {
 describe('Soft Delete Collections', () => {
   describe('Collection Configuration', () => {
     it('should have trash enabled for all target collections', async () => {
-      // Check soft deletion across the target collections.
+      // Import the collections that should have soft delete enabled
       const collections = [
         () => import('@/collections/Clinics'),
         () => import('@/collections/Doctors'),
@@ -26,7 +26,7 @@ describe('Soft Delete Collections', () => {
 
       for (const importCollection of collections) {
         const importedModule = await importCollection()
-        // Find the collection configuration export by its fields and slug.
+        // Find the export that is a collection config (has fields and slug)
         // Some files might export other constants (like options) before the collection config
         const collectionConfig = Object.values(importedModule).find(isCollectionConfig)
 

@@ -1,10 +1,8 @@
 ---
 name: Feature
-# Capture the problem and outcome before implementation planning.
 description: Product feature request for implementation planning
 title: 'Feature: '
 labels: []
-# Triage assigns labels after the request is submitted.
 type: Feature
 projects: ['findmydoc-platform/3']
 body:

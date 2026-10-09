@@ -61,14 +61,23 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  play: async () => {
-    const canvas = within(document.body)
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
     const input = canvas.getByPlaceholderText('Search for anything…')
+
+    expect(canvas.getByRole('option', { name: 'Doctors' })).toBeVisible()
 
     await userEvent.type(input, 'Clinic')
 
-    expect(canvas.getByText('Clinics Dashboard')).toBeVisible()
-    expect(canvas.getByText('Create Clinic')).toBeVisible()
+    expect(canvas.getByRole('option', { name: 'Clinics Dashboard' })).toBeVisible()
+    expect(canvas.getByRole('option', { name: 'Create Clinic' })).toBeVisible()
+    expect(canvas.queryByRole('option', { name: 'Doctors' })).not.toBeInTheDocument()
+    expect(canvas.getAllByRole('option')).toHaveLength(2)
+
+    await userEvent.clear(input)
+
+    expect(canvas.getByRole('option', { name: 'Doctors' })).toBeVisible()
+    expect(canvas.getAllByRole('option')).toHaveLength(navigationItems.length + actionItems.length)
   },
 }
 

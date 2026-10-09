@@ -58,6 +58,18 @@ Use `pnpm tests --inspect-brk` for debugging with breakpoints.
 
 CI full integration uses `node scripts/integration-runner.mjs`. It prepares the seed baseline, runs isolated database copies serially, replays native Vitest coverage and performs strict cleanup. Main integration relevance is independent of the application build; `workflow_dispatch` preserves a full execution control. See [CI results and full integration](./strategy.md#ci-results-and-full-integration).
 
+Normal PR selection supplies file arguments only when native change classification confirms that every changed file is a modification to an existing integration test case. The runner uses `vitest list --filesOnly --json` to verify the exact intended files and adds `tests/integration/contracts/collectionContractCoverage.test.ts`. A discovery failure, extra match or missing expected test or contract file invokes the unfiltered full suite. A failing executed contract test remains a test failure. The suite-stage filter leaves seed preparation, full Payload configuration, isolated serial copies and strict cleanup unchanged.
+
+For local runner diagnosis, the same entry point accepts file arguments:
+
+```bash
+node scripts/integration-runner.mjs tests/integration/countries.lifecycle.test.ts
+```
+
+This command checks native discovery but does not prove that a normal PR qualified for selection. Use the unfiltered command above for a full control. The runner records actual mode and file identities in `coverage/integration/scope.json`. Native report replay merges seed and suite coverage. Partial mode omits global full-suite thresholds and CI uploads `coverage-integration-partial`; full mode retains all four 50% thresholds and uploads `coverage-integration`. Both modes require complete reports and successful tests, artifact transfer and merging. A passing partial report makes no full-suite compliance claim.
+
+The [normal-CI evidence](./strategy.md#normal-ci-evidence-and-acceptance) records the full-suite controls and the outstanding candidate/Main comparisons. A manual control cannot establish normal PR selection or net savings.
+
 Each executed coverage suite must produce both `coverage-summary.json` and `coverage-final.json`. PR Validation downloads each expected artifact by name, rejects missing transfers and passes the expected source list to the existing combined summary command. For example, merge unit and Storybook reports when integration was explicitly omitted:
 
 ```bash

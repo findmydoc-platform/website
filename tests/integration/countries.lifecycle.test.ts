@@ -84,6 +84,7 @@ describe('Countries integration - lifecycle and access', () => {
   })
 
   it('updates country fields', async () => {
+    // Verify the updated fields on the same country record.
     const created = await payload.create({
       collection: 'countries',
       data: {

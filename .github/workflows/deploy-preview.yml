@@ -3,24 +3,8 @@ name: Deploy Preview
 on:
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '.github/workflows/**'
-      - '.github/actions/**'
-      - '.secrets.baseline'
-      - 'zizmor.yml'
-      - '**/.github/dependabot.yml'
-      - '**/*.md'
-      - '**/.vscode/settings.json'
   push:
     branches: [main]
-    paths-ignore:
-      - '.github/workflows/**'
-      - '.github/actions/**'
-      - '.secrets.baseline'
-      - 'zizmor.yml'
-      - '**/.github/dependabot.yml'
-      - '**/*.md'
-      - '**/.vscode/settings.json'
   workflow_dispatch:
 
 permissions:
@@ -43,19 +27,89 @@ defaults:
     shell: bash
 
 jobs:
+  paths:
+    name: Preview Path Filter
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    outputs:
+      deployable: ${{ steps.set-path-outputs.outputs.deployable }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect build-relevant changes
+        id: filter
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          predicate-quantifier: every
+          filters: .github/filters/validation.yml
+
+      - name: Set Preview build output
+        id: set-path-outputs
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGED: ${{ steps.filter.outputs.changed }}
+          DEPLOYABLE: ${{ steps.filter.outputs.deployable }}
+          TEST_SUPPORT: ${{ steps.filter.outputs.test_support }}
+          CHANGED_COUNT: ${{ steps.filter.outputs.changed_count }}
+          PR_CHANGED_COUNT: ${{ github.event.pull_request.changed_files }}
+        run: |
+          set -euo pipefail
+          for output in "$CHANGED" "$DEPLOYABLE" "$TEST_SUPPORT"; do
+            if [[ "$output" != true && "$output" != false ]]; then
+              echo '::error::Path classification is incomplete. No omission is approved.'
+              exit 1
+            fi
+          done
+          if [[ ! "$CHANGED_COUNT" =~ ^(0|[1-9][0-9]{0,8})$ || ("$CHANGED" == false && "$CHANGED_COUNT" != 0) || ("$CHANGED" == true && "$CHANGED_COUNT" == 0) ]]; then
+            echo '::error::Native changed-file count is invalid. No omission is approved.'
+            exit 1
+          fi
+          if [[ "$EVENT_NAME" == pull_request ]]; then
+            if [[ ! "$PR_CHANGED_COUNT" =~ ^(0|[1-9][0-9]{0,8})$ ]] || (( PR_CHANGED_COUNT <= 3000 && (CHANGED_COUNT < PR_CHANGED_COUNT || CHANGED_COUNT > 2 * PR_CHANGED_COUNT) )); then
+              echo '::error::Native changed-file evidence is incomplete. No omission is approved.'
+              exit 1
+            fi
+            # The PR API caps file discovery at 3000; renamed files expand into two native paths.
+            if (( PR_CHANGED_COUNT > 3000 )); then
+              echo '::error::PR exceeds the native API discovery limit. No omission is approved.'
+              exit 1
+            fi
+          fi
+          if [[ "$TEST_SUPPORT" == true ]]; then DEPLOYABLE=true; fi
+          if [[ "$EVENT_NAME" == workflow_dispatch || "$CHANGED" == false ]]; then DEPLOYABLE=true; fi
+          echo "deployable=$DEPLOYABLE" >> "$GITHUB_OUTPUT"
+          {
+            echo '## Preview build scope'
+            echo "- New Preview deployment: $DEPLOYABLE"
+            if [[ "$DEPLOYABLE" == false ]]; then
+              echo '- Build and deployment omitted: every changed path is an approved test case, repository metadata or documentation path.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   deploy-preview:
     name: Deploy Preview
+    needs: paths
     # Preview deploys need Vercel secrets, so only trusted sources may run them.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      always() &&
+      (github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && github.ref_name == 'main') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) &&
+      (needs.paths.result != 'success' || needs.paths.outputs.deployable != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
       name: Preview
       url: ${{ github.event_name == 'push' && github.ref_name == 'main' && format('https://{0}', env.PREVIEW_ALIAS_DOMAIN) || steps.vercel_preview.outputs.deploymentUrl }}
     steps:
+      - name: Require successful Preview scope classification
+        if: needs.paths.result != 'success' || (needs.paths.outputs.deployable != 'true' && needs.paths.outputs.deployable != 'false')
+        run: exit 1
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Resolve Preview deployment metadata

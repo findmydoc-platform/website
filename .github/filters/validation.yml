@@ -1,0 +1,18 @@
+# Native paths-filter uses predicate-quantifier: every for each filter.
+changed:
+  - '**'
+non_markdown:
+  - '!**/*.md'
+deployable:
+  - '**'
+  - '!tests/**/*.test.{ts,tsx}'
+  - '!tests/e2e/**/*.spec.{ts,tsx}'
+  - '!.secrets.baseline'
+  - '!.github/ISSUE_TEMPLATE/*.{yml,yaml}'
+  - '!docs/**/*.md'
+  - '!README.md'
+# Test-like support paths must still build. One positive OR pattern keeps every semantics.
+test_support:
+  - '{tests/**/{setup,fixtures,fixture,helpers,helper,support,__fixtures__,__helpers__,__mocks__,mocks}/**,tests/**/*{[sS]etup,[fF]ixture,[hH]elper,[sS]upport}*.{test,spec}.{ts,tsx}}'
+integration:
+  - '{src/access/**,src/app/api/**,src/auth/**,src/collections/**,src/endpoints/seed/**,src/hooks/**,src/migrations/**,src/payload.config.ts,scripts/test-database-harness.mjs,tests/integration/**,tests/setup/**,vitest.config.ts}'

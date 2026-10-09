@@ -30,7 +30,7 @@ const INLINE_CODE_RE = /`([^`\n]+)`/g
 
 const PATH_PREFIX_RE = /^(?:src|docs|tests|scripts|\.github)\//
 
-const ALLOWED_PNPM_SUBCOMMANDS = new Set(['add', 'create', 'dlx', 'exec', 'help', 'i', 'install', 'payload'])
+const ALLOWED_PNPM_SUBCOMMANDS = new Set(['add', 'create', 'dedupe', 'dlx', 'exec', 'help', 'i', 'install', 'payload'])
 
 /**
  * Recursively collects markdown files from a directory.

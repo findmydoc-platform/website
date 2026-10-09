@@ -51,32 +51,8 @@ jobs:
         id: filter
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
-          filters: |
-            changed:
-              - '**'
-            non_markdown:
-              - '!**/*.md'
-            deployable:
-              - '**'
-              - '!docs/**'
-              - '!tests/**'
-              - '!.storybook/**'
-              - '!src/stories/**'
-              - '!**/*.stories.{ts,tsx}'
-              - '!**/*.md'
-            integration:
-              - 'src/access/**'
-              - 'src/app/api/**'
-              - 'src/auth/**'
-              - 'src/collections/**'
-              - 'src/endpoints/seed/**'
-              - 'src/hooks/**'
-              - 'src/migrations/**'
-              - 'src/payload.config.ts'
-              - 'scripts/test-database-harness.mjs'
-              - 'tests/integration/**'
-              - 'tests/setup/**'
-              - 'vitest.config.ts'
+          predicate-quantifier: every
+          filters: .github/filters/validation.yml
 
       - name: Set path outputs
         id: set-path-outputs
@@ -86,14 +62,33 @@ jobs:
           NON_MARKDOWN: ${{ steps.filter.outputs.non_markdown }}
           DEPLOYABLE: ${{ steps.filter.outputs.deployable }}
           INTEGRATION: ${{ steps.filter.outputs.integration }}
+          TEST_SUPPORT: ${{ steps.filter.outputs.test_support }}
+          CHANGED_COUNT: ${{ steps.filter.outputs.changed_count }}
+          PR_CHANGED_COUNT: ${{ github.event.pull_request.changed_files }}
         run: |
           set -euo pipefail
-          for output in "$CHANGED" "$NON_MARKDOWN" "$DEPLOYABLE" "$INTEGRATION"; do
+          for output in "$CHANGED" "$NON_MARKDOWN" "$DEPLOYABLE" "$INTEGRATION" "$TEST_SUPPORT"; do
             if [[ "$output" != true && "$output" != false ]]; then
               echo "::error::Path classification is incomplete. No omission is approved."
               exit 1
             fi
           done
+          if [[ ! "$CHANGED_COUNT" =~ ^(0|[1-9][0-9]{0,8})$ || ("$CHANGED" == false && "$CHANGED_COUNT" != 0) || ("$CHANGED" == true && "$CHANGED_COUNT" == 0) ]]; then
+            echo '::error::Native changed-file count is invalid. No omission is approved.'
+            exit 1
+          fi
+          if [[ "$EVENT_NAME" == pull_request ]]; then
+            if [[ ! "$PR_CHANGED_COUNT" =~ ^(0|[1-9][0-9]{0,8})$ ]] || (( PR_CHANGED_COUNT <= 3000 && (CHANGED_COUNT < PR_CHANGED_COUNT || CHANGED_COUNT > 2 * PR_CHANGED_COUNT) )); then
+              echo '::error::Native changed-file evidence is incomplete. No omission is approved.'
+              exit 1
+            fi
+            # The PR API caps file discovery at 3000; renamed files expand into two native paths.
+            if (( PR_CHANGED_COUNT > 3000 )); then
+              echo '::error::PR exceeds the native API discovery limit. No omission is approved.'
+              exit 1
+            fi
+          fi
+          if [[ "$TEST_SUPPORT" == true ]]; then DEPLOYABLE=true; fi
           validation=true
           if [[ "$CHANGED" == true && "$NON_MARKDOWN" == false ]]; then validation=false; fi
           if [[ "$EVENT_NAME" == workflow_dispatch || "$CHANGED" == false ]]; then
@@ -115,8 +110,8 @@ jobs:
             if [[ "$EVENT_NAME" == pull_request && "$validation" == false ]]; then
               echo '- Static, unit and Storybook checks omitted: all changed files are Markdown documentation.'
             fi
-            if [[ "$EVENT_NAME" == pull_request && "$DEPLOYABLE" == false ]]; then
-              echo '- Build omitted: no application-build inputs changed.'
+            if [[ "$DEPLOYABLE" == false ]]; then
+              echo '- Build omitted: every changed path is an approved test case, repository metadata or documentation path.'
             fi
             if [[ "$INTEGRATION" == false ]]; then
               echo '- Integration report intentionally absent: no integration inputs changed on the PR, or documentation-only Main scope.'
@@ -395,7 +390,7 @@ jobs:
       needs.storybook-tests.result == 'failure' || needs.storybook-tests.result == 'cancelled' ||
       ((github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true') &&
       (needs.ci-static.result != 'success' || needs.unit-tests.result != 'success' || needs.storybook-tests.result != 'success')) ||
-      github.event_name != 'pull_request' || needs.paths.outputs.deployable != 'false')
+      github.event_name == 'workflow_dispatch' || needs.paths.outputs.deployable != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

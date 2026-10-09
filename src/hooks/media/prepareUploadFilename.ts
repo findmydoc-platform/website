@@ -112,7 +112,7 @@ function writePreparedFilename(file: UploadFileLike, filename: string): void {
   }
 }
 
-export function buildPreparedUploadFilename({ filename, hash }: { filename: string; hash: string }): string | null {
+function buildPreparedUploadFilename({ filename, hash }: { filename: string; hash: string }): string | null {
   const normalized = normalizeUploadedFilename(filename)
   if (!normalized) return null
 
@@ -120,13 +120,7 @@ export function buildPreparedUploadFilename({ filename, hash }: { filename: stri
   return `${hash}-${stem}${extension}`
 }
 
-export function prepareUploadFilenameFromBuffer({
-  filename,
-  buffer,
-}: {
-  filename: string
-  buffer: Buffer
-}): string | null {
+function prepareUploadFilenameFromBuffer({ filename, buffer }: { filename: string; buffer: Buffer }): string | null {
   return buildPreparedUploadFilename({
     filename,
     hash: shortHash(buffer),

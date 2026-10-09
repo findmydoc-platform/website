@@ -1,7 +1,7 @@
 import type { WorkerClaim } from './worker'
 
 export const schedulerInvocationBudgetMilliseconds = 240_000
-export const schedulerAttemptAndResultBudgetMilliseconds = 25_000
+const schedulerAttemptAndResultBudgetMilliseconds = 25_000
 
 type SchedulerPorts = {
   sweep(mayContinue: () => boolean): Promise<boolean>

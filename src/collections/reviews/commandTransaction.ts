@@ -19,7 +19,7 @@ const errorRecord = (error: unknown): Record<string, unknown> | null =>
     ? (error as Record<string, unknown>)
     : null
 
-export const isSerializationFailure = (error: unknown): boolean => {
+const isSerializationFailure = (error: unknown): boolean => {
   const visited = new Set<unknown>()
   let current: unknown = error
 

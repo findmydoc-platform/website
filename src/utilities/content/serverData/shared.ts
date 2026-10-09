@@ -17,7 +17,7 @@ export type PaginatedResult<T> = {
 
 export type LocalizedDocQuery = ContentLocaleContext
 
-export const PUBLISHED_WHERE: Where = {
+const PUBLISHED_WHERE: Where = {
   _status: {
     equals: 'published',
   },

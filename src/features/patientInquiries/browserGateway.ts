@@ -31,7 +31,7 @@ export type PatientInquiriesErrorCode =
       | 'SERVICE_UNAVAILABLE'
       | 'UNAUTHORIZED'}`
 
-export const PATIENT_INQUIRY_UPLOAD_TIMEOUT_MS = 120_000
+const PATIENT_INQUIRY_UPLOAD_TIMEOUT_MS = 120_000
 
 type ApiErrorBody = {
   error?: {

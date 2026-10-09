@@ -19,7 +19,7 @@ const clients: WeakMap<object, Client> = (() => {
   return map
 })()
 
-export function canonicalRecoveryIP(value: string): string | null {
+function canonicalRecoveryIP(value: string): string | null {
   const ip = value.trim()
   if (!isIP(ip) || ip.includes('%')) return null
   if (isIP(ip) === 4) return ip

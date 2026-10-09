@@ -7,16 +7,16 @@ export const SITE_NAME = 'findmydoc'
 export const DEFAULT_SITE_DESCRIPTION =
   'findmydoc connects international patients with vetted clinics and specialist care.'
 
-export const DEFAULT_SOCIAL_IMAGE_ALT = 'findmydoc clinic discovery platform preview'
+const DEFAULT_SOCIAL_IMAGE_ALT = 'findmydoc clinic discovery platform preview'
 
-export const DEFAULT_OPEN_GRAPH_IMAGE = {
+const DEFAULT_OPEN_GRAPH_IMAGE = {
   path: '/findmydoc-og.jpg',
   width: 1200,
   height: 630,
   alt: DEFAULT_SOCIAL_IMAGE_ALT,
 }
 
-export const DEFAULT_TWITTER_IMAGE = {
+const DEFAULT_TWITTER_IMAGE = {
   path: '/findmydoc-og.jpg',
   alt: DEFAULT_SOCIAL_IMAGE_ALT,
 }

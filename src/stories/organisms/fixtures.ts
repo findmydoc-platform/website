@@ -57,7 +57,7 @@ export const sampleMedia: PlatformContentMedia = {
   sizes: {},
 }
 
-export const samplePostMedia: PlatformContentMedia = {
+const samplePostMedia: PlatformContentMedia = {
   ...sampleMedia,
   id: 2,
   alt: 'Doctor consulting with a patient',
@@ -70,7 +70,7 @@ export const samplePostMedia: PlatformContentMedia = {
   height: 900,
 }
 
-export const sampleCategories: Category[] = [
+const sampleCategories: Category[] = [
   {
     id: 1,
     title: 'Dental Care',
@@ -93,7 +93,7 @@ export const sampleCategories: Category[] = [
   },
 ]
 
-export const sampleCardPost: Partial<BlogCardBaseProps> = {
+const sampleCardPost: Partial<BlogCardBaseProps> = {
   title: 'Comprehensive Dental Checkups',
   excerpt: 'Preventative care plans that keep smiles healthy year-round.',
   href: '/posts/comprehensive-dental-checkups',

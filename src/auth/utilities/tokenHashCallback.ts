@@ -27,7 +27,7 @@ export function validateTokenHashCallback(request: NextRequest): PendingTokenHas
   return { next: expectedNext, tokenHash, type }
 }
 
-export function encodePendingTokenHash(callback: PendingTokenHashCallback): string {
+function encodePendingTokenHash(callback: PendingTokenHashCallback): string {
   return Buffer.from(JSON.stringify(callback), 'utf8').toString('base64url')
 }
 

@@ -19,13 +19,7 @@ export type PublicDiscoveryAccess =
       reason: PublicDiscoveryBlockReason
     }
 
-export const PUBLIC_DISCOVERY_BLOCK_HEADERS = {
-  [SEARCH_ROBOTS_HEADER]: SEARCH_ROBOTS_HEADER_VALUE,
-} as const
-
-export const resolvePublicDiscoveryAccessForRuntime = (
-  env: SearchIndexingEnvInput = process.env,
-): PublicDiscoveryAccess => {
+const resolvePublicDiscoveryAccessForRuntime = (env: SearchIndexingEnvInput = process.env): PublicDiscoveryAccess => {
   if (shouldBlockSearchIndexing(env)) {
     return {
       allowed: false,

@@ -3,4 +3,4 @@ export {
   classifyDatabaseAvailabilityError,
   payloadDatabaseAvailabilityAfterError,
 } from './availability'
-export { createPayloadRuntimePoolConfig, PAYLOAD_RUNTIME_POOL_POLICY } from './runtimePool'
+export { createPayloadRuntimePoolConfig } from './runtimePool'

@@ -65,7 +65,7 @@ const adminThemeCSS = `
   }
 `
 
-export const AdminThemeProvider: React.FC<AdminThemeProviderProps> = ({ children }) => {
+const AdminThemeProvider: React.FC<AdminThemeProviderProps> = ({ children }) => {
   return (
     <>
       <style data-fmd-admin-theme="true">{adminThemeCSS}</style>

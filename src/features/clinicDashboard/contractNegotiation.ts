@@ -1,6 +1,6 @@
 export const CLINIC_DASHBOARD_CONTRACT_HEADER = 'X-Findmydoc-Clinic-Dashboard-Contract'
-export const CLINIC_DASHBOARD_INQUIRY_CONTRACT_V1 = 'inquiry-communication-v1'
-export const CLINIC_DASHBOARD_INQUIRY_CONTRACT_V2 = 'inquiry-communication-v2'
+const CLINIC_DASHBOARD_INQUIRY_CONTRACT_V1 = 'inquiry-communication-v1'
+const CLINIC_DASHBOARD_INQUIRY_CONTRACT_V2 = 'inquiry-communication-v2'
 
 export type ClinicDashboardContract = 'inquiry' | 'legacy'
 export type ClinicDashboardInquiryContractVersion = 'v1' | 'v2'

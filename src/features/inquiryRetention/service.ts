@@ -19,7 +19,6 @@ import {
   DEFAULT_INQUIRY_RETENTION_POLICY,
   isRetentionReviewDue,
   mapLegacyInquiryState,
-  moderationReviewDueAt,
 } from './policy'
 import type { InquiryRetentionObjectDeletionPort } from './storagePort'
 
@@ -1382,11 +1381,3 @@ export const releaseInquiryLegalHold = async (req: PayloadRequest, rawInput: unk
   })
   return { released: true }
 }
-
-export const stampModerationRetentionReview = (
-  input: { finalOutcomeAt: string | null; measureEndedAt: string | null },
-  policy: ActiveInquiryRetentionPolicy,
-): { retentionPolicyVersion: string; retentionReviewDueAt: string | null } => ({
-  retentionPolicyVersion: policy.version,
-  retentionReviewDueAt: moderationReviewDueAt({ ...input, reviewMonths: policy.moderationReviewMonths }),
-})

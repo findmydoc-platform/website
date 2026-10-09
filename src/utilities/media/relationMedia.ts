@@ -60,7 +60,7 @@ function chunkArray<T>(items: T[], size: number): T[][] {
   return chunks
 }
 
-export function extractMediaRelationId(value: unknown): number | null {
+function extractMediaRelationId(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value
   }
@@ -78,7 +78,7 @@ export function extractMediaRelationId(value: unknown): number | null {
   return null
 }
 
-export function getMediaDescriptorFromRelation(value: unknown): MediaDescriptor | undefined {
+function getMediaDescriptorFromRelation(value: unknown): MediaDescriptor | undefined {
   if (!value || typeof value !== 'object') return undefined
   if (!('url' in value)) return undefined
 
@@ -135,7 +135,7 @@ export async function resolveMediaDescriptorFromRelation({
   }
 }
 
-export async function findMediaDescriptorsByIds({
+async function findMediaDescriptorsByIds({
   payload,
   collection,
   ids,

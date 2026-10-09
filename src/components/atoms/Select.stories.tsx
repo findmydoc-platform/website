@@ -1,14 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/atoms/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/select'
 
 const meta = {
   title: 'Shared/Atoms/Select',
@@ -25,13 +17,10 @@ const TreatmentSelect = () => (
       <SelectValue placeholder="Choose a specialty" />
     </SelectTrigger>
     <SelectContent>
-      <SelectGroup>
-        <SelectLabel>Popular Specialties</SelectLabel>
-        <SelectItem value="cardiology">Cardiology</SelectItem>
-        <SelectItem value="oncology">Oncology</SelectItem>
-        <SelectItem value="orthopedics">Orthopedics</SelectItem>
-        <SelectItem value="fertility">Fertility</SelectItem>
-      </SelectGroup>
+      <SelectItem value="cardiology">Cardiology</SelectItem>
+      <SelectItem value="oncology">Oncology</SelectItem>
+      <SelectItem value="orthopedics">Orthopedics</SelectItem>
+      <SelectItem value="fertility">Fertility</SelectItem>
     </SelectContent>
   </Select>
 )
@@ -63,12 +52,10 @@ export const WithoutDefaultValue: Story = {
         <SelectValue placeholder="Select language" />
       </SelectTrigger>
       <SelectContent>
-        <SelectGroup>
-          <SelectItem value="english">English</SelectItem>
-          <SelectItem value="spanish">Spanish</SelectItem>
-          <SelectItem value="french">French</SelectItem>
-          <SelectItem value="arabic">Arabic</SelectItem>
-        </SelectGroup>
+        <SelectItem value="english">English</SelectItem>
+        <SelectItem value="spanish">Spanish</SelectItem>
+        <SelectItem value="french">French</SelectItem>
+        <SelectItem value="arabic">Arabic</SelectItem>
       </SelectContent>
     </Select>
   ),

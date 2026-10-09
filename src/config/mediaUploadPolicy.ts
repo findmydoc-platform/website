@@ -1,5 +1,5 @@
 export const MEDIA_UPLOAD_MAX_BYTES = 4 * 1024 * 1024
-export const MEDIA_UPLOAD_MAX_SIZE_LABEL = '4 MB'
+const MEDIA_UPLOAD_MAX_SIZE_LABEL = '4 MB'
 
 export const MEDIA_UPLOAD_TOO_LARGE_MESSAGE = `Image is too large. Maximum file size is ${MEDIA_UPLOAD_MAX_SIZE_LABEL}.`
 export const MEDIA_STORAGE_LIMIT_MESSAGE =
@@ -14,11 +14,11 @@ const MEDIA_FORMAT_LABELS: Record<string, string> = {
   'image/svg+xml': 'SVG',
 }
 
-export function getAcceptedMediaFormatLabels(mimeTypes: readonly string[]): string[] {
+function getAcceptedMediaFormatLabels(mimeTypes: readonly string[]): string[] {
   return mimeTypes.map((mimeType) => MEDIA_FORMAT_LABELS[mimeType] ?? mimeType)
 }
 
-export function getAcceptedMediaFormats(mimeTypes: readonly string[]): string {
+function getAcceptedMediaFormats(mimeTypes: readonly string[]): string {
   return getAcceptedMediaFormatLabels(mimeTypes).join(', ')
 }
 
@@ -30,7 +30,7 @@ export function getUnsupportedMediaFormatMessage(mimeTypes: readonly string[]): 
   return `Unsupported image format. Accepted formats: ${getAcceptedMediaFormats(mimeTypes)}.`
 }
 
-export function isAcceptedMediaMimeType(mimeType: string, acceptedMimeTypes: readonly string[]): boolean {
+function isAcceptedMediaMimeType(mimeType: string, acceptedMimeTypes: readonly string[]): boolean {
   return acceptedMimeTypes.some((acceptedMimeType) => {
     if (acceptedMimeType.endsWith('/*')) {
       return mimeType.startsWith(acceptedMimeType.slice(0, -1))

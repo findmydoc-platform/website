@@ -51,7 +51,7 @@ export type PublicAccountMenuLinks = {
   signOut: PublicAccountMenuLinkValue
 }
 
-export const DEFAULT_PUBLIC_ACCOUNT_MENU_LINKS: PublicAccountMenuLinks = {
+const DEFAULT_PUBLIC_ACCOUNT_MENU_LINKS: PublicAccountMenuLinks = {
   clinicPartner: '/partners/clinics',
   dashboard: '/patient/inquiries',
   favorites: '/patient/favorites',

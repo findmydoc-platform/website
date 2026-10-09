@@ -3,14 +3,9 @@ import { z } from 'zod'
 import { authActionEnvironments, dashboardActionFlows, type DashboardActionFlow } from '../contracts'
 import { validatedRecoveryKeys, type RecoveryKey } from '../recoveryContext'
 
-export const authActionProtocolVersion = 1
-export const authActionProtocolOperations = [
-  'requestRecovery',
-  'validateAction',
-  'confirmAction',
-  'completeAction',
-] as const
-export const authActionRequestWindowMs = 300_000
+const authActionProtocolVersion = 1
+const authActionProtocolOperations = ['requestRecovery', 'validateAction', 'confirmAction', 'completeAction'] as const
+const authActionRequestWindowMs = 300_000
 export const authActionRequestBodyLimit = 16_384
 
 export type AuthActionProtocolKeys = {

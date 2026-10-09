@@ -1,15 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import { type DialogProps } from '@radix-ui/react-dialog'
 import { Command as CommandPrimitive } from 'cmdk'
 import { Search } from 'lucide-react'
 
 import { cn } from '@/utilities/ui'
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/atoms/dialog'
-
-const commandDialogClasses =
-  '**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 **:[[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-4 [&_[cmdk-input-wrapper]_svg]:w-4 **:[[cmdk-input]]:h-12 **:[[cmdk-item]]:px-2 **:[[cmdk-item]]:py-4 [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4'
 
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
@@ -25,26 +20,6 @@ const Command = React.forwardRef<
   />
 ))
 Command.displayName = CommandPrimitive.displayName
-
-const CommandDialog = ({
-  children,
-  description = 'Type to search for commands',
-  title = 'Command menu',
-  ...props
-}: DialogProps & {
-  description?: string
-  title?: string
-}) => {
-  return (
-    <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-lg">
-        <DialogTitle className="sr-only">{title}</DialogTitle>
-        <DialogDescription className="sr-only">{description}</DialogDescription>
-        <Command className={commandDialogClasses}>{children}</Command>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
@@ -113,14 +88,6 @@ const CommandGroup = React.forwardRef<
 
 CommandGroup.displayName = CommandPrimitive.Group.displayName
 
-const CommandSeparator = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive.Separator>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Separator>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.Separator ref={ref} className={cn('-mx-1 h-px bg-border', className)} {...props} />
-))
-CommandSeparator.displayName = CommandPrimitive.Separator.displayName
-
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
@@ -137,19 +104,4 @@ const CommandItem = React.forwardRef<
 
 CommandItem.displayName = CommandPrimitive.Item.displayName
 
-const CommandShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
-  return <span className={cn('ml-auto text-xs tracking-widest text-muted-foreground', className)} {...props} />
-}
-CommandShortcut.displayName = 'CommandShortcut'
-
-export {
-  Command,
-  CommandDialog,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandShortcut,
-  CommandSeparator,
-}
+export { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem }

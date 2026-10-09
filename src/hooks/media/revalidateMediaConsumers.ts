@@ -2,8 +2,8 @@
 import { revalidatePath, revalidateTag } from 'next/cache.js'
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadRequest } from 'payload'
 
-export const PLATFORM_CONTENT_MEDIA_LANDING_TAGS = ['global_landingPages', 'pages-sitemap'] as const
-export const PLATFORM_CONTENT_MEDIA_LANDING_PATHS = ['/', '/about', '/partners/clinics'] as const
+const PLATFORM_CONTENT_MEDIA_LANDING_TAGS = ['global_landingPages', 'pages-sitemap'] as const
+const PLATFORM_CONTENT_MEDIA_LANDING_PATHS = ['/', '/about', '/partners/clinics'] as const
 
 const POSTS_PER_PAGE = 12
 const REVALIDATE_SLUG_PAGE_SIZE = 100

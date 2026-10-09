@@ -3,7 +3,7 @@ import type { SortOption } from '@/utilities/listingComparison/sort'
 export const LISTING_COMPARISON_PER_PAGE = 24
 export const LISTING_COMPARISON_PRICE_MIN_DEFAULT = 0
 export const LISTING_COMPARISON_PRICE_MAX_DEFAULT = 20000
-export const LISTING_COMPARISON_RATING_MIN_DEFAULT = 0
+const LISTING_COMPARISON_RATING_MIN_DEFAULT = 0
 
 export type ListingComparisonQueryState = {
   page: number

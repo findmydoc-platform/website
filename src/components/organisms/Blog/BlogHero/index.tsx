@@ -66,5 +66,3 @@ export const BlogHero: React.FC<BlogHeroProps> = ({
     </>
   )
 }
-
-export default BlogHero

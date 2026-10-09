@@ -5,8 +5,7 @@ import sharp from 'sharp'
 import { extractFileFromRequest, type RequestFile } from '@/utilities/requestFileUtils'
 
 export const CLINIC_MEDIA_MAX_PIXELS = 50_000_000
-export const CLINIC_MEDIA_TOO_MANY_PIXELS_MESSAGE =
-  'Image dimensions are too large. Maximum image size is 50 megapixels.'
+const CLINIC_MEDIA_TOO_MANY_PIXELS_MESSAGE = 'Image dimensions are too large. Maximum image size is 50 megapixels.'
 
 type SupportedFormat = 'avif' | 'jpeg' | 'png' | 'webp'
 

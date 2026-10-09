@@ -64,7 +64,7 @@ const assertSurfaceInstanceTag = (surfaceId: string, id: string): void => {
   assertTagSegment(id, 'surface instance id')
 }
 
-export const normalizeCacheTagIdentifier = (tag: string): string => {
+const normalizeCacheTagIdentifier = (tag: string): string => {
   const normalizedTag = assertExactText(tag, 'cache tag')
   const parts = normalizedTag.split(':')
 
@@ -116,7 +116,7 @@ export const normalizeCacheTagIdentifier = (tag: string): string => {
   throw new InvalidRevalidationPlanError(`Invalid cache tag: ${normalizedTag}`)
 }
 
-export const normalizePublicPathIdentifier = (path: string): string => {
+const normalizePublicPathIdentifier = (path: string): string => {
   const normalizedPath = assertExactText(path, 'path')
 
   if (!normalizedPath.startsWith('/')) {

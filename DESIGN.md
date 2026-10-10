@@ -491,7 +491,7 @@ The Google `css-tailwind` export emits literal token names. Runtime compatibilit
 
 ## Breakpoints & Responsive Behavior
 
-Use the repository breakpoint scale from `src/cssVariables.js` as the responsive contract unless a route-level design explicitly documents a narrower constraint.
+The local [frontend stylesheet](src/app/%28frontend%29/globals.css) imports Tailwind CSS and uses its default responsive utility scale without breakpoint overrides. The breakpoint values below are supplied by the Tailwind version locked in this repository's `pnpm-lock.yaml`; pixel equivalents assume the browser's default `16px` font size. Update this section when the local theme changes.
 
 | Breakpoint | Width       | Layout contract                                                                     |
 | ---------- | ----------- | ----------------------------------------------------------------------------------- |
@@ -501,7 +501,10 @@ Use the repository breakpoint scale from `src/cssVariables.js` as the responsive
 | `lg`       | `>= 1024px` | 12-column page composition becomes available for route shells and comparison views. |
 | `xl`       | `>= 1280px` | Dense comparison, filters, and clinic-detail layouts may add supporting columns.    |
 | `2xl`      | `>= 1536px` | Use the full `container-content` width only when density improves scanning.         |
-| `3xl`      | `>= 1920px` | Preserve centered content; do not stretch text lines or cards just to fill space.   |
+
+At `1920px` and wider, preserve centered content and readable line lengths. This is large-screen design guidance, not a configured `3xl` breakpoint.
+
+Responsive QA widths are maintained separately in the [mobile playbook](docs/frontend/mobile-ai-playbook.md) and [Storybook viewport matrix](src/stories/utils/viewportMatrix.ts). The `320px` and `375px` checks exercise the base layout; they do not add layout breakpoints.
 
 - **Stack-to-grid rule:** Start stacked. Move to grid only when the reading order remains obvious and the primary action does not move below secondary content.
 - **12-column desktop rule:** Use 12 columns for wide page composition, not for tiny internal card layouts. Components may use local flex/grid rules inside their own bounds.

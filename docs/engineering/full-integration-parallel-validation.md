@@ -4,11 +4,13 @@ Website [#2121](https://github.com/findmydoc-platform/website/issues/2121) exten
 
 ## Reference and candidate
 
-The reference starts at Main `2e7d9b4c8b39a12424a332714aaf51d7f764b009`. [Reference PR #2124](https://github.com/findmydoc-platform/website/pull/2124) has a one-line documentation edit in the runtime URL utility. This requests normal product-path validation while keeping product behavior, assertions, fixtures and dependencies unchanged. The candidate retains exactly that source edit. It changes the full integration execution and delivery contracts only.
+The reference starts at Main `5dc9cd2d8eaeec9d47feff0c0ba14c9b75660ffe`. [Reference PR #2124](https://github.com/findmydoc-platform/website/pull/2124) has a one-line documentation edit in the runtime URL utility. This requests normal product-path validation while keeping product behavior, assertions, fixtures and dependencies unchanged. The candidate retains exactly that source edit. It changes the full integration execution and delivery contracts only.
 
 This controlled runtime-path comparison measures the complete pipeline with full integration. It does not establish performance for every possible business change or larger future test inventory. Native discovery at this reference identifies 104 suite files. Accepted case counts and coverage come from actual successful execution, not from an assumed historical count.
 
 The initial successful reference at `86fc3b9f` is retained as preparation evidence. Main then accepted a release-workflow/tooling-test change in [#2122](https://github.com/findmydoc-platform/website/pull/2122). Both benchmark variants were re-frozen on the resulting Main before acceptance measurements. The earlier elapsed time is not paired with the re-frozen candidate.
+
+Main then accepted documentation-only [#2125](https://github.com/findmydoc-platform/website/pull/2125). All four fresh observations use the resulting identical actual Main merge base. The prepared source heads retain their common `2e7d9b4c` ancestry; the ordinary PR test merges include the same new `DESIGN.md`. Executable product, suite, fixtures, dependency, coverage and workflow input identities are unchanged. Neither preparation observation substitutes for a fresh acceptance pair.
 
 ## Candidate execution
 

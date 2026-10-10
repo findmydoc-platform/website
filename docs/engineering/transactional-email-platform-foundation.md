@@ -576,23 +576,23 @@ sets `state` to `expired`, and writes `terminalAt` and `scrubbedAt`. If an alrea
 somehow remains unscrubbed, the sweep clears its transient fields and writes `scrubbedAt` without replacing its
 recorded outcome. The hard-deletion phase may run daily through the same entry point.
 
-The provisional retention assumptions are:
+The retention contract is:
 
 - transient delivery fields are scrubbed immediately at provider acceptance or another terminal outcome;
 - a safety sweep scrubs any remaining transient fields no later than one hour after `deliveryDeadline`;
-- scrubbed outbox metadata and its events become deletion-eligible 42 days after `terminalAt`;
+- scrubbed outbox metadata and its events become deletion-eligible 28 days after `terminalAt`;
 - the daily sweep hard-deletes the outbox and its events within the following 24 hours.
 
-The 42-day working value matches Lettermint's documented
-[28-day active message retention](https://lettermint.co/docs/platform/emails/data-retention) plus the
-[DPA](https://lettermint.co/dpa)'s maximum 14-day residual backup cycle. It is an engineering assumption, not Legal
-approval. Legal and Privacy review the value, processing purpose, HMAC key ownership and rotation policy, and deletion
+The 28-day value follows the approved
+[transactional email Product Spec](https://app.notion.com/p/3f4283c73e618101ba7edc7ee0530850).
+Provider backup retention does not extend the active findmydoc outbox-history period. This product decision is not
+Legal approval. Legal and Privacy review the value, processing purpose, HMAC key ownership and rotation policy, and deletion
 mechanism in [management issue #396](https://github.com/findmydoc-platform/management/issues/396). As decided in
 [ADR 031](../adrs/031-adr-transactional-email-technical-activation-gates.md), that governance review does not block the
 technical activation and technical activation does not imply approval. Any resulting contract change requires its own
 decision before deployment.
 
-Suppression retention belongs to issue #1847 and is not governed by this 42-day value.
+Suppression retention belongs to issue #1847 and is not governed by this 28-day value.
 
 ## Fake adapters and environment behavior
 
@@ -686,7 +686,7 @@ The behavior suite must prove:
 17. Provider-event identities deduplicate repeated webhook input at the storage seam.
 18. Provider acceptance and every terminal pre-provider outcome scrub every transient field while retaining exactly
     the approved content-free metadata.
-19. A 30-minute runner cadence and safety sweep meet the one-hour scrub limit, while the provisional 42-day deletion
+19. A 30-minute runner cadence and safety sweep meet the one-hour scrub limit, while the 28-day deletion
     policy meets its daily deletion bound.
 20. Local, test, and CI make no external network or PostHog call.
 21. Environment selection is exhaustive: Local, test, and CI choose only fakes; Preview and Production without a real

@@ -399,6 +399,8 @@ describe('integration coverage when other Markdown lanes are omitted', () => {
               STORYBOOK_RESULT: 'skipped',
               INTEGRATION_RESULT: integrationResult,
               INTEGRATION_MODE: mode,
+              INTEGRATION_FILES: mode === 'partial' ? '["tests/integration/countries.lifecycle.test.ts"]' : '[]',
+              FULL_INTEGRATION_RESULT: 'success',
               GITHUB_OUTPUT: output,
               GITHUB_STEP_SUMMARY: path.join(directory, 'summary'),
             },
@@ -418,4 +420,47 @@ describe('integration coverage when other Markdown lanes are omitted', () => {
       }
     },
   )
+})
+
+describe('complete integration aggregation result', () => {
+  it.each([
+    ['[]', 'failure', 1],
+    ['[]', 'cancelled', 1],
+    ['[]', 'skipped', 1],
+    ['[]', '', 1],
+    ['[]', 'success', 0],
+    ['["tests/integration/countries.lifecycle.test.ts"]', 'skipped', 0],
+  ])('requires the expected full aggregation for files=%s and collector=%s', (files, collectorResult, status) => {
+    const directory = mkdtempSync(path.join(tmpdir(), 'ci-full-integration-result-'))
+    try {
+      const result = spawnSync(
+        'bash',
+        [
+          '-c',
+          workflow.jobs['coverage-merge'].steps.find((step: { id?: string }) => step.id === 'coverage_inputs').run,
+        ],
+        {
+          env: {
+            ...process.env,
+            EVENT_NAME: 'pull_request',
+            PATHS_RESULT: 'success',
+            VALIDATION: 'true',
+            INTEGRATION: 'true',
+            UNIT_RESULT: 'success',
+            STORYBOOK_RESULT: 'success',
+            INTEGRATION_RESULT: 'success',
+            INTEGRATION_MODE: 'full',
+            INTEGRATION_FILES: files,
+            FULL_INTEGRATION_RESULT: collectorResult,
+            GITHUB_OUTPUT: path.join(directory, 'output'),
+            GITHUB_STEP_SUMMARY: path.join(directory, 'summary'),
+          },
+          encoding: 'utf8',
+        },
+      )
+      expect(result.status).toBe(status)
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
 })

@@ -465,12 +465,6 @@ const Dots: React.FC<DotsProps> = ({ className }) => {
   )
 }
 
-export const LandingTestimonialsCarousel = {
-  Root,
-  Track,
-  Dots,
-}
-
 export const LandingTestimonialsCarouselClient: React.FC<LandingTestimonialsCarouselClientProps> = ({
   testimonials,
   className,

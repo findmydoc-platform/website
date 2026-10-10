@@ -28,7 +28,7 @@ export type InquiryModerationDTO = {
       }
 }
 
-export const inquiryModerationReportCategorySchema = z.enum([
+const inquiryModerationReportCategorySchema = z.enum([
   'harassment-threats',
   'spam-fraud-impersonation',
   'suspected-illegal-content',

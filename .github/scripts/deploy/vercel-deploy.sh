@@ -32,6 +32,32 @@ validate_deployment_metadata() {
   esac
 }
 
+build_preview_without_root_env_files() (
+  # Vercel adds root .env files to functions even when Next.js tracing excludes them.
+  # Preview values come from the pulled .vercel environment and the runner instead.
+  environment_backup="$(mktemp -d)"
+  restore_root_env_files() {
+    local environment_file
+    for environment_file in "${environment_backup}/.env" "${environment_backup}"/.env.*; do
+      if [[ -f "${environment_file}" || -L "${environment_file}" ]]; then
+        mv -- "${environment_file}" .
+      fi
+    done
+    rmdir -- "${environment_backup}"
+  }
+  trap restore_root_env_files EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+
+  for environment_file in .env .env.*; do
+    if [[ -f "${environment_file}" || -L "${environment_file}" ]]; then
+      mv -- "${environment_file}" "${environment_backup}/"
+    fi
+  done
+
+  pnpm dlx vercel@canary build --target preview --yes
+)
+
 validate_pulled_preview_environment() {
   local environment_file=".vercel/.env.preview.local"
 
@@ -97,7 +123,7 @@ case "${target}" in
     fi
 
     echo "Building Preview deployment in the GitHub runner..."
-    pnpm dlx vercel@canary build --target preview --yes
+    build_preview_without_root_env_files
     unset NODE_AUTH_TOKEN
     deploy_command=(pnpm dlx vercel@canary deploy --prebuilt --target preview --yes)
     label="Preview"

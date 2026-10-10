@@ -45,7 +45,7 @@ export type ClinicGallerySaveResult = ClinicGalleryReadResult & {
   removedMediaIds: string[]
 }
 
-export const CLINIC_GALLERY_ABANDONED_DRAFT_MIN_AGE_MS = 24 * 60 * 60 * 1_000
+const CLINIC_GALLERY_ABANDONED_DRAFT_MIN_AGE_MS = 24 * 60 * 60 * 1_000
 
 const payloadId = (value: string): RelationId => {
   const numeric = Number(value)

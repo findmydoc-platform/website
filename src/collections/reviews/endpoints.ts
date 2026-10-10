@@ -10,7 +10,6 @@ import {
   projectPublicReviewText,
   REVIEW_PLACEHOLDER_NOTICE,
   REVIEW_REDACTION_NOTICE,
-  type ReviewPublicMeasure,
 } from '@/collections/reviews/publicProjection'
 import { dispatchReviewChangeRevalidation } from '@/hooks/revalidateClinicSurfaces'
 import { toLoggedError } from '@/utilities/logging/shared'
@@ -562,6 +561,3 @@ export const reviewPublicationEndpoints = [
   },
   { path: '/:id/publication-history', method: 'get' as const, handler: reviewPublicationHistoryGetHandler },
 ]
-
-export const isSupportedReviewPublicMeasure = (value: unknown): value is ReviewPublicMeasure =>
-  value === 'none' || value === 'context' || value === 'redaction' || value === 'placeholder' || value === 'removed'

@@ -37,7 +37,7 @@ type ErrorDescription = {
   status: number
 }
 
-export const PATIENT_INQUIRY_PRIVATE_LIVE_HEADERS = {
+const PATIENT_INQUIRY_PRIVATE_LIVE_HEADERS = {
   'Cache-Control': 'private, no-store',
   Expires: '0',
   Pragma: 'no-cache',

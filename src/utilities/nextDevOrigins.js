@@ -1,4 +1,4 @@
-export const normalizeAllowedDevOrigin = (value) => {
+const normalizeAllowedDevOrigin = (value) => {
   if (!value) return null
 
   const normalized = value.trim()
@@ -13,7 +13,7 @@ export const normalizeAllowedDevOrigin = (value) => {
   }
 }
 
-export const isPrivateIpv4Address = (address) => {
+const isPrivateIpv4Address = (address) => {
   const octets = address.split('.').map(Number)
 
   if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) {
@@ -25,7 +25,7 @@ export const isPrivateIpv4Address = (address) => {
   return first === 10 || (first === 172 && second >= 16 && second <= 31) || (first === 192 && second === 168)
 }
 
-export const getLocalIpv4DevOrigins = (networkInterfacesByName) =>
+const getLocalIpv4DevOrigins = (networkInterfacesByName) =>
   Object.values(networkInterfacesByName)
     .flatMap((interfaces) => interfaces ?? [])
     .filter(
@@ -36,8 +36,7 @@ export const getLocalIpv4DevOrigins = (networkInterfacesByName) =>
     )
     .map((networkInterface) => networkInterface.address)
 
-export const getConfiguredDevOrigins = (value) =>
-  (value ?? '').split(',').map(normalizeAllowedDevOrigin).filter(Boolean)
+const getConfiguredDevOrigins = (value) => (value ?? '').split(',').map(normalizeAllowedDevOrigin).filter(Boolean)
 
 export const getAllowedDevOrigins = ({ configuredOrigins, isDevelopmentRuntime, networkInterfacesByName }) => {
   if (!isDevelopmentRuntime) return []

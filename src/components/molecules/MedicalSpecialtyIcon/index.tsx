@@ -46,7 +46,7 @@ function PlasticSurgeryIcon({ className, ...props }: React.SVGProps<SVGSVGElemen
   )
 }
 
-export const medicalSpecialtyIconMap: Record<MedicalSpecialtyIconKey, MedicalSpecialtyIconComponent> = {
+const medicalSpecialtyIconMap: Record<MedicalSpecialtyIconKey, MedicalSpecialtyIconComponent> = {
   dental: ToothIcon,
   dermatology: Sparkles,
   'eye-care': Eye,
@@ -55,7 +55,7 @@ export const medicalSpecialtyIconMap: Record<MedicalSpecialtyIconKey, MedicalSpe
   'plastic-surgery': PlasticSurgeryIcon,
 }
 
-export function getMedicalSpecialtyIconComponent(iconKey: unknown): MedicalSpecialtyIconComponent {
+function getMedicalSpecialtyIconComponent(iconKey: unknown): MedicalSpecialtyIconComponent {
   return (
     medicalSpecialtyIconMap[resolveMedicalSpecialtyIconKey(iconKey)] ??
     medicalSpecialtyIconMap[fallbackMedicalSpecialtyIconKey]

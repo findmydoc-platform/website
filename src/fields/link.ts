@@ -4,7 +4,7 @@ import deepMerge from '@/utilities/deepMerge'
 
 export type LinkAppearances = 'default' | 'outline'
 
-export const appearanceOptions: Record<LinkAppearances, { label: string; value: string }> = {
+const appearanceOptions: Record<LinkAppearances, { label: string; value: string }> = {
   default: {
     label: 'Default',
     value: 'default',

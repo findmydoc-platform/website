@@ -1,12 +1,47 @@
+import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
 
 import nextConfig, { isPreviewDeployment } from '../../../next.config.js'
 import vercelConfig from '../../../vercel.json'
 import { getAllowedDevOrigins } from '@/utilities/nextDevOrigins.js'
 
+const matchGlob = createRequire(import.meta.url)('next/dist/compiled/picomatch') as (
+  patterns: string | string[],
+  options?: { contains?: boolean; dot?: boolean },
+) => (value: string) => boolean
+
 describe('nextConfig', () => {
   it('includes seed assets in API output tracing', () => {
     expect(nextConfig.outputFileTracingIncludes?.['/api/**/*']).toContain('./src/endpoints/seed/assets/**/*')
+  })
+
+  it('keeps ignored environment files out of every server trace while retaining runtime assets', () => {
+    const exclusions = Object.entries(nextConfig.outputFileTracingExcludes ?? {})
+    const routes = ['/', '/posts/[slug]', '/admin/[[...segments]]', '/api/clinics']
+    const environmentFiles = ['.env', '.env.example', '.env.test', '.vercel/.env.preview.local']
+    const runtimeAsset = 'src/endpoints/seed/assets/clinic.jpg'
+
+    for (const route of routes) {
+      const patterns = exclusions
+        .filter(([routeGlob]) => matchGlob(routeGlob, { contains: true, dot: true })(route))
+        .flatMap(([, files]) => files)
+      const isExcluded = matchGlob(patterns, { contains: true, dot: true })
+
+      for (const file of environmentFiles) {
+        expect(isExcluded(file), `${route} must exclude ${file}`).toBe(true)
+      }
+      expect(isExcluded(runtimeAsset)).toBe(false)
+    }
+
+    const serverPatterns = exclusions
+      .filter(([routeGlob]) => matchGlob(routeGlob)('next-server'))
+      .flatMap(([, files]) => files)
+    const isExcludedFromServer = matchGlob(serverPatterns, { contains: true, dot: true })
+
+    for (const file of environmentFiles) {
+      expect(isExcludedFromServer(file), `next-server must exclude ${file}`).toBe(true)
+    }
+    expect(isExcludedFromServer(runtimeAsset)).toBe(false)
   })
 
   it('disables image optimization only for preview deployments', () => {

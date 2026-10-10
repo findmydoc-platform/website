@@ -1,44 +1,20 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from 'storybook/test'
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut,
-} from '@/components/atoms/command'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/atoms/command'
 
-const navigationItems = [
-  { label: 'Clinics Dashboard', shortcut: '⌘D' },
-  { label: 'Doctors', shortcut: '⌘⇧D' },
-  { label: 'Blog Posts', shortcut: '⌘B' },
-]
+const navigationItems = [{ label: 'Clinics Dashboard' }, { label: 'Doctors' }, { label: 'Blog Posts' }]
 
-const actionItems = [
-  { label: 'Create Clinic', shortcut: '⌘N' },
-  { label: 'Invite Staff', shortcut: '⌘I' },
-  { label: 'Open Support', shortcut: '⌘/' },
-]
+const actionItems = [{ label: 'Create Clinic' }, { label: 'Invite Staff' }, { label: 'Open Support' }]
 
 type CommandPreviewProps = {
   searchPlaceholder: string
   showEmptyState: boolean
-  open: boolean
 }
 
-const CommandPreview: React.FC<CommandPreviewProps> = ({ open, searchPlaceholder, showEmptyState }) => {
-  const [isOpen, setIsOpen] = React.useState(open)
-
-  React.useEffect(() => {
-    setIsOpen(open)
-  }, [open])
-
+const CommandPreview: React.FC<CommandPreviewProps> = ({ searchPlaceholder, showEmptyState }) => {
   return (
-    <CommandDialog open={isOpen} onOpenChange={setIsOpen}>
+    <Command className="mx-auto w-full max-w-lg border">
       <CommandInput placeholder={searchPlaceholder} />
       <CommandList>
         <CommandEmpty>No matching commands.</CommandEmpty>
@@ -48,23 +24,20 @@ const CommandPreview: React.FC<CommandPreviewProps> = ({ open, searchPlaceholder
               {navigationItems.map((item) => (
                 <CommandItem key={item.label} onSelect={() => {}}>
                   {item.label}
-                  <CommandShortcut>{item.shortcut}</CommandShortcut>
                 </CommandItem>
               ))}
             </CommandGroup>
-            <CommandSeparator />
             <CommandGroup heading="Actions">
               {actionItems.map((item) => (
                 <CommandItem key={item.label} onSelect={() => {}}>
                   {item.label}
-                  <CommandShortcut>{item.shortcut}</CommandShortcut>
                 </CommandItem>
               ))}
             </CommandGroup>
           </>
         )}
       </CommandList>
-    </CommandDialog>
+    </Command>
   )
 }
 
@@ -76,12 +49,8 @@ const meta = {
     showEmptyState: {
       control: 'boolean',
     },
-    open: {
-      control: 'boolean',
-    },
   },
   args: {
-    open: true,
     searchPlaceholder: 'Search for anything…',
     showEmptyState: false,
   },
@@ -92,14 +61,23 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  play: async () => {
-    const canvas = within(document.body)
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
     const input = canvas.getByPlaceholderText('Search for anything…')
+
+    expect(canvas.getByRole('option', { name: 'Doctors' })).toBeVisible()
 
     await userEvent.type(input, 'Clinic')
 
-    expect(canvas.getByText('Clinics Dashboard')).toBeVisible()
-    expect(canvas.getByText('Create Clinic')).toBeVisible()
+    expect(canvas.getByRole('option', { name: 'Clinics Dashboard' })).toBeVisible()
+    expect(canvas.getByRole('option', { name: 'Create Clinic' })).toBeVisible()
+    expect(canvas.queryByRole('option', { name: 'Doctors' })).not.toBeInTheDocument()
+    expect(canvas.getAllByRole('option')).toHaveLength(2)
+
+    await userEvent.clear(input)
+
+    expect(canvas.getByRole('option', { name: 'Doctors' })).toBeVisible()
+    expect(canvas.getAllByRole('option')).toHaveLength(navigationItems.length + actionItems.length)
   },
 }
 

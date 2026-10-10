@@ -25,7 +25,7 @@ type Dependencies = {
   actionReferenceKeys?: AuthActionProtocolKeys
 }
 
-export function clinicInvitationCallback(origin: string, id: number): URL {
+function clinicInvitationCallback(origin: string, id: number): URL {
   const callback = new URL('/auth/callback', origin)
   callback.searchParams.set('authActionId', String(id))
   return callback

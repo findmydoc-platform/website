@@ -3,16 +3,15 @@ import { z } from 'zod'
 import { inquiryIdempotencyKeySchema, inquiryIdSchema } from '@/features/inquiryAggregate/contracts'
 import type { InquiryContentModerationDTO, InquiryModerationDTO } from '@/features/inquiryModeration/contracts'
 
-export { inquiryIdempotencyKeySchema, inquiryIdSchema } from '@/features/inquiryAggregate/contracts'
+export { inquiryIdSchema } from '@/features/inquiryAggregate/contracts'
 
-export const INQUIRY_TEXT_MAX_LENGTH = 3_000
+const INQUIRY_TEXT_MAX_LENGTH = 3_000
 export const INQUIRY_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024
 export const INQUIRY_ATTACHMENT_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'] as const
 
 export const inquiryHandlingStatusSchema = z.enum(['submitted', 'in_review', 'contacted', 'spam'])
-export const inquiryLifecycleSchema = z.enum(['open', 'closed'])
 
-export const clinicHandlingStatusTransitions = {
+const clinicHandlingStatusTransitions = {
   submitted: ['in_review', 'contacted'],
   in_review: ['contacted'],
   contacted: ['in_review'],
@@ -23,8 +22,8 @@ export const isAllowedClinicHandlingStatusTransition = (
   from: z.infer<typeof inquiryHandlingStatusSchema>,
   to: 'contacted' | 'in_review' | 'submitted',
 ): boolean => clinicHandlingStatusTransitions[from].includes(to as never)
-export const inquiryRevisionSchema = z.number().int().nonnegative()
-export const inquiryTextSchema = z.string().max(INQUIRY_TEXT_MAX_LENGTH)
+const inquiryRevisionSchema = z.number().int().nonnegative()
+const inquiryTextSchema = z.string().max(INQUIRY_TEXT_MAX_LENGTH)
 const nonBlankInquiryTextSchema = inquiryTextSchema.superRefine((value, context) => {
   if (!value.trim()) context.addIssue({ code: 'custom', message: 'Text cannot be empty.' })
 })
@@ -73,14 +72,6 @@ export const guestInquiryCreateInputSchema = z
       context.addIssue({ code: 'custom', message: 'Select a doctor or treatment.' })
     }
   })
-
-export const legacyInquiryStatusSchema = z.enum(['submitted', 'in_review', 'contacted', 'closed', 'spam'])
-
-export const legacyInquiryStatusInputSchema = z
-  .object({
-    status: legacyInquiryStatusSchema,
-  })
-  .strict()
 
 export const verifiedInquiryCreateInputSchema = z
   .object({
@@ -234,7 +225,7 @@ export const attachmentDraftMutationInputSchema = z
   .strict()
 
 export type InquiryHandlingStatus = z.infer<typeof inquiryHandlingStatusSchema>
-export type InquiryLifecycle = z.infer<typeof inquiryLifecycleSchema>
+export type InquiryLifecycle = 'open' | 'closed'
 export type ClinicInquiryQueueInput = z.infer<typeof clinicInquiryQueueInputSchema>
 export type PatientInquiryQueueInput = z.input<typeof patientInquiryQueueInputSchema>
 export type VerifiedInquiryCreateInput = z.infer<typeof verifiedInquiryCreateInputSchema>
@@ -247,7 +238,7 @@ export type InquiryContactRevealInput = z.infer<typeof inquiryContactRevealInput
 export type AttachmentDraftCreateInput = z.infer<typeof attachmentDraftCreateInputSchema>
 export type AttachmentDraftMutationInput = z.infer<typeof attachmentDraftMutationInputSchema>
 export type GuestInquiryCreateInput = z.infer<typeof guestInquiryCreateInputSchema>
-export type LegacyInquiryStatus = z.infer<typeof legacyInquiryStatusSchema>
+export type LegacyInquiryStatus = 'submitted' | 'in_review' | 'contacted' | 'closed' | 'spam'
 
 export type LegacyPatientClinicInquiryDTO = {
   createdAt: string

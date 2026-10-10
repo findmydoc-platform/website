@@ -1,4 +1,4 @@
-import type { ClinicBeforeAfterEntry, ClinicDetailData, ClinicDetailDoctor } from '@/features/clinicDetail/contracts'
+import type { ClinicDetailData, ClinicDetailDoctor } from '@/features/clinicDetail/contracts'
 
 import { getStoryImageSrc, storyClinicImages, storyClinicMedia, storyPortraits } from './assets'
 
@@ -80,88 +80,6 @@ function buildDoctor(index: number): ClinicDetailDoctor {
 }
 
 const doctors = Array.from({ length: 13 }, (_, index) => buildDoctor(index))
-
-// Retained only for the deprecated component story. The gallery is not an active product surface.
-export const disabledClinicBeforeAfterEntriesFixture: ClinicBeforeAfterEntry[] = [
-  {
-    id: 'gallery-1',
-    title: 'Orthopedic program timeline',
-    before: { src: getStoryImageSrc(storyClinicImages.clinicDetail.exterior), alt: 'Before program placeholder' },
-    after: {
-      src: getStoryImageSrc(storyClinicImages.clinicDetail.rehabilitation),
-      alt: 'After program placeholder',
-    },
-    description: 'Demo gallery item showing placeholder imagery for a four-week program timeline.',
-    category: 'Orthopedic',
-    durationLabel: '4 weeks',
-  },
-  {
-    id: 'gallery-2',
-    title: 'Respiratory program timeline',
-    before: {
-      src: getStoryImageSrc(storyClinicImages.clinicDetail.treatmentRoom),
-      alt: 'Before program placeholder',
-    },
-    after: { src: getStoryImageSrc(storyClinicImages.clinicDetail.diagnostics), alt: 'After program placeholder' },
-    description: 'Demo gallery item showing a second timeline card with treatment-room imagery.',
-    category: 'Respiratory',
-    durationLabel: '8 weeks',
-  },
-  {
-    id: 'gallery-3',
-    title: 'Mobility support timeline',
-    before: {
-      src: getStoryImageSrc(storyClinicImages.clinicDetail.rehabilitation),
-      alt: 'Before program placeholder',
-    },
-    after: {
-      src: getStoryImageSrc(storyClinicImages.clinicDetail.treatmentRoom),
-      alt: 'After program placeholder',
-    },
-    description: 'Demo gallery item for a longer service sequence and category label.',
-    category: 'Recovery',
-    durationLabel: '12 weeks',
-  },
-  {
-    id: 'gallery-4',
-    title: 'Long-term care timeline',
-    before: {
-      src: getStoryImageSrc(storyClinicImages.clinicDetail.treatmentRoom),
-      alt: 'Before program placeholder',
-    },
-    after: { src: getStoryImageSrc(storyPortraits.doctor), alt: 'After program placeholder' },
-    description: 'Demo gallery item with portrait imagery and a sixteen-week duration label.',
-    category: 'Chronic Care',
-    durationLabel: '16 weeks',
-  },
-  {
-    id: 'gallery-5',
-    title: 'Nutrition support timeline',
-    before: { src: getStoryImageSrc(storyClinicImages.clinicDetail.lab), alt: 'Before program placeholder' },
-    after: {
-      src: getStoryImageSrc(storyClinicImages.clinicDetail.consultation),
-      alt: 'After program placeholder',
-    },
-    description: 'Demo gallery item for a multi-step service card with consultation imagery.',
-    category: 'Nutrition',
-    durationLabel: '24 weeks',
-  },
-  {
-    id: 'gallery-6',
-    title: 'Sports service timeline',
-    before: {
-      src: getStoryImageSrc(storyClinicImages.clinicDetail.treatmentRoom),
-      alt: 'Before program placeholder',
-    },
-    after: {
-      src: getStoryImageSrc(storyClinicImages.clinicDetail.rehabilitation),
-      alt: 'After program placeholder',
-    },
-    description: 'Demo gallery item with a longer duration and rehabilitation imagery.',
-    category: 'Sports',
-    durationLabel: '32 weeks',
-  },
-]
 
 export const clinicDetailFixture: ClinicDetailData = {
   clinicId: 1001,
@@ -400,18 +318,6 @@ export const clinicDetailModeratedReviewsFixture: ClinicDetailData = {
       },
     ],
   },
-}
-
-export const clinicDetailNoCoordinatesFixture: ClinicDetailData = {
-  ...clinicDetailFixture,
-  location: {
-    fullAddress: clinicDetailFixture.location.fullAddress,
-  },
-}
-
-export const clinicDetailNoLocationFixture: ClinicDetailData = {
-  ...clinicDetailFixture,
-  location: {},
 }
 
 export const clinicDetailNoReviewsFixture: ClinicDetailData = {

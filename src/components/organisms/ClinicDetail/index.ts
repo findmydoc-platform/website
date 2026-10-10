@@ -1,4 +1,3 @@
-export * from './BeforeAfterCaseGallerySection'
 export * from './ClinicAppointmentSection'
 export * from './ClinicGallery'
 export * from './ClinicLocationSection'

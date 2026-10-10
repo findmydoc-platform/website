@@ -54,6 +54,9 @@ jobs:
       - name: Semgrep scan
         run: bash .github/scripts/ci/run-semgrep.sh
 
+      - name: Production dead code report
+        run: pnpm deadcode:report:production
+
       - name: Dead code check
         run: pnpm deadcode:check
 

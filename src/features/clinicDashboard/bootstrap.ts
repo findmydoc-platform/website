@@ -7,7 +7,7 @@ import type { PayloadRequest } from 'payload'
 import { toLoggedError } from '@/utilities/logging/shared'
 import type { ClinicDashboardContract } from './contractNegotiation'
 
-export const CLINIC_DASHBOARD_LEGACY_CAPABILITIES = [
+const CLINIC_DASHBOARD_LEGACY_CAPABILITIES = [
   'clinic-profile:view',
   'clinic-profile:edit',
   'clinic-treatments:view',
@@ -16,9 +16,9 @@ export const CLINIC_DASHBOARD_LEGACY_CAPABILITIES = [
   'clinic-gallery:edit',
 ] as const
 
-export const CLINIC_DASHBOARD_INQUIRY_CAPABILITIES = ['clinic-inquiries:view', 'clinic-inquiries:edit'] as const
+const CLINIC_DASHBOARD_INQUIRY_CAPABILITIES = ['clinic-inquiries:view', 'clinic-inquiries:edit'] as const
 
-export const CLINIC_DASHBOARD_CAPABILITIES = [
+const CLINIC_DASHBOARD_CAPABILITIES = [
   ...CLINIC_DASHBOARD_LEGACY_CAPABILITIES,
   ...CLINIC_DASHBOARD_INQUIRY_CAPABILITIES,
 ] as const

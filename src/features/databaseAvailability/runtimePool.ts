@@ -1,4 +1,4 @@
-export const PAYLOAD_RUNTIME_POOL_POLICY = {
+const PAYLOAD_RUNTIME_POOL_POLICY = {
   connectionTimeoutMillis: 3_000,
   idleTimeoutMillis: 10_000,
   max: 4,

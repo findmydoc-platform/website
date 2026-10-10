@@ -117,5 +117,3 @@ export const BlogCardCollection: React.FC<BlogCardCollectionProps> = ({
     </section>
   )
 }
-
-export default BlogCardCollection

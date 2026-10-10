@@ -27,5 +27,3 @@ export function PriceSummary({ priceFrom, className }: { priceFrom: PriceSummary
     </div>
   )
 }
-
-export default PriceSummary

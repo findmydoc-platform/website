@@ -1,10 +1,10 @@
 import { splitUrlQuery } from '@/utilities/urlParts'
 
-export function isPayloadApiFileUrl(src: string): boolean {
+function isPayloadApiFileUrl(src: string): boolean {
   return src.includes('/api/') && src.includes('/file/')
 }
 
-export function normalizePayloadApiFileUrl(src: string): string {
+function normalizePayloadApiFileUrl(src: string): string {
   if (!isPayloadApiFileUrl(src)) return src
 
   const { path: pathPart, query } = splitUrlQuery(src)

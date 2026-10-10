@@ -126,7 +126,7 @@ export function isPostHogLocalEvaluationConfigured(): boolean {
   )
 }
 
-export async function shutdownPostHogFeatureFlagServer(): Promise<void> {
+async function shutdownPostHogFeatureFlagServer(): Promise<void> {
   clearPostHogFeatureFlagShutdownTimer()
 
   if (posthogFeatureFlagClient) {

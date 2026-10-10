@@ -189,7 +189,7 @@ export const CACHE_DISCOVERY_IDS = [
 
 export type CacheDiscoveryId = (typeof CACHE_DISCOVERY_IDS)[number]
 
-export const FIXED_PUBLIC_PATHS = {
+const FIXED_PUBLIC_PATHS = {
   home: '/',
   about: '/about',
   'partners-clinics': '/partners/clinics',
@@ -199,7 +199,7 @@ export const FIXED_PUBLIC_PATHS = {
   'patient-registration': '/register/patient',
 } as const
 
-export const FIXED_PUBLIC_PATH_SURFACE_IDS = Object.keys(FIXED_PUBLIC_PATHS) as FixedPublicPathSurfaceId[]
+const FIXED_PUBLIC_PATH_SURFACE_IDS = Object.keys(FIXED_PUBLIC_PATHS) as FixedPublicPathSurfaceId[]
 
 export type FixedPublicPathSurfaceId = keyof typeof FIXED_PUBLIC_PATHS
 
@@ -728,7 +728,7 @@ const assertPositivePageNumber = (page: number): number => {
   return page
 }
 
-export const assertKnownCollection = (collection: string): CachePolicyCollection =>
+const assertKnownCollection = (collection: string): CachePolicyCollection =>
   assertKnownValue(collection, CACHE_POLICY_COLLECTIONS, 'collection')
 
 export const assertTaggableCollection = (collection: string): CacheTaggableCollection => {
@@ -744,7 +744,7 @@ export const assertTaggableCollection = (collection: string): CacheTaggableColle
 export const assertKnownGlobal = (global: string): CachePolicyGlobal =>
   assertKnownValue(global, CACHE_POLICY_GLOBALS, 'global')
 
-export const assertKnownSurfaceId = (surfaceId: string): CacheSurfaceId =>
+const assertKnownSurfaceId = (surfaceId: string): CacheSurfaceId =>
   assertKnownValue(surfaceId, CACHE_SURFACE_IDS, 'surface')
 
 export const assertTaggableSurfaceId = (surfaceId: string): CacheTaggableSurfaceId => {

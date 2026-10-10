@@ -6,7 +6,7 @@ import type { RecoveryKey } from './recoveryContext'
 import { supabaseEmailTokenHashSchema } from '@/auth/utilities/supabaseEmailTokenHash'
 
 export const WEBSITE_RECOVERY_COOKIE = 'findmydoc_website_recovery'
-export const recoveryFinish = {
+const recoveryFinish = {
   'patient-recovery': '/login/patient?status=recovery-complete',
   'platform-recovery': '/admin/login?status=recovery-complete',
 } as const

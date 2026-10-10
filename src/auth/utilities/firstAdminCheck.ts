@@ -201,5 +201,3 @@ export async function getLocalPlatformStaffUserState(
     return { reason: 'payload_check_failed', status: 'check_failed' }
   }
 }
-
-export const getLocalAdminUserState = getLocalPlatformStaffUserState

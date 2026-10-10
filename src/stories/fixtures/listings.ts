@@ -323,7 +323,7 @@ export const makeClinicList = (count: number, source: ListingCardData[] = clinic
         })
       })
 
-export const sampleClinic: ListingCardData = clinicResults[0] ?? makeClinic({})
+const sampleClinic: ListingCardData = clinicResults[0] ?? makeClinic({})
 export const sampleClinicRating = sampleClinic.rating
 export const sampleClinicWaitTime = sampleClinic.waitTime
 export const sampleClinicTags = sampleClinic.tags

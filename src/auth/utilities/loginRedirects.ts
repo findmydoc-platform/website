@@ -1,5 +1,5 @@
-export const PATIENT_LOGIN_PATH = '/login/patient'
-export const STAFF_LOGIN_PATH = '/admin/login'
+const PATIENT_LOGIN_PATH = '/login/patient'
+const STAFF_LOGIN_PATH = '/admin/login'
 
 export type PasswordResetLoginTarget = {
   href: string

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- next-sitemap loads this config as CommonJS. */
-const { isPreviewRuntime } = require('./src/features/runtimePolicy/core.cjs')
+const { isPreviewRuntime } = require('./src/features/runtimePolicy/tooling.cjs')
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || 'https://example.com'

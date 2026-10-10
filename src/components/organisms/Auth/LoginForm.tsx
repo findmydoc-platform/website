@@ -299,14 +299,3 @@ export const SubmitButton = ({
 export const Footer = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   return <div className={cn('mt-5 space-y-3 text-center [&_a]:break-words [&_p]:leading-5', className)}>{children}</div>
 }
-
-export const LoginForm = {
-  Root,
-  Header,
-  Status,
-  Form,
-  EmailField,
-  PasswordField,
-  SubmitButton,
-  Footer,
-}

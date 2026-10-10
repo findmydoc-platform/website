@@ -1395,58 +1395,6 @@ export const readLegacyClinicInquiryDetail = async (
   return buildLegacyInquiryDTO(req, await readAuthorizedInquiry(req, input.inquiryId, actor))
 }
 
-const legacyForwardTransitions = {
-  submitted: ['in_review', 'contacted', 'closed'],
-  in_review: ['contacted', 'closed'],
-  contacted: ['closed'],
-  closed: [],
-  spam: [],
-} as const satisfies Record<LegacyInquiryStatus, readonly LegacyInquiryStatus[]>
-
-export const changeLegacyClinicInquiryStatus = async (
-  req: PayloadRequest,
-  input: { inquiryId: string; status: LegacyInquiryStatus },
-): Promise<LegacyPatientClinicInquiryDTO> => {
-  const initialActor = await resolveCurrentActor(req)
-  if (initialActor.kind !== 'clinic') {
-    throw new InquiryCommunicationServiceError('access-denied', 'Clinic access is required.')
-  }
-  if (input.status === 'spam') {
-    throw new InquiryCommunicationServiceError('invalid-state', 'Spam requires the focused reason-bearing command.')
-  }
-
-  const updated = await runRetryableActorInquiryCommand(req, input.inquiryId, initialActor, async () => {
-    const actor = await resolveCurrentActor(req)
-    if (actor.kind !== 'clinic' || actor.key !== initialActor.key) {
-      throw new InquiryCommunicationServiceError('access-denied', 'The clinic participant changed.')
-    }
-    const inquiry = await readAuthorizedInquiry(req, input.inquiryId, actor)
-    await assertOperationalInquiry(req, inquiry)
-    const currentStatus = legacyStatus(inquiry)
-    if (!legacyForwardTransitions[currentStatus].includes(input.status as never)) {
-      throw new InquiryCommunicationServiceError('conflict', 'The legacy status transition is no longer available.')
-    }
-
-    const nextSequence = numberValue(inquiry.activitySequence, 1) + 1
-    const closes = input.status === 'closed'
-    const current = await updateInquiry(req, inquiry, {
-      activitySequence: nextSequence,
-      ...(closes ? { lifecycle: 'closed' } : { handlingStatus: input.status }),
-      lastActivityAt: new Date().toISOString(),
-      revision: numberValue(inquiry.revision) + 1,
-    })
-    await createAuditEvent(req, current, actor, closes ? 'closed' : 'handling-status-changed', nextSequence, {
-      fromValue: closes ? text(inquiry.lifecycle) : text(inquiry.handlingStatus),
-      targetId: String(current.id),
-      targetType: 'inquiry',
-      toValue: closes ? 'closed' : input.status,
-    })
-    return current
-  })
-
-  return buildLegacyInquiryDTO(req, updated)
-}
-
 export const readPatientInquiryQueue = async (
   req: PayloadRequest,
   rawInput: PatientInquiryQueueInput = {},
@@ -2494,7 +2442,7 @@ const readOwnedAttachment = async (
   return { attachment, inquiry }
 }
 
-export const cleanupFinalizedAttachmentDraft = async (
+const cleanupFinalizedAttachmentDraft = async (
   req: PayloadRequest,
   input: { attachmentId: string },
   storage: InquiryAttachmentStorageGateway = createS3InquiryAttachmentStorage(),

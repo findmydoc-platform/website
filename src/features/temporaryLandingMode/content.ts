@@ -295,7 +295,7 @@ const buildTemporaryLandingPageContent = (locale: TemporaryLandingLocale): Tempo
   }
 }
 
-export const temporaryLandingPageContentByLocale: Record<TemporaryLandingLocale, TemporaryLandingPageContent> = {
+const temporaryLandingPageContentByLocale: Record<TemporaryLandingLocale, TemporaryLandingPageContent> = {
   en: buildTemporaryLandingPageContent('en'),
   de: buildTemporaryLandingPageContent('de'),
   tr: buildTemporaryLandingPageContent('tr'),

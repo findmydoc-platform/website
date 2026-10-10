@@ -25,7 +25,7 @@ import { toLoggedError } from '@/utilities/logging/shared'
 import type { RequestFile } from '@/utilities/requestFileUtils'
 import { CLINIC_DASHBOARD_ERROR_CODES, clinicDashboardPrivateJsonResponse } from './clinicDashboardBootstrap'
 
-export const CLINIC_GALLERY_ERROR_CODES = {
+const CLINIC_GALLERY_ERROR_CODES = {
   conflict: 'CLINIC_GALLERY_CONFLICT',
   invalidInput: 'CLINIC_GALLERY_INVALID_INPUT',
   mediaNotFound: 'CLINIC_GALLERY_MEDIA_NOT_FOUND',

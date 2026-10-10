@@ -1,6 +1,6 @@
 export const TEMPORARY_LANDING_LOCALES = ['en', 'de', 'tr'] as const
 export const TEMPORARY_LANDING_DEFAULT_LOCALE = 'en'
-export const TEMPORARY_LANDING_LANGUAGE_QUERY_KEY = 'lang'
+const TEMPORARY_LANDING_LANGUAGE_QUERY_KEY = 'lang'
 
 export type TemporaryLandingLocale = (typeof TEMPORARY_LANDING_LOCALES)[number]
 type SearchParamValue = string | string[] | undefined

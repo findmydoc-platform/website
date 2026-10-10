@@ -16,7 +16,7 @@ export function enablePostHogAnalyticsCapture(): boolean {
   return enablePostHog()
 }
 
-export function disablePostHogAnalyticsCapture(): boolean {
+function disablePostHogAnalyticsCapture(): boolean {
   disablePostHog()
   return false
 }

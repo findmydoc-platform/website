@@ -1,5 +1,5 @@
 export * from './PublicContactSection'
-export { DEFAULT_CONTACT_FORM_LABELS, DEFAULT_CONTACT_FORM_SLUG } from './contactRequestForm.shared'
+export { DEFAULT_CONTACT_FORM_LABELS } from './contactRequestForm.shared'
 export type {
   ContactFormContext,
   ContactRequestFormLabels,

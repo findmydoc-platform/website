@@ -111,7 +111,7 @@ const readStoredRunId = async (payload: Payload, key: string): Promise<string | 
 
 export const createSeedRunId = () => randomUUID()
 
-export const getSeedRunKey = (runId: string) => `${RUN_KEY_PREFIX}${runId}`
+const getSeedRunKey = (runId: string) => `${RUN_KEY_PREFIX}${runId}`
 
 export const createSeedRunRecord = (args: {
   runId: string
@@ -171,7 +171,7 @@ export const setLatestSeedRunId = async (payload: Payload, runId: string): Promi
   await payload.kv.set(LATEST_RUN_KEY, runId)
 }
 
-export const getLatestSeedRunId = async (payload: Payload): Promise<string | null> => {
+const getLatestSeedRunId = async (payload: Payload): Promise<string | null> => {
   return readStoredRunId(payload, LATEST_RUN_KEY)
 }
 

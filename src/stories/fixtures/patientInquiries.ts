@@ -28,7 +28,7 @@ const listItem = (overrides: Partial<InquiryListItemDTO>): InquiryListItemDTO =>
   ...overrides,
 })
 
-export const patientInquiryItems: InquiryListItemDTO[] = [
+const patientInquiryItems: InquiryListItemDTO[] = [
   listItem({}),
   listItem({
     clinic: { displayName: 'Antalya MedVista Clinic', id: 'clinic-antalya', messagingAvailable: true },

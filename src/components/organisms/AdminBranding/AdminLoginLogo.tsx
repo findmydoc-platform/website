@@ -2,7 +2,7 @@ import React from 'react'
 
 type AdminLoginLogoProps = Record<string, unknown>
 
-export const AdminLoginLogo: React.FC<AdminLoginLogoProps> = () => {
+const AdminLoginLogo: React.FC<AdminLoginLogoProps> = () => {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img

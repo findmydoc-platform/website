@@ -1,25 +1,36 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
   "entry": [
-    "next.config.mjs",
+    "next.config.js!",
+    "next-sitemap.config.cjs!",
     "src/payload.config.ts!",
     "src/app/(payload)/admin/importMap.js!",
-    "src/app/**/*.{ts,tsx}!",
-    "src/collections/**/*.ts!",
-    "src/endpoints/**/*.ts!",
-    "scripts/**/*.{js,mjs,ts}",
+    // Next discovers routes/proxy; Payload config and importMap discover CMS registrations.
+    // These production operations are called by deployment or documented operator commands.
+    "scripts/permission-matrix/derive-json.ts!",
+    "scripts/lettermint-digest-key-retirement.ts!",
+    // The integration runner selects this guarded config by filename, not an import.
+    "vitest.integration.config.ts",
+    // Development globs must not overlap the explicitly classified production operations.
+    "scripts/**/!(derive-json|lettermint-digest-key-retirement).{js,mjs,ts}",
     "tests/**/*.{ts,tsx}",
   ],
   // Analyze Payload imports statically. Loading its config executes server and JSX modules.
   "payload": { "config": [] },
+  // Keep standard Next route discovery, but traverse build config as a production entry.
+  "next": { "config": [] },
   "project": [
-    "src/**/*.{ts,tsx}!",
+    "src/**/*.{js,jsx,mjs,cjs,ts,tsx}!",
     "!src/**/*.stories.{ts,tsx}!",
     "!src/stories/**!",
+    "next.config.js!",
+    "next-sitemap.config.cjs!",
+    "scripts/permission-matrix/derive-json.ts!",
+    "scripts/lettermint-digest-key-retirement.ts!",
     "tests/**/*.{ts,tsx}",
-    "scripts/**/*.{js,mjs,ts}",
+    "scripts/**/!(derive-json|lettermint-digest-key-retirement).{js,mjs,ts}",
     ".storybook/**/*.{ts,tsx}",
-    "*.config.{js,mjs,ts,cjs}",
+    "!(next|next-sitemap).config.{js,mjs,ts,cjs}",
   ],
   "ignore": ["src/migrations/**", "src/payload-types.ts", "src/app/(frontend)/fonts/**"],
   "ignoreBinaries": ["cross-env", "next-sitemap", "payload", "storybook", "vercel"],

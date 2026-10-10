@@ -4,7 +4,7 @@ Website [#2121](https://github.com/findmydoc-platform/website/issues/2121) exten
 
 ## Reference and candidate
 
-The reference starts at Main `5dc9cd2d8eaeec9d47feff0c0ba14c9b75660ffe`. [Reference PR #2124](https://github.com/findmydoc-platform/website/pull/2124) has a one-line documentation edit in the runtime URL utility. This requests normal product-path validation while keeping product behavior, assertions, fixtures and dependencies unchanged. The candidate retains exactly that source edit. It changes the full integration execution and delivery contracts only.
+The reference starts at Main `5dc9cd2d8eaeec9d47feff0c0ba14c9b75660ffe`. [Reference PRs #2127](https://github.com/findmydoc-platform/website/pull/2127) and [#2128](https://github.com/findmydoc-platform/website/pull/2128) have a one-line documentation edit in the runtime URL utility. This requests normal product-path validation while keeping product behavior, assertions, fixtures and dependencies unchanged. The candidate retains exactly that source edit. It changes the full integration execution and delivery contracts only.
 
 This controlled runtime-path comparison measures the complete pipeline with full integration. It does not establish performance for every possible business change or larger future test inventory. Native discovery at this reference identifies 104 suite files. Accepted case counts and coverage come from actual successful execution, not from an assumed historical count.
 
@@ -27,6 +27,7 @@ The existing selected-test PR path remains a single serial runner, including con
 - Freeze reference/candidate heads, their actual PR merge revisions, base Main, product tree, full integration tests, fixtures, lockfile, runtime versions, runner class and coverage configuration.
 - Use normal PR events for two complete before/after pairs. Repeated observations use separate immutable branches/PRs with equivalent inputs, so unrelated checks and Preview are executed normally in each event.
 - Prefer reversed pair order for the second repetition when practical. Record scheduling and environment variation; do not overlap experimental series deliberately to manufacture a speedup.
+- Associate runs with the native `pull_requests[].number` and the PR-specific dynamic security run identity. A commit-wide check rollup can include other PRs sharing the same head and is not the observation boundary.
 - Capture every expected native workflow and job through its terminal result, including Build, Preview, E2E when relevant, scans, Integration Tests and Combined Coverage.
 - Measure complete CI from the first associated normal workflow start to the last expected result. Report validation-only time and queue delay separately where the native records establish them.
 - Sum every actual job's execution interval once for Actions runner work. Include duplicate setup, seeds, transfer, the collector and delivery-contract tests. Parallel job durations are not added to claim elapsed workflow duration.
@@ -42,7 +43,22 @@ The native contract test executes real Vitest seed and shard processes, verifies
 
 CI-critical changes require `pnpm check` and `pnpm format`; focused native runner/routing tests and `actionlint` cover the changed delivery behavior. No product behavior, UI, schema or migration changes are involved. Native Build and Preview remain part of the full normal comparison.
 
-Candidate acceptance is pending until two successful complete comparable pairs exist. Main activation and its actual full-suite proof follow a concrete reviewed candidate. The historical four-shard result of 27:15 to 14:28 used another setup and increased runner work to 47:22; it is not the candidate's prediction.
+Two successful complete comparable pairs establish bounded latency acceptance for the frozen full-product-classified inputs. Every observation succeeds on its original attempt. Test, architecture and security reviews report no findings at severity 5/10 or higher. The test review's 4/10 seed-exclusive fixture gap is corrected before these observations.
+
+| Observation | Complete CI | PR Validation | All actual runner work | PR Validation runner work |
+| --- | ---: | ---: | ---: | ---: |
+| [Serial A, #2127](https://github.com/findmydoc-platform/website/actions/runs/38041888405) | 21:21 | 21:19 | 49:24 | 30:51 |
+| [Two-shard A, #2126](https://github.com/findmydoc-platform/website/actions/runs/38040913335) | 11:19 | 11:17 | 48:11 | 27:58 |
+| [Serial B, #2128](https://github.com/findmydoc-platform/website/actions/runs/38043239213) | 21:42 | 21:40 | 52:54 | 32:24 |
+| [Two-shard B, #2129](https://github.com/findmydoc-platform/website/actions/runs/38044541545) | 15:08 | 15:05 | 55:27 | 32:59 |
+
+Complete CI falls by 10:02, or 47.0%, in pair A and 6:34, or 30.3%, in pair B. The sum of the two independent elapsed windows falls from 43:03 to 26:27, or 38.6%. Actual runner work changes from 102:18 to 103:38, an increase of 1:20, or 1.3%. These are job execution intervals, not an invoiced-minutes or monetary-cost measurement. Combined Coverage is the last expected job in all four observations. Additional candidate workflow, documentation, migration-gate and delivery-test checks remain included.
+
+All four native full reports retain the same 104 suite files and 1,019 cases plus one seed file/case, giving 105 files and 1,020 recorded occurrences. Comparison checks each file and full test title with its multiplicity, all 102 covered source identities, and every per-source and total coverage metric. Coverage remains 77.8% statements, 71.82% branches, 75.38% functions and 81.47% lines. Actual native checkout revisions match the frozen test merges; both isolated executions complete strict service stop/preservation.
+
+The measured candidate source is `3e6d6896`, with reference source `1d186419`. Publication rebases the candidate on the same frozen Main and adds this evidence documentation. The immutable measurement replicas and captured records retain their original identities. Normal current-source PR checks must pass before Main activation; actual merged Main full-suite proof and a product-only post-activation observation remain separate acceptance requirements. The implementation issue and earlier spec stay open for final owner acceptance.
+
+The successful candidate range is 11:19 to 15:08 for these inputs. It is an observed range, not a guaranteed future maximum. Different runner scheduling, shard imbalance, service preparation or a slower Build/Preview/E2E tail can reduce the gain. The historical four-shard result of 27:15 to 14:28 used another setup and increased runner work to 47:22; it is not this candidate's prediction.
 
 ## Operational limits
 

@@ -16,7 +16,7 @@ const toHttpsURL = (value?: string) => {
 /**
  * Gets the server-side URL for the application.
  * Checks environment variables in order of preference and provides fallback.
- * Surrounding whitespace is removed before a configured URL is chosen.
+ * Configured URLs lose surrounding whitespace before selection.
  *
  * @returns Server-side URL string
  *

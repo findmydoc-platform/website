@@ -466,7 +466,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   integration-tests:
-    name: Integration Tests
+    name: ${{ matrix.shard == 'serial' && 'Integration Tests' || format('Integration Shard ({0})', matrix.shard) }}
     needs:
       - ci-static
       - paths
@@ -475,6 +475,10 @@ jobs:
       needs.ci-static.result == 'failure' || needs.ci-static.result == 'cancelled' ||
       ((github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true') && needs.ci-static.result != 'success') ||
       needs.paths.outputs.integration != 'false')
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.paths.outputs.integration_files == '[]' && '["1/2","2/2"]' || '["serial"]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs:
@@ -520,6 +524,7 @@ jobs:
         id: integration
         env:
           NODE_ENV: test
+          INTEGRATION_SHARD: ${{ matrix.shard != 'serial' && matrix.shard || '' }}
           SELECTED_FILES: ${{ needs.paths.outputs.integration_files }}
         run: |
           set -euo pipefail
@@ -531,7 +536,7 @@ jobs:
 
       - name: Require integration coverage reports
         id: integration_reports
-        if: always() && (steps.integration.outcome == 'success' || steps.integration.outcome == 'failure')
+        if: always() && matrix.shard == 'serial' && (steps.integration.outcome == 'success' || steps.integration.outcome == 'failure')
         run: test -s coverage/integration/coverage-summary.json && test -s coverage/integration/coverage-final.json && test -s coverage/integration/scope.json
 
       - name: Publish full integration coverage
@@ -566,6 +571,15 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Upload native full-integration shard reports
+        if: always() && matrix.shard != 'serial' && (steps.integration.outcome == 'success' || steps.integration.outcome == 'failure')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: integration-shard-${{ strategy.job-index }}
+          path: coverage/integration-shards/
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Generate job summary
         if: always()
         run: |
@@ -574,6 +588,78 @@ jobs:
             echo "- **Integration Tests**: ${{ steps.integration.outcome }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
+  integration-full-merge:
+    name: Integration Tests
+    needs:
+      - paths
+      - integration-tests
+    if: >-
+      always() && needs.paths.outputs.integration == 'true' &&
+      needs.paths.outputs.integration_files == '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Require every integration shard to succeed
+        env:
+          SHARDS_RESULT: ${{ needs.integration-tests.result }}
+        run: test "$SHARDS_RESULT" = success
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+        with:
+          cache: false
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Install dependencies for native coverage replay
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
+        run: node scripts/assert-email-template-package-access.mjs && pnpm install --frozen-lockfile --strict-peer-dependencies
+
+      - name: Download every native shard report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: integration-shard-*
+          merge-multiple: true
+          path: coverage/integration-shards
+
+      - name: Verify full inventory and replay native seed and suite coverage
+        env:
+          NODE_ENV: test
+        run: node scripts/integration-runner.mjs --merge-shards 2
+
+      - name: Require full integration coverage reports
+        run: test -s coverage/integration/coverage-summary.json && test -s coverage/integration/coverage-final.json && test -s coverage/integration/scope.json
+
+      - name: Publish full integration coverage
+        uses: davelosert/vitest-coverage-report-action@15b5b41bb7d36796d89f4bf482b09529c53f3446
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vite-config-path: config/coverage/vitest.thresholds.integration.js
+          name: Integration Tests
+          file-coverage-mode: all
+          json-summary-path: coverage/integration/coverage-summary.json
+          json-final-path: coverage/integration/coverage-final.json
+
+      - name: Upload full integration coverage artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-integration
+          path: |
+            coverage/integration/coverage-summary.json
+            coverage/integration/coverage-final.json
+            coverage/integration/scope.json
+          if-no-files-found: error
+          retention-days: 7
+
   coverage-merge:
     name: Combined Coverage
     needs:
@@ -581,6 +667,7 @@ jobs:
       - unit-tests
       - storybook-tests
       - integration-tests
+      - integration-full-merge
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -599,6 +686,8 @@ jobs:
           UNIT_RESULT: ${{ needs.unit-tests.result }}
           STORYBOOK_RESULT: ${{ needs.storybook-tests.result }}
           INTEGRATION_RESULT: ${{ needs.integration-tests.result }}
+          FULL_INTEGRATION_RESULT: ${{ needs.integration-full-merge.result }}
+          INTEGRATION_FILES: ${{ needs.paths.outputs.integration_files }}
           INTEGRATION_MODE: ${{ needs.integration-tests.outputs.coverage_mode }}
         run: |
           set -euo pipefail
@@ -630,6 +719,10 @@ jobs:
           if [[ "$INTEGRATION" == true ]]; then
             if [[ "$INTEGRATION_RESULT" != success ]]; then
               echo '::error::Expected integration validation did not succeed.'
+              exit 1
+            fi
+            if [[ "$INTEGRATION_FILES" == '[]' && "$FULL_INTEGRATION_RESULT" != success ]]; then
+              echo '::error::Expected complete native integration aggregation did not succeed.'
               exit 1
             fi
             if [[ "$INTEGRATION_MODE" != full && "$INTEGRATION_MODE" != partial ]]; then

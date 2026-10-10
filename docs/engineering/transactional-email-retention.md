@@ -29,7 +29,7 @@ Remaining non-null columns belong to the foundation's content-free metadata allo
 
 ## Joint deletion
 
-Scrubbed terminal operations become eligible for hard deletion 42 days after their original terminal timestamp.
+Scrubbed terminal operations become eligible for hard deletion 28 days after their original terminal timestamp.
 The same worker entry checks this boundary on every invocation, which also satisfies the daily deletion contract.
 It deletes all associated events and their outbox record in one transaction. Failure in either deletion rolls back
 both. Only this retention path grants exact, single-use event and outbox deletion permissions bound to the live
@@ -43,12 +43,24 @@ introduced. Preview and Production remain fail-closed without their real adapter
 
 The eventual runner must call this worker at intervals of at most 30 minutes, including empty runs. Controlled-clock
 integration tests simulate that cadence and prove scrubbing within one hour after delivery expiry. They exercise
-the exact 42-day boundary and deletion within the following 24 hours. These are execution contracts; this change
+the exact 28-day boundary and deletion within the following 24 hours. These are execution contracts; this change
 does not activate a runner or guarantee execution when an eventual runner is unavailable.
 
-The 42-day period is a provisional engineering assumption. Production still requires separate approval of the
-processing purpose, retention period, HMAC key ownership and rotation, and deletion mechanism. It is not a Legal,
-Privacy, or Production approval. Suppression retention remains outside this ticket.
+The 28-day period follows the approved
+[transactional email Product Spec](https://app.notion.com/p/3f4283c73e618101ba7edc7ee0530850).
+This product decision does not constitute Legal or Privacy approval. Processing purpose, HMAC key ownership and
+rotation, and the deletion mechanism remain separate governance questions. Suppression retention is unchanged.
+
+## Rollout of the 28-day policy
+
+After deployment, the next normal worker sweep also deletes eligible existing operations that are between 28 and
+42 days old, together with their events. Eligibility still requires a terminal outcome and completed scrubbing,
+uses the original terminal timestamp, and is restricted to the worker's runtime environment. No migration or
+backfill is needed: both candidate selection and the transactional deletion guard use the same policy constant.
+
+Reverting the duration cannot restore history already deleted. The shorter deduplication window applies to this
+outbox history only. Suppression records, AuthActions, and other data classes retain their own existing policies.
+Complaint handling and Legal documents are not changed by this rollout.
 
 ## Verification and cache boundary
 

@@ -457,7 +457,7 @@ describe('immutable provider preparation through the worker', () => {
         provider_project_id: 'project-preview',
         provider_route_id: 'route-preview',
       })
-      now = scrubbed.terminal_at.getTime() + 42 * 86_400_000 - 1
+      now = scrubbed.terminal_at.getTime() + 28 * 86_400_000 - 1
       await worker.run()
       expect(await stored(operationId)).toBeDefined()
       now += 1

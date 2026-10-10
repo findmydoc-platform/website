@@ -68,7 +68,7 @@ A provider timestamp is informational; only the per-operation sequence orders hi
 
 The outbox update authorizes a transaction-bound, one-use event append. Direct internal event updates are denied, as
 are ordinary Payload calls and forged context objects. The approved retention transaction alone can delete events.
-Late feedback preserves `terminalAt`, `scrubbedAt`, and the scrubbed payload, so it cannot extend the 42-day retention
+Late feedback preserves `terminalAt`, `scrubbedAt`, and the scrubbed payload, so it cannot extend the 28-day retention
 clock. No public cache, tag, route, or invalidation depends on either private collection.
 
 ## Schema and migration

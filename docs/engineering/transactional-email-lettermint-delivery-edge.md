@@ -734,7 +734,7 @@ than last-write-wins.
 ### Local suppression collection
 
 The delivery edge adds one hidden, system-owned `TransactionalEmailSuppressions` collection. A separate collection is
-required because active suppression outlives the 42-day outbox history, is queried before every new preparation, and
+required because active suppression outlives the 28-day outbox history, is queried before every new preparation, and
 cannot depend on a provider API call. It cannot be a field on one outbox record, an event-history query, a global, or
 a join to a record that is intentionally hard-deleted.
 
@@ -774,7 +774,7 @@ local record automatically.
 
 ### Suppression retention and digest-key rotation
 
-Suppression records do not follow the outbox's 42-day deletion policy. They remain active until an approved manual or
+Suppression records do not follow the outbox's 28-day deletion policy. They remain active until an approved manual or
 legal removal process exists. The first implementation provides no Admin UI, public API, automatic expiry, provider-
 driven removal, or application delete command. Management issue #396 assesses that indefinite active retention as
 non-blocking follow-up work against the implemented data flow.
@@ -1124,7 +1124,7 @@ claim that post-release run has happened.
 
 - Reconsidering the provider retained by ADR 031 or selecting another provider.
 - Changing the foundation command interface, transaction ownership, lease model, retry schedule, state list, action-
-  link deadlines, scrubbing deadline, or 42-day outbox-history assumption.
+  link deadlines, scrubbing deadline, or 28-day outbox-history policy.
 - Defining or changing triggers, recipients, action links, callbacks, templates, template wording, or template
   registration owned by issues #1734 through #1737.
 - Implementing the Clinic Dashboard handoff owned by Clinic Dashboard issue #150.

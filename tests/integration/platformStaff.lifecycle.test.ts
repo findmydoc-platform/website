@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
 
 import { testSlug } from '../fixtures/testSlug'
-import type { Patient, PlatformStaff } from '@/payload-types'
+import { createTinyPngFile } from '../fixtures/mediaFile'
+import type { Patient, PlatformStaff, UserProfileMedia } from '@/payload-types'
 
 type PayloadUser = NonNullable<Parameters<Payload['update']>[0]['user']>
 type PayloadCreateArgs = Parameters<Payload['create']>[0]
@@ -22,6 +23,7 @@ const asPatientUser = (user: Patient): PayloadUser => {
 describe('PlatformStaff integration - access and constraints', () => {
   let payload: Payload
   const slugPrefix = testSlug('platformStaff.lifecycle.test.ts')
+  const mediaIds: number[] = []
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -37,6 +39,12 @@ describe('PlatformStaff integration - access and constraints', () => {
     try {
       await payload.delete({ collection: 'clinicStaff', where: {}, overrideAccess: true })
     } catch {}
+  })
+
+  afterEach(async () => {
+    for (const id of mediaIds.splice(0)) {
+      await payload.delete({ collection: 'userProfileMedia', id, overrideAccess: true })
+    }
   })
 
   const createPlatformUser = async (suffix: string, role: PlatformStaff['role'] = 'support') => {
@@ -65,6 +73,92 @@ describe('PlatformStaff integration - access and constraints', () => {
       overrideAccess: true,
     } as PayloadCreateArgs)) as unknown as Patient
   }
+
+  const createProfileMedia = async (user: PayloadUser, suffix: string) => {
+    const media = (await payload.create({
+      collection: 'userProfileMedia',
+      data: {},
+      file: createTinyPngFile(`${slugPrefix}-${suffix}.png`),
+      user,
+      overrideAccess: false,
+      depth: 0,
+    } as PayloadCreateArgs)) as UserProfileMedia
+    mediaIds.push(media.id)
+    return media
+  }
+
+  it.each(['admin', 'support', 'content-manager'] as const)(
+    'allows %s staff to select, replace, and remove their own image while keeping identity fields protected',
+    async (role) => {
+      const staff = await createPlatformUser(`avatar-${role}`, role)
+      const user = asPlatformUser(staff)
+      const image = await createProfileMedia(user, `avatar-${role}`)
+      const replacement = await createProfileMedia(user, `avatar-${role}-replacement`)
+
+      const updateImage = (profileImage: number | null) =>
+        payload.update({
+          collection: 'platformStaff',
+          id: staff.id,
+          data: { profileImage, firstName: 'Changed', email: 'changed@findmydoc.eu', supabaseUserId: 'changed' },
+          user,
+          overrideAccess: false,
+          depth: 0,
+        })
+
+      expect((await updateImage(image.id)).profileImage).toBe(image.id)
+      expect((await updateImage(replacement.id)).profileImage).toBe(replacement.id)
+      expect((await updateImage(null)).profileImage).toBeNull()
+
+      const stored = await payload.findByID({ collection: 'platformStaff', id: staff.id, depth: 0 })
+      expect(stored).toMatchObject({
+        email: staff.email,
+        firstName: staff.firstName,
+        supabaseUserId: staff.supabaseUserId,
+        role,
+      })
+    },
+  )
+
+  it("does not let an administrator change another staff member's image", async () => {
+    const actor = await createPlatformUser('avatar-other-admin', 'admin')
+    const target = await createPlatformUser('avatar-other-target')
+    const image = await createProfileMedia(asPlatformUser(target), 'avatar-other-target')
+
+    await payload.update({
+      collection: 'platformStaff',
+      id: target.id,
+      data: { profileImage: image.id },
+      user: asPlatformUser(actor),
+      overrideAccess: false,
+      depth: 0,
+    })
+
+    const stored = await payload.findByID({ collection: 'platformStaff', id: target.id, depth: 0 })
+    expect(stored.profileImage).toBeNull()
+  })
+
+  it.each(['platformStaff', 'patients'] as const)(
+    "rejects assigning another %s principal's media",
+    async (collection) => {
+      const staff = await createPlatformUser(`avatar-foreign-${collection}`)
+      const owner =
+        collection === 'platformStaff'
+          ? asPlatformUser(await createPlatformUser('avatar-foreign-owner'))
+          : asPatientUser(await createPatientUser('avatar-foreign-owner'))
+      const image = await createProfileMedia(owner, `avatar-foreign-${collection}`)
+
+      await expect(
+        payload.update({
+          collection: 'platformStaff',
+          id: staff.id,
+          data: { profileImage: image.id },
+          user: asPlatformUser(staff),
+          overrideAccess: false,
+          depth: 0,
+        }),
+      ).rejects.toMatchObject({ data: { errors: [expect.objectContaining({ path: 'profileImage' })] } })
+    },
+  )
 
   it('allows platform admins to update another role but blocks non-platform users', async () => {
     const adminUser = await createPlatformUser('role-admin', 'admin')

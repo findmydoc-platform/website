@@ -1,6 +1,6 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Where } from 'payload'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
-import { platformOnlyFieldAccess } from '@/access/fieldAccess'
+import { platformOnlyFieldAccess, platformSelfFieldAccess } from '@/access/fieldAccess'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 import { supabaseStrategy } from '@/auth/strategies/supabaseStrategy'
 import { guardPlatformStaffRoleChange } from './PlatformStaff/hooks/guardRoleChange'
@@ -105,13 +105,19 @@ export const PlatformStaff: CollectionConfig = {
       name: 'profileImage',
       type: 'upload',
       relationTo: 'userProfileMedia',
+      filterOptions: ({ id }): Where | false =>
+        id == null
+          ? false
+          : {
+              and: [{ 'user.relationTo': { equals: 'platformStaff' } }, { 'user.value': { equals: id } }],
+            },
       access: {
         create: () => false,
         read: platformOnlyFieldAccess,
-        update: () => false,
+        update: platformSelfFieldAccess,
       },
       admin: {
-        readOnly: true,
+        description: 'Upload or choose your own profile image. You can also replace or remove it.',
       },
     },
     {

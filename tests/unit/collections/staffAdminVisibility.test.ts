@@ -11,6 +11,7 @@ type FieldNode = {
   type?: string
   access?: {
     read?: FieldAccess
+    update?: FieldAccess
   }
   admin?: {
     hidden?: boolean
@@ -55,12 +56,41 @@ describe('staff Admin identity visibility', () => {
       const field = findField(platformFields, name)
 
       expect(field?.admin?.hidden).not.toBe(true)
-      expect(field?.admin?.readOnly).toBe(true)
+      if (name !== 'profileImage') {
+        expect(field?.admin?.readOnly).toBe(true)
+        expect(await field?.access?.update?.(createAccessArgs(mockUsers.platform(), { extra: { id: 1 } }))).toBe(false)
+      }
       await expectFieldRead(field, mockUsers.platform(), true)
       await expectFieldRead(field, mockUsers.clinic(), false)
       await expectFieldRead(field, mockUsers.patient(), false)
       await expectFieldRead(field, mockUsers.anonymous(), false)
     }
+  })
+
+  it.each(['admin', 'support', 'content-manager'])('allows %s staff to edit their own profile image', async (role) => {
+    const field = findField(platformFields, 'profileImage')
+    const user = { ...mockUsers.platform(7), role }
+
+    expect(field?.admin?.readOnly).not.toBe(true)
+    expect(await field?.access?.update?.(createAccessArgs(user, { extra: { id: 7 } }))).toBe(true)
+  })
+
+  it.each([
+    { user: mockUsers.platform(8), id: 7 },
+    { user: mockUsers.clinic(7), id: 7 },
+    { user: mockUsers.patient(7), id: 7 },
+    { user: mockUsers.anonymous(), id: 7 },
+    { user: mockUsers.platform(7), id: undefined },
+  ])('denies profile image writes outside the current platform principal: %j', async ({ user, id }) => {
+    const field = findField(platformFields, 'profileImage')
+
+    expect(await field?.access?.update?.(createAccessArgs(user, { extra: { id } }))).toBe(false)
+  })
+
+  it('accepts the string document id used by Admin routes', async () => {
+    const field = findField(platformFields, 'profileImage')
+
+    expect(await field?.access?.update?.(createAccessArgs(mockUsers.platform(7), { extra: { id: '7' } }))).toBe(true)
   })
 
   it('shows safe clinic identity fields to scoped staff readers', async () => {

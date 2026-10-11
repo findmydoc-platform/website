@@ -215,7 +215,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform staff review safe identity fields and manage roles; identity bindings and create/delete remain provisioning-only',
+        'Platform staff review safe identity fields, edit their own profile image using their own media, and manage roles; identity bindings and create/delete remain provisioning-only',
     },
     clinicStaff: {
       slug: 'clinicStaff',

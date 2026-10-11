@@ -28,7 +28,7 @@ export function needsScrubbing(record: TransactionalEmailOutbox, now: number) {
     : effectiveDeliveryDeadline(record) < now
 }
 
-export const metadataRetentionMilliseconds = 42 * 86_400_000
+export const metadataRetentionMilliseconds = 28 * 86_400_000
 export function deletionEligible(record: TransactionalEmailOutbox, now: number) {
   return (
     outgoingTerminalStates.includes(record.state) &&

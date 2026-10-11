@@ -86,22 +86,22 @@ describe('transactional email safety sweep and retention', () => {
     )
     expect(events.rows.map(({ type }) => type)).toEqual(['command.accepted', 'delivery.expired', 'payload.scrubbed'])
   })
-  it('retains deduplication until day 42, then deletes the outbox and all events atomically', async () => {
+  it('retains deduplication until day 28, then deletes the outbox and all events atomically', async () => {
     const { req, id, registrationId } = await accept()
     await createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
       catalog: syntheticEmailCatalog,
     }).run(id)
     const stored = await row(id)
-    const day42 = stored.terminal_at.getTime() + 42 * 86400000
-    await createTransactionalEmailWorker(req, { suppression: clearedSyntheticSuppression, now: () => day42 - 1 }).run()
+    const day28 = stored.terminal_at.getTime() + 28 * 86400000
+    await createTransactionalEmailWorker(req, { suppression: clearedSyntheticSuppression, now: () => day28 - 1 }).run()
     expect(await row(id)).toBeDefined()
     const duplicate = await bindTransactionalEmail(req, syntheticEmailCatalog).accept({
       type: 'clinic.registration-received',
       registrationId,
     })
     expect(duplicate).toMatchObject({ operationId: id, deduplicated: true })
-    await createTransactionalEmailWorker(req, { suppression: clearedSyntheticSuppression, now: () => day42 }).run()
+    await createTransactionalEmailWorker(req, { suppression: clearedSyntheticSuppression, now: () => day28 }).run()
     expect(await row(id)).toBeUndefined()
     expect((await observer.query('SELECT id FROM transactional_email_events WHERE outbox_id = $1', [id])).rows).toEqual(
       [],
@@ -126,7 +126,7 @@ describe('transactional email safety sweep and retention', () => {
       [digest, observedAt],
     )
     try {
-      const deletionTime = terminal.terminal_at.getTime() + 42 * 86400000
+      const deletionTime = terminal.terminal_at.getTime() + 28 * 86400000
       await createTransactionalEmailWorker(original.req, {
         suppression: clearedSyntheticSuppression,
         now: () => deletionTime,
@@ -292,7 +292,7 @@ describe('transactional email safety sweep and retention', () => {
       catalog: syntheticEmailCatalog,
     }).run(id)
     const stored = await row(id)
-    const now = stored.terminal_at.getTime() + 42 * 86400000
+    const now = stored.terminal_at.getTime() + 28 * 86400000
     const hooks = payload.collections.transactionalEmailOutbox.config.hooks
     const original = hooks.afterDelete
     hooks.afterDelete = [
@@ -333,7 +333,7 @@ describe('transactional email safety sweep and retention', () => {
     await Promise.all([run(deadline + 1), run(deadline + 1)])
     const stored = await row(id)
     expect(Number(stored.latest_event_sequence)).toBe(3)
-    await Promise.all([run(deadline + 1 + 42 * 86400000), run(deadline + 1 + 42 * 86400000)])
+    await Promise.all([run(deadline + 1 + 28 * 86400000), run(deadline + 1 + 28 * 86400000)])
     expect(await row(id)).toBeUndefined()
     expect((await observer.query('SELECT id FROM transactional_email_events WHERE outbox_id = $1', [id])).rows).toEqual(
       [],
@@ -487,7 +487,7 @@ describe('transactional email safety sweep and retention', () => {
     expect(expired.rows.every(({ state }) => state === 'expired')).toBe(true)
     await createTransactionalEmailWorker(req, {
       suppression: clearedSyntheticSuppression,
-      now: () => now + 42 * 86400000,
+      now: () => now + 28 * 86400000,
     }).run()
     expect((await observer.query('SELECT id FROM transactional_email_outbox WHERE id = ANY($1)', [ids])).rows).toEqual(
       [],
@@ -509,6 +509,35 @@ describe('transactional email safety sweep and retention', () => {
     expect((await row(id)).command_payload).not.toBeNull()
   })
 
+  it('deletes old terminal history only in the current runtime environment', async () => {
+    const current = await accept()
+    const other = await accept()
+    for (const operation of [current, other]) {
+      await createTransactionalEmailWorker(operation.req, {
+        suppression: clearedSyntheticSuppression,
+        catalog: syntheticEmailCatalog,
+      }).run(operation.id)
+    }
+    await observer.query("UPDATE transactional_email_outbox SET runtime_environment = 'local' WHERE id = $1", [
+      other.id,
+    ])
+    const now =
+      Math.max((await row(current.id)).terminal_at.getTime(), (await row(other.id)).terminal_at.getTime()) +
+      35 * 86400000
+    await createTransactionalEmailWorker(current.req, {
+      suppression: clearedSyntheticSuppression,
+      now: () => now,
+    }).run()
+    expect(await row(current.id)).toBeUndefined()
+    expect(
+      (await observer.query('SELECT id FROM transactional_email_events WHERE outbox_id = $1', [current.id])).rows,
+    ).toEqual([])
+    expect(await row(other.id)).toBeDefined()
+    expect(
+      (await observer.query('SELECT id FROM transactional_email_events WHERE outbox_id = $1', [other.id])).rows.length,
+    ).toBeGreaterThan(0)
+  })
+
   it('scrubs outstanding content before deleting an older metadata backlog', async () => {
     const retained = await accept()
     await createTransactionalEmailWorker(retained.req, {
@@ -516,7 +545,7 @@ describe('transactional email safety sweep and retention', () => {
       catalog: syntheticEmailCatalog,
     }).run(retained.id)
     const expired = await accept()
-    const now = (await row(retained.id)).terminal_at.getTime() + 42 * 86400000
+    const now = (await row(retained.id)).terminal_at.getTime() + 28 * 86400000
     const hooks = payload.collections.transactionalEmailOutbox.config.hooks
     const original = hooks.beforeDelete
     let checked = false

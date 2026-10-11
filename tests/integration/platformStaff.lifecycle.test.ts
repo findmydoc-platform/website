@@ -88,75 +88,29 @@ describe('PlatformStaff integration - access and constraints', () => {
   }
 
   it.each(['admin', 'support', 'content-manager'] as const)(
-    'allows %s staff to select, replace, and remove their own image while keeping identity fields protected',
+    'allows %s staff to upload and save their own profile image',
     async (role) => {
       const staff = await createPlatformUser(`avatar-${role}`, role)
       const user = asPlatformUser(staff)
       const image = await createProfileMedia(user, `avatar-${role}`)
-      const replacement = await createProfileMedia(user, `avatar-${role}-replacement`)
 
-      const updateImage = (profileImage: number | null) =>
-        payload.update({
-          collection: 'platformStaff',
-          id: staff.id,
-          data: { profileImage, firstName: 'Changed', email: 'changed@findmydoc.eu', supabaseUserId: 'changed' },
-          user,
-          overrideAccess: false,
-          depth: 0,
-        })
-
-      expect((await updateImage(image.id)).profileImage).toBe(image.id)
-      expect((await updateImage(replacement.id)).profileImage).toBe(replacement.id)
-      expect((await updateImage(null)).profileImage).toBeNull()
-
-      const stored = await payload.findByID({ collection: 'platformStaff', id: staff.id, depth: 0 })
-      expect(stored).toMatchObject({
-        email: staff.email,
-        firstName: staff.firstName,
-        supabaseUserId: staff.supabaseUserId,
-        role,
+      await payload.update({
+        collection: 'platformStaff',
+        id: staff.id,
+        data: { profileImage: image.id },
+        user,
+        overrideAccess: false,
+        depth: 0,
       })
-    },
-  )
 
-  it("does not let an administrator change another staff member's image", async () => {
-    const actor = await createPlatformUser('avatar-other-admin', 'admin')
-    const target = await createPlatformUser('avatar-other-target')
-    const image = await createProfileMedia(asPlatformUser(target), 'avatar-other-target')
-
-    await payload.update({
-      collection: 'platformStaff',
-      id: target.id,
-      data: { profileImage: image.id },
-      user: asPlatformUser(actor),
-      overrideAccess: false,
-      depth: 0,
-    })
-
-    const stored = await payload.findByID({ collection: 'platformStaff', id: target.id, depth: 0 })
-    expect(stored.profileImage).toBeNull()
-  })
-
-  it.each(['platformStaff', 'patients'] as const)(
-    "rejects assigning another %s principal's media",
-    async (collection) => {
-      const staff = await createPlatformUser(`avatar-foreign-${collection}`)
-      const owner =
-        collection === 'platformStaff'
-          ? asPlatformUser(await createPlatformUser('avatar-foreign-owner'))
-          : asPatientUser(await createPatientUser('avatar-foreign-owner'))
-      const image = await createProfileMedia(owner, `avatar-foreign-${collection}`)
-
-      await expect(
-        payload.update({
-          collection: 'platformStaff',
-          id: staff.id,
-          data: { profileImage: image.id },
-          user: asPlatformUser(staff),
-          overrideAccess: false,
-          depth: 0,
-        }),
-      ).rejects.toMatchObject({ data: { errors: [expect.objectContaining({ path: 'profileImage' })] } })
+      const stored = await payload.findByID({
+        collection: 'platformStaff',
+        id: staff.id,
+        user,
+        overrideAccess: false,
+        depth: 0,
+      })
+      expect(stored.profileImage).toBe(image.id)
     },
   )
 

@@ -1244,6 +1244,9 @@ export interface PlatformStaff {
   email?: string | null;
   firstName?: string | null;
   lastName?: string | null;
+  /**
+   * Upload or choose your own profile image. You can also replace or remove it.
+   */
   profileImage?: (number | null) | UserProfileMedia;
   /**
    * Choose the access level for this staff member

@@ -55,7 +55,11 @@ describe('staff Admin identity visibility', () => {
       const field = findField(platformFields, name)
 
       expect(field?.admin?.hidden).not.toBe(true)
-      expect(field?.admin?.readOnly).toBe(true)
+      if (name !== 'profileImage') {
+        expect(field?.admin?.readOnly).toBe(true)
+      } else {
+        expect(field?.admin?.readOnly).not.toBe(true)
+      }
       await expectFieldRead(field, mockUsers.platform(), true)
       await expectFieldRead(field, mockUsers.clinic(), false)
       await expectFieldRead(field, mockUsers.patient(), false)

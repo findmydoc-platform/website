@@ -54,6 +54,11 @@ export const platformOnlyFieldAccess: FieldAccess = ({ req }) => {
   return isPlatformUser(req.user)
 }
 
+/** Platform staff may edit this field only on their own principal. */
+export const platformSelfFieldAccess: FieldAccess = ({ id, req }) => {
+  return Boolean(isPlatformUser(req.user) && id != null && String(id) === String(req.user?.id))
+}
+
 /**
  * Only Clinic Staff can access this field operation.
  */

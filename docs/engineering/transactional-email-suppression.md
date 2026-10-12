@@ -85,7 +85,7 @@ contract.
 
 ## Retention
 
-Suppression does not inherit the outbox's 42-day retention policy. The normal sweep deletes terminal outbox records
+Suppression does not inherit the outbox's 28-day retention policy. The normal sweep deletes terminal outbox records
 and their events without reading, expiring, or deleting suppression. A retained suppression continues to block a new
 operation after its originating outbox and event history are gone. The schema has no expiry, plaintext rehash source,
 reversible ciphertext, deletion marker, or provider-removal state, and the runtime has no automatic cleanup path.
@@ -120,6 +120,6 @@ The real Next.js request and real Payload/PostgreSQL suite checks atomic creatio
 conflicts, replay, digest mismatch, rotated correlation, previous-key materialization races and rollback, retirement
 blocking, event-result rollback, ambiguous COMMIT reconciliation, and non-suppressing events. It also crosses the real
 worker to prove suppression before preparation and delivery, store unavailability, Preview/Production separation,
-and continued suppression after 42-day outbox deletion. The collection suite checks private access, absent lifecycle
+and continued suppression after 28-day outbox deletion. The collection suite checks private access, absent lifecycle
 surfaces, private-live cache classification, and the freshly migrated schema. Independent database observations keep
 digest values out of assertion output. Network guards forbid external calls.

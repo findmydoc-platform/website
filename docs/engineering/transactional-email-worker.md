@@ -142,7 +142,7 @@ unprepared operation, followed by up and an unchanged-row check. It is not a hos
 
 The preparation integration suite uses real Payload and PostgreSQL, a separate committed-row observer, explicit
 synthetic suppression decisions, and a controlled delivery adapter. It checks durable-before-delivery preparation,
-same-byte retries, target drift, forbidden fields, atomic rollback, private writes, content scrubbing, and 42-day
+same-byte retries, target drift, forbidden fields, atomic rollback, private writes, content scrubbing, and 28-day
 binding deletion. Network guards reject fetch and HTTP(S) calls. The transport protocol is described below.
 
 ## Controlled Lettermint transport

@@ -74,7 +74,7 @@
     "@aws-sdk/client-s3": "3.1140.0",
     "@aws-sdk/s3-request-presigner": "3.1140.0",
     "@findmydoc-platform/email-templates": "0.3.0",
-    "@payloadcms/db-postgres": "3.90.0",
+    "@payloadcms/db-postgres": "3.90.2",
     "@payloadcms/live-preview-react": "3.90.2",
     "@payloadcms/next": "3.90.2",
     "@payloadcms/plugin-form-builder": "3.90.2",
@@ -199,11 +199,12 @@
       "@modelcontextprotocol/sdk": "1.31.0",
       "@tailwindcss/typography@0.5.20>postcss-selector-parser": "7.1.6",
       "esbuild@<0.28.1": "0.28.1",
-      "@payloadcms/plugin-import-export@3.90.0>csv-parse": "7.0.2",
-      "payload@3.90.0>undici": "7.29.1"
+      "@payloadcms/plugin-import-export@3.90.2>csv-parse": "7.0.2",
+      "@payloadcms/storage-s3@3.90.2>@aws-sdk/lib-storage": "3.1140.0",
+      "payload@3.90.2>undici": "7.29.1"
     },
     "patchedDependencies": {
-      "@payloadcms/drizzle@3.90.0": "patches/@payloadcms__drizzle@3.90.0.patch"
+      "@payloadcms/drizzle@3.90.2": "patches/@payloadcms__drizzle@3.90.2.patch"
     }
   },
   "packageManager": "pnpm@10.28.2"

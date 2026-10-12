@@ -1,3 +1,19 @@
 {
   "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  "allowlist": [
+    {
+      "GHSA-vfj7-8cjw-p6xm|@next/eslint-plugin-next>fast-glob>micromatch>braces": {
+        "active": true,
+        "notes": "Repository owner explicitly accepted GHSA-vfj7-8cjw-p6xm on 2026-10-12 and approved extending the decision to Payload's Sass/chokidar build-tool chain despite its transitive production dependency classification. Assessed use is repository-controlled build/watch and lint tooling; no application imports or unchecked user patterns were found. Accept the risk of a tooling process abort without a local patch or package replacement. Do not extend to processing untrusted application patterns. Reassess by 2027-01-10. https://github.com/findmydoc-platform/website/security/dependabot/181",
+        "expiry": "2027-01-10T00:00:00Z",
+      },
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|@payloadcms/next>sass>chokidar>braces": {
+        "active": true,
+        "notes": "Repository owner explicitly accepted GHSA-vfj7-8cjw-p6xm on 2026-10-12 and approved extending the decision to Payload's Sass/chokidar build-tool chain despite its transitive production dependency classification. Assessed use is repository-controlled build/watch and lint tooling; no application imports or unchecked user patterns were found. Accept the risk of a tooling process abort without a local patch or package replacement. Do not extend to processing untrusted application patterns. Reassess by 2027-01-10. https://github.com/findmydoc-platform/website/security/dependabot/181",
+        "expiry": "2027-01-10T00:00:00Z",
+      },
+    },
+  ],
 }

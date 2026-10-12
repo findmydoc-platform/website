@@ -17,6 +17,7 @@ describe('media image editing through Payload and cloud storage', () => {
   let payload: Payload
   let user: NonNullable<PayloadRequest['user']>
   let previousSkipSafeFetch: unknown
+  let previousServerURL: string
   const mediaIds: number[] = []
   const staffIds: number[] = []
   const fileReads: string[] = []
@@ -24,6 +25,8 @@ describe('media image editing through Payload and cloud storage', () => {
 
   beforeAll(async () => {
     payload = await getPayload({ config })
+    previousServerURL = payload.config.serverURL
+    payload.config.serverURL = 'https://media-edit.example'
     const upload = payload.collections.platformContentMedia.config.upload
     previousSkipSafeFetch = upload.skipSafeFetch
     upload.skipSafeFetch = true
@@ -44,7 +47,7 @@ describe('media image editing through Payload and cloud storage', () => {
     // S3 and Postgres use the repository's isolated integration services.
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input)
-      if (url.startsWith('https://media-edit.example/')) {
+      if (url.startsWith(new URL('/api/platformContentMedia/file/', payload.config.serverURL).toString())) {
         fileReads.push(url)
         return handleEndpoints({ config, request: new Request(url, init) })
       }
@@ -60,6 +63,7 @@ describe('media image editing through Payload and cloud storage', () => {
   afterAll(async () => {
     vi.restoreAllMocks()
     if (payload) {
+      payload.config.serverURL = previousServerURL
       payload.collections.platformContentMedia.config.upload.skipSafeFetch = previousSkipSafeFetch as boolean
       await cleanupTrackedDocs(payload, [{ collection: 'platformStaff', ids: staffIds }])
     }
@@ -102,7 +106,7 @@ describe('media image editing through Payload and cloud storage', () => {
       user,
       overrideAccess: false,
       depth: 0,
-      data: { ...doc, alt: 'After edit', url: new URL(doc.url!, 'https://media-edit.example').toString() },
+      data: { ...doc, alt: 'After edit' },
       req: {
         headers: new Headers({ origin: 'https://media-edit.example' }),
         query: { uploadEdits: { widthInPixels: '100', heightInPixels: '80', focalPoint: { x: '50', y: '50' } } },
@@ -132,7 +136,7 @@ describe('media image editing through Payload and cloud storage', () => {
       user,
       overrideAccess: false,
       depth: 0,
-      data: { ...doc, url: new URL(doc.url!, 'https://media-edit.example').toString() },
+      data: { ...doc },
       req,
     })
     expect(updated.width).toBe(50)
@@ -161,7 +165,7 @@ describe('media image editing through Payload and cloud storage', () => {
         user,
         overrideAccess: false,
         depth: 0,
-        data: { ...doc, url: new URL(doc.url!, 'https://media-edit.example').toString() },
+        data: { ...doc },
         req: {
           headers: new Headers({ origin: 'https://media-edit.example' }),
           query: {
@@ -227,7 +231,7 @@ describe('media image editing through Payload and cloud storage', () => {
           id: doc.id,
           user,
           overrideAccess: false,
-          data: { ...doc, url: new URL(doc.url!, 'https://media-edit.example').toString() },
+          data: { ...doc },
           req: {
             headers: new Headers({ origin: 'https://media-edit.example' }),
             query: {

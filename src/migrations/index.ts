@@ -93,6 +93,7 @@ import * as migration_20261002_115916_patient_verification_correlation from './2
 import * as migration_20261002_150524_recovery_request_limits from './20261002_150524_recovery_request_limits'
 import * as migration_20261003_075837_clinic_participation_completion from './20261003_075837_clinic_participation_completion'
 import * as migration_20261003_104659_clinic_invitation_authorization from './20261003_104659_clinic_invitation_authorization'
+import * as migration_20261011_072913_payload_390_storage_object_key from './20261011_072913_payload_390_storage_object_key'
 
 export const migrations = [
   {
@@ -569,5 +570,10 @@ export const migrations = [
     up: migration_20261003_104659_clinic_invitation_authorization.up,
     down: migration_20261003_104659_clinic_invitation_authorization.down,
     name: '20261003_104659_clinic_invitation_authorization',
+  },
+  {
+    up: migration_20261011_072913_payload_390_storage_object_key.up,
+    down: migration_20261011_072913_payload_390_storage_object_key.down,
+    name: '20261011_072913_payload_390_storage_object_key',
   },
 ]

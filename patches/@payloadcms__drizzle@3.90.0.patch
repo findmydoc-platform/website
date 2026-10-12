@@ -43,7 +43,7 @@ diff --git a/dist/transactions/commitTransaction.js b/dist/transactions/commitTr
 index 50c8251dbd29fe3ca7296800ed4fe5d2bb814057..df70d39b26c1a97e43ab10765858800d5167f866 100644
 --- a/dist/transactions/commitTransaction.js
 +++ b/dist/transactions/commitTransaction.js
-@@ -10,7 +10,8 @@ export const commitTransaction = async function commitTransaction(incomingID = '
+@@ -10,7 +10,8 @@ export const commitTransaction = async function commitTransaction(incomingID = ''
      delete this.sessions[transactionID];
      try {
          await session.resolve();

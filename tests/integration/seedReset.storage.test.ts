@@ -407,7 +407,7 @@ describe('complete seed reset with PostgreSQL and test storage', () => {
       // Existing media may omit the optional document prefix; S3 uses the collection prefix.
       data: { alt: 'Outdated hero', prefix: null },
     })
-    expect(changedMedia.prefix).toBeNull()
+    expect(changedMedia.prefix).toBe('')
     const storagePrefix = posix.dirname(changedMedia.storagePath)
     const obsoleteKeys = [
       changedMedia.storagePath,

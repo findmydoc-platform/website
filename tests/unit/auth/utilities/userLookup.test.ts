@@ -33,10 +33,17 @@ describe('userLookup utilities', () => {
 
     expect(mockPayload.find).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ collection: 'clinicStaff', where: { supabaseUserId: { equals: 'supabase-123' } } }),
+      expect.objectContaining({
+        collection: 'clinicStaff',
+        depth: 0,
+        where: { supabaseUserId: { equals: 'supabase-123' } },
+      }),
     )
-    expect(mockPayload.find).toHaveBeenNthCalledWith(2, expect.objectContaining({ collection: 'platformStaff' }))
-    expect(mockPayload.find).toHaveBeenNthCalledWith(3, expect.objectContaining({ collection: 'patients' }))
+    expect(mockPayload.find).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ collection: 'platformStaff', depth: 0 }),
+    )
+    expect(mockPayload.find).toHaveBeenNthCalledWith(3, expect.objectContaining({ collection: 'patients', depth: 0 }))
   })
 
   it('fails closed when the identity also resolves in another principal collection', async () => {

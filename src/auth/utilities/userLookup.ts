@@ -34,6 +34,7 @@ export async function findUserBySupabaseId(
   try {
     const userBySupabaseId = await payload.find({
       collection,
+      depth: 0,
       where: { supabaseUserId: { equals: authData.supabaseUserId } },
       limit: 1,
       overrideAccess: true,
@@ -51,6 +52,7 @@ export async function findUserBySupabaseId(
       otherCollections.map((candidate) =>
         payload.find({
           collection: candidate,
+          depth: 0,
           where: { supabaseUserId: { equals: authData.supabaseUserId } },
           limit: 1,
           overrideAccess: true,

@@ -1160,6 +1160,7 @@ export interface PlatformContentMedia {
    * Storage folder
    */
   prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -1309,6 +1310,7 @@ export interface UserProfileMedia {
    * Storage folder
    */
   prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -1695,6 +1697,7 @@ export interface DoctorMedia {
    * Storage folder
    */
   prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -1853,6 +1856,7 @@ export interface ClinicMedia {
    * Storage folder
    */
   prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -2054,6 +2058,7 @@ export interface ClinicGalleryMedia {
    * Storage folder
    */
   prefix?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
@@ -3761,6 +3766,7 @@ export interface PayloadMcpApiKey {
   enableAPIKey?: boolean | null;
   apiKey?: string | null;
   apiKeyIndex?: string | null;
+  hasAPIKey?: boolean | null;
   collection: 'payload-mcp-api-keys';
 }
 /**
@@ -4389,6 +4395,7 @@ export interface PlatformContentMediaSelect<T extends boolean = true> {
   createdBy?: T;
   storagePath?: T;
   prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -4489,6 +4496,7 @@ export interface ClinicMediaSelect<T extends boolean = true> {
   createdBy?: T;
   storagePath?: T;
   prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -4590,6 +4598,7 @@ export interface ClinicGalleryMediaSelect<T extends boolean = true> {
   storageKey?: T;
   storagePath?: T;
   prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -4708,6 +4717,7 @@ export interface DoctorMediaSelect<T extends boolean = true> {
   createdBy?: T;
   storagePath?: T;
   prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -4805,6 +4815,7 @@ export interface UserProfileMediaSelect<T extends boolean = true> {
   createdBy?: T;
   storagePath?: T;
   prefix?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
@@ -6145,6 +6156,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
   enableAPIKey?: T;
   apiKey?: T;
   apiKeyIndex?: T;
+  hasAPIKey?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -7444,7 +7456,23 @@ export interface TaskSchedulePublish {
           value: number | Post;
         } | null);
     global?: string | null;
-    user?: (number | null) | PlatformStaff;
+    user?:
+      | ({
+          relationTo: 'patients';
+          value: number | Patient;
+        } | null)
+      | ({
+          relationTo: 'clinicStaff';
+          value: number | ClinicStaff;
+        } | null)
+      | ({
+          relationTo: 'platformStaff';
+          value: number | PlatformStaff;
+        } | null)
+      | ({
+          relationTo: 'payload-mcp-api-keys';
+          value: number | PayloadMcpApiKey;
+        } | null);
   };
   output?: unknown;
 }

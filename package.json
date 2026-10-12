@@ -203,8 +203,7 @@
       "payload@3.90.0>undici": "7.29.1"
     },
     "patchedDependencies": {
-      "@payloadcms/drizzle@3.90.0": "patches/@payloadcms__drizzle@3.90.0.patch",
-      "braces@3.0.3": "patches/braces@3.0.3.patch"
+      "@payloadcms/drizzle@3.90.0": "patches/@payloadcms__drizzle@3.90.0.patch"
     }
   },
   "packageManager": "pnpm@10.28.2"

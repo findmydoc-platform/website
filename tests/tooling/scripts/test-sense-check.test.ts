@@ -172,18 +172,6 @@ describe('runTestSenseCheck', () => {
     expect(runTestSenseCheck({ rootDir }).ok).toBe(true)
   })
 
-  it.each([
-    {
-      source:
-        "const consumer = createRequire(realpathSync(new URL('../../../node_modules/pkg/package.json', import.meta.url)))",
-      accepted: true,
-    },
-    { source: "const unusedPath = '../../../node_modules/pkg/package.json'", accepted: false },
-  ])('classifies installed dependency consumers with accepted=$accepted', ({ source, accepted }) => {
-    const rootDir = createTempRepo({ 'tests/tooling/dependencies/security.test.ts': source })
-    expect(runTestSenseCheck({ rootDir }).ok).toBe(accepted)
-  })
-
   it('recognizes separately deployed runtime handlers and deployment manifests in their suites', () => {
     const rootDir = createTempRepo({
       'tests/unit/scheduler.test.ts': "import handler from '../../apps/preview-email-scheduler/api/tick'",

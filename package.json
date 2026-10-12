@@ -197,12 +197,14 @@
     ],
     "overrides": {
       "@modelcontextprotocol/sdk": "1.31.0",
+      "@tailwindcss/typography@0.5.20>postcss-selector-parser": "7.1.6",
       "esbuild@<0.28.1": "0.28.1",
       "@payloadcms/plugin-import-export@3.90.0>csv-parse": "7.0.2",
       "payload@3.90.0>undici": "7.29.1"
     },
     "patchedDependencies": {
-      "@payloadcms/drizzle@3.90.0": "patches/@payloadcms__drizzle@3.90.0.patch"
+      "@payloadcms/drizzle@3.90.0": "patches/@payloadcms__drizzle@3.90.0.patch",
+      "braces@3.0.3": "patches/braces@3.0.3.patch"
     }
   },
   "packageManager": "pnpm@10.28.2"

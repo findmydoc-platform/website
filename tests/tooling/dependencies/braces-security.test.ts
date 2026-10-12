@@ -31,24 +31,30 @@ describe.each([
     '{'.repeat(4000) + 'a,b',
   ]
 
-  it.each(['parse', 'compile', 'expand', 'stringify'] as const)(
-    '%s rejects deep patterns before recursive traversal',
-    (operation) => {
-      for (const pattern of deepPatterns) {
-        expect(() => braces[operation](pattern)).toThrow(SyntaxError)
-        expect(() => braces[operation](pattern)).toThrow(/safe depth/)
-      }
-    },
-  )
+  it.each([
+    { name: 'parse', run: braces.parse },
+    { name: 'compile', run: braces.compile },
+    { name: 'expand', run: braces.expand },
+    { name: 'stringify', run: braces.stringify },
+  ])('$name rejects deep patterns before recursive traversal', ({ run }) => {
+    for (const pattern of deepPatterns) {
+      expect(() => run(pattern)).toThrow(SyntaxError)
+      expect(() => run(pattern)).toThrow(/safe depth/)
+    }
+  })
 
-  it.each(['compile', 'expand', 'stringify'] as const)('%s rejects deep and cyclic supplied ASTs', (operation) => {
+  it.each([
+    { name: 'compile', run: braces.compile },
+    { name: 'expand', run: braces.expand },
+    { name: 'stringify', run: braces.stringify },
+  ])('$name rejects deep and cyclic supplied ASTs', ({ run }) => {
     let deep: AstNode = { type: 'text', value: 'a' }
     for (let i = 0; i < 12000; i++) deep = { type: 'root', nodes: [deep] }
-    expect(() => braces[operation](deep)).toThrow(/safe depth/)
+    expect(() => run(deep)).toThrow(/safe depth/)
 
     const cycle: AstNode = { type: 'root', nodes: [] }
     cycle.nodes!.push(cycle)
-    expect(() => braces[operation](cycle)).toThrow(/acyclic/)
+    expect(() => run(cycle)).toThrow(/acyclic/)
   })
 
   it('preserves normal ranges, nested alternatives, and literal delimiters', () => {

@@ -3219,7 +3219,7 @@ export interface ClinicNotificationReadReceipt {
   createdAt: string;
 }
 /**
- * One persisted activation boundary for the complete environment catalog
+ * Private capture activation, authorization ordering and independent retention scheduling state
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicNotificationControls".
@@ -3230,6 +3230,12 @@ export interface ClinicNotificationControl {
   active: boolean;
   activatedAt?: string | null;
   nonce: string;
+  retentionStartedAt?: string | null;
+  retentionCompletedAt?: string | null;
+  retentionSlot?: number | null;
+  retentionLeaseToken?: string | null;
+  retentionLeaseExpiresAt?: string | null;
+  retentionResult?: ('running' | 'success' | 'incomplete' | 'failure') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -5532,6 +5538,12 @@ export interface ClinicNotificationControlsSelect<T extends boolean = true> {
   active?: T;
   activatedAt?: T;
   nonce?: T;
+  retentionStartedAt?: T;
+  retentionCompletedAt?: T;
+  retentionSlot?: T;
+  retentionLeaseToken?: T;
+  retentionLeaseExpiresAt?: T;
+  retentionResult?: T;
   updatedAt?: T;
   createdAt?: T;
 }

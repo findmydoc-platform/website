@@ -1,4 +1,8 @@
 import type { PayloadHandler } from 'payload'
+import {
+  CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
+  CLINIC_NOTIFICATIONS_SUPPORT_HEADER,
+} from '@/features/clinicNotifications/contracts'
 import { resolveClinicDashboardBootstrap } from '@/features/clinicDashboard/bootstrap'
 import {
   CLINIC_DASHBOARD_CONTRACT_HEADER,
@@ -14,6 +18,7 @@ export const CLINIC_DASHBOARD_ERROR_CODES = {
 
 export const CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS = {
   'Cache-Control': 'private, no-store',
+  [CLINIC_NOTIFICATIONS_SUPPORT_HEADER]: CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
   Expires: '0',
   Pragma: 'no-cache',
   Vary: `Authorization, ${CLINIC_DASHBOARD_CONTRACT_HEADER}`,

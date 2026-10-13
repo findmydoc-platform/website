@@ -7,10 +7,16 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { loadLocalAndTestEnv } from './test-env.mjs'
 import { setupTestDatabase, teardownTestDatabase } from './test-database-harness.mjs'
 
+loadLocalAndTestEnv()
+const authPort = Number(process.env.INQUIRY_ACCEPTANCE_AUTH_PORT ?? '54321')
+if (!Number.isSafeInteger(authPort) || authPort < 1 || authPort > 65535)
+  throw new Error('Invalid isolated auth stub port')
 const websiteOrigin = 'http://127.0.0.1:3200'
-const authOrigin = 'http://127.0.0.1:54321'
+const authOrigin = `http://127.0.0.1:${authPort}`
 const controlOrigin = 'http://127.0.0.1:3201'
-const databaseUri = 'postgresql://postgres:password@127.0.0.1:5433/findmydoc-test-cross-app' // pragma: allowlist secret
+const databaseUri =
+  process.env.INQUIRY_ACCEPTANCE_DATABASE_URI ??
+  'postgresql://postgres:password@127.0.0.1:5433/findmydoc-test-cross-app' // pragma: allowlist secret
 const dashboardDirectory = process.env.INQUIRY_ACCEPTANCE_DASHBOARD_DIR
 
 if (!dashboardDirectory) throw new Error('INQUIRY_ACCEPTANCE_DASHBOARD_DIR is required')
@@ -86,25 +92,29 @@ function startAuthStub(users: ReadonlyMap<string, SyntheticUser>): Promise<Serve
 
   return new Promise((resolve, reject) => {
     server.once('error', reject)
-    server.listen(54321, '127.0.0.1', () => resolve(server))
+    server.listen(authPort, '127.0.0.1', () => resolve(server))
   })
 }
 
-function startControlServer(offboardClinicStaff: () => Promise<void>): Promise<Server> {
+function startControlServer(
+  offboardClinicStaff: () => Promise<void>,
+  createNotificationInquiry: () => Promise<unknown>,
+): Promise<Server> {
   const server = http.createServer((request, response) => {
     if (
       request.method !== 'POST' ||
-      request.url?.split('?')[0] !== '/offboard-clinic-staff' ||
+      !['/offboard-clinic-staff', '/create-notification-inquiry'].includes(request.url?.split('?')[0] ?? '') ||
       request.headers.authorization !== `Bearer ${controlToken}`
     ) {
       response.writeHead(404, { 'content-type': 'application/json' })
       response.end(JSON.stringify({ error: 'not-found' }))
       return
     }
-    void offboardClinicStaff()
-      .then(() => {
-        response.writeHead(204)
-        response.end()
+    const createsNotification = request.url?.split('?')[0] === '/create-notification-inquiry'
+    void (createsNotification ? createNotificationInquiry() : offboardClinicStaff())
+      .then((result) => {
+        response.writeHead(createsNotification ? 200 : 204, { 'content-type': 'application/json' })
+        response.end(createsNotification ? JSON.stringify(result) : undefined)
       })
       .catch(() => {
         response.writeHead(500, { 'content-type': 'application/json' })
@@ -148,13 +158,15 @@ function closeServer(server: Server | undefined) {
 }
 
 async function seedSyntheticInquiry() {
-  const [{ createLocalReq, getPayload }, { default: config }, fixtures, users, communication] = await Promise.all([
-    import('payload'),
-    import('@payload-config'),
-    import('../tests/fixtures/createClinicFixture'),
-    import('../tests/fixtures/testUsers'),
-    import('../src/features/inquiryCommunication/service'),
-  ])
+  const [{ createLocalReq, getPayload }, { default: config }, fixtures, users, communication, notifications] =
+    await Promise.all([
+      import('payload'),
+      import('@payload-config'),
+      import('../tests/fixtures/createClinicFixture'),
+      import('../tests/fixtures/testUsers'),
+      import('../src/features/inquiryCommunication/service'),
+      import('../src/features/clinicNotifications/service'),
+    ])
   const payload = await getPayload({ config })
   try {
     const cities = await payload.find({ collection: 'cities', depth: 0, limit: 1, overrideAccess: true })
@@ -197,9 +209,9 @@ async function seedSyntheticInquiry() {
       lastName: 'Clinic',
       supabaseUserId: subjects.foreignClinic,
     })
-    for (const [staffId, clinicId] of [
-      [clinicStaff.id, clinicFixture.clinic.id],
-      [foreignClinicStaff.id, foreignFixture.clinic.id],
+    for (const [staff, clinicId] of [
+      [clinicStaff, clinicFixture.clinic.id],
+      [foreignClinicStaff, foreignFixture.clinic.id],
     ] as const) {
       await payload.update({
         collection: 'clinicStaff',
@@ -210,13 +222,21 @@ async function seedSyntheticInquiry() {
           status: 'approved',
         },
         depth: 0,
-        id: staffId,
+        id: staff.id,
         overrideAccess: true,
       })
+      const accessReady = await payload.findByID({
+        collection: 'clinicStaff',
+        id: staff.id,
+        depth: 0,
+        overrideAccess: true,
+      })
+      await users.completeLegacyClinicFixture(payload, accessReady, clinicId)
     }
 
     const patientReq = await createLocalReq({}, payload)
     patientReq.user = users.asPayloadPatientUser(patient)
+    await notifications.activateClinicNotificationsForTest(patientReq)
     const created = await communication.createVerifiedPatientInquiry(patientReq, {
       clinicId: String(clinicFixture.clinic.id),
       consent: true,
@@ -234,6 +254,32 @@ async function seedSyntheticInquiry() {
       foreignClinicId: String(foreignFixture.clinic.id),
       foreignClinicName: foreignFixture.clinic.name,
       inquiryId: created.inquiry.id,
+      createNotificationInquiry: async () => {
+        const req = await createLocalReq({}, payload)
+        const source = await communication.submitGuestClinicInquiry(req, {
+          clinicId: clinicFixture.clinic.id,
+          doctorId: clinicFixture.doctor.id,
+          consent: true,
+          email: 'notification-arrival@example.com',
+          fullName: 'Notification Arrival',
+          message: 'Private cross-app arrival text.',
+          phoneNumber: '+493000000099',
+        })
+        const occurrences = await payload.find({
+          collection: 'clinicNotificationOccurrences',
+          overrideAccess: true,
+          where: { sourceRecordId: { equals: source.id } },
+          limit: 1,
+        })
+        const occurrence = occurrences.docs[0]
+        if (!occurrence) throw new Error('Expected captured cross-app occurrence')
+        return {
+          inquiryId: source.id,
+          notificationId: occurrence.notificationId,
+          occurredAt: occurrence.occurredAt,
+          displayName: 'Notification Arrival',
+        }
+      },
       offboardClinicStaff: async () => {
         await payload.update({
           collection: 'clinicStaff',
@@ -301,6 +347,7 @@ async function main() {
   loadLocalAndTestEnv()
   Object.assign(process.env, {
     DATABASE_URI: databaseUri,
+    DATABASE_DIRECT_URI: databaseUri,
     DEPLOYMENT_ENV: 'test',
     NEXT_PUBLIC_DEPLOYMENT_ENV: 'test',
     NEXT_PUBLIC_SERVER_URL: websiteOrigin,
@@ -317,7 +364,7 @@ async function main() {
     await setupTestDatabase({ templateKind: 'baseline' })
     fixture = await seedSyntheticInquiry()
     authServer = await startAuthStub(fixture.users)
-    controlServer = await startControlServer(fixture.offboardClinicStaff)
+    controlServer = await startControlServer(fixture.offboardClinicStaff, fixture.createNotificationInquiry)
     websiteServer = spawn('pnpm', ['dev', '--hostname', '127.0.0.1', '--port', '3200'], {
       cwd: process.cwd(),
       env: process.env,

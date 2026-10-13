@@ -100,6 +100,9 @@ export interface Config {
     inquiryLegalHolds: InquiryLegalHold;
     inquiryDeletionProofs: InquiryDeletionProof;
     inquiryCommandLocks: InquiryCommandLock;
+    clinicNotificationOccurrences: ClinicNotificationOccurrence;
+    clinicNotificationReadReceipts: ClinicNotificationReadReceipt;
+    clinicNotificationControls: ClinicNotificationControl;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -181,6 +184,9 @@ export interface Config {
     inquiryLegalHolds: InquiryLegalHoldsSelect<false> | InquiryLegalHoldsSelect<true>;
     inquiryDeletionProofs: InquiryDeletionProofsSelect<false> | InquiryDeletionProofsSelect<true>;
     inquiryCommandLocks: InquiryCommandLocksSelect<false> | InquiryCommandLocksSelect<true>;
+    clinicNotificationOccurrences: ClinicNotificationOccurrencesSelect<false> | ClinicNotificationOccurrencesSelect<true>;
+    clinicNotificationReadReceipts: ClinicNotificationReadReceiptsSelect<false> | ClinicNotificationReadReceiptsSelect<true>;
+    clinicNotificationControls: ClinicNotificationControlsSelect<false> | ClinicNotificationControlsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -3176,6 +3182,58 @@ export interface InquiryCommandLock {
   key: string;
 }
 /**
+ * Immutable clinic events with independent ninety-day retention
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicNotificationOccurrences".
+ */
+export interface ClinicNotificationOccurrence {
+  id: number;
+  notificationId: string;
+  clinic: number | Clinic;
+  schemaVersion: number;
+  eventType: string;
+  sourceRecordKind: 'inquiry' | 'review';
+  sourceRecordId: string;
+  sourceOccurrenceKind: string;
+  sourceOccurrenceId: string;
+  occurredAt: string;
+  expiresAt: string;
+  outcome?: ('approved' | 'rejected' | 'blocked' | 'upheld' | 'confirmed' | 'lifted') | null;
+  rating?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * First successful personal acknowledgement of a clinic notification
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicNotificationReadReceipts".
+ */
+export interface ClinicNotificationReadReceipt {
+  id: number;
+  occurrence: number | ClinicNotificationOccurrence;
+  clinicStaff: number | ClinicStaff;
+  readAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * One persisted activation boundary for the complete environment catalog
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicNotificationControls".
+ */
+export interface ClinicNotificationControl {
+  id: number;
+  key: string;
+  active: boolean;
+  activatedAt?: string | null;
+  nonce: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Saved clinics for patients
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3996,6 +4054,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'inquiryCommandLocks';
         value: number | InquiryCommandLock;
+      } | null)
+    | ({
+        relationTo: 'clinicNotificationOccurrences';
+        value: number | ClinicNotificationOccurrence;
+      } | null)
+    | ({
+        relationTo: 'clinicNotificationReadReceipts';
+        value: number | ClinicNotificationReadReceipt;
+      } | null)
+    | ({
+        relationTo: 'clinicNotificationControls';
+        value: number | ClinicNotificationControl;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -5421,6 +5491,49 @@ export interface InquiryDeletionProofsSelect<T extends boolean = true> {
  */
 export interface InquiryCommandLocksSelect<T extends boolean = true> {
   key?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicNotificationOccurrences_select".
+ */
+export interface ClinicNotificationOccurrencesSelect<T extends boolean = true> {
+  notificationId?: T;
+  clinic?: T;
+  schemaVersion?: T;
+  eventType?: T;
+  sourceRecordKind?: T;
+  sourceRecordId?: T;
+  sourceOccurrenceKind?: T;
+  sourceOccurrenceId?: T;
+  occurredAt?: T;
+  expiresAt?: T;
+  outcome?: T;
+  rating?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicNotificationReadReceipts_select".
+ */
+export interface ClinicNotificationReadReceiptsSelect<T extends boolean = true> {
+  occurrence?: T;
+  clinicStaff?: T;
+  readAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicNotificationControls_select".
+ */
+export interface ClinicNotificationControlsSelect<T extends boolean = true> {
+  key?: T;
+  active?: T;
+  activatedAt?: T;
+  nonce?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -7376,6 +7489,9 @@ export interface TaskCreateCollectionExport {
       | 'inquiryLegalHolds'
       | 'inquiryDeletionProofs'
       | 'inquiryCommandLocks'
+      | 'clinicNotificationOccurrences'
+      | 'clinicNotificationReadReceipts'
+      | 'clinicNotificationControls'
       | 'clinics'
       | 'doctors'
       | 'accreditation'

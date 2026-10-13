@@ -22,6 +22,7 @@ export function loadLocalAndTestEnv({ cwd = process.cwd() } = {}) {
   dotenvConfig({ path: path.resolve(cwd, '.env.local'), quiet: true })
   dotenvConfig({ path: path.resolve(cwd, '.env'), quiet: true })
   dotenvConfig({ path: path.resolve(cwd, '.env.test'), override: true, quiet: true })
+  dotenvConfig({ path: path.resolve(cwd, '.env.test.local'), override: true, quiet: true })
 
   // Test infrastructure must not inherit a development storage backend from a local env file.
   process.env.DEPLOYMENT_ENV = 'test'

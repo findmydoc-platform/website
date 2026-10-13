@@ -4,6 +4,18 @@ export interface CollectionContractEntry {
 }
 
 export const collectionContractRegistry = {
+  clinicNotificationOccurrences: {
+    baseline: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+    deep: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+  },
+  clinicNotificationReadReceipts: {
+    baseline: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+    deep: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+  },
+  clinicNotificationControls: {
+    baseline: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+    deep: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+  },
   recoveryRequestEvents: {
     baseline: ['tests/integration/recoveryRequests.lifecycle.test.ts'],
     deep: ['tests/integration/recoveryRequests.lifecycle.test.ts'],
@@ -272,6 +284,9 @@ export const deepContractDomains = {
     'inquiryLegalHolds',
     'inquiryDeletionProofs',
     'inquiryCommandLocks',
+    'clinicNotificationOccurrences',
+    'clinicNotificationReadReceipts',
+    'clinicNotificationControls',
   ],
   trustWorkflow: [
     'reviews',

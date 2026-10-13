@@ -25,6 +25,14 @@ Payload exposes the private bootstrap contract, the persistent clinic-profile dr
 treatment and gallery contracts, and the inquiry communication contract. The Clinic Dashboard session and BFF runtime
 are implemented in the Dashboard repository; trusted preview and production rollout evidence remain pending.
 
+The notification foundation adds Website-owned immutable occurrences, personal receipt storage and the read-only
+new-inquiry path. Guest and verified submissions capture one occurrence inside their existing source transaction,
+subject to a persisted activation boundary that defaults to inactive. Installed `clinic-notifications-v1` support
+is negotiated separately from capture activation. Its [closed wire contract](../architecture/clinic-notifications-v1.md)
+defines the complete catalog for the following implementation slices. Personal marking, the remaining producers,
+exact destination opening, continuation loading and independent cleanup are not delivered by this foundation.
+Hosted capture stays inactive; local isolated acceptance does not establish Preview or Production availability.
+
 ## Boundary and Ownership
 
 | Concern | Website and Payload | Clinic Dashboard |

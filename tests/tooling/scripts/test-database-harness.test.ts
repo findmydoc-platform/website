@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   computeTestDatabaseFingerprint,
@@ -18,7 +18,12 @@ import {
 
 const tempDirectories = new Set<string>()
 
+beforeEach(() => {
+  vi.stubEnv('TEST_DB_COMPOSE_PROJECT', '')
+})
+
 afterEach(() => {
+  vi.unstubAllEnvs()
   for (const directoryPath of tempDirectories) {
     fs.rmSync(directoryPath, { force: true, recursive: true })
   }
@@ -204,6 +209,20 @@ describe('template dependencies', () => {
 })
 
 describe('test service teardown', () => {
+  it('isolates a task compose project without changing the default project', () => {
+    vi.stubEnv('TEST_DB_COMPOSE_PROJECT', 'findmydoc-test-notifications')
+    expect(getTestServiceStartupCommand()).toBe(
+      'docker compose -p findmydoc-test-notifications -f docker-compose.test.yml up -d postgres s3mock',
+    )
+    expect(getTestServiceTeardownCommands()).toEqual([
+      'docker compose -p findmydoc-test-notifications -f docker-compose.test.yml stop postgres s3mock',
+    ])
+  })
+
+  it('refuses a non-test compose project before invoking Docker', () => {
+    vi.stubEnv('TEST_DB_COMPOSE_PROJECT', 'website')
+    expect(() => getTestServiceStartupCommand()).toThrow('isolated findmydoc-test project')
+  })
   it('keeps stopped S3Mock state aligned with the preserved Postgres templates', () => {
     expect(getTestServiceTeardownCommands()).toEqual([
       'docker compose -p findmydoc-test -f docker-compose.test.yml stop postgres s3mock',

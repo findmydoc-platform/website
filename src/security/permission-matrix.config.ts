@@ -982,6 +982,69 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Ephemeral private lock records created and released inside one serializable domain transaction',
     },
+    clinicNotificationOccurrences: {
+      slug: 'clinicNotificationOccurrences',
+      displayName: 'ClinicNotificationOccurrences',
+      operations: {
+        create: { type: 'conditional', details: 'private notification domain transactions only' },
+        read: { type: 'conditional', details: 'not exposed through generic access' },
+        update: { type: 'conditional', details: 'private notification domain commands only' },
+        delete: { type: 'conditional', details: 'notification retention or control commands only' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes: 'Private notification storage guarded by native transactions and closed domain commands',
+    },
+    clinicNotificationReadReceipts: {
+      slug: 'clinicNotificationReadReceipts',
+      displayName: 'ClinicNotificationReadReceipts',
+      operations: {
+        create: { type: 'conditional', details: 'private notification domain transactions only' },
+        read: { type: 'conditional', details: 'not exposed through generic access' },
+        update: { type: 'conditional', details: 'private notification domain commands only' },
+        delete: { type: 'conditional', details: 'notification retention or control commands only' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes: 'Private notification storage guarded by native transactions and closed domain commands',
+    },
+    clinicNotificationControls: {
+      slug: 'clinicNotificationControls',
+      displayName: 'ClinicNotificationControls',
+      operations: {
+        create: { type: 'conditional', details: 'private notification domain transactions only' },
+        read: { type: 'conditional', details: 'not exposed through generic access' },
+        update: { type: 'conditional', details: 'private notification domain commands only' },
+        delete: { type: 'conditional', details: 'notification retention or control commands only' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes: 'Private notification storage guarded by native transactions and closed domain commands',
+    },
     recoveryRequestEvents: {
       slug: 'recoveryRequestEvents',
       displayName: 'RecoveryRequestEvents',

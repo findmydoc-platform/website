@@ -63,6 +63,10 @@ import {
 import { communicationReviewDueAt } from '@/features/inquiryRetention/policy'
 import { selectTransactionalEmailCommandAcceptance } from '@/features/transactionalEmail/payloadIntegration'
 import { TransactionalEmailError } from '@/features/transactionalEmail'
+import { captureClinicNotificationOccurrence } from '@/features/clinicNotifications/capture'
+import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
+import { recordNotificationDiagnostic } from '@/features/clinicNotifications/diagnostics'
+import { ClinicNotificationCaptureConflict } from '@/features/clinicNotifications/errors'
 
 export type InquiryCommunicationServiceErrorKind =
   | 'access-denied'
@@ -175,6 +179,7 @@ const duplicateConstraint = (error: unknown): boolean => {
 }
 
 const isSerializationFailure = (error: unknown): boolean => {
+  if (error instanceof ClinicNotificationCaptureConflict) return true
   const visited = new Set<unknown>()
   let current = error
   while (current !== null && typeof current !== 'undefined' && !visited.has(current)) {
@@ -189,13 +194,20 @@ const isSerializationFailure = (error: unknown): boolean => {
   return false
 }
 
-const runCommandTransaction = async <Result>(req: PayloadRequest, command: () => Promise<Result>): Promise<Result> => {
+const runCommandTransaction = async <Result>(
+  req: PayloadRequest,
+  command: () => Promise<Result>,
+  attemptCount = 1,
+): Promise<Result> => {
   if (typeof req.transactionID !== 'undefined') {
     throw new InquiryCommunicationServiceError('unavailable', 'Inquiry commands cannot join another transaction.')
   }
 
   let transactionID: null | number | string = null
+  let commitAttempted = false
+  const started = performance.now()
   const previousCommandContext = req.context?.inquiryCommunicationCommand
+  const previousCaptureContext = req.context?.clinicNotificationCaptureAttempt
   try {
     req.context = { ...(req.context ?? {}), inquiryCommunicationCommand: true }
     transactionID = await req.payload.db.beginTransaction({ accessMode: 'read write', isolationLevel: 'serializable' })
@@ -203,22 +215,57 @@ const runCommandTransaction = async <Result>(req: PayloadRequest, command: () =>
       throw new InquiryCommunicationServiceError('unavailable', 'An inquiry transaction could not be started.')
     }
     req.transactionID = transactionID
+    requireNotificationTransaction(req, transactionID)
     const result = await command()
+    requireNotificationTransaction(req, transactionID)
+    commitAttempted = true
     await req.payload.db.commitTransaction(transactionID)
+    if (req.context?.clinicNotificationCaptureAttempt === true) {
+      recordNotificationDiagnostic(req, {
+        operation: 'source_capture',
+        result: 'success',
+        transactionOutcome: 'committed',
+        attemptCount,
+        elapsedMs: Math.round(performance.now() - started),
+      })
+    }
     return result
   } catch (error: unknown) {
     if (transactionID !== null) {
       try {
         await req.payload.db.rollbackTransaction(transactionID)
       } catch (rollbackError: unknown) {
+        if (req.context?.clinicNotificationCaptureAttempt === true) {
+          recordNotificationDiagnostic(req, {
+            operation: 'source_capture',
+            result: 'failure',
+            attemptCount,
+            transactionOutcome: 'unknown',
+            errorCode: 'SERVICE_UNAVAILABLE',
+            elapsedMs: Math.round(performance.now() - started),
+          })
+          throw new InquiryCommunicationServiceError('unavailable', 'The inquiry outcome could not be confirmed.')
+        }
         throw new AggregateError([error, rollbackError], 'Inquiry command and rollback both failed.')
       }
+    }
+    if (req.context?.clinicNotificationCaptureAttempt === true) {
+      recordNotificationDiagnostic(req, {
+        operation: 'source_capture',
+        result: 'failure',
+        attemptCount,
+        transactionOutcome: !commitAttempted || isSerializationFailure(error) ? 'not_committed' : 'unknown',
+        errorCode: 'SERVICE_UNAVAILABLE',
+        elapsedMs: Math.round(performance.now() - started),
+      })
     }
     if (isSerializationFailure(error)) {
       throw new InquiryCommunicationServiceError('conflict', 'The inquiry changed concurrently.')
     }
     throw error
   } finally {
+    if (typeof previousCaptureContext === 'undefined') delete req.context?.clinicNotificationCaptureAttempt
+    else req.context = { ...req.context, clinicNotificationCaptureAttempt: previousCaptureContext }
     if (transactionID !== null && req.transactionID === transactionID) delete req.transactionID
     if (typeof previousCommandContext === 'undefined') {
       delete req.context?.inquiryCommunicationCommand
@@ -1500,7 +1547,7 @@ const runRetryableActorInquiryCommand = async <Result>(
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       await beforeAttempt?.()
-      return await runCommandTransaction(req, command)
+      return await runCommandTransaction(req, command, attempt + 1)
     } catch (error: unknown) {
       lastError = error
       if (
@@ -2902,7 +2949,7 @@ export const createVerifiedPatientInquiry = async (
   const policy = await resolveActiveInquiryRetentionPolicy(req, new Date(now))
 
   try {
-    const inquiry = await runCommandTransaction(req, async () => {
+    const inquiry = await runRetryableCommand(req, async () => {
       const replay = await findCreationReplay(req, ownerId, input)
       if (replay) return replay
       await validateInquiryTarget(req, input)
@@ -3005,7 +3052,7 @@ export const createVerifiedPatientInquiry = async (
         overrideAccess: true,
         req,
       } as never)
-      await req.payload.create({
+      const originalAudit = await req.payload.create({
         collection: 'inquiryAuditEvents' as never,
         data: {
           actorId: String(ownerId),
@@ -3022,6 +3069,15 @@ export const createVerifiedPatientInquiry = async (
         overrideAccess: true,
         req,
       } as never)
+      await captureClinicNotificationOccurrence(req, {
+        clinicId: payloadId(input.clinicId),
+        member: {
+          schemaVersion: 1,
+          eventType: 'inquiry_created',
+          sourceRecord: { kind: 'inquiry', id: String(created.id) },
+          sourceOccurrence: { kind: 'inquiry_audit', id: String(originalAudit.id) },
+        },
+      })
       return created
     })
 
@@ -3075,7 +3131,7 @@ const runRetryableCommand = async <Result>(req: PayloadRequest, command: () => P
   let lastError: unknown
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      return await runCommandTransaction(req, command)
+      return await runCommandTransaction(req, command, attempt + 1)
     } catch (error: unknown) {
       lastError = error
       if (
@@ -3154,12 +3210,39 @@ export const submitGuestClinicInquiry = async (
         req,
       } as never),
     )
-    await createAuditEvent(req, inquiry, { id: 'system', kind: 'system' }, 'inquiry-created', 1, {
+    const originalAudit = await createAuditEvent(req, inquiry, { id: 'system', kind: 'system' }, 'inquiry-created', 1, {
       targetId: String(inquiry.id),
       targetType: 'inquiry',
+    })
+    await captureClinicNotificationOccurrence(req, {
+      clinicId: input.clinicId,
+      member: {
+        schemaVersion: 1,
+        eventType: 'inquiry_created',
+        sourceRecord: { kind: 'inquiry', id: String(inquiry.id) },
+        sourceOccurrence: { kind: 'inquiry_audit', id: String(originalAudit.id) },
+      },
     })
     return { deduped: false, inquiry }
   })
 
   return { deduped: result.deduped, id: String(result.inquiry.id), status: 'submitted' }
+}
+
+export async function readClinicInquiryNotificationProjection(
+  req: PayloadRequest,
+  inquiryId: string,
+): Promise<{ visible: false } | { visible: true; displayName?: string }> {
+  const actor = await resolveCurrentActor(req)
+  if (actor.kind !== 'clinic') return { visible: false }
+  const inquiry = await findOne(req, 'patientClinicInquiries', { id: { equals: payloadId(inquiryId) } })
+  if (!inquiry) return { visible: true }
+  if (String(relationId(inquiry.clinic)) !== String(actor.clinicId)) return { visible: false }
+  const retention = await effectiveInquiryRetentionState(req, inquiry)
+  const moderation = await readInquiryModerationState(req, inquiry.id, actor)
+  const displayName =
+    retention === 'available' && moderation.moderation.identity.state === 'available'
+      ? text(inquiry.fullName).trim()
+      : ''
+  return { visible: true, ...(displayName ? { displayName } : {}) }
 }

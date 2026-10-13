@@ -1,5 +1,5 @@
+import { slugField } from '@/fields/slugField'
 import type { CollectionConfig } from 'payload'
-import { slugField } from 'payload'
 
 import { anyone } from '../access/anyone'
 import { isPlatformStaff } from '../access/isPlatformStaff'

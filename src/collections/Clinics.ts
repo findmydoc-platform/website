@@ -1,3 +1,4 @@
+import { slugField } from '@/fields/slugField'
 import type { Clinic } from '@/payload-types'
 import type {
   CollectionAfterReadHook,
@@ -5,7 +6,7 @@ import type {
   CollectionBeforeValidateHook,
   CollectionConfig,
 } from 'payload'
-import { slugField, ValidationError, validations } from 'payload'
+import { ValidationError, validations } from 'payload'
 import { clinicContactRoleOptions, languageOptions } from './common/selectionOptions'
 import { createConditionalRequiredValidator, toValidationFieldErrors } from './common/conditionalRequirements'
 import {

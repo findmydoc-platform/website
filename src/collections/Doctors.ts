@@ -1,4 +1,5 @@
-import { CollectionConfig, slugField } from 'payload'
+import { slugField } from '@/fields/slugField'
+import { CollectionConfig } from 'payload'
 import { languageOptions } from './common/selectionOptions'
 import { generateFullName } from '@/utilities/nameUtils'
 import { computedOnlyFieldAccess } from '@/access/fieldAccess'

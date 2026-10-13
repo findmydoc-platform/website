@@ -1,3 +1,4 @@
+import { slugField } from '@/fields/slugField'
 import type { CollectionConfig, Field } from 'payload'
 
 import { platformOnlyOrPublished } from '../../access/scopeFilters'
@@ -13,7 +14,6 @@ import {
   OverviewField,
   PreviewField,
 } from '@payloadcms/plugin-seo/fields'
-import { slugField } from 'payload'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 import {

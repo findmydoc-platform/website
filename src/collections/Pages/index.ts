@@ -1,3 +1,4 @@
+import { slugField } from '@/fields/slugField'
 import type { CollectionConfig, Field } from 'payload'
 
 import { platformOnlyOrPublished } from '../../access/scopeFilters'
@@ -7,7 +8,6 @@ import { CallToAction } from '../../blocks/CallToAction/config'
 import { Content } from '../../blocks/Content/config'
 import { FormBlock } from '../../blocks/Form/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
-import { slugField } from 'payload'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { beforeChangePublishedAt } from '@/hooks/publishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'

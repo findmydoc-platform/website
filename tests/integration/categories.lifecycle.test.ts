@@ -37,6 +37,40 @@ describe('Categories integration - lifecycle and access', () => {
     expect(created.slug).toBe(slugify(title))
   })
 
+  it('preserves a manually supplied slug on create and later title changes', async () => {
+    const manualSlug = `${slugPrefix}-manual-initial`
+    const created = await payload.create({
+      collection: 'categories',
+      data: { title: `${slugPrefix} different title`, slug: manualSlug },
+      overrideAccess: true,
+    })
+    expect(created.slug).toBe(manualSlug)
+
+    const updated = await payload.update({
+      collection: 'categories',
+      id: created.id,
+      data: { title: `${slugPrefix} renamed title` },
+      overrideAccess: true,
+    })
+    expect(updated.slug).toBe(manualSlug)
+  })
+
+  it('regenerates a locked slug only when generation is explicitly enabled', async () => {
+    const created = await payload.create({
+      collection: 'categories',
+      data: { title: `${slugPrefix} original`, slug: `${slugPrefix}-original-manual` },
+      overrideAccess: true,
+    })
+    const updated = await payload.update({
+      collection: 'categories',
+      id: created.id,
+      data: { title: `${slugPrefix} regenerated`, generateSlug: true },
+      overrideAccess: true,
+    })
+    expect(updated.slug).toBe(`${slugPrefix}-regenerated`)
+    expect(updated.generateSlug).toBe(false)
+  })
+
   it('rejects duplicate category slug/title (unique constraint)', async () => {
     const title = `${slugPrefix} duplicate`
 

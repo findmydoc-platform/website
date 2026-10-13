@@ -1,4 +1,5 @@
-import { CollectionConfig, slugField } from 'payload'
+import { slugField } from '@/fields/slugField'
+import { CollectionConfig } from 'payload'
 import { anyone } from '@/access/anyone'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'

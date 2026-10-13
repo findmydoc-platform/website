@@ -3190,7 +3190,11 @@ export interface InquiryCommandLock {
 export interface ClinicNotificationOccurrence {
   id: number;
   notificationId: string;
-  clinic: number | Clinic;
+  /**
+   * Immutable clinic scope preserved independently of clinic deletion
+   */
+  clinicScopeId?: string | null;
+  clinic?: (number | null) | Clinic;
   schemaVersion: number;
   eventType: string;
   sourceRecordKind: 'inquiry' | 'review';
@@ -5504,6 +5508,7 @@ export interface InquiryCommandLocksSelect<T extends boolean = true> {
  */
 export interface ClinicNotificationOccurrencesSelect<T extends boolean = true> {
   notificationId?: T;
+  clinicScopeId?: T;
   clinic?: T;
   schemaVersion?: T;
   eventType?: T;

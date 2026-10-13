@@ -96,6 +96,7 @@ import * as migration_20261003_104659_clinic_invitation_authorization from './20
 import * as migration_20261011_072913_payload_390_storage_object_key from './20261011_072913_payload_390_storage_object_key'
 import * as migration_20261013_225346_clinic_notification_foundation from './20261013_225346_clinic_notification_foundation'
 import * as migration_20261013_232344_clinic_notification_retention_control from './20261013_232344_clinic_notification_retention_control'
+import * as migration_20261013_234505_clinic_notification_scope from './20261013_234505_clinic_notification_scope'
 
 export const migrations = [
   {
@@ -587,5 +588,10 @@ export const migrations = [
     up: migration_20261013_232344_clinic_notification_retention_control.up,
     down: migration_20261013_232344_clinic_notification_retention_control.down,
     name: '20261013_232344_clinic_notification_retention_control',
+  },
+  {
+    up: migration_20261013_234505_clinic_notification_scope.up,
+    down: migration_20261013_234505_clinic_notification_scope.down,
+    name: '20261013_234505_clinic_notification_scope',
   },
 ]

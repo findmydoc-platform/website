@@ -1,3 +1,7 @@
+import {
+  guardNotificationAuthorizationChange,
+  guardNotificationAuthorizationSession,
+} from '@/features/clinicNotifications/authorizationBarrier'
 import { slugField } from '@/fields/slugField'
 import type { Clinic } from '@/payload-types'
 import type {
@@ -152,8 +156,18 @@ export const Clinics: CollectionConfig<'clinics'> = {
     delete: isPlatformStaff, // Only Platform can delete clinics
   },
   hooks: {
+    beforeOperation: [guardNotificationAuthorizationChange],
+    beforeDelete: [guardNotificationAuthorizationSession],
+    afterOperation: [
+      async ({ result, req, operation }) => {
+        if (['update', 'delete', 'restoreVersion'].includes(operation))
+          await guardNotificationAuthorizationSession({ req })
+        return result
+      },
+    ],
     beforeValidate: [validateGalleryEntriesBeforeValidate],
     beforeChange: [
+      guardNotificationAuthorizationSession,
       ({ data, operation }) => {
         if (operation === 'create' && data.participationStatus == null) data.participationStatus = 'pending'
         return data

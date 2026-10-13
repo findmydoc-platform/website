@@ -29,8 +29,9 @@ The notification foundation adds Website-owned immutable occurrences, personal r
 new-inquiry path. Guest and verified submissions capture one occurrence inside their existing source transaction,
 subject to a persisted activation boundary that defaults to inactive. Installed `clinic-notifications-v1` support
 is negotiated separately from capture activation. Its [closed wire contract](../architecture/clinic-notifications-v1.md)
-defines the complete catalog for the following implementation slices. Personal marking, the remaining producers,
-exact destination opening, continuation loading and independent cleanup are not delivered by this foundation.
+defines the complete catalog for the following implementation slices. Personal explicit marking now persists first
+read receipts through the authorized acknowledgement command. Remaining producers, exact destination opening,
+continuation loading and independent cleanup remain separate slices.
 Hosted capture stays inactive; local isolated acceptance does not establish Preview or Production availability.
 
 ## Boundary and Ownership

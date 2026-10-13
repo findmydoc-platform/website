@@ -4,7 +4,7 @@ import { CLINIC_NOTIFICATIONS_CONTRACT_VERSION, type NotificationErrorCode } fro
 export function recordNotificationDiagnostic(
   req: PayloadRequest,
   details: {
-    operation: 'feed_read' | 'summary_read' | 'source_capture'
+    operation: 'feed_read' | 'summary_read' | 'source_capture' | 'acknowledge'
     result: 'success' | 'rejected' | 'failure'
     errorCode?: NotificationErrorCode
     elapsedMs: number

@@ -1,3 +1,4 @@
+import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
 import type { PayloadHandler } from 'payload'
 import { revalidateClinicDashboardRequest } from '@/features/clinicDashboard/authorization'
 import { CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS } from './clinicDashboardBootstrap'
@@ -6,9 +7,15 @@ import {
   CLINIC_NOTIFICATIONS_CONTRACT_HEADER,
   CLINIC_NOTIFICATIONS_SUPPORT_HEADER,
   notificationReadQuerySchema,
+  notificationReadInputSchema,
+  NOTIFICATION_READ_MAX_BYTES,
   type NotificationErrorCode,
 } from '@/features/clinicNotifications/contracts'
-import { ClinicNotificationError, readClinicNotifications } from '@/features/clinicNotifications/service'
+import {
+  ClinicNotificationError,
+  markClinicNotificationsRead,
+  readClinicNotifications,
+} from '@/features/clinicNotifications/service'
 import { recordNotificationDiagnostic } from '@/features/clinicNotifications/diagnostics'
 
 const statuses: Record<NotificationErrorCode, number> = {
@@ -60,7 +67,7 @@ export const clinicDashboardNotificationsGetHandler: PayloadHandler = async (req
     const input = notificationReadQuerySchema.safeParse(Object.fromEntries(query))
     if (!input.success) throw new ClinicNotificationError('INVALID_INPUT')
     const result = await readClinicNotifications(req, input.data)
-    recordNotificationDiagnostic(req, {
+    await recordNotificationDiagnostic(req, {
       operation: mode,
       result: 'success',
       elapsedMs: Math.round(performance.now() - started),
@@ -68,12 +75,85 @@ export const clinicDashboardNotificationsGetHandler: PayloadHandler = async (req
     return response(result, 200)
   } catch (error) {
     const code = error instanceof ClinicNotificationError ? error.code : 'SERVICE_UNAVAILABLE'
-    recordNotificationDiagnostic(req, {
+    await recordNotificationDiagnostic(req, {
       operation: mode,
       result: statuses[code] < 500 ? 'rejected' : 'failure',
       errorCode: code,
       elapsedMs: Math.round(performance.now() - started),
     })
     return response({ contractVersion: CLINIC_NOTIFICATIONS_CONTRACT_VERSION, error: { code } }, statuses[code])
+  }
+}
+
+export const clinicDashboardNotificationsReadPostHandler: PayloadHandler = async (req) => {
+  const started = performance.now()
+  let commandStarted = false
+  try {
+    if (req.headers.get(CLINIC_NOTIFICATIONS_CONTRACT_HEADER) !== CLINIC_NOTIFICATIONS_CONTRACT_VERSION)
+      throw new ClinicNotificationError('CONTRACT_INCOMPATIBLE')
+    if (req.headers.get('origin') !== getClinicDashboardOrigin()) throw new ClinicNotificationError('REQUEST_REJECTED')
+    if (new URL(req.url ?? 'http://localhost:3000').search) throw new ClinicNotificationError('INVALID_INPUT')
+    if (req.headers.get('content-type')?.split(';')[0]?.trim() !== 'application/json')
+      throw new ClinicNotificationError('INVALID_INPUT')
+    const declared = req.headers.get('content-length')
+    if (declared && Number(declared) > NOTIFICATION_READ_MAX_BYTES)
+      throw new ClinicNotificationError('PAYLOAD_TOO_LARGE')
+    if (!req.body) throw new ClinicNotificationError('INVALID_INPUT')
+    const reader = req.body.getReader()
+    const chunks: Uint8Array[] = []
+    let size = 0
+    try {
+      for (;;) {
+        const chunk = await reader.read()
+        if (chunk.done) break
+        size += chunk.value.byteLength
+        if (size > NOTIFICATION_READ_MAX_BYTES) {
+          await reader.cancel().catch(() => undefined)
+          throw new ClinicNotificationError('PAYLOAD_TOO_LARGE')
+        }
+        chunks.push(chunk.value)
+      }
+    } finally {
+      reader.releaseLock()
+    }
+    let value: unknown
+    try {
+      value = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+    } catch {
+      throw new ClinicNotificationError('INVALID_INPUT')
+    }
+    const input = notificationReadInputSchema.safeParse(value)
+    if (!input.success) throw new ClinicNotificationError('INVALID_INPUT')
+    const authorization = await revalidateClinicDashboardRequest(req, 'inquiry')
+    if (authorization.status !== 'authorized')
+      throw new ClinicNotificationError(
+        authorization.status === 'unauthorized'
+          ? 'UNAUTHENTICATED'
+          : authorization.status === 'access-denied'
+            ? 'CLINIC_ACCESS_DENIED'
+            : 'SERVICE_UNAVAILABLE',
+      )
+    commandStarted = true
+    return response(await markClinicNotificationsRead(req, input.data), 200)
+  } catch (error) {
+    const code = error instanceof ClinicNotificationError ? error.code : 'SERVICE_UNAVAILABLE'
+    const writeOutcome =
+      error instanceof ClinicNotificationError && error.writeOutcome
+        ? error.writeOutcome
+        : commandStarted
+          ? 'unknown'
+          : 'not_committed'
+    if (!commandStarted || !(error instanceof ClinicNotificationError))
+      await recordNotificationDiagnostic(req, {
+        operation: 'acknowledge',
+        result: statuses[code] < 500 ? 'rejected' : 'failure',
+        errorCode: code,
+        transactionOutcome: writeOutcome,
+        elapsedMs: Math.round(performance.now() - started),
+      })
+    return response(
+      { contractVersion: CLINIC_NOTIFICATIONS_CONTRACT_VERSION, error: { code }, writeOutcome },
+      statuses[code],
+    )
   }
 }

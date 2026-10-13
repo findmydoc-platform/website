@@ -1,6 +1,6 @@
 import type { PayloadRequest } from 'payload'
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
-import { readClinicInquiryNotificationProjection } from '@/features/inquiryCommunication/service'
+import { readNotificationSourceProjection } from './projection'
 import {
   CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
   NOTIFICATION_PAGE_MAX_BYTES,
@@ -65,7 +65,7 @@ export async function readClinicNotifications(
   if (input.mode === 'page' && input.cursor) throw new ClinicNotificationError('CURSOR_INVALID')
   const serverTime = new Date().toISOString()
   const occurrences = await allRows(req, 'clinicNotificationOccurrences', {
-    and: [{ clinic: { equals: access.clinic.id } }, { expiresAt: { greater_than: serverTime } }],
+    and: [{ clinicScopeId: { equals: String(access.clinic.id) } }, { expiresAt: { greater_than: serverTime } }],
   })
   const receipts = await allRows(req, 'clinicNotificationReadReceipts', { clinicStaff: { equals: access.staff.id } })
   const readTimes = new Map(receipts.map((receipt) => [String(idOf(receipt.occurrence)), receipt.readAt]))
@@ -84,10 +84,7 @@ export async function readClinicNotifications(
     })
     if (!parsed.success) throw new ClinicNotificationError('CONTRACT_INCOMPATIBLE')
     const member = parsed.data
-    const projection =
-      member.sourceRecord.kind === 'inquiry'
-        ? await readClinicInquiryNotificationProjection(req, member.sourceRecord.id)
-        : { visible: true as const }
+    const projection = await readNotificationSourceProjection(req, member.sourceRecord)
     if (!projection.visible) continue
     items.push({
       kind: 'occurrence',
@@ -149,3 +146,5 @@ export async function readClinicNotifications(
   }
   return notificationsResponseSchema.parse(body())
 }
+
+export { markClinicNotificationsRead } from './markRead'

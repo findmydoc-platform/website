@@ -30,6 +30,7 @@ if (dashboardPackage.name !== 'clinic-dashboard') {
 
 const subjects = {
   clinic: '00000000-0000-4000-8000-000000000001',
+  secondClinic: '00000000-0000-4000-8000-000000000004',
   foreignClinic: '00000000-0000-4000-8000-000000000002',
   patient: '00000000-0000-4000-8000-000000000003',
 } as const
@@ -51,6 +52,7 @@ function syntheticJwt(subject: string, email: string, type: 'clinic' | 'patient'
 
 const tokens = {
   clinic: syntheticJwt(subjects.clinic, 'clinic-staff@example.com', 'clinic'),
+  secondClinic: syntheticJwt(subjects.secondClinic, 'second-clinic-staff@example.com', 'clinic'),
   foreignClinic: syntheticJwt(subjects.foreignClinic, 'foreign-clinic@example.com', 'clinic'),
   patient: syntheticJwt(subjects.patient, 'cross-app-ada@example.com', 'patient'),
 } as const
@@ -203,6 +205,12 @@ async function seedSyntheticInquiry() {
       lastName: 'Clinic',
       supabaseUserId: subjects.clinic,
     })
+    const secondClinicStaff = await users.createClinicTestUser(payload, {
+      emailPrefix: 'cross-app-second-clinic',
+      firstName: 'Taylor',
+      lastName: 'Clinic',
+      supabaseUserId: subjects.secondClinic,
+    })
     const foreignClinicStaff = await users.createClinicTestUser(payload, {
       emailPrefix: 'cross-app-foreign-clinic',
       firstName: 'Foreign',
@@ -211,6 +219,7 @@ async function seedSyntheticInquiry() {
     })
     for (const [staff, clinicId] of [
       [clinicStaff, clinicFixture.clinic.id],
+      [secondClinicStaff, clinicFixture.clinic.id],
       [foreignClinicStaff, foreignFixture.clinic.id],
     ] as const) {
       await payload.update({
@@ -292,6 +301,16 @@ async function seedSyntheticInquiry() {
       },
       users: new Map<string, SyntheticUser>([
         [
+          tokens.secondClinic,
+          {
+            email: secondClinicStaff.email ?? 'second-clinic-staff@example.com',
+            firstName: 'Taylor',
+            id: subjects.secondClinic,
+            lastName: 'Clinic',
+            type: 'clinic',
+          },
+        ],
+        [
           tokens.clinic,
           {
             email: clinicStaff.email ?? 'cross-app-clinic@example.com',
@@ -348,6 +367,7 @@ async function main() {
   Object.assign(process.env, {
     DATABASE_URI: databaseUri,
     DATABASE_DIRECT_URI: databaseUri,
+    CLINIC_DASHBOARD_URL: `http://127.0.0.1:${Number(process.env.CLINIC_DASHBOARD_CROSS_APP_PORT ?? '3101')}`,
     DEPLOYMENT_ENV: 'test',
     NEXT_PUBLIC_DEPLOYMENT_ENV: 'test',
     NEXT_PUBLIC_SERVER_URL: websiteOrigin,
@@ -379,6 +399,7 @@ async function main() {
         INQUIRY_ACCEPTANCE_CLINIC_ID: fixture.clinicId,
         INQUIRY_ACCEPTANCE_CLINIC_NAME: fixture.clinicName,
         INQUIRY_ACCEPTANCE_CLINIC_TOKEN: tokens.clinic,
+        INQUIRY_ACCEPTANCE_SECOND_CLINIC_TOKEN: tokens.secondClinic,
         INQUIRY_ACCEPTANCE_CONTROL_ORIGIN: controlOrigin,
         INQUIRY_ACCEPTANCE_CONTROL_TOKEN: controlToken,
         INQUIRY_ACCEPTANCE_FOREIGN_CLINIC_ID: fixture.foreignClinicId,

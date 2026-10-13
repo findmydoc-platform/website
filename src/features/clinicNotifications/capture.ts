@@ -90,6 +90,7 @@ export async function captureClinicNotificationOccurrence(
       overrideAccess: true,
       req: transactionReq,
       data: {
+        clinicScopeId: String(input.clinicId),
         clinic: input.clinicId,
         notificationId: member.notificationId,
         schemaVersion: member.schemaVersion,

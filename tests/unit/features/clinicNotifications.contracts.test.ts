@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import cases from '../../fixtures/clinic-notifications-v1.json'
+import readCases from '../../fixtures/clinic-notification-read-v1.json'
 import {
   notificationsResponseSchema,
   notificationErrorSchema,
@@ -7,6 +8,10 @@ import {
 } from '@/features/clinicNotifications/contracts'
 
 describe('Website clinic-notifications-v1 published wire contract', () => {
+  it.each(readCases)('accepts independent acknowledgement case $name without discarding fields', ({ response }) => {
+    const schema = 'acknowledged' in response ? notificationReadSuccessSchema : notificationErrorSchema
+    expect(schema.parse(response)).toEqual(response)
+  })
   it.each(cases)('accepts the independent $name wire example without discarding fields', ({ response }) => {
     expect(notificationsResponseSchema.parse(response)).toEqual(response)
   })

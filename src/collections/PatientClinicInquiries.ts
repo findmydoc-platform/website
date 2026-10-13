@@ -1,3 +1,7 @@
+import {
+  guardNotificationInquiryMembershipChange,
+  guardNotificationAuthorizationSession,
+} from '@/features/clinicNotifications/authorizationBarrier'
 import { ValidationError } from 'payload'
 import type { CollectionBeforeChangeHook, CollectionConfig, FieldAccess } from 'payload'
 
@@ -212,7 +216,16 @@ export const PatientClinicInquiries: CollectionConfig = {
   endpoints: false,
   graphQL: false,
   hooks: {
+    beforeOperation: [guardNotificationInquiryMembershipChange],
+    afterOperation: [
+      async ({ result, req, operation }) => {
+        if (['update', 'delete', 'restoreVersion'].includes(operation))
+          await guardNotificationAuthorizationSession({ req })
+        return result
+      },
+    ],
     beforeChange: [
+      guardNotificationAuthorizationSession,
       protectInquiryDomainFields,
       freezeOriginalSubmission,
       freezeSubmissionEvidence,

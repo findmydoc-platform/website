@@ -9,7 +9,10 @@ import path from 'path'
 import { buildConfig, PayloadHandler, type EmailAdapter } from 'payload'
 import { cacheRevalidationVisibilityGetHandler } from './endpoints/cacheRevalidationVisibility'
 import { clinicDashboardBootstrapGetHandler } from './endpoints/clinicDashboardBootstrap'
-import { clinicDashboardNotificationsGetHandler } from './endpoints/clinicDashboardNotifications'
+import {
+  clinicDashboardNotificationsGetHandler,
+  clinicDashboardNotificationsReadPostHandler,
+} from './endpoints/clinicDashboardNotifications'
 import { clinicDashboardReportingGetHandler } from './endpoints/clinicDashboardReporting'
 import {
   clinicDashboardProfileDraftDiscardPostHandler,
@@ -190,6 +193,11 @@ export default buildConfig({
       handler: clinicDashboardBootstrapGetHandler as PayloadHandler,
     },
     { path: '/clinic-dashboard/notifications', method: 'get', handler: clinicDashboardNotificationsGetHandler },
+    {
+      path: '/clinic-dashboard/notifications/read',
+      method: 'post',
+      handler: clinicDashboardNotificationsReadPostHandler,
+    },
     {
       path: '/clinic-dashboard/reporting',
       method: 'get',

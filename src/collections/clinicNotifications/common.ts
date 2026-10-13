@@ -29,9 +29,12 @@ export const guardNotificationWrite: CollectionBeforeChangeHook = async ({ data,
   return data
 }
 
-export const guardNotificationDelete: CollectionBeforeDeleteHook = async ({ req }) => {
+export const guardNotificationDelete: CollectionBeforeDeleteHook = async ({ req, collection }) => {
   requireNotificationTransaction(req, await req.transactionID)
-  if (req.context?.clinicNotificationRetention !== true) {
+  if (
+    req.context?.clinicNotificationRetention !== true &&
+    !(collection.slug === 'clinicNotificationReadReceipts' && req.context?.clinicNotificationReaderDeletion === true)
+  ) {
     throw new Error('Notification deletion belongs to the independent retention command.')
   }
 }

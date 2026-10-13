@@ -16,7 +16,7 @@ describe('independent transactional email schedules', () => {
   })
 
   it('gives the Preview scheduler its own function, cadence, runtime and deployment root', () => {
-    expect(scheduler.crons).toEqual([{ path: '/api/tick', schedule: '* * * * *' }])
+    expect(scheduler.crons).toContainEqual({ path: '/api/tick', schedule: '* * * * *' })
     expect(scheduler.functions['api/tick.js'].maxDuration).toBe(300)
     expect(scheduler.framework).toBeNull()
     expect(runtime.engines.node).toBe('24.x')

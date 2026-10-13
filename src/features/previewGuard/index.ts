@@ -166,6 +166,7 @@ export const isPreviewGuardEndpointAuthApiPath = (pathname: string): boolean => 
   const normalizedPath = normalizePathname(pathname)
   return (
     normalizedPath === '/api/internal/transactional-email/worker' ||
+    normalizedPath === '/api/internal/clinic-notifications/preview-retention' ||
     normalizedPath === '/api/mcp' ||
     normalizedPath === '/api/internal/transactional-email/lettermint/preview' ||
     normalizedPath === '/api/internal/transactional-email/lettermint/production' ||

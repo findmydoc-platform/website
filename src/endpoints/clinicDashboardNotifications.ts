@@ -60,7 +60,7 @@ export const clinicDashboardNotificationsGetHandler: PayloadHandler = async (req
     const input = notificationReadQuerySchema.safeParse(Object.fromEntries(query))
     if (!input.success) throw new ClinicNotificationError('INVALID_INPUT')
     const result = await readClinicNotifications(req, input.data)
-    recordNotificationDiagnostic(req, {
+    await recordNotificationDiagnostic(req, {
       operation: mode,
       result: 'success',
       elapsedMs: Math.round(performance.now() - started),
@@ -68,7 +68,7 @@ export const clinicDashboardNotificationsGetHandler: PayloadHandler = async (req
     return response(result, 200)
   } catch (error) {
     const code = error instanceof ClinicNotificationError ? error.code : 'SERVICE_UNAVAILABLE'
-    recordNotificationDiagnostic(req, {
+    await recordNotificationDiagnostic(req, {
       operation: mode,
       result: statuses[code] < 500 ? 'rejected' : 'failure',
       errorCode: code,

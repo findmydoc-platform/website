@@ -1,6 +1,12 @@
 import { slugField as payloadSlugField } from 'payload'
 
-/** Keep native slug rules, but finish generation before the slug field validates. */
+/**
+ * Work around Payload 3.90.2's race between native slug generation and validation.
+ * Upstream: https://github.com/payloadcms/payload/issues/18334
+ * Removal tracking: https://github.com/findmydoc-platform/website/issues/2144
+ * Remove this adapter and restore native imports once a released upstream fix is
+ * installed and baseline/collection regressions pass without the workaround.
+ */
 export const slugField: typeof payloadSlugField = (options = {}) =>
   payloadSlugField({
     ...options,

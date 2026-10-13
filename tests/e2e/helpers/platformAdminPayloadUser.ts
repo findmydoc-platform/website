@@ -20,6 +20,44 @@ const resolveName = (user: User, key: 'first_name' | 'last_name', fallback: stri
   return typeof rawValue === 'string' && rawValue.trim().length > 0 ? rawValue.trim() : fallback
 }
 
+// Only known diagnostic values may enter CI logs; raw Auth errors can contain user data.
+const authErrorTypes = new Set(['AuthApiError', 'AuthRetryableFetchError', 'AuthUnknownError'])
+const authErrorCodes = new Set([
+  'invalid_credentials',
+  'email_not_confirmed',
+  'user_banned',
+  'bad_jwt',
+  'no_authorization',
+  'over_request_rate_limit',
+  'over_email_send_rate_limit',
+  'request_timeout',
+  'unexpected_failure',
+  'captcha_failed',
+  'validation_failed',
+])
+
+const createAuthFailure = (error: unknown, missingUser = false): Error => {
+  const diagnostic =
+    error && typeof error === 'object' ? (error as { name?: unknown; status?: unknown; code?: unknown }) : {}
+  const type = typeof diagnostic.name === 'string' && authErrorTypes.has(diagnostic.name) ? diagnostic.name : 'unknown'
+  const status =
+    typeof diagnostic.status === 'number' &&
+    Number.isInteger(diagnostic.status) &&
+    diagnostic.status >= 100 &&
+    diagnostic.status <= 599
+      ? diagnostic.status
+      : 'unknown'
+  const code = missingUser
+    ? 'missing_user'
+    : typeof diagnostic.code === 'string' && authErrorCodes.has(diagnostic.code)
+      ? diagnostic.code
+      : 'unknown'
+
+  return new Error(
+    `Admin E2E setup authentication failed before Payload synchronization or browser login: phase=supabase-signin type=${type} status=${status} code=${code}.`,
+  )
+}
+
 const readFixedSupabasePlatformUser = async (credentials: AdminSessionCredentials): Promise<User> => {
   const supabase = createClient(
     readRequiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
@@ -33,14 +71,22 @@ const readFixedSupabasePlatformUser = async (credentials: AdminSessionCredential
     },
   )
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: credentials.email,
-    password: credentials.password,
-  })
-
-  if (error || !data.user) {
-    throw new Error('The fixed E2E admin Supabase credentials could not be authenticated.')
+  let response: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>
+  try {
+    response = await supabase.auth.signInWithPassword({
+      email: credentials.email,
+      password: credentials.password,
+    })
+  } catch (error) {
+    throw createAuthFailure(error)
   }
+
+  const { data, error } = response
+  if (error || !data.user) {
+    throw createAuthFailure(error, !error && !data.user)
+  }
+
+  console.info('[admin-e2e] phase=supabase-signin result=success')
 
   if (data.user.app_metadata?.user_type !== 'platform') {
     throw new Error('The fixed E2E admin Supabase account is not marked as a platform user.')

@@ -5,42 +5,42 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
    CREATE TYPE "public"."enum_clinic_notification_occurrences_source_record_kind" AS ENUM('inquiry', 'review');
   CREATE TYPE "public"."enum_clinic_notification_occurrences_outcome" AS ENUM('approved', 'rejected', 'blocked', 'upheld', 'confirmed', 'lifted');
   CREATE TABLE "clinic_notification_occurrences" (
-  	"id" serial PRIMARY KEY NOT NULL,
-  	"notification_id" varchar NOT NULL,
-  	"clinic_id" integer NOT NULL,
-  	"schema_version" numeric DEFAULT 1 NOT NULL,
-  	"event_type" varchar NOT NULL,
-  	"source_record_kind" "enum_clinic_notification_occurrences_source_record_kind" NOT NULL,
-  	"source_record_id" varchar NOT NULL,
-  	"source_occurrence_kind" varchar NOT NULL,
-  	"source_occurrence_id" varchar NOT NULL,
-  	"occurred_at" timestamp(3) with time zone NOT NULL,
-  	"expires_at" timestamp(3) with time zone NOT NULL,
-  	"outcome" "enum_clinic_notification_occurrences_outcome",
-  	"rating" numeric,
-  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+    "id" serial PRIMARY KEY NOT NULL,
+    "notification_id" varchar NOT NULL,
+    "clinic_id" integer NOT NULL,
+    "schema_version" numeric DEFAULT 1 NOT NULL,
+    "event_type" varchar NOT NULL,
+    "source_record_kind" "enum_clinic_notification_occurrences_source_record_kind" NOT NULL,
+    "source_record_id" varchar NOT NULL,
+    "source_occurrence_kind" varchar NOT NULL,
+    "source_occurrence_id" varchar NOT NULL,
+    "occurred_at" timestamp(3) with time zone NOT NULL,
+    "expires_at" timestamp(3) with time zone NOT NULL,
+    "outcome" "enum_clinic_notification_occurrences_outcome",
+    "rating" numeric,
+    "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+    "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
-  
+
   CREATE TABLE "clinic_notification_read_receipts" (
-  	"id" serial PRIMARY KEY NOT NULL,
-  	"occurrence_id" integer NOT NULL,
-  	"clinic_staff_id" integer NOT NULL,
-  	"read_at" timestamp(3) with time zone NOT NULL,
-  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+    "id" serial PRIMARY KEY NOT NULL,
+    "occurrence_id" integer NOT NULL,
+    "clinic_staff_id" integer NOT NULL,
+    "read_at" timestamp(3) with time zone NOT NULL,
+    "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+    "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
-  
+
   CREATE TABLE "clinic_notification_controls" (
-  	"id" serial PRIMARY KEY NOT NULL,
-  	"key" varchar NOT NULL,
-  	"active" boolean DEFAULT false NOT NULL,
-  	"activated_at" timestamp(3) with time zone,
-  	"nonce" varchar NOT NULL,
-  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+    "id" serial PRIMARY KEY NOT NULL,
+    "key" varchar NOT NULL,
+    "active" boolean DEFAULT false NOT NULL,
+    "activated_at" timestamp(3) with time zone,
+    "nonce" varchar NOT NULL,
+    "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+    "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
-  
+
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "clinic_notification_occurrences_id" integer;
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "clinic_notification_read_receipts_id" integer;
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "clinic_notification_controls_id" integer;
@@ -81,11 +81,11 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "clinic_notification_read_receipts" CASCADE;
   DROP TABLE "clinic_notification_controls" CASCADE;
   ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_clinic_notification_occurre_fk";
-  
+
   ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_clinic_notification_read_re_fk";
-  
+
   ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_clinic_notification_control_fk";
-  
+
   DROP INDEX "payload_locked_documents_rels_clinic_notification_occurr_idx";
   DROP INDEX "payload_locked_documents_rels_clinic_notification_read_r_idx";
   DROP INDEX "payload_locked_documents_rels_clinic_notification_contro_idx";

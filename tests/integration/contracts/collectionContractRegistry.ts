@@ -16,6 +16,10 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
     deep: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
   },
+  reviewPublicationTransitions: {
+    baseline: ['tests/integration/clinicNotifications.reviews.test.ts'],
+    deep: ['tests/integration/clinicNotifications.reviews.test.ts'],
+  },
   recoveryRequestEvents: {
     baseline: ['tests/integration/recoveryRequests.lifecycle.test.ts'],
     deep: ['tests/integration/recoveryRequests.lifecycle.test.ts'],

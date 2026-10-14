@@ -1338,8 +1338,10 @@ describe('clinic notification source-to-feed lifecycle', () => {
   })
 
   it('counts authorized unread entries beyond the complete initial twenty-five-entry page', async () => {
+    await activateClinicNotificationsForTest(sourceReq)
+    const createdInquiryIds: string[] = []
     for (let index = 0; index < 26; index++) {
-      await submitGuestClinicInquiry(sourceReq, {
+      const created = await submitGuestClinicInquiry(sourceReq, {
         clinicId,
         doctorId,
         consent: true,
@@ -1348,6 +1350,7 @@ describe('clinic notification source-to-feed lifecycle', () => {
         message: 'Synthetic initial source for page boundary acceptance.',
         phoneNumber: '+491234567890',
       })
+      createdInquiryIds.push(created.id)
     }
     const feed = await readClinicNotifications(staffReq, { mode: 'page', view: 'unread' })
     expect(feed.mode).toBe('page')
@@ -1357,6 +1360,46 @@ describe('clinic notification source-to-feed lifecycle', () => {
     expect(feed.unreadCount).toBeGreaterThan(25)
     expect(feed.nextCursor).toEqual(expect.any(String))
     expect(Buffer.byteLength(JSON.stringify(feed))).toBeLessThanOrEqual(524288)
+    const pages: Array<{ items: typeof feed.items }> = [feed]
+    let cursor = feed.nextCursor
+    while (cursor) {
+      const older = await readClinicNotifications(staffReq, { mode: 'page', view: 'unread', cursor })
+      if (older.mode !== 'page') throw new Error('Expected continuation page')
+      expect('unreadCount' in older).toBe(false)
+      expect(older.items.length).toBeGreaterThan(0)
+      expect(older.items.length).toBeLessThanOrEqual(25)
+      expect(Buffer.byteLength(JSON.stringify(older))).toBeLessThanOrEqual(524288)
+      pages.push(older)
+      cursor = older.nextCursor
+      expect(pages.length).toBeLessThan(20)
+    }
+    const loaded = pages.flatMap((page) => page.items)
+    expect(new Set(loaded.map((item) => item.presentationId)).size).toBe(loaded.length)
+    const loadedInquiryIds = new Set(
+      loaded.flatMap((item) => (item.destination.kind === 'inquiry' ? [item.destination.inquiryId] : [])),
+    )
+    for (const inquiryId of createdInquiryIds) expect(loadedInquiryIds.has(inquiryId)).toBe(true)
+    for (let index = 1; index < loaded.length; index++)
+      expect(loaded[index]!.members.at(-1)!.occurredAt <= loaded[index - 1]!.members.at(-1)!.occurredAt).toBe(true)
+    await expect(
+      readClinicNotifications(staffReq, { mode: 'page', view: 'all', cursor: feed.nextCursor! }),
+    ).rejects.toMatchObject({ code: 'CURSOR_INVALID' })
+    await expect(
+      readClinicNotifications(staffReq, {
+        mode: 'page',
+        view: 'unread',
+        cursor: `${feed.nextCursor!.slice(0, -1)}${feed.nextCursor!.endsWith('A') ? 'B' : 'A'}`,
+      }),
+    ).rejects.toMatchObject({ code: 'CURSOR_INVALID' })
+    const otherStaff = await createClinicTestUser(payload, {
+      createdStaffIds: staffIds,
+      emailPrefix: 'notification-page-other-reader',
+    })
+    const otherReq = await createLocalReq({}, payload)
+    otherReq.user = await asClinicScopedPayloadUser(payload, otherStaff, clinicId)
+    await expect(
+      readClinicNotifications(otherReq, { mode: 'page', view: 'unread', cursor: feed.nextCursor! }),
+    ).rejects.toMatchObject({ code: 'CURSOR_INVALID' })
     const summary = await readClinicNotifications(staffReq, { mode: 'summary' })
     expect(summary).toMatchObject({ unreadCount: feed.unreadCount })
   })

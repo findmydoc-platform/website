@@ -440,6 +440,53 @@ describe('complete personal patient message notifications', () => {
     ).toEqual(receipts)
     expect((await page()).items.find((item) => item.presentationId === group.presentationId)!.members).toHaveLength(1)
   })
+  it('keeps an older patient group complete and accepts its move before a live continuation cursor', async () => {
+    const created = await create()
+    const first = await send(created.inquiry.id, created.inquiry.revision, 'pagination-group-first')
+    const second = await send(created.inquiry.id, first.inquiry.revision, 'pagination-group-second')
+    const groupId = (await page()).items.find(
+      (item) =>
+        item.kind === 'patient_message_group' &&
+        item.destination.kind === 'inquiry' &&
+        item.destination.inquiryId === created.inquiry.id,
+    )?.presentationId
+    expect(groupId).toEqual(expect.any(String))
+    const guestReq = await createLocalReq({}, payload)
+    for (let index = 0; index < 26; index++)
+      await submitGuestClinicInquiry(guestReq, {
+        clinicId,
+        doctorId,
+        consent: true,
+        fullName: `Pagination Guest ${index}`,
+        email: `pagination-group-guest-${index}@example.com`,
+        phoneNumber: '+493000003204',
+        message: 'Private pagination boundary input',
+      })
+    const firstPage = await page()
+    expect(firstPage.nextCursor).toEqual(expect.any(String))
+    expect(firstPage.items.some((item) => item.presentationId === groupId)).toBe(false)
+    const afterCursor = async () => {
+      const items: typeof firstPage.items = []
+      let cursor = firstPage.nextCursor
+      let pageCount = 0
+      while (cursor) {
+        const continuation = await readClinicNotifications(staffReq, { mode: 'page', view: 'unread', cursor })
+        if (continuation.mode !== 'page') throw new Error('Expected continuation page')
+        items.push(...continuation.items)
+        cursor = continuation.nextCursor
+        expect(++pageCount).toBeLessThan(20)
+      }
+      return items
+    }
+    const older = await afterCursor()
+    const olderGroup = older.find((item) => item.presentationId === groupId)
+    expect(olderGroup?.kind).toBe('patient_message_group')
+    expect(olderGroup?.members).toHaveLength(2)
+    expect(older.some((item) => item.presentationId === groupId && item.members.length === 1)).toBe(false)
+    await send(created.inquiry.id, second.inquiry.revision, 'pagination-group-newest')
+    expect((await afterCursor()).some((item) => item.presentationId === groupId)).toBe(false)
+    expect((await page()).items.find((item) => item.presentationId === groupId)?.members).toHaveLength(3)
+  }, 120000)
   it('retains complete membership beyond one hundred stored rows and fails an oversized group without truncating it', async () => {
     const created = await create()
     await send(created.inquiry.id, created.inquiry.revision, 'large-group-real-source')
@@ -588,5 +635,37 @@ describe('complete personal patient message notifications', () => {
       await expect(readClinicNotifications(staffReq, { mode: 'page', view })).rejects.toMatchObject({
         code: 'PAYLOAD_TOO_LARGE',
       })
-  }, 60000)
+    const guestReq = await createLocalReq({}, payload)
+    for (let index = 0; index < 26; index++)
+      await submitGuestClinicInquiry(guestReq, {
+        clinicId,
+        doctorId,
+        consent: true,
+        fullName: `Oversized Group Boundary ${index}`,
+        email: `oversized-group-boundary-${index}@example.com`,
+        phoneNumber: '+493000003204',
+        message: 'Private pagination boundary input',
+      })
+    for (const view of ['unread', 'all'] as const) {
+      const initial = await readClinicNotifications(staffReq, { mode: 'page', view })
+      if (initial.mode !== 'page') throw new Error('Expected first page before oversized group')
+      expect(initial.nextCursor).toEqual(expect.any(String))
+      expect(Buffer.byteLength(JSON.stringify(initial))).toBeLessThanOrEqual(524288)
+      let cursor = initial.nextCursor
+      let oversizedReached = false
+      for (let pageCount = 0; cursor && pageCount < 20; pageCount++) {
+        try {
+          const continuation = await readClinicNotifications(staffReq, { mode: 'page', view, cursor })
+          if (continuation.mode !== 'page') throw new Error('Expected continuation page')
+          expect(Buffer.byteLength(JSON.stringify(continuation))).toBeLessThanOrEqual(524288)
+          cursor = continuation.nextCursor
+        } catch (error) {
+          expect(error).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' })
+          oversizedReached = true
+          break
+        }
+      }
+      expect(oversizedReached).toBe(true)
+    }
+  }, 120000)
 })

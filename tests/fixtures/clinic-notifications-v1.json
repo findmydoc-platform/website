@@ -714,5 +714,35 @@
       ],
       "nextCursor": null
     }
+  },
+  {
+    "name": "continuation_page_without_summary",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:10:00.000Z",
+      "view": "all",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-older",
+          "display": { "eventLabel": "New inquiry" },
+          "destination": { "kind": "inquiry", "inquiryId": "record-older" },
+          "members": [
+            {
+              "notificationId": "notification-older",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-13T09:00:00.000Z",
+              "expiresAt": "2027-01-11T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "inquiry_created",
+              "sourceRecord": { "kind": "inquiry", "id": "record-older" },
+              "sourceOccurrence": { "kind": "inquiry_audit", "id": "audit-older" }
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
   }
 ]

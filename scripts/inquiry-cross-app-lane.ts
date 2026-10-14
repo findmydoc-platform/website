@@ -101,11 +101,14 @@ function startAuthStub(users: ReadonlyMap<string, SyntheticUser>): Promise<Serve
 function startControlServer(
   offboardClinicStaff: () => Promise<void>,
   createNotificationInquiry: () => Promise<unknown>,
+  removeNotificationInquiry: () => Promise<void>,
 ): Promise<Server> {
   const server = http.createServer((request, response) => {
     if (
       request.method !== 'POST' ||
-      !['/offboard-clinic-staff', '/create-notification-inquiry'].includes(request.url?.split('?')[0] ?? '') ||
+      !['/offboard-clinic-staff', '/create-notification-inquiry', '/remove-notification-inquiry'].includes(
+        request.url?.split('?')[0] ?? '',
+      ) ||
       request.headers.authorization !== `Bearer ${controlToken}`
     ) {
       response.writeHead(404, { 'content-type': 'application/json' })
@@ -113,7 +116,13 @@ function startControlServer(
       return
     }
     const createsNotification = request.url?.split('?')[0] === '/create-notification-inquiry'
-    void (createsNotification ? createNotificationInquiry() : offboardClinicStaff())
+    void (
+      createsNotification
+        ? createNotificationInquiry()
+        : request.url?.split('?')[0] === '/remove-notification-inquiry'
+          ? removeNotificationInquiry()
+          : offboardClinicStaff()
+    )
       .then((result) => {
         response.writeHead(createsNotification ? 200 : 204, { 'content-type': 'application/json' })
         response.end(createsNotification ? JSON.stringify(result) : undefined)
@@ -256,6 +265,8 @@ async function seedSyntheticInquiry() {
       treatmentTimeline: 'within_two_weeks',
     })
 
+    let notificationArrivals = 0
+    let lastNotificationInquiryId: string | number | undefined
     return {
       clinicId: String(clinicFixture.clinic.id),
       clinicName: clinicFixture.clinic.name,
@@ -264,16 +275,18 @@ async function seedSyntheticInquiry() {
       foreignClinicName: foreignFixture.clinic.name,
       inquiryId: created.inquiry.id,
       createNotificationInquiry: async () => {
+        notificationArrivals += 1
         const req = await createLocalReq({}, payload)
         const source = await communication.submitGuestClinicInquiry(req, {
           clinicId: clinicFixture.clinic.id,
           doctorId: clinicFixture.doctor.id,
           consent: true,
-          email: 'notification-arrival@example.com',
+          email: `notification-arrival-${notificationArrivals}@example.com`,
           fullName: 'Notification Arrival',
           message: 'Private cross-app arrival text.',
           phoneNumber: '+493000000099',
         })
+        lastNotificationInquiryId = source.id
         const occurrences = await payload.find({
           collection: 'clinicNotificationOccurrences',
           overrideAccess: true,
@@ -288,6 +301,15 @@ async function seedSyntheticInquiry() {
           occurredAt: occurrence.occurredAt,
           displayName: 'Notification Arrival',
         }
+      },
+      removeNotificationInquiry: async () => {
+        if (lastNotificationInquiryId === undefined) throw new Error('Expected a captured synthetic inquiry')
+        await payload.update({
+          collection: 'patientClinicInquiries',
+          id: lastNotificationInquiryId,
+          data: { deletedAt: new Date().toISOString() },
+          overrideAccess: true,
+        })
       },
       offboardClinicStaff: async () => {
         await payload.update({
@@ -384,7 +406,11 @@ async function main() {
     await setupTestDatabase({ templateKind: 'baseline' })
     fixture = await seedSyntheticInquiry()
     authServer = await startAuthStub(fixture.users)
-    controlServer = await startControlServer(fixture.offboardClinicStaff, fixture.createNotificationInquiry)
+    controlServer = await startControlServer(
+      fixture.offboardClinicStaff,
+      fixture.createNotificationInquiry,
+      fixture.removeNotificationInquiry,
+    )
     websiteServer = spawn('pnpm', ['dev', '--hostname', '127.0.0.1', '--port', '3200'], {
       cwd: process.cwd(),
       env: process.env,

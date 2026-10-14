@@ -103,6 +103,7 @@ export interface Config {
     clinicNotificationOccurrences: ClinicNotificationOccurrence;
     clinicNotificationReadReceipts: ClinicNotificationReadReceipt;
     clinicNotificationControls: ClinicNotificationControl;
+    reviewPublicationTransitions: ReviewPublicationTransition;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -187,6 +188,7 @@ export interface Config {
     clinicNotificationOccurrences: ClinicNotificationOccurrencesSelect<false> | ClinicNotificationOccurrencesSelect<true>;
     clinicNotificationReadReceipts: ClinicNotificationReadReceiptsSelect<false> | ClinicNotificationReadReceiptsSelect<true>;
     clinicNotificationControls: ClinicNotificationControlsSelect<false> | ClinicNotificationControlsSelect<true>;
+    reviewPublicationTransitions: ReviewPublicationTransitionsSelect<false> | ReviewPublicationTransitionsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -3244,6 +3246,22 @@ export interface ClinicNotificationControl {
   createdAt: string;
 }
 /**
+ * Immutable review publication facts without patient or review content
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviewPublicationTransitions".
+ */
+export interface ReviewPublicationTransition {
+  id: number;
+  transitionId: string;
+  reviewId: string;
+  clinicScopeId: string;
+  eventType: 'review_published' | 'review_withdrawn' | 'review_removed';
+  occurredAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Saved clinics for patients
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3272,6 +3290,16 @@ export interface Favoriteclinic {
 export interface Review {
   id: number;
   stableId?: string | null;
+  notificationPublicationEvidenceAt?: string | null;
+  notificationTransition?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   /**
    * Date the review was written
    */
@@ -4076,6 +4104,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'clinicNotificationControls';
         value: number | ClinicNotificationControl;
+      } | null)
+    | ({
+        relationTo: 'reviewPublicationTransitions';
+        value: number | ReviewPublicationTransition;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -5554,6 +5586,19 @@ export interface ClinicNotificationControlsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviewPublicationTransitions_select".
+ */
+export interface ReviewPublicationTransitionsSelect<T extends boolean = true> {
+  transitionId?: T;
+  reviewId?: T;
+  clinicScopeId?: T;
+  eventType?: T;
+  occurredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinics_select".
  */
 export interface ClinicsSelect<T extends boolean = true> {
@@ -5802,6 +5847,8 @@ export interface FavoriteclinicsSelect<T extends boolean = true> {
  */
 export interface ReviewsSelect<T extends boolean = true> {
   stableId?: T;
+  notificationPublicationEvidenceAt?: T;
+  notificationTransition?: T;
   reviewDate?: T;
   patient?: T;
   status?: T;
@@ -7509,6 +7556,7 @@ export interface TaskCreateCollectionExport {
       | 'clinicNotificationOccurrences'
       | 'clinicNotificationReadReceipts'
       | 'clinicNotificationControls'
+      | 'reviewPublicationTransitions'
       | 'clinics'
       | 'doctors'
       | 'accreditation'

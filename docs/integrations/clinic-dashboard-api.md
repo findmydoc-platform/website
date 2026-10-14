@@ -685,6 +685,7 @@ There is no public `under_review` display and no black-bar rendering. `status` r
 The standard Payload REST collection routes remain the current-read contract:
 
 - `GET /api/reviews` and `GET /api/reviews/:id` return platform staff all review states and fields.
+- `GET /api/clinic-dashboard/reviews/:id` returns an ordinary exact clinic review in a closed `{ data }` envelope. It revalidates the current clinic principal and source scope, takes no query or caller-selected clinic, and returns `404 TARGET_UNAVAILABLE` for a missing, foreign, rejected or trashed record. Its independently executable examples live in `tests/fixtures/clinic-review-detail-v1.json`. The response exposes the current permitted text projection, treatment, rating and publication/withdrawal state. Removed or withdrawn rows remain available to their clinic but omit author name and written content. The route is private and uncached; it does not read versions or create notification receipts.
 - The same routes return clinic staff approved reviews only for their assigned clinic, including logically removed and
   withdrawn rows. Clinic fields are limited to the public measure/text/notice, moderation time, withdrawal
   state/source/time, rating/date/public author, and ordinary review relationships. Raw `comment` is returned only for

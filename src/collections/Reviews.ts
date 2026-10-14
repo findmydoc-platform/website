@@ -23,6 +23,13 @@ import {
 import { preventReviewVersionRestore } from '@/collections/reviews/versioning'
 import { reviewPublicationEndpoints } from '@/collections/reviews/endpoints'
 import {
+  prepareReviewNotificationOperation,
+  prepareReviewNotificationTransitions,
+  captureReviewNotificationTransitions,
+  captureReviewNotificationDeletion,
+  finalizeReviewNotificationOperation,
+} from '@/collections/reviews/notificationTransitions'
+import {
   clinicReviewAuditFieldReadAccess,
   publicReviewProjectionFieldReadAccess,
   rawReviewCommentFieldReadAccess,
@@ -198,6 +205,13 @@ export const Reviews: CollectionConfig = {
   endpoints: reviewPublicationEndpoints,
   fields: [
     stableIdField(),
+    {
+      name: 'notificationPublicationEvidenceAt',
+      type: 'date',
+      access: reviewFoundationFieldAccess,
+      admin: { hidden: true },
+    },
+    { name: 'notificationTransition', type: 'json', access: reviewFoundationFieldAccess, admin: { hidden: true } },
     {
       name: 'reviewDate',
       type: 'date',
@@ -602,6 +616,7 @@ export const Reviews: CollectionConfig = {
         return draft
       },
       validateReviewCreationRequirements,
+      prepareReviewNotificationTransitions,
     ],
     beforeValidate: [
       async ({ data, req, operation, originalDoc, collection }) => {
@@ -656,8 +671,10 @@ export const Reviews: CollectionConfig = {
         return data
       },
     ],
-    beforeOperation: [preventReviewVersionRestore],
-    afterChange: [updateAverageRatingsAfterChange, revalidateReviewChange],
+    beforeOperation: [preventReviewVersionRestore, prepareReviewNotificationOperation],
+    beforeDelete: [captureReviewNotificationDeletion],
+    afterOperation: [finalizeReviewNotificationOperation],
+    afterChange: [captureReviewNotificationTransitions, updateAverageRatingsAfterChange, revalidateReviewChange],
     afterDelete: [updateAverageRatingsAfterDelete, revalidateReviewDelete],
   },
   timestamps: true,

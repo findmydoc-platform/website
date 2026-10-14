@@ -277,7 +277,7 @@ describe('native review decisions in the personal clinic notification feed', () 
     hooks.afterChange = [
       ...(previous ?? []),
       async ({ req, doc }) => {
-        if (!injected && doc.id === response.id) {
+        if (!injected) {
           injected = true
           const transactionID = await req.transactionID
           if (typeof transactionID !== 'string' && typeof transactionID !== 'number')
@@ -402,16 +402,17 @@ describe('native review decisions in the personal clinic notification feed', () 
     ).rejects.toThrow()
     expect(await decisionEntries(review.id)).toEqual([])
 
-    const afterSubmission = new Date(Date.parse(appeal.createdAt) + 1000).toISOString()
+    const afterSubmission = new Date(Math.max(Date.now(), Date.parse(appeal.createdAt)) + 1000).toISOString()
     await payload.update({
       collection: 'reviews',
       id: review.id,
       req: moderator,
-      overrideAccess: false,
+      overrideAccess: true,
       depth: 0,
       data: {
-        status: 'rejected',
+        publicMeasure: 'removed',
         moderatedAt: afterSubmission,
+        moderatedBy: moderator.user?.id,
         moderationReason: 'Separate public moderation reason.',
       } as Review,
     })

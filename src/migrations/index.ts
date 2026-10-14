@@ -98,6 +98,7 @@ import * as migration_20261013_225346_clinic_notification_foundation from './202
 import * as migration_20261013_232344_clinic_notification_retention_control from './20261013_232344_clinic_notification_retention_control'
 import * as migration_20261013_234505_clinic_notification_scope from './20261013_234505_clinic_notification_scope'
 import * as migration_20261014_064510_review_notification_transitions from './20261014_064510_review_notification_transitions'
+import * as migration_20261014_083610_review_decision_transitions from './20261014_083610_review_decision_transitions'
 
 export const migrations = [
   {
@@ -599,5 +600,10 @@ export const migrations = [
     up: migration_20261014_064510_review_notification_transitions.up,
     down: migration_20261014_064510_review_notification_transitions.down,
     name: '20261014_064510_review_notification_transitions',
+  },
+  {
+    up: migration_20261014_083610_review_decision_transitions.up,
+    down: migration_20261014_083610_review_decision_transitions.down,
+    name: '20261014_083610_review_decision_transitions',
   },
 ]

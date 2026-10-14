@@ -247,7 +247,7 @@ export const finalizeReviewDecisionNotificationOperation: CollectionAfterOperati
   operation,
   result,
 }) => {
-  if (['create', 'update'].includes(operation)) {
+  if (['create', 'update', 'updateByID'].includes(operation)) {
     try {
       await active(req)
     } catch (error) {

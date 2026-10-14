@@ -4,6 +4,7 @@ import { requireNotificationTransaction } from '@/collections/clinicNotification
 
 type Id = number | string
 const key = (kind: 'clinic' | 'staff', id: Id) => `notification-authorization:${kind}:${String(id)}`
+export const notificationClinicAuthorizationKey = (clinicId: Id): string => key('clinic', clinicId)
 
 /** Clinic and staff keys are independent of the environment capture and retention controls. */
 export async function lockNotificationAuthorization(req: PayloadRequest, keys: readonly string[]): Promise<void> {
@@ -50,7 +51,7 @@ export async function lockNotificationAuthorization(req: PayloadRequest, keys: r
 }
 
 export const notificationAcknowledgementKeys = (clinicId: Id, staffId: Id): string[] => [
-  key('clinic', clinicId),
+  notificationClinicAuthorizationKey(clinicId),
   key('staff', staffId),
 ]
 

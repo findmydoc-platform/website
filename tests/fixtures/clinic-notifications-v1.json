@@ -617,5 +617,102 @@
       "unreadCount": 0,
       "nextUnreadCountChangeAt": null
     }
+  },
+  {
+    "name": "complete_unread_group_and_individual_read_history",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:10:00.000Z",
+      "view": "all",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:09:00.000Z",
+      "items": [
+        {
+          "kind": "patient_message_group",
+          "presentationId": "patient-messages:record-203",
+          "display": {
+            "eventLabel": "2 new messages",
+            "displayName": "Synthetic Patient"
+          },
+          "destination": {
+            "kind": "inquiry",
+            "inquiryId": "record-203",
+            "anchor": {
+              "kind": "message",
+              "id": "source-oldest"
+            }
+          },
+          "members": [
+            {
+              "notificationId": "group-oldest",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:05:00.000Z",
+              "expiresAt": "2027-01-12T09:05:00.000Z",
+              "readAt": null,
+              "eventType": "patient_message_received",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-203"
+              },
+              "sourceOccurrence": {
+                "kind": "patient_message",
+                "id": "source-oldest"
+              }
+            },
+            {
+              "notificationId": "group-newest",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:09:00.000Z",
+              "expiresAt": "2027-01-12T09:09:00.000Z",
+              "readAt": null,
+              "eventType": "patient_message_received",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-203"
+              },
+              "sourceOccurrence": {
+                "kind": "patient_message",
+                "id": "source-newest"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "occurrence",
+          "presentationId": "group-read",
+          "display": {
+            "eventLabel": "New patient message"
+          },
+          "destination": {
+            "kind": "inquiry",
+            "inquiryId": "record-203",
+            "anchor": {
+              "kind": "message",
+              "id": "source-read"
+            }
+          },
+          "members": [
+            {
+              "notificationId": "group-read",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": "2026-10-14T09:03:00.000Z",
+              "eventType": "patient_message_received",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-203"
+              },
+              "sourceOccurrence": {
+                "kind": "patient_message",
+                "id": "source-read"
+              }
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
   }
 ]

@@ -575,7 +575,7 @@ describe('independent notification retention with native storage', () => {
       ).docs
       expect(prepared).toHaveLength(1)
       firstReadAt = prepared[0]!.readAt
-      vi.setSystemTime(new Date(stored.expiresAt))
+      vi.setSystemTime(new Date(Date.parse(stored.expiresAt) + 1))
       await originalCommit(transactionID)
       enteredCommit()
       await allowCommit
@@ -602,7 +602,10 @@ describe('independent notification retention with native storage', () => {
       cleanup = runClinicNotificationRetention(req)
       await waitForRace(deleting)
       releaseCommit()
-      expect(await marking).toMatchObject({ acknowledged: true, serverTime: stored.expiresAt })
+      expect(await marking).toMatchObject({
+        acknowledged: true,
+        serverTime: new Date(Date.parse(stored.expiresAt) + 1).toISOString(),
+      })
       commit.mockRestore()
       const receipts = (
         await payload.find({
@@ -725,7 +728,7 @@ describe('independent notification retention with native storage', () => {
       ).docs
       expect(prepared).toHaveLength(1)
       firstReadAt = prepared[0]!.readAt
-      vi.setSystemTime(new Date(stored.expiresAt))
+      vi.setSystemTime(new Date(Date.parse(stored.expiresAt) + 1))
       enteredCommit()
       await allowCommit
       await originalCommit(transactionID)

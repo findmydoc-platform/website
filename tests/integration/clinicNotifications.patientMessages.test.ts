@@ -631,10 +631,36 @@ describe('complete personal patient message notifications', () => {
       unreadCount: summaryBefore.unreadCount,
       nextUnreadCountChangeAt: summaryBefore.nextUnreadCountChangeAt,
     })
-    for (const view of ['unread', 'all'] as const)
-      await expect(readClinicNotifications(staffReq, { mode: 'page', view })).rejects.toMatchObject({
-        code: 'PAYLOAD_TOO_LARGE',
-      })
+    const expectOversizedGroup = async (view: 'unread' | 'all') => {
+      let cursor: string | null = null
+      for (let pageCount = 0; pageCount < 20; pageCount++) {
+        let response: Awaited<ReturnType<typeof readClinicNotifications>>
+        try {
+          response = await readClinicNotifications(staffReq, {
+            mode: 'page',
+            view,
+            ...(cursor ? { cursor } : {}),
+          })
+        } catch (error) {
+          expect(error).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' })
+          return
+        }
+        if (response.mode !== 'page') throw new Error('Expected notification page')
+        expect(Buffer.byteLength(JSON.stringify(response))).toBeLessThanOrEqual(524288)
+        expect(
+          response.items.some(
+            (item) =>
+              item.kind === 'patient_message_group' &&
+              item.destination.kind === 'inquiry' &&
+              item.destination.inquiryId === created.inquiry.id,
+          ),
+        ).toBe(false)
+        cursor = response.nextCursor
+        if (!cursor) break
+      }
+      throw new Error('Expected oversized group to reject its page')
+    }
+    for (const view of ['unread', 'all'] as const) await expectOversizedGroup(view)
     const guestReq = await createLocalReq({}, payload)
     for (let index = 0; index < 26; index++)
       await submitGuestClinicInquiry(guestReq, {
@@ -646,26 +672,6 @@ describe('complete personal patient message notifications', () => {
         phoneNumber: '+493000003204',
         message: 'Private pagination boundary input',
       })
-    for (const view of ['unread', 'all'] as const) {
-      const initial = await readClinicNotifications(staffReq, { mode: 'page', view })
-      if (initial.mode !== 'page') throw new Error('Expected first page before oversized group')
-      expect(initial.nextCursor).toEqual(expect.any(String))
-      expect(Buffer.byteLength(JSON.stringify(initial))).toBeLessThanOrEqual(524288)
-      let cursor = initial.nextCursor
-      let oversizedReached = false
-      for (let pageCount = 0; cursor && pageCount < 20; pageCount++) {
-        try {
-          const continuation = await readClinicNotifications(staffReq, { mode: 'page', view, cursor })
-          if (continuation.mode !== 'page') throw new Error('Expected continuation page')
-          expect(Buffer.byteLength(JSON.stringify(continuation))).toBeLessThanOrEqual(524288)
-          cursor = continuation.nextCursor
-        } catch (error) {
-          expect(error).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' })
-          oversizedReached = true
-          break
-        }
-      }
-      expect(oversizedReached).toBe(true)
-    }
+    for (const view of ['unread', 'all'] as const) await expectOversizedGroup(view)
   }, 120000)
 })

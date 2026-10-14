@@ -85,7 +85,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
   let route: AppRouteRouteModule
   let beforeState: string
   let payload: Payload
-  const requestErrors: unknown[] = []
+  const renderErrors: unknown[] = []
   const logCalls: unknown[] = []
   const signalCalls: unknown[] = []
   const expectedSignals: { outcomeCode: string }[] = []
@@ -170,7 +170,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('DEPLOYMENT_ENV', 'preview')
     vi.spyOn(Date, 'now').mockReturnValue(webhookNow)
-    requestErrors.length = 0
+    renderErrors.length = 0
     logCalls.length = 0
     signalCalls.length = 0
     expectedSignals.length = 0
@@ -197,7 +197,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
       raceWork.clear()
       if (!mutationExpected) expect(await state()).toEqual(beforeState)
       networkGuard.assertNoAttempts()
-      expect(requestErrors).toHaveLength(0)
+      expect(renderErrors).toHaveLength(0)
       expect(logCalls).toHaveLength(0)
       expect(signalCalls.map((signal) => validateDeliveryEdgeLog(signal).outcomeCode)).toEqual(
         expect.arrayContaining(expectedSignals.map(({ outcomeCode }) => outcomeCode)),
@@ -259,22 +259,26 @@ describe('Lettermint webhook Next.js request boundary', () => {
     })
     const guarded = await proxy(request)
     if (guarded.headers.get('x-middleware-next') !== '1') return guarded
+    const renderOpts: NonNullable<Parameters<typeof route.handle>[1]['renderOpts']> & {
+      onInstrumentationRequestError: (error: unknown) => Promise<void>
+    } = {
+      waitUntil: undefined,
+      onClose: () => {},
+      onAfterTaskError: async (error: unknown) => {
+        renderErrors.push(error)
+      },
+      onInstrumentationRequestError: async (error: unknown) => {
+        renderErrors.push(error)
+      },
+      experimental: { authInterrupts: false, useCacheTimeout: 5000, durableUseCacheEntries: false },
+      cacheLifeProfiles: { default: { stale: 0, revalidate: 0, expire: 0 } },
+      staticPageGenerationTimeout: 60,
+      cacheComponents: false,
+      validationLevel: 'warning',
+    }
     return route.handle(request, {
       params: { environment },
-      renderOpts: {
-        supportsDynamicResponse: true,
-        waitUntil: undefined,
-        onClose: () => {},
-        onAfterTaskError: undefined,
-        onInstrumentationRequestError: async (error) => {
-          requestErrors.push(error)
-        },
-        experimental: { authInterrupts: false, useCacheTimeout: 5000 },
-        cacheLifeProfiles: { default: { stale: 0, revalidate: 0, expire: 0 } },
-        staticPageGenerationTimeout: 60,
-        cacheComponents: false,
-        validationLevel: 'warning',
-      },
+      renderOpts,
       previewProps: { previewModeId: '', previewModeEncryptionKey: '', previewModeSigningKey: '' },
       sharedContext: { buildId: 'test', deploymentId: '' },
     })
@@ -638,9 +642,9 @@ describe('Lettermint webhook Next.js request boundary', () => {
       'delivery.suppressed',
       'payload.scrubbed',
     ])
-    expect(JSON.stringify([logCalls, signalCalls, requestErrors]).includes(recipientAddress)).toBe(false)
+    expect(JSON.stringify([logCalls, signalCalls, renderErrors]).includes(recipientAddress)).toBe(false)
     expect(
-      JSON.stringify([logCalls, signalCalls, requestErrors]).includes((await stored(id)).provider_recipient_digest),
+      JSON.stringify([logCalls, signalCalls, renderErrors]).includes((await stored(id)).provider_recipient_digest),
     ).toBe(false)
   })
 
@@ -843,7 +847,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
         )
       ).rows[0].count,
     ).toBe(0)
-    expect(JSON.stringify([logCalls, signalCalls, requestErrors])).not.toContain('materialization failure')
+    expect(JSON.stringify([logCalls, signalCalls, renderErrors])).not.toContain('materialization failure')
   })
 
   it.each(['outbox', 'suppression', 'allowlist'] as const)(
@@ -896,7 +900,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
           name: 'DigestKeyRetirementBlockedError',
         })
         expect(retireConfiguration).not.toHaveBeenCalled()
-        const visible = JSON.stringify([failure, logCalls, signalCalls, requestErrors])
+        const visible = JSON.stringify([failure, logCalls, signalCalls, renderErrors])
         for (const sentinel of [
           recipientAddress,
           digest,
@@ -1181,7 +1185,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
           ...(scenario === 'prepared' ? { attemptNumber: 1 } : {}),
         },
       ])
-      expect(JSON.stringify([logCalls, signalCalls, requestErrors]).includes('private-unavailable-detail')).toBe(false)
+      expect(JSON.stringify([logCalls, signalCalls, renderErrors]).includes('private-unavailable-detail')).toBe(false)
     },
   )
 

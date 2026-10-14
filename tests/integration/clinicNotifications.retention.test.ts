@@ -8,7 +8,11 @@ import {
   captureClinicNotificationOccurrence,
   type NotificationCaptureMember,
 } from '@/features/clinicNotifications/capture'
-import { activateClinicNotificationsForTest, readClinicNotifications } from '@/features/clinicNotifications/service'
+import {
+  activateClinicNotificationsForTest,
+  readClinicNotifications,
+  markClinicNotificationsRead,
+} from '@/features/clinicNotifications/service'
 import { submitGuestClinicInquiry } from '@/features/inquiryCommunication/service'
 import { runClinicNotificationRetention } from '@/features/clinicNotifications/retention'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
@@ -60,10 +64,24 @@ describe('independent notification retention with native storage', () => {
       await payload.find({
         collection: 'clinicNotificationOccurrences',
         overrideAccess: true,
+        depth: 0,
         where: { sourceRecordId: { equals: source.id } },
       })
     ).docs[0]!
     return { source, stored }
+  }
+  async function waitForRace(signal: Promise<void>): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    try {
+      await Promise.race([
+        signal,
+        new Promise<void>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Timed out waiting for the native notification race')), 15000)
+        }),
+      ])
+    } finally {
+      if (timer) clearTimeout(timer)
+    }
   }
   it('physically deletes due occurrences and first personal receipts without user traffic, keeping source data', async () => {
     const { source, stored } = await occurrence('first')
@@ -512,5 +530,446 @@ describe('independent notification retention with native storage', () => {
         overrideAccess: true,
       }),
     ).toMatchObject({ message: 'Protected source text survives notification cleanup.' })
+  })
+  it('keeps a pre-expiry acknowledgement decision valid during a late commit and concurrent physical cleanup', async () => {
+    const prior = (
+      await payload.find({
+        collection: 'clinicNotificationControls',
+        where: { key: { equals: 'notification-retention' } },
+        overrideAccess: true,
+        depth: 0,
+      })
+    ).docs[0]!
+    vi.setSystemTime(new Date(Date.parse(prior.retentionCompletedAt!) + 300000))
+    const { source, stored } = await occurrence('late-commit-cleanup')
+    vi.setSystemTime(new Date(Date.parse(stored.expiresAt) - 1))
+    expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({ unreadCount: 1 })
+    let enteredCommit!: () => void
+    let releaseCommit!: () => void
+    let enteredCleanup!: () => void
+    let releaseCleanup!: () => void
+    const committing = new Promise<void>((resolve) => {
+      enteredCommit = resolve
+    })
+    const allowCommit = new Promise<void>((resolve) => {
+      releaseCommit = resolve
+    })
+    const deleting = new Promise<void>((resolve) => {
+      enteredCleanup = resolve
+    })
+    const allowDelete = new Promise<void>((resolve) => {
+      releaseCleanup = resolve
+    })
+    let firstReadAt: string | undefined
+    const originalCommit = payload.db.commitTransaction.bind(payload.db)
+    const commit = vi.spyOn(payload.db, 'commitTransaction').mockImplementationOnce(async (transactionID) => {
+      const transactionReq = await createLocalReq({ req: { transactionID: Promise.resolve(transactionID) } }, payload)
+      const prepared = (
+        await payload.find({
+          collection: 'clinicNotificationReadReceipts',
+          where: { occurrence: { equals: stored.id } },
+          overrideAccess: true,
+          depth: 0,
+          req: transactionReq,
+        })
+      ).docs
+      expect(prepared).toHaveLength(1)
+      firstReadAt = prepared[0]!.readAt
+      vi.setSystemTime(new Date(stored.expiresAt))
+      await originalCommit(transactionID)
+      enteredCommit()
+      await allowCommit
+    })
+    const hooks = payload.collections.clinicNotificationOccurrences.config.hooks
+    const previous = hooks.beforeDelete
+    let deletionAttempts = 0
+    hooks.beforeDelete = [
+      ...(previous ?? []),
+      async ({ id }) => {
+        if (id === stored.id && ++deletionAttempts === 1) {
+          enteredCleanup()
+          await allowDelete
+        }
+      },
+    ]
+    const marking = markClinicNotificationsRead(staffReq, { notificationIds: [stored.notificationId] })
+    let cleanup: ReturnType<typeof runClinicNotificationRetention> | undefined
+    try {
+      await waitForRace(committing)
+      expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({ unreadCount: 0 })
+      for (const view of ['unread', 'all'] as const)
+        expect(await readClinicNotifications(staffReq, { mode: 'page', view })).toMatchObject({ items: [] })
+      cleanup = runClinicNotificationRetention(req)
+      await waitForRace(deleting)
+      releaseCommit()
+      expect(await marking).toMatchObject({ acknowledged: true, serverTime: stored.expiresAt })
+      commit.mockRestore()
+      const receipts = (
+        await payload.find({
+          collection: 'clinicNotificationReadReceipts',
+          where: { occurrence: { equals: stored.id } },
+          overrideAccess: true,
+          depth: 0,
+        })
+      ).docs
+      expect(receipts).toHaveLength(1)
+      expect(receipts[0]!.readAt).toBe(firstReadAt)
+      expect(Date.parse(firstReadAt!)).toBe(Date.parse(stored.expiresAt) - 1)
+      await markClinicNotificationsRead(staffReq, { notificationIds: [stored.notificationId] })
+      expect(
+        (
+          await payload.find({
+            collection: 'clinicNotificationReadReceipts',
+            where: { occurrence: { equals: stored.id } },
+            overrideAccess: true,
+            depth: 0,
+          })
+        ).docs,
+      ).toEqual(receipts)
+      releaseCleanup()
+      const result = await cleanup
+      if (result.result === 'failure') {
+        expect(result.transactionOutcome).toBe('not_committed')
+        expect(
+          (
+            await payload.find({
+              collection: 'clinicNotificationReadReceipts',
+              where: { occurrence: { equals: stored.id } },
+              overrideAccess: true,
+              depth: 0,
+            })
+          ).docs,
+        ).toEqual(receipts)
+        expect(
+          (
+            await payload.find({
+              collection: 'clinicNotificationOccurrences',
+              where: { id: { equals: stored.id } },
+              overrideAccess: true,
+              depth: 0,
+            })
+          ).docs,
+        ).toHaveLength(1)
+        vi.setSystemTime(new Date(Date.parse(stored.expiresAt) + 300000))
+        expect(await runClinicNotificationRetention(req)).toMatchObject({
+          result: 'success',
+          occurrencesDeleted: 1,
+          receiptsDeleted: 1,
+        })
+      } else expect(result).toMatchObject({ result: 'success', occurrencesDeleted: 1, receiptsDeleted: 1 })
+      expect(
+        (await payload.find({ collection: 'clinicNotificationReadReceipts', overrideAccess: true, depth: 0 })).docs,
+      ).toHaveLength(0)
+      expect(
+        (await payload.find({ collection: 'clinicNotificationOccurrences', overrideAccess: true, depth: 0 })).docs,
+      ).toHaveLength(0)
+      expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({ unreadCount: 0 })
+      expect(
+        await payload.findByID({
+          collection: 'patientClinicInquiries',
+          id: Number(source.id),
+          overrideAccess: true,
+          depth: 0,
+        }),
+      ).toMatchObject({ message: 'Protected source text survives notification cleanup.' })
+    } finally {
+      releaseCommit()
+      releaseCleanup()
+      await marking.catch(() => undefined)
+      await cleanup?.catch(() => undefined)
+      commit.mockRestore()
+      hooks.beforeDelete = previous
+    }
+  }, 60000)
+
+  it('does not leave orphaned receipts when cleanup overlaps an uncommitted acknowledgement transaction', async () => {
+    const prior = (
+      await payload.find({
+        collection: 'clinicNotificationControls',
+        where: { key: { equals: 'notification-retention' } },
+        overrideAccess: true,
+        depth: 0,
+      })
+    ).docs[0]!
+    vi.setSystemTime(new Date(Date.parse(prior.retentionCompletedAt!) + 300000))
+    const { source, stored } = await occurrence('uncommitted-cleanup')
+    vi.setSystemTime(new Date(Date.parse(stored.expiresAt) - 1))
+    let enteredCommit!: () => void
+    let releaseCommit!: () => void
+    let enteredCleanup!: () => void
+    let releaseCleanup!: () => void
+    const committing = new Promise<void>((resolve) => {
+      enteredCommit = resolve
+    })
+    const allowCommit = new Promise<void>((resolve) => {
+      releaseCommit = resolve
+    })
+    const deleting = new Promise<void>((resolve) => {
+      enteredCleanup = resolve
+    })
+    const allowDelete = new Promise<void>((resolve) => {
+      releaseCleanup = resolve
+    })
+    let firstReadAt: string | undefined
+    const originalCommit = payload.db.commitTransaction.bind(payload.db)
+    const commit = vi.spyOn(payload.db, 'commitTransaction').mockImplementationOnce(async (transactionID) => {
+      const transactionReq = await createLocalReq({ req: { transactionID: Promise.resolve(transactionID) } }, payload)
+      const prepared = (
+        await payload.find({
+          collection: 'clinicNotificationReadReceipts',
+          where: { occurrence: { equals: stored.id } },
+          overrideAccess: true,
+          depth: 0,
+          req: transactionReq,
+        })
+      ).docs
+      expect(prepared).toHaveLength(1)
+      firstReadAt = prepared[0]!.readAt
+      vi.setSystemTime(new Date(stored.expiresAt))
+      enteredCommit()
+      await allowCommit
+      await originalCommit(transactionID)
+    })
+    const hooks = payload.collections.clinicNotificationOccurrences.config.hooks
+    const previous = hooks.beforeDelete
+    let deletionAttempts = 0
+    hooks.beforeDelete = [
+      ...(previous ?? []),
+      async ({ id }) => {
+        if (id === stored.id && ++deletionAttempts === 1) {
+          enteredCleanup()
+          await allowDelete
+        }
+      },
+    ]
+    const marking = markClinicNotificationsRead(staffReq, { notificationIds: [stored.notificationId] }).then(
+      (value) => ({ value }),
+      (error) => ({ error }),
+    )
+    let cleanup: ReturnType<typeof runClinicNotificationRetention> | undefined
+    try {
+      await waitForRace(committing)
+      cleanup = runClinicNotificationRetention(req)
+      await waitForRace(deleting)
+      releaseCommit()
+      const outcome = await marking
+      const receipts = (
+        await payload.find({
+          collection: 'clinicNotificationReadReceipts',
+          where: { occurrence: { equals: stored.id } },
+          overrideAccess: true,
+          depth: 0,
+        })
+      ).docs
+      if ('error' in outcome) {
+        expect(outcome.error).toMatchObject({ code: 'SERVICE_UNAVAILABLE', writeOutcome: 'unknown' })
+        expect(receipts).toHaveLength(0)
+      } else {
+        expect(outcome.value).toMatchObject({ acknowledged: true })
+        expect(receipts).toHaveLength(1)
+        expect(receipts[0]!.readAt).toBe(firstReadAt)
+      }
+      commit.mockRestore()
+      expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({ unreadCount: 0 })
+      for (const view of ['unread', 'all'] as const)
+        expect(await readClinicNotifications(staffReq, { mode: 'page', view })).toMatchObject({ items: [] })
+      releaseCleanup()
+      const result = await cleanup
+      expect(result.attemptCount).toBeLessThanOrEqual(5)
+      if (result.result === 'failure') {
+        expect(result.transactionOutcome).toBe('not_committed')
+        expect(
+          (
+            await payload.find({
+              collection: 'clinicNotificationOccurrences',
+              where: { id: { equals: stored.id } },
+              overrideAccess: true,
+              depth: 0,
+            })
+          ).docs,
+        ).toHaveLength(1)
+        expect(
+          (
+            await payload.find({
+              collection: 'clinicNotificationReadReceipts',
+              where: { occurrence: { equals: stored.id } },
+              overrideAccess: true,
+              depth: 0,
+            })
+          ).docs,
+        ).toEqual(receipts)
+        vi.setSystemTime(new Date(Date.parse(stored.expiresAt) + 300000))
+        expect(await runClinicNotificationRetention(req)).toMatchObject({
+          result: 'success',
+          occurrencesDeleted: 1,
+          receiptsDeleted: receipts.length,
+        })
+      } else
+        expect(result).toMatchObject({ result: 'success', occurrencesDeleted: 1, receiptsDeleted: receipts.length })
+      expect(
+        (await payload.find({ collection: 'clinicNotificationOccurrences', overrideAccess: true, depth: 0 })).docs,
+      ).toHaveLength(0)
+      expect(
+        (await payload.find({ collection: 'clinicNotificationReadReceipts', overrideAccess: true, depth: 0 })).docs,
+      ).toHaveLength(0)
+      await markClinicNotificationsRead(staffReq, { notificationIds: [stored.notificationId] })
+      expect(
+        (await payload.find({ collection: 'clinicNotificationReadReceipts', overrideAccess: true, depth: 0 })).docs,
+      ).toHaveLength(0)
+      expect(
+        await payload.findByID({
+          collection: 'patientClinicInquiries',
+          id: Number(source.id),
+          overrideAccess: true,
+          depth: 0,
+        }),
+      ).toMatchObject({ message: 'Protected source text survives notification cleanup.' })
+    } finally {
+      releaseCommit()
+      releaseCleanup()
+      await marking
+      await cleanup?.catch(() => undefined)
+      commit.mockRestore()
+      hooks.beforeDelete = previous
+    }
+  }, 60000)
+  it('skips a member expiring before the decision, retains the fixed selection and recovers physical cleanup without changing first readAt', async () => {
+    const prior = (
+      await payload.find({
+        collection: 'clinicNotificationControls',
+        where: { key: { equals: 'notification-retention' } },
+        overrideAccess: true,
+        depth: 0,
+      })
+    ).docs[0]!
+    const base = Date.parse(prior.retentionCompletedAt!) + 300000
+    vi.setSystemTime(new Date(base))
+    const first = await occurrence('selection-expiring')
+    vi.setSystemTime(new Date(base + 300000))
+    const second = await occurrence('selection-remaining')
+    vi.setSystemTime(new Date(base + 600000))
+    const later = await occurrence('selection-unselected')
+    const sources = await Promise.all(
+      [first, second, later].map(async ({ source }) => {
+        const doc = await payload.findByID({
+          collection: 'patientClinicInquiries',
+          id: Number(source.id),
+          overrideAccess: true,
+          depth: 0,
+        })
+        return { id: doc.id, createdAt: doc.createdAt, updatedAt: doc.updatedAt, message: doc.message }
+      }),
+    )
+    const fixedIds = [first.stored.notificationId, second.stored.notificationId]
+    const receiptHooks = payload.collections.clinicNotificationReadReceipts.config.hooks
+    const previousReceipts = receiptHooks.afterChange
+    let writes = 0
+    receiptHooks.afterChange = [
+      ...(previousReceipts ?? []),
+      ({ doc }) => {
+        writes++
+        vi.setSystemTime(new Date(first.stored.expiresAt))
+        return doc
+      },
+    ]
+    vi.setSystemTime(new Date(Date.parse(first.stored.expiresAt) - 1))
+    try {
+      expect(await markClinicNotificationsRead(staffReq, { notificationIds: fixedIds })).toMatchObject({
+        acknowledged: true,
+      })
+    } finally {
+      receiptHooks.afterChange = previousReceipts
+    }
+    expect(writes).toBeGreaterThan(1)
+    const receipts = (
+      await payload.find({ collection: 'clinicNotificationReadReceipts', overrideAccess: true, depth: 0 })
+    ).docs
+    expect(receipts).toHaveLength(1)
+    expect(receipts[0]!.occurrence).toBe(second.stored.id)
+    expect(receipts[0]!.readAt).toBe(first.stored.expiresAt)
+    expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({
+      unreadCount: 1,
+      nextUnreadCountChangeAt: later.stored.expiresAt,
+    })
+    const all = await readClinicNotifications(staffReq, { mode: 'page', view: 'all' })
+    if (all.mode !== 'page') throw new Error('Expected All page')
+    expect(all.items.flatMap(({ members }) => members.map(({ notificationId }) => notificationId)).sort()).toEqual(
+      [second.stored.notificationId, later.stored.notificationId].sort(),
+    )
+    expect(
+      all.items
+        .flatMap(({ members }) => members)
+        .find(({ notificationId }) => notificationId === later.stored.notificationId)!.readAt,
+    ).toBeNull()
+    await markClinicNotificationsRead(staffReq, { notificationIds: fixedIds })
+    expect(
+      (await payload.find({ collection: 'clinicNotificationReadReceipts', overrideAccess: true, depth: 0 })).docs,
+    ).toEqual(receipts)
+    const hooks = payload.collections.clinicNotificationOccurrences.config.hooks
+    const previous = hooks.beforeDelete
+    hooks.beforeDelete = [
+      ...(previous ?? []),
+      () => {
+        throw new Error('Synthetic bounded cleanup outage after the fixed acknowledgement decision')
+      },
+    ]
+    try {
+      expect(await runClinicNotificationRetention(req)).toMatchObject({
+        result: 'failure',
+        transactionOutcome: 'not_committed',
+        occurrencesDeleted: 0,
+        receiptsDeleted: 0,
+      })
+      expect(
+        (await payload.find({ collection: 'clinicNotificationReadReceipts', overrideAccess: true, depth: 0 })).docs,
+      ).toEqual(receipts)
+      expect(
+        (await payload.find({ collection: 'clinicNotificationOccurrences', overrideAccess: true, depth: 0 })).docs,
+      ).toHaveLength(3)
+    } finally {
+      hooks.beforeDelete = previous
+    }
+    vi.setSystemTime(new Date(second.stored.expiresAt))
+    expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({ unreadCount: 1 })
+    await markClinicNotificationsRead(staffReq, { notificationIds: fixedIds })
+    expect(
+      (await payload.find({ collection: 'clinicNotificationReadReceipts', overrideAccess: true, depth: 0 })).docs,
+    ).toEqual(receipts)
+    expect(await runClinicNotificationRetention(req)).toMatchObject({
+      result: 'success',
+      occurrencesDeleted: 2,
+      receiptsDeleted: 1,
+      missedSlots: 0,
+    })
+    expect(
+      (await payload.find({ collection: 'clinicNotificationReadReceipts', overrideAccess: true, depth: 0 })).docs,
+    ).toHaveLength(0)
+    expect(
+      (await payload.find({ collection: 'clinicNotificationOccurrences', overrideAccess: true, depth: 0 })).docs,
+    ).toEqual([later.stored])
+    const unread = await readClinicNotifications(staffReq, { mode: 'page', view: 'unread' })
+    if (unread.mode !== 'page') throw new Error('Expected Unread page')
+    expect(unread.items.flatMap(({ members }) => members.map(({ notificationId }) => notificationId))).toEqual([
+      later.stored.notificationId,
+    ])
+    vi.setSystemTime(new Date(later.stored.expiresAt))
+    expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({ unreadCount: 0 })
+    for (const view of ['unread', 'all'] as const)
+      expect(await readClinicNotifications(staffReq, { mode: 'page', view })).toMatchObject({ items: [] })
+    expect(await runClinicNotificationRetention(req)).toMatchObject({
+      result: 'success',
+      occurrencesDeleted: 1,
+      receiptsDeleted: 0,
+    })
+    expect(
+      (await payload.find({ collection: 'clinicNotificationOccurrences', overrideAccess: true, depth: 0 })).docs,
+    ).toHaveLength(0)
+    expect(
+      (await payload.find({ collection: 'clinicNotificationReadReceipts', overrideAccess: true, depth: 0 })).docs,
+    ).toHaveLength(0)
+    for (const source of sources)
+      expect(
+        await payload.findByID({ collection: 'patientClinicInquiries', id: source.id, overrideAccess: true, depth: 0 }),
+      ).toMatchObject(source)
   })
 })

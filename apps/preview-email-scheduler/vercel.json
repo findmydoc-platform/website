@@ -6,12 +6,19 @@
   "functions": {
     "api/tick.js": {
       "maxDuration": 300
+    },
+    "api/notifications.js": {
+      "maxDuration": 300
     }
   },
   "crons": [
     {
       "path": "/api/tick",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/notifications",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

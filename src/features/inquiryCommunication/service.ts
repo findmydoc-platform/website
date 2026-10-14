@@ -221,7 +221,7 @@ const runCommandTransaction = async <Result>(
     commitAttempted = true
     await req.payload.db.commitTransaction(transactionID)
     if (req.context?.clinicNotificationCaptureAttempt === true) {
-      recordNotificationDiagnostic(req, {
+      await recordNotificationDiagnostic(req, {
         operation: 'source_capture',
         result: 'success',
         transactionOutcome: 'committed',
@@ -236,7 +236,7 @@ const runCommandTransaction = async <Result>(
         await req.payload.db.rollbackTransaction(transactionID)
       } catch (rollbackError: unknown) {
         if (req.context?.clinicNotificationCaptureAttempt === true) {
-          recordNotificationDiagnostic(req, {
+          await recordNotificationDiagnostic(req, {
             operation: 'source_capture',
             result: 'failure',
             attemptCount,
@@ -250,7 +250,7 @@ const runCommandTransaction = async <Result>(
       }
     }
     if (req.context?.clinicNotificationCaptureAttempt === true) {
-      recordNotificationDiagnostic(req, {
+      await recordNotificationDiagnostic(req, {
         operation: 'source_capture',
         result: 'failure',
         attemptCount,

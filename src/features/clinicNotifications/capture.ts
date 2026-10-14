@@ -62,6 +62,30 @@ async function serializeCapture(req: PayloadRequest): Promise<Stored> {
   }
 }
 
+function throwCaptureError(error: unknown): never {
+  if (error instanceof ClinicNotificationCaptureConflict || error instanceof ClinicNotificationError) throw error
+  const seen = new Set<unknown>()
+  let current: unknown = error
+  while (current && typeof current === 'object' && !seen.has(current)) {
+    seen.add(current)
+    const details = current as Record<string, unknown>
+    if (details.code === '40001' || details.code === '40P01') throw new ClinicNotificationCaptureConflict()
+    current = details.cause
+  }
+  throw new ClinicNotificationError('SERVICE_UNAVAILABLE')
+}
+
+/** Serializes activation before a source command reads the original transition state. */
+export async function prepareClinicNotificationCapture(req: PayloadRequest): Promise<void> {
+  req.context = { ...req.context, clinicNotificationCaptureAttempt: true }
+  try {
+    const transactionReq = await notificationReq(req)
+    await serializeCapture(transactionReq)
+  } catch (error) {
+    throwCaptureError(error)
+  }
+}
+
 /** Source commands call this inside their owned transaction, after immutable source evidence exists. */
 export async function captureClinicNotificationOccurrence(
   req: PayloadRequest,
@@ -69,6 +93,7 @@ export async function captureClinicNotificationOccurrence(
     clinicId: Id
     member: NotificationCaptureMember
     rating?: number
+    occurredAt?: string
   },
 ): Promise<void> {
   req.context = { ...req.context, clinicNotificationCaptureAttempt: true }
@@ -76,7 +101,10 @@ export async function captureClinicNotificationOccurrence(
     const transactionReq = await notificationReq(req)
     const control = await serializeCapture(transactionReq)
     if (control.active !== true) return
-    const occurredAt = new Date().toISOString()
+    const occurredAt = input.occurredAt ?? new Date().toISOString()
+    if (typeof control.activatedAt !== 'string' || !Number.isFinite(Date.parse(control.activatedAt)))
+      throw new ClinicNotificationError('SERVICE_UNAVAILABLE')
+    if (Date.parse(occurredAt) < Date.parse(control.activatedAt)) return
     const member = notificationMemberSchema.parse({
       ...input.member,
       notificationId: randomUUID(),
@@ -106,16 +134,7 @@ export async function captureClinicNotificationOccurrence(
       },
     } as never)
   } catch (error) {
-    if (error instanceof ClinicNotificationCaptureConflict || error instanceof ClinicNotificationError) throw error
-    const seen = new Set<unknown>()
-    let current: unknown = error
-    while (current && typeof current === 'object' && !seen.has(current)) {
-      seen.add(current)
-      const details = current as Record<string, unknown>
-      if (details.code === '40001' || details.code === '40P01') throw new ClinicNotificationCaptureConflict()
-      current = details.cause
-    }
-    throw new ClinicNotificationError('SERVICE_UNAVAILABLE')
+    throwCaptureError(error)
   }
 }
 

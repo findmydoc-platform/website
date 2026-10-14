@@ -84,7 +84,7 @@ export async function readClinicNotifications(
     })
     if (!parsed.success) throw new ClinicNotificationError('CONTRACT_INCOMPATIBLE')
     const member = parsed.data
-    const projection = await readNotificationSourceProjection(req, member.sourceRecord)
+    const projection = await readNotificationSourceProjection(req, member)
     if (!projection.visible) continue
     items.push({
       kind: 'occurrence',

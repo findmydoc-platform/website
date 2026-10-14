@@ -7,12 +7,40 @@ import {
   CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
   NOTIFICATION_READ_MAX_BYTES,
   notificationReadInputSchema,
+  notificationMemberSchema,
   notificationReadSuccessSchema,
 } from './contracts'
 import { ClinicNotificationError } from './errors'
 import { recordNotificationDiagnostic } from './diagnostics'
 
 type Id = string | number
+
+function occurrenceMember(occurrence: {
+  notificationId: string
+  schemaVersion: number
+  eventType: string
+  sourceRecordKind: string
+  sourceRecordId: string
+  sourceOccurrenceKind: string
+  sourceOccurrenceId: string
+  occurredAt: string
+  expiresAt: string
+  outcome?: string | null
+}) {
+  const parsed = notificationMemberSchema.safeParse({
+    notificationId: occurrence.notificationId,
+    schemaVersion: occurrence.schemaVersion,
+    eventType: occurrence.eventType,
+    sourceRecord: { kind: occurrence.sourceRecordKind, id: occurrence.sourceRecordId },
+    sourceOccurrence: { kind: occurrence.sourceOccurrenceKind, id: occurrence.sourceOccurrenceId },
+    occurredAt: occurrence.occurredAt,
+    expiresAt: occurrence.expiresAt,
+    readAt: null,
+    ...(occurrence.outcome ? { outcome: occurrence.outcome } : {}),
+  })
+  if (!parsed.success) throw new ClinicNotificationError('CONTRACT_INCOMPATIBLE')
+  return parsed.data
+}
 
 /** One fixed selection is acknowledged through one transaction, without automatic command retries. */
 export async function markClinicNotificationsRead(
@@ -67,12 +95,7 @@ export async function markClinicNotificationsRead(
           })
           if (
             !receipts.docs.length &&
-            (
-              await readNotificationSourceProjection(req, {
-                kind: occurrence.sourceRecordKind,
-                id: occurrence.sourceRecordId,
-              })
-            ).visible
+            (await readNotificationSourceProjection(req, occurrenceMember(occurrence))).visible
           ) {
             hasUnread = true
             break
@@ -134,15 +157,7 @@ export async function markClinicNotificationsRead(
         })
         for (const occurrence of result.docs) {
           if (!selectedIds.has(occurrence.notificationId)) continue
-          if (
-            !(
-              await readNotificationSourceProjection(transactionReq, {
-                kind: occurrence.sourceRecordKind,
-                id: occurrence.sourceRecordId,
-              })
-            ).visible
-          )
-            continue
+          if (!(await readNotificationSourceProjection(transactionReq, occurrenceMember(occurrence))).visible) continue
           const existing = await req.payload.find({
             collection: 'clinicNotificationReadReceipts',
             depth: 0,

@@ -122,7 +122,7 @@ function startControlServer(
       return
     }
     const route = request.url?.split('?')[0] ?? ''
-    const extra = extraRoutes[route]
+    const extra = Object.entries(extraRoutes).find(([path]) => path === route)?.[1]
     const createsNotification = route === '/create-notification-inquiry'
     void (
       extra

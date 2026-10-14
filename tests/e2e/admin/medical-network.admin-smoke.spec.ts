@@ -47,6 +47,9 @@ test('platform staff can create a treatment from the admin UI @smoke', async ({ 
   })
 
   await expect(page.getByLabel('Name')).toHaveValue(result.state.treatmentName)
+  await expect(
+    page.getByText(`${result.state.treatmentName} created during Playwright admin journey`, { exact: true }),
+  ).toBeVisible()
   await expectNoBrowserIssues(issues)
 })
 

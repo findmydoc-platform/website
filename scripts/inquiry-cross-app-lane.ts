@@ -297,11 +297,39 @@ async function seedSyntheticInquiry() {
           req.user = users.asPayloadPatientUser(patient)
           const detail = await communication.readPatientInquiryDetail(req, { inquiryId: created.inquiry.id })
           notificationArrivals += 1
+          let attachmentDraftId: string | undefined
+          if (notificationArrivals === 1) {
+            const bytes = new Uint8Array(
+              Buffer.from(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+                'base64',
+              ),
+            )
+            const draft = await communication.createAttachmentDraft(req, {
+              inquiryId: created.inquiry.id,
+              fileName: 'patient-message-proof.png',
+              mimeType: 'image/png',
+              sizeBytes: bytes.byteLength,
+            })
+            const uploaded = await fetch(draft.upload.url, {
+              method: draft.upload.method,
+              headers: draft.upload.headers,
+              body: bytes,
+            })
+            if (!uploaded.ok) throw new Error('The isolated synthetic attachment upload failed')
+            const finalized = await communication.finalizeAttachmentDraft(req, {
+              inquiryId: created.inquiry.id,
+              draftId: draft.draftId,
+            })
+            attachmentDraftId = finalized.attachment.id
+          }
           const sent = await communication.sendPatientInquiryMessage(req, {
             inquiryId: created.inquiry.id,
             expectedRevision: detail.revision,
             idempotencyKey: `cross-app-patient-message-${notificationArrivals}`,
-            text: `Private synthetic grouped message ${notificationArrivals}.`,
+            ...(attachmentDraftId
+              ? { attachmentDraftId }
+              : { text: `Private synthetic grouped message ${notificationArrivals}.` }),
           })
           const occurrences = await payload.find({
             collection: 'clinicNotificationOccurrences',

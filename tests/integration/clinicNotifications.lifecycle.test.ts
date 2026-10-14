@@ -275,8 +275,14 @@ describe('clinic notification source-to-feed lifecycle', () => {
     }
   })
 
-  it('retries an in-flight source transaction against the committed activation boundary', async () => {
-    const control = (await payload.find({ collection: 'clinicNotificationControls', overrideAccess: true })).docs[0]!
+  it('serializes an in-flight source before activation and never retrofits its preparatory history', async () => {
+    const control = (
+      await payload.find({
+        collection: 'clinicNotificationControls',
+        overrideAccess: true,
+        where: { key: { equals: 'notification-center' } },
+      })
+    ).docs[0]!
     const transactionID = await payload.db.beginTransaction({ isolationLevel: 'serializable' })
     const controlReq = await createLocalReq(
       { context: { clinicNotificationCommand: true }, req: { transactionID: Promise.resolve(transactionID!) } },
@@ -290,18 +296,24 @@ describe('clinic notification source-to-feed lifecycle', () => {
       data: { active: false, activatedAt: null },
     })
     await payload.db.commitTransaction(transactionID!)
-
     let entered!: () => void
     let proceed!: () => void
+    let activationEntered!: () => void
     const paused = new Promise<void>((resolve) => {
       entered = resolve
     })
     const released = new Promise<void>((resolve) => {
       proceed = resolve
     })
+    const activationAttempt = new Promise<void>((resolve) => {
+      activationEntered = resolve
+    })
     const hooks = payload.collections.inquiryAuditEvents.config.hooks
     const previous = hooks.afterChange
+    const controlHooks = payload.collections.clinicNotificationControls.config.hooks
+    const previousControl = controlHooks.beforeChange
     let waits = 0
+    let activationSettled = false
     hooks.afterChange = [
       ...(previous ?? []),
       async ({ doc, req }) => {
@@ -312,39 +324,112 @@ describe('clinic notification source-to-feed lifecycle', () => {
         return doc
       },
     ]
+    controlHooks.beforeChange = [
+      ...(previousControl ?? []),
+      ({ data, req }) => {
+        if (req.context?.inquiryCommunicationCommand !== true) activationEntered()
+        return data
+      },
+    ]
     const raceReq = await createLocalReq({ context: { notificationRaceSource: true } }, payload)
-    const creating = submitGuestClinicInquiry(raceReq, {
+    const input = {
       clinicId,
       doctorId,
-      consent: true,
+      consent: true as const,
       email: 'activation-race@example.com',
       fullName: 'Activation Race',
-      message: 'An in-flight source command must retry after activation commits.',
+      message: 'The source owns the inactive activation boundary before its qualifying write.',
       phoneNumber: '+491234567890',
-    })
+    }
+    const creating = submitGuestClinicInquiry(raceReq, input)
+    let activating: Promise<boolean> | undefined
     try {
       await paused
-      await activateClinicNotificationsForTest(sourceReq)
+      activating = activateClinicNotificationsForTest(sourceReq).then(
+        () => {
+          activationSettled = true
+          return true
+        },
+        () => {
+          activationSettled = true
+          return false
+        },
+      )
+      await Promise.race([
+        activationAttempt,
+        activating.then(() => {
+          throw new Error('Expected the controlled native activation barrier')
+        }),
+      ])
+      expect(activationSettled).toBe(false)
       proceed()
       const created = await creating
-      expect(waits).toBe(2)
-      const stored = await payload.find({
-        collection: 'clinicNotificationOccurrences',
-        overrideAccess: true,
-        where: { sourceRecordId: { equals: created.id } },
+      const activated = await activating
+      expect(waits).toBe(1)
+      expect(
+        (
+          await payload.find({
+            collection: 'clinicNotificationOccurrences',
+            overrideAccess: true,
+            where: { and: [{ sourceRecordKind: { equals: 'inquiry' } }, { sourceRecordId: { equals: created.id } }] },
+          })
+        ).docs,
+      ).toHaveLength(0)
+      expect(
+        (
+          await payload.find({
+            collection: 'inquiryAuditEvents',
+            overrideAccess: true,
+            where: { and: [{ inquiry: { equals: Number(created.id) } }, { eventType: { equals: 'inquiry-created' } }] },
+          })
+        ).docs,
+      ).toHaveLength(1)
+      if (!activated) {
+        expect(
+          (await payload.findByID({ collection: 'clinicNotificationControls', id: control.id, overrideAccess: true }))
+            .active,
+        ).toBe(false)
+        await activateClinicNotificationsForTest(sourceReq)
+      }
+      expect((await submitGuestClinicInquiry(sourceReq, input)).deduped).toBe(true)
+      expect(
+        (
+          await payload.find({
+            collection: 'clinicNotificationOccurrences',
+            overrideAccess: true,
+            where: { sourceRecordId: { equals: created.id } },
+          })
+        ).docs,
+      ).toHaveLength(0)
+      const after = await submitGuestClinicInquiry(sourceReq, {
+        ...input,
+        email: 'activation-wins@example.com',
+        fullName: 'Activation Wins',
+        message: 'This new source starts after activation is committed.',
       })
-      expect(stored.docs).toHaveLength(1)
-      const audit = await payload.find({
-        collection: 'inquiryAuditEvents',
-        overrideAccess: true,
-        where: { and: [{ inquiry: { equals: Number(created.id) } }, { eventType: { equals: 'inquiry-created' } }] },
-      })
-      expect(audit.docs).toHaveLength(1)
-      expect(stored.docs[0]!.sourceOccurrenceId).toBe(String(audit.docs[0]!.id))
+      const captured = (
+        await payload.find({
+          collection: 'clinicNotificationOccurrences',
+          overrideAccess: true,
+          where: { sourceRecordId: { equals: after.id } },
+        })
+      ).docs
+      expect(captured).toHaveLength(1)
+      const audit = (
+        await payload.find({
+          collection: 'inquiryAuditEvents',
+          overrideAccess: true,
+          where: { and: [{ inquiry: { equals: Number(after.id) } }, { eventType: { equals: 'inquiry-created' } }] },
+        })
+      ).docs[0]!
+      expect(captured[0]!.sourceOccurrenceId).toBe(String(audit.id))
+      expect(captured[0]!.occurredAt).toBe(audit.createdAt)
     } finally {
       proceed()
       await creating.catch(() => undefined)
+      await activating?.catch(() => undefined)
       hooks.afterChange = previous
+      controlHooks.beforeChange = previousControl
     }
   })
 

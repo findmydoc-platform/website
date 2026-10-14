@@ -124,6 +124,7 @@ describe('independent notification retention with native storage', () => {
     })
   })
   it('removes every closed v1 event variant with all personal receipts in bounded batches', async () => {
+    const expectedCount = cases.filter((fixture) => fixture.response.items?.[0]).length
     const transactionID = await payload.db.beginTransaction({ isolationLevel: 'serializable' })
     const sourceReq = await createLocalReq({ req: { transactionID: Promise.resolve(transactionID!) } }, payload)
     for (const fixture of cases) {
@@ -143,7 +144,7 @@ describe('independent notification retention with native storage', () => {
     const occurrences = (
       await payload.find({ collection: 'clinicNotificationOccurrences', overrideAccess: true, limit: 100, depth: 0 })
     ).docs
-    expect(occurrences).toHaveLength(14)
+    expect(occurrences).toHaveLength(expectedCount)
     const id = await payload.db.beginTransaction({ isolationLevel: 'serializable' })
     const receiptReq = await createLocalReq(
       { context: { clinicNotificationCommand: true }, req: { transactionID: Promise.resolve(id!) } },
@@ -161,8 +162,8 @@ describe('independent notification retention with native storage', () => {
     vi.setSystemTime(new Date(Math.max(...occurrences.map(({ expiresAt }) => Date.parse(expiresAt))) + 300000))
     expect(await runClinicNotificationRetention(req)).toMatchObject({
       result: 'success',
-      occurrencesDeleted: 14,
-      receiptsDeleted: 14,
+      occurrencesDeleted: expectedCount,
+      receiptsDeleted: expectedCount,
     })
     expect(
       (await payload.find({ collection: 'clinicNotificationOccurrences', overrideAccess: true })).docs,

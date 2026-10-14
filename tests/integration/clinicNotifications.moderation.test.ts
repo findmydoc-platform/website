@@ -452,6 +452,7 @@ describe('clinic inquiry moderation notifications', () => {
   ] as const)('bounds %s capture-conflict retries after %i rejected attempts', async (owner, failures) => {
     const source = await clinicContentCase(`retry-${owner}-${failures}`)
     if (owner === 'plain') {
+      vi.stubEnv('CI', 'false')
       vi.stubEnv('NODE_ENV', 'production')
       vi.stubEnv('DEPLOYMENT_ENV', 'production')
       vi.stubEnv('VERCEL_ENV', 'production')
@@ -627,6 +628,7 @@ describe('clinic inquiry moderation notifications', () => {
     async (owner) => {
       const source = await clinicContentCase(`lost-commit-${owner}`)
       if (owner === 'plain') {
+        vi.stubEnv('CI', 'false')
         vi.stubEnv('NODE_ENV', 'production')
         vi.stubEnv('DEPLOYMENT_ENV', 'production')
         vi.stubEnv('VERCEL_ENV', 'production')

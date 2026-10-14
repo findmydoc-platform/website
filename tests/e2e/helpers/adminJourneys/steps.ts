@@ -597,9 +597,10 @@ export const createFillTreatmentStep = <
     run: async ({ page, state }) => {
       const treatmentName = state.treatmentName || `E2E Treatment ${Date.now()}`
       state.treatmentName = treatmentName
+      const description = `${treatmentName} created during Playwright admin journey`
 
       await page.getByLabel('Name').fill(treatmentName)
-      await fillAdminRichTextField(page, 'Description', `${treatmentName} created during Playwright admin journey`, {
+      const descriptionEditor = await fillAdminRichTextField(page, 'Description', description, {
         fieldPath: 'description',
       })
 
@@ -613,6 +614,8 @@ export const createFillTreatmentStep = <
 
         state.specialtyName = selectedName
       }
+
+      await expect(descriptionEditor).toContainText(description)
     },
     stepId: options.stepId,
   }) satisfies AdminJourneyStep<TState>

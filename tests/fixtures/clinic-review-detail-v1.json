@@ -1,0 +1,102 @@
+{
+  "accepted": [
+    {
+      "data": {
+        "id": "review-204",
+        "reviewDate": "2026-10-14T10:00:00.000Z",
+        "starRating": 5,
+        "status": "approved",
+        "treatment": { "id": "treatment-204", "name": "Dentistry" },
+        "publicMeasure": "none",
+        "withdrawalState": "active",
+        "publicAuthorName": "Maya K.",
+        "comment": "Permitted current review text."
+      }
+    },
+    {
+      "data": {
+        "id": "review-204",
+        "reviewDate": "2026-10-14T10:00:00.000Z",
+        "starRating": 5,
+        "status": "approved",
+        "treatment": { "id": "treatment-204", "name": "Dentistry" },
+        "publicMeasure": "redaction",
+        "withdrawalState": "active",
+        "publicComment": "Permitted redacted text.",
+        "publicNotice": "Parts of this review were removed to protect legal rights or personal data. The remaining text is unchanged."
+      }
+    },
+    {
+      "data": {
+        "id": "review-204",
+        "reviewDate": "2026-10-14T10:00:00.000Z",
+        "starRating": 5,
+        "status": "approved",
+        "treatment": { "id": "treatment-204", "name": "Dentistry" },
+        "publicMeasure": "removed",
+        "withdrawalState": "active"
+      }
+    },
+    {
+      "data": {
+        "id": "review-204",
+        "reviewDate": "2026-10-14T10:00:00.000Z",
+        "starRating": 5,
+        "status": "approved",
+        "treatment": { "id": "treatment-204", "name": "Dentistry" },
+        "publicMeasure": "none",
+        "withdrawalState": "withdrawn",
+        "withdrawnAt": "2026-10-14T10:01:00.000Z"
+      }
+    }
+  ],
+  "rejected": [
+    {
+      "data": {
+        "id": "review-204",
+        "reviewDate": "2026-10-14T10:00:00.000Z",
+        "starRating": 5,
+        "status": "approved",
+        "treatment": { "id": "treatment-204", "name": "Dentistry" },
+        "publicMeasure": "future",
+        "withdrawalState": "active"
+      }
+    },
+    {
+      "data": {
+        "id": "review-204",
+        "reviewDate": "2026-10-14T10:00:00.000Z",
+        "starRating": 5,
+        "status": "approved",
+        "treatment": { "id": "treatment-204", "name": "Dentistry" },
+        "publicMeasure": "none",
+        "withdrawalState": "active",
+        "patient": "synthetic-private-patient"
+      }
+    },
+    {
+      "data": {
+        "id": "review-204",
+        "reviewDate": "2026-10-14T10:00:00.000Z",
+        "starRating": 5,
+        "status": "approved",
+        "treatment": { "id": "treatment-204", "name": "Dentistry" },
+        "publicMeasure": "removed",
+        "withdrawalState": "active",
+        "comment": "Forbidden historical text."
+      }
+    },
+    {
+      "data": {
+        "id": "review-204",
+        "reviewDate": "2026-10-14T10:00:00.000Z",
+        "starRating": 5,
+        "status": "approved",
+        "treatment": { "id": "treatment-204", "name": "Dentistry" },
+        "publicMeasure": "none",
+        "withdrawalState": "withdrawn",
+        "publicAuthorName": "Forbidden historical name."
+      }
+    }
+  ]
+}

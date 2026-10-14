@@ -982,6 +982,28 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Ephemeral private lock records created and released inside one serializable domain transaction',
     },
+    reviewPublicationTransitions: {
+      slug: 'reviewPublicationTransitions',
+      displayName: 'ReviewPublicationTransitions',
+      operations: {
+        create: { type: 'conditional', details: 'private review source transactions only' },
+        read: { type: 'conditional', details: 'not exposed through generic access' },
+        update: { type: 'conditional', details: 'immutable source facts' },
+        delete: { type: 'conditional', details: 'immutable source facts' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes:
+        'Immutable scalar source evidence survives native review deletion without retaining patient or review content',
+    },
     clinicNotificationOccurrences: {
       slug: 'clinicNotificationOccurrences',
       displayName: 'ClinicNotificationOccurrences',

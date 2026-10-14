@@ -102,30 +102,38 @@ function startControlServer(
   offboardClinicStaff: () => Promise<void>,
   createNotificationInquiry: () => Promise<unknown>,
   removeNotificationInquiry: () => Promise<void>,
+  extraRoutes: Readonly<Record<string, () => Promise<unknown>>> = {},
 ): Promise<Server> {
   const server = http.createServer((request, response) => {
     if (
       request.method !== 'POST' ||
-      !['/offboard-clinic-staff', '/create-notification-inquiry', '/remove-notification-inquiry'].includes(
-        request.url?.split('?')[0] ?? '',
-      ) ||
+      ![
+        '/offboard-clinic-staff',
+        '/create-notification-inquiry',
+        '/remove-notification-inquiry',
+        ...Object.keys(extraRoutes),
+      ].includes(request.url?.split('?')[0] ?? '') ||
       request.headers.authorization !== `Bearer ${controlToken}`
     ) {
       response.writeHead(404, { 'content-type': 'application/json' })
       response.end(JSON.stringify({ error: 'not-found' }))
       return
     }
-    const createsNotification = request.url?.split('?')[0] === '/create-notification-inquiry'
+    const route = request.url?.split('?')[0] ?? ''
+    const extra = extraRoutes[route]
+    const createsNotification = route === '/create-notification-inquiry'
     void (
-      createsNotification
-        ? createNotificationInquiry()
-        : request.url?.split('?')[0] === '/remove-notification-inquiry'
-          ? removeNotificationInquiry()
-          : offboardClinicStaff()
+      extra
+        ? extra()
+        : createsNotification
+          ? createNotificationInquiry()
+          : request.url?.split('?')[0] === '/remove-notification-inquiry'
+            ? removeNotificationInquiry()
+            : offboardClinicStaff()
     )
       .then((result) => {
-        response.writeHead(createsNotification ? 200 : 204, { 'content-type': 'application/json' })
-        response.end(createsNotification ? JSON.stringify(result) : undefined)
+        response.writeHead(createsNotification || extra ? 200 : 204, { 'content-type': 'application/json' })
+        response.end(createsNotification || extra ? JSON.stringify(result ?? { completed: true }) : undefined)
       })
       .catch(() => {
         response.writeHead(500, { 'content-type': 'application/json' })
@@ -271,6 +279,53 @@ async function seedSyntheticInquiry() {
       clinicId: String(clinicFixture.clinic.id),
       clinicName: clinicFixture.clinic.name,
       close: () => payload.destroy(),
+      controlRoutes: {
+        '/remove-latest-patient-message': async () => {
+          const latest = await payload.find({
+            collection: 'inquiryMessages',
+            where: { inquiry: { equals: created.inquiry.id } },
+            sort: '-id',
+            limit: 1,
+            overrideAccess: true,
+          })
+          const message = latest.docs[0]
+          if (!message) throw new Error('Expected an actual synthetic patient message')
+          await payload.delete({ collection: 'inquiryMessages', id: message.id, overrideAccess: true })
+        },
+        '/create-patient-message': async () => {
+          const req = await createLocalReq({}, payload)
+          req.user = users.asPayloadPatientUser(patient)
+          const detail = await communication.readPatientInquiryDetail(req, { inquiryId: created.inquiry.id })
+          notificationArrivals += 1
+          const sent = await communication.sendPatientInquiryMessage(req, {
+            inquiryId: created.inquiry.id,
+            expectedRevision: detail.revision,
+            idempotencyKey: `cross-app-patient-message-${notificationArrivals}`,
+            text: `Private synthetic grouped message ${notificationArrivals}.`,
+          })
+          const occurrences = await payload.find({
+            collection: 'clinicNotificationOccurrences',
+            overrideAccess: true,
+            depth: 0,
+            where: {
+              and: [
+                { sourceRecordId: { equals: created.inquiry.id } },
+                { eventType: { equals: 'patient_message_received' } },
+              ],
+            },
+            sort: ['occurredAt', 'id'],
+            limit: 100,
+          })
+          return {
+            inquiryId: sent.inquiry.id,
+            members: occurrences.docs.map((occurrence) => ({
+              notificationId: occurrence.notificationId,
+              sourceOccurrenceId: occurrence.sourceOccurrenceId,
+              occurredAt: occurrence.occurredAt,
+            })),
+          }
+        },
+      },
       foreignClinicId: String(foreignFixture.clinic.id),
       foreignClinicName: foreignFixture.clinic.name,
       inquiryId: created.inquiry.id,
@@ -290,7 +345,7 @@ async function seedSyntheticInquiry() {
         const occurrences = await payload.find({
           collection: 'clinicNotificationOccurrences',
           overrideAccess: true,
-          where: { sourceRecordId: { equals: source.id } },
+          where: { and: [{ sourceRecordKind: { equals: 'inquiry' } }, { sourceRecordId: { equals: source.id } }] },
           limit: 1,
         })
         const occurrence = occurrences.docs[0]
@@ -410,6 +465,7 @@ async function main() {
       fixture.offboardClinicStaff,
       fixture.createNotificationInquiry,
       fixture.removeNotificationInquiry,
+      fixture.controlRoutes,
     )
     websiteServer = spawn('pnpm', ['dev', '--hostname', '127.0.0.1', '--port', '3200'], {
       cwd: process.cwd(),

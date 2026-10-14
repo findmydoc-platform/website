@@ -4,16 +4,16 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
    CREATE TYPE "public"."enum_review_publication_transitions_event_type" AS ENUM('review_published', 'review_withdrawn', 'review_removed');
   CREATE TABLE "review_publication_transitions" (
-  	"id" serial PRIMARY KEY NOT NULL,
-  	"transition_id" varchar NOT NULL,
-  	"review_id" varchar NOT NULL,
-  	"clinic_scope_id" varchar NOT NULL,
-  	"event_type" "enum_review_publication_transitions_event_type" NOT NULL,
-  	"occurred_at" timestamp(3) with time zone NOT NULL,
-  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+    "id" serial PRIMARY KEY NOT NULL,
+    "transition_id" varchar NOT NULL,
+    "review_id" varchar NOT NULL,
+    "clinic_scope_id" varchar NOT NULL,
+    "event_type" "enum_review_publication_transitions_event_type" NOT NULL,
+    "occurred_at" timestamp(3) with time zone NOT NULL,
+    "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+    "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
-  
+
   ALTER TABLE "reviews" ADD COLUMN "notification_publication_evidence_at" timestamp(3) with time zone;
   ALTER TABLE "reviews" ADD COLUMN "notification_transition" jsonb;
   ALTER TABLE "_reviews_v" ADD COLUMN "version_notification_publication_evidence_at" timestamp(3) with time zone;

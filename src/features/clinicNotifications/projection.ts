@@ -1,5 +1,5 @@
 import type { PayloadRequest } from 'payload'
-import { readClinicInquiryNotificationProjection } from '@/features/inquiryCommunication/service'
+import { readInquiryModerationNotificationProjection } from '@/features/inquiryModeration/notificationProjection'
 import type { NotificationMember } from './contracts'
 import { readClinicReviewNotificationProjection } from './reviewProjection'
 
@@ -9,6 +9,6 @@ export function readNotificationSourceProjection(
   member: NotificationMember,
 ): Promise<{ visible: false } | { visible: true; displayName?: string; rating?: number }> {
   return member.sourceRecord.kind === 'inquiry'
-    ? readClinicInquiryNotificationProjection(req, member.sourceRecord.id)
+    ? readInquiryModerationNotificationProjection(req, member)
     : readClinicReviewNotificationProjection(req, member)
 }

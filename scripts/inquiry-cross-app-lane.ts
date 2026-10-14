@@ -276,6 +276,19 @@ async function seedSyntheticInquiry() {
 
     let notificationArrivals = 0
     let lastNotificationInquiryId: string | number | undefined
+    let moderationRoutes: Record<string, () => Promise<unknown>> = {}
+    if (process.env.INQUIRY_ACCEPTANCE_SPEC === 'inquiry-moderation-cross-app.spec.ts') {
+      const clinicReq = await createLocalReq({}, payload)
+      clinicReq.user = await users.asClinicScopedPayloadUser(payload, clinicStaff, clinicFixture.clinic.id)
+      const { inquiryModerationCrossAppFixture } = await import('./inquiry-moderation-cross-app-fixture')
+      moderationRoutes = await inquiryModerationCrossAppFixture({
+        payload,
+        clinicId: clinicFixture.clinic.id,
+        inquiryId: created.inquiry.id,
+        patientReq,
+        clinicReq,
+      })
+    }
     return {
       clinicId: String(clinicFixture.clinic.id),
       clinicName: clinicFixture.clinic.name,
@@ -286,6 +299,7 @@ async function seedSyntheticInquiry() {
           clinicId: clinicFixture.clinic.id,
           doctorId: clinicFixture.doctor.id,
         }),
+        ...moderationRoutes,
         '/remove-latest-patient-message': async () => {
           const latest = await payload.find({
             collection: 'inquiryMessages',

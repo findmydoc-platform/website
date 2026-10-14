@@ -6,19 +6,19 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_review_decision_transitions_event_type" AS ENUM('clinic_response_decided', 'review_appeal_decided');
   CREATE TYPE "public"."enum_review_decision_transitions_outcome" AS ENUM('approved', 'rejected', 'blocked', 'upheld');
   CREATE TABLE "review_decision_transitions" (
-  	"id" serial PRIMARY KEY NOT NULL,
-  	"transition_id" varchar NOT NULL,
-  	"review_id" varchar NOT NULL,
-  	"clinic_scope_id" varchar NOT NULL,
-  	"workflow_kind" "enum_review_decision_transitions_workflow_kind" NOT NULL,
-  	"workflow_id" varchar NOT NULL,
-  	"event_type" "enum_review_decision_transitions_event_type" NOT NULL,
-  	"outcome" "enum_review_decision_transitions_outcome" NOT NULL,
-  	"occurred_at" timestamp(3) with time zone NOT NULL,
-  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+    "id" serial PRIMARY KEY NOT NULL,
+    "transition_id" varchar NOT NULL,
+    "review_id" varchar NOT NULL,
+    "clinic_scope_id" varchar NOT NULL,
+    "workflow_kind" "enum_review_decision_transitions_workflow_kind" NOT NULL,
+    "workflow_id" varchar NOT NULL,
+    "event_type" "enum_review_decision_transitions_event_type" NOT NULL,
+    "outcome" "enum_review_decision_transitions_outcome" NOT NULL,
+    "occurred_at" timestamp(3) with time zone NOT NULL,
+    "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+    "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
-  
+
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "review_decision_transitions_id" integer;
   CREATE UNIQUE INDEX "review_decision_transitions_transition_id_idx" ON "review_decision_transitions" USING btree ("transition_id");
   CREATE INDEX "review_decision_transitions_review_id_idx" ON "review_decision_transitions" USING btree ("review_id");

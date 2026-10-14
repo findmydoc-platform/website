@@ -63,7 +63,10 @@ import {
 import { communicationReviewDueAt } from '@/features/inquiryRetention/policy'
 import { selectTransactionalEmailCommandAcceptance } from '@/features/transactionalEmail/payloadIntegration'
 import { TransactionalEmailError } from '@/features/transactionalEmail'
-import { captureClinicNotificationOccurrence } from '@/features/clinicNotifications/capture'
+import {
+  captureClinicNotificationOccurrence,
+  prepareClinicNotificationCapture,
+} from '@/features/clinicNotifications/capture'
 import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 import { recordNotificationDiagnostic } from '@/features/clinicNotifications/diagnostics'
 import { ClinicNotificationCaptureConflict } from '@/features/clinicNotifications/errors'
@@ -1804,6 +1807,7 @@ const sendInquiryMessage = async (
       input.inquiryId,
       initialActor,
       async () => {
+        if (requiredActor === 'patient') await prepareClinicNotificationCapture(req)
         const actor = await resolveCurrentActor(req)
         if (actor.kind !== requiredActor || actor.key !== initialActor.key) {
           throw new InquiryCommunicationServiceError('access-denied', 'The inquiry participant changed.')
@@ -1878,6 +1882,19 @@ const sendInquiryMessage = async (
             req,
           } as never),
         )
+
+        if (actor.kind === 'patient') {
+          await captureClinicNotificationOccurrence(req, {
+            clinicId,
+            occurredAt: text(message.createdAt),
+            member: {
+              schemaVersion: 1,
+              eventType: 'patient_message_received',
+              sourceRecord: { kind: 'inquiry', id: String(inquiry.id) },
+              sourceOccurrence: { kind: 'patient_message', id: String(message.id) },
+            },
+          })
+        }
 
         const current = await updateInquiry(req, inquiry, {
           activitySequence: nextSequence,
@@ -2950,6 +2967,7 @@ export const createVerifiedPatientInquiry = async (
 
   try {
     const inquiry = await runRetryableCommand(req, async () => {
+      await prepareClinicNotificationCapture(req)
       const replay = await findCreationReplay(req, ownerId, input)
       if (replay) return replay
       await validateInquiryTarget(req, input)
@@ -3071,6 +3089,7 @@ export const createVerifiedPatientInquiry = async (
       } as never)
       await captureClinicNotificationOccurrence(req, {
         clinicId: payloadId(input.clinicId),
+        occurredAt: text(asRecord(originalAudit).createdAt),
         member: {
           schemaVersion: 1,
           eventType: 'inquiry_created',
@@ -3167,6 +3186,7 @@ export const submitGuestClinicInquiry = async (
   const nowMs = Date.now()
 
   const result = await runRetryableCommand(req, async () => {
+    await prepareClinicNotificationCapture(req)
     const replay = await findGuestInquiryReplay(req, guestActorKey, hash, nowMs)
     if (replay) return { deduped: true, inquiry: replay }
     await validateInquiryTarget(req, input)
@@ -3216,6 +3236,7 @@ export const submitGuestClinicInquiry = async (
     })
     await captureClinicNotificationOccurrence(req, {
       clinicId: input.clinicId,
+      occurredAt: text(originalAudit.createdAt),
       member: {
         schemaVersion: 1,
         eventType: 'inquiry_created',

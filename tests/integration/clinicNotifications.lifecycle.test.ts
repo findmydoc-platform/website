@@ -1338,6 +1338,7 @@ describe('clinic notification source-to-feed lifecycle', () => {
   })
 
   it('counts authorized unread entries beyond the complete initial twenty-five-entry page', async () => {
+    await activateClinicNotificationsForTest(sourceReq)
     const createdInquiryIds: string[] = []
     for (let index = 0; index < 26; index++) {
       const created = await submitGuestClinicInquiry(sourceReq, {

@@ -1,0 +1,748 @@
+[
+  {
+    "name": "inquiry_created",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-001",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "inquiry",
+            "inquiryId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-001",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "inquiry_created",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "inquiry_audit",
+                "id": "source-001"
+              }
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "patient_message_received",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-002",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "inquiry",
+            "inquiryId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-002",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "patient_message_received",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "patient_message",
+                "id": "source-002"
+              }
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "review_published",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-003",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "review",
+            "reviewId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-003",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "review_published",
+              "sourceRecord": {
+                "kind": "review",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "review_transition",
+                "id": "source-003"
+              }
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "clinic_response_decided_approved",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-004",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "review",
+            "reviewId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-004",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "clinic_response_decided",
+              "sourceRecord": {
+                "kind": "review",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "response_decision",
+                "id": "source-004"
+              },
+              "outcome": "approved"
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "clinic_response_decided_rejected",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-005",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "review",
+            "reviewId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-005",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "clinic_response_decided",
+              "sourceRecord": {
+                "kind": "review",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "response_decision",
+                "id": "source-005"
+              },
+              "outcome": "rejected"
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "clinic_response_decided_blocked",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-006",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "review",
+            "reviewId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-006",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "clinic_response_decided",
+              "sourceRecord": {
+                "kind": "review",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "response_decision",
+                "id": "source-006"
+              },
+              "outcome": "blocked"
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "review_appeal_decided_upheld",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-007",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "review",
+            "reviewId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-007",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "review_appeal_decided",
+              "sourceRecord": {
+                "kind": "review",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "review_appeal_decision",
+                "id": "source-007"
+              },
+              "outcome": "upheld"
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "review_appeal_decided_rejected",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-008",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "review",
+            "reviewId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-008",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "review_appeal_decided",
+              "sourceRecord": {
+                "kind": "review",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "review_appeal_decision",
+                "id": "source-008"
+              },
+              "outcome": "rejected"
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "inquiry_restricted",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-009",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "inquiry",
+            "inquiryId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-009",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "inquiry_restricted",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "inquiry_moderation_event",
+                "id": "source-009"
+              }
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "inquiry_restored",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-010",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "inquiry",
+            "inquiryId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-010",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "inquiry_restored",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "inquiry_moderation_event",
+                "id": "source-010"
+              }
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "inquiry_appeal_decided_confirmed",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-011",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "inquiry",
+            "inquiryId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-011",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "inquiry_appeal_decided",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "inquiry_moderation_event",
+                "id": "source-011"
+              },
+              "outcome": "confirmed"
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "inquiry_appeal_decided_lifted",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-012",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "inquiry",
+            "inquiryId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-012",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "inquiry_appeal_decided",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "inquiry_moderation_event",
+                "id": "source-012"
+              },
+              "outcome": "lifted"
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "review_withdrawn",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-013",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "review",
+            "reviewId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-013",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "review_withdrawn",
+              "sourceRecord": {
+                "kind": "review",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "review_transition",
+                "id": "source-013"
+              }
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "review_removed",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "view": "unread",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:00:00.000Z",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-014",
+          "display": {
+            "eventLabel": "Synthetic event"
+          },
+          "destination": {
+            "kind": "review",
+            "reviewId": "record-001"
+          },
+          "members": [
+            {
+              "notificationId": "notification-014",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "review_removed",
+              "sourceRecord": {
+                "kind": "review",
+                "id": "record-001"
+              },
+              "sourceOccurrence": {
+                "kind": "review_transition",
+                "id": "source-014"
+              }
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "empty_summary",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "summary",
+      "serverTime": "2026-10-14T09:00:01.000Z",
+      "unreadCount": 0,
+      "nextUnreadCountChangeAt": null
+    }
+  },
+  {
+    "name": "complete_unread_group_and_individual_read_history",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:10:00.000Z",
+      "view": "all",
+      "unreadCount": 1,
+      "nextUnreadCountChangeAt": "2027-01-12T09:09:00.000Z",
+      "items": [
+        {
+          "kind": "patient_message_group",
+          "presentationId": "patient-messages:record-203",
+          "display": {
+            "eventLabel": "2 new messages",
+            "displayName": "Synthetic Patient"
+          },
+          "destination": {
+            "kind": "inquiry",
+            "inquiryId": "record-203",
+            "anchor": {
+              "kind": "message",
+              "id": "source-oldest"
+            }
+          },
+          "members": [
+            {
+              "notificationId": "group-oldest",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:05:00.000Z",
+              "expiresAt": "2027-01-12T09:05:00.000Z",
+              "readAt": null,
+              "eventType": "patient_message_received",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-203"
+              },
+              "sourceOccurrence": {
+                "kind": "patient_message",
+                "id": "source-oldest"
+              }
+            },
+            {
+              "notificationId": "group-newest",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:09:00.000Z",
+              "expiresAt": "2027-01-12T09:09:00.000Z",
+              "readAt": null,
+              "eventType": "patient_message_received",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-203"
+              },
+              "sourceOccurrence": {
+                "kind": "patient_message",
+                "id": "source-newest"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "occurrence",
+          "presentationId": "group-read",
+          "display": {
+            "eventLabel": "New patient message"
+          },
+          "destination": {
+            "kind": "inquiry",
+            "inquiryId": "record-203",
+            "anchor": {
+              "kind": "message",
+              "id": "source-read"
+            }
+          },
+          "members": [
+            {
+              "notificationId": "group-read",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-14T09:00:00.000Z",
+              "expiresAt": "2027-01-12T09:00:00.000Z",
+              "readAt": "2026-10-14T09:03:00.000Z",
+              "eventType": "patient_message_received",
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-203"
+              },
+              "sourceOccurrence": {
+                "kind": "patient_message",
+                "id": "source-read"
+              }
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  {
+    "name": "continuation_page_without_summary",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "mode": "page",
+      "serverTime": "2026-10-14T09:10:00.000Z",
+      "view": "all",
+      "items": [
+        {
+          "kind": "occurrence",
+          "presentationId": "notification-older",
+          "display": { "eventLabel": "New inquiry" },
+          "destination": { "kind": "inquiry", "inquiryId": "record-older" },
+          "members": [
+            {
+              "notificationId": "notification-older",
+              "schemaVersion": 1,
+              "occurredAt": "2026-10-13T09:00:00.000Z",
+              "expiresAt": "2027-01-11T09:00:00.000Z",
+              "readAt": null,
+              "eventType": "inquiry_created",
+              "sourceRecord": { "kind": "inquiry", "id": "record-older" },
+              "sourceOccurrence": { "kind": "inquiry_audit", "id": "audit-older" }
+            }
+          ]
+        }
+      ],
+      "nextCursor": null
+    }
+  }
+]

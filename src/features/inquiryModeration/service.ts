@@ -3,6 +3,13 @@ import { createHash } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 
 import { acquireInquiryCommandLock } from '@/features/inquiryAggregate/commandLock'
+import {
+  captureClinicNotificationOccurrence,
+  prepareClinicNotificationCapture,
+} from '@/features/clinicNotifications/capture'
+import { ClinicNotificationCaptureConflict } from '@/features/clinicNotifications/errors'
+import { recordNotificationDiagnostic } from '@/features/clinicNotifications/diagnostics'
+import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 import type { TransactionalEmailCommands } from '@/features/transactionalEmail'
 import { selectTransactionalEmailCommandAcceptance } from '@/features/transactionalEmail/payloadIntegration'
 import { TransactionalEmailError } from '@/features/transactionalEmail/errors'
@@ -257,10 +264,49 @@ const isSerializationFailure = (error: unknown): boolean =>
     error &&
     typeof error === 'object' &&
     ('code' in error || 'cause' in error) &&
-    ((error as { code?: unknown }).code === '40001' || isSerializationFailure((error as { cause?: unknown }).cause)),
+    (['40001', '40P01'].includes(String((error as { code?: unknown }).code)) ||
+      isSerializationFailure((error as { cause?: unknown }).cause)),
   )
 
-const runCommandTransaction = async <Result>(
+type SourceCaptureState = { attemptCount: number; completed: boolean }
+
+const observeNotificationSourceCommand = async <Result>(
+  req: PayloadRequest,
+  state: SourceCaptureState,
+  command: () => Promise<Result>,
+): Promise<Result> => {
+  const started = performance.now()
+  try {
+    const result = await command()
+    if (state.attemptCount > 0)
+      await recordNotificationDiagnostic(req, {
+        operation: 'source_capture',
+        result: 'success',
+        transactionOutcome: 'committed',
+        attemptCount: state.attemptCount,
+        elapsedMs: Math.round(performance.now() - started),
+      })
+    return result
+  } catch (error) {
+    if (state.attemptCount > 0)
+      await recordNotificationDiagnostic(req, {
+        operation: 'source_capture',
+        result: 'failure',
+        errorCode: 'SERVICE_UNAVAILABLE',
+        transactionOutcome:
+          !state.completed ||
+          isSerializationFailure(error) ||
+          (error instanceof InquiryModerationServiceError && error.kind === 'conflict')
+            ? 'not_committed'
+            : 'unknown',
+        attemptCount: state.attemptCount,
+        elapsedMs: Math.round(performance.now() - started),
+      })
+    throw error
+  }
+}
+
+const runSingleCommandTransaction = async <Result>(
   req: PayloadRequest,
   command: () => Promise<Result>,
   lockKey?: string,
@@ -269,7 +315,9 @@ const runCommandTransaction = async <Result>(
     throw new InquiryModerationServiceError('unavailable', 'Moderation commands cannot join another transaction.')
   }
   let transactionID: null | number | string = null
+  let commitAttempted = false
   const previousContext = req.context?.inquiryModerationCommand
+  const previousCaptureContext = req.context?.clinicNotificationCaptureAttempt
   try {
     req.context = { ...(req.context ?? {}), inquiryModerationCommand: true }
     transactionID = await req.payload.db.beginTransaction({ accessMode: 'read write', isolationLevel: 'serializable' })
@@ -280,18 +328,36 @@ const runCommandTransaction = async <Result>(
     const releaseLock = lockKey ? await acquireInquiryCommandLock(req, lockKey) : undefined
     const result = await command()
     if (releaseLock) await releaseLock()
+    requireNotificationTransaction(req, transactionID)
+    commitAttempted = true
     await req.payload.db.commitTransaction(transactionID)
     return result
   } catch (error: unknown) {
     if (transactionID !== null) await req.payload.db.rollbackTransaction(transactionID)
-    if (isSerializationFailure(error)) {
+    if (isSerializationFailure(error) || (!commitAttempted && error instanceof ClinicNotificationCaptureConflict)) {
       throw new InquiryModerationServiceError('conflict', 'The moderation case changed concurrently.')
     }
     throw error
   } finally {
+    if (typeof previousCaptureContext === 'undefined') delete req.context?.clinicNotificationCaptureAttempt
+    else req.context = { ...req.context, clinicNotificationCaptureAttempt: previousCaptureContext }
     if (transactionID !== null && req.transactionID === transactionID) delete req.transactionID
     if (typeof previousContext === 'undefined') delete req.context?.inquiryModerationCommand
     else req.context = { ...(req.context ?? {}), inquiryModerationCommand: previousContext }
+  }
+}
+
+const runCommandTransaction = async <Result>(
+  req: PayloadRequest,
+  command: () => Promise<Result>,
+  lockKey?: string,
+): Promise<Result> => {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await runSingleCommandTransaction(req, command, lockKey)
+    } catch (error) {
+      if (!(error instanceof InquiryModerationServiceError) || error.kind !== 'conflict' || attempt === 3) throw error
+    }
   }
 }
 
@@ -485,7 +551,7 @@ const updateCaseAndCreateEvent = async (
       req,
     } as never),
   )
-  await req.payload.create({
+  const sourceEvent = await req.payload.create({
     collection: 'inquiryModerationEvents' as never,
     context: { inquiryModerationCommand: true },
     data: {
@@ -508,6 +574,57 @@ const updateCaseAndCreateEvent = async (
     overrideAccess: true,
     req,
   } as never)
+  if (eventType === 'decision-recorded' && data.decisionOutcome !== 'no-action') {
+    await captureClinicNotificationOccurrence(req, {
+      clinicId: scope.clinicId,
+      occurredAt: text(data.decisionAt),
+      member: {
+        schemaVersion: 1,
+        eventType: 'inquiry_restricted',
+        sourceRecord: { kind: 'inquiry', id: String(scope.inquiry.id) },
+        sourceOccurrence: { kind: 'inquiry_moderation_event', id: String(sourceEvent.id) },
+      },
+    })
+  }
+  if (eventType === 'appeal-decided') {
+    await captureClinicNotificationOccurrence(req, {
+      clinicId: scope.clinicId,
+      occurredAt: text(data.appealDecidedAt),
+      member: {
+        schemaVersion: 1,
+        eventType: 'inquiry_appeal_decided',
+        sourceRecord: { kind: 'inquiry', id: String(scope.inquiry.id) },
+        sourceOccurrence: { kind: 'inquiry_moderation_event', id: String(sourceEvent.id) },
+        outcome: data.appealOutcome === 'upheld' ? 'confirmed' : 'lifted',
+      },
+    })
+    if (!moderationCase.measureEndedAt && text(data.measureEndedAt)) {
+      const endedAt = text(data.measureEndedAt)
+      const effectiveUntil = text(moderationCase.effectiveUntil)
+      await captureClinicNotificationOccurrence(req, {
+        clinicId: scope.clinicId,
+        occurredAt: effectiveUntil && Date.parse(effectiveUntil) < Date.parse(endedAt) ? effectiveUntil : endedAt,
+        member: {
+          schemaVersion: 1,
+          eventType: 'inquiry_restored',
+          sourceRecord: { kind: 'inquiry', id: String(scope.inquiry.id) },
+          sourceOccurrence: { kind: 'inquiry_moderation_event', id: String(sourceEvent.id) },
+        },
+      })
+    }
+  }
+  if (eventType === 'measure-ended') {
+    await captureClinicNotificationOccurrence(req, {
+      clinicId: scope.clinicId,
+      occurredAt: text(data.measureEndedAt),
+      member: {
+        schemaVersion: 1,
+        eventType: 'inquiry_restored',
+        sourceRecord: { kind: 'inquiry', id: String(scope.inquiry.id) },
+        sourceOccurrence: { kind: 'inquiry_moderation_event', id: String(sourceEvent.id) },
+      },
+    })
+  }
   return updated
 }
 
@@ -818,7 +935,11 @@ export const decideInquiryModerationCase = async (
   const input = parsed.data
   const initialModerator = await resolveModerator(req)
   const acceptance = selectTransactionalEmailCommandAcceptance('moderation.report-decided')
+  const capture: SourceCaptureState = { attemptCount: 0, completed: false }
   const decide = async (req: PayloadRequest, commands?: TransactionalEmailCommands) => {
+    capture.attemptCount += 1
+    capture.completed = false
+    await prepareClinicNotificationCapture(req)
     const moderator = await resolveModerator(req)
     if (moderator.key !== initialModerator.key) {
       throw new InquiryModerationServiceError('access-denied', 'The moderation actor changed.')
@@ -894,32 +1015,37 @@ export const decideInquiryModerationCase = async (
           recipientSlot: 'affected',
         })
     }
+    capture.completed = true
     return updatedCase
   }
-  if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => decide(req))
-  else {
-    let domainError: InquiryModerationServiceError | undefined
-    try {
-      await acceptance.run(req, async (transactionReq, commands) => {
-        domainError = undefined
-        transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
-        try {
-          return await decide(transactionReq, commands)
-        } catch (error) {
-          if (error instanceof InquiryModerationServiceError) domainError = error
-          throw error
-        }
-      })
-    } catch (error) {
-      if (domainError) throw domainError
-      if (error instanceof TransactionalEmailError)
-        throw new InquiryModerationServiceError(
-          error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
-          'The moderation decision could not be committed.',
-        )
-      throw error
+  await observeNotificationSourceCommand(req, capture, async () => {
+    if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => decide(req))
+    else {
+      let domainError: InquiryModerationServiceError | undefined
+      try {
+        await acceptance.run(req, async (transactionReq, commands) => {
+          domainError = undefined
+          transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+          try {
+            return await decide(transactionReq, commands)
+          } catch (error) {
+            if (error instanceof InquiryModerationServiceError) domainError = error
+            if (error instanceof ClinicNotificationCaptureConflict)
+              throw new TransactionalEmailError('transaction-conflict')
+            throw error
+          }
+        })
+      } catch (error) {
+        if (domainError) throw domainError
+        if (error instanceof TransactionalEmailError)
+          throw new InquiryModerationServiceError(
+            error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
+            'The moderation decision could not be committed.',
+          )
+        throw error
+      }
     }
-  }
+  })
   return { decided: true }
 }
 
@@ -1034,7 +1160,11 @@ export const decideInquiryModerationAppeal = async (
   const input = parsed.data
   const initialModerator = await resolveModerator(req)
   const acceptance = selectTransactionalEmailCommandAcceptance('moderation.appeal-decided')
+  const capture: SourceCaptureState = { attemptCount: 0, completed: false }
   const decide = async (req: PayloadRequest, commands?: TransactionalEmailCommands) => {
+    capture.attemptCount += 1
+    capture.completed = false
+    await prepareClinicNotificationCapture(req)
     const moderator = await resolveModerator(req)
     if (moderator.key !== initialModerator.key) {
       throw new InquiryModerationServiceError('access-denied', 'The moderation actor changed.')
@@ -1111,31 +1241,36 @@ export const decideInquiryModerationAppeal = async (
           recipientSlot: 'reporter',
         })
     }
+    capture.completed = true
   }
-  if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => decide(req))
-  else {
-    let domainError: InquiryModerationServiceError | undefined
-    try {
-      await acceptance.run(req, async (transactionReq, commands) => {
-        domainError = undefined
-        transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
-        try {
-          await decide(transactionReq, commands)
-        } catch (error) {
-          if (error instanceof InquiryModerationServiceError) domainError = error
-          throw error
-        }
-      })
-    } catch (error) {
-      if (domainError) throw domainError
-      if (error instanceof TransactionalEmailError)
-        throw new InquiryModerationServiceError(
-          error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
-          'The appeal decision could not be committed.',
-        )
-      throw error
+  await observeNotificationSourceCommand(req, capture, async () => {
+    if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => decide(req))
+    else {
+      let domainError: InquiryModerationServiceError | undefined
+      try {
+        await acceptance.run(req, async (transactionReq, commands) => {
+          domainError = undefined
+          transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+          try {
+            await decide(transactionReq, commands)
+          } catch (error) {
+            if (error instanceof InquiryModerationServiceError) domainError = error
+            if (error instanceof ClinicNotificationCaptureConflict)
+              throw new TransactionalEmailError('transaction-conflict')
+            throw error
+          }
+        })
+      } catch (error) {
+        if (domainError) throw domainError
+        if (error instanceof TransactionalEmailError)
+          throw new InquiryModerationServiceError(
+            error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
+            'The appeal decision could not be committed.',
+          )
+        throw error
+      }
     }
-  }
+  })
   return { decided: true }
 }
 
@@ -1154,51 +1289,60 @@ export const reconcileExpiredInquiryModerationMeasures = async (
   })
   let reconciled = 0
   for (const candidate of candidates.slice(0, 50)) {
-    await runCommandTransaction(req, async () => {
-      const moderationCase = await readModerationCase(req, String(candidate.id))
-      const effectiveUntil = text(moderationCase.effectiveUntil)
-      if (
-        moderationCase.measureEndedAt ||
-        moderationCase.appealOutcome === 'overturned' ||
-        !effectiveUntil ||
-        Date.parse(effectiveUntil) >= now.getTime() ||
-        !['content-restricted', 'conversation-restricted', 'identity-messaging-suspended'].includes(
-          text(moderationCase.decisionOutcome),
+    const capture: SourceCaptureState = { attemptCount: 0, completed: false }
+    const changed = await observeNotificationSourceCommand(req, capture, () =>
+      runCommandTransaction(req, async () => {
+        capture.attemptCount += 1
+        capture.completed = false
+        await prepareClinicNotificationCapture(req)
+        const moderationCase = await readModerationCase(req, String(candidate.id))
+        const effectiveUntil = text(moderationCase.effectiveUntil)
+        if (
+          moderationCase.measureEndedAt ||
+          moderationCase.appealOutcome === 'overturned' ||
+          !effectiveUntil ||
+          Date.parse(effectiveUntil) >= now.getTime() ||
+          !['content-restricted', 'conversation-restricted', 'identity-messaging-suspended'].includes(
+            text(moderationCase.decisionOutcome),
+          )
+        ) {
+          capture.completed = true
+          return false
+        }
+        const appealPending = moderationCase.status === 'appealed' && moderationCase.appealOutcome === 'pending'
+        const retentionPolicy = await resolveInquiryRetentionPolicyVersion(
+          req,
+          text(moderationCase.retentionPolicyVersion),
         )
-      ) {
-        return
-      }
-      const appealPending = moderationCase.status === 'appealed' && moderationCase.appealOutcome === 'pending'
-      const retentionPolicy = await resolveInquiryRetentionPolicyVersion(
-        req,
-        text(moderationCase.retentionPolicyVersion),
-      )
-      const finalOutcomeAt = text(moderationCase.finalOutcomeAt) || (!appealPending ? effectiveUntil : null)
-      const reviewDueAt = moderationReviewDueAt({
-        finalOutcomeAt,
-        measureEndedAt: effectiveUntil,
-        reviewMonths: retentionPolicy.moderationReviewMonths,
-      })
-      const ended = await updateCaseAndCreateEvent(
-        req,
-        moderationCase,
-        { id: 'system', kind: 'system' },
-        'measure-ended',
-        {
-          ...(!appealPending ? { finalOutcomeAt, retentionReviewDueAt: reviewDueAt, status: 'resolved' } : {}),
+        const finalOutcomeAt = text(moderationCase.finalOutcomeAt) || (!appealPending ? effectiveUntil : null)
+        const reviewDueAt = moderationReviewDueAt({
+          finalOutcomeAt,
           measureEndedAt: effectiveUntil,
-        },
-        { toValue: 'available' },
-      )
-      await updateInquiryModerationActivity(
-        req,
-        ended,
-        { id: 'system', kind: 'system' },
-        'moderation-restored',
-        'available',
-      )
-      reconciled += 1
-    })
+          reviewMonths: retentionPolicy.moderationReviewMonths,
+        })
+        const ended = await updateCaseAndCreateEvent(
+          req,
+          moderationCase,
+          { id: 'system', kind: 'system' },
+          'measure-ended',
+          {
+            ...(!appealPending ? { finalOutcomeAt, retentionReviewDueAt: reviewDueAt, status: 'resolved' } : {}),
+            measureEndedAt: effectiveUntil,
+          },
+          { toValue: 'available' },
+        )
+        await updateInquiryModerationActivity(
+          req,
+          ended,
+          { id: 'system', kind: 'system' },
+          'moderation-restored',
+          'available',
+        )
+        capture.completed = true
+        return true
+      }),
+    )
+    if (changed) reconciled += 1
   }
   return { reconciled }
 }

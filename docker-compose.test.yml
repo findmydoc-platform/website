@@ -1,10 +1,10 @@
 services:
   postgres:
     image: postgis/postgis:15-3.3
-    container_name: findmydoc-postgres-test
+    container_name: findmydoc-postgres-${TEST_SERVICE_SUFFIX:-test}
     platform: linux/amd64
     ports:
-      - '5433:5432'
+      - '${TEST_POSTGRES_PORT:-5433}:5432'
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -19,9 +19,9 @@ services:
 
   s3mock:
     image: adobe/s3mock:5.1.0
-    container_name: findmydoc-s3mock-test
+    container_name: findmydoc-s3mock-${TEST_SERVICE_SUFFIX:-test}
     ports:
-      - '127.0.0.1:9091:9090'
+      - '127.0.0.1:${TEST_S3MOCK_PORT:-9091}:9090'
     environment:
       COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: findmydoc-test
     healthcheck:

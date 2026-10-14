@@ -19,6 +19,12 @@ import {
   preventReviewWorkflowVersionRestore,
 } from '@/collections/reviewWorkflow'
 import { revalidateReviewResponseChange } from '@/hooks/revalidateClinicSurfaces'
+import {
+  captureReviewResponseNotification,
+  finalizeReviewDecisionNotificationOperation,
+  prepareReviewResponseNotification,
+  prepareReviewResponseNotificationOperation,
+} from '@/collections/reviews/decisionNotifications'
 
 const auditFields: Field[] = [
   {
@@ -257,9 +263,10 @@ export const ReviewResponses: CollectionConfig = {
     ...auditFields,
   ],
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook, prepareReviewResponseChange],
-    beforeOperation: [preventReviewWorkflowVersionRestore],
-    afterChange: [revalidateReviewResponseChange],
+    beforeChange: [stableIdBeforeChangeHook, prepareReviewResponseChange, prepareReviewResponseNotification],
+    beforeOperation: [preventReviewWorkflowVersionRestore, prepareReviewResponseNotificationOperation],
+    afterChange: [captureReviewResponseNotification, revalidateReviewResponseChange],
+    afterOperation: [finalizeReviewDecisionNotificationOperation],
     afterRead: [hideEmptyReviewResponseGroups],
   },
   timestamps: true,

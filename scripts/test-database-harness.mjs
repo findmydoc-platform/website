@@ -7,7 +7,13 @@ import pg from 'pg'
 
 const { Client } = pg
 
-const DOCKER_COMPOSE = 'docker compose -p findmydoc-test -f docker-compose.test.yml'
+function dockerComposeCommand() {
+  const project = process.env.TEST_DB_COMPOSE_PROJECT || 'findmydoc-test'
+  if (!/^findmydoc-test(?:-[a-z0-9][a-z0-9-]*)?$/.test(project)) {
+    throw new Error('TEST_DB_COMPOSE_PROJECT must identify an isolated findmydoc-test project.')
+  }
+  return `docker compose -p ${project} -f docker-compose.test.yml`
+}
 const TEST_S3MOCK_SERVICE = 's3mock'
 const DEFAULT_CONN = 'postgresql://postgres:password@localhost:5433/findmydoc-test' // pragma: allowlist secret
 const DEFAULT_TEST_S3_ENDPOINT = 'http://localhost:9091'
@@ -473,19 +479,19 @@ function getTestServiceNames({ includeDatabase = true, includeStorage = true } =
 export function getTestServiceStartupCommand(options = {}) {
   const services = getTestServiceNames(options)
 
-  return services.length > 0 ? `${DOCKER_COMPOSE} up -d ${services.join(' ')}` : null
+  return services.length > 0 ? `${dockerComposeCommand()} up -d ${services.join(' ')}` : null
 }
 
 export function getTestServiceTeardownCommands(options = {}) {
   const services = getTestServiceNames(options)
 
-  return services.length > 0 ? [`${DOCKER_COMPOSE} stop ${services.join(' ')}`] : []
+  return services.length > 0 ? [`${dockerComposeCommand()} stop ${services.join(' ')}`] : []
 }
 
 function runDockerCompose(command, options = {}) {
   if (command === 'reset') {
     try {
-      execSync(`${DOCKER_COMPOSE} down -v --remove-orphans`, { stdio: 'pipe' })
+      execSync(`${dockerComposeCommand()} down -v --remove-orphans`, { stdio: 'pipe' })
     } catch {}
     return
   }

@@ -4,6 +4,26 @@ export interface CollectionContractEntry {
 }
 
 export const collectionContractRegistry = {
+  clinicNotificationOccurrences: {
+    baseline: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+    deep: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+  },
+  clinicNotificationReadReceipts: {
+    baseline: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+    deep: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+  },
+  clinicNotificationControls: {
+    baseline: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+    deep: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+  },
+  reviewPublicationTransitions: {
+    baseline: ['tests/integration/clinicNotifications.reviews.test.ts'],
+    deep: ['tests/integration/clinicNotifications.reviews.test.ts'],
+  },
+  reviewDecisionTransitions: {
+    baseline: ['tests/integration/clinicNotifications.reviewDecisions.test.ts'],
+    deep: ['tests/integration/clinicNotifications.reviewDecisions.test.ts'],
+  },
   recoveryRequestEvents: {
     baseline: ['tests/integration/recoveryRequests.lifecycle.test.ts'],
     deep: ['tests/integration/recoveryRequests.lifecycle.test.ts'],
@@ -272,6 +292,9 @@ export const deepContractDomains = {
     'inquiryLegalHolds',
     'inquiryDeletionProofs',
     'inquiryCommandLocks',
+    'clinicNotificationOccurrences',
+    'clinicNotificationReadReceipts',
+    'clinicNotificationControls',
   ],
   trustWorkflow: [
     'reviews',

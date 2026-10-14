@@ -6,11 +6,19 @@ import { setTimeout as delay } from 'node:timers/promises'
 
 import { loadLocalAndTestEnv } from './test-env.mjs'
 import { setupTestDatabase, teardownTestDatabase } from './test-database-harness.mjs'
+import { createReviewNotificationControl } from './review-notification-cross-app-control'
+import { createReviewDecisionControl } from './review-decision-cross-app-control'
 
+loadLocalAndTestEnv()
+const authPort = Number(process.env.INQUIRY_ACCEPTANCE_AUTH_PORT ?? '54321')
+if (!Number.isSafeInteger(authPort) || authPort < 1 || authPort > 65535)
+  throw new Error('Invalid isolated auth stub port')
 const websiteOrigin = 'http://127.0.0.1:3200'
-const authOrigin = 'http://127.0.0.1:54321'
+const authOrigin = `http://127.0.0.1:${authPort}`
 const controlOrigin = 'http://127.0.0.1:3201'
-const databaseUri = 'postgresql://postgres:password@127.0.0.1:5433/findmydoc-test-cross-app' // pragma: allowlist secret
+const databaseUri =
+  process.env.INQUIRY_ACCEPTANCE_DATABASE_URI ??
+  'postgresql://postgres:password@127.0.0.1:5433/findmydoc-test-cross-app' // pragma: allowlist secret
 const dashboardDirectory = process.env.INQUIRY_ACCEPTANCE_DASHBOARD_DIR
 
 if (!dashboardDirectory) throw new Error('INQUIRY_ACCEPTANCE_DASHBOARD_DIR is required')
@@ -24,6 +32,7 @@ if (dashboardPackage.name !== 'clinic-dashboard') {
 
 const subjects = {
   clinic: '00000000-0000-4000-8000-000000000001',
+  secondClinic: '00000000-0000-4000-8000-000000000004',
   foreignClinic: '00000000-0000-4000-8000-000000000002',
   patient: '00000000-0000-4000-8000-000000000003',
 } as const
@@ -45,6 +54,7 @@ function syntheticJwt(subject: string, email: string, type: 'clinic' | 'patient'
 
 const tokens = {
   clinic: syntheticJwt(subjects.clinic, 'clinic-staff@example.com', 'clinic'),
+  secondClinic: syntheticJwt(subjects.secondClinic, 'second-clinic-staff@example.com', 'clinic'),
   foreignClinic: syntheticJwt(subjects.foreignClinic, 'foreign-clinic@example.com', 'clinic'),
   patient: syntheticJwt(subjects.patient, 'cross-app-ada@example.com', 'patient'),
 } as const
@@ -86,25 +96,46 @@ function startAuthStub(users: ReadonlyMap<string, SyntheticUser>): Promise<Serve
 
   return new Promise((resolve, reject) => {
     server.once('error', reject)
-    server.listen(54321, '127.0.0.1', () => resolve(server))
+    server.listen(authPort, '127.0.0.1', () => resolve(server))
   })
 }
 
-function startControlServer(offboardClinicStaff: () => Promise<void>): Promise<Server> {
+function startControlServer(
+  offboardClinicStaff: () => Promise<void>,
+  createNotificationInquiry: () => Promise<unknown>,
+  removeNotificationInquiry: () => Promise<void>,
+  extraRoutes: Readonly<Record<string, () => Promise<unknown>>> = {},
+): Promise<Server> {
   const server = http.createServer((request, response) => {
     if (
       request.method !== 'POST' ||
-      request.url?.split('?')[0] !== '/offboard-clinic-staff' ||
+      ![
+        '/offboard-clinic-staff',
+        '/create-notification-inquiry',
+        '/remove-notification-inquiry',
+        ...Object.keys(extraRoutes),
+      ].includes(request.url?.split('?')[0] ?? '') ||
       request.headers.authorization !== `Bearer ${controlToken}`
     ) {
       response.writeHead(404, { 'content-type': 'application/json' })
       response.end(JSON.stringify({ error: 'not-found' }))
       return
     }
-    void offboardClinicStaff()
-      .then(() => {
-        response.writeHead(204)
-        response.end()
+    const route = request.url?.split('?')[0] ?? ''
+    const extra = Object.entries(extraRoutes).find(([path]) => path === route)?.[1]
+    const createsNotification = route === '/create-notification-inquiry'
+    void (
+      extra
+        ? extra()
+        : createsNotification
+          ? createNotificationInquiry()
+          : request.url?.split('?')[0] === '/remove-notification-inquiry'
+            ? removeNotificationInquiry()
+            : offboardClinicStaff()
+    )
+      .then((result) => {
+        response.writeHead(createsNotification || extra ? 200 : 204, { 'content-type': 'application/json' })
+        response.end(createsNotification || extra ? JSON.stringify(result ?? { completed: true }) : undefined)
       })
       .catch(() => {
         response.writeHead(500, { 'content-type': 'application/json' })
@@ -148,13 +179,15 @@ function closeServer(server: Server | undefined) {
 }
 
 async function seedSyntheticInquiry() {
-  const [{ createLocalReq, getPayload }, { default: config }, fixtures, users, communication] = await Promise.all([
-    import('payload'),
-    import('@payload-config'),
-    import('../tests/fixtures/createClinicFixture'),
-    import('../tests/fixtures/testUsers'),
-    import('../src/features/inquiryCommunication/service'),
-  ])
+  const [{ createLocalReq, getPayload }, { default: config }, fixtures, users, communication, notifications] =
+    await Promise.all([
+      import('payload'),
+      import('@payload-config'),
+      import('../tests/fixtures/createClinicFixture'),
+      import('../tests/fixtures/testUsers'),
+      import('../src/features/inquiryCommunication/service'),
+      import('../src/features/clinicNotifications/service'),
+    ])
   const payload = await getPayload({ config })
   try {
     const cities = await payload.find({ collection: 'cities', depth: 0, limit: 1, overrideAccess: true })
@@ -191,15 +224,22 @@ async function seedSyntheticInquiry() {
       lastName: 'Clinic',
       supabaseUserId: subjects.clinic,
     })
+    const secondClinicStaff = await users.createClinicTestUser(payload, {
+      emailPrefix: 'cross-app-second-clinic',
+      firstName: 'Taylor',
+      lastName: 'Clinic',
+      supabaseUserId: subjects.secondClinic,
+    })
     const foreignClinicStaff = await users.createClinicTestUser(payload, {
       emailPrefix: 'cross-app-foreign-clinic',
       firstName: 'Foreign',
       lastName: 'Clinic',
       supabaseUserId: subjects.foreignClinic,
     })
-    for (const [staffId, clinicId] of [
-      [clinicStaff.id, clinicFixture.clinic.id],
-      [foreignClinicStaff.id, foreignFixture.clinic.id],
+    for (const [staff, clinicId] of [
+      [clinicStaff, clinicFixture.clinic.id],
+      [secondClinicStaff, clinicFixture.clinic.id],
+      [foreignClinicStaff, foreignFixture.clinic.id],
     ] as const) {
       await payload.update({
         collection: 'clinicStaff',
@@ -210,13 +250,21 @@ async function seedSyntheticInquiry() {
           status: 'approved',
         },
         depth: 0,
-        id: staffId,
+        id: staff.id,
         overrideAccess: true,
       })
+      const accessReady = await payload.findByID({
+        collection: 'clinicStaff',
+        id: staff.id,
+        depth: 0,
+        overrideAccess: true,
+      })
+      await users.completeLegacyClinicFixture(payload, accessReady, clinicId)
     }
 
     const patientReq = await createLocalReq({}, payload)
     patientReq.user = users.asPayloadPatientUser(patient)
+    await notifications.activateClinicNotificationsForTest(patientReq)
     const created = await communication.createVerifiedPatientInquiry(patientReq, {
       clinicId: String(clinicFixture.clinic.id),
       consent: true,
@@ -227,13 +275,152 @@ async function seedSyntheticInquiry() {
       treatmentTimeline: 'within_two_weeks',
     })
 
+    let notificationArrivals = 0
+    let lastNotificationInquiryId: string | number | undefined
+    let moderationRoutes: Record<string, () => Promise<unknown>> = {}
+    if (process.env.INQUIRY_ACCEPTANCE_SPEC === 'inquiry-moderation-cross-app.spec.ts') {
+      const clinicReq = await createLocalReq({}, payload)
+      clinicReq.user = await users.asClinicScopedPayloadUser(payload, clinicStaff, clinicFixture.clinic.id)
+      const { inquiryModerationCrossAppFixture } = await import('./inquiry-moderation-cross-app-fixture')
+      moderationRoutes = await inquiryModerationCrossAppFixture({
+        payload,
+        clinicId: clinicFixture.clinic.id,
+        inquiryId: created.inquiry.id,
+        patientReq,
+        clinicReq,
+      })
+    }
     return {
       clinicId: String(clinicFixture.clinic.id),
       clinicName: clinicFixture.clinic.name,
       close: () => payload.destroy(),
+      controlRoutes: {
+        ...createReviewNotificationControl({
+          payload,
+          clinicId: clinicFixture.clinic.id,
+          doctorId: clinicFixture.doctor.id,
+        }),
+        ...createReviewDecisionControl({
+          payload,
+          clinicId: clinicFixture.clinic.id,
+          doctorId: clinicFixture.doctor.id,
+          clinicStaff,
+        }),
+        ...moderationRoutes,
+        '/remove-latest-patient-message': async () => {
+          const latest = await payload.find({
+            collection: 'inquiryMessages',
+            where: { inquiry: { equals: created.inquiry.id } },
+            sort: '-id',
+            limit: 1,
+            overrideAccess: true,
+          })
+          const message = latest.docs[0]
+          if (!message) throw new Error('Expected an actual synthetic patient message')
+          await payload.delete({ collection: 'inquiryMessages', id: message.id, overrideAccess: true })
+        },
+        '/create-patient-message': async () => {
+          const req = await createLocalReq({}, payload)
+          req.user = users.asPayloadPatientUser(patient)
+          const detail = await communication.readPatientInquiryDetail(req, { inquiryId: created.inquiry.id })
+          notificationArrivals += 1
+          let attachmentDraftId: string | undefined
+          if (notificationArrivals === 1) {
+            const bytes = new Uint8Array(
+              Buffer.from(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+                'base64',
+              ),
+            )
+            const draft = await communication.createAttachmentDraft(req, {
+              inquiryId: created.inquiry.id,
+              fileName: 'patient-message-proof.png',
+              mimeType: 'image/png',
+              sizeBytes: bytes.byteLength,
+            })
+            const uploaded = await fetch(draft.upload.url, {
+              method: draft.upload.method,
+              headers: draft.upload.headers,
+              body: bytes,
+            })
+            if (!uploaded.ok) throw new Error('The isolated synthetic attachment upload failed')
+            const finalized = await communication.finalizeAttachmentDraft(req, {
+              inquiryId: created.inquiry.id,
+              draftId: draft.draftId,
+            })
+            attachmentDraftId = finalized.attachment.id
+          }
+          const sent = await communication.sendPatientInquiryMessage(req, {
+            inquiryId: created.inquiry.id,
+            expectedRevision: detail.revision,
+            idempotencyKey: `cross-app-patient-message-${notificationArrivals}`,
+            ...(attachmentDraftId
+              ? { attachmentDraftId }
+              : { text: `Private synthetic grouped message ${notificationArrivals}.` }),
+          })
+          const occurrences = await payload.find({
+            collection: 'clinicNotificationOccurrences',
+            overrideAccess: true,
+            depth: 0,
+            where: {
+              and: [
+                { sourceRecordId: { equals: created.inquiry.id } },
+                { eventType: { equals: 'patient_message_received' } },
+              ],
+            },
+            sort: ['occurredAt', 'id'],
+            limit: 100,
+          })
+          return {
+            inquiryId: sent.inquiry.id,
+            members: occurrences.docs.map((occurrence) => ({
+              notificationId: occurrence.notificationId,
+              sourceOccurrenceId: occurrence.sourceOccurrenceId,
+              occurredAt: occurrence.occurredAt,
+            })),
+          }
+        },
+      },
       foreignClinicId: String(foreignFixture.clinic.id),
       foreignClinicName: foreignFixture.clinic.name,
       inquiryId: created.inquiry.id,
+      createNotificationInquiry: async () => {
+        notificationArrivals += 1
+        const req = await createLocalReq({}, payload)
+        const source = await communication.submitGuestClinicInquiry(req, {
+          clinicId: clinicFixture.clinic.id,
+          doctorId: clinicFixture.doctor.id,
+          consent: true,
+          email: `notification-arrival-${notificationArrivals}@example.com`,
+          fullName: 'Notification Arrival',
+          message: 'Private cross-app arrival text.',
+          phoneNumber: '+493000000099',
+        })
+        lastNotificationInquiryId = source.id
+        const occurrences = await payload.find({
+          collection: 'clinicNotificationOccurrences',
+          overrideAccess: true,
+          where: { and: [{ sourceRecordKind: { equals: 'inquiry' } }, { sourceRecordId: { equals: source.id } }] },
+          limit: 1,
+        })
+        const occurrence = occurrences.docs[0]
+        if (!occurrence) throw new Error('Expected captured cross-app occurrence')
+        return {
+          inquiryId: source.id,
+          notificationId: occurrence.notificationId,
+          occurredAt: occurrence.occurredAt,
+          displayName: 'Notification Arrival',
+        }
+      },
+      removeNotificationInquiry: async () => {
+        if (lastNotificationInquiryId === undefined) throw new Error('Expected a captured synthetic inquiry')
+        await payload.update({
+          collection: 'patientClinicInquiries',
+          id: lastNotificationInquiryId,
+          data: { deletedAt: new Date().toISOString() },
+          overrideAccess: true,
+        })
+      },
       offboardClinicStaff: async () => {
         await payload.update({
           collection: 'clinicStaff',
@@ -245,6 +432,16 @@ async function seedSyntheticInquiry() {
         })
       },
       users: new Map<string, SyntheticUser>([
+        [
+          tokens.secondClinic,
+          {
+            email: secondClinicStaff.email ?? 'second-clinic-staff@example.com',
+            firstName: 'Taylor',
+            id: subjects.secondClinic,
+            lastName: 'Clinic',
+            type: 'clinic',
+          },
+        ],
         [
           tokens.clinic,
           {
@@ -301,6 +498,8 @@ async function main() {
   loadLocalAndTestEnv()
   Object.assign(process.env, {
     DATABASE_URI: databaseUri,
+    DATABASE_DIRECT_URI: databaseUri,
+    CLINIC_DASHBOARD_URL: `http://127.0.0.1:${Number(process.env.CLINIC_DASHBOARD_CROSS_APP_PORT ?? '3101')}`,
     DEPLOYMENT_ENV: 'test',
     NEXT_PUBLIC_DEPLOYMENT_ENV: 'test',
     NEXT_PUBLIC_SERVER_URL: websiteOrigin,
@@ -317,7 +516,12 @@ async function main() {
     await setupTestDatabase({ templateKind: 'baseline' })
     fixture = await seedSyntheticInquiry()
     authServer = await startAuthStub(fixture.users)
-    controlServer = await startControlServer(fixture.offboardClinicStaff)
+    controlServer = await startControlServer(
+      fixture.offboardClinicStaff,
+      fixture.createNotificationInquiry,
+      fixture.removeNotificationInquiry,
+      fixture.controlRoutes,
+    )
     websiteServer = spawn('pnpm', ['dev', '--hostname', '127.0.0.1', '--port', '3200'], {
       cwd: process.cwd(),
       env: process.env,
@@ -332,6 +536,7 @@ async function main() {
         INQUIRY_ACCEPTANCE_CLINIC_ID: fixture.clinicId,
         INQUIRY_ACCEPTANCE_CLINIC_NAME: fixture.clinicName,
         INQUIRY_ACCEPTANCE_CLINIC_TOKEN: tokens.clinic,
+        INQUIRY_ACCEPTANCE_SECOND_CLINIC_TOKEN: tokens.secondClinic,
         INQUIRY_ACCEPTANCE_CONTROL_ORIGIN: controlOrigin,
         INQUIRY_ACCEPTANCE_CONTROL_TOKEN: controlToken,
         INQUIRY_ACCEPTANCE_FOREIGN_CLINIC_ID: fixture.foreignClinicId,

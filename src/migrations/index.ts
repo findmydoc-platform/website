@@ -94,6 +94,11 @@ import * as migration_20261002_150524_recovery_request_limits from './20261002_1
 import * as migration_20261003_075837_clinic_participation_completion from './20261003_075837_clinic_participation_completion'
 import * as migration_20261003_104659_clinic_invitation_authorization from './20261003_104659_clinic_invitation_authorization'
 import * as migration_20261011_072913_payload_390_storage_object_key from './20261011_072913_payload_390_storage_object_key'
+import * as migration_20261013_225346_clinic_notification_foundation from './20261013_225346_clinic_notification_foundation'
+import * as migration_20261013_232344_clinic_notification_retention_control from './20261013_232344_clinic_notification_retention_control'
+import * as migration_20261013_234505_clinic_notification_scope from './20261013_234505_clinic_notification_scope'
+import * as migration_20261014_064510_review_notification_transitions from './20261014_064510_review_notification_transitions'
+import * as migration_20261014_083610_review_decision_transitions from './20261014_083610_review_decision_transitions'
 
 export const migrations = [
   {
@@ -575,5 +580,30 @@ export const migrations = [
     up: migration_20261011_072913_payload_390_storage_object_key.up,
     down: migration_20261011_072913_payload_390_storage_object_key.down,
     name: '20261011_072913_payload_390_storage_object_key',
+  },
+  {
+    up: migration_20261013_225346_clinic_notification_foundation.up,
+    down: migration_20261013_225346_clinic_notification_foundation.down,
+    name: '20261013_225346_clinic_notification_foundation',
+  },
+  {
+    up: migration_20261013_232344_clinic_notification_retention_control.up,
+    down: migration_20261013_232344_clinic_notification_retention_control.down,
+    name: '20261013_232344_clinic_notification_retention_control',
+  },
+  {
+    up: migration_20261013_234505_clinic_notification_scope.up,
+    down: migration_20261013_234505_clinic_notification_scope.down,
+    name: '20261013_234505_clinic_notification_scope',
+  },
+  {
+    up: migration_20261014_064510_review_notification_transitions.up,
+    down: migration_20261014_064510_review_notification_transitions.down,
+    name: '20261014_064510_review_notification_transitions',
+  },
+  {
+    up: migration_20261014_083610_review_decision_transitions.up,
+    down: migration_20261014_083610_review_decision_transitions.down,
+    name: '20261014_083610_review_decision_transitions',
   },
 ]

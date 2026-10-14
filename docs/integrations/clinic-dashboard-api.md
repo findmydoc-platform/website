@@ -25,6 +25,20 @@ Payload exposes the private bootstrap contract, the persistent clinic-profile dr
 treatment and gallery contracts, and the inquiry communication contract. The Clinic Dashboard session and BFF runtime
 are implemented in the Dashboard repository; trusted preview and production rollout evidence remain pending.
 
+The notification foundation adds Website-owned immutable occurrences, personal receipt storage and the read-only
+new-inquiry path. Guest and verified submissions capture one occurrence inside their existing source transaction,
+subject to a persisted activation boundary that defaults to inactive. Installed `clinic-notifications-v1` support
+is negotiated separately from capture activation. Its [closed wire contract](../architecture/clinic-notifications-v1.md)
+defines the complete catalog for the following implementation slices. Personal explicit marking now persists first
+read receipts through the authorized acknowledgement command. Remaining producers, exact destination opening,
+continuation loading and independent cleanup remain separate slices.
+Hosted capture stays inactive; local isolated acceptance does not establish Preview or Production availability.
+
+The [notification contract](../architecture/clinic-notifications-v1.md) defines acknowledgement eligibility at the final
+atomic server decision immediately before the native commit call. A decision before expiry may finish committing
+afterward; logical feed/count/group expiry remains exact at ninety days. This user-approved boundary does not claim
+a physical commit-time guarantee or hosted activation.
+
 ## Boundary and Ownership
 
 | Concern | Website and Payload | Clinic Dashboard |
@@ -671,6 +685,7 @@ There is no public `under_review` display and no black-bar rendering. `status` r
 The standard Payload REST collection routes remain the current-read contract:
 
 - `GET /api/reviews` and `GET /api/reviews/:id` return platform staff all review states and fields.
+- `GET /api/clinic-dashboard/reviews/:id` returns an ordinary exact clinic review in a closed `{ data }` envelope. It revalidates the current clinic principal and source scope, takes no query or caller-selected clinic, and returns `404 TARGET_UNAVAILABLE` for a missing, foreign, rejected or trashed record. Its independently executable examples live in `tests/fixtures/clinic-review-detail-v1.json`. The response exposes the current permitted text projection, treatment, rating and publication/withdrawal state. Removed or withdrawn rows remain available to their clinic but omit author name and written content. The route is private and uncached; it does not read versions or create notification receipts.
 - The same routes return clinic staff approved reviews only for their assigned clinic, including logically removed and
   withdrawn rows. Clinic fields are limited to the public measure/text/notice, moderation time, withdrawal
   state/source/time, rating/date/public author, and ordinary review relationships. Raw `comment` is returned only for

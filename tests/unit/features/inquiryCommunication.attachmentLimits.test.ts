@@ -75,6 +75,7 @@ const createRequest = (counts: number[], events: string[] = []) => {
         beginTransaction: vi.fn(async () => 'tx-1'),
         commitTransaction,
         rollbackTransaction,
+        sessions: { 'tx-1': {} },
       },
       find,
       logger: { error: vi.fn() },

@@ -9,6 +9,10 @@ import path from 'path'
 import { buildConfig, PayloadHandler, type EmailAdapter } from 'payload'
 import { cacheRevalidationVisibilityGetHandler } from './endpoints/cacheRevalidationVisibility'
 import { clinicDashboardBootstrapGetHandler } from './endpoints/clinicDashboardBootstrap'
+import {
+  clinicDashboardNotificationsGetHandler,
+  clinicDashboardNotificationsReadPostHandler,
+} from './endpoints/clinicDashboardNotifications'
 import { clinicDashboardReportingGetHandler } from './endpoints/clinicDashboardReporting'
 import {
   clinicDashboardProfileDraftDiscardPostHandler,
@@ -109,6 +113,12 @@ import { InquiryRetentionPolicies } from './collections/InquiryRetentionPolicies
 import { InquiryLegalHolds } from './collections/InquiryLegalHolds'
 import { InquiryDeletionProofs } from './collections/InquiryDeletionProofs'
 import { InquiryCommandLocks } from './collections/InquiryCommandLocks'
+import { ClinicNotificationOccurrences } from './collections/ClinicNotificationOccurrences'
+import { ClinicNotificationReadReceipts } from './collections/ClinicNotificationReadReceipts'
+import { ClinicNotificationControls } from './collections/ClinicNotificationControls'
+import { ReviewPublicationTransitions } from './collections/ReviewPublicationTransitions'
+import { ReviewDecisionTransitions } from './collections/ReviewDecisionTransitions'
+import { clinicDashboardReviewGetHandler } from './endpoints/clinicDashboardReviews'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accreditation'
 import { MedicalSpecialties } from './collections/MedicalSpecialties'
@@ -180,10 +190,17 @@ export default buildConfig({
     preserveExtension: true,
   },
   endpoints: [
+    { path: '/clinic-dashboard/reviews/:id', method: 'get', handler: clinicDashboardReviewGetHandler },
     {
       path: '/clinic-dashboard/bootstrap',
       method: 'get',
       handler: clinicDashboardBootstrapGetHandler as PayloadHandler,
+    },
+    { path: '/clinic-dashboard/notifications', method: 'get', handler: clinicDashboardNotificationsGetHandler },
+    {
+      path: '/clinic-dashboard/notifications/read',
+      method: 'post',
+      handler: clinicDashboardNotificationsReadPostHandler,
     },
     {
       path: '/clinic-dashboard/reporting',
@@ -546,6 +563,11 @@ export default buildConfig({
     InquiryLegalHolds,
     InquiryDeletionProofs,
     InquiryCommandLocks,
+    ClinicNotificationOccurrences,
+    ClinicNotificationReadReceipts,
+    ClinicNotificationControls,
+    ReviewPublicationTransitions,
+    ReviewDecisionTransitions,
     Clinics,
     Doctors,
     Accreditation,

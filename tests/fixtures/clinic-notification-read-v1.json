@@ -1,0 +1,39 @@
+[
+  {
+    "name": "acknowledged",
+    "status": 200,
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "serverTime": "2026-10-14T09:01:00.000Z",
+      "acknowledged": true
+    }
+  },
+  {
+    "name": "definite_rejection",
+    "status": 503,
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "error": { "code": "SERVICE_UNAVAILABLE" },
+      "writeOutcome": "not_committed"
+    }
+  },
+  {
+    "name": "unknown_outcome",
+    "status": 503,
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "error": { "code": "SERVICE_UNAVAILABLE" },
+      "writeOutcome": "unknown"
+    }
+  },
+  {
+    "name": "throttled",
+    "status": 429,
+    "retryAfter": "30",
+    "response": {
+      "contractVersion": "clinic-notifications-v1",
+      "error": { "code": "RATE_LIMITED" },
+      "writeOutcome": "not_committed"
+    }
+  }
+]

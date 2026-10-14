@@ -1,3 +1,8 @@
+import {
+  guardNotificationAuthorizationChange,
+  guardNotificationAuthorizationSession,
+  deleteNotificationReaderReceipts,
+} from '@/features/clinicNotifications/authorizationBarrier'
 import type { CollectionConfig } from 'payload'
 import { isClinicStaff, isOwnClinicStaffProfile } from '@/access/isClinicStaff'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
@@ -51,7 +56,17 @@ export const ClinicStaff: CollectionConfig = {
     delete: () => false,
   },
   hooks: {
+    beforeOperation: [guardNotificationAuthorizationChange],
+    beforeDelete: [guardNotificationAuthorizationSession, deleteNotificationReaderReceipts],
+    afterOperation: [
+      async ({ result, req, operation }) => {
+        if (['update', 'delete', 'restoreVersion'].includes(operation))
+          await guardNotificationAuthorizationSession({ req })
+        return result
+      },
+    ],
     beforeChange: [
+      guardNotificationAuthorizationSession,
       guardClinicAccountEvidence,
       guardClinicInvitationAuthorization,
       validateClinicStaffStatusTransition,

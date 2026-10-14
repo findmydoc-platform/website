@@ -9,6 +9,12 @@ import {
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { prepareReviewAppealChange, preventReviewWorkflowVersionRestore } from '@/collections/reviewWorkflow'
+import {
+  captureReviewAppealNotification,
+  finalizeReviewDecisionNotificationOperation,
+  prepareReviewAppealNotification,
+  prepareReviewAppealNotificationOperation,
+} from '@/collections/reviews/decisionNotifications'
 
 const auditFields: Field[] = [
   {
@@ -184,8 +190,10 @@ export const ReviewAppeals: CollectionConfig = {
     ...auditFields,
   ],
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook, prepareReviewAppealChange],
-    beforeOperation: [preventReviewWorkflowVersionRestore],
+    beforeChange: [stableIdBeforeChangeHook, prepareReviewAppealChange, prepareReviewAppealNotification],
+    beforeOperation: [preventReviewWorkflowVersionRestore, prepareReviewAppealNotificationOperation],
+    afterChange: [captureReviewAppealNotification],
+    afterOperation: [finalizeReviewDecisionNotificationOperation],
   },
   timestamps: true,
 }

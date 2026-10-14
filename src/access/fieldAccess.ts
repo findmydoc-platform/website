@@ -55,8 +55,10 @@ export const platformOnlyFieldAccess: FieldAccess = ({ req }) => {
 }
 
 /** Platform staff may edit this field only on their own principal. */
-export const platformSelfFieldAccess: FieldAccess = ({ id, req }) => {
-  return Boolean(isPlatformUser(req.user) && id != null && String(id) === String(req.user?.id))
+export const platformSelfFieldAccess: FieldAccess = ({ doc, id, req }) => {
+  // Payload's Admin permission check supplies the loaded doc without a separate id.
+  const targetId = id ?? doc?.id
+  return Boolean(isPlatformUser(req.user) && targetId != null && String(targetId) === String(req.user?.id))
 }
 
 /**

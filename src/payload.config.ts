@@ -116,6 +116,8 @@ import { InquiryCommandLocks } from './collections/InquiryCommandLocks'
 import { ClinicNotificationOccurrences } from './collections/ClinicNotificationOccurrences'
 import { ClinicNotificationReadReceipts } from './collections/ClinicNotificationReadReceipts'
 import { ClinicNotificationControls } from './collections/ClinicNotificationControls'
+import { ReviewPublicationTransitions } from './collections/ReviewPublicationTransitions'
+import { clinicDashboardReviewGetHandler } from './endpoints/clinicDashboardReviews'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accreditation'
 import { MedicalSpecialties } from './collections/MedicalSpecialties'
@@ -187,6 +189,7 @@ export default buildConfig({
     preserveExtension: true,
   },
   endpoints: [
+    { path: '/clinic-dashboard/reviews/:id', method: 'get', handler: clinicDashboardReviewGetHandler },
     {
       path: '/clinic-dashboard/bootstrap',
       method: 'get',
@@ -562,6 +565,7 @@ export default buildConfig({
     ClinicNotificationOccurrences,
     ClinicNotificationReadReceipts,
     ClinicNotificationControls,
+    ReviewPublicationTransitions,
     Clinics,
     Doctors,
     Accreditation,

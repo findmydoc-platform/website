@@ -93,7 +93,7 @@ export async function readClinicNotifications(
         eventLabel: labels[member.eventType],
         ...('displayName' in projection && projection.displayName ? { displayName: projection.displayName } : {}),
         ...('outcome' in member ? { outcome: member.outcome } : {}),
-        ...(typeof occurrence.rating === 'number' ? { rating: occurrence.rating } : {}),
+        ...('rating' in projection && typeof projection.rating === 'number' ? { rating: projection.rating } : {}),
       },
       destination:
         member.sourceRecord.kind === 'inquiry'

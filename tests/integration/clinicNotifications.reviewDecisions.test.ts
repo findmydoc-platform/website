@@ -208,6 +208,115 @@ describe('native review decisions in the personal clinic notification feed', () 
     60_000,
   )
 
+  it('revokes a reader before a stored decision can be read or acknowledged', async () => {
+    const review = await newReview()
+    const secondStaff = await createClinicTestUser(payload, {
+      emailPrefix: 'review-decision-second-reader',
+      createdStaffIds: [],
+    })
+    const otherReq = await createLocalReq(
+      { user: await asClinicScopedPayloadUser(payload, secondStaff, clinicId) },
+      payload,
+    )
+    const submitted = await payload.create({
+      collection: 'reviewResponses',
+      req: clinicWriter,
+      overrideAccess: false,
+      data: {
+        review: review.id,
+        pendingResponse: { body: 'Synthetic response for current authorization.' },
+      } as ReviewResponse,
+    })
+    await payload.update({
+      collection: 'reviewResponses',
+      id: submitted.id,
+      req: moderator,
+      overrideAccess: false,
+      data: { moderationStatus: 'approved' } as ReviewResponse,
+    })
+    const otherFeed = await readClinicNotifications(otherReq, { mode: 'page', view: 'unread' })
+    if (otherFeed.mode !== 'page') throw new Error('Expected unread notification page')
+    const decision = otherFeed.items.find(
+      (item) =>
+        item.members[0]?.sourceRecord.id === String(review.id) &&
+        item.members[0].eventType === 'clinic_response_decided',
+    )
+    expect(decision).toBeDefined()
+    const notificationId = decision!.members[0]!.notificationId
+    await payload.update({
+      collection: 'clinicStaff',
+      id: secondStaff.id,
+      overrideAccess: true,
+      context: { skipClinicStaffAuthSync: true },
+      data: { status: 'offboarded' },
+    })
+    await expect(readClinicNotifications(otherReq, { mode: 'summary' })).rejects.toMatchObject({
+      code: 'CLINIC_ACCESS_DENIED',
+    })
+    await expect(markClinicNotificationsRead(otherReq, { notificationIds: [notificationId] })).rejects.toMatchObject({
+      code: 'CLINIC_ACCESS_DENIED',
+      writeOutcome: 'not_committed',
+    })
+    expect((await decisionEntries(review.id))[0]!.members[0]!.readAt).toBeNull()
+  }, 60_000)
+
+  it('rolls back source, immutable fact and occurrence when the native transaction is lost', async () => {
+    const review = await newReview()
+    const response = await payload.create({
+      collection: 'reviewResponses',
+      req: clinicWriter,
+      overrideAccess: false,
+      data: {
+        review: review.id,
+        pendingResponse: { body: 'Synthetic response requiring transaction rollback.' },
+      } as ReviewResponse,
+    })
+    const hooks = payload.collections.reviewResponses.config.hooks
+    const previous = hooks.afterChange
+    let injected = false
+    hooks.afterChange = [
+      ...(previous ?? []),
+      async ({ req, doc }) => {
+        if (!injected && doc.id === response.id) {
+          injected = true
+          const transactionID = await req.transactionID
+          if (typeof transactionID !== 'string' && typeof transactionID !== 'number')
+            throw new Error('Expected owned source transaction.')
+          await payload.db.rollbackTransaction(transactionID)
+          delete req.transactionID
+        }
+        return doc
+      },
+    ]
+    try {
+      await expect(
+        payload.update({
+          collection: 'reviewResponses',
+          id: response.id,
+          req: moderator,
+          overrideAccess: false,
+          data: { moderationStatus: 'approved' } as ReviewResponse,
+        }),
+      ).rejects.toThrow('transaction')
+    } finally {
+      hooks.afterChange = previous
+    }
+    expect(
+      (await payload.findByID({ collection: 'reviewResponses', id: response.id, overrideAccess: true }))
+        .moderationStatus,
+    ).toBe('pending')
+    expect(await decisionEntries(review.id)).toEqual([])
+    expect(
+      (
+        await payload.find({
+          collection: 'reviewDecisionTransitions',
+          overrideAccess: true,
+          where: { reviewId: { equals: String(review.id) } },
+        })
+      ).docs,
+    ).toEqual([])
+  }, 60_000)
+
   it('keeps intermediate appeal work silent and records the final rejected outcome once', async () => {
     const review = await newReview()
     const appeal = await payload.create({

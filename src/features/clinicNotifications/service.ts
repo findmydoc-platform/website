@@ -15,6 +15,7 @@ import {
 } from './contracts'
 
 import { ClinicNotificationError } from './errors'
+import { createNotificationCursor, readNotificationCursor, type NotificationSortKey } from './cursor'
 export { activateClinicNotificationsForTest } from './capture'
 export { ClinicNotificationError } from './errors'
 
@@ -93,10 +94,17 @@ export async function readClinicNotifications(
   if (!req.user || req.user.collection !== 'clinicStaff') throw new ClinicNotificationError('UNAUTHENTICATED')
   const access = await readClinicAccessState(req.payload, req.user.id, req)
   if (!access) throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')
-  if (input.mode === 'page' && input.cursor) throw new ClinicNotificationError('CURSOR_INVALID')
-  const serverTime = new Date().toISOString()
+  const scanTime = new Date().toISOString()
+  const cursorScope = {
+    contractVersion: CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
+    clinic: String(access.clinic.id),
+    principal: String(access.staff.id),
+    view: input.mode === 'page' ? input.view : 'unread',
+  } as const
+  const cursor =
+    input.mode === 'page' && input.cursor ? readNotificationCursor(input.cursor, cursorScope, req.payload.secret) : null
   const occurrences = await allRows(req, 'clinicNotificationOccurrences', {
-    and: [{ clinicScopeId: { equals: String(access.clinic.id) } }, { expiresAt: { greater_than: serverTime } }],
+    and: [{ clinicScopeId: { equals: String(access.clinic.id) } }, { expiresAt: { greater_than: scanTime } }],
   })
   const receipts = await allRows(req, 'clinicNotificationReadReceipts', { clinicStaff: { equals: access.staff.id } })
   const readTimes = new Map(receipts.map((receipt) => [String(idOf(receipt.occurrence)), receipt.readAt]))
@@ -133,13 +141,15 @@ export async function readClinicNotifications(
       members: [member],
     })
   }
+  const serverTime = new Date().toISOString()
+  const activeItems = items.filter((item) => item.members[0]!.expiresAt > serverTime)
   const compareMembers = (left: NotificationMember, right: NotificationMember) =>
     left.occurredAt.localeCompare(right.occurredAt) ||
     left.sourceOccurrence.id.localeCompare(right.sourceOccurrence.id, 'en', { numeric: true }) ||
     left.notificationId.localeCompare(right.notificationId)
   const groups = new Map<string, NotificationItem>()
   const grouped: NotificationItem[] = []
-  for (const item of items) {
+  for (const item of activeItems) {
     const member = item.members[0]!
     if (member.eventType !== 'patient_message_received' || member.readAt !== null) {
       if (member.eventType === 'patient_message_received') item.destination = messageDestination(member)
@@ -169,11 +179,21 @@ export async function readClinicNotifications(
       eventLabel: group.members.length === 1 ? '1 new message' : `${group.members.length} new messages`,
     }
   }
-  grouped.sort(
-    (left, right) =>
-      compareMembers(right.members.at(-1)!, left.members.at(-1)!) ||
-      right.presentationId.localeCompare(left.presentationId),
-  )
+  const sortKey = (item: NotificationItem): NotificationSortKey => {
+    const newest = item.members.at(-1)!
+    return {
+      occurredAt: newest.occurredAt,
+      sourceOccurrenceId: newest.sourceOccurrence.id,
+      notificationId: newest.notificationId,
+      presentationId: item.presentationId,
+    }
+  }
+  const compareKeys = (left: NotificationSortKey, right: NotificationSortKey) =>
+    left.occurredAt.localeCompare(right.occurredAt) ||
+    left.sourceOccurrenceId.localeCompare(right.sourceOccurrenceId, 'en', { numeric: true }) ||
+    left.notificationId.localeCompare(right.notificationId) ||
+    left.presentationId.localeCompare(right.presentationId)
+  grouped.sort((left, right) => compareKeys(sortKey(right), sortKey(left)))
   const unread = grouped.filter((item) => item.members[0]!.readAt === null)
   const summary = {
     unreadCount: unread.length,
@@ -189,41 +209,32 @@ export async function readClinicNotifications(
   }
   const envelope = { contractVersion: CLINIC_NOTIFICATIONS_CONTRACT_VERSION, serverTime }
   if (input.mode === 'summary') return notificationsResponseSchema.parse({ ...envelope, mode: 'summary', ...summary })
-  const eligible = input.view === 'unread' ? unread : grouped
+  const eligible = (input.view === 'unread' ? unread : grouped).filter(
+    (item) => !cursor || compareKeys(sortKey(item), cursor) < 0,
+  )
   const selected: NotificationItem[] = []
-  const body = () => ({
+  const body = (nextCursor: string | null) => ({
     ...envelope,
     mode: 'page' as const,
     view: input.view,
-    ...summary,
+    ...(!input.cursor ? summary : {}),
     items: selected,
-    nextCursor:
-      selected.length < eligible.length
-        ? Buffer.from(
-            JSON.stringify({
-              contractVersion: CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
-              clinic: String(access.clinic.id),
-              principal: String(access.staff.id),
-              view: input.view,
-              last: selected.at(-1)?.presentationId,
-            }),
-          ).toString('base64url')
-        : null,
+    nextCursor,
   })
-  for (const item of eligible) {
-    if (Buffer.byteLength(JSON.stringify({ ...body(), items: [item], nextCursor: null })) > NOTIFICATION_PAGE_MAX_BYTES)
-      throw new ClinicNotificationError('PAYLOAD_TOO_LARGE')
-  }
-  for (const item of eligible) {
+  let nextCursor: string | null = null
+  for (const [index, item] of eligible.entries()) {
     if (selected.length === NOTIFICATION_PAGE_MAX_ENTRIES) break
     selected.push(item)
-    if (Buffer.byteLength(JSON.stringify(body())) > NOTIFICATION_PAGE_MAX_BYTES) {
+    const candidateCursor =
+      index + 1 < eligible.length ? createNotificationCursor(cursorScope, sortKey(item), req.payload.secret) : null
+    if (Buffer.byteLength(JSON.stringify(body(candidateCursor))) > NOTIFICATION_PAGE_MAX_BYTES) {
       selected.pop()
       if (!selected.length) throw new ClinicNotificationError('PAYLOAD_TOO_LARGE')
       break
     }
+    nextCursor = candidateCursor
   }
-  return notificationsResponseSchema.parse(body())
+  return notificationsResponseSchema.parse(body(nextCursor))
 }
 
 export { markClinicNotificationsRead } from './markRead'

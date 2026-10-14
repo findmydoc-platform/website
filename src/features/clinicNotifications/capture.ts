@@ -80,7 +80,9 @@ export async function prepareClinicNotificationCapture(req: PayloadRequest): Pro
   req.context = { ...req.context, clinicNotificationCaptureAttempt: true }
   try {
     const transactionReq = await notificationReq(req)
+    const transactionID = await transactionReq.transactionID
     await serializeCapture(transactionReq)
+    requireNotificationTransaction(transactionReq, transactionID)
   } catch (error) {
     throwCaptureError(error)
   }
@@ -99,7 +101,9 @@ export async function captureClinicNotificationOccurrence(
   req.context = { ...req.context, clinicNotificationCaptureAttempt: true }
   try {
     const transactionReq = await notificationReq(req)
+    const transactionID = await transactionReq.transactionID
     const control = await serializeCapture(transactionReq)
+    requireNotificationTransaction(transactionReq, transactionID)
     if (control.active !== true) return
     const occurredAt = input.occurredAt ?? new Date().toISOString()
     if (typeof control.activatedAt !== 'string' || !Number.isFinite(Date.parse(control.activatedAt)))
@@ -133,6 +137,7 @@ export async function captureClinicNotificationOccurrence(
         ...(input.rating ? { rating: input.rating } : {}),
       },
     } as never)
+    requireNotificationTransaction(transactionReq, transactionID)
   } catch (error) {
     throwCaptureError(error)
   }

@@ -149,7 +149,12 @@ function readRelationshipId(data: ReviewDraft, originalDoc: unknown, field: stri
   return extractRelationId((originalDoc as Record<string, unknown>)[field])
 }
 
-const validateReviewCreationRequirements: CollectionBeforeChangeHook = ({ data, operation, originalDoc, req }) => {
+export const validateReviewCreationRequirements: CollectionBeforeChangeHook = ({
+  data,
+  operation,
+  originalDoc,
+  req,
+}) => {
   const missingRequirements = getMissingReviewCreationRequirements(data, operation)
 
   if (missingRequirements.length > 0) {

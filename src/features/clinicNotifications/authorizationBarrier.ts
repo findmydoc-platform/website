@@ -4,6 +4,7 @@ import { requireNotificationTransaction } from '@/collections/clinicNotification
 
 type Id = number | string
 const key = (kind: 'clinic' | 'staff', id: Id) => `notification-authorization:${kind}:${String(id)}`
+const isSeedReset = (req: PayloadRequest): boolean => req.context?.seedReset === true && req.context?.skipHooks === true
 export const notificationClinicAuthorizationKey = (clinicId: Id): string => key('clinic', clinicId)
 
 /** Clinic and staff keys are independent of the environment capture and retention controls. */
@@ -77,6 +78,7 @@ export async function guardNotificationAuthorizationChange({
   args: unknown
 }): Promise<void> {
   if (!['update', 'delete', 'restoreVersion'].includes(operation)) return
+  if (isSeedReset(req)) return
   await discardCompletedAuthorizationGuard(req)
   const controls = await req.payload.find({
     collection: 'clinicNotificationControls',
@@ -119,6 +121,7 @@ export async function guardNotificationAuthorizationChange({
 
 /** Bulk native operations must never continue without the transaction that owns their authorization locks. */
 export async function guardNotificationAuthorizationSession({ req }: { req: PayloadRequest }): Promise<void> {
+  if (isSeedReset(req)) return
   if (req.context?.clinicNotificationAuthorizationGuard === true) {
     const transactionID = await req.transactionID
     requireNotificationTransaction(req, transactionID)
@@ -137,6 +140,7 @@ export async function guardNotificationInquiryMembershipChange({
   args: unknown
 }): Promise<void> {
   if (operation !== 'update') return
+  if (isSeedReset(req)) return
   await discardCompletedAuthorizationGuard(req)
   const input = args as { id?: Id; where?: Where; data?: { clinic?: unknown } }
   if (!input.data || !Object.hasOwn(input.data, 'clinic')) return

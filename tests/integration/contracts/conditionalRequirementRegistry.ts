@@ -2,7 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { Clinics } from '@/collections/Clinics'
 import { clinicApprovalRequirementSet } from '@/collections/clinics/approvalRequirements'
-import { Reviews } from '@/collections/Reviews'
+import { Reviews, validateReviewCreationRequirements } from '@/collections/Reviews'
 import { reviewCreationRequirementSet } from '@/collections/reviews/creationRequirements'
 import type { ConditionalRequirementSet } from '@/collections/common/conditionalRequirements'
 
@@ -22,7 +22,7 @@ export const conditionalRequirementRegistry = {
   },
   reviews: {
     collection: Reviews,
-    finalValidationHook: Reviews.hooks?.beforeChange?.at(-1),
+    finalValidationHook: validateReviewCreationRequirements,
     requirementSet: reviewCreationRequirementSet,
   },
 } as const satisfies Record<string, ConditionalRequirementContract>

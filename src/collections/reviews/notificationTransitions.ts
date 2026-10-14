@@ -31,6 +31,7 @@ type Prepared = {
   startedAt: number
 }
 const owned = new WeakMap<PayloadRequest, Prepared>()
+const isSeedReset = (req: PayloadRequest): boolean => req.context?.seedReset === true && req.context?.skipHooks === true
 const record = (value: unknown): RecordData => (value && typeof value === 'object' ? (value as RecordData) : {})
 const relationId = (value: unknown): string | null =>
   typeof value === 'string' || typeof value === 'number'
@@ -49,6 +50,7 @@ async function active(req: PayloadRequest): Promise<Prepared> {
 
 export const prepareReviewNotificationOperation: CollectionBeforeOperationHook = async ({ req, operation, args }) => {
   if (!['create', 'update', 'delete'].includes(operation)) return args
+  if (isSeedReset(req)) return args
   const transactionID = await req.transactionID
   requireNotificationTransaction(req, transactionID)
   const previous = owned.get(req)
@@ -116,6 +118,7 @@ export const prepareReviewNotificationTransitions: CollectionBeforeChangeHook = 
   req,
   operation,
 }) => {
+  if (isSeedReset(req)) return data
   const state = await active(req)
   const original = record(originalDoc)
   const next = { ...original, ...data }
@@ -208,6 +211,7 @@ export const captureReviewNotificationTransitions: CollectionAfterChangeHook = a
   previousDoc,
   operation,
 }) => {
+  if (isSeedReset(req)) return doc
   const state = await active(req)
   const transitions = state.transitions.get(operation === 'create' ? 'create' : String(previousDoc.id)) ?? []
   if (!transitions.length) return doc
@@ -228,6 +232,7 @@ export const captureReviewNotificationTransitions: CollectionAfterChangeHook = a
 }
 
 export const captureReviewNotificationDeletion: CollectionBeforeDeleteHook = async ({ req, id }) => {
+  if (isSeedReset(req)) return
   await active(req)
   const source = await req.payload.findByID({
     collection: 'reviews',
@@ -247,7 +252,7 @@ export const captureReviewNotificationDeletion: CollectionBeforeDeleteHook = asy
 }
 
 export const finalizeReviewNotificationOperation: CollectionAfterOperationHook = async ({ req, operation, result }) => {
-  if (['create', 'update', 'delete'].includes(operation)) {
+  if (['create', 'update', 'delete'].includes(operation) && !isSeedReset(req)) {
     try {
       await active(req)
     } catch (error) {

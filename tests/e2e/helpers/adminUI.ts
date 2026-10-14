@@ -4,7 +4,6 @@ import { createBrowserIssueCollector, expectNoBrowserIssues } from './browserIss
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const toFieldId = (fieldPath: string) => `field-${fieldPath.replace(/\./g, '__')}`
-const resolveShortcutModifier = () => (process.platform === 'darwin' ? 'Meta' : 'Control')
 
 type AdminSurface = Locator | Page
 
@@ -157,13 +156,21 @@ export const saveAdminDocumentForCollection = async (page: Page, collectionSlug:
 
     return (
       (method === 'PATCH' || method === 'POST') &&
-      (pathname === `/api/${collectionSlug}` || pathname.startsWith(`/api/${collectionSlug}/`)) &&
-      response.ok()
+      (pathname === `/api/${collectionSlug}` || pathname.startsWith(`/api/${collectionSlug}/`))
     )
   })
 
   await page.getByRole('button', { name: /^Save$/ }).click()
-  await saveResponse
+  const response = await saveResponse
+
+  if (!response.ok()) {
+    const errorBody: unknown = await response.json().catch(() => undefined)
+    const details = getPayloadErrorDetails(errorBody)
+    const detailMessage = details.length > 0 ? `: ${details.join('; ')}` : ''
+
+    throw new Error(`Saving admin collection "${collectionSlug}" failed with HTTP ${response.status()}${detailMessage}`)
+  }
+
   await page.waitForURL((url) => {
     const match = url.pathname.match(documentPath)
     return Boolean(match?.[1] && match[1] !== 'create')
@@ -171,6 +178,35 @@ export const saveAdminDocumentForCollection = async (page: Page, collectionSlug:
 
   const match = new URL(page.url()).pathname.match(documentPath)
   return match?.[1]
+}
+
+const getPayloadErrorDetails = (body: unknown) => {
+  if (typeof body !== 'object' || body === null) {
+    return []
+  }
+
+  const payload = body as { errors?: unknown; message?: unknown }
+  const details = typeof payload.message === 'string' ? [payload.message] : []
+
+  if (!Array.isArray(payload.errors)) {
+    return details
+  }
+
+  for (const error of payload.errors) {
+    if (typeof error !== 'object' || error === null) {
+      continue
+    }
+
+    const issue = error as { message?: unknown; path?: unknown }
+    if (typeof issue.message !== 'string') {
+      continue
+    }
+
+    const path = Array.isArray(issue.path) ? issue.path.join('.') : issue.path
+    details.push(`${typeof path === 'string' ? `${path}: ` : ''}${issue.message}`)
+  }
+
+  return details
 }
 
 export const saveAdminDrawerDocument = async (page: Page) => {
@@ -224,10 +260,10 @@ export const fillAdminRichTextField = async (
     throw new Error(`Could not resolve the rich text editor for admin field "${label}".`)
   }
 
-  await editor.click()
-  await page.keyboard.press(`${resolveShortcutModifier()}+A`)
-  await page.keyboard.press('Backspace')
-  await page.keyboard.insertText(value)
+  await editor.fill(value)
+  await expect(editor).toContainText(value)
+
+  return editor
 }
 
 export const selectFirstComboboxOption = async (

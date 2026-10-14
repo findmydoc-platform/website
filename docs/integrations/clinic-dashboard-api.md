@@ -34,6 +34,11 @@ read receipts through the authorized acknowledgement command. Remaining producer
 continuation loading and independent cleanup remain separate slices.
 Hosted capture stays inactive; local isolated acceptance does not establish Preview or Production availability.
 
+The [notification contract](../architecture/clinic-notifications-v1.md) defines acknowledgement eligibility at the final
+atomic server decision immediately before the native commit call. A decision before expiry may finish committing
+afterward; logical feed/count/group expiry remains exact at ninety days. This user-approved boundary does not claim
+a physical commit-time guarantee or hosted activation.
+
 ## Boundary and Ownership
 
 | Concern | Website and Payload | Clinic Dashboard |

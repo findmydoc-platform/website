@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto'
 import { resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
 
 const noStore = { 'Cache-Control': 'no-store' }
-export const notificationRetentionBudgetMs = 220_000
+const notificationRetentionBudgetMs = 220_000
 
 export async function handleNotificationRetentionRequest(
   request: Request,

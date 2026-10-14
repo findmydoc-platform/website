@@ -85,7 +85,7 @@ export const notificationMemberSchema = z
     }
   })
 
-export const notificationDestinationSchema = z.discriminatedUnion('kind', [
+const notificationDestinationSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('inquiry'),
@@ -111,7 +111,7 @@ const display = z
   })
   .strict()
 
-export const notificationItemSchema = z
+const notificationItemSchema = z
   .discriminatedUnion('kind', [
     z
       .object({

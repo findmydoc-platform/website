@@ -7,6 +7,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { loadLocalAndTestEnv } from './test-env.mjs'
 import { setupTestDatabase, teardownTestDatabase } from './test-database-harness.mjs'
 import { createReviewNotificationControl } from './review-notification-cross-app-control'
+import { createReviewDecisionControl } from './review-decision-cross-app-control'
 
 loadLocalAndTestEnv()
 const authPort = Number(process.env.INQUIRY_ACCEPTANCE_AUTH_PORT ?? '54321')
@@ -285,6 +286,12 @@ async function seedSyntheticInquiry() {
           payload,
           clinicId: clinicFixture.clinic.id,
           doctorId: clinicFixture.doctor.id,
+        }),
+        ...createReviewDecisionControl({
+          payload,
+          clinicId: clinicFixture.clinic.id,
+          doctorId: clinicFixture.doctor.id,
+          clinicStaff,
         }),
         '/remove-latest-patient-message': async () => {
           const latest = await payload.find({

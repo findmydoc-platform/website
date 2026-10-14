@@ -117,6 +117,7 @@ import { ClinicNotificationOccurrences } from './collections/ClinicNotificationO
 import { ClinicNotificationReadReceipts } from './collections/ClinicNotificationReadReceipts'
 import { ClinicNotificationControls } from './collections/ClinicNotificationControls'
 import { ReviewPublicationTransitions } from './collections/ReviewPublicationTransitions'
+import { ReviewDecisionTransitions } from './collections/ReviewDecisionTransitions'
 import { clinicDashboardReviewGetHandler } from './endpoints/clinicDashboardReviews'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accreditation'
@@ -566,6 +567,7 @@ export default buildConfig({
     ClinicNotificationReadReceipts,
     ClinicNotificationControls,
     ReviewPublicationTransitions,
+    ReviewDecisionTransitions,
     Clinics,
     Doctors,
     Accreditation,

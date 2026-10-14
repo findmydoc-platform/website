@@ -1004,6 +1004,27 @@ export const permissionMatrix: PermissionMatrix = {
       notes:
         'Immutable scalar source evidence survives native review deletion without retaining patient or review content',
     },
+    reviewDecisionTransitions: {
+      slug: 'reviewDecisionTransitions',
+      displayName: 'ReviewDecisionTransitions',
+      operations: {
+        create: { type: 'conditional', details: 'private review decision source transactions only' },
+        read: { type: 'conditional', details: 'not exposed through generic access' },
+        update: { type: 'conditional', details: 'immutable source facts' },
+        delete: { type: 'conditional', details: 'immutable source facts' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes: 'Immutable scalar review decision evidence without review text or moderation reasons',
+    },
     clinicNotificationOccurrences: {
       slug: 'clinicNotificationOccurrences',
       displayName: 'ClinicNotificationOccurrences',

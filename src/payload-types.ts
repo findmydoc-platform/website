@@ -104,6 +104,7 @@ export interface Config {
     clinicNotificationReadReceipts: ClinicNotificationReadReceipt;
     clinicNotificationControls: ClinicNotificationControl;
     reviewPublicationTransitions: ReviewPublicationTransition;
+    reviewDecisionTransitions: ReviewDecisionTransition;
     clinics: Clinic;
     doctors: Doctor;
     accreditation: Accreditation;
@@ -189,6 +190,7 @@ export interface Config {
     clinicNotificationReadReceipts: ClinicNotificationReadReceiptsSelect<false> | ClinicNotificationReadReceiptsSelect<true>;
     clinicNotificationControls: ClinicNotificationControlsSelect<false> | ClinicNotificationControlsSelect<true>;
     reviewPublicationTransitions: ReviewPublicationTransitionsSelect<false> | ReviewPublicationTransitionsSelect<true>;
+    reviewDecisionTransitions: ReviewDecisionTransitionsSelect<false> | ReviewDecisionTransitionsSelect<true>;
     clinics: ClinicsSelect<false> | ClinicsSelect<true>;
     doctors: DoctorsSelect<false> | DoctorsSelect<true>;
     accreditation: AccreditationSelect<false> | AccreditationSelect<true>;
@@ -3262,6 +3264,25 @@ export interface ReviewPublicationTransition {
   createdAt: string;
 }
 /**
+ * Immutable review decision facts without review or moderation content
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviewDecisionTransitions".
+ */
+export interface ReviewDecisionTransition {
+  id: number;
+  transitionId: string;
+  reviewId: string;
+  clinicScopeId: string;
+  workflowKind: 'response' | 'appeal';
+  workflowId: string;
+  eventType: 'clinic_response_decided' | 'review_appeal_decided';
+  outcome: 'approved' | 'rejected' | 'blocked' | 'upheld';
+  occurredAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Saved clinics for patients
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -4108,6 +4129,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'reviewPublicationTransitions';
         value: number | ReviewPublicationTransition;
+      } | null)
+    | ({
+        relationTo: 'reviewDecisionTransitions';
+        value: number | ReviewDecisionTransition;
       } | null)
     | ({
         relationTo: 'clinics';
@@ -5593,6 +5618,22 @@ export interface ReviewPublicationTransitionsSelect<T extends boolean = true> {
   reviewId?: T;
   clinicScopeId?: T;
   eventType?: T;
+  occurredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviewDecisionTransitions_select".
+ */
+export interface ReviewDecisionTransitionsSelect<T extends boolean = true> {
+  transitionId?: T;
+  reviewId?: T;
+  clinicScopeId?: T;
+  workflowKind?: T;
+  workflowId?: T;
+  eventType?: T;
+  outcome?: T;
   occurredAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -7557,6 +7598,7 @@ export interface TaskCreateCollectionExport {
       | 'clinicNotificationReadReceipts'
       | 'clinicNotificationControls'
       | 'reviewPublicationTransitions'
+      | 'reviewDecisionTransitions'
       | 'clinics'
       | 'doctors'
       | 'accreditation'

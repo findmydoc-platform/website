@@ -2,7 +2,7 @@
 
 The [notification specification](https://github.com/findmydoc-platform/clinic-dashboard/issues/200) and [retention ticket](https://github.com/findmydoc-platform/clinic-dashboard/issues/209) define this independent command. The public [v1 contract](clinic-notifications-v1.md) keeps logical expiry separate from physical removal.
 
-Occurrence visibility and acknowledgement eligibility end exactly ninety days after `occurredAt`. Reads and commands enforce `expiresAt` independently of cleanup. The independent scheduled command physically removes expired occurrences and their personal receipts in its next successful execution; ordinary scheduling delay does not extend visibility.
+Occurrence visibility, counts, and grouping end exactly ninety days after `occurredAt`. Acknowledgement expiry uses the [v1 contract's final atomic server decision](clinic-notifications-v1.md): a decision before expiry may finish committing afterward, but a decision at or after expiry cannot create a new receipt. Reads and commands enforce `expiresAt` independently of cleanup. The independent scheduled command physically removes expired occurrences and their personal receipts in its next successful execution; ordinary scheduling delay does not extend visibility.
 
 ## Scheduling and authority
 

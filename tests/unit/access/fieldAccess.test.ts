@@ -14,6 +14,7 @@ import {
   platformClinicTrustAccess,
   platformClinicTrustFieldAccess,
   platformOnlyFieldAccess,
+  platformSelfFieldAccess,
 } from '@/access/fieldAccess'
 
 describe('Field Access Control', () => {
@@ -64,6 +65,27 @@ describe('Field Access Control', () => {
         expectAccess.none(result)
       }
     })
+  })
+
+  describe('platformSelfFieldAccess', () => {
+    test.each([
+      { name: 'own document in Admin', id: undefined, doc: { id: 1 }, data: undefined, expected: true },
+      { name: 'own API target', id: '1', doc: undefined, data: undefined, expected: true },
+      { name: 'another document in Admin', id: undefined, doc: { id: 2 }, data: undefined, expected: false },
+      { name: 'authoritative foreign target', id: 2, doc: { id: 1 }, data: undefined, expected: false },
+      { name: 'unscoped permission check', id: undefined, doc: undefined, data: undefined, expected: false },
+      { name: 'submitted owner spoof', id: undefined, doc: undefined, data: { id: 1 }, expected: false },
+    ])('$name returns $expected', async ({ id, doc, data, expected }) => {
+      const args = { ...createAccessArgs(mockUsers.platform()), id, doc, data }
+      expect(await platformSelfFieldAccess(args)).toBe(expected)
+    })
+
+    test.each([mockUsers.clinic(), mockUsers.patient(), mockUsers.anonymous()])(
+      'denies another principal collection with the same document id',
+      async (user) => {
+        expect(await platformSelfFieldAccess({ ...createAccessArgs(user), doc: { id: 1 } })).toBe(false)
+      },
+    )
   })
 
   describe('clinicOnlyFieldAccess', () => {

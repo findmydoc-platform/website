@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { getPayload } from 'payload'
+import { createLocalReq, docAccessOperation, getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '@payload-config'
 
@@ -92,6 +92,12 @@ describe('PlatformStaff integration - access and constraints', () => {
     async (role) => {
       const staff = await createPlatformUser(`avatar-${role}`, role)
       const user = asPlatformUser(staff)
+      const permissions = await docAccessOperation({
+        id: staff.id,
+        collection: payload.collections.platformStaff,
+        req: await createLocalReq({ user }, payload),
+      })
+      expect(permissions).toMatchObject({ fields: { profileImage: { update: true } } })
       const image = await createProfileMedia(user, `avatar-${role}`)
 
       await payload.update({
@@ -111,6 +117,30 @@ describe('PlatformStaff integration - access and constraints', () => {
         depth: 0,
       })
       expect(stored.profileImage).toBe(image.id)
+
+      const otherStaff = await createPlatformUser(`other-avatar-${role}`)
+      const otherPermissions = await docAccessOperation({
+        id: otherStaff.id,
+        collection: payload.collections.platformStaff,
+        req: await createLocalReq({ user }, payload),
+      })
+      expect(otherPermissions).not.toMatchObject({ fields: { profileImage: { update: true } } })
+
+      await payload.update({
+        collection: 'platformStaff',
+        id: otherStaff.id,
+        data: { profileImage: image.id },
+        user,
+        overrideAccess: false,
+      })
+      const otherStored = await payload.findByID({
+        collection: 'platformStaff',
+        id: otherStaff.id,
+        user,
+        overrideAccess: false,
+        depth: 0,
+      })
+      expect(otherStored.profileImage).toBeNull()
     },
   )
 

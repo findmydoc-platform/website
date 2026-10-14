@@ -171,7 +171,9 @@ export async function markClinicNotificationsRead(
     const finalAccess = await readClinicAccessState(req.payload, req.user.id, transactionReq)
     if (!finalAccess || String(finalAccess.clinic.id) !== String(initialAccess.clinic.id))
       throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')
-    if (receipts.some((receipt) => Date.parse(receipt.expiresAt) <= Date.now())) {
+    // Eligibility is decided once under the authorization locks before the native commit call.
+    const eligibilityDecidedAt = Date.now()
+    if (receipts.some((receipt) => Date.parse(receipt.expiresAt) <= eligibilityDecidedAt)) {
       await req.payload.db.rollbackTransaction(transactionID)
       transactionID = null
       if (attempt >= 3) throw new ClinicNotificationError('SERVICE_UNAVAILABLE')

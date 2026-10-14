@@ -832,6 +832,195 @@ describe('clinic notification source-to-feed lifecycle', () => {
     }
   })
 
+  it('commits a decision made before expiry even when commit confirmation arrives at the deadline', async () => {
+    const source = await submitGuestClinicInquiry(sourceReq, {
+      clinicId,
+      doctorId,
+      consent: true,
+      email: 'delayed-acknowledgement@example.com',
+      fullName: 'Delayed Acknowledgement',
+      message: 'The authorized decision precedes the deadline; its commit may finish afterward.',
+      phoneNumber: '+493000000557',
+    })
+    const occurrence = (
+      await payload.find({
+        collection: 'clinicNotificationOccurrences',
+        overrideAccess: true,
+        depth: 0,
+        where: { sourceRecordId: { equals: source.id } },
+      })
+    ).docs[0]!
+    const originalCommit = payload.db.commitTransaction.bind(payload.db)
+    let preparedReadAt: string | undefined
+    let commit: ReturnType<typeof vi.spyOn> | undefined
+    try {
+      vi.setSystemTime(new Date(Date.parse(occurrence.expiresAt) - 1))
+      const before = await readClinicNotifications(staffReq, { mode: 'summary' })
+      if (before.mode !== 'summary') throw new Error('Expected summary')
+      commit = vi.spyOn(payload.db, 'commitTransaction').mockImplementationOnce(async (transactionID) => {
+        const transactionReq = await createLocalReq({ req: { transactionID: Promise.resolve(transactionID) } }, payload)
+        const prepared = (
+          await payload.find({
+            collection: 'clinicNotificationReadReceipts',
+            depth: 0,
+            overrideAccess: true,
+            req: transactionReq,
+            where: { and: [{ occurrence: { equals: occurrence.id } }, { clinicStaff: { equals: staffReq.user!.id } }] },
+          })
+        ).docs
+        expect(prepared).toHaveLength(1)
+        preparedReadAt = prepared[0]!.readAt
+        vi.setSystemTime(new Date(occurrence.expiresAt))
+        await originalCommit(transactionID)
+      })
+      expect(await markClinicNotificationsRead(staffReq, { notificationIds: [occurrence.notificationId] })).toEqual({
+        contractVersion: 'clinic-notifications-v1',
+        serverTime: occurrence.expiresAt,
+        acknowledged: true,
+      })
+      expect(commit).toHaveBeenCalledTimes(1)
+      commit.mockRestore()
+      commit = undefined
+      const receipts = (
+        await payload.find({
+          collection: 'clinicNotificationReadReceipts',
+          depth: 0,
+          overrideAccess: true,
+          where: { occurrence: { equals: occurrence.id } },
+        })
+      ).docs
+      expect(receipts).toHaveLength(1)
+      expect(receipts[0]!.readAt).toBe(preparedReadAt)
+      expect(Date.parse(receipts[0]!.readAt)).toBeLessThan(Date.parse(occurrence.expiresAt))
+      expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({
+        unreadCount: before.unreadCount - 1,
+      })
+      for (const view of ['unread', 'all'] as const) {
+        const page = await readClinicNotifications(staffReq, { mode: 'page', view })
+        if (page.mode !== 'page') throw new Error('Expected page')
+        expect(
+          page.items
+            .flatMap((item) => item.members)
+            .some((member) => member.notificationId === occurrence.notificationId),
+        ).toBe(false)
+      }
+      await markClinicNotificationsRead(staffReq, { notificationIds: [occurrence.notificationId] })
+      expect(
+        (
+          await payload.find({
+            collection: 'clinicNotificationReadReceipts',
+            depth: 0,
+            overrideAccess: true,
+            where: { occurrence: { equals: occurrence.id } },
+          })
+        ).docs,
+      ).toEqual(receipts)
+    } finally {
+      commit?.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
+  it('reevaluates only the original selection when one prepared member expires before the final decision', async () => {
+    let first!: { id: string }
+    let second!: { id: string }
+    let later!: { id: string }
+    const hooks = payload.collections.clinicNotificationReadReceipts.config.hooks
+    const previous = hooks.afterChange
+    try {
+      vi.setSystemTime(new Date('2026-12-01T10:00:00.000Z'))
+      first = await submitGuestClinicInquiry(sourceReq, {
+        clinicId,
+        doctorId,
+        consent: true,
+        email: 'selection-first@example.com',
+        fullName: 'Selection First',
+        message: 'First fixed selected occurrence.',
+        phoneNumber: '+493000000558',
+      })
+      vi.setSystemTime(new Date('2026-12-01T10:05:00.000Z'))
+      second = await submitGuestClinicInquiry(sourceReq, {
+        clinicId,
+        doctorId,
+        consent: true,
+        email: 'selection-second@example.com',
+        fullName: 'Selection Second',
+        message: 'Second fixed selected occurrence.',
+        phoneNumber: '+493000000559',
+      })
+      const fixed = (
+        await payload.find({
+          collection: 'clinicNotificationOccurrences',
+          overrideAccess: true,
+          depth: 0,
+          where: { sourceRecordId: { in: [first.id, second.id] } },
+        })
+      ).docs
+      const notificationIds = fixed.map((occurrence) => occurrence.notificationId)
+      const firstOccurrence = fixed.find((occurrence) => occurrence.sourceRecordId === first.id)!
+      const secondOccurrence = fixed.find((occurrence) => occurrence.sourceRecordId === second.id)!
+      vi.setSystemTime(new Date('2026-12-01T10:10:00.000Z'))
+      later = await submitGuestClinicInquiry(sourceReq, {
+        clinicId,
+        doctorId,
+        consent: true,
+        email: 'selection-later@example.com',
+        fullName: 'Selection Later',
+        message: 'A later occurrence must never widen the fixed selection.',
+        phoneNumber: '+493000000560',
+      })
+      const laterOccurrence = (
+        await payload.find({
+          collection: 'clinicNotificationOccurrences',
+          overrideAccess: true,
+          depth: 0,
+          where: { sourceRecordId: { equals: later.id } },
+        })
+      ).docs[0]!
+      let writes = 0
+      hooks.afterChange = [
+        ...(previous ?? []),
+        ({ doc }) => {
+          writes++
+          vi.setSystemTime(new Date(firstOccurrence.expiresAt))
+          return doc
+        },
+      ]
+      expect(await markClinicNotificationsRead(staffReq, { notificationIds })).toMatchObject({ acknowledged: true })
+      expect(writes).toBeGreaterThan(1)
+      const receipts = (
+        await payload.find({
+          collection: 'clinicNotificationReadReceipts',
+          overrideAccess: true,
+          depth: 0,
+          where: { occurrence: { in: [firstOccurrence.id, secondOccurrence.id, laterOccurrence.id] } },
+        })
+      ).docs
+      expect(receipts).toHaveLength(1)
+      expect(receipts[0]!.occurrence).toBe(secondOccurrence.id)
+      expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({
+        unreadCount: 1,
+        nextUnreadCountChangeAt: laterOccurrence.expiresAt,
+      })
+      const all = await readClinicNotifications(staffReq, { mode: 'page', view: 'all' })
+      if (all.mode !== 'page') throw new Error('Expected page')
+      expect(
+        all.items
+          .flatMap((item) => item.members)
+          .map((member) => member.notificationId)
+          .sort(),
+      ).toEqual([secondOccurrence.notificationId, laterOccurrence.notificationId].sort())
+      expect(
+        all.items
+          .flatMap((item) => item.members)
+          .find((member) => member.notificationId === laterOccurrence.notificationId)!.readAt,
+      ).toBeNull()
+    } finally {
+      hooks.afterChange = previous
+      vi.useRealTimers()
+    }
+  })
+
   it('rolls back both staff deletion and its receipt cleanup if permanent deletion fails', async () => {
     const reader = await createClinicTestUser(payload, {
       createdStaffIds: staffIds,

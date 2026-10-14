@@ -3,6 +3,12 @@ import { createHash } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 
 import { acquireInquiryCommandLock } from '@/features/inquiryAggregate/commandLock'
+import {
+  captureClinicNotificationOccurrence,
+  prepareClinicNotificationCapture,
+} from '@/features/clinicNotifications/capture'
+import { ClinicNotificationCaptureConflict } from '@/features/clinicNotifications/errors'
+import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 import type { TransactionalEmailCommands } from '@/features/transactionalEmail'
 import { selectTransactionalEmailCommandAcceptance } from '@/features/transactionalEmail/payloadIntegration'
 import { TransactionalEmailError } from '@/features/transactionalEmail/errors'
@@ -260,7 +266,7 @@ const isSerializationFailure = (error: unknown): boolean =>
     ((error as { code?: unknown }).code === '40001' || isSerializationFailure((error as { cause?: unknown }).cause)),
   )
 
-const runCommandTransaction = async <Result>(
+const runSingleCommandTransaction = async <Result>(
   req: PayloadRequest,
   command: () => Promise<Result>,
   lockKey?: string,
@@ -269,6 +275,7 @@ const runCommandTransaction = async <Result>(
     throw new InquiryModerationServiceError('unavailable', 'Moderation commands cannot join another transaction.')
   }
   let transactionID: null | number | string = null
+  let commitAttempted = false
   const previousContext = req.context?.inquiryModerationCommand
   try {
     req.context = { ...(req.context ?? {}), inquiryModerationCommand: true }
@@ -280,11 +287,13 @@ const runCommandTransaction = async <Result>(
     const releaseLock = lockKey ? await acquireInquiryCommandLock(req, lockKey) : undefined
     const result = await command()
     if (releaseLock) await releaseLock()
+    requireNotificationTransaction(req, transactionID)
+    commitAttempted = true
     await req.payload.db.commitTransaction(transactionID)
     return result
   } catch (error: unknown) {
     if (transactionID !== null) await req.payload.db.rollbackTransaction(transactionID)
-    if (isSerializationFailure(error)) {
+    if (!commitAttempted && (isSerializationFailure(error) || error instanceof ClinicNotificationCaptureConflict)) {
       throw new InquiryModerationServiceError('conflict', 'The moderation case changed concurrently.')
     }
     throw error
@@ -292,6 +301,20 @@ const runCommandTransaction = async <Result>(
     if (transactionID !== null && req.transactionID === transactionID) delete req.transactionID
     if (typeof previousContext === 'undefined') delete req.context?.inquiryModerationCommand
     else req.context = { ...(req.context ?? {}), inquiryModerationCommand: previousContext }
+  }
+}
+
+const runCommandTransaction = async <Result>(
+  req: PayloadRequest,
+  command: () => Promise<Result>,
+  lockKey?: string,
+): Promise<Result> => {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await runSingleCommandTransaction(req, command, lockKey)
+    } catch (error) {
+      if (!(error instanceof InquiryModerationServiceError) || error.kind !== 'conflict' || attempt === 3) throw error
+    }
   }
 }
 
@@ -485,7 +508,7 @@ const updateCaseAndCreateEvent = async (
       req,
     } as never),
   )
-  await req.payload.create({
+  const sourceEvent = await req.payload.create({
     collection: 'inquiryModerationEvents' as never,
     context: { inquiryModerationCommand: true },
     data: {
@@ -508,6 +531,18 @@ const updateCaseAndCreateEvent = async (
     overrideAccess: true,
     req,
   } as never)
+  if (eventType === 'decision-recorded' && data.decisionOutcome !== 'no-action') {
+    await captureClinicNotificationOccurrence(req, {
+      clinicId: scope.clinicId,
+      occurredAt: text(data.decisionAt),
+      member: {
+        schemaVersion: 1,
+        eventType: 'inquiry_restricted',
+        sourceRecord: { kind: 'inquiry', id: String(scope.inquiry.id) },
+        sourceOccurrence: { kind: 'inquiry_moderation_event', id: String(sourceEvent.id) },
+      },
+    })
+  }
   return updated
 }
 
@@ -819,6 +854,7 @@ export const decideInquiryModerationCase = async (
   const initialModerator = await resolveModerator(req)
   const acceptance = selectTransactionalEmailCommandAcceptance('moderation.report-decided')
   const decide = async (req: PayloadRequest, commands?: TransactionalEmailCommands) => {
+    await prepareClinicNotificationCapture(req)
     const moderator = await resolveModerator(req)
     if (moderator.key !== initialModerator.key) {
       throw new InquiryModerationServiceError('access-denied', 'The moderation actor changed.')

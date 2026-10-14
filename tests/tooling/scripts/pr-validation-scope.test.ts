@@ -41,6 +41,7 @@ const conditionDecision = (
   event: string,
   needs: Record<string, unknown>,
   headRepository = 'findmydoc-platform/website',
+  authorLogin = 'human-contributor',
 ) =>
   runInNewContext(expression.replace(/needs\.([\w-]+)/g, 'needs["$1"]'), {
     always: () => true,
@@ -49,7 +50,12 @@ const conditionDecision = (
       ref: 'refs/heads/main',
       ref_name: 'main',
       repository: 'findmydoc-platform/website',
-      event: { pull_request: { head: { repo: { full_name: headRepository } } } },
+      event: {
+        pull_request: {
+          head: { repo: { full_name: headRepository } },
+          user: { login: authorLogin },
+        },
+      },
     },
     needs,
   }) as boolean
@@ -222,6 +228,18 @@ describe('shared native build routing', () => {
     expect(
       conditionDecision(previewWorkflow.jobs['deploy-preview'].if, 'pull_request', needs, 'contributor/website'),
     ).toBe(false)
+  })
+
+  it('skips Preview deployment for Dependabot-authored PRs', () => {
+    const needs = { paths: { result: 'success', outputs: { deployable: 'true' } } }
+    expect(
+      conditionDecision(previewWorkflow.jobs['deploy-preview'].if, 'pull_request', needs, undefined, 'dependabot[bot]'),
+    ).toBe(false)
+  })
+
+  it.each(['push', 'workflow_dispatch'])('preserves Preview deployment for %s events', (event) => {
+    const needs = { paths: { result: 'success', outputs: { deployable: 'true' } } }
+    expect(conditionDecision(previewWorkflow.jobs['deploy-preview'].if, event, needs)).toBe(true)
   })
 
   it.each([

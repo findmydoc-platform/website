@@ -1331,8 +1331,8 @@ function renderVariantLayout(
               />
             </div>
 
-            <ScrollReveal preset="surface">
-              <div id="landing-content-start" className="mt-4 grid gap-4 sm:mt-6 xl:grid-cols-[1.08fr_0.92fr]">
+            <div id="landing-content-start" className="mt-4 grid gap-4 sm:mt-6 xl:grid-cols-[1.08fr_0.92fr]">
+              <ScrollReveal preset="surface" className="h-full">
                 <div className={cn(baseSurfaceClassName, 'flex h-full flex-col rounded-[28px] p-5 sm:p-6 lg:p-7')}>
                   <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">
                     {whySectionEyebrow ?? 'Why findmydoc'}
@@ -1365,19 +1365,19 @@ function renderVariantLayout(
                     ))}
                   </div>
                 </div>
+              </ScrollReveal>
 
-                <ContactPanel
-                  contactConsentCompact={contactConsentCompact}
-                  contactConsentFull={contactConsentFull}
-                  contactEyebrow={contactEyebrow}
-                  contactDescription={contactDescription}
-                  contactForm={contactForm}
-                  contactMode={contactMode}
-                  contactTitle={contactTitle}
-                  className="rounded-[28px]"
-                />
-              </div>
-            </ScrollReveal>
+              <ContactPanel
+                contactConsentCompact={contactConsentCompact}
+                contactConsentFull={contactConsentFull}
+                contactEyebrow={contactEyebrow}
+                contactDescription={contactDescription}
+                contactForm={contactForm}
+                contactMode={contactMode}
+                contactTitle={contactTitle}
+                className="rounded-[28px]"
+              />
+            </div>
 
             <ScrollReveal preset="surface">
               <div className={cn(baseSurfaceClassName, 'mt-6 rounded-[24px] p-4 sm:p-5')}>
@@ -1412,14 +1412,12 @@ function renderVariantLayout(
             {afterSignals ? <ScrollReveal preset="surface">{afterSignals}</ScrollReveal> : null}
           </div>
 
-          <ScrollReveal>
-            <FooterBlock
-              bestFor={bestFor}
-              footerLinks={footerLinks}
-              supportingNote={supportingNote}
-              className="mx-auto max-w-[94rem]"
-            />
-          </ScrollReveal>
+          <FooterBlock
+            bestFor={bestFor}
+            footerLinks={footerLinks}
+            supportingNote={supportingNote}
+            className="mx-auto max-w-[94rem]"
+          />
         </>
       )
 

@@ -142,11 +142,12 @@ describe('clinic inquiry moderation notifications', () => {
     const source = await clinicContentCase('restriction')
     const hooks = payload.collections.inquiryModerationCases.config.hooks
     const previous = hooks.afterChange
-    vi.setSystemTime(new Date('2026-10-15T10:00:00.000Z'))
+    const occurredAt = new Date(Date.now() + 60_000)
+    vi.setSystemTime(occurredAt)
     hooks.afterChange = [
       ...(previous ?? []),
       ({ doc }) => {
-        vi.setSystemTime(new Date('2026-10-15T11:00:00.000Z'))
+        vi.setSystemTime(new Date(occurredAt.getTime() + 60 * 60_000))
         return doc
       },
     ]
@@ -167,8 +168,8 @@ describe('clinic inquiry moderation notifications', () => {
     const restriction = page.items.filter((item) => item.members[0]!.eventType === 'inquiry_restricted')
     expect(restriction).toHaveLength(1)
     expect(restriction[0]!.members[0]).toMatchObject({
-      occurredAt: '2026-10-15T10:00:00.000Z',
-      expiresAt: '2027-01-13T10:00:00.000Z',
+      occurredAt: occurredAt.toISOString(),
+      expiresAt: new Date(occurredAt.getTime() + 90 * 24 * 60 * 60_000).toISOString(),
     })
     expect(restriction[0]!.destination).toEqual({ kind: 'inquiry', inquiryId: source.inquiryId })
     expect(JSON.stringify(page)).not.toContain('Private moderation reason')

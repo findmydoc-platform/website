@@ -155,7 +155,6 @@ const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<strin
 
     requestHeaders.set(key, value)
   })
-
   return NextResponse.next({ request: { headers: requestHeaders } })
 }
 

@@ -1,5 +1,6 @@
 import React from 'react'
 
+import { FrontendChrome } from '@/app/(frontend)/FrontendChrome.client'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
 import { Footer } from '@/components/templates/Footer/Component'
 import { Header } from '@/components/templates/Header/Component'
@@ -12,10 +13,12 @@ import { PreviewDataNotice } from '@/components/templates/PreviewDataNotice/Comp
 import {
   PREVIEW_GUARD_ACTIVE_REQUEST_HEADER,
   PREVIEW_GUARD_LOCK_REQUEST_HEADER,
+  isPreviewDeployment,
   isNonProductionDeployment,
 } from '@/features/previewGuard'
 import { projectHoldingFooterGroups, projectHoldingHeaderNavItems } from '@/features/temporaryLandingMode/navigation'
 import { readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
+import { resolveHoldingMode } from '@/features/temporaryLandingMode/resolver'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { getServerSideURL } from '@/utilities/getURL'
 import { normalizeFooterNavGroups, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
@@ -53,8 +56,21 @@ async function resolvePublicAccountMenuState(requestHeaders: Headers): Promise<P
 export default async function FrontendTemplate({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
   const isGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
-  const isPreviewGuardActive = requestHeaders.get(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER) === '1'
-  const isHoldingPublicView = readPublicSiteModeRequestHeader(requestHeaders) === 'holding' && !isPreviewGuardActive
+  const isPreviewGuardActive =
+    requestHeaders.get(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER) === '1' || isPreviewDeployment(process.env)
+  const requestMode = readPublicSiteModeRequestHeader(requestHeaders)
+  const siteOrigin = getServerSideURL()
+  const requestHost = requestHeaders.get('host')
+  let requestUrl = new URL(siteOrigin)
+  if (requestHost) {
+    try {
+      requestUrl = new URL(`http://${requestHost}`)
+    } catch {
+      // Fall back to the configured site origin when the request host is malformed.
+    }
+  }
+  const resolvedMode = requestMode ?? (isPreviewGuardActive ? null : (await resolveHoldingMode(requestUrl)).mode)
+  const isHoldingPublicView = resolvedMode === 'holding' && !isPreviewGuardActive
   const showSiteChrome = !isGuardLocked
   const showPreviewBadge = isNonProductionDeployment(process.env)
   const configuredHeaderLogoSrc = process.env.NEXT_PUBLIC_HEADER_LOGO_SRC?.trim() || undefined
@@ -68,7 +84,6 @@ export default async function FrontendTemplate({ children }: { children: React.R
   const normalizedHeaderNavItems = showSiteChrome
     ? normalizeHeaderNavItems((await getCachedGlobal('header', 1)()) as HeaderType)
     : []
-  const siteOrigin = getServerSideURL()
   const footerGroups = isHoldingPublicView
     ? projectHoldingFooterGroups(normalizedFooterGroups, siteOrigin)
     : normalizedFooterGroups
@@ -82,39 +97,43 @@ export default async function FrontendTemplate({ children }: { children: React.R
 
   return (
     <>
-      {showSiteChrome ? (
-        <div className="full-width">
-          <Header
-            navItems={headerNavItems}
-            logoSrc={headerLogoSrc}
-            rightActions={
-              isHoldingPublicView ? null : (
-                <PublicAccountMenu links={LIVE_PATIENT_ACCOUNT_MENU_LINKS} state={accountMenuState} />
-              )
-            }
-            showPreviewBadge={showPreviewBadge}
-          />
-        </div>
-      ) : null}
+      <FrontendChrome holdingMode={isHoldingPublicView}>
+        {showSiteChrome ? (
+          <div className="full-width">
+            <Header
+              navItems={headerNavItems}
+              logoSrc={headerLogoSrc}
+              rightActions={
+                isHoldingPublicView ? null : (
+                  <PublicAccountMenu links={LIVE_PATIENT_ACCOUNT_MENU_LINKS} state={accountMenuState} />
+                )
+              }
+              showPreviewBadge={showPreviewBadge}
+            />
+          </div>
+        ) : null}
 
-      {showSiteChrome && showPreviewBadge ? (
-        <div className="full-width">
-          <PreviewDataNotice />
-        </div>
-      ) : null}
+        {showSiteChrome && showPreviewBadge ? (
+          <div className="full-width">
+            <PreviewDataNotice />
+          </div>
+        ) : null}
+      </FrontendChrome>
 
       <main className="min-w-0 flex-1">{children}</main>
 
-      {showSiteChrome ? (
-        <div className="full-width">
-          <Footer
-            footerGroups={footerGroups}
-            logoSrc={footerLogoSrc}
-            showPreviewBadge={showPreviewBadge}
-            holdingMode={isHoldingPublicView}
-          />
-        </div>
-      ) : null}
+      <FrontendChrome holdingMode={isHoldingPublicView}>
+        {showSiteChrome ? (
+          <div className="full-width">
+            <Footer
+              footerGroups={footerGroups}
+              logoSrc={footerLogoSrc}
+              showPreviewBadge={showPreviewBadge}
+              holdingMode={isHoldingPublicView}
+            />
+          </div>
+        ) : null}
+      </FrontendChrome>
     </>
   )
 }

@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   footerComponent: vi.fn(() => null),
   previewDataNoticeComponent: vi.fn(() => null),
   extractSupabaseUserDataMock: vi.fn(),
+  resolveHoldingModeMock: vi.fn(),
 }))
 
 vi.mock('next/headers', () => ({
@@ -27,6 +28,10 @@ vi.mock('@/utilities/getGlobals', () => ({
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({
   extractSupabaseUserData: mocks.extractSupabaseUserDataMock,
+}))
+
+vi.mock('@/features/temporaryLandingMode/resolver', () => ({
+  resolveHoldingMode: mocks.resolveHoldingModeMock,
 }))
 
 vi.mock('@/components/templates/Header/Component', () => ({
@@ -62,6 +67,7 @@ describe('frontend route template', () => {
       }
     })
     mocks.extractSupabaseUserDataMock.mockResolvedValue(null)
+    mocks.resolveHoldingModeMock.mockResolvedValue({ mode: 'full', source: 'posthog' })
   })
 
   it('renders holding chrome for the effective mode on each route render', async () => {
@@ -69,14 +75,15 @@ describe('frontend route template', () => {
 
     const templateModule = await import('@/app/(frontend)/template')
     const result = await templateModule.default({ children: 'route content' })
-    const templateChildren = result.props.children
+    const templateChildren = result.props.children[0].props.children
+    const footer = result.props.children[2].props.children.props.children
 
     expect(templateChildren[0].props.children.type).toBe(mocks.headerComponent)
     expect(templateChildren[0].props.children.props.rightActions).toBeNull()
-    expect(templateChildren[2].type).toBe('main')
-    expect(templateChildren[2].props.children).toBe('route content')
-    expect(templateChildren[3].props.children.type).toBe(mocks.footerComponent)
-    expect(templateChildren[3].props.children.props.holdingMode).toBe(true)
+    expect(result.props.children[1].type).toBe('main')
+    expect(result.props.children[1].props.children).toBe('route content')
+    expect(footer.type).toBe(mocks.footerComponent)
+    expect(footer.props.holdingMode).toBe(true)
   })
 
   it('restores full chrome when the next route render carries full mode', async () => {
@@ -84,11 +91,26 @@ describe('frontend route template', () => {
 
     const templateModule = await import('@/app/(frontend)/template')
     const result = await templateModule.default({ children: 'route content' })
-    const templateChildren = result.props.children
+    const templateChildren = result.props.children[0].props.children
+    const footer = result.props.children[2].props.children.props.children
 
     expect(templateChildren[0].props.children.type).toBe(mocks.headerComponent)
     expect(templateChildren[0].props.children.props.rightActions).not.toBeNull()
-    expect(templateChildren[3].props.children.props.holdingMode).toBe(false)
+    expect(footer.props.holdingMode).toBe(false)
+  })
+
+  it('resolves Holding mode when the request marker is unavailable', async () => {
+    mocks.headersMock.mockResolvedValue(new Headers({ host: 'findmydoc.eu' }))
+    mocks.resolveHoldingModeMock.mockResolvedValue({ mode: 'holding', source: 'deployment-fallback' })
+
+    const templateModule = await import('@/app/(frontend)/template')
+    const result = await templateModule.default({ children: 'route content' })
+    const templateChildren = result.props.children[0].props.children
+    const footer = result.props.children[2].props.children.props.children
+
+    expect(mocks.resolveHoldingModeMock).toHaveBeenCalledWith(new URL('http://findmydoc.eu'))
+    expect(templateChildren[0].props.children.props.rightActions).toBeNull()
+    expect(footer.props.holdingMode).toBe(true)
   })
 
   it('keeps normal chrome when Preview Guard takes precedence over Holding mode', async () => {
@@ -101,9 +123,10 @@ describe('frontend route template', () => {
 
     const templateModule = await import('@/app/(frontend)/template')
     const result = await templateModule.default({ children: 'guarded route content' })
-    const templateChildren = result.props.children
+    const templateChildren = result.props.children[0].props.children
+    const footer = result.props.children[2].props.children.props.children
 
     expect(templateChildren[0].props.children.props.rightActions).not.toBeNull()
-    expect(templateChildren[3].props.children.props.holdingMode).toBe(false)
+    expect(footer.props.holdingMode).toBe(false)
   })
 })

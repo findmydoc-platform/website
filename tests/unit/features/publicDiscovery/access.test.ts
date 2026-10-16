@@ -1,35 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const posthogMocks = vi.hoisted(() => ({
-  createPostHogFlagEvaluationContext: vi.fn((input: { url: URL }) => {
-    const pathname = input.url.pathname || '/'
-    const normalizedPath = pathname !== '/' && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
-
-    return {
-      feature_flag_site_host: input.url.hostname,
-      feature_flag_site_path: normalizedPath,
-    }
-  }),
-  evaluatePostHogFlags: vi.fn(),
-  resolvePostHogSiteFlagActor: vi.fn(),
+const resolverMocks = vi.hoisted(() => ({
+  resolveHoldingMode: vi.fn(),
 }))
 
-vi.mock('@/posthog/api', () => posthogMocks)
+vi.mock('@/features/temporaryLandingMode/resolver', () => resolverMocks)
 
 describe('public discovery access', () => {
-  const actor = {
-    distinctId: 'site:findmydoc.eu:/llms.txt',
-    isAuthenticated: false,
-    personProperties: {},
-    userType: 'anonymous',
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
-    posthogMocks.resolvePostHogSiteFlagActor.mockReturnValue(actor)
-    posthogMocks.evaluatePostHogFlags.mockResolvedValue({
-      isEnabled: vi.fn(() => false),
-    })
+    resolverMocks.resolveHoldingMode.mockResolvedValue({ mode: 'full', source: 'posthog' })
   })
 
   it('blocks preview runtimes before evaluating feature flags', async () => {
@@ -45,10 +25,10 @@ describe('public discovery access', () => {
       reason: 'preview-runtime',
     })
 
-    expect(posthogMocks.evaluatePostHogFlags).not.toHaveBeenCalled()
+    expect(resolverMocks.resolveHoldingMode).not.toHaveBeenCalled()
   })
 
-  it('uses request URLs only as PostHog context outside preview runtime', async () => {
+  it('uses the shared host resolver outside preview runtime', async () => {
     const { resolvePublicDiscoveryAccessForRequest } = await import('@/features/publicDiscovery/access')
 
     await expect(
@@ -60,17 +40,13 @@ describe('public discovery access', () => {
       allowed: true,
     })
 
-    expect(posthogMocks.createPostHogFlagEvaluationContext).toHaveBeenCalledWith({
-      url: new URL('https://preview.findmydoc.eu/llms.txt'),
+    expect(resolverMocks.resolveHoldingMode).toHaveBeenCalledWith(new URL('https://preview.findmydoc.eu/llms.txt'), {
+      PUBLIC_SITE_FALLBACK_MODE: undefined,
     })
-    expect(posthogMocks.evaluatePostHogFlags).toHaveBeenCalledOnce()
   })
 
   it('blocks production discovery when temporary landing mode is active', async () => {
-    const isEnabled = vi.fn((key: string) => key === 'temporary-landing-mode')
-    posthogMocks.evaluatePostHogFlags.mockResolvedValue({
-      isEnabled,
-    })
+    resolverMocks.resolveHoldingMode.mockResolvedValue({ mode: 'holding', source: 'posthog' })
     const { resolvePublicDiscoveryAccessForRequest } = await import('@/features/publicDiscovery/access')
     const request = new Request('https://findmydoc.eu/llms.txt')
 
@@ -84,25 +60,11 @@ describe('public discovery access', () => {
       reason: 'temporary-landing-mode',
     })
 
-    expect(posthogMocks.createPostHogFlagEvaluationContext).toHaveBeenCalledWith({
-      url: new URL('https://findmydoc.eu/llms.txt'),
-    })
-    expect(posthogMocks.resolvePostHogSiteFlagActor).toHaveBeenCalledWith({
-      feature_flag_site_host: 'findmydoc.eu',
-      feature_flag_site_path: '/llms.txt',
-    })
-    expect(posthogMocks.evaluatePostHogFlags).toHaveBeenCalledWith(actor, ['temporary-landing-mode'], {
-      context: {
-        feature_flag_site_host: 'findmydoc.eu',
-        feature_flag_site_path: '/llms.txt',
-      },
-    })
+    expect(resolverMocks.resolveHoldingMode).toHaveBeenCalledOnce()
   })
 
   it('allows only the blog discovery files when temporary landing mode is active', async () => {
-    posthogMocks.evaluatePostHogFlags.mockResolvedValue({
-      isEnabled: vi.fn((key: string) => key === 'temporary-landing-mode'),
-    })
+    resolverMocks.resolveHoldingMode.mockResolvedValue({ mode: 'holding', source: 'posthog' })
     const { resolvePublicDiscoveryAccessForRequest } = await import('@/features/publicDiscovery/access')
 
     await expect(
@@ -127,6 +89,36 @@ describe('public discovery access', () => {
     ).resolves.toEqual({
       allowed: true,
     })
+  })
+
+  it('uses an explicit sanitized public mode marker without resolving PostHog again', async () => {
+    const { resolvePublicDiscoveryAccessForRequest } = await import('@/features/publicDiscovery/access')
+    const request = new Request('https://findmydoc.eu/llms.txt', {
+      headers: { 'x-public-site-mode': 'holding' },
+    })
+
+    await expect(
+      resolvePublicDiscoveryAccessForRequest(request, {
+        NODE_ENV: 'production',
+        VERCEL_ENV: 'production',
+      }),
+    ).resolves.toEqual({ allowed: false, reason: 'temporary-landing-mode' })
+    expect(resolverMocks.resolveHoldingMode).not.toHaveBeenCalled()
+  })
+
+  it('ignores unknown mode markers and resolves mode directly', async () => {
+    const { resolvePublicDiscoveryAccessForRequest } = await import('@/features/publicDiscovery/access')
+    const request = new Request('https://findmydoc.eu/llms.txt', {
+      headers: { 'x-public-site-mode': 'admin' },
+    })
+
+    await expect(
+      resolvePublicDiscoveryAccessForRequest(request, {
+        NODE_ENV: 'production',
+        VERCEL_ENV: 'production',
+      }),
+    ).resolves.toEqual({ allowed: true })
+    expect(resolverMocks.resolveHoldingMode).toHaveBeenCalledOnce()
   })
 
   it('builds a blocked no-discovery response', async () => {

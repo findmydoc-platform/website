@@ -12,6 +12,7 @@ import type { FooterNavGroup } from '@/utilities/normalizeNavItems'
 
 export type FooterProps = {
   footerGroups: FooterNavGroup[]
+  holdingMode?: boolean
   logoSrc?: string
   showPreviewBadge?: boolean
 }
@@ -28,7 +29,12 @@ function normalizeFooterHref(href: string): string {
   return href === '/' ? href : href.replace(/\/+$/, '')
 }
 
-export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPreviewBadge = false }) => {
+export const Footer: React.FC<FooterProps> = ({
+  footerGroups,
+  holdingMode = false,
+  logoSrc,
+  showPreviewBadge = false,
+}) => {
   const isLegalLink = (href: string) => legalFooterHrefs.has(normalizeFooterHref(href))
   const legalQuickLinks = footerGroups
     .flatMap((group) => group.items)
@@ -81,16 +87,18 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
 
             <div className="flex flex-col items-start gap-4 border-t border-site-divider/60 pt-4">
               <p className="text-sm text-muted-foreground">{DISCLAIMER_COPY.platform}</p>
-              <div className="flex flex-wrap items-center gap-4">
-                <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
-                <SocialLink href="https://x.com" aria-label="X" platform="x" variant="outline" />
-                <SocialLink
-                  href="https://instagram.com"
-                  aria-label="Instagram"
-                  platform="instagram"
-                  variant="outline"
-                />
-              </div>
+              {!holdingMode ? (
+                <div className="flex flex-wrap items-center gap-4">
+                  <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
+                  <SocialLink href="https://x.com" aria-label="X" platform="x" variant="outline" />
+                  <SocialLink
+                    href="https://instagram.com"
+                    aria-label="Instagram"
+                    platform="instagram"
+                    variant="outline"
+                  />
+                </div>
+              ) : null}
               <p className="text-sm text-muted-foreground">
                 © Copyright {new Date().getFullYear()}. findmydoc All Rights Reserved
               </p>
@@ -137,16 +145,18 @@ export const Footer: React.FC<FooterProps> = ({ footerGroups, logoSrc, showPrevi
 
               <p className="text-sm text-muted-foreground">{DISCLAIMER_COPY.platform}</p>
 
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
-                <SocialLink href="https://x.com" aria-label="X" platform="x" variant="outline" />
-                <SocialLink
-                  href="https://instagram.com"
-                  aria-label="Instagram"
-                  platform="instagram"
-                  variant="outline"
-                />
-              </div>
+              {!holdingMode ? (
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  <SocialLink href="https://meta.com" aria-label="Meta" platform="meta" variant="outline" />
+                  <SocialLink href="https://x.com" aria-label="X" platform="x" variant="outline" />
+                  <SocialLink
+                    href="https://instagram.com"
+                    aria-label="Instagram"
+                    platform="instagram"
+                    variant="outline"
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

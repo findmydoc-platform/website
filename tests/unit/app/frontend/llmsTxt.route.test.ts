@@ -1,17 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const posthogMocks = vi.hoisted(() => ({
-  createPostHogFlagEvaluationContext: vi.fn((input: { url: URL }) => {
-    const pathname = input.url.pathname || '/'
-    const normalizedPath = pathname !== '/' && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
-
-    return {
-      feature_flag_site_host: input.url.hostname,
-      feature_flag_site_path: normalizedPath,
-    }
-  }),
+  createPostHogHoldingEvaluationContext: vi.fn((input: { url: URL }) => ({
+    feature_flag_site_host: input.url.hostname.toLowerCase(),
+  })),
   evaluatePostHogFlags: vi.fn(),
-  resolvePostHogSiteFlagActor: vi.fn(),
+  resolvePostHogHoldingFlagActor: vi.fn(),
 }))
 
 vi.mock('@/posthog/api', () => posthogMocks)
@@ -55,9 +49,9 @@ describe('llms.txt routes', () => {
       NODE_ENV: 'production',
       VERCEL_ENV: 'production',
     }
-    posthogMocks.resolvePostHogSiteFlagActor.mockReturnValue(actor)
+    posthogMocks.resolvePostHogHoldingFlagActor.mockReturnValue(actor)
     posthogMocks.evaluatePostHogFlags.mockResolvedValue({
-      isEnabled: vi.fn(() => false),
+      getEvaluation: vi.fn(() => ({ status: 'evaluated', value: false })),
     })
   })
 
@@ -142,7 +136,7 @@ describe('llms.txt routes', () => {
 
   it('does not expose public discovery content while temporary landing mode is active', async () => {
     posthogMocks.evaluatePostHogFlags.mockResolvedValue({
-      isEnabled: vi.fn((key: string) => key === 'temporary-landing-mode'),
+      getEvaluation: vi.fn(() => ({ status: 'evaluated', value: true })),
     })
 
     const response = await getLlmsTxtResponse()

@@ -1,11 +1,11 @@
-import { createPostHogFlagEvaluationContext, evaluatePostHogFlags, resolvePostHogSiteFlagActor } from '@/posthog/api'
 import {
   SEARCH_ROBOTS_HEADER,
   SEARCH_ROBOTS_HEADER_VALUE,
   shouldBlockSearchIndexing,
   type SearchIndexingEnvInput,
 } from '@/features/searchIndexing'
-import { isTemporaryLandingPublicDiscoveryPath } from '@/features/temporaryLandingMode'
+import { isTemporaryLandingPublicDiscoveryPath, readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
+import { resolveHoldingMode } from '@/features/temporaryLandingMode/resolver'
 
 export type PublicDiscoveryBlockReason = 'preview-runtime' | 'temporary-landing-mode'
 
@@ -34,20 +34,21 @@ const resolvePublicDiscoveryAccessForRuntime = (env: SearchIndexingEnvInput = pr
 
 export const resolvePublicDiscoveryAccessForRequest = async (
   request: Request,
-  env: SearchIndexingEnvInput = process.env,
+  env: SearchIndexingEnvInput & Partial<Pick<NodeJS.ProcessEnv, 'PUBLIC_SITE_FALLBACK_MODE'>> = process.env,
 ): Promise<PublicDiscoveryAccess> => {
   const runtimeAccess = resolvePublicDiscoveryAccessForRuntime(env)
   if (!runtimeAccess.allowed) return runtimeAccess
 
-  const context = createPostHogFlagEvaluationContext({
-    url: new URL(request.url),
-  })
-  const actor = resolvePostHogSiteFlagActor(context)
-  const flags = await evaluatePostHogFlags(actor, ['temporary-landing-mode'], {
-    context,
-  })
+  const requestMode = readPublicSiteModeRequestHeader(request.headers)
+  const mode =
+    requestMode ??
+    (
+      await resolveHoldingMode(new URL(request.url), {
+        PUBLIC_SITE_FALLBACK_MODE: env.PUBLIC_SITE_FALLBACK_MODE,
+      })
+    ).mode
 
-  if (flags.isEnabled('temporary-landing-mode')) {
+  if (mode === 'holding') {
     if (isTemporaryLandingPublicDiscoveryPath(new URL(request.url).pathname)) {
       return {
         allowed: true,

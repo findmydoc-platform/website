@@ -8,7 +8,7 @@ import {
   PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH,
 } from '@/features/previewGuard'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
-import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import { PUBLIC_SITE_MODE_REQUEST_HEADER, TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 
 const mocks = vi.hoisted(() => ({
   createServerClient: vi.fn(),
@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   logCrawlerRequest: vi.fn(),
   resolvePostHogSiteFlagActor: vi.fn(),
+  resolveHoldingMode: vi.fn(),
 }))
 
 vi.mock('@supabase/ssr', () => ({
@@ -39,6 +40,10 @@ vi.mock('@/posthog/api', () => ({
 
 vi.mock('@/features/publicDiscovery/crawlerMonitoring', () => ({
   logCrawlerRequest: mocks.logCrawlerRequest,
+}))
+
+vi.mock('@/features/temporaryLandingMode/resolver', () => ({
+  resolveHoldingMode: mocks.resolveHoldingMode,
 }))
 
 import { config, proxy } from '@/proxy'
@@ -56,11 +61,15 @@ const siteActor = {
 }
 
 const mockGuardFlags = (enabled: Partial<Record<GuardFlagKey, boolean>> = {}) => {
+  mocks.resolveHoldingMode.mockResolvedValue({
+    mode: enabled['temporary-landing-mode'] ? 'holding' : 'full',
+    source: 'posthog',
+  })
   mocks.evaluatePostHogFlags.mockResolvedValue({
     getPayload: vi.fn((_key: GuardFlagKey, fallback: unknown) => fallback),
     getVariant: vi.fn((_key: GuardFlagKey, fallback: string) => fallback),
     isEnabled: vi.fn((key: GuardFlagKey) => enabled[key] ?? false),
-    keys: ['temporary-landing-mode', 'preview-guard-enabled'],
+    keys: ['preview-guard-enabled'],
   })
 }
 
@@ -123,16 +132,33 @@ describe('preview lock proxy', () => {
       feature_flag_site_host: 'preview.findmydoc.eu',
       feature_flag_site_path: '/posts/example',
     })
-    expect(mocks.evaluatePostHogFlags).toHaveBeenCalledWith(
-      siteActor,
-      ['temporary-landing-mode', 'preview-guard-enabled'],
-      {
-        context: {
-          feature_flag_site_host: 'preview.findmydoc.eu',
-          feature_flag_site_path: '/posts/example',
-        },
+    expect(mocks.evaluatePostHogFlags).toHaveBeenCalledWith(siteActor, ['preview-guard-enabled'], {
+      context: {
+        feature_flag_site_host: 'preview.findmydoc.eu',
+        feature_flag_site_path: '/posts/example',
       },
-    )
+    })
+    expect(mocks.resolveHoldingMode).toHaveBeenCalledWith(request.nextUrl)
+  })
+
+  it('overwrites visitor-supplied public and viewer mode markers', async () => {
+    process.env.VERCEL_ENV = 'production'
+    mocks.resolveHoldingMode.mockResolvedValue({ mode: 'holding', source: 'posthog' })
+    const request = new NextRequest('https://findmydoc.eu/posts/example', {
+      headers: {
+        [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'full',
+        [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1',
+        [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
+        [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
+      },
+    })
+
+    const response = await proxy(request)
+
+    expect(response.headers.get(`x-middleware-request-${PUBLIC_SITE_MODE_REQUEST_HEADER}`)).toBe('holding')
+    expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBeNull()
+    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBeNull()
   })
 
   it('logs public discovery crawlers before leaving access to the route contract', async () => {

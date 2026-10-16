@@ -1,17 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const posthogMocks = vi.hoisted(() => ({
-  createPostHogFlagEvaluationContext: vi.fn((input: { url: URL }) => {
-    const pathname = input.url.pathname || '/'
-    const normalizedPath = pathname !== '/' && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
-
-    return {
-      feature_flag_site_host: input.url.hostname,
-      feature_flag_site_path: normalizedPath,
-    }
-  }),
+  createPostHogHoldingEvaluationContext: vi.fn((input: { url: URL }) => ({
+    feature_flag_site_host: input.url.hostname.toLowerCase(),
+  })),
   evaluatePostHogFlags: vi.fn(),
-  resolvePostHogSiteFlagActor: vi.fn(),
+  resolvePostHogHoldingFlagActor: vi.fn(),
 }))
 
 vi.mock('@/posthog/api', () => posthogMocks)
@@ -26,9 +20,9 @@ describe('sitemap indexing guards', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    posthogMocks.resolvePostHogSiteFlagActor.mockReturnValue(actor)
+    posthogMocks.resolvePostHogHoldingFlagActor.mockReturnValue(actor)
     posthogMocks.evaluatePostHogFlags.mockResolvedValue({
-      isEnabled: vi.fn(() => false),
+      getEvaluation: vi.fn(() => ({ status: 'evaluated', value: false })),
     })
   })
 
@@ -46,9 +40,9 @@ describe('sitemap indexing guards', () => {
   })
 
   it('uses the temporary landing flag for production sitemap decisions', async () => {
-    const isEnabled = vi.fn((key: string) => key === 'temporary-landing-mode')
+    const getEvaluation = vi.fn(() => ({ status: 'evaluated', value: true }))
     posthogMocks.evaluatePostHogFlags.mockResolvedValue({
-      isEnabled,
+      getEvaluation,
     })
     const request = new Request('https://findmydoc.eu/posts-sitemap.xml')
     const { shouldBlockSitemapIndexingForRequest } = await import('@/features/searchIndexing/sitemapGuards')
@@ -60,24 +54,22 @@ describe('sitemap indexing guards', () => {
       }),
     ).resolves.toBe(false)
 
-    expect(posthogMocks.createPostHogFlagEvaluationContext).toHaveBeenCalledWith({
+    expect(posthogMocks.createPostHogHoldingEvaluationContext).toHaveBeenCalledWith({
       url: new URL('https://findmydoc.eu/posts-sitemap.xml'),
     })
-    expect(posthogMocks.resolvePostHogSiteFlagActor).toHaveBeenCalledWith({
+    expect(posthogMocks.resolvePostHogHoldingFlagActor).toHaveBeenCalledWith({
       feature_flag_site_host: 'findmydoc.eu',
-      feature_flag_site_path: '/posts-sitemap.xml',
     })
     expect(posthogMocks.evaluatePostHogFlags).toHaveBeenCalledWith(actor, ['temporary-landing-mode'], {
       context: {
         feature_flag_site_host: 'findmydoc.eu',
-        feature_flag_site_path: '/posts-sitemap.xml',
       },
     })
   })
 
   it('does not block the production sitemap when PostHog returns the code default', async () => {
     posthogMocks.evaluatePostHogFlags.mockResolvedValue({
-      isEnabled: vi.fn(() => false),
+      getEvaluation: vi.fn(() => ({ status: 'evaluated', value: false })),
     })
     const request = new Request('https://findmydoc.eu/pages-sitemap.xml')
     const { shouldBlockSitemapIndexingForRequest } = await import('@/features/searchIndexing/sitemapGuards')

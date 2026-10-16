@@ -81,7 +81,7 @@ The S3 adapter is active in every runtime. There is no local filesystem fallback
 - Preview and production require all `S3_*` variables. Startup fails with the missing variable names if that configuration is incomplete.
 - Development and test use AWS SDK checksum validation only when required because S3Mock cannot validate the SDK's optional response checksum for ranged reads. Online S3 backends retain the SDK default validation.
 
-The test harness starts and stops its isolated S3Mock alongside Postgres. S3Mock has no named test-data volume, but its stopped container is retained with the cached Postgres templates between warm runs so baseline media records keep matching objects. `TEST_DB_REBUILD_TEMPLATES=1` removes both states before rebuilding. With `TEST_DB_ALLOW_REMOTE=1`, the harness still starts local S3Mock for the default local endpoint; an explicit external `S3_TEST_ENDPOINT` keeps both remote lifecycles external.
+The test harness starts and stops its isolated S3Mock alongside Postgres. S3Mock retains files in the `s3mock-test-data` volume at `/s3root`, so baseline media records keep matching objects across container restarts. `TEST_DB_REBUILD_TEMPLATES=1` removes both the Postgres and S3Mock volumes before rebuilding. With `TEST_DB_ALLOW_REMOTE=1`, the harness still starts local S3Mock for the default local endpoint; an explicit external `S3_TEST_ENDPOINT` keeps both remote lifecycles external.
 
 ## Current Online Storage Constraint
 

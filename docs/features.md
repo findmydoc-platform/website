@@ -128,11 +128,14 @@ Architecture reference:
 
 ## Temporary Landing Mode
 
-PostHog can enable a temporary public landing mode through the server-side feature flag `temporary-landing-mode`.
+PostHog controls the host-wide public Holding mode through the server-side feature flag `temporary-landing-mode`.
 
 - Flag default in code: `false`
-- URL-specific rules use the PostHog person properties `feature_flag_site_host` and normalized `feature_flag_site_path`
-- Missing PostHog configuration or unavailable local evaluation keeps the flag at the code default `false`
+- Holding evaluation uses a stable host identity and the PostHog person property `feature_flag_site_host`; it does not vary by request path or visitor identity. Preview Guard retains its separate path-aware evaluation context.
+- An evaluated boolean `true` selects Holding and an evaluated boolean `false` selects full operation. Missing output, a non-boolean output, missing PostHog configuration, and evaluation errors use `PUBLIC_SITE_FALLBACK_MODE`.
+- `PUBLIC_SITE_FALLBACK_MODE` accepts `holding` or `full`. Missing or invalid configuration safely selects Holding and writes a sanitized operational warning. `.env.example` explicitly sets local development to `full`; prepare the current Production deployment with `holding` before rollout.
+- An explicitly evaluated PostHog value takes priority over the deployment fallback. At full launch, coordinate changing the Production fallback to `full` and setting `temporary-landing-mode` to `false`. For rollback, set the PostHog flag to `true` and the deployment fallback to `holding`.
+- Already loaded PostHog definitions keep the current SDK and definition-cache behavior during provider outages. A cold start without usable definitions uses the deployment fallback. Healthy changes can take several minutes to propagate, and an outage can extend use of older definitions; no maximum age or live update of already open pages is guaranteed.
 - Public and non-platform sessions can access the landing page and legal pages, which remain `noindex`
 - Published blog routes stay public and indexable: `/posts`, `/posts/page/:positiveInteger`, and `/posts/:singleSlug`
 - Blog discovery stays public: `/robots.txt`, `/pages-sitemap.xml`, and `/posts-sitemap.xml`; the temporary pages sitemap contains only `/posts`

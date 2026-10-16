@@ -21,7 +21,11 @@ import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getCachedGlobal, getGlobal } from '@/utilities/getGlobals'
 import { normalizeFooterNavGroups, normalizeHeaderNavItems } from '@/utilities/normalizeNavItems'
-import { isNonProductionDeployment, PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
+import {
+  isNonProductionDeployment,
+  PREVIEW_GUARD_ACTIVE_REQUEST_HEADER,
+  PREVIEW_GUARD_LOCK_REQUEST_HEADER,
+} from '@/features/previewGuard'
 import { COOKIE_CONSENT_COOKIE_NAME, resolveCookieConsentContext } from '@/features/cookieConsent'
 import { CookieConsentClientAdapter } from '@/features/cookieConsent/CookieConsentClientAdapter.client'
 import {
@@ -32,6 +36,8 @@ import {
 import { JsonLdScript, buildSiteBaseJsonLd } from '@/utilities/structuredData'
 import type { Footer as FooterType, Header as HeaderType } from '@/payload-types'
 import type { CookieConsent as CookieConsentType } from '@/payload-types'
+import { projectHoldingFooterGroups, projectHoldingHeaderNavItems } from '@/features/temporaryLandingMode/navigation'
+import { readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
 
 const LIVE_PATIENT_ACCOUNT_MENU_LINKS: Partial<PublicAccountMenuLinks> = {
   dashboard: '/patient/inquiries',
@@ -64,6 +70,8 @@ async function resolvePublicAccountMenuState(requestHeaders: Headers): Promise<P
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
   const isGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
+  const isPreviewGuardActive = requestHeaders.get(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER) === '1'
+  const isHoldingPublicView = readPublicSiteModeRequestHeader(requestHeaders) === 'holding' && !isPreviewGuardActive
   const showSiteChrome = !isGuardLocked
   const showPreviewBadge = isNonProductionDeployment(process.env)
   const blockSearchIndexing = shouldBlockSearchIndexingForRequest({ env: process.env, headers: requestHeaders })
@@ -74,16 +82,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { isEnabled } = await draftMode()
   const requestCookies = await cookies()
 
-  const footerGroups = showSiteChrome
+  const normalizedFooterGroups = showSiteChrome
     ? normalizeFooterNavGroups((await getCachedGlobal('footer', 1)()) as FooterType)
     : []
 
-  const headerNavItems = showSiteChrome
+  const normalizedHeaderNavItems = showSiteChrome
     ? normalizeHeaderNavItems((await getCachedGlobal('header', 1)()) as HeaderType)
     : []
-  const accountMenuState = showSiteChrome
-    ? await resolvePublicAccountMenuState(requestHeaders)
-    : DEFAULT_ACCOUNT_MENU_STATE
+  const siteOrigin = getServerSideURL()
+  const footerGroups = isHoldingPublicView
+    ? projectHoldingFooterGroups(normalizedFooterGroups, siteOrigin)
+    : normalizedFooterGroups
+  const headerNavItems = isHoldingPublicView
+    ? projectHoldingHeaderNavItems(normalizedHeaderNavItems, siteOrigin)
+    : normalizedHeaderNavItems
+  const accountMenuState =
+    showSiteChrome && !isHoldingPublicView
+      ? await resolvePublicAccountMenuState(requestHeaders)
+      : DEFAULT_ACCOUNT_MENU_STATE
 
   const cookieConsentContext = resolveCookieConsentContext(
     (await getGlobal('cookieConsent', 1)) as CookieConsentType,
@@ -113,7 +129,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Header
                 navItems={headerNavItems}
                 logoSrc={headerLogoSrc}
-                rightActions={<PublicAccountMenu links={LIVE_PATIENT_ACCOUNT_MENU_LINKS} state={accountMenuState} />}
+                rightActions={
+                  isHoldingPublicView ? null : (
+                    <PublicAccountMenu links={LIVE_PATIENT_ACCOUNT_MENU_LINKS} state={accountMenuState} />
+                  )
+                }
                 showPreviewBadge={showPreviewBadge}
               />
             </div>
@@ -130,7 +150,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           {showSiteChrome ? (
             <div className="full-width">
-              <Footer footerGroups={footerGroups} logoSrc={footerLogoSrc} showPreviewBadge={showPreviewBadge} />
+              <Footer
+                footerGroups={footerGroups}
+                logoSrc={footerLogoSrc}
+                showPreviewBadge={showPreviewBadge}
+                holdingMode={isHoldingPublicView}
+              />
             </div>
           ) : null}
         </div>

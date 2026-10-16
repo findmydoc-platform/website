@@ -51,6 +51,15 @@ describe('Footer template', () => {
     expect(screen.getAllByRole('link', { name: 'Meta' }).length).toBeGreaterThan(0)
   })
 
+  it('hides hard-coded social destinations in Holding mode', () => {
+    render(<Footer footerGroups={footerGroups} holdingMode />)
+
+    expect(screen.queryByRole('link', { name: 'Meta' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'X' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Instagram' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'About us' }).length).toBeGreaterThan(0)
+  })
+
   it('applies custom logo source', () => {
     render(<Footer footerGroups={footerGroups} logoSrc="/preview-logo.png" />)
 

@@ -3,6 +3,7 @@ import { applyE2ERuntimeDefaults, TEMPORARY_LANDING_E2E_RUNTIME_POLICY } from '.
 
 const buildTemporaryLandingEnv = (): NodeJS.ProcessEnv => {
   const env: NodeJS.ProcessEnv = { ...process.env }
+  delete env.PUBLIC_SITE_FALLBACK_MODE
   env.E2E_RUNTIME_POLICY = TEMPORARY_LANDING_E2E_RUNTIME_POLICY
   env.NEXT_PUBLIC_POSTHOG_HOST = 'https://posthog.example.test'
   env.NEXT_PUBLIC_POSTHOG_KEY = 'posthog-test-key'
@@ -30,6 +31,27 @@ describe('E2E runtime defaults', () => {
       S3_REGION: 'us-east-1',
       S3_SECRET_ACCESS_KEY: 's3mock-secret-key', // pragma: allowlist secret
     })
+    expect(env.PUBLIC_SITE_FALLBACK_MODE).toBeUndefined()
+  })
+
+  it('defaults regular E2E runs to full public-site mode', () => {
+    const env: NodeJS.ProcessEnv = { ...process.env }
+    delete env.E2E_RUNTIME_POLICY
+    delete env.PUBLIC_SITE_FALLBACK_MODE
+
+    applyE2ERuntimeDefaults(env)
+
+    expect(env.PUBLIC_SITE_FALLBACK_MODE).toBe('full')
+  })
+
+  it('preserves an explicit public-site fallback for regular E2E runs', () => {
+    const env: NodeJS.ProcessEnv = { ...process.env }
+    env.PUBLIC_SITE_FALLBACK_MODE = 'holding'
+    delete env.E2E_RUNTIME_POLICY
+
+    applyE2ERuntimeDefaults(env)
+
+    expect(env.PUBLIC_SITE_FALLBACK_MODE).toBe('holding')
   })
 
   it('overrides inherited Vercel preview values for the temporary landing regression lane', () => {

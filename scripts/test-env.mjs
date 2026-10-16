@@ -87,6 +87,8 @@ export function applyE2ERuntimeDefaults(env = process.env) {
   } else {
     env.DEPLOYMENT_ENV = 'test'
     env.NEXT_PUBLIC_DEPLOYMENT_ENV = 'test'
+    // Regular E2E flows cover the full public experience; the dedicated temporary landing lane evaluates PostHog.
+    env.PUBLIC_SITE_FALLBACK_MODE ??= 'full'
   }
 
   env.NEXT_PUBLIC_SERVER_URL = baseUrl

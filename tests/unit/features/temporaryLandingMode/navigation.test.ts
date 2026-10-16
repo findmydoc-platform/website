@@ -23,6 +23,7 @@ describe('Holding public navigation policy', () => {
   })
 
   it.each([
+    ['/privacy', null],
     ['/posts/page/0', null],
     ['/posts/page/01', null],
     ['/posts/page/2/extra', null],

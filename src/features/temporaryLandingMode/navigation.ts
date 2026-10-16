@@ -48,7 +48,7 @@ export const classifyHoldingPublicDestination = (href: string, siteOrigin: strin
   if (/^\/posts\/page\/[1-9]\d*$/.test(pathname)) return 'blog-pagination'
   if (/^\/posts\/[^/]+$/.test(pathname)) return 'blog-article'
   if (pathname === '/contact') return 'contact'
-  if (pathname === '/privacy-policy' || pathname === '/privacy') return 'privacy'
+  if (pathname === '/privacy-policy') return 'privacy'
   if (pathname === '/imprint') return 'imprint'
 
   return null

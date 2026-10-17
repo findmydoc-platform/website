@@ -1,9 +1,11 @@
+import { hasClinicScopeContract } from '@/features/clinicDashboard/contractNegotiation'
+import { APIError } from 'payload'
 import { after } from 'next/server.js'
 import { addDataAndFileToRequest, type PayloadHandler, type PayloadRequest } from 'payload'
 import type { ZodType } from 'zod'
 
 import { MEDIA_UPLOAD_TOO_LARGE_MESSAGE } from '@/config/mediaUploadPolicy'
-import { resolveClinicDashboardBootstrap, type ClinicDashboardCapability } from '@/features/clinicDashboard/bootstrap'
+import { resolveClinicScopeBootstrap, type ClinicDashboardCapability } from '@/features/clinicDashboard/bootstrap'
 import {
   cleanupClinicGalleryDraftMedia,
   type ClinicGalleryCleanupReason,
@@ -17,6 +19,7 @@ import {
   ClinicGalleryServiceError,
   discardClinicGalleryDrafts,
   readClinicGallerySnapshot,
+  readClinicGalleryImageSource,
   saveClinicGallery,
   uploadClinicGalleryDraft,
 } from '@/features/clinicDashboard/gallery/service'
@@ -45,19 +48,35 @@ const authorizeClinic = async (
   req: PayloadRequest,
   requiredCapability: ClinicDashboardCapability,
 ): Promise<AuthorizedClinic> => {
-  const result = await resolveClinicDashboardBootstrap(req)
+  const clinicId = req.routeParams?.clinicId
+  if (
+    !hasClinicScopeContract(req.headers) ||
+    typeof clinicId !== 'string' ||
+    !/^[1-9]\d*$/u.test(clinicId) ||
+    !Number.isSafeInteger(Number(clinicId))
+  ) {
+    return {
+      ok: false,
+      response: clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_GALLERY_ERROR_CODES.invalidInput } }, 400),
+    }
+  }
+  const result = await resolveClinicScopeBootstrap(req)
 
   switch (result.status) {
-    case 'success':
-      return result.data.capabilities.includes(requiredCapability)
-        ? { ok: true, clinicId: result.data.clinic.id }
-        : {
-            ok: false,
-            response: clinicDashboardPrivateJsonResponse(
-              { error: { code: CLINIC_DASHBOARD_ERROR_CODES.accessDenied } },
-              403,
-            ),
-          }
+    case 'success': {
+      const clinic = result.data.clinics.find((clinic) => clinic.id === clinicId)
+      if (clinic?.capabilities.includes(requiredCapability)) {
+        req.context = { ...req.context, clinicGalleryTargetId: clinicId }
+        return { ok: true, clinicId }
+      }
+      return {
+        ok: false,
+        response: clinicDashboardPrivateJsonResponse(
+          { error: { code: CLINIC_DASHBOARD_ERROR_CODES.accessDenied } },
+          403,
+        ),
+      }
+    }
     case 'access-denied':
       return {
         ok: false,
@@ -127,13 +146,18 @@ const uploadErrorResponse = (error: unknown): Response | null => {
   if (record.status === 400 && /unsupported image format/iu.test(message)) {
     return clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_GALLERY_ERROR_CODES.unsupportedMediaType } }, 415)
   }
-  if (record.status === 400) {
-    return clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_GALLERY_ERROR_CODES.invalidInput } }, 400)
+  if (record.status === 400 || record.status === 422) {
+    return clinicDashboardPrivateJsonResponse(
+      { error: { code: CLINIC_GALLERY_ERROR_CODES.invalidInput } },
+      record.status,
+    )
   }
   return null
 }
 
 const unexpectedErrorResponse = (req: PayloadRequest, error: unknown, operation: string): Response => {
+  if (error instanceof APIError && error.status === 403)
+    return clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.accessDenied } }, 403)
   req.payload.logger.error(
     {
       err: toLoggedError(error),
@@ -251,5 +275,65 @@ export const clinicDashboardGalleryDiscardPostHandler: PayloadHandler = async (r
   } catch (error: unknown) {
     if (error instanceof ClinicGalleryServiceError) return serviceErrorResponse(error)
     return unexpectedErrorResponse(req, error, 'discard')
+  }
+}
+
+export const clinicDashboardGalleryImageGetHandler: PayloadHandler = async (req) => {
+  const authorization = await authorizeClinic(req, 'clinic-gallery:view')
+  if (!authorization.ok) return authorization.response
+  const mediaId = req.routeParams?.mediaId
+  const size = req.searchParams.get('size') ?? 'original'
+  if (
+    typeof mediaId !== 'string' ||
+    !/^[A-Za-z0-9_-]{1,128}$/u.test(mediaId) ||
+    !['original', 'thumbnail'].includes(size) ||
+    req.searchParams.getAll('size').length > 1 ||
+    [...req.searchParams.keys()].some((key) => key !== 'size')
+  ) {
+    return clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_GALLERY_ERROR_CODES.invalidInput } }, 400)
+  }
+  try {
+    const source = await readClinicGalleryImageSource(
+      req,
+      authorization.clinicId,
+      mediaId,
+      size as 'original' | 'thumbnail',
+    )
+    const upstream = await fetch(source, {
+      cache: 'no-store',
+      redirect: 'error',
+      headers: { Authorization: req.headers.get('authorization') ?? '' },
+      signal: AbortSignal.timeout(12_000),
+    })
+    if (upstream.status >= 500) throw new Error('The gallery image service is unavailable.')
+    if (!upstream.ok)
+      return clinicDashboardPrivateJsonResponse(
+        {
+          error: {
+            code:
+              upstream.status === 403
+                ? CLINIC_DASHBOARD_ERROR_CODES.accessDenied
+                : CLINIC_GALLERY_ERROR_CODES.mediaNotFound,
+          },
+        },
+        upstream.status === 403 ? 403 : 404,
+      )
+    const contentType = upstream.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase()
+    if (!contentType || !['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(contentType))
+      throw new Error('Unexpected gallery image type.')
+    return new Response(await upstream.arrayBuffer(), {
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': 'private, no-store',
+        Pragma: 'no-cache',
+        Expires: '0',
+        Vary: 'Authorization, X-Findmydoc-Clinic-Scope-Contract',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    })
+  } catch (error) {
+    return error instanceof ClinicGalleryServiceError
+      ? serviceErrorResponse(error)
+      : unexpectedErrorResponse(req, error, 'image')
   }
 }

@@ -381,18 +381,20 @@ authoritative. The private Dashboard endpoint adds no cache class, tag, surface,
 
 ## Clinic Gallery Contract
 
-The gallery capability uses four focused custom Payload operations:
+The gallery capability uses five focused custom Payload operations:
 
 | Method and route | Result |
 | --- | --- |
-| `GET /api/clinic-dashboard/gallery` | Returns the saved ordered gallery, its revision, and upload constraints. |
-| `POST /api/clinic-dashboard/gallery/media` | Accepts exactly one multipart image and returns one private draft medium. |
-| `PUT /api/clinic-dashboard/gallery` | Atomically publishes the supplied order and metadata after a revision check. |
-| `POST /api/clinic-dashboard/gallery/discard` | Accepts private draft IDs for post-response permanent cleanup. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/gallery` | Returns the saved ordered gallery, its revision, and upload constraints. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/gallery/media` | Accepts exactly one multipart image and returns one private draft medium. |
+| `PUT /api/clinic-dashboard/clinics/:clinicId/gallery` | Atomically publishes the supplied order and metadata after a revision check. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/gallery/discard` | Accepts private draft IDs for post-response permanent cleanup. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/gallery/media/:mediaId/image` | Checks current target access and stored media ownership before returning protected bytes. |
 
-Every request repeats bootstrap authorization, derives the clinic from the approved `clinicStaff` assignment, and
-requires `clinic-gallery:view` for reads or `clinic-gallery:edit` for mutations. No request accepts a clinic ID,
-storage key, bucket name, or direct object-storage credential. Clinic Staff cannot bypass this revision-protected
+Every request requires `clinic-scope-v1`, repeats current personal bootstrap authorization, and selects the explicit
+clinic path target from the resulting local or group access set. Reads require `clinic-gallery:view`; mutations
+require `clinic-gallery:edit`. The target must match stored media ownership and gallery relationships. No request
+accepts a storage key, bucket name, or direct object-storage credential. Clinic Staff cannot bypass this revision-protected
 contract through the regular `clinicMedia` collection routes; direct collection writes are Platform-only.
 
 ```ts
@@ -423,19 +425,23 @@ type ClinicGallerySnapshotDTO = {
 Uploads accept JPEG, PNG, WebP, or AVIF and remain `draft` until included in a successful save. The application limit
 is 4 MiB per request and the Dashboard sends no more than three independent upload requests concurrently. Payload
 normalizes orientation and strips metadata before generating its registered image sizes. Returned media URLs are
-absolute URLs suitable for server-side Dashboard validation and rendering.
+absolute protected image-operation URLs. The optional `size=thumbnail` selects a stored registered size; neither
+the URL nor its encrypted Dashboard token grants access. Public media URLs keep their existing behavior.
 
 Save accepts `{ expectedRevision, items: [{ mediaId, alt, captionText? }] }`; array order is public order and the first
 item is the main image. A serializable transaction verifies the revision, ownership, uniqueness, maximum count, and
 required alt text, publishes selected media, returns removed media to `draft`, and updates the gallery, derived
 thumbnail, and profile revision together. A stale revision returns `409 CLINIC_GALLERY_CONFLICT` without partial
-writes.
+writes. The native transaction owns the clinic and staff authorization barrier, final current source access,
+and business writes. Assignment changes and clinic membership transfers use the same barriers. Confirmed
+serialization aborts retry with the original target; unknown commit outcomes do not retry.
 
 Discard accepts `{ mediaIds }` for at most twelve own-clinic, unreferenced drafts. Save, discard, and gallery reads may
 schedule one bounded post-response cleanup batch. Cleanup rechecks ownership, `draft` status, and gallery or thumbnail
-references before each attempt, then permanently deletes through Payload so the storage adapter removes the original
+references again under the native delete transaction barrier, then permanently deletes through Payload so the storage adapter removes the original
 and every registered size. Cleanup failure is logged and reported without changing the successful user response; a
-later gallery read may retry an abandoned draft. The contract makes no time guarantee and defines no scheduler.
+later gallery read may retry an abandoned draft. Only confirmed database aborts retry automatically; external object
+cleanup with an unknown outcome does not repeat. Object cleanup stays outside the retryable publication transaction. The contract makes no time guarantee and defines no scheduler.
 Gallery reads consider only unreferenced drafts older than 24 hours as abandoned, so a reload cannot delete a fresh
 upload from an active editing session.
 

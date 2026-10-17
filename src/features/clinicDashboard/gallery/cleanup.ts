@@ -85,14 +85,16 @@ const cleanupOne = async ({
 }): Promise<void> => {
   const attempts = CLINIC_GALLERY_CLEANUP_RETRY_DELAYS_MS.length + 1
   let lastError: unknown
+  let attemptCount = 0
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
+      attemptCount = attempt
       if (!(await canDelete(payload, clinicId, mediaId))) return
 
       await payload.delete({
         collection: 'clinicMedia',
-        context: { disableRevalidate: true },
+        context: { disableRevalidate: true, clinicGalleryCleanupTarget: String(clinicId) },
         id: payloadId(mediaId),
         overrideAccess: true,
         trash: true,
@@ -100,7 +102,8 @@ const cleanupOne = async ({
       return
     } catch (error: unknown) {
       lastError = error
-      if (attempt >= attempts) break
+      const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined
+      if (attempt >= attempts || (code !== '40001' && code !== '40P01')) break
       const baseDelay = CLINIC_GALLERY_CLEANUP_RETRY_DELAYS_MS[attempt - 1] ?? 0
       const jitter = 0.9 + random() * 0.2
       await sleep(Math.round(baseDelay * jitter))
@@ -110,7 +113,7 @@ const cleanupOne = async ({
   const cleanupError = lastError instanceof Error ? lastError : new Error(String(lastError))
   logger.error(
     {
-      attemptCount: attempts,
+      attemptCount,
       clinicId: String(clinicId),
       err: toLoggedError(cleanupError),
       event: 'clinic_gallery.media_cleanup_failed',
@@ -122,7 +125,7 @@ const cleanupOne = async ({
   await sendPostHogException(cleanupError, {
     distinctId: `clinic:${String(clinicId)}`,
     properties: {
-      attemptCount: attempts,
+      attemptCount,
       clinicId: String(clinicId),
       event: 'clinic_gallery.media_cleanup_failed',
       mediaId,

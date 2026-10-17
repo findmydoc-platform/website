@@ -3,6 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { readClinicGallerySnapshot, saveClinicGallery } from '@/features/clinicDashboard/gallery/service'
 
+vi.mock('@/features/clinicNotifications/authorizationBarrier', () => ({
+  guardClinicAuthorizationKeys: vi.fn(),
+  clinicStaffAuthorizationKey: vi.fn(),
+  notificationClinicAuthorizationKey: vi.fn(),
+}))
+
 const dispatchClinicGalleryChangeRevalidation = vi.hoisted(() => vi.fn())
 vi.mock('@/hooks/revalidateClinicSurfaces', () => ({ dispatchClinicGalleryChangeRevalidation }))
 
@@ -18,6 +24,7 @@ const clinic = {
 
 const buildRequest = () => {
   const db = {
+    sessions: { 'tx-1': {}, 'tx-2': {} },
     beginTransaction: vi.fn().mockResolvedValue('tx-1'),
     commitTransaction: vi.fn().mockResolvedValue(undefined),
     rollbackTransaction: vi.fn().mockResolvedValue(undefined),

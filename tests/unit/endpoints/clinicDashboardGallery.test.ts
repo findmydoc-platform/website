@@ -1,9 +1,10 @@
 import type { PayloadRequest } from 'payload'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   clinicDashboardGalleryDiscardPostHandler,
   clinicDashboardGalleryGetHandler,
+  clinicDashboardGalleryImageGetHandler,
   clinicDashboardGalleryPutHandler,
 } from '@/endpoints/clinicDashboardGallery'
 import { ClinicGalleryServiceError } from '@/features/clinicDashboard/gallery/service'
@@ -14,11 +15,12 @@ const mocks = vi.hoisted(() => ({
   cleanup: vi.fn().mockResolvedValue(undefined),
   discard: vi.fn(),
   read: vi.fn(),
+  image: vi.fn(),
   save: vi.fn(),
 }))
 
 vi.mock('next/server', () => ({ after: mocks.after }))
-vi.mock('@/features/clinicDashboard/bootstrap', () => ({ resolveClinicDashboardBootstrap: mocks.bootstrap }))
+vi.mock('@/features/clinicDashboard/bootstrap', () => ({ resolveClinicScopeBootstrap: mocks.bootstrap }))
 vi.mock('@/features/clinicDashboard/gallery/cleanup', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/clinicDashboard/gallery/cleanup')>()),
   cleanupClinicGalleryDraftMedia: mocks.cleanup,
@@ -27,6 +29,7 @@ vi.mock('@/features/clinicDashboard/gallery/service', async (importOriginal) => 
   ...(await importOriginal<typeof import('@/features/clinicDashboard/gallery/service')>()),
   discardClinicGalleryDrafts: mocks.discard,
   readClinicGallerySnapshot: mocks.read,
+  readClinicGalleryImageSource: mocks.image,
   saveClinicGallery: mocks.save,
 }))
 
@@ -45,19 +48,28 @@ const snapshot = {
 const request = (body?: unknown) =>
   ({
     context: {},
-    headers: new Headers({ authorization: 'Bearer token' }),
+    searchParams: new URLSearchParams(),
+    routeParams: { clinicId: '42' },
+    headers: new Headers({ authorization: 'Bearer token', 'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1' }),
     json: vi.fn(async () => body),
     payload: { logger: { error: vi.fn() } },
   }) as unknown as PayloadRequest
 
 describe('Clinic Dashboard gallery endpoints', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  it('rejects gallery reads without an explicit clinic target', async () => {
+    const req = request()
+    req.routeParams = {}
+    expect((await clinicDashboardGalleryGetHandler(req)).status).toBe(400)
+    expect(mocks.read).not.toHaveBeenCalled()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.bootstrap.mockResolvedValue({
       status: 'success',
       data: {
-        capabilities: ['clinic-gallery:view', 'clinic-gallery:edit'],
-        clinic: { id: '42', name: 'Assigned clinic' },
+        clinics: [{ id: '42', name: 'Assigned clinic', capabilities: ['clinic-gallery:view', 'clinic-gallery:edit'] }],
       },
     })
     mocks.read.mockResolvedValue({ cleanupCandidateIds: ['9'], snapshot })
@@ -98,10 +110,41 @@ describe('Clinic Dashboard gallery endpoints', () => {
     expect(mocks.discard).toHaveBeenCalledOnce()
   })
 
+  it('re-authorizes the explicit media source before returning private image bytes', async () => {
+    mocks.image.mockResolvedValueOnce('https://preview.findmydoc.eu/api/clinicMedia/file/reception.png')
+    const fetcher = vi.fn(
+      async () => new Response(new Uint8Array([1, 2]), { headers: { 'Content-Type': 'image/png' } }),
+    )
+    vi.stubGlobal('fetch', fetcher)
+    const req = request()
+    req.routeParams = { clinicId: '42', mediaId: '9' }
+    const response = await clinicDashboardGalleryImageGetHandler(req)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(mocks.image).toHaveBeenCalledWith(req, '42', '9', 'original')
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([1, 2]))
+    const foreign = request()
+    foreign.routeParams = { clinicId: '43', mediaId: '9' }
+    expect((await clinicDashboardGalleryImageGetHandler(foreign)).status).toBe(403)
+    expect(fetcher).toHaveBeenCalledOnce()
+  })
+
+  it('does not fetch a foreign stored media ID or invalid image selector', async () => {
+    mocks.image.mockRejectedValueOnce(new ClinicGalleryServiceError('not-found', 'Missing source'))
+    const fetcher = vi.fn()
+    vi.stubGlobal('fetch', fetcher)
+    const req = request()
+    req.routeParams = { clinicId: '42', mediaId: '99' }
+    expect((await clinicDashboardGalleryImageGetHandler(req)).status).toBe(404)
+    req.searchParams.set('size', 'foreign-storage-key')
+    expect((await clinicDashboardGalleryImageGetHandler(req)).status).toBe(400)
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
   it('enforces method-specific gallery capabilities', async () => {
     mocks.bootstrap.mockResolvedValue({
       status: 'success',
-      data: { capabilities: ['clinic-gallery:view'], clinic: { id: '42', name: 'Assigned clinic' } },
+      data: { clinics: [{ capabilities: ['clinic-gallery:view'], id: '42', name: 'Assigned clinic' }] },
     })
 
     expect((await clinicDashboardGalleryGetHandler(request())).status).toBe(200)

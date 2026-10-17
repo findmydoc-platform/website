@@ -37,8 +37,8 @@ describe('ClinicStaff access', () => {
     }
 
     await cleanupTrackedUsers(payload, { staffIds: createdStaffIds })
-    await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
+    await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
   it('scopes clinic staff reads to their clinic', async () => {

@@ -117,6 +117,38 @@ describe('Clinic Dashboard treatment service', () => {
     expect(cache.dispatch).not.toHaveBeenCalled()
   })
 
+  it('recomputes the aggregate after a serialization abort without leaking nested hook context', async () => {
+    const req = request()
+    const callerContext = { retainedSourceFlag: true, skipHooks: false }
+    req.context = callerContext
+    let averagePrice: number | null = null
+    req.payload.update = vi.fn(async () => {
+      expect(req.context.retainedSourceFlag).toBe(true)
+      if (!req.context.skipHooks) averagePrice = 120
+      // Native createLocalReq merges the average-price hook's nested skipHooks context into this request.
+      req.context = { ...req.context, skipHooks: true }
+      return { docs: [{ ...offering, price: 120 }] }
+    }) as unknown as typeof req.payload.update
+    transactions.begin.mockResolvedValueOnce('tx-1').mockResolvedValueOnce('tx-2')
+    transactions.commit.mockRejectedValueOnce(
+      Object.assign(new Error('Synthetic serialization abort'), { code: '40001' }),
+    )
+    transactions.rollback.mockImplementationOnce(async () => {
+      averagePrice = null
+    })
+    await updateClinicTreatment(req, 7, {
+      offeringId: '9',
+      expectedRevision: offering.updatedAt,
+      priceEUR: 120,
+      active: false,
+    })
+    expect(averagePrice).toBe(120)
+    expect(req.context).toBe(callerContext)
+    expect(transactions.begin).toHaveBeenCalledTimes(2)
+    expect(transactions.rollback).toHaveBeenCalledOnce()
+    expect(transactions.commit).toHaveBeenCalledTimes(2)
+  })
+
   it('returns complete paginated snapshots with full treatment descriptions', async () => {
     const describedTreatment = {
       ...treatment,

@@ -120,6 +120,18 @@ import { ClinicNotificationControls } from './collections/ClinicNotificationCont
 import { ReviewPublicationTransitions } from './collections/ReviewPublicationTransitions'
 import { ReviewDecisionTransitions } from './collections/ReviewDecisionTransitions'
 import { clinicDashboardReviewGetHandler } from './endpoints/clinicDashboardReviews'
+import {
+  clinicDashboardReviewsGetHandler,
+  clinicDashboardReviewRecordGetHandler,
+  clinicDashboardReviewHistoryGetHandler,
+  clinicDashboardReviewResponsesGetHandler,
+  clinicDashboardReviewAppealsGetHandler,
+  clinicDashboardReviewResponseVersionsGetHandler,
+  clinicDashboardReviewAppealVersionsGetHandler,
+  clinicDashboardReviewResponsesPostHandler,
+  clinicDashboardReviewAppealsPostHandler,
+  clinicDashboardReviewResponsePatchHandler,
+} from './endpoints/clinicDashboardReviewOperations'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accreditation'
 import { MedicalSpecialties } from './collections/MedicalSpecialties'
@@ -191,7 +203,57 @@ export default buildConfig({
     preserveExtension: true,
   },
   endpoints: [
-    { path: '/clinic-dashboard/reviews/:id', method: 'get', handler: clinicDashboardReviewGetHandler },
+    { path: '/clinic-dashboard/clinics/:clinicId/reviews', method: 'get', handler: clinicDashboardReviewsGetHandler },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/reviews/:id/record',
+      method: 'get',
+      handler: clinicDashboardReviewRecordGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/reviews/:id/publication-history',
+      method: 'get',
+      handler: clinicDashboardReviewHistoryGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-responses/versions',
+      method: 'get',
+      handler: clinicDashboardReviewResponseVersionsGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-appeals/versions',
+      method: 'get',
+      handler: clinicDashboardReviewAppealVersionsGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-responses',
+      method: 'get',
+      handler: clinicDashboardReviewResponsesGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-appeals',
+      method: 'get',
+      handler: clinicDashboardReviewAppealsGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-responses',
+      method: 'post',
+      handler: clinicDashboardReviewResponsesPostHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-appeals',
+      method: 'post',
+      handler: clinicDashboardReviewAppealsPostHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-responses/:workflowId',
+      method: 'patch',
+      handler: clinicDashboardReviewResponsePatchHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/reviews/:id',
+      method: 'get',
+      handler: clinicDashboardReviewGetHandler,
+    },
     {
       path: '/clinic-dashboard/bootstrap',
       method: 'get',

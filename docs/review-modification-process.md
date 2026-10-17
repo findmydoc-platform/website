@@ -36,13 +36,13 @@ remove, redact, or otherwise change a review or its clinic response.
 | --- | --- |
 | Anonymous caller | Reads only approved, active public review projections and eligible published clinic responses. |
 | Patient | Creates a review that is forced to the authenticated patient and `pending`; reads the same public projection as an anonymous caller; can withdraw only their own review. Patients cannot directly update, delete, or read review versions. |
-| Clinic staff | Reads approved reviews for the currently assigned clinic, including sanitized moderation and withdrawal state; manages only that clinic's response and appeal workflows; reads tenant-scoped response and appeal versions and the sanitized review publication history. Clinic staff cannot moderate or withdraw reviews. |
+| Clinic staff | Reads approved reviews for currently eligible local or group clinics, including sanitized moderation and withdrawal state; manages only the actual source clinic's response and appeal workflows; reads current-scope response and appeal versions and sanitized review publication history. Clinic staff cannot moderate or withdraw reviews. |
 | Platform staff | Reads all review states and raw history; performs ordinary Review updates and public moderation; records author withdrawal after external support verification; corrects withdrawal state; moderates clinic-authored response workflows without editing the pending text; and submits or decides appeals. Review deletion is platform-only and uses Payload soft delete. |
 
 For response and appeal writes, the clinic is derived from the related review and checked against the authenticated
-clinic assignment. A clinic or actor supplied by a client is not authoritative. Cross-tenant workflow reads are
-filtered, and the review publication-history endpoint returns `404` for an assigned clinic that does not own the
-review.
+current source assignment and approved clinic membership. Browser selection supplies an explicit target, never an authorization grant. Native writes acquire the actual clinic, current staff and group barriers and repeat eligibility and review ownership before commit. Membership and assignment changes therefore serialize with response and appeal commits under ADR-036. A clinic or actor supplied in a command body is not authoritative. Cross-clinic workflow reads are filtered, and exact detail or sanitized history returns `404` when the current target does not own the review.
+
+Private Dashboard operations use `/api/clinic-dashboard/clinics/:clinicId/reviews` and the closed `review-responses` and `review-appeals` route families under the same clinic prefix. Every request negotiates `clinic-scope-v1`; commands retain the configured Dashboard origin check and bounded strict JSON inputs. Lists intersect approved source reviews with the target clinic and supported filters. Exact detail does not depend on list filters or pagination. Only the existing public review projection and permitted workflow/history fields cross this boundary. All responses remain private and uncached.
 
 ## Submission and Approval
 

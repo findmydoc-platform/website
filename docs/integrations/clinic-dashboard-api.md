@@ -108,6 +108,13 @@ An approved person with no eligible clinic receives a successful bootstrap with 
 persons receive `403` without clinic data. Invalid identity returns `401`; unavailable identity or source reads return
 sanitized `503` responses.
 
+Active-workspace recovery consumes these existing source contracts. A clinic assignment replacement, revocation or group
+membership change takes effect on the next scoped operation; stale identity or bootstrap claims cannot authorize it. The
+Dashboard then reads a new personal bootstrap and offers only current eligible choices. `403` preserves the valid personal
+session, including an approved empty set. Source outages remain distinct from confirmed denial. Recovery introduces no
+new source endpoint, stored draft transport, revocation channel, age policy or public-cache invalidation.
+
+
 ```ts
 type ClinicDashboardCapability =
   | 'clinic-profile:view'

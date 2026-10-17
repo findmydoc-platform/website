@@ -5,6 +5,7 @@ import {
   type PayloadRequest,
   type Where,
 } from 'payload'
+import { hasClinicGroupChange, requireClinicGroupChange } from './membership'
 import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 import type { Clinic } from '@/payload-types'
 import { platformClinicTrustAccess } from '@/access/fieldAccess'
@@ -43,13 +44,18 @@ export const assignInitialClinicGroup: CollectionBeforeChangeHook<Clinic> = asyn
   if (!Object.hasOwn(data, 'group')) return data
   const previous = relationId(originalDoc?.group)
   const next = relationId(data.group)
+  if (hasClinicGroupChange(req)) {
+    if (previous === null) throw new APIError('Clinic group membership changed. Reload before trying again.', 409)
+    requireClinicGroupChange(req, originalDoc!.id, previous, next)
+  }
   if (previous === next) return data
   await requireGroupOperator(req)
-  if (previous !== null)
-    throw new APIError('Existing clinic membership requires the dedicated transfer or detachment workflow.', 409)
-  if (next === null) return data
-  await guardClinicAuthorizationKeys(req, [clinicGroupAuthorizationKey(next)])
-  await req.payload.findByID({ collection: 'clinicGroups', id: next, depth: 0, overrideAccess: true, req })
+  if (previous !== null) requireClinicGroupChange(req, originalDoc!.id, previous, next)
+  if (previous === null && next === null) return data
+  const groupIds = [...new Set([previous, next].filter((id): id is number => id !== null))]
+  await guardClinicAuthorizationKeys(req, groupIds.map(clinicGroupAuthorizationKey))
+  for (const id of groupIds)
+    await req.payload.findByID({ collection: 'clinicGroups', id, depth: 0, overrideAccess: true, req })
   await guardNotificationAuthorizationSession({ req })
   return data
 }

@@ -1,3 +1,4 @@
+import { clinicGroupMembershipEndpoint } from '@/features/clinicGroups/membership'
 import {
   currentClinicOrPublicRead,
   currentClinicProfileAccess,
@@ -135,6 +136,7 @@ const normalizeClinicOpeningHoursAfterRead: CollectionAfterReadHook<Clinic> = ({
 
 export const Clinics: CollectionConfig<'clinics'> = {
   slug: 'clinics',
+  endpoints: [clinicGroupMembershipEndpoint],
   // This config controls what's populated by default when a clinic is referenced
   // via relationship fields or join results.
   defaultPopulate: {
@@ -205,6 +207,14 @@ export const Clinics: CollectionConfig<'clinics'> = {
       admin: {
         position: 'sidebar',
         description: 'Optional group for this clinic. Existing memberships require a transfer or detachment workflow.',
+      },
+    },
+    {
+      name: 'groupMovement',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: { Field: '@/app/(payload)/components/ClinicGroupMovement#ClinicGroupMovement' },
       },
     },
     {

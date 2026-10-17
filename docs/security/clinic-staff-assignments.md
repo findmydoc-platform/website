@@ -27,8 +27,8 @@ their existing publication filter.
 The legacy `readClinicAccessState` adapter remains explicitly local-only. Bootstrap and workspace wire conversion
 belongs to Dashboard #230. Other source-domain adapters remain closed to group access until Dashboard #231–238
 and their Website dependencies convert them. They must use the current policy, explicit target and actual source
-ownership; none may select a first clinic or infer access from bootstrap data. Initial clinic membership transfer and
-detachment belong to Website #2184, and new-person invitations belong to Website #2181. These boundaries leave the
+ownership; none may select a first clinic or infer access from bootstrap data. Clinic membership transfer and detachment use the [group movement operation](clinic-groups.md#transfer-and-detachment).
+New-person invitations belong to Website #2181. These boundaries leave the
 cross-repository acceptance criteria open.
 
 ## Native mutation ordering

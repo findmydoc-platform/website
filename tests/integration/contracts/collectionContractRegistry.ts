@@ -147,6 +147,8 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/clinicTreatments.creation.test.ts'],
     deep: [
       'tests/integration/clinicTreatments.creation.test.ts',
+      'tests/integration/clinicTreatmentScope.lifecycle.test.ts',
+      'tests/integration/clinicDashboardTreatments.concurrency.test.ts',
       'tests/integration/clinicTreatments.averagePrice.test.ts',
       'tests/integration/migrations/clinicOpeningHoursActiveTreatments.test.ts',
       'tests/integration/migrations/clinicPostalCodePriceContract.test.ts',

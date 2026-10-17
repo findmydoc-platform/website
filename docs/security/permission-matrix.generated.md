@@ -16,11 +16,12 @@
 | Patients `(patients)` | Platform | Conditional<br/><sub>platform full + patient own profile</sub> | Conditional<br/><sub>platform full + own profile only</sub> | Platform | Platform | – |
 | Posts `(posts)` | Platform | Published (approved) | Platform | Platform | Platform | – |
 | Pages `(pages)` | Platform | Published (approved) | Platform | Platform | Platform | – |
-| Doctors `(doctors)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Conditional<br/><sub>platform all + clinic own inactive + everyone active</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | – |
-| Clinics `(clinics)` | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>anyone approved, platform all</sub> | Conditional<br/><sub>platform full + clinic own profile only</sub> | Platform | Platform | – |
-| DoctorSpecialties `(doctorspecialties)` | Conditional<br/><sub>platform full + clinic allowed (hook enforces doctor clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | – |
-| DoctorTreatments `(doctortreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook enforces doctor clinic ownership)</sub> | Anyone | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | – |
-| ClinicTreatments `(clinictreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Conditional<br/><sub>platform all + clinic own inactive + everyone active</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | – |
+| Doctors `(doctors)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Conditional<br/><sub>platform all + current eligible clinic scope + public active doctors</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | – |
+| ClinicGroups `(clinicGroups)` | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>platform admin/support only; referenced groups cannot be deleted</sub> | Conditional<br/><sub>platform admin/support only</sub> | – |
+| Clinics `(clinics)` | Conditional<br/><sub>platform admin/support only</sub> | Conditional<br/><sub>clinic current eligible assignment, public approved, platform all</sub> | Conditional<br/><sub>platform full + clinic own profile only</sub> | Platform | Platform | – |
+| DoctorSpecialties `(doctorspecialties)` | Conditional<br/><sub>platform full + clinic allowed (hook enforces doctor clinic ownership)</sub> | Conditional<br/><sub>current eligible clinic doctors for staff; public read for others</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | – |
+| DoctorTreatments `(doctortreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook enforces doctor clinic ownership)</sub> | Conditional<br/><sub>current eligible clinic doctors for staff; public read for others</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | – |
+| ClinicTreatments `(clinictreatments)` | Conditional<br/><sub>platform full + clinic allowed (hook assigns clinic ownership)</sub> | Conditional<br/><sub>platform all + current eligible clinic offerings + public active offerings</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Platform | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | – |
 | FavoriteClinics `(favoriteclinics)` | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> | Conditional<br/><sub>platform full + patient own list</sub> | – |
 | Reviews `(reviews)` | Conditional<br/><sub>platform full + patient create only</sub> | Conditional<br/><sub>platform all + clinic own approved state + public visible projection</sub> | Platform | Platform | Platform | Platform |
 | ReviewResponses `(reviewResponses)` | Conditional<br/><sub>clinic staff with assigned clinic</sub> | Conditional<br/><sub>platform all + clinic own workflow + public active readable-review non-blocked response projection</sub> | Conditional<br/><sub>platform full + clinic scoped to own clinic</sub> | Conditional<br/><sub>physical deletion disabled</sub> | Platform | Conditional<br/><sub>platform all + clinic own clinic versions</sub> |
@@ -77,11 +78,12 @@
 - **Patients**: Patients can update own profile; no self-create/delete
 - **Posts**: Blog content - platform write, published content readable by all
 - **Pages**: Static pages - platform write, published content readable by all
-- **Doctors**: Platform RWDA, clinic RWA own clinic including inactive doctors, patients/anonymous R active doctors; averageRating is computed-only
-- **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved; averageRating is computed-only
+- **Doctors**: Platform RWDA; clinic RWA current eligible local/group clinics including inactive doctors; public active doctors; averageRating is computed-only
+- **ClinicGroups**: Private group metadata; only persisted platform admin/support roles manage groups. Clinic references block deletion.
+- **Clinics**: Platform admin/support create, platform read/update/delete, clinic RW current eligible assignment, patients/anonymous R approved; averageRating is computed-only
 - **DoctorSpecialties**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **DoctorTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
-- **ClinicTreatments**: Platform RWDA, clinic RWA own clinic including inactive offerings, patients/anonymous R active offerings
+- **ClinicTreatments**: Platform RWDA; clinic RWA current eligible local/group clinics including inactive offerings; public active offerings; clinic staff cannot delete records or edit the master catalogue
 - **FavoriteClinics**: Hidden from Payload Admin. Platform retains data access; patients manage only their own list.
 - **Reviews**: Platform RWDA moderation and raw version history, patients W create own pending reviews only, clinic staff R own approved sanitized state, public R active visible projection; unlimited immutable native versions
 - **ReviewResponses**: One moderated response workflow per review; public reads require a non-deleted approved parent review and an approved non-blocked response; unlimited immutable native versions
@@ -94,7 +96,7 @@
 - **ClinicMedia**: Clinic-owned gallery files - clinic writes use the revision-protected dashboard gallery endpoints; direct collection writes are platform-only
 - **ClinicGalleryMedia**: Retained gallery assets are unavailable through regular application and admin access
 - **ClinicGalleryEntries**: Retained gallery stories are unavailable through regular application and admin access
-- **DoctorMedia**: Platform full + clinic-managed doctor images scoped to the assigned clinic
+- **DoctorMedia**: Platform full; doctor images require matching stored-clinic and current doctor-clinic ownership within the eligible local/group scope; doctor ownership is immutable
 - **UserProfileMedia**: User &amp; patient avatars - self or platform management; owner + createdBy auto-stamped for requesters
 - **Tags**: Supporting data - platform write, everyone read
 - **Categories**: Supporting data - platform write, everyone read

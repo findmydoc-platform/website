@@ -40,6 +40,7 @@ const request = (overrides: Record<string, unknown> = {}) =>
     payload: {
       create: vi.fn(async () => offering),
       db: {
+        sessions: { 'tx-1': {}, 'tx-2': {} },
         beginTransaction: transactions.begin,
         commitTransaction: transactions.commit,
         rollbackTransaction: transactions.rollback,
@@ -71,6 +72,49 @@ describe('Clinic Dashboard treatment service', () => {
         data: { active: false, clinic: 7, price: 100, treatment: 8 },
       }),
     )
+  })
+
+  it('owns one native creation transaction and publishes invalidation only after commit', async () => {
+    const req = request()
+    req.payload.create = vi.fn(async ({ req: borrowed }: { req: PayloadRequest }) => {
+      expect(borrowed.transactionID).toBeInstanceOf(Promise)
+      expect(await borrowed.transactionID).toBe('tx-1')
+      return offering
+    }) as unknown as typeof req.payload.create
+    await createClinicTreatment(req, 7, { priceEUR: 100, treatmentId: '8' })
+    expect(transactions.begin).toHaveBeenCalledOnce()
+    expect(transactions.commit).toHaveBeenCalledOnce()
+    expect(cache.dispatch).toHaveBeenCalledAfter(transactions.commit)
+    expect(req.transactionID).toBeUndefined()
+  })
+
+  it('does not retry an unknown creation serialization outcome', async () => {
+    const error = Object.assign(new Error('Synthetic creation abort'), { code: '40001' })
+    const req = request({ create: vi.fn().mockRejectedValue(error) })
+    await expect(createClinicTreatment(req, 7, { priceEUR: 100, treatmentId: '8' })).rejects.toBe(error)
+    expect(transactions.begin).toHaveBeenCalledOnce()
+    expect(transactions.rollback).toHaveBeenCalledOnce()
+    expect(transactions.commit).not.toHaveBeenCalled()
+    expect(cache.dispatch).not.toHaveBeenCalled()
+  })
+
+  it('never commits or invalidates after a nested writer loses the active native owner', async () => {
+    const req = request()
+    req.payload.update = vi.fn(async () => {
+      delete req.payload.db.sessions!['tx-1']
+      return { docs: [{ ...offering, price: 120 }] }
+    }) as unknown as typeof req.payload.update
+    await expect(
+      updateClinicTreatment(req, 7, {
+        offeringId: '9',
+        expectedRevision: offering.updatedAt,
+        priceEUR: 120,
+        active: false,
+      }),
+    ).rejects.toThrow(/active native transaction/)
+    expect(transactions.commit).not.toHaveBeenCalled()
+    expect(transactions.rollback).toHaveBeenCalledOnce()
+    expect(cache.dispatch).not.toHaveBeenCalled()
   })
 
   it('returns complete paginated snapshots with full treatment descriptions', async () => {

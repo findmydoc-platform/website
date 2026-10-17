@@ -1,3 +1,6 @@
+import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
+import { guardNotificationAuthorizationSession } from '@/features/clinicNotifications/authorizationBarrier'
+import { assertClinicTreatmentTarget } from './authorization'
 import type { PayloadRequest } from 'payload'
 
 import { richTextToPlainText } from '@/features/clinicDashboard/profile/richText'
@@ -151,12 +154,14 @@ const isSerializationFailure = (error: unknown): boolean => {
 const runSerializableTransaction = async <Result>(
   req: PayloadRequest,
   command: () => Promise<Result>,
+  options: { allowSerializationRetry: boolean } = { allowSerializationRetry: true },
 ): Promise<Result> => {
   if (typeof req.transactionID !== 'undefined') {
     throw new ClinicTreatmentServiceError('unavailable', 'Treatment updates cannot join another transaction.')
   }
 
-  for (let attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt += 1) {
+  const attempts = options.allowSerializationRetry ? MAX_TRANSACTION_ATTEMPTS : 1
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
     let transactionID: null | number | string = null
 
     try {
@@ -168,19 +173,23 @@ const runSerializableTransaction = async <Result>(
         throw new ClinicTreatmentServiceError('unavailable', 'A database transaction could not be started.')
       }
 
-      req.transactionID = transactionID
+      req.transactionID = Promise.resolve(transactionID)
       const result = await command()
+      requireNotificationTransaction(req, transactionID)
+      if ((await req.transactionID) !== transactionID)
+        throw new ClinicTreatmentServiceError('unavailable', 'Treatment mutation lost its native owner.')
+      await guardNotificationAuthorizationSession({ req })
       await req.payload.db.commitTransaction(transactionID)
       return result
     } catch (error: unknown) {
       if (transactionID !== null) await req.payload.db.rollbackTransaction(transactionID)
-      if (isSerializationFailure(error)) {
-        if (attempt < MAX_TRANSACTION_ATTEMPTS) continue
+      if (options.allowSerializationRetry && isSerializationFailure(error)) {
+        if (attempt < attempts) continue
         throw new ClinicTreatmentServiceError('conflict', 'The clinic treatment changed.')
       }
       throw error
     } finally {
-      if (transactionID !== null && req.transactionID === transactionID) delete req.transactionID
+      if (transactionID !== null && (await req.transactionID) === transactionID) delete req.transactionID
     }
   }
 
@@ -191,7 +200,9 @@ export const readClinicTreatmentSnapshot = async (
   req: PayloadRequest,
   clinicId: RelationId,
 ): Promise<ClinicTreatmentSnapshotDTO> => {
+  await assertClinicTreatmentTarget(req, clinicId)
   const [offerings, catalogue] = await Promise.all([readAllClinicOfferings(req, clinicId), readAllTreatments(req)])
+  await assertClinicTreatmentTarget(req, clinicId)
   const treatmentsById = new Map(catalogue.map((treatment) => [String(treatment.id), treatment]))
 
   return {
@@ -212,38 +223,40 @@ export const createClinicTreatment = async (
   input: ClinicTreatmentCreateInput,
 ): Promise<ClinicTreatmentOfferingDTO> => {
   try {
-    const treatment = await req.payload.findByID({
-      collection: 'treatments',
-      depth: 0,
-      id: payloadId(input.treatmentId),
-      overrideAccess: true,
+    const result = await runSerializableTransaction(
       req,
-    })
-    if (!treatment.name.trim()) {
-      throw new ClinicTreatmentServiceError('invalid-input', 'The selected treatment is unavailable.')
-    }
-
-    const offering = await req.payload.create({
-      collection: 'clinictreatments',
-      data: {
-        active: false,
-        clinic: numericClinicId(clinicId),
-        price: input.priceEUR,
-        treatment: treatment.id,
+      async () => {
+        await assertClinicTreatmentTarget(req, clinicId)
+        const treatment = await req.payload.findByID({
+          collection: 'treatments',
+          depth: 0,
+          id: payloadId(input.treatmentId),
+          overrideAccess: true,
+          req,
+        })
+        if (!treatment.name.trim())
+          throw new ClinicTreatmentServiceError('invalid-input', 'The selected treatment is unavailable.')
+        const offering = await req.payload.create({
+          collection: 'clinictreatments',
+          context: { disableRevalidate: true },
+          data: { active: false, clinic: numericClinicId(clinicId), price: input.priceEUR, treatment: treatment.id },
+          depth: 0,
+          overrideAccess: true,
+          req,
+        })
+        await assertClinicTreatmentTarget(req, clinicId)
+        return { offering, treatment }
       },
-      depth: 0,
-      overrideAccess: true,
-      req,
-    })
-    return offeringDTO(offering, clinicId, treatment)
+      { allowSerializationRetry: false },
+    )
+    await dispatchClinicTreatmentChangeRevalidation({ doc: result.offering, req })
+    return offeringDTO(result.offering, clinicId, result.treatment)
   } catch (error: unknown) {
     if (error instanceof ClinicTreatmentServiceError) throw error
-    if (duplicateConstraint(error)) {
+    if (duplicateConstraint(error))
       throw new ClinicTreatmentServiceError('conflict', 'The clinic already offers this treatment.')
-    }
-    if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+    if (error && typeof error === 'object' && 'status' in error && error.status === 404)
       throw new ClinicTreatmentServiceError('invalid-input', 'The selected treatment is unavailable.')
-    }
     throw error
   }
 }
@@ -254,6 +267,7 @@ export const updateClinicTreatment = async (
   input: ClinicTreatmentUpdateInput,
 ): Promise<ClinicTreatmentOfferingDTO> => {
   const result = await runSerializableTransaction(req, async () => {
+    await assertClinicTreatmentTarget(req, clinicId)
     const existing = await req.payload.find({
       collection: 'clinictreatments',
       depth: 0,
@@ -302,6 +316,7 @@ export const updateClinicTreatment = async (
       throw new ClinicTreatmentServiceError('conflict', 'The clinic treatment changed.')
     }
 
+    await assertClinicTreatmentTarget(req, clinicId)
     return { current, treatment, updated }
   })
 

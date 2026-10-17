@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/features/clinicDashboard/bootstrap', () => ({
-  resolveClinicDashboardBootstrap: mocks.bootstrap,
+  resolveClinicScopeBootstrap: mocks.bootstrap,
 }))
 
 vi.mock('@/features/clinicDashboard/treatments/service', async (importOriginal) => {
@@ -39,7 +39,8 @@ const offering = {
 
 const request = (body?: unknown) =>
   ({
-    headers: new Headers({ authorization: 'Bearer token' }),
+    headers: new Headers({ authorization: 'Bearer token', 'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1' }),
+    routeParams: { clinicId: '42' },
     json: vi.fn(async () => body),
     payload: { logger: { error: vi.fn() } },
   }) as unknown as PayloadRequest
@@ -50,13 +51,18 @@ describe('Clinic Dashboard treatment endpoints', () => {
     mocks.bootstrap.mockResolvedValue({
       status: 'success',
       data: {
-        capabilities: [
-          'clinic-profile:view',
-          'clinic-profile:edit',
-          'clinic-treatments:view',
-          'clinic-treatments:edit',
+        clinics: [
+          {
+            id: '42',
+            name: 'Assigned clinic',
+            capabilities: [
+              'clinic-profile:view',
+              'clinic-profile:edit',
+              'clinic-treatments:view',
+              'clinic-treatments:edit',
+            ],
+          },
         ],
-        clinic: { id: '42', name: 'Assigned clinic' },
       },
     })
     mocks.read.mockResolvedValue({ catalogue: [offering.treatment], offerings: [offering] })
@@ -64,12 +70,39 @@ describe('Clinic Dashboard treatment endpoints', () => {
     mocks.update.mockResolvedValue({ ...offering, active: true })
   })
 
-  it('returns only the server-assigned clinic snapshot with private-live headers', async () => {
+  it('denies a foreign explicit clinic instead of using the local bootstrap clinic', async () => {
+    const req = request()
+    req.routeParams = { clinicId: '99' }
+    expect((await clinicDashboardTreatmentsGetHandler(req)).status).toBe(403)
+    expect(mocks.read).not.toHaveBeenCalled()
+  })
+
+  it('requires the scope contract and an explicit target rather than choosing the first clinic', async () => {
+    const missing = request()
+    missing.routeParams = {}
+    expect((await clinicDashboardTreatmentsGetHandler(missing)).status).toBe(400)
+    const legacy = request()
+    legacy.headers.delete('X-Findmydoc-Clinic-Scope-Contract')
+    expect((await clinicDashboardTreatmentsGetHandler(legacy)).status).toBe(400)
+    expect(mocks.bootstrap).not.toHaveBeenCalled()
+    expect(mocks.read).not.toHaveBeenCalled()
+  })
+
+  it('preserves a source mutation denial as private 403 for draft recovery', async () => {
+    mocks.update.mockRejectedValueOnce(Object.assign(new Error('Synthetic source denial'), { status: 403 }))
+    const req = request({ active: false, expectedRevision: offering.revision, offeringId: offering.id, priceEUR: 100 })
+    const response = await clinicDashboardTreatmentsPatchHandler(req)
+    expect(response.status).toBe(403)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(req.payload.logger.error).not.toHaveBeenCalled()
+  })
+
+  it('returns only the explicit current clinic snapshot with private-live headers', async () => {
     const response = await clinicDashboardTreatmentsGetHandler(request())
 
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
-    expect(response.headers.get('vary')).toBe('Authorization, X-Findmydoc-Clinic-Dashboard-Contract')
+    expect(response.headers.get('vary')).toBe('Authorization, X-Findmydoc-Clinic-Scope-Contract')
     expect(mocks.read).toHaveBeenCalledWith(expect.anything(), '42')
   })
 
@@ -106,7 +139,7 @@ describe('Clinic Dashboard treatment endpoints', () => {
     await expect(conflict.json()).resolves.toEqual({ error: { code: 'CLINIC_TREATMENT_CONFLICT' } })
   })
 
-  it('reuses bootstrap authorization failures without calling the service', async () => {
+  it('reuses current principal authorization failures without calling the service', async () => {
     mocks.bootstrap.mockResolvedValue({ status: 'access-denied' })
     const response = await clinicDashboardTreatmentsGetHandler(request())
 
@@ -118,8 +151,7 @@ describe('Clinic Dashboard treatment endpoints', () => {
     mocks.bootstrap.mockResolvedValue({
       status: 'success',
       data: {
-        capabilities: ['clinic-treatments:view'],
-        clinic: { id: '42', name: 'Assigned clinic' },
+        clinics: [{ id: '42', name: 'Assigned clinic', capabilities: ['clinic-treatments:view'] }],
       },
     })
 

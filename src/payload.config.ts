@@ -299,17 +299,17 @@ export default buildConfig({
       handler: clinicDashboardProfilePublishPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/treatments',
+      path: '/clinic-dashboard/clinics/:clinicId/treatments',
       method: 'get',
       handler: clinicDashboardTreatmentsGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/treatments',
+      path: '/clinic-dashboard/clinics/:clinicId/treatments',
       method: 'post',
       handler: clinicDashboardTreatmentsPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/treatments',
+      path: '/clinic-dashboard/clinics/:clinicId/treatments',
       method: 'patch',
       handler: clinicDashboardTreatmentsPatchHandler as PayloadHandler,
     },

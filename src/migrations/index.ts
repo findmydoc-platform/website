@@ -100,6 +100,7 @@ import * as migration_20261013_234505_clinic_notification_scope from './20261013
 import * as migration_20261014_064510_review_notification_transitions from './20261014_064510_review_notification_transitions'
 import * as migration_20261014_083610_review_decision_transitions from './20261014_083610_review_decision_transitions'
 import * as migration_20261017_084048_clinic_staff_identity_activation from './20261017_084048_clinic_staff_identity_activation'
+import * as migration_20261017_085356_clinic_groups_initial_membership from './20261017_085356_clinic_groups_initial_membership'
 
 export const migrations = [
   {
@@ -611,5 +612,10 @@ export const migrations = [
     up: migration_20261017_084048_clinic_staff_identity_activation.up,
     down: migration_20261017_084048_clinic_staff_identity_activation.down,
     name: '20261017_084048_clinic_staff_identity_activation',
+  },
+  {
+    up: migration_20261017_085356_clinic_groups_initial_membership.up,
+    down: migration_20261017_085356_clinic_groups_initial_membership.down,
+    name: '20261017_085356_clinic_groups_initial_membership',
   },
 ]

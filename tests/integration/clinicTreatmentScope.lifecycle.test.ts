@@ -252,6 +252,8 @@ describe('Current clinic treatment ownership and native ordering', () => {
     let entered!: () => void
     let release!: () => void
     let opponentEntered!: () => void
+    const firstAuthorizationKeys = new Set<string>()
+    let sharedAuthorizationKey: string | undefined
     const paused = new Promise<void>((resolve) => {
       entered = resolve
     })
@@ -292,14 +294,14 @@ describe('Current clinic treatment ownership and native ordering', () => {
     controls.beforeChange = [
       ...(oldControl ?? []),
       ({ data, originalDoc, req }) => {
-        if (
-          req.context.treatmentRace === 'second' &&
-          (data.key ?? originalDoc?.key) ===
-            (change === 'move'
-              ? `notification-authorization:clinic:${f.first.clinic.id}`
-              : `notification-authorization:staff:${f.principal.id}`)
-        )
-          opponentEntered()
+        const key = data.key ?? originalDoc?.key
+        if (typeof key === 'string' && key.startsWith('notification-authorization:')) {
+          if (req.context.treatmentRace === 'first') firstAuthorizationKeys.add(key)
+          if (req.context.treatmentRace === 'second' && firstAuthorizationKeys.has(key) && !sharedAuthorizationKey) {
+            sharedAuthorizationKey = key
+            opponentEntered()
+          }
+        }
         return data
       },
     ]
@@ -325,8 +327,17 @@ describe('Current clinic treatment ownership and native ordering', () => {
     let second: ReturnType<typeof settle> | undefined
     try {
       await waitFor(paused)
+      const accessKey =
+        change === 'move'
+          ? `notification-authorization:clinic:${f.first.clinic.id}`
+          : `notification-authorization:staff:${f.principal.id}`
+      expect(firstAuthorizationKeys.has(accessKey)).toBe(true)
+      const expectedSharedKey =
+        order === 'access-first' && change === 'revoke' ? `notification-authorization:group:${f.group.id}` : accessKey
+      expect(firstAuthorizationKeys.has(expectedSharedKey)).toBe(true)
       second = settle(order === 'business-first' ? revoke('second') : business('second'))
       await waitFor(opponentPaused)
+      expect(sharedAuthorizationKey).toBe(expectedSharedKey)
       release()
       expect((await first).error).toBeUndefined()
       if (order === 'access-first') expect((await second).error).toMatchObject({ status: 403 })

@@ -175,7 +175,7 @@ const runSerializableTransaction = async <Result>(
         throw new ClinicTreatmentServiceError('unavailable', 'A database transaction could not be started.')
       }
 
-      req.transactionID = Promise.resolve(transactionID)
+      req.transactionID = transactionID
       const result = await command()
       requireNotificationTransaction(req, transactionID)
       if ((await req.transactionID) !== transactionID)

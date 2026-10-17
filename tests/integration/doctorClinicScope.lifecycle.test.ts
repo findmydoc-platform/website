@@ -116,7 +116,7 @@ describe('Current clinic doctor source permissions and native ordering', () => {
     })
     await expect(
       payload.findByID({ collection: 'doctors', id: f.second.doctor.id, req: own, overrideAccess: false }),
-    ).rejects.toMatchObject({ status: 403 })
+    ).rejects.toMatchObject({ status: 404 })
     await replaceClinicStaffAssignment(operator, f.principal.id, { scope: 'group', groupId: f.group.id })
     const second = await f.request(f.second.clinic.id)
     await payload.update({
@@ -144,7 +144,7 @@ describe('Current clinic doctor source permissions and native ordering', () => {
     ).rejects.toMatchObject({ status: 403 })
     await expect(
       payload.findByID({ collection: 'doctors', id: f.foreign.doctor.id, req: second, overrideAccess: false }),
-    ).rejects.toMatchObject({ status: 403 })
+    ).rejects.toMatchObject({ status: 404 })
     await expect(
       payload.update({
         collection: 'doctors',
@@ -186,6 +186,7 @@ describe('Current clinic doctor source permissions and native ordering', () => {
     } as import('payload').RequiredDataFromCollectionSlug<'doctors'>
     const created = await payload.create({
       collection: 'doctors',
+      depth: 0,
       data,
       req: await f.request(f.second.clinic.id),
       overrideAccess: false,
@@ -309,6 +310,24 @@ describe('Current clinic doctor source permissions and native ordering', () => {
         overrideAccess: false,
       }),
     ).rejects.toMatchObject({ status: 403 })
+    await payload.update({
+      collection: 'doctors',
+      id: f.first.doctor.id,
+      data: { clinic: f.second.clinic.id, profileImage: null },
+      req: operator,
+      overrideAccess: false,
+    })
+    await expect(
+      payload.findByID({ collection: 'doctorMedia', id: ownImage.id, req, overrideAccess: false }),
+    ).rejects.toMatchObject({ status: 404 })
+    await expect(
+      payload.findByID({
+        collection: 'doctorMedia',
+        id: ownImage.id,
+        req: await f.request(f.second.clinic.id),
+        overrideAccess: false,
+      }),
+    ).rejects.toMatchObject({ status: 404 })
   })
   it('retains privileged native orphan cleanup after the doctor and clinic are hard deleted', async () => {
     const f = await fixtures()

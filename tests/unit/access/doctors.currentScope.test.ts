@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { PayloadRequest, RelationshipField } from 'payload'
 import { Doctors } from '@/collections/Doctors'
+import { DoctorMedia } from '@/collections/DoctorMedia'
 import { DoctorSpecialties } from '@/collections/DoctorSpecialties'
 import { DoctorTreatments } from '@/collections/DoctorTreatments'
 
@@ -46,6 +47,17 @@ describe('Current doctor source access', () => {
       ).toEqual({ clinic: { equals: 12 } })
     },
   )
+
+  it('requires matching media and doctor clinic owners within a current group set', async () => {
+    readClinicPrincipalAccess.mockResolvedValue({ staff: { id: 9 }, clinics: [{ id: 11 }, { id: 12 }] })
+    const req = { user: { id: 9, collection: 'clinicStaff' }, payload: {} } as unknown as PayloadRequest
+    expect(await DoctorMedia.access!.read!({ req })).toEqual({
+      or: [
+        { clinic: { equals: 11 }, 'doctor.clinic': { equals: 11 } },
+        { clinic: { equals: 12 }, 'doctor.clinic': { equals: 12 } },
+      ],
+    })
+  })
 
   it('restricts the selected path even when another clinic is currently eligible', async () => {
     readClinicPrincipalAccess.mockResolvedValue({ staff: { id: 9 }, clinics: [{ id: 11 }, { id: 12 }] })

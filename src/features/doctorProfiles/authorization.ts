@@ -38,11 +38,16 @@ async function creationClinic(req: PayloadRequest): Promise<number | null> {
   return access.clinics.some(({ id }) => id === local) ? local : null
 }
 
-export function doctorSourceAccess(path: 'clinic' | 'doctor.clinic' = 'clinic'): Access {
+export function doctorSourceAccess(
+  path: 'clinic' | 'doctor.clinic' | readonly ('clinic' | 'doctor.clinic')[] = 'clinic',
+): Access {
   return async ({ req }) => {
     if (isPlatformStaff({ req })) return true
     const ids = await clinicIds(req)
-    return ids.length === 1 ? { [path]: { equals: ids[0]! } } : ids.length ? { [path]: { in: ids } } : false
+    if (!ids.length) return false
+    if (typeof path === 'string') return { [path]: ids.length === 1 ? { equals: ids[0]! } : { in: ids } }
+    const matchingOwners = ids.map((id) => Object.fromEntries(path.map((field) => [field, { equals: id }])))
+    return matchingOwners.length === 1 ? matchingOwners[0]! : { or: matchingOwners }
   }
 }
 export const doctorCreateAccess: Access = async ({ req }) =>

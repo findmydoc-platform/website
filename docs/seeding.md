@@ -94,6 +94,13 @@ Behavior:
 
 Access control: platform staff only.
 
+Collection imports use Payload's native per-item create/update/delete boundaries. Each operation gets its own
+request-bound population loader, including localized follow-up writes and existing media-recovery operations.
+The caller's user, context, and any caller-owned transaction remain intact; the importer does not open a second
+transaction or discard an unknown transaction. This prevents relationship population from writing a completed
+item transaction back into a reused seed caller. Post relations and global imports already start without a reused
+request. Domain authorization hooks still enforce their current native transaction and membership requirements.
+
 POST policy:
 - POST is enabled in `preview`, `development`, `test`, and `production`.
 - Production still rejects demo and reset operations.
@@ -184,6 +191,77 @@ Baseline upserts ensure second run yields `{ created: 0 }` for each unit unless 
 Versioned review workflow fixtures additionally match each intended snapshot against native Payload versions before
 updating. This preserves the same moderation, appeal, response, and withdrawal sequence across repeated full demo
 runs and partial-history retries.
+
+## Group-access acceptance dataset
+
+The demo plan creates two private groups before resolving clinic memberships. It reuses existing clinic, doctor,
+treatment and review stable IDs; it does not create another copy of those source records. All demo clinics explicitly
+have approved Dashboard participation. Bosphorus remains publicly unpublished (`status: pending`), independently of its
+private participation.
+
+| Group or scope | Existing clinic fixtures | Acceptance role |
+| --- | --- | --- |
+| `seed-group-coastal` — Coastal Acceptance Group | Istanbul Smile Center (`aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`), Bosphorus Aesthetic Hospital (`seed-clinic-istanbul-bosphorus`), Izmir Coast Dental and Derm (`seed-clinic-izmir-coast`) | Three distinguishable selectable clinics, including one unpublished member |
+| `seed-group-capital` — Capital Acceptance Group | Ankara Harmony Dental Clinic (`seed-clinic-ankara-harmony`) | Foreign group for the Coastal manager and destination for a membership move |
+| Independent | Antalya MedVista Clinic (`seed-clinic-antalya-medvista`); the other ungrouped demo clinics remain independent | Local access without a group |
+
+The registered `clinicGroups` seed unit runs as the existing persisted platform seed operator. Both clinic import passes
+use that operator. A required nullable relation mapping treats an explicit null as independent; a supplied unresolved
+group reference skips the clinic and reports a warning. A missing group never creates an unintended independent clinic.
+Existing group membership changes still require the approved transfer/detachment command. Reseeding after a deliberate
+move reports the conflicting write as a failure and retains the current group rather than silently restoring the fixture.
+Resolve that scenario through the ordinary operator workflow, or run the separately authorized demo reset.
+
+Demo reset retains groups, their IDs, and all protected principals. It therefore retains immutable personal invitation
+origins that name the original group. The existing reset revokes local clinic assignments before replacing clinics;
+group assignments keep their group reference while current eligibility derives the newly created clinics. No reset or
+seed writes readiness, original completion evidence, invitation origin, provider identity or passwords. Group fixtures
+are upserted by stable ID, so repeated setup preserves their database IDs.
+
+`src/endpoints/seed/data/demo/groupAccessScenarios.json` is a seed-only acceptance descriptor, not a collection import or
+an account-activation source. Its stable IDs must be resolved to current Payload IDs; they never become runtime route IDs
+or grants. The two persona descriptors refer to private operator configuration names
+`FMD_ACCEPTANCE_COASTAL_MANAGER_EMAIL` and `FMD_ACCEPTANCE_CAPITAL_MANAGER_EMAIL`. The seed does not read these values or
+reserve those email addresses. It creates no clinic staff row that could collide with the trusted invitation workflow.
+
+After separate environment authorization, use the existing Clinic Group Admin personal invitation control for one person
+per group. Complete the environment-specific trusted invitation and password-selection flow before attempting clinic
+work. The Capital persona can first exercise incomplete activation, then finish the same invitation; do not erase an
+activated person's proof to manufacture an invalid case. Existing people require the ordinary assignment/lifecycle
+workflow if the personal invitation command reports a conflict. Keep all contact values and credentials outside fixtures,
+logs and shared artifacts. A descriptor, demo staff row or manually assigned scope does not establish a usable identity.
+
+Use the Coastal persona sequentially for isolated manager, local and unassigned scenarios; the ordinary complete
+assignment replacement preserves its original evidence. Restore its intended group assignment before the next manager
+scenario. This keeps the dataset at two intended people without merging independently observable outcomes.
+
+| Descriptor scenario | Authorized acceptance operation and observation |
+| --- | --- |
+| Multiple clinics / unpublished participation | Fresh login lists the three Coastal clinics; the unpublished Bosphorus clinic remains absent from public discovery. |
+| Local within group / independent local | Assign the same activated person locally to Istanbul Smile or Antalya MedVista. The current bootstrap contains only that clinic; foreign targets deny access. |
+| Last-used fallback | Store a preference, sign out, change eligibility or assignment, then start a fresh session. Validate initial-entry fallback. Confirmed loss during active use must instead require explicit recovery selection. |
+| Zero eligible clinics / revocation | Replace the assignment with unassigned. Fresh bootstrap is approved with no clinics; prior clinic operations deny access. |
+| Membership movement | Transfer Izmir Coast from Coastal to Capital through the existing native command. Coastal loses it immediately; a current local assignment to that clinic survives. Restore through the same command. |
+| Invalid activation | Before completing the Capital invitation, verify no clinic content is authorized. Complete its trusted flow afterward. |
+| Draft protection | Use the existing editor to create an unsaved draft, then exercise normal switching and confirmed access loss. Validate explicit save/discard or restricted discard and no draft under the destination. |
+| Exact notification target | Use the descriptor's existing clinic/review pairs. After separately qualified notification capture, produce a new ordinary event through its source workflow and open that exact target; foreign/missing targets create no acknowledgement. |
+| Per-clinic reporting | Switch between current authorized clinic IDs and inspect the real scoped reporting responses. Do not inject analytics counts or treat missing external measurements as a seeded metric. |
+
+The descriptor's doctor/review references resolve to the named clinic in data-integrity checks. Existing source workflows
+create drafts and notification events; the seed does not insert fabricated activation evidence, notification occurrences,
+receipts or analytics. Source capture/delivery qualification remains a separate prerequisite.
+
+The cache decision is `public-cached`: demo clinic publication and existing public source records use the established
+`operational-scaling` import context (`disableRevalidate`) and the existing terminal `seed-final-flush` planner/executor.
+Clinic/detail/listing/discovery tags retain their current owners and bounded paths. Groups and persona descriptors remain
+private-live and add no public tags, route family or invalidation mechanism. Production still accepts baseline reference
+seeding only and rejects every demo/reset/retry/queue path under its existing policy.
+
+Repository tests cover queue ordering/operator binding, nullable required references, fixture ownership, protected reset
+regressions and Production rejection. Native seed lifecycle coverage checks stable ID reuse, retained activated principal
+state and visible membership drift. Local deterministic results do not prove hosted provisioning, Preview login,
+authorized Preview reads or complete feature acceptance; record those observations only after the separately authorized
+operator workflow has run.
 
 ## Baseline Seed Units
 

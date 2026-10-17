@@ -443,7 +443,7 @@ describe('importCollection', () => {
       context: {
         disableRevalidate: true,
       },
-      req: undefined,
+      req: { context: {} },
     })
   })
 

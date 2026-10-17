@@ -4,6 +4,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { createAttachmentDraft, INQUIRY_ATTACHMENT_DRAFT_LIMITS } from '@/features/inquiryCommunication/service'
 import type { InquiryAttachmentStorageGateway } from '@/features/inquiryCommunication/storage'
 
+vi.mock('payload', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('payload')>()),
+  createLocalReq: async (
+    options: { context: unknown; user: unknown; req: Record<string, unknown> },
+    payload: unknown,
+  ) => ({ ...options.req, context: options.context, user: options.user, payload }),
+}))
+
 const inquiry = {
   activitySequence: 1,
   clinic: 8,

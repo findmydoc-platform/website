@@ -439,6 +439,16 @@ sitemap surfaces.
 
 ## Inquiry communication contract
 
+Every inquiry route selects its clinic through `:clinicId` and requires
+`X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1` alongside the inquiry contract header.
+Website resolves the current personal principal against that clinic and checks each stored inquiry,
+message, note, draft, attachment, and moderation-case relationship. The target never supplies a grant.
+Clinic command retries retain the original target. A native Payload transaction holds the shared
+clinic/staff authorization barrier through the final stored-access check and business commit.
+Direct native clinic writes use the same barrier independently of notification activation.
+Existing contact reauthentication, lifecycle, retention, attachment quotas, and actor permissions remain in force.
+Inquiry data is private and request-bound; this conversion has no public-cache impact.
+
 The inquiry capability uses focused custom Payload endpoints. Generic REST and GraphQL access to the inquiry
 aggregate, conversations, messages, internal notes, attachments, read positions, audit events, moderation cases, and
 moderation events stays disabled.
@@ -448,20 +458,20 @@ domain work. Version 1 excludes the version 2-only `moderation-restricted`, `mod
 
 | Method and route | Result |
 | --- | --- |
-| `GET /api/clinic-dashboard/inquiries` | Returns one cursor-paginated, filtered queue for the current clinic and an opaque change cursor. |
-| `GET /api/clinic-dashboard/inquiries/detail` | Returns one current-clinic detail projection and an opaque change cursor. |
-| `POST /api/clinic-dashboard/inquiries/messages` | Stores one idempotent external clinic message and any automatic `contacted` transition atomically. |
-| `POST /api/clinic-dashboard/inquiries/notes` | Stores one idempotent, immutable clinic-only note. |
-| `PATCH /api/clinic-dashboard/inquiries/state` | Applies one revision-checked handling or lifecycle command. |
-| `PUT /api/clinic-dashboard/inquiries/read-position` | Changes only the current staff member's personal read position. |
-| `POST /api/clinic-dashboard/inquiries/contact/reveal` | Reauthorizes and reveals raw contact values for a current-clinic spam inquiry. |
-| `POST /api/clinic-dashboard/inquiries/attachments/drafts` | Creates one actor- and inquiry-bound private upload draft. |
-| `POST /api/clinic-dashboard/inquiries/attachments/drafts/finalize` | Verifies and seals one own unused draft. |
-| `POST /api/clinic-dashboard/inquiries/attachments/drafts/discard` | Marks one own unused draft discarded and schedules non-blocking object cleanup. |
-| `GET /api/clinic-dashboard/inquiries/attachments/preview` | Reauthorizes and proxies allowlisted attachment bytes for preview. |
-| `GET /api/clinic-dashboard/inquiries/attachments/download` | Reauthorizes and proxies allowlisted attachment bytes for download. |
-| `POST /api/clinic-dashboard/inquiries/report` | Reports one opposite-party message, attachment, or conversation without changing visibility. |
-| `POST /api/clinic-dashboard/inquiries/appeal` | Submits the affected clinic's single text-only appeal against an active measure. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/inquiries` | Returns one cursor-paginated, filtered queue for the current clinic and an opaque change cursor. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/inquiries/detail` | Returns one current-clinic detail projection and an opaque change cursor. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/messages` | Stores one idempotent external clinic message and any automatic `contacted` transition atomically. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/notes` | Stores one idempotent, immutable clinic-only note. |
+| `PATCH /api/clinic-dashboard/clinics/:clinicId/inquiries/state` | Applies one revision-checked handling or lifecycle command. |
+| `PUT /api/clinic-dashboard/clinics/:clinicId/inquiries/read-position` | Changes only the current staff member's personal read position. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/contact/reveal` | Reauthorizes and reveals raw contact values for a current-clinic spam inquiry. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/attachments/drafts` | Creates one actor- and inquiry-bound private upload draft. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/attachments/drafts/finalize` | Verifies and seals one own unused draft. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/attachments/drafts/discard` | Marks one own unused draft discarded and schedules non-blocking object cleanup. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/inquiries/attachments/preview` | Reauthorizes and proxies allowlisted attachment bytes for preview. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/inquiries/attachments/download` | Reauthorizes and proxies allowlisted attachment bytes for download. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/report` | Reports one opposite-party message, attachment, or conversation without changing visibility. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/appeal` | Submits the affected clinic's single text-only appeal against an active measure. |
 
 Every operation requires an explicit Supabase Bearer token. Payload verifies that token even when request middleware
 already populated `req.user`, then requires the verified Supabase subject to equal the current `clinicStaff` identity.

@@ -31,7 +31,7 @@ vi.mock('@/features/inquiryModeration/service', () => ({
 }))
 
 vi.mock('@/features/clinicDashboard/authorization', () => ({
-  revalidateClinicDashboardRequest: mocks.authorizeClinic,
+  revalidateClinicDashboardTargetRequest: mocks.authorizeClinic,
 }))
 
 const request = ({
@@ -41,8 +41,10 @@ const request = ({
 }: { body?: unknown; collection?: string | null; contract?: string } = {}) =>
   ({
     context: {},
+    routeParams: { clinicId: '1' },
     headers: new Headers({
       'content-type': 'application/json',
+      'x-findmydoc-clinic-scope-contract': 'clinic-scope-v1',
       ...(contract ? { 'x-findmydoc-clinic-dashboard-contract': contract } : {}),
     }),
     json: vi.fn(async () => body),
@@ -161,7 +163,7 @@ describe('inquiry moderation endpoints', () => {
     const response = await clinicInquiryReportPostHandler(req)
 
     expect(response.status).toBe(201)
-    expect(mocks.authorizeClinic).toHaveBeenCalledWith(req, 'inquiry')
+    expect(mocks.authorizeClinic).toHaveBeenCalledWith(req, '1')
     expect(mocks.createReport).toHaveBeenCalledOnce()
   })
 

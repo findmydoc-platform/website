@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import config from '@payload-config'
@@ -23,6 +24,13 @@ import {
   createPatientTestUser,
 } from '../fixtures/testUsers'
 import { testSlug } from '../fixtures/testSlug'
+
+const identity = vi.hoisted(() => ({ validate: vi.fn() }))
+// External Bearer identity is isolated; current principal, clinic rights and receipts use native Payload/Postgres.
+vi.mock('@/auth/utilities/jwtValidation', async (original) => ({
+  ...(await original<typeof import('@/auth/utilities/jwtValidation')>()),
+  validateSupabaseBearerToken: identity.validate,
+}))
 
 vi.mock('@payloadcms/storage-s3', () => ({ s3Storage: () => (incomingConfig: unknown) => incomingConfig }))
 
@@ -331,11 +339,38 @@ describe('personal notifications across current clinic assignments', () => {
       )!
       expect(fixed.clinic.id).toBe(String(second))
       const selection = fixed.members.map((member) => member.notificationId)
-      const detail = async (clinicId: number, recordId: string) => {
-        const request = await createLocalReq({ user: manager.user! }, payload)
-        request.routeParams = { clinicId: String(clinicId), id: recordId }
-        request.headers.set('X-Findmydoc-Clinic-Scope-Contract', 'clinic-scope-v1')
-        request.headers.set('X-Findmydoc-Clinic-Dashboard-Contract', 'inquiry-communication-v2')
+      const personalPrincipal = manager.user
+      if (personalPrincipal?.collection !== 'clinicStaff' || !personalPrincipal.supabaseUserId?.trim())
+        throw new Error('Expected a clinic staff personal identity')
+      const personalBearer = randomUUID()
+      const foreignBearer = randomUUID()
+      const foreignSubject = randomUUID()
+      identity.validate.mockImplementation(async ({ token }: { token: string }) =>
+        token === personalBearer || token === foreignBearer
+          ? {
+              status: 'authenticated',
+              authData: {
+                userType: 'clinic',
+                supabaseUserId: token === personalBearer ? personalPrincipal.supabaseUserId : foreignSubject,
+              },
+            }
+          : { status: 'invalid' },
+      )
+      const detail = async (clinicId: number, recordId: string, bearer: string | null = personalBearer) => {
+        const request = await createLocalReq(
+          {
+            user: personalPrincipal,
+            req: {
+              headers: new Headers({
+                ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
+                'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
+                'X-Findmydoc-Clinic-Dashboard-Contract': 'inquiry-communication-v2',
+              }),
+              routeParams: { clinicId: String(clinicId), id: recordId },
+            },
+          },
+          payload,
+        )
         Object.defineProperty(request, 'url', {
           configurable: true,
           value:
@@ -363,6 +398,12 @@ describe('personal notifications across current clinic assignments', () => {
         })
         const filtered = await readClinicReviewPage(filteredRequest, String(second))
         expect(filtered.docs.map((item) => item.id)).not.toContain(exactId)
+      }
+      // A local Payload user never substitutes for the endpoint's independently verified personal identity.
+      for (const bearer of [null, foreignBearer]) {
+        const denied = await detail(second, exactId, bearer)
+        expect(denied.status).toBe(401)
+        expect(denied.headers.get('Cache-Control')).toContain('no-store')
       }
       const opened = await detail(second, exactId)
       expect(opened.status).toBe(200)

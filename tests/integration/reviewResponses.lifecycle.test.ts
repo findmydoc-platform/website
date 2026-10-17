@@ -627,15 +627,17 @@ describe('reviewResponses lifecycle', () => {
         depth: 0,
       }),
     ).rejects.toMatchObject({
-      data: {
-        errors: [
-          expect.objectContaining({
-            message: expect.stringContaining('does not belong to the assigned clinic'),
-            path: 'review',
-          }),
-        ],
-      },
+      status: 403,
+      data: null,
+      message: 'Clinic review access is unavailable for this operation.',
     })
+    const deniedWrites = await payload.find({
+      collection: 'reviewResponses',
+      where: { review: { equals: foreign.review.id } },
+      overrideAccess: true,
+      depth: 0,
+    })
+    expect(deniedWrites.docs).toHaveLength(0)
 
     const response = await payload.create({
       collection: 'reviewResponses',

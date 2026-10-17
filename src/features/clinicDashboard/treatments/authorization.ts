@@ -130,7 +130,7 @@ export const guardClinicTreatmentChange: CollectionBeforeChangeHook = async ({ d
   const previous = relationId(originalDoc?.clinic)
   const target =
     relationId(data.clinic ?? originalDoc?.clinic) ?? (operation === 'create' ? await creationClinic(req) : null)
-  if (!target || (originalDoc && !previous)) throw denied()
+  if (!target || (operation === 'update' && !previous)) throw denied()
   if (req.user?.collection === 'clinicStaff' && previous && previous !== target) throw denied()
   await protect(req, previous ? [previous, target] : [target])
   return { ...data, clinic: target }

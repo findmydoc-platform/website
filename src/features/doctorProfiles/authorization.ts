@@ -208,7 +208,13 @@ export const guardDoctorChange: CollectionBeforeChangeHook = async ({
   const previous = originalDoc ? await sourceClinic(req, slug, originalDoc as Record<string, unknown>) : null
   if (req.user?.collection === 'clinicStaff' && previous && previous !== id) throw denied()
   await protect(req, previous ? [previous, id] : [id])
-  return { ...data, ...(slug === 'doctors' ? { clinic: id } : {}) }
+  return {
+    ...data,
+    ...(slug === 'doctors' ? { clinic: id } : {}),
+    ...((slug === 'doctorspecialties' || slug === 'doctortreatments') && data.doctor != null
+      ? { doctor: relationId(data.doctor) }
+      : {}),
+  }
 }
 
 export async function verifyDoctorOperation<Result>({

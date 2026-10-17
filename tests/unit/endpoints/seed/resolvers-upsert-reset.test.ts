@@ -409,7 +409,64 @@ describe('resetCollections', () => {
     })
   })
 
+  it('rejects an inherited transaction before destructive reset work', async () => {
+    await expect(resetCollections(payload, 'demo', { req: { transactionID: 'outer-owner' } })).rejects.toThrow(
+      'independent native deletion owners',
+    )
+    expect(deleteDocuments).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'clinicMedia',
+    'doctorMedia',
+    'doctors',
+    'doctorspecialties',
+    'doctortreatments',
+    'clinicProfileDrafts',
+  ] as const)('deletes %s sequentially with separate native owners', async (mediaCollection) => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', '')
+    vi.stubEnv('NODE_ENV', 'test')
+    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs: collection === mediaCollection ? [{ id: 17 }, { id: 18 }] : [],
+    }))
+    let active = 0
+    let maximumActive = 0
+    deleteDocuments.mockImplementation(async ({ collection }: { collection: string }) => {
+      if (collection === mediaCollection) {
+        active += 1
+        maximumActive = Math.max(maximumActive, active)
+        await Promise.resolve()
+        active -= 1
+      }
+      return { docs: [], errors: [] }
+    })
+    await resetCollections(payload, 'demo')
+    const deletions = deleteDocuments.mock.calls
+      .map(([args]) => args)
+      .filter(({ collection }) => collection === mediaCollection)
+    expect(deletions.map(({ id }) => id)).toEqual([17, 18])
+    expect(maximumActive).toBe(1)
+    expect(deletions[0].req).not.toBe(deletions[1].req)
+    for (const deletion of deletions) {
+      expect(deletion).toMatchObject({ trash: true, req: { transactionID: undefined } })
+      expect(deletion).not.toHaveProperty('disableTransaction')
+    }
+  })
+
   it('deletes demo collections in order for demo reset', async () => {
+    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs: [
+        'clinicMedia',
+        'doctorMedia',
+        'doctors',
+        'doctorspecialties',
+        'doctortreatments',
+        'clinicProfileDrafts',
+      ].includes(collection)
+        ? [{ id: 17 }]
+        : [],
+    }))
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')
     vi.stubEnv('NODE_ENV', 'test')
@@ -456,6 +513,20 @@ describe('resetCollections', () => {
     expect(actualOrder).toEqual(expectedOrder)
     expect(deleteDocuments).toHaveBeenCalledTimes(expectedOrder.length)
     for (const [args] of deleteDocuments.mock.calls) {
+      if (
+        [
+          'clinicMedia',
+          'doctorMedia',
+          'doctors',
+          'doctorspecialties',
+          'doctortreatments',
+          'clinicProfileDrafts',
+        ].includes(args.collection)
+      ) {
+        expect(args).toMatchObject({ id: 17, trash: true, req: { transactionID: undefined } })
+        expect(args).not.toHaveProperty('disableTransaction')
+        continue
+      }
       expect(args).toEqual(
         expect.objectContaining({
           context: expect.objectContaining({ seedReset: true, skipHooks: true }),
@@ -504,6 +575,17 @@ describe('resetCollections', () => {
       if (collection === 'platformStaff') return { docs: [{ id: 'platform-1' }] }
       if (collection === 'clinicStaff') return { docs: [{ id: 7, clinic: 11 }] }
       if (collection === 'patients') return { docs: [{ id: 'patient-1' }] }
+      if (
+        [
+          'clinicMedia',
+          'doctorMedia',
+          'doctors',
+          'doctorspecialties',
+          'doctortreatments',
+          'clinicProfileDrafts',
+        ].includes(collection)
+      )
+        return { docs: [] }
       throw new Error(`Unexpected find: ${collection}:${JSON.stringify(where)}`)
     })
 
@@ -745,6 +827,18 @@ describe('resetCollections', () => {
   })
 
   it('deletes demo then baseline collections for baseline reset', async () => {
+    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs: [
+        'clinicMedia',
+        'doctorMedia',
+        'doctors',
+        'doctorspecialties',
+        'doctortreatments',
+        'clinicProfileDrafts',
+      ].includes(collection)
+        ? [{ id: 17 }]
+        : [],
+    }))
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')
     vi.stubEnv('NODE_ENV', 'test')

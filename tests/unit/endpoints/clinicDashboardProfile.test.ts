@@ -15,8 +15,8 @@ const mocks = vi.hoisted(() => ({
   save: vi.fn(),
 }))
 
-vi.mock('@/features/clinicDashboard/bootstrap', () => ({
-  resolveClinicDashboardBootstrap: mocks.bootstrap,
+vi.mock('@/features/clinicDashboard/authorization', () => ({
+  revalidateClinicDashboardTargetRequest: mocks.bootstrap,
 }))
 
 vi.mock('@/features/clinicDashboard/profile/service', async (importOriginal) => {
@@ -47,7 +47,8 @@ const snapshot = {
 
 const request = (body?: unknown) =>
   ({
-    headers: new Headers({ authorization: 'Bearer token' }),
+    headers: new Headers({ authorization: 'Bearer token', 'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1' }),
+    routeParams: { clinicId: '42' },
     json: vi.fn(async () => body),
     payload: {
       logger: {
@@ -60,23 +61,37 @@ describe('Clinic Dashboard profile endpoints', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.bootstrap.mockResolvedValue({
-      status: 'success',
-      data: {
-        clinic: { id: '42', name: 'Assigned clinic' },
-      },
+      status: 'authorized',
+      clinicId: '42',
     })
     mocks.read.mockResolvedValue(snapshot)
     mocks.create.mockResolvedValue(snapshot)
     mocks.save.mockResolvedValue(snapshot)
   })
 
-  it('returns the assigned clinic snapshot with private-live headers', async () => {
+  it('returns the explicit target clinic snapshot with private-live headers', async () => {
     const response = await clinicDashboardProfileGetHandler(request())
 
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
-    expect(response.headers.get('vary')).toBe('Authorization, X-Findmydoc-Clinic-Dashboard-Contract')
+    expect(response.headers.get('vary')).toBe(
+      'Authorization, X-Findmydoc-Clinic-Dashboard-Contract, X-Findmydoc-Clinic-Scope-Contract',
+    )
     expect(mocks.read).toHaveBeenCalledWith(expect.anything(), '42')
+  })
+
+  it.each([undefined, 'foreign', '0'])('rejects invalid or missing clinic target %s', async (clinicId) => {
+    const req = request()
+    req.routeParams = { clinicId }
+    expect((await clinicDashboardProfileGetHandler(req)).status).toBe(400)
+    expect(mocks.read).not.toHaveBeenCalled()
+  })
+
+  it('requires the explicit clinic scope contract', async () => {
+    const req = request()
+    req.headers.delete('X-Findmydoc-Clinic-Scope-Contract')
+    expect((await clinicDashboardProfileGetHandler(req)).status).toBe(400)
+    expect(mocks.read).not.toHaveBeenCalled()
   })
 
   it('does not accept a caller-provided clinic id', async () => {
@@ -91,7 +106,7 @@ describe('Clinic Dashboard profile endpoints', () => {
     expect(mocks.create).not.toHaveBeenCalled()
   })
 
-  it('creates a draft for the server-assigned clinic only', async () => {
+  it('creates a draft for the authorized path target only', async () => {
     const response = await clinicDashboardProfileDraftPostHandler(
       request({
         expectedPublishedRevision: 0,

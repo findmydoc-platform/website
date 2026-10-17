@@ -282,19 +282,25 @@ The profile capability uses five custom Payload endpoints:
 
 | Method and route | Result |
 | --- | --- |
-| `GET /api/clinic-dashboard/profile` | Returns the current published profile, the optional active draft, and safe Türkiye city options. |
-| `POST /api/clinic-dashboard/profile/draft` | Creates the assigned clinic's active draft from the current published profile after a published-revision check. |
-| `PUT /api/clinic-dashboard/profile/draft` | Replaces the assigned clinic's active draft after published- and draft-revision checks. |
-| `POST /api/clinic-dashboard/profile/draft/discard` | Deletes the assigned clinic's active draft after a draft-revision check. |
-| `POST /api/clinic-dashboard/profile/publish` | Atomically applies the draft-owned fields to the public clinic, deletes the draft, and triggers the established clinic revalidation plan. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/profile` | Returns the current published profile, the optional active draft, and safe Türkiye city options. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/profile/draft` | Creates the authorized target clinic's active draft from the current published profile after a published-revision check. |
+| `PUT /api/clinic-dashboard/clinics/:clinicId/profile/draft` | Replaces the authorized target clinic's active draft after published- and draft-revision checks. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/profile/draft/discard` | Deletes the authorized target clinic's active draft after a draft-revision check. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/profile/publish` | Atomically applies the draft-owned fields to the public clinic, deletes the draft, and triggers the established clinic revalidation plan. |
 
-Every request repeats bootstrap authorization and derives the clinic from the current approved `clinicStaff`
-assignment. No route accepts a clinic ID as authority. Payload stores at most one active `clinicProfileDrafts` record
-per clinic.
+Every request requires `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1` and an explicit clinic path target.
+Website repeats current principal, local or group assignment, clinic participation and operation authorization.
+The path selects a target; it does not grant access. The stored draft clinic is immutable and must match the target.
+Payload stores at most one active `clinicProfileDrafts` record per clinic.
+
+The profile command's existing native transaction owns the clinic/staff authorization barrier, revision checks,
+business writes and final current authorization through commit. Direct native draft writers use the same source
+barrier and stored ownership checks. Draft operations do not invalidate public output. Successful publication keeps
+the existing Website-owned post-commit clinic revalidation plan. Profile writes do not retry automatically.
 
 Draft creation accepts only `{ expectedPublishedRevision }`. The server copies the current published name,
 description, public postal address, supported languages, and opening hours into revision `1`; callers cannot supply
-initial field values or a clinic ID. Draft updates require the complete draft-owned field set plus
+initial field values or a clinic ID in the request body. Draft updates require the complete draft-owned field set plus
 `expectedPublishedRevision` and `expectedDraftRevision`.
 
 The response contract is:

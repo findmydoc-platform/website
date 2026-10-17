@@ -422,6 +422,7 @@ describe('resetCollections', () => {
     'doctors',
     'doctorspecialties',
     'doctortreatments',
+    'clinicProfileDrafts',
     'clinictreatments',
   ] as const)('deletes %s sequentially with separate native owners', async (mediaCollection) => {
     vi.stubEnv('VERCEL_ENV', '')
@@ -462,6 +463,7 @@ describe('resetCollections', () => {
         'doctors',
         'doctorspecialties',
         'doctortreatments',
+        'clinicProfileDrafts',
         'clinictreatments',
       ].includes(collection)
         ? [{ id: 17 }]
@@ -514,9 +516,15 @@ describe('resetCollections', () => {
     expect(deleteDocuments).toHaveBeenCalledTimes(expectedOrder.length)
     for (const [args] of deleteDocuments.mock.calls) {
       if (
-        ['clinicMedia', 'doctorMedia', 'doctors', 'doctorspecialties', 'doctortreatments', 'clinictreatments'].includes(
-          args.collection,
-        )
+        [
+          'clinicMedia',
+          'doctorMedia',
+          'doctors',
+          'doctorspecialties',
+          'doctortreatments',
+          'clinicProfileDrafts',
+          'clinictreatments',
+        ].includes(args.collection)
       ) {
         expect(args).toMatchObject({ id: 17, trash: true, req: { transactionID: undefined } })
         expect(args).not.toHaveProperty('disableTransaction')
@@ -571,9 +579,15 @@ describe('resetCollections', () => {
       if (collection === 'clinicStaff') return { docs: [{ id: 7, clinic: 11 }] }
       if (collection === 'patients') return { docs: [{ id: 'patient-1' }] }
       if (
-        ['clinicMedia', 'doctorMedia', 'doctors', 'doctorspecialties', 'doctortreatments', 'clinictreatments'].includes(
-          collection,
-        )
+        [
+          'clinicMedia',
+          'doctorMedia',
+          'doctors',
+          'doctorspecialties',
+          'doctortreatments',
+          'clinicProfileDrafts',
+          'clinictreatments',
+        ].includes(collection)
       )
         return { docs: [] }
       throw new Error(`Unexpected find: ${collection}:${JSON.stringify(where)}`)
@@ -824,6 +838,7 @@ describe('resetCollections', () => {
         'doctors',
         'doctorspecialties',
         'doctortreatments',
+        'clinicProfileDrafts',
         'clinictreatments',
       ].includes(collection)
         ? [{ id: 17 }]

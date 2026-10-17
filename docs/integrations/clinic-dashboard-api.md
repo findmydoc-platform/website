@@ -30,8 +30,7 @@ new-inquiry path. Guest and verified submissions capture one occurrence inside t
 subject to a persisted activation boundary that defaults to inactive. Installed `clinic-notifications-v1` support
 is negotiated separately from capture activation. Its [closed wire contract](../architecture/clinic-notifications-v1.md)
 defines the complete catalog for the following implementation slices. Personal explicit marking now persists first
-read receipts through the authorized acknowledgement command. Remaining producers, exact destination opening,
-continuation loading and independent cleanup remain separate slices.
+read receipts through the authorized acknowledgement command. Remaining producers, continuation loading and independent cleanup remain separate slices.
 Hosted capture stays inactive; local isolated acceptance does not establish Preview or Production availability.
 
 The personal notification feed reads the current union of eligible clinics for the principal's local or group
@@ -42,6 +41,15 @@ principal, view and contract version while each request rereads current eligibil
 notification contract header plus `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1`, with both headers in `Vary`.
 An eligible person with no clinics receives an empty feed and zero count; receipt commands reject complete clinic
 access loss. The closed notification contract defines full grouping, limits, visibility and atomic receipt semantics.
+
+Dashboard record URLs use `/clinics/:clinicId?section=messages&inquiry=:id` and
+`/clinics/:clinicId?section=reviews&review=:id`. These validated internal return targets carry routing intent through
+login, never authority. Direct links and notification opening use the same editor departure gate as a manual clinic
+switch. The ordinary exact detail read rechecks the current principal, clinic scope and record ownership independently
+of list filters or pagination. Missing or foreign records do not select a replacement. Fetching details creates no
+receipt: only the Dashboard's committed exact display permits a separate existing personal receipt command with the
+original fixed selection. That command rechecks current eligibility and retains atomic, expiry and unknown-outcome
+semantics. Optional anchors use the normal permitted detail projection without additional history reads.
 
 The [notification contract](../architecture/clinic-notifications-v1.md) defines acknowledgement eligibility at the final
 atomic server decision immediately before the native commit call. A decision before expiry may finish committing

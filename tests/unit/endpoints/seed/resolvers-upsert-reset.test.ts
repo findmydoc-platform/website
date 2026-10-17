@@ -416,9 +416,43 @@ describe('resetCollections', () => {
     expect(deleteDocuments).not.toHaveBeenCalled()
   })
 
+  it.each(['clinicMedia', 'doctorMedia'] as const)(
+    'deletes %s sequentially with separate native owners',
+    async (mediaCollection) => {
+      vi.stubEnv('VERCEL_ENV', '')
+      vi.stubEnv('DEPLOYMENT_ENV', '')
+      vi.stubEnv('NODE_ENV', 'test')
+      find.mockImplementation(async ({ collection }: { collection: string }) => ({
+        docs: collection === mediaCollection ? [{ id: 17 }, { id: 18 }] : [],
+      }))
+      let active = 0
+      let maximumActive = 0
+      deleteDocuments.mockImplementation(async ({ collection }: { collection: string }) => {
+        if (collection === mediaCollection) {
+          active += 1
+          maximumActive = Math.max(maximumActive, active)
+          await Promise.resolve()
+          active -= 1
+        }
+        return { docs: [], errors: [] }
+      })
+      await resetCollections(payload, 'demo')
+      const deletions = deleteDocuments.mock.calls
+        .map(([args]) => args)
+        .filter(({ collection }) => collection === mediaCollection)
+      expect(deletions.map(({ id }) => id)).toEqual([17, 18])
+      expect(maximumActive).toBe(1)
+      expect(deletions[0].req).not.toBe(deletions[1].req)
+      for (const deletion of deletions) {
+        expect(deletion).toMatchObject({ trash: true, req: { transactionID: undefined } })
+        expect(deletion).not.toHaveProperty('disableTransaction')
+      }
+    },
+  )
+
   it('deletes demo collections in order for demo reset', async () => {
     find.mockImplementation(async ({ collection }: { collection: string }) => ({
-      docs: collection === 'clinicMedia' ? [{ id: 17 }] : [],
+      docs: collection === 'clinicMedia' || collection === 'doctorMedia' ? [{ id: 17 }] : [],
     }))
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')
@@ -466,7 +500,7 @@ describe('resetCollections', () => {
     expect(actualOrder).toEqual(expectedOrder)
     expect(deleteDocuments).toHaveBeenCalledTimes(expectedOrder.length)
     for (const [args] of deleteDocuments.mock.calls) {
-      if (args.collection === 'clinicMedia') {
+      if (args.collection === 'clinicMedia' || args.collection === 'doctorMedia') {
         expect(args).toMatchObject({ id: 17, trash: true, req: { transactionID: undefined } })
         expect(args).not.toHaveProperty('disableTransaction')
         continue
@@ -519,7 +553,7 @@ describe('resetCollections', () => {
       if (collection === 'platformStaff') return { docs: [{ id: 'platform-1' }] }
       if (collection === 'clinicStaff') return { docs: [{ id: 7, clinic: 11 }] }
       if (collection === 'patients') return { docs: [{ id: 'patient-1' }] }
-      if (collection === 'clinicMedia') return { docs: [] }
+      if (collection === 'clinicMedia' || collection === 'doctorMedia') return { docs: [] }
       throw new Error(`Unexpected find: ${collection}:${JSON.stringify(where)}`)
     })
 
@@ -762,7 +796,7 @@ describe('resetCollections', () => {
 
   it('deletes demo then baseline collections for baseline reset', async () => {
     find.mockImplementation(async ({ collection }: { collection: string }) => ({
-      docs: collection === 'clinicMedia' ? [{ id: 17 }] : [],
+      docs: collection === 'clinicMedia' || collection === 'doctorMedia' ? [{ id: 17 }] : [],
     }))
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')

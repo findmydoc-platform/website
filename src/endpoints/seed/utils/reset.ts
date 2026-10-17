@@ -296,7 +296,7 @@ const deleteCollection = async (
   where: Where,
   req: Partial<PayloadRequest>,
 ): Promise<void> => {
-  if (collection === 'clinicMedia') {
+  if (collection === 'clinicMedia' || collection === 'doctorMedia') {
     const media = await payload.find({
       collection,
       where,

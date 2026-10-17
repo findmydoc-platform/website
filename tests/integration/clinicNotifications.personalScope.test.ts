@@ -367,6 +367,7 @@ describe('personal notifications across current clinic assignments', () => {
                 'X-Findmydoc-Clinic-Dashboard-Contract': 'inquiry-communication-v2',
               }),
               routeParams: { clinicId: String(clinicId), id: recordId },
+              searchParams: new URLSearchParams(kind === 'inquiry' ? { inquiryId: recordId } : undefined),
             },
           },
           payload,

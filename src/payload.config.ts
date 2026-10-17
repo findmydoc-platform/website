@@ -1,3 +1,4 @@
+import { clinicDashboardDoctorEndpoints } from './endpoints/clinicDashboardDoctors'
 import { ClinicGroups } from './collections/ClinicGroups'
 import { transactionalEmailEventSchema } from './features/transactionalEmail/eventSchema'
 import { validateTransactionalEmailStartup } from './features/transactionalEmail/environment'
@@ -204,6 +205,7 @@ export default buildConfig({
     preserveExtension: true,
   },
   endpoints: [
+    ...clinicDashboardDoctorEndpoints,
     { path: '/clinic-dashboard/clinics/:clinicId/reviews', method: 'get', handler: clinicDashboardReviewsGetHandler },
     {
       path: '/clinic-dashboard/clinics/:clinicId/reviews/:id/record',

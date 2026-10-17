@@ -135,7 +135,7 @@ describe('hosted capture native ownership and source ordering', () => {
     hooks.afterOperation = [
       ...(previous ?? []),
       async ({ args, operation, req, result }) => {
-        if ((operation === 'create' || operation === 'update') && args.data.active === true) {
+        if ((operation === 'create' || operation === 'updateByID') && args.data.active === true) {
           expect(operation).toBe('create')
           const id = await req.transactionID
           expect(id).toBeDefined()
@@ -241,6 +241,16 @@ describe('hosted capture native ownership and source ordering', () => {
   it('holds activation-first serialization through delayed native commit and captures the later source', async () => {
     await fixtureBoundary()
     hostedEnvironment()
+    const center = (
+      await payload.find({
+        collection: 'clinicNotificationControls',
+        where: { key: { equals: 'notification-center' } },
+        overrideAccess: true,
+        depth: 0,
+      })
+    ).docs[0]
+    if (!center) throw new Error('Expected the inactive capture center fixture')
+    const competingSource = await createLocalReq({ context: { hostedActivationFirstSource: true } }, payload)
     const entered = gate(),
       proceed = gate(),
       sourceAttempt = gate()
@@ -251,7 +261,7 @@ describe('hosted capture native ownership and source ordering', () => {
     hooks.afterOperation = [
       ...(previousAfter ?? []),
       async ({ args, operation, result }) => {
-        if ((operation === 'create' || operation === 'update') && args.data.active === true) {
+        if ((operation === 'create' || operation === 'updateByID') && args.data.active === true) {
           activationTime = (result as { activatedAt?: string }).activatedAt
           entered.release()
           await proceed.promise
@@ -260,8 +270,16 @@ describe('hosted capture native ownership and source ordering', () => {
       },
     ]
     hooks.beforeOperation = [
-      async ({ args, operation }) => {
-        if (operation === 'update' && args.data.nonce && !args.data.active) sourceAttempt.release()
+      async ({ args, operation, req }) => {
+        if (
+          operation === 'update' &&
+          'id' in args &&
+          String(args.id) === String(center.id) &&
+          req.context.hostedActivationFirstSource === true &&
+          args.data.nonce &&
+          !args.data.active
+        )
+          sourceAttempt.release()
         return args
       },
       ...(previousBefore ?? []),
@@ -272,7 +290,7 @@ describe('hosted capture native ownership and source ordering', () => {
     try {
       await entered.promise
       vi.setSystemTime(new Date(Date.parse(String(activationTime)) + 60_000))
-      creating = source('hosted-activation-first').finally(() => {
+      creating = source('hosted-activation-first', competingSource).finally(() => {
         sourceSettled = true
       })
       await sourceAttempt.promise
@@ -302,7 +320,7 @@ describe('hosted capture native ownership and source ordering', () => {
     hooks.afterOperation = [
       ...(previous ?? []),
       ({ args, operation, result }) => {
-        if ((operation === 'create' || operation === 'update') && args.data.active === true) {
+        if ((operation === 'create' || operation === 'updateByID') && args.data.active === true) {
           attempts++
           throw new Error('Synthetic native activation failure')
         }

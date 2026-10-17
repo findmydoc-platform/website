@@ -178,7 +178,7 @@ export const guardCaptureActivationBoundary: CollectionBeforeChangeHook = async 
 }
 
 export const finishHostedCaptureOperation: CollectionAfterOperationHook = async ({ req, result, operation }) => {
-  if (operation !== 'create' && operation !== 'update') return result
+  if (operation !== 'create' && operation !== 'updateByID') return result
   const authority = authorities.get(req)
   if (!authority) return result
   await requireHostedOwner(req, authority)

@@ -1,3 +1,5 @@
+import { hasPersonalGroupInvitationSource } from './personalGroupInvitationState'
+import { clinicAssignmentRelationId } from './clinicStaffAssignment'
 import { APIError, createLocalReq, type CollectionBeforeChangeHook, type PayloadRequest } from 'payload'
 import type { ClinicStaff } from '@/payload-types'
 import { createClient } from './supaBaseServer'
@@ -11,7 +13,7 @@ import { findClinicInvitationPrincipal } from '@/auth/actions/clinicInvitationPr
 export { hasClinicAccountCompletion } from './clinicAccountCompletionState'
 
 type Completion = NonNullable<ClinicStaff['accountCompletion']>
-type StaffBinding = { subject: string; clinicId: number; email: string; onboardingKey: string }
+type StaffBinding = { subject: string; clinicId?: number; groupId?: number; email: string; onboardingKey: string }
 type ProtectedWrite = {
   id: number
   field: 'accountCompletion' | 'legacyAccess' | 'activationReadiness'
@@ -117,7 +119,10 @@ export const guardClinicAccountEvidence: CollectionBeforeChangeHook<ClinicStaff>
       (originalDoc?.status !== 'approved' ||
         originalDoc.authSync?.status !== 'synced' ||
         originalDoc.supabaseUserId !== binding.subject ||
-        clinicId !== binding.clinicId ||
+        (binding.groupId
+          ? !hasPersonalGroupInvitationSource(originalDoc) ||
+            clinicAssignmentRelationId(originalDoc.group) !== binding.groupId
+          : clinicId !== binding.clinicId) ||
         normalizeEmail(originalDoc.email) !== binding.email ||
         (originalDoc.onboardingKey ?? '') !== binding.onboardingKey ||
         ('clinic' in data && data.clinic !== originalDoc.clinic) ||
@@ -167,7 +172,10 @@ async function writeEvidence(
       data: {
         [field]: value,
         ...(readiness
-          ? { activationReadiness: readiness, assignmentScope: 'local' as const }
+          ? {
+              activationReadiness: readiness,
+              assignmentScope: completion.source === 'group-initial-password' ? ('group' as const) : ('local' as const),
+            }
           : field === 'activationReadiness'
             ? { assignmentScope: 'local' as const }
             : {}),
@@ -402,19 +410,23 @@ export async function recordClinicInitialPasswordCompletion(
     staff.status !== 'approved' ||
     staff.authSync?.status !== 'synced' ||
     staff.supabaseUserId !== action.supabaseSubject ||
-    !staff.clinic
+    (!staff.clinic && !hasPersonalGroupInvitationSource(staff))
   ) {
     throw new APIError('Account completion is unavailable.', 403)
   }
-  const clinicId = typeof staff.clinic === 'object' ? staff.clinic.id : staff.clinic
-  const clinic = await req.payload.findByID({
-    collection: 'clinics',
-    id: clinicId,
-    depth: 0,
-    overrideAccess: true,
-    req,
-  })
-  if (!isClinicParticipationApproved(clinic)) throw new APIError('Account completion is unavailable.', 403)
+  const groupId = hasPersonalGroupInvitationSource(staff) ? clinicAssignmentRelationId(staff.group) : null
+  const clinicId = typeof staff.clinic === 'object' ? staff.clinic?.id : staff.clinic
+  const clinic = !groupId
+    ? await req.payload.findByID({
+        collection: 'clinics',
+        id: clinicId!,
+        depth: 0,
+        overrideAccess: true,
+        req,
+      })
+    : null
+  if (!groupId && (!clinic || !isClinicParticipationApproved(clinic)))
+    throw new APIError('Account completion is unavailable.', 403)
   const evidenceAt = await verifiedPasswordEvent(staff, input.token)
   if (!evidenceAt || Date.parse(evidenceAt) < Date.parse(action.createdAt))
     throw new APIError('Password verification is required.', 403)
@@ -422,7 +434,9 @@ export async function recordClinicInitialPasswordCompletion(
   const currentClinicId = typeof current?.clinic === 'object' ? current.clinic?.id : current?.clinic
   if (
     !current ||
-    currentClinicId !== clinicId ||
+    (groupId
+      ? !hasPersonalGroupInvitationSource(current) || clinicAssignmentRelationId(current.group) !== groupId
+      : currentClinicId !== clinicId) ||
     current.supabaseUserId !== action.supabaseSubject ||
     normalizeEmail(current.email) !== normalizeEmail(staff.email) ||
     current.onboardingKey !== staff.onboardingKey
@@ -434,16 +448,16 @@ export async function recordClinicInitialPasswordCompletion(
     current.id,
     'accountCompletion',
     {
-      source: 'initial-password',
+      source: groupId ? 'group-initial-password' : 'initial-password',
       subject: action.supabaseSubject,
-      clinicId: String(clinicId),
+      ...(groupId ? { principalId: String(current.id), groupId: String(groupId) } : { clinicId: String(clinicId) }),
       evidenceAt,
       observedAt: new Date().toISOString(),
       authActionId: String(action.id),
     } satisfies Completion,
     {
       subject: action.supabaseSubject,
-      clinicId,
+      ...(groupId ? { groupId } : { clinicId: clinicId! }),
       email: normalizeEmail(current.email),
       onboardingKey: current.onboardingKey!,
     },

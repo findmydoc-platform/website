@@ -1,3 +1,5 @@
+import { hasPersonalGroupInvitationSource } from '@/auth/utilities/personalGroupInvitationState'
+import { isPersonalGroupInvitationWrite } from '@/auth/utilities/personalGroupInvitationSource'
 import { createLocalReq, APIError, type CollectionBeforeChangeHook, type PayloadRequest } from 'payload'
 import type { ClinicStaff } from '@/payload-types'
 import { platformClinicTrustAccess } from '@/access/fieldAccess'
@@ -58,6 +60,7 @@ export async function guardClinicStaffAssignmentInput({
   const current = input.id
     ? await req.payload.findByID({ collection: 'clinicStaff', id: input.id, depth: 0, overrideAccess: true, req })
     : undefined
+  if (current && isPersonalGroupInvitationWrite(req, { ...current, ...input.data } as ClinicStaff)) return
   if (input.id && isResetRevocation(req, input.id, input.data, current)) return
   // An onboarding clinic reference without explicit scope grants no access before trusted activation.
   if (
@@ -87,7 +90,17 @@ export const validateClinicStaffAssignment: CollectionBeforeChangeHook<ClinicSta
       return data
     throw new APIError('Choose exactly one clinic, one group, or an unassigned scope.', 400)
   }
-  if (assignment.scope === 'group' && !hasClinicActivationReadiness(candidate))
+  const retainedPersonalInvitation =
+    originalDoc &&
+    hasPersonalGroupInvitationSource(originalDoc) &&
+    hasPersonalGroupInvitationSource(candidate) &&
+    clinicAssignmentRelationId(originalDoc.group) === clinicAssignmentRelationId(candidate.group)
+  if (
+    assignment.scope === 'group' &&
+    !hasClinicActivationReadiness(candidate) &&
+    !isPersonalGroupInvitationWrite(req, candidate) &&
+    !retainedPersonalInvitation
+  )
     throw new APIError('Complete identity activation before assigning group access.', 403)
   const previousGroup = clinicAssignmentRelationId(originalDoc?.group)
   const nextGroup = assignment.scope === 'group' ? assignment.groupId : null

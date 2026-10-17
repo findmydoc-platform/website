@@ -1,3 +1,4 @@
+import { guardPersonalGroupInvitationSource } from '@/auth/utilities/personalGroupInvitationSource'
 import {
   guardClinicStaffAssignmentInput,
   validateClinicStaffAssignment,
@@ -76,6 +77,7 @@ export const ClinicStaff: CollectionConfig = {
     beforeChange: [
       guardNotificationAuthorizationSession,
       guardClinicAccountEvidence,
+      guardPersonalGroupInvitationSource,
       validateClinicStaffAssignment,
       guardClinicInvitationAuthorization,
       validateClinicStaffStatusTransition,
@@ -106,6 +108,17 @@ export const ClinicStaff: CollectionConfig = {
       admin: { position: 'sidebar', description: 'Group for group scope. Clear the clinic when selecting a group.' },
     },
     {
+      name: 'personalGroupInvitation',
+      type: 'group',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+      fields: [
+        { name: 'groupId', type: 'text' },
+        { name: 'operatorId', type: 'text' },
+        { name: 'authorizedAt', type: 'date' },
+      ],
+    },
+    {
       name: 'activationReadiness',
       type: 'group',
       access: { create: () => false, read: () => false, update: () => false },
@@ -123,8 +136,14 @@ export const ClinicStaff: CollectionConfig = {
       access: { create: () => false, read: () => false, update: () => false },
       admin: { hidden: true },
       fields: [
-        { name: 'source', type: 'select', options: ['initial-password', 'legacy-password-login', 'legacy-audit'] },
+        {
+          name: 'source',
+          type: 'select',
+          options: ['initial-password', 'group-initial-password', 'legacy-password-login', 'legacy-audit'],
+        },
         { name: 'subject', type: 'text' },
+        { name: 'principalId', type: 'text' },
+        { name: 'groupId', type: 'text' },
         { name: 'clinicId', type: 'text' },
         { name: 'evidenceAt', type: 'date' },
         { name: 'observedAt', type: 'date' },

@@ -294,6 +294,128 @@ describe('clinic password evidence boundary', () => {
     expect(req.payload.update).not.toHaveBeenCalled()
   })
 
+  it('establishes personal identity readiness from the completed group invitation without clinic-origin evidence', async () => {
+    const req = request()
+    const current = {
+      ...staff,
+      clinic: null,
+      group: 4,
+      assignmentScope: 'group',
+      legacyAccess: undefined,
+      onboardingKey: 'personal-group-invitation:00000000-0000-4000-8000-000000000044',
+      personalGroupInvitation: { groupId: '4', operatorId: '3', authorizedAt: snapshotAt },
+    } as ClinicStaff
+    vi.mocked(req.payload.findByID).mockImplementation(
+      async ({ collection }) => (collection === 'clinicStaff' ? current : { id: 4, name: 'Group' }) as never,
+    )
+    vi.mocked(req.payload.update).mockImplementation(async ({ data, context }) => {
+      guardClinicAccountEvidence({ data, originalDoc: current, operation: 'update', req: { ...req, context } } as never)
+      return { ...current, ...data } as ClinicStaff
+    })
+    provider.readAction.mockResolvedValue({
+      id: 1,
+      actionType: 'clinic-invitation',
+      state: 'completed',
+      principal: { relationTo: 'clinicStaff', value: 22 },
+      supabaseSubject: subject,
+      createdAt: '2026-10-03T09:00:00.000Z',
+    })
+    const activated = await recordClinicInitialPasswordCompletion(
+      req,
+      { authActionId: 1, token: 'verified-token' },
+      'test',
+    )
+    expect(activated.assignmentScope).toBe('group')
+    expect(activated.clinic).toBeNull()
+    expect(activated.accountCompletion).toMatchObject({
+      source: 'group-initial-password',
+      principalId: '22',
+      groupId: '4',
+      subject,
+      authActionId: '1',
+    })
+    expect(activated.accountCompletion?.clinicId).toBeUndefined()
+    expect(activated.activationReadiness).toMatchObject({ version: 'identity-v1', principalId: '22', subject })
+  })
+
+  it.each([
+    'disabled',
+    'unsynced',
+    'unassigned',
+    'foreign-subject',
+    'generic-session',
+    'stale-password',
+    'revoked-during-proof',
+    'revoked-at-protected-write',
+  ] as const)('rejects personal group activation for %s', async (failure) => {
+    const req = request()
+    const current = {
+      ...staff,
+      clinic: null,
+      group: 4,
+      assignmentScope: 'group',
+      legacyAccess: undefined,
+      onboardingKey: 'personal-group-invitation:00000000-0000-4000-8000-000000000044',
+      personalGroupInvitation: { groupId: '4', operatorId: '3', authorizedAt: snapshotAt },
+    } as ClinicStaff
+    if (failure === 'disabled') current.status = 'disabled'
+    if (failure === 'unsynced') current.authSync = { status: 'failed' }
+    if (failure === 'unassigned') {
+      current.group = null
+      current.assignmentScope = 'unassigned'
+    }
+    vi.mocked(req.payload.findByID).mockImplementation(
+      async ({ collection }) =>
+        structuredClone(collection === 'clinicStaff' ? current : { id: 4, name: 'Group' }) as never,
+    )
+    provider.readAction.mockResolvedValue({
+      id: 1,
+      actionType: 'clinic-invitation',
+      state: 'completed',
+      principal: { relationTo: 'clinicStaff', value: 22 },
+      supabaseSubject: failure === 'foreign-subject' ? randomUUID() : subject,
+      createdAt: '2026-10-03T09:00:00.000Z',
+    })
+    if (failure === 'generic-session' || failure === 'stale-password')
+      provider.getClaims.mockResolvedValueOnce({
+        data: {
+          claims: {
+            sub: subject,
+            amr: [
+              {
+                method: failure === 'generic-session' ? 'magiclink' : 'password',
+                timestamp: Date.now() / 1000 - (failure === 'stale-password' ? 3600 : 0),
+              },
+            ],
+          },
+        },
+        error: null,
+      })
+    if (failure === 'revoked-during-proof')
+      provider.getClaims.mockImplementationOnce(async () => {
+        current.status = 'disabled'
+        return {
+          data: { claims: { sub: subject, amr: [{ method: 'password', timestamp: Date.now() / 1000 }] } },
+          error: null,
+        }
+      })
+    if (failure === 'revoked-at-protected-write')
+      vi.mocked(req.payload.update).mockImplementationOnce(async ({ data, context }) => {
+        current.status = 'disabled'
+        guardClinicAccountEvidence({
+          data,
+          originalDoc: current,
+          operation: 'update',
+          req: { ...req, context },
+        } as never)
+        return { ...current, ...data } as ClinicStaff
+      })
+    await expect(
+      recordClinicInitialPasswordCompletion(req, { authActionId: 1, token: 'verified-token' }, 'test'),
+    ).rejects.toThrow()
+    if (failure !== 'revoked-at-protected-write') expect(req.payload.update).not.toHaveBeenCalled()
+  })
+
   it('retains successful new completion evidence without a mutable AuthAction relationship', async () => {
     const req = request(true)
     provider.readAction.mockResolvedValue({

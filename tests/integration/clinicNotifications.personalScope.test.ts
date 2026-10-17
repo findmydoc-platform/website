@@ -26,6 +26,9 @@ import {
 import { testSlug } from '../fixtures/testSlug'
 
 const identity = vi.hoisted(() => ({ validate: vi.fn() }))
+const afterMock = vi.hoisted(() => vi.fn())
+// Direct native endpoint fixtures have no Next request scope for its external post-response scheduler.
+vi.mock('next/server.js', () => ({ after: afterMock }))
 // External Bearer identity is isolated; current principal, clinic rights and receipts use native Payload/Postgres.
 vi.mock('@/auth/utilities/jwtValidation', async (original) => ({
   ...(await original<typeof import('@/auth/utilities/jwtValidation')>()),
@@ -339,6 +342,31 @@ describe('personal notifications across current clinic assignments', () => {
       )!
       expect(fixed.clinic.id).toBe(String(second))
       const selection = fixed.members.map((member) => member.notificationId)
+      const selectedOccurrenceIds = (
+        await payload.find({
+          collection: 'clinicNotificationOccurrences',
+          where: { notificationId: { in: selection } },
+          depth: 0,
+          pagination: false,
+          overrideAccess: true,
+        })
+      ).docs.map((occurrence) => occurrence.id)
+      expect(selectedOccurrenceIds).toHaveLength(selection.length)
+      const personalReceipts = async () =>
+        (
+          await payload.find({
+            collection: 'clinicNotificationReadReceipts',
+            where: { clinicStaff: { equals: manager.user!.id } },
+            sort: 'id',
+            depth: 0,
+            pagination: false,
+            overrideAccess: true,
+          })
+        ).docs
+      const receiptsBeforeOpening = await personalReceipts()
+      expect(
+        receiptsBeforeOpening.filter((receipt) => selectedOccurrenceIds.includes(Number(receipt.occurrence))),
+      ).toHaveLength(0)
       const personalPrincipal = manager.user
       if (personalPrincipal?.collection !== 'clinicStaff' || !personalPrincipal.supabaseUserId?.trim())
         throw new Error('Expected a clinic staff personal identity')
@@ -417,15 +445,27 @@ describe('personal notifications across current clinic assignments', () => {
           .find((item) => item.presentationId === fixed.presentationId)
           ?.members.every((member) => member.readAt === null),
       ).toBe(true)
+      expect(await personalReceipts()).toEqual(receiptsBeforeOpening)
       expect((await detail(first, exactId)).status).toBe(404)
       expect((await detail(second, foreignId)).status).toBe(404)
       expect((await detail(second, '999999999')).status).toBe(404)
       await replaceClinicStaffAssignment(operator, Number(manager.user!.id), { scope: 'local', clinicId: first })
       try {
         expect((await detail(second, exactId)).status).toBe(403)
+        // The personal command filters inaccessible IDs while another clinic remains eligible.
+        // Its success envelope does not grant the exact target or create any receipt for it.
+        await expect(markClinicNotificationsRead(manager, { notificationIds: selection })).resolves.toEqual({
+          contractVersion: 'clinic-notifications-v1',
+          serverTime: expect.any(String),
+          acknowledged: true,
+        })
+        expect(await personalReceipts()).toEqual(receiptsBeforeOpening)
+        await replaceClinicStaffAssignment(operator, Number(manager.user!.id), { scope: 'unassigned' })
         await expect(markClinicNotificationsRead(manager, { notificationIds: selection })).rejects.toMatchObject({
+          code: 'CLINIC_ACCESS_DENIED',
           writeOutcome: 'not_committed',
         })
+        expect(await personalReceipts()).toEqual(receiptsBeforeOpening)
       } finally {
         await replaceClinicStaffAssignment(operator, Number(manager.user!.id), { scope: 'group', groupId: network })
       }
@@ -435,6 +475,17 @@ describe('personal notifications across current clinic assignments', () => {
           ?.members.every((member) => member.readAt === null),
       ).toBe(true)
       await markClinicNotificationsRead(manager, { notificationIds: selection })
+      const receiptsAfterRestoration = await personalReceipts()
+      const originalReceiptIds = new Set(receiptsBeforeOpening.map((receipt) => receipt.id))
+      expect(receiptsAfterRestoration.filter((receipt) => originalReceiptIds.has(receipt.id))).toEqual(
+        receiptsBeforeOpening,
+      )
+      expect(
+        receiptsAfterRestoration
+          .filter((receipt) => !originalReceiptIds.has(receipt.id))
+          .map((receipt) => Number(receipt.occurrence))
+          .sort((a, b) => a - b),
+      ).toEqual([...selectedOccurrenceIds].sort((a, b) => a - b))
       expect(
         (await page()).items
           .find((item) => item.presentationId === fixed.presentationId)

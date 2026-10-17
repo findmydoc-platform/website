@@ -9,6 +9,13 @@ const staff = {
   status: 'approved',
   supabaseUserId: 'subject-22',
   authSync: { status: 'synced' },
+  assignmentScope: 'local',
+  activationReadiness: {
+    version: 'identity-v1',
+    principalId: String(22),
+    subject: 'subject-22',
+    establishedAt: '2026-10-17T10:00:00.000Z',
+  },
   accountCompletion: {
     source: 'initial-password',
     subject: 'subject-22',
@@ -24,17 +31,34 @@ describe('private clinic participation', () => {
     expect(isClinicStaffAccessReady(staff)).toBe(true)
   })
 
+  it('keeps activation bound to the person after local assignment replacement', () => {
+    const converted = {
+      ...staff,
+      clinic: 9,
+      assignmentScope: 'local',
+      activationReadiness: {
+        version: 'identity-v1',
+        principalId: '22',
+        subject: 'subject-22',
+        establishedAt: '2026-10-17T10:00:00.000Z',
+      },
+    } as ClinicStaff
+    expect(isClinicStaffAccessReady(converted)).toBe(true)
+    expect(isClinicStaffAccessReady({ ...converted, id: 23 })).toBe(false)
+    expect(isClinicStaffAccessReady({ ...converted, supabaseUserId: 'replacement' })).toBe(false)
+  })
+
   it('denies an invited and synchronized participant without password evidence', () => {
-    expect(isClinicStaffAccessReady({ ...staff, accountCompletion: undefined })).toBe(false)
+    expect(isClinicStaffAccessReady({ ...staff, activationReadiness: undefined })).toBe(false)
   })
 
   it.each(['pending', 'rejected', 'disabled', 'offboarded'])('denies %s staff despite completion', (status) => {
     expect(isClinicStaffAccessReady({ ...staff, status } as ClinicStaff)).toBe(false)
   })
 
-  it('denies a replacement identity or clinic assignment', () => {
+  it('denies a replacement identity or missing explicit assignment', () => {
     expect(isClinicStaffAccessReady({ ...staff, supabaseUserId: 'other-subject' })).toBe(false)
-    expect(isClinicStaffAccessReady({ ...staff, clinic: 9 })).toBe(false)
+    expect(isClinicStaffAccessReady({ ...staff, assignmentScope: undefined })).toBe(false)
   })
 
   it('denies rejected and deleted clinics independently of participation', () => {

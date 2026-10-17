@@ -14,10 +14,10 @@ import { createMockPayload } from '../../helpers/testHelpers'
 import type { Payload } from 'payload'
 
 const accessStateMocks = vi.hoisted(() => ({
-  readClinicAccessState: vi.fn(),
+  readClinicPrincipalAccess: vi.fn(),
 }))
 
-vi.mock('@/auth/utilities/clinicAccessState', () => accessStateMocks)
+vi.mock('@/auth/utilities/clinicPrincipalAccess', () => accessStateMocks)
 
 type ClinicUser = PayloadClinicStaff
 type ClinicUserOverrides = Partial<ClinicUser> & { userType?: string }
@@ -71,14 +71,14 @@ describe('accessValidation edge cases', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    accessStateMocks.readClinicAccessState.mockResolvedValue(null)
+    accessStateMocks.readClinicPrincipalAccess.mockResolvedValue(null)
     mockPayload = createMockPayload()
     payload = mockPayload as unknown as Payload
   })
 
   describe('validateClinicAccess', () => {
     it('should handle database errors gracefully', async () => {
-      accessStateMocks.readClinicAccessState.mockRejectedValue(new Error('Database connection failed'))
+      accessStateMocks.readClinicPrincipalAccess.mockRejectedValue(new Error('Database connection failed'))
 
       const authData = {
         supabaseUserId: 'supabase-123',
@@ -108,7 +108,7 @@ describe('accessValidation edge cases', () => {
     })
 
     it('should allow an access-ready staff principal assigned to an approved clinic', async () => {
-      accessStateMocks.readClinicAccessState.mockResolvedValue({ clinic: { id: 44 }, staff: { id: 123 } })
+      accessStateMocks.readClinicPrincipalAccess.mockResolvedValue({ clinics: [{ id: 44 }], staff: { id: 123 } })
 
       const authData = {
         supabaseUserId: 'supabase-123',
@@ -120,6 +120,7 @@ describe('accessValidation edge cases', () => {
 
       const result = await validateClinicAccess(payload, authData, userResult)
       expect(result).toBe(true)
+      expect(accessStateMocks.readClinicPrincipalAccess).toHaveBeenCalledWith(payload, 123, undefined)
     })
   })
 
@@ -181,7 +182,7 @@ describe('accessValidation edge cases', () => {
 
       const result = await validateUserAccess(payload, authData, userResult)
       expect(result).toBe(false)
-      expect(accessStateMocks.readClinicAccessState).not.toHaveBeenCalled()
+      expect(accessStateMocks.readClinicPrincipalAccess).not.toHaveBeenCalled()
     })
 
     it('should fail when clinic access is denied', async () => {
@@ -228,7 +229,7 @@ describe('accessValidation edge cases', () => {
     })
 
     it('should handle database errors during clinic validation', async () => {
-      accessStateMocks.readClinicAccessState.mockRejectedValue(new Error('Database timeout'))
+      accessStateMocks.readClinicPrincipalAccess.mockRejectedValue(new Error('Database timeout'))
 
       const authData = {
         supabaseUserId: 'supabase-123',

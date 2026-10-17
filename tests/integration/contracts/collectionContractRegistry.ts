@@ -167,19 +167,28 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/countries.lifecycle.test.ts'],
   },
   doctorMedia: {
-    baseline: ['tests/integration/doctorMedia.lifecycle.test.ts'],
+    baseline: [
+      'tests/integration/doctorMedia.lifecycle.test.ts',
+      'tests/integration/doctorClinicScope.lifecycle.test.ts',
+    ],
     deep: ['tests/integration/doctorMedia.lifecycle.test.ts'],
   },
   doctors: {
-    baseline: ['tests/integration/doctors.lifecycle.test.ts'],
+    baseline: ['tests/integration/doctors.lifecycle.test.ts', 'tests/integration/doctorClinicScope.lifecycle.test.ts'],
     deep: ['tests/integration/doctors.lifecycle.test.ts', 'tests/integration/doctors.titles.test.ts'],
   },
   doctorspecialties: {
-    baseline: ['tests/integration/doctorSpecialties.lifecycle.test.ts'],
+    baseline: [
+      'tests/integration/doctorSpecialties.lifecycle.test.ts',
+      'tests/integration/doctorClinicScope.lifecycle.test.ts',
+    ],
     deep: ['tests/integration/doctorSpecialties.lifecycle.test.ts'],
   },
   doctortreatments: {
-    baseline: ['tests/integration/doctorTreatments.lifecycle.test.ts'],
+    baseline: [
+      'tests/integration/doctorTreatments.lifecycle.test.ts',
+      'tests/integration/doctorClinicScope.lifecycle.test.ts',
+    ],
     deep: ['tests/integration/doctorTreatments.lifecycle.test.ts'],
   },
   favoriteclinics: {

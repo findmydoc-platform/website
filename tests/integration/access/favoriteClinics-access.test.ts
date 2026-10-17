@@ -43,8 +43,8 @@ describe('FavoriteClinics access', () => {
     }
 
     await cleanupTrackedUsers(payload, { staffIds: createdStaffIds, patientIds: createdPatientIds })
-    await cleanupTestEntities(payload, 'clinics', slugPrefix)
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
+    await cleanupTestEntities(payload, 'clinics', slugPrefix)
   })
 
   it('lets platform users manage any patient favorite', async () => {

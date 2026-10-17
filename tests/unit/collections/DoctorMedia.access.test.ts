@@ -35,7 +35,7 @@ describe('DoctorMedia Collection Access Control', () => {
       const res = (await DoctorMedia.access!.read!(
         createAccessArgs<AccessArgs<Partial<DoctorMediaDoc>>>(req.user, { payload: mockPayload }),
       )) as unknown
-      expect(res).toEqual({ clinic: { equals: clinicId } })
+      expect(res).toEqual({ clinic: { equals: clinicId }, 'doctor.clinic': { equals: clinicId } })
     })
 
     test('Clinic staff without assignment denied', async () => {
@@ -87,7 +87,7 @@ describe('DoctorMedia Collection Access Control', () => {
         }),
       )
 
-      expect(res).toEqual({ clinic: { equals: clinicId } })
+      expect(res).toEqual({ clinic: { equals: clinicId }, 'doctor.clinic': { equals: clinicId } })
     })
 
     test('Non-patient static file read stays denied when scoped access is missing', async () => {

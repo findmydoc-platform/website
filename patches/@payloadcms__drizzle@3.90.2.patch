@@ -1,8 +1,46 @@
+diff --git a/dist/galleryUploadProvenance.js b/dist/galleryUploadProvenance.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..afa4ebfd17a96369c9447439a7e354fc37779e7a
+--- /dev/null
++++ b/dist/galleryUploadProvenance.js
+@@ -0,0 +1,24 @@
++const uniqueFailures = new WeakMap();
++const rollbacks = new WeakMap();
++export const recordGalleryUniqueFailure = (error, evidence) => {
++    uniqueFailures.set(error, Object.freeze(evidence));
++};
++export const readGalleryUniqueFailure = (error) => uniqueFailures.get(error);
++export const completeGalleryRollback = (adapter, transactionID) => {
++    const receipt = Object.freeze({});
++    rollbacks.set(receipt, Object.freeze({ adapter, transactionID }));
++    return receipt;
++};
++export const readGalleryRollback = (receipt) => rollbacks.get(receipt);
++
++export const installGalleryProvenanceReader = (adapter) => {
++    if (Object.hasOwn(adapter, 'galleryUploadProvenance')) return;
++    Object.defineProperty(adapter, 'galleryUploadProvenance', {
++        value: Object.freeze({
++            version: 'native-gallery-abort-v1',
++            readUniqueFailure: (error) => { const evidence = readGalleryUniqueFailure(error); return evidence?.adapter === adapter ? evidence : undefined; },
++            readRollback: (receipt) => { const evidence = readGalleryRollback(receipt); return evidence?.adapter === adapter ? evidence : undefined; }
++        }),
++        writable: false, configurable: false, enumerable: false
++    });
++};
 diff --git a/dist/transactions/beginTransaction.js b/dist/transactions/beginTransaction.js
-index b997960d6443005979890c1fdeef9271810a407c..f6929cfbeac78d99427c4d59d126a64d3c5860cc 100644
+index b997960d6443005979890c1fdeef9271810a407c..ff1f73f7022e905f349f70def0c4366feba4bf08 100644
 --- a/dist/transactions/beginTransaction.js
 +++ b/dist/transactions/beginTransaction.js
-@@ -8,6 +8,9 @@ export const beginTransaction = async function beginTransaction(options) {
+@@ -1,5 +1,7 @@
++import { installGalleryProvenanceReader } from '../galleryUploadProvenance.js';
+ import { v4 as uuid } from 'uuid';
+ export const beginTransaction = async function beginTransaction(options) {
++    installGalleryProvenanceReader(this);
+     let id;
+     try {
+         id = uuid();
+@@ -8,6 +10,9 @@ export const beginTransaction = async function beginTransaction(options) {
          let transaction;
          let transactionReady;
          let transactionFailed;
@@ -12,7 +50,7 @@ index b997960d6443005979890c1fdeef9271810a407c..f6929cfbeac78d99427c4d59d126a64d
          // Await initialization here
          // Prevent race conditions where the adapter may be
          // re-initializing, and `this.drizzle` is potentially undefined
-@@ -22,17 +25,23 @@ export const beginTransaction = async function beginTransaction(options) {
+@@ -22,17 +27,23 @@ export const beginTransaction = async function beginTransaction(options) {
              await new Promise((res, rej)=>{
                  resolve = ()=>{
                      res();
@@ -43,7 +81,7 @@ diff --git a/dist/transactions/commitTransaction.js b/dist/transactions/commitTr
 index 50c8251dbd29fe3ca7296800ed4fe5d2bb814057..df70d39b26c1a97e43ab10765858800d5167f866 100644
 --- a/dist/transactions/commitTransaction.js
 +++ b/dist/transactions/commitTransaction.js
-@@ -10,7 +10,8 @@ export const commitTransaction = async function commitTransaction(incomingID = ''
+@@ -10,8 +10,9 @@ export const commitTransaction = async function commitTransaction(incomingID = '
      delete this.sessions[transactionID];
      try {
          await session.resolve();
@@ -53,3 +91,51 @@ index 50c8251dbd29fe3ca7296800ed4fe5d2bb814057..df70d39b26c1a97e43ab10765858800d
 +        throw error;
      }
  };
+ 
+diff --git a/dist/transactions/rollbackTransaction.js b/dist/transactions/rollbackTransaction.js
+index fab4c91c4565003876c56225256d96b0ff2048b8..4df739eddfc1e367d979ad41360577669fe30cab 100644
+--- a/dist/transactions/rollbackTransaction.js
++++ b/dist/transactions/rollbackTransaction.js
+@@ -1,3 +1,4 @@
++import { completeGalleryRollback } from '../galleryUploadProvenance.js';
+ export const rollbackTransaction = async function rollbackTransaction(incomingID = '') {
+     const transactionID = incomingID instanceof Promise ? await incomingID : incomingID;
+     // if multiple operations are using the same transaction, the first will flow through and delete the session.
+@@ -11,6 +12,7 @@ export const rollbackTransaction = async function rollbackTransaction(incomingID
+     delete this.sessions[transactionID];
+     // end the session promise in failure by calling reject
+     await session.reject();
++    return completeGalleryRollback(this, transactionID);
+ };
+ 
+ //# sourceMappingURL=rollbackTransaction.js.map
+\ No newline at end of file
+diff --git a/dist/upsertRow/handleUpsertError.js b/dist/upsertRow/handleUpsertError.js
+index 433591dd46b31de6bb888fee9b35af17fe79a36d..10e123adaa042305fbbfea376e28cd013e0148e6 100644
+--- a/dist/upsertRow/handleUpsertError.js
++++ b/dist/upsertRow/handleUpsertError.js
+@@ -1,3 +1,4 @@
++import { recordGalleryUniqueFailure } from '../galleryUploadProvenance.js';
+ import { ValidationError } from 'payload';
+ /**
+  * Handles unique constraint violation errors from PostgreSQL and SQLite,
+@@ -45,7 +46,7 @@ import { ValidationError } from 'payload';
+                 }
+             }
+         }
+-        throw new ValidationError({
++        const mapped = new ValidationError({
+             id,
+             collection: collectionSlug,
+             errors: [
+@@ -58,6 +59,10 @@ import { ValidationError } from 'payload';
+             global: globalSlug,
+             req
+         }, req?.t);
++        if (error.code === '23505') {
++            recordGalleryUniqueFailure(mapped, { adapter, code: '23505', collection: collectionSlug, table: tableName, field: fieldName, req, transactionID: req?.transactionID });
++        }
++        throw mapped;
+     }
+     // Re-throw non-constraint errors
+     throw caughtError;

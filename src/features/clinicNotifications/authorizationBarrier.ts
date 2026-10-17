@@ -1,3 +1,4 @@
+import { createColdGalleryAuthorizationControl } from './coldAuthorizationControl'
 import { randomUUID } from 'node:crypto'
 import { createLocalReq, type PayloadRequest, type Where } from 'payload'
 import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
@@ -42,14 +43,7 @@ export async function lockNotificationAuthorization(req: PayloadRequest, keys: r
         overrideAccess: true,
         req: transactionReq,
       })
-    else
-      await req.payload.create({
-        collection: 'clinicNotificationControls',
-        data: { key: controlKey, active: false, nonce: randomUUID() },
-        depth: 0,
-        overrideAccess: true,
-        req: transactionReq,
-      })
+    else await createColdGalleryAuthorizationControl(transactionReq, controlKey, randomUUID())
   }
 }
 

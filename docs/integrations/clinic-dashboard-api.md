@@ -492,6 +492,17 @@ normalizes orientation and strips metadata before generating its registered imag
 absolute protected image-operation URLs. The optional `size=thumbnail` selects a stored registered size; neither
 the URL nor its encrypted Dashboard token grants access. Public media URLs keep their existing behavior.
 
+The Website instance installs the bounded native upload owner from [ADR 036](../adrs/036-adr-clinic-authorization-mutation-ordering.md#bounded-native-media-initialization-retry).
+Direct root `payload.create` uploads and this custom multipart handler retain native transaction ownership. At most
+three total native attempts are permitted only for an attested PostgreSQL `23505` from the exact cold authorization
+control initializer before upload, followed by confirmed rollback of the original owner. Each attempt retains its
+original person, clinic and bytes, derives fresh request/file/data state, and reruns current access and draft quota.
+The version-pinned lifecycle evidence also preserves a confirmed inner rollback through missing outer cleanup.
+Borrowed or replaced owners, unrelated or caller-forged errors, upload/media effects, commit attempts and uncertain
+outcomes never replay. The browser, BFF and provider do not replay an unknown submitted result. Generic REST creates
+that call the native operation directly do not acquire this Local API exception. Successful media publication and
+cache invalidation keep their existing hooks; private replay metadata changes no public freshness value.
+
 Save accepts `{ expectedRevision, items: [{ mediaId, alt, captionText? }] }`; array order is public order and the first
 item is the main image. A serializable transaction verifies the revision, ownership, uniqueness, maximum count, and
 required alt text, publishes selected media, returns removed media to `draft`, and updates the gallery, derived

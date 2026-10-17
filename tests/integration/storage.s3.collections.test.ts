@@ -30,7 +30,7 @@ type StorageMatrixCase = {
   }) => RegExp
 }
 
-const storageConfig = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'test' })
+const storageConfig = resolveS3StorageConfig({ ...process.env, DEPLOYMENT_ENV: 'test' })
 const slugPrefix = testSlug('storage.s3.collections.test.ts')
 
 const storageObjectUrl = (storagePath: string): string =>
@@ -141,7 +141,7 @@ describe('S3Mock media collection matrix', () => {
       const response = await fetch(storageObjectUrl(created.storagePath))
       expect(response.status).toBe(200)
       expect(response.headers.get('content-type')).toContain('image/png')
-      expect(Buffer.from(await response.arrayBuffer())).toEqual(file.data)
+      expect(Buffer.from(await response.arrayBuffer()), entry.collection).toEqual(file.data)
     }
   })
 

@@ -1,3 +1,4 @@
+import { installClinicGalleryUploadReplay } from '@/features/clinicDashboard/gallery/uploadReplay'
 import { clinicDashboardDoctorEndpoints } from './endpoints/clinicDashboardDoctors'
 import { ClinicGroups } from './collections/ClinicGroups'
 import { transactionalEmailEventSchema } from './features/transactionalEmail/eventSchema'
@@ -697,6 +698,7 @@ export default buildConfig({
   logger: createPayloadLoggerConfig(process.env),
   onInit: async (payload) => {
     protectAuthActionProtocolStorage(payload)
+    installClinicGalleryUploadReplay(payload)
     if (process.env.NEXT_PHASE === 'phase-production-build') {
       return
     }

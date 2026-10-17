@@ -94,6 +94,13 @@ Behavior:
 
 Access control: platform staff only.
 
+Collection imports use Payload's native per-item create/update/delete boundaries. Each operation gets its own
+request-bound population loader, including localized follow-up writes and existing media-recovery operations.
+The caller's user, context, and any caller-owned transaction remain intact; the importer does not open a second
+transaction or discard an unknown transaction. This prevents relationship population from writing a completed
+item transaction back into a reused seed caller. Post relations and global imports already start without a reused
+request. Domain authorization hooks still enforce their current native transaction and membership requirements.
+
 POST policy:
 - POST is enabled in `preview`, `development`, `test`, and `production`.
 - Production still rejects demo and reset operations.

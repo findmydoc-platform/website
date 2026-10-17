@@ -38,7 +38,13 @@ describe('native group-access seed preservation', () => {
   const seed = async (collection: 'clinicGroups' | 'clinics', stableIds?: string[]) => {
     const step = demoPlan.find((step) => step.kind === 'collection' && step.collection === collection)!
     if (step.kind !== 'collection') throw new Error('Missing collection seed')
-    return importCollection({
+    const callerState = {
+      transactionID: operator.transactionID,
+      payloadDataLoader: operator.payloadDataLoader,
+      context: operator.context,
+      user: operator.user,
+    }
+    const result = await importCollection({
       payload,
       kind: 'demo',
       collection,
@@ -49,6 +55,11 @@ describe('native group-access seed preservation', () => {
       resolvers: createStableIdResolvers(payload),
       req: operator,
     })
+    expect(operator.transactionID).toBe(callerState.transactionID)
+    expect(operator.payloadDataLoader).toBe(callerState.payloadDataLoader)
+    expect(operator.context).toBe(callerState.context)
+    expect(operator.user).toBe(callerState.user)
+    return result
   }
   beforeAll(async () => {
     payload = await getPayload({ config })

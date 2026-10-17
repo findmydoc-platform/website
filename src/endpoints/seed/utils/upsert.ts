@@ -1,5 +1,6 @@
 import type { CollectionSlug, Payload, PayloadRequest, Where } from 'payload'
 import { resolveS3StorageBucket } from '@/plugins/storageConfig'
+import { cloneSeedOperationRequest as cloneOperationReq } from './operation-request'
 
 export type UpsertResult = {
   created: boolean
@@ -86,15 +87,6 @@ function buildOperationReq(
     context: {
       ...((req?.context as Record<string, unknown> | undefined) ?? {}),
       ...context,
-    },
-  }
-}
-
-function cloneOperationReq(req: Partial<PayloadRequest>): Partial<PayloadRequest> {
-  return {
-    ...req,
-    context: {
-      ...((req.context as Record<string, unknown> | undefined) ?? {}),
     },
   }
 }
@@ -313,7 +305,7 @@ async function clearTrashedUploadFilenames(options: {
         },
         // Payload hooks can extend request context. Keep this one-off cloud
         // suppression out of the following upload operation.
-        req: buildOperationReq(req, recoveryContext),
+        req: cloneOperationReq(buildOperationReq(req, recoveryContext)),
       })
       cleared += 1
     }

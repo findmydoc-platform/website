@@ -4,7 +4,14 @@ import { sendPostHogException } from '@/posthog/api'
 import { CLINIC_NOTIFICATIONS_CONTRACT_VERSION, notificationErrorCodes } from './contracts'
 
 const diagnosticSchema = z.strictObject({
-  operation: z.enum(['feed_read', 'summary_read', 'source_capture', 'acknowledge']),
+  operation: z.enum([
+    'feed_read',
+    'summary_read',
+    'source_capture',
+    'acknowledge',
+    'capture_prepare',
+    'capture_activate',
+  ]),
   result: z.enum(['success', 'rejected', 'failure']),
   errorCode: z.enum(notificationErrorCodes).optional(),
   elapsedMs: z.number().int().nonnegative(),

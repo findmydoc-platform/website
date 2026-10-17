@@ -1,12 +1,9 @@
 import type { CollectionConfig, Field } from 'payload'
 
 import { computedOnlyFieldAccess, platformOnlyFieldAccess, staffProfileFieldReadAccess } from '@/access/fieldAccess'
-import {
-  platformOrAssignedClinicMutation,
-  platformOrOwnClinicResource,
-  platformOrOwnClinicReviewWorkflowVersions,
-} from '@/access/scopeFilters'
+import { platformOrOwnClinicReviewWorkflowVersions } from '@/access/scopeFilters'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { currentClinicReviewCreateAccess, currentClinicReviewResourceAccess } from '@/access/clinicReviewScope'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { prepareReviewAppealChange, preventReviewWorkflowVersionRestore } from '@/collections/reviewWorkflow'
 import {
@@ -89,8 +86,8 @@ export const ReviewAppeals: CollectionConfig = {
     description: 'Clinic appeals against approved patient reviews. Appeals are never public.',
   },
   access: {
-    create: platformOrAssignedClinicMutation,
-    read: platformOrOwnClinicResource,
+    create: async (args) => isPlatformStaff(args) || currentClinicReviewCreateAccess(args),
+    read: currentClinicReviewResourceAccess,
     readVersions: platformOrOwnClinicReviewWorkflowVersions,
     update: ({ req }) => isPlatformStaff({ req }),
     delete: () => false,

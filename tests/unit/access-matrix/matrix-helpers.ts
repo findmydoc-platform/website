@@ -37,6 +37,7 @@ export type ConditionalScenarioKind =
   | 'always-false'
   | 'clinic-approved'
   | 'clinic-scope'
+  | 'clinic-source-public'
   | 'clinic-staff-update'
   | 'patient-scope'
   | 'patient-update-self'
@@ -240,6 +241,7 @@ type ConditionalScenario =
   | { kind: 'always-false' }
   | { kind: 'clinic-approved'; path: string; value: string }
   | { kind: 'clinic-scope'; path: string }
+  | { kind: 'clinic-source-public'; path: string; activePath?: string }
   | { kind: 'clinic-staff-update'; path: string }
   | { kind: 'patient-scope'; path: string }
   | { kind: 'patient-update-self' }
@@ -272,6 +274,8 @@ function convertMetaToScenario(config: ConditionalScenarioMeta): ConditionalScen
   switch (config.kind) {
     case 'clinic-approved':
       return { kind: 'clinic-approved', path: config.path ?? 'status', value: config.value ?? 'approved' }
+    case 'clinic-source-public':
+      return { kind: 'clinic-source-public', path: config.path ?? 'clinic', activePath: config.statusPath }
     case 'clinic-scope':
       return { kind: 'clinic-scope', path: config.path ?? 'clinic' }
     case 'clinic-staff-update':
@@ -572,9 +576,17 @@ function validateConditional(ctx: ValidationContext, value: unknown) {
     case 'clinic-approved':
       if (ctx.userType === 'platform') {
         expect(value).toBe(true)
+      } else if (ctx.userType === 'clinic') {
+        expectFilter(value, 'id', getClinicIdFromUser(ctx.user), ctx)
       } else {
         expectFilter(value, scenario.path, scenario.value, ctx)
       }
+      return
+    case 'clinic-source-public':
+      if (ctx.userType === 'platform') expect(value).toBe(true)
+      else if (ctx.userType === 'clinic') expectFilter(value, scenario.path, getClinicIdFromUser(ctx.user), ctx)
+      else if (scenario.activePath) expectFilter(value, scenario.activePath, true, ctx)
+      else expect(value).toBe(true)
       return
     case 'clinic-scope':
       validateClinicScoped(ctx, value, scenario.path)

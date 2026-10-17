@@ -1,14 +1,21 @@
 import { createLocalReq, type PayloadRequest } from 'payload'
-import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
+import { readClinicPrincipalAccess } from '@/auth/utilities/clinicPrincipalAccess'
+import { readClinicStaffAssignment } from '@/auth/utilities/clinicStaffAssignment'
 import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
-import { readNotificationSourceProjection } from './projection'
-import { lockNotificationAuthorization, notificationAcknowledgementKeys } from './authorizationBarrier'
+import { createNotificationSourceProjector } from './projection'
+import {
+  clinicStaffAuthorizationKey,
+  clinicGroupAuthorizationKey,
+  lockNotificationAuthorization,
+  notificationClinicAuthorizationKey,
+} from './authorizationBarrier'
 import {
   CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
   NOTIFICATION_READ_MAX_BYTES,
   notificationReadInputSchema,
   notificationMemberSchema,
   notificationReadSuccessSchema,
+  type NotificationMember,
 } from './contracts'
 import { ClinicNotificationError } from './errors'
 import { recordNotificationDiagnostic } from './diagnostics'
@@ -58,10 +65,11 @@ export async function markClinicNotificationsRead(
     if (Buffer.byteLength(JSON.stringify(parsed.data)) > NOTIFICATION_READ_MAX_BYTES)
       throw new ClinicNotificationError('PAYLOAD_TOO_LARGE')
     if (req.user?.collection !== 'clinicStaff') throw new ClinicNotificationError('UNAUTHENTICATED')
-    const initialAccess = await readClinicAccessState(req.payload, req.user.id, req)
-    if (!initialAccess) throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')
+    const initialAccess = await readClinicPrincipalAccess(req.payload, req.user.id, req)
+    if (!initialAccess || !initialAccess.clinics.length) throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')
     const selectedIds = new Set(parsed.data.notificationIds)
     const ids = [...selectedIds]
+    const initialProject = createNotificationSourceProjector(req)
     let hasUnread = false
     if (ids.length) {
       for (let page = 1; ; page++) {
@@ -75,7 +83,7 @@ export async function markClinicNotificationsRead(
           req,
           where: {
             and: [
-              { clinicScopeId: { equals: String(initialAccess.clinic.id) } },
+              { clinicScopeId: { in: initialAccess.clinics.map(({ id }) => String(id)) } },
               { expiresAt: { greater_than: new Date().toISOString() } },
             ],
           },
@@ -95,7 +103,7 @@ export async function markClinicNotificationsRead(
           })
           if (
             !receipts.docs.length &&
-            (await readNotificationSourceProjection(req, occurrenceMember(occurrence))).visible
+            (await initialProject(occurrenceMember(occurrence), String(occurrence.clinicScopeId))).visible
           ) {
             hasUnread = true
             break
@@ -105,9 +113,8 @@ export async function markClinicNotificationsRead(
       }
     }
     if (!hasUnread) {
-      const current = await readClinicAccessState(req.payload, req.user.id, req)
-      if (!current || String(current.clinic.id) !== String(initialAccess.clinic.id))
-        throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')
+      const current = await readClinicPrincipalAccess(req.payload, req.user.id, req)
+      if (!current || !current.clinics.length) throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')
       await recordNotificationDiagnostic(req, {
         operation: 'acknowledge',
         result: 'success',
@@ -129,14 +136,35 @@ export async function markClinicNotificationsRead(
       },
       req.payload,
     )
-    await lockNotificationAuthorization(
-      transactionReq,
-      notificationAcknowledgementKeys(initialAccess.clinic.id, initialAccess.staff.id),
-    )
-    const access = await readClinicAccessState(req.payload, req.user.id, transactionReq)
-    if (!access || String(access.clinic.id) !== String(initialAccess.clinic.id))
-      throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')
-    const receipts: Array<{ occurrence: number; clinicStaff: number; expiresAt: string }> = []
+    const assignment = readClinicStaffAssignment(initialAccess.staff)
+    const heldKeys = new Set([
+      ...initialAccess.clinics.map(({ id }) => notificationClinicAuthorizationKey(id)),
+      ...(assignment?.scope === 'group' ? [clinicGroupAuthorizationKey(assignment.groupId)] : []),
+      clinicStaffAuthorizationKey(initialAccess.staff.id),
+    ])
+    await lockNotificationAuthorization(transactionReq, [...heldKeys])
+    let access = await readClinicPrincipalAccess(req.payload, req.user.id, transactionReq)
+    for (;;) {
+      if (!access || !access.clinics.length) throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')
+      const currentAssignment = readClinicStaffAssignment(access.staff)
+      const missingKeys = [
+        ...access.clinics.map(({ id }) => notificationClinicAuthorizationKey(id)),
+        ...(currentAssignment?.scope === 'group' ? [clinicGroupAuthorizationKey(currentAssignment.groupId)] : []),
+      ].filter((key) => !heldKeys.has(key))
+      if (!missingKeys.length) break
+      // A grant committed before the barrier may add clinics; every candidate source needs its own held key.
+      await lockNotificationAuthorization(transactionReq, missingKeys)
+      for (const key of missingKeys) heldKeys.add(key)
+      access = await readClinicPrincipalAccess(req.payload, req.user.id, transactionReq)
+    }
+    const project = createNotificationSourceProjector(transactionReq)
+    const receipts: Array<{
+      occurrence: number
+      clinicStaff: number
+      expiresAt: string
+      clinicId: string
+      member: NotificationMember
+    }> = []
     let page = 1
     if (ids.length)
       for (;;) {
@@ -150,14 +178,15 @@ export async function markClinicNotificationsRead(
           req: transactionReq,
           where: {
             and: [
-              { clinicScopeId: { equals: String(access.clinic.id) } },
+              { clinicScopeId: { in: access.clinics.map(({ id }) => String(id)) } },
               { expiresAt: { greater_than: new Date().toISOString() } },
             ],
           },
         })
         for (const occurrence of result.docs) {
           if (!selectedIds.has(occurrence.notificationId)) continue
-          if (!(await readNotificationSourceProjection(transactionReq, occurrenceMember(occurrence))).visible) continue
+          const member = occurrenceMember(occurrence)
+          if (!(await project(member, String(occurrence.clinicScopeId))).visible) continue
           const existing = await req.payload.find({
             collection: 'clinicNotificationReadReceipts',
             depth: 0,
@@ -168,7 +197,13 @@ export async function markClinicNotificationsRead(
             where: { and: [{ occurrence: { equals: occurrence.id } }, { clinicStaff: { equals: access.staff.id } }] },
           })
           if (!existing.docs.length)
-            receipts.push({ occurrence: occurrence.id, clinicStaff: access.staff.id, expiresAt: occurrence.expiresAt })
+            receipts.push({
+              occurrence: occurrence.id,
+              clinicStaff: access.staff.id,
+              expiresAt: occurrence.expiresAt,
+              clinicId: String(occurrence.clinicScopeId),
+              member,
+            })
         }
         if (!result.hasNextPage) break
         page++
@@ -183,9 +218,17 @@ export async function markClinicNotificationsRead(
         req: transactionReq,
       })
     }
-    const finalAccess = await readClinicAccessState(req.payload, req.user.id, transactionReq)
-    if (!finalAccess || String(finalAccess.clinic.id) !== String(initialAccess.clinic.id))
+    const finalAccess = await readClinicPrincipalAccess(req.payload, req.user.id, transactionReq)
+    if (
+      !finalAccess ||
+      !finalAccess.clinics.length ||
+      receipts.some((receipt) => !finalAccess.clinics.some(({ id }) => String(id) === receipt.clinicId))
+    )
       throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')
+    const finalProject = createNotificationSourceProjector(transactionReq)
+    for (const receipt of receipts)
+      if (!(await finalProject(receipt.member, receipt.clinicId)).visible)
+        throw new ClinicNotificationError('CONTENT_ACCESS_DENIED')
     // Eligibility is decided once under the authorization locks before the native commit call.
     const eligibilityDecidedAt = Date.now()
     if (receipts.some((receipt) => Date.parse(receipt.expiresAt) <= eligibilityDecidedAt)) {

@@ -59,6 +59,8 @@ vi.mock('@/auth/utilities/supaBaseServer', async (importOriginal) => {
   }
 })
 
+let currentClinicTarget: number
+
 const CONTRACT_HEADER = 'X-Findmydoc-Clinic-Dashboard-Contract'
 const CONTRACT_VERSION = 'inquiry-communication-v2'
 
@@ -69,15 +71,25 @@ const requestRegisteredPayloadEndpoint = (
 ): Promise<Response> =>
   handleEndpoints({
     config,
-    request: new Request(new URL(path, 'https://payload-http-boundary.test'), {
-      body: typeof options?.body === 'undefined' ? undefined : JSON.stringify(options.body),
-      headers: {
-        Authorization: `Bearer ${token}`,
-        [CONTRACT_HEADER]: CONTRACT_VERSION,
-        ...(typeof options?.body === 'undefined' ? {} : { 'Content-Type': 'application/json' }),
+    request: new Request(
+      new URL(
+        path.replace(
+          '/api/clinic-dashboard/inquiries',
+          `/api/clinic-dashboard/clinics/${currentClinicTarget}/inquiries`,
+        ),
+        'https://payload-http-boundary.test',
+      ),
+      {
+        body: typeof options?.body === 'undefined' ? undefined : JSON.stringify(options.body),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          [CONTRACT_HEADER]: CONTRACT_VERSION,
+          'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
+          ...(typeof options?.body === 'undefined' ? {} : { 'Content-Type': 'application/json' }),
+        },
+        method: options?.method ?? 'GET',
       },
-      method: options?.method ?? 'GET',
-    }),
+    ),
   })
 
 describe('inquiry communication registered Payload HTTP boundary', () => {
@@ -101,6 +113,7 @@ describe('inquiry communication registered Payload HTTP boundary', () => {
 
     const localFixture = await createClinicFixture(payload, city.id, { slugPrefix })
     clinicId = localFixture.clinic.id
+    currentClinicTarget = clinicId
     await payload.update({
       collection: 'clinics',
       data: { status: 'approved' },
@@ -265,14 +278,14 @@ describe('inquiry communication registered Payload HTTP boundary', () => {
     })
   })
 
-  it('returns tenant-safe not-found through the registered detail route', async () => {
+  it('denies a foreign clinic target through the registered detail route', async () => {
     const response = await requestRegisteredPayloadEndpoint(
       `/api/clinic-dashboard/inquiries/detail?inquiryId=${encodeURIComponent(inquiryId)}`,
       foreignClinicToken,
     )
 
-    expect(response.status).toBe(404)
-    await expect(response.json()).resolves.toEqual({ error: { code: 'INQUIRY_NOT_FOUND' } })
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({ error: { code: 'INQUIRY_ACCESS_DENIED' } })
     expect(response.headers.get('cache-control')).toBe('private, no-store')
   })
 

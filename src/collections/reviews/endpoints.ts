@@ -2,7 +2,8 @@ import type { PayloadHandler, PayloadRequest, Where } from 'payload'
 import { z } from 'zod'
 
 import type { Review } from '@/payload-types'
-import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
+import { clinicAssignmentRelationId } from '@/auth/utilities/clinicStaffAssignment'
 import { runReviewCommandTransaction } from '@/collections/reviews/commandTransaction'
 import {
   getReviewPublicMeasure,
@@ -469,8 +470,14 @@ export const reviewPublicationHistoryGetHandler: PayloadHandler = async (req) =>
 
     if (isClinicStaffRequest(req)) {
       if (review.status !== 'approved' || review.deletedAt) return errorResponse('NOT_FOUND', 404)
-      const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-      if (clinicId === null || !sameId(review.clinic, clinicId)) return errorResponse('NOT_FOUND', 404)
+      const clinicId = clinicAssignmentRelationId(review.clinic)
+      if (
+        !clinicId ||
+        (req.routeParams?.clinicId !== undefined && clinicAssignmentRelationId(req.routeParams.clinicId) !== clinicId)
+      )
+        return errorResponse('NOT_FOUND', 404)
+      const target = await readClinicTargetAccess(req.payload, req.user!.id, clinicId, req)
+      if (!target) return errorResponse('NOT_FOUND', 404)
     }
 
     const query = parsePublicationHistoryQuery(req)

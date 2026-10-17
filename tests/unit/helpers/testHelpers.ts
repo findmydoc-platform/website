@@ -165,6 +165,13 @@ export const createMockReq = (
                 status: 'approved',
                 authSync: { status: 'synced' },
                 supabaseUserId: `subject-${userId}`,
+                assignmentScope: 'local',
+                activationReadiness: {
+                  version: 'identity-v1',
+                  principalId: String(userId),
+                  subject: `subject-${userId}`,
+                  establishedAt: '2026-10-17T10:00:00.000Z',
+                },
                 accountCompletion: {
                   source: 'initial-password',
                   subject: `subject-${userId}`,

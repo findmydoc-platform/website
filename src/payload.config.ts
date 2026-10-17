@@ -1,3 +1,6 @@
+import { installClinicGalleryUploadReplay } from '@/features/clinicDashboard/gallery/uploadReplay'
+import { clinicDashboardDoctorEndpoints } from './endpoints/clinicDashboardDoctors'
+import { ClinicGroups } from './collections/ClinicGroups'
 import { transactionalEmailEventSchema } from './features/transactionalEmail/eventSchema'
 import { validateTransactionalEmailStartup } from './features/transactionalEmail/environment'
 import { protectAuthActionProtocolStorage } from './auth/actions/protocol/storage'
@@ -8,6 +11,10 @@ import sharp from 'sharp'
 import path from 'path'
 import { buildConfig, PayloadHandler, type EmailAdapter } from 'payload'
 import { cacheRevalidationVisibilityGetHandler } from './endpoints/cacheRevalidationVisibility'
+import {
+  clinicNotificationCaptureGetHandler,
+  clinicNotificationCapturePostHandler,
+} from './endpoints/clinicNotificationCapture'
 import { clinicDashboardBootstrapGetHandler } from './endpoints/clinicDashboardBootstrap'
 import {
   clinicDashboardNotificationsGetHandler,
@@ -29,6 +36,7 @@ import {
 import {
   clinicDashboardGalleryDiscardPostHandler,
   clinicDashboardGalleryGetHandler,
+  clinicDashboardGalleryImageGetHandler,
   clinicDashboardGalleryMediaPostHandler,
   clinicDashboardGalleryPutHandler,
 } from './endpoints/clinicDashboardGallery'
@@ -119,6 +127,18 @@ import { ClinicNotificationControls } from './collections/ClinicNotificationCont
 import { ReviewPublicationTransitions } from './collections/ReviewPublicationTransitions'
 import { ReviewDecisionTransitions } from './collections/ReviewDecisionTransitions'
 import { clinicDashboardReviewGetHandler } from './endpoints/clinicDashboardReviews'
+import {
+  clinicDashboardReviewsGetHandler,
+  clinicDashboardReviewRecordGetHandler,
+  clinicDashboardReviewHistoryGetHandler,
+  clinicDashboardReviewResponsesGetHandler,
+  clinicDashboardReviewAppealsGetHandler,
+  clinicDashboardReviewResponseVersionsGetHandler,
+  clinicDashboardReviewAppealVersionsGetHandler,
+  clinicDashboardReviewResponsesPostHandler,
+  clinicDashboardReviewAppealsPostHandler,
+  clinicDashboardReviewResponsePatchHandler,
+} from './endpoints/clinicDashboardReviewOperations'
 import { Doctors } from './collections/Doctors'
 import { Accreditation } from './collections/Accreditation'
 import { MedicalSpecialties } from './collections/MedicalSpecialties'
@@ -190,7 +210,60 @@ export default buildConfig({
     preserveExtension: true,
   },
   endpoints: [
-    { path: '/clinic-dashboard/reviews/:id', method: 'get', handler: clinicDashboardReviewGetHandler },
+    ...clinicDashboardDoctorEndpoints,
+    { path: '/internal/clinic-notifications/capture', method: 'get', handler: clinicNotificationCaptureGetHandler },
+    { path: '/internal/clinic-notifications/capture', method: 'post', handler: clinicNotificationCapturePostHandler },
+    { path: '/clinic-dashboard/clinics/:clinicId/reviews', method: 'get', handler: clinicDashboardReviewsGetHandler },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/reviews/:id/record',
+      method: 'get',
+      handler: clinicDashboardReviewRecordGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/reviews/:id/publication-history',
+      method: 'get',
+      handler: clinicDashboardReviewHistoryGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-responses/versions',
+      method: 'get',
+      handler: clinicDashboardReviewResponseVersionsGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-appeals/versions',
+      method: 'get',
+      handler: clinicDashboardReviewAppealVersionsGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-responses',
+      method: 'get',
+      handler: clinicDashboardReviewResponsesGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-appeals',
+      method: 'get',
+      handler: clinicDashboardReviewAppealsGetHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-responses',
+      method: 'post',
+      handler: clinicDashboardReviewResponsesPostHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-appeals',
+      method: 'post',
+      handler: clinicDashboardReviewAppealsPostHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/review-responses/:workflowId',
+      method: 'patch',
+      handler: clinicDashboardReviewResponsePatchHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/reviews/:id',
+      method: 'get',
+      handler: clinicDashboardReviewGetHandler,
+    },
     {
       path: '/clinic-dashboard/bootstrap',
       method: 'get',
@@ -203,137 +276,142 @@ export default buildConfig({
       handler: clinicDashboardNotificationsReadPostHandler,
     },
     {
-      path: '/clinic-dashboard/reporting',
+      path: '/clinic-dashboard/clinics/:clinicId/reporting',
       method: 'get',
       handler: clinicDashboardReportingGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/profile',
+      path: '/clinic-dashboard/clinics/:clinicId/profile',
       method: 'get',
       handler: clinicDashboardProfileGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/profile/draft',
+      path: '/clinic-dashboard/clinics/:clinicId/profile/draft',
       method: 'post',
       handler: clinicDashboardProfileDraftPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/profile/draft',
+      path: '/clinic-dashboard/clinics/:clinicId/profile/draft',
       method: 'put',
       handler: clinicDashboardProfileDraftPutHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/profile/draft/discard',
+      path: '/clinic-dashboard/clinics/:clinicId/profile/draft/discard',
       method: 'post',
       handler: clinicDashboardProfileDraftDiscardPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/profile/publish',
+      path: '/clinic-dashboard/clinics/:clinicId/profile/publish',
       method: 'post',
       handler: clinicDashboardProfilePublishPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/treatments',
+      path: '/clinic-dashboard/clinics/:clinicId/treatments',
       method: 'get',
       handler: clinicDashboardTreatmentsGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/treatments',
+      path: '/clinic-dashboard/clinics/:clinicId/treatments',
       method: 'post',
       handler: clinicDashboardTreatmentsPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/treatments',
+      path: '/clinic-dashboard/clinics/:clinicId/treatments',
       method: 'patch',
       handler: clinicDashboardTreatmentsPatchHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/gallery',
+      path: '/clinic-dashboard/clinics/:clinicId/gallery/media/:mediaId/image',
+      method: 'get',
+      handler: clinicDashboardGalleryImageGetHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/gallery',
       method: 'get',
       handler: clinicDashboardGalleryGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/gallery',
+      path: '/clinic-dashboard/clinics/:clinicId/gallery',
       method: 'put',
       handler: clinicDashboardGalleryPutHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/gallery/media',
+      path: '/clinic-dashboard/clinics/:clinicId/gallery/media',
       method: 'post',
       handler: clinicDashboardGalleryMediaPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/gallery/discard',
+      path: '/clinic-dashboard/clinics/:clinicId/gallery/discard',
       method: 'post',
       handler: clinicDashboardGalleryDiscardPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries',
       method: 'get',
       handler: clinicDashboardInquiriesGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/detail',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/detail',
       method: 'get',
       handler: clinicDashboardInquiryDetailGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/messages',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/messages',
       method: 'post',
       handler: clinicDashboardInquiryMessagesPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/notes',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/notes',
       method: 'post',
       handler: clinicDashboardInquiryNotesPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/state',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/state',
       method: 'patch',
       handler: clinicDashboardInquiryStatePatchHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/read-position',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/read-position',
       method: 'put',
       handler: clinicDashboardInquiryReadPositionPutHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/contact/reveal',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/contact/reveal',
       method: 'post',
       handler: clinicDashboardInquiryContactRevealPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/attachments/drafts',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/attachments/drafts',
       method: 'post',
       handler: clinicDashboardInquiryAttachmentDraftPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/attachments/drafts/finalize',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/attachments/drafts/finalize',
       method: 'post',
       handler: clinicDashboardInquiryAttachmentFinalizePostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/attachments/drafts/discard',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/attachments/drafts/discard',
       method: 'post',
       handler: clinicDashboardInquiryAttachmentDiscardPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/attachments/preview',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/attachments/preview',
       method: 'get',
       handler: clinicDashboardInquiryAttachmentPreviewGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/attachments/download',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/attachments/download',
       method: 'get',
       handler: clinicDashboardInquiryAttachmentDownloadGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/report',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/report',
       method: 'post',
       handler: clinicInquiryReportPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/inquiries/appeal',
+      path: '/clinic-dashboard/clinics/:clinicId/inquiries/appeal',
       method: 'post',
       handler: clinicInquiryAppealPostHandler as PayloadHandler,
     },
@@ -547,6 +625,7 @@ export default buildConfig({
     Categories,
     Patients,
     ClinicStaff,
+    ClinicGroups,
     ClinicProfileDrafts,
     PlatformStaff,
     ClinicApplications,
@@ -619,6 +698,7 @@ export default buildConfig({
   logger: createPayloadLoggerConfig(process.env),
   onInit: async (payload) => {
     protectAuthActionProtocolStorage(payload)
+    installClinicGalleryUploadReplay(payload)
     if (process.env.NEXT_PHASE === 'phase-production-build') {
       return
     }

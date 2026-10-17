@@ -1,15 +1,17 @@
+import {
+  doctorSourceAccess,
+  doctorCreateAccess,
+  doctorPublicRead,
+  guardDoctorOperation,
+  guardDoctorChange,
+  verifyDoctorOperation,
+} from '@/features/doctorProfiles/authorization'
 import { slugField } from '@/fields/slugField'
 import { CollectionConfig } from 'payload'
 import { languageOptions } from './common/selectionOptions'
 import { generateFullName } from '@/utilities/nameUtils'
 import { computedOnlyFieldAccess } from '@/access/fieldAccess'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
-import {
-  platformOrAssignedClinicMutation,
-  platformOrOwnClinicResourceOrActive,
-  platformOrOwnClinicResource,
-} from '@/access/scopeFilters'
-import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateDoctorChange, revalidateDoctorDelete } from '@/hooks/revalidateClinicSurfaces'
 import { beforeChangeValidateDoctorProfileImage } from '@/hooks/doctorProfileImageOwnership'
@@ -49,17 +51,20 @@ export const Doctors: CollectionConfig<'doctors'> = {
     description: 'Doctor profiles with specialties, languages, and experience',
   },
   access: {
-    read: platformOrOwnClinicResourceOrActive,
-    create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
-    update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
+    read: doctorPublicRead,
+    create: doctorCreateAccess, // Platform: all, Clinic: assigned clinic only
+    update: doctorSourceAccess(), // Platform: all, Clinic: only their clinic
     delete: isPlatformStaff, // Only Platform can delete
   },
   hooks: {
-    beforeChange: [
-      stableIdBeforeChangeHook,
-      beforeChangeAssignClinicFromUser({ clinicField: 'clinic' }),
-      beforeChangeValidateDoctorProfileImage,
+    beforeOperation: [guardDoctorOperation],
+    afterOperation: [
+      async (args) => {
+        await verifyDoctorOperation({ ...args, result: args.result as unknown })
+        return args.result
+      },
     ],
+    beforeChange: [stableIdBeforeChangeHook, guardDoctorChange, beforeChangeValidateDoctorProfileImage],
     afterChange: [revalidateDoctorChange],
     afterDelete: [revalidateDoctorDelete],
   },

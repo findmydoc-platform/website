@@ -42,6 +42,7 @@ const conditionDecision = (
   needs: Record<string, unknown>,
   headRepository = 'findmydoc-platform/website',
   authorLogin = 'human-contributor',
+  draft = false,
 ) =>
   runInNewContext(expression.replace(/needs\.([\w-]+)/g, 'needs["$1"]'), {
     always: () => true,
@@ -52,6 +53,7 @@ const conditionDecision = (
       repository: 'findmydoc-platform/website',
       event: {
         pull_request: {
+          draft,
           head: { repo: { full_name: headRepository } },
           user: { login: authorLogin },
         },
@@ -227,6 +229,13 @@ describe('shared native build routing', () => {
     expect(conditionDecision(previewWorkflow.jobs['deploy-preview'].if, 'pull_request', needs)).toBe(true)
     expect(
       conditionDecision(previewWorkflow.jobs['deploy-preview'].if, 'pull_request', needs, 'contributor/website'),
+    ).toBe(false)
+  })
+
+  it.each(['success', 'failure'])('skips Draft Preview deployment when classification is %s', (result) => {
+    const needs = { paths: { result, outputs: { deployable: 'true' } } }
+    expect(
+      conditionDecision(previewWorkflow.jobs['deploy-preview'].if, 'pull_request', needs, undefined, undefined, true),
     ).toBe(false)
   })
 

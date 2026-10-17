@@ -1,5 +1,5 @@
 import type { Payload } from 'payload'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   cleanupClinicGalleryDraftMedia,
@@ -22,6 +22,7 @@ const buildPayload = (deleteImplementation: (id: unknown) => Promise<unknown>) =
   }) as unknown as Payload
 
 describe('clinic gallery draft cleanup', () => {
+  beforeEach(() => vi.clearAllMocks())
   it('caps a batch at twelve IDs and deletes at most three objects concurrently', async () => {
     let active = 0
     let peak = 0
@@ -48,7 +49,7 @@ describe('clinic gallery draft cleanup', () => {
 
   it('rechecks eligibility for every attempt and uses the two retry delays', async () => {
     const payload = buildPayload(async () => {
-      throw new Error('S3 unavailable')
+      throw Object.assign(new Error('Serialization aborted'), { code: '40001' })
     })
     const sleep = vi.fn().mockResolvedValue(undefined)
 
@@ -73,6 +74,16 @@ describe('clinic gallery draft cleanup', () => {
       'Clinic gallery media cleanup failed',
     )
     expect(sendPostHogException).toHaveBeenCalledOnce()
+  })
+
+  it('does not retry an external cleanup with an unknown outcome', async () => {
+    const payload = buildPayload(async () => {
+      throw new Error('Object cleanup unavailable')
+    })
+    const sleep = vi.fn()
+    await cleanupClinicGalleryDraftMedia(payload, 1, ['9'], 'discard', { sleep })
+    expect(payload.delete).toHaveBeenCalledOnce()
+    expect(sleep).not.toHaveBeenCalled()
   })
 
   it('does not delete a draft that becomes referenced', async () => {

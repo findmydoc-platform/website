@@ -41,8 +41,11 @@ const hasClinicTrustManagerRole = async (req: PayloadRequest): Promise<boolean> 
     })
 
     return result.docs.length > 0
-  } catch (error) {
-    req.payload.logger.warn({ error }, 'Unable to resolve platform staff role for clinic trust access')
+  } catch {
+    req.payload.logger.warn(
+      { event: 'access.clinic_trust.lookup_failed', reason: 'role_lookup_failed', errorType: 'dependency_failure' },
+      'Unable to resolve platform staff role for clinic trust access',
+    )
     return false
   }
 }

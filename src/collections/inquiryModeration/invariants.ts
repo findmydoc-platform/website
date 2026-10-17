@@ -1,3 +1,5 @@
+import { authorizeStoredInquiryWrite } from '@/features/inquiryAggregate/clinicAccess'
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { ValidationError, type CollectionBeforeValidateHook, type PayloadRequest } from 'payload'
 
 import { hasInquiryPackageHardDeleteBarrier } from '@/features/inquiryAggregate/tombstones'
@@ -54,6 +56,7 @@ const validateScope = async (req: PayloadRequest, collection: string, record: Re
   const inquiry =
     (await findRecord(req, 'patientClinicInquiries', record.inquiry)) ??
     fail(req, collection, 'inquiry', 'The inquiry does not exist.')
+  await authorizeStoredInquiryWrite(req, inquiry.clinic)
   const identityDeleted = inquiry.retentionState === 'anonymized' || inquiry.retentionState === 'hard-deleted'
   if (
     inquiry.retentionState === 'hard-deleted' ||
@@ -89,8 +92,10 @@ const validateClinicActor = async (
   staffId: unknown,
   path: string,
 ) => {
-  const staff = await findRecord(req, 'clinicStaff', staffId)
-  if (!staff || !sameId(staff.clinic, clinic)) {
+  const id = relationId(staffId)
+  const target = relationId(clinic)
+  const access = id !== null && target !== null ? await readClinicTargetAccess(req.payload, id, target, req) : null
+  if (!access) {
     fail(req, collection, path, 'The clinic actor must belong to the inquiry clinic.')
   }
 }

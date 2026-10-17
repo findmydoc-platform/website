@@ -1,9 +1,25 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import type { CollectionBeforeChangeHook, PayloadRequest, SanitizedCollectionConfig, RequestContext } from 'payload'
 import { ClinicMedia } from '@/collections/ClinicMedia'
+import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
+
+// Metadata hooks use the real native-session guard; only the database lock writer is a unit boundary.
+vi.mock('@/features/clinicNotifications/authorizationBarrier', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/features/clinicNotifications/authorizationBarrier')>()
+  return {
+    ...original,
+    guardClinicAuthorizationKeys: async (req: PayloadRequest) => {
+      requireNotificationTransaction(req, await req.transactionID)
+    },
+  }
+})
 
 const baseReq = (user?: unknown) =>
-  ({ user, payload: { logger: { warn: () => {}, error: () => {} } } }) as unknown as PayloadRequest
+  ({
+    user,
+    transactionID: 'metadata-unit',
+    payload: { db: { sessions: { 'metadata-unit': {} } }, logger: { warn: () => {}, error: () => {} } },
+  }) as unknown as PayloadRequest
 
 const runBeforeChangeHooks = async ({
   data,
@@ -27,6 +43,14 @@ const runBeforeChangeHooks = async ({
 }
 
 describe('beforeChangeClinicMedia', () => {
+  test('rejects a metadata write without an active native transaction', async () => {
+    const req = baseReq({ id: 42, collection: 'platformStaff' })
+    req.transactionID = undefined
+    await expect(runBeforeChangeHooks({ data: { clinic: 7 }, operation: 'create', req })).rejects.toThrow(
+      'Notification storage requires an active native transaction session.',
+    )
+  })
+
   test('auto-sets createdBy on create for clinic staff', async () => {
     const req = baseReq({ id: 42, collection: 'platformStaff' })
     const data = { id: '123', clinic: 7, filename: 'photo.jpg', createdBy: 999 }

@@ -12,9 +12,11 @@ it('rejects a hosted process with unbound credentials during Payload initializat
   vi.stubEnv('LETTERMINT_PROJECT_TOKEN', 'lm_preview_unbound_synthetic_token') // pragma: allowlist secret
   const resolved = await config
   if (!resolved.onInit) throw new Error('Expected Payload initialization hook')
+  const create = vi.fn<Parameters<typeof resolved.onInit>[0]['create']>()
   await expect(
-    resolved.onInit({ collections: { 'payload-kv': { config: { hooks: {} } } } } as Parameters<
+    resolved.onInit({ create, collections: { 'payload-kv': { config: { hooks: {} } } } } as unknown as Parameters<
       typeof resolved.onInit
     >[0]),
   ).rejects.toThrow('environment-unavailable')
+  expect(create).not.toHaveBeenCalled()
 })

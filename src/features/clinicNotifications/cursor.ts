@@ -6,7 +6,6 @@ import { ClinicNotificationError } from './errors'
 const scopeSchema = z
   .object({
     contractVersion: z.literal(CLINIC_NOTIFICATIONS_CONTRACT_VERSION),
-    clinic: z.string().min(1).max(200),
     principal: z.string().min(1).max(200),
     view: z.enum(['unread', 'all']),
   })
@@ -62,7 +61,6 @@ export function readNotificationCursor(
     const parsed = cursorSchema.parse(JSON.parse(bytes.toString('utf8')))
     if (
       parsed.contractVersion !== scope.contractVersion ||
-      parsed.clinic !== scope.clinic ||
       parsed.principal !== scope.principal ||
       parsed.view !== scope.view
     )

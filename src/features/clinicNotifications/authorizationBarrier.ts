@@ -1,10 +1,13 @@
+import { createColdGalleryAuthorizationControl } from './coldAuthorizationControl'
 import { randomUUID } from 'node:crypto'
 import { createLocalReq, type PayloadRequest, type Where } from 'payload'
 import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 
 type Id = number | string
-const key = (kind: 'clinic' | 'staff', id: Id) => `notification-authorization:${kind}:${String(id)}`
+const key = (kind: 'clinic' | 'staff' | 'group', id: Id) => `notification-authorization:${kind}:${String(id)}`
 const isSeedReset = (req: PayloadRequest): boolean => req.context?.seedReset === true && req.context?.skipHooks === true
+export const clinicStaffAuthorizationKey = (staffId: Id): string => key('staff', staffId)
+export const clinicGroupAuthorizationKey = (groupId: Id): string => key('group', groupId)
 export const notificationClinicAuthorizationKey = (clinicId: Id): string => key('clinic', clinicId)
 
 /** Clinic and staff keys are independent of the environment capture and retention controls. */
@@ -40,21 +43,9 @@ export async function lockNotificationAuthorization(req: PayloadRequest, keys: r
         overrideAccess: true,
         req: transactionReq,
       })
-    else
-      await req.payload.create({
-        collection: 'clinicNotificationControls',
-        data: { key: controlKey, active: false, nonce: randomUUID() },
-        depth: 0,
-        overrideAccess: true,
-        req: transactionReq,
-      })
+    else await createColdGalleryAuthorizationControl(transactionReq, controlKey, randomUUID())
   }
 }
-
-export const notificationAcknowledgementKeys = (clinicId: Id, staffId: Id): string[] => [
-  notificationClinicAuthorizationKey(clinicId),
-  key('staff', staffId),
-]
 
 async function discardCompletedAuthorizationGuard(req: PayloadRequest): Promise<void> {
   if (
@@ -63,6 +54,17 @@ async function discardCompletedAuthorizationGuard(req: PayloadRequest): Promise<
   ) {
     delete req.context.clinicNotificationAuthorizationGuard
     delete req.context.clinicNotificationAuthorizationTransaction
+  }
+}
+
+/** Shared native authorization barrier for clinic structure and business writers. */
+export async function guardClinicAuthorizationKeys(req: PayloadRequest, keys: readonly string[]): Promise<void> {
+  await discardCompletedAuthorizationGuard(req)
+  await lockNotificationAuthorization(req, keys)
+  req.context = {
+    ...req.context,
+    clinicNotificationAuthorizationGuard: true,
+    clinicNotificationAuthorizationTransaction: await req.transactionID,
   }
 }
 
@@ -77,19 +79,13 @@ export async function guardNotificationAuthorizationChange({
   collection: { slug: string }
   args: unknown
 }): Promise<void> {
+  if (operation === 'create') {
+    await discardCompletedAuthorizationGuard(req)
+    return
+  }
   if (!['update', 'delete', 'restoreVersion'].includes(operation)) return
   if (isSeedReset(req)) return
   await discardCompletedAuthorizationGuard(req)
-  const controls = await req.payload.find({
-    collection: 'clinicNotificationControls',
-    depth: 0,
-    limit: 1,
-    pagination: false,
-    overrideAccess: true,
-    req,
-    where: { key: { equals: 'notification-center' } },
-  })
-  if (!controls.docs.length) return
   const input = args as { id?: Id; where?: Where }
   const ids: Id[] = []
   if (input.id !== undefined) ids.push(input.id)
@@ -108,10 +104,12 @@ export async function guardNotificationAuthorizationChange({
       ids.push(...result.docs.map((doc) => doc.id))
       if (!result.hasNextPage) break
     }
-  await lockNotificationAuthorization(
-    req,
-    ids.map((id) => key(collection.slug === 'clinics' ? 'clinic' : 'staff', id)),
-  )
+  await lockNotificationAuthorization(req, [
+    ...ids.map((id) => key(collection.slug === 'clinics' ? 'clinic' : 'staff', id)),
+    ...(collection.slug === 'clinics' && req.user?.collection === 'clinicStaff'
+      ? [clinicStaffAuthorizationKey(req.user.id)]
+      : []),
+  ])
   req.context = {
     ...req.context,
     clinicNotificationAuthorizationGuard: true,

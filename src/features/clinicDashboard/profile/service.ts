@@ -6,6 +6,8 @@ import {
   type RequiredDataFromCollectionSlug,
 } from 'payload'
 
+import { authorizeClinicProfileTarget } from './authorization'
+import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 import type { City, Clinic, ClinicProfileDraft, Country } from '@/payload-types'
 import { validateOpeningHours } from '@/collections/clinics/openingHours'
 import { validateClinicPostalCodeValue } from '@/collections/clinics/postalCode'
@@ -126,6 +128,7 @@ const sourceFieldsDTO = (
 })
 
 const readProfileContext = async (req: PayloadRequest, clinicId: RelationId): Promise<ProfileReadContext> => {
+  await authorizeClinicProfileTarget(req, clinicId, Boolean(await req.transactionID))
   const clinic = await req.payload.findByID({
     collection: 'clinics',
     id: clinicId,
@@ -135,6 +138,7 @@ const readProfileContext = async (req: PayloadRequest, clinicId: RelationId): Pr
   })
   const countries = await req.payload.find({
     collection: 'countries',
+    where: { isoCode: { equals: 'TR' } },
     depth: 0,
     limit: 1,
     pagination: false,
@@ -330,6 +334,8 @@ export const createClinicProfileDraft = async (
       req,
     })
 
+    await authorizeClinicProfileTarget(req, clinicId, true)
+    requireNotificationTransaction(req, await req.transactionID)
     await commitTransaction(req)
   } catch (error: unknown) {
     await rollback(req)
@@ -382,6 +388,8 @@ export const saveClinicProfileDraft = async (
       throw new ClinicProfileServiceError('conflict', 'The clinic profile draft changed.')
     }
 
+    await authorizeClinicProfileTarget(req, clinicId, true)
+    requireNotificationTransaction(req, await req.transactionID)
     await commitTransaction(req)
   } catch (error: unknown) {
     await rollback(req)
@@ -427,6 +435,8 @@ export const discardClinicProfileDraft = async (
       throw new ClinicProfileServiceError('conflict', 'The clinic profile draft changed.')
     }
 
+    await authorizeClinicProfileTarget(req, clinicId, true)
+    requireNotificationTransaction(req, await req.transactionID)
     await commitTransaction(req)
   } catch (error: unknown) {
     await rollback(req)
@@ -535,6 +545,8 @@ export const publishClinicProfileDraft = async (
       throw new ClinicProfileServiceError('conflict', 'The clinic profile draft changed.')
     }
 
+    await authorizeClinicProfileTarget(req, clinicId, true)
+    requireNotificationTransaction(req, await req.transactionID)
     await commitTransaction(req)
   } catch (error: unknown) {
     await rollback(req)

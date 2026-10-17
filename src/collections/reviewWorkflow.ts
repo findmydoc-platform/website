@@ -8,7 +8,7 @@ import { APIError, ValidationError } from 'payload'
 
 import { isClinicStaff } from '@/access/isClinicStaff'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
-import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
+import { requireClinicReviewTarget } from './reviews/clinicAuthorization'
 
 type RelationId = string | number
 type WorkflowDraft = Record<string, unknown>
@@ -129,16 +129,7 @@ const resolveReviewContext = async (req: PayloadRequest, value: unknown): Promis
     throw new APIError('The selected review is not assigned to a clinic.', 400)
   }
 
-  if (isClinicStaff({ req })) {
-    const assignedClinicId = await getUserAssignedClinicId(req.user, req.payload)
-    if (assignedClinicId === null || String(assignedClinicId) !== String(clinicId)) {
-      throw new ValidationError({
-        collection: 'reviews',
-        errors: [{ message: 'The selected review does not belong to the assigned clinic.', path: 'review' }],
-        req,
-      })
-    }
-  }
+  await requireClinicReviewTarget(req, clinicId)
 
   return {
     clinicId,

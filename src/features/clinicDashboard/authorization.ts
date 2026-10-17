@@ -1,12 +1,33 @@
 import type { PayloadRequest } from 'payload'
 
 import { extractTokenFromHeader, validateSupabaseBearerToken } from '@/auth/utilities/jwtValidation'
-import { resolveClinicDashboardBootstrap, type ClinicDashboardBootstrapDTO } from './bootstrap'
+import {
+  resolveClinicDashboardBootstrap,
+  resolveClinicDashboardPrincipal,
+  type ClinicDashboardBootstrapDTO,
+} from './bootstrap'
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import type { ClinicDashboardContract } from './contractNegotiation'
 
 export type ClinicDashboardAuthorizationResult =
   | { status: 'authorized'; data: ClinicDashboardBootstrapDTO }
   | { status: 'access-denied' | 'unauthorized' | 'unavailable' }
+
+export const revalidateClinicDashboardTargetRequest = async (
+  req: PayloadRequest,
+  targetClinicId: string,
+): Promise<
+  { status: 'authorized'; clinicId: string } | { status: 'access-denied' | 'unauthorized' | 'unavailable' }
+> => {
+  const principal = await resolveClinicDashboardPrincipal(req)
+  if (principal.status !== 'success') return principal
+  try {
+    const access = await readClinicTargetAccess(req.payload, principal.principalId, targetClinicId, req)
+    return access ? { status: 'authorized', clinicId: String(access.clinic.id) } : { status: 'access-denied' }
+  } catch {
+    return { status: 'unavailable' }
+  }
+}
 
 export const revalidateClinicDashboardRequest = async (
   req: PayloadRequest,

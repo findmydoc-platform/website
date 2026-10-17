@@ -9,6 +9,7 @@
 import type { Access, Where } from 'payload'
 import { isPlatformStaff } from './isPlatformStaff'
 import { isClinicStaff } from './isClinicStaff'
+import { currentClinicReviewScope } from './clinicReviewScope'
 import { isPatient } from './isPatient'
 import { getUserAssignedClinicId } from './utils/getClinicAssignment'
 import {
@@ -255,23 +256,8 @@ export const platformOrApprovedReviewsByClinic: Access = async ({ req }) => {
   }
 
   if (isClinicStaff({ req })) {
-    const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-    if (!clinicId) return false
-
-    return {
-      and: [
-        {
-          status: {
-            equals: 'approved',
-          },
-        },
-        {
-          clinic: {
-            equals: clinicId,
-          },
-        },
-      ],
-    }
+    const scope = await currentClinicReviewScope(req)
+    return scope ? { and: [{ status: { equals: 'approved' } }, scope] } : false
   }
 
   return buildPublicReviewWhere()
@@ -288,14 +274,7 @@ export const platformClinicOrPublicReviewResponse: Access = async ({ req }): Pro
   }
 
   if (isClinicStaff({ req })) {
-    const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-    if (!clinicId) return false
-
-    return {
-      clinic: {
-        equals: clinicId,
-      },
-    } satisfies Where
+    return currentClinicReviewScope(req, 'clinic')
   }
 
   return {
@@ -324,14 +303,7 @@ export const platformOrOwnClinicReviewWorkflowVersions: Access = async ({ req })
   }
 
   if (isClinicStaff({ req })) {
-    const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-    if (!clinicId) return false
-
-    return {
-      'version.clinic': {
-        equals: clinicId,
-      },
-    }
+    return currentClinicReviewScope(req, 'version.clinic')
   }
 
   return false

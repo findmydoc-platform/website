@@ -8,11 +8,11 @@ import { createMockPayload, createMockReq } from '../../../helpers/testHelpers'
 
 const mocks = vi.hoisted(() => ({
   readPostHogClinicDashboardReporting: vi.fn(),
-  revalidateClinicDashboardRequest: vi.fn(),
+  revalidateClinicDashboardTargetRequest: vi.fn(),
 }))
 
 vi.mock('@/features/clinicDashboard/authorization', () => ({
-  revalidateClinicDashboardRequest: mocks.revalidateClinicDashboardRequest,
+  revalidateClinicDashboardTargetRequest: mocks.revalidateClinicDashboardTargetRequest,
 }))
 
 vi.mock('@/features/clinicDashboard/reporting/posthog', async (importOriginal) => ({
@@ -195,6 +195,7 @@ const configuredPayload = (
           {
             address: { city: 34, country: 77, houseNumber: '1', street: 'Main', zipCode: '34000' },
             description: { root: { children: [{ text: 'Description' }] } },
+            id: 8,
             name: 'Türkiye Clinic',
             openingHours: {
               friday: { closesAt: '17:00', isClosed: false, opensAt: '09:00' },
@@ -231,8 +232,8 @@ const findFor = (payload: ReturnType<typeof createMockPayload>, collection: stri
 describe('Clinic Dashboard reporting service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.revalidateClinicDashboardRequest.mockResolvedValue({
-      data: { clinic: { id: '8', name: 'Türkiye Clinic' } },
+    mocks.revalidateClinicDashboardTargetRequest.mockResolvedValue({
+      clinicId: '8',
       status: 'authorized',
     })
     mocks.readPostHogClinicDashboardReporting.mockResolvedValue(availablePostHog)
@@ -253,7 +254,7 @@ describe('Clinic Dashboard reporting service', () => {
   it('returns the complete immutable reporting-v1 DTO and scoped source reads', async () => {
     const payload = configuredPayload()
 
-    const result = await resolveClinicDashboardReporting(createMockReq(null, payload), 7, now)
+    const result = await resolveClinicDashboardReporting(createMockReq(null, payload), '8', 7, now)
 
     expect(result).toEqual({ data: completeDto, status: 'success' })
     expect(mocks.readPostHogClinicDashboardReporting).toHaveBeenCalledWith({
@@ -296,7 +297,7 @@ describe('Clinic Dashboard reporting service', () => {
   })
 
   it('counts a depth-zero city relationship as a complete address area', async () => {
-    const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), 7, now)
+    const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), '8', 7, now)
 
     expect(result).toMatchObject({
       data: {
@@ -313,12 +314,22 @@ describe('Clinic Dashboard reporting service', () => {
     })
   })
 
+  it('rejects a mismatched source clinic before reading its metrics', async () => {
+    const payload = configuredPayload()
+    payload.find.mockResolvedValue({ docs: [{ id: 99, address: { country: { isoCode: 'TR' } } }] })
+    await expect(resolveClinicDashboardReporting(createMockReq(null, payload), '8', 7, now)).resolves.toEqual({
+      status: 'access-denied',
+    })
+    expect(mocks.readPostHogClinicDashboardReporting).not.toHaveBeenCalled()
+  })
+
   it('excludes an inquiry at comparison.to while including one at the current-period start', async () => {
     const result = await resolveClinicDashboardReporting(
       createMockReq(
         null,
         configuredPayload([{ createdAt: completeDto.comparisonPeriod.to }, { createdAt: completeDto.period.from }]),
       ),
+      '8',
       7,
       now,
     )
@@ -346,7 +357,7 @@ describe('Clinic Dashboard reporting service', () => {
       current: { ...availablePostHog.current, [field]: 1 },
     })
 
-    const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), 7, now)
+    const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), '8', 7, now)
 
     expect(result).toEqual({
       data: {
@@ -398,6 +409,7 @@ describe('Clinic Dashboard reporting service', () => {
           {
             address: { city: 'Istanbul', country: 77, houseNumber: '1', street: 'Main', zipCode: '34000' },
             description: { root: { children: [{ text: 'Description' }] } },
+            id: 8,
             name: 'Türkiye Clinic',
             openingHours: undefined,
             profileGallery: [],
@@ -408,7 +420,7 @@ describe('Clinic Dashboard reporting service', () => {
       }
     })
 
-    const result = await resolveClinicDashboardReporting(createMockReq(null, payload), 7, now)
+    const result = await resolveClinicDashboardReporting(createMockReq(null, payload), '8', 7, now)
 
     expect(result).toMatchObject({
       data: {
@@ -451,7 +463,7 @@ describe('Clinic Dashboard reporting service', () => {
         currentState: state,
       })
 
-      const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), 7, now)
+      const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), '8', 7, now)
 
       expect(result).toEqual({ data: withUnknownPostHog(state), status: 'success' })
       expect(mocks.readPostHogClinicDashboardReporting).toHaveBeenCalledOnce()
@@ -464,7 +476,7 @@ describe('Clinic Dashboard reporting service', () => {
       comparisonState: 'partial_coverage',
     })
 
-    const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), 7, now)
+    const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), '8', 7, now)
 
     expect(result).toEqual({ data: withPartialComparisonPostHog(), status: 'success' })
   })
@@ -476,7 +488,7 @@ describe('Clinic Dashboard reporting service', () => {
       current: { ...availablePostHog.current, inquirySessions: 0, profileViewSessions: 0 },
     })
 
-    const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), 7, now)
+    const result = await resolveClinicDashboardReporting(createMockReq(null, configuredPayload()), '8', 7, now)
 
     expect(result).toMatchObject({
       data: {
@@ -501,10 +513,10 @@ describe('Clinic Dashboard reporting service', () => {
     ['unauthorized', { status: 'unauthorized' }],
     ['access denied', { status: 'access-denied' }],
   ] as const)('stops before every source read for %s', async (_, access) => {
-    mocks.revalidateClinicDashboardRequest.mockResolvedValueOnce(access)
+    mocks.revalidateClinicDashboardTargetRequest.mockResolvedValueOnce(access)
     const payload = configuredPayload()
 
-    await expect(resolveClinicDashboardReporting(createMockReq(null, payload), 7, now)).resolves.toEqual(access)
+    await expect(resolveClinicDashboardReporting(createMockReq(null, payload), '8', 7, now)).resolves.toEqual(access)
     expect(payload.find).not.toHaveBeenCalled()
     expect(mocks.readPostHogClinicDashboardReporting).not.toHaveBeenCalled()
   })
@@ -521,6 +533,7 @@ describe('Clinic Dashboard reporting service', () => {
           {
             address: { city: 'Istanbul', country: 77, houseNumber: '1', street: 'Main', zipCode: '34000' },
             description: { root: { children: [{ text: 'Description' }] } },
+            id: 8,
             name: 'Türkiye Clinic',
             openingHours: {
               friday: { closesAt: '17:00', isClosed: false, opensAt: '09:00' },
@@ -539,7 +552,7 @@ describe('Clinic Dashboard reporting service', () => {
       }
     })
 
-    const result = await resolveClinicDashboardReporting(createMockReq(null, payload), 7, now)
+    const result = await resolveClinicDashboardReporting(createMockReq(null, payload), '8', 7, now)
 
     expect(result).toMatchObject({
       data: {

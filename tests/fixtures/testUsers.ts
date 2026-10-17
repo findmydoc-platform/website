@@ -1,3 +1,4 @@
+import { replaceClinicStaffAssignment } from '@/features/clinicGroups/staffAssignments'
 import { createLocalReq, type Payload } from 'payload'
 import { createHmac, randomBytes, randomUUID } from 'node:crypto'
 import {
@@ -205,5 +206,26 @@ export async function cleanupTrackedUsers(payload: Payload, options: CleanupTrac
         overrideAccess: true,
       })
     } catch {}
+  }
+}
+
+/** Trusted fixture reassignment through the same native operator boundary as back-office writes. */
+export async function replaceClinicTestUserAssignment(
+  payload: Payload,
+  id: number | string,
+  clinic: ClinicStaff['clinic'],
+  context: Record<string, unknown> = {},
+): Promise<ClinicStaff> {
+  const operator = await createPlatformTestUser(payload, { emailPrefix: `assignment-${randomUUID()}` })
+  try {
+    const req = await createLocalReq({ user: withCollection(operator), context }, payload)
+    const clinicId = clinic === null || clinic === undefined ? null : typeof clinic === 'object' ? clinic.id : clinic
+    return await replaceClinicStaffAssignment(
+      req,
+      Number(id),
+      clinicId === null ? { scope: 'unassigned' } : { scope: 'local', clinicId },
+    )
+  } finally {
+    await payload.delete({ collection: 'platformStaff', id: operator.id, overrideAccess: true })
   }
 }

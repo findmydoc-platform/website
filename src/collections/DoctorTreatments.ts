@@ -1,11 +1,14 @@
+import {
+  doctorSourceAccess,
+  doctorCreateAccess,
+  doctorRelatedPublicRead,
+  guardDoctorOperation,
+  guardDoctorChange,
+  verifyDoctorOperation,
+} from '@/features/doctorProfiles/authorization'
 import { CollectionConfig } from 'payload'
-import { anyone } from '@/access/anyone'
-import { isClinicStaff } from '@/access/isClinicStaff'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
-import { platformOrAssignedClinicMutation, platformOrOwnClinicDoctorResource } from '@/access/scopeFilters'
-import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
-import { beforeChangeEnforceDoctorInAssignedClinic } from '@/hooks/clinicOwnership'
 
 export const DoctorTreatments: CollectionConfig = {
   slug: 'doctortreatments',
@@ -20,13 +23,15 @@ export const DoctorTreatments: CollectionConfig = {
     defaultColumns: ['doctor', 'treatment', 'specializationLevel'],
   },
   access: {
-    read: anyone, // Public read access
-    create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
-    update: platformOrOwnClinicDoctorResource, // Platform: all, Clinic: only doctors from their clinic
+    read: doctorRelatedPublicRead, // Public read access
+    create: doctorCreateAccess, // Platform: all, Clinic: assigned clinic only
+    update: doctorSourceAccess('doctor.clinic'), // Platform: all, Clinic: only doctors from their clinic
     delete: isPlatformStaff, // Only Platform can delete
   },
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook, beforeChangeEnforceDoctorInAssignedClinic({ doctorField: 'doctor' })],
+    beforeOperation: [guardDoctorOperation],
+    afterOperation: [verifyDoctorOperation],
+    beforeChange: [stableIdBeforeChangeHook, guardDoctorChange],
   },
   timestamps: true,
   fields: [
@@ -41,20 +46,7 @@ export const DoctorTreatments: CollectionConfig = {
         description: 'Doctor for this treatment',
         allowCreate: false,
       },
-      filterOptions: async ({ req }) => {
-        if (!req.user) return true
-        if (isPlatformStaff({ req })) return true
-        if (!isClinicStaff({ req })) return false
-
-        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        if (clinicId === null) return false
-
-        return {
-          clinic: {
-            equals: clinicId,
-          },
-        }
-      },
+      filterOptions: ({ req }) => (!req.user ? true : doctorSourceAccess()({ req })),
     },
     {
       name: 'treatment',

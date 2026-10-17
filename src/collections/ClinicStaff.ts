@@ -1,3 +1,8 @@
+import { guardPersonalGroupInvitationSource } from '@/auth/utilities/personalGroupInvitationSource'
+import {
+  guardClinicStaffAssignmentInput,
+  validateClinicStaffAssignment,
+} from '@/features/clinicGroups/staffAssignments'
 import {
   guardNotificationAuthorizationChange,
   guardNotificationAuthorizationSession,
@@ -8,7 +13,11 @@ import { isClinicStaff, isOwnClinicStaffProfile } from '@/access/isClinicStaff'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
-import { platformOnlyFieldAccess, staffProfileFieldReadAccess } from '@/access/fieldAccess'
+import {
+  platformOnlyFieldAccess,
+  platformClinicTrustFieldAccess,
+  staffProfileFieldReadAccess,
+} from '@/access/fieldAccess'
 import { synchronizeClinicStaffAuthState, validateClinicStaffStatusTransition } from '@/hooks/clinicStaffLifecycle'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { clinicStaffStatusOptions } from './clinicStaff/lifecycle'
@@ -56,7 +65,7 @@ export const ClinicStaff: CollectionConfig = {
     delete: () => false,
   },
   hooks: {
-    beforeOperation: [guardNotificationAuthorizationChange],
+    beforeOperation: [guardNotificationAuthorizationChange, guardClinicStaffAssignmentInput],
     beforeDelete: [guardNotificationAuthorizationSession, deleteNotificationReaderReceipts],
     afterOperation: [
       async ({ result, req, operation }) => {
@@ -68,6 +77,8 @@ export const ClinicStaff: CollectionConfig = {
     beforeChange: [
       guardNotificationAuthorizationSession,
       guardClinicAccountEvidence,
+      guardPersonalGroupInvitationSource,
+      validateClinicStaffAssignment,
       guardClinicInvitationAuthorization,
       validateClinicStaffStatusTransition,
       beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
@@ -77,13 +88,62 @@ export const ClinicStaff: CollectionConfig = {
   },
   fields: [
     {
+      name: 'assignmentScope',
+      type: 'select',
+      options: ['local', 'group', 'unassigned'],
+      access: { create: platformClinicTrustFieldAccess, update: platformClinicTrustFieldAccess },
+      admin: { description: 'Scope of the current clinic staff assignment.' },
+    },
+    {
+      name: 'group',
+      type: 'relationship',
+      relationTo: 'clinicGroups',
+      hasMany: false,
+      index: true,
+      access: {
+        create: platformClinicTrustFieldAccess,
+        update: platformClinicTrustFieldAccess,
+        read: staffProfileFieldReadAccess,
+      },
+      admin: { position: 'sidebar', description: 'Group for group scope. Clear the clinic when selecting a group.' },
+    },
+    {
+      name: 'personalGroupInvitation',
+      type: 'group',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+      fields: [
+        { name: 'groupId', type: 'text' },
+        { name: 'operatorId', type: 'text' },
+        { name: 'authorizedAt', type: 'date' },
+      ],
+    },
+    {
+      name: 'activationReadiness',
+      type: 'group',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+      fields: [
+        { name: 'version', type: 'select', options: ['identity-v1'] },
+        { name: 'principalId', type: 'text' },
+        { name: 'subject', type: 'text' },
+        { name: 'establishedAt', type: 'date' },
+      ],
+    },
+    {
       name: 'accountCompletion',
       type: 'group',
       access: { create: () => false, read: () => false, update: () => false },
       admin: { hidden: true },
       fields: [
-        { name: 'source', type: 'select', options: ['initial-password', 'legacy-password-login', 'legacy-audit'] },
+        {
+          name: 'source',
+          type: 'select',
+          options: ['initial-password', 'group-initial-password', 'legacy-password-login', 'legacy-audit'],
+        },
         { name: 'subject', type: 'text' },
+        { name: 'principalId', type: 'text' },
+        { name: 'groupId', type: 'text' },
         { name: 'clinicId', type: 'text' },
         { name: 'evidenceAt', type: 'date' },
         { name: 'observedAt', type: 'date' },

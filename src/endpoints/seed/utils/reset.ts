@@ -1,3 +1,6 @@
+import { createLocalReq } from 'payload'
+import { revokeResetClinicAssignment } from '@/features/clinicGroups/staffAssignments'
+import { clinicAssignmentRelationId } from '@/auth/utilities/clinicStaffAssignment'
 import fs from 'node:fs'
 import path from 'node:path'
 import type { CollectionSlug, Payload, PayloadRequest, Where } from 'payload'
@@ -98,6 +101,7 @@ type PlannedUserUpdate = {
   collection: ProtectedPrincipalCollection
   data: Record<string, null>
   id: number | string
+  resetClinicId?: number
 }
 
 const allDocumentsWhere: Where = {
@@ -224,6 +228,11 @@ const planProtectedUserRelationCleanup = async (payload: Payload, kind: SeedKind
         data: {},
         id: doc.id,
       }
+      if (spec.collection === 'clinicStaff' && spec.field === 'clinic') {
+        const clinicId = clinicAssignmentRelationId('clinic' in doc ? doc.clinic : null)
+        if (!clinicId) throw new Error('Seed reset preflight failed: invalid staff clinic reference')
+        current.resetClinicId = clinicId
+      }
       current.data[spec.field] = null
       updates.set(key, current)
     }
@@ -239,10 +248,18 @@ const clearProtectedUserRelations = async (
 ): Promise<void> => {
   for (const update of updates) {
     payload.logger.info(`Clearing resettable relations on preserved ${update.collection}:${String(update.id)}`)
+    const data = { ...update.data }
+    if (update.collection === 'clinicStaff' && Object.hasOwn(data, 'clinic')) {
+      if (!update.resetClinicId) throw new Error('Seed reset preflight failed: missing expected clinic reference')
+      const resetReq = await createLocalReq({ user: req.user ?? undefined, context: req.context }, payload)
+      await revokeResetClinicAssignment(resetReq, Number(update.id), update.resetClinicId)
+      delete data.clinic
+    }
+    if (!Object.keys(data).length) continue
     await payload.update({
       collection: update.collection,
       id: update.id,
-      data: update.data,
+      data,
       depth: 0,
       overrideAccess: true,
       context: req.context,

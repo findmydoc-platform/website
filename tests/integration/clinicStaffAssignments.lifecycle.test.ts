@@ -11,7 +11,7 @@ import {
   cleanupTrackedUsers,
 } from '../fixtures/testUsers'
 import { testSlug } from '../fixtures/testSlug'
-import { replaceClinicStaffAssignment } from '@/features/clinicGroups/staffAssignments'
+import { replaceClinicStaffAssignment, revokeResetClinicAssignment } from '@/features/clinicGroups/staffAssignments'
 import { readClinicPrincipalAccess, readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { isClinicUserApproved } from '@/auth/utilities/userLookup'
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
@@ -235,6 +235,35 @@ describe('existing personal clinic and group assignments', () => {
       }),
     ).rejects.toMatchObject({ status: 403 })
     expect((await readClinicPrincipalAccess(payload, staff.id, req))?.clinics.map(({ id }) => id)).toEqual([first.id])
+  })
+
+  it('keeps a changed assignment when reset expected another clinic and never turns reset context into authority', async () => {
+    const first = await clinic('reset-first')
+    const other = await clinic('reset-other')
+    const network = await group()
+    const { staff, req } = await person(first.id)
+    const original = await payload.findByID({ collection: 'clinicStaff', id: staff.id, depth: 0, overrideAccess: true })
+    await expect(revokeResetClinicAssignment(req, staff.id, other.id)).rejects.toMatchObject({ status: 409 })
+    await expect(
+      payload.update({
+        collection: 'clinicStaff',
+        id: staff.id,
+        data: { assignmentScope: 'unassigned', clinic: null, group: null },
+        overrideAccess: true,
+        req,
+        context: { seedReset: true, skipHooks: true, clinicResetAssignmentCapability: {} },
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+    await replaceClinicStaffAssignment(operator, staff.id, { scope: 'group', groupId: network.id })
+    await expect(revokeResetClinicAssignment(req, staff.id, first.id)).rejects.toMatchObject({ status: 409 })
+    const current = await payload.findByID({ collection: 'clinicStaff', id: staff.id, depth: 0, overrideAccess: true })
+    expect(current).toMatchObject({
+      assignmentScope: 'group',
+      group: network.id,
+      clinic: null,
+      activationReadiness: original.activationReadiness,
+      accountCompletion: original.accountCompletion,
+    })
   })
 
   it.each([

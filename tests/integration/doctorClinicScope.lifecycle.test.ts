@@ -258,15 +258,6 @@ describe('Current clinic doctor source permissions and native ordering', () => {
         overrideAccess: false,
       }),
     ).rejects.toMatchObject({ status: 403 })
-    await expect(
-      payload.update({
-        collection: 'doctorspecialties',
-        id: assignment.id,
-        data: { medicalSpecialty: 2147483647 },
-        req,
-        overrideAccess: false,
-      }),
-    ).rejects.toMatchObject({ status: 400 })
     const ownImage = await image(f.first.doctor.id)
     const foreignImage = await image(f.second.doctor.id)
     await payload.update({
@@ -329,9 +320,86 @@ describe('Current clinic doctor source permissions and native ordering', () => {
       }),
     ).rejects.toMatchObject({ status: 404 })
   })
-  it('retains privileged native orphan cleanup after the doctor and clinic are hard deleted', async () => {
+  it('rejects an unknown controlled master specialty and preserves the stored reference', async () => {
     const f = await fixtures()
-    const orphan = await image(f.foreign.doctor.id)
+    await replaceClinicStaffAssignment(operator, f.principal.id, { scope: 'group', groupId: f.group.id })
+    const req = await f.request(f.first.clinic.id)
+    const assignment = await specialty(f.first.doctor.id)
+    await expect(
+      payload.update({
+        collection: 'doctorspecialties',
+        id: assignment.id,
+        data: { medicalSpecialty: 2147483647 },
+        req,
+        overrideAccess: false,
+      }),
+    ).rejects.toMatchObject({ cause: { code: '23503' } })
+    expect(
+      (await payload.findByID({ collection: 'doctorspecialties', id: assignment.id, depth: 0, overrideAccess: true }))
+        .medicalSpecialty,
+    ).toBe(
+      typeof assignment.medicalSpecialty === 'object' ? assignment.medicalSpecialty.id : assignment.medicalSpecialty,
+    )
+  })
+  it('retains required media ownership and removes media before hard deleting its doctor and clinic', async () => {
+    const f = await fixtures()
+    const portrait = await image(f.foreign.doctor.id)
+    await expect(
+      payload.delete({
+        collection: 'doctors',
+        id: f.foreign.doctor.id,
+        trash: true,
+        overrideAccess: true,
+        req: operator,
+      }),
+    ).rejects.toMatchObject({ cause: { code: '23502' } })
+    const stored = await payload.findByID({
+      collection: 'doctorMedia',
+      id: portrait.id,
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(stored.doctor).toBe(f.foreign.doctor.id)
+    expect(stored.clinic).toBe(f.foreign.clinic.id)
+    await expect(
+      payload.delete({
+        collection: 'doctorMedia',
+        id: portrait.id,
+        overrideAccess: true,
+        req: await f.request(f.first.clinic.id),
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+    await expect(
+      payload.delete({
+        collection: 'doctorMedia',
+        id: portrait.id,
+        overrideAccess: true,
+        req: operator,
+        disableTransaction: true,
+      }),
+    ).rejects.toThrow(/active native transaction/)
+    await expect(
+      payload.update({
+        collection: 'doctorMedia',
+        id: portrait.id,
+        data: { doctor: f.first.doctor.id },
+        overrideAccess: true,
+        req: operator,
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+    await expect(
+      payload.delete({
+        collection: 'doctorMedia',
+        id: portrait.id,
+        overrideAccess: true,
+        req: await createLocalReq(
+          { user: f.user, req: { routeParams: { clinicId: String(f.first.clinic.id) } } },
+          payload,
+        ),
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+    await payload.delete({ collection: 'doctorMedia', id: portrait.id, overrideAccess: true, req: operator })
+    media.splice(media.indexOf(portrait.id), 1)
     await payload.delete({
       collection: 'doctors',
       id: f.foreign.doctor.id,
@@ -348,49 +416,9 @@ describe('Current clinic doctor source permissions and native ordering', () => {
       req: operator,
     })
     clinics.splice(clinics.indexOf(f.foreign.clinic.id), 1)
-    const stored = await payload.findByID({ collection: 'doctorMedia', id: orphan.id, depth: 0, overrideAccess: true })
-    expect(stored.doctor).toBeNull()
-    expect(stored.clinic).toBeNull()
     await expect(
-      payload.delete({
-        collection: 'doctorMedia',
-        id: orphan.id,
-        overrideAccess: true,
-        req: await f.request(f.first.clinic.id),
-      }),
-    ).rejects.toMatchObject({ status: 403 })
-    await expect(
-      payload.delete({
-        collection: 'doctorMedia',
-        id: orphan.id,
-        overrideAccess: true,
-        req: operator,
-        disableTransaction: true,
-      }),
-    ).rejects.toThrow(/active native transaction/)
-    await expect(
-      payload.update({
-        collection: 'doctorMedia',
-        id: orphan.id,
-        data: { doctor: f.first.doctor.id },
-        overrideAccess: true,
-        req: operator,
-      }),
-    ).rejects.toMatchObject({ status: 403 })
-    await expect(
-      payload.delete({
-        collection: 'doctorMedia',
-        id: orphan.id,
-        overrideAccess: true,
-        req: await createLocalReq(
-          { user: operator.user!, req: { routeParams: { clinicId: String(f.first.clinic.id) } } },
-          payload,
-        ),
-      }),
-    ).rejects.toMatchObject({ status: 403 })
-    await payload.delete({ collection: 'doctorMedia', id: orphan.id, overrideAccess: true, req: operator })
-    media.splice(media.indexOf(orphan.id), 1)
-    await expect(payload.findByID({ collection: 'doctorMedia', id: orphan.id, overrideAccess: true })).rejects.toThrow()
+      payload.findByID({ collection: 'doctorMedia', id: portrait.id, overrideAccess: true }),
+    ).rejects.toThrow()
   })
   it.each(['doctors', 'doctorspecialties', 'doctorMedia'] as const)(
     'fails closed without a native transaction owner for %s',
@@ -497,10 +525,10 @@ describe('Current clinic doctor source permissions and native ordering', () => {
     staffHooks.afterChange = [...(oldStaff ?? []), pause]
     controls.beforeChange = [
       ...(oldControl ?? []),
-      ({ data, req }) => {
+      ({ data, originalDoc, req }) => {
         if (
           req.context.doctorRace === 'second' &&
-          data.key ===
+          (data.key ?? originalDoc?.key) ===
             (accessChange === 'move'
               ? `notification-authorization:clinic:${f.first.clinic.id}`
               : `notification-authorization:staff:${f.principal.id}`)

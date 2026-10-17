@@ -90,7 +90,23 @@ describe('clinic group back office and initial membership', () => {
       })
     try {
       const network = await group()
-      const independent = await clinic()
+      const template = await clinic()
+      // The shared fixture creates a doctor and its clinic barrier; this target must have no business children.
+      const independent = await payload.create({
+        collection: 'clinics',
+        data: {
+          name: `${prefix}-independent`,
+          slug: `${prefix}-independent`,
+          address: template.address,
+          contact: template.contact,
+          internalPrimaryContact: template.internalPrimaryContact,
+          supportedLanguages: template.supportedLanguages,
+          status: 'draft',
+        },
+        depth: 0,
+        overrideAccess: true,
+      })
+      clinicIds.push(independent.id)
       expect(independent.group).toBeFalsy()
       const keys = [
         `notification-authorization:clinic:${independent.id}`,

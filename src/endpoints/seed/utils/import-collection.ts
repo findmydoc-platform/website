@@ -7,6 +7,7 @@ import type { StableIdResolvers } from './resolvers'
 import { loadSeedFile } from './load-json'
 import { assertSeedRunPolicy, resolveSeedRuntimeEnv } from './runtime'
 import { upsertByStableId, type SeedUpsertPolicy } from './upsert'
+import { cloneSeedOperationRequest } from './operation-request'
 
 export type RelationMapping = {
   sourceField: string
@@ -151,7 +152,7 @@ async function applyLocalizedFieldUpdates(options: {
         disableRevalidate: true,
         ...(context ?? {}),
       },
-      req,
+      req: cloneSeedOperationRequest(req),
     })
   }
 }

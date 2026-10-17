@@ -77,6 +77,25 @@ export const ClinicStaff: CollectionConfig = {
   },
   fields: [
     {
+      name: 'assignmentScope',
+      type: 'select',
+      options: ['local', 'group', 'unassigned'],
+      access: { create: platformOnlyFieldAccess, update: platformOnlyFieldAccess },
+      admin: { description: 'Scope of the current clinic staff assignment.' },
+    },
+    {
+      name: 'activationReadiness',
+      type: 'group',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+      fields: [
+        { name: 'version', type: 'select', options: ['identity-v1'] },
+        { name: 'principalId', type: 'text' },
+        { name: 'subject', type: 'text' },
+        { name: 'establishedAt', type: 'date' },
+      ],
+    },
+    {
       name: 'accountCompletion',
       type: 'group',
       access: { create: () => false, read: () => false, update: () => false },

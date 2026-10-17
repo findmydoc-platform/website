@@ -42,6 +42,13 @@ const createRequest = (counts: number[], events: string[] = []) => {
           {
             authSync: { status: 'synced' },
             supabaseUserId: 'subject-5',
+            assignmentScope: 'local',
+            activationReadiness: {
+              version: 'identity-v1',
+              principalId: '5',
+              subject: 'subject-5',
+              establishedAt: '2026-10-17T10:00:00.000Z',
+            },
             accountCompletion: {
               source: 'initial-password',
               subject: 'subject-5',

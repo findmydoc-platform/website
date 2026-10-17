@@ -16,6 +16,13 @@ const readyStaff = {
   status: 'approved',
   authSync: { status: 'synced' },
   supabaseUserId: 'subject-22',
+  assignmentScope: 'local',
+  activationReadiness: {
+    version: 'identity-v1',
+    principalId: String(22),
+    subject: 'subject-22',
+    establishedAt: '2026-10-17T10:00:00.000Z',
+  },
   accountCompletion: {
     source: 'initial-password',
     subject: 'subject-22',

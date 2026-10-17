@@ -1,6 +1,7 @@
 import type { Clinic, ClinicStaff } from '@/payload-types'
 import type { Payload, PayloadRequest } from 'payload'
 import { establishLegacyClinicPasswordEvidence, hasClinicAccountCompletion } from './clinicAccountCompletion'
+import { hasClinicActivationReadiness } from './clinicAccountCompletionState'
 import { extractTokenFromHeader } from './supabaseAuthPolicy'
 import { isClinicParticipationApproved } from './clinicParticipation'
 
@@ -18,8 +19,9 @@ const readRelationId = (value: ClinicStaff['clinic']): number | string | null =>
 export const isClinicStaffAccessReady = (staff: ClinicStaff): boolean =>
   staff.status === 'approved' &&
   staff.authSync?.status === 'synced' &&
+  staff.assignmentScope === 'local' &&
   readRelationId(staff.clinic) !== null &&
-  hasClinicAccountCompletion(staff)
+  hasClinicActivationReadiness(staff)
 
 export const isClinicAccessReady = isClinicParticipationApproved
 

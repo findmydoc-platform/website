@@ -1400,6 +1400,16 @@ export interface UserProfileMedia {
  */
 export interface ClinicStaff {
   id: number;
+  /**
+   * Scope of the current clinic staff assignment.
+   */
+  assignmentScope?: ('local' | 'group' | 'unassigned') | null;
+  activationReadiness?: {
+    version?: 'identity-v1' | null;
+    principalId?: string | null;
+    subject?: string | null;
+    establishedAt?: string | null;
+  };
   accountCompletion?: {
     source?: ('initial-password' | 'legacy-password-login' | 'legacy-audit') | null;
     subject?: string | null;
@@ -5086,6 +5096,15 @@ export interface PatientsSelect<T extends boolean = true> {
  * via the `definition` "clinicStaff_select".
  */
 export interface ClinicStaffSelect<T extends boolean = true> {
+  assignmentScope?: T;
+  activationReadiness?:
+    | T
+    | {
+        version?: T;
+        principalId?: T;
+        subject?: T;
+        establishedAt?: T;
+      };
   accountCompletion?:
     | T
     | {

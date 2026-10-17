@@ -4,6 +4,7 @@ import { createMockPayload, createMockReq } from '../../helpers/testHelpers'
 import type { ClinicStaff } from '@/payload-types'
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import {
+  convertClinicStaffLocalAccess,
   establishLegacyClinicPasswordEvidence,
   guardClinicAccountEvidence,
   importLegacyClinicPasswordEvidence,
@@ -58,6 +59,35 @@ function request(initial = false) {
 }
 
 describe('clinic password evidence boundary', () => {
+  it.each([
+    ['valid', {}, true],
+    ['wrong subject', { subject: 'replacement' }, false],
+    ['wrong clinic', { clinicId: '9' }, false],
+    ['missing source', { source: null }, false],
+    ['invalid evidence time', { evidenceAt: 'invalid' }, false],
+    ['missing observation', { observedAt: null }, false],
+  ])('converts original %s evidence without replacing it', async (_name, change, expected) => {
+    const req = request()
+    const original = {
+      ...staff,
+      accountCompletion: {
+        source: 'legacy-audit',
+        subject,
+        clinicId: '8',
+        evidenceAt: snapshotAt,
+        observedAt: snapshotAt,
+        ...change,
+      },
+    } as ClinicStaff
+    vi.mocked(req.payload.findByID).mockResolvedValue(original)
+    vi.mocked(req.payload.update).mockImplementation(async ({ data }) => ({ ...original, ...data }) as ClinicStaff)
+    const converted = await convertClinicStaffLocalAccess(req, staff.id)
+    expect(Boolean(converted.activationReadiness?.version)).toBe(expected)
+    expect(converted.assignmentScope).toBe('local')
+    expect(converted.accountCompletion).toEqual(original.accountCompletion)
+    expect(converted.supabaseUserId).toBe(staff.supabaseUserId)
+  })
+
   afterEach(() => vi.useRealTimers())
   beforeEach(() => {
     vi.useFakeTimers()
@@ -135,6 +165,13 @@ describe('clinic password evidence boundary', () => {
     const req = request()
     const currentStaff = {
       ...staff,
+      assignmentScope: 'local',
+      activationReadiness: {
+        version: 'identity-v1',
+        principalId: '22',
+        subject,
+        establishedAt: '2026-10-17T10:00:00.000Z',
+      },
       accountCompletion: {
         source: 'legacy-password-login',
         subject,

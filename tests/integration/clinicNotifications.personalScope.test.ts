@@ -1,7 +1,12 @@
+import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import config from '@payload-config'
-import { submitGuestClinicInquiry } from '@/features/inquiryCommunication/service'
+import type { Review } from '@/payload-types'
+import { clinicDashboardInquiryDetailGetHandler } from '@/endpoints/clinicDashboardInquiries'
+import { clinicDashboardReviewGetHandler } from '@/endpoints/clinicDashboardReviews'
+import { readClinicInquiryQueue, submitGuestClinicInquiry } from '@/features/inquiryCommunication/service'
+import { readClinicReviewPage } from '@/features/clinicDashboard/reviews/operations'
 import {
   activateClinicNotificationsForTest,
   readClinicNotifications,
@@ -16,8 +21,19 @@ import {
   asPayloadStaffUser,
   createClinicTestUser,
   createPlatformTestUser,
+  createPatientTestUser,
 } from '../fixtures/testUsers'
 import { testSlug } from '../fixtures/testSlug'
+
+const identity = vi.hoisted(() => ({ validate: vi.fn() }))
+const afterMock = vi.hoisted(() => vi.fn())
+// Direct native endpoint fixtures have no Next request scope for its external post-response scheduler.
+vi.mock('next/server.js', () => ({ after: afterMock }))
+// External Bearer identity is isolated; current principal, clinic rights and receipts use native Payload/Postgres.
+vi.mock('@/auth/utilities/jwtValidation', async (original) => ({
+  ...(await original<typeof import('@/auth/utilities/jwtValidation')>()),
+  validateSupabaseBearerToken: identity.validate,
+}))
 
 vi.mock('@payloadcms/storage-s3', () => ({ s3Storage: () => (incomingConfig: unknown) => incomingConfig }))
 
@@ -291,6 +307,190 @@ describe('personal notifications across current clinic assignments', () => {
         .filter((member) => selected.includes(member.notificationId))
       expect(returned).toHaveLength(2)
       expect(returned.filter((member) => member.readAt === null)).toHaveLength(order === 'receipt-first' ? 0 : 1)
+    },
+  )
+
+  it.each(['inquiry', 'review'] as const)(
+    'opens an exact cross-clinic %s independently, then rechecks current rights for its separate fixed receipt',
+    async (kind) => {
+      const createSource = async (clinicId: number) => {
+        if (kind === 'inquiry') return (await createInquiry(clinicId)).id
+        const patient = await createPatientTestUser(payload, { emailPrefix: `${prefix}-exact-${++serial}` })
+        const treatment = (await payload.find({ collection: 'treatments', limit: 1, overrideAccess: true })).docs[0]!
+        const source = await payload.create({
+          collection: 'reviews',
+          req: operator,
+          overrideAccess: false,
+          depth: 0,
+          data: {
+            patient: patient.id,
+            clinic: clinicId,
+            doctor: doctors.get(clinicId)!,
+            treatment: treatment.id,
+            status: 'approved',
+            starRating: 5,
+            comment: 'Synthetic exact notification target.',
+            authorVisibility: 'anonymous',
+          } as Review,
+        })
+        return String(source.id)
+      }
+      const exactId = await createSource(second)
+      const foreignId = await createSource(foreign)
+      const fixed = (await page()).items.find(
+        (item) => item.destination.kind === kind && item.members.some((member) => member.sourceRecord.id === exactId),
+      )!
+      expect(fixed.clinic.id).toBe(String(second))
+      const selection = fixed.members.map((member) => member.notificationId)
+      const selectedOccurrenceIds = (
+        await payload.find({
+          collection: 'clinicNotificationOccurrences',
+          where: { notificationId: { in: selection } },
+          depth: 0,
+          pagination: false,
+          overrideAccess: true,
+        })
+      ).docs.map((occurrence) => occurrence.id)
+      expect(selectedOccurrenceIds).toHaveLength(selection.length)
+      const personalReceipts = async () =>
+        (
+          await payload.find({
+            collection: 'clinicNotificationReadReceipts',
+            where: { clinicStaff: { equals: manager.user!.id } },
+            sort: 'id',
+            depth: 0,
+            pagination: false,
+            overrideAccess: true,
+          })
+        ).docs
+      const receiptsBeforeOpening = await personalReceipts()
+      expect(
+        receiptsBeforeOpening.filter((receipt) => selectedOccurrenceIds.includes(Number(receipt.occurrence))),
+      ).toHaveLength(0)
+      const personalPrincipal = manager.user
+      if (personalPrincipal?.collection !== 'clinicStaff' || !personalPrincipal.supabaseUserId?.trim())
+        throw new Error('Expected a clinic staff personal identity')
+      const personalBearer = randomUUID()
+      const foreignBearer = randomUUID()
+      const foreignSubject = randomUUID()
+      identity.validate.mockImplementation(async ({ token }: { token: string }) =>
+        token === personalBearer || token === foreignBearer
+          ? {
+              status: 'authenticated',
+              authData: {
+                userType: 'clinic',
+                supabaseUserId: token === personalBearer ? personalPrincipal.supabaseUserId : foreignSubject,
+              },
+            }
+          : { status: 'invalid' },
+      )
+      const detail = async (clinicId: number, recordId: string, bearer: string | null = personalBearer) => {
+        const request = await createLocalReq(
+          {
+            user: personalPrincipal,
+            req: {
+              headers: new Headers({
+                ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
+                'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
+                'X-Findmydoc-Clinic-Dashboard-Contract': 'inquiry-communication-v2',
+              }),
+              routeParams: { clinicId: String(clinicId), id: recordId },
+              searchParams: new URLSearchParams(kind === 'inquiry' ? { inquiryId: recordId } : undefined),
+            },
+          },
+          payload,
+        )
+        Object.defineProperty(request, 'url', {
+          configurable: true,
+          value:
+            kind === 'inquiry' ? `http://localhost:3000/detail?inquiryId=${recordId}` : 'http://localhost:3000/detail',
+        })
+        return kind === 'inquiry'
+          ? clinicDashboardInquiryDetailGetHandler(request)
+          : clinicDashboardReviewGetHandler(request)
+      }
+      const filteredRequest = await createLocalReq(
+        { user: manager.user!, context: { inquiryClinicTargetId: String(second) } },
+        payload,
+      )
+      if (kind === 'inquiry') {
+        const filtered = await readClinicInquiryQueue(filteredRequest, {
+          lifecycle: 'open',
+          limit: 25,
+          unreadOnly: false,
+          query: 'No matching exact synthetic patient',
+        })
+        expect(filtered.items.map((item) => item.id)).not.toContain(exactId)
+      } else {
+        Object.defineProperty(filteredRequest, 'url', {
+          value: 'http://localhost:3000/reviews?where[starRating][equals]=1',
+        })
+        const filtered = await readClinicReviewPage(filteredRequest, String(second))
+        expect(filtered.docs.map((item) => item.id)).not.toContain(exactId)
+      }
+      // A local Payload user never substitutes for the endpoint's independently verified personal identity.
+      for (const bearer of [null, foreignBearer]) {
+        const denied = await detail(second, exactId, bearer)
+        expect(denied.status).toBe(401)
+        expect(denied.headers.get('Cache-Control')).toContain('no-store')
+      }
+      const opened = await detail(second, exactId)
+      expect(opened.status).toBe(200)
+      expect(opened.headers.get('Cache-Control')).toContain('no-store')
+      const body = await opened.json()
+      expect(kind === 'inquiry' ? body.inquiry.id : body.data.id).toBe(exactId)
+      // Browser selection and an authorized fetch do not create notification receipts.
+      expect(
+        (await page()).items
+          .find((item) => item.presentationId === fixed.presentationId)
+          ?.members.every((member) => member.readAt === null),
+      ).toBe(true)
+      expect(await personalReceipts()).toEqual(receiptsBeforeOpening)
+      expect((await detail(first, exactId)).status).toBe(404)
+      expect((await detail(second, foreignId)).status).toBe(404)
+      expect((await detail(second, '999999999')).status).toBe(404)
+      await replaceClinicStaffAssignment(operator, Number(manager.user!.id), { scope: 'local', clinicId: first })
+      try {
+        expect((await detail(second, exactId)).status).toBe(403)
+        // The personal command filters inaccessible IDs while another clinic remains eligible.
+        // Its success envelope does not grant the exact target or create any receipt for it.
+        await expect(markClinicNotificationsRead(manager, { notificationIds: selection })).resolves.toEqual({
+          contractVersion: 'clinic-notifications-v1',
+          serverTime: expect.any(String),
+          acknowledged: true,
+        })
+        expect(await personalReceipts()).toEqual(receiptsBeforeOpening)
+        await replaceClinicStaffAssignment(operator, Number(manager.user!.id), { scope: 'unassigned' })
+        await expect(markClinicNotificationsRead(manager, { notificationIds: selection })).rejects.toMatchObject({
+          code: 'CLINIC_ACCESS_DENIED',
+          writeOutcome: 'not_committed',
+        })
+        expect(await personalReceipts()).toEqual(receiptsBeforeOpening)
+      } finally {
+        await replaceClinicStaffAssignment(operator, Number(manager.user!.id), { scope: 'group', groupId: network })
+      }
+      expect(
+        (await page()).items
+          .find((item) => item.presentationId === fixed.presentationId)
+          ?.members.every((member) => member.readAt === null),
+      ).toBe(true)
+      await markClinicNotificationsRead(manager, { notificationIds: selection })
+      const receiptsAfterRestoration = await personalReceipts()
+      const originalReceiptIds = new Set(receiptsBeforeOpening.map((receipt) => receipt.id))
+      expect(receiptsAfterRestoration.filter((receipt) => originalReceiptIds.has(receipt.id))).toEqual(
+        receiptsBeforeOpening,
+      )
+      expect(
+        receiptsAfterRestoration
+          .filter((receipt) => !originalReceiptIds.has(receipt.id))
+          .map((receipt) => Number(receipt.occurrence))
+          .sort((a, b) => a - b),
+      ).toEqual([...selectedOccurrenceIds].sort((a, b) => a - b))
+      expect(
+        (await page()).items
+          .find((item) => item.presentationId === fixed.presentationId)
+          ?.members.every((member) => member.readAt !== null),
+      ).toBe(true)
     },
   )
 })

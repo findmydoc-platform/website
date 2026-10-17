@@ -2,7 +2,11 @@ import { createLocalReq, type PayloadRequest } from 'payload'
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
 import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 import { readNotificationSourceProjection } from './projection'
-import { lockNotificationAuthorization, notificationAcknowledgementKeys } from './authorizationBarrier'
+import {
+  clinicStaffAuthorizationKey,
+  lockNotificationAuthorization,
+  notificationClinicAuthorizationKey,
+} from './authorizationBarrier'
 import {
   CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
   NOTIFICATION_READ_MAX_BYTES,
@@ -129,10 +133,10 @@ export async function markClinicNotificationsRead(
       },
       req.payload,
     )
-    await lockNotificationAuthorization(
-      transactionReq,
-      notificationAcknowledgementKeys(initialAccess.clinic.id, initialAccess.staff.id),
-    )
+    await lockNotificationAuthorization(transactionReq, [
+      notificationClinicAuthorizationKey(initialAccess.clinic.id),
+      clinicStaffAuthorizationKey(initialAccess.staff.id),
+    ])
     const access = await readClinicAccessState(req.payload, req.user.id, transactionReq)
     if (!access || String(access.clinic.id) !== String(initialAccess.clinic.id))
       throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')

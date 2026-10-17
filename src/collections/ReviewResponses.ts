@@ -6,12 +6,8 @@ import {
   platformOnlyFieldAccess,
   staffProfileFieldReadAccess,
 } from '@/access/fieldAccess'
-import {
-  assignedClinicMutation,
-  platformClinicOrPublicReviewResponse,
-  platformOrOwnClinicResource,
-  platformOrOwnClinicReviewWorkflowVersions,
-} from '@/access/scopeFilters'
+import { platformClinicOrPublicReviewResponse, platformOrOwnClinicReviewWorkflowVersions } from '@/access/scopeFilters'
+import { currentClinicReviewCreateAccess, currentClinicReviewResourceAccess } from '@/access/clinicReviewScope'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import {
   hideEmptyReviewResponseGroups,
@@ -106,10 +102,10 @@ export const ReviewResponses: CollectionConfig = {
     description: 'Moderated clinic responses. The approved response remains public while a replacement is pending.',
   },
   access: {
-    create: assignedClinicMutation,
+    create: currentClinicReviewCreateAccess,
     read: platformClinicOrPublicReviewResponse,
     readVersions: platformOrOwnClinicReviewWorkflowVersions,
-    update: platformOrOwnClinicResource,
+    update: currentClinicReviewResourceAccess,
     delete: () => false,
   },
   disableDuplicate: true,

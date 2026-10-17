@@ -14,6 +14,7 @@ export type RelationMapping = {
   resolver?: 'stableId'
   many?: boolean
   required?: boolean
+  nullable?: boolean
 }
 
 export type CollectionImportResult = {
@@ -229,6 +230,10 @@ export async function importCollection(options: CollectionImportOptions): Promis
         delete draft[relation.sourceField]
 
         if (rawValue == null) {
+          if (rawValue === null && relation.nullable) {
+            setValueAtPath(draft, relation.targetField, null)
+            continue
+          }
           if (relation.required) {
             warnings.push(`Missing ${relation.sourceField} for ${formatRecordIdentifier(collection, record)}`)
             skip = true

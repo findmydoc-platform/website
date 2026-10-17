@@ -1,4 +1,5 @@
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { createHash, randomUUID } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 
@@ -437,7 +438,7 @@ const writeReadPosition = async (
   )
 }
 
-const resolveCurrentActor = async (req: PayloadRequest): Promise<InquiryActor> => {
+const resolveCurrentActor = async (req: PayloadRequest, targetClinicId?: string): Promise<InquiryActor> => {
   if (!req.user) throw new InquiryCommunicationServiceError('unauthorized', 'Authentication is required.')
 
   if (req.user.collection === 'patients') {
@@ -447,7 +448,9 @@ const resolveCurrentActor = async (req: PayloadRequest): Promise<InquiryActor> =
   }
 
   if (req.user.collection === 'clinicStaff') {
-    const access = await readClinicAccessState(req.payload, req.user.id, req)
+    const access = targetClinicId
+      ? await readClinicTargetAccess(req.payload, req.user.id, targetClinicId, req)
+      : await readClinicAccessState(req.payload, req.user.id, req)
     if (!access)
       throw new InquiryCommunicationServiceError('access-denied', 'The clinic principal is not access-ready.')
     const { clinic, staff } = access
@@ -3253,8 +3256,9 @@ export const submitGuestClinicInquiry = async (
 export async function readClinicInquiryNotificationProjection(
   req: PayloadRequest,
   inquiryId: string,
+  clinicId: string,
 ): Promise<{ visible: false } | { visible: true; displayName?: string }> {
-  const actor = await resolveCurrentActor(req)
+  const actor = await resolveCurrentActor(req, clinicId)
   if (actor.kind !== 'clinic') return { visible: false }
   const inquiry = await findOne(req, 'patientClinicInquiries', { id: { equals: payloadId(inquiryId) } })
   if (!inquiry) return { visible: true }

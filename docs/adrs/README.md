@@ -97,3 +97,4 @@ When adding a new ADR:
 - [033 — Bounded Auth transaction-control exceptions](./033-adr-auth-actions-owned-transactions.md)
 - [034 — Bounded Website recovery execution exclusion](./034-adr-website-recovery-execution-exclusion.md)
 - [035 — Notification acknowledgement decision time](./035-adr-notification-acknowledgement-decision-time.md)
+- [036 — Order of clinic access changes and business writes](./036-adr-clinic-authorization-mutation-ordering.md) _(approved on 17.10.2026)_

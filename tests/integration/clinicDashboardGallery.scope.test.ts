@@ -202,7 +202,8 @@ describe('clinic gallery current source scope', () => {
       const stored = await payload.findByID({ collection: 'clinicMedia', depth: 0, id: media.id, overrideAccess: true })
       expect(stored.clinic).toBe(foreignClinicId)
       expect(stored.storagePath).toContain(`clinics/${foreignClinicId}-`)
-      await saveClinicGallery(operator, foreignClinicId, { expectedRevision: saved.snapshot.revision, items: [] })
+      const detached = await readClinicGallerySnapshot(operator, foreignClinicId)
+      await saveClinicGallery(operator, foreignClinicId, { expectedRevision: detached.snapshot.revision, items: [] })
     } finally {
       const gallery = await readClinicGallerySnapshot(operator, foreignClinicId)
       await saveClinicGallery(operator, foreignClinicId, { expectedRevision: gallery.snapshot.revision, items: [] })
@@ -235,7 +236,6 @@ describe('clinic gallery current source scope', () => {
       createTinyPngFile(`${slugPrefix}-${order}-${change}-${writer}.png`),
     )
     mediaIds.push(Number(media.id))
-    const revision = (await readClinicGallerySnapshot(clinicReqA, clinicId)).snapshot.revision
     const group = await payload.create({
       collection: 'clinicGroups',
       data: { name: `Gallery group ${order}` },
@@ -251,6 +251,7 @@ describe('clinic gallery current source scope', () => {
       overrideAccess: true,
     })
     await replaceClinicStaffAssignment(operator, staffId, { scope: 'group', groupId: group.id })
+    const revision = (await readClinicGallerySnapshot(clinicReqA, clinicId)).snapshot.revision
     let enter!: () => void
     let release!: () => void
     let opponent!: () => void

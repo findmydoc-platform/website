@@ -423,6 +423,7 @@ describe('resetCollections', () => {
     'doctorspecialties',
     'doctortreatments',
     'clinicProfileDrafts',
+    'clinictreatments',
   ] as const)('deletes %s sequentially with separate native owners', async (mediaCollection) => {
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')
@@ -463,6 +464,7 @@ describe('resetCollections', () => {
         'doctorspecialties',
         'doctortreatments',
         'clinicProfileDrafts',
+        'clinictreatments',
       ].includes(collection)
         ? [{ id: 17 }]
         : [],
@@ -521,6 +523,7 @@ describe('resetCollections', () => {
           'doctorspecialties',
           'doctortreatments',
           'clinicProfileDrafts',
+          'clinictreatments',
         ].includes(args.collection)
       ) {
         expect(args).toMatchObject({ id: 17, trash: true, req: { transactionID: undefined } })
@@ -583,6 +586,7 @@ describe('resetCollections', () => {
           'doctorspecialties',
           'doctortreatments',
           'clinicProfileDrafts',
+          'clinictreatments',
         ].includes(collection)
       )
         return { docs: [] }
@@ -835,6 +839,7 @@ describe('resetCollections', () => {
         'doctorspecialties',
         'doctortreatments',
         'clinicProfileDrafts',
+        'clinictreatments',
       ].includes(collection)
         ? [{ id: 17 }]
         : [],

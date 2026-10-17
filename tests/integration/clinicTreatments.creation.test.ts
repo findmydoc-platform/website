@@ -182,7 +182,7 @@ describe('ClinicTreatments Creation and Hooks Integration Tests', () => {
       },
     })
 
-    expect(clinicRead.docs.map((doc) => doc.id).sort()).toEqual([foreignActive.id, ownInactive.id].sort())
+    expect(clinicRead.docs.map((doc) => doc.id)).toEqual([ownInactive.id])
   })
 
   it('validates required fields when creating clinic treatment', async () => {

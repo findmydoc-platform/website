@@ -1,7 +1,7 @@
 import type { PayloadHandler, PayloadRequest } from 'payload'
 import type { ZodType } from 'zod'
 
-import { resolveClinicDashboardBootstrap } from '@/features/clinicDashboard/bootstrap'
+import { resolveClinicScopeBootstrap } from '@/features/clinicDashboard/bootstrap'
 import type { ClinicDashboardCapability } from '@/features/clinicDashboard/bootstrap'
 import {
   clinicTreatmentCreateInputSchema,
@@ -14,7 +14,17 @@ import {
   updateClinicTreatment,
 } from '@/features/clinicDashboard/treatments/service'
 import { toLoggedError } from '@/utilities/logging/shared'
-import { CLINIC_DASHBOARD_ERROR_CODES, clinicDashboardPrivateJsonResponse } from './clinicDashboardBootstrap'
+import {
+  CLINIC_DASHBOARD_ERROR_CODES,
+  clinicDashboardPrivateJsonResponse as bootstrapPrivateJson,
+} from './clinicDashboardBootstrap'
+import { CLINIC_SCOPE_CONTRACT_HEADER, hasClinicScopeContract } from '@/features/clinicDashboard/contractNegotiation'
+
+const clinicDashboardPrivateJsonResponse = (body: unknown, status = 200): Response => {
+  const response = bootstrapPrivateJson(body, status)
+  response.headers.set('Vary', `Authorization, ${CLINIC_SCOPE_CONTRACT_HEADER}`)
+  return response
+}
 
 const CLINIC_TREATMENT_ERROR_CODES = {
   conflict: 'CLINIC_TREATMENT_CONFLICT',
@@ -33,12 +43,25 @@ const authorizeClinic = async (
   req: PayloadRequest,
   requiredCapability: ClinicDashboardCapability,
 ): Promise<AuthorizedClinic> => {
-  const result = await resolveClinicDashboardBootstrap(req)
+  const clinicId = req.routeParams?.clinicId
+  if (
+    !hasClinicScopeContract(req.headers) ||
+    typeof clinicId !== 'string' ||
+    !/^[1-9]\d*$/u.test(clinicId) ||
+    !Number.isSafeInteger(Number(clinicId))
+  ) {
+    return {
+      ok: false,
+      response: clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_TREATMENT_ERROR_CODES.invalidInput } }, 400),
+    }
+  }
+  const result = await resolveClinicScopeBootstrap(req)
 
   switch (result.status) {
-    case 'success':
-      return result.data.capabilities.includes(requiredCapability)
-        ? { ok: true, clinicId: result.data.clinic.id }
+    case 'success': {
+      const target = result.data.clinics.find((clinic) => clinic.id === clinicId)
+      return target?.capabilities.includes(requiredCapability)
+        ? { ok: true, clinicId: target.id }
         : {
             ok: false,
             response: clinicDashboardPrivateJsonResponse(
@@ -46,6 +69,7 @@ const authorizeClinic = async (
               403,
             ),
           }
+    }
     case 'access-denied':
       return {
         ok: false,
@@ -98,6 +122,8 @@ const serviceErrorResponse = (error: ClinicTreatmentServiceError): Response => {
 }
 
 const unexpectedErrorResponse = (req: PayloadRequest, error: unknown, operation: string): Response => {
+  if (error && typeof error === 'object' && 'status' in error && error.status === 403)
+    return clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.accessDenied } }, 403)
   req.payload.logger.error(
     {
       err: toLoggedError(error),

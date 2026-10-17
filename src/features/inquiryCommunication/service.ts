@@ -1,5 +1,4 @@
-import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
-import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
+import { readInquiryClinicAccess } from '@/features/inquiryAggregate/clinicAccess'
 import { createHash, randomUUID } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 
@@ -448,9 +447,7 @@ const resolveCurrentActor = async (req: PayloadRequest, targetClinicId?: string)
   }
 
   if (req.user.collection === 'clinicStaff') {
-    const access = targetClinicId
-      ? await readClinicTargetAccess(req.payload, req.user.id, targetClinicId, req)
-      : await readClinicAccessState(req.payload, req.user.id, req)
+    const access = await readInquiryClinicAccess(req, targetClinicId)
     if (!access)
       throw new InquiryCommunicationServiceError('access-denied', 'The clinic principal is not access-ready.')
     const { clinic, staff } = access
@@ -1689,6 +1686,7 @@ const verifiedAttachmentForActor = async (
     and: [
       { id: { equals: payloadId(attachmentId) } },
       { inquiry: { equals: inquiry.id } },
+      { clinic: { equals: relationId(inquiry.clinic) } },
       { actorKey: { equals: actor.key } },
       { state: { equals: 'verified' } },
     ],
@@ -2502,7 +2500,11 @@ const readOwnedAttachment = async (
 ): Promise<{ attachment: StoredRecord; inquiry: StoredRecord }> => {
   const inquiry = await readAuthorizedInquiry(req, input.inquiryId, actor)
   const attachment = await findOne(req, 'inquiryAttachments', {
-    and: [{ id: { equals: payloadId(input.draftId) } }, { inquiry: { equals: inquiry.id } }],
+    and: [
+      { id: { equals: payloadId(input.draftId) } },
+      { inquiry: { equals: inquiry.id } },
+      { clinic: { equals: relationId(inquiry.clinic) } },
+    ],
   })
   if (!attachment) throw new InquiryCommunicationServiceError('not-found', 'The attachment does not exist.')
   assertAttachmentOwner(attachment, actor)
@@ -2514,9 +2516,11 @@ const cleanupFinalizedAttachmentDraft = async (
   input: { attachmentId: string },
   storage: InquiryAttachmentStorageGateway = createS3InquiryAttachmentStorage(),
 ): Promise<boolean> => {
+  const clinicActor = req.user?.collection === 'clinicStaff' ? await resolveCurrentActor(req) : null
   const attachment = await findOne(req, 'inquiryAttachments', {
     and: [
       { id: { equals: payloadId(input.attachmentId) } },
+      ...(clinicActor?.kind === 'clinic' ? [{ clinic: { equals: clinicActor.clinicId } }] : []),
       { state: { in: ['verified', 'bound'] } },
       { draftCleanupCompletedAt: { exists: false } },
     ],
@@ -2729,9 +2733,11 @@ export const cleanupDiscardedAttachment = async (
   input: { attachmentId: string },
   storage: InquiryAttachmentStorageGateway = createS3InquiryAttachmentStorage(),
 ): Promise<boolean> => {
+  const clinicActor = req.user?.collection === 'clinicStaff' ? await resolveCurrentActor(req) : null
   const attachment = await findOne(req, 'inquiryAttachments', {
     and: [
       { id: { equals: payloadId(input.attachmentId) } },
+      ...(clinicActor?.kind === 'clinic' ? [{ clinic: { equals: clinicActor.clinicId } }] : []),
       { state: { equals: 'discarded' } },
       { cleanupCompletedAt: { exists: false } },
     ],
@@ -2763,12 +2769,14 @@ export const sweepExpiredAttachmentDrafts = async (
   req: PayloadRequest,
   storage: InquiryAttachmentStorageGateway = createS3InquiryAttachmentStorage(),
 ): Promise<{ cleaned: number; examined: number }> => {
+  const clinicActor = req.user?.collection === 'clinicStaff' ? await resolveCurrentActor(req) : null
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1_000).toISOString()
   const candidates = await findMany(
     req,
     'inquiryAttachments',
     {
       and: [
+        ...(clinicActor?.kind === 'clinic' ? [{ clinic: { equals: clinicActor.clinicId } }] : []),
         { objectCreatedAt: { less_than: cutoff } },
         {
           or: [
@@ -2834,12 +2842,19 @@ export const readAttachmentAccess = async (
 ) => {
   const actor = await resolveCurrentActor(req)
   const attachment = await findOne(req, 'inquiryAttachments', {
-    and: [{ id: { equals: payloadId(input.attachmentId) } }, { state: { equals: 'bound' } }],
+    and: [
+      { id: { equals: payloadId(input.attachmentId) } },
+      { state: { equals: 'bound' } },
+      ...(actor.kind === 'clinic' ? [{ clinic: { equals: actor.clinicId } }] : []),
+    ],
   })
   if (!attachment) throw new InquiryCommunicationServiceError('not-found', 'The attachment does not exist.')
   const inquiryId = relationId(attachment.inquiry)
   if (inquiryId === null) throw new InquiryCommunicationServiceError('not-found', 'The attachment does not exist.')
-  await readAuthorizedInquiry(req, String(inquiryId), actor)
+  const inquiry = await readAuthorizedInquiry(req, String(inquiryId), actor)
+  if (String(relationId(attachment.clinic)) !== String(relationId(inquiry.clinic))) {
+    throw new InquiryCommunicationServiceError('not-found', 'The attachment does not exist.')
+  }
   const tombstones = await readInquiryHardDeleteTombstones(req, inquiryId)
   if (
     isInquiryContentHardDeleted(tombstones, {
@@ -2853,6 +2868,18 @@ export const readAttachmentAccess = async (
   }
   const moderationState = await readInquiryModerationState(req, inquiryId, actor)
   const boundMessageId = relationId(attachment.boundMessage)
+  const boundMessage =
+    boundMessageId === null
+      ? null
+      : await findOne(req, 'inquiryMessages', {
+          and: [
+            { id: { equals: boundMessageId } },
+            { inquiry: { equals: inquiryId } },
+            { clinic: { equals: relationId(inquiry.clinic) } },
+            { attachment: { equals: attachment.id } },
+          ],
+        })
+  if (!boundMessage) throw new InquiryCommunicationServiceError('not-found', 'The attachment does not exist.')
   if (
     moderationState.restrictedAttachmentIds.has(String(attachment.id)) ||
     (boundMessageId !== null && moderationState.restrictedMessageIds.has(String(boundMessageId)))
@@ -3256,10 +3283,13 @@ export const submitGuestClinicInquiry = async (
 export async function readClinicInquiryNotificationProjection(
   req: PayloadRequest,
   inquiryId: string,
-  clinicId: string,
+  clinicId?: string,
 ): Promise<{ visible: false } | { visible: true; displayName?: string }> {
-  const actor = await resolveCurrentActor(req, clinicId)
-  if (actor.kind !== 'clinic') return { visible: false }
+  const actor = await resolveCurrentActor(req, clinicId).catch((error: unknown) => {
+    if (error instanceof InquiryCommunicationServiceError && error.kind === 'access-denied') return null
+    throw error
+  })
+  if (!actor || actor.kind !== 'clinic') return { visible: false }
   const inquiry = await findOne(req, 'patientClinicInquiries', { id: { equals: payloadId(inquiryId) } })
   if (!inquiry) return { visible: true }
   if (String(relationId(inquiry.clinic)) !== String(actor.clinicId)) return { visible: false }

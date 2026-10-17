@@ -1,3 +1,4 @@
+import { authorizeStoredInquiryWrite } from '@/features/inquiryAggregate/clinicAccess'
 import {
   guardNotificationInquiryMembershipChange,
   guardNotificationAuthorizationSession,
@@ -225,6 +226,10 @@ export const PatientClinicInquiries: CollectionConfig = {
       },
     ],
     beforeChange: [
+      async ({ data, originalDoc, req }) => {
+        await authorizeStoredInquiryWrite(req, originalDoc?.clinic ?? data.clinic)
+        return data
+      },
       guardNotificationAuthorizationSession,
       protectInquiryDomainFields,
       freezeOriginalSubmission,

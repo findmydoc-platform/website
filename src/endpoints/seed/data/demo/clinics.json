@@ -1,6 +1,8 @@
 [
   {
     "stableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "participationStatus": "approved",
+    "groupStableId": "seed-group-coastal",
     "name": "Istanbul Smile Center",
     "description": {
       "root": {
@@ -68,6 +70,8 @@
   },
   {
     "stableId": "seed-clinic-istanbul-bosphorus",
+    "participationStatus": "approved",
+    "groupStableId": "seed-group-coastal",
     "name": "Bosphorus Aesthetic Hospital",
     "description": {
       "root": {
@@ -115,7 +119,7 @@
       "email": "elif.demir@bosphorusaesthetic.example",
       "role": "International Office"
     },
-    "status": "approved",
+    "status": "pending",
     "verification": "silver",
     "supportedLanguages": ["english", "arabic", "turkish"],
     "cityStableId": "22222222-2222-2222-2222-222222222222",
@@ -126,6 +130,8 @@
   },
   {
     "stableId": "seed-clinic-ankara-harmony",
+    "participationStatus": "approved",
+    "groupStableId": "seed-group-capital",
     "name": "Ankara Harmony Dental Clinic",
     "description": {
       "root": {
@@ -184,6 +190,9 @@
   },
   {
     "stableId": "seed-clinic-ankara-capital",
+    "participationStatus": "approved",
+    "group": null,
+    "groupStableId": null,
     "name": "Capital Hair and Skin Clinic",
     "description": {
       "root": {
@@ -242,6 +251,8 @@
   },
   {
     "stableId": "seed-clinic-izmir-coast",
+    "participationStatus": "approved",
+    "groupStableId": "seed-group-coastal",
     "name": "Izmir Coast Dental and Derm",
     "description": {
       "root": {
@@ -300,6 +311,9 @@
   },
   {
     "stableId": "seed-clinic-izmir-ege",
+    "participationStatus": "approved",
+    "group": null,
+    "groupStableId": null,
     "name": "Ege Surgical Center",
     "description": {
       "root": {
@@ -358,6 +372,9 @@
   },
   {
     "stableId": "seed-clinic-antalya-medvista",
+    "participationStatus": "approved",
+    "group": null,
+    "groupStableId": null,
     "name": "Antalya MedVista Clinic",
     "description": {
       "root": {
@@ -416,6 +433,9 @@
   },
   {
     "stableId": "seed-clinic-antalya-riviera",
+    "participationStatus": "approved",
+    "group": null,
+    "groupStableId": null,
     "name": "Riviera Body Contour Clinic",
     "description": {
       "root": {
@@ -474,6 +494,9 @@
   },
   {
     "stableId": "seed-clinic-bursa-nova",
+    "participationStatus": "approved",
+    "group": null,
+    "groupStableId": null,
     "name": "Bursa Nova Oral and Implant Clinic",
     "description": {
       "root": {
@@ -532,6 +555,9 @@
   },
   {
     "stableId": "seed-clinic-bursa-green",
+    "participationStatus": "approved",
+    "group": null,
+    "groupStableId": null,
     "name": "Green Bursa Reconstructive Center",
     "description": {
       "root": {

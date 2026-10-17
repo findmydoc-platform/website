@@ -1,3 +1,4 @@
+import { hasPersonalGroupInvitationSource } from '@/auth/utilities/personalGroupInvitationState'
 import type { PayloadRequest } from 'payload'
 import { z } from 'zod'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
@@ -33,13 +34,24 @@ export async function findClinicInvitationPrincipal(
       !(
         completedActionId &&
         hasClinicAccountCompletion(staff) &&
-        staff.accountCompletion.source === 'initial-password' &&
+        ['initial-password', 'group-initial-password'].includes(staff.accountCompletion.source) &&
         staff.accountCompletion.authActionId === String(completedActionId)
       )) ||
     staff.legacyAccess?.eligibleAt ||
     staff.invitationAttemptedAt
   )
     return null
+  if (hasPersonalGroupInvitationSource(staff)) {
+    const group = await req.payload.findByID({
+      collection: 'clinicGroups',
+      id: Number(staff.personalGroupInvitation!.groupId),
+      depth: 0,
+      overrideAccess: true,
+      disableErrors: true,
+      req,
+    })
+    return group ? staff : null
+  }
   const applicationMatch = /^clinic-application:([1-9]\d*)$/.exec(staff.onboardingKey ?? '')
   const applicationId = applicationMatch ? Number(applicationMatch[1]) : undefined
   const clinicId = relationshipId(staff.clinic)

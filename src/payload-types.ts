@@ -1430,6 +1430,11 @@ export interface ClinicStaff {
    * Group for group scope. Clear the clinic when selecting a group.
    */
   group?: (number | null) | ClinicGroup;
+  personalGroupInvitation?: {
+    groupId?: string | null;
+    operatorId?: string | null;
+    authorizedAt?: string | null;
+  };
   activationReadiness?: {
     version?: 'identity-v1' | null;
     principalId?: string | null;
@@ -1437,8 +1442,10 @@ export interface ClinicStaff {
     establishedAt?: string | null;
   };
   accountCompletion?: {
-    source?: ('initial-password' | 'legacy-password-login' | 'legacy-audit') | null;
+    source?: ('initial-password' | 'group-initial-password' | 'legacy-password-login' | 'legacy-audit') | null;
     subject?: string | null;
+    principalId?: string | null;
+    groupId?: string | null;
     clinicId?: string | null;
     evidenceAt?: string | null;
     observedAt?: string | null;
@@ -5128,6 +5135,13 @@ export interface PatientsSelect<T extends boolean = true> {
 export interface ClinicStaffSelect<T extends boolean = true> {
   assignmentScope?: T;
   group?: T;
+  personalGroupInvitation?:
+    | T
+    | {
+        groupId?: T;
+        operatorId?: T;
+        authorizedAt?: T;
+      };
   activationReadiness?:
     | T
     | {
@@ -5141,6 +5155,8 @@ export interface ClinicStaffSelect<T extends boolean = true> {
     | {
         source?: T;
         subject?: T;
+        principalId?: T;
+        groupId?: T;
         clinicId?: T;
         evidenceAt?: T;
         observedAt?: T;

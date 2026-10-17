@@ -272,27 +272,27 @@ export default buildConfig({
       handler: clinicDashboardReportingGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/profile',
+      path: '/clinic-dashboard/clinics/:clinicId/profile',
       method: 'get',
       handler: clinicDashboardProfileGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/profile/draft',
+      path: '/clinic-dashboard/clinics/:clinicId/profile/draft',
       method: 'post',
       handler: clinicDashboardProfileDraftPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/profile/draft',
+      path: '/clinic-dashboard/clinics/:clinicId/profile/draft',
       method: 'put',
       handler: clinicDashboardProfileDraftPutHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/profile/draft/discard',
+      path: '/clinic-dashboard/clinics/:clinicId/profile/draft/discard',
       method: 'post',
       handler: clinicDashboardProfileDraftDiscardPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/profile/publish',
+      path: '/clinic-dashboard/clinics/:clinicId/profile/publish',
       method: 'post',
       handler: clinicDashboardProfilePublishPostHandler as PayloadHandler,
     },

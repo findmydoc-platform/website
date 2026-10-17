@@ -1426,6 +1426,10 @@ export interface ClinicStaff {
    * Scope of the current clinic staff assignment.
    */
   assignmentScope?: ('local' | 'group' | 'unassigned') | null;
+  /**
+   * Group for group scope. Clear the clinic when selecting a group.
+   */
+  group?: (number | null) | ClinicGroup;
   activationReadiness?: {
     version?: 'identity-v1' | null;
     principalId?: string | null;
@@ -5123,6 +5127,7 @@ export interface PatientsSelect<T extends boolean = true> {
  */
 export interface ClinicStaffSelect<T extends boolean = true> {
   assignmentScope?: T;
+  group?: T;
   activationReadiness?:
     | T
     | {

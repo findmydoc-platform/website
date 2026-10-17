@@ -5,6 +5,7 @@ import { requireNotificationTransaction } from '@/collections/clinicNotification
 type Id = number | string
 const key = (kind: 'clinic' | 'staff' | 'group', id: Id) => `notification-authorization:${kind}:${String(id)}`
 const isSeedReset = (req: PayloadRequest): boolean => req.context?.seedReset === true && req.context?.skipHooks === true
+export const clinicStaffAuthorizationKey = (staffId: Id): string => key('staff', staffId)
 export const clinicGroupAuthorizationKey = (groupId: Id): string => key('group', groupId)
 export const notificationClinicAuthorizationKey = (clinicId: Id): string => key('clinic', clinicId)
 
@@ -114,10 +115,12 @@ export async function guardNotificationAuthorizationChange({
       ids.push(...result.docs.map((doc) => doc.id))
       if (!result.hasNextPage) break
     }
-  await lockNotificationAuthorization(
-    req,
-    ids.map((id) => key(collection.slug === 'clinics' ? 'clinic' : 'staff', id)),
-  )
+  await lockNotificationAuthorization(req, [
+    ...ids.map((id) => key(collection.slug === 'clinics' ? 'clinic' : 'staff', id)),
+    ...(collection.slug === 'clinics' && req.user?.collection === 'clinicStaff'
+      ? [clinicStaffAuthorizationKey(req.user.id)]
+      : []),
+  ])
   req.context = {
     ...req.context,
     clinicNotificationAuthorizationGuard: true,

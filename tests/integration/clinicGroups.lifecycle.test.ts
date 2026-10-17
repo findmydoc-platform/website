@@ -1,3 +1,7 @@
+import {
+  up as addStaffGroupSchema,
+  down as removeStaffGroupSchema,
+} from '@/migrations/20261017_091316_clinic_staff_group_assignment'
 import { afterEach, afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import config from '@payload-config'
@@ -68,78 +72,105 @@ describe('clinic group back office and initial membership', () => {
   }
 
   it('lets a trusted operator create, rename and initially attach an independent clinic', async () => {
-    const network = await group()
-    const independent = await clinic()
-    expect(independent.group).toBeFalsy()
-    const keys = [
-      `notification-authorization:clinic:${independent.id}`,
-      `notification-authorization:group:${network.id}`,
-    ]
-    expect(
-      (
-        await payload.find({
+    // Keep this no-center scenario independent from notification suites that activate the shared test database.
+    const center = (
+      await payload.find({
+        collection: 'clinicNotificationControls',
+        overrideAccess: true,
+        where: { key: { equals: 'notification-center' } },
+      })
+    ).docs[0]
+    if (center)
+      await payload.update({
+        collection: 'clinicNotificationControls',
+        id: center.id,
+        overrideAccess: true,
+        context: { clinicNotificationCommand: true },
+        data: { key: `isolated-center-${center.id}` },
+      })
+    try {
+      const network = await group()
+      const independent = await clinic()
+      expect(independent.group).toBeFalsy()
+      const keys = [
+        `notification-authorization:clinic:${independent.id}`,
+        `notification-authorization:group:${network.id}`,
+      ]
+      expect(
+        (
+          await payload.find({
+            collection: 'clinicNotificationControls',
+            overrideAccess: true,
+            where: { key: { in: keys } },
+          })
+        ).docs,
+      ).toHaveLength(0)
+      expect(
+        (
+          await payload.find({
+            collection: 'clinicNotificationControls',
+            overrideAccess: true,
+            where: { key: { equals: 'notification-center' } },
+          })
+        ).docs,
+      ).toHaveLength(0)
+      const attached = await payload.update({
+        collection: 'clinics',
+        id: independent.id,
+        data: { group: network.id },
+        overrideAccess: false,
+        req: operator,
+        depth: 0,
+      })
+      expect(attached.group).toBe(network.id)
+      expect(
+        (
+          await payload.find({
+            collection: 'clinicNotificationControls',
+            overrideAccess: true,
+            where: { key: { in: keys } },
+          })
+        ).docs,
+      ).toHaveLength(2)
+      await payload.update({
+        collection: 'clinicGroups',
+        id: network.id,
+        data: { name: 'Renamed network' },
+        overrideAccess: false,
+        req: operator,
+      })
+      expect(attached.id).toBe(independent.id)
+      expect(attached.participationStatus).toBe(independent.participationStatus)
+      expect(attached.status).toBe(independent.status)
+      await expect(
+        payload.delete({ collection: 'clinicGroups', id: network.id, overrideAccess: false, req: operator }),
+      ).rejects.toMatchObject({ status: 409 })
+      await payload.update({
+        collection: 'clinics',
+        id: independent.id,
+        data: { deletedAt: new Date().toISOString() },
+        overrideAccess: true,
+      })
+      await expect(
+        payload.delete({ collection: 'clinicGroups', id: network.id, overrideAccess: false, req: operator }),
+      ).rejects.toMatchObject({ status: 409 })
+      await payload.update({
+        collection: 'clinics',
+        id: independent.id,
+        data: { deletedAt: null },
+        trash: true,
+        overrideAccess: true,
+      })
+    } finally {
+      if (center)
+        await payload.update({
           collection: 'clinicNotificationControls',
+          id: center.id,
           overrideAccess: true,
-          where: { key: { in: keys } },
+          context: { clinicNotificationCommand: true },
+          data: { key: 'notification-center' },
         })
-      ).docs,
-    ).toHaveLength(0)
-    expect(
-      (
-        await payload.find({
-          collection: 'clinicNotificationControls',
-          overrideAccess: true,
-          where: { key: { equals: 'notification-center' } },
-        })
-      ).docs,
-    ).toHaveLength(0)
-    const attached = await payload.update({
-      collection: 'clinics',
-      id: independent.id,
-      data: { group: network.id },
-      overrideAccess: false,
-      req: operator,
-      depth: 0,
-    })
-    expect(attached.group).toBe(network.id)
-    expect(
-      (
-        await payload.find({
-          collection: 'clinicNotificationControls',
-          overrideAccess: true,
-          where: { key: { in: keys } },
-        })
-      ).docs,
-    ).toHaveLength(2)
-    await payload.update({
-      collection: 'clinicGroups',
-      id: network.id,
-      data: { name: 'Renamed network' },
-      overrideAccess: false,
-      req: operator,
-    })
-    expect(attached.id).toBe(independent.id)
-    expect(attached.participationStatus).toBe(independent.participationStatus)
-    expect(attached.status).toBe(independent.status)
-    await expect(
-      payload.delete({ collection: 'clinicGroups', id: network.id, overrideAccess: false, req: operator }),
-    ).rejects.toMatchObject({ status: 409 })
-    await payload.update({
-      collection: 'clinics',
-      id: independent.id,
-      data: { deletedAt: new Date().toISOString() },
-      overrideAccess: true,
-    })
-    await expect(
-      payload.delete({ collection: 'clinicGroups', id: network.id, overrideAccess: false, req: operator }),
-    ).rejects.toMatchObject({ status: 409 })
-    await payload.update({
-      collection: 'clinics',
-      id: independent.id,
-      data: { deletedAt: null },
-      trash: true,
-      overrideAccess: true,
-    })
+    }
   })
   it('denies local staff and a stale platform role claim without changing local access', async () => {
     const network = await group()
@@ -458,8 +489,10 @@ describe('clinic group back office and initial membership', () => {
     const independent = await clinic()
     const req = await createLocalReq({}, payload)
     const args = { db: (payload.db as unknown as PostgresAdapter).drizzle, payload, req }
+    await removeStaffGroupSchema(args)
     await removeGroupSchema(args)
     await addGroupSchema(args)
+    await addStaffGroupSchema(args)
     const retained = await payload.findByID({
       collection: 'clinics',
       id: independent.id,

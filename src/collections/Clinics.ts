@@ -1,3 +1,8 @@
+import {
+  currentClinicOrPublicRead,
+  currentClinicProfileAccess,
+  verifyClinicBusinessWrite,
+} from '@/access/clinicCurrentScope'
 import { guardInitialClinicMembershipInput, assignInitialClinicGroup } from '@/features/clinicGroups/hooks'
 import {
   guardNotificationAuthorizationChange,
@@ -22,7 +27,6 @@ import {
 } from './clinics/approvalRequirements'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { disabledClinicGalleryAccess } from '@/access/clinicGallery'
-import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
 import {
   computedOnlyFieldAccess,
   platformClinicTrustAccess,
@@ -151,9 +155,9 @@ export const Clinics: CollectionConfig<'clinics'> = {
     description: 'Clinic profiles with address, contact details, and services',
   },
   access: {
-    read: platformOnlyOrApproved, // Platform Staff: all clinics, Others: approved only
+    read: currentClinicOrPublicRead, // Clinic staff: current eligible clinics; public: approved publication.
     create: platformClinicTrustAccess, // Only Platform admin/support can create clinics
-    update: platformOrOwnClinicProfile, // Platform: all clinics, Clinic: only own profile
+    update: currentClinicProfileAccess, // Clinic staff: current local or group scope.
     delete: isPlatformStaff, // Only Platform can delete clinics
   },
   hooks: {
@@ -163,6 +167,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
       async ({ result, req, operation }) => {
         if (['create', 'update', 'delete', 'restoreVersion'].includes(operation))
           await guardNotificationAuthorizationSession({ req })
+        await verifyClinicBusinessWrite({ req, result, operation })
         return result
       },
     ],

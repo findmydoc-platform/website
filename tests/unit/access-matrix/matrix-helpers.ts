@@ -573,6 +573,8 @@ function validateConditional(ctx: ValidationContext, value: unknown) {
     case 'clinic-approved':
       if (ctx.userType === 'platform') {
         expect(value).toBe(true)
+      } else if (ctx.userType === 'clinic') {
+        expectFilter(value, 'id', getClinicIdFromUser(ctx.user), ctx)
       } else {
         expectFilter(value, scenario.path, scenario.value, ctx)
       }

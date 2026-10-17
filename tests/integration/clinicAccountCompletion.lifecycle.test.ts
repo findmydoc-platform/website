@@ -3,7 +3,12 @@ import { getPayload, type Payload } from 'payload'
 import config from '@payload-config'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
-import { asClinicScopedPayloadUser, createClinicTestUser, cleanupTrackedUsers } from '../fixtures/testUsers'
+import {
+  replaceClinicTestUserAssignment,
+  asClinicScopedPayloadUser,
+  createClinicTestUser,
+  cleanupTrackedUsers,
+} from '../fixtures/testUsers'
 import { testSlug } from '../fixtures/testSlug'
 import { createLocalReq } from 'payload'
 import { convertClinicStaffLocalAccess } from '@/auth/utilities/clinicAccountCompletion'
@@ -114,13 +119,7 @@ describe('native clinic account evidence boundary', () => {
     const missing = await createClinicTestUser(payload, { emailPrefix: `${prefix}-missing`, createdStaffIds: staffIds })
     await asClinicScopedPayloadUser(payload, valid, first.clinic.id)
     await asClinicScopedPayloadUser(payload, inconsistent, first.clinic.id)
-    await payload.update({
-      collection: 'clinicStaff',
-      id: inconsistent.id,
-      data: { clinic: second.clinic.id },
-      overrideAccess: true,
-      context: { skipClinicStaffAuthSync: true },
-    })
+    await replaceClinicTestUserAssignment(payload, inconsistent.id, second.clinic.id, { skipClinicStaffAuthSync: true })
     await payload.update({
       collection: 'clinicStaff',
       id: missing.id,

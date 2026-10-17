@@ -1,7 +1,7 @@
 import type { Clinic, ClinicStaff } from '@/payload-types'
 import type { Payload, PayloadRequest } from 'payload'
 import { establishLegacyClinicPasswordEvidence, hasClinicAccountCompletion } from './clinicAccountCompletion'
-import { hasClinicActivationReadiness } from './clinicAccountCompletionState'
+import { isClinicPersonalIdentityReady, readClinicStaffAssignment } from './clinicStaffAssignment'
 import { extractTokenFromHeader } from './supabaseAuthPolicy'
 import { isClinicParticipationApproved } from './clinicParticipation'
 
@@ -16,12 +16,10 @@ const readRelationId = (value: ClinicStaff['clinic']): number | string | null =>
   return null
 }
 
-export const isClinicStaffAccessReady = (staff: ClinicStaff): boolean =>
-  staff.status === 'approved' &&
-  staff.authSync?.status === 'synced' &&
-  staff.assignmentScope === 'local' &&
-  readRelationId(staff.clinic) !== null &&
-  hasClinicActivationReadiness(staff)
+export const isClinicStaffAccessReady = (staff: ClinicStaff): boolean => {
+  const assignment = readClinicStaffAssignment(staff)
+  return isClinicPersonalIdentityReady(staff) && assignment !== null && assignment.scope !== 'unassigned'
+}
 
 export const isClinicAccessReady = isClinicParticipationApproved
 
@@ -55,7 +53,7 @@ export async function readClinicAccessState(
     }
   }
   const clinicId = staff ? readRelationId(staff.clinic) : null
-  if (!staff || !isClinicStaffAccessReady(staff) || clinicId === null) return null
+  if (!staff || staff.assignmentScope !== 'local' || !isClinicStaffAccessReady(staff) || clinicId === null) return null
 
   const clinicResult = await payload.find({
     collection: 'clinics',

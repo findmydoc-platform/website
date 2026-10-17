@@ -7,7 +7,7 @@ import type { AuthData, UserResult } from '@/auth/types/authTypes'
 import { VALID_USER_TYPES } from '@/auth/config/authConfig'
 import type { Payload, PayloadRequest } from 'payload'
 import { createScopedLogger, getRequestLogContext, type ServerLogger } from '@/utilities/logging/shared'
-import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
+import { readClinicPrincipalAccess } from '@/auth/utilities/clinicPrincipalAccess'
 
 /**
  * Validates if a clinic user has authorized API access.
@@ -36,7 +36,7 @@ export async function validateClinicAccess(
   const userId = userResult.user.id
 
   try {
-    const isApproved = Boolean(await readClinicAccessState(payload, userId, req))
+    const isApproved = Boolean(await readClinicPrincipalAccess(payload, userId, req))
 
     if (!isApproved) {
       activeLogger.warn(

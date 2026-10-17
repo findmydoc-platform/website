@@ -73,7 +73,11 @@ const reportingPayload = (days: 7 | 30 | 90): ClinicDashboardReportingDTO => ({
 const request = (query: string) => {
   const payload = createMockPayload()
   return createMockReq(null, payload, {
-    headers: new Headers({ Authorization: 'Bearer clinic-token' }),
+    headers: new Headers({
+      Authorization: 'Bearer clinic-token',
+      'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
+    }),
+    routeParams: { clinicId: '8' },
     searchParams: new URLSearchParams(query),
   })
 }
@@ -82,13 +86,13 @@ const expectPrivateHeaders = (response: Response) => {
   expect(response.headers.get('cache-control')).toBe('private, no-store')
   expect(response.headers.get('pragma')).toBe('no-cache')
   expect(response.headers.get('expires')).toBe('0')
-  expect(response.headers.get('vary')).toBe('Authorization')
+  expect(response.headers.get('vary')).toBe('Authorization, X-Findmydoc-Clinic-Scope-Contract')
 }
 
 describe('Clinic Dashboard reporting endpoint', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.resolveClinicDashboardReporting.mockImplementation(async (_, periodDays) => ({
+    mocks.resolveClinicDashboardReporting.mockImplementation(async (_, _clinicId, periodDays) => ({
       data: reportingPayload(periodDays as 7 | 30 | 90),
       status: 'success',
     }))
@@ -117,7 +121,29 @@ describe('Clinic Dashboard reporting endpoint', () => {
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual(reportingPayload(periodDays as 7 | 30 | 90))
-    expect(mocks.resolveClinicDashboardReporting).toHaveBeenCalledWith(req, periodDays)
+    expect(mocks.resolveClinicDashboardReporting).toHaveBeenCalledWith(req, '8', periodDays)
+    expectPrivateHeaders(response)
+  })
+
+  it.each([undefined, '', '08', '-1', '1e2', '9007199254740992'])(
+    'rejects invalid path target %s before source access',
+    async (clinicId) => {
+      const req = request('periodDays=7')
+      req.routeParams = clinicId === undefined ? {} : { clinicId }
+      const response = await clinicDashboardReportingGetHandler(req)
+      expect(response.status).toBe(400)
+      expect(mocks.resolveClinicDashboardReporting).not.toHaveBeenCalled()
+      expectPrivateHeaders(response)
+    },
+  )
+
+  it('requires clinic-scope-v1 separately from the reporting content schema', async () => {
+    const req = request('periodDays=7')
+    req.headers.delete('X-Findmydoc-Clinic-Scope-Contract')
+    const response = await clinicDashboardReportingGetHandler(req)
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: { code: 'CLINIC_DASHBOARD_INVALID_CONTRACT' } })
+    expect(mocks.resolveClinicDashboardReporting).not.toHaveBeenCalled()
     expectPrivateHeaders(response)
   })
 

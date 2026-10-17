@@ -3,9 +3,11 @@ import {
   CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
   CLINIC_NOTIFICATIONS_SUPPORT_HEADER,
 } from '@/features/clinicNotifications/contracts'
-import { resolveClinicDashboardBootstrap } from '@/features/clinicDashboard/bootstrap'
+import { resolveClinicScopeBootstrap } from '@/features/clinicDashboard/bootstrap'
 import {
   CLINIC_DASHBOARD_CONTRACT_HEADER,
+  CLINIC_SCOPE_CONTRACT_HEADER,
+  hasClinicScopeContract,
   resolveClinicDashboardContract,
 } from '@/features/clinicDashboard/contractNegotiation'
 
@@ -27,24 +29,30 @@ export const CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS = {
 export const clinicDashboardPrivateJsonResponse = (body: unknown, status: number): Response =>
   Response.json(body, { status, headers: CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS })
 
+const clinicScopePrivateJsonResponse = (body: unknown, status: number): Response => {
+  const response = clinicDashboardPrivateJsonResponse(body, status)
+  response.headers.append('Vary', CLINIC_SCOPE_CONTRACT_HEADER)
+  return response
+}
+
 export const clinicDashboardBootstrapGetHandler: PayloadHandler = async (req) => {
   const contract = resolveClinicDashboardContract(req.headers)
-  if (contract === 'invalid') {
-    return clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.invalidContract } }, 400)
+  if (contract === 'invalid' || !hasClinicScopeContract(req.headers)) {
+    return clinicScopePrivateJsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.invalidContract } }, 400)
   }
-  const result = await resolveClinicDashboardBootstrap(req, contract)
+  const result = await resolveClinicScopeBootstrap(req)
 
   switch (result.status) {
     case 'success':
-      return clinicDashboardPrivateJsonResponse(result.data, 200)
+      return clinicScopePrivateJsonResponse(result.data, 200)
     case 'access-denied':
-      return clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.accessDenied } }, 403)
+      return clinicScopePrivateJsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.accessDenied } }, 403)
     case 'unavailable':
-      return clinicDashboardPrivateJsonResponse(
+      return clinicScopePrivateJsonResponse(
         { error: { code: CLINIC_DASHBOARD_ERROR_CODES.temporarilyUnavailable } },
         503,
       )
     case 'unauthorized':
-      return clinicDashboardPrivateJsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.unauthorized } }, 401)
+      return clinicScopePrivateJsonResponse({ error: { code: CLINIC_DASHBOARD_ERROR_CODES.unauthorized } }, 401)
   }
 }

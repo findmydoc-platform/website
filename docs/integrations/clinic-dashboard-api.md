@@ -55,24 +55,20 @@ a physical commit-time guarantee or hosted activation.
 The initial focused endpoint is `GET /api/clinic-dashboard/bootstrap`. Payload registers it through its standard custom
 endpoint conventions; its stable semantic contract is fixed here.
 
-Inquiry capabilities are negotiated additively through `X-Findmydoc-Clinic-Dashboard-Contract`. The supported values
-are `inquiry-communication-v1` for the compatibility projection and `inquiry-communication-v2` for moderation and
-retention system events. A request without that header receives the historical six-capability bootstrap. Exactly one
-known value adds the two inquiry capabilities and enables the focused inquiry routes. Empty, unknown, mixed, or
-coalesced duplicate values fail closed with
-`CLINIC_DASHBOARD_INVALID_CONTRACT`. Bootstrap and inquiry responses include both `Authorization` and the contract
-header in `Vary`; the Dashboard BFF, never the browser, owns the fixed opt-in value.
+Bootstrap requires exactly `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1`. Missing, empty, unknown,
+mixed, or coalesced duplicate values return `400 CLINIC_DASHBOARD_INVALID_CONTRACT`. This Greenfield contract has
+no historical single-clinic response projection. The BFF owns negotiation; the browser does not call Payload.
 
-The endpoint:
+`X-Findmydoc-Clinic-Dashboard-Contract` remains a separate inquiry-domain contract with its existing
+`inquiry-communication-v1` and `inquiry-communication-v2` values. It does not select the bootstrap shape or grant
+group access to unconverted domain routes. Notification support negotiation also retains its existing meaning.
 
-1. validates the Bearer token through the existing Supabase authentication strategy;
-2. accepts only a resolved `clinicStaff` principal;
-3. reads current approval and clinic assignment from Payload;
-4. returns `403` without clinic data when the principal is not approved or has no clinic;
-5. derives all capabilities server-side from current access rules;
-6. returns a purpose-specific DTO, not a populated Payload document.
-
-The initial response shape is owned by the website repository:
+Every bootstrap request independently validates the personal Bearer token and binds its subject to the resolved
+`clinicStaff` principal. Payload reads current personal activation, approval, assignment, group existence and clinic
+participation. Local assignments grant their current clinic; group assignments derive the current group clinic set.
+An approved person with no eligible clinic receives a successful bootstrap with an empty `clinics` array. Ineligible
+persons receive `403` without clinic data. Invalid identity returns `401`; unavailable identity or source reads return
+sanitized `503` responses.
 
 ```ts
 type ClinicDashboardCapability =
@@ -85,52 +81,40 @@ type ClinicDashboardCapability =
   | 'clinic-inquiries:view'
   | 'clinic-inquiries:edit'
 
-type ClinicDashboardBootstrapDTO = {
-  principal: {
-    id: string
-    displayName: string
-    email: string
-  }
-  clinic: {
-    id: string
-    name: string
-  }
-  status: "approved"
-  capabilities: ClinicDashboardCapability[]
+type ClinicScopeBootstrapDTO = {
+  schemaVersion: 'clinic-scope-v1'
+  principal: { id: string; displayName: string; email: string }
+  status: 'approved'
+  clinics: Array<{ id: string; name: string; capabilities: ClinicDashboardCapability[] }>
 }
 ```
 
-The historical six capabilities are returned exactly once in the order shown above for every approved clinic principal
-with synchronized identity, private password evidence, and a current assignment to a participation-approved clinic.
-Public publication is independent. The negotiated inquiry contract appends inquiry view and edit in that order. Existing
-profile view and edit access respectively grant treatment and gallery view and edit access while those workspaces are
-introduced. Inquiry view and edit remain explicit because each inquiry endpoint checks the current capability again. A
-successful bootstrap implies Dashboard access, so there is no separate `dashboard:access` capability.
+Clinics are sorted by display name, then stable ID, using the English collation. Each entry projects the eight
+closed capabilities in the order above. These capabilities describe existing profile, treatment, gallery and inquiry
+operations; they do not introduce doctor, review, notification, reporting or export capability strings. Each domain
+still enforces its own source and operation authorization. Unconverted unscoped domain authorization remains local
+and fails closed for group managers.
 
-`ClinicDashboardCapability` is a closed, version-controlled string union. It describes user-visible operations, not
-Payload collection names or field-level access details. It is a UI projection and never replaces Payload authorization:
-each later read or mutation must authorize the current principal, clinic, document, and fields again. New capability
-values require synchronized type, endpoint, Dashboard behavior, and permission tests.
+`status: approved` describes personal Dashboard eligibility, not public clinic publication. The DTO omits Supabase
+identifiers, tokens, internal roles, account evidence, Payload timestamps and unrelated fields. Private activation
+contracts remain documented in [clinic participation](../security/clinic-participation.md).
 
-The DTO's `status: approved` means authorized Dashboard participation, including unpublished clinics. It is not the
-clinic's public publication status. Its shape remains compatible with existing Dashboard readers. Website Auth owns
-private completion evidence and its trusted command contract in
-[clinic participation](../security/clinic-participation.md). The later authenticated completion protocol belongs to
-Website #1995 and Dashboard #160; this process change does not activate it.
-
-The DTO deliberately omits Supabase identifiers, tokens, internal roles, access-control metadata, Payload timestamps,
-and unrelated clinic fields. Later capability endpoints may add their own DTOs without expanding this bootstrap into a
-generic data endpoint.
+Success and error responses use `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
+`Vary: Authorization, X-Findmydoc-Clinic-Dashboard-Contract, X-Findmydoc-Clinic-Scope-Contract`. Bootstrap grants are
+request-bound projections. A selected clinic path never grants permission and later requests read current access again.
 
 ## Clinic Dashboard Reporting Contract
 
 > **Canonical decision:**
 > [ADR 029](https://github.com/findmydoc-platform/website/blob/main/docs/adrs/029-adr-tenant-safe-clinic-dashboard-reporting.md)
 
-`GET /api/clinic-dashboard/reporting` is the fixed `clinic-dashboard-reporting-v1` reporting contract. It is a
-request-bound private route. Each request validates the Bearer token, resolves the current approved `clinicStaff` and
-its assigned clinic, and derives every scope, source, and timezone server-side. The request never chooses a clinic,
-role, source, timezone, cache policy, or analytic identity.
+`GET /api/clinic-dashboard/clinics/:clinicId/reporting` carries the explicit clinic target and retains the
+`clinic-dashboard-reporting-v1` content schema. It requires `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1`.
+The previous unscoped reporting route is removed. Each request validates the personal Bearer identity and authorizes
+the positive integer path target against current local or group assignment and clinic participation. The source
+clinic record must match that authorized target. Every Payload and PostHog metric read uses that clinic alone.
+The request cannot choose role, source, timezone, cache policy or analytic identity. Existing Türkiye availability,
+partial-source behavior and export availability remain unchanged; no group aggregation or new export is added.
 
 The sole query parameter is exactly one `periodDays` value: `7`, `30`, or `90`. Missing, repeated, malformed, or
 additional parameters return:
@@ -145,7 +129,7 @@ additional parameters return:
 ```
 
 Every success and error response has `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
-`Vary: Authorization`. The route has no tags, revalidation, cache layer, cache policy, or public-cache impact
+`Vary: Authorization, X-Findmydoc-Clinic-Scope-Contract`. The route has no tags, revalidation, cache layer, cache policy, or public-cache impact
 (`no-public-impact`). Authentication failures return `401 CLINIC_DASHBOARD_UNAUTHORIZED` with `Authentication is
 required.`; unavailable reporting access returns `403 CLINIC_DASHBOARD_ACCESS_DENIED` with `Reporting access is not
 available.`; an authorization/source bootstrap failure returns `503
@@ -809,7 +793,7 @@ The bootstrap always returns one of these stable Payload status and code pairs:
 | Payload or upstream condition | Payload result | Session effect |
 | --- | --- | --- |
 | Missing or invalid explicit Bearer token, non-clinic principal, conflicting identity mapping, or valid identity without matching clinic staff | `401` with `CLINIC_DASHBOARD_UNAUTHORIZED` | Dashboard may attempt one controlled refresh; persistent failure clears invalid cookies. Staff is never created during authentication. |
-| Principal not approved or missing a current clinic assignment | `403` with `CLINIC_DASHBOARD_ACCESS_DENIED` | Preserve the session so the Dashboard can render an access-state explanation. |
+| Principal not eligible for personal Dashboard access | `403` with `CLINIC_DASHBOARD_ACCESS_DENIED` | Preserve the session so the Dashboard can render an access-state explanation. |
 | Supabase or Payload temporarily unavailable | `503` with `CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE` | Preserve the session; do not present an upstream outage as logout. |
 
 Capability routes additionally use these general semantics:
@@ -820,7 +804,7 @@ posts to the Dashboard recovery handler, which refreshes once, retries with the 
 returning to the page. A bounded return marker prevents another automatic refresh; persistent rejection clears local
 Dashboard auth cookies before login. Writable Dashboard Route Handlers keep their existing refresh-and-retry path.
 The [Dashboard initial page recovery contract](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/authentication-and-bff.md#initial-page-recovery-and-writable-requests)
-owns these routes and guards. Payload bootstrap status codes, DTOs, and clinic authorization are unchanged.
+owns these routes and guards. The recovery policy applies to the person-scoped bootstrap documented above; an empty authorized clinic set preserves the valid personal session.
 
 | Payload or upstream condition | Dashboard BFF result | Session effect |
 | --- | --- | --- |
@@ -838,14 +822,16 @@ city-country mismatch even when a client submits manipulated identifiers.
 Error bodies expose stable machine-readable codes and safe user-facing categories. They do not expose tokens, raw
 Payload errors, SQL details, stack traces, clinic data from a denied request, or Supabase response bodies.
 
-Every bootstrap and clinic-profile response, including errors, carries:
+Every bootstrap and clinic-profile response, including errors, carries these cache headers:
 
 ```text
 Cache-Control: private, no-store
 Pragma: no-cache
 Expires: 0
-Vary: Authorization
 ```
+
+Bootstrap varies by Authorization, the inquiry-domain contract and the clinic-scope contract headers. Unconverted
+clinic-profile routes retain their existing Authorization and inquiry-domain contract Vary values.
 
 ## Environment Matrix
 
@@ -890,7 +876,7 @@ The architecture remains valid only while the following properties hold:
 - Browser network evidence contains Dashboard-origin application requests and authentication navigation only; it
   contains no browser request to Payload.
 - Browser JavaScript cannot read access or refresh tokens.
-- Payload resolves clinic, status, and capabilities from the current principal for every request.
+- Payload derives current authorized clinics and capabilities from the personal principal for every request, and authorizes each explicit business target at the source.
 - Bootstrap and capability DTOs contain no unapproved internal fields.
 - Every state-changing Dashboard route uses the central session-bound HMAC-CSRF guard; Payload remains unchanged.
 - The Payload client accepts only the exact environment origin and does not follow authenticated redirects.

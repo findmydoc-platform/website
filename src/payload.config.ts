@@ -204,7 +204,7 @@ export default buildConfig({
       handler: clinicDashboardNotificationsReadPostHandler,
     },
     {
-      path: '/clinic-dashboard/reporting',
+      path: '/clinic-dashboard/clinics/:clinicId/reporting',
       method: 'get',
       handler: clinicDashboardReportingGetHandler as PayloadHandler,
     },

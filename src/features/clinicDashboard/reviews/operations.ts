@@ -36,14 +36,14 @@ const versionsQuery = z
     'where[version.review][equals]': clinicReviewDetailIdSchema,
   })
   .strict()
-export const reviewResponseCreateInput = z
+const reviewResponseCreateInput = z
   .object({
     review: z.union([clinicReviewDetailIdSchema, z.number().int().positive()]),
     pendingResponse: z.object({ body: z.string().trim().min(10).max(2000) }).strict(),
   })
   .strict()
-export const reviewResponseUpdateInput = reviewResponseCreateInput.omit({ review: true })
-export const reviewAppealCreateInput = z
+const reviewResponseUpdateInput = reviewResponseCreateInput.omit({ review: true })
+const reviewAppealCreateInput = z
   .object({
     review: z.union([clinicReviewDetailIdSchema, z.number().int().positive()]),
     reason: z.enum(['incorrect_clinic', 'inappropriate_content', 'privacy_concern', 'other']),
@@ -68,7 +68,7 @@ function relation(value: unknown): string | null {
   if (typeof value === 'number' || typeof value === 'string') return String(value)
   return value && typeof value === 'object' && 'id' in value ? relation(value.id) : null
 }
-export function projectReviewWorkflow(collection: WorkflowCollection, doc: ReviewResponse | ReviewAppeal) {
+function projectReviewWorkflow(collection: WorkflowCollection, doc: ReviewResponse | ReviewAppeal) {
   const review = relation(doc.review)
   if (!review) throw new Error('Review workflow source is missing.')
   if (collection === 'reviewResponses') {

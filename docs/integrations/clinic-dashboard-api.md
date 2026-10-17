@@ -688,8 +688,8 @@ There is no public `under_review` display and no black-bar rendering. `status` r
 The standard Payload REST collection routes remain the current-read contract:
 
 - `GET /api/reviews` and `GET /api/reviews/:id` return platform staff all review states and fields.
-- `GET /api/clinic-dashboard/reviews/:id` returns an ordinary exact clinic review in a closed `{ data }` envelope. It revalidates the current clinic principal and source scope, takes no query or caller-selected clinic, and returns `404 TARGET_UNAVAILABLE` for a missing, foreign, rejected or trashed record. Its independently executable examples live in `tests/fixtures/clinic-review-detail-v1.json`. The response exposes the current permitted text projection, treatment, rating and publication/withdrawal state. Removed or withdrawn rows remain available to their clinic but omit author name and written content. The route is private and uncached; it does not read versions or create notification receipts.
-- The same routes return clinic staff approved reviews only for their assigned clinic, including logically removed and
+- `GET /api/clinic-dashboard/clinics/:clinicId/reviews/:id` returns an ordinary exact clinic review in a closed `{ data }` envelope. It revalidates the current clinic principal and source scope, takes no query and intersects the explicit clinic path with current source authorization, and returns `404 TARGET_UNAVAILABLE` for a missing, foreign, rejected or trashed record. Its independently executable examples live in `tests/fixtures/clinic-review-detail-v1.json`. The response exposes the current permitted text projection, treatment, rating and publication/withdrawal state. Removed or withdrawn rows remain available to their clinic but omit author name and written content. The route is private and uncached; it does not read versions or create notification receipts.
+- The same routes return clinic staff approved reviews only for currently eligible local or group clinics, including logically removed and
   withdrawn rows. Clinic fields are limited to the public measure/text/notice, moderation time, withdrawal
   state/source/time, rating/date/public author, and ordinary review relationships. Raw `comment` is returned only for
   active `none` or `context` rows. Internal reasons, patient relation, named audit actors, and raw redacted, placeholder,
@@ -702,6 +702,23 @@ The standard Payload REST collection routes remain the current-read contract:
 placeholder use Website-owned fixed notices. Empty fields may be absent or `null` according to standard Payload REST
 serialization, so consumers must discriminate on `publicMeasure` rather than field presence.
 
+#### Private clinic-target review operations
+
+The Dashboard uses only the dedicated `/api/clinic-dashboard/clinics/:clinicId` review family. Every operation requires `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1` and fresh current target access. Responses vary by authorization and scope contract and remain `private, no-store`.
+
+| Operation | Contract |
+| --- | --- |
+| `GET /reviews` | Approved target reviews, bounded page/limit and the existing period/rating/treatment/visibility filters; unknown or duplicate query keys fail closed. Returns minimized public review projections and pagination metadata. |
+| `GET /reviews/:id` | Closed exact `{ data }` detail, independent of loaded list filters and pages. |
+| `GET /reviews/:id/record?depth=1` | The same permitted current review projection as a direct record for existing workflow preflight. |
+| `GET /reviews/:id/publication-history` | Existing sanitized publication-history projection and revision-bound cursor. |
+| `GET /review-responses` and `/review-appeals` | Only workflows for a bounded fixed set of approved reviews in the explicit target clinic. |
+| `GET /review-responses/versions` and `/review-appeals/versions` | Existing permitted workflow history after current exact source authorization. |
+| `POST /review-responses` and `/review-appeals` | Existing response or appeal submission; clinic and actor are source-derived. |
+| `PATCH /review-responses/:workflowId` | Existing pending-response revision after exact review and workflow ownership checks. |
+
+Commands require the configured Dashboard origin, JSON content type and a strict body bounded to 16 KiB. Native Payload access, operation permissions, computed fields, moderation transitions and versions remain authoritative. Response and appeal writes hold the actual clinic, current staff and group barriers, recheck source eligibility and ownership before commit, and serialize with assignment or group membership changes. No public projection, capture activation, retention or moderation policy changes are implied.
+
 #### Version and publication-history reads
 
 Reviews use unlimited, immutable Payload native versions. Raw native history remains platform-only through standard
@@ -713,7 +730,7 @@ Payload REST:
 Clinic staff must not use the raw version routes because an older version can contain text that a later redaction,
 removal, or withdrawal makes unsafe. The clinic-safe fallback is
 `GET /api/reviews/<reviewId>/publication-history?limit=25&cursor=<opaque>`. It returns platform staff any available
-review, or the currently assigned clinic only when the current review remains approved and not physically deleted:
+review, or a currently eligible source clinic only when the current review remains approved and not physically deleted:
 
 ```ts
 type ReviewPublicationHistoryResponseDTO = {

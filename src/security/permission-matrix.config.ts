@@ -50,6 +50,7 @@ export type ConditionalScenarioKind =
   | 'clinic-approved'
   // Clinic scope: response must scope by clinic identifier for non-platform users.
   | 'clinic-scope'
+  | 'clinic-source-public'
   // Clinic staff update: clinic staff can target only their own profile; field access protects authorization data.
   | 'clinic-staff-update'
   // Patient scope: restricts non-platform reads/writes to documents owned by the patient user.
@@ -396,7 +397,10 @@ export const permissionMatrix: PermissionMatrix = {
       displayName: 'ClinicTreatments',
       operations: {
         create: { type: 'conditional', details: 'platform full + clinic allowed (hook assigns clinic ownership)' },
-        read: { type: 'conditional', details: 'platform all + clinic own inactive + everyone active' },
+        read: {
+          type: 'conditional',
+          details: 'platform all + current eligible clinic offerings + public active offerings',
+        },
         update: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
         delete: { type: 'platform' },
         admin: { type: 'conditional', details: 'platform full + clinic scoped to own clinic' },
@@ -404,12 +408,13 @@ export const permissionMatrix: PermissionMatrix = {
       meta: {
         conditional: {
           create: { kind: 'role-allow', allow: ['platform', 'clinic'] },
-          read: { kind: 'clinic-or-active', path: 'clinic', statusPath: 'active' },
+          read: { kind: 'clinic-source-public', path: 'clinic', statusPath: 'active' },
           update: { kind: 'clinic-scope', path: 'clinic' },
           admin: { kind: 'clinic-scope', path: 'clinic' },
         },
       },
-      notes: 'Platform RWDA, clinic RWA own clinic including inactive offerings, patients/anonymous R active offerings',
+      notes:
+        'Platform RWDA; clinic RWA current eligible local/group clinics including inactive offerings; public active offerings; clinic staff cannot delete records or edit the master catalogue',
     },
     favoriteclinics: {
       slug: 'favoriteclinics',

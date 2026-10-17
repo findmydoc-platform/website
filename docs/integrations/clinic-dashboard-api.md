@@ -364,14 +364,15 @@ The treatment capability uses one focused custom Payload endpoint rather than ge
 
 | Method and route | Result |
 | --- | --- |
-| `GET /api/clinic-dashboard/treatments` | Returns the assigned clinic's complete treatment snapshot and the central treatment catalogue. |
-| `POST /api/clinic-dashboard/treatments` | Creates one inactive offering for an existing central treatment. |
-| `PATCH /api/clinic-dashboard/treatments` | Updates only EUR price and active state after an optimistic revision check. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/treatments` | Returns the selected clinic's complete treatment snapshot and the central treatment catalogue. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/treatments` | Creates one inactive offering for an existing central treatment. |
+| `PATCH /api/clinic-dashboard/clinics/:clinicId/treatments` | Updates only EUR price and active state after an optimistic revision check. |
 
-Every request repeats bootstrap authorization, requires `clinic-treatments:view` for reads or
-`clinic-treatments:edit` for writes, and derives the clinic from the approved `clinicStaff` assignment. No request
-accepts a clinic ID. The endpoint returns purpose-specific DTOs and does not expose generic Payload query, depth,
-relationship, or collection response semantics.
+Every request sends `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1`, independently validates the personal Bearer
+identity, and reads current Payload readiness, assignment, clinic membership and participation. The path selects one
+currently eligible local/group clinic. Reads require `clinic-treatments:view`; writes require `clinic-treatments:edit`.
+The path, token, selector preference and a previous bootstrap result do not grant access. The unscoped route is not
+registered. Request bodies accept no clinic override or generic Payload query, depth or relationship options.
 
 ```ts
 type ClinicTreatmentMasterDTO = {
@@ -394,11 +395,11 @@ type ClinicTreatmentSnapshotDTO = {
 }
 ```
 
-Create accepts only `{ treatmentId, priceEUR }`; Payload assigns the authenticated clinic and stores `active: false`.
+Create accepts only `{ treatmentId, priceEUR }`; Payload assigns the explicit authorized clinic and stores `active: false`.
 The offering can be activated only by a later update. Update accepts
 `{ offeringId, expectedRevision, priceEUR, active }`. `revision` is the offering's ISO `updatedAt` value. Payload finds
-the offering by both ID and assigned clinic and compares the expected revision inside a serializable transaction.
-Serialization failures are retried; a retry observes the newer revision and returns a conflict instead of overwriting
+the offering by both ID and the original explicit clinic and compares the expected revision inside a serializable transaction.
+Update serialization failures retain the existing maximum of three transaction attempts; a retry observes the newer revision and returns a conflict instead of overwriting
 it. Treatment name and plain-text description remain projections of the central Treatment record and are never
 writable through this endpoint.
 
@@ -407,13 +408,24 @@ returns `422 CLINIC_TREATMENT_INVALID_INPUT`; a foreign or missing clinic offeri
 `404 CLINIC_TREATMENT_NOT_FOUND`; a duplicate clinic/treatment pair or stale revision returns
 `409 CLINIC_TREATMENT_CONFLICT`. Authentication and temporary-service errors reuse the stable Clinic Dashboard error
 codes. Every response is private-live with `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
-`Vary: Authorization`.
+`Vary: Authorization, X-Findmydoc-Clinic-Scope-Contract`. Source authorization loss returns `403` rather than a misleading service failure.
 
-Clinic-treatment writes retain the existing `clinictreatments` hook behavior. Transactional updates suppress the hook's
-in-transaction invalidation and dispatch the same related-clinic plan once after commit, preventing an invalidated
-public cache from refilling against pre-commit data. Public clinic detail and listing comparison reads remain
-`public-cached`; the existing event, cache-policy entries, tags, planner owner, and bounded public paths remain
-authoritative. The private Dashboard endpoint adds no cache class, tag, surface, or invalidation owner.
+Both focused mutations own their complete native transaction. Create makes one attempt and preserves unknown outcomes;
+update retains its existing bounded serialization owner. Clinic, current group and personal staff barriers remain held
+through final source and active-session checks before commit. Direct `clinictreatments` writes use the same native
+barriers and current-source checks. Clinic staff cannot move an offering to another clinic, delete it, or modify the
+master catalogue. Removal from the clinic's public offerings remains `PATCH` with `active: false`.
+
+Cache impact is `private-live` for the scoped Dashboard endpoint and `public-cached` for existing public clinic detail
+and listing comparison consumers. Focused creates and updates suppress in-transaction revalidation and dispatch the
+existing related-clinic plan after commit. Existing average-price hooks, previous/current clinic identity mapping,
+policy entries, canonical tags, planner owner and bounded public paths remain authoritative. This conversion adds no
+public cache class, tag, surface or invalidation owner. No collection schema or migration changes are required.
+
+The source lifecycle suite covers local/group/foreign targets, record/clinic mismatches, controlled references,
+participation, missing native owners, and both business/access commit orders for assignment revocation and group
+movement. Native results and the DB-backed build require the authorized test CI; authored cases alone are not passing
+evidence. Profile, doctor and gallery conversions keep their own gates and acceptance evidence.
 
 ## Clinic Gallery Contract
 

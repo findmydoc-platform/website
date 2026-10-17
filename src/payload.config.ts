@@ -1,3 +1,4 @@
+import { ClinicGroups } from './collections/ClinicGroups'
 import { transactionalEmailEventSchema } from './features/transactionalEmail/eventSchema'
 import { validateTransactionalEmailStartup } from './features/transactionalEmail/environment'
 import { protectAuthActionProtocolStorage } from './auth/actions/protocol/storage'
@@ -547,6 +548,7 @@ export default buildConfig({
     Categories,
     Patients,
     ClinicStaff,
+    ClinicGroups,
     ClinicProfileDrafts,
     PlatformStaff,
     ClinicApplications,

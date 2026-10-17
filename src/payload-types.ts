@@ -84,6 +84,7 @@ export interface Config {
     categories: Category;
     patients: Patient;
     clinicStaff: ClinicStaff;
+    clinicGroups: ClinicGroup;
     clinicProfileDrafts: ClinicProfileDraft;
     platformStaff: PlatformStaff;
     clinicApplications: ClinicApplication;
@@ -170,6 +171,7 @@ export interface Config {
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     patients: PatientsSelect<false> | PatientsSelect<true>;
     clinicStaff: ClinicStaffSelect<false> | ClinicStaffSelect<true>;
+    clinicGroups: ClinicGroupsSelect<false> | ClinicGroupsSelect<true>;
     clinicProfileDrafts: ClinicProfileDraftsSelect<false> | ClinicProfileDraftsSelect<true>;
     platformStaff: PlatformStaffSelect<false> | PlatformStaffSelect<true>;
     clinicApplications: ClinicApplicationsSelect<false> | ClinicApplicationsSelect<true>;
@@ -713,6 +715,10 @@ export interface Tag {
 export interface Clinic {
   id: number;
   /**
+   * Optional group for this clinic. Existing memberships require a transfer or detachment workflow.
+   */
+  group?: (number | null) | ClinicGroup;
+  /**
    * Dashboard participation. Public publication is a separate decision.
    */
   participationStatus?: ('pending' | 'approved' | 'disabled' | 'rejected') | null;
@@ -982,6 +988,22 @@ export interface Clinic {
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
+}
+/**
+ * Private clinic groups managed by authorized findmydoc operators.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicGroups".
+ */
+export interface ClinicGroup {
+  id: number;
+  stableId?: string | null;
+  /**
+   * Name used to identify this clinic group in the back office.
+   */
+  name: string;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Treatments offered by clinics with EUR prices and public activation status
@@ -4061,6 +4083,10 @@ export interface PayloadLockedDocument {
         value: number | ClinicStaff;
       } | null)
     | ({
+        relationTo: 'clinicGroups';
+        value: number | ClinicGroup;
+      } | null)
+    | ({
         relationTo: 'clinicProfileDrafts';
         value: number | ClinicProfileDraft;
       } | null)
@@ -5146,6 +5172,16 @@ export interface ClinicStaffSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "clinicGroups_select".
+ */
+export interface ClinicGroupsSelect<T extends boolean = true> {
+  stableId?: T;
+  name?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "clinicProfileDrafts_select".
  */
 export interface ClinicProfileDraftsSelect<T extends boolean = true> {
@@ -5662,6 +5698,7 @@ export interface ReviewDecisionTransitionsSelect<T extends boolean = true> {
  * via the `definition` "clinics_select".
  */
 export interface ClinicsSelect<T extends boolean = true> {
+  group?: T;
   participationStatus?: T;
   provisioningIdentity?: T;
   stableId?: T;
@@ -7597,6 +7634,7 @@ export interface TaskCreateCollectionExport {
       | 'categories'
       | 'patients'
       | 'clinicStaff'
+      | 'clinicGroups'
       | 'clinicProfileDrafts'
       | 'platformStaff'
       | 'clinicApplications'

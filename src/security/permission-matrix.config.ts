@@ -305,6 +305,28 @@ export const permissionMatrix: PermissionMatrix = {
       notes:
         'Platform RWDA, clinic RWA own clinic including inactive doctors, patients/anonymous R active doctors; averageRating is computed-only',
     },
+    clinicGroups: {
+      slug: 'clinicGroups',
+      displayName: 'ClinicGroups',
+      operations: {
+        create: { type: 'conditional', details: 'platform admin/support only' },
+        read: { type: 'conditional', details: 'platform admin/support only' },
+        update: { type: 'conditional', details: 'platform admin/support only' },
+        delete: { type: 'conditional', details: 'platform admin/support only; referenced groups cannot be deleted' },
+        admin: { type: 'conditional', details: 'platform admin/support only' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'platform-staff-role' },
+          read: { kind: 'platform-staff-role' },
+          update: { kind: 'platform-staff-role' },
+          delete: { kind: 'platform-staff-role' },
+          admin: { kind: 'platform-staff-role' },
+        },
+      },
+      notes:
+        'Private group metadata; only persisted platform admin/support roles manage groups. Clinic references block deletion.',
+    },
     clinics: {
       slug: 'clinics',
       displayName: 'Clinics',

@@ -207,10 +207,26 @@ export const demoPlan: SeedPlanStep[] = [
   },
   {
     kind: 'collection',
+    name: 'clinic-groups',
+    collection: 'clinicGroups',
+    fileName: 'clinicGroups',
+    reqUserStableId: 'seed-platform-admin',
+    upsertPolicy: { skipIfCurrentMatches: true },
+  },
+  {
+    kind: 'collection',
     name: 'clinics',
     collection: 'clinics',
     fileName: 'clinics',
+    reqUserStableId: 'seed-platform-admin',
     mapping: [
+      {
+        sourceField: 'groupStableId',
+        targetField: 'group',
+        collection: 'clinicGroups',
+        required: true,
+        nullable: true,
+      },
       {
         sourceField: 'cityStableId',
         targetField: 'address.city',
@@ -257,6 +273,7 @@ export const demoPlan: SeedPlanStep[] = [
     name: 'clinic-profile-galleries',
     collection: 'clinics',
     fileName: 'clinics',
+    reqUserStableId: 'seed-platform-admin',
     mapping: [
       {
         sourceField: 'profileGalleryStableIds',

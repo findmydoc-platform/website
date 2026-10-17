@@ -5,7 +5,9 @@ import { CONTENT_LOCALES, DEFAULT_CONTENT_LOCALE, type ContentLocale } from '@/u
 import type { SeedKind, SeedRecord } from './load-json'
 import type { StableIdResolvers } from './resolvers'
 import { loadSeedFile } from './load-json'
+import { assertSeedRunPolicy, resolveSeedRuntimeEnv } from './runtime'
 import { upsertByStableId, type SeedUpsertPolicy } from './upsert'
+import { cloneSeedOperationRequest } from './operation-request'
 
 export type RelationMapping = {
   sourceField: string
@@ -14,6 +16,7 @@ export type RelationMapping = {
   resolver?: 'stableId'
   many?: boolean
   required?: boolean
+  nullable?: boolean
 }
 
 export type CollectionImportResult = {
@@ -149,7 +152,7 @@ async function applyLocalizedFieldUpdates(options: {
         disableRevalidate: true,
         ...(context ?? {}),
       },
-      req,
+      req: cloneSeedOperationRequest(req),
     })
   }
 }
@@ -159,6 +162,7 @@ function formatRecordIdentifier(collection: CollectionSlug, record: SeedRecord) 
 }
 
 export async function importCollection(options: CollectionImportOptions): Promise<CollectionImportResult> {
+  assertSeedRunPolicy({ runtimeEnv: resolveSeedRuntimeEnv(undefined, process.env), type: options.kind, reset: false })
   const {
     payload,
     kind,
@@ -229,6 +233,10 @@ export async function importCollection(options: CollectionImportOptions): Promis
         delete draft[relation.sourceField]
 
         if (rawValue == null) {
+          if (rawValue === null && relation.nullable) {
+            setValueAtPath(draft, relation.targetField, null)
+            continue
+          }
           if (relation.required) {
             warnings.push(`Missing ${relation.sourceField} for ${formatRecordIdentifier(collection, record)}`)
             skip = true

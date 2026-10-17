@@ -495,6 +495,8 @@ describe('Current clinic doctor source permissions and native ordering', () => {
     const opponentPaused = new Promise<void>((resolve) => {
       opponentEntered = resolve
     })
+    const firstAuthorizationKeys = new Set<string>()
+    let sharedAuthorizationKey: string | undefined
     async function waitFor(promise: Promise<void>) {
       let timer: ReturnType<typeof setTimeout> | undefined
       try {
@@ -526,14 +528,13 @@ describe('Current clinic doctor source permissions and native ordering', () => {
     controls.beforeChange = [
       ...(oldControl ?? []),
       ({ data, originalDoc, req }) => {
-        if (
-          req.context.doctorRace === 'second' &&
-          (data.key ?? originalDoc?.key) ===
-            (accessChange === 'move'
-              ? `notification-authorization:clinic:${f.first.clinic.id}`
-              : `notification-authorization:staff:${f.principal.id}`)
-        )
+        const key = data.key ?? originalDoc?.key
+        if (typeof key !== 'string' || !key.startsWith('notification-authorization:')) return data
+        if (req.context.doctorRace === 'first') firstAuthorizationKeys.add(key)
+        if (req.context.doctorRace === 'second' && firstAuthorizationKeys.has(key) && !sharedAuthorizationKey) {
+          sharedAuthorizationKey = key
           opponentEntered()
+        }
         return data
       },
     ]
@@ -572,8 +573,20 @@ describe('Current clinic doctor source permissions and native ordering', () => {
     let second: ReturnType<typeof settled> | undefined
     try {
       await waitFor(paused)
+      const accessKey =
+        accessChange === 'move'
+          ? `notification-authorization:clinic:${f.first.clinic.id}`
+          : `notification-authorization:staff:${f.principal.id}`
+      expect(firstAuthorizationKeys).toContain(accessKey)
+      // Revocation also holds its former group. The business writer reaches that sorted key before staff.
+      const expectedSharedKey =
+        order === 'access-first' && accessChange === 'revoke'
+          ? `notification-authorization:group:${f.group.id}`
+          : accessKey
+      expect(firstAuthorizationKeys).toContain(expectedSharedKey)
       second = settled(order === 'business-first' ? revoke('second') : business('second'))
       await waitFor(opponentPaused)
+      expect(sharedAuthorizationKey).toBe(expectedSharedKey)
       release()
       expect((await first).error).toBeUndefined()
       if (order === 'access-first') expect((await second).error).toMatchObject({ status: 403 })

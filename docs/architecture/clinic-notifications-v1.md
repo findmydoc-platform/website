@@ -39,7 +39,52 @@ Errors contain the contract version and a closed `error.code`: `UNAUTHENTICATED`
 
 An eligible person with no clinics receives an empty personal feed and zero count. Acknowledgements require at least one currently eligible clinic. Personal URLs are independent of the active Dashboard clinic.
 
-Storage is additive and private-live. Cache impact is `no-public-impact`, classified as private operational storage. Capture remains inactive by default, with a persisted serialization boundary. Isolated tests may activate it. No historical backfill or hosted activation is part of the foundation slice.
+Storage is additive and private-live. Cache impact is `no-public-impact`, classified as private operational storage. Capture remains inactive by default, with a persisted serialization boundary. Isolated tests have a request-bound, test-only activation helper that rejects hosted environments. The authenticated [hosted capture operation](#hosted-capture-operation) supplies preparation, explicit activation and readonly reconciliation. Its availability does not establish Preview or Production acceptance. Neither path imports historical events.
+
+## Hosted capture operation
+
+GET `/api/internal/clinic-notifications/capture` prepares or reads back the single environment boundary without creating storage. POST on the same path activates it. Both require a currently stored PlatformStaff admin or support principal; a stale authenticated role is insufficient. The private control collection remains hidden, with ordinary REST and GraphQL disabled. Neither group management nor Dashboard clinic access grants this operation.
+
+Preparation returns `environment`, `runtimeRevision`, `contractVersion`, `active`, `activatedAt` and `expectedState`. The environment must agree exactly across the server runtime policy, `DEPLOYMENT_ENV` and `VERCEL_ENV`, and must be Preview or Production. The revision comes from the installed runtime's forty-character `VERCEL_GIT_COMMIT_SHA`; missing or inconsistent runtime identity fails closed. The state fingerprint binds that environment, revision, notification contract and boundary identity/state. Source nonce updates do not invalidate preparation. The fingerprint is an expected-state comparison, not a credential or an approval token.
+
+The operator entry is the existing authenticated Website Payload Admin session and its browser developer console. No additional account, service credential or Ops runner is required. Use the matching authorized Website origin. Preparation is readonly:
+
+```js
+const capturePath = '/api/internal/clinic-notifications/capture'
+const preparedResponse = await fetch(capturePath, { credentials: 'same-origin', cache: 'no-store' })
+if (!preparedResponse.ok) throw new Error('Capture preparation rejected; inspect the closed error code.')
+const preparedCapture = await preparedResponse.json()
+```
+
+Review the returned environment, runtime revision, contract and boundary against the matching prepared applications and the dated acceptance evidence. D210 requires Preview qualification; D211 additionally requires the user's explicit chat approval before Production activation. These are existing delivery gates, not an added product approval workflow. Only after the applicable authorization, submit the explicit transition:
+
+```js
+const activationResponse = await fetch(capturePath, {
+  method: 'POST',
+  credentials: 'same-origin',
+  cache: 'no-store',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    action: 'activate',
+    environment: preparedCapture.environment,
+    runtimeRevision: preparedCapture.runtimeRevision,
+    expectedState: preparedCapture.expectedState,
+  }),
+})
+const captureResult = await activationResponse.json()
+```
+
+POST accepts only those four fields, at most 2,048 request bytes, from the exact configured HTTPS Website origin. JSON and exact Origin validation preserve the existing same-origin session boundary; no new secret, signature, cross-origin exception or second approver is introduced. All responses, including errors, use `private, no-store` and vary by Authorization and Cookie. Do not copy session material into commands, URLs, logs or evidence.
+
+The native Payload create or by-ID update owns one outer transaction. Existing controls acquire the same `notification-center` nonce serialization used by source producers in `beforeOperation`, before Payload reads its predecessor. A missing center is created through the native unique-key insert; a concurrent first creator may cause a conflict, without an automatic retry. A private request-identity capability admits only this command. Hook checks retain the original active native session and reread the current operator, runtime identity and boundary. The final check runs in `afterOperation` before native commit. No adapter transaction controls, SQL, isolation change or new retry owner are added.
+
+`activatedAt` is server-derived under that serialized owner. It is persisted atomically with activation, not supplied by the operator or backdated. It records the server decision phase, not a guarantee about physical database commit time. A delayed successful commit retains that timestamp. A source that commits before activation stays ineligible and is never backfilled; a later qualifying source transition uses the existing producer protocol. A matching prepared active replay returns `already_active` and preserves the first timestamp without writing. Reset, deactivation, identity replacement and timestamp replacement are unavailable.
+
+Closed errors are `CAPTURE_ACCESS_DENIED`, `CAPTURE_INVALID_INPUT`, `CAPTURE_CONFLICT` and `CAPTURE_UNAVAILABLE`. A rejected preparation reports `not_committed`. A submitted native operation whose commit or rollback is uncertain reports `unknown`; cleanup success is not rollback evidence. Do not automatically repeat a submitted request. Use authenticated GET to read the durable boundary and reconcile the desired final state. Readback cannot identify which concurrent or unconfirmed request caused an activation. Controlled diagnostics contain technical operation, environment, contract, result and transaction outcome, never raw failures, request bodies, session material or business records. Diagnostic sink failures do not reverse a result or trigger replay.
+
+The code and local tests do not qualify a hosted environment. Preview and Production still require their own paired deployment, all seven producer paths, retention execution, diagnostic retention/access, source-to-browser observations and D239/D240 acceptance. No hosted activation is claimed by this implementation.
+
+## Source ownership and lifecycle
 
 Acknowledgements and native access writers serialize through independent private clinic, group and staff authorization keys. The receipt command acquires the initial clinic union, group assignment and personal staff barriers before rereading current access in its one outer transaction. If a preceding committed grant adds candidates, it acquires the missing clinic and group keys and rereads access until every candidate is covered. A fresh final source projection and access check precede the expiry decision. The environment capture control retains its separate activation key; retention owns its own key. Clinic membership changes lock old and new clinic keys, while ordinary inquiry progress changes remain independent. The hooks run before native document reads and guard bulk operations against continuing after the transaction is lost. No public cache, invalidation event, or business progress mutation is added.
 

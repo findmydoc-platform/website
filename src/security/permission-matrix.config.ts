@@ -649,7 +649,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform full; doctor images use current eligible local/group clinic scope and immutable doctor ownership',
+        'Platform full; doctor images require matching stored-clinic and current doctor-clinic ownership within the eligible local/group scope; doctor ownership is immutable',
     },
     userProfileMedia: {
       slug: 'userProfileMedia',

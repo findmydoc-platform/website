@@ -3,7 +3,7 @@ import type { Access } from 'payload'
 import { doctorSourceAccess } from '@/features/doctorProfiles/authorization'
 
 export const doctorMediaReadAccess: Access = async ({ req, isReadingStaticFile }) => {
-  const scopedAccess = await doctorSourceAccess()({ req })
+  const scopedAccess = await doctorSourceAccess(['clinic', 'doctor.clinic'])({ req })
   if (!isReadingStaticFile) {
     return scopedAccess
   }

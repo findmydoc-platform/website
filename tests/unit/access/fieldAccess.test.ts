@@ -141,15 +141,19 @@ describe('Field Access Control', () => {
 
     test('role lookup errors fail closed', async () => {
       const payload = createMockPayload()
-      payload.find.mockRejectedValue(new Error('lookup failed'))
+      const sentinel = new Error('synthetic-private-role-lookup', { cause: new Error('synthetic-private-cause') })
+      sentinel.name = 'SyntheticPrivateErrorType'
+      payload.find.mockRejectedValue(sentinel)
 
       const result = await platformClinicTrustFieldAccess(createAccessArgs(mockUsers.platform(), { payload }))
 
       expect(result).toBe(false)
       expect(payload.logger.warn).toHaveBeenCalledWith(
-        expect.objectContaining({ error: expect.any(Error) }),
+        { event: 'access.clinic_trust.lookup_failed', reason: 'role_lookup_failed', errorType: 'dependency_failure' },
         'Unable to resolve platform staff role for clinic trust access',
       )
+      expect(payload.logger.warn.mock.calls.flat()).not.toContain(sentinel)
+      expect(JSON.stringify(payload.logger.warn.mock.calls)).not.toMatch(/synthetic-private|SyntheticPrivateErrorType/)
     })
   })
 

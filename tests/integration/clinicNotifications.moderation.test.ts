@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { withTestCaptureAuthority } from '@/features/clinicNotifications/testCaptureAuthority'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import config from '@payload-config'
 import {
@@ -581,13 +582,15 @@ describe('clinic inquiry moderation notifications', () => {
         payload,
       )
       try {
-        await payload.update({
-          collection: 'clinicNotificationControls',
-          id: control.id,
-          overrideAccess: true,
-          req,
-          data,
-        })
+        await withTestCaptureAuthority(req, () =>
+          payload.update({
+            collection: 'clinicNotificationControls',
+            id: control.id,
+            overrideAccess: true,
+            req,
+            data,
+          }),
+        )
         await payload.db.commitTransaction(transactionID)
       } catch (error) {
         await payload.db.rollbackTransaction(transactionID)

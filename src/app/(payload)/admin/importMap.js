@@ -29,6 +29,7 @@ import { ClinicStaffLifecyclePanel as ClinicStaffLifecyclePanel_d0a2f65900e52a34
 import { OpeningHoursTimeField as OpeningHoursTimeField_75ea827af6a03f373c3e1bcdcb127d93 } from '@/app/(payload)/components/OpeningHoursTimeField'
 import { PlatformStaffAdminGuidance as PlatformStaffAdminGuidance_44a83a5fcf2c50f5e0c31ed343de2547 } from '@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance'
 import { ClinicApplicationLifecyclePanel as ClinicApplicationLifecyclePanel_2ecefdcb5754cece59d0633a49b851df } from '@/app/(payload)/components/ClinicApplicationLifecycle'
+import { ClinicGroupMovement as ClinicGroupMovement_2c7ef09ebb58e30008cdc6cd75021c43 } from '@/app/(payload)/components/ClinicGroupMovement'
 import { ClinicApprovalRequirementError as ClinicApprovalRequirementError_6b9b57c3f957a81847439b14fa4ed9d4 } from '@/app/(payload)/components/ClinicApprovalRequirements'
 import { ClinicApprovalRequirements as ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4 } from '@/app/(payload)/components/ClinicApprovalRequirements'
 import { default as default_edf1bab331b69df45f809a41e2fc2349 } from '@/components/organisms/MedicalSpecialtiesAdminGuidance'
@@ -91,6 +92,7 @@ export const importMap = {
   "@/app/(payload)/components/OpeningHoursTimeField#OpeningHoursTimeField": OpeningHoursTimeField_75ea827af6a03f373c3e1bcdcb127d93,
   "@/app/(payload)/components/AdminNotice/PlatformStaffAdminGuidance#PlatformStaffAdminGuidance": PlatformStaffAdminGuidance_44a83a5fcf2c50f5e0c31ed343de2547,
   "@/app/(payload)/components/ClinicApplicationLifecycle#ClinicApplicationLifecyclePanel": ClinicApplicationLifecyclePanel_2ecefdcb5754cece59d0633a49b851df,
+  "@/app/(payload)/components/ClinicGroupMovement#ClinicGroupMovement": ClinicGroupMovement_2c7ef09ebb58e30008cdc6cd75021c43,
   "@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirementError": ClinicApprovalRequirementError_6b9b57c3f957a81847439b14fa4ed9d4,
   "@/app/(payload)/components/ClinicApprovalRequirements#ClinicApprovalRequirements": ClinicApprovalRequirements_6b9b57c3f957a81847439b14fa4ed9d4,
   "@/components/organisms/MedicalSpecialtiesAdminGuidance#default": default_edf1bab331b69df45f809a41e2fc2349,

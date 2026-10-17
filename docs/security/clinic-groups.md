@@ -12,9 +12,8 @@ an existing membership is rejected until the separate transfer/detachment workfl
 Initial attachment preserves clinic IDs, historical business records, local staff access, participation and public
 publication. It does not activate a personal account or change operation permissions.
 
-Group deletion rejects references from any clinic, including a soft-deleted clinic. Personal staff-assignment
-reference protection belongs to [Website #2183](https://github.com/findmydoc-platform/website/issues/2183).
-The initial group setup is usable independently of those later assignment and transfer workflows.
+Group deletion rejects references from any clinic, including a soft-deleted clinic, and from personal staff
+assignments. Personal assignment changes follow [the staff assignment policy](clinic-staff-assignments.md).
 
 ## Authorization ordering
 

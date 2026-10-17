@@ -33,6 +33,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import { testSlug } from '../fixtures/testSlug'
 import {
+  replaceClinicTestUserAssignment,
   asClinicScopedPayloadUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
@@ -872,26 +873,14 @@ describe('authoritative initial moderation decision mail', () => {
     const event = await decisionEvent(source.caseId)
     const operation = (await operations(event.id)).docs[0]!
     try {
-      await payload.update({
-        collection: 'clinicStaff',
-        id: clinicReq.user!.id,
-        data: { clinic: null },
-        context: { skipClinicStaffAuthSync: true },
-        overrideAccess: true,
-      })
+      await replaceClinicTestUserAssignment(payload, clinicReq.user!.id, null, { skipClinicStaffAuthSync: true })
       const { delivery, logs } = await deliver(String(operation.id))
       expect(delivery.deliver).not.toHaveBeenCalled()
       expect(logs).toContainEqual(
         expect.objectContaining({ outcomeCode: 'recipient-changed', outboxState: 'suppressed' }),
       )
     } finally {
-      await payload.update({
-        collection: 'clinicStaff',
-        id: clinicReq.user!.id,
-        data: { clinic: clinicId },
-        context: { skipClinicStaffAuthSync: true },
-        overrideAccess: true,
-      })
+      await replaceClinicTestUserAssignment(payload, clinicReq.user!.id, clinicId, { skipClinicStaffAuthSync: true })
     }
   })
 

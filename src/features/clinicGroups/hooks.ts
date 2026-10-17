@@ -110,4 +110,14 @@ export const rejectReferencedClinicGroupDeletion: CollectionBeforeDeleteHook = a
     where: { group: { equals: id } },
   })
   if (references.docs.length) throw new APIError('Resolve clinic memberships before deleting this group.', 409)
+  const assignments = await req.payload.find({
+    collection: 'clinicStaff',
+    depth: 0,
+    limit: 1,
+    pagination: false,
+    overrideAccess: true,
+    req,
+    where: { group: { equals: id } },
+  })
+  if (assignments.docs.length) throw new APIError('Resolve staff assignments before deleting this group.', 409)
 }

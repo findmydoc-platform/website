@@ -13,10 +13,10 @@ import type { UserResult, UserType } from '@/auth/types/authTypes'
 import type { ClinicStaff as PayloadClinicStaff } from '@/payload-types'
 
 const accessStateMocks = vi.hoisted(() => ({
-  readClinicAccessState: vi.fn(),
+  readClinicPrincipalAccess: vi.fn(),
 }))
 
-vi.mock('@/auth/utilities/clinicAccessState', () => accessStateMocks)
+vi.mock('@/auth/utilities/clinicPrincipalAccess', () => accessStateMocks)
 
 type ClinicUser = PayloadClinicStaff
 type ClinicUserOverrides = Partial<ClinicUser> & { userType?: string }
@@ -53,12 +53,12 @@ const makeClinicUser = (overrides: ClinicUserOverrides = {}): ClinicUser => ({
 describe('accessValidation utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    accessStateMocks.readClinicAccessState.mockResolvedValue(null)
+    accessStateMocks.readClinicPrincipalAccess.mockResolvedValue(null)
   })
 
   describe('validateClinicAccess', () => {
     it('should return true for approved clinic user', async () => {
-      accessStateMocks.readClinicAccessState.mockResolvedValue({ clinic: { id: 44 }, staff: { id: 123 } })
+      accessStateMocks.readClinicPrincipalAccess.mockResolvedValue({ clinics: [{ id: 44 }], staff: { id: 123 } })
 
       const authData = {
         supabaseUserId: 'supabase-123',
@@ -73,7 +73,7 @@ describe('accessValidation utilities', () => {
 
       const result = await validateClinicAccess(mockPayload as unknown as Payload, authData, userResult)
       expect(result).toBe(true)
-      expect(accessStateMocks.readClinicAccessState).toHaveBeenCalledWith(mockPayload, 123, undefined)
+      expect(accessStateMocks.readClinicPrincipalAccess).toHaveBeenCalledWith(mockPayload, 123, undefined)
     })
 
     it('should return true for non-clinic users', async () => {
@@ -139,7 +139,7 @@ describe('accessValidation utilities', () => {
 
   describe('validateUserAccess', () => {
     it('should pass comprehensive validation for approved clinic user', async () => {
-      accessStateMocks.readClinicAccessState.mockResolvedValue({ clinic: { id: 44 }, staff: { id: 123 } })
+      accessStateMocks.readClinicPrincipalAccess.mockResolvedValue({ clinics: [{ id: 44 }], staff: { id: 123 } })
 
       const authData = {
         supabaseUserId: 'supabase-123',
@@ -154,7 +154,7 @@ describe('accessValidation utilities', () => {
 
       const result = await validateUserAccess(mockPayload as unknown as Payload, authData, userResult)
       expect(result).toBe(true)
-      expect(accessStateMocks.readClinicAccessState).toHaveBeenCalledWith(mockPayload, 123, undefined)
+      expect(accessStateMocks.readClinicPrincipalAccess).toHaveBeenCalledWith(mockPayload, 123, undefined)
     })
 
     it('should fail validation for invalid user type', async () => {
@@ -171,7 +171,7 @@ describe('accessValidation utilities', () => {
 
       const result = await validateUserAccess(mockPayload as unknown as Payload, authData, userResult)
       expect(result).toBe(false)
-      expect(accessStateMocks.readClinicAccessState).not.toHaveBeenCalled()
+      expect(accessStateMocks.readClinicPrincipalAccess).not.toHaveBeenCalled()
     })
   })
 })

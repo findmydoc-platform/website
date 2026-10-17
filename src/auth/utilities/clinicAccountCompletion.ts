@@ -24,6 +24,20 @@ const writes = (existingBroker ?? new WeakMap<object, ProtectedWrite[]>()) as We
 if (!existingBroker)
   Object.defineProperty(globalThis, brokerKey, { value: writes, writable: false, configurable: false })
 
+/** Recognizes only the process-local trusted activation write, never a request-supplied flag. */
+export function isTrustedClinicAccountEvidenceWrite(req: PayloadRequest, id: number): boolean {
+  const capability = req.context?.clinicAccountEvidenceCapability
+  return Boolean(
+    capability &&
+    typeof capability === 'object' &&
+    writes
+      .get(capability)
+      ?.some(
+        (write) => write.id === id && (write.field === 'activationReadiness' || write.field === 'accountCompletion'),
+      ),
+  )
+}
+
 function canonical(value: unknown): string {
   if (!value || typeof value !== 'object') return JSON.stringify(value)
   return JSON.stringify(
@@ -184,6 +198,7 @@ export async function convertClinicStaffLocalAccess(req: PayloadRequest, id: num
     }
     return writeEvidence(req, staff.id, 'activationReadiness', readiness)
   }
+  if (staff.assignmentScope === 'local') return staff
   return req.payload.update({
     collection: 'clinicStaff',
     id,

@@ -122,17 +122,16 @@ describe('ClinicStaff access', () => {
     await approveClinicStaff(payload, staffA.id, clinicA.id as number)
     await approveClinicStaff(payload, staffB.id, clinicB.id as number)
 
-    const updated = await payload.update({
-      collection: 'clinicStaff',
-      id: staffA.id,
-      data: { clinic: clinicB.id },
-      user: asStaffPayloadUser(clinicUserA),
-      overrideAccess: false,
-      depth: 0,
-    })
-
-    expect(updated.id).toBe(staffA.id)
-    expect(updated.clinic).toBe(clinicA.id)
+    await expect(
+      payload.update({
+        collection: 'clinicStaff',
+        id: staffA.id,
+        data: { clinic: clinicB.id },
+        user: asStaffPayloadUser(clinicUserA),
+        overrideAccess: false,
+        depth: 0,
+      }),
+    ).rejects.toMatchObject({ status: 403 })
 
     const persisted = await payload.findByID({
       collection: 'clinicStaff',
@@ -162,7 +161,7 @@ describe('ClinicStaff access', () => {
     const platformUpdated = await payload.update({
       collection: 'clinicStaff',
       id: staffB.id,
-      data: { clinic: clinicA.id },
+      data: { assignmentScope: 'local', clinic: clinicA.id, group: null },
       user: asPayloadStaffUser(platformUser),
       overrideAccess: false,
       depth: 0,

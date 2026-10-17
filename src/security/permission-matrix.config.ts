@@ -46,7 +46,7 @@ export type UserType = 'platform' | 'clinic' | 'patient' | 'anonymous'
 export type ConditionalScenarioKind =
   // Always false: access should consistently return false regardless of user context.
   | 'always-false'
-  // Clinic approved: non-platform users must receive a filter enforcing the approved status check.
+  // Clinic reads: current eligible clinics for clinic staff, approved public records for public users.
   | 'clinic-approved'
   // Clinic scope: response must scope by clinic identifier for non-platform users.
   | 'clinic-scope'
@@ -332,7 +332,7 @@ export const permissionMatrix: PermissionMatrix = {
       displayName: 'Clinics',
       operations: {
         create: { type: 'conditional', details: 'platform admin/support only' },
-        read: { type: 'conditional', details: 'anyone approved, platform all' },
+        read: { type: 'conditional', details: 'clinic current eligible assignment, public approved, platform all' },
         update: { type: 'conditional', details: 'platform full + clinic own profile only' },
         delete: { type: 'platform' },
         admin: { type: 'platform' },
@@ -345,7 +345,7 @@ export const permissionMatrix: PermissionMatrix = {
         },
       },
       notes:
-        'Platform admin/support create, platform read/update/delete, clinic RW own profile, patients/anonymous R approved; averageRating is computed-only',
+        'Platform admin/support create, platform read/update/delete, clinic RW current eligible assignment, patients/anonymous R approved; averageRating is computed-only',
     },
     doctorspecialties: {
       slug: 'doctorspecialties',

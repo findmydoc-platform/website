@@ -24,6 +24,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import {
+  replaceClinicTestUserAssignment,
   asClinicScopedPayloadUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
@@ -789,26 +790,14 @@ describe('authoritative moderation report receipt', () => {
     const accepted = await bindTransactionalEmail(clinicReq).accept(commandFor(source.eventId))
     const staffId = clinicReq.user!.id
     try {
-      await payload.update({
-        collection: 'clinicStaff',
-        id: staffId,
-        data: { clinic: null },
-        overrideAccess: true,
-        context: { skipClinicStaffAuthSync: true },
-      })
+      await replaceClinicTestUserAssignment(payload, staffId, null, { skipClinicStaffAuthSync: true })
       const { delivery, logs } = await deliver(accepted.operationId)
       expect(delivery.deliver).not.toHaveBeenCalled()
       expect(logs).toContainEqual(
         expect.objectContaining({ outcomeCode: 'recipient-changed', outboxState: 'suppressed' }),
       )
     } finally {
-      await payload.update({
-        collection: 'clinicStaff',
-        id: staffId,
-        data: { clinic: clinicId },
-        overrideAccess: true,
-        context: { skipClinicStaffAuthSync: true },
-      })
+      await replaceClinicTestUserAssignment(payload, staffId, clinicId, { skipClinicStaffAuthSync: true })
     }
   })
 

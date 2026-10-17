@@ -10,7 +10,7 @@ import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import type { Payload, PayloadRequest } from 'payload'
 import type { ClinicStaff, Patient, PlatformStaff } from '@/payload-types'
 import { createScopedLogger, getRequestLogContext, hashLogValue, type ServerLogger } from '@/utilities/logging/shared'
-import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
+import { readClinicPrincipalAccess } from '@/auth/utilities/clinicPrincipalAccess'
 
 /**
  * Finds an existing user by Supabase ID in the appropriate collection.
@@ -114,7 +114,7 @@ export async function isClinicUserApproved(
   })
 
   try {
-    return Boolean(await readClinicAccessState(payload, userId, req))
+    return Boolean(await readClinicPrincipalAccess(payload, userId, req))
   } catch (error: unknown) {
     activeLogger.error(
       {

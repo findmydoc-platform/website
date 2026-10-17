@@ -1,4 +1,8 @@
 import {
+  guardClinicStaffAssignmentInput,
+  validateClinicStaffAssignment,
+} from '@/features/clinicGroups/staffAssignments'
+import {
   guardNotificationAuthorizationChange,
   guardNotificationAuthorizationSession,
   deleteNotificationReaderReceipts,
@@ -8,7 +12,11 @@ import { isClinicStaff, isOwnClinicStaffProfile } from '@/access/isClinicStaff'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
-import { platformOnlyFieldAccess, staffProfileFieldReadAccess } from '@/access/fieldAccess'
+import {
+  platformOnlyFieldAccess,
+  platformClinicTrustFieldAccess,
+  staffProfileFieldReadAccess,
+} from '@/access/fieldAccess'
 import { synchronizeClinicStaffAuthState, validateClinicStaffStatusTransition } from '@/hooks/clinicStaffLifecycle'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { clinicStaffStatusOptions } from './clinicStaff/lifecycle'
@@ -56,7 +64,7 @@ export const ClinicStaff: CollectionConfig = {
     delete: () => false,
   },
   hooks: {
-    beforeOperation: [guardNotificationAuthorizationChange],
+    beforeOperation: [guardNotificationAuthorizationChange, guardClinicStaffAssignmentInput],
     beforeDelete: [guardNotificationAuthorizationSession, deleteNotificationReaderReceipts],
     afterOperation: [
       async ({ result, req, operation }) => {
@@ -68,6 +76,7 @@ export const ClinicStaff: CollectionConfig = {
     beforeChange: [
       guardNotificationAuthorizationSession,
       guardClinicAccountEvidence,
+      validateClinicStaffAssignment,
       guardClinicInvitationAuthorization,
       validateClinicStaffStatusTransition,
       beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
@@ -80,8 +89,21 @@ export const ClinicStaff: CollectionConfig = {
       name: 'assignmentScope',
       type: 'select',
       options: ['local', 'group', 'unassigned'],
-      access: { create: platformOnlyFieldAccess, update: platformOnlyFieldAccess },
+      access: { create: platformClinicTrustFieldAccess, update: platformClinicTrustFieldAccess },
       admin: { description: 'Scope of the current clinic staff assignment.' },
+    },
+    {
+      name: 'group',
+      type: 'relationship',
+      relationTo: 'clinicGroups',
+      hasMany: false,
+      index: true,
+      access: {
+        create: platformClinicTrustFieldAccess,
+        update: platformClinicTrustFieldAccess,
+        read: staffProfileFieldReadAccess,
+      },
+      admin: { position: 'sidebar', description: 'Group for group scope. Clear the clinic when selecting a group.' },
     },
     {
       name: 'activationReadiness',

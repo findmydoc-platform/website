@@ -36,7 +36,11 @@
                 "id": "source-001"
               }
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -79,7 +83,11 @@
                 "id": "source-002"
               }
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -122,7 +130,11 @@
                 "id": "source-003"
               }
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -166,7 +178,11 @@
               },
               "outcome": "approved"
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -210,7 +226,11 @@
               },
               "outcome": "rejected"
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -254,7 +274,11 @@
               },
               "outcome": "blocked"
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -298,7 +322,11 @@
               },
               "outcome": "upheld"
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -342,7 +370,11 @@
               },
               "outcome": "rejected"
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -385,7 +417,11 @@
                 "id": "source-009"
               }
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -428,7 +464,11 @@
                 "id": "source-010"
               }
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -472,7 +512,11 @@
               },
               "outcome": "confirmed"
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -516,7 +560,11 @@
               },
               "outcome": "lifted"
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -559,7 +607,11 @@
                 "id": "source-013"
               }
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -602,7 +654,11 @@
                 "id": "source-014"
               }
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -676,7 +732,11 @@
                 "id": "source-newest"
               }
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         },
         {
           "kind": "occurrence",
@@ -709,7 +769,11 @@
                 "id": "source-read"
               }
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null
@@ -726,8 +790,13 @@
         {
           "kind": "occurrence",
           "presentationId": "notification-older",
-          "display": { "eventLabel": "New inquiry" },
-          "destination": { "kind": "inquiry", "inquiryId": "record-older" },
+          "display": {
+            "eventLabel": "New inquiry"
+          },
+          "destination": {
+            "kind": "inquiry",
+            "inquiryId": "record-older"
+          },
           "members": [
             {
               "notificationId": "notification-older",
@@ -736,10 +805,20 @@
               "expiresAt": "2027-01-11T09:00:00.000Z",
               "readAt": null,
               "eventType": "inquiry_created",
-              "sourceRecord": { "kind": "inquiry", "id": "record-older" },
-              "sourceOccurrence": { "kind": "inquiry_audit", "id": "audit-older" }
+              "sourceRecord": {
+                "kind": "inquiry",
+                "id": "record-older"
+              },
+              "sourceOccurrence": {
+                "kind": "inquiry_audit",
+                "id": "audit-older"
+              }
             }
-          ]
+          ],
+          "clinic": {
+            "id": "clinic-1",
+            "name": "Synthetic Clinic"
+          }
         }
       ],
       "nextCursor": null

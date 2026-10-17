@@ -267,16 +267,19 @@ describe('clinic notification source-to-feed lifecycle', () => {
     ).toEqual(stored.docs)
   })
 
-  it('rechecks current clinic assignment before returning names or counts', async () => {
+  it('rechecks current assignment and returns an empty personal feed without clinic names or counts', async () => {
     const id = staffReq.user!.id
     const staff = await payload.findByID({ collection: 'clinicStaff', id, overrideAccess: true })
     await replaceClinicTestUserAssignment(payload, id, null)
     try {
-      await expect(readClinicNotifications(staffReq, { mode: 'summary' })).rejects.toMatchObject({
-        code: 'CLINIC_ACCESS_DENIED',
+      expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({
+        unreadCount: 0,
+        nextUnreadCountChangeAt: null,
       })
-      await expect(readClinicNotifications(staffReq, { mode: 'page', view: 'all' })).rejects.toMatchObject({
-        code: 'CLINIC_ACCESS_DENIED',
+      expect(await readClinicNotifications(staffReq, { mode: 'page', view: 'all' })).toMatchObject({
+        items: [],
+        unreadCount: 0,
+        nextCursor: null,
       })
     } finally {
       await replaceClinicTestUserAssignment(payload, id, staff.clinic)

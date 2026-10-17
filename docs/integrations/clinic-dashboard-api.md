@@ -34,6 +34,15 @@ read receipts through the authorized acknowledgement command. Remaining producer
 continuation loading and independent cleanup remain separate slices.
 Hosted capture stays inactive; local isolated acceptance does not establish Preview or Production availability.
 
+The personal notification feed reads the current union of eligible clinics for the principal's local or group
+assignment. Each occurrence or patient-message presentation includes one strict `clinic: { id, name }` attribution
+with its current clinic name. Notifications and explicit receipt selections remain personal at
+`/api/clinic-dashboard/notifications` and `/read`; they never use an active-clinic URL. Signed continuations bind
+principal, view and contract version while each request rereads current eligibility. Both routes require the existing
+notification contract header plus `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1`, with both headers in `Vary`.
+An eligible person with no clinics receives an empty feed and zero count; receipt commands reject complete clinic
+access loss. The closed notification contract defines full grouping, limits, visibility and atomic receipt semantics.
+
 The [notification contract](../architecture/clinic-notifications-v1.md) defines acknowledgement eligibility at the final
 atomic server decision immediately before the native commit call. A decision before expiry may finish committing
 afterward; logical feed/count/group expiry remains exact at ninety days. This user-approved boundary does not claim

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, onTestFailed, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import config from '@payload-config'
 import {
@@ -488,6 +488,22 @@ describe('complete personal patient message notifications', () => {
     expect((await page()).items.find((item) => item.presentationId === groupId)?.members).toHaveLength(3)
   }, 120000)
   it('retains complete membership beyond one hundred stored rows and fails an oversized group without truncating it', async () => {
+    let phase = 'create-real-inquiry-and-message'
+    let started = performance.now()
+    const completed: Array<{ phase: string; elapsedMs: number }> = []
+    const checkpoint = (next: string) => {
+      completed.push({ phase, elapsedMs: Math.round(performance.now() - started) })
+      if (process.env.TEST_SHOW_LOGS === '1') console.info('notification-membership-boundary', completed.at(-1))
+      phase = next
+      started = performance.now()
+    }
+    onTestFailed(() => {
+      console.error('notification-membership-boundary', {
+        phase,
+        elapsedMs: Math.round(performance.now() - started),
+        completed,
+      })
+    })
     const created = await create()
     await send(created.inquiry.id, created.inquiry.revision, 'large-group-real-source')
     const original = (
@@ -503,6 +519,7 @@ describe('complete personal patient message notifications', () => {
         },
       })
     ).docs[0]!
+    checkpoint('store-110-additional-members')
     const transactionId = await payload.db.beginTransaction({ isolationLevel: 'serializable' })
     const req = await createLocalReq(
       { context: { clinicNotificationCommand: true }, req: { transactionID: Promise.resolve(transactionId!) } },
@@ -534,6 +551,7 @@ describe('complete personal patient message notifications', () => {
       await payload.db.rollbackTransaction(transactionId!)
       throw error
     }
+    checkpoint('read-complete-111-member-group')
     expect(
       (await page()).items.find(
         (item) =>
@@ -542,6 +560,7 @@ describe('complete personal patient message notifications', () => {
           item.kind === 'patient_message_group',
       )!.members,
     ).toHaveLength(111)
+    checkpoint('concurrent-arrival-and-fixed-selection-acknowledgement')
     const hooks = payload.collections.clinicNotificationOccurrences.config.hooks
     const previous = hooks.afterRead
     let arrived = false
@@ -572,12 +591,15 @@ describe('complete personal patient message notifications', () => {
       expect(arrived).toBe(true)
       expect(group.members).toHaveLength(111)
       expect(new Set(group.members.map((member) => member.notificationId)).size).toBe(111)
+      checkpoint('read-complete-112-member-group-after-arrival')
       expect((await page()).items.find((item) => item.presentationId === group.presentationId)!.members).toHaveLength(
         112,
       )
+      checkpoint('acknowledge-fixed-111-member-selection')
       await markClinicNotificationsRead(staffReq, {
         notificationIds: group.members.map((member) => member.notificationId),
       })
+      checkpoint('read-late-member-after-fixed-selection')
       const remaining = (await page()).items.find((item) => item.presentationId === group.presentationId)!
       expect(remaining.members).toHaveLength(1)
       expect(group.members.map((member) => member.notificationId)).not.toContain(remaining.members[0]!.notificationId)
@@ -594,8 +616,10 @@ describe('complete personal patient message notifications', () => {
     } finally {
       hooks.afterRead = previous
     }
+    checkpoint('read-count-before-oversized-group')
     const summaryBefore = await readClinicNotifications(staffReq, { mode: 'summary' })
     if (summaryBefore.mode !== 'summary') throw new Error('Expected complete summary')
+    checkpoint('store-800-oversized-members')
     const oversizedId = await payload.db.beginTransaction({ isolationLevel: 'serializable' })
     const oversizedReq = await createLocalReq(
       { context: { clinicNotificationCommand: true }, req: { transactionID: Promise.resolve(oversizedId!) } },
@@ -627,6 +651,7 @@ describe('complete personal patient message notifications', () => {
       await payload.db.rollbackTransaction(oversizedId!)
       throw error
     }
+    checkpoint('read-oversized-summary-and-initial-pages')
     expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({
       unreadCount: summaryBefore.unreadCount,
       nextUnreadCountChangeAt: summaryBefore.nextUnreadCountChangeAt,
@@ -636,6 +661,7 @@ describe('complete personal patient message notifications', () => {
       for (let pageCount = 0; pageCount < 20; pageCount++) {
         let response: Awaited<ReturnType<typeof readClinicNotifications>>
         try {
+          checkpoint(`read-oversized-${view}-page-${pageCount}`)
           response = await readClinicNotifications(staffReq, {
             mode: 'page',
             view,
@@ -661,6 +687,7 @@ describe('complete personal patient message notifications', () => {
       throw new Error('Expected oversized group to reject its page')
     }
     for (const view of ['unread', 'all'] as const) await expectOversizedGroup(view)
+    checkpoint('store-26-newer-inquiries')
     const guestReq = await createLocalReq({}, payload)
     for (let index = 0; index < 26; index++)
       await submitGuestClinicInquiry(guestReq, {
@@ -672,6 +699,8 @@ describe('complete personal patient message notifications', () => {
         phoneNumber: '+493000003204',
         message: 'Private pagination boundary input',
       })
+    checkpoint('read-oversized-continuation-pages')
     for (const view of ['unread', 'all'] as const) await expectOversizedGroup(view)
+    checkpoint('complete')
   }, 120000)
 })

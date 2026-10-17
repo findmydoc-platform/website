@@ -37,6 +37,19 @@ describe('Website clinic-notifications-v1 published wire contract', () => {
     expect(notificationsResponseSchema.safeParse(response).success).toBe(false)
   })
 
+  it('requires closed source clinic attribution on every presentation', () => {
+    for (const clinic of [
+      undefined,
+      { id: '', name: 'Clinic' },
+      { id: 'clinic-1', name: '' },
+      { id: 'clinic-1', name: 'Clinic', internalRole: 'forged' },
+    ]) {
+      const response = structuredClone(cases[0]!.response)
+      Reflect.set(response.items![0]!, 'clinic', clinic)
+      expect(notificationsResponseSchema.safeParse(response).success).toBe(false)
+    }
+  })
+
   it('validates explicit acknowledgement outcomes without inferring rollback from HTTP', () => {
     expect(
       notificationReadSuccessSchema.parse({

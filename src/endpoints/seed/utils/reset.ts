@@ -296,7 +296,11 @@ const deleteCollection = async (
   where: Where,
   req: Partial<PayloadRequest>,
 ): Promise<void> => {
-  if (['clinicMedia', 'doctorMedia', 'doctors', 'doctorspecialties', 'doctortreatments'].includes(collection)) {
+  if (
+    ['clinicMedia', 'doctorMedia', 'doctors', 'doctorspecialties', 'doctortreatments', 'clinicProfileDrafts'].includes(
+      collection,
+    )
+  ) {
     const media = await payload.find({
       collection,
       where,

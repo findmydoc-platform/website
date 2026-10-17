@@ -1,3 +1,4 @@
+import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 import { APIError, type CollectionBeforeChangeHook, type CollectionBeforeDeleteHook } from 'payload'
 import { clinicGalleryConstraints } from '@/features/clinicDashboard/gallery/contracts'
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
@@ -6,6 +7,8 @@ import { authorizeClinicGalleryTarget } from '@/features/clinicDashboard/gallery
 
 export const authorizeClinicMediaWrite: CollectionBeforeChangeHook = async ({ data, originalDoc, operation, req }) => {
   const stored = relationId(originalDoc?.clinic)
+  if (operation === 'update' && stored === null)
+    throw new APIError('The stored clinic media owner is unavailable.', 403)
   const incoming = relationId(data?.clinic)
   const explicit = req.context?.clinicGalleryTargetId
   const local =
@@ -40,7 +43,13 @@ export const authorizeClinicMediaDelete: CollectionBeforeDeleteHook = async ({ i
     req,
   })
   const clinicId = relationId(original.clinic)
-  if (clinicId === null) throw new APIError('Media access denied.', 403)
+  if (clinicId === null) {
+    // Hard-deleted clinic relations become null. Privileged source cleanup still owns its native deletion.
+    requireNotificationTransaction(req, await req.transactionID)
+    if (req.user && req.user.collection !== 'platformStaff') throw new APIError('Media access denied.', 403)
+    if (typeof req.context?.clinicGalleryCleanupTarget === 'string') throw new APIError('Media access denied.', 403)
+    return
+  }
   await authorizeClinicGalleryTarget(req, clinicId, true)
   const cleanupTarget = req.context?.clinicGalleryCleanupTarget
   if (typeof cleanupTarget === 'string') {

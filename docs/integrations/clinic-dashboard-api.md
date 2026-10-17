@@ -417,7 +417,9 @@ codes. Every response is private-live with `Cache-Control: private, no-store`, `
 `Vary: Authorization, X-Findmydoc-Clinic-Scope-Contract`. Source authorization loss returns `403` rather than a misleading service failure.
 
 Both focused mutations own their complete native transaction. Create makes one attempt and preserves unknown outcomes;
-update retains its existing bounded serialization owner. Clinic, current group and personal staff barriers remain held
+update retains its existing bounded serialization owner. Each attempt starts from the caller's context so nested
+aggregate hooks cannot suppress recomputation after an aborted attempt. The caller's context is restored afterward.
+Clinic, current group and personal staff barriers remain held
 through final source and active-session checks before commit. Direct `clinictreatments` writes use the same native
 barriers and current-source checks. Clinic staff cannot move an offering to another clinic, delete it, or modify the
 master catalogue. Removal from the clinic's public offerings remains `PATCH` with `active: false`.

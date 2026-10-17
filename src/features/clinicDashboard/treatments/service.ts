@@ -160,11 +160,13 @@ const runSerializableTransaction = async <Result>(
     throw new ClinicTreatmentServiceError('unavailable', 'Treatment updates cannot join another transaction.')
   }
 
+  const callerContext = req.context
   const attempts = options.allowSerializationRetry ? MAX_TRANSACTION_ATTEMPTS : 1
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     let transactionID: null | number | string = null
 
     try {
+      req.context = { ...callerContext }
       transactionID = await req.payload.db.beginTransaction({
         accessMode: 'read write',
         isolationLevel: 'serializable',
@@ -189,6 +191,7 @@ const runSerializableTransaction = async <Result>(
       }
       throw error
     } finally {
+      req.context = callerContext
       if (transactionID !== null && (await req.transactionID) === transactionID) delete req.transactionID
     }
   }

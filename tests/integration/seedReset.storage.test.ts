@@ -300,6 +300,19 @@ describe('complete seed reset with PostgreSQL and test storage', () => {
       doctorImage.storagePath,
     ]
     for (const key of removedKeys) expect((await fetch(objectUrl(key))).status).toBe(200)
+    const principalBeforeReset = await payload.findByID({
+      collection: 'clinicStaff',
+      id: clinicStaff.id,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const controlBeforeReset = (
+      await payload.find({
+        collection: 'clinicNotificationControls',
+        overrideAccess: true,
+        where: { key: { equals: `notification-authorization:staff:${clinicStaff.id}` } },
+      })
+    ).docs[0]!
     vi.clearAllMocks()
 
     await resetCollections(payload, 'demo')
@@ -336,6 +349,26 @@ describe('complete seed reset with PostgreSQL and test storage', () => {
       ).toEqual(docs)
     }
     for (const fn of Object.values(provisioning)) if (vi.isMockFunction(fn)) expect(fn).not.toHaveBeenCalled()
+    const principalAfterReset = await payload.findByID({
+      collection: 'clinicStaff',
+      id: clinicStaff.id,
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(principalAfterReset).toMatchObject({
+      assignmentScope: 'unassigned',
+      clinic: null,
+      group: null,
+      accountCompletion: principalBeforeReset.accountCompletion,
+      activationReadiness: principalBeforeReset.activationReadiness,
+      supabaseUserId: principalBeforeReset.supabaseUserId,
+    })
+    const controlAfterReset = await payload.findByID({
+      collection: 'clinicNotificationControls',
+      id: controlBeforeReset.id,
+      overrideAccess: true,
+    })
+    expect(controlAfterReset.nonce).not.toBe(controlBeforeReset.nonce)
     expect(await payload.findByID({ collection: 'inquiryCommandLocks', id: lock.id, overrideAccess: true })).toEqual(
       lock,
     )

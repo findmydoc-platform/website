@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
   addNote: vi.fn(),
   after: vi.fn(),
   bearer: vi.fn(),
-  bootstrap: vi.fn(),
+  targetAccess: vi.fn(),
   cleanup: vi.fn(),
   createDraft: vi.fn(),
   discardDraft: vi.fn(),
@@ -49,8 +49,8 @@ vi.mock('@/auth/utilities/jwtValidation', async (importOriginal) => ({
   validateSupabaseFreshFirstFactor: mocks.freshAuthentication,
 }))
 
-vi.mock('@/features/clinicDashboard/bootstrap', () => ({
-  resolveClinicDashboardBootstrap: mocks.bootstrap,
+vi.mock('@/auth/utilities/clinicPrincipalAccess', () => ({
+  readClinicTargetAccess: mocks.targetAccess,
 }))
 
 vi.mock('@/features/inquiryCommunication/service', async (importOriginal) => ({
@@ -87,16 +87,6 @@ const inquiry = {
   unread: { count: 2, isUnread: true, lastReadActivityId: 'message:1' },
 }
 
-const successfulBootstrap = {
-  status: 'success' as const,
-  data: {
-    capabilities: ['clinic-inquiries:view', 'clinic-inquiries:edit'],
-    clinic: { id: 'clinic-1', name: 'Synthetic Clinic' },
-    principal: { id: 'staff-1' },
-    status: 'approved' as const,
-  },
-}
-
 const request = ({
   body,
   contract = 'inquiry-communication-v2',
@@ -110,8 +100,10 @@ const request = ({
 } = {}): PayloadRequest =>
   ({
     context: {},
+    routeParams: { clinicId: '1' },
     headers: new Headers({
       authorization: 'Bearer clinic-token',
+      'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
       'X-Findmydoc-Clinic-Dashboard-Contract': contract,
     }),
     json: vi.fn(async () => body),
@@ -140,10 +132,19 @@ const expectPrivateLive = (response: Response): void => {
   expect(response.headers.get('cache-control')).toBe('private, no-store')
   expect(response.headers.get('pragma')).toBe('no-cache')
   expect(response.headers.get('expires')).toBe('0')
-  expect(response.headers.get('vary')).toBe('Authorization, X-Findmydoc-Clinic-Dashboard-Contract')
+  expect(response.headers.get('vary')).toBe(
+    'Authorization, X-Findmydoc-Clinic-Dashboard-Contract, X-Findmydoc-Clinic-Scope-Contract',
+  )
 }
 
 describe('Clinic Dashboard inquiry endpoints', () => {
+  it('rejects an inquiry queue without an explicit clinic target', async () => {
+    const req = request()
+    req.routeParams = {}
+    expect((await clinicDashboardInquiriesGetHandler(req)).status).toBe(400)
+    expect(mocks.readQueue).not.toHaveBeenCalled()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.after.mockImplementation((task: () => Promise<unknown> | unknown) => {
@@ -158,7 +159,7 @@ describe('Clinic Dashboard inquiry endpoints', () => {
       },
     })
     mocks.freshAuthentication.mockResolvedValue({ status: 'authenticated' })
-    mocks.bootstrap.mockResolvedValue(successfulBootstrap)
+    mocks.targetAccess.mockResolvedValue({ clinic: { id: 1, name: 'Synthetic Clinic' }, staff: { id: 'staff-1' } })
     mocks.readQueue.mockResolvedValue({ changeCursor: 'change-1', items: [], unchanged: false, unreadCount: 0 })
     mocks.readDetail.mockResolvedValue({ changeCursor: 'change-1', inquiry, unchanged: false })
     mocks.reconcileModeration.mockResolvedValue({ reconciled: 0 })
@@ -203,7 +204,7 @@ describe('Clinic Dashboard inquiry endpoints', () => {
       body: { error: { code: 'INQUIRY_INVALID_INPUT' } },
     })
     expect(mocks.bearer).not.toHaveBeenCalled()
-    expect(mocks.bootstrap).not.toHaveBeenCalled()
+    expect(mocks.targetAccess).not.toHaveBeenCalled()
     expect(mocks.readQueue).not.toHaveBeenCalled()
     expectPrivateLive(response)
   })
@@ -372,7 +373,7 @@ describe('Clinic Dashboard inquiry endpoints', () => {
     const response = await clinicDashboardInquiriesGetHandler(request())
 
     expect(await json(response)).toEqual({ status: 401, body: { error: { code: 'INQUIRY_UNAUTHORIZED' } } })
-    expect(mocks.bootstrap).not.toHaveBeenCalled()
+    expect(mocks.targetAccess).not.toHaveBeenCalled()
     expect(mocks.readQueue).not.toHaveBeenCalled()
     expect(mocks.after).not.toHaveBeenCalled()
   })
@@ -384,11 +385,8 @@ describe('Clinic Dashboard inquiry endpoints', () => {
     expect(mocks.readQueue).not.toHaveBeenCalled()
   })
 
-  it('checks current capabilities on every request and does not call mutations after revocation', async () => {
-    mocks.bootstrap.mockResolvedValueOnce({
-      ...successfulBootstrap,
-      data: { ...successfulBootstrap.data, capabilities: ['clinic-inquiries:view'] },
-    })
+  it('checks current clinic authorization on every mutation after revocation', async () => {
+    mocks.targetAccess.mockResolvedValueOnce(null)
 
     const response = await clinicDashboardInquiryMessagesPostHandler(
       request({

@@ -1,8 +1,8 @@
 import type { PayloadHandler, PayloadRequest } from 'payload'
 import type { ZodType } from 'zod'
 
-import { revalidateClinicDashboardRequest } from '@/features/clinicDashboard/authorization'
-import { resolveClinicDashboardContract } from '@/features/clinicDashboard/contractNegotiation'
+import { revalidateClinicDashboardTargetRequest } from '@/features/clinicDashboard/authorization'
+import { hasClinicScopeContract, resolveClinicDashboardContract } from '@/features/clinicDashboard/contractNegotiation'
 import {
   inquiryModerationAccessExpandInputSchema,
   inquiryModerationAppealDecisionInputSchema,
@@ -31,7 +31,7 @@ const PRIVATE_HEADERS = {
 
 const CLINIC_PRIVATE_HEADERS = {
   ...PRIVATE_HEADERS,
-  Vary: 'Authorization, X-Findmydoc-Clinic-Dashboard-Contract',
+  Vary: 'Authorization, X-Findmydoc-Clinic-Dashboard-Contract, X-Findmydoc-Clinic-Scope-Contract',
 } as const
 
 const response = (body: unknown, status: number, headers: HeadersInit = PRIVATE_HEADERS): Response =>
@@ -93,16 +93,26 @@ const authorizeClinic = async (req: PayloadRequest): Promise<Response | null> =>
   if (resolveClinicDashboardContract(req.headers) !== 'inquiry') {
     return errorResponse('MODERATION_INVALID_INPUT', 400, CLINIC_PRIVATE_HEADERS)
   }
-  const authorization = await revalidateClinicDashboardRequest(req, 'inquiry')
+  const clinicId = req.routeParams?.clinicId
+  if (
+    !hasClinicScopeContract(req.headers) ||
+    typeof clinicId !== 'string' ||
+    !/^[1-9]\d*$/u.test(clinicId) ||
+    !Number.isSafeInteger(Number(clinicId))
+  ) {
+    return errorResponse('MODERATION_INVALID_INPUT', 400, CLINIC_PRIVATE_HEADERS)
+  }
+  const authorization = await revalidateClinicDashboardTargetRequest(req, clinicId)
   if (authorization.status === 'unauthorized') {
     return errorResponse('MODERATION_UNAUTHORIZED', 401, CLINIC_PRIVATE_HEADERS)
   }
   if (authorization.status === 'unavailable') {
     return errorResponse('MODERATION_SERVICE_UNAVAILABLE', 503, CLINIC_PRIVATE_HEADERS)
   }
-  if (authorization.status !== 'authorized' || !authorization.data.capabilities.includes('clinic-inquiries:view')) {
+  if (authorization.status !== 'authorized') {
     return errorResponse('MODERATION_ACCESS_DENIED', 403, CLINIC_PRIVATE_HEADERS)
   }
+  req.context = { ...req.context, inquiryClinicTargetId: clinicId }
   return null
 }
 

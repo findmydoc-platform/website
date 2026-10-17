@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { buildSeedQueueJobs } from '@/endpoints/seed/utils/planner'
 
 describe('group-access demo seed execution', () => {
@@ -79,4 +79,41 @@ it('imports an explicitly independent clinic while refusing an unresolved requir
     expect.stringContaining('Missing clinicGroups for clinics:seed-clinic-izmir-coast'),
   )
   expect(created).toHaveLength(1)
+})
+
+it('rejects direct demo group imports in Production while retaining baseline references', async () => {
+  const { importCollection } = await import('@/endpoints/seed/utils/import-collection')
+  const { createStableIdResolvers } = await import('@/endpoints/seed/utils/resolvers')
+  const create = vi.fn(async () => ({ id: 1 }))
+  const payload = {
+    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    find: vi.fn(async () => ({ docs: [], totalDocs: 0 })),
+    create,
+  } as unknown as import('payload').Payload
+  vi.stubEnv('VERCEL_ENV', 'production')
+  vi.stubEnv('DEPLOYMENT_ENV', 'production')
+  vi.stubEnv('NODE_ENV', 'production')
+  try {
+    await expect(
+      importCollection({
+        payload,
+        kind: 'demo',
+        collection: 'clinicGroups',
+        fileName: 'clinicGroups',
+        resolvers: createStableIdResolvers(payload),
+      }),
+    ).rejects.toThrow('Demo seeding is disabled in production runtime')
+    expect(create).not.toHaveBeenCalled()
+    const baseline = await importCollection({
+      payload,
+      kind: 'baseline',
+      collection: 'tags',
+      fileName: 'tags',
+      resolvers: createStableIdResolvers(payload),
+    })
+    expect(baseline.failures).toEqual([])
+    expect(baseline.created).toBeGreaterThan(0)
+  } finally {
+    vi.unstubAllEnvs()
+  }
 })

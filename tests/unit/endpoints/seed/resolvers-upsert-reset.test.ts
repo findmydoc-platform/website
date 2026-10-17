@@ -416,7 +416,7 @@ describe('resetCollections', () => {
     expect(deleteDocuments).not.toHaveBeenCalled()
   })
 
-  it.each(['clinicMedia', 'doctorMedia'] as const)(
+  it.each(['clinicMedia', 'doctorMedia', 'doctors', 'doctorspecialties', 'doctortreatments'] as const)(
     'deletes %s sequentially with separate native owners',
     async (mediaCollection) => {
       vi.stubEnv('VERCEL_ENV', '')
@@ -452,7 +452,9 @@ describe('resetCollections', () => {
 
   it('deletes demo collections in order for demo reset', async () => {
     find.mockImplementation(async ({ collection }: { collection: string }) => ({
-      docs: collection === 'clinicMedia' || collection === 'doctorMedia' ? [{ id: 17 }] : [],
+      docs: ['clinicMedia', 'doctorMedia', 'doctors', 'doctorspecialties', 'doctortreatments'].includes(collection)
+        ? [{ id: 17 }]
+        : [],
     }))
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')
@@ -500,7 +502,9 @@ describe('resetCollections', () => {
     expect(actualOrder).toEqual(expectedOrder)
     expect(deleteDocuments).toHaveBeenCalledTimes(expectedOrder.length)
     for (const [args] of deleteDocuments.mock.calls) {
-      if (args.collection === 'clinicMedia' || args.collection === 'doctorMedia') {
+      if (
+        ['clinicMedia', 'doctorMedia', 'doctors', 'doctorspecialties', 'doctortreatments'].includes(args.collection)
+      ) {
         expect(args).toMatchObject({ id: 17, trash: true, req: { transactionID: undefined } })
         expect(args).not.toHaveProperty('disableTransaction')
         continue
@@ -553,7 +557,8 @@ describe('resetCollections', () => {
       if (collection === 'platformStaff') return { docs: [{ id: 'platform-1' }] }
       if (collection === 'clinicStaff') return { docs: [{ id: 7, clinic: 11 }] }
       if (collection === 'patients') return { docs: [{ id: 'patient-1' }] }
-      if (collection === 'clinicMedia' || collection === 'doctorMedia') return { docs: [] }
+      if (['clinicMedia', 'doctorMedia', 'doctors', 'doctorspecialties', 'doctortreatments'].includes(collection))
+        return { docs: [] }
       throw new Error(`Unexpected find: ${collection}:${JSON.stringify(where)}`)
     })
 
@@ -796,7 +801,9 @@ describe('resetCollections', () => {
 
   it('deletes demo then baseline collections for baseline reset', async () => {
     find.mockImplementation(async ({ collection }: { collection: string }) => ({
-      docs: collection === 'clinicMedia' || collection === 'doctorMedia' ? [{ id: 17 }] : [],
+      docs: ['clinicMedia', 'doctorMedia', 'doctors', 'doctorspecialties', 'doctortreatments'].includes(collection)
+        ? [{ id: 17 }]
+        : [],
     }))
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')

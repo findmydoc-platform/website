@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { readClinicNotifications, markClinicNotificationsRead } from '@/features/clinicNotifications/service'
 import { createMockPayload, createMockReq } from '../helpers/testHelpers'
@@ -75,7 +76,7 @@ function fixture() {
     reviews: [],
   }
   const payload = Object.assign(createMockPayload(), {
-    secret: 'synthetic-cursor-signing-key',
+    secret: randomUUID(),
     db: {
       sessions: { 'tx-237': {} },
       beginTransaction: vi.fn().mockResolvedValue('tx-237'),

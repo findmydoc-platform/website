@@ -1,9 +1,12 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { readClinicPrincipalAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { ClinicMedia } from '@/collections/ClinicMedia'
 import { createAccessArgs, createMockReq, createMockPayload, type MockPayload } from '../helpers/testHelpers'
 import { mockUsers } from '../helpers/mockUsers'
 import type { AccessArgs } from 'payload'
 import type { ClinicMedia as ClinicMediaDoc } from '@/payload-types'
+
+vi.mock('@/auth/utilities/clinicPrincipalAccess', () => ({ readClinicPrincipalAccess: vi.fn() }))
 
 const mockClinicId = 123
 
@@ -25,6 +28,7 @@ describe('ClinicMedia Collection Access Control', () => {
 
     test('Clinic Staff document read is scoped to their clinic', async () => {
       const clinicId = 555
+      vi.mocked(readClinicPrincipalAccess).mockResolvedValueOnce({ clinics: [{ id: clinicId }] } as never)
       const req = createMockReq(mockUsers.clinic(2, clinicId), payload)
       const result = await ClinicMedia.access!.read!(
         createAccessArgs<AccessArgs<Partial<ClinicMediaDoc>>>(req.user, { payload }),
@@ -70,6 +74,7 @@ describe('ClinicMedia Collection Access Control', () => {
 
     test('Clinic Staff static file read keeps clinic scoping', async () => {
       const clinicId = 777
+      vi.mocked(readClinicPrincipalAccess).mockResolvedValueOnce({ clinics: [{ id: clinicId }] } as never)
       const req = createMockReq(mockUsers.clinic(2, clinicId), payload)
 
       const result = await ClinicMedia.access!.read!(

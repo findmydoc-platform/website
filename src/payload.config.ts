@@ -35,6 +35,7 @@ import {
 import {
   clinicDashboardGalleryDiscardPostHandler,
   clinicDashboardGalleryGetHandler,
+  clinicDashboardGalleryImageGetHandler,
   clinicDashboardGalleryMediaPostHandler,
   clinicDashboardGalleryPutHandler,
 } from './endpoints/clinicDashboardGallery'
@@ -320,22 +321,27 @@ export default buildConfig({
       handler: clinicDashboardTreatmentsPatchHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/gallery',
+      path: '/clinic-dashboard/clinics/:clinicId/gallery/media/:mediaId/image',
+      method: 'get',
+      handler: clinicDashboardGalleryImageGetHandler as PayloadHandler,
+    },
+    {
+      path: '/clinic-dashboard/clinics/:clinicId/gallery',
       method: 'get',
       handler: clinicDashboardGalleryGetHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/gallery',
+      path: '/clinic-dashboard/clinics/:clinicId/gallery',
       method: 'put',
       handler: clinicDashboardGalleryPutHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/gallery/media',
+      path: '/clinic-dashboard/clinics/:clinicId/gallery/media',
       method: 'post',
       handler: clinicDashboardGalleryMediaPostHandler as PayloadHandler,
     },
     {
-      path: '/clinic-dashboard/gallery/discard',
+      path: '/clinic-dashboard/clinics/:clinicId/gallery/discard',
       method: 'post',
       handler: clinicDashboardGalleryDiscardPostHandler as PayloadHandler,
     },

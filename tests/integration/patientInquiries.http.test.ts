@@ -84,7 +84,12 @@ const requestPatientEndpoint = (
       body: typeof options?.body === 'undefined' ? undefined : JSON.stringify(options.body),
       headers: {
         Authorization: `Bearer ${token}`,
-        ...(options?.contract ? { 'X-Findmydoc-Clinic-Dashboard-Contract': 'inquiry-communication-v1' } : {}),
+        ...(options?.contract
+          ? {
+              'X-Findmydoc-Clinic-Dashboard-Contract': 'inquiry-communication-v1',
+              'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
+            }
+          : {}),
         ...(typeof options?.body === 'undefined' ? {} : { 'Content-Type': 'application/json' }),
       },
       method: options?.method ?? 'GET',
@@ -583,17 +588,21 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     )
     if (!patientMessage) throw new Error('Expected clinic report target')
 
-    const clinicReport = await requestPatientEndpoint('/api/clinic-dashboard/inquiries/report', clinicToken, {
-      body: {
-        category: 'privacy-concern',
-        idempotencyKey: `${slugPrefix}-clinic-http-report`,
-        inquiryId,
-        targetId: patientMessage.id,
-        targetType: 'message',
+    const clinicReport = await requestPatientEndpoint(
+      `/api/clinic-dashboard/clinics/${clinicId}/inquiries/report`,
+      clinicToken,
+      {
+        body: {
+          category: 'privacy-concern',
+          idempotencyKey: `${slugPrefix}-clinic-http-report`,
+          inquiryId,
+          targetId: patientMessage.id,
+          targetType: 'message',
+        },
+        contract: true,
+        method: 'POST',
       },
-      contract: true,
-      method: 'POST',
-    })
+    )
     expect(clinicReport.status).toBe(201)
     const clinicReportBody = (await clinicReport.json()) as { reportId: string }
 
@@ -671,11 +680,15 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
       },
     )
     expect(appealCaseDecision.status).toBe(200)
-    const appeal = await requestPatientEndpoint('/api/clinic-dashboard/inquiries/appeal', clinicToken, {
-      body: { caseId: patientReportBody.reportId, text: 'Synthetic clinic appeal through HTTP.' },
-      contract: true,
-      method: 'POST',
-    })
+    const appeal = await requestPatientEndpoint(
+      `/api/clinic-dashboard/clinics/${clinicId}/inquiries/appeal`,
+      clinicToken,
+      {
+        body: { caseId: patientReportBody.reportId, text: 'Synthetic clinic appeal through HTTP.' },
+        contract: true,
+        method: 'POST',
+      },
+    )
     expect(appeal.status).toBe(201)
     const appealDecision = await requestPatientEndpoint(
       '/api/platform/inquiry-moderation/cases/appeal-decision',
@@ -694,11 +707,13 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     const [patientProjectionResponse, clinicProjectionResponse] = await Promise.all([
       requestPatientEndpoint(`/api/patient/inquiries/detail?inquiryId=${encodeURIComponent(inquiryId)}`, patientToken),
       requestPatientEndpoint(
-        `/api/clinic-dashboard/inquiries/detail?inquiryId=${encodeURIComponent(inquiryId)}`,
+        `/api/clinic-dashboard/clinics/${clinicId}/inquiries/detail?inquiryId=${encodeURIComponent(inquiryId)}`,
         clinicToken,
         { contract: true },
       ),
     ])
+    expect(patientProjectionResponse.status).toBe(200)
+    expect(clinicProjectionResponse.status).toBe(200)
     const participantProjection = JSON.stringify({
       clinic: await clinicProjectionResponse.json(),
       patient: await patientProjectionResponse.json(),

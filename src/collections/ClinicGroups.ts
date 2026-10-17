@@ -1,3 +1,4 @@
+import { personalGroupInvitationEndpoint } from '@/auth/actions/personalGroupInvitation'
 import type { CollectionConfig } from 'payload'
 import { platformClinicTrustAccess } from '@/access/fieldAccess'
 import {
@@ -23,6 +24,7 @@ export const ClinicGroups: CollectionConfig = {
     update: platformClinicTrustAccess,
     delete: platformClinicTrustAccess,
   },
+  endpoints: [personalGroupInvitationEndpoint],
   hooks: {
     beforeOperation: [guardClinicGroupOperation],
     beforeChange: [guardClinicGroupWrite, stableIdBeforeChangeHook],
@@ -37,6 +39,11 @@ export const ClinicGroups: CollectionConfig = {
   },
   fields: [
     stableIdField(),
+    {
+      name: 'personalInvitation',
+      type: 'ui',
+      admin: { components: { Field: '@/app/(payload)/components/PersonalGroupInvitation#PersonalGroupInvitation' } },
+    },
     {
       name: 'name',
       type: 'text',

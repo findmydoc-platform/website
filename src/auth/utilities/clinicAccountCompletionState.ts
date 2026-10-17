@@ -1,3 +1,4 @@
+import { hasPersonalGroupInvitationSource } from './personalGroupInvitationState'
 import type { ClinicStaff } from '@/payload-types'
 
 export function hasClinicAccountCompletion(staff: ClinicStaff): boolean {
@@ -7,7 +8,12 @@ export function hasClinicAccountCompletion(staff: ClinicStaff): boolean {
     staff.supabaseUserId?.trim() &&
     proof?.source &&
     proof.subject === staff.supabaseUserId &&
-    proof.clinicId === String(clinicId) &&
+    (proof.source === 'group-initial-password'
+      ? hasPersonalGroupInvitationSource(staff) &&
+        proof.principalId === String(staff.id) &&
+        proof.groupId === staff.personalGroupInvitation?.groupId &&
+        proof.clinicId == null
+      : proof.clinicId === String(clinicId)) &&
     proof.evidenceAt &&
     Number.isFinite(Date.parse(proof.evidenceAt)) &&
     proof.observedAt &&

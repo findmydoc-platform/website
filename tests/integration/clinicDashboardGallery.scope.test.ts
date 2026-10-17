@@ -54,7 +54,12 @@ describe('clinic gallery current source scope', () => {
   }, 60000)
   afterAll(async () => {
     if (!payload) return
-    for (const id of mediaIds) await payload.delete({ collection: 'clinicMedia', id, overrideAccess: true })
+    for (const id of [clinicId, foreignClinicId]) {
+      const current = await readClinicGallerySnapshot(operator, id)
+      await saveClinicGallery(operator, id, { expectedRevision: current.snapshot.revision, items: [] })
+    }
+    for (const id of mediaIds)
+      await payload.delete({ collection: 'clinicMedia', id, overrideAccess: true, trash: true })
     await cleanupTrackedUsers(payload, { staffIds })
     await cleanupTestEntities(payload, 'doctors', slugPrefix)
     await cleanupTestEntities(payload, 'clinics', slugPrefix)
@@ -65,7 +70,7 @@ describe('clinic gallery current source scope', () => {
     expect(new URL(media.url).pathname).toBe(
       `/api/clinic-dashboard/clinics/${clinicId}/gallery/media/${media.id}/image`,
     )
-    const stored = await payload.findByID({ collection: 'clinicMedia', id: media.id, overrideAccess: true })
+    const stored = await payload.findByID({ collection: 'clinicMedia', depth: 0, id: media.id, overrideAccess: true })
     expect(stored.clinic).toBe(clinicId)
     expect(stored.createdBy).toEqual({ relationTo: 'clinicStaff', value: clinicReqA.user!.id })
     expect(stored.storagePath).toContain(`clinics/${clinicId}-`)
@@ -194,14 +199,21 @@ describe('clinic gallery current source scope', () => {
           })
         ).docs,
       ).toEqual([])
-      const stored = await payload.findByID({ collection: 'clinicMedia', id: media.id, overrideAccess: true })
+      const stored = await payload.findByID({ collection: 'clinicMedia', depth: 0, id: media.id, overrideAccess: true })
       expect(stored.clinic).toBe(foreignClinicId)
       expect(stored.storagePath).toContain(`clinics/${foreignClinicId}-`)
       await saveClinicGallery(operator, foreignClinicId, { expectedRevision: saved.snapshot.revision, items: [] })
     } finally {
+      const gallery = await readClinicGallerySnapshot(operator, foreignClinicId)
+      await saveClinicGallery(operator, foreignClinicId, { expectedRevision: gallery.snapshot.revision, items: [] })
       await replaceClinicStaffAssignment(operator, clinicReqA.user!.id, { scope: 'local', clinicId })
       await changeClinicGroup(operator, clinicId, { fromGroupId: group.id, toGroupId: null })
-      const current = await payload.findByID({ collection: 'clinics', id: foreignClinicId, overrideAccess: true })
+      const current = await payload.findByID({
+        collection: 'clinics',
+        depth: 0,
+        id: foreignClinicId,
+        overrideAccess: true,
+      })
       if (current.group) await changeClinicGroup(operator, foreignClinicId, { fromGroupId: group.id, toGroupId: null })
       await payload.delete({ collection: 'clinicGroups', id: group.id, req: operator, overrideAccess: false })
     }
@@ -271,10 +283,10 @@ describe('clinic gallery current source scope', () => {
     staffHooks.afterChange = [...(previousStaff ?? []), pause as never]
     controlHooks.beforeChange = [
       ...(previousControl ?? []),
-      ({ data, req }) => {
+      ({ data, originalDoc, req }) => {
         if (
           req.context.galleryRace === 'second' &&
-          data.key ===
+          (data.key ?? originalDoc?.key) ===
             `notification-authorization:${change === 'assignment' ? `staff:${staffId}` : `clinic:${clinicId}`}`
         )
           opponent()
@@ -326,9 +338,25 @@ describe('clinic gallery current source scope', () => {
       }
     }
     try {
-      await wait(entered)
+      await wait(
+        Promise.race([
+          entered,
+          first.then(({ error }) => {
+            if (error) throw error
+            throw new Error('The first gallery command completed without its ordering checkpoint.')
+          }),
+        ]),
+      )
       second = settle(order === 'business-first' ? revoke('second') : business('second'))
-      await wait(opposed)
+      await wait(
+        Promise.race([
+          opposed,
+          second.then(({ error }) => {
+            if (error) throw error
+            throw new Error('The second gallery command completed without requesting the shared barrier.')
+          }),
+        ]),
+      )
       release()
       expect((await first).error).toBeUndefined()
       const secondResult = await second
@@ -337,7 +365,7 @@ describe('clinic gallery current source scope', () => {
         else expect(secondResult.error).toBeDefined()
       } else expect(secondResult.error).toBeUndefined()
       expect(await readClinicTargetAccess(payload, staffId, clinicId)).toBeNull()
-      const stored = await payload.findByID({ collection: 'clinicMedia', id: media.id, overrideAccess: true })
+      const stored = await payload.findByID({ collection: 'clinicMedia', depth: 0, id: media.id, overrideAccess: true })
       expect(stored.clinic).toBe(clinicId)
       expect(stored.status).toBe(order === 'business-first' ? 'published' : 'draft')
       const gallery = await readClinicGallerySnapshot(operator, clinicId)
@@ -353,7 +381,13 @@ describe('clinic gallery current source scope', () => {
       clinicHooks.afterChange = previousClinic
       controlHooks.beforeChange = previousControl
       await replaceClinicStaffAssignment(operator, staffId, { scope: 'local', clinicId })
-      if (change === 'assignment')
+      const storedClinic = await payload.findByID({
+        collection: 'clinics',
+        id: clinicId,
+        depth: 0,
+        overrideAccess: true,
+      })
+      if (storedClinic.group === group.id)
         await changeClinicGroup(operator, clinicId, { fromGroupId: group.id, toGroupId: null })
       const current = await readClinicGallerySnapshot(operator, clinicId)
       await saveClinicGallery(operator, clinicId, { expectedRevision: current.snapshot.revision, items: [] })

@@ -409,7 +409,17 @@ describe('resetCollections', () => {
     })
   })
 
+  it('rejects an inherited transaction before destructive reset work', async () => {
+    await expect(resetCollections(payload, 'demo', { req: { transactionID: 'outer-owner' } })).rejects.toThrow(
+      'independent native deletion owners',
+    )
+    expect(deleteDocuments).not.toHaveBeenCalled()
+  })
+
   it('deletes demo collections in order for demo reset', async () => {
+    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs: collection === 'clinicMedia' ? [{ id: 17 }] : [],
+    }))
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')
     vi.stubEnv('NODE_ENV', 'test')
@@ -456,6 +466,11 @@ describe('resetCollections', () => {
     expect(actualOrder).toEqual(expectedOrder)
     expect(deleteDocuments).toHaveBeenCalledTimes(expectedOrder.length)
     for (const [args] of deleteDocuments.mock.calls) {
+      if (args.collection === 'clinicMedia') {
+        expect(args).toMatchObject({ id: 17, trash: true, req: { transactionID: undefined } })
+        expect(args).not.toHaveProperty('disableTransaction')
+        continue
+      }
       expect(args).toEqual(
         expect.objectContaining({
           context: expect.objectContaining({ seedReset: true, skipHooks: true }),
@@ -504,6 +519,7 @@ describe('resetCollections', () => {
       if (collection === 'platformStaff') return { docs: [{ id: 'platform-1' }] }
       if (collection === 'clinicStaff') return { docs: [{ id: 7, clinic: 11 }] }
       if (collection === 'patients') return { docs: [{ id: 'patient-1' }] }
+      if (collection === 'clinicMedia') return { docs: [] }
       throw new Error(`Unexpected find: ${collection}:${JSON.stringify(where)}`)
     })
 
@@ -745,6 +761,9 @@ describe('resetCollections', () => {
   })
 
   it('deletes demo then baseline collections for baseline reset', async () => {
+    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs: collection === 'clinicMedia' ? [{ id: 17 }] : [],
+    }))
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')
     vi.stubEnv('NODE_ENV', 'test')

@@ -1,3 +1,4 @@
+import { authorizeClinicMediaWrite, authorizeClinicMediaDelete } from './authorization'
 import { beforeOperationNormalizeImageEdits } from '@/hooks/media/normalizeImageEdits'
 import type { CollectionConfig } from 'payload'
 import path from 'path'
@@ -5,7 +6,6 @@ import { fileURLToPath } from 'url'
 
 import { clinicMediaReadAccess } from '@/access/clinicMediaRead'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
-import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { beforeChangeFreezeRelation } from '@/hooks/ownership'
 import { beforeChangeCreatedBy } from '@/hooks/createdBy'
 import { beforeChangeComputeStorage } from '@/hooks/media/computeStorage'
@@ -55,7 +55,7 @@ export const ClinicMedia: CollectionConfig = {
     afterError: [afterErrorLogMediaUploadError],
     beforeChange: [
       stableIdBeforeChangeHook,
-      beforeChangeAssignClinicFromUser({ clinicField: 'clinic' }),
+      authorizeClinicMediaWrite,
       beforeChangeFreezeRelation({
         relationField: 'clinic',
         message: 'Clinic ownership cannot be changed once set',
@@ -68,7 +68,7 @@ export const ClinicMedia: CollectionConfig = {
       }),
       beforeChangeValidatePublishedClinicMedia,
     ],
-    beforeDelete: [beforeDeleteRejectReferencedClinicMedia],
+    beforeDelete: [authorizeClinicMediaDelete, beforeDeleteRejectReferencedClinicMedia],
     beforeOperation: [
       beforeOperationNormalizeImageEdits,
       beforeOperationValidateMediaUpload,

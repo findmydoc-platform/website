@@ -1,7 +1,11 @@
-import type { Payload } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 import type { Doctor } from '@/payload-types'
 
-export async function getDoctorClinicId(doctorId: string | number | null | undefined, payload: Payload | undefined) {
+export async function getDoctorClinicId(
+  doctorId: string | number | null | undefined,
+  payload: Payload | undefined,
+  req?: PayloadRequest,
+) {
   if (!doctorId || !payload) {
     return null
   }
@@ -11,6 +15,8 @@ export async function getDoctorClinicId(doctorId: string | number | null | undef
       collection: 'doctors',
       id: doctorId,
       depth: 0,
+      overrideAccess: true,
+      req,
     })) as Doctor
     const clinic = doctor?.clinic
     if (!clinic) return null

@@ -1,9 +1,9 @@
 import type { Access } from 'payload'
 
-import { platformOrOwnClinicResource } from './scopeFilters'
+import { doctorSourceAccess } from '@/features/doctorProfiles/authorization'
 
 export const doctorMediaReadAccess: Access = async ({ req, isReadingStaticFile }) => {
-  const scopedAccess = await platformOrOwnClinicResource({ req })
+  const scopedAccess = await doctorSourceAccess()({ req })
   if (!isReadingStaticFile) {
     return scopedAccess
   }

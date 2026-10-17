@@ -1,5 +1,7 @@
 import type { PayloadRequest } from 'payload'
-import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
+import { clinicAssignmentRelationId } from '@/auth/utilities/clinicStaffAssignment'
+import type { Review } from '@/payload-types'
 import {
   getReviewPublicMeasure,
   getReviewWithdrawalState,
@@ -8,9 +10,13 @@ import {
 } from '@/collections/reviews/publicProjection'
 import { clinicReviewDetailSchema, type ClinicReviewDetail } from './contracts'
 
-export async function readClinicReviewDetail(req: PayloadRequest, id: string): Promise<ClinicReviewDetail | null> {
+export async function readClinicReviewDetail(
+  req: PayloadRequest,
+  id: string,
+  targetClinicId: string,
+): Promise<ClinicReviewDetail | null> {
   if (req.user?.collection !== 'clinicStaff') return null
-  const access = await readClinicAccessState(req.payload, req.user.id, req)
+  const access = await readClinicTargetAccess(req.payload, req.user.id, targetClinicId, req)
   if (!access) return null
   const result = await req.payload.find({
     collection: 'reviews',
@@ -23,6 +29,12 @@ export async function readClinicReviewDetail(req: PayloadRequest, id: string): P
   })
   const review = result.docs[0]
   if (!review || review.status !== 'approved' || review.deletedAt) return null
+  if (String(review.id) !== id || clinicAssignmentRelationId(review.clinic) !== access.clinic.id) return null
+  return projectClinicReviewDetail(review)
+}
+
+export function projectClinicReviewDetail(review: Review): ClinicReviewDetail | null {
+  if (review.status !== 'approved' || review.deletedAt) return null
   const treatment = review.treatment
   if (!treatment || typeof treatment !== 'object') throw new Error('Authorized review treatment is unavailable.')
   const text = projectPublicReviewText(review)

@@ -5,10 +5,10 @@ import type { Review } from '@/payload-types'
 import { reviewPublicationHistoryGetHandler } from '@/collections/reviews/endpoints'
 
 const clinicAssignmentMocks = vi.hoisted(() => ({
-  getUserAssignedClinicId: vi.fn(async () => 7 as number | null),
+  readClinicTargetAccess: vi.fn(async () => ({ clinic: { id: 7 } }) as { clinic: { id: number } } | null),
 }))
 
-vi.mock('@/access/utils/getClinicAssignment', () => clinicAssignmentMocks)
+vi.mock('@/auth/utilities/clinicPrincipalAccess', () => clinicAssignmentMocks)
 
 const REVIEW_REVISION = '2026-08-08T10:00:00.000Z'
 
@@ -93,7 +93,7 @@ const encodeCursor = (cursor: Record<string, unknown>): string =>
 
 beforeEach(() => {
   vi.clearAllMocks()
-  clinicAssignmentMocks.getUserAssignedClinicId.mockResolvedValue(7)
+  clinicAssignmentMocks.readClinicTargetAccess.mockResolvedValue({ clinic: { id: 7 } })
 })
 
 describe('review publication history pagination', () => {
@@ -253,7 +253,7 @@ describe('review publication history pagination', () => {
     const missing = createHarness({ review: null })
     expect((await reviewPublicationHistoryGetHandler(missing.request({ query: 'unknown=true' }))).status).toBe(404)
 
-    clinicAssignmentMocks.getUserAssignedClinicId.mockResolvedValueOnce(99)
+    clinicAssignmentMocks.readClinicTargetAccess.mockResolvedValueOnce(null)
     const foreignTenant = createHarness()
     expect(
       (await reviewPublicationHistoryGetHandler(foreignTenant.request({ query: 'unknown=true', user: clinicUser })))

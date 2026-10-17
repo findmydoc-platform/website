@@ -1,4 +1,4 @@
-import { APIError, type CollectionBeforeChangeHook, type PayloadRequest } from 'payload'
+import { createLocalReq, APIError, type CollectionBeforeChangeHook, type PayloadRequest } from 'payload'
 import type { ClinicStaff } from '@/payload-types'
 import { platformClinicTrustAccess } from '@/access/fieldAccess'
 import {
@@ -13,6 +13,31 @@ import {
   guardClinicAuthorizationKeys,
   guardNotificationAuthorizationSession,
 } from '@/features/clinicNotifications/authorizationBarrier'
+
+const resetRevocations = new WeakMap<object, { id: number; clinicId: number }>()
+
+function isResetRevocation(
+  req: PayloadRequest,
+  id: number,
+  data: Record<string, unknown>,
+  current: ClinicStaff | undefined,
+): boolean {
+  const capability = req.context.clinicResetAssignmentCapability
+  const expected = capability && typeof capability === 'object' ? resetRevocations.get(capability) : undefined
+  if (!expected) return false
+  if (
+    expected.id !== Number(id) ||
+    !current ||
+    clinicAssignmentRelationId(current.clinic) !== expected.clinicId ||
+    current.group != null ||
+    Object.keys(data).length !== 3 ||
+    data.assignmentScope !== 'unassigned' ||
+    data.clinic !== null ||
+    data.group !== null
+  )
+    throw new APIError('The clinic assignment changed after reset preflight.', 409)
+  return true
+}
 
 const fields = ['assignmentScope', 'clinic', 'group'] as const
 
@@ -33,6 +58,7 @@ export async function guardClinicStaffAssignmentInput({
   const current = input.id
     ? await req.payload.findByID({ collection: 'clinicStaff', id: input.id, depth: 0, overrideAccess: true, req })
     : undefined
+  if (input.id && isResetRevocation(req, input.id, input.data, current)) return
   // An onboarding clinic reference without explicit scope grants no access before trusted activation.
   if (
     current &&
@@ -106,4 +132,39 @@ export async function replaceClinicStaffAssignment(
     overrideAccess: false,
     req,
   })
+}
+
+/** Internal reset revokes only the exact clinic reference selected by reset preflight, never a grant. */
+export async function revokeResetClinicAssignment(
+  req: PayloadRequest,
+  id: number,
+  expectedClinicId: number,
+): Promise<ClinicStaff> {
+  if (!clinicAssignmentRelationId(id) || !clinicAssignmentRelationId(expectedClinicId))
+    throw new APIError('Invalid reset assignment.', 400)
+  const capability = {}
+  resetRevocations.set(capability, { id, clinicId: expectedClinicId })
+  const context: Record<string, unknown> = {
+    ...req.context,
+    clinicResetAssignmentCapability: capability,
+    skipClinicStaffAuthSync: true,
+  }
+  delete context.seedReset
+  delete context.skipHooks
+  const scopedReq = await createLocalReq(
+    { user: req.user ?? undefined, context, req: { transactionID: req.transactionID } },
+    req.payload,
+  )
+  try {
+    return await req.payload.update({
+      collection: 'clinicStaff',
+      id,
+      data: { assignmentScope: 'unassigned', clinic: null, group: null },
+      req: scopedReq,
+      depth: 0,
+      overrideAccess: true,
+    })
+  } finally {
+    resetRevocations.delete(capability)
+  }
 }

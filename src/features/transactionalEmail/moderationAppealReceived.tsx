@@ -1,11 +1,10 @@
 import type { PayloadRequest } from 'payload'
 import { APPEAL_RECEIVED_SUBJECT, AppealReceivedEmail, type ReportCategory } from '@findmydoc-platform/email-templates'
 import { render, toPlainText } from '@react-email/render'
-import { isClinicStaffAccessReady, readClinicAccessState } from '@/auth/utilities/clinicAccessState'
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
 import { isValidEmail, normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { hasInquiryPackageHardDeleteBarrier } from '@/features/inquiryAggregate/tombstones'
-import type { ClinicStaff } from '@/payload-types'
 import type { CatalogEntry, CatalogRevalidation } from './catalog'
 import type { TransactionalEmailCommand } from './commands'
 import { TransactionalEmailError } from './errors'
@@ -130,7 +129,12 @@ export function createModerationAppealReceivedCatalogEntry(req: PayloadRequest):
     )
       return terminal('recipient-changed')
     const recipient = await find(req, collection, recipientId)
-    if (recipient && kind === 'clinic' && id(recipient.clinic) !== id(event.clinic))
+    if (
+      recipient &&
+      kind === 'clinic' &&
+      recipient.assignmentScope !== 'group' &&
+      id(recipient.clinic) !== id(event.clinic)
+    )
       return terminal('recipient-changed')
     if (
       !recipient ||
@@ -144,8 +148,10 @@ export function createModerationAppealReceivedCatalogEntry(req: PayloadRequest):
       return terminal('ineligible')
     if (kind === 'patient' && inquiry.retentionState !== 'available') return terminal('ineligible')
     if (kind === 'clinic') {
-      if (!isClinicStaffAccessReady(recipient as unknown as ClinicStaff)) return terminal('ineligible')
-      const access = await readClinicAccessState(req.payload, recipient.id, req)
+      const targetClinicId = id(event.clinic)
+      const access = targetClinicId
+        ? await readClinicTargetAccess(req.payload, recipient.id, targetClinicId, req)
+        : null
       if (!access || id(access.clinic.id) !== id(event.clinic)) return terminal('ineligible')
     }
     return {

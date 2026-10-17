@@ -1,3 +1,5 @@
+import { authorizeStoredInquiryWrite } from '@/features/inquiryAggregate/clinicAccess'
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { ValidationError, type CollectionBeforeValidateHook, type PayloadRequest } from 'payload'
 
 import { hasInquiryPackageHardDeleteBarrier } from '@/features/inquiryAggregate/tombstones'
@@ -71,6 +73,7 @@ const validateInquiryScope = async (
   ) {
     fail(req, collection, 'inquiry', 'The inquiry package has been hard deleted.')
   }
+  await authorizeStoredInquiryWrite(req, inquiry.clinic)
   if (!sameId(record.clinic, inquiry.clinic)) {
     fail(req, collection, 'clinic', 'The clinic must match the inquiry.')
   }
@@ -84,8 +87,10 @@ const validateClinicActor = async (
   staffId: unknown,
   path: string,
 ): Promise<void> => {
-  const staff = await findRecord(req, 'clinicStaff', staffId)
-  if (!staff || !sameId(staff.clinic, clinic)) {
+  const id = relationId(staffId)
+  const target = relationId(clinic)
+  const access = id !== null && target !== null ? await readClinicTargetAccess(req.payload, id, target, req) : null
+  if (!access) {
     fail(req, collection, path, 'The clinic actor must belong to the inquiry clinic.')
   }
 }

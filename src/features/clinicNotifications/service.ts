@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
-import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
-import { readNotificationSourceProjection } from './projection'
+import { readClinicPrincipalAccess } from '@/auth/utilities/clinicPrincipalAccess'
+import { createNotificationSourceProjector } from './projection'
 import {
   CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
   NOTIFICATION_PAGE_MAX_BYTES,
@@ -92,24 +92,34 @@ export async function readClinicNotifications(
   input: NotificationReadQuery,
 ): Promise<NotificationsResponse> {
   if (!req.user || req.user.collection !== 'clinicStaff') throw new ClinicNotificationError('UNAUTHENTICATED')
-  const access = await readClinicAccessState(req.payload, req.user.id, req)
+  const access = await readClinicPrincipalAccess(req.payload, req.user.id, req)
   if (!access) throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')
   const scanTime = new Date().toISOString()
   const cursorScope = {
     contractVersion: CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
-    clinic: String(access.clinic.id),
     principal: String(access.staff.id),
     view: input.mode === 'page' ? input.view : 'unread',
   } as const
   const cursor =
     input.mode === 'page' && input.cursor ? readNotificationCursor(input.cursor, cursorScope, req.payload.secret) : null
-  const occurrences = await allRows(req, 'clinicNotificationOccurrences', {
-    and: [{ clinicScopeId: { equals: String(access.clinic.id) } }, { expiresAt: { greater_than: scanTime } }],
-  })
-  const receipts = await allRows(req, 'clinicNotificationReadReceipts', { clinicStaff: { equals: access.staff.id } })
+  const occurrences = access.clinics.length
+    ? await allRows(req, 'clinicNotificationOccurrences', {
+        and: [
+          { clinicScopeId: { in: access.clinics.map(({ id }) => String(id)) } },
+          { expiresAt: { greater_than: scanTime } },
+        ],
+      })
+    : []
+  const receipts = occurrences.length
+    ? await allRows(req, 'clinicNotificationReadReceipts', { clinicStaff: { equals: access.staff.id } })
+    : []
   const readTimes = new Map(receipts.map((receipt) => [String(idOf(receipt.occurrence)), receipt.readAt]))
+  const clinics = new Map(access.clinics.map((clinic) => [String(clinic.id), clinic]))
+  const project = createNotificationSourceProjector(req)
   const items: NotificationItem[] = []
   for (const occurrence of occurrences) {
+    const clinic = clinics.get(String(occurrence.clinicScopeId))
+    if (!clinic) continue
     const parsed = notificationMemberSchema.safeParse({
       notificationId: occurrence.notificationId,
       schemaVersion: occurrence.schemaVersion,
@@ -123,10 +133,11 @@ export async function readClinicNotifications(
     })
     if (!parsed.success) throw new ClinicNotificationError('CONTRACT_INCOMPATIBLE')
     const member = parsed.data
-    const projection = await readNotificationSourceProjection(req, member)
+    const projection = await project(member, String(clinic.id))
     if (!projection.visible) continue
     items.push({
       kind: 'occurrence',
+      clinic: { id: String(clinic.id), name: clinic.name },
       presentationId: member.notificationId,
       display: {
         eventLabel: labels[member.eventType],
@@ -157,15 +168,16 @@ export async function readClinicNotifications(
       continue
     }
     const inquiryId = member.sourceRecord.id
-    let group = groups.get(inquiryId)
+    const groupKey = JSON.stringify([item.clinic.id, inquiryId])
+    let group = groups.get(groupKey)
     if (!group) {
       group = {
         ...item,
         kind: 'patient_message_group',
-        presentationId: `patient-messages:${createHash('sha256').update(inquiryId).digest('hex')}`,
+        presentationId: `patient-messages:${createHash('sha256').update(groupKey).digest('hex')}`,
         members: [],
       }
-      groups.set(inquiryId, group)
+      groups.set(groupKey, group)
       grouped.push(group)
     }
     group.members.push(member)

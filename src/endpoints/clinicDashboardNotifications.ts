@@ -1,6 +1,7 @@
 import { getClinicDashboardOrigin } from '@/auth/utilities/clinicDashboardOrigin'
 import type { PayloadHandler } from 'payload'
-import { revalidateClinicDashboardRequest } from '@/features/clinicDashboard/authorization'
+import { resolveClinicDashboardPrincipal } from '@/features/clinicDashboard/bootstrap'
+import { CLINIC_SCOPE_CONTRACT_HEADER, hasClinicScopeContract } from '@/features/clinicDashboard/contractNegotiation'
 import { CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS } from './clinicDashboardBootstrap'
 import {
   CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
@@ -38,7 +39,7 @@ function response(body: unknown, status: number): Response {
     status,
     headers: {
       ...CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS,
-      Vary: `${CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS.Vary}, ${CLINIC_NOTIFICATIONS_CONTRACT_HEADER}`,
+      Vary: `${CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS.Vary}, ${CLINIC_NOTIFICATIONS_CONTRACT_HEADER}, ${CLINIC_SCOPE_CONTRACT_HEADER}`,
       [CLINIC_NOTIFICATIONS_SUPPORT_HEADER]: CLINIC_NOTIFICATIONS_CONTRACT_VERSION,
     },
   })
@@ -49,11 +50,14 @@ export const clinicDashboardNotificationsGetHandler: PayloadHandler = async (req
   const query = new URL(req.url ?? 'http://localhost:3000').searchParams
   const mode = query.get('mode') === 'summary' ? 'summary_read' : 'feed_read'
   try {
-    if (req.headers.get(CLINIC_NOTIFICATIONS_CONTRACT_HEADER) !== CLINIC_NOTIFICATIONS_CONTRACT_VERSION) {
+    if (
+      req.headers.get(CLINIC_NOTIFICATIONS_CONTRACT_HEADER) !== CLINIC_NOTIFICATIONS_CONTRACT_VERSION ||
+      !hasClinicScopeContract(req.headers)
+    ) {
       throw new ClinicNotificationError('CONTRACT_INCOMPATIBLE')
     }
-    const authorization = await revalidateClinicDashboardRequest(req, 'inquiry')
-    if (authorization.status !== 'authorized') {
+    const authorization = await resolveClinicDashboardPrincipal(req)
+    if (authorization.status !== 'success') {
       throw new ClinicNotificationError(
         authorization.status === 'unauthorized'
           ? 'UNAUTHENTICATED'
@@ -89,7 +93,10 @@ export const clinicDashboardNotificationsReadPostHandler: PayloadHandler = async
   const started = performance.now()
   let commandStarted = false
   try {
-    if (req.headers.get(CLINIC_NOTIFICATIONS_CONTRACT_HEADER) !== CLINIC_NOTIFICATIONS_CONTRACT_VERSION)
+    if (
+      req.headers.get(CLINIC_NOTIFICATIONS_CONTRACT_HEADER) !== CLINIC_NOTIFICATIONS_CONTRACT_VERSION ||
+      !hasClinicScopeContract(req.headers)
+    )
       throw new ClinicNotificationError('CONTRACT_INCOMPATIBLE')
     if (req.headers.get('origin') !== getClinicDashboardOrigin()) throw new ClinicNotificationError('REQUEST_REJECTED')
     if (new URL(req.url ?? 'http://localhost:3000').search) throw new ClinicNotificationError('INVALID_INPUT')
@@ -124,8 +131,8 @@ export const clinicDashboardNotificationsReadPostHandler: PayloadHandler = async
     }
     const input = notificationReadInputSchema.safeParse(value)
     if (!input.success) throw new ClinicNotificationError('INVALID_INPUT')
-    const authorization = await revalidateClinicDashboardRequest(req, 'inquiry')
-    if (authorization.status !== 'authorized')
+    const authorization = await resolveClinicDashboardPrincipal(req)
+    if (authorization.status !== 'success')
       throw new ClinicNotificationError(
         authorization.status === 'unauthorized'
           ? 'UNAUTHENTICATED'

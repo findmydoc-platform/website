@@ -1,3 +1,4 @@
+import { replaceClinicStaffAssignment } from '@/features/clinicGroups/staffAssignments'
 import http from 'node:http'
 import https from 'node:https'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -611,18 +612,21 @@ describe('authoritative moderation appeal receipt', () => {
         overrideAccess: true,
       })
       try {
-        await payload.update({
-          collection: 'clinicStaff',
-          id: staff.id,
-          data:
-            loss === 'missing-address'
-              ? { email: null }
-              : loss === 'access-lost'
-                ? { authSync: { status: 'failed' } }
-                : { clinic: null },
-          overrideAccess: true,
-          context: { skipClinicStaffAuthSync: true },
-        })
+        if (loss === 'binding-changed') {
+          await replaceClinicStaffAssignment(moderatorReq, staff.id, { scope: 'unassigned' })
+        } else
+          await payload.update({
+            collection: 'clinicStaff',
+            id: staff.id,
+            data:
+              loss === 'missing-address'
+                ? { email: null }
+                : loss === 'access-lost'
+                  ? { authSync: { status: 'failed' } }
+                  : { authSync: { status: 'failed' } },
+            overrideAccess: true,
+            context: { skipClinicStaffAuthSync: true },
+          })
         const delivery = await deliver(stored.operations[0]!.id)
         expect(delivery.deliver).not.toHaveBeenCalled()
         const observed = await mail(reference)
@@ -635,10 +639,13 @@ describe('authoritative moderation appeal receipt', () => {
           loss === 'binding-changed' ? 'recipient-changed' : 'ineligible',
         )
       } finally {
+        if (loss === 'binding-changed') {
+          await replaceClinicStaffAssignment(moderatorReq, staff.id, { scope: 'local', clinicId })
+        }
         await payload.update({
           collection: 'clinicStaff',
           id: staff.id,
-          data: { email: staff.email, clinic: staff.clinic, authSync: staff.authSync },
+          data: { email: staff.email, authSync: staff.authSync },
           overrideAccess: true,
           context: { skipClinicStaffAuthSync: true },
         })

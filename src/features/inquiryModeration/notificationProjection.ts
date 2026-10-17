@@ -1,5 +1,5 @@
 import type { PayloadRequest } from 'payload'
-import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { readClinicInquiryNotificationProjection } from '@/features/inquiryCommunication/service'
 import type { NotificationMember } from '@/features/clinicNotifications/contracts'
 
@@ -31,12 +31,13 @@ async function findOne(
 export async function readInquiryModerationNotificationProjection(
   req: PayloadRequest,
   member: NotificationMember,
+  clinicId: string,
 ): Promise<{ visible: false } | { visible: true; displayName?: string }> {
   if (member.sourceRecord.kind !== 'inquiry') return { visible: false }
-  const projection = await readClinicInquiryNotificationProjection(req, member.sourceRecord.id)
+  const projection = await readClinicInquiryNotificationProjection(req, member.sourceRecord.id, clinicId)
   if (!projection.visible || member.eventType !== 'inquiry_appeal_decided') return projection
   if (req.user?.collection !== 'clinicStaff') return { visible: false }
-  const access = await readClinicAccessState(req.payload, req.user.id, req)
+  const access = await readClinicTargetAccess(req.payload, req.user.id, clinicId, req)
   if (!access) return { visible: false }
   const event = await findOne(req, 'inquiryModerationEvents', {
     and: [

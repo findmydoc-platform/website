@@ -1,14 +1,15 @@
 import type { PayloadRequest } from 'payload'
-import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { isReviewPubliclyVisible } from '@/collections/reviews/publicProjection'
 import type { NotificationMember } from './contracts'
 
 export async function readClinicReviewNotificationProjection(
   req: PayloadRequest,
   member: NotificationMember,
+  targetClinicId: string,
 ): Promise<{ visible: false } | { visible: true; displayName?: string; rating?: number }> {
   if (member.sourceRecord.kind !== 'review' || req.user?.collection !== 'clinicStaff') return { visible: false }
-  const access = await readClinicAccessState(req.payload, req.user.id, req)
+  const access = await readClinicTargetAccess(req.payload, req.user.id, targetClinicId, req)
   if (!access) return { visible: false }
   const result = await req.payload.find({
     collection: 'reviews',

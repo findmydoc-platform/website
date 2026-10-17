@@ -1,3 +1,6 @@
+import { changeClinicGroup } from '@/features/clinicGroups/membership'
+import { replaceClinicStaffAssignment } from '@/features/clinicGroups/staffAssignments'
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 
@@ -28,6 +31,8 @@ import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { testSlug } from '../fixtures/testSlug'
 import {
   asClinicScopedPayloadUser,
+  asPayloadStaffUser,
+  createPlatformTestUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
   createClinicTestUser,
@@ -41,6 +46,7 @@ vi.mock('@payloadcms/storage-s3', () => ({
 describe('inquiry communication lifecycle', () => {
   let payload: Payload
   let clinicId: number
+  let operator: PayloadRequest
   let clinicName: string
   let doctorId: number
   let foreignClinicId: number
@@ -59,6 +65,14 @@ describe('inquiry communication lifecycle', () => {
   beforeAll(async () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
+    operator = await createLocalReq(
+      {
+        user: asPayloadStaffUser(
+          await createPlatformTestUser(payload, { createdStaffIds, emailPrefix: `${slugPrefix}-operator` }),
+        ),
+      },
+      payload,
+    )
 
     const cities = await payload.find({ collection: 'cities', depth: 0, limit: 1, overrideAccess: true })
     const city = cities.docs[0]
@@ -167,6 +181,222 @@ describe('inquiry communication lifecycle', () => {
     createdInquiryIds.push(result.inquiry.id)
     return result.inquiry
   }
+
+  it.each([
+    ['business-first', 'assignment'],
+    ['access-first', 'assignment'],
+    ['business-first', 'membership'],
+    ['access-first', 'membership'],
+  ] as const)('orders a group inquiry note and %s %s change in the native database', async (order, change) => {
+    const inquiry = await createInquiry(`group-race-${order}-${change}`)
+    const group = await payload.create({
+      collection: 'clinicGroups',
+      data: { name: `Inquiry group ${order}` },
+      req: operator,
+      overrideAccess: false,
+    })
+    const staffId = Number(clinicReqA.user!.id)
+    await payload.update({
+      collection: 'clinics',
+      id: clinicId,
+      data: { group: group.id },
+      req: operator,
+      overrideAccess: true,
+    })
+    await replaceClinicStaffAssignment(operator, staffId, { scope: 'group', groupId: group.id })
+    let enter!: () => void
+    let release!: () => void
+    let opponent!: () => void
+    const entered = new Promise<void>((resolve) => {
+      enter = resolve
+    })
+    const released = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const opposed = new Promise<void>((resolve) => {
+      opponent = resolve
+    })
+    const noteHooks = payload.collections.inquiryInternalNotes.config.hooks
+    const staffHooks = payload.collections.clinicStaff.config.hooks
+    const controlHooks = payload.collections.clinicNotificationControls.config.hooks
+    const previousNotes = noteHooks.afterChange
+    const clinicHooks = payload.collections.clinics.config.hooks
+    const previousClinic = clinicHooks.afterChange
+    const previousStaff = staffHooks.afterChange
+    const previousControl = controlHooks.beforeChange
+    const pause = async ({ doc, req }: { doc: unknown; req: PayloadRequest }) => {
+      if (req.context.inquiryRace === 'first') {
+        enter()
+        await released
+      }
+      return doc
+    }
+    clinicHooks.afterChange = [...(previousClinic ?? []), pause as never]
+    noteHooks.afterChange = [...(previousNotes ?? []), pause as never]
+    staffHooks.afterChange = [...(previousStaff ?? []), pause as never]
+    controlHooks.beforeChange = [
+      ...(previousControl ?? []),
+      ({ data, req }) => {
+        if (
+          req.context.inquiryRace === 'second' &&
+          data.key ===
+            `notification-authorization:${change === 'assignment' ? `staff:${staffId}` : `clinic:${clinicId}`}`
+        )
+          opponent()
+        return data
+      },
+    ]
+    const business = async (position: string) =>
+      addClinicInquiryNote(
+        await createLocalReq(
+          { user: clinicReqA.user!, context: { inquiryRace: position, inquiryClinicTargetId: String(clinicId) } },
+          payload,
+        ),
+        {
+          inquiryId: inquiry.id,
+          idempotencyKey: `${slugPrefix}-${order}-${change}-note`,
+          text: 'Authorized group note.',
+        },
+      )
+    const revoke = async (position: string) => {
+      const req = await createLocalReq({ user: operator.user!, context: { inquiryRace: position } }, payload)
+      return change === 'assignment'
+        ? replaceClinicStaffAssignment(req, staffId, { scope: 'unassigned' })
+        : changeClinicGroup(req, clinicId, { fromGroupId: group.id, toGroupId: null })
+    }
+    const settle = (promise: Promise<unknown>) =>
+      promise.then(
+        (value) => ({ value, error: undefined }),
+        (error: unknown) => ({ value: undefined, error }),
+      )
+    const first = settle(order === 'business-first' ? business('first') : revoke('first'))
+    let second: ReturnType<typeof settle> | undefined
+    const wait = async (promise: Promise<void>) => {
+      let timer: ReturnType<typeof setTimeout> | undefined
+      try {
+        await Promise.race([
+          promise,
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error('Inquiry authorization ordering checkpoint timed out.')), 5000)
+          }),
+        ])
+      } finally {
+        clearTimeout(timer)
+      }
+    }
+    try {
+      await wait(entered)
+      second = settle(order === 'business-first' ? revoke('second') : business('second'))
+      await wait(opposed)
+      release()
+      expect((await first).error).toBeUndefined()
+      const secondResult = await second
+      if (order === 'access-first') expect(secondResult.error).toMatchObject({ kind: 'access-denied' })
+      else expect(secondResult.error).toBeUndefined()
+      expect(await readClinicTargetAccess(payload, staffId, clinicId)).toBeNull()
+      const notes = await payload.find({
+        collection: 'inquiryInternalNotes',
+        overrideAccess: true,
+        where: { inquiry: { equals: inquiry.id } },
+      })
+      expect(notes.docs.map((note) => note.text)).toEqual(order === 'business-first' ? ['Authorized group note.'] : [])
+    } finally {
+      release()
+      await first
+      await second
+      noteHooks.afterChange = previousNotes
+      staffHooks.afterChange = previousStaff
+      clinicHooks.afterChange = previousClinic
+      controlHooks.beforeChange = previousControl
+      await replaceClinicStaffAssignment(operator, staffId, { scope: 'local', clinicId })
+      if (change === 'assignment')
+        await changeClinicGroup(operator, clinicId, { fromGroupId: group.id, toGroupId: null })
+      await payload.delete({ collection: 'clinicGroups', id: group.id, req: operator, overrideAccess: false })
+    }
+  })
+
+  it('keeps an explicit inquiry target independent of the selected source record', async () => {
+    const inquiry = await createInquiry('target-mismatch')
+    const req = await createLocalReq(
+      { user: clinicReqA.user!, context: { inquiryClinicTargetId: String(foreignClinicId) } },
+      payload,
+    )
+    await expect(readClinicInquiryDetail(req, { inquiryId: inquiry.id })).rejects.toMatchObject({
+      kind: 'access-denied',
+    })
+    await expect(
+      addClinicInquiryNote(req, {
+        inquiryId: inquiry.id,
+        idempotencyKey: `${slugPrefix}-wrong-target`,
+        text: 'Must not persist.',
+      }),
+    ).rejects.toMatchObject({ kind: 'access-denied' })
+    const notes = await payload.find({
+      collection: 'inquiryInternalNotes',
+      overrideAccess: true,
+      where: { inquiry: { equals: inquiry.id } },
+    })
+    expect(notes.docs).toEqual([])
+  })
+
+  it('checks actual inquiry ownership even when the principal can access both targets', async () => {
+    const inquiry = await createInquiry('authorized-target-mismatch')
+    const group = await payload.create({
+      collection: 'clinicGroups',
+      data: { name: 'Two inquiry clinics' },
+      req: operator,
+      overrideAccess: false,
+    })
+    const staffId = Number(clinicReqA.user!.id)
+    for (const id of [clinicId, foreignClinicId])
+      await payload.update({
+        collection: 'clinics',
+        id,
+        data: { group: group.id },
+        req: operator,
+        overrideAccess: true,
+      })
+    await replaceClinicStaffAssignment(operator, staffId, { scope: 'group', groupId: group.id })
+    const req = await createLocalReq(
+      { user: clinicReqA.user!, context: { inquiryClinicTargetId: String(foreignClinicId) } },
+      payload,
+    )
+    try {
+      expect(await readClinicTargetAccess(payload, staffId, foreignClinicId)).not.toBeNull()
+      await expect(readClinicInquiryDetail(req, { inquiryId: inquiry.id })).rejects.toMatchObject({ kind: 'not-found' })
+      await expect(
+        addClinicInquiryNote(req, {
+          inquiryId: inquiry.id,
+          idempotencyKey: `${slugPrefix}-authorized-wrong-target`,
+          text: 'Must not persist.',
+        }),
+      ).rejects.toMatchObject({ kind: 'not-found' })
+      await expect(
+        payload.update({
+          collection: 'patientClinicInquiries',
+          id: Number(inquiry.id),
+          data: { revision: 999 },
+          req,
+          overrideAccess: true,
+        }),
+      ).rejects.toMatchObject({ status: 403 })
+      const own = await createLocalReq(
+        { user: clinicReqA.user!, context: { inquiryClinicTargetId: String(clinicId) } },
+        payload,
+      )
+      expect((await readClinicInquiryDetail(own, { inquiryId: inquiry.id })).inquiry.id).toBe(inquiry.id)
+      expect(
+        (await readClinicInquiryQueue(req, { lifecycle: 'all', limit: 25, unreadOnly: false })).items.some(
+          (item) => item.id === inquiry.id,
+        ),
+      ).toBe(false)
+    } finally {
+      await replaceClinicStaffAssignment(operator, staffId, { scope: 'local', clinicId })
+      for (const id of [clinicId, foreignClinicId])
+        await changeClinicGroup(operator, id, { fromGroupId: group.id, toGroupId: null })
+      await payload.delete({ collection: 'clinicGroups', id: group.id, req: operator, overrideAccess: false })
+    }
+  })
 
   const storageGateway = (): InquiryAttachmentStorageGateway => ({
     createReadAccess: vi.fn(async () => ({

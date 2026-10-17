@@ -53,11 +53,6 @@ export async function lockNotificationAuthorization(req: PayloadRequest, keys: r
   }
 }
 
-export const notificationAcknowledgementKeys = (clinicId: Id, staffId: Id): string[] => [
-  notificationClinicAuthorizationKey(clinicId),
-  key('staff', staffId),
-]
-
 async function discardCompletedAuthorizationGuard(req: PayloadRequest): Promise<void> {
   if (
     req.context?.clinicNotificationAuthorizationGuard === true &&

@@ -4,6 +4,10 @@ export interface CollectionContractEntry {
 }
 
 export const collectionContractRegistry = {
+  clinicGroups: {
+    baseline: ['tests/integration/clinicGroups.lifecycle.test.ts'],
+    deep: ['tests/integration/clinicGroups.lifecycle.test.ts'],
+  },
   clinicNotificationOccurrences: {
     baseline: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
     deep: ['tests/integration/clinicNotifications.lifecycle.test.ts'],

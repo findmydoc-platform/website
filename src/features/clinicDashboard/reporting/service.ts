@@ -1,5 +1,5 @@
 import { validateOpeningHours } from '@/collections/clinics/openingHours'
-import { revalidateClinicDashboardRequest } from '@/features/clinicDashboard/authorization'
+import { revalidateClinicDashboardTargetRequest } from '@/features/clinicDashboard/authorization'
 import type { PayloadRequest, Where } from 'payload'
 import {
   CLINIC_DASHBOARD_REPORTING_SCHEMA_VERSION,
@@ -323,7 +323,7 @@ const resolveClinic = async (req: PayloadRequest, clinicId: string): Promise<Rec
     where: { id: { equals: clinicId } },
   })
   const clinic = result.docs[0]
-  return isRecord(clinic) ? clinic : null
+  return isRecord(clinic) && String(clinic.id) === clinicId ? clinic : null
 }
 
 const isTürkiyeClinic = async (req: PayloadRequest, clinic: RecordValue): Promise<boolean> => {
@@ -347,12 +347,13 @@ const isTürkiyeClinic = async (req: PayloadRequest, clinic: RecordValue): Promi
 
 export async function resolveClinicDashboardReporting(
   req: PayloadRequest,
+  targetClinicId: string,
   periodDays: ReportingPeriodDays,
   now = new Date(),
 ): Promise<ClinicDashboardReportingResult> {
-  const access = await revalidateClinicDashboardRequest(req, 'legacy')
+  const access = await revalidateClinicDashboardTargetRequest(req, targetClinicId)
   if (access.status !== 'authorized') return access
-  const clinicId = access.data.clinic.id
+  const clinicId = access.clinicId
   const windows = createReportingWindows(periodDays, now)
 
   let clinic: RecordValue | null

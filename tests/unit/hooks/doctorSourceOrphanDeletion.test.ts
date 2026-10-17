@@ -37,6 +37,23 @@ describe('Native doctor media orphan cleanup', () => {
     req.transactionID = undefined
     await expect(operation(req)).rejects.toThrow(/active native transaction/)
   })
+  it('preserves immutable doctor ownership before resolving an incoming owner', async () => {
+    const req = request('platformStaff')
+    req.payload.find = vi.fn(async () => ({
+      docs: [{ id: 7, doctor: 41, clinic: 11 }],
+      hasNextPage: false,
+    })) as unknown as typeof req.payload.find
+    req.payload.findByID = vi.fn()
+    await expect(
+      guardDoctorOperation({
+        req,
+        collection: { slug: 'doctorMedia' },
+        operation: 'update',
+        args: { id: 7, data: { doctor: 42 } },
+      }),
+    ).rejects.toThrow(/Doctor ownership/)
+    expect(req.payload.findByID).not.toHaveBeenCalled()
+  })
   it.each(['create', 'update'])('never turns orphan cleanup into %s authorization', async (kind) => {
     await expect(operation(request('platformStaff'), kind)).rejects.toMatchObject({ status: 403 })
   })

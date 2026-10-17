@@ -151,6 +151,14 @@ export async function guardDoctorOperation({
         where: input.id != null ? { id: { equals: input.id } } : input.where,
       })
       for (const record of result.docs) {
+        if (
+          slug === 'doctorMedia' &&
+          operation === 'update' &&
+          input.data &&
+          Object.hasOwn(input.data, 'doctor') &&
+          relationId(input.data.doctor) !== relationId((record as unknown as Record<string, unknown>).doctor)
+        )
+          throw new APIError('Doctor ownership cannot be changed once set', 403)
         const id = await sourceClinic(req, slug, record as unknown as Record<string, unknown>)
         if (!id) {
           if (await allowOrphanMediaDeletion(req, slug, operation, record as unknown as Record<string, unknown>))

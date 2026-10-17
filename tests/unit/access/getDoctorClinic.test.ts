@@ -25,6 +25,8 @@ describe('getDoctorClinicId', () => {
       collection: 'doctors',
       id: 1,
       depth: 0,
+      overrideAccess: true,
+      req: undefined,
     })
   })
 

@@ -1,3 +1,4 @@
+import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 import { APIError, type Access, type CollectionBeforeChangeHook, type PayloadRequest, type Where } from 'payload'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { readClinicPrincipalAccess, readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
@@ -106,6 +107,21 @@ async function protect(req: PayloadRequest, ids: readonly number[]): Promise<voi
   await guardNotificationAuthorizationSession({ req })
 }
 
+async function allowOrphanMediaDeletion(
+  req: PayloadRequest,
+  collection: DoctorCollection,
+  operation: string,
+  record: Record<string, unknown>,
+): Promise<boolean> {
+  if (collection !== 'doctorMedia' || operation !== 'delete') return false
+  if (req.user && req.user.collection !== 'platformStaff') return false
+  if (req.routeParams && Object.hasOwn(req.routeParams, 'clinicId')) return false
+  requireNotificationTransaction(req, await req.transactionID)
+  const remainingClinic = relationId(record.clinic)
+  if (remainingClinic) await protect(req, [remainingClinic])
+  return true
+}
+
 /** Native Payload owns the transaction before this hook, including direct and bulk collection writes. */
 export async function guardDoctorOperation({
   args,
@@ -120,12 +136,13 @@ export async function guardDoctorOperation({
 }): Promise<void> {
   if (!mutation(operation)) return
   const slug = collection.slug as DoctorCollection
-  const input = args as { id?: number | string; where?: Where; data?: Record<string, unknown> }
+  const input = args as { id?: number | string; where?: Where; data?: Record<string, unknown>; trash?: boolean }
   const ids: number[] = []
   if (operation !== 'create') {
     for (let page = 1; ; page++) {
       const result = await req.payload.find({
         collection: slug,
+        trash: input.trash,
         depth: 0,
         limit: 100,
         page,
@@ -135,7 +152,11 @@ export async function guardDoctorOperation({
       })
       for (const record of result.docs) {
         const id = await sourceClinic(req, slug, record as unknown as Record<string, unknown>)
-        if (!id) throw denied()
+        if (!id) {
+          if (await allowOrphanMediaDeletion(req, slug, operation, record as unknown as Record<string, unknown>))
+            continue
+          throw denied()
+        }
         ids.push(id)
       }
       if (!result.hasNextPage) break
@@ -195,7 +216,18 @@ export async function verifyDoctorOperation<Result>({
   for (const record of records) {
     if (!record || typeof record !== 'object') continue
     const id = await sourceClinic(req, collection.slug as DoctorCollection, record as Record<string, unknown>)
-    if (!id) throw denied()
+    if (!id) {
+      if (
+        await allowOrphanMediaDeletion(
+          req,
+          collection.slug as DoctorCollection,
+          operation,
+          record as Record<string, unknown>,
+        )
+      )
+        continue
+      throw denied()
+    }
     await protect(req, [id])
   }
   await guardNotificationAuthorizationSession({ req })

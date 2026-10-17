@@ -310,6 +310,69 @@ describe('Current clinic doctor source permissions and native ordering', () => {
       }),
     ).rejects.toMatchObject({ status: 403 })
   })
+  it('retains privileged native orphan cleanup after the doctor and clinic are hard deleted', async () => {
+    const f = await fixtures()
+    const orphan = await image(f.foreign.doctor.id)
+    await payload.delete({
+      collection: 'doctors',
+      id: f.foreign.doctor.id,
+      trash: true,
+      overrideAccess: true,
+      req: operator,
+    })
+    doctors.splice(doctors.indexOf(f.foreign.doctor.id), 1)
+    await payload.delete({
+      collection: 'clinics',
+      id: f.foreign.clinic.id,
+      trash: true,
+      overrideAccess: true,
+      req: operator,
+    })
+    clinics.splice(clinics.indexOf(f.foreign.clinic.id), 1)
+    const stored = await payload.findByID({ collection: 'doctorMedia', id: orphan.id, depth: 0, overrideAccess: true })
+    expect(stored.doctor).toBeNull()
+    expect(stored.clinic).toBeNull()
+    await expect(
+      payload.delete({
+        collection: 'doctorMedia',
+        id: orphan.id,
+        overrideAccess: true,
+        req: await f.request(f.first.clinic.id),
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+    await expect(
+      payload.delete({
+        collection: 'doctorMedia',
+        id: orphan.id,
+        overrideAccess: true,
+        req: operator,
+        disableTransaction: true,
+      }),
+    ).rejects.toThrow(/active native transaction/)
+    await expect(
+      payload.update({
+        collection: 'doctorMedia',
+        id: orphan.id,
+        data: { doctor: f.first.doctor.id },
+        overrideAccess: true,
+        req: operator,
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+    await expect(
+      payload.delete({
+        collection: 'doctorMedia',
+        id: orphan.id,
+        overrideAccess: true,
+        req: await createLocalReq(
+          { user: operator.user!, req: { routeParams: { clinicId: String(f.first.clinic.id) } } },
+          payload,
+        ),
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+    await payload.delete({ collection: 'doctorMedia', id: orphan.id, overrideAccess: true, req: operator })
+    media.splice(media.indexOf(orphan.id), 1)
+    await expect(payload.findByID({ collection: 'doctorMedia', id: orphan.id, overrideAccess: true })).rejects.toThrow()
+  })
   it.each(['doctors', 'doctorspecialties', 'doctorMedia'] as const)(
     'fails closed without a native transaction owner for %s',
     async (collection) => {

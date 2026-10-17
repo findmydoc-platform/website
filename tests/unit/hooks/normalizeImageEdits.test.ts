@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { PayloadRequest } from 'payload'
 import { beforeOperationNormalizeImageEdits } from '@/hooks/media/normalizeImageEdits'
+import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
 import { PlatformContentMedia } from '@/collections/PlatformContentMedia'
 import { ClinicMedia } from '@/collections/ClinicMedia'
 import { DoctorMedia } from '@/collections/DoctorMedia'
@@ -40,10 +41,16 @@ describe('media edit normalization', () => {
         query: { uploadEdits: { widthInPixels: '100', heightInPixels: '80' } },
         payload: { findByID: vi.fn().mockResolvedValue({ width: 100, height: 80 }) },
       } as unknown as PayloadRequest
-      const firstHook = collection.hooks!.beforeOperation![0]!
-      await firstHook({ args: { id: 150, req }, collection, req, operation: 'update' } as unknown as Parameters<
-        typeof firstHook
-      >[0])
+      const hooks = collection.hooks!.beforeOperation!
+      const normalizationIndex = hooks.indexOf(beforeOperationNormalizeImageEdits)
+      expect(normalizationIndex).toBeGreaterThanOrEqual(0)
+      expect(normalizationIndex).toBeLessThan(hooks.indexOf(beforeOperationValidateMediaUpload))
+      await beforeOperationNormalizeImageEdits({
+        args: { id: 150, req },
+        collection,
+        req,
+        operation: 'update',
+      } as unknown as Parameters<typeof beforeOperationNormalizeImageEdits>[0])
       expect(req.query.uploadEdits).toBeUndefined()
     },
   )

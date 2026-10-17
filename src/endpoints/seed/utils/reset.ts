@@ -296,7 +296,7 @@ const deleteCollection = async (
   where: Where,
   req: Partial<PayloadRequest>,
 ): Promise<void> => {
-  if (collection === 'clinicMedia' || collection === 'doctorMedia') {
+  if (['clinicMedia', 'doctorMedia', 'doctors', 'doctorspecialties', 'doctortreatments'].includes(collection)) {
     const media = await payload.find({
       collection,
       where,
@@ -307,7 +307,7 @@ const deleteCollection = async (
       req,
     })
     for (const { id } of media.docs) {
-      // Each file deletion retains its own native transaction instead of sharing a parallel bulk client.
+      // Each record deletion retains its own native transaction instead of sharing a parallel bulk client.
       await payload.delete({
         collection,
         id,

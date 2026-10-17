@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import config from '@payload-config'
 import type { Review, ReviewAppeal, ReviewResponse } from '@/payload-types'
+import { reviewPublicationHistoryGetHandler } from '@/collections/reviews/endpoints'
 import { readClinicReviewDetail } from '@/features/clinicDashboard/reviews/service'
 import {
   readClinicReviewPage,
@@ -148,6 +149,18 @@ describe('current clinic review source and native workflow authorization', () =>
     expect(await readClinicReviewDetail(local, String(b.id), String(second))).toBeNull()
     await expect(readClinicReviewPage(await req(foreign), String(foreign))).rejects.toMatchObject({ status: 403 })
   })
+  it('authorizes sanitized publication history by current group access and exact path ownership', async () => {
+    const source = await review(second)
+    const owned = await req(second)
+    owned.routeParams = { clinicId: String(second), id: String(source.id) }
+    const response = await reviewPublicationHistoryGetHandler(owned)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ data: { reviewId: source.id, versions: expect.any(Array) } })
+    const wrong = await req(first)
+    wrong.routeParams = { clinicId: String(first), id: String(source.id) }
+    expect((await reviewPublicationHistoryGetHandler(wrong)).status).toBe(404)
+  })
+
   it('creates and revises only own current response and appeal workflows with native versions', async () => {
     const source = await review(second)
     const target = await req(second)
@@ -211,114 +224,126 @@ describe('current clinic review source and native workflow authorization', () =>
       await replaceClinicStaffAssignment(operator, Number(manager.user!.id), { scope: 'group', groupId: group })
     }
   })
-  it.each([
-    { collection: 'reviewResponses', order: 'workflow-first' },
-    { collection: 'reviewResponses', order: 'membership-first' },
-    { collection: 'reviewAppeals', order: 'workflow-first' },
-    { collection: 'reviewAppeals', order: 'membership-first' },
-  ] as const)(
-    'serializes $collection $order at the actual clinic barrier through native commit',
-    async ({ collection, order }) => {
-      const source = await review(first)
-      let enter!: () => void
-      let release!: () => void
-      let contender!: () => void
-      const paused = new Promise<void>((r) => {
-        enter = r
-      })
-      const released = new Promise<void>((r) => {
-        release = r
-      })
-      const contended = new Promise<void>((r) => {
-        contender = r
-      })
-      const wait = async (promise: Promise<void>) => {
-        let timer: ReturnType<typeof setTimeout> | undefined
-        try {
-          await Promise.race([
-            promise,
-            new Promise<never>((_, reject) => {
-              timer = setTimeout(() => reject(new Error('Review ordering checkpoint timed out.')), 5000)
-            }),
-          ])
-        } finally {
-          clearTimeout(timer)
-        }
-      }
-      const responses = payload.collections[collection].config.hooks
-      const clinics = payload.collections.clinics.config.hooks
-      const controls = payload.collections.clinicNotificationControls.config.hooks
-      const previousResponse = responses.afterChange
-      const previousClinic = clinics.afterChange
-      const previousControl = controls.beforeChange
-      const pause = async ({ doc, req }: { doc: unknown; req: PayloadRequest }) => {
-        if (req.context.reviewScopeRace === 'first') {
-          enter()
-          await released
-        }
-        return doc
-      }
-      responses.afterChange = [...(previousResponse ?? []), pause]
-      clinics.afterChange = [...(previousClinic ?? []), pause]
-      controls.beforeChange = [
-        ...(previousControl ?? []),
-        ({ data, req }) => {
-          if (req.context.reviewScopeRace === 'second' && data.key === `notification-authorization:clinic:${first}`)
-            contender()
-          return data
-        },
-      ]
-      const writing = async (position: string) =>
-        payload.create({
-          collection,
-          overrideAccess: false,
-          req: await req(first, '', { reviewScopeRace: position }),
-          data: (collection === 'reviewResponses'
-            ? {
-                review: source.id,
-                pendingResponse: { body: 'Synthetic ordered clinic response.' },
-              }
-            : { review: source.id, reason: 'other', details: 'Synthetic ordered review objection.' }) as never,
-        })
-      const moving = async (position: string) =>
-        changeClinicGroup(
-          await createLocalReq({ user: operator.user!, context: { reviewScopeRace: position } }, payload),
-          first,
-          { fromGroupId: group, toGroupId: foreignGroup },
-        )
-      const settle = (promise: Promise<unknown>) =>
-        promise.then(
-          (value) => ({ value, error: undefined }),
-          (error: unknown) => ({ value: undefined, error }),
-        )
-      const leading = settle(order === 'workflow-first' ? writing('first') : moving('first'))
-      let trailing: ReturnType<typeof settle> | undefined
+  it.each(
+    (['reviewResponses', 'reviewAppeals'] as const).flatMap((collection) =>
+      (['membership', 'assignment'] as const).flatMap((change) =>
+        (['workflow-first', 'access-first'] as const).map((order) => ({ collection, change, order })),
+      ),
+    ),
+  )('serializes $collection $order against $change through native commit', async ({ collection, change, order }) => {
+    const source = await review(first)
+    let enter!: () => void
+    let release!: () => void
+    let contender!: () => void
+    const paused = new Promise<void>((r) => {
+      enter = r
+    })
+    const released = new Promise<void>((r) => {
+      release = r
+    })
+    const contended = new Promise<void>((r) => {
+      contender = r
+    })
+    const wait = async (promise: Promise<void>) => {
+      let timer: ReturnType<typeof setTimeout> | undefined
       try {
-        await wait(paused)
-        trailing = settle(order === 'workflow-first' ? moving('second') : writing('second'))
-        await wait(contended)
-        release()
-        expect((await leading).error).toBeUndefined()
-        const result = await trailing
-        if (order === 'membership-first') expect(result.error).toMatchObject({ status: 403 })
-        else expect(result.error).toBeUndefined()
-        const persisted = await payload.find({
-          collection,
-          overrideAccess: true,
-          where: { review: { equals: source.id } },
-        })
-        expect(persisted.totalDocs).toBe(order === 'workflow-first' ? 1 : 0)
+        await Promise.race([
+          promise,
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error('Review ordering checkpoint timed out.')), 5000)
+          }),
+        ])
       } finally {
-        release()
-        await leading
-        await trailing
-        responses.afterChange = previousResponse
-        clinics.afterChange = previousClinic
-        controls.beforeChange = previousControl
-        const current = await payload.findByID({ collection: 'clinics', id: first, overrideAccess: true, depth: 0 })
-        if (current.group === foreignGroup)
-          await changeClinicGroup(operator, first, { fromGroupId: foreignGroup, toGroupId: group })
+        clearTimeout(timer)
       }
-    },
-  )
+    }
+    const responses = payload.collections[collection].config.hooks
+    const clinics = payload.collections.clinics.config.hooks
+    const staff = payload.collections.clinicStaff.config.hooks
+    const controls = payload.collections.clinicNotificationControls.config.hooks
+    const previousResponse = responses.afterChange
+    const previousClinic = clinics.afterChange
+    const previousStaff = staff.afterChange
+    const previousControl = controls.beforeChange
+    const pause = async ({ doc, req }: { doc: unknown; req: PayloadRequest }) => {
+      if (req.context.reviewScopeRace === 'first') {
+        enter()
+        await released
+      }
+      return doc
+    }
+    responses.afterChange = [...(previousResponse ?? []), pause]
+    clinics.afterChange = [...(previousClinic ?? []), pause]
+    staff.afterChange = [...(previousStaff ?? []), pause]
+    controls.beforeChange = [
+      ...(previousControl ?? []),
+      ({ data, req }) => {
+        if (
+          req.context.reviewScopeRace === 'second' &&
+          data.key ===
+            (change === 'membership'
+              ? `notification-authorization:clinic:${first}`
+              : order === 'workflow-first'
+                ? `notification-authorization:staff:${manager.user!.id}`
+                : `notification-authorization:group:${group}`)
+        )
+          contender()
+        return data
+      },
+    ]
+    const writing = async (position: string) =>
+      payload.create({
+        collection,
+        overrideAccess: false,
+        req: await req(first, '', { reviewScopeRace: position }),
+        data: (collection === 'reviewResponses'
+          ? {
+              review: source.id,
+              pendingResponse: { body: 'Synthetic ordered clinic response.' },
+            }
+          : { review: source.id, reason: 'other', details: 'Synthetic ordered review objection.' }) as never,
+      })
+    const moving = async (position: string) => {
+      const request = await createLocalReq({ user: operator.user!, context: { reviewScopeRace: position } }, payload)
+      return change === 'membership'
+        ? changeClinicGroup(request, first, { fromGroupId: group, toGroupId: foreignGroup })
+        : replaceClinicStaffAssignment(request, Number(manager.user!.id), { scope: 'unassigned' })
+    }
+    const settle = (promise: Promise<unknown>) =>
+      promise.then(
+        (value) => ({ value, error: undefined }),
+        (error: unknown) => ({ value: undefined, error }),
+      )
+    const leading = settle(order === 'workflow-first' ? writing('first') : moving('first'))
+    let trailing: ReturnType<typeof settle> | undefined
+    try {
+      await wait(paused)
+      trailing = settle(order === 'workflow-first' ? moving('second') : writing('second'))
+      await wait(contended)
+      release()
+      expect((await leading).error).toBeUndefined()
+      const result = await trailing
+      if (order === 'access-first') expect(result.error).toMatchObject({ status: 403 })
+      else expect(result.error).toBeUndefined()
+      const persisted = await payload.find({
+        collection,
+        overrideAccess: true,
+        where: { review: { equals: source.id } },
+      })
+      expect(persisted.totalDocs).toBe(order === 'workflow-first' ? 1 : 0)
+    } finally {
+      release()
+      await leading
+      await trailing
+      responses.afterChange = previousResponse
+      clinics.afterChange = previousClinic
+      staff.afterChange = previousStaff
+      controls.beforeChange = previousControl
+      const current = await payload.findByID({ collection: 'clinics', id: first, overrideAccess: true, depth: 0 })
+      if (current.group === foreignGroup)
+        await changeClinicGroup(operator, first, { fromGroupId: foreignGroup, toGroupId: group })
+      if (change === 'assignment')
+        await replaceClinicStaffAssignment(operator, Number(manager.user!.id), { scope: 'group', groupId: group })
+    }
+  })
 })

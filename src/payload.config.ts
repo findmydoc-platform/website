@@ -9,6 +9,10 @@ import sharp from 'sharp'
 import path from 'path'
 import { buildConfig, PayloadHandler, type EmailAdapter } from 'payload'
 import { cacheRevalidationVisibilityGetHandler } from './endpoints/cacheRevalidationVisibility'
+import {
+  clinicNotificationCaptureGetHandler,
+  clinicNotificationCapturePostHandler,
+} from './endpoints/clinicNotificationCapture'
 import { clinicDashboardBootstrapGetHandler } from './endpoints/clinicDashboardBootstrap'
 import {
   clinicDashboardNotificationsGetHandler,
@@ -203,6 +207,8 @@ export default buildConfig({
     preserveExtension: true,
   },
   endpoints: [
+    { path: '/internal/clinic-notifications/capture', method: 'get', handler: clinicNotificationCaptureGetHandler },
+    { path: '/internal/clinic-notifications/capture', method: 'post', handler: clinicNotificationCapturePostHandler },
     { path: '/clinic-dashboard/clinics/:clinicId/reviews', method: 'get', handler: clinicDashboardReviewsGetHandler },
     {
       path: '/clinic-dashboard/clinics/:clinicId/reviews/:id/record',

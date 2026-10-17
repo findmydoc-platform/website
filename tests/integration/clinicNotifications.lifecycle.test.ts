@@ -23,6 +23,7 @@ import {
   createPatientTestUser,
 } from '../fixtures/testUsers'
 import { testSlug } from '../fixtures/testSlug'
+import { withTestCaptureAuthority } from '@/features/clinicNotifications/testCaptureAuthority'
 
 vi.mock('@payloadcms/storage-s3', () => ({ s3Storage: () => (incomingConfig: unknown) => incomingConfig }))
 
@@ -299,13 +300,15 @@ describe('clinic notification source-to-feed lifecycle', () => {
       { context: { clinicNotificationCommand: true }, req: { transactionID: Promise.resolve(transactionID!) } },
       payload,
     )
-    await payload.update({
-      collection: 'clinicNotificationControls',
-      id: control.id,
-      overrideAccess: true,
-      req: controlReq,
-      data: { active: false, activatedAt: null },
-    })
+    await withTestCaptureAuthority(controlReq, () =>
+      payload.update({
+        collection: 'clinicNotificationControls',
+        id: control.id,
+        overrideAccess: true,
+        req: controlReq,
+        data: { active: false, activatedAt: null },
+      }),
+    )
     await payload.db.commitTransaction(transactionID!)
     let entered!: () => void
     let proceed!: () => void

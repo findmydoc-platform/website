@@ -1,3 +1,4 @@
+import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
 import { guardPersonalGroupInvitationSource } from '@/auth/utilities/personalGroupInvitationSource'
 import {
   guardClinicStaffAssignmentInput,
@@ -69,8 +70,8 @@ export const ClinicStaff: CollectionConfig = {
     beforeDelete: [guardNotificationAuthorizationSession, deleteNotificationReaderReceipts],
     afterOperation: [
       async ({ result, req, operation }) => {
-        if (['update', 'delete', 'restoreVersion'].includes(operation))
-          await guardNotificationAuthorizationSession({ req })
+        const finalOperation = normalizeNativeFinalWriteOperation(operation)
+        if (finalOperation && finalOperation !== 'create') await guardNotificationAuthorizationSession({ req })
         return result
       },
     ],

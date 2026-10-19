@@ -20,12 +20,21 @@ describe('Native doctor media orphan cleanup', () => {
   it.each([undefined, 'platformStaff'])('allows only source cleanup with native ownership for %s', async (actor) => {
     const req = request(actor)
     await expect(operation(req)).resolves.toBeUndefined()
-    await expect(
-      verifyDoctorOperation({ req, collection: { slug: 'doctorMedia' }, operation: 'delete', result: record }),
-    ).resolves.toEqual(record)
+    for (const finalOperation of ['delete', 'deleteByID'])
+      await expect(
+        verifyDoctorOperation({ req, collection: { slug: 'doctorMedia' }, operation: finalOperation, result: record }),
+      ).resolves.toEqual(record)
   })
   it.each(['clinicStaff', 'patients'])('denies orphan cleanup for %s even with access override', async (actor) => {
     await expect(operation(request(actor))).rejects.toMatchObject({ status: 403 })
+    await expect(
+      verifyDoctorOperation({
+        req: request(actor),
+        collection: { slug: 'doctorMedia' },
+        operation: 'deleteByID',
+        result: record,
+      }),
+    ).rejects.toMatchObject({ status: 403 })
   })
   it('denies a target-bound cleanup even for platform staff', async () => {
     const req = request('platformStaff')

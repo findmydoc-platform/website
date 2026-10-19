@@ -1,4 +1,6 @@
 import { APIError, type CollectionConfig } from 'payload'
+import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
+import { guardNotificationAuthorizationSession } from '@/features/clinicNotifications/authorizationBarrier'
 import {
   authorizeClinicProfileTarget,
   guardClinicProfileDraftWrite,
@@ -43,7 +45,8 @@ export const ClinicProfileDrafts: CollectionConfig = {
     ],
     afterOperation: [
       async ({ req, operation, result }) => {
-        if (!['create', 'update', 'delete'].includes(operation)) return result
+        if (!normalizeNativeFinalWriteOperation(operation)) return result
+        await guardNotificationAuthorizationSession({ req })
         requireNotificationTransaction(req, await req.transactionID)
         const records =
           result && typeof result === 'object' && 'docs' in result && Array.isArray(result.docs)
@@ -54,6 +57,7 @@ export const ClinicProfileDrafts: CollectionConfig = {
           if (target === null) throw new APIError('The stored clinic profile draft owner is unavailable.', 403)
           await authorizeClinicProfileTarget(req, target, true)
         }
+        await guardNotificationAuthorizationSession({ req })
         return result
       },
     ],

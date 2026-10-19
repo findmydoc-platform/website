@@ -1,6 +1,7 @@
 import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 import { APIError, type Access, type CollectionBeforeChangeHook, type PayloadRequest, type Where } from 'payload'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
 import { readClinicPrincipalAccess, readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { clinicAssignmentRelationId as relationId } from '@/auth/utilities/clinicStaffAssignment'
 import {
@@ -228,7 +229,8 @@ export async function verifyDoctorOperation<Result>({
   collection: { slug: string }
   operation: string
 }): Promise<Result> {
-  if (!mutation(operation)) return result
+  const finalOperation = normalizeNativeFinalWriteOperation(operation)
+  if (!finalOperation) return result
   await guardNotificationAuthorizationSession({ req })
   const records =
     result && typeof result === 'object' && 'docs' in result && Array.isArray(result.docs) ? result.docs : [result]
@@ -240,7 +242,7 @@ export async function verifyDoctorOperation<Result>({
         await allowOrphanMediaDeletion(
           req,
           collection.slug as DoctorCollection,
-          operation,
+          finalOperation,
           record as Record<string, unknown>,
         )
       )

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
 import {
   createLocalReq,
   type CollectionAfterChangeHook,
@@ -252,7 +253,8 @@ export const captureReviewNotificationDeletion: CollectionBeforeDeleteHook = asy
 }
 
 export const finalizeReviewNotificationOperation: CollectionAfterOperationHook = async ({ req, operation, result }) => {
-  if (['create', 'update', 'delete'].includes(operation) && !isSeedReset(req)) {
+  const finalOperation = normalizeNativeFinalWriteOperation(operation)
+  if (finalOperation && finalOperation !== 'restoreVersion' && !isSeedReset(req)) {
     try {
       await active(req)
     } catch (error) {

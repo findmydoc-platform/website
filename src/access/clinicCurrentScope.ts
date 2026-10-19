@@ -3,6 +3,7 @@ import { isPlatformStaff } from './isPlatformStaff'
 import { readClinicPrincipalAccess, readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { clinicAssignmentRelationId } from '@/auth/utilities/clinicStaffAssignment'
 import { guardNotificationAuthorizationSession } from '@/features/clinicNotifications/authorizationBarrier'
+import { normalizeNativeFinalWriteOperation } from './nativeFinalOperation'
 
 /** Direct Clinic documents use their own ID as the target; future adapters may also carry clinicId in the route. */
 export const currentClinicProfileAccess: Access = async ({ req, id }) => {
@@ -33,7 +34,8 @@ export async function verifyClinicBusinessWrite({
   result: unknown
   operation: string
 }): Promise<void> {
-  if (req.user?.collection !== 'clinicStaff' || !['update', 'delete', 'restoreVersion'].includes(operation)) return
+  const finalOperation = normalizeNativeFinalWriteOperation(operation)
+  if (req.user?.collection !== 'clinicStaff' || !finalOperation || finalOperation === 'create') return
   await guardNotificationAuthorizationSession({ req })
   const records =
     result && typeof result === 'object' && 'docs' in result && Array.isArray(result.docs) ? result.docs : [result]

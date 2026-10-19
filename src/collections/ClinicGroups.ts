@@ -1,4 +1,5 @@
 import { personalGroupInvitationEndpoint } from '@/auth/actions/personalGroupInvitation'
+import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
 import type { CollectionConfig } from 'payload'
 import { platformClinicTrustAccess } from '@/access/fieldAccess'
 import {
@@ -31,8 +32,7 @@ export const ClinicGroups: CollectionConfig = {
     beforeDelete: [rejectReferencedClinicGroupDeletion],
     afterOperation: [
       async ({ result, operation, req }) => {
-        if (['create', 'update', 'delete', 'restoreVersion'].includes(operation))
-          await guardNotificationAuthorizationSession({ req })
+        if (normalizeNativeFinalWriteOperation(operation)) await guardNotificationAuthorizationSession({ req })
         return result
       },
     ],

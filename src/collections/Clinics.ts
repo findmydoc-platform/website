@@ -1,3 +1,4 @@
+import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
 import { clinicGroupMembershipEndpoint } from '@/features/clinicGroups/membership'
 import {
   currentClinicOrPublicRead,
@@ -167,8 +168,7 @@ export const Clinics: CollectionConfig<'clinics'> = {
     beforeDelete: [guardNotificationAuthorizationSession],
     afterOperation: [
       async ({ result, req, operation }) => {
-        if (['create', 'update', 'delete', 'restoreVersion'].includes(operation))
-          await guardNotificationAuthorizationSession({ req })
+        if (normalizeNativeFinalWriteOperation(operation)) await guardNotificationAuthorizationSession({ req })
         await verifyClinicBusinessWrite({ req, result, operation })
         return result
       },

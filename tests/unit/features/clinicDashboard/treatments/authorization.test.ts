@@ -158,16 +158,19 @@ describe('Clinic treatment current source access', () => {
     expect(source.target).toHaveBeenCalledAfter(source.barrier)
   })
 
-  it('fails final verification when a nested operation loses its native session', async () => {
-    const req = request()
-    req.transactionID = Promise.resolve('finished-owner')
-    Object.assign(req.payload, { db: { sessions: {} } })
-    const hook = ClinicTreatments.hooks!.afterOperation![0]!
-    await expect(
-      hook({ req, operation: 'update', result: { clinic: 11 }, collection: ClinicTreatments } as unknown as Parameters<
-        typeof hook
-      >[0]),
-    ).rejects.toThrow(/active native transaction/)
-    expect(source.barrier).not.toHaveBeenCalled()
-  })
+  it.each(['create', 'update', 'updateByID', 'delete', 'deleteByID', 'restoreVersion'])(
+    'fails %s final verification when a nested operation loses its native session',
+    async (operation) => {
+      const req = request()
+      req.transactionID = Promise.resolve('finished-owner')
+      Object.assign(req.payload, { db: { sessions: {} } })
+      const hook = ClinicTreatments.hooks!.afterOperation![0]!
+      await expect(
+        hook({ req, operation, result: { clinic: 11 }, collection: ClinicTreatments } as unknown as Parameters<
+          typeof hook
+        >[0]),
+      ).rejects.toThrow(/active native transaction/)
+      expect(source.barrier).not.toHaveBeenCalled()
+    },
+  )
 })

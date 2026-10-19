@@ -8,6 +8,7 @@ import {
   clinicStaffAuthorizationKey,
 } from '@/features/clinicNotifications/authorizationBarrier'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
 import { readClinicPrincipalAccess, readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { clinicAssignmentRelationId as relationId } from '@/auth/utilities/clinicStaffAssignment'
 
@@ -145,7 +146,7 @@ export async function verifyClinicTreatmentOperation<Result>({
   operation: string
   result: Result
 }): Promise<Result> {
-  if (!isMutation(operation)) return result
+  if (!normalizeNativeFinalWriteOperation(operation)) return result
   requireNotificationTransaction(req, await req.transactionID)
   await guardNotificationAuthorizationSession({ req })
   const records =

@@ -1,3 +1,4 @@
+import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
 import { authorizeStoredInquiryWrite } from '@/features/inquiryAggregate/clinicAccess'
 import {
   guardNotificationInquiryMembershipChange,
@@ -220,8 +221,8 @@ export const PatientClinicInquiries: CollectionConfig = {
     beforeOperation: [guardNotificationInquiryMembershipChange],
     afterOperation: [
       async ({ result, req, operation }) => {
-        if (['update', 'delete', 'restoreVersion'].includes(operation))
-          await guardNotificationAuthorizationSession({ req })
+        const finalOperation = normalizeNativeFinalWriteOperation(operation)
+        if (finalOperation && finalOperation !== 'create') await guardNotificationAuthorizationSession({ req })
         return result
       },
     ],

@@ -117,6 +117,8 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/inquiryRetention.lifecycle.test.ts'],
     deep: ['tests/integration/inquiryRetention.lifecycle.test.ts'],
   },
+  // Disabled before-and-after gallery collections retain storage/reset contracts only.
+  // Unit configuration and permission-matrix tests cover the access lock.
   clinicGalleryEntries: {
     baseline: ['tests/integration/seedReset.storage.test.ts'],
     deep: ['tests/integration/seedReset.storage.test.ts'],

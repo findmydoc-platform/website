@@ -31,9 +31,11 @@ This page explains what we expect from the test suite and how it mirrors the per
 
 We use a two-tier model for collection coverage:
 
-- **Baseline contract (all collections):** at least one integration path that proves owner-role CRUD behavior plus one denied write path.
+- **Baseline contract (active collections):** at least one integration path that proves owner-role CRUD behavior plus one denied write path.
 - **Deep contract (critical domains):** additional integration scenarios for relationship integrity, duplicate guards, and hook-driven side effects.
 - A suite can intentionally be referenced by both tiers in the registry when one file contains both baseline and deep assertions for the same slug.
+
+For the disabled before-and-after gallery collections `clinicGalleryEntries` and `clinicGalleryMedia`, both tiers reference retained storage and reset integration paths only. `tests/unit/collections/clinicGalleryDisabled.test.ts` and the permission-matrix suites cover the access lock. These registry entries do not claim active gallery CRUD or legacy validation coverage.
 
 Registry and gate:
 

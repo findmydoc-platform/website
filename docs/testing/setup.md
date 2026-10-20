@@ -93,6 +93,7 @@ Integration coverage for collections is tracked via `tests/integration/contracts
   - `baseline` entries define the minimum contract references for a slug (privileged CRUD path + denied write expectation).
   - `deep` entries define additional references for relationship integrity, duplicate guards, and hook-driven side effects.
   - A test file can appear in both `baseline` and `deep` for one slug when the same suite covers both tiers.
+  - For the disabled before-and-after gallery collections `clinicGalleryEntries` and `clinicGalleryMedia`, both tiers reference storage/reset integration paths only. The disabled-access unit contract and permission-matrix suites cover the access lock; these registry entries do not claim active CRUD or legacy validation coverage.
 - Recommended suite pattern:
   1. Use fixture/setup helpers to establish deterministic test data.
   2. Run `runBaselineContract` from `tests/integration/contracts/baselineContract.ts`.

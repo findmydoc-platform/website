@@ -23,6 +23,8 @@ import { ImportListMenuItem as ImportListMenuItem_cdf7e044479f899a31f804427d568b
 import { HorizontalRuleFeatureClient as HorizontalRuleFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { BlocksFeatureClient as BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { default as default_5ecb274b48d69152edaeef5b36c5c4d8 } from '@/app/(payload)/components/PolicyAwareUpload'
+import { ClinicStaffGroupField as ClinicStaffGroupField_a97127ba622a1e6ebd086ab7ff7f8111 } from '@/app/(payload)/components/ClinicStaffGroupField'
+import { ClinicStaffGroupTooltipError as ClinicStaffGroupTooltipError_a97127ba622a1e6ebd086ab7ff7f8111 } from '@/app/(payload)/components/ClinicStaffGroupField'
 import { ClinicStaffAdminGuidance as ClinicStaffAdminGuidance_40aac613a756cdcd1ea79946bc7d5b3e } from '@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance'
 import { ClinicStaffStatusField as ClinicStaffStatusField_d0a2f65900e52a342fe0b74a98d8adc2 } from '@/app/(payload)/components/ClinicStaffLifecycle'
 import { ClinicStaffLifecyclePanel as ClinicStaffLifecyclePanel_d0a2f65900e52a342fe0b74a98d8adc2 } from '@/app/(payload)/components/ClinicStaffLifecycle'
@@ -87,6 +89,8 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#HorizontalRuleFeatureClient": HorizontalRuleFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#BlocksFeatureClient": BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@/app/(payload)/components/PolicyAwareUpload#default": default_5ecb274b48d69152edaeef5b36c5c4d8,
+  "@/app/(payload)/components/ClinicStaffGroupField#ClinicStaffGroupField": ClinicStaffGroupField_a97127ba622a1e6ebd086ab7ff7f8111,
+  "@/app/(payload)/components/ClinicStaffGroupField#ClinicStaffGroupTooltipError": ClinicStaffGroupTooltipError_a97127ba622a1e6ebd086ab7ff7f8111,
   "@/app/(payload)/components/AdminNotice/ClinicStaffAdminGuidance#ClinicStaffAdminGuidance": ClinicStaffAdminGuidance_40aac613a756cdcd1ea79946bc7d5b3e,
   "@/app/(payload)/components/ClinicStaffLifecycle#ClinicStaffStatusField": ClinicStaffStatusField_d0a2f65900e52a342fe0b74a98d8adc2,
   "@/app/(payload)/components/ClinicStaffLifecycle#ClinicStaffLifecyclePanel": ClinicStaffLifecyclePanel_d0a2f65900e52a342fe0b74a98d8adc2,

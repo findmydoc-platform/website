@@ -148,6 +148,10 @@ export const ClinicStaff: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: `${groupAssignmentRequirement.marker}. Clear the clinic when selecting a group.`,
+        components: {
+          Field: '@/app/(payload)/components/ClinicStaffGroupField#ClinicStaffGroupField',
+          Error: '@/app/(payload)/components/ClinicStaffGroupField#ClinicStaffGroupTooltipError',
+        },
       },
       validate: createConditionalRequiredValidator(
         validations.relationship,

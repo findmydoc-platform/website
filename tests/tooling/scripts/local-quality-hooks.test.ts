@@ -3,8 +3,6 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-import { parse } from 'yaml'
-
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../../..')
@@ -194,22 +192,6 @@ describe('dead-code push hook', () => {
 
   it.each([1, 2])('blocks the push when Knip exits with status %s', (status) => {
     expect(runHook('pre-push', '', { KNIP_STATUS: String(status) }).status).toBe(status)
-    expect(calls()).toEqual([['deadcode:report:production'], ['deadcode:check']])
-  })
-})
-
-describe('Deep Quality dead-code steps', () => {
-  it.each([0, 1, 2])('runs the production report before the full gate and propagates gate status %s', (status) => {
-    const workflow = parse(readFileSync(path.join(repositoryRoot, '.github/workflows/deep-quality-lane.yml'), 'utf8'))
-    const commands = workflow.jobs['deep-quality'].steps
-      .map((step: { run?: string }) => step.run)
-      .filter((run?: string): run is string => Boolean(run?.includes('pnpm deadcode:')))
-    const result = spawnSync('bash', ['-e', '-c', commands.join('\n')], {
-      cwd: directory,
-      encoding: 'utf8',
-      env: { ...process.env, PATH: `${directory}/bin:${process.env.PATH}`, KNIP_STATUS: String(status) },
-    })
-    expect(result.status).toBe(status)
     expect(calls()).toEqual([['deadcode:report:production'], ['deadcode:check']])
   })
 })

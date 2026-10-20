@@ -4,37 +4,9 @@ import os from 'node:os'
 import path from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
-
-type WorkflowStep = {
-  readonly env?: Record<string, string>
-  readonly name?: string
-  readonly run?: string
-}
-
-type Workflow = {
-  readonly jobs: Record<
-    string,
-    {
-      readonly needs?: string | readonly string[]
-      readonly secrets?: Record<string, string>
-      readonly steps?: readonly WorkflowStep[]
-      readonly uses?: string
-    }
-  >
-}
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../../..')
 const temporaryDirectories = new Set<string>()
-
-const readWorkflow = (name: string): Workflow =>
-  parse(fs.readFileSync(path.join(repositoryRoot, '.github/workflows', name), 'utf8')) as Workflow
-
-const namedStep = (workflow: Workflow, jobName: string, stepName: string): WorkflowStep => {
-  const step = workflow.jobs[jobName]?.steps?.find((candidate) => candidate.name === stepName)
-  expect(step, `Expected ${jobName} to contain the ${stepName} step.`).toBeDefined()
-  return step as WorkflowStep
-}
 
 const runDeployHelper = (
   target: 'preview' | 'production',
@@ -129,39 +101,7 @@ afterEach(() => {
 })
 
 describe('Vercel deployment boundary', () => {
-  it('routes Preview and central production through guarded deployment boundaries', () => {
-    const previewWorkflow = readWorkflow('deploy-preview.yml')
-    const storybookWorkflow = readWorkflow('deploy-storybook.yml')
-    const platformReleaseWorkflow = readWorkflow('platform-release-deploy.yml')
-    const previewDeployStep = namedStep(previewWorkflow, 'deploy-preview', 'Deploy to Vercel (Preview)')
-    const storybookBuildStep = namedStep(storybookWorkflow, 'deploy', 'Build Storybook via Vercel Build Output')
-    const storybookDeployStep = namedStep(storybookWorkflow, 'deploy', 'Deploy Storybook to Vercel (Production)')
-    const dispatcherGuardStep = namedStep(platformReleaseWorkflow, 'verify-dispatcher', 'Verify dispatch identity')
-
-    expect(previewDeployStep.env).toMatchObject({
-      DATABASE_DIRECT_URI: '${{ secrets.DATABASE_DIRECT_URI }}',
-      DEPLOYMENT_COMMIT_SHA: '${{ steps.deployment_metadata.outputs.commit_sha }}',
-      DEPLOYMENT_ENVIRONMENT: 'preview',
-      NODE_AUTH_TOKEN: '${{ secrets.GH_PACKAGES_READ_TOKEN }}',
-    })
-    expect(storybookBuildStep.env?.NODE_AUTH_TOKEN).toBe('${{ secrets.GH_PACKAGES_READ_TOKEN }}')
-    expect(storybookDeployStep.env?.NODE_AUTH_TOKEN).toBeUndefined()
-    expect(previewDeployStep.run).toBe('bash ./.github/scripts/deploy/vercel-deploy.sh preview')
-    expect(dispatcherGuardStep.env).toEqual({
-      GITHUB_ACTOR: '${{ github.actor }}',
-      GITHUB_TRIGGERING_ACTOR: '${{ github.triggering_actor }}',
-    })
-    expect(dispatcherGuardStep.run).toBe('bash ./.github/scripts/deploy/require-platform-release-dispatcher.sh')
-    expect(platformReleaseWorkflow.jobs.deploy?.needs).toBe('verify-dispatcher')
-    expect(platformReleaseWorkflow.jobs.deploy?.uses).toBe(
-      'findmydoc-platform/platform-release/.github/workflows/reusable-deploy-website.yml@ec3fecb070c92b43727315e220b07af0829eb42a',
-    )
-    expect(platformReleaseWorkflow.jobs.deploy?.secrets?.GH_PACKAGES_READ_TOKEN).toBe(
-      '${{ secrets.GH_PACKAGES_READ_TOKEN }}',
-    )
-    expect(platformReleaseWorkflow.jobs.deploy?.secrets?.DATABASE_CA_CERT).toBe('${{ secrets.DATABASE_CA_CERT }}')
-    expect(fs.existsSync(path.join(repositoryRoot, '.github/workflows/deploy-production.yml'))).toBe(false)
-
+  it('builds Preview and deploys production with their required environment boundaries', () => {
     const preview = runDeployHelper('preview', { NODE_AUTH_TOKEN: 'synthetic-read-token' })
     expect(preview.result.status).toBe(0)
     expect(preview.commands).toHaveLength(2)

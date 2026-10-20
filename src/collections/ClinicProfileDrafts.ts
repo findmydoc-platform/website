@@ -1,22 +1,23 @@
 import type { CollectionConfig } from 'payload'
 
-import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { languageOptions } from './common/selectionOptions'
 import { draftOpeningHoursField } from './clinics/openingHours'
 
 export const ClinicProfileDrafts: CollectionConfig = {
   slug: 'clinicProfileDrafts',
   admin: {
+    hidden: true,
     group: 'Medical Network',
     useAsTitle: 'name',
     defaultColumns: ['clinic', 'revision', 'basePublishedRevision', 'updatedAt'],
     description: 'Private clinic profile drafts managed through the Clinic Dashboard API',
   },
   access: {
-    create: isPlatformStaff,
-    read: isPlatformStaff,
-    update: isPlatformStaff,
-    delete: isPlatformStaff,
+    admin: () => false,
+    create: () => false,
+    read: () => false,
+    update: () => false,
+    delete: () => false,
   },
   indexes: [
     {

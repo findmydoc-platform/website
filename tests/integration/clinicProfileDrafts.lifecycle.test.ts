@@ -168,6 +168,44 @@ describe('clinic profile draft lifecycle', () => {
     expect(storedFirstDraft.docs[0]?.description).toEqual(clinic.description)
     expect(storedFirstDraft.docs[0]).not.toHaveProperty('coordinates')
 
+    for (const role of ['admin', 'support', 'content-manager'] as const) {
+      const user = { id: 100000001, collection: 'platformStaff', role } as NonNullable<
+        Parameters<typeof createLocalReq>[0]['user']
+      >
+      await expect(
+        payload.find({
+          collection: 'clinicProfileDrafts',
+          user,
+          overrideAccess: false,
+        }),
+      ).rejects.toMatchObject({ status: 403 })
+      await expect(
+        payload.create({
+          collection: 'clinicProfileDrafts',
+          user,
+          overrideAccess: false,
+          data: { clinic: clinic.id, revision: 1, basePublishedRevision: 0, address: { country: countryId } },
+        }),
+      ).rejects.toMatchObject({ status: 403 })
+      await expect(
+        payload.update({
+          collection: 'clinicProfileDrafts',
+          id: storedFirstDraft.docs[0]!.id,
+          data: { revision: 999 },
+          user,
+          overrideAccess: false,
+        }),
+      ).rejects.toMatchObject({ status: 403 })
+      await expect(
+        payload.delete({
+          collection: 'clinicProfileDrafts',
+          id: storedFirstDraft.docs[0]!.id,
+          user,
+          overrideAccess: false,
+        }),
+      ).rejects.toMatchObject({ status: 403 })
+    }
+
     await expect(
       createClinicProfileDraft(req, clinic.id, {
         expectedPublishedRevision: 0,

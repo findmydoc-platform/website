@@ -3,15 +3,20 @@
 This repo exposes a Payload MCP server at `POST /api/mcp` using `@payloadcms/plugin-mcp`.
 
 Important notes:
-- **Only platform staff can create/manage MCP API keys**.
+- **Only platform staff with the current `admin` role can create, read, update, or delete MCP API keys**.
 - **Only platform staff-owned keys can authenticate to MCP**.
 - MCP requests authenticate with an **Authorization Bearer token** (not Payload "API-Key" auth).
 
-## Create an MCP API key (Platform Staff only)
+The Admin navigation and key-management routes are hidden from Support and Content Manager users. Server-side access
+checks reload the current staff role, so a removed admin role denies management even when a request carries an old role.
+Existing platform staff-owned keys remain usable with their configured MCP permissions, including keys owned by Support
+or Content Manager users. Key creation binds the owner to the administrator creating it; the owner cannot be reassigned.
 
-1. Log in to the Payload Admin UI with a **Platform Staff** account.
+## Create an MCP API key (administrators only)
+
+1. Log in to the Payload Admin UI with a **Platform Staff administrator** account.
    - Admin UI principals live in the `platformStaff` collection.
-   - The principal must have an authorized platform role.
+   - The principal's current role must be `admin`.
 
 2. Go to **MCP → API Keys**.
 

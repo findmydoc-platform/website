@@ -11,6 +11,7 @@ export const FavoriteClinics: CollectionConfig = {
     plural: 'Favorite Clinics',
   },
   admin: {
+    hidden: true,
     group: 'Medical Network',
     description: 'Saved clinics for patients',
     useAsTitle: 'id',

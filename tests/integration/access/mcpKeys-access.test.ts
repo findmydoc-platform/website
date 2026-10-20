@@ -49,7 +49,7 @@ describe('MCP key management and client access', () => {
       collection: 'payload-mcp-api-keys',
       user: admin,
       overrideAccess: false,
-      data: { user: admin.id, label: `${prefix}-managed`, enableAPIKey: true, apiKey: randomUUID() },
+      data: { user: support.id, label: `${prefix}-managed`, enableAPIKey: true, apiKey: randomUUID() },
     })
     keyIds.push(key.id)
     expect(key.user).toMatchObject({ id: admin.id })
@@ -63,13 +63,14 @@ describe('MCP key management and client access', () => {
         })
       ).id,
     ).toBe(key.id)
-    await payload.update({
+    const updated = await payload.update({
       collection: 'payload-mcp-api-keys',
       id: key.id,
-      data: { label: `${prefix}-updated` },
+      data: { user: support.id, label: `${prefix}-updated` },
       user: admin,
       overrideAccess: false,
     })
+    expect(updated).toMatchObject({ label: `${prefix}-updated`, user: { id: admin.id } })
     await payload.update({
       collection: 'platformStaff',
       id: admin.id,

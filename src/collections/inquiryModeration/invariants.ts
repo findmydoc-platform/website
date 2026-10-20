@@ -140,13 +140,21 @@ export const validateInquiryModerationCase: CollectionBeforeValidateHook = async
     if (!record.reporterClinicStaff || record.reporterPatient) {
       fail(req, 'inquiryModerationCases', 'reporterClinicStaff', 'The clinic reporter binding is invalid.')
     }
-    await validateClinicActor(
-      req,
-      'inquiryModerationCases',
-      record.clinic,
-      record.reporterClinicStaff,
-      'reporterClinicStaff',
-    )
+    const storedReporterUnchanged =
+      operation === 'update' &&
+      originalDoc?.reporterKind === 'clinic' &&
+      sameId(record.clinic, originalDoc.clinic) &&
+      sameId(record.reporterClinicStaff, originalDoc.reporterClinicStaff)
+    // The reporter is historical evidence; validate current access only when binding a new reporter.
+    if (!storedReporterUnchanged) {
+      await validateClinicActor(
+        req,
+        'inquiryModerationCases',
+        record.clinic,
+        record.reporterClinicStaff,
+        'reporterClinicStaff',
+      )
+    }
     if (record.reporterKey !== `clinicStaff:${String(relationId(record.reporterClinicStaff))}`) {
       fail(req, 'inquiryModerationCases', 'reporterKey', 'The clinic reporter key is invalid.')
     }

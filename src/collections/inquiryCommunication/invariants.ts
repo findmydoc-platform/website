@@ -314,7 +314,15 @@ export const validateInquiryAttachment: CollectionBeforeValidateHook = async ({
     if (!record.ownerClinicStaff || record.ownerPatient) {
       fail(req, 'inquiryAttachments', 'ownerClinicStaff', 'The clinic attachment owner is invalid.')
     }
-    await validateClinicActor(req, 'inquiryAttachments', record.clinic, record.ownerClinicStaff, 'ownerClinicStaff')
+    const storedOwnerUnchanged =
+      operation === 'update' &&
+      originalDoc?.ownerKind === 'clinic' &&
+      sameId(record.clinic, originalDoc.clinic) &&
+      sameId(record.ownerClinicStaff, originalDoc.ownerClinicStaff)
+    // Cleanup preserves the original owner even after that principal loses clinic access.
+    if (!storedOwnerUnchanged) {
+      await validateClinicActor(req, 'inquiryAttachments', record.clinic, record.ownerClinicStaff, 'ownerClinicStaff')
+    }
     if (record.actorKey !== `clinicStaff:${String(relationId(record.ownerClinicStaff))}`) {
       fail(req, 'inquiryAttachments', 'actorKey', 'The attachment actor key is invalid.')
     }

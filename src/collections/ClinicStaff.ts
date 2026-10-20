@@ -9,8 +9,13 @@ import {
   guardNotificationAuthorizationSession,
   deleteNotificationReaderReceipts,
 } from '@/features/clinicNotifications/authorizationBarrier'
-import { validations, type CollectionConfig } from 'payload'
-import { createConditionalRequiredValidator, type ConditionalRequirementSet } from './common/conditionalRequirements'
+import { ValidationError, validations, type CollectionConfig } from 'payload'
+import {
+  createConditionalRequiredValidator,
+  getMissingConditionalRequirements,
+  toValidationFieldErrors,
+  type ConditionalRequirementSet,
+} from './common/conditionalRequirements'
 import { isClinicStaff, isOwnClinicStaffProfile } from '@/access/isClinicStaff'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
@@ -83,6 +88,24 @@ export const ClinicStaff: CollectionConfig = {
   },
   hooks: {
     beforeOperation: [guardNotificationAuthorizationChange, guardClinicStaffAssignmentInput],
+    beforeValidate: [
+      ({ data, originalDoc, operation, req }) => {
+        if (!data || !['assignmentScope', 'clinic', 'group'].some((field) => Object.hasOwn(data, field))) return data
+        const missing = getMissingConditionalRequirements(groupAssignmentRequirementSet, {
+          data: { ...originalDoc, ...data },
+          operation,
+        })
+        if (missing.length) {
+          throw new ValidationError({
+            collection: 'clinicStaff',
+            errors: toValidationFieldErrors(missing),
+            id: originalDoc?.id,
+            req,
+          })
+        }
+        return data
+      },
+    ],
     beforeDelete: [guardNotificationAuthorizationSession, deleteNotificationReaderReceipts],
     afterOperation: [
       async ({ result, req, operation }) => {

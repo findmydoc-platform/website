@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ValidationError } from 'payload'
+import { ValidationError, type RelationshipFieldSingleValidation } from 'payload'
 
 import { ClinicApplications } from '@/collections/ClinicApplications'
 import { ClinicStaff } from '@/collections/ClinicStaff'
@@ -31,6 +31,33 @@ describe('Clinic lifecycle Admin contract', () => {
     expect(getField(applicationFields, 'lifecycleGuidance')?.admin?.components?.Field).toBe(
       '@/app/(payload)/components/ClinicApplicationLifecycle#ClinicApplicationLifecyclePanel',
     )
+  })
+
+  it('requires a group in native field validation only for group assignments', async () => {
+    const field = ClinicStaff.fields.find((entry) => 'name' in entry && entry.name === 'group')
+    if (!field || field.type !== 'relationship' || typeof field.validate !== 'function')
+      throw new Error('Expected group relationship validation.')
+    const validate = field.validate as RelationshipFieldSingleValidation
+    const options = {
+      data: { assignmentScope: 'group' },
+      siblingData: { assignmentScope: 'group' },
+      relationTo: 'clinicGroups',
+      required: false,
+      req: {
+        t: (key: string) => key,
+        payload: {
+          collections: { clinicGroups: { customIDType: 'number' } },
+          config: { collections: [] },
+          db: { defaultIDType: 'number' },
+        },
+      },
+    }
+    await expect(validate(null, options as never)).resolves.toBe('Group is required for group scope.')
+    await expect(validate(17, options as never)).resolves.toBe(true)
+    for (const scope of ['local', 'unassigned']) {
+      await expect(validate(null, { ...options, data: { assignmentScope: scope } } as never)).resolves.toBe(true)
+    }
+    expect(field.admin?.description).toContain('Required for group scope.')
   })
 
   it('returns a structured status field error for a forbidden API transition', async () => {

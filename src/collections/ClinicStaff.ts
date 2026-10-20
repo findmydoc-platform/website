@@ -9,7 +9,8 @@ import {
   guardNotificationAuthorizationSession,
   deleteNotificationReaderReceipts,
 } from '@/features/clinicNotifications/authorizationBarrier'
-import type { CollectionConfig } from 'payload'
+import { validations, type CollectionConfig } from 'payload'
+import { createConditionalRequiredValidator, type ConditionalRequirementSet } from './common/conditionalRequirements'
 import { isClinicStaff, isOwnClinicStaffProfile } from '@/access/isClinicStaff'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
@@ -24,6 +25,21 @@ import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { clinicStaffStatusOptions } from './clinicStaff/lifecycle'
 import { guardClinicAccountEvidence } from '@/auth/utilities/clinicAccountCompletion'
 import { guardClinicInvitationAuthorization } from '@/auth/actions/lifecycle'
+
+const groupAssignmentRequirement = {
+  label: 'Group',
+  marker: 'Required for group scope',
+  message: 'Group is required for group scope.',
+  path: 'group',
+  valueIsPresent: (value: unknown) => value !== null && value !== undefined && value !== '',
+} as const
+
+const groupAssignmentRequirementSet = {
+  collection: 'clinicStaff',
+  isRequired: ({ data }) =>
+    Boolean(data && typeof data === 'object' && 'assignmentScope' in data && data.assignmentScope === 'group'),
+  requirements: [groupAssignmentRequirement],
+} satisfies ConditionalRequirementSet
 
 // Direct authentication principal for clinic dashboard and API access, never Payload Admin.
 export const ClinicStaff: CollectionConfig = {
@@ -106,7 +122,15 @@ export const ClinicStaff: CollectionConfig = {
         update: platformClinicTrustFieldAccess,
         read: staffProfileFieldReadAccess,
       },
-      admin: { position: 'sidebar', description: 'Group for group scope. Clear the clinic when selecting a group.' },
+      admin: {
+        position: 'sidebar',
+        description: `${groupAssignmentRequirement.marker}. Clear the clinic when selecting a group.`,
+      },
+      validate: createConditionalRequiredValidator(
+        validations.relationship,
+        groupAssignmentRequirementSet,
+        groupAssignmentRequirement,
+      ),
     },
     {
       name: 'personalGroupInvitation',

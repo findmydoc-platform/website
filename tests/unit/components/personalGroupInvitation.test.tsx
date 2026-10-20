@@ -20,6 +20,25 @@ describe('personal group invitation operator control', () => {
       expect(invite).toHaveBeenCalledWith({ email: 'manager@example.test', firstName: 'New', lastName: 'Manager' }),
     )
   })
+  it('identifies missing and invalid contact fields after blur and clears corrected errors', () => {
+    const invite = vi.fn()
+    render(<PersonalGroupInvitationPanel onInvite={invite} />)
+    const email = screen.getByLabelText('Personal email')
+    const firstName = screen.getByLabelText('First name')
+    expect(screen.queryByText('Enter a valid personal email address.')).not.toBeInTheDocument()
+    fireEvent.change(email, { target: { value: 'invalid' } })
+    fireEvent.blur(email)
+    fireEvent.blur(firstName)
+    expect(email).toHaveAccessibleDescription('Enter a valid personal email address.')
+    expect(firstName).toHaveAccessibleDescription('Enter a first name.')
+    expect(email).toHaveAttribute('aria-invalid', 'true')
+    fireEvent.change(email, { target: { value: 'manager@example.test' } })
+    fireEvent.change(firstName, { target: { value: 'New' } })
+    expect(email).not.toHaveAttribute('aria-invalid', 'true')
+    expect(screen.queryByText('Enter a first name.')).not.toBeInTheDocument()
+    expect(screen.getByText(/All contact fields and the authorization confirmation are required/)).toBeVisible()
+    expect(invite).not.toHaveBeenCalled()
+  })
   it('announces an unknown result and blocks submissions while the group has unsaved changes', () => {
     render(
       <PersonalGroupInvitationPanel

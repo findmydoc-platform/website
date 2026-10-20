@@ -259,8 +259,10 @@ describe('shared native build routing', () => {
     [['vitest.config.ts', '.storybook/main.ts', 'src/stories/example.stories.tsx'], true],
     [['docs/script.mjs', 'scripts/tool.mjs'], true],
     [['.github/workflows/deploy.yml', '.github/filters/validation.yml'], true],
-    [['unknown.md'], true],
-    [['GLOSSARY.md', 'DESIGN.md', 'CONTRIBUTING.md'], true],
+    [['unknown.md'], false],
+    [['GLOSSARY.md', 'DESIGN.md', 'CONTRIBUTING.md'], false],
+    [['AGENTS.md', 'src/auth/session.ts'], true],
+    [['GLOSSARY.md', 'tests/unit/example.test.ts'], false],
     [['docs/old.md', 'src/new.ts'], true],
     [['src/old.ts', 'docs/new.md'], true],
     [['tests/unit/old.test.ts', 'tests/unit/new.test.ts'], false],
@@ -279,6 +281,47 @@ describe('shared native build routing', () => {
       expect(result.status).toBe(0)
       expect(result.output).toContain(`deployable=${expected}`)
       if (!expected) expect(result.summary).toContain('every changed path is an approved test case')
+    }
+  })
+
+  it.each([
+    ['AGENTS.md', 'GLOSSARY.md'],
+    ['README.md', 'docs/contract.md'],
+    ['unknown.md', 'DESIGN.md', 'CONTRIBUTING.md'],
+    ['.github/README.md', 'docs/.hidden.md'],
+    ['src/AGENTS.md', 'src/nested/AGENTS.override.md'],
+    ['tests/integration/README.md', 'tests/setup/README.md'],
+    ['tests/integration/fixtures/README.md', 'tests/e2e/helpers/README.md'],
+    ['src/content/example.md', 'docs/read me.md'],
+  ])('omits expensive jobs for Markdown paths %j while allowing manual runs', (...filenames) => {
+    for (const event of ['pull_request', 'push', 'workflow_dispatch']) {
+      const manual = event === 'workflow_dispatch'
+      const validation = String(validationDecision(filenames))
+      const needs = {
+        paths: { result: 'success', outputs: { validation, deployable: String(manual), integration: String(manual) } },
+        'ci-static': { result: event === 'pull_request' ? 'skipped' : 'success' },
+        'unit-tests': { result: event === 'pull_request' ? 'skipped' : 'success' },
+        'storybook-tests': { result: event === 'pull_request' ? 'skipped' : 'success' },
+      }
+      for (const target of [workflow, previewWorkflow]) {
+        const result = scopeOutputs(target, {
+          EVENT_NAME: event,
+          CHANGED: 'true',
+          NON_MARKDOWN: String(filenames.some((filename) => matches('non_markdown', filename, target))),
+          DEPLOYABLE: String(filenames.some((filename) => matches('deployable', filename, target))),
+          INTEGRATION: String(filenames.some((filename) => matches('integration', filename, target))),
+          TEST_SUPPORT: String(filenames.some((filename) => matches('test_support', filename, target))),
+          CHANGED_COUNT: String(filenames.length),
+          PR_CHANGED_COUNT: String(filenames.length),
+        })
+        expect(result.status).toBe(0)
+        expect(result.output).toContain(`deployable=${manual}`)
+        if (target === workflow) expect(result.output).toContain(`integration=${manual}`)
+      }
+      for (const job of ['build', 'integration-tests']) {
+        expect(conditionDecision(workflow.jobs[job].if, event, needs)).toBe(manual)
+      }
+      expect(conditionDecision(previewWorkflow.jobs['deploy-preview'].if, event, needs)).toBe(manual)
     }
   })
 
@@ -363,13 +406,10 @@ describe('native integration selection routing', () => {
   it.each([
     'src/styles.css',
     'unknown.txt',
-    'unknown.md',
     'package.json',
     'pnpm-lock.yaml',
     'vitest.integration.config.ts',
     'tests/integration/contracts/collectionContractRegistry.ts',
-    'tests/integration/README.md',
-    'tests/setup/README.md',
   ])('runs full integration for shared or unknown input %s', (filename) => {
     const result = scopeOutputs(workflow, {
       INTEGRATION: String(matches('integration', filename)),
@@ -377,11 +417,6 @@ describe('native integration selection routing', () => {
     })
     expect(result.output).toContain('integration=true')
     expect(result.output).toContain('integration_files=[]')
-  })
-
-  it('keeps Main integration required for Markdown inside full-suite inputs', () => {
-    const result = scopeOutputs(workflow, { EVENT_NAME: 'push', INTEGRATION: 'true', NON_MARKDOWN: 'false' })
-    expect(result.output).toContain('integration=true')
   })
 })
 

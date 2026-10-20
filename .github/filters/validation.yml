@@ -9,11 +9,11 @@ deployable:
   - '!tests/e2e/**/*.spec.{ts,tsx}'
   - '!.secrets.baseline'
   - '!.github/ISSUE_TEMPLATE/*.{yml,yaml}'
-  - '!docs/**/*.md'
-  - '!README.md'
-# Test-like support paths must still build. One positive OR pattern keeps every semantics.
+  - '!**/*.md'
+# Non-Markdown test support paths must still build. One positive OR pattern keeps every semantics.
 test_support:
   - '{tests/**/{setup,fixtures,fixture,helpers,helper,support,__fixtures__,__helpers__,__mocks__,mocks}/**,tests/**/*{[sS]etup,[fF]ixture,[hH]elper,[sS]upport}*.{test,spec}.{ts,tsx}}'
+  - '!**/*.md'
 # Preserve known non-integration case and documentation omissions; unknown inputs run full.
 integration:
   - '**'
@@ -21,7 +21,6 @@ integration:
   - '!tests/e2e/**/*.spec.{ts,tsx}'
   - '!.secrets.baseline'
   - '!.github/ISSUE_TEMPLATE/*.{yml,yaml}'
-  - '!docs/**/*.md'
-  - '!README.md'
+  - '!**/*.md'
 integration_modified:
   - modified: 'tests/integration/**/*.test.ts'

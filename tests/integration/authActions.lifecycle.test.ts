@@ -86,7 +86,7 @@ describe('AuthActions private Local API lifecycle contract', () => {
     await system.bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: patient.id } })
     for (const to of ['active', 'confirmed', 'completed'] as const) await system.transition({ id: action.id, to })
     const original = await system.read(action.id)
-    const platform = { id: 100000001, collection: 'platformStaff' } as NonNullable<
+    const platform = { id: 100000001, collection: 'platformStaff', role: 'support' } as NonNullable<
       Parameters<typeof createLocalReq>[0]['user']
     >
     for (const overrideAccess of [false, true]) {

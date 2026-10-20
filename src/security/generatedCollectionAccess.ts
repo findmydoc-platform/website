@@ -2,6 +2,7 @@ import type { Access, CollectionConfig, PayloadHandler } from 'payload'
 
 import { anyone } from '@/access/anyone'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { isPlatformAdmin } from '@/access/isPlatformAdmin'
 
 const denyAllCollectionAccess: Access = () => false
 
@@ -33,7 +34,14 @@ const formSubmissionCollectionAccess = {
   admin: platformAdminAccess,
 } satisfies NonNullable<CollectionConfig['access']>
 
-export const managedPluginCollectionSlugs = ['imports', 'exports', 'forms', 'form-submissions', 'redirects'] as const
+export const managedPluginCollectionSlugs = [
+  'imports',
+  'exports',
+  'forms',
+  'form-submissions',
+  'redirects',
+  'payload-mcp-api-keys',
+] as const
 
 export const generatedCollectionAccess = {
   imports: importExportCollectionAccess,
@@ -41,6 +49,14 @@ export const generatedCollectionAccess = {
   forms: publicReadPlatformManagedCollectionAccess,
   'form-submissions': formSubmissionCollectionAccess,
   redirects: publicReadPlatformManagedCollectionAccess,
+  'payload-mcp-api-keys': {
+    create: isPlatformAdmin,
+    read: isPlatformAdmin,
+    update: isPlatformAdmin,
+    delete: isPlatformAdmin,
+    admin: isPlatformAdmin,
+    unlock: () => false,
+  },
 } satisfies Record<(typeof managedPluginCollectionSlugs)[number], NonNullable<CollectionConfig['access']>>
 
 const withPlatformEndpointAccess = (handler: PayloadHandler): PayloadHandler => {

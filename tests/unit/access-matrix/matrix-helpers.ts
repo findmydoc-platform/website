@@ -113,6 +113,7 @@ export function createMatrixAccessTest(
     if (scenario?.kind === 'platform-staff-role' && userType === 'platform') {
       const payload = req.payload as unknown as MockPayload
       payload.find.mockResolvedValue({ docs: [{ id: 10, role: 'admin' }] })
+      payload.findByID.mockResolvedValue({ id: user?.id, role: 'admin' })
     }
 
     const operationArgs = buildOperationArgs(collectionSlug, operation, userType, user)

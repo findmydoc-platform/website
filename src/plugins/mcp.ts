@@ -1,6 +1,7 @@
 import { mcpPlugin } from '@payloadcms/plugin-mcp'
 import { UnauthorizedError, type CollectionSlug, type Plugin } from 'payload'
-import { isPlatformStaff } from '@/access/isPlatformStaff'
+import { isPlatformAdminUser } from '@/access/isPlatformAdmin'
+import { generatedCollectionAccess } from '@/security/generatedCollectionAccess'
 
 type McpCollectionConfig = {
   description: string
@@ -91,13 +92,13 @@ export const createMcpPlugin = (): Plugin =>
     overrideApiKeyCollection: (collection) => {
       return {
         ...collection,
+        admin: {
+          ...collection.admin,
+          hidden: ({ user }) => !isPlatformAdminUser(user),
+        },
         access: {
           ...collection.access,
-          create: isPlatformStaff,
-          read: isPlatformStaff,
-          unlock: () => false,
-          update: isPlatformStaff,
-          delete: isPlatformStaff,
+          ...generatedCollectionAccess['payload-mcp-api-keys'],
         },
       }
     },

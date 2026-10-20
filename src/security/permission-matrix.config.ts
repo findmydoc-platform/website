@@ -198,6 +198,28 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Public redirect rules with platform-only management',
     },
+    'payload-mcp-api-keys': {
+      slug: 'payload-mcp-api-keys',
+      displayName: 'MCP API Keys',
+      operations: {
+        create: { type: 'conditional', details: 'current platform admin role only' },
+        read: { type: 'conditional', details: 'current platform admin role only' },
+        update: { type: 'conditional', details: 'current platform admin role only' },
+        delete: { type: 'conditional', details: 'current platform admin role only' },
+        admin: { type: 'conditional', details: 'current platform admin role only' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'platform-staff-role' },
+          read: { kind: 'platform-staff-role' },
+          update: { kind: 'platform-staff-role' },
+          delete: { kind: 'platform-staff-role' },
+          admin: { kind: 'platform-staff-role' },
+        },
+      },
+      notes:
+        'Only current platform administrators manage keys. Existing platform staff-owned keys retain MCP access; owner binding and disabled unlock remain enforced.',
+    },
     platformStaff: {
       slug: 'platformStaff',
       displayName: 'PlatformStaff',
@@ -408,7 +430,7 @@ export const permissionMatrix: PermissionMatrix = {
           admin: { kind: 'patient-scope', path: 'patient' },
         },
       },
-      notes: 'Platform RWDA, patients RWDA own list only',
+      notes: 'Hidden from Payload Admin. Platform retains data access; patients manage only their own list.',
     },
     reviews: {
       slug: 'reviews',
@@ -698,14 +720,23 @@ export const permissionMatrix: PermissionMatrix = {
       slug: 'clinicProfileDrafts',
       displayName: 'ClinicProfileDrafts',
       operations: {
-        create: { type: 'platform' },
-        read: { type: 'platform' },
-        update: { type: 'platform' },
-        delete: { type: 'platform' },
-        admin: { type: 'platform' },
+        create: { type: 'conditional', details: 'dedicated profile commands only' },
+        read: { type: 'conditional', details: 'dedicated profile commands only' },
+        update: { type: 'conditional', details: 'dedicated profile commands only' },
+        delete: { type: 'conditional', details: 'dedicated profile commands only' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
       },
       notes:
-        'Private active clinic profile drafts; Clinic Dashboard access is authorized and tenant-scoped through dedicated API endpoints',
+        'Private active clinic profile drafts; generic access is denied for all roles. The tenant-scoped Clinic Dashboard service owns draft operations.',
     },
     patientClinicInquiries: {
       slug: 'patientClinicInquiries',

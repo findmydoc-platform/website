@@ -10,6 +10,7 @@
 | Forms `(forms)` | Platform | Anyone | Platform | Platform | Platform | – |
 | Form Submissions `(form-submissions)` | Anyone | Platform | Conditional<br/><sub>disabled for direct writes</sub> | Platform | Platform | – |
 | Redirects `(redirects)` | Platform | Anyone | Platform | Platform | Platform | – |
+| MCP API Keys `(payload-mcp-api-keys)` | Conditional<br/><sub>current platform admin role only</sub> | Conditional<br/><sub>current platform admin role only</sub> | Conditional<br/><sub>current platform admin role only</sub> | Conditional<br/><sub>current platform admin role only</sub> | Conditional<br/><sub>current platform admin role only</sub> | – |
 | PlatformStaff `(platformStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Platform | Platform | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform | – |
 | ClinicStaff `(clinicStaff)` | Conditional<br/><sub>disabled API create; managed via provisioning</sub> | Conditional<br/><sub>platform full + clinic own clinic</sub> | Conditional<br/><sub>platform + own profile only when staff and clinic are access-ready; clinic, lifecycle, identity, and sync fields are system/platform controlled</sub> | Conditional<br/><sub>disabled API delete; managed via provisioning</sub> | Platform | – |
 | Patients `(patients)` | Platform | Conditional<br/><sub>platform full + patient own profile</sub> | Conditional<br/><sub>platform full + own profile only</sub> | Platform | Platform | – |
@@ -38,7 +39,7 @@
 | Categories `(categories)` | Platform | Anyone | Platform | Platform | Platform | – |
 | Accreditation `(accreditation)` | Platform | Anyone | Platform | Platform | Platform | – |
 | ClinicApplications `(clinicApplications)` | Platform | Platform | Platform | Platform | Platform | – |
-| ClinicProfileDrafts `(clinicProfileDrafts)` | Platform | Platform | Platform | Platform | Platform | – |
+| ClinicProfileDrafts `(clinicProfileDrafts)` | Conditional<br/><sub>dedicated profile commands only</sub> | Conditional<br/><sub>dedicated profile commands only</sub> | Conditional<br/><sub>dedicated profile commands only</sub> | Conditional<br/><sub>dedicated profile commands only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 | PatientClinicInquiries `(patientClinicInquiries)` | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 | InquiryConversations `(inquiryConversations)` | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
 | InquiryMessages `(inquiryMessages)` | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>dedicated inquiry commands only</sub> | Conditional<br/><sub>immutable after command creation</sub> | Conditional<br/><sub>retention workflow only</sub> | Conditional<br/><sub>hidden from generic admin access</sub> | – |
@@ -70,6 +71,7 @@
 - **Forms**: Public form definitions with platform-only management
 - **Form Submissions**: Public create path with platform-only read and delete access; direct updates are disabled
 - **Redirects**: Public redirect rules with platform-only management
+- **MCP API Keys**: Only current platform administrators manage keys. Existing platform staff-owned keys retain MCP access; owner binding and disabled unlock remain enforced.
 - **PlatformStaff**: Platform staff review safe identity fields, edit their own profile image using their own media, and manage roles; identity bindings and create/delete remain provisioning-only
 - **ClinicStaff**: Platform staff manage clinic assignment and lifecycle; approved and synced staff with private password evidence read their participation-approved clinic; invitation authorization is private and immutable; identity binding, auth sync, and create/delete remain provisioning-only
 - **Patients**: Patients can update own profile; no self-create/delete
@@ -80,7 +82,7 @@
 - **DoctorSpecialties**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **DoctorTreatments**: Platform RWDA, clinic RWA own clinic, patients/anonymous R
 - **ClinicTreatments**: Platform RWDA, clinic RWA own clinic including inactive offerings, patients/anonymous R active offerings
-- **FavoriteClinics**: Platform RWDA, patients RWDA own list only
+- **FavoriteClinics**: Hidden from Payload Admin. Platform retains data access; patients manage only their own list.
 - **Reviews**: Platform RWDA moderation and raw version history, patients W create own pending reviews only, clinic staff R own approved sanitized state, public R active visible projection; unlimited immutable native versions
 - **ReviewResponses**: One moderated response workflow per review; public reads require a non-deleted approved parent review and an approved non-blocked response; unlimited immutable native versions
 - **ReviewAppeals**: One immutable clinic appeal per approved review; platform-only lifecycle decisions; no public access; unlimited immutable native versions
@@ -98,7 +100,7 @@
 - **Categories**: Supporting data - platform write, everyone read
 - **Accreditation**: Supporting data - platform write, everyone read
 - **ClinicApplications**: Public submissions use the controlled API route; platform approval authorizes private clinic participation and the named initial staff member; recoverable provisioning reuses both records without automatic reinvitation
-- **ClinicProfileDrafts**: Private active clinic profile drafts; Clinic Dashboard access is authorized and tenant-scoped through dedicated API endpoints
+- **ClinicProfileDrafts**: Private active clinic profile drafts; generic access is denied for all roles. The tenant-scoped Clinic Dashboard service owns draft operations.
 - **PatientClinicInquiries**: Inquiry aggregate; patient and clinic access uses actor-bound, tenant-checked commands instead of generic collection routes
 - **InquiryConversations**: Private inquiry grouping; all access uses checked inquiry communication commands
 - **InquiryMessages**: Immutable private external messages; patient and clinic projections use checked commands

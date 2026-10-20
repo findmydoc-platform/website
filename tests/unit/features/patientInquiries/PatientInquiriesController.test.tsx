@@ -230,8 +230,8 @@ describe('PatientInquiriesController', () => {
 
     render(<PatientInquiriesController api={api} loginHref="/login/patient?next=%2Fpatient%2Finquiries" mode="index" />)
 
-    expect(await screen.findByRole('heading', { name: 'Your session has ended' })).toBeTruthy()
-    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Your session has ended' }))
+    const heading = await screen.findByRole('heading', { name: 'Your session has ended' })
+    await waitFor(() => expect(document.activeElement).toBe(heading))
     expect(screen.getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe(
       '/login/patient?next=%2Fpatient%2Finquiries',
     )

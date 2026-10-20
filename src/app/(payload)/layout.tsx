@@ -7,6 +7,7 @@ import { handleServerFunctions, RootLayout } from '@payloadcms/next/layouts'
 import React from 'react'
 
 import { importMap } from './admin/importMap.js'
+import { loggedSchedulePublishHandler } from '@/features/postScheduling/serverFunction'
 
 type Args = {
   children: React.ReactNode
@@ -18,6 +19,7 @@ const serverFunction: ServerFunctionClient = async function (args) {
     ...args,
     config,
     importMap,
+    serverFunctions: { 'schedule-publish': loggedSchedulePublishHandler },
   })
 }
 

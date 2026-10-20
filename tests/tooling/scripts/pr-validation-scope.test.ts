@@ -62,16 +62,37 @@ describe('PR application validation job gates', () => {
   })
 
   it.each(['failure', 'cancelled', 'skipped'])(
-    'rejects an expected %s prerequisite despite a build omission',
+    'rejects expected Static Checks with result %s despite a build omission',
     (result) => {
       const needs = {
         paths: { result: 'success', outputs: { validation: 'true', deployable: 'false', integration: 'true' } },
-        'ci-static': { result: 'success' },
-        'unit-tests': { result },
-        'storybook-tests': { result: 'success' },
+        'ci-static': { result },
       }
       expect(conditionDecision(workflow.jobs.build.if, 'pull_request', needs)).toBe(true)
       expect(conditionDecision(workflow.jobs.build.steps[0].if, 'pull_request', needs)).toBe(true)
+    },
+  )
+
+  it.each(['in_progress', 'failure', 'cancelled', 'skipped'])(
+    'allows the build after Static Checks while other test jobs are %s',
+    (result) => {
+      const checks: Record<string, { result: string; outputs?: Record<string, string> }> = {
+        paths: { result: 'success', outputs: { validation: 'true', deployable: 'true', integration: 'true' } },
+        'ci-static': { result: 'success' },
+        'unit-tests': { result },
+        'storybook-tests': { result },
+        'integration-tests': { result },
+        'integration-full-merge': { result },
+        'coverage-merge': { result },
+      }
+      const needs = Object.fromEntries(workflow.jobs.build.needs.map((job: string) => [job, checks[job]]))
+      const prerequisitesFinished = Object.values(needs).every((check) =>
+        ['success', 'failure', 'cancelled', 'skipped'].includes(check.result),
+      )
+
+      expect(prerequisitesFinished).toBe(true)
+      expect(conditionDecision(workflow.jobs.build.if, 'pull_request', needs)).toBe(true)
+      expect(conditionDecision(workflow.jobs.build.steps[0].if, 'pull_request', needs)).toBe(false)
     },
   )
 

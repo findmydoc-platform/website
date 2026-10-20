@@ -1,18 +1,13 @@
 import { createLocalReq, type Payload, type PayloadRequest } from 'payload'
-import {
-  asClinicScopedPayloadUser,
-  asPayloadStaffUser,
-  createPatientTestUser,
-  createPlatformTestUser,
-} from '../tests/fixtures/testUsers'
-import type { Review, ReviewAppeal, ReviewResponse } from '../src/payload-types'
+import { asPayloadStaffUser, createPatientTestUser, createPlatformTestUser } from '../tests/fixtures/testUsers'
+import type { ClinicStaff, Review, ReviewAppeal, ReviewResponse } from '../src/payload-types'
 
 /** Synthetic native source commands for the isolated two-application acceptance lane. */
 export function createReviewDecisionControl(input: {
   payload: Payload
   clinicId: number
   doctorId: number
-  clinicStaff: Parameters<typeof asClinicScopedPayloadUser>[1]
+  clinicStaff: ClinicStaff
 }) {
   const { payload, clinicId, doctorId, clinicStaff } = input
   let sequence = 0
@@ -20,7 +15,7 @@ export function createReviewDecisionControl(input: {
   let moderator: PayloadRequest | undefined
 
   const actors = async () => {
-    writer ??= await createLocalReq({ user: await asClinicScopedPayloadUser(payload, clinicStaff, clinicId) }, payload)
+    writer ??= await createLocalReq({ user: asPayloadStaffUser(clinicStaff) }, payload)
     if (!moderator) {
       const platform = await createPlatformTestUser(payload, {
         emailPrefix: 'cross-app-review-decision-platform',

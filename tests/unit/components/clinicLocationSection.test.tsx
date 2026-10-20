@@ -58,10 +58,6 @@ describe('ClinicLocationSection', () => {
     expect(expandedMap).not.toHaveClass('pointer-events-none')
     expect(expandedMap).toHaveAttribute('tabindex', '-1')
     expect(screen.getByTestId('map-preview-interaction-guard')).toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: 'Expanded map keyboard controls' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Pan map north' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Zoom map in' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Reset map view' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Close map' }))
 

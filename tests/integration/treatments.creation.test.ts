@@ -94,6 +94,8 @@ describe('Treatments Creation Integration Tests', () => {
     expect(treatment.name).toBe(`${slugPrefix}-basic-treatment`)
     expect(treatment.description).toBeDefined()
     expect(treatment.medicalSpecialty).toBe(medicalSpecialtyId)
+    expect(treatment.averagePrice ?? null).toBeNull()
+    expect(treatment.averageRating ?? null).toBeNull()
   })
 
   it('creates a treatment with tags', async () => {
@@ -125,38 +127,6 @@ describe('Treatments Creation Integration Tests', () => {
         overrideAccess: true,
       } as PayloadCreateArgs),
     ).rejects.toThrow()
-  })
-
-  it('initializes averagePrice as null/undefined for new treatments', async () => {
-    const treatment = await payload.create({
-      collection: 'treatments',
-      data: {
-        name: `${slugPrefix}-no-price-treatment`,
-        description: buildRichText('A treatment with no price'),
-        medicalSpecialty: medicalSpecialtyId,
-      },
-      overrideAccess: true,
-      depth: 0,
-    })
-
-    expect(treatment.id).toBeDefined()
-    expect(treatment.averagePrice ?? null).toBeNull()
-  })
-
-  it('initializes averageRating as null/undefined for new treatments', async () => {
-    const treatment = await payload.create({
-      collection: 'treatments',
-      data: {
-        name: `${slugPrefix}-no-rating-treatment`,
-        description: buildRichText('A treatment with no rating'),
-        medicalSpecialty: medicalSpecialtyId,
-      },
-      overrideAccess: true,
-      depth: 0,
-    })
-
-    expect(treatment.id).toBeDefined()
-    expect(treatment.averageRating ?? null).toBeNull()
   })
 
   it('updates treatment information', async () => {

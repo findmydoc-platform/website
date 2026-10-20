@@ -118,15 +118,12 @@ export const collectionContractRegistry = {
     deep: ['tests/integration/inquiryRetention.lifecycle.test.ts'],
   },
   clinicGalleryEntries: {
-    baseline: ['tests/integration/clinicGalleryEntries.lifecycle.test.ts'],
-    deep: [
-      'tests/integration/clinicGalleryEntries.lifecycle.test.ts',
-      'tests/integration/clinicGalleryEntries.validation.test.ts',
-    ],
+    baseline: ['tests/integration/seedReset.storage.test.ts'],
+    deep: ['tests/integration/seedReset.storage.test.ts'],
   },
   clinicGalleryMedia: {
-    baseline: ['tests/integration/clinicGalleryMedia.lifecycle.test.ts'],
-    deep: ['tests/integration/clinicGalleryMedia.lifecycle.test.ts'],
+    baseline: ['tests/integration/storage.s3.collections.test.ts'],
+    deep: ['tests/integration/seedReset.storage.test.ts'],
   },
   clinicMedia: {
     baseline: ['tests/integration/clinicMedia.lifecycle.test.ts'],

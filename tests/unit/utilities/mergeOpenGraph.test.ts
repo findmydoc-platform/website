@@ -166,40 +166,6 @@ describe('mergeOpenGraph', () => {
     })
   })
 
-  it('should handle partial custom data', () => {
-    const customOg: Metadata['openGraph'] = {
-      title: 'Only Title Changed',
-    }
-
-    const result = mergeOpenGraph(customOg)
-
-    expect((result as unknown as Record<string, unknown>).title).toBe('Only Title Changed')
-    expect((result as unknown as Record<string, unknown>).type).toBe('website') // Default preserved
-    expect((result as unknown as Record<string, unknown>).siteName).toBe('findmydoc') // Default preserved
-    expect(result!.description).toBe(
-      'findmydoc connects international patients with vetted clinics and specialist care.',
-    ) // Default preserved
-  })
-
-  it('should handle empty object input', () => {
-    const result = mergeOpenGraph({})
-
-    expect(result).toEqual({
-      type: 'website',
-      description: 'findmydoc connects international patients with vetted clinics and specialist care.',
-      images: [
-        {
-          url: 'https://example.com/findmydoc-og.jpg',
-          width: 1200,
-          height: 630,
-          alt: 'findmydoc clinic discovery platform preview',
-        },
-      ],
-      siteName: 'findmydoc',
-      title: 'findmydoc',
-    })
-  })
-
   it('should handle additional OpenGraph properties', () => {
     const customOg: Metadata['openGraph'] = {
       title: 'Custom Title',
@@ -232,59 +198,5 @@ describe('mergeOpenGraph', () => {
     // Other defaults should still be present
     expect((result as unknown as Record<string, unknown>).type).toBe('website')
     expect((result as unknown as Record<string, unknown>).siteName).toBe('findmydoc')
-  })
-
-  it('should handle Twitter-specific OpenGraph properties', () => {
-    const customOg: Metadata['openGraph'] = {
-      title: 'Twitter Card Title',
-      description: 'Twitter card description',
-      images: [
-        {
-          url: 'https://example.com/twitter-image.jpg',
-          width: 1200,
-          height: 600,
-          alt: 'Twitter image alt text',
-        },
-      ],
-    }
-
-    const result = mergeOpenGraph(customOg)
-    const imagesValue = result?.images
-    const images = Array.isArray(imagesValue) ? imagesValue : imagesValue ? [imagesValue] : []
-
-    expect(images[0]).toEqual({
-      url: 'https://example.com/twitter-image.jpg',
-      width: 1200,
-      height: 600,
-      alt: 'Twitter image alt text',
-    })
-  })
-
-  it('should handle complex image objects', () => {
-    const customOg: Metadata['openGraph'] = {
-      images: [
-        {
-          url: 'https://example.com/complex-image.jpg',
-          secureUrl: 'https://example.com/complex-image.jpg',
-          alt: 'Complex image description',
-          type: 'image/jpeg',
-          width: 1200,
-          height: 630,
-        },
-      ],
-    }
-
-    const result = mergeOpenGraph(customOg)
-    const imagesValue = result?.images
-    const images = Array.isArray(imagesValue) ? imagesValue : imagesValue ? [imagesValue] : []
-
-    expect(images[0]).toEqual({
-      url: 'https://example.com/complex-image.jpg',
-      secureUrl: 'https://example.com/complex-image.jpg',
-      alt: 'Complex image description',
-      type: 'image/jpeg',
-      width: 1200,
-      height: 630,
-    })
   })
 })

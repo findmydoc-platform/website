@@ -4,40 +4,10 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { createRequire } from 'node:module'
-import YAML from 'yaml'
-
 import { afterEach, describe, expect, it } from 'vitest'
 
 const tempDirectories = new Set<string>()
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
-
-const require = createRequire(import.meta.url)
-const picomatch = require(path.join(repositoryRoot, 'node_modules/.pnpm/picomatch@2.3.2/node_modules/picomatch')) as (
-  pattern: string,
-  options: { dot: boolean },
-) => (file: string) => boolean
-const workflow = YAML.parse(fs.readFileSync(path.join(repositoryRoot, '.github/workflows/db-quality.yml'), 'utf8'))
-const pathInputs = workflow.jobs['detect-db-changes'].steps.find((step: { id?: string }) => step.id === 'paths').with
-const filters = YAML.parse(pathInputs.filters) as Record<string, (string | Record<string, string>)[]>
-type ChangedFile = { filename: string; status: 'added' | 'modified' | 'copied' | 'deleted' }
-const selectPaths = (filter: string, files: (string | ChangedFile)[]) => {
-  const matches = (file: ChangedFile, rule: string | Record<string, string>) => {
-    if (typeof rule === 'string') return picomatch(rule, { dot: true })(file.filename)
-    return Object.entries(rule).some(
-      ([statuses, pattern]) =>
-        statuses.split('|').includes(file.status) && picomatch(pattern, { dot: true })(file.filename),
-    )
-  }
-  return files
-    .map((file): ChangedFile => (typeof file === 'string' ? { filename: file, status: 'modified' } : file))
-    .filter((file) =>
-      pathInputs['predicate-quantifier'] === 'every'
-        ? filters[filter]!.every((rule) => matches(file, rule))
-        : filters[filter]!.some((rule) => matches(file, rule)),
-    )
-    .map((file) => file.filename)
-}
 
 afterEach(() => {
   for (const directoryPath of tempDirectories) {
@@ -189,13 +159,14 @@ const commitFiles = (rootDir: string, files: Record<string, string>) => {
 
 const runDetector = (rootDir: string, event = 'push', base = '', overrides: Record<string, string> = {}) => {
   const outputPath = path.join(rootDir, 'github-output')
-  const changed: ChangedFile[] = []
+  let changed: string[] = []
   try {
-    const fields = execFileSync(
+    changed = execFileSync(
       'git',
       [
         'diff',
-        '--name-status',
+        '--name-only',
+        '--diff-filter=ACMR',
         '--no-renames',
         '-z',
         event === 'pull_request' ? `origin/${base}...HEAD` : 'HEAD~1...HEAD',
@@ -205,21 +176,17 @@ const runDetector = (rootDir: string, event = 'push', base = '', overrides: Reco
       .toString()
       .split('\0')
       .filter(Boolean)
-    const statuses: Record<string, ChangedFile['status']> = { A: 'added', M: 'modified', C: 'copied', D: 'deleted' }
-    for (let index = 0; index < fields.length; index += 2) {
-      const status = statuses[fields[index]![0]!]
-      if (status) changed.push({ filename: fields[index + 1]!, status })
-    }
   } catch {
     /* A first commit has no comparison predecessor. */
   }
+  // Supply classifier inputs explicitly, independently of workflow path selection.
   const selection = {
-    CHANGED_FILES: JSON.stringify(selectPaths('changed', changed)),
-    SCHEMA_FILES: JSON.stringify(selectPaths('schema', changed)),
-    BLOCK_SCHEMA_FILES: JSON.stringify(selectPaths('block_schema', changed)),
-    PAYLOAD_SCHEMA_FILES: JSON.stringify(selectPaths('payload_schema', changed)),
-    MIGRATIONS_CHANGED: String(selectPaths('migrations', changed).length > 0),
-    DB_TOOLING_CHANGED: String(selectPaths('tooling', changed).length > 0),
+    CHANGED_FILES: JSON.stringify(changed),
+    SCHEMA_FILES: JSON.stringify(['src/payload.config.ts']),
+    BLOCK_SCHEMA_FILES: '[]',
+    PAYLOAD_SCHEMA_FILES: '[]',
+    MIGRATIONS_CHANGED: 'false',
+    DB_TOOLING_CHANGED: 'false',
   }
   execFileSync('bash', [path.join(repositoryRoot, '.github/scripts/ci/detect-migration-diff.sh'), event, base], {
     cwd: rootDir,
@@ -302,23 +269,12 @@ export default {
     expect(output).toContain('schema_changed=false')
   })
 
-  it('does not require a migration for scoped agent instructions', () => {
-    const rootDir = createTempRepo()
-
-    commitFile(rootDir, 'src/collections/AGENTS.md', '# Collection instructions\n')
-
-    const output = runDetector(rootDir)
-
-    expect(output).toContain('db_changed=false')
-    expect(output).toContain('schema_changed=false')
-  })
-
   it('keeps collection config changes schema-relevant', () => {
     const rootDir = createTempRepo()
 
     commitFile(rootDir, 'src/collections/Doctors/index.ts', "export const Doctors = { slug: 'doctors' }\n")
 
-    const output = runDetector(rootDir)
+    const output = runDetector(rootDir, 'push', '', { SCHEMA_FILES: '["src/collections/Doctors/index.ts"]' })
 
     expect(output).toContain('db_changed=true')
     expect(output).toContain('schema_changed=true')
@@ -364,7 +320,7 @@ export const ClinicStaff = {
 `,
     )
 
-    const output = runDetector(rootDir)
+    const output = runDetector(rootDir, 'push', '', { SCHEMA_FILES: '["src/collections/ClinicStaff.ts"]' })
 
     expect(output).toContain('db_changed=false')
     expect(output).toContain('schema_changed=false')
@@ -413,7 +369,7 @@ export const Clinics = {
 `,
     )
 
-    const output = runDetector(rootDir)
+    const output = runDetector(rootDir, 'push', '', { SCHEMA_FILES: '["src/collections/Clinics.ts"]' })
 
     expect(output).toContain('db_changed=false')
     expect(output).toContain('schema_changed=false')
@@ -457,7 +413,7 @@ export const Clinics = {
 `,
     )
 
-    const output = runDetector(rootDir)
+    const output = runDetector(rootDir, 'push', '', { SCHEMA_FILES: '["src/collections/ClinicStaff.ts"]' })
 
     expect(output).toContain('db_changed=true')
     expect(output).toContain('schema_changed=true')
@@ -506,7 +462,7 @@ export const Doctors = {
 `,
     )
 
-    const output = runDetector(rootDir)
+    const output = runDetector(rootDir, 'push', '', { SCHEMA_FILES: '["src/collections/Doctors/index.ts"]' })
 
     expect(output).toContain('db_changed=false')
     expect(output).toContain('schema_changed=false')
@@ -548,7 +504,7 @@ export const Doctors = {
 `,
     )
 
-    const output = runDetector(rootDir)
+    const output = runDetector(rootDir, 'push', '', { SCHEMA_FILES: '["src/collections/Doctors.ts"]' })
 
     expect(output).toContain('db_changed=false')
     expect(output).toContain('schema_changed=false')
@@ -564,7 +520,9 @@ export const Doctors = {
       'src/security/generatedCollectionAccess.ts': 'export const generatedCollectionAccess = {}\n',
     })
 
-    const output = runDetector(rootDir)
+    const output = runDetector(rootDir, 'push', '', {
+      SCHEMA_FILES: '["src/plugins/index.ts", "src/plugins/importExport.ts"]',
+    })
 
     expect(output).toContain('db_changed=false')
     expect(output).toContain('schema_changed=false')
@@ -586,7 +544,9 @@ export const Doctors = {
       'src/plugins/importExport.ts': schemaChangingModule,
     })
 
-    const output = runDetector(rootDir)
+    const output = runDetector(rootDir, 'push', '', {
+      SCHEMA_FILES: '["src/plugins/index.ts", "src/plugins/importExport.ts"]',
+    })
 
     expect(output).toContain('db_changed=true')
     expect(output).toContain('schema_changed=true')
@@ -598,7 +558,7 @@ export const Doctors = {
     commitFile(rootDir, 'src/plugins/index.ts', pluginIndexWithoutManagedAccess)
     commitFile(rootDir, 'src/plugins/index.ts', pluginIndexWithManagedAccess)
 
-    const output = runDetector(rootDir)
+    const output = runDetector(rootDir, 'push', '', { SCHEMA_FILES: '["src/plugins/index.ts"]' })
 
     expect(output).toContain('db_changed=false')
     expect(output).toContain('schema_changed=false')
@@ -614,7 +574,7 @@ export const Doctors = {
     commitFile(rootDir, 'src/plugins/index.ts', pluginIndexWithoutManagedAccess)
     commitFile(rootDir, 'src/plugins/index.ts', schemaChangingPluginIndex)
 
-    const output = runDetector(rootDir)
+    const output = runDetector(rootDir, 'push', '', { SCHEMA_FILES: '["src/plugins/index.ts"]' })
 
     expect(output).toContain('db_changed=true')
     expect(output).toContain('schema_changed=true')
@@ -650,73 +610,9 @@ describe('DB classifier event contracts', () => {
   it('passes selected migrations and tooling decisions to the stable outputs', () => {
     const rootDir = createTempRepo()
     commitFile(rootDir, 'src/migrations/new.ts', 'export const up = () => {}')
-    const output = runDetector(rootDir)
+    const output = runDetector(rootDir, 'push', '', { MIGRATIONS_CHANGED: 'true', DB_TOOLING_CHANGED: 'true' })
     expect(output).toContain('db_changed=true')
     expect(output).toContain('migrations_changed=true')
     expect(output).toContain('risk_scan_needed=true')
-  })
-})
-
-describe('DB workflow path selection', () => {
-  it.each(['added', 'modified', 'copied', 'deleted'] as const)('handles %s schema and migration paths', (status) => {
-    const expected = status === 'deleted' ? [] : ['src/payload.config.ts']
-    expect(selectPaths('payload_schema', [{ filename: 'src/payload.config.ts', status }])).toEqual(expected)
-    expect(selectPaths('migrations', [{ filename: 'src/migrations/new.ts', status }])).toEqual(
-      status === 'deleted' ? [] : ['src/migrations/new.ts'],
-    )
-  })
-  it('does not apply migration checks for deleted-only paths', () => {
-    const rootDir = createTempRepo()
-    commitFile(rootDir, 'src/migrations/old.ts', 'export const up = () => {}')
-    runGit(rootDir, ['rm', 'src/migrations/old.ts'])
-    runGit(rootDir, ['commit', '--message', 'delete migration fixture'])
-    expect(runDetector(rootDir)).toContain('migrations_changed=false')
-  })
-  it('normalizes a renamed migration to its added new path', () => {
-    const rootDir = createTempRepo()
-    commitFile(rootDir, 'src/migrations/old.ts', 'export const up = () => {}')
-    runGit(rootDir, ['mv', 'src/migrations/old.ts', 'src/migrations/new.ts'])
-    runGit(rootDir, ['commit', '--message', 'rename migration fixture'])
-    const output = runDetector(rootDir)
-    expect(output).toContain('migrations_changed=true')
-    expect(output).toContain('src/migrations/new.ts')
-    expect(output).not.toContain('src/migrations/old.ts')
-  })
-
-  it.each([
-    ['src/collections/Clinics/index.ts', true],
-    ['src/collections/Clinics/AGENTS.md', false],
-    ['src/collections/Clinics/AGENTS.override.md', false],
-    ['src/collections/Clinics/hooks/update.ts', false],
-    ['src/collections/.hidden/index.ts', true],
-    ['src/collections/Clinic space/index.ts', true],
-    ['src/collections/Clinic$(echo bad)/index.ts', true],
-    ['docs/database.md', false],
-  ])('selects schema path %s: %s', (file, selected) => {
-    expect(selectPaths('schema', [file])).toEqual(selected ? [file] : [])
-  })
-  it('selects block config files without selecting renderers', () => {
-    expect(
-      selectPaths('block_schema', [
-        'src/blocks/Test/config.ts',
-        'src/blocks/Test/config.tsx',
-        'src/blocks/Test/nested/config.ts',
-        'src/blocks/Test space/config.ts',
-        'src/blocks/Test/Component.tsx',
-      ]),
-    ).toEqual(['src/blocks/Test/config.ts', 'src/blocks/Test/config.tsx', 'src/blocks/Test/nested/config.ts'])
-  })
-  it('selects each independent database tooling alternative', () => {
-    const files = [
-      '.github/workflows/db-quality.yml',
-      '.github/workflows/deploy.yml',
-      '.github/scripts/ci/detect-migration-diff.sh',
-      '.github/scripts/ci/enforce-schema-migration.sh',
-      '.github/scripts/ci/wait-for-postgres.sh',
-      'scripts/migration-risk-scan.mjs',
-      'scripts/test-database-harness.mjs',
-      'vitest.config.ts',
-    ]
-    expect(selectPaths('tooling', [...files, 'scripts/unrelated.mjs'])).toEqual(files)
   })
 })

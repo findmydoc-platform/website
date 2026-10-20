@@ -7,6 +7,7 @@ import {
   requireCaptureOperator,
 } from '@/features/clinicNotifications/hostedCapture'
 import { recordNotificationDiagnostic } from '@/features/clinicNotifications/diagnostics'
+import { getServerSideURL } from '@/utilities/getURL'
 
 function response(body: unknown, status = 200) {
   return Response.json(body, {
@@ -56,7 +57,7 @@ export const clinicNotificationCapturePostHandler: PayloadHandler = async (req) 
   const started = performance.now()
   try {
     await requireCaptureOperator(req)
-    const configured = new URL(req.payload.config.serverURL)
+    const configured = new URL(req.payload.config.serverURL || getServerSideURL())
     if (
       configured.protocol !== 'https:' ||
       configured.username ||

@@ -164,29 +164,24 @@ export const Header = ({
 export const Status = ({ message, variant = 'info' }: { message?: string; variant?: StatusVariant }) => {
   const { state } = useLoginFormContext()
 
-  if (message) {
-    const role = variant === 'success' || variant === 'info' ? 'status' : 'alert'
+  if (!message && !state.error) return null
 
-    return (
-      <div className="mb-4">
+  const role = variant === 'success' || variant === 'info' ? 'status' : 'alert'
+
+  return (
+    <div className="mb-4 space-y-4">
+      {message ? (
         <Alert variant={variant} role={role} className="text-left break-words">
           {message}
         </Alert>
-      </div>
-    )
-  }
-
-  if (state.error) {
-    return (
-      <div className="mb-4">
+      ) : null}
+      {state.error ? (
         <Alert variant="error" className="text-left break-words">
           {state.error}
         </Alert>
-      </div>
-    )
-  }
-
-  return null
+      ) : null}
+    </div>
+  )
 }
 
 export const Form = ({ children, className }: { children: React.ReactNode; className?: string }) => {

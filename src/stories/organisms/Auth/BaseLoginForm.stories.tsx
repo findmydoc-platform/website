@@ -22,6 +22,10 @@ const mockInvalidCredentials = async (_data: LoginRequest): Promise<LoginError> 
   }
 }
 
+const mockRejectedCredentials = async (_data: LoginRequest): Promise<LoginError> => ({
+  error: 'Invalid login credentials',
+})
+
 const meta = {
   title: 'Domain/Auth/Organisms/LoginForm',
   component: LoginForm.Root,
@@ -110,6 +114,35 @@ export const InvalidCredentials: Story = {
     } finally {
       consoleSpy.mockRestore()
     }
+  },
+}
+
+export const RejectedCredentialsWithStatus: Story = {
+  args: {
+    loginHandler: mockRejectedCredentials,
+    children: null, // Satisfy required prop
+  },
+  render: (args) => (
+    <LoginForm.Root {...args}>
+      <LoginForm.Header title="Platform Login" description="Sign in to the platform administration area" />
+      <LoginForm.Status message="This is a preview deployment. Please sign in to continue." variant="info" />
+      <LoginForm.Form>
+        <LoginForm.EmailField />
+        <LoginForm.PasswordField />
+        <LoginForm.SubmitButton>Sign in</LoginForm.SubmitButton>
+      </LoginForm.Form>
+    </LoginForm.Root>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.type(canvas.getByLabelText(/email/i), 'staff@example.com')
+    await userEvent.type(canvas.getByLabelText(/password/i), 'rejected-password')
+    await userEvent.click(canvas.getByRole('button', { name: /sign in/i }))
+
+    await waitFor(() => {
+      expect(canvas.getByText('This is a preview deployment. Please sign in to continue.')).toBeInTheDocument()
+      expect(canvas.getByText('Invalid login credentials')).toBeInTheDocument()
+    })
   },
 }
 

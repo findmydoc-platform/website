@@ -102,6 +102,47 @@ They must never include the original database message or connection URL. See
 
 For the flow-level operating map, escalation rules, and privacy boundaries, see [Monitoring and Error Logic](./monitoring-and-error-logic.md).
 
+## Post publication schedules
+
+Filter runtime logs by `scope:posts.scheduling` or `event:posts.scheduling.created`, then follow
+`postId` and `jobId` across requests. Both publish and unpublish use the same events; `action`
+distinguishes them. `Published At` alone creates no schedule and produces no scheduling event.
+
+| Event suffix | Meaning |
+| --- | --- |
+| `created` | Native queue storage succeeded. |
+| `creation_failed` | Native schedule creation or its Admin request failed. |
+| `cancelled` | A pending job was removed; `reason` is `explicit` or `post_deleted`. |
+| `cancellation_failed` | An Admin cancellation failed, or a pending job remained after Post deletion. |
+| `attempt_started` | The native task handler began a publication attempt. |
+| `attempt_succeeded` | The native publication handler returned successfully after its status update. |
+| `attempt_failed` | The native handler threw or returned a failed state. |
+| `observation_failed` | A diagnostic read failed; cancellation history may be incomplete. |
+
+Events include the scheduled UTC instant, validated IANA timezone when stored, locale scope,
+initiating staff `userId` when stored, request actor `actorId` when known, environment and
+`eventTime`. Request and Vercel correlation identifiers are included when available, including
+Admin requests that fail before allocating a job. Each execution includes `attempt`, calculated
+from the native job's prior attempt count. Errors contain only an allowlisted class and numeric
+status, without raw messages, stack traces, article content or credentials.
+If native retry handling changes `waitUntil`, execution events show that attempt's scheduled
+instant. Use the `created` event with the same `jobId` for the original publication schedule.
+
+The scoped child of the existing Payload logger uses `info`, so successful lifecycle events pass
+the Production root logger's `warn` threshold without changing global verbosity or redaction.
+Failures use `error`. Native queueing, publication, retries and cleanup remain unchanged.
+Successful-job cleanup is not a cancellation. Post deletion is reported only when a pending job
+captured before native deletion is confirmed absent afterward; moving a Post to Trash alone is
+not reported as cancellation when native Payload leaves its schedule intact.
+
+These are runtime diagnostics within the existing Vercel retention period, not a permanent audit
+trail. Process termination, failed diagnostic reads, delivery loss, transaction rollback and expired
+retention can leave gaps. A start without an outcome can indicate interruption. A missing event
+does not prove that a schedule or attempt never existed. Handler success records the native
+publication outcome, not a guarantee that later job bookkeeping or log delivery succeeded.
+Cancellation events cover the native Admin scheduling request and collection deletion hooks.
+Generic programmatic Jobs `cancel` and `cancelByID` calls do not pass through these editorial hooks.
+
 ## Local Development
 
 Local `development` uses pretty logging for readability.

@@ -83,6 +83,7 @@ import { fileURLToPath } from 'url'
 import { config as dotenvConfig } from 'dotenv'
 import { canRunPayloadJobs } from '@/access/payloadJobs'
 import { createPayloadLoggerConfig } from '@/utilities/logging/payloadLogger'
+import { installPostSchedulingLogs } from '@/features/postScheduling/logging'
 import { createPayloadRuntimePoolConfig, payloadDatabaseAvailabilityAfterError } from '@/features/databaseAvailability'
 import { createAdminDashboardConfig } from './dashboard/adminDashboard'
 
@@ -618,6 +619,7 @@ export default buildConfig({
   },
   logger: createPayloadLoggerConfig(process.env),
   onInit: async (payload) => {
+    installPostSchedulingLogs(payload)
     protectAuthActionProtocolStorage(payload)
     if (process.env.NEXT_PHASE === 'phase-production-build') {
       return

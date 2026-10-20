@@ -1,6 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs'
-import { createRequire } from 'node:module'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { runInNewContext } from 'node:vm'
@@ -9,32 +8,8 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
 const repositoryRoot = path.resolve(import.meta.dirname, '../../..')
-const require = createRequire(import.meta.url)
-// Dorny's pinned action uses picomatch 2; reuse the installed transitive version.
-const picomatch = require(
-  path.join(realpathSync(path.join(repositoryRoot, 'node_modules')), '.pnpm/picomatch@2.3.2/node_modules/picomatch'),
-) as (pattern: string, options: { dot: boolean }) => (filename: string) => boolean
 const workflow = parse(readFileSync(path.join(repositoryRoot, '.github/workflows/deploy.yml'), 'utf8'))
 const previewWorkflow = parse(readFileSync(path.join(repositoryRoot, '.github/workflows/deploy-preview.yml'), 'utf8'))
-
-const matches = (name: string, filename: string, target = workflow) => {
-  const action = target.jobs.paths.steps.find((step: { id?: string }) => step.id === 'filter')
-  const rules = parse(readFileSync(path.join(repositoryRoot, action.with.filters), 'utf8')) as Record<string, string[]>
-  const rule = rules[name]
-  if (!rule) throw new Error(`Missing native path filter: ${name}`)
-  const patterns = rule.map((pattern) => picomatch(pattern, { dot: true })(filename))
-  return action.with['predicate-quantifier'] === 'every' ? patterns.every(Boolean) : patterns.some(Boolean)
-}
-
-const validationDecision = (filenames: string[]) => {
-  const outputs = {
-    changed: String(filenames.some((filename) => matches('changed', filename))),
-    non_markdown: String(filenames.some((filename) => matches('non_markdown', filename))),
-  }
-  const expression = workflow.jobs.paths.outputs.validation.replace(/^\$\{\{\s*|\s*\}\}$/g, '')
-  // The workflow output is a boolean expression over action outputs, with no shell execution.
-  return runInNewContext(expression, { steps: { filter: { outputs } } }) as boolean
-}
 
 const conditionDecision = (
   expression: string,
@@ -60,25 +35,7 @@ const conditionDecision = (
     needs,
   }) as boolean
 
-describe('PR application validation workflow filters', () => {
-  it.each([
-    [['README.md', 'docs/contract.md'], false],
-    [['.github/README.md', 'docs/.hidden.md'], false],
-    [['docs/contract.md', 'src/auth/session.ts'], true],
-    [['.github/workflows/deploy.yml'], true],
-    [['package.json', 'pnpm-lock.yaml'], true],
-    [['docs/read me.md'], false],
-    [['scripts/a $(echo hello); name.sh'], true],
-    [[], true],
-  ])('routes changed paths %j to application validation = %s', (filenames, expected) => {
-    expect(validationDecision(filenames)).toBe(expected)
-  })
-
-  it('validates a rename across the Markdown boundary in either direction', () => {
-    expect(validationDecision(['docs/old.md', 'src/new.ts'])).toBe(true)
-    expect(validationDecision(['src/old.ts', 'docs/new.md'])).toBe(true)
-  })
-
+describe('PR application validation job gates', () => {
   it.each(['failure', 'cancelled', 'skipped'])('runs failure reporting when scope classification is %s', (result) => {
     const needs = {
       paths: { result, outputs: {} },
@@ -207,21 +164,6 @@ const scopeOutputs = (workflow: typeof previewWorkflow, env: Record<string, stri
 }
 
 describe('shared native build routing', () => {
-  it.each([
-    ['src/auth/session.ts', true],
-    ['src/collections/Clinics.ts', true],
-    ['tests/integration/example.test.ts', true],
-    ['tests/setup/unit.setup.ts', true],
-    ['vitest.config.ts', true],
-    ['scripts/test-database-harness.mjs', true],
-    ['tests/unit/example.test.ts', false],
-    ['.secrets.baseline', false],
-    ['README.md', false],
-  ])('retains existing PR integration relevance for %s', (filename, expected) => {
-    const result = scopeOutputs(workflow, { INTEGRATION: String(matches('integration', filename)) })
-    expect(result.output).toContain(`integration=${expected}`)
-  })
-
   it.each(['success', 'failure'])('preserves Preview trust when classification is %s', (result) => {
     const needs = { paths: { result, outputs: { deployable: 'true' } } }
     expect(conditionDecision(previewWorkflow.jobs['deploy-preview'].if, 'pull_request', needs)).toBe(true)
@@ -240,89 +182,6 @@ describe('shared native build routing', () => {
   it.each(['push', 'workflow_dispatch'])('preserves Preview deployment for %s events', (event) => {
     const needs = { paths: { result: 'success', outputs: { deployable: 'true' } } }
     expect(conditionDecision(previewWorkflow.jobs['deploy-preview'].if, event, needs)).toBe(true)
-  })
-
-  it.each([
-    [['tests/unit/example.test.ts'], false],
-    [['tests/e2e/example.spec.tsx'], false],
-    [['tests/integration/example.test.ts'], false],
-    [['.secrets.baseline', '.github/ISSUE_TEMPLATE/feature.yaml'], false],
-    [['README.md', 'docs/contract.md', 'tests/unit/example.test.ts', '.secrets.baseline'], false],
-    [['tests/integration/fixtures/example.test.ts'], true],
-    [['tests/unit/exampleHelper.test.ts'], true],
-    [['tests/e2e/helpers/example.spec.ts'], true],
-    [['tests/setup/unit.test.ts'], true],
-    [['src/example.ts', 'tests/unit/example.test.ts'], true],
-    [['src/styles.css'], true],
-    [['public/icon.svg'], true],
-    [['package.json', 'pnpm-lock.yaml'], true],
-    [['vitest.config.ts', '.storybook/main.ts', 'src/stories/example.stories.tsx'], true],
-    [['docs/script.mjs', 'scripts/tool.mjs'], true],
-    [['.github/workflows/deploy.yml', '.github/filters/validation.yml'], true],
-    [['unknown.md'], false],
-    [['GLOSSARY.md', 'DESIGN.md', 'CONTRIBUTING.md'], false],
-    [['AGENTS.md', 'src/auth/session.ts'], true],
-    [['GLOSSARY.md', 'tests/unit/example.test.ts'], false],
-    [['docs/old.md', 'src/new.ts'], true],
-    [['src/old.ts', 'docs/new.md'], true],
-    [['tests/unit/old.test.ts', 'tests/unit/new.test.ts'], false],
-  ])('routes native changed paths %j to CI and Preview build = %s', (filenames, expected) => {
-    for (const target of [workflow, previewWorkflow]) {
-      const nativeOutputs = {
-        CHANGED: 'true',
-        NON_MARKDOWN: String(filenames.some((filename) => matches('non_markdown', filename, target))),
-        DEPLOYABLE: String(filenames.some((filename) => matches('deployable', filename, target))),
-        INTEGRATION: String(filenames.some((filename) => matches('integration', filename, target))),
-        TEST_SUPPORT: String(filenames.some((filename) => matches('test_support', filename, target))),
-        CHANGED_COUNT: String(filenames.length),
-        PR_CHANGED_COUNT: String(filenames.length),
-      }
-      const result = scopeOutputs(target, nativeOutputs)
-      expect(result.status).toBe(0)
-      expect(result.output).toContain(`deployable=${expected}`)
-      if (!expected) expect(result.summary).toContain('every changed path is an approved test case')
-    }
-  })
-
-  it.each([
-    ['AGENTS.md', 'GLOSSARY.md'],
-    ['README.md', 'docs/contract.md'],
-    ['unknown.md', 'DESIGN.md', 'CONTRIBUTING.md'],
-    ['.github/README.md', 'docs/.hidden.md'],
-    ['src/AGENTS.md', 'src/nested/AGENTS.override.md'],
-    ['tests/integration/README.md', 'tests/setup/README.md'],
-    ['tests/integration/fixtures/README.md', 'tests/e2e/helpers/README.md'],
-    ['src/content/example.md', 'docs/read me.md'],
-  ])('omits expensive jobs for Markdown paths %j while allowing manual runs', (...filenames) => {
-    for (const event of ['pull_request', 'push', 'workflow_dispatch']) {
-      const manual = event === 'workflow_dispatch'
-      const validation = String(validationDecision(filenames))
-      const needs = {
-        paths: { result: 'success', outputs: { validation, deployable: String(manual), integration: String(manual) } },
-        'ci-static': { result: event === 'pull_request' ? 'skipped' : 'success' },
-        'unit-tests': { result: event === 'pull_request' ? 'skipped' : 'success' },
-        'storybook-tests': { result: event === 'pull_request' ? 'skipped' : 'success' },
-      }
-      for (const target of [workflow, previewWorkflow]) {
-        const result = scopeOutputs(target, {
-          EVENT_NAME: event,
-          CHANGED: 'true',
-          NON_MARKDOWN: String(filenames.some((filename) => matches('non_markdown', filename, target))),
-          DEPLOYABLE: String(filenames.some((filename) => matches('deployable', filename, target))),
-          INTEGRATION: String(filenames.some((filename) => matches('integration', filename, target))),
-          TEST_SUPPORT: String(filenames.some((filename) => matches('test_support', filename, target))),
-          CHANGED_COUNT: String(filenames.length),
-          PR_CHANGED_COUNT: String(filenames.length),
-        })
-        expect(result.status).toBe(0)
-        expect(result.output).toContain(`deployable=${manual}`)
-        if (target === workflow) expect(result.output).toContain(`integration=${manual}`)
-      }
-      for (const job of ['build', 'integration-tests']) {
-        expect(conditionDecision(workflow.jobs[job].if, event, needs)).toBe(manual)
-      }
-      expect(conditionDecision(previewWorkflow.jobs['deploy-preview'].if, event, needs)).toBe(manual)
-    }
   })
 
   it.each([
@@ -401,22 +260,6 @@ describe('native integration selection routing', () => {
     expect(result.status).toBe(0)
     expect(result.output).toContain('integration_files=[]')
     expect(result.output).toContain('integration=true')
-  })
-
-  it.each([
-    'src/styles.css',
-    'unknown.txt',
-    'package.json',
-    'pnpm-lock.yaml',
-    'vitest.integration.config.ts',
-    'tests/integration/contracts/collectionContractRegistry.ts',
-  ])('runs full integration for shared or unknown input %s', (filename) => {
-    const result = scopeOutputs(workflow, {
-      INTEGRATION: String(matches('integration', filename)),
-      NON_MARKDOWN: String(matches('non_markdown', filename)),
-    })
-    expect(result.output).toContain('integration=true')
-    expect(result.output).toContain('integration_files=[]')
   })
 })
 

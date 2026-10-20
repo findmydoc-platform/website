@@ -14,7 +14,6 @@ import {
   createConditionalRequiredValidator,
   getMissingConditionalRequirements,
   toValidationFieldErrors,
-  type ConditionalRequirementSet,
 } from './common/conditionalRequirements'
 import { isClinicStaff, isOwnClinicStaffProfile } from '@/access/isClinicStaff'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
@@ -30,21 +29,7 @@ import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { clinicStaffStatusOptions } from './clinicStaff/lifecycle'
 import { guardClinicAccountEvidence } from '@/auth/utilities/clinicAccountCompletion'
 import { guardClinicInvitationAuthorization } from '@/auth/actions/lifecycle'
-
-const groupAssignmentRequirement = {
-  label: 'Group',
-  marker: 'Required for group scope',
-  message: 'Group is required for group scope.',
-  path: 'group',
-  valueIsPresent: (value: unknown) => value !== null && value !== undefined && value !== '',
-} as const
-
-const groupAssignmentRequirementSet = {
-  collection: 'clinicStaff',
-  isRequired: ({ data }) =>
-    Boolean(data && typeof data === 'object' && 'assignmentScope' in data && data.assignmentScope === 'group'),
-  requirements: [groupAssignmentRequirement],
-} satisfies ConditionalRequirementSet
+import { groupAssignmentRequirement, groupAssignmentRequirementSet } from './clinicStaff/groupAssignmentRequirements'
 
 // Direct authentication principal for clinic dashboard and API access, never Payload Admin.
 export const ClinicStaff: CollectionConfig = {

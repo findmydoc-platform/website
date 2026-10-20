@@ -4,10 +4,18 @@ import { render, screen } from '@testing-library/react'
 import type { RelationshipFieldClientProps } from 'payload'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const state = vi.hoisted(() => ({ submitted: false, valid: false, errorMessage: '' }))
+const state = vi.hoisted(() => ({
+  submitted: false,
+  valid: false,
+  errorMessage: '',
+  value: null as number | null,
+  assignmentScope: 'group',
+}))
 vi.mock('@payloadcms/ui', () => ({
   RelationshipField: () => <input aria-label="Group" role="combobox" />,
-  useFormFields: (selector: (context: [Record<string, typeof state>]) => unknown) => selector([{ group: state }]),
+  useFormFields: (
+    selector: (context: [Record<string, { value?: unknown; valid?: boolean; errorMessage?: string }>]) => unknown,
+  ) => selector([{ group: state, assignmentScope: { value: state.assignmentScope } }]),
   useFormSubmitted: () => state.submitted,
 }))
 
@@ -19,6 +27,8 @@ describe('Clinic staff group field validation', () => {
   beforeEach(() => {
     state.submitted = false
     state.valid = false
+    state.value = null
+    state.assignmentScope = 'group'
     state.errorMessage = ''
   })
 
@@ -35,9 +45,19 @@ describe('Clinic staff group field validation', () => {
     state.valid = true
     state.errorMessage = ''
     rerender(<ClinicStaffGroupField {...props} />)
+    expect(screen.getByRole('alert')).toHaveTextContent('Group is required for group scope.')
+    expect(group).toHaveAttribute('aria-invalid', 'true')
+
+    state.value = 17
+    rerender(<ClinicStaffGroupField {...props} />)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(group).not.toHaveAttribute('aria-invalid')
     expect(group).not.toHaveAttribute('aria-describedby')
+
+    state.value = null
+    state.assignmentScope = 'local'
+    rerender(<ClinicStaffGroupField {...props} />)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('does not announce an unsubmitted error', () => {

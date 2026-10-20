@@ -157,7 +157,8 @@ describe('trusted current clinic group movement', () => {
     req.json = async () => ({ fromGroupId: oldGroup.id, toGroupId: newGroup.id })
     const response = await endpoint(req)
     expect(response.status).toBe(200)
-    expect(response.headers.get('Cache-Control')).toBe('no-store')
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(response.headers.get('Vary')).toBe('Authorization, Cookie')
     expect(await response.json()).toEqual({ id: source.id, group: newGroup.id })
     await expect(
       changeClinicGroup(operator, source.id, { fromGroupId: oldGroup.id, toGroupId: newGroup.id }),

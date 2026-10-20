@@ -66,11 +66,20 @@ export const clinicGroupMembershipEndpoint: Endpoint = {
   path: '/:id/group-membership',
   method: 'post',
   handler: async (req) => {
-    const body: unknown = typeof req.json === 'function' ? await req.json().catch(() => undefined) : undefined
-    const clinicId = clinicAssignmentRelationId(req.routeParams?.id)
-    if (!clinicId || !body || typeof body !== 'object' || Array.isArray(body))
-      throw new APIError('Invalid clinic group change.', 400)
-    const clinic = await changeClinicGroup(req, clinicId, body as ClinicGroupChange)
-    return Response.json({ id: clinic.id, group: clinic.group ?? null }, { headers: { 'Cache-Control': 'no-store' } })
+    const headers = { 'Cache-Control': 'private, no-store', Vary: 'Authorization, Cookie' }
+    try {
+      const body: unknown = typeof req.json === 'function' ? await req.json().catch(() => undefined) : undefined
+      const clinicId = clinicAssignmentRelationId(req.routeParams?.id)
+      if (!clinicId || !body || typeof body !== 'object' || Array.isArray(body))
+        throw new APIError('Invalid clinic group change.', 400)
+      const clinic = await changeClinicGroup(req, clinicId, body as ClinicGroupChange)
+      return Response.json({ id: clinic.id, group: clinic.group ?? null }, { headers })
+    } catch (error) {
+      // Native Payload merges request-owned headers when serializing the unchanged command error.
+      req.responseHeaders ??= new Headers()
+      req.responseHeaders.set('Cache-Control', headers['Cache-Control'])
+      req.responseHeaders.append('Vary', headers.Vary)
+      throw error
+    }
   },
 }

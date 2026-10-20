@@ -380,17 +380,13 @@ jobs:
     name: Build
     needs:
       - ci-static
-      - unit-tests
-      - storybook-tests
       - paths
     if: >-
       always() &&
       (needs.paths.result != 'success' ||
       needs.ci-static.result == 'failure' || needs.ci-static.result == 'cancelled' ||
-      needs.unit-tests.result == 'failure' || needs.unit-tests.result == 'cancelled' ||
-      needs.storybook-tests.result == 'failure' || needs.storybook-tests.result == 'cancelled' ||
       ((github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true') &&
-      (needs.ci-static.result != 'success' || needs.unit-tests.result != 'success' || needs.storybook-tests.result != 'success')) ||
+      needs.ci-static.result != 'success') ||
       github.event_name == 'workflow_dispatch' || needs.paths.outputs.deployable != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -416,17 +412,15 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Require successful validation prerequisites
+      - name: Require successful build prerequisites
         if: >-
           needs.paths.result != 'success' ||
           (needs.paths.outputs.validation != 'true' && needs.paths.outputs.validation != 'false') ||
           (needs.paths.outputs.deployable != 'true' && needs.paths.outputs.deployable != 'false') ||
           (needs.paths.outputs.integration != 'true' && needs.paths.outputs.integration != 'false') ||
           needs.ci-static.result == 'failure' || needs.ci-static.result == 'cancelled' ||
-          needs.unit-tests.result == 'failure' || needs.unit-tests.result == 'cancelled' ||
-          needs.storybook-tests.result == 'failure' || needs.storybook-tests.result == 'cancelled' ||
           ((github.event_name != 'pull_request' || needs.paths.outputs.validation == 'true') &&
-          (needs.ci-static.result != 'success' || needs.unit-tests.result != 'success' || needs.storybook-tests.result != 'success'))
+          needs.ci-static.result != 'success')
         run: exit 1
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

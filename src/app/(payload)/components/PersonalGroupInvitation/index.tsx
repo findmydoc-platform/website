@@ -22,7 +22,11 @@ export function PersonalGroupInvitation() {
     setError(undefined)
     setResult(undefined)
     try {
-      const response = await fetch(`${apiURL}/personal-invitation`, {
+      const invitationURL = new URL(apiURL, window.location.origin)
+      invitationURL.pathname = `${invitationURL.pathname.replace(/\/$/, '')}/personal-invitation`
+      invitationURL.search = ''
+      invitationURL.hash = ''
+      const response = await fetch(invitationURL.href, {
         method: 'POST',
         credentials: 'same-origin',
         cache: 'no-store',

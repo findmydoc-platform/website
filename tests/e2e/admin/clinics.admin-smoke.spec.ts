@@ -34,5 +34,11 @@ test('platform staff can create a draft clinic from the admin UI @smoke', async 
   })
 
   await expect(page.getByLabel('Name')).toHaveValue(result.state.clinicName)
+
+  for (const width of [320, 375, 640, 768, 1024, 1280]) {
+    await page.setViewportSize({ width, height: 900 })
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    await expect(page.getByRole('link', { name: 'Account', exact: true })).toBeInViewport()
+  }
   await expectNoBrowserIssues(issues)
 })

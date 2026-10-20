@@ -1,4 +1,9 @@
 export const TEMPORARY_LANDING_MODE_REQUEST_HEADER = 'x-temporary-landing-mode'
+export const PUBLIC_SITE_MODE_REQUEST_HEADER = 'x-public-site-mode'
+export const readPublicSiteModeRequestHeader = (headers: Headers): 'full' | 'holding' | null => {
+  const mode = headers.get(PUBLIC_SITE_MODE_REQUEST_HEADER)
+  return mode === 'full' || mode === 'holding' ? mode : null
+}
 
 const TEMPORARY_LANDING_PUBLIC_EXEMPT_PATHS = new Set(['/privacy-policy', '/imprint', '/contact'])
 const TEMPORARY_LANDING_PUBLIC_DISCOVERY_PATHS = new Set(['/robots.txt', '/pages-sitemap.xml', '/posts-sitemap.xml'])

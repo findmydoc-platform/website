@@ -29,7 +29,9 @@ import {
   isTemporaryLandingPublicExemptPath,
   isTemporaryLandingRootPath,
   TEMPORARY_LANDING_MODE_REQUEST_HEADER,
+  PUBLIC_SITE_MODE_REQUEST_HEADER,
 } from '@/features/temporaryLandingMode'
+import { resolveHoldingMode, type PublicSiteMode } from '@/features/temporaryLandingMode/resolver'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import {
   createPostHogFlagEvaluationContext,
@@ -39,7 +41,7 @@ import {
 } from '@/posthog/api'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
 
-const GUARD_FLAG_KEYS = ['temporary-landing-mode', 'preview-guard-enabled'] as const satisfies readonly PostHogFlagKey[]
+const GUARD_FLAG_KEYS = ['preview-guard-enabled'] as const satisfies readonly PostHogFlagKey[]
 const NON_PAGE_PATHS = new Set(['/next/exit-preview', '/next/preview'])
 const PUBLIC_ASSET_PATHS = new Set([
   '/favicon.ico',
@@ -141,6 +143,10 @@ const getPreviewUser = async (request: NextRequest): Promise<User | null> => (aw
 
 const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<string, string | null>): NextResponse => {
   const requestHeaders = new Headers(request.headers)
+  requestHeaders.delete(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER)
+  requestHeaders.delete(PREVIEW_GUARD_LOCK_REQUEST_HEADER)
+  requestHeaders.delete(PUBLIC_SITE_MODE_REQUEST_HEADER)
+  requestHeaders.delete(TEMPORARY_LANDING_MODE_REQUEST_HEADER)
   Object.entries(headersToSet).forEach(([key, value]) => {
     if (value === null) {
       requestHeaders.delete(key)
@@ -149,7 +155,6 @@ const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<strin
 
     requestHeaders.set(key, value)
   })
-
   return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
@@ -158,38 +163,46 @@ const withSearchRobotsHeader = (response: NextResponse): NextResponse => {
   return response
 }
 
-const nextWithGuardActiveHeader = (request: NextRequest): NextResponse =>
+const nextWithGuardActiveHeader = (request: NextRequest, publicMode?: PublicSiteMode): NextResponse =>
   nextWithRequestHeaders(request, {
     [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1',
     [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: null,
+    [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode ?? null,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: null,
   })
 
-const nextWithGuardLockHeader = (request: NextRequest): NextResponse =>
+const nextWithGuardLockHeader = (request: NextRequest, publicMode?: PublicSiteMode): NextResponse =>
   nextWithRequestHeaders(request, {
     [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1',
     [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
+    [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode ?? null,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: null,
   })
 
-const nextWithTemporaryLandingHeaders = (request: NextRequest): NextResponse =>
+const nextWithTemporaryLandingHeaders = (request: NextRequest, publicMode: PublicSiteMode = 'holding'): NextResponse =>
   nextWithRequestHeaders(request, {
     [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
     [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
-    [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
+    [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
+    [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: publicMode === 'holding' ? '1' : null,
   })
 
-const nextWithTemporaryLandingPublicHeaders = (request: NextRequest): NextResponse =>
+const nextWithTemporaryLandingPublicHeaders = (
+  request: NextRequest,
+  publicMode: PublicSiteMode = 'holding',
+): NextResponse =>
   nextWithRequestHeaders(request, {
     [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
     [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: null,
-    [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: '1',
+    [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
+    [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: publicMode === 'holding' ? '1' : null,
   })
 
-const nextWithoutGuardHeaders = (request: NextRequest): NextResponse =>
+const nextWithoutGuardHeaders = (request: NextRequest, publicMode?: PublicSiteMode): NextResponse =>
   nextWithRequestHeaders(request, {
     [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
     [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: null,
+    [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode ?? null,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: null,
   })
 
@@ -250,7 +263,6 @@ const evaluateGuardFlagsForRequest = async (request: NextRequest) => {
 
   return {
     previewGuardFlagEnabled: flags.isEnabled('preview-guard-enabled'),
-    temporaryLandingModeEnabled: flags.isEnabled('temporary-landing-mode'),
   }
 }
 
@@ -262,16 +274,16 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   if (request.method === 'OPTIONS' && isPathFamily(pathname, '/api')) {
-    return NextResponse.next()
+    return nextWithRequestHeaders(request, {})
   }
 
   if (shouldBypassProxy(pathname)) {
-    return NextResponse.next()
+    return nextWithRequestHeaders(request, {})
   }
 
   if (isPathFamily(pathname, '/api')) {
     if (!isPreviewDeployment()) {
-      if (!isPreviewGuardPatientRegistrationApiPath(pathname)) return NextResponse.next()
+      if (!isPreviewGuardPatientRegistrationApiPath(pathname)) return nextWithRequestHeaders(request, {})
 
       const { previewGuardFlagEnabled } = await evaluateGuardFlagsForRequest(request)
       const previewGuardEnabled = resolveDeploymentEnvironment() !== 'development' && previewGuardFlagEnabled
@@ -289,24 +301,23 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   const previewDeployment = isPreviewDeployment()
-  let temporaryLandingModeEnabled = false
   let previewGuardFlagEnabled = false
 
   if (!previewDeployment) {
     const flagState = await evaluateGuardFlagsForRequest(request)
-    temporaryLandingModeEnabled = flagState.temporaryLandingModeEnabled
     previewGuardFlagEnabled = flagState.previewGuardFlagEnabled
   }
+  const holdingMode = (await resolveHoldingMode(request.nextUrl)).mode
 
   const previewGuardEnabled =
     previewDeployment || (resolveDeploymentEnvironment() !== 'development' && previewGuardFlagEnabled)
 
-  if (!previewGuardEnabled && !temporaryLandingModeEnabled) {
-    return nextWithoutGuardHeaders(request)
+  if (!previewGuardEnabled && holdingMode === 'full') {
+    return nextWithoutGuardHeaders(request, holdingMode)
   }
 
   if (previewGuardEnabled && pagePathClassification === 'exempt') {
-    return withSearchRobotsHeader(nextWithGuardLockHeader(request))
+    return withSearchRobotsHeader(nextWithGuardLockHeader(request, holdingMode))
   }
 
   if (previewGuardEnabled && pagePathClassification === 'dynamic-content' && !hasSupabaseSessionCookie(request)) {
@@ -320,12 +331,12 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   if (previewGuardEnabled) {
     if (isPlatformUser) {
-      return withSearchRobotsHeader(nextWithGuardActiveHeader(request))
+      return withSearchRobotsHeader(nextWithGuardActiveHeader(request, holdingMode))
     }
 
     if (isPatientPath) {
       if (isPatientUser) {
-        return withSearchRobotsHeader(nextWithGuardActiveHeader(request))
+        return withSearchRobotsHeader(nextWithGuardActiveHeader(request, holdingMode))
       }
 
       const redirectTarget = user
@@ -342,23 +353,23 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url)))
   }
 
-  if (temporaryLandingModeEnabled && !isPlatformUser) {
+  if (holdingMode === 'holding' && !isPlatformUser) {
     if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {
       if (isTemporaryLandingIndexablePath(pathname)) {
-        return nextWithTemporaryLandingPublicHeaders(request)
+        return nextWithTemporaryLandingPublicHeaders(request, holdingMode)
       }
 
-      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request))
+      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode))
     }
 
     if (isTemporaryLandingModeExemptPath(pathname)) {
-      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request))
+      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode))
     }
 
     return withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 }))
   }
 
-  return withSearchRobotsHeader(nextWithoutGuardHeaders(request))
+  return withSearchRobotsHeader(nextWithoutGuardHeaders(request, holdingMode))
 }
 
 export const config = {

@@ -123,6 +123,50 @@ describe('PostHog API facade', () => {
     })
   })
 
+  it('exposes raw evaluation provenance without changing the default flag contract', async () => {
+    const { evaluatePostHogFlags } = await import('@/posthog/api')
+    const actor = {
+      distinctId: 'holding:findmydoc.eu',
+      isAuthenticated: false,
+      personProperties: { is_authenticated: 'false', user_type: 'anonymous' },
+      userType: 'anonymous' as const,
+    }
+
+    fakeClient.getAllFlagsAndPayloads.mockResolvedValueOnce({
+      featureFlagPayloads: {},
+      featureFlags: { 'temporary-landing-mode': false },
+    })
+    const evaluatedFalse = await evaluatePostHogFlags(actor, ['temporary-landing-mode'])
+    expect(evaluatedFalse.isEnabled('temporary-landing-mode')).toBe(false)
+    expect(evaluatedFalse.getEvaluation('temporary-landing-mode')).toEqual({ status: 'evaluated', value: false })
+
+    fakeClient.getAllFlagsAndPayloads.mockResolvedValueOnce({ featureFlagPayloads: {}, featureFlags: {} })
+    const unavailable = await evaluatePostHogFlags(actor, ['temporary-landing-mode'])
+    expect(unavailable.isEnabled('temporary-landing-mode')).toBe(false)
+    expect(unavailable.getEvaluation('temporary-landing-mode')).toEqual({ status: 'unavailable', reason: 'missing' })
+
+    fakeClient.getAllFlagsAndPayloads.mockResolvedValueOnce({
+      featureFlagPayloads: {},
+      featureFlags: { 'temporary-landing-mode': 1 },
+    })
+    const invalid = await evaluatePostHogFlags(actor, ['temporary-landing-mode'])
+    expect(invalid.isEnabled('temporary-landing-mode')).toBe(false)
+    expect(invalid.getEvaluation('temporary-landing-mode')).toEqual({ status: 'unavailable', reason: 'invalid' })
+
+    fakeClient.getAllFlagsAndPayloads.mockRejectedValueOnce(new Error('provider response contains synthetic details'))
+    const failed = await evaluatePostHogFlags(actor, ['temporary-landing-mode'])
+    expect(failed.isEnabled('temporary-landing-mode')).toBe(false)
+    expect(failed.getEvaluation('temporary-landing-mode')).toEqual({ status: 'unavailable', reason: 'error' })
+  })
+
+  it('creates stable host-only identity and context for Holding evaluations', async () => {
+    const { createPostHogHoldingEvaluationContext, resolvePostHogHoldingFlagActor } = await import('@/posthog/api')
+    const context = createPostHogHoldingEvaluationContext({ url: new URL('https://FindMyDoc.eu/posts/example?x=1') })
+
+    expect(context).toEqual({ feature_flag_site_host: 'findmydoc.eu' })
+    expect(resolvePostHogHoldingFlagActor(context).distinctId).toBe('holding:findmydoc.eu')
+  })
+
   it('normalizes site flag context paths before PostHog targeting', async () => {
     const { createPostHogFlagEvaluationContext } = await import('@/posthog/api')
 
@@ -141,6 +185,10 @@ describe('PostHog API facade', () => {
 
     expect(flags.isEnabled('temporary-landing-mode')).toBe(false)
     expect(flags.isEnabled('preview-guard-enabled')).toBe(false)
+    expect(flags.getEvaluation('temporary-landing-mode')).toEqual({
+      status: 'unavailable',
+      reason: 'not-configured',
+    })
     expect(fakeClient.evaluateFlags).not.toHaveBeenCalled()
     expect(fakeClient.getAllFlagsAndPayloads).not.toHaveBeenCalled()
   })

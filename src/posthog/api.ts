@@ -66,15 +66,20 @@ export const POSTHOG_FLAG_REGISTRY = {
 export type PostHogFlagKey = keyof typeof POSTHOG_FLAG_REGISTRY
 
 export type PostHogFlagSnapshot = {
+  getEvaluation(key: PostHogFlagKey): PostHogFlagEvaluation
   getPayload<T>(key: PostHogFlagKey, fallback: T): T
   getVariant<T extends string>(key: PostHogFlagKey, fallback: T): T
   isEnabled(key: PostHogFlagKey): boolean
   keys: readonly PostHogFlagKey[]
 }
 
+export type PostHogFlagEvaluation =
+  | { status: 'evaluated'; value: boolean | string }
+  | { status: 'unavailable'; reason: 'error' | 'invalid' | 'missing' | 'not-configured' | 'unsupported-runtime' }
+
 export type PostHogFlagEvaluationContext = {
   feature_flag_site_host: string
-  feature_flag_site_path: string
+  feature_flag_site_path?: string
 }
 
 export type PostHogServerAnalyticsConsent = {
@@ -83,6 +88,10 @@ export type PostHogServerAnalyticsConsent = {
 
 type CreatePostHogFlagEvaluationContextInput = {
   url: Pick<URL, 'hostname' | 'pathname'>
+}
+
+type CreatePostHogHoldingEvaluationContextInput = {
+  url: Pick<URL, 'hostname'>
 }
 
 type InternalPostHogFlagSnapshot = PostHogFlagSnapshot & {
@@ -151,9 +160,20 @@ export const createPostHogFlagEvaluationContext = ({
   feature_flag_site_path: normalizeFeatureFlagSitePath(url.pathname),
 })
 
+export const createPostHogHoldingEvaluationContext = ({
+  url,
+}: CreatePostHogHoldingEvaluationContextInput): PostHogFlagEvaluationContext => ({
+  feature_flag_site_host: url.hostname.trim().toLowerCase(),
+})
+
 export const resolvePostHogSiteFlagActor = (context: PostHogFlagEvaluationContext): PostHogActor =>
   toAnonymousPostHogActor({
     fallbackAnonymousId: `site:${context.feature_flag_site_host}:${context.feature_flag_site_path}`,
+  })
+
+export const resolvePostHogHoldingFlagActor = (context: PostHogFlagEvaluationContext): PostHogActor =>
+  toAnonymousPostHogActor({
+    fallbackAnonymousId: `holding:${context.feature_flag_site_host}`,
   })
 
 const normalizeIdentifier = (value: number | string | null | undefined): string | undefined => {
@@ -208,13 +228,20 @@ const toAnonymousPostHogActor = ({
 const getFlagDefault = (key: PostHogFlagKey): boolean | string => POSTHOG_FLAG_REGISTRY[key].defaultValue
 
 const createPostHogFlagSnapshot = ({
+  evaluations,
   keys,
   rawEvaluations,
+  unavailableReason = 'missing',
 }: {
+  evaluations?: Partial<Record<PostHogFlagKey, PostHogFlagEvaluation>>
   keys: readonly PostHogFlagKey[]
   rawEvaluations?: PostHogFeatureFlagEvaluations
+  unavailableReason?: Extract<PostHogFlagEvaluation, { status: 'unavailable' }>['reason']
 }): PostHogFlagSnapshot => {
   const snapshot: InternalPostHogFlagSnapshot = {
+    getEvaluation(key: PostHogFlagKey): PostHogFlagEvaluation {
+      return evaluations?.[key] ?? { status: 'unavailable', reason: unavailableReason }
+    },
     getPayload<T>(key: PostHogFlagKey, fallback: T): T {
       const payload = rawEvaluations?.getFlagPayload(key)
       return payload === undefined ? fallback : (payload as T)
@@ -358,8 +385,14 @@ export async function evaluatePostHogFlags(
   keys: readonly PostHogFlagKey[],
   options: EvaluatePostHogFlagsOptions = {},
 ): Promise<PostHogFlagSnapshot> {
-  if (keys.length === 0 || !isNodeRuntime() || !isPostHogLocalEvaluationConfigured()) {
-    return createPostHogFlagSnapshot({ keys })
+  if (keys.length === 0) {
+    return createPostHogFlagSnapshot({ keys, unavailableReason: 'missing' })
+  }
+  if (!isNodeRuntime()) {
+    return createPostHogFlagSnapshot({ keys, unavailableReason: 'unsupported-runtime' })
+  }
+  if (!isPostHogLocalEvaluationConfigured()) {
+    return createPostHogFlagSnapshot({ keys, unavailableReason: 'not-configured' })
   }
 
   const cacheKey = buildEvaluationCacheKey(actor, keys, options.context)
@@ -384,7 +417,20 @@ export async function evaluatePostHogFlags(
         keys,
       })
 
-      return createPostHogFlagSnapshot({ keys, rawEvaluations })
+      const evaluations = Object.fromEntries(
+        keys.map((key) => {
+          const value = localFlags.featureFlags?.[key]
+          const hasValue = Object.prototype.hasOwnProperty.call(localFlags.featureFlags ?? {}, key)
+          const evaluation = !hasValue
+            ? { status: 'unavailable', reason: 'missing' }
+            : typeof value === 'boolean' || typeof value === 'string'
+              ? { status: 'evaluated', value }
+              : { status: 'unavailable', reason: 'invalid' }
+          return [key, evaluation]
+        }),
+      ) as Partial<Record<PostHogFlagKey, PostHogFlagEvaluation>>
+
+      return createPostHogFlagSnapshot({ evaluations, keys, rawEvaluations })
     } catch (error) {
       logger.warn(
         {
@@ -393,7 +439,7 @@ export async function evaluatePostHogFlags(
         },
         'PostHog feature flag evaluation failed; using code defaults',
       )
-      return createPostHogFlagSnapshot({ keys })
+      return createPostHogFlagSnapshot({ keys, unavailableReason: 'error' })
     } finally {
       inFlightFlagEvaluations.delete(cacheKey)
       schedulePostHogFeatureFlagServerIdleShutdown()

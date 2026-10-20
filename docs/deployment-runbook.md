@@ -54,6 +54,37 @@ Keep schema changes safe and repeatable across local development, preview, and p
    calling Vercel. Its controlled Vercel-stub test verifies the build and runtime values actually passed to the CLI;
    it is not a replacement for validating a real Preview deployment.
 
+## Reserve the shared Preview alias
+
+The Website Preview workflow deploys immutable Preview URLs for trusted changes. A push to `main` also assigns
+`preview.findmydoc.eu` unless the repository variable `PREVIEW_ALIAS_RESERVATION` is nonempty. The GitHub deployment
+Environment URL always identifies the immutable deployment; its summary reports whether the shared alias changed.
+Production and other CI workflows do not read this reservation.
+
+For acceptance that requires a fixed Website/Dashboard pair:
+
+1. Set the Website repository variable to a non-secret purpose, issue reference, and qualified deployment ID, for example:
+   `gh variable set PREVIEW_ALIAS_RESERVATION --repo findmydoc-platform/website --body 'group-access #2182; dpl_example'`.
+2. Wait for already queued/running Preview workflows to finish. Repository variables are captured by workflow runs;
+   setting a reservation does not retroactively stop an older run from assigning the alias.
+3. Assign the approved Website deployment with the named account profile:
+   `vercel-findmydoc alias set <qualified-deployment-url> preview.findmydoc.eu --scope findmydoc`.
+   Verify the alias target and runtime revision alongside the Dashboard target before collecting acceptance evidence.
+4. Leave the reservation in place during acceptance. New immutable deployments continue normally, including those on
+   `main`; their summaries report that the shared alias is reserved. Assign replacement qualified deployments explicitly.
+5. After acceptance, delete the reservation with
+   `gh variable delete PREVIEW_ALIAS_RESERVATION --repo findmydoc-platform/website`.
+   The next successful push deployment from `main` resumes automatic alias assignment. Deletion alone does not move it.
+
+This guard protects the alias only after the workflow change is integrated into `main`. Until then, temporarily pause
+only the Website Preview workflow with `gh workflow disable deploy-preview.yml --repo findmydoc-platform/website`,
+wait for existing runs, then assign and verify the qualified alias. This also pauses its automatic immutable Preview
+builds; other CI and Production remain enabled. CLI Preview uploads remain available. After `main` contains the guard,
+set or retain the reservation before restoring the workflow with
+`gh workflow enable deploy-preview.yml --repo findmydoc-platform/website`. Do not restore the unguarded workflow while
+acceptance still relies on a fixed alias. Record the workflow state, reservation purpose, target IDs, and restoration
+owner in the acceptance handoff.
+
 ## Developer Workflow for Schema Changes
 
 1. Change schema-related code (`src/collections/**`, `src/globals/**`, etc.).

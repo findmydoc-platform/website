@@ -90,7 +90,7 @@ jobs:
     timeout-minutes: 10
     environment:
       name: Preview
-      url: ${{ github.event_name == 'push' && github.ref_name == 'main' && format('https://{0}', env.PREVIEW_ALIAS_DOMAIN) || steps.vercel_preview.outputs.deploymentUrl }}
+      url: ${{ steps.vercel_preview.outputs.deploymentUrl }}
     steps:
       - name: Require successful Preview scope classification
         if: needs.paths.result != 'success' || (needs.paths.outputs.deployable != 'true' && needs.paths.outputs.deployable != 'false')
@@ -144,7 +144,8 @@ jobs:
         run: bash ./.github/scripts/deploy/vercel-deploy.sh preview
 
       - name: Set Preview Alias
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        id: preview_alias
+        if: github.event_name == 'push' && github.ref_name == 'main' && vars.PREVIEW_ALIAS_RESERVATION == ''
         env:
           DEPLOYMENT_URL: ${{ steps.vercel_preview.outputs.deploymentUrl }}
           EXPECTED_VERCEL_PROJECT_ID: ${{ env.EXPECTED_VERCEL_PROJECT_ID }}
@@ -163,10 +164,15 @@ jobs:
           DEPLOYMENT_URL: ${{ steps.vercel_preview.outputs.deploymentUrl }}
           SOURCE_EVENT: ${{ github.event_name }}
           SOURCE_BRANCH: ${{ github.ref_name }}
+          ALIAS_OUTCOME: ${{ steps.preview_alias.outcome }}
+          PREVIEW_ALIAS_RESERVED: ${{ vars.PREVIEW_ALIAS_RESERVATION != '' }}
         run: |
           alias_domain=""
-          if [[ "$SOURCE_EVENT" == "push" && "$SOURCE_BRANCH" == "main" ]]; then
+          if [[ "$ALIAS_OUTCOME" == "success" ]]; then
             alias_domain="${PREVIEW_ALIAS_DOMAIN}"
           fi
 
           bash ./.github/scripts/deploy/write-preview-summary.sh "$DEPLOYMENT_OUTCOME" "$DEPLOYMENT_URL" "$alias_domain"
+          if [[ "$SOURCE_EVENT" == "push" && "$SOURCE_BRANCH" == "main" && "$PREVIEW_ALIAS_RESERVED" == "true" ]]; then
+            echo '- **Alias**: unchanged; reserved for Preview acceptance (PREVIEW_ALIAS_RESERVATION).' >> "$GITHUB_STEP_SUMMARY"
+          fi

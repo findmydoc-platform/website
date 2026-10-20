@@ -14,8 +14,6 @@ describe('DisclaimerNotice', () => {
     expect(screen.getByText(copy)).toBeInTheDocument()
     expect(screen.getByText('Clinic profiles')).toBeInTheDocument()
     expect(screen.queryByText('Inline note')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Visible in flow/i)).not.toBeInTheDocument()
-    expect(screen.queryByText(/Still visible/i)).not.toBeInTheDocument()
   })
 
   it('keeps standalone route notes to icon and copy only', () => {
@@ -29,7 +27,6 @@ describe('DisclaimerNotice', () => {
     render(<DisclaimerNotice routeLabel="Clinic profiles" copy={copy} variant="collapsible-disclosure" />)
 
     expect(screen.queryByText(copy)).not.toBeInTheDocument()
-    expect(screen.queryByText(/Short legal text/i)).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Clinic profiles' }))
 

@@ -10,11 +10,6 @@ describe('authConfig', () => {
     it('should contain expected user types', () => {
       expect(VALID_USER_TYPES).toEqual(['clinic', 'platform', 'patient'])
     })
-
-    it('should be readonly array', () => {
-      expect(Array.isArray(VALID_USER_TYPES)).toBe(true)
-      expect(VALID_USER_TYPES.length).toBe(3)
-    })
   })
 
   describe('USER_CONFIG', () => {

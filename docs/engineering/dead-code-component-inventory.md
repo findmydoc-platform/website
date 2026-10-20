@@ -78,6 +78,8 @@ The retained seed graph is invoked by `scripts/seed-run.ts` and integration setu
 
 Report on 2026-10-09: **19 files and 163 exports**. The file rows name retained consumers; export rows name at least one concrete consumer for each remaining symbol.
 
+The tables below omit modules and exports retired since that report.
+
 ### Files
 
 | Reported file | Retained consumer | Classification |
@@ -87,8 +89,6 @@ Report on 2026-10-09: **19 files and 163 exports**. The file rows name retained 
 | `src/access/authenticatedOrApprovedClinic.ts` | `tests/unit/access/authenticatedOrApprovedClinic.test.ts` | Test-only module; product consumption unproven |
 | `src/access/authenticatedOrPublished.ts` | `tests/unit/access/authenticatedOrPublished.test.ts` | Test-only module; product consumption unproven |
 | `src/posthog/identify.ts` | `tests/unit/posthog/identify.test.ts` | Test-only module; product consumption unproven |
-| `src/utilities/buildSearchWhere.ts` | `tests/unit/utilities/buildSearchWhere.test.ts` | Test-only module; product consumption unproven |
-| `src/utilities/formatAuthors.ts` | `tests/unit/utilities/formatAuthors.test.ts` | Test-only module; product consumption unproven |
 | `src/utilities/getMediaUrl.ts` | `tests/unit/utilities/getMediaUrl.test.ts` | Test-only module; product consumption unproven |
 | `src/utilities/mapPostToCardData.ts` | `tests/unit/utilities/mapPostToCardData.test.ts` | Test-only module; product consumption unproven |
 | `src/utilities/useClickableCard.ts` | `tests/unit/utilities/useClickableCard.test.tsx` | Test-only module; product consumption unproven |
@@ -205,7 +205,6 @@ Report on 2026-10-09: **19 files and 163 exports**. The file rows name retained 
 | `src/utilities/listingComparison/serverData/getListingComparisonServerData.ts` | `buildListingComparisonDataCacheKey` | `tests/unit/utilities/listingComparisonServerData.contract.test.ts` |
 | `src/utilities/listingComparison/serverData/getListingComparisonServerData.ts` | `buildListingComparisonResolvedDataCacheKey` | `tests/unit/utilities/listingComparisonLegacyService.test.ts` |
 | `src/utilities/listingComparison/sort.ts` | `sortListingComparison` | `src/stories/templates/ListingComparison.stories.tsx` |
-| `src/utilities/listingComparison/sort.ts` | `getSortLabel` | `tests/unit/utilities/listingComparisonSort.test.ts` |
 | `src/posthog/client.ts` | `initializePostHog` | `tests/unit/posthog/client.test.ts` |
 | `src/auth/utilities/clinicAccessState.ts` | `isClinicAccessReady` | `tests/unit/auth/utilities/clinicAccessState.test.ts` |
 | `src/features/inquiryCommunication/storage.ts` | `buildInquiryAttachmentContentDisposition` | `tests/unit/features/inquiryCommunication.storage.test.ts` |

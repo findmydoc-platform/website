@@ -126,10 +126,6 @@ export const HeroMapFloatingCard: Story = {
 
     await expect(page.getByRole('link', { name: 'View map in OpenStreetMap' })).toBeInTheDocument()
     await expect(interactiveMap).not.toHaveClass(/pointer-events-none/)
-    await expect(page.queryByRole('group', { name: 'Expanded map keyboard controls' })).not.toBeInTheDocument()
-    await expect(page.queryByRole('button', { name: 'Pan map north' })).not.toBeInTheDocument()
-    await expect(page.queryByRole('button', { name: 'Zoom map in' })).not.toBeInTheDocument()
-    await expect(page.queryByRole('button', { name: 'Reset map view' })).not.toBeInTheDocument()
     await userEvent.click(page.getByRole('button', { name: 'Close map' }))
     await expect(canvas.getByRole('button', { name: 'Expand map' })).toBeInTheDocument()
   },

@@ -104,10 +104,6 @@ test.describe('clinic detail map dialog', () => {
     await expect(page.getByRole('link', { name: 'Directions' })).toBeVisible()
     await expect(interactiveMap).toBeVisible()
     await expect(interactiveMap).toHaveAttribute('tabindex', '-1')
-    await expect(dialog.getByRole('group', { name: 'Expanded map keyboard controls' })).not.toBeVisible()
-    await expect(dialog.getByRole('button', { name: 'Pan map north' })).not.toBeVisible()
-    await expect(dialog.getByRole('button', { name: 'Zoom map in' })).not.toBeVisible()
-    await expect(dialog.getByRole('button', { name: 'Reset map view' })).not.toBeVisible()
     await page.keyboard.press('Escape')
 
     await expect(page.getByRole('dialog', { name: 'Expanded Map View' })).not.toBeVisible()

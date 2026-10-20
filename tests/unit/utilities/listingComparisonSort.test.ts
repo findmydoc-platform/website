@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
-import { sortListingComparison, getSortLabel, SORT_OPTIONS } from '@/utilities/listingComparison/sort'
+import { sortListingComparison, SORT_OPTIONS } from '@/utilities/listingComparison/sort'
 
 const baseClinic: ListingCardData = {
   id: 'clinic-0',
@@ -109,16 +109,6 @@ describe('sortListingComparison', () => {
     sortListingComparison(clinics, 'rank')
 
     expect(clinics.map((c) => c.name)).toEqual(originalOrder)
-  })
-})
-
-describe('getSortLabel', () => {
-  it('returns correct labels for all sort options', () => {
-    expect(getSortLabel('rank')).toBe('Best match')
-    expect(getSortLabel('price-asc')).toBe('Price: Low to High')
-    expect(getSortLabel('price-desc')).toBe('Price: High to Low')
-    expect(getSortLabel('rating-desc')).toBe('Highest rated')
-    expect(getSortLabel('name-asc')).toBe('Name: A-Z')
   })
 })
 

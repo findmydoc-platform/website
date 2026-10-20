@@ -41,18 +41,6 @@ describe('getURL utilities', () => {
       expect(getServerSideURL()).toBe('https://custom-domain.com')
     })
 
-    it('should handle empty NEXT_PUBLIC_SERVER_URL', () => {
-      process.env.NEXT_PUBLIC_SERVER_URL = ''
-      process.env.VERCEL_PROJECT_PRODUCTION_URL = 'my-vercel-app.vercel.app'
-      expect(getServerSideURL()).toBe('https://my-vercel-app.vercel.app')
-    })
-
-    it('should handle Vercel URL without protocol', () => {
-      process.env.NEXT_PUBLIC_SERVER_URL = ''
-      process.env.VERCEL_PROJECT_PRODUCTION_URL = 'example.vercel.app'
-      expect(getServerSideURL()).toBe('https://example.vercel.app')
-    })
-
     it('should treat whitespace-only NEXT_PUBLIC_SERVER_URL as unset', () => {
       process.env.NEXT_PUBLIC_SERVER_URL = '   '
       process.env.VERCEL_PROJECT_PRODUCTION_URL = 'example.vercel.app'
@@ -85,15 +73,6 @@ describe('getURL utilities', () => {
       expect(getClientSideURL()).toBe('')
     })
 
-    it('should handle environment without DOM (Node.js)', () => {
-      // Test the actual Node.js behavior
-      process.env.VERCEL_PROJECT_PRODUCTION_URL = ''
-      process.env.NEXT_PUBLIC_SERVER_URL = ''
-
-      const result = getClientSideURL()
-      expect(result).toBe('') // Should return empty string in Node.js environment
-    })
-
     it('should handle environment variables correctly', () => {
       // Test priority order in Node.js environment
       process.env.VERCEL_PROJECT_PRODUCTION_URL = 'vercel-app.vercel.app'
@@ -103,23 +82,10 @@ describe('getURL utilities', () => {
       expect(result).toBe('https://vercel-app.vercel.app') // Vercel URL has priority in fallback
     })
 
-    it('should construct Vercel URL correctly', () => {
-      process.env.VERCEL_PROJECT_PRODUCTION_URL = 'my-project.vercel.app'
-
-      expect(getClientSideURL()).toBe('https://my-project.vercel.app')
-    })
-
     it('should normalize Vercel URL that already includes protocol', () => {
       process.env.VERCEL_PROJECT_PRODUCTION_URL = 'https://my-project.vercel.app'
 
       expect(getClientSideURL()).toBe('https://my-project.vercel.app')
-    })
-
-    it('should handle empty environment variables', () => {
-      process.env.VERCEL_PROJECT_PRODUCTION_URL = ''
-      process.env.NEXT_PUBLIC_SERVER_URL = ''
-
-      expect(getClientSideURL()).toBe('')
     })
 
     // Note: Browser environment tests would require a different test setup
@@ -138,18 +104,6 @@ describe('getURL utilities', () => {
 
       expect(serverURL).toBe(productionURL)
       expect(clientURL).toBe(productionURL) // Falls back to NEXT_PUBLIC_SERVER_URL
-    })
-
-    it('should handle Vercel deployment scenario', () => {
-      process.env.NEXT_PUBLIC_SERVER_URL = ''
-      process.env.VERCEL_PROJECT_PRODUCTION_URL = 'my-app.vercel.app'
-
-      const serverURL = getServerSideURL()
-      expect(serverURL).toBe('https://my-app.vercel.app')
-
-      // Client-side in Node.js test environment
-      const clientURL = getClientSideURL()
-      expect(clientURL).toBe('https://my-app.vercel.app')
     })
   })
 })

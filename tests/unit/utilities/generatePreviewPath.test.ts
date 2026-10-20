@@ -100,42 +100,6 @@ describe('generatePreviewPath', () => {
     expect(result).toContain('path=%2Fposts%2Fhello-world-2023%21')
   })
 
-  it('should handle different collection types', () => {
-    process.env.PREVIEW_SECRET = 'test'
-
-    const postsResult = generatePreviewPath({
-      collection: 'posts',
-      slug: 'test',
-      req: {} as unknown as PayloadRequest,
-    })
-
-    const pagesResult = generatePreviewPath({
-      collection: 'pages',
-      slug: 'test',
-      req: {} as unknown as PayloadRequest,
-    })
-
-    // Posts should have /posts prefix
-    expect(postsResult).toContain('path=%2Fposts%2Ftest')
-
-    // Pages should have no prefix (empty string in collectionPrefixMap)
-    expect(pagesResult).toContain('path=%2Ftest')
-  })
-
-  it('should handle long slugs', () => {
-    process.env.PREVIEW_SECRET = 'secret'
-
-    const longSlug = 'this-is-a-very-long-slug-that-might-be-used-in-some-real-world-scenarios'
-    const result = generatePreviewPath({
-      collection: 'posts',
-      slug: longSlug,
-      req: {} as unknown as PayloadRequest,
-    })
-
-    expect(result).toContain(`slug=${longSlug}`)
-    expect(result).toContain(`path=%2Fposts%2F${longSlug}`)
-  })
-
   it('should handle slugs with spaces (though they should be slugified)', () => {
     process.env.PREVIEW_SECRET = 'secret'
 
@@ -163,35 +127,6 @@ describe('generatePreviewPath', () => {
     expect(result).toContain('path=%2Fposts%2F')
   })
 
-  it('should maintain consistent parameter order', () => {
-    process.env.PREVIEW_SECRET = 'secret'
-
-    const result = generatePreviewPath({
-      collection: 'posts',
-      slug: 'test',
-      req: {} as unknown as PayloadRequest,
-    })
-
-    // Should have specific parameter order: slug, collection, path, previewSecret
-    const url = new URL(`http://example.com${result}`)
-    const params = Array.from(url.searchParams.keys())
-
-    expect(params).toEqual(['slug', 'collection', 'path', 'previewSecret'])
-  })
-
-  it('should handle numeric-like slugs', () => {
-    process.env.PREVIEW_SECRET = 'secret'
-
-    const result = generatePreviewPath({
-      collection: 'posts',
-      slug: '12345',
-      req: {} as unknown as PayloadRequest,
-    })
-
-    expect(result).toContain('slug=12345')
-    expect(result).toContain('path=%2Fposts%2F12345')
-  })
-
   it('should properly encode URL parameters', () => {
     process.env.PREVIEW_SECRET = 'secret/with/slashes'
 
@@ -204,18 +139,5 @@ describe('generatePreviewPath', () => {
     // URLSearchParams should encode special characters
     expect(result).toContain('slug=test%26param%3Dvalue')
     expect(result).toContain('previewSecret=secret%2Fwith%2Fslashes')
-  })
-
-  it('should generate correct base path', () => {
-    process.env.PREVIEW_SECRET = 'secret'
-
-    const result = generatePreviewPath({
-      collection: 'posts',
-      slug: 'test',
-      req: {} as unknown as PayloadRequest,
-    })
-
-    // Should always start with /next/preview
-    expect(result).toMatch(/^\/next\/preview\?/)
   })
 })

@@ -52,26 +52,6 @@ export function sortListingComparison(list: ListingCardData[], sortBy: SortOptio
 }
 
 /**
- * Get human-readable label for sort option
- */
-export function getSortLabel(sortOption: SortOption): string {
-  switch (sortOption) {
-    case 'rank':
-      return 'Best match'
-    case 'price-asc':
-      return 'Price: Low to High'
-    case 'price-desc':
-      return 'Price: High to Low'
-    case 'rating-desc':
-      return 'Highest rated'
-    case 'name-asc':
-      return 'Name: A-Z'
-    default:
-      return 'Best match'
-  }
-}
-
-/**
  * Get all available sort options with labels
  */
 export const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [

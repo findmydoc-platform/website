@@ -149,3 +149,7 @@ Issues and specs live in this repository's GitHub Issues. See `docs/agents/issue
 ### Triage labels
 
 The canonical triage labels are configured for GitHub Issues. See `docs/agents/triage-labels.md`.
+
+### Architecture decisions
+
+ADRs live in `docs/adrs/`.

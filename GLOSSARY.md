@@ -1,6 +1,6 @@
 # findmydoc
 
-findmydoc connects patients with clinics and their treatment offerings. This glossary defines the shared product language for clinic participation, patient inquiries, and reviews.
+findmydoc connects patients with clinics and their treatment offerings. This glossary defines the shared product language for clinic participation, patient inquiries, reviews, and editorial content.
 
 ## Language
 
@@ -111,6 +111,23 @@ _Avoid_: Review appeal, initial report.
 **Conversation message notification**:
 A neutral email notice announcing a new clinic message and directing the patient to the protected Inquiry conversation. It does not contain the conversation content.
 _Avoid_: Inquiry message, conversation transcript, Dashboard notification record.
+
+### Editorial content
+
+**Post**:
+An editorial article with localized content and a publication status of Draft or Published.
+
+**Publication schedule**:
+An editorial instruction to publish or unpublish a Post at a chosen date and time, with a specified timezone and locale scope. A publication schedule is distinct from the Post's publication date.
+
+**Scheduled publication attempt**:
+An attempt to carry out the publication status change specified by a publication schedule. Its outcome is success or failure.
+
+**Schedule cancellation**:
+Withdrawal of a publication schedule before it is carried out, either explicitly or because its Post is deleted.
+
+**Publication date**:
+The editorial date associated with a Post. This date alone does not instruct the Post to become published.
 
 ### Reviews
 

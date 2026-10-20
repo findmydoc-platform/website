@@ -619,13 +619,13 @@ export default buildConfig({
   },
   logger: createPayloadLoggerConfig(process.env),
   onInit: async (payload) => {
-    installPostSchedulingLogs(payload)
     protectAuthActionProtocolStorage(payload)
     if (process.env.NEXT_PHASE === 'phase-production-build') {
       return
     }
 
     validateTransactionalEmailStartup()
+    installPostSchedulingLogs(payload)
     if (process.env.CI === 'true') return
 
     await ensureManagedLegalContent(payload)

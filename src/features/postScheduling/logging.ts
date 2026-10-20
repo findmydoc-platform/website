@@ -17,7 +17,13 @@ export const schedulingRequest = (existingContext ??
   new AsyncLocalStorage<RequestContext>()) as AsyncLocalStorage<RequestContext>
 if (!existingContext) Object.defineProperty(globalThis, contextKey, { value: schedulingRequest })
 const installed = new WeakSet<Payload>()
-const pendingDeletes = new WeakMap<PayloadRequest, Map<number | string, Schedule[]>>()
+type DeleteObservation = {
+  req?: PayloadRequest
+  callerTransaction: boolean
+  pending: Map<number | string, Schedule[]>
+  explicit: Schedule[]
+}
+const deletionRequest = new AsyncLocalStorage<DeleteObservation>()
 const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
 const identifier = (value: unknown) =>
@@ -99,7 +105,13 @@ async function schedules(req: PayloadRequest, where: Where): Promise<Schedule[] 
     const result = await req.payload.find({
       collection: 'payload-jobs',
       where,
-      req: { ...req, query: { ...req.query }, context: { ...req.context } },
+      req: {
+        ...req,
+        transactionID: undefined,
+        payloadDataLoader: undefined,
+        query: { ...req.query },
+        context: { ...req.context },
+      },
       overrideAccess: true,
       depth: 0,
       limit: 0,
@@ -117,6 +129,9 @@ export async function findSchedule(req: PayloadRequest, id: number | string) {
 }
 
 const beforePostDelete: CollectionBeforeDeleteHook = async ({ id, req }) => {
+  const observation = deletionRequest.getStore()
+  if (!observation) return
+  observation.req = req
   const found = await schedules(req, {
     and: [
       { taskSlug: { equals: 'schedulePublish' } },
@@ -127,34 +142,68 @@ const beforePostDelete: CollectionBeforeDeleteHook = async ({ id, req }) => {
     ],
   })
   if (!found?.length) return
-  const entries = pendingDeletes.get(req) ?? new Map()
-  entries.set(id, found)
-  pendingDeletes.set(req, entries)
-}
-
-const afterPostDelete: CollectionAfterDeleteHook = async ({ id, req, doc }) => {
-  const entries = pendingDeletes.get(req)
-  const pending = entries?.get(id)
-  entries?.delete(id)
-  if (pending?.length) {
-    const remaining = await schedules(req, { id: { in: pending.map((job) => job.id) } })
-    if (remaining)
-      for (const job of pending) {
-        if (!remaining.some((item) => item.id === job.id))
-          logSchedule(req.payload, 'cancelled', job, req, { reason: 'post_deleted' })
-        else logSchedule(req.payload, 'cancellation_failed', job, req, { reason: 'post_deleted' }, new Error())
-      }
-  }
-  return doc
+  observation.pending.set(id, found)
 }
 
 const afterJobDelete: CollectionAfterDeleteHook = ({ doc, req }) => {
   if (doc.taskSlug === 'schedulePublish' && isPostSchedule(doc) && !doc.completedAt && !doc.processing) {
-    logSchedule(req.payload, 'cancelled', doc, req, { reason: 'explicit' })
-    const context = schedulingRequest.getStore()
-    if (context) context.cancelled = true
+    const observation = deletionRequest.getStore()
+    if (observation) {
+      observation.req = req
+      observation.explicit.push(doc)
+    }
   }
   return doc
+}
+
+async function observeDeletion<Result>(
+  req: Partial<PayloadRequest> | undefined,
+  operation: () => Promise<Result>,
+): Promise<Result> {
+  const observation: DeleteObservation = {
+    callerTransaction: req?.transactionID != null,
+    pending: new Map(),
+    explicit: [],
+  }
+  return deletionRequest.run(observation, async () => {
+    const result = await operation()
+    // Native deletion has returned, including its owned transaction commit and bulk outcomes.
+    try {
+      const request = observation.req
+      if (!request || (!observation.pending.size && !observation.explicit.length)) return result
+      const output = record(result instanceof Response ? await result.clone().json() : result)
+      const docs = Array.isArray(output.docs) ? output.docs : [output.doc ?? output]
+      const deleted = new Set(docs.map((doc) => String(identifier(record(doc).id))))
+      const explicit = observation.explicit.filter((job) => deleted.has(String(job.id)))
+      const context = schedulingRequest.getStore()
+      if (explicit.length && context) context.cancelled = true
+      if (observation.callerTransaction) {
+        logSchedule(
+          request.payload,
+          'observation_failed',
+          {},
+          request,
+          { reason: 'caller_transaction_pending' },
+          new Error(),
+        )
+        return result
+      }
+      for (const job of explicit) logSchedule(request.payload, 'cancelled', job, request, { reason: 'explicit' })
+      const pending = [...observation.pending].filter(([id]) => deleted.has(String(id))).flatMap(([, jobs]) => jobs)
+      if (!pending.length) return result
+      const remaining = await schedules(request, { id: { in: pending.map((job) => job.id) } })
+      if (remaining)
+        for (const job of pending) {
+          if (!remaining.some((item) => item.id === job.id))
+            logSchedule(request.payload, 'cancelled', job, request, { reason: 'post_deleted' })
+          else
+            logSchedule(request.payload, 'cancellation_failed', job, request, { reason: 'post_deleted' }, new Error())
+        }
+    } catch (error) {
+      if (observation.req) logSchedule(observation.req.payload, 'observation_failed', {}, observation.req, {}, error)
+    }
+    return result
+  })
 }
 
 /** Decorate native APIs after Payload has generated its scheduled publication task. */
@@ -197,7 +246,19 @@ export function installPostSchedulingLogs(payload: Payload) {
     }
   const posts = payload.collections.posts.config
   posts.hooks.beforeDelete = [...posts.hooks.beforeDelete, beforePostDelete]
-  posts.hooks.afterDelete = [...posts.hooks.afterDelete, afterPostDelete]
   const jobs = payload.collections['payload-jobs'].config
   jobs.hooks.afterDelete = [...jobs.hooks.afterDelete, afterJobDelete]
+  const nativeDelete = payload.delete.bind(payload)
+  payload.delete = ((args: Parameters<Payload['delete']>[0]) =>
+    args.collection === 'posts' || args.collection === 'payload-jobs'
+      ? observeDeletion(args.req, () => nativeDelete(args))
+      : nativeDelete(args)) as Payload['delete']
+  for (const config of [posts, jobs]) {
+    if (config.endpoints)
+      config.endpoints = config.endpoints.map((endpoint) => {
+        if (endpoint.method !== 'delete') return endpoint
+        const handler = endpoint.handler
+        return { ...endpoint, handler: (req) => observeDeletion(req, async () => handler(req)) }
+      })
+  }
 }

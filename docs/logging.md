@@ -134,6 +134,11 @@ Failures use `error`. Native queueing, publication, retries and cleanup remain u
 Successful-job cleanup is not a cancellation. Post deletion is reported only when a pending job
 captured before native deletion is confirmed absent afterward; moving a Post to Trash alone is
 not reported as cancellation when native Payload leaves its schedule intact.
+Diagnostic reads use an independent request without the deletion transaction or its data loader.
+Cancellation confirmation runs after the existing native DELETE endpoint or Local API returns.
+For bulk deletion, only documents in the native successful result can produce cancellation events.
+Caller-owned transactions produce `observation_failed` with `reason:caller_transaction_pending`
+instead of cancellation confirmation, because the caller can still roll back afterward.
 
 These are runtime diagnostics within the existing Vercel retention period, not a permanent audit
 trail. Process termination, failed diagnostic reads, delivery loss, transaction rollback and expired

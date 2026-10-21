@@ -6,7 +6,7 @@ import { runClinicNotificationRetention } from './retention'
 export async function runHostedClinicNotificationRetention(environment: 'preview' | 'production', deadline: number) {
   if (
     resolveServerRuntimeEnvironment() !== environment ||
-    process.env.DEPLOYMENT_ENV !== environment ||
+    process.env.DEPLOYMENT_ENVIRONMENT !== environment ||
     process.env.VERCEL_ENV !== environment
   )
     throw new Error('Notification retention environment is unavailable.')

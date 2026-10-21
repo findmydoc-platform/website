@@ -101,7 +101,7 @@ export async function retireDigestKey(
 ) {
   if (
     process.env.VERCEL_ENV !== environment ||
-    process.env.DEPLOYMENT_ENV !== environment ||
+    process.env.DEPLOYMENT_ENVIRONMENT !== environment ||
     process.env.CI === 'true' ||
     process.env.NODE_ENV === 'test' ||
     typeof retireConfiguration !== 'function'

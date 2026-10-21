@@ -51,7 +51,7 @@ function request(body = '{}', signed = true, transportBody = body) {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.spyOn(Date, 'now').mockReturnValue(now)
-  vi.stubEnv('DEPLOYMENT_ENV', 'test')
+  vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
   vi.stubEnv('CI', 'false')
   vi.stubEnv('VERCEL_ENV', '')
   vi.stubEnv('AUTH_ACTION_PROTOCOL_KEYS_JSON', JSON.stringify(keys))

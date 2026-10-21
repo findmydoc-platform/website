@@ -155,9 +155,9 @@ Priority behavior:
 
 Preview deployments use runtime policy for auth recovery, search-index protection, and the application access guard.
 
-- Runtime resolves to the boolean preview signal from `VERCEL_ENV` first, then `DEPLOYMENT_ENV`; request hostnames are not preview or production signals
+- Runtime resolves to the boolean preview signal from `VERCEL_ENV` first, then `DEPLOYMENT_ENVIRONMENT`; request hostnames are not preview or production signals
 - `NODE_ENV` is not used as a preview or production deployment signal
-- Non-Vercel preview/production runtimes must set `DEPLOYMENT_ENV` explicitly
+- Non-Vercel preview/production runtimes must set `DEPLOYMENT_ENVIRONMENT` explicitly
 - Every runtime that resolves to Preview activates Preview Guard, independent of hostname and PostHog evaluation
 - This includes Vercel-generated branch, deployment, and alias hosts with `VERCEL_ENV=preview`
 - Local development remains open even if PostHog returns `preview-guard-enabled`

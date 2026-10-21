@@ -117,7 +117,7 @@ describe('Lettermint delivery through the real worker', () => {
         {
           NODE_ENV: 'production',
           VERCEL_ENV: 'preview',
-          DEPLOYMENT_ENV: 'preview',
+          DEPLOYMENT_ENVIRONMENT: 'preview',
           ...fixture.configuration.secrets.preview,
           LETTERMINT_PREVIEW_RECIPIENT_DIGESTS: JSON.stringify([
             'digest-preview:b6b9397238db67fdbabcf8b26ff25b27694d3c9e4ae7ce14ddc692cc7bea29cf',
@@ -197,7 +197,7 @@ describe('Lettermint delivery through the real worker', () => {
     })
 
     const productionInput = [
-      { NODE_ENV: 'production', VERCEL_ENV: 'production', DEPLOYMENT_ENV: 'production' },
+      { NODE_ENV: 'production', VERCEL_ENV: 'production', DEPLOYMENT_ENVIRONMENT: 'production' },
       fixture.configuration.registry,
       fixture.configuration.locks,
       webhookNow,
@@ -623,7 +623,7 @@ describe('Lettermint delivery through the real worker', () => {
   })
 
   it.each(['local', 'test', 'ci'] as const)('cannot select real network delivery in %s', (environment) => {
-    vi.stubEnv('DEPLOYMENT_ENV', environment)
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', environment)
     vi.stubEnv('NODE_ENV', environment === 'local' ? 'development' : 'test')
     vi.stubEnv('CI', environment === 'ci' ? 'true' : 'false')
     expect(() => createLettermintDeliveryAdapter(createActivationFixture().binding)).toThrow('environment-unavailable')

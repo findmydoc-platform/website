@@ -70,7 +70,7 @@ describe('demo seed reset handling', () => {
 
   it('blocks direct demo seed execution in production before imports run', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
     const payload = makePayload()

@@ -50,7 +50,7 @@ function hostedRuntime() {
   const runtimeRevision = process.env.VERCEL_GIT_COMMIT_SHA
   if (
     (environment !== 'preview' && environment !== 'production') ||
-    process.env.DEPLOYMENT_ENV !== environment ||
+    process.env.DEPLOYMENT_ENVIRONMENT !== environment ||
     process.env.VERCEL_ENV !== environment ||
     !runtimeRevision ||
     !/^[a-f0-9]{40}$/.test(runtimeRevision)

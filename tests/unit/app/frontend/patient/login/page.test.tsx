@@ -16,7 +16,7 @@ describe('Patient LoginPage', () => {
   beforeEach(() => {
     process.env = {
       ...originalEnv,
-      DEPLOYMENT_ENV: undefined,
+      DEPLOYMENT_ENVIRONMENT: undefined,
       VERCEL_ENV: undefined,
       NODE_ENV: 'development',
     }

@@ -51,7 +51,7 @@ describe('patient registration through Auth, catalog, Outbox and offline deliver
     vi.setSystemTime(new Date('2026-10-03T12:00:00.000Z'))
     vi.stubEnv('CI', 'false')
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     vi.stubEnv('AUTH_VERIFICATION_CORRELATION_KEYS_JSON', JSON.stringify({ environment: 'test', keys: [key] }))
     storage = createEmailCommandStorage()
     boundary.payload = storage.payload
@@ -205,7 +205,7 @@ describe('patient registration through Auth, catalog, Outbox and offline deliver
   )
 
   test('fails closed before identity creation when hosted verification is not activated', async () => {
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     vi.stubEnv('NODE_ENV', 'development')
     const response = await POST(makeRequest())
     expect(response.status).toBe(503)

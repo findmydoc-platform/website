@@ -17,7 +17,7 @@ import { testSlug } from '../fixtures/testSlug'
 vi.mock('@payloadcms/storage-s3', () => ({ s3Storage: () => (incoming: unknown) => incoming }))
 
 function hostedEnvironment() {
-  vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+  vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
   vi.stubEnv('VERCEL_ENV', 'preview')
   vi.stubEnv('VERCEL_GIT_COMMIT_SHA', 'a'.repeat(40))
 }
@@ -72,7 +72,7 @@ describe('hosted capture native ownership and source ordering', () => {
       })
     ).docs[0]
     if (!stored) return
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     vi.stubEnv('VERCEL_ENV', 'development')
     const req = await createLocalReq({ context: { clinicNotificationCommand: true } }, payload)
     await withTestCaptureAuthority(req, () =>

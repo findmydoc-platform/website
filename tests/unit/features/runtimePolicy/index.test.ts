@@ -11,10 +11,10 @@ import {
 } from '@/features/runtimePolicy'
 
 describe('runtimePolicy', () => {
-  it('prefers VERCEL_ENV over DEPLOYMENT_ENV for server runtime resolution', () => {
+  it('prefers VERCEL_ENV over DEPLOYMENT_ENVIRONMENT for server runtime resolution', () => {
     const runtimeEnvironment = resolveServerRuntimeEnvironment({
       VERCEL_ENV: 'production',
-      DEPLOYMENT_ENV: 'preview',
+      DEPLOYMENT_ENVIRONMENT: 'preview',
       NODE_ENV: 'development',
     })
 
@@ -25,7 +25,7 @@ describe('runtimePolicy', () => {
     expect(
       resolveRuntimeClass({
         VERCEL_ENV: 'preview',
-        DEPLOYMENT_ENV: undefined,
+        DEPLOYMENT_ENVIRONMENT: undefined,
         NODE_ENV: 'production',
       }),
     ).toBe('preview')
@@ -35,7 +35,7 @@ describe('runtimePolicy', () => {
     expect(
       isPreviewRuntime({
         VERCEL_ENV: 'preview',
-        DEPLOYMENT_ENV: undefined,
+        DEPLOYMENT_ENVIRONMENT: undefined,
         NODE_ENV: 'production',
       }),
     ).toBe(true)
@@ -45,7 +45,7 @@ describe('runtimePolicy', () => {
     expect(
       isPreviewRuntime({
         VERCEL_ENV: undefined,
-        DEPLOYMENT_ENV: 'preview',
+        DEPLOYMENT_ENVIRONMENT: 'preview',
         NODE_ENV: 'production',
       }),
     ).toBe(true)
@@ -55,7 +55,7 @@ describe('runtimePolicy', () => {
     expect(
       isPreviewRuntime({
         VERCEL_ENV: 'production',
-        DEPLOYMENT_ENV: 'preview',
+        DEPLOYMENT_ENVIRONMENT: 'preview',
         NODE_ENV: 'production',
       }),
     ).toBe(false)
@@ -65,7 +65,7 @@ describe('runtimePolicy', () => {
     expect(
       resolveRuntimeClass({
         VERCEL_ENV: 'production',
-        DEPLOYMENT_ENV: undefined,
+        DEPLOYMENT_ENVIRONMENT: undefined,
         NODE_ENV: 'production',
       }),
     ).toBe('nonPreview')

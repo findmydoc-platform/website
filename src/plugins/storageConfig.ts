@@ -3,7 +3,7 @@ import { resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
 type StorageEnvironmentInput = Partial<
   Pick<
     NodeJS.ProcessEnv,
-    | 'DEPLOYMENT_ENV'
+    | 'DEPLOYMENT_ENVIRONMENT'
     | 'NODE_ENV'
     | 'S3_ACCESS_KEY_ID'
     | 'S3_BUCKET'
@@ -56,7 +56,7 @@ function getTrimmedValue(env: StorageEnvironmentInput, variable: keyof StorageEn
 
 function resolveStorageRuntime(env: StorageEnvironmentInput): ReturnType<typeof resolveServerRuntimeEnvironment> {
   const runtime = resolveServerRuntimeEnvironment(env)
-  const configuredRuntime = getTrimmedValue(env, 'VERCEL_ENV') ?? getTrimmedValue(env, 'DEPLOYMENT_ENV')
+  const configuredRuntime = getTrimmedValue(env, 'VERCEL_ENV') ?? getTrimmedValue(env, 'DEPLOYMENT_ENVIRONMENT')
 
   // Runtime policy deliberately treats an unclassified NODE_ENV as development. Storage must not do so for a production process.
   if (

@@ -17,7 +17,7 @@ describe('searchIndexing feature', () => {
   it('blocks indexing for preview runtime', () => {
     expect(
       shouldBlockSearchIndexing({
-        DEPLOYMENT_ENV: undefined,
+        DEPLOYMENT_ENVIRONMENT: undefined,
         NODE_ENV: 'production',
         VERCEL_ENV: 'preview',
       }),
@@ -27,7 +27,7 @@ describe('searchIndexing feature', () => {
   it('does not block indexing for production runtime', () => {
     expect(
       shouldBlockSearchIndexing({
-        DEPLOYMENT_ENV: undefined,
+        DEPLOYMENT_ENVIRONMENT: undefined,
         NODE_ENV: 'production',
         VERCEL_ENV: 'production',
       }),
@@ -38,7 +38,7 @@ describe('searchIndexing feature', () => {
     expect(
       shouldBlockSearchIndexingForRequest({
         env: {
-          DEPLOYMENT_ENV: undefined,
+          DEPLOYMENT_ENVIRONMENT: undefined,
           NODE_ENV: 'production',
           VERCEL_ENV: 'production',
         },

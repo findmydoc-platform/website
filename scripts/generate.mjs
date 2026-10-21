@@ -21,7 +21,7 @@ const baseEnv = {
 const generationEnv = {
   ...baseEnv,
   // Keep generated Payload artifacts independent from deployment-only S3 credentials.
-  DEPLOYMENT_ENV: 'development',
+  DEPLOYMENT_ENVIRONMENT: 'development',
   NODE_ENV: 'development',
 }
 

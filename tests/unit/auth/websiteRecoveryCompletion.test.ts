@@ -62,7 +62,7 @@ describe('Website recovery at the callback HTTP boundary', () => {
     vi.setSystemTime(new Date('2026-10-03T12:00:00Z'))
     vi.stubEnv('CI', 'false')
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     vi.stubEnv('AUTH_RECOVERY_CORRELATION_KEYS_JSON', JSON.stringify({ environment: 'test', keys: [key] }))
     storage = createEmailCommandStorage()
     pool = recoveryPool()

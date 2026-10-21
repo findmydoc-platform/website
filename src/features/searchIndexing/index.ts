@@ -2,7 +2,7 @@ import { PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 import { isPreviewRuntime } from '@/features/runtimePolicy'
 
 export type SearchIndexingEnvInput = {
-  DEPLOYMENT_ENV?: string
+  DEPLOYMENT_ENVIRONMENT?: string
   NODE_ENV?: string
   VERCEL_ENV?: string
 }

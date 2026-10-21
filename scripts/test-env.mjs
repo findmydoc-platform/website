@@ -25,7 +25,7 @@ export function loadLocalAndTestEnv({ cwd = process.cwd() } = {}) {
   dotenvConfig({ path: path.resolve(cwd, '.env.test.local'), override: true, quiet: true })
 
   // Test infrastructure must not inherit a development storage backend from a local env file.
-  process.env.DEPLOYMENT_ENV = 'test'
+  process.env.DEPLOYMENT_ENVIRONMENT = 'test'
   process.env.NEXT_PUBLIC_DEPLOYMENT_ENV = 'test'
 
   if (!process.env.PAYLOAD_SECRET && process.env.PAYLOAD_SECRET_KEY) {
@@ -75,7 +75,7 @@ export function applyE2ERuntimeDefaults(env = process.env) {
       )
     }
 
-    env.DEPLOYMENT_ENV = 'production'
+    env.DEPLOYMENT_ENVIRONMENT = 'production'
     env.NEXT_PUBLIC_DEPLOYMENT_ENV = 'production'
     env.VERCEL_ENV = 'production'
     env.NEXT_PUBLIC_VERCEL_ENV = 'production'
@@ -85,7 +85,7 @@ export function applyE2ERuntimeDefaults(env = process.env) {
     env.S3_REGION = E2E_TEST_STORAGE.region
     env.S3_SECRET_ACCESS_KEY = E2E_TEST_STORAGE.secretAccessKey
   } else {
-    env.DEPLOYMENT_ENV = 'test'
+    env.DEPLOYMENT_ENVIRONMENT = 'test'
     env.NEXT_PUBLIC_DEPLOYMENT_ENV = 'test'
     // Regular E2E flows cover the full public experience; the dedicated temporary landing lane evaluates PostHog.
     env.PUBLIC_SITE_FALLBACK_MODE ??= 'full'

@@ -68,7 +68,7 @@ const PREVIEW_GUARD_SCANNER_API_PATHS = new Set(['/api/exec'])
 
 export type PreviewGuardPagePathClassification = 'dynamic-content' | 'exempt' | 'not-found' | 'patient' | 'platform'
 
-type DeploymentEnvInput = Pick<NodeJS.ProcessEnv, 'DEPLOYMENT_ENV' | 'NODE_ENV' | 'VERCEL_ENV'>
+type DeploymentEnvInput = Pick<NodeJS.ProcessEnv, 'DEPLOYMENT_ENVIRONMENT' | 'NODE_ENV' | 'VERCEL_ENV'>
 type UserTypeCarrier = Pick<User, 'app_metadata'> | null
 
 const normalizePathname = (pathname: string): string => {

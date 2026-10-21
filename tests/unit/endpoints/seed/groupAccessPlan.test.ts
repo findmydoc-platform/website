@@ -91,7 +91,7 @@ it('rejects direct demo group imports in Production while retaining baseline ref
     create,
   } as unknown as import('payload').Payload
   vi.stubEnv('VERCEL_ENV', 'production')
-  vi.stubEnv('DEPLOYMENT_ENV', 'production')
+  vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
   vi.stubEnv('NODE_ENV', 'production')
   try {
     await expect(

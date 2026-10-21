@@ -168,7 +168,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.stubEnv('CI', 'false')
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('VERCEL_ENV', 'preview')
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     vi.spyOn(Date, 'now').mockReturnValue(webhookNow)
     renderErrors.length = 0
     logCalls.length = 0
@@ -328,7 +328,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     for (const [key, value] of Object.entries(webhookConfiguration.secrets[environment])) vi.stubEnv(key, value)
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('VERCEL_ENV', environment)
-    vi.stubEnv('DEPLOYMENT_ENV', environment)
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', environment)
     beforeState = await state()
     return operationId
   }
@@ -931,7 +931,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.stubEnv('LETTERMINT_PREVIEW_RECIPIENT_DIGESTS', undefined)
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     const req = await createLocalReq({}, payload)
     const retireConfiguration = vi.fn()
 
@@ -971,7 +971,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     vi.stubEnv('LETTERMINT_PREVIEW_RECIPIENT_DIGESTS', undefined)
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     const directory = await mkdtemp(join(tmpdir(), 'lettermint-retirement-command-'))
     const path = join(directory, 'registry.json')
     await writeFile(path, `${JSON.stringify(rotated.configuration.registry, null, 2)}\n`)
@@ -1000,7 +1000,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
       const retiredEnv = {
         NODE_ENV: 'production',
         VERCEL_ENV: 'production',
-        DEPLOYMENT_ENV: 'production',
+        DEPLOYMENT_ENVIRONMENT: 'production',
         ...rotated.configuration.secrets.production,
         LETTERMINT_PREVIOUS_RECIPIENT_DIGEST_KEYS: undefined,
       }
@@ -1273,7 +1273,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     for (const [key, value] of Object.entries(webhookConfiguration.secrets.preview)) vi.stubEnv(key, value)
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('VERCEL_ENV', 'preview')
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     beforeState = await state()
     return { operationId, resume, completion }
   }
@@ -2494,7 +2494,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
     expect((await send({ body: productionBody })).status).toBe(403)
     for (const [key, value] of Object.entries(webhookConfiguration.secrets.production)) vi.stubEnv(key, value)
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     expect((await send({ environment: 'production', body: productionBody, secret: productionSecret })).status).toBe(200)
     expect((await send({ environment: 'production', body: productionBody })).status).toBe(401)
   })
@@ -2502,7 +2502,7 @@ describe('Lettermint webhook Next.js request boundary', () => {
   it.each(['local', 'test', 'ci', 'unknown'])('keeps the webhook unavailable in %s', async (environment) => {
     for (const key of Object.keys(webhookConfiguration.secrets.preview)) vi.stubEnv(key, undefined)
     vi.stubEnv('VERCEL_ENV', undefined)
-    vi.stubEnv('DEPLOYMENT_ENV', environment)
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', environment)
     vi.stubEnv('NODE_ENV', 'development')
     expect((await send()).status).toBe(503)
   })

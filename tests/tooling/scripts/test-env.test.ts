@@ -20,7 +20,7 @@ describe('E2E runtime defaults', () => {
 
     expect(result.baseUrl).toBe('http://localhost:3100')
     expect(env).toMatchObject({
-      DEPLOYMENT_ENV: 'production',
+      DEPLOYMENT_ENVIRONMENT: 'production',
       NEXT_PUBLIC_DEPLOYMENT_ENV: 'production',
       VERCEL_ENV: 'production',
       NEXT_PUBLIC_VERCEL_ENV: 'production',

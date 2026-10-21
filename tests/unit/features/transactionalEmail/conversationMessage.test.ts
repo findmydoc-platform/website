@@ -111,7 +111,7 @@ describe('conversation notification command preparation', () => {
     vi.stubEnv('NODE_ENV', 'development')
     vi.stubEnv('CI', 'false')
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', environment)
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', environment)
     vi.stubEnv('NEXT_PUBLIC_SERVER_URL', 'https://untrusted.example.test')
     const { commands, operations, catalog } = fixture()
     await commands.accept(command)

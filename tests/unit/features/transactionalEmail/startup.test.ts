@@ -7,7 +7,7 @@ it('rejects a hosted process with unbound credentials during Payload initializat
   vi.stubEnv('CI', 'false')
   vi.stubEnv('NEXT_PHASE', undefined)
   vi.stubEnv('VERCEL_ENV', 'preview')
-  vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+  vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
   vi.stubEnv('NODE_ENV', 'production')
   vi.stubEnv('LETTERMINT_PROJECT_TOKEN', 'lm_preview_unbound_synthetic_token') // pragma: allowlist secret
   const resolved = await config

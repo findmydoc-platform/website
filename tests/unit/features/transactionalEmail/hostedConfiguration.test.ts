@@ -189,7 +189,7 @@ describe('hosted Lettermint binding', () => {
     const productionEnv = {
       NODE_ENV: 'production',
       VERCEL_ENV: 'production',
-      DEPLOYMENT_ENV: 'production',
+      DEPLOYMENT_ENVIRONMENT: 'production',
     }
 
     expect(
@@ -236,7 +236,7 @@ describe('hosted Lettermint binding', () => {
 
     expect(
       validateTransactionalEmailStartupForTest(
-        { NODE_ENV: 'production', VERCEL_ENV: 'production', DEPLOYMENT_ENV: 'production' },
+        { NODE_ENV: 'production', VERCEL_ENV: 'production', DEPLOYMENT_ENVIRONMENT: 'production' },
         input.configuration.registry,
         input.configuration.locks,
         webhookNow,
@@ -259,7 +259,7 @@ describe('hosted Lettermint binding', () => {
       const env = {
         NODE_ENV: 'production',
         VERCEL_ENV: environment,
-        DEPLOYMENT_ENV: environment,
+        DEPLOYMENT_ENVIRONMENT: environment,
         ...input.configuration.secrets[environment],
         ...(environment === 'preview'
           ? { LETTERMINT_PREVIEW_RECIPIENT_DIGESTS: JSON.stringify(recipientAllowlist) }
@@ -305,7 +305,7 @@ describe('hosted Lettermint binding', () => {
     const env = {
       NODE_ENV: 'production',
       VERCEL_ENV: 'preview',
-      DEPLOYMENT_ENV: 'preview',
+      DEPLOYMENT_ENVIRONMENT: 'preview',
       ...input.configuration.secrets.preview,
       LETTERMINT_RECIPIENT_DIGEST_KEY: undefined,
     }
@@ -621,7 +621,7 @@ describe('hosted Lettermint binding', () => {
     for (const environment of ['local', 'test', 'ci']) {
       expect(() =>
         selectTransactionalEmailRuntimeForTest({
-          DEPLOYMENT_ENV: environment,
+          DEPLOYMENT_ENVIRONMENT: environment,
           LETTERMINT_PROJECT_TOKEN: 'lm_synthetic',
         }),
       ).toThrow('environment-unavailable')
@@ -629,9 +629,9 @@ describe('hosted Lettermint binding', () => {
   })
 
   it.each(['preview', 'production'] as const)('rejects development and %s signals together', (hosted) => {
-    expect(() => selectTransactionalEmailRuntimeForTest({ VERCEL_ENV: 'development', DEPLOYMENT_ENV: hosted })).toThrow(
-      'environment-unavailable',
-    )
+    expect(() =>
+      selectTransactionalEmailRuntimeForTest({ VERCEL_ENV: 'development', DEPLOYMENT_ENVIRONMENT: hosted }),
+    ).toThrow('environment-unavailable')
   })
 
   it('checks fingerprints at hosted startup independently from command activation', () => {
@@ -639,7 +639,7 @@ describe('hosted Lettermint binding', () => {
     const inactiveRegistry = { schemaVersion: 1, version: 'activation-v1', preflights: [], records: [] }
     expect(
       validateTransactionalEmailStartupForTest(
-        { VERCEL_ENV: 'preview', DEPLOYMENT_ENV: 'preview', ...input.secrets.preview },
+        { VERCEL_ENV: 'preview', DEPLOYMENT_ENVIRONMENT: 'preview', ...input.secrets.preview },
         input.registry,
         input.targetLocks,
         now,
@@ -649,7 +649,7 @@ describe('hosted Lettermint binding', () => {
     input.secrets.preview.LETTERMINT_WEBHOOK_SECRET = 'wrong-synthetic-webhook-secret' // pragma: allowlist secret
     expect(() =>
       validateTransactionalEmailStartupForTest(
-        { VERCEL_ENV: 'preview', DEPLOYMENT_ENV: 'preview', ...input.secrets.preview },
+        { VERCEL_ENV: 'preview', DEPLOYMENT_ENVIRONMENT: 'preview', ...input.secrets.preview },
         input.registry,
         input.targetLocks,
         now,

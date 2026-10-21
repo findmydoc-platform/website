@@ -6,7 +6,7 @@ declare global {
       NEXT_PUBLIC_SERVER_URL: string
       CLINIC_DASHBOARD_URL: string
       VERCEL_PROJECT_PRODUCTION_URL: string
-      DEPLOYMENT_ENV?: string
+      DEPLOYMENT_ENVIRONMENT?: string
       NEXT_PUBLIC_DEPLOYMENT_ENV?: string
       VERCEL_ENV?: string
       NEXT_PUBLIC_VERCEL_ENV?: string

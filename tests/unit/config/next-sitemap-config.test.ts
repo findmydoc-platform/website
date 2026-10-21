@@ -39,7 +39,7 @@ describe('next-sitemap config', () => {
   it('includes sitemap references outside preview runtime', () => {
     process.env = {
       ...originalEnv,
-      DEPLOYMENT_ENV: undefined,
+      DEPLOYMENT_ENVIRONMENT: undefined,
       NEXT_PUBLIC_SERVER_URL: 'https://findmydoc.eu',
       VERCEL_ENV: 'production',
     }
@@ -67,7 +67,7 @@ describe('next-sitemap config', () => {
   it('blocks model training crawlers outside preview runtime', () => {
     process.env = {
       ...originalEnv,
-      DEPLOYMENT_ENV: undefined,
+      DEPLOYMENT_ENVIRONMENT: undefined,
       NEXT_PUBLIC_SERVER_URL: 'https://findmydoc.eu',
       VERCEL_ENV: 'production',
     }
@@ -85,7 +85,7 @@ describe('next-sitemap config', () => {
   it('blocks robots and hides sitemap references in Vercel preview runtime', () => {
     process.env = {
       ...originalEnv,
-      DEPLOYMENT_ENV: undefined,
+      DEPLOYMENT_ENVIRONMENT: undefined,
       NEXT_PUBLIC_SERVER_URL: 'https://findmydoc.eu',
       VERCEL_ENV: 'preview',
     }
@@ -99,7 +99,7 @@ describe('next-sitemap config', () => {
   it('blocks robots and hides sitemap references in explicit preview runtime', () => {
     process.env = {
       ...originalEnv,
-      DEPLOYMENT_ENV: 'preview',
+      DEPLOYMENT_ENVIRONMENT: 'preview',
       NEXT_PUBLIC_SERVER_URL: 'https://findmydoc.eu',
       VERCEL_ENV: undefined,
     }
@@ -113,7 +113,7 @@ describe('next-sitemap config', () => {
   it('does not block robots only because the configured site URL uses the preview host', () => {
     process.env = {
       ...originalEnv,
-      DEPLOYMENT_ENV: undefined,
+      DEPLOYMENT_ENVIRONMENT: undefined,
       NEXT_PUBLIC_SERVER_URL: 'https://preview.findmydoc.eu',
       VERCEL_ENV: 'production',
     }

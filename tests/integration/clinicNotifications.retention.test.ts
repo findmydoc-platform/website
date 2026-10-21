@@ -511,7 +511,7 @@ describe('independent notification retention with native storage', () => {
     const secret = 'synthetic-local-notification-cron-secret-only'
     vi.stubEnv('CRON_SECRET', secret)
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     const response = await scheduledRetention(
       new Request('https://scheduler.example.test/api/internal/clinic-notifications/retention', {
         headers: { authorization: `Bearer ${secret}` },

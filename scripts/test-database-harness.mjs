@@ -450,7 +450,7 @@ async function runPayloadMigrateFresh({ attempts = 3, connectionString, delayMs 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       execSync("printf 'y\\n' | pnpm run payload migrate:fresh", {
-        env: { ...process.env, DATABASE_URI: connectionString, DEPLOYMENT_ENV: 'test', NODE_ENV: 'test' },
+        env: { ...process.env, DATABASE_URI: connectionString, DEPLOYMENT_ENVIRONMENT: 'test', NODE_ENV: 'test' },
         stdio: 'inherit',
       })
       return
@@ -467,7 +467,7 @@ async function runPayloadMigrateFresh({ attempts = 3, connectionString, delayMs 
 
 function runBaselineSeed(connectionString) {
   execSync('pnpm run seed:run -- --type baseline --runtime-env test', {
-    env: { ...process.env, DATABASE_URI: connectionString, DEPLOYMENT_ENV: 'test', NODE_ENV: 'development' },
+    env: { ...process.env, DATABASE_URI: connectionString, DEPLOYMENT_ENVIRONMENT: 'test', NODE_ENV: 'development' },
     stdio: 'inherit',
   })
 }

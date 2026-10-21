@@ -12,7 +12,7 @@ beforeEach(() => {
   vi.stubEnv('CRON_SECRET', secret)
   vi.stubEnv('PREVIEW_NOTIFICATION_RETENTION_SECRET', secret)
   vi.stubEnv('VERCEL_ENV', 'production')
-  vi.stubEnv('DEPLOYMENT_ENV', 'production')
+  vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
   getPayload.mockRejectedValue(new Error('Synthetic storage initialization failure'))
 })
 afterEach(() => {
@@ -20,6 +20,11 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 describe('independent notification retention scheduling boundary', () => {
+  it('rejects missing deployment configuration before retention', async () => {
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', undefined)
+    expect((await production(request())).status).toBe(503)
+    expect(getPayload).not.toHaveBeenCalled()
+  })
   it('rejects missing credentials before resolving retention', async () => {
     expect((await production(request({}))).status).toBe(401)
     expect(getPayload).not.toHaveBeenCalled()
@@ -42,18 +47,18 @@ describe('independent notification retention scheduling boundary', () => {
   })
   it('refuses Preview on the Production path before retention', async () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     expect((await production(request())).status).toBe(503)
     expect(getPayload).not.toHaveBeenCalled()
   })
   it('refuses logical environment drift', async () => {
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     expect((await production(request())).status).toBe(503)
     expect(getPayload).not.toHaveBeenCalled()
   })
   it('accepts only Preview on its separate credential path', async () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     expect((await preview(request())).status).toBe(503)
     expect(getPayload).toHaveBeenCalledTimes(1)
   })

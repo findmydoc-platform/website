@@ -964,7 +964,7 @@ describe('authoritative initial moderation decision mail', () => {
   it('preserves normal domain decision without mail while Production activation is undeclared', async () => {
     const source = await report()
     vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('VERCEL_ENV', 'production')
     activationRegistry.records = declaredActivationRecords.filter(
       ({ environment, commandType }) => environment !== 'production' || commandType !== 'moderation.report-decided',

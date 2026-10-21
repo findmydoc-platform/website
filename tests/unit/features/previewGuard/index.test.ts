@@ -51,7 +51,7 @@ describe('previewGuard feature', () => {
   it('uses VERCEL_ENV with highest priority', () => {
     const resolved = resolveDeploymentEnvironment({
       VERCEL_ENV: 'production',
-      DEPLOYMENT_ENV: 'preview',
+      DEPLOYMENT_ENVIRONMENT: 'preview',
       NODE_ENV: 'production',
     })
 
@@ -61,7 +61,7 @@ describe('previewGuard feature', () => {
   it('detects preview deployments correctly', () => {
     expect(
       isPreviewDeployment({
-        DEPLOYMENT_ENV: 'preview',
+        DEPLOYMENT_ENVIRONMENT: 'preview',
         VERCEL_ENV: undefined,
         NODE_ENV: 'production',
       }),
@@ -69,7 +69,7 @@ describe('previewGuard feature', () => {
 
     expect(
       isPreviewDeployment({
-        DEPLOYMENT_ENV: undefined,
+        DEPLOYMENT_ENVIRONMENT: undefined,
         VERCEL_ENV: 'production',
         NODE_ENV: 'production',
       }),
@@ -79,7 +79,7 @@ describe('previewGuard feature', () => {
   it('detects non-production deployments correctly', () => {
     expect(
       isNonProductionDeployment({
-        DEPLOYMENT_ENV: 'preview',
+        DEPLOYMENT_ENVIRONMENT: 'preview',
         VERCEL_ENV: undefined,
         NODE_ENV: 'production',
       }),
@@ -87,7 +87,7 @@ describe('previewGuard feature', () => {
 
     expect(
       isNonProductionDeployment({
-        DEPLOYMENT_ENV: undefined,
+        DEPLOYMENT_ENVIRONMENT: undefined,
         VERCEL_ENV: 'production',
         NODE_ENV: 'production',
       }),

@@ -2,6 +2,7 @@ import React from 'react'
 
 import { FrontendChrome } from '@/app/(frontend)/FrontendChrome.client'
 import { extractSupabaseUserData } from '@/auth/utilities/jwtValidation'
+import type { AuthData } from '@/auth/types/authTypes'
 import { Footer } from '@/components/templates/Footer/Component'
 import { Header } from '@/components/templates/Header/Component'
 import {
@@ -39,9 +40,7 @@ const buildPatientDisplayName = (firstName?: string, lastName?: string, email?: 
   return displayName || email || 'Patient account'
 }
 
-async function resolvePublicAccountMenuState(requestHeaders: Headers): Promise<PublicAccountMenuState> {
-  const authData = await extractSupabaseUserData({ headers: requestHeaders })
-
+function resolvePublicAccountMenuState(authData: AuthData | null): PublicAccountMenuState {
   if (!authData || authData.userType !== 'patient') {
     return DEFAULT_ACCOUNT_MENU_STATE
   }
@@ -70,8 +69,9 @@ export default async function FrontendTemplate({ children }: { children: React.R
     }
   }
   const resolvedMode = requestMode ?? (isPreviewGuardActive ? null : (await resolveHoldingMode(requestUrl)).mode)
-  const isHoldingPublicView = resolvedMode === 'holding' && !isPreviewGuardActive
   const showSiteChrome = !isGuardLocked
+  const authData = showSiteChrome ? await extractSupabaseUserData({ headers: requestHeaders }) : null
+  const isHoldingPublicView = resolvedMode === 'holding' && !isPreviewGuardActive && authData?.userType !== 'platform'
   const showPreviewBadge = isNonProductionDeployment(process.env)
   const configuredHeaderLogoSrc = process.env.NEXT_PUBLIC_HEADER_LOGO_SRC?.trim() || undefined
   const configuredFooterLogoSrc = process.env.NEXT_PUBLIC_FOOTER_LOGO_SRC?.trim() || undefined
@@ -91,9 +91,7 @@ export default async function FrontendTemplate({ children }: { children: React.R
     ? projectHoldingHeaderNavItems(normalizedHeaderNavItems, siteOrigin)
     : normalizedHeaderNavItems
   const accountMenuState =
-    showSiteChrome && !isHoldingPublicView
-      ? await resolvePublicAccountMenuState(requestHeaders)
-      : DEFAULT_ACCOUNT_MENU_STATE
+    showSiteChrome && !isHoldingPublicView ? resolvePublicAccountMenuState(authData) : DEFAULT_ACCOUNT_MENU_STATE
 
   return (
     <>

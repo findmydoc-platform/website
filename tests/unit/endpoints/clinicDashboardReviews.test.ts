@@ -4,7 +4,7 @@ import { clinicDashboardReviewGetHandler } from '@/endpoints/clinicDashboardRevi
 import examples from '../../fixtures/clinic-review-detail-v1.json'
 
 const mocks = vi.hoisted(() => ({ authorize: vi.fn(), resolve: vi.fn() }))
-vi.mock('@/features/clinicDashboard/authorization', () => ({ revalidateClinicDashboardRequest: mocks.authorize }))
+vi.mock('@/features/clinicDashboard/authorization', () => ({ revalidateClinicDashboardTargetRequest: mocks.authorize }))
 vi.mock('@/features/clinicDashboard/reviews/service', () => ({ readClinicReviewDetail: mocks.resolve }))
 
 const detail = {
@@ -19,14 +19,19 @@ const detail = {
   comment: 'Permitted current review text.',
 }
 const request = (id = 'review-204', query = '') =>
-  Object.assign(new Request(`http://localhost:3000/api/clinic-dashboard/reviews/${id}${query}`), {
-    routeParams: { id },
-    payload: { logger: { error: vi.fn() } },
-  }) as unknown as PayloadRequest
+  Object.assign(
+    new Request(`http://localhost:3000/api/clinic-dashboard/clinics/42/reviews/${id}${query}`, {
+      headers: { 'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1' },
+    }),
+    {
+      routeParams: { clinicId: '42', id },
+      payload: { logger: { error: vi.fn() } },
+    },
+  ) as unknown as PayloadRequest
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.authorize.mockResolvedValue({ status: 'authorized', data: { capabilities: ['reviews:view'] } })
+  mocks.authorize.mockResolvedValue({ status: 'authorized', clinicId: '42' })
   mocks.resolve.mockResolvedValue(detail)
 })
 
@@ -36,8 +41,9 @@ describe('ordinary authorized exact review HTTP boundary', () => {
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ data: detail })
     expect(response.headers.get('cache-control')).toContain('private, no-store')
-    expect(response.headers.get('vary')).toBe('Authorization, X-Findmydoc-Clinic-Dashboard-Contract')
-    expect(mocks.resolve).toHaveBeenCalledWith(expect.anything(), 'review-204')
+    expect(response.headers.get('vary')).toBe('Authorization, X-Findmydoc-Clinic-Scope-Contract')
+    expect(mocks.authorize).toHaveBeenCalledWith(expect.anything(), '42')
+    expect(mocks.resolve).toHaveBeenCalledWith(expect.anything(), 'review-204', '42')
   })
   it.each([
     { authorization: { status: 'unauthorized' }, status: 401, code: 'UNAUTHENTICATED' },

@@ -262,6 +262,13 @@ async function seedSyntheticInquiry() {
       await users.completeLegacyClinicFixture(payload, accessReady, clinicId)
     }
 
+    const readyClinicStaff = await payload.findByID({
+      collection: 'clinicStaff',
+      id: clinicStaff.id,
+      depth: 0,
+      overrideAccess: true,
+    })
+
     const patientReq = await createLocalReq({}, payload)
     patientReq.user = users.asPayloadPatientUser(patient)
     await notifications.activateClinicNotificationsForTest(patientReq)
@@ -280,7 +287,7 @@ async function seedSyntheticInquiry() {
     let moderationRoutes: Record<string, () => Promise<unknown>> = {}
     if (process.env.INQUIRY_ACCEPTANCE_SPEC === 'inquiry-moderation-cross-app.spec.ts') {
       const clinicReq = await createLocalReq({}, payload)
-      clinicReq.user = await users.asClinicScopedPayloadUser(payload, clinicStaff, clinicFixture.clinic.id)
+      clinicReq.user = users.asPayloadStaffUser(readyClinicStaff)
       const { inquiryModerationCrossAppFixture } = await import('./inquiry-moderation-cross-app-fixture')
       moderationRoutes = await inquiryModerationCrossAppFixture({
         payload,
@@ -304,7 +311,7 @@ async function seedSyntheticInquiry() {
           payload,
           clinicId: clinicFixture.clinic.id,
           doctorId: clinicFixture.doctor.id,
-          clinicStaff,
+          clinicStaff: readyClinicStaff,
         }),
         ...moderationRoutes,
         '/remove-latest-patient-message': async () => {
@@ -505,7 +512,7 @@ async function main() {
     NEXT_PUBLIC_SERVER_URL: websiteOrigin,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: 'cross-app-anon-key',
     NEXT_PUBLIC_SUPABASE_URL: authOrigin,
-    TEMPORARY_LANDING_MODE_ENABLED: 'false',
+    PUBLIC_SITE_FALLBACK_MODE: 'full',
   })
 
   let authServer: Server | undefined

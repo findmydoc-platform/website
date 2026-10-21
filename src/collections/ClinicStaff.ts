@@ -1,19 +1,35 @@
+import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
+import { guardPersonalGroupInvitationSource } from '@/auth/utilities/personalGroupInvitationSource'
+import {
+  guardClinicStaffAssignmentInput,
+  validateClinicStaffAssignment,
+} from '@/features/clinicGroups/staffAssignments'
 import {
   guardNotificationAuthorizationChange,
   guardNotificationAuthorizationSession,
   deleteNotificationReaderReceipts,
 } from '@/features/clinicNotifications/authorizationBarrier'
-import type { CollectionConfig } from 'payload'
+import { ValidationError, validations, type CollectionConfig } from 'payload'
+import {
+  createConditionalRequiredValidator,
+  getMissingConditionalRequirements,
+  toValidationFieldErrors,
+} from './common/conditionalRequirements'
 import { isClinicStaff, isOwnClinicStaffProfile } from '@/access/isClinicStaff'
 import { enforceSupabaseIdentityInvariant } from '@/auth/hooks/enforceSupabaseIdentityInvariant'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { getUserAssignedClinicId } from '@/access/utils/getClinicAssignment'
-import { platformOnlyFieldAccess, staffProfileFieldReadAccess } from '@/access/fieldAccess'
+import {
+  platformOnlyFieldAccess,
+  platformClinicTrustFieldAccess,
+  staffProfileFieldReadAccess,
+} from '@/access/fieldAccess'
 import { synchronizeClinicStaffAuthState, validateClinicStaffStatusTransition } from '@/hooks/clinicStaffLifecycle'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { clinicStaffStatusOptions } from './clinicStaff/lifecycle'
 import { guardClinicAccountEvidence } from '@/auth/utilities/clinicAccountCompletion'
 import { guardClinicInvitationAuthorization } from '@/auth/actions/lifecycle'
+import { groupAssignmentRequirement, groupAssignmentRequirementSet } from './clinicStaff/groupAssignmentRequirements'
 
 // Direct authentication principal for clinic dashboard and API access, never Payload Admin.
 export const ClinicStaff: CollectionConfig = {
@@ -56,18 +72,38 @@ export const ClinicStaff: CollectionConfig = {
     delete: () => false,
   },
   hooks: {
-    beforeOperation: [guardNotificationAuthorizationChange],
+    beforeOperation: [guardNotificationAuthorizationChange, guardClinicStaffAssignmentInput],
+    beforeValidate: [
+      ({ data, originalDoc, operation, req }) => {
+        if (!data || !['assignmentScope', 'clinic', 'group'].some((field) => Object.hasOwn(data, field))) return data
+        const missing = getMissingConditionalRequirements(groupAssignmentRequirementSet, {
+          data: { ...originalDoc, ...data },
+          operation,
+        })
+        if (missing.length) {
+          throw new ValidationError({
+            collection: 'clinicStaff',
+            errors: toValidationFieldErrors(missing),
+            id: originalDoc?.id,
+            req,
+          })
+        }
+        return data
+      },
+    ],
     beforeDelete: [guardNotificationAuthorizationSession, deleteNotificationReaderReceipts],
     afterOperation: [
       async ({ result, req, operation }) => {
-        if (['update', 'delete', 'restoreVersion'].includes(operation))
-          await guardNotificationAuthorizationSession({ req })
+        const finalOperation = normalizeNativeFinalWriteOperation(operation)
+        if (finalOperation && finalOperation !== 'create') await guardNotificationAuthorizationSession({ req })
         return result
       },
     ],
     beforeChange: [
       guardNotificationAuthorizationSession,
       guardClinicAccountEvidence,
+      guardPersonalGroupInvitationSource,
+      validateClinicStaffAssignment,
       guardClinicInvitationAuthorization,
       validateClinicStaffStatusTransition,
       beforeChangeImmutableField({ field: 'onboardingKey', message: 'onboardingKey cannot be changed once set' }),
@@ -77,13 +113,74 @@ export const ClinicStaff: CollectionConfig = {
   },
   fields: [
     {
+      name: 'assignmentScope',
+      type: 'select',
+      options: ['local', 'group', 'unassigned'],
+      access: { create: platformClinicTrustFieldAccess, update: platformClinicTrustFieldAccess },
+      admin: { description: 'Scope of the current clinic staff assignment.' },
+    },
+    {
+      name: 'group',
+      type: 'relationship',
+      relationTo: 'clinicGroups',
+      hasMany: false,
+      index: true,
+      access: {
+        create: platformClinicTrustFieldAccess,
+        update: platformClinicTrustFieldAccess,
+        read: staffProfileFieldReadAccess,
+      },
+      admin: {
+        position: 'sidebar',
+        description: `${groupAssignmentRequirement.marker}. Clear the clinic when selecting a group.`,
+        components: {
+          Field: '@/app/(payload)/components/ClinicStaffGroupField#ClinicStaffGroupField',
+          Error: '@/app/(payload)/components/ClinicStaffGroupField#ClinicStaffGroupTooltipError',
+        },
+      },
+      validate: createConditionalRequiredValidator(
+        validations.relationship,
+        groupAssignmentRequirementSet,
+        groupAssignmentRequirement,
+      ),
+    },
+    {
+      name: 'personalGroupInvitation',
+      type: 'group',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+      fields: [
+        { name: 'groupId', type: 'text' },
+        { name: 'operatorId', type: 'text' },
+        { name: 'authorizedAt', type: 'date' },
+      ],
+    },
+    {
+      name: 'activationReadiness',
+      type: 'group',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+      fields: [
+        { name: 'version', type: 'select', options: ['identity-v1'] },
+        { name: 'principalId', type: 'text' },
+        { name: 'subject', type: 'text' },
+        { name: 'establishedAt', type: 'date' },
+      ],
+    },
+    {
       name: 'accountCompletion',
       type: 'group',
       access: { create: () => false, read: () => false, update: () => false },
       admin: { hidden: true },
       fields: [
-        { name: 'source', type: 'select', options: ['initial-password', 'legacy-password-login', 'legacy-audit'] },
+        {
+          name: 'source',
+          type: 'select',
+          options: ['initial-password', 'group-initial-password', 'legacy-password-login', 'legacy-audit'],
+        },
         { name: 'subject', type: 'text' },
+        { name: 'principalId', type: 'text' },
+        { name: 'groupId', type: 'text' },
         { name: 'clinicId', type: 'text' },
         { name: 'evidenceAt', type: 'date' },
         { name: 'observedAt', type: 'date' },

@@ -1,14 +1,16 @@
 import { CollectionConfig } from 'payload'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import {
-  platformOrAssignedClinicMutation,
-  platformOrOwnClinicResource,
-  platformOrOwnClinicResourceOrActive,
-} from '@/access/scopeFilters'
+  clinicTreatmentCreateAccess,
+  clinicTreatmentUpdateAccess,
+  clinicTreatmentReadAccess,
+  guardClinicTreatmentOperation,
+  guardClinicTreatmentChange,
+  verifyClinicTreatmentOperation,
+} from '@/features/clinicDashboard/treatments/authorization'
 import { updateAveragePriceAfterChange } from './hooks/updateAveragePriceAfterChange'
 import { updateAveragePriceAfterDelete } from './hooks/updateAveragePriceAfterDelete'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
-import { beforeChangeAssignClinicFromUser } from '@/hooks/clinicOwnership'
 import { revalidateClinicTreatmentChange, revalidateClinicTreatmentDelete } from '@/hooks/revalidateClinicSurfaces'
 import { normalizeClinicTreatmentPrice, validateClinicTreatmentPrice } from './priceValidation'
 
@@ -25,14 +27,16 @@ export const ClinicTreatments: CollectionConfig = {
     defaultColumns: ['clinic', 'treatment', 'price', 'active'],
   },
   access: {
-    read: platformOrOwnClinicResourceOrActive,
-    create: platformOrAssignedClinicMutation, // Platform: all, Clinic: assigned clinic only
-    update: platformOrOwnClinicResource, // Platform: all, Clinic: only their clinic
+    read: clinicTreatmentReadAccess,
+    create: clinicTreatmentCreateAccess,
+    update: clinicTreatmentUpdateAccess,
     delete: isPlatformStaff, // Only Platform can delete
   },
   timestamps: true,
   hooks: {
-    beforeChange: [stableIdBeforeChangeHook, beforeChangeAssignClinicFromUser({ clinicField: 'clinic' })],
+    beforeOperation: [guardClinicTreatmentOperation],
+    beforeChange: [stableIdBeforeChangeHook, guardClinicTreatmentChange],
+    afterOperation: [verifyClinicTreatmentOperation],
     afterChange: [updateAveragePriceAfterChange, revalidateClinicTreatmentChange],
     afterDelete: [updateAveragePriceAfterDelete, revalidateClinicTreatmentDelete],
   },

@@ -1,5 +1,10 @@
 import type { CollectionConfig } from 'payload'
 import {
+  finishHostedCaptureOperation,
+  guardCaptureActivationBoundary,
+  prepareHostedCaptureOperation,
+} from '@/features/clinicNotifications/hostedCapture'
+import {
   guardNotificationControl,
   notificationStorageAccess,
   requireNotificationTransaction,
@@ -16,7 +21,10 @@ export const ClinicNotificationControls: CollectionConfig = {
   endpoints: false,
   graphQL: false,
   hooks: {
+    beforeOperation: [prepareHostedCaptureOperation],
+    afterOperation: [finishHostedCaptureOperation],
     beforeChange: [
+      guardCaptureActivationBoundary,
       async (args) => {
         if ((args.data.key ?? args.originalDoc?.key) !== 'notification-retention') return guardNotificationControl(args)
         requireNotificationTransaction(args.req, await args.req.transactionID)

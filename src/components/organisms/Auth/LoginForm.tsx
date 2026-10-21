@@ -164,6 +164,16 @@ export const Header = ({
 export const Status = ({ message, variant = 'info' }: { message?: string; variant?: StatusVariant }) => {
   const { state } = useLoginFormContext()
 
+  if (state.error) {
+    return (
+      <div className="mb-4">
+        <Alert variant="error" className="text-left break-words">
+          {state.error}
+        </Alert>
+      </div>
+    )
+  }
+
   if (message) {
     const role = variant === 'success' || variant === 'info' ? 'status' : 'alert'
 
@@ -171,16 +181,6 @@ export const Status = ({ message, variant = 'info' }: { message?: string; varian
       <div className="mb-4">
         <Alert variant={variant} role={role} className="text-left break-words">
           {message}
-        </Alert>
-      </div>
-    )
-  }
-
-  if (state.error) {
-    return (
-      <div className="mb-4">
-        <Alert variant="error" className="text-left break-words">
-          {state.error}
         </Alert>
       </div>
     )

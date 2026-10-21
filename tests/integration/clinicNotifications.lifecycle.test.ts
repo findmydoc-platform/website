@@ -14,12 +14,16 @@ import {
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import {
+  replaceClinicTestUserAssignment,
   asClinicScopedPayloadUser,
   asPayloadPatientUser,
+  asPayloadStaffUser,
+  createPlatformTestUser,
   createClinicTestUser,
   createPatientTestUser,
 } from '../fixtures/testUsers'
 import { testSlug } from '../fixtures/testSlug'
+import { withTestCaptureAuthority } from '@/features/clinicNotifications/testCaptureAuthority'
 
 vi.mock('@payloadcms/storage-s3', () => ({ s3Storage: () => (incomingConfig: unknown) => incomingConfig }))
 
@@ -28,6 +32,7 @@ describe('clinic notification source-to-feed lifecycle', () => {
   let clinicId: number
   let doctorId: number
   let staffReq: PayloadRequest
+  let operatorReq: PayloadRequest
   let sourceReq: PayloadRequest
   const staffIds: Array<string | number> = []
   const patientIds: Array<string | number> = []
@@ -47,6 +52,10 @@ describe('clinic notification source-to-feed lifecycle', () => {
     })
     staffReq = await createLocalReq({}, payload)
     staffReq.user = await asClinicScopedPayloadUser(payload, staff, clinicId)
+    operatorReq = await createLocalReq(
+      { user: asPayloadStaffUser(await createPlatformTestUser(payload, { emailPrefix: 'notification-operator' })) },
+      payload,
+    )
     sourceReq = await createLocalReq({}, payload)
   }, 60_000)
 
@@ -259,19 +268,22 @@ describe('clinic notification source-to-feed lifecycle', () => {
     ).toEqual(stored.docs)
   })
 
-  it('rechecks current clinic assignment before returning names or counts', async () => {
+  it('rechecks current assignment and returns an empty personal feed without clinic names or counts', async () => {
     const id = staffReq.user!.id
     const staff = await payload.findByID({ collection: 'clinicStaff', id, overrideAccess: true })
-    await payload.update({ collection: 'clinicStaff', id, overrideAccess: true, data: { clinic: null } })
+    await replaceClinicTestUserAssignment(payload, id, null)
     try {
-      await expect(readClinicNotifications(staffReq, { mode: 'summary' })).rejects.toMatchObject({
-        code: 'CLINIC_ACCESS_DENIED',
+      expect(await readClinicNotifications(staffReq, { mode: 'summary' })).toMatchObject({
+        unreadCount: 0,
+        nextUnreadCountChangeAt: null,
       })
-      await expect(readClinicNotifications(staffReq, { mode: 'page', view: 'all' })).rejects.toMatchObject({
-        code: 'CLINIC_ACCESS_DENIED',
+      expect(await readClinicNotifications(staffReq, { mode: 'page', view: 'all' })).toMatchObject({
+        items: [],
+        unreadCount: 0,
+        nextCursor: null,
       })
     } finally {
-      await payload.update({ collection: 'clinicStaff', id, overrideAccess: true, data: { clinic: staff.clinic } })
+      await replaceClinicTestUserAssignment(payload, id, staff.clinic)
     }
   })
 
@@ -288,13 +300,15 @@ describe('clinic notification source-to-feed lifecycle', () => {
       { context: { clinicNotificationCommand: true }, req: { transactionID: Promise.resolve(transactionID!) } },
       payload,
     )
-    await payload.update({
-      collection: 'clinicNotificationControls',
-      id: control.id,
-      overrideAccess: true,
-      req: controlReq,
-      data: { active: false, activatedAt: null },
-    })
+    await withTestCaptureAuthority(controlReq, () =>
+      payload.update({
+        collection: 'clinicNotificationControls',
+        id: control.id,
+        overrideAccess: true,
+        req: controlReq,
+        data: { active: false, activatedAt: null },
+      }),
+    )
     await payload.db.commitTransaction(transactionID!)
     let entered!: () => void
     let proceed!: () => void
@@ -752,7 +766,8 @@ describe('clinic notification source-to-feed lifecycle', () => {
       collection: 'clinicStaff',
       id: staffReq.user!.id,
       overrideAccess: true,
-      data: { clinic: null },
+      user: operatorReq.user!,
+      data: { assignmentScope: 'unassigned', clinic: null, group: null },
       context: { notificationOffboardRace: true },
     })
     try {
@@ -804,12 +819,7 @@ describe('clinic notification source-to-feed lifecycle', () => {
       proceed()
       await offboard.catch(() => undefined)
       hooks.afterChange = previous
-      await payload.update({
-        collection: 'clinicStaff',
-        id: original.id,
-        overrideAccess: true,
-        data: { clinic: original.clinic },
-      })
+      await replaceClinicTestUserAssignment(payload, original.id, original.clinic, { skipClinicStaffAuthSync: true })
     }
   })
 
@@ -1184,7 +1194,8 @@ describe('clinic notification source-to-feed lifecycle', () => {
           overrideAccess: true,
           context: { notificationBulkFailure: true },
           where: { id: { in: ids } },
-          data: { clinic: null },
+          user: operatorReq.user!,
+          data: { assignmentScope: 'unassigned', clinic: null, group: null },
         }),
       ).rejects.toThrow('active native transaction session')
     } finally {

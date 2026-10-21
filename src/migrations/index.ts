@@ -99,6 +99,10 @@ import * as migration_20261013_232344_clinic_notification_retention_control from
 import * as migration_20261013_234505_clinic_notification_scope from './20261013_234505_clinic_notification_scope'
 import * as migration_20261014_064510_review_notification_transitions from './20261014_064510_review_notification_transitions'
 import * as migration_20261014_083610_review_decision_transitions from './20261014_083610_review_decision_transitions'
+import * as migration_20261017_084048_clinic_staff_identity_activation from './20261017_084048_clinic_staff_identity_activation'
+import * as migration_20261017_085356_clinic_groups_initial_membership from './20261017_085356_clinic_groups_initial_membership'
+import * as migration_20261017_091316_clinic_staff_group_assignment from './20261017_091316_clinic_staff_group_assignment'
+import * as migration_20261017_101649_personal_group_invitation from './20261017_101649_personal_group_invitation'
 
 export const migrations = [
   {
@@ -605,5 +609,25 @@ export const migrations = [
     up: migration_20261014_083610_review_decision_transitions.up,
     down: migration_20261014_083610_review_decision_transitions.down,
     name: '20261014_083610_review_decision_transitions',
+  },
+  {
+    up: migration_20261017_084048_clinic_staff_identity_activation.up,
+    down: migration_20261017_084048_clinic_staff_identity_activation.down,
+    name: '20261017_084048_clinic_staff_identity_activation',
+  },
+  {
+    up: migration_20261017_085356_clinic_groups_initial_membership.up,
+    down: migration_20261017_085356_clinic_groups_initial_membership.down,
+    name: '20261017_085356_clinic_groups_initial_membership',
+  },
+  {
+    up: migration_20261017_091316_clinic_staff_group_assignment.up,
+    down: migration_20261017_091316_clinic_staff_group_assignment.down,
+    name: '20261017_091316_clinic_staff_group_assignment',
+  },
+  {
+    up: migration_20261017_101649_personal_group_invitation.up,
+    down: migration_20261017_101649_personal_group_invitation.down,
+    name: '20261017_101649_personal_group_invitation',
   },
 ]

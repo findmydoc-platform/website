@@ -53,6 +53,7 @@ describe('beforeChangeDoctorMedia', () => {
     expect(callArgs).toBeDefined()
     expect(callArgs?.collection).toBe('doctors')
     expect(callArgs?.depth).toBe(0)
+    expect(callArgs?.req).toBe(req)
     expect(String(callArgs?.id)).toBe('3')
     // shortHash is mocked to 'aaaaaaaaaaaaaaaa...' so shortHash().slice(0,10) === 'aaaaaaaaaa'
     expect(result.createdBy).toEqual({ relationTo: 'platformStaff', value: 5 })

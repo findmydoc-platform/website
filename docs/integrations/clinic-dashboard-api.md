@@ -30,9 +30,26 @@ new-inquiry path. Guest and verified submissions capture one occurrence inside t
 subject to a persisted activation boundary that defaults to inactive. Installed `clinic-notifications-v1` support
 is negotiated separately from capture activation. Its [closed wire contract](../architecture/clinic-notifications-v1.md)
 defines the complete catalog for the following implementation slices. Personal explicit marking now persists first
-read receipts through the authorized acknowledgement command. Remaining producers, exact destination opening,
-continuation loading and independent cleanup remain separate slices.
+read receipts through the authorized acknowledgement command. Remaining producers, continuation loading and independent cleanup remain separate slices.
 Hosted capture stays inactive; local isolated acceptance does not establish Preview or Production availability.
+
+The personal notification feed reads the current union of eligible clinics for the principal's local or group
+assignment. Each occurrence or patient-message presentation includes one strict `clinic: { id, name }` attribution
+with its current clinic name. Notifications and explicit receipt selections remain personal at
+`/api/clinic-dashboard/notifications` and `/read`; they never use an active-clinic URL. Signed continuations bind
+principal, view and contract version while each request rereads current eligibility. Both routes require the existing
+notification contract header plus `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1`, with both headers in `Vary`.
+An eligible person with no clinics receives an empty feed and zero count; receipt commands reject complete clinic
+access loss. The closed notification contract defines full grouping, limits, visibility and atomic receipt semantics.
+
+Dashboard record URLs use `/clinics/:clinicId?section=messages&inquiry=:id` and
+`/clinics/:clinicId?section=reviews&review=:id`. These validated internal return targets carry routing intent through
+login, never authority. Direct links and notification opening use the same editor departure gate as a manual clinic
+switch. The ordinary exact detail read rechecks the current principal, clinic scope and record ownership independently
+of list filters or pagination. Missing or foreign records do not select a replacement. Fetching details creates no
+receipt: only the Dashboard's committed exact display permits a separate existing personal receipt command with the
+original fixed selection. That command rechecks current eligibility and retains atomic, expiry and unknown-outcome
+semantics. Optional anchors use the normal permitted detail projection without additional history reads.
 
 The [notification contract](../architecture/clinic-notifications-v1.md) defines acknowledgement eligibility at the final
 atomic server decision immediately before the native commit call. A decision before expiry may finish committing
@@ -50,29 +67,61 @@ a physical commit-time guarantee or hosted activation.
 | Server rendering | Provide typed Payload REST and custom endpoint contracts. | Read through a server-only Payload client directly from React Server Components. |
 | Persistence | Remain the sole business-data persistence boundary. | Own no database or durable business cache. |
 
+## Personal group invitation and activation
+
+An authorized Website back-office operator opens an existing Clinic Group and uses **Invite a personal group
+manager**. The control sends `POST /api/clinicGroups/:id/personal-invitation` with only `email`, `firstName`, and
+`lastName`. The persisted admin/support role authorizes the operation. This native Admin command is not a Dashboard
+browser API and does not confer Payload Admin access.
+
+Website reserves one pending personal principal and immutable operator/group origin before any provider effect.
+Repeated preparation reconciles that same onboarding identity; an unknown provider result remains unconfirmed and
+retryable. Existing local staff, reassignment, reactivation, revocation, and offboarding use their separate workflows.
+An approved synchronized group assignment grants no Dashboard access before trusted personal activation.
+
+Delivery uses the existing Website-owned `clinic-invitation` Auth action, signed cross-app protocol, replay handling,
+password-completion claim, and environment activation registry. Preparation does not activate delivery. An inactive
+environment returns an explicit inactive-delivery result to the operator; no direct provider invitation bypass exists.
+The existing Dashboard confirmation/password journey clears its completion grant and returns to login. A subsequent
+login obtains a fresh `clinic-scope-v1` bootstrap. Current eligible group clinics open through that response; an empty
+set stays on the restricted workspace. Neither the invitation nor a bootstrap snapshot supplies a later grant.
+
+The client-handled login, reset-request, and password-completion forms declare native POST submission so inputs do
+not enter navigation URLs before hydration. Hydrated requests retain the established JSON, origin, CSRF, session,
+and signed Auth protocol behavior.
+
+Website records `group-initial-password` evidence only after the completed identity-bound action and a fresh
+server-verified password event. The immutable proof binds principal, subject, original group, and Auth action; it
+contains no clinic-origin claim. The same protected update establishes `identity-v1` readiness. Current approval,
+identity synchronization, original invitation binding, and assignment are checked again before persistence. Existing
+clinic-origin completion evidence and its guards retain their established semantics.
+
 ## Payload Bootstrap Contract
 
 The initial focused endpoint is `GET /api/clinic-dashboard/bootstrap`. Payload registers it through its standard custom
 endpoint conventions; its stable semantic contract is fixed here.
 
-Inquiry capabilities are negotiated additively through `X-Findmydoc-Clinic-Dashboard-Contract`. The supported values
-are `inquiry-communication-v1` for the compatibility projection and `inquiry-communication-v2` for moderation and
-retention system events. A request without that header receives the historical six-capability bootstrap. Exactly one
-known value adds the two inquiry capabilities and enables the focused inquiry routes. Empty, unknown, mixed, or
-coalesced duplicate values fail closed with
-`CLINIC_DASHBOARD_INVALID_CONTRACT`. Bootstrap and inquiry responses include both `Authorization` and the contract
-header in `Vary`; the Dashboard BFF, never the browser, owns the fixed opt-in value.
+Bootstrap requires exactly `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1`. Missing, empty, unknown,
+mixed, or coalesced duplicate values return `400 CLINIC_DASHBOARD_INVALID_CONTRACT`. This Greenfield contract has
+no historical single-clinic response projection. The BFF owns negotiation; the browser does not call Payload.
 
-The endpoint:
+`X-Findmydoc-Clinic-Dashboard-Contract` remains a separate inquiry-domain contract with its existing
+`inquiry-communication-v1` and `inquiry-communication-v2` values. It does not select the bootstrap shape or grant
+group access to unconverted domain routes. Notification support negotiation also retains its existing meaning.
 
-1. validates the Bearer token through the existing Supabase authentication strategy;
-2. accepts only a resolved `clinicStaff` principal;
-3. reads current approval and clinic assignment from Payload;
-4. returns `403` without clinic data when the principal is not approved or has no clinic;
-5. derives all capabilities server-side from current access rules;
-6. returns a purpose-specific DTO, not a populated Payload document.
+Every bootstrap request independently validates the personal Bearer token and binds its subject to the resolved
+`clinicStaff` principal. Payload reads current personal activation, approval, assignment, group existence and clinic
+participation. Local assignments grant their current clinic; group assignments derive the current group clinic set.
+An approved person with no eligible clinic receives a successful bootstrap with an empty `clinics` array. Ineligible
+persons receive `403` without clinic data. Invalid identity returns `401`; unavailable identity or source reads return
+sanitized `503` responses.
 
-The initial response shape is owned by the website repository:
+Active-workspace recovery consumes these existing source contracts. A clinic assignment replacement, revocation or group
+membership change takes effect on the next scoped operation; stale identity or bootstrap claims cannot authorize it. The
+Dashboard then reads a new personal bootstrap and offers only current eligible choices. `403` preserves the valid personal
+session, including an approved empty set. Source outages remain distinct from confirmed denial. Recovery introduces no
+new source endpoint, stored draft transport, revocation channel, age policy or public-cache invalidation.
+
 
 ```ts
 type ClinicDashboardCapability =
@@ -85,52 +134,40 @@ type ClinicDashboardCapability =
   | 'clinic-inquiries:view'
   | 'clinic-inquiries:edit'
 
-type ClinicDashboardBootstrapDTO = {
-  principal: {
-    id: string
-    displayName: string
-    email: string
-  }
-  clinic: {
-    id: string
-    name: string
-  }
-  status: "approved"
-  capabilities: ClinicDashboardCapability[]
+type ClinicScopeBootstrapDTO = {
+  schemaVersion: 'clinic-scope-v1'
+  principal: { id: string; displayName: string; email: string }
+  status: 'approved'
+  clinics: Array<{ id: string; name: string; capabilities: ClinicDashboardCapability[] }>
 }
 ```
 
-The historical six capabilities are returned exactly once in the order shown above for every approved clinic principal
-with synchronized identity, private password evidence, and a current assignment to a participation-approved clinic.
-Public publication is independent. The negotiated inquiry contract appends inquiry view and edit in that order. Existing
-profile view and edit access respectively grant treatment and gallery view and edit access while those workspaces are
-introduced. Inquiry view and edit remain explicit because each inquiry endpoint checks the current capability again. A
-successful bootstrap implies Dashboard access, so there is no separate `dashboard:access` capability.
+Clinics are sorted by display name, then stable ID, using the English collation. Each entry projects the eight
+closed capabilities in the order above. These capabilities describe existing profile, treatment, gallery and inquiry
+operations; they do not introduce doctor, review, notification, reporting or export capability strings. Each domain
+still enforces its own source and operation authorization. Unconverted unscoped domain authorization remains local
+and fails closed for group managers.
 
-`ClinicDashboardCapability` is a closed, version-controlled string union. It describes user-visible operations, not
-Payload collection names or field-level access details. It is a UI projection and never replaces Payload authorization:
-each later read or mutation must authorize the current principal, clinic, document, and fields again. New capability
-values require synchronized type, endpoint, Dashboard behavior, and permission tests.
+`status: approved` describes personal Dashboard eligibility, not public clinic publication. The DTO omits Supabase
+identifiers, tokens, internal roles, account evidence, Payload timestamps and unrelated fields. Private activation
+contracts remain documented in [clinic participation](../security/clinic-participation.md).
 
-The DTO's `status: approved` means authorized Dashboard participation, including unpublished clinics. It is not the
-clinic's public publication status. Its shape remains compatible with existing Dashboard readers. Website Auth owns
-private completion evidence and its trusted command contract in
-[clinic participation](../security/clinic-participation.md). The later authenticated completion protocol belongs to
-Website #1995 and Dashboard #160; this process change does not activate it.
-
-The DTO deliberately omits Supabase identifiers, tokens, internal roles, access-control metadata, Payload timestamps,
-and unrelated clinic fields. Later capability endpoints may add their own DTOs without expanding this bootstrap into a
-generic data endpoint.
+Success and error responses use `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
+`Vary: Authorization, X-Findmydoc-Clinic-Dashboard-Contract, X-Findmydoc-Clinic-Scope-Contract`. Bootstrap grants are
+request-bound projections. A selected clinic path never grants permission and later requests read current access again.
 
 ## Clinic Dashboard Reporting Contract
 
 > **Canonical decision:**
 > [ADR 029](https://github.com/findmydoc-platform/website/blob/main/docs/adrs/029-adr-tenant-safe-clinic-dashboard-reporting.md)
 
-`GET /api/clinic-dashboard/reporting` is the fixed `clinic-dashboard-reporting-v1` reporting contract. It is a
-request-bound private route. Each request validates the Bearer token, resolves the current approved `clinicStaff` and
-its assigned clinic, and derives every scope, source, and timezone server-side. The request never chooses a clinic,
-role, source, timezone, cache policy, or analytic identity.
+`GET /api/clinic-dashboard/clinics/:clinicId/reporting` carries the explicit clinic target and retains the
+`clinic-dashboard-reporting-v1` content schema. It requires `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1`.
+The previous unscoped reporting route is removed. Each request validates the personal Bearer identity and authorizes
+the positive integer path target against current local or group assignment and clinic participation. The source
+clinic record must match that authorized target. Every Payload and PostHog metric read uses that clinic alone.
+The request cannot choose role, source, timezone, cache policy or analytic identity. Existing Türkiye availability,
+partial-source behavior and export availability remain unchanged; no group aggregation or new export is added.
 
 The sole query parameter is exactly one `periodDays` value: `7`, `30`, or `90`. Missing, repeated, malformed, or
 additional parameters return:
@@ -145,7 +182,7 @@ additional parameters return:
 ```
 
 Every success and error response has `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
-`Vary: Authorization`. The route has no tags, revalidation, cache layer, cache policy, or public-cache impact
+`Vary: Authorization, X-Findmydoc-Clinic-Scope-Contract`. The route has no tags, revalidation, cache layer, cache policy, or public-cache impact
 (`no-public-impact`). Authentication failures return `401 CLINIC_DASHBOARD_UNAUTHORIZED` with `Authentication is
 required.`; unavailable reporting access returns `403 CLINIC_DASHBOARD_ACCESS_DENIED` with `Reporting access is not
 available.`; an authorization/source bootstrap failure returns `503
@@ -253,19 +290,25 @@ The profile capability uses five custom Payload endpoints:
 
 | Method and route | Result |
 | --- | --- |
-| `GET /api/clinic-dashboard/profile` | Returns the current published profile, the optional active draft, and safe Türkiye city options. |
-| `POST /api/clinic-dashboard/profile/draft` | Creates the assigned clinic's active draft from the current published profile after a published-revision check. |
-| `PUT /api/clinic-dashboard/profile/draft` | Replaces the assigned clinic's active draft after published- and draft-revision checks. |
-| `POST /api/clinic-dashboard/profile/draft/discard` | Deletes the assigned clinic's active draft after a draft-revision check. |
-| `POST /api/clinic-dashboard/profile/publish` | Atomically applies the draft-owned fields to the public clinic, deletes the draft, and triggers the established clinic revalidation plan. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/profile` | Returns the current published profile, the optional active draft, and safe Türkiye city options. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/profile/draft` | Creates the authorized target clinic's active draft from the current published profile after a published-revision check. |
+| `PUT /api/clinic-dashboard/clinics/:clinicId/profile/draft` | Replaces the authorized target clinic's active draft after published- and draft-revision checks. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/profile/draft/discard` | Deletes the authorized target clinic's active draft after a draft-revision check. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/profile/publish` | Atomically applies the draft-owned fields to the public clinic, deletes the draft, and triggers the established clinic revalidation plan. |
 
-Every request repeats bootstrap authorization and derives the clinic from the current approved `clinicStaff`
-assignment. No route accepts a clinic ID as authority. Payload stores at most one active `clinicProfileDrafts` record
-per clinic.
+Every request requires `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1` and an explicit clinic path target.
+Website repeats current principal, local or group assignment, clinic participation and operation authorization.
+The path selects a target; it does not grant access. The stored draft clinic is immutable and must match the target.
+Payload stores at most one active `clinicProfileDrafts` record per clinic.
+
+The profile command's existing native transaction owns the clinic/staff authorization barrier, revision checks,
+business writes and final current authorization through commit. Direct native draft writers use the same source
+barrier and stored ownership checks. Draft operations do not invalidate public output. Successful publication keeps
+the existing Website-owned post-commit clinic revalidation plan. Profile writes do not retry automatically.
 
 Draft creation accepts only `{ expectedPublishedRevision }`. The server copies the current published name,
 description, public postal address, supported languages, and opening hours into revision `1`; callers cannot supply
-initial field values or a clinic ID. Draft updates require the complete draft-owned field set plus
+initial field values or a clinic ID in the request body. Draft updates require the complete draft-owned field set plus
 `expectedPublishedRevision` and `expectedDraftRevision`.
 
 The response contract is:
@@ -335,14 +378,15 @@ The treatment capability uses one focused custom Payload endpoint rather than ge
 
 | Method and route | Result |
 | --- | --- |
-| `GET /api/clinic-dashboard/treatments` | Returns the assigned clinic's complete treatment snapshot and the central treatment catalogue. |
-| `POST /api/clinic-dashboard/treatments` | Creates one inactive offering for an existing central treatment. |
-| `PATCH /api/clinic-dashboard/treatments` | Updates only EUR price and active state after an optimistic revision check. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/treatments` | Returns the selected clinic's complete treatment snapshot and the central treatment catalogue. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/treatments` | Creates one inactive offering for an existing central treatment. |
+| `PATCH /api/clinic-dashboard/clinics/:clinicId/treatments` | Updates only EUR price and active state after an optimistic revision check. |
 
-Every request repeats bootstrap authorization, requires `clinic-treatments:view` for reads or
-`clinic-treatments:edit` for writes, and derives the clinic from the approved `clinicStaff` assignment. No request
-accepts a clinic ID. The endpoint returns purpose-specific DTOs and does not expose generic Payload query, depth,
-relationship, or collection response semantics.
+Every request sends `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1`, independently validates the personal Bearer
+identity, and reads current Payload readiness, assignment, clinic membership and participation. The path selects one
+currently eligible local/group clinic. Reads require `clinic-treatments:view`; writes require `clinic-treatments:edit`.
+The path, token, selector preference and a previous bootstrap result do not grant access. The unscoped route is not
+registered. Request bodies accept no clinic override or generic Payload query, depth or relationship options.
 
 ```ts
 type ClinicTreatmentMasterDTO = {
@@ -365,11 +409,11 @@ type ClinicTreatmentSnapshotDTO = {
 }
 ```
 
-Create accepts only `{ treatmentId, priceEUR }`; Payload assigns the authenticated clinic and stores `active: false`.
+Create accepts only `{ treatmentId, priceEUR }`; Payload assigns the explicit authorized clinic and stores `active: false`.
 The offering can be activated only by a later update. Update accepts
 `{ offeringId, expectedRevision, priceEUR, active }`. `revision` is the offering's ISO `updatedAt` value. Payload finds
-the offering by both ID and assigned clinic and compares the expected revision inside a serializable transaction.
-Serialization failures are retried; a retry observes the newer revision and returns a conflict instead of overwriting
+the offering by both ID and the original explicit clinic and compares the expected revision inside a serializable transaction.
+Update serialization failures retain the existing maximum of three transaction attempts; a retry observes the newer revision and returns a conflict instead of overwriting
 it. Treatment name and plain-text description remain projections of the central Treatment record and are never
 writable through this endpoint.
 
@@ -378,28 +422,43 @@ returns `422 CLINIC_TREATMENT_INVALID_INPUT`; a foreign or missing clinic offeri
 `404 CLINIC_TREATMENT_NOT_FOUND`; a duplicate clinic/treatment pair or stale revision returns
 `409 CLINIC_TREATMENT_CONFLICT`. Authentication and temporary-service errors reuse the stable Clinic Dashboard error
 codes. Every response is private-live with `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
-`Vary: Authorization`.
+`Vary: Authorization, X-Findmydoc-Clinic-Scope-Contract`. Source authorization loss returns `403` rather than a misleading service failure.
 
-Clinic-treatment writes retain the existing `clinictreatments` hook behavior. Transactional updates suppress the hook's
-in-transaction invalidation and dispatch the same related-clinic plan once after commit, preventing an invalidated
-public cache from refilling against pre-commit data. Public clinic detail and listing comparison reads remain
-`public-cached`; the existing event, cache-policy entries, tags, planner owner, and bounded public paths remain
-authoritative. The private Dashboard endpoint adds no cache class, tag, surface, or invalidation owner.
+Both focused mutations own their complete native transaction. Create makes one attempt and preserves unknown outcomes;
+update retains its existing bounded serialization owner. Each attempt starts from the caller's context so nested
+aggregate hooks cannot suppress recomputation after an aborted attempt. The caller's context is restored afterward.
+Clinic, current group and personal staff barriers remain held
+through final source and active-session checks before commit. Direct `clinictreatments` writes use the same native
+barriers and current-source checks. Clinic staff cannot move an offering to another clinic, delete it, or modify the
+master catalogue. Removal from the clinic's public offerings remains `PATCH` with `active: false`.
+
+Cache impact is `private-live` for the scoped Dashboard endpoint and `public-cached` for existing public clinic detail
+and listing comparison consumers. Focused creates and updates suppress in-transaction revalidation and dispatch the
+existing related-clinic plan after commit. Existing average-price hooks, previous/current clinic identity mapping,
+policy entries, canonical tags, planner owner and bounded public paths remain authoritative. This conversion adds no
+public cache class, tag, surface or invalidation owner. No collection schema or migration changes are required.
+
+The source lifecycle suite covers local/group/foreign targets, record/clinic mismatches, controlled references,
+participation, missing native owners, and both business/access commit orders for assignment revocation and group
+movement. Native results and the DB-backed build require the authorized test CI; authored cases alone are not passing
+evidence. Profile, doctor and gallery conversions keep their own gates and acceptance evidence.
 
 ## Clinic Gallery Contract
 
-The gallery capability uses four focused custom Payload operations:
+The gallery capability uses five focused custom Payload operations:
 
 | Method and route | Result |
 | --- | --- |
-| `GET /api/clinic-dashboard/gallery` | Returns the saved ordered gallery, its revision, and upload constraints. |
-| `POST /api/clinic-dashboard/gallery/media` | Accepts exactly one multipart image and returns one private draft medium. |
-| `PUT /api/clinic-dashboard/gallery` | Atomically publishes the supplied order and metadata after a revision check. |
-| `POST /api/clinic-dashboard/gallery/discard` | Accepts private draft IDs for post-response permanent cleanup. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/gallery` | Returns the saved ordered gallery, its revision, and upload constraints. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/gallery/media` | Accepts exactly one multipart image and returns one private draft medium. |
+| `PUT /api/clinic-dashboard/clinics/:clinicId/gallery` | Atomically publishes the supplied order and metadata after a revision check. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/gallery/discard` | Accepts private draft IDs for post-response permanent cleanup. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/gallery/media/:mediaId/image` | Checks current target access and stored media ownership before returning protected bytes. |
 
-Every request repeats bootstrap authorization, derives the clinic from the approved `clinicStaff` assignment, and
-requires `clinic-gallery:view` for reads or `clinic-gallery:edit` for mutations. No request accepts a clinic ID,
-storage key, bucket name, or direct object-storage credential. Clinic Staff cannot bypass this revision-protected
+Every request requires `clinic-scope-v1`, repeats current personal bootstrap authorization, and selects the explicit
+clinic path target from the resulting local or group access set. Reads require `clinic-gallery:view`; mutations
+require `clinic-gallery:edit`. The target must match stored media ownership and gallery relationships. No request
+accepts a storage key, bucket name, or direct object-storage credential. Clinic Staff cannot bypass this revision-protected
 contract through the regular `clinicMedia` collection routes; direct collection writes are Platform-only.
 
 ```ts
@@ -430,19 +489,34 @@ type ClinicGallerySnapshotDTO = {
 Uploads accept JPEG, PNG, WebP, or AVIF and remain `draft` until included in a successful save. The application limit
 is 4 MiB per request and the Dashboard sends no more than three independent upload requests concurrently. Payload
 normalizes orientation and strips metadata before generating its registered image sizes. Returned media URLs are
-absolute URLs suitable for server-side Dashboard validation and rendering.
+absolute protected image-operation URLs. The optional `size=thumbnail` selects a stored registered size; neither
+the URL nor its encrypted Dashboard token grants access. Public media URLs keep their existing behavior.
+
+The Website instance installs the bounded native upload owner from [ADR 036](../adrs/036-adr-clinic-authorization-mutation-ordering.md#bounded-native-media-initialization-retry).
+Direct root `payload.create` uploads and this custom multipart handler retain native transaction ownership. At most
+three total native attempts are permitted only for an attested PostgreSQL `23505` from the exact cold authorization
+control initializer before upload, followed by confirmed rollback of the original owner. Each attempt retains its
+original person, clinic and bytes, derives fresh request/file/data state, and reruns current access and draft quota.
+The version-pinned lifecycle evidence also preserves a confirmed inner rollback through missing outer cleanup.
+Borrowed or replaced owners, unrelated or caller-forged errors, upload/media effects, commit attempts and uncertain
+outcomes never replay. The browser, BFF and provider do not replay an unknown submitted result. Generic REST creates
+that call the native operation directly do not acquire this Local API exception. Successful media publication and
+cache invalidation keep their existing hooks; private replay metadata changes no public freshness value.
 
 Save accepts `{ expectedRevision, items: [{ mediaId, alt, captionText? }] }`; array order is public order and the first
 item is the main image. A serializable transaction verifies the revision, ownership, uniqueness, maximum count, and
 required alt text, publishes selected media, returns removed media to `draft`, and updates the gallery, derived
 thumbnail, and profile revision together. A stale revision returns `409 CLINIC_GALLERY_CONFLICT` without partial
-writes.
+writes. The native transaction owns the clinic and staff authorization barrier, final current source access,
+and business writes. Assignment changes and clinic membership transfers use the same barriers. Confirmed
+serialization aborts retry with the original target; unknown commit outcomes do not retry.
 
 Discard accepts `{ mediaIds }` for at most twelve own-clinic, unreferenced drafts. Save, discard, and gallery reads may
 schedule one bounded post-response cleanup batch. Cleanup rechecks ownership, `draft` status, and gallery or thumbnail
-references before each attempt, then permanently deletes through Payload so the storage adapter removes the original
+references again under the native delete transaction barrier, then permanently deletes through Payload so the storage adapter removes the original
 and every registered size. Cleanup failure is logged and reported without changing the successful user response; a
-later gallery read may retry an abandoned draft. The contract makes no time guarantee and defines no scheduler.
+later gallery read may retry an abandoned draft. Only confirmed database aborts retry automatically; external object
+cleanup with an unknown outcome does not repeat. Object cleanup stays outside the retryable publication transaction. The contract makes no time guarantee and defines no scheduler.
 Gallery reads consider only unreferenced drafts older than 24 hours as abandoned, so a reload cannot delete a fresh
 upload from an active editing session.
 
@@ -455,6 +529,16 @@ sitemap surfaces.
 
 ## Inquiry communication contract
 
+Every inquiry route selects its clinic through `:clinicId` and requires
+`X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1` alongside the inquiry contract header.
+Website resolves the current personal principal against that clinic and checks each stored inquiry,
+message, note, draft, attachment, and moderation-case relationship. The target never supplies a grant.
+Clinic command retries retain the original target. A native Payload transaction holds the shared
+clinic/staff authorization barrier through the final stored-access check and business commit.
+Direct native clinic writes use the same barrier independently of notification activation.
+Existing contact reauthentication, lifecycle, retention, attachment quotas, and actor permissions remain in force.
+Inquiry data is private and request-bound; this conversion has no public-cache impact.
+
 The inquiry capability uses focused custom Payload endpoints. Generic REST and GraphQL access to the inquiry
 aggregate, conversations, messages, internal notes, attachments, read positions, audit events, moderation cases, and
 moderation events stays disabled.
@@ -464,20 +548,20 @@ domain work. Version 1 excludes the version 2-only `moderation-restricted`, `mod
 
 | Method and route | Result |
 | --- | --- |
-| `GET /api/clinic-dashboard/inquiries` | Returns one cursor-paginated, filtered queue for the current clinic and an opaque change cursor. |
-| `GET /api/clinic-dashboard/inquiries/detail` | Returns one current-clinic detail projection and an opaque change cursor. |
-| `POST /api/clinic-dashboard/inquiries/messages` | Stores one idempotent external clinic message and any automatic `contacted` transition atomically. |
-| `POST /api/clinic-dashboard/inquiries/notes` | Stores one idempotent, immutable clinic-only note. |
-| `PATCH /api/clinic-dashboard/inquiries/state` | Applies one revision-checked handling or lifecycle command. |
-| `PUT /api/clinic-dashboard/inquiries/read-position` | Changes only the current staff member's personal read position. |
-| `POST /api/clinic-dashboard/inquiries/contact/reveal` | Reauthorizes and reveals raw contact values for a current-clinic spam inquiry. |
-| `POST /api/clinic-dashboard/inquiries/attachments/drafts` | Creates one actor- and inquiry-bound private upload draft. |
-| `POST /api/clinic-dashboard/inquiries/attachments/drafts/finalize` | Verifies and seals one own unused draft. |
-| `POST /api/clinic-dashboard/inquiries/attachments/drafts/discard` | Marks one own unused draft discarded and schedules non-blocking object cleanup. |
-| `GET /api/clinic-dashboard/inquiries/attachments/preview` | Reauthorizes and proxies allowlisted attachment bytes for preview. |
-| `GET /api/clinic-dashboard/inquiries/attachments/download` | Reauthorizes and proxies allowlisted attachment bytes for download. |
-| `POST /api/clinic-dashboard/inquiries/report` | Reports one opposite-party message, attachment, or conversation without changing visibility. |
-| `POST /api/clinic-dashboard/inquiries/appeal` | Submits the affected clinic's single text-only appeal against an active measure. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/inquiries` | Returns one cursor-paginated, filtered queue for the current clinic and an opaque change cursor. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/inquiries/detail` | Returns one current-clinic detail projection and an opaque change cursor. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/messages` | Stores one idempotent external clinic message and any automatic `contacted` transition atomically. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/notes` | Stores one idempotent, immutable clinic-only note. |
+| `PATCH /api/clinic-dashboard/clinics/:clinicId/inquiries/state` | Applies one revision-checked handling or lifecycle command. |
+| `PUT /api/clinic-dashboard/clinics/:clinicId/inquiries/read-position` | Changes only the current staff member's personal read position. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/contact/reveal` | Reauthorizes and reveals raw contact values for a current-clinic spam inquiry. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/attachments/drafts` | Creates one actor- and inquiry-bound private upload draft. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/attachments/drafts/finalize` | Verifies and seals one own unused draft. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/attachments/drafts/discard` | Marks one own unused draft discarded and schedules non-blocking object cleanup. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/inquiries/attachments/preview` | Reauthorizes and proxies allowlisted attachment bytes for preview. |
+| `GET /api/clinic-dashboard/clinics/:clinicId/inquiries/attachments/download` | Reauthorizes and proxies allowlisted attachment bytes for download. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/report` | Reports one opposite-party message, attachment, or conversation without changing visibility. |
+| `POST /api/clinic-dashboard/clinics/:clinicId/inquiries/appeal` | Submits the affected clinic's single text-only appeal against an active measure. |
 
 Every operation requires an explicit Supabase Bearer token. Payload verifies that token even when request middleware
 already populated `req.user`, then requires the verified Supabase subject to equal the current `clinicStaff` identity.
@@ -685,8 +769,8 @@ There is no public `under_review` display and no black-bar rendering. `status` r
 The standard Payload REST collection routes remain the current-read contract:
 
 - `GET /api/reviews` and `GET /api/reviews/:id` return platform staff all review states and fields.
-- `GET /api/clinic-dashboard/reviews/:id` returns an ordinary exact clinic review in a closed `{ data }` envelope. It revalidates the current clinic principal and source scope, takes no query or caller-selected clinic, and returns `404 TARGET_UNAVAILABLE` for a missing, foreign, rejected or trashed record. Its independently executable examples live in `tests/fixtures/clinic-review-detail-v1.json`. The response exposes the current permitted text projection, treatment, rating and publication/withdrawal state. Removed or withdrawn rows remain available to their clinic but omit author name and written content. The route is private and uncached; it does not read versions or create notification receipts.
-- The same routes return clinic staff approved reviews only for their assigned clinic, including logically removed and
+- `GET /api/clinic-dashboard/clinics/:clinicId/reviews/:id` returns an ordinary exact clinic review in a closed `{ data }` envelope. It revalidates the current clinic principal and source scope, takes no query and intersects the explicit clinic path with current source authorization, and returns `404 TARGET_UNAVAILABLE` for a missing, foreign, rejected or trashed record. Its independently executable examples live in `tests/fixtures/clinic-review-detail-v1.json`. The response exposes the current permitted text projection, treatment, rating and publication/withdrawal state. Removed or withdrawn rows remain available to their clinic but omit author name and written content. The route is private and uncached; it does not read versions or create notification receipts.
+- The same routes return clinic staff approved reviews only for currently eligible local or group clinics, including logically removed and
   withdrawn rows. Clinic fields are limited to the public measure/text/notice, moderation time, withdrawal
   state/source/time, rating/date/public author, and ordinary review relationships. Raw `comment` is returned only for
   active `none` or `context` rows. Internal reasons, patient relation, named audit actors, and raw redacted, placeholder,
@@ -699,6 +783,23 @@ The standard Payload REST collection routes remain the current-read contract:
 placeholder use Website-owned fixed notices. Empty fields may be absent or `null` according to standard Payload REST
 serialization, so consumers must discriminate on `publicMeasure` rather than field presence.
 
+#### Private clinic-target review operations
+
+The Dashboard uses only the dedicated `/api/clinic-dashboard/clinics/:clinicId` review family. Every operation requires `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1` and fresh current target access. Responses vary by authorization and scope contract and remain `private, no-store`.
+
+| Operation | Contract |
+| --- | --- |
+| `GET /reviews` | Approved target reviews, bounded page/limit and the existing period/rating/treatment/visibility filters; unknown or duplicate query keys fail closed. Returns minimized public review projections and pagination metadata. |
+| `GET /reviews/:id` | Closed exact `{ data }` detail, independent of loaded list filters and pages. |
+| `GET /reviews/:id/record?depth=1` | The same permitted current review projection as a direct record for existing workflow preflight. |
+| `GET /reviews/:id/publication-history` | Existing sanitized publication-history projection and revision-bound cursor. |
+| `GET /review-responses` and `/review-appeals` | Only workflows for a bounded fixed set of approved reviews in the explicit target clinic. |
+| `GET /review-responses/versions` and `/review-appeals/versions` | Existing permitted workflow history after current exact source authorization. |
+| `POST /review-responses` and `/review-appeals` | Existing response or appeal submission; clinic and actor are source-derived. |
+| `PATCH /review-responses/:workflowId` | Existing pending-response revision after exact review and workflow ownership checks. |
+
+Commands require the configured Dashboard origin, JSON content type and a strict body bounded to 16 KiB. Native Payload access, operation permissions, computed fields, moderation transitions and versions remain authoritative. Response and appeal writes hold the actual clinic, current staff and group barriers, recheck source eligibility and ownership before commit, and serialize with assignment or group membership changes. No public projection, capture activation, retention or moderation policy changes are implied.
+
 #### Version and publication-history reads
 
 Reviews use unlimited, immutable Payload native versions. Raw native history remains platform-only through standard
@@ -710,7 +811,7 @@ Payload REST:
 Clinic staff must not use the raw version routes because an older version can contain text that a later redaction,
 removal, or withdrawal makes unsafe. The clinic-safe fallback is
 `GET /api/reviews/<reviewId>/publication-history?limit=25&cursor=<opaque>`. It returns platform staff any available
-review, or the currently assigned clinic only when the current review remains approved and not physically deleted:
+review, or a currently eligible source clinic only when the current review remains approved and not physically deleted:
 
 ```ts
 type ReviewPublicationHistoryResponseDTO = {
@@ -809,7 +910,7 @@ The bootstrap always returns one of these stable Payload status and code pairs:
 | Payload or upstream condition | Payload result | Session effect |
 | --- | --- | --- |
 | Missing or invalid explicit Bearer token, non-clinic principal, conflicting identity mapping, or valid identity without matching clinic staff | `401` with `CLINIC_DASHBOARD_UNAUTHORIZED` | Dashboard may attempt one controlled refresh; persistent failure clears invalid cookies. Staff is never created during authentication. |
-| Principal not approved or missing a current clinic assignment | `403` with `CLINIC_DASHBOARD_ACCESS_DENIED` | Preserve the session so the Dashboard can render an access-state explanation. |
+| Principal not eligible for personal Dashboard access | `403` with `CLINIC_DASHBOARD_ACCESS_DENIED` | Preserve the session so the Dashboard can render an access-state explanation. |
 | Supabase or Payload temporarily unavailable | `503` with `CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE` | Preserve the session; do not present an upstream outage as logout. |
 
 Capability routes additionally use these general semantics:
@@ -820,7 +921,7 @@ posts to the Dashboard recovery handler, which refreshes once, retries with the 
 returning to the page. A bounded return marker prevents another automatic refresh; persistent rejection clears local
 Dashboard auth cookies before login. Writable Dashboard Route Handlers keep their existing refresh-and-retry path.
 The [Dashboard initial page recovery contract](https://github.com/findmydoc-platform/clinic-dashboard/blob/main/docs/authentication-and-bff.md#initial-page-recovery-and-writable-requests)
-owns these routes and guards. Payload bootstrap status codes, DTOs, and clinic authorization are unchanged.
+owns these routes and guards. The recovery policy applies to the person-scoped bootstrap documented above; an empty authorized clinic set preserves the valid personal session.
 
 | Payload or upstream condition | Dashboard BFF result | Session effect |
 | --- | --- | --- |
@@ -838,14 +939,16 @@ city-country mismatch even when a client submits manipulated identifiers.
 Error bodies expose stable machine-readable codes and safe user-facing categories. They do not expose tokens, raw
 Payload errors, SQL details, stack traces, clinic data from a denied request, or Supabase response bodies.
 
-Every bootstrap and clinic-profile response, including errors, carries:
+Every bootstrap and clinic-profile response, including errors, carries these cache headers:
 
 ```text
 Cache-Control: private, no-store
 Pragma: no-cache
 Expires: 0
-Vary: Authorization
 ```
+
+Bootstrap varies by Authorization, the inquiry-domain contract and the clinic-scope contract headers. Unconverted
+clinic-profile routes retain their existing Authorization and inquiry-domain contract Vary values.
 
 ## Environment Matrix
 
@@ -890,7 +993,7 @@ The architecture remains valid only while the following properties hold:
 - Browser network evidence contains Dashboard-origin application requests and authentication navigation only; it
   contains no browser request to Payload.
 - Browser JavaScript cannot read access or refresh tokens.
-- Payload resolves clinic, status, and capabilities from the current principal for every request.
+- Payload derives current authorized clinics and capabilities from the personal principal for every request, and authorizes each explicit business target at the source.
 - Bootstrap and capability DTOs contain no unapproved internal fields.
 - Every state-changing Dashboard route uses the central session-bound HMAC-CSRF guard; Payload remains unchanged.
 - The Payload client accepts only the exact environment origin and does not follow authenticated redirects.
@@ -899,3 +1002,15 @@ The architecture remains valid only while the following properties hold:
 - Local, preview, and production configurations reject cross-environment combinations.
 - Authenticated responses bypass shared and durable caches.
 - Public-impacting Payload mutations retain their established ADR 023 revalidation behavior.
+
+## Selected-clinic doctor operations
+
+Doctor directory and update-detail reads use `GET /api/clinic-dashboard/clinics/:clinicId/doctors` with the existing bounded Payload query shape. Doctor creation and conditional image assignment use POST and PATCH on that path; exact updates use PATCH `/:id`. Specialty reads and creation use `/doctor-specialties`; exact updates use `/doctor-specialties/:id`. Doctor image upload and cleanup use POST `/doctor-media` and DELETE `/doctor-media/:id`. These requests retain ordinary collection access and return private, uncached responses, including errors. A caller-supplied query is combined with the source clinic constraint and cannot broaden it.
+
+`GET /api/clinic-dashboard/clinics/:clinicId/doctors/:id/image` resolves the current doctor profile image, actual media doctor and clinic before reading its same-origin Payload file. It forwards the verified server-side bearer only to that configured origin, rejects redirects and unsupported formats, and bounds image reads to 5 MiB. Existing upload validation remains 4 MiB with its existing accepted formats. Public media file access remains governed by the existing publication policy.
+
+The source derives current local/group eligibility through `readClinicPrincipalAccess` and `readClinicTargetAccess`; path and body identifiers only select records. Direct `doctors`, `doctorspecialties`, `doctortreatments` and `doctorMedia` collection operations use the same source policy. Doctor clinic ownership cannot be reassigned by clinic staff. Specialty/treatment joins retain their real doctor parent, controlled reference validation and existing platform-only delete policy. Doctor images retain immutable doctor ownership and must belong to both the selected doctor and clinic. Staff reads require the stored media clinic and current doctor clinic to match one eligible clinic, including targetless native reads. Native foreign keys preserve required media ownership; media must be removed before its doctor is hard-deleted. Defensive cleanup of historical orphan rows, if present, permits only platform/internal deletion with an active native transaction. Target-bound requests and clinic/patient actors cannot use that cleanup path; create, update and orphan reassignment remain denied. Any remaining clinic source retains its barrier. A group principal must explicitly select a creation clinic, even when its eligible set has one member.
+
+`src/features/doctorProfiles/authorization.ts` supplies the native `guardDoctorOperation`, `guardDoctorChange` and `verifyDoctorOperation` hooks. Payload starts the outer transaction before `beforeOperation`; nested ownership lookups carry the same request. Original and proposed clinic sources acquire the shared clinic/group/person barriers, and final current authorization runs before native commit. Missing native ownership fails closed. No runtime SQL, isolation override or new retry loop is introduced. These are doctor-child hooks; they do not convert clinic treatments or master specialty/treatment management.
+
+Cache impact is `public-cached`: the existing Doctor and DoctorSpecialty change/delete hooks retain old/new source identities and dispatch the existing clinic-surface planner events. Existing Clinic Detail/Listing tags and bounded paths remain Website-owned. Private directory, editor, image and authorization state stays live and is never placed in a public cache.

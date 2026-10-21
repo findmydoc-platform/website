@@ -8,6 +8,7 @@ import {
   type CollectionAfterChangeHook,
   type CollectionBeforeChangeHook,
   type Payload,
+  type PayloadRequest,
 } from 'payload'
 import pg from 'pg'
 import config from '@payload-config'
@@ -22,6 +23,9 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { createActivationFixture } from '../fixtures/transactionalEmailActivation'
 import { webhookNow } from '../fixtures/lettermintWebhook'
 import { testSlug } from '../fixtures/testSlug'
+import { registrationFailureDiagnostic } from '../../scripts/testing/registration-failure-diagnostic'
+import type { TransactionalEmailCommands } from '@/features/transactionalEmail'
+import type { CommandCatalog } from '@/features/transactionalEmail/catalog'
 import { asPayloadStaffUser, cleanupTrackedUsers, createPlatformTestUser } from '../fixtures/testUsers'
 
 vi.mock('@/auth/utilities/jwtValidation', () => ({ extractSupabaseUserData: async () => null }))
@@ -613,6 +617,45 @@ describe('public clinic registration transaction', () => {
   it('converges concurrent Production submissions on one application and receipt', async () => {
     installProductionAcceptance()
     const contactEmail = `${prefix}-production-active-concurrent@clinic.example`
+    const failures: ReturnType<typeof registrationFailureDiagnostic>[] = []
+    async function observeFailure<Result>(work: () => Promise<Result>): Promise<Result> {
+      try {
+        return await work()
+      } catch (error) {
+        failures.push(registrationFailureDiagnostic(error))
+        throw error
+      }
+    }
+    const originalSelector = commandAcceptanceOverride.select!
+    commandAcceptanceOverride.select = (command) => {
+      const selection = originalSelector(command)
+      if (selection.kind === 'inactive') return selection
+      return {
+        ...selection,
+        async run<Result>(
+          req: PayloadRequest,
+          work: (transactionReq: PayloadRequest, commands: TransactionalEmailCommands) => Promise<Result>,
+          catalog?: CommandCatalog,
+        ): Promise<Result> {
+          return observeFailure(() =>
+            selection.run(
+              req,
+              (transactionReq, commands) => observeFailure(() => work(transactionReq, commands)),
+              catalog,
+            ),
+          )
+        },
+      }
+    }
+    const nativeCreate = payload.db.create.bind(payload.db)
+    const createDiagnostic = vi
+      .spyOn(payload.db, 'create')
+      .mockImplementation((args) => observeFailure(() => nativeCreate(args)))
+    const nativeCommit = payload.db.commitTransaction.bind(payload.db)
+    const commitDiagnostic = vi
+      .spyOn(payload.db, 'commitTransaction')
+      .mockImplementation((transactionID) => observeFailure(() => nativeCommit(transactionID)))
+
     const applicationHooks = payload.collections.clinicApplications.config.hooks.beforeChange
     let releaseWrites!: () => void
     let bothWriting!: () => void
@@ -640,6 +683,8 @@ describe('public clinic registration transaction', () => {
       releaseWrites()
       const responses = await Promise.all([first, second])
 
+      if (responses.some(({ status }) => status !== 202))
+        console.error('Controlled registration failure classifications', JSON.stringify(failures))
       expect(responses.map(({ status }) => status)).toEqual([202, 202])
       await expect(Promise.all(responses.map((response) => response.json()))).resolves.toEqual([
         { success: true },
@@ -649,6 +694,9 @@ describe('public clinic registration transaction', () => {
       await trackRegistrations(contactEmail)
     } finally {
       applicationHooks.splice(applicationHooks.indexOf(synchronize), 1)
+      commitDiagnostic.mockRestore()
+      createDiagnostic.mockRestore()
+      commandAcceptanceOverride.select = originalSelector
     }
   })
 })

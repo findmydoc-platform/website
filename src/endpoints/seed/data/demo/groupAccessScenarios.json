@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "clinic-group-acceptance-v1",
+  "personas": [
+    {
+      "key": "coastal-manager",
+      "groupStableId": "seed-group-coastal",
+      "preparation": "trusted-personal-group-invitation",
+      "emailEnvironmentKey": "FMD_ACCEPTANCE_COASTAL_MANAGER_EMAIL"
+    },
+    {
+      "key": "capital-manager",
+      "groupStableId": "seed-group-capital",
+      "preparation": "trusted-personal-group-invitation",
+      "emailEnvironmentKey": "FMD_ACCEPTANCE_CAPITAL_MANAGER_EMAIL"
+    }
+  ],
+  "independentClinicStableId": "seed-clinic-antalya-medvista",
+  "sourceTargets": [
+    {
+      "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "doctorStableId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "reviewStableId": "seed-review-01"
+    },
+    {
+      "clinicStableId": "seed-clinic-izmir-coast",
+      "doctorStableId": "seed-doctor-elif-arslan",
+      "reviewStableId": "seed-review-izmir-coast-03"
+    },
+    {
+      "clinicStableId": "seed-clinic-ankara-harmony",
+      "doctorStableId": "seed-doctor-selin-ozkan",
+      "reviewStableId": "seed-review-06"
+    }
+  ],
+  "scenarios": [
+    { "key": "multiple-clinics", "persona": "coastal-manager" },
+    {
+      "key": "unpublished-participation",
+      "persona": "coastal-manager",
+      "clinicStableId": "seed-clinic-istanbul-bosphorus"
+    },
+    {
+      "key": "local-within-group",
+      "persona": "coastal-manager",
+      "clinicStableId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    },
+    { "key": "independent-local", "persona": "coastal-manager", "clinicStableId": "seed-clinic-antalya-medvista" },
+    { "key": "last-used-fallback", "persona": "coastal-manager" },
+    { "key": "zero-eligible-clinics", "persona": "coastal-manager" },
+    {
+      "key": "membership-movement",
+      "persona": "coastal-manager",
+      "clinicStableId": "seed-clinic-izmir-coast",
+      "destinationGroupStableId": "seed-group-capital"
+    },
+    { "key": "revocation", "persona": "coastal-manager" },
+    { "key": "invalid-activation", "persona": "capital-manager" },
+    { "key": "draft-protection", "persona": "coastal-manager" },
+    { "key": "exact-notification-target", "persona": "coastal-manager" },
+    { "key": "per-clinic-reporting", "persona": "coastal-manager" }
+  ]
+}

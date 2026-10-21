@@ -44,6 +44,13 @@ describe('clinic ownership hooks', () => {
               status: 'approved',
               authSync: { status: 'synced' },
               supabaseUserId: 'clinic-subject',
+              assignmentScope: 'local',
+              activationReadiness: {
+                version: 'identity-v1',
+                principalId: String(10),
+                subject: 'clinic-subject',
+                establishedAt: '2026-10-17T10:00:00.000Z',
+              },
               accountCompletion: {
                 source: 'initial-password',
                 subject: 'clinic-subject',
@@ -80,6 +87,13 @@ describe('clinic ownership hooks', () => {
               status: 'approved',
               authSync: { status: 'synced' },
               supabaseUserId: 'clinic-subject',
+              assignmentScope: 'local',
+              activationReadiness: {
+                version: 'identity-v1',
+                principalId: String(10),
+                subject: 'clinic-subject',
+                establishedAt: '2026-10-17T10:00:00.000Z',
+              },
               accountCompletion: {
                 source: 'initial-password',
                 subject: 'clinic-subject',
@@ -152,6 +166,13 @@ describe('clinic ownership hooks', () => {
               status: 'approved',
               authSync: { status: 'synced' },
               supabaseUserId: 'clinic-subject',
+              assignmentScope: 'local',
+              activationReadiness: {
+                version: 'identity-v1',
+                principalId: String(10),
+                subject: 'clinic-subject',
+                establishedAt: '2026-10-17T10:00:00.000Z',
+              },
               accountCompletion: {
                 source: 'initial-password',
                 subject: 'clinic-subject',
@@ -190,6 +211,13 @@ describe('clinic ownership hooks', () => {
               status: 'approved',
               authSync: { status: 'synced' },
               supabaseUserId: 'clinic-subject',
+              assignmentScope: 'local',
+              activationReadiness: {
+                version: 'identity-v1',
+                principalId: String(10),
+                subject: 'clinic-subject',
+                establishedAt: '2026-10-17T10:00:00.000Z',
+              },
               accountCompletion: {
                 source: 'initial-password',
                 subject: 'clinic-subject',
@@ -228,6 +256,13 @@ describe('clinic ownership hooks', () => {
               status: 'approved',
               authSync: { status: 'synced' },
               supabaseUserId: 'clinic-subject',
+              assignmentScope: 'local',
+              activationReadiness: {
+                version: 'identity-v1',
+                principalId: String(10),
+                subject: 'clinic-subject',
+                establishedAt: '2026-10-17T10:00:00.000Z',
+              },
               accountCompletion: {
                 source: 'initial-password',
                 subject: 'clinic-subject',

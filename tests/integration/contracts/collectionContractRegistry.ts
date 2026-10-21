@@ -4,6 +4,10 @@ export interface CollectionContractEntry {
 }
 
 export const collectionContractRegistry = {
+  clinicGroups: {
+    baseline: ['tests/integration/clinicGroups.lifecycle.test.ts'],
+    deep: ['tests/integration/clinicGroups.lifecycle.test.ts'],
+  },
   clinicNotificationOccurrences: {
     baseline: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
     deep: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
@@ -14,7 +18,10 @@ export const collectionContractRegistry = {
   },
   clinicNotificationControls: {
     baseline: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
-    deep: ['tests/integration/clinicNotifications.lifecycle.test.ts'],
+    deep: [
+      'tests/integration/clinicNotifications.lifecycle.test.ts',
+      'tests/integration/clinicNotifications.hostedCapture.test.ts',
+    ],
   },
   reviewPublicationTransitions: {
     baseline: ['tests/integration/clinicNotifications.reviews.test.ts'],
@@ -143,6 +150,8 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/clinicTreatments.creation.test.ts'],
     deep: [
       'tests/integration/clinicTreatments.creation.test.ts',
+      'tests/integration/clinicTreatmentScope.lifecycle.test.ts',
+      'tests/integration/clinicDashboardTreatments.concurrency.test.ts',
       'tests/integration/clinicTreatments.averagePrice.test.ts',
       'tests/integration/migrations/clinicOpeningHoursActiveTreatments.test.ts',
       'tests/integration/migrations/clinicPostalCodePriceContract.test.ts',
@@ -162,19 +171,28 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/countries.lifecycle.test.ts'],
   },
   doctorMedia: {
-    baseline: ['tests/integration/doctorMedia.lifecycle.test.ts'],
+    baseline: [
+      'tests/integration/doctorMedia.lifecycle.test.ts',
+      'tests/integration/doctorClinicScope.lifecycle.test.ts',
+    ],
     deep: ['tests/integration/doctorMedia.lifecycle.test.ts'],
   },
   doctors: {
-    baseline: ['tests/integration/doctors.lifecycle.test.ts'],
+    baseline: ['tests/integration/doctors.lifecycle.test.ts', 'tests/integration/doctorClinicScope.lifecycle.test.ts'],
     deep: ['tests/integration/doctors.lifecycle.test.ts', 'tests/integration/doctors.titles.test.ts'],
   },
   doctorspecialties: {
-    baseline: ['tests/integration/doctorSpecialties.lifecycle.test.ts'],
+    baseline: [
+      'tests/integration/doctorSpecialties.lifecycle.test.ts',
+      'tests/integration/doctorClinicScope.lifecycle.test.ts',
+    ],
     deep: ['tests/integration/doctorSpecialties.lifecycle.test.ts'],
   },
   doctortreatments: {
-    baseline: ['tests/integration/doctorTreatments.lifecycle.test.ts'],
+    baseline: [
+      'tests/integration/doctorTreatments.lifecycle.test.ts',
+      'tests/integration/doctorClinicScope.lifecycle.test.ts',
+    ],
     deep: ['tests/integration/doctorTreatments.lifecycle.test.ts'],
   },
   favoriteclinics: {

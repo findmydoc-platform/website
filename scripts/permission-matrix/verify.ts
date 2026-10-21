@@ -31,6 +31,7 @@ type ConditionalScenarioKind =
   | 'always-false'
   | 'clinic-approved'
   | 'clinic-scope'
+  | 'clinic-source-public'
   | 'clinic-staff-update'
   | 'patient-scope'
   | 'patient-update-self'

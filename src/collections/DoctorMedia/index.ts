@@ -3,16 +3,16 @@ import type { CollectionConfig } from 'payload'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-import { isPlatformStaff } from '@/access/isPlatformStaff'
-import { isClinicStaff } from '@/access/isClinicStaff'
-import { getUserAssignedClinicId, normalizeClinicId } from '@/access/utils/getClinicAssignment'
 import { doctorMediaReadAccess } from '@/access/doctorMediaRead'
-import { platformOrOwnClinicResource } from '@/access/scopeFilters'
-import { getDoctorClinicId } from '@/access/utils/getDoctorClinic'
-import { extractRelationId } from '@/collections/common/mediaPathHelpers'
+import {
+  doctorSourceAccess,
+  doctorMediaCreateAccess,
+  guardDoctorOperation,
+  guardDoctorChange,
+  verifyDoctorOperation,
+} from '@/features/doctorProfiles/authorization'
 import { stableIdBeforeChangeHook, stableIdField } from '@/collections/common/stableIdField'
 import { beforeChangeDoctorMedia } from './hooks/beforeChangeDoctorMedia'
-import type { DoctorMedia as DoctorMediaType } from '@/payload-types'
 import { afterErrorLogMediaUploadError, beforeOperationCaptureMediaUpload } from '@/hooks/media/uploadLogging'
 import { beforeOperationPrepareUploadFilename } from '@/hooks/media/prepareUploadFilename'
 import { beforeOperationValidateMediaUpload } from '@/hooks/media/validateMediaUpload'
@@ -42,38 +42,17 @@ export const DoctorMedia: CollectionConfig = {
   },
   access: {
     read: doctorMediaReadAccess,
-    // Custom create logic: we must ensure the doctor provided actually belongs to the clinic of the
-    // uploading clinic staff user (or platform). This cross-entity validation (doctor -> clinic)
-    // goes beyond the simple clinic scoping handled by platformOrOwnClinicResource, so we keep a
-    // bespoke create handler here.
-    create: async ({ req, data }) => {
-      if (isPlatformStaff({ req })) return true
-
-      if (isClinicStaff({ req })) {
-        const clinicId = await getUserAssignedClinicId(req.user, req.payload)
-        const mediaData = data as Partial<DoctorMediaType>
-        const doctorId = extractRelationId(mediaData?.doctor)
-        if (!clinicId || !doctorId) return false
-
-        const doctorClinic = await getDoctorClinicId(doctorId, req.payload)
-        const normalizedClinic = normalizeClinicId(clinicId)
-        const normalizedDoctorClinic = normalizeClinicId(doctorClinic)
-
-        return Boolean(
-          normalizedClinic !== null && normalizedDoctorClinic !== null && normalizedDoctorClinic === normalizedClinic,
-        )
-      }
-
-      return false
-    },
-    update: platformOrOwnClinicResource,
-    delete: platformOrOwnClinicResource,
+    create: doctorMediaCreateAccess,
+    update: doctorSourceAccess(),
+    delete: doctorSourceAccess(),
   },
   trash: true,
   hooks: {
     afterError: [afterErrorLogMediaUploadError],
-    beforeChange: [stableIdBeforeChangeHook, beforeChangeDoctorMedia],
+    beforeChange: [stableIdBeforeChangeHook, guardDoctorChange, beforeChangeDoctorMedia],
+    afterOperation: [verifyDoctorOperation],
     beforeOperation: [
+      guardDoctorOperation,
       beforeOperationNormalizeImageEdits,
       beforeOperationValidateMediaUpload,
       beforeOperationPrepareUploadFilename,

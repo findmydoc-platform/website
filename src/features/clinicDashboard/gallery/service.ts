@@ -1,3 +1,5 @@
+import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
+import { authorizeClinicGalleryTarget } from './authorization'
 import type { Payload, PayloadRequest } from 'payload'
 
 import type { Clinic, ClinicMedia } from '@/payload-types'
@@ -59,6 +61,7 @@ const uniqueRelationIds = (values: unknown): RelationId[] => {
 }
 
 const readGalleryContext = async (req: PayloadRequest, clinicId: RelationId): Promise<GalleryContext> => {
+  await authorizeClinicGalleryTarget(req, clinicId, Boolean(await req.transactionID))
   const clinic = await req.payload.findByID({
     collection: 'clinics',
     depth: 0,
@@ -94,10 +97,13 @@ const mediaDTO = (media: ClinicMedia): ClinicGalleryMediaDTO => {
   const descriptor = resolveMediaDescriptorFromLoadedRelation(media, 'clinicMedia')
   const sourceUrl = descriptor?.url ?? mediaFileUrl(media)
   if (!sourceUrl) throw new ClinicGalleryServiceError('unavailable', 'A clinic gallery image is unavailable.')
-  const url = new URL(sourceUrl, getServerSideURL()).toString()
+  const clinicId = relationId(media.clinic)
+  if (clinicId === null) throw new ClinicGalleryServiceError('unavailable', 'The gallery media owner is unavailable.')
+  const imagePath = `/api/clinic-dashboard/clinics/${encodeURIComponent(String(clinicId))}/gallery/media/${encodeURIComponent(String(media.id))}/image`
+  const url = new URL(imagePath, getServerSideURL()).toString()
 
   const captionText = richTextToPlainText(media.caption)
-  const thumbnailUrl = mediaFileUrl(media, 'thumbnail')
+  const thumbnailUrl = mediaFileUrl(media, 'thumbnail') ? `${url}?size=thumbnail` : null
 
   return {
     alt: typeof media.alt === 'string' ? media.alt : '',
@@ -193,6 +199,7 @@ export const uploadClinicGalleryDraft = async (
   input: ClinicGalleryUploadInput,
   file: RequestFile,
 ): Promise<ClinicGalleryMediaDTO> => {
+  await authorizeClinicGalleryTarget(req, clinicId)
   const existingDrafts = await req.payload.count({
     collection: 'clinicMedia',
     overrideAccess: true,
@@ -207,6 +214,7 @@ export const uploadClinicGalleryDraft = async (
 
   const media = (await req.payload.create({
     collection: 'clinicMedia',
+    context: { clinicGalleryUpload: true },
     data: {
       ...(input.alt ? { alt: input.alt } : {}),
       ...(input.captionText
@@ -295,6 +303,7 @@ const runSerializableTransaction = async <Result>(
       }
       req.transactionID = transactionID
       const result = await command()
+      requireNotificationTransaction(req, transactionID)
       await req.payload.db.commitTransaction(transactionID)
       return result
     } catch (error: unknown) {
@@ -463,4 +472,33 @@ export const discardClinicGalleryDrafts = async (
   }
 
   return ids
+}
+
+/** A protected image URL selects one stored media record; it never supplies authorization. */
+export async function readClinicGalleryImageSource(
+  req: PayloadRequest,
+  clinicId: RelationId,
+  mediaId: string,
+  size: 'original' | 'thumbnail',
+): Promise<string> {
+  await authorizeClinicGalleryTarget(req, clinicId)
+  const media = (
+    await req.payload.find({
+      collection: 'clinicMedia',
+      depth: 0,
+      limit: 1,
+      pagination: false,
+      overrideAccess: true,
+      req,
+      where: { and: [{ id: { equals: payloadId(mediaId) } }, { clinic: { equals: clinicId } }] },
+    })
+  ).docs[0]
+  if (!media || String(relationId(media.clinic)) !== String(clinicId))
+    throw new ClinicGalleryServiceError('not-found', 'The gallery image does not exist.')
+  const raw = mediaFileUrl(media, size === 'thumbnail' ? 'thumbnail' : undefined)
+  if (!raw) throw new ClinicGalleryServiceError('not-found', 'The gallery image does not exist.')
+  const source = new URL(raw)
+  if (source.origin !== new URL(getServerSideURL()).origin || !source.pathname.startsWith('/api/clinicMedia/file/'))
+    throw new ClinicGalleryServiceError('unavailable', 'The image source is unavailable.')
+  return source.toString()
 }

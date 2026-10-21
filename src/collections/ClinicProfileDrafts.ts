@@ -1,4 +1,12 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionConfig } from 'payload'
+import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
+import { guardNotificationAuthorizationSession } from '@/features/clinicNotifications/authorizationBarrier'
+import {
+  authorizeClinicProfileTarget,
+  guardClinicProfileDraftWrite,
+} from '@/features/clinicDashboard/profile/authorization'
+import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
+import { relationId } from './clinics/profileGallery'
 
 import { languageOptions } from './common/selectionOptions'
 import { draftOpeningHoursField } from './clinics/openingHours'
@@ -18,6 +26,41 @@ export const ClinicProfileDrafts: CollectionConfig = {
     read: () => false,
     update: () => false,
     delete: () => false,
+  },
+  hooks: {
+    beforeChange: [guardClinicProfileDraftWrite],
+    beforeDelete: [
+      async ({ id, req }) => {
+        const stored = await req.payload.findByID({
+          collection: 'clinicProfileDrafts',
+          id,
+          depth: 0,
+          overrideAccess: true,
+          req,
+        })
+        const target = relationId(stored.clinic)
+        if (target === null) throw new APIError('The stored clinic profile draft owner is unavailable.', 403)
+        await authorizeClinicProfileTarget(req, target, true)
+      },
+    ],
+    afterOperation: [
+      async ({ req, operation, result }) => {
+        if (!normalizeNativeFinalWriteOperation(operation)) return result
+        await guardNotificationAuthorizationSession({ req })
+        requireNotificationTransaction(req, await req.transactionID)
+        const records =
+          result && typeof result === 'object' && 'docs' in result && Array.isArray(result.docs)
+            ? result.docs
+            : [result]
+        for (const record of records) {
+          const target = relationId(record && typeof record === 'object' && 'clinic' in record ? record.clinic : null)
+          if (target === null) throw new APIError('The stored clinic profile draft owner is unavailable.', 403)
+          await authorizeClinicProfileTarget(req, target, true)
+        }
+        await guardNotificationAuthorizationSession({ req })
+        return result
+      },
+    ],
   },
   indexes: [
     {

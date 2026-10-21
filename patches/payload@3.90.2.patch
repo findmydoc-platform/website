@@ -1,0 +1,155 @@
+diff --git a/dist/collections/operations/create.js b/dist/collections/operations/create.js
+index 4ab4e665797ce03aae3257660b59b4bf06cd7bc2..a0dc5f89b50ce1241e5ca072656815ef5306eb29 100644
+--- a/dist/collections/operations/create.js
++++ b/dist/collections/operations/create.js
+@@ -1,3 +1,4 @@
++import { recordGalleryCreateFailure } from '../../utilities/galleryUploadProvenance.js';
+ import crypto from 'crypto';
+ import { ensureUsernameOrEmail } from '../../auth/ensureUsernameOrEmail.js';
+ import { executeAccess } from '../../auth/executeAccess.js';
+@@ -23,11 +24,24 @@ import { sanitizeSelect } from '../../utilities/sanitizeSelect.js';
+ import { buildAllLocalesPublicationHookDoc, getAllLocalesPublicationStatus, hasAuthorizedAllLocalesPublicationStatus, normalizeAllLocalesPublicationStatus, reconcileAllLocalesPublicationStatus } from '../../versions/allLocalesPublicationStatus.js';
+ import { buildAfterOperation } from './utilities/buildAfterOperation.js';
+ import { buildBeforeOperation } from './utilities/buildBeforeOperation.js';
++const ownsGallerySession = (req, evidence) => Boolean(evidence.session) && req.transactionID === evidence.transactionID && req.payload.db.sessions?.[evidence.transactionID] === evidence.session;
++const assertGallerySession = (req, evidence) => {
++    if (evidence.owned && evidence.collection === 'clinicMedia' && !ownsGallerySession(req, evidence)) {
++        throw new Error('Clinic media requires its original active native owner.');
++    }
++};
+ export const createOperation = async (incomingArgs)=>{
+     let args = incomingArgs;
+     let externalUploadSource;
++    let galleryEvidence = { req: args.req, collection: args.collection.config.slug, owned: false, transactionID: undefined, session: undefined, phase: 'before-upload' };
+     try {
+         const shouldCommit = !args.disableTransaction && await initTransaction(args.req);
++        galleryEvidence.owned = Boolean(shouldCommit);
++        galleryEvidence.transactionID = await args.req.transactionID;
++        if (galleryEvidence.owned && galleryEvidence.collection === 'clinicMedia') {
++            galleryEvidence.session = args.req.payload.db.sessions?.[galleryEvidence.transactionID];
++            assertGallerySession(args.req, galleryEvidence);
++        }
+         // Keep a remote URL only as an ephemeral file source, then strip all submitted generated
+         // identity before untrusted create hooks run. The fetched file receives new server-owned
+         // identity before persistence.
+@@ -263,12 +277,16 @@ export const createOperation = async (incomingArgs)=>{
+         // /////////////////////////////////////
+         // Write files to local storage
+         // /////////////////////////////////////
++        assertGallerySession(req, galleryEvidence);
++        galleryEvidence.phase = 'upload';
+         if (!collectionConfig.upload.disableLocalStorage) {
+             await uploadFiles(payload, filesToUpload, req);
+         }
+         // /////////////////////////////////////
+         // Create
+         // /////////////////////////////////////
++        assertGallerySession(req, galleryEvidence);
++        galleryEvidence.phase = 'media';
+         let doc;
+         const select = sanitizeSelect({
+             fields: collectionConfig.flattenedFields,
+@@ -418,6 +436,8 @@ export const createOperation = async (incomingArgs)=>{
+         // Return results
+         // /////////////////////////////////////
+         if (shouldCommit) {
++            assertGallerySession(req, galleryEvidence);
++            galleryEvidence.phase = 'commit';
+             await commitTransaction(req);
+         }
+         return result;
+@@ -432,7 +452,20 @@ export const createOperation = async (incomingArgs)=>{
+                 msg: 'Failed to remove temp file'
+             });
+         });
+-        await killTransaction(args.req);
++        if (galleryEvidence.owned && galleryEvidence.collection === 'clinicMedia') {
++            const registered = args.req.payload.db.sessions?.[galleryEvidence.transactionID];
++            if (registered === galleryEvidence.session && registered) {
++                // Cleanup retains the captured original owner and never adopts a replacement request owner.
++                const cleanupReq = args.req.transactionID === galleryEvidence.transactionID ? args.req : { ...args.req, transactionID: galleryEvidence.transactionID };
++                await killTransaction(cleanupReq, error);
++            } else if (!registered && args.req.transactionID === galleryEvidence.transactionID) {
++                // Missing cleanup may follow the first nested rollback; it provides no new receipt.
++                await killTransaction(args.req, error);
++            }
++        } else {
++            await killTransaction(args.req, error);
++        }
++        recordGalleryCreateFailure(error, galleryEvidence);
+         throw error;
+     }
+ };
+diff --git a/dist/exports/gallery-upload-provenance.d.ts b/dist/exports/gallery-upload-provenance.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..b8ba2be19a0c9940472dae827619c1678da3ddaf
+--- /dev/null
++++ b/dist/exports/gallery-upload-provenance.d.ts
+@@ -0,0 +1 @@
++export declare function readGalleryCreateFailure(error: object, req: object): Readonly<{req: object; collection: string; owned: boolean; transactionID: unknown; borrowedMediaFailure: boolean; phase: 'before-upload' | 'upload' | 'media' | 'commit'; rollbacks: readonly object[]}> | undefined;
+diff --git a/dist/exports/gallery-upload-provenance.js b/dist/exports/gallery-upload-provenance.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c5f2aa0f57cbecfa822c963d5e0cd24e9784ce3a
+--- /dev/null
++++ b/dist/exports/gallery-upload-provenance.js
+@@ -0,0 +1 @@
++export { readGalleryCreateFailure } from '../utilities/galleryUploadProvenance.js';
+diff --git a/dist/utilities/galleryUploadProvenance.js b/dist/utilities/galleryUploadProvenance.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fca15faa074d550a7c4c242a9c7e4fe4cc644e3b
+--- /dev/null
++++ b/dist/utilities/galleryUploadProvenance.js
+@@ -0,0 +1,18 @@
++const failures = new WeakMap();
++const rollbacks = new WeakMap();
++export const recordGalleryCreateFailure = (error, evidence) => {
++    if (!error || (typeof error !== 'object' && typeof error !== 'function')) return;
++    const entries = failures.get(error) || [];
++    entries.push(Object.freeze(evidence));
++    failures.set(error, entries);
++};
++export const recordGalleryRollback = (error, receipt) => {
++    if (!error || (typeof error !== 'object' && typeof error !== 'function') || !receipt || typeof receipt !== 'object') return;
++    const entries = rollbacks.get(error) || [];
++    entries.push(receipt);
++    rollbacks.set(error, entries);
++};
++export const readGalleryCreateFailure = (error, req) => {
++    const attempt = failures.get(error)?.find((entry) => entry.req === req && entry.owned);
++    return attempt ? Object.freeze({ ...attempt, borrowedMediaFailure: failures.get(error).some((entry) => entry.collection === 'clinicMedia' && !entry.owned && entry.transactionID === attempt.transactionID), rollbacks: Object.freeze([...(rollbacks.get(error) || [])]) }) : undefined;
++};
+diff --git a/dist/utilities/killTransaction.js b/dist/utilities/killTransaction.js
+index 576ac222b4cf5ea36259b88f94d9048bd1d121a9..95dcd04f93cc31eea49e9af2d59bfa0b365cff66 100644
+--- a/dist/utilities/killTransaction.js
++++ b/dist/utilities/killTransaction.js
+@@ -1,10 +1,12 @@
++import { recordGalleryRollback } from './galleryUploadProvenance.js';
+ /**
+  * Rollback the transaction from the req using the db adapter and removes it from the req
+- */ export async function killTransaction(req) {
++ */ export async function killTransaction(req, error) {
+     const { payload, transactionID } = req;
+     if (transactionID && !(transactionID instanceof Promise)) {
+         try {
+-            await payload.db.rollbackTransaction(req.transactionID);
++            const receipt = await payload.db.rollbackTransaction(req.transactionID);
++            recordGalleryRollback(error, receipt);
+         } catch (ignore) {
+         // swallow any errors while attempting to rollback
+         }
+diff --git a/package.json b/package.json
+index cf81f1e4978b34a31bbd9175a2fea4f9520d43c7..e0e2896f0b351fb5f09b17e5642a2c83fe69ddd2 100644
+--- a/package.json
++++ b/package.json
+@@ -73,6 +73,11 @@
+     "./__testing__/predefinedMigration": {
+       "import": "./dist/__testing__/predefinedMigration.js",
+       "default": "./dist/__testing__/predefinedMigration.js"
++    },
++    "./gallery-upload-provenance": {
++      "import": "./dist/exports/gallery-upload-provenance.js",
++      "types": "./dist/exports/gallery-upload-provenance.d.ts",
++      "default": "./dist/exports/gallery-upload-provenance.js"
+     }
+   },
+   "main": "./dist/index.js",

@@ -21,6 +21,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
 import {
+  replaceClinicTestUserAssignment,
   asClinicScopedPayloadUser,
   asPayloadPatientUser,
   cleanupTrackedUsers,
@@ -562,18 +563,16 @@ describe('authoritative moderation appeal decision', () => {
         overrideAccess: true,
       })
       try {
-        await payload.update({
-          collection: 'clinicStaff',
-          id: staff.id,
-          data:
-            loss === 'missing-address'
-              ? { email: null }
-              : loss === 'access-lost'
-                ? { authSync: { status: 'failed' } }
-                : { clinic: null },
-          overrideAccess: true,
-          context: { skipClinicStaffAuthSync: true },
-        })
+        if (loss === 'binding-changed') {
+          await replaceClinicTestUserAssignment(payload, staff.id, null, { skipClinicStaffAuthSync: true })
+        } else
+          await payload.update({
+            collection: 'clinicStaff',
+            id: staff.id,
+            data: loss === 'missing-address' ? { email: null } : { authSync: { status: 'failed' } },
+            overrideAccess: true,
+            context: { skipClinicStaffAuthSync: true },
+          })
         expect((await deliver(result.appellant.operations[0]!.id)).deliver).not.toHaveBeenCalled()
         const stored = await mail(result.appellantReference)
         expect(stored.operations[0]).toMatchObject({
@@ -589,10 +588,11 @@ describe('authoritative moderation appeal decision', () => {
         )
         expect((await deliver(result.reporter.operations[0]!.id)).deliver).toHaveBeenCalledOnce()
       } finally {
+        await replaceClinicTestUserAssignment(payload, staff.id, staff.clinic, { skipClinicStaffAuthSync: true })
         await payload.update({
           collection: 'clinicStaff',
           id: staff.id,
-          data: { clinic: staff.clinic, email: staff.email, authSync: staff.authSync },
+          data: { email: staff.email, authSync: staff.authSync },
           overrideAccess: true,
           context: { skipClinicStaffAuthSync: true },
         })

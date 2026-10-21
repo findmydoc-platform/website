@@ -1,4 +1,9 @@
 export const CLINIC_DASHBOARD_CONTRACT_HEADER = 'X-Findmydoc-Clinic-Dashboard-Contract'
+export const CLINIC_SCOPE_CONTRACT_HEADER = 'X-Findmydoc-Clinic-Scope-Contract'
+export const CLINIC_SCOPE_CONTRACT_VERSION = 'clinic-scope-v1'
+
+export const hasClinicScopeContract = (headers: Headers): boolean =>
+  headers.get(CLINIC_SCOPE_CONTRACT_HEADER) === CLINIC_SCOPE_CONTRACT_VERSION
 const CLINIC_DASHBOARD_INQUIRY_CONTRACT_V1 = 'inquiry-communication-v1'
 const CLINIC_DASHBOARD_INQUIRY_CONTRACT_V2 = 'inquiry-communication-v2'
 

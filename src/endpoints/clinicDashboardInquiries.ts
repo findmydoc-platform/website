@@ -1,10 +1,11 @@
+import { hasClinicScopeContract } from '@/features/clinicDashboard/contractNegotiation'
 import { after } from 'next/server.js'
 import type { PayloadHandler, PayloadRequest } from 'payload'
 import type { ZodType } from 'zod'
 
 import { extractTokenFromHeader, validateSupabaseFreshFirstFactor } from '@/auth/utilities/jwtValidation'
 import type { ClinicDashboardCapability } from '@/features/clinicDashboard/bootstrap'
-import { revalidateClinicDashboardRequest } from '@/features/clinicDashboard/authorization'
+import { revalidateClinicDashboardTargetRequest } from '@/features/clinicDashboard/authorization'
 import {
   resolveClinicDashboardContract,
   resolveClinicDashboardInquiryContractVersion,
@@ -40,6 +41,12 @@ import { reconcileExpiredInquiryModerationMeasures } from '@/features/inquiryMod
 import { toLoggedError } from '@/utilities/logging/shared'
 import { CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS, clinicDashboardPrivateJsonResponse } from './clinicDashboardBootstrap'
 import { proxyInquiryAttachment } from './inquiryAttachmentProxy'
+
+const inquiryPrivateJsonResponse = (body: unknown, status: number): Response => {
+  const response = clinicDashboardPrivateJsonResponse(body, status)
+  response.headers.append('Vary', 'X-Findmydoc-Clinic-Scope-Contract')
+  return response
+}
 
 type AuthorizationResult = { ok: true } | { ok: false; response: Response }
 
@@ -123,7 +130,7 @@ const inquiryErrorResponse = (
   description: ErrorDescription,
   current?: InquiryCommunicationServiceError['current'],
 ): Response =>
-  clinicDashboardPrivateJsonResponse(
+  inquiryPrivateJsonResponse(
     {
       error: {
         code: description.code,
@@ -147,13 +154,24 @@ const authorizeClinic = async (
   if (resolveClinicDashboardContract(req.headers) !== 'inquiry') {
     return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS['invalid-input']) }
   }
-  const result = await revalidateClinicDashboardRequest(req, 'inquiry')
+  const clinicId = req.routeParams?.clinicId
+  if (
+    !hasClinicScopeContract(req.headers) ||
+    typeof clinicId !== 'string' ||
+    !/^[1-9]\d*$/u.test(clinicId) ||
+    !Number.isSafeInteger(Number(clinicId))
+  ) {
+    return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS['invalid-input']) }
+  }
+  const result = await revalidateClinicDashboardTargetRequest(req, clinicId)
 
   switch (result.status) {
     case 'authorized': {
-      return result.data.capabilities.includes(capability)
-        ? { ok: true }
-        : { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS['access-denied']) }
+      if (capability !== 'clinic-inquiries:view' && capability !== 'clinic-inquiries:edit') {
+        return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS['access-denied']) }
+      }
+      req.context = { ...req.context, inquiryClinicTargetId: result.clinicId }
+      return { ok: true }
     }
     case 'access-denied':
       return { ok: false, response: inquiryErrorResponse(req, ERROR_DESCRIPTIONS['access-denied']) }
@@ -361,7 +379,7 @@ const execute = async <Value>(
   operation: string,
   command: () => Promise<Value>,
   success: (value: Value) => Response = (value) =>
-    clinicDashboardPrivateJsonResponse(projectInquiryContractValue(req, value), 200),
+    inquiryPrivateJsonResponse(projectInquiryContractValue(req, value), 200),
 ): Promise<Response> => {
   try {
     const value = await command()
@@ -464,7 +482,7 @@ export const clinicDashboardInquiryReadPositionPutHandler: PayloadHandler = asyn
     'read_position_update',
     input.inquiryId,
     () => updateClinicInquiryReadPosition(req, input),
-    (value) => clinicDashboardPrivateJsonResponse({ unread: value.inquiry.unread }, 200),
+    (value) => inquiryPrivateJsonResponse({ unread: value.inquiry.unread }, 200),
   )
 }
 
@@ -502,7 +520,7 @@ export const clinicDashboardInquiryAttachmentDraftPostHandler: PayloadHandler = 
     () => createAttachmentDraft(req, input),
     (value) => {
       scheduleAttachmentSweep(req)
-      return clinicDashboardPrivateJsonResponse(value, 201)
+      return inquiryPrivateJsonResponse(value, 201)
     },
   )
 }
@@ -519,7 +537,7 @@ export const clinicDashboardInquiryAttachmentFinalizePostHandler: PayloadHandler
     () => finalizeAttachmentDraft(req, input),
     () => {
       scheduleAttachmentSweep(req)
-      return clinicDashboardPrivateJsonResponse({ finalized: true }, 200)
+      return inquiryPrivateJsonResponse({ finalized: true }, 200)
     },
   )
 }
@@ -536,7 +554,7 @@ export const clinicDashboardInquiryAttachmentDiscardPostHandler: PayloadHandler 
     () => discardAttachmentDraft(req, input),
     (value) => {
       scheduleDiscardCleanup(req, value.attachmentId)
-      return clinicDashboardPrivateJsonResponse({ discarded: true }, 200)
+      return inquiryPrivateJsonResponse({ discarded: true }, 200)
     },
   )
 }
@@ -555,7 +573,10 @@ const attachmentAccessHandler =
         proxyInquiryAttachment(req, {
           attachmentId,
           mode,
-          responseHeaders: CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS,
+          responseHeaders: {
+            ...CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS,
+            Vary: `${CLINIC_DASHBOARD_PRIVATE_LIVE_HEADERS.Vary}, X-Findmydoc-Clinic-Scope-Contract`,
+          },
         }),
       (response) => {
         scheduleAttachmentSweep(req)

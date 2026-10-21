@@ -21,13 +21,17 @@ export const normalizeClinicId = (value: unknown): number | null => {
  * @param payload - Payload instance from req.payload
  * @returns Promise<number | null> - The clinic ID or null if not found/applicable
  */
-export async function getUserAssignedClinicId(user: PayloadRequest['user'], payload: Payload): Promise<number | null> {
+export async function getUserAssignedClinicId(
+  user: PayloadRequest['user'],
+  payload: Payload,
+  req?: PayloadRequest,
+): Promise<number | null> {
   if (!user || user.collection !== 'clinicStaff') {
     return null
   }
 
   try {
-    const accessState = await readClinicAccessState(payload, user.id)
+    const accessState = await readClinicAccessState(payload, user.id, req)
     if (!accessState) {
       payload.logger.warn(`No access-ready clinic staff principal found for user ${user.id}`)
       return null

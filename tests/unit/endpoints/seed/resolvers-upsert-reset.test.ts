@@ -9,6 +9,12 @@ import { loadSeedFile } from '@/endpoints/seed/utils/load-json'
 const deleteObjects = vi.hoisted(() => vi.fn())
 const createStorage = vi.hoisted(() => vi.fn(() => ({ deleteObjects })))
 vi.mock('@/features/inquiryCommunication/storage', () => ({ createS3InquiryAttachmentStorage: createStorage }))
+const revokeResetClinicAssignment = vi.hoisted(() => vi.fn())
+vi.mock('@/features/clinicGroups/staffAssignments', () => ({ revokeResetClinicAssignment }))
+vi.mock('payload', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('payload')>()),
+  createLocalReq: vi.fn(async ({ user, context }, payload) => ({ user, context, payload })),
+}))
 
 describe('stableId resolvers', () => {
   const find = vi.fn()
@@ -348,6 +354,7 @@ describe('resetCollections', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    revokeResetClinicAssignment.mockReset()
     find.mockResolvedValue({ docs: [] })
     update.mockResolvedValue({ id: 'updated' })
     deleteDocuments.mockResolvedValue({ docs: [], errors: [] })
@@ -402,7 +409,66 @@ describe('resetCollections', () => {
     })
   })
 
+  it('rejects an inherited transaction before destructive reset work', async () => {
+    await expect(resetCollections(payload, 'demo', { req: { transactionID: 'outer-owner' } })).rejects.toThrow(
+      'independent native deletion owners',
+    )
+    expect(deleteDocuments).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'clinicMedia',
+    'doctorMedia',
+    'doctors',
+    'doctorspecialties',
+    'doctortreatments',
+    'clinicProfileDrafts',
+    'clinictreatments',
+  ] as const)('deletes %s sequentially with separate native owners', async (mediaCollection) => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', '')
+    vi.stubEnv('NODE_ENV', 'test')
+    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs: collection === mediaCollection ? [{ id: 17 }, { id: 18 }] : [],
+    }))
+    let active = 0
+    let maximumActive = 0
+    deleteDocuments.mockImplementation(async ({ collection }: { collection: string }) => {
+      if (collection === mediaCollection) {
+        active += 1
+        maximumActive = Math.max(maximumActive, active)
+        await Promise.resolve()
+        active -= 1
+      }
+      return { docs: [], errors: [] }
+    })
+    await resetCollections(payload, 'demo')
+    const deletions = deleteDocuments.mock.calls
+      .map(([args]) => args)
+      .filter(({ collection }) => collection === mediaCollection)
+    expect(deletions.map(({ id }) => id)).toEqual([17, 18])
+    expect(maximumActive).toBe(1)
+    expect(deletions[0].req).not.toBe(deletions[1].req)
+    for (const deletion of deletions) {
+      expect(deletion).toMatchObject({ trash: true, req: { transactionID: undefined } })
+      expect(deletion).not.toHaveProperty('disableTransaction')
+    }
+  })
+
   it('deletes demo collections in order for demo reset', async () => {
+    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs: [
+        'clinicMedia',
+        'doctorMedia',
+        'doctors',
+        'doctorspecialties',
+        'doctortreatments',
+        'clinicProfileDrafts',
+        'clinictreatments',
+      ].includes(collection)
+        ? [{ id: 17 }]
+        : [],
+    }))
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')
     vi.stubEnv('NODE_ENV', 'test')
@@ -449,6 +515,21 @@ describe('resetCollections', () => {
     expect(actualOrder).toEqual(expectedOrder)
     expect(deleteDocuments).toHaveBeenCalledTimes(expectedOrder.length)
     for (const [args] of deleteDocuments.mock.calls) {
+      if (
+        [
+          'clinicMedia',
+          'doctorMedia',
+          'doctors',
+          'doctorspecialties',
+          'doctortreatments',
+          'clinicProfileDrafts',
+          'clinictreatments',
+        ].includes(args.collection)
+      ) {
+        expect(args).toMatchObject({ id: 17, trash: true, req: { transactionID: undefined } })
+        expect(args).not.toHaveProperty('disableTransaction')
+        continue
+      }
       expect(args).toEqual(
         expect.objectContaining({
           context: expect.objectContaining({ seedReset: true, skipHooks: true }),
@@ -495,13 +576,30 @@ describe('resetCollections', () => {
     find.mockImplementation(async ({ collection, where }: { collection: string; where?: Record<string, unknown> }) => {
       if (collection === 'posts' || collection === 'inquiryAttachments') return { docs: [] }
       if (collection === 'platformStaff') return { docs: [{ id: 'platform-1' }] }
-      if (collection === 'clinicStaff') return { docs: [{ id: 'clinic-staff-1' }] }
+      if (collection === 'clinicStaff') return { docs: [{ id: 7, clinic: 11 }] }
       if (collection === 'patients') return { docs: [{ id: 'patient-1' }] }
+      if (
+        [
+          'clinicMedia',
+          'doctorMedia',
+          'doctors',
+          'doctorspecialties',
+          'doctortreatments',
+          'clinicProfileDrafts',
+          'clinictreatments',
+        ].includes(collection)
+      )
+        return { docs: [] }
       throw new Error(`Unexpected find: ${collection}:${JSON.stringify(where)}`)
     })
 
     await resetCollections(payload, 'demo')
 
+    expect(revokeResetClinicAssignment).toHaveBeenCalledWith(
+      expect.objectContaining({ payload, context: expect.objectContaining({ skipClinicStaffAuthSync: true }) }),
+      7,
+      11,
+    )
     expect(update).toHaveBeenCalledTimes(3)
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -514,8 +612,8 @@ describe('resetCollections', () => {
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'clinicStaff',
-        id: 'clinic-staff-1',
-        data: { clinic: null, profileImage: null },
+        id: 7,
+        data: { profileImage: null },
         context: expect.objectContaining({ skipClinicStaffAuthSync: true }),
       }),
     )
@@ -586,6 +684,21 @@ describe('resetCollections', () => {
     expect(deleteDocuments).not.toHaveBeenCalled()
   })
 
+  it('rejects an invalid staff clinic reference before files, account changes, or deletion', async () => {
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    find.mockImplementation(async ({ collection, where }) => ({
+      docs: collection === 'clinicStaff' && where && 'clinic' in where ? [{ id: 7, clinic: null }] : [],
+    }))
+    await expect(resetCollections(payload, 'demo')).rejects.toThrow(
+      'Seed reset preflight failed: invalid staff clinic reference',
+    )
+    expect(deleteObjects).not.toHaveBeenCalled()
+    expect(revokeResetClinicAssignment).not.toHaveBeenCalled()
+    expect(update).not.toHaveBeenCalled()
+    expect(deleteDocuments).not.toHaveBeenCalled()
+  })
+
   it('surfaces Payload lifecycle delete errors instead of continuing', async () => {
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', 'test')
@@ -602,20 +715,19 @@ describe('resetCollections', () => {
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', 'test')
     const events: string[] = []
-    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+    find.mockImplementation(async ({ collection, where }: { collection: string; where?: Record<string, unknown> }) => ({
       docs:
         collection === 'inquiryAttachments'
           ? [{ id: 42, draftObjectKey: 'draft/42', readyObjectKey: 'ready/42' }]
-          : collection === 'clinicStaff'
-            ? [{ id: 7 }]
+          : collection === 'clinicStaff' && where && 'clinic' in where
+            ? [{ id: 7, clinic: 11 }]
             : [],
     }))
     deleteObjects.mockImplementation(async () => {
       events.push('files')
     })
-    update.mockImplementation(async () => {
+    revokeResetClinicAssignment.mockImplementation(async () => {
       events.push('account')
-      return { id: 7 }
     })
     deleteDocuments.mockImplementation(async () => {
       events.push('documents')
@@ -627,18 +739,19 @@ describe('resetCollections', () => {
       },
     })
     expect(events.slice(0, 4)).toEqual(['prepared', 'files', 'account', 'documents'])
+    expect(revokeResetClinicAssignment).toHaveBeenCalledWith(expect.any(Object), 7, 11)
     expect(deleteObjects).toHaveBeenCalledWith(['draft/42', 'ready/42'])
   })
 
   it('keeps attachment metadata and account relations after storage failure and retries the same files', async () => {
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', 'test')
-    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+    find.mockImplementation(async ({ collection, where }: { collection: string; where?: Record<string, unknown> }) => ({
       docs:
         collection === 'inquiryAttachments'
           ? [{ id: 42, draftObjectKey: 'private/42' }]
-          : collection === 'clinicStaff'
-            ? [{ id: 7 }]
+          : collection === 'clinicStaff' && where && 'clinic' in where
+            ? [{ id: 7, clinic: 11 }]
             : [],
     }))
     deleteObjects.mockRejectedValueOnce(new Error('private key or signed URL'))
@@ -646,10 +759,13 @@ describe('resetCollections', () => {
       'Seed reset failed during file cleanup of inquiryAttachments:42',
     )
     expect(update).not.toHaveBeenCalled()
+    expect(revokeResetClinicAssignment).not.toHaveBeenCalled()
     expect(deleteDocuments).not.toHaveBeenCalled()
     deleteObjects.mockResolvedValue(undefined)
     await resetCollections(payload, 'demo')
     expect(deleteObjects).toHaveBeenCalledTimes(2)
+    expect(revokeResetClinicAssignment).toHaveBeenCalledOnce()
+    expect(revokeResetClinicAssignment).toHaveBeenCalledWith(expect.any(Object), 7, 11)
     expect(deleteDocuments).toHaveBeenCalledWith(expect.objectContaining({ collection: 'inquiryAttachments' }))
   })
 
@@ -715,6 +831,19 @@ describe('resetCollections', () => {
   })
 
   it('deletes demo then baseline collections for baseline reset', async () => {
+    find.mockImplementation(async ({ collection }: { collection: string }) => ({
+      docs: [
+        'clinicMedia',
+        'doctorMedia',
+        'doctors',
+        'doctorspecialties',
+        'doctortreatments',
+        'clinicProfileDrafts',
+        'clinictreatments',
+      ].includes(collection)
+        ? [{ id: 17 }]
+        : [],
+    }))
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('DEPLOYMENT_ENV', '')
     vi.stubEnv('NODE_ENV', 'test')

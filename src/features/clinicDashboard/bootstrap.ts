@@ -3,9 +3,11 @@ import { AUTH_FLOW_ERROR_CODES, isAuthFlowError } from '@/auth/errors/authFlowEr
 import { extractTokenFromHeader, validateSupabaseBearerToken } from '@/auth/utilities/jwtValidation'
 import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
+import { readClinicPrincipalAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import type { PayloadRequest } from 'payload'
 import { toLoggedError } from '@/utilities/logging/shared'
 import type { ClinicDashboardContract } from './contractNegotiation'
+import { CLINIC_SCOPE_CONTRACT_VERSION } from './contractNegotiation'
 
 const CLINIC_DASHBOARD_LEGACY_CAPABILITIES = [
   'clinic-profile:view',
@@ -25,6 +27,7 @@ const CLINIC_DASHBOARD_CAPABILITIES = [
 
 export type ClinicDashboardCapability = (typeof CLINIC_DASHBOARD_CAPABILITIES)[number]
 
+/** Internal local-only authorization projection for domains awaiting explicit clinic targets. */
 export type ClinicDashboardBootstrapDTO = {
   principal: {
     id: string
@@ -44,6 +47,74 @@ export type ClinicDashboardBootstrapResult =
   | { status: 'unauthorized' }
   | { status: 'access-denied' }
   | { status: 'unavailable' }
+
+export type ClinicScopeBootstrapDTO = {
+  schemaVersion: typeof CLINIC_SCOPE_CONTRACT_VERSION
+  principal: ClinicDashboardBootstrapDTO['principal']
+  status: 'approved'
+  clinics: Array<ClinicDashboardBootstrapDTO['clinic'] & { capabilities: ClinicDashboardCapability[] }>
+}
+
+type BootstrapFailure = { status: 'unauthorized' | 'access-denied' | 'unavailable' }
+
+/** Binds the current Payload principal to the independently validated personal Bearer identity. */
+export async function resolveClinicDashboardPrincipal(
+  req: PayloadRequest,
+): Promise<{ status: 'success'; principalId: number | string } | BootstrapFailure> {
+  const token = extractTokenFromHeader(req.headers)
+  if (!token) return { status: 'unauthorized' }
+  try {
+    const validation = await validateSupabaseBearerToken({ token, headers: req.headers, logger: req.payload.logger })
+    if (validation.status === 'unavailable') return { status: 'unavailable' }
+    if (validation.status === 'invalid' || validation.authData.userType !== 'clinic') return { status: 'unauthorized' }
+    const principal =
+      req.user ?? (await findUserBySupabaseId(req.payload, validation.authData, req, req.payload.logger))
+    if (
+      principal?.collection !== 'clinicStaff' ||
+      principal.supabaseUserId?.trim() !== validation.authData.supabaseUserId
+    )
+      return { status: 'unauthorized' }
+    req.user = principal
+    return { status: 'success', principalId: principal.id }
+  } catch (error: unknown) {
+    if (isAuthFlowError(error) && error.code === AUTH_FLOW_ERROR_CODES.USER_LOOKUP_FAILED && !error.retryable)
+      return { status: 'unauthorized' }
+    return { status: 'unavailable' }
+  }
+}
+
+export async function resolveClinicScopeBootstrap(
+  req: PayloadRequest,
+): Promise<{ status: 'success'; data: ClinicScopeBootstrapDTO } | BootstrapFailure> {
+  const principal = await resolveClinicDashboardPrincipal(req)
+  if (principal.status !== 'success') return principal
+  try {
+    const access = await readClinicPrincipalAccess(req.payload, principal.principalId, req)
+    if (!access || !access.staff.email) return { status: 'access-denied' }
+    if (access.clinics.some((clinic) => !clinic.name?.trim())) return { status: 'access-denied' }
+    return {
+      status: 'success',
+      data: {
+        schemaVersion: CLINIC_SCOPE_CONTRACT_VERSION,
+        principal: { id: String(access.staff.id), displayName: displayName(access.staff), email: access.staff.email },
+        status: 'approved',
+        clinics: access.clinics
+          .map((clinic) => ({
+            id: String(clinic.id),
+            name: clinic.name,
+            capabilities: [...CLINIC_DASHBOARD_CAPABILITIES],
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name, 'en') || a.id.localeCompare(b.id, 'en')),
+      },
+    }
+  } catch (error: unknown) {
+    req.payload.logger.error(
+      { err: toLoggedError(error), event: 'clinic_dashboard.bootstrap.read_failed' },
+      'Clinic Dashboard bootstrap state could not be read',
+    )
+    return { status: 'unavailable' }
+  }
+}
 
 const displayName = (staff: ClinicStaff): string => {
   const name = [staff.firstName, staff.lastName]
@@ -68,6 +139,7 @@ const readCurrentClinicStaff = async (req: PayloadRequest, id: number | string):
   return (result.docs[0] as ClinicStaff | undefined) ?? null
 }
 
+/** Retains fail-closed local authorization for unconverted domains; never the person bootstrap wire contract. */
 export async function resolveClinicDashboardBootstrap(
   req: PayloadRequest,
   contract: ClinicDashboardContract = 'legacy',

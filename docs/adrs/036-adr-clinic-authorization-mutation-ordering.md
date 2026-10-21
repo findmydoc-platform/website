@@ -5,11 +5,11 @@
 | Name | Content |
 | --- | --- |
 | Author | AI-assisted draft for Sebastian Schütze |
-| Version | 1.0 |
+| Version | 1.1 |
 | Date | 17.10.2026 |
 | Status | Approved |
 | Approved by | Sebastian Schütze |
-| Approval evidence | Explicit user approval in the ADR review chat on 17.10.2026 |
+| Approval evidence | Initial ADR approval on 17.10.2026; explicit user approval in the implementation chat on 17.10.2026 for the bounded native media retry amendment and this in-place edit |
 
 ## Background
 
@@ -99,7 +99,7 @@ This decision permits no new direct SQL, adapter transaction controls, or global
 ADR-033's existing exceptions and ADR-035's notification expiry rule remain unchanged.
 
 Only committed transactions determine the order. The owner returns success only after the database reports a successful commit.
-An operation may retry only if its existing rules permit automatic retries.
+An operation may retry only if its existing rules permit automatic retries or the bounded native media exception below applies.
 For such operations, database-reported aborts caused by concurrent transactions permit at most three total attempts.
 Each attempt checks access again for the original operation and clinic.
 Notification acknowledgements retain their existing retry restrictions and original selection of notifications.
@@ -107,6 +107,24 @@ Notification acknowledgements retain their existing retry restrictions and origi
 An uncertain commit or rollback result prevents an automatic retry.
 A completed rollback cleanup call does not prove that the transaction aborted.
 Actions outside the database must not run inside transactions that can retry.
+
+## Bounded native media initialization retry
+
+For root `payload.create` calls on `clinicMedia`, Website may install one bounded retry owner around the existing native Local API operation. This covers direct Local API uploads and the custom clinic Gallery upload handler, which starts no outer transaction. An authenticated request without a transaction is eligible; a caller-supplied transaction ID or promise is not. Other collections, operations and direct REST operation entry points retain their existing rules.
+
+The owner permits at most three total native create attempts. It may repeat an attempt only after trusted evidence establishes all of the following:
+
+- PostgreSQL reported `23505` for the exact authorization-control key being initialized for the original upload. A mapped validation error or matching field name alone is insufficient.
+- The failed attempt reached no upload, media persistence or external-effect phase and made no commit attempt.
+- The original native transaction completed a confirmed rollback. If a nested control create performed that rollback, its confirmation remains bound to the same upload invocation, original transaction and failure through the outer cleanup.
+
+A missing request transaction or adapter session is not rollback evidence. Cleanup completion without a confirmed outcome is insufficient. Unknown, failed or lost rollback or commit confirmation prevents another attempt. Beginning an external effect permanently closes retry eligibility for that attempt; storage, email and other outside-database effects must not be repeated.
+
+Each attempt uses fresh request, file and data state while retaining the original identity, clinic, operation and file contents. Native hooks recheck current access, ownership and draft quota. Removed rights deny the next attempt; retry cannot select another clinic. The existing native create still owns its transaction, authorization barrier and final commit. The retry owner cannot continue or replay a borrowed or replaced transaction.
+
+A version-pinned Payload/Drizzle lifecycle patch may supply private failure, phase and rollback evidence at the existing native operations. Evidence must be non-serializable and bound to the exact invocation, original owner and registered initializer. Ordinary request context flags and caller-provided errors cannot create it. Preserve the mapped public error contract and do not expose database causes, queries or credentials. Missing or incompatible evidence fails closed. This permits no new direct SQL, adapter data or transaction operations, isolation changes, separate initialization commits or public entity nonce fields.
+
+Integration requires real native acceptance on the pinned versions: the unchanged three-concurrent-first-upload Local API test and three concurrent custom Gallery upload handlers must each produce exactly one persisted media record and readable storage object per successful upload. Native tests must also prove current-rights ordering and refusal after unrelated errors, borrowed or lost ownership, forged evidence, started external effects, commit attempts, uncertain rollback and a third failed attempt. A broader required mechanism stops the experiment rather than extending this exception.
 
 ## Technical Debt
 

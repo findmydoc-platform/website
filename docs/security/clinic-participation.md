@@ -2,8 +2,8 @@
 
 Application approval, account preparation, and public publication are distinct decisions. New approved applications
 authorize the clinic and the named initial staff member. The clinic stays unpublished. Usable Dashboard access requires
-current staff approval, synchronized Supabase identity, approved clinic participation, private password evidence for
-that exact identity and tenant, and a clinic that is neither rejected nor deleted. Additional staff do not inherit the
+current staff approval, synchronized Supabase identity, approved clinic participation, versioned activation readiness for
+that exact personal principal and identity, an explicit local clinic assignment, and a clinic that is neither rejected nor deleted. Additional staff do not inherit the
 application decision.
 
 `clinics.participationStatus` controls participation. A null value preserves the old participation decision only for
@@ -30,6 +30,31 @@ No new public HTTP adapter is introduced. Recovery alone does not populate initi
 The durable evidence survives the 42-day AuthAction retention sweep. Its observation timestamp records when Website
 verified and persisted the evidence. A password authentication timestamp establishes password usability at that time;
 it never reconstructs the historical instant of the first password change.
+
+## Identity-bound local activation
+
+`activationReadiness` stores `identity-v1`, the personal principal ID, its Supabase subject, and the time Website
+established readiness. Normal field reads and writes are disabled. The existing process-local evidence capability
+also protects readiness from privileged overrides, Admin input, browser input, seed context, and replacement.
+A copied readiness record does not activate another principal or replacement identity.
+
+`convertClinicStaffLocalAccess` validates the original subject, clinic, source and timestamps before deriving readiness.
+It writes readiness and `assignmentScope: local` together through native Payload hooks. The additive migration freezes the same original-evidence checks in its generated schema backfill,
+limited to existing clinic assignments without an explicit scope. Missing or inconsistent original evidence
+still produces explicit local scope, but no readiness and no clinic access. Repeated conversion retains existing
+readiness and the original immutable `accountCompletion`. No principal, identity, password, approval state or clinic
+is replaced. Independent clinics receive no group. New trusted password completion commands establish readiness in
+the same protected update as their original completion evidence.
+
+Original completion evidence remains historical. A later explicit assignment change does not invalidate identity-bound
+readiness. Before readiness exists, the evidence guard rejects assignment changes that would invalidate a valid
+original clinic check. Staff lifecycle, identity synchronization, current assignment, clinic participation, public
+publication and operation permissions keep their own checks. Assignment alone never establishes activation.
+The existing pending/restricted flow and trusted activation or recovery process apply when readiness is absent.
+
+The migration adds nullable columns and backfills through the trusted command. Old code can read the additive schema;
+new code requires explicit local scope and readiness. Existing sessions and older Dashboard clients have no
+compatibility bridge. Deployment and environment activation require separate authorization and acceptance evidence.
 
 ## Additive legacy transition
 
@@ -83,3 +108,31 @@ Focused unit contracts exercise incomplete-account denial, unpublished participa
 denials, password-only legacy evidence, closed writes, and signed import rejection. The database-backed application
 approval integration exercises native hooks, public invisibility, forged evidence rejection, and retry reuse in CI.
 These tests do not establish real provider audit availability or deployed end-to-end password completion.
+
+## Personal group invitation origin
+
+The Clinic Group Admin control prepares a personal invitation through the trusted operator command. The hidden
+`personalGroupInvitation` stores its original group ID, operator ID, and authorization time. These nullable fields
+and the reserved `personal-group-invitation:` onboarding key are protected by a process-local capability. Raw REST,
+Admin field edits, access overrides, and fabricated request flags cannot mint or replace this origin. The temporary
+provisional group assignment remains unusable until trusted password completion creates identity-bound readiness.
+
+`group-initial-password` adds principal/group identifiers to immutable `accountCompletion` while retaining the exact
+subject and completed Auth action. It leaves `clinicId` empty. Later assignment changes retain this historical origin
+and personal readiness; current authorization still derives current membership and participation on every request.
+The migration is additive: nullable columns and one enum value, without backfill or existing evidence replacement.
+Old and new application versions can use the expanded schema; rollback after new group evidence exists requires
+preserving that evidence rather than running the generated destructive down migration.
+
+This remains `no-public-impact` in the existing `private-live` cache policy. No public projection, cache tag, shared
+private cache, delivery activation, hosted provider identity, or domain-adapter conversion is introduced.
+
+Local verification covers real Payload/Postgres writes with provider mocks, additive migration replay, principal reuse,
+unconfirmed provider outcomes, generic-session denial, immutable proof replay, foreign-clinic denial, and both commit
+orders of activation versus participation revocation. Existing local activation and assignment regressions remain green.
+Paired controlled Dashboard journeys cover fresh login/bootstrap, an empty eligible clinic set, and invalid completion
+grants. These are distinct from a hosted provider activation journey.
+
+The isolated Admin control was checked at 320, 375, 640, 768, and 1024 pixels, including failure and inactive-delivery
+states. Authenticated native Admin composition remains unverified because no existing authorized session was available.
+No hosted identity, live invitation, credential refresh, or delivery activation was performed.

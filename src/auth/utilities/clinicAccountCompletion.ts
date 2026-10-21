@@ -1,3 +1,5 @@
+import { hasPersonalGroupInvitationSource } from './personalGroupInvitationState'
+import { clinicAssignmentRelationId } from './clinicStaffAssignment'
 import { APIError, createLocalReq, type CollectionBeforeChangeHook, type PayloadRequest } from 'payload'
 import type { ClinicStaff } from '@/payload-types'
 import { createClient } from './supaBaseServer'
@@ -6,23 +8,37 @@ import { bindAuthActions } from '@/auth/actions/lifecycle'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
 import { isClinicParticipationApproved } from './clinicParticipation'
-import { hasClinicAccountCompletion } from './clinicAccountCompletionState'
+import { hasClinicAccountCompletion, hasClinicActivationReadiness } from './clinicAccountCompletionState'
 import { findClinicInvitationPrincipal } from '@/auth/actions/clinicInvitationPrincipal'
 export { hasClinicAccountCompletion } from './clinicAccountCompletionState'
 
 type Completion = NonNullable<ClinicStaff['accountCompletion']>
-type StaffBinding = { subject: string; clinicId: number; email: string; onboardingKey: string }
+type StaffBinding = { subject: string; clinicId?: number; groupId?: number; email: string; onboardingKey: string }
 type ProtectedWrite = {
   id: number
-  field: 'accountCompletion' | 'legacyAccess'
+  field: 'accountCompletion' | 'legacyAccess' | 'activationReadiness'
   value: unknown
   staffBinding?: StaffBinding
 }
 const brokerKey = Symbol.for('findmydoc.clinic-account-evidence.v1')
 const existingBroker: unknown = Reflect.get(globalThis, brokerKey)
-const writes = (existingBroker ?? new WeakMap<object, ProtectedWrite>()) as WeakMap<object, ProtectedWrite>
+const writes = (existingBroker ?? new WeakMap<object, ProtectedWrite[]>()) as WeakMap<object, ProtectedWrite[]>
 if (!existingBroker)
   Object.defineProperty(globalThis, brokerKey, { value: writes, writable: false, configurable: false })
+
+/** Recognizes only the process-local trusted activation write, never a request-supplied flag. */
+export function isTrustedClinicAccountEvidenceWrite(req: PayloadRequest, id: number): boolean {
+  const capability = req.context?.clinicAccountEvidenceCapability
+  return Boolean(
+    capability &&
+    typeof capability === 'object' &&
+    writes
+      .get(capability)
+      ?.some(
+        (write) => write.id === id && (write.field === 'activationReadiness' || write.field === 'accountCompletion'),
+      ),
+  )
+}
 
 function canonical(value: unknown): string {
   if (!value || typeof value !== 'object') return JSON.stringify(value)
@@ -49,7 +65,7 @@ export const guardClinicAccountEvidence: CollectionBeforeChangeHook<ClinicStaff>
   operation,
   req,
 }) => {
-  for (const field of ['accountCompletion', 'legacyAccess'] as const) {
+  for (const field of ['accountCompletion', 'legacyAccess', 'activationReadiness'] as const) {
     if (!(field in data)) continue
     const empty = isEmptyEvidenceGroup(field, data[field])
     // Payload passes an empty originalDoc on ordinary create and may materialize empty/default groups.
@@ -65,12 +81,19 @@ export const guardClinicAccountEvidence: CollectionBeforeChangeHook<ClinicStaff>
       continue
     if (
       originalDoc?.[field] &&
-      (field === 'accountCompletion' ? originalDoc.accountCompletion?.source : originalDoc.legacyAccess?.eligibleAt)
+      (field === 'accountCompletion'
+        ? originalDoc.accountCompletion?.source
+        : field === 'activationReadiness'
+          ? originalDoc.activationReadiness?.version
+          : originalDoc.legacyAccess?.eligibleAt)
     ) {
       throw new APIError('Clinic account evidence cannot be replaced.', 403)
     }
     const capability = req.context?.clinicAccountEvidenceCapability
-    const write = capability && typeof capability === 'object' ? writes.get(capability) : undefined
+    const write =
+      capability && typeof capability === 'object'
+        ? writes.get(capability)?.find((candidate) => candidate.field === field)
+        : undefined
     if (
       !write ||
       write.id !== originalDoc?.id ||
@@ -79,6 +102,16 @@ export const guardClinicAccountEvidence: CollectionBeforeChangeHook<ClinicStaff>
     ) {
       throw new APIError('Clinic account evidence is managed by the trusted Auth boundary.', 403)
     }
+    if (field === 'activationReadiness') {
+      const candidate = { ...originalDoc, ...data }
+      if (
+        !originalDoc ||
+        !hasClinicAccountCompletion(candidate) ||
+        data.activationReadiness?.principalId !== String(originalDoc.id) ||
+        data.activationReadiness?.subject !== originalDoc.supabaseUserId
+      )
+        throw new APIError('Original clinic completion evidence is required.', 403)
+    }
     const binding = write.staffBinding
     const clinicId = typeof originalDoc?.clinic === 'object' ? originalDoc.clinic?.id : originalDoc?.clinic
     if (
@@ -86,14 +119,27 @@ export const guardClinicAccountEvidence: CollectionBeforeChangeHook<ClinicStaff>
       (originalDoc?.status !== 'approved' ||
         originalDoc.authSync?.status !== 'synced' ||
         originalDoc.supabaseUserId !== binding.subject ||
-        clinicId !== binding.clinicId ||
+        (binding.groupId
+          ? !hasPersonalGroupInvitationSource(originalDoc) ||
+            clinicAssignmentRelationId(originalDoc.group) !== binding.groupId
+          : clinicId !== binding.clinicId) ||
         normalizeEmail(originalDoc.email) !== binding.email ||
-        originalDoc.onboardingKey !== binding.onboardingKey ||
+        (originalDoc.onboardingKey ?? '') !== binding.onboardingKey ||
         ('clinic' in data && data.clinic !== originalDoc.clinic) ||
         ('supabaseUserId' in data && data.supabaseUserId !== originalDoc.supabaseUserId))
     )
       throw new APIError('Clinic account binding changed during completion.', 403)
   }
+  const originalClinic = typeof originalDoc?.clinic === 'object' ? originalDoc.clinic?.id : originalDoc?.clinic
+  const nextClinic = typeof data.clinic === 'object' ? data.clinic?.id : data.clinic
+  if (
+    originalDoc &&
+    hasClinicAccountCompletion(originalDoc) &&
+    !hasClinicActivationReadiness(originalDoc) &&
+    (('clinic' in data && nextClinic !== originalClinic) ||
+      ('assignmentScope' in data && data.assignmentScope !== 'local'))
+  )
+    throw new APIError('Convert original clinic activation evidence before changing the assignment.', 403)
   return data
 }
 
@@ -105,20 +151,71 @@ async function writeEvidence(
   staffBinding?: StaffBinding,
 ) {
   const capability = Object.freeze({})
-  writes.set(capability, { id, field, value, staffBinding })
+  const completion = value as Completion
+  const readiness =
+    field === 'accountCompletion'
+      ? {
+          version: 'identity-v1' as const,
+          principalId: String(id),
+          subject: completion.subject,
+          establishedAt: new Date().toISOString(),
+        }
+      : undefined
+  writes.set(capability, [
+    { id, field, value, staffBinding },
+    ...(readiness ? [{ id, field: 'activationReadiness' as const, value: readiness }] : []),
+  ])
   try {
-    return await req.payload.update({
+    const updated = await req.payload.update({
       collection: 'clinicStaff',
       id,
-      data: { [field]: value },
+      data: {
+        [field]: value,
+        ...(readiness
+          ? {
+              activationReadiness: readiness,
+              assignmentScope: completion.source === 'group-initial-password' ? ('group' as const) : ('local' as const),
+            }
+          : field === 'activationReadiness'
+            ? { assignmentScope: 'local' as const }
+            : {}),
+      },
       depth: 0,
       overrideAccess: true,
       context: { ...req.context, clinicAccountEvidenceCapability: capability, skipClinicStaffAuthSync: true },
       req,
     })
+    return updated
   } finally {
     writes.delete(capability)
   }
+}
+
+/** Trusted conversion preserves the immutable original completion and personal identity. */
+export async function convertClinicStaffLocalAccess(req: PayloadRequest, id: number): Promise<ClinicStaff> {
+  const staff = await req.payload.findByID({ collection: 'clinicStaff', id, depth: 0, overrideAccess: true, req })
+  if (staff.assignmentScope && staff.assignmentScope !== 'local')
+    throw new APIError('Only an existing local assignment can be converted.', 403)
+  if (!staff.clinic) return staff
+  if (!hasClinicActivationReadiness(staff) && hasClinicAccountCompletion(staff)) {
+    const readiness = {
+      version: 'identity-v1' as const,
+      principalId: String(staff.id),
+      subject: staff.supabaseUserId!,
+      establishedAt: new Date().toISOString(),
+    }
+    return writeEvidence(req, staff.id, 'activationReadiness', readiness)
+  }
+  if (staff.assignmentScope === 'local') return staff
+  return req.payload.update({
+    collection: 'clinicStaff',
+    id,
+    data: { assignmentScope: 'local' },
+    depth: 0,
+    overrideAccess: true,
+    context: { ...req.context, skipClinicStaffAuthSync: true },
+    req,
+  })
 }
 
 async function verifiedPasswordEvent(staff: ClinicStaff, token: string): Promise<string | null> {
@@ -313,19 +410,23 @@ export async function recordClinicInitialPasswordCompletion(
     staff.status !== 'approved' ||
     staff.authSync?.status !== 'synced' ||
     staff.supabaseUserId !== action.supabaseSubject ||
-    !staff.clinic
+    (!staff.clinic && !hasPersonalGroupInvitationSource(staff))
   ) {
     throw new APIError('Account completion is unavailable.', 403)
   }
-  const clinicId = typeof staff.clinic === 'object' ? staff.clinic.id : staff.clinic
-  const clinic = await req.payload.findByID({
-    collection: 'clinics',
-    id: clinicId,
-    depth: 0,
-    overrideAccess: true,
-    req,
-  })
-  if (!isClinicParticipationApproved(clinic)) throw new APIError('Account completion is unavailable.', 403)
+  const groupId = hasPersonalGroupInvitationSource(staff) ? clinicAssignmentRelationId(staff.group) : null
+  const clinicId = typeof staff.clinic === 'object' ? staff.clinic?.id : staff.clinic
+  const clinic = !groupId
+    ? await req.payload.findByID({
+        collection: 'clinics',
+        id: clinicId!,
+        depth: 0,
+        overrideAccess: true,
+        req,
+      })
+    : null
+  if (!groupId && (!clinic || !isClinicParticipationApproved(clinic)))
+    throw new APIError('Account completion is unavailable.', 403)
   const evidenceAt = await verifiedPasswordEvent(staff, input.token)
   if (!evidenceAt || Date.parse(evidenceAt) < Date.parse(action.createdAt))
     throw new APIError('Password verification is required.', 403)
@@ -333,7 +434,9 @@ export async function recordClinicInitialPasswordCompletion(
   const currentClinicId = typeof current?.clinic === 'object' ? current.clinic?.id : current?.clinic
   if (
     !current ||
-    currentClinicId !== clinicId ||
+    (groupId
+      ? !hasPersonalGroupInvitationSource(current) || clinicAssignmentRelationId(current.group) !== groupId
+      : currentClinicId !== clinicId) ||
     current.supabaseUserId !== action.supabaseSubject ||
     normalizeEmail(current.email) !== normalizeEmail(staff.email) ||
     current.onboardingKey !== staff.onboardingKey
@@ -345,16 +448,16 @@ export async function recordClinicInitialPasswordCompletion(
     current.id,
     'accountCompletion',
     {
-      source: 'initial-password',
+      source: groupId ? 'group-initial-password' : 'initial-password',
       subject: action.supabaseSubject,
-      clinicId: String(clinicId),
+      ...(groupId ? { principalId: String(current.id), groupId: String(groupId) } : { clinicId: String(clinicId) }),
       evidenceAt,
       observedAt: new Date().toISOString(),
       authActionId: String(action.id),
     } satisfies Completion,
     {
       subject: action.supabaseSubject,
-      clinicId,
+      ...(groupId ? { groupId } : { clinicId: clinicId! }),
       email: normalizeEmail(current.email),
       onboardingKey: current.onboardingKey!,
     },

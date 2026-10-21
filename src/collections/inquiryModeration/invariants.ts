@@ -1,3 +1,5 @@
+import { authorizeStoredInquiryWrite } from '@/features/inquiryAggregate/clinicAccess'
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { ValidationError, type CollectionBeforeValidateHook, type PayloadRequest } from 'payload'
 
 import { hasInquiryPackageHardDeleteBarrier } from '@/features/inquiryAggregate/tombstones'
@@ -54,6 +56,7 @@ const validateScope = async (req: PayloadRequest, collection: string, record: Re
   const inquiry =
     (await findRecord(req, 'patientClinicInquiries', record.inquiry)) ??
     fail(req, collection, 'inquiry', 'The inquiry does not exist.')
+  await authorizeStoredInquiryWrite(req, inquiry.clinic)
   const identityDeleted = inquiry.retentionState === 'anonymized' || inquiry.retentionState === 'hard-deleted'
   if (
     inquiry.retentionState === 'hard-deleted' ||
@@ -89,8 +92,10 @@ const validateClinicActor = async (
   staffId: unknown,
   path: string,
 ) => {
-  const staff = await findRecord(req, 'clinicStaff', staffId)
-  if (!staff || !sameId(staff.clinic, clinic)) {
+  const id = relationId(staffId)
+  const target = relationId(clinic)
+  const access = id !== null && target !== null ? await readClinicTargetAccess(req.payload, id, target, req) : null
+  if (!access) {
     fail(req, collection, path, 'The clinic actor must belong to the inquiry clinic.')
   }
 }
@@ -135,13 +140,21 @@ export const validateInquiryModerationCase: CollectionBeforeValidateHook = async
     if (!record.reporterClinicStaff || record.reporterPatient) {
       fail(req, 'inquiryModerationCases', 'reporterClinicStaff', 'The clinic reporter binding is invalid.')
     }
-    await validateClinicActor(
-      req,
-      'inquiryModerationCases',
-      record.clinic,
-      record.reporterClinicStaff,
-      'reporterClinicStaff',
-    )
+    const storedReporterUnchanged =
+      operation === 'update' &&
+      originalDoc?.reporterKind === 'clinic' &&
+      sameId(record.clinic, originalDoc.clinic) &&
+      sameId(record.reporterClinicStaff, originalDoc.reporterClinicStaff)
+    // The reporter is historical evidence; validate current access only when binding a new reporter.
+    if (!storedReporterUnchanged) {
+      await validateClinicActor(
+        req,
+        'inquiryModerationCases',
+        record.clinic,
+        record.reporterClinicStaff,
+        'reporterClinicStaff',
+      )
+    }
     if (record.reporterKey !== `clinicStaff:${String(relationId(record.reporterClinicStaff))}`) {
       fail(req, 'inquiryModerationCases', 'reporterKey', 'The clinic reporter key is invalid.')
     }

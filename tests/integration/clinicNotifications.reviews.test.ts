@@ -130,7 +130,7 @@ describe('native review transitions to personal authorized notification feed', (
     await markClinicNotificationsRead(reader, { notificationIds: ids })
     expect(await entries(review.id)).toEqual(marked)
     expect(marked[0]?.members[0]?.readAt).toEqual(expect.any(String))
-    expect(await readClinicReviewDetail(reader, String(review.id))).toMatchObject({
+    expect(await readClinicReviewDetail(reader, String(review.id), String(clinicId))).toMatchObject({
       id: String(review.id),
       comment: 'Ordinary edited current permitted text.',
     })
@@ -152,8 +152,10 @@ describe('native review transitions to personal authorized notification feed', (
     ])
     const withdrawn = await entries(review.id)
     expect(withdrawn.every((item) => !('rating' in item.display) && !('displayName' in item.display))).toBe(true)
-    expect(await readClinicReviewDetail(reader, String(review.id))).toMatchObject({ withdrawalState: 'withdrawn' })
-    expect(await readClinicReviewDetail(reader, String(review.id))).not.toHaveProperty('comment')
+    expect(await readClinicReviewDetail(reader, String(review.id), String(clinicId))).toMatchObject({
+      withdrawalState: 'withdrawn',
+    })
+    expect(await readClinicReviewDetail(reader, String(review.id), String(clinicId))).not.toHaveProperty('comment')
     await reviewWithdrawPostHandler(await endpointReq(review.id, { reason: 'Repeated withdrawal must be ignored.' }))
     expect(await entries(review.id)).toEqual(withdrawn)
     await reviewWithdrawalCorrectionPostHandler(
@@ -283,7 +285,7 @@ describe('native review transitions to personal authorized notification feed', (
   it('keeps a permanent removal fact after native source and versions are gone, without forbidden history', async () => {
     const review = await createReview('approved')
     await payload.delete({ collection: 'reviews', id: review.id, req: moderator, overrideAccess: false })
-    expect(await readClinicReviewDetail(reader, String(review.id))).toBeNull()
+    expect(await readClinicReviewDetail(reader, String(review.id), String(clinicId))).toBeNull()
     const feed = await entries(review.id)
     expect(feed.map((item) => item.members[0]?.eventType)).toEqual(['review_removed', 'review_published'])
     expect(feed.every((item) => !('rating' in item.display) && !('displayName' in item.display))).toBe(true)
@@ -556,6 +558,7 @@ describe('native review transitions to personal authorized notification feed', (
     const detail = await readClinicReviewDetail(
       await createLocalReq({ user: reader.user! }, payload),
       String(review.id),
+      String(clinicId),
     )
     expect(detail).toMatchObject({ publicComment: 'Current redacted text only.', starRating: 1 })
     expect(detail).not.toHaveProperty('comment')

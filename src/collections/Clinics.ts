@@ -1,3 +1,11 @@
+import { normalizeNativeFinalWriteOperation } from '@/access/nativeFinalOperation'
+import { clinicGroupMembershipEndpoint } from '@/features/clinicGroups/membership'
+import {
+  currentClinicOrPublicRead,
+  currentClinicProfileAccess,
+  verifyClinicBusinessWrite,
+} from '@/access/clinicCurrentScope'
+import { guardInitialClinicMembershipInput, assignInitialClinicGroup } from '@/features/clinicGroups/hooks'
 import {
   guardNotificationAuthorizationChange,
   guardNotificationAuthorizationSession,
@@ -21,7 +29,6 @@ import {
 } from './clinics/approvalRequirements'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { disabledClinicGalleryAccess } from '@/access/clinicGallery'
-import { platformOrOwnClinicProfile, platformOnlyOrApproved } from '@/access/scopeFilters'
 import {
   computedOnlyFieldAccess,
   platformClinicTrustAccess,
@@ -130,6 +137,7 @@ const normalizeClinicOpeningHoursAfterRead: CollectionAfterReadHook<Clinic> = ({
 
 export const Clinics: CollectionConfig<'clinics'> = {
   slug: 'clinics',
+  endpoints: [clinicGroupMembershipEndpoint],
   // This config controls what's populated by default when a clinic is referenced
   // via relationship fields or join results.
   defaultPopulate: {
@@ -150,24 +158,25 @@ export const Clinics: CollectionConfig<'clinics'> = {
     description: 'Clinic profiles with address, contact details, and services',
   },
   access: {
-    read: platformOnlyOrApproved, // Platform Staff: all clinics, Others: approved only
+    read: currentClinicOrPublicRead, // Clinic staff: current eligible clinics; public: approved publication.
     create: platformClinicTrustAccess, // Only Platform admin/support can create clinics
-    update: platformOrOwnClinicProfile, // Platform: all clinics, Clinic: only own profile
+    update: currentClinicProfileAccess, // Clinic staff: current local or group scope.
     delete: isPlatformStaff, // Only Platform can delete clinics
   },
   hooks: {
-    beforeOperation: [guardNotificationAuthorizationChange],
+    beforeOperation: [guardInitialClinicMembershipInput, guardNotificationAuthorizationChange],
     beforeDelete: [guardNotificationAuthorizationSession],
     afterOperation: [
       async ({ result, req, operation }) => {
-        if (['update', 'delete', 'restoreVersion'].includes(operation))
-          await guardNotificationAuthorizationSession({ req })
+        if (normalizeNativeFinalWriteOperation(operation)) await guardNotificationAuthorizationSession({ req })
+        await verifyClinicBusinessWrite({ req, result, operation })
         return result
       },
     ],
     beforeValidate: [validateGalleryEntriesBeforeValidate],
     beforeChange: [
       guardNotificationAuthorizationSession,
+      assignInitialClinicGroup,
       ({ data, operation }) => {
         if (operation === 'create' && data.participationStatus == null) data.participationStatus = 'pending'
         return data
@@ -184,6 +193,30 @@ export const Clinics: CollectionConfig<'clinics'> = {
   },
   trash: true, // Enable soft delete - records are marked as deleted instead of permanently removed
   fields: [
+    {
+      name: 'group',
+      type: 'relationship',
+      relationTo: 'clinicGroups',
+      hasMany: false,
+      index: true,
+      access: {
+        create: platformClinicTrustFieldAccess,
+        update: platformClinicTrustFieldAccess,
+        read: platformOnlyFieldAccess,
+      },
+      admin: {
+        position: 'sidebar',
+        description: 'Optional group for this clinic. Existing memberships require a transfer or detachment workflow.',
+      },
+    },
+    {
+      name: 'groupMovement',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: { Field: '@/app/(payload)/components/ClinicGroupMovement#ClinicGroupMovement' },
+      },
+    },
     {
       name: 'participationStatus',
       type: 'select',

@@ -18,6 +18,7 @@ const baselinePlatformContentMedia: unknown = loadSeedJson('../data/baseline/pla
 const baselineTags: unknown = loadSeedJson('../data/baseline/tags.json')
 const baselineTreatments: unknown = loadSeedJson('../data/baseline/treatments.json')
 
+const demoClinicGroups: unknown = loadSeedJson('../data/demo/clinicGroups.json')
 const demoClinicMedia: unknown = loadSeedJson('../data/demo/clinicMedia.json')
 const demoClinicTreatments: unknown = loadSeedJson('../data/demo/clinicTreatments.json')
 const demoClinics: unknown = loadSeedJson('../data/demo/clinics.json')
@@ -54,6 +55,7 @@ const seedFileMap: SeedFileMap = {
     treatments: baselineTreatments,
   },
   demo: {
+    clinicGroups: demoClinicGroups,
     clinicMedia: demoClinicMedia,
     clinicTreatments: demoClinicTreatments,
     clinics: demoClinics,

@@ -41,7 +41,7 @@ export const beforeChangeDoctorMedia: CollectionBeforeChangeHook<DoctorMedia> = 
 
   draft.doctor = doctorId
 
-  const clinicId = await getDoctorClinicId(doctorId, req.payload)
+  const clinicId = await getDoctorClinicId(doctorId, req.payload, req)
 
   const numericClinicId = Number(clinicId)
   if (!clinicId || !Number.isFinite(numericClinicId)) {

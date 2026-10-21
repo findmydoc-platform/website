@@ -28,6 +28,13 @@ export const mockUsers = {
     status: 'approved',
     authSync: { status: 'synced' },
     supabaseUserId: `subject-${id}`,
+    assignmentScope: 'local',
+    activationReadiness: {
+      version: 'identity-v1',
+      principalId: String(id),
+      subject: `subject-${id}`,
+      establishedAt: '2026-10-17T10:00:00.000Z',
+    },
     accountCompletion: {
       source: 'initial-password',
       subject: `subject-${id}`,

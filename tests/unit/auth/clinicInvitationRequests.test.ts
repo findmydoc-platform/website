@@ -90,7 +90,12 @@ describe('committed clinic invitation preparation', () => {
         { invitationAttemptedAt: { exists: false } },
         { 'accountCompletion.source': { exists: false } },
         { 'legacyAccess.eligibleAt': { exists: false } },
-        { onboardingKey: { like: 'clinic-application:' } },
+        {
+          or: [
+            { onboardingKey: { like: 'clinic-application:' } },
+            { onboardingKey: { like: 'personal-group-invitation:' } },
+          ],
+        },
       ])
       const excludesAuthorized = where.and.some(
         (condition: { invitationAuthorizedAt?: { exists?: boolean } }) =>

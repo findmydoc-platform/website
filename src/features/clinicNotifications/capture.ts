@@ -3,6 +3,7 @@ import { createLocalReq, ValidationError, type PayloadRequest } from 'payload'
 import { requireNotificationTransaction } from '@/collections/clinicNotifications/common'
 import { ClinicNotificationCaptureConflict, ClinicNotificationError } from './errors'
 import { NOTIFICATION_RETENTION_MS, notificationMemberSchema, type NotificationMember } from './contracts'
+import { withTestCaptureAuthority } from './testCaptureAuthority'
 
 type Id = string | number
 type Stored = Record<string, unknown> & { id: Id }
@@ -160,13 +161,15 @@ export async function activateClinicNotificationsForTest(req: PayloadRequest): P
   try {
     const control = await serializeCapture(transactionReq)
     if (control.active !== true) {
-      await req.payload.update({
-        collection: 'clinicNotificationControls' as never,
-        id: control.id,
-        data: { active: true, activatedAt: new Date().toISOString(), nonce: randomUUID() },
-        overrideAccess: true,
-        req: transactionReq,
-      } as never)
+      await withTestCaptureAuthority(transactionReq, () =>
+        req.payload.update({
+          collection: 'clinicNotificationControls' as never,
+          id: control.id,
+          data: { active: true, activatedAt: new Date().toISOString(), nonce: randomUUID() },
+          overrideAccess: true,
+          req: transactionReq,
+        } as never),
+      )
     }
     requireNotificationTransaction(transactionReq, transactionID)
     await req.payload.db.commitTransaction(transactionID)

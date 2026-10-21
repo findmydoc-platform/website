@@ -26,6 +26,10 @@ import {
   platformClinicOrPublicReviewResponse,
 } from '@/access/scopeFilters'
 
+vi.mock('@/access/clinicReviewScope', () => ({
+  currentClinicReviewScope: vi.fn(async () => ({ clinic: { equals: 123 } })),
+}))
+
 // Mock the utility function
 vi.mock('@/access/utils/getClinicAssignment', () => ({
   getUserAssignedClinicId: vi.fn(),

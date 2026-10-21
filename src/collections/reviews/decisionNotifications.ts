@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { lockClinicReviewWorkflowAuthorization, finalizeClinicReviewWorkflowAuthorization } from './clinicAuthorization'
 import {
   createLocalReq,
   type CollectionAfterChangeHook,
@@ -13,10 +14,6 @@ import {
   captureClinicNotificationOccurrence,
   prepareClinicNotificationCapture,
 } from '@/features/clinicNotifications/capture'
-import {
-  lockNotificationAuthorization,
-  notificationClinicAuthorizationKey,
-} from '@/features/clinicNotifications/authorizationBarrier'
 import { recordNotificationDiagnostic } from '@/features/clinicNotifications/diagnostics'
 
 type WorkflowKind = 'response' | 'appeal'
@@ -106,7 +103,7 @@ const prepareOperation =
       }
     }
     const unlocked = [...scopes].filter((scope) => !state.lockedClinicScopes.has(scope))
-    await lockNotificationAuthorization(req, unlocked.map(notificationClinicAuthorizationKey))
+    await lockClinicReviewWorkflowAuthorization(req, unlocked)
     unlocked.forEach((scope) => state.lockedClinicScopes.add(scope))
     return args
   }
@@ -250,6 +247,7 @@ export const finalizeReviewDecisionNotificationOperation: CollectionAfterOperati
   if (['create', 'update', 'updateByID'].includes(operation)) {
     try {
       await active(req)
+      await finalizeClinicReviewWorkflowAuthorization(req, result)
     } catch (error) {
       await recordNotificationDiagnostic(req, {
         operation: 'source_capture',

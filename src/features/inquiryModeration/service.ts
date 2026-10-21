@@ -1,4 +1,4 @@
-import { readClinicAccessState } from '@/auth/utilities/clinicAccessState'
+import { readInquiryClinicAccess } from '@/features/inquiryAggregate/clinicAccess'
 import { createHash } from 'node:crypto'
 import type { PayloadRequest } from 'payload'
 
@@ -142,7 +142,7 @@ const resolveReporter = async (req: PayloadRequest): Promise<Reporter> => {
     return { id: patient.id, key: `patients:${String(patient.id)}`, kind: 'patient' }
   }
   if (req.user.collection === 'clinicStaff') {
-    const access = await readClinicAccessState(req.payload, req.user.id, req)
+    const access = await readInquiryClinicAccess(req)
     if (!access) throw new InquiryModerationServiceError('access-denied', 'The clinic principal is not access-ready.')
     const { clinic, staff } = access
     const clinicId = clinic.id
@@ -1079,6 +1079,9 @@ export const submitInquiryModerationAppeal = async (
       throw new InquiryModerationServiceError('access-denied', 'The appeal actor changed.')
     }
     const moderationCase = await readModerationCase(req, input.caseId)
+    if (participant.kind === 'clinic' && String(relationId(moderationCase.clinic)) !== String(participant.clinicId)) {
+      throw new InquiryModerationServiceError('access-denied', 'The moderation case is outside the target clinic.')
+    }
     if (!participantAffectedByCase(moderationCase, participant)) {
       throw new InquiryModerationServiceError('not-found', 'The moderation case does not exist.')
     }

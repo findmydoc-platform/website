@@ -3,7 +3,6 @@ import { createNotificationCursor, readNotificationCursor } from '@/features/cli
 
 const scope = {
   contractVersion: 'clinic-notifications-v1',
-  clinic: 'clinic-1',
   principal: 'reader-1',
   view: 'unread',
 } as const
@@ -22,7 +21,6 @@ describe('notification continuation cursor', () => {
   })
 
   it.each([
-    { ...scope, clinic: 'clinic-2' },
     { ...scope, principal: 'reader-2' },
     { ...scope, view: 'all' as const },
   ])('rejects a cursor outside its feed scope', (otherScope) => {

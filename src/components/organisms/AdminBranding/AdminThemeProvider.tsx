@@ -44,6 +44,11 @@ const adminThemeCSS = `
       border-color: var(--fmd-admin-accent-250);
     }
 
+    .app-header__step-nav-wrapper {
+      min-width: 0;
+      overflow-x: auto;
+    }
+
     .fmd-admin-account-avatar {
       width: 25px;
       height: 25px;

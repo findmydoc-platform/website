@@ -32,6 +32,7 @@ export function authActionProtocolResponse(outcome: ProtocolOutcome): Response {
 const recoverySchema = z.object({ email: z.string().max(254), clientIP: z.string().max(64) }).strict()
 const actionSchema = z.object({ actionRef: z.string().max(1024), flow: z.enum(dashboardActionFlows) }).strict()
 const subjectSchema = actionSchema.extend({ accessToken: z.string().min(1).max(8192) }).strict()
+const confirmSchema = subjectSchema.extend({ resumeConfirmedInvitation: z.literal(true).optional() }).strict()
 const completeSchema = subjectSchema.extend({ password: z.string().min(1).max(1024) }).strict()
 
 async function boundedBody(request: Request): Promise<string> {
@@ -166,7 +167,7 @@ export function bindAuthActionProtocol(
         return authActionProtocolResponse('accepted')
       }
       const parsed = (
-        operation === 'validateAction' ? actionSchema : operation === 'confirmAction' ? subjectSchema : completeSchema
+        operation === 'validateAction' ? actionSchema : operation === 'confirmAction' ? confirmSchema : completeSchema
       ).safeParse(body)
       if (!parsed.success) return authActionProtocolResponse('invalid')
       const reference = readActionReference(parsed.data.actionRef, keys)
@@ -236,6 +237,19 @@ export function bindAuthActionProtocol(
         return authActionProtocolResponse(claim.outcome)
       }
       if (operation === 'confirmAction') {
+        if ('resumeConfirmedInvitation' in parsed.data && parsed.data.resumeConfirmedInvitation) {
+          if (reference.flow !== 'clinic-invitation' || source.state !== 'confirmed')
+            return authActionProtocolResponse('invalid')
+          await actionService.inspectDashboardAction({
+            id: source.id,
+            flow: reference.flow,
+            subject: user.id,
+            email: user.email!,
+            state: 'confirmed',
+          })
+          if (claim.kind === 'owned') await claim.finish('confirmed')
+          return authActionProtocolResponse('confirmed')
+        }
         if (claim.kind === 'replay') {
           if (source.state !== 'confirmed') return authActionProtocolResponse('unavailable')
           await actionService.inspectDashboardAction({

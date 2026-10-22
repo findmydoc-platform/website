@@ -456,7 +456,7 @@ describe('clinic inquiry moderation notifications', () => {
     if (owner === 'plain') {
       vi.stubEnv('CI', 'false')
       vi.stubEnv('NODE_ENV', 'production')
-      vi.stubEnv('DEPLOYMENT_ENV', 'production')
+      vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
       vi.stubEnv('VERCEL_ENV', 'production')
       activationRegistry.records = declaredActivationRecords.filter(
         ({ environment, commandType }) => environment !== 'production' || commandType !== 'moderation.report-decided',
@@ -634,7 +634,7 @@ describe('clinic inquiry moderation notifications', () => {
       if (owner === 'plain') {
         vi.stubEnv('CI', 'false')
         vi.stubEnv('NODE_ENV', 'production')
-        vi.stubEnv('DEPLOYMENT_ENV', 'production')
+        vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
         vi.stubEnv('VERCEL_ENV', 'production')
         activationRegistry.records = declaredActivationRecords.filter(
           ({ environment, commandType }) => environment !== 'production' || commandType !== 'moderation.report-decided',

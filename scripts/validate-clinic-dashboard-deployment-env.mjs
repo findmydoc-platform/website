@@ -12,7 +12,7 @@ const resolveDeploymentEnvironment = (env) => {
   const vercelEnvironment = env.VERCEL_ENV?.trim()
   if (vercelEnvironment) return vercelEnvironment
 
-  return env.DEPLOYMENT_ENV?.trim()
+  return env.DEPLOYMENT_ENVIRONMENT?.trim()
 }
 
 const isExactHttpsOrigin = (value) => {

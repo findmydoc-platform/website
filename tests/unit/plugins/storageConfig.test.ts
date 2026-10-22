@@ -14,7 +14,7 @@ describe('resolveS3StorageConfig', () => {
   it('always uses the local S3Mock configuration in development', () => {
     expect(
       resolveS3StorageConfig({
-        DEPLOYMENT_ENV: 'development',
+        DEPLOYMENT_ENVIRONMENT: 'development',
         ...completeOnlineS3Env,
       }),
     ).toEqual({
@@ -35,29 +35,29 @@ describe('resolveS3StorageConfig', () => {
   it('allows the Docker development endpoint to override the host default', () => {
     expect(
       resolveS3StorageConfig({
-        DEPLOYMENT_ENV: 'development',
+        DEPLOYMENT_ENVIRONMENT: 'development',
         S3_LOCAL_ENDPOINT: 'http://s3mock:9090',
       }).clientConfig.endpoint,
     ).toBe('http://s3mock:9090')
   })
 
   it('uses explicit development storage during a static production-mode build', () => {
-    const config = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'development', NODE_ENV: 'production' })
+    const config = resolveS3StorageConfig({ DEPLOYMENT_ENVIRONMENT: 'development', NODE_ENV: 'production' })
 
     expect(config.bucket).toBe('findmydoc-local')
     expect(config.clientConfig.endpoint).toBe('http://localhost:9090')
   })
 
   it('uses a separate local S3Mock bucket and endpoint in tests', () => {
-    const config = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'test' })
+    const config = resolveS3StorageConfig({ DEPLOYMENT_ENVIRONMENT: 'test' })
 
     expect(config.bucket).toBe('findmydoc-test')
     expect(config.clientConfig.endpoint).toBe('http://localhost:9091')
-    expect(resolveS3StorageBucket({ DEPLOYMENT_ENV: 'test' })).toBe('findmydoc-test')
+    expect(resolveS3StorageBucket({ DEPLOYMENT_ENVIRONMENT: 'test' })).toBe('findmydoc-test')
   })
 
   it.each(['preview', 'production'] as const)('requires complete S3 configuration in %s', (runtime) => {
-    expect(() => resolveS3StorageConfig({ DEPLOYMENT_ENV: runtime })).toThrow(
+    expect(() => resolveS3StorageConfig({ DEPLOYMENT_ENVIRONMENT: runtime })).toThrow(
       `Missing required S3 environment variables for ${runtime}: S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET, S3_REGION`,
     )
   })
@@ -69,7 +69,7 @@ describe('resolveS3StorageConfig', () => {
   })
 
   it.each(['preview', 'production'] as const)('uses real S3 credentials in %s', (runtime) => {
-    const config = resolveS3StorageConfig({ DEPLOYMENT_ENV: runtime, ...completeOnlineS3Env })
+    const config = resolveS3StorageConfig({ DEPLOYMENT_ENVIRONMENT: runtime, ...completeOnlineS3Env })
 
     expect(config).toEqual({
       bucket: 'online-bucket',

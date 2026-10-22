@@ -11,7 +11,7 @@
 ## Activation
 
 - `VERCEL_ENV=preview` activates the guard for every Vercel-generated branch, deployment, and alias host.
-- `DEPLOYMENT_ENV=preview` provides the same behavior for explicitly configured non-Vercel Preview runtimes.
+- `DEPLOYMENT_ENVIRONMENT=preview` provides the same behavior for explicitly configured non-Vercel Preview runtimes.
 - Hostnames do not determine whether a deployment is Preview.
 - Local development stays open. A PostHog result cannot activate the guard while runtime policy resolves to `development`.
 - The server-side PostHog flag `preview-guard-enabled` can additionally activate the guard in a non-local, non-Preview runtime.

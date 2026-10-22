@@ -193,7 +193,7 @@ describe('public clinic registration transaction', () => {
       {
         NODE_ENV: 'production',
         VERCEL_ENV: 'production',
-        DEPLOYMENT_ENV: 'production',
+        DEPLOYMENT_ENVIRONMENT: 'production',
         ...fixture.configuration.secrets.production,
       },
       fixture.configuration.registry,
@@ -582,7 +582,7 @@ describe('public clinic registration transaction', () => {
       {
         NODE_ENV: 'production',
         VERCEL_ENV: 'preview',
-        DEPLOYMENT_ENV: 'preview',
+        DEPLOYMENT_ENVIRONMENT: 'preview',
         ...fixture.configuration.secrets.preview,
         LETTERMINT_PREVIEW_RECIPIENT_DIGESTS: JSON.stringify([recipientDigest]),
       },

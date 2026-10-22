@@ -41,7 +41,7 @@ const runHelper = (overrides: Partial<NodeJS.ProcessEnv>) => {
     CI: '',
     DATABASE_DIRECT_URI: '',
     DATABASE_URI: '',
-    DEPLOYMENT_ENV: '',
+    DEPLOYMENT_ENVIRONMENT: '',
     VERCEL: '',
     VERCEL_ENV: '',
     ...overrides,
@@ -138,7 +138,7 @@ describe('Payload migration database selection', () => {
   it('keeps the local preview simulator on the local database fallback', () => {
     const result = runHelper({
       DATABASE_URI: 'postgresql://localhost:5432/findmydoc-portal',
-      DEPLOYMENT_ENV: 'preview',
+      DEPLOYMENT_ENVIRONMENT: 'preview',
     })
 
     expect(result.status).toBe(0)

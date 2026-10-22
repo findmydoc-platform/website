@@ -25,7 +25,7 @@ export async function handleNotificationRetentionRequest(
   if (method !== 'GET') return new Response(null, { status: 405, headers: noStore })
   if (
     resolveServerRuntimeEnvironment() !== environment ||
-    process.env.DEPLOYMENT_ENV !== environment ||
+    process.env.DEPLOYMENT_ENVIRONMENT !== environment ||
     process.env.VERCEL_ENV !== environment
   )
     return Response.json({ ok: false }, { status: 503, headers: noStore })

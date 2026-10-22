@@ -154,7 +154,7 @@ describe('media upload logging hooks', () => {
 
   it('downgrades expected NoSuchKey upload failures to warnings without stack traces', async () => {
     const req = createRequest()
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     req.context.mediaUploadLog = {
       collection: 'clinicMedia',
       event: 'storage.media.upload_attempt',

@@ -23,7 +23,7 @@ export const isPreviewDeployment = ({ deploymentEnvironment, vercelEnvironment }
   (normalizeEnvValue(vercelEnvironment) ?? normalizeEnvValue(deploymentEnvironment)) === 'preview'
 
 const isPreviewRuntime = isPreviewDeployment({
-  deploymentEnvironment: process.env.DEPLOYMENT_ENV,
+  deploymentEnvironment: process.env.DEPLOYMENT_ENVIRONMENT,
   vercelEnvironment: process.env.VERCEL_ENV,
 })
 const blockSearchIndexing = isPreviewRuntime

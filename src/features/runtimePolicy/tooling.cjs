@@ -27,7 +27,7 @@ const toRuntimeClass = (runtimeEnvironment) => {
 }
 
 const resolveServerRuntimeEnvironment = (env = process.env) => {
-  const runtimeValue = normalizeEnvValue(env.VERCEL_ENV) ?? normalizeEnvValue(env.DEPLOYMENT_ENV)
+  const runtimeValue = normalizeEnvValue(env.VERCEL_ENV) ?? normalizeEnvValue(env.DEPLOYMENT_ENVIRONMENT)
   const runtimeEnvironment = toRuntimeEnvironment(runtimeValue)
   return runtimeEnvironment === 'unknown'
     ? toNodeRuntimeEnvironment(normalizeEnvValue(env.NODE_ENV))

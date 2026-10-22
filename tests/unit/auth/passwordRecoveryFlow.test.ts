@@ -66,7 +66,7 @@ function fixture(collection: (typeof variants)[number][0], ci = false) {
   vi.stubEnv('CI', String(ci))
   vi.stubEnv('NODE_ENV', 'test')
   vi.stubEnv('VERCEL_ENV', '')
-  vi.stubEnv('DEPLOYMENT_ENV', '')
+  vi.stubEnv('DEPLOYMENT_ENVIRONMENT', '')
   vi.stubEnv('CLINIC_DASHBOARD_URL', 'https://dashboard.example.test')
   const environment = resolveTransactionalEmailEnvironment()
   expect(environment).toBe(ci ? 'ci' : 'test')
@@ -430,7 +430,7 @@ describe('recovery from Auth request through the real static catalog and shared 
       vi.stubEnv('NODE_ENV', 'production')
       vi.stubEnv('CI', 'false')
       vi.stubEnv('VERCEL_ENV', environment)
-      vi.stubEnv('DEPLOYMENT_ENV', environment)
+      vi.stubEnv('DEPLOYMENT_ENVIRONMENT', environment)
       vi.stubEnv('AUTH_RECOVERY_CORRELATION_KEYS_JSON', '')
       await expect(requestPasswordRecovery(store.req, { email, context: store.context })).rejects.toThrow(
         'environment-unavailable',

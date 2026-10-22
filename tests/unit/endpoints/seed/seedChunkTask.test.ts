@@ -231,7 +231,7 @@ describe('seedChunkTask', () => {
 
   it('forwards the authenticated request to principal-safe reset jobs', async () => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     vi.stubEnv('NODE_ENV', 'test')
 
     const payload = createMockPayload()
@@ -304,7 +304,7 @@ describe('seedChunkTask', () => {
     'persists reset scope and fails the job cleanly after %s',
     async (message) => {
       vi.stubEnv('VERCEL_ENV', '')
-      vi.stubEnv('DEPLOYMENT_ENV', 'test')
+      vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
       vi.stubEnv('NODE_ENV', 'test')
 
       const payload = createMockPayload()
@@ -368,7 +368,7 @@ describe('seedChunkTask', () => {
 
   it('blocks demo chunk execution in production before importing records', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
     const payload = createMockPayload()

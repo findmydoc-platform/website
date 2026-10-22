@@ -23,7 +23,7 @@ describe('upsertByStableId S3 NoSuchKey recovery', () => {
     remove.mockReset().mockResolvedValue(undefined)
     update.mockReset()
     warn.mockReset()
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
   })
 
   afterEach(() => {

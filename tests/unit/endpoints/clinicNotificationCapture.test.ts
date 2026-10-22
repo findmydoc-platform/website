@@ -49,7 +49,7 @@ describe('hosted notification capture operator endpoint', () => {
   })
 
   it('prepares an inactive hosted boundary without creating it and rejects environment drift', async () => {
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('VERCEL_GIT_COMMIT_SHA', 'a'.repeat(40))
     const req = request()
@@ -63,7 +63,7 @@ describe('hosted notification capture operator endpoint', () => {
     })
     expect(req.payload.create).not.toHaveBeenCalled()
     expect(req.payload.update).not.toHaveBeenCalled()
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     expect((await clinicNotificationCaptureGetHandler(req)).status).toBe(409)
   })
 
@@ -113,7 +113,7 @@ describe('hosted notification capture operator endpoint', () => {
   })
 
   it('preserves the original activation time on an explicitly prepared active replay', async () => {
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('VERCEL_GIT_COMMIT_SHA', 'a'.repeat(40))
     const activatedAt = '2026-10-17T10:00:00.000Z'
@@ -140,7 +140,7 @@ describe('hosted notification capture operator endpoint', () => {
   })
 
   it('rejects a different environment or revision as definitely unsubmitted', async () => {
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('VERCEL_GIT_COMMIT_SHA', 'a'.repeat(40))
     const req = request('admin', {
@@ -178,7 +178,7 @@ describe('hosted notification capture operator endpoint', () => {
   })
 
   it('keeps diagnostic sink failure separate from successful readonly preparation', async () => {
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('VERCEL_GIT_COMMIT_SHA', 'a'.repeat(40))
     const req = request()

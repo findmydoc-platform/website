@@ -46,7 +46,7 @@ async function renderTemplate() {
 describe('platform navigation during Holding mode', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     mocks.pathname = '/'
     mocks.headers.mockResolvedValue(new Headers({ [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'holding' }))
     mocks.resolveHoldingMode.mockResolvedValue({ mode: 'holding', source: 'deployment-fallback' })

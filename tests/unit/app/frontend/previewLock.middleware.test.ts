@@ -79,7 +79,7 @@ describe('preview lock proxy', () => {
   beforeEach(() => {
     process.env = {
       ...originalEnv,
-      DEPLOYMENT_ENV: undefined,
+      DEPLOYMENT_ENVIRONMENT: undefined,
       VERCEL_ENV: undefined,
       NODE_ENV: 'development',
       NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
@@ -162,7 +162,7 @@ describe('preview lock proxy', () => {
   })
 
   it('logs public discovery crawlers before leaving access to the route contract', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
     const request = new NextRequest('https://preview.findmydoc.eu/llms.txt', {
       headers: {
@@ -246,7 +246,7 @@ describe('preview lock proxy', () => {
   })
 
   it('redirects unauthenticated users when preview guard flag is enabled in preview runtime', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
     const request = new NextRequest('https://preview.findmydoc.eu/about?foo=bar')
@@ -261,7 +261,7 @@ describe('preview lock proxy', () => {
   })
 
   it('keeps preview guard exempt paths reachable with lock headers', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
     const request = new NextRequest('https://preview.findmydoc.eu/admin/login')
 
@@ -273,7 +273,7 @@ describe('preview lock proxy', () => {
   })
 
   it('keeps the exact patient auth lifecycle reachable without a staff session', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
     const allowedPaths = [
@@ -299,7 +299,7 @@ describe('preview lock proxy', () => {
   })
 
   it('keeps patient self-registration behind the staff preview guard', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
     const response = await proxy(new NextRequest('https://preview.findmydoc.eu/register/patient'))
@@ -363,7 +363,7 @@ describe('preview lock proxy', () => {
   })
 
   it('redirects anonymous patient routes to the patient login with a safe next path', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
     const response = await proxy(new NextRequest('https://preview.findmydoc.eu/patient/favorites?from=account-menu'))
@@ -376,7 +376,7 @@ describe('preview lock proxy', () => {
   })
 
   it('allows patient sessions only on patient routes', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
     mocks.getUser.mockResolvedValue({
       data: { user: { id: 'patient-1', app_metadata: { user_type: 'patient' } } },
@@ -396,7 +396,7 @@ describe('preview lock proxy', () => {
   })
 
   it('does not grant clinic sessions access to patient routes', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
     mocks.getUser.mockResolvedValue({
       data: { user: { id: 'clinic-1', app_metadata: { user_type: 'clinic' } } },
@@ -410,7 +410,7 @@ describe('preview lock proxy', () => {
   })
 
   it('returns 404 for first-admin bootstrap paths before preview guard redirects', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
     const firstAdminResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/admin/first-admin'))
@@ -634,7 +634,7 @@ describe('preview lock proxy', () => {
   })
 
   it('keeps the Preview Guard closed allowlist when temporary landing mode is also active', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true, 'temporary-landing-mode': true })
 
     const privacyRequest = new NextRequest('https://preview.findmydoc.eu/privacy-policy')
@@ -677,7 +677,7 @@ describe('preview lock proxy', () => {
   })
 
   it('keeps anonymous dynamic content hidden when both guards are active', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true, 'temporary-landing-mode': true })
 
     const request = new NextRequest('https://preview.findmydoc.eu/posts/example')
@@ -691,7 +691,7 @@ describe('preview lock proxy', () => {
   })
 
   it('keeps preview guard restrictions on temporary landing exempt admin routes', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true, 'temporary-landing-mode': true })
 
     const request = new NextRequest('https://preview.findmydoc.eu/admin')
@@ -706,7 +706,7 @@ describe('preview lock proxy', () => {
   })
 
   it('keeps patient login and patient routes usable when both guards are active', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true, 'temporary-landing-mode': true })
 
     const loginResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/login/patient'))
@@ -1119,7 +1119,7 @@ describe('preview lock proxy', () => {
   })
 
   it('bypasses known public assets before evaluating PostHog flags', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
     const faviconResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/favicon.ico'))
@@ -1148,7 +1148,7 @@ describe('preview lock proxy', () => {
   })
 
   it('returns 404 for anonymous CMS-like image and story paths instead of treating prefixes as assets', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
     const imagePageResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/images/clinic-page'))
@@ -1160,7 +1160,7 @@ describe('preview lock proxy', () => {
   })
 
   it('returns 404 for anonymous dotted CMS page paths instead of treating them as files', async () => {
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     mockGuardFlags({ 'preview-guard-enabled': true })
 
     const request = new NextRequest('https://preview.findmydoc.eu/about.v2')

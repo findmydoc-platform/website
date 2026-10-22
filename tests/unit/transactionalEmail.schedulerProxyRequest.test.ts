@@ -39,7 +39,7 @@ async function requestThroughProxy(request: NextRequest, handler: typeof GET = G
 beforeEach(() => {
   vi.clearAllMocks()
   vi.stubEnv('VERCEL_ENV', 'preview')
-  vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+  vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
   vi.stubEnv('CRON_SECRET', secret)
   vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co')
   vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'public-anon-key')

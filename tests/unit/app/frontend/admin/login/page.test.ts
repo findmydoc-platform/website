@@ -116,7 +116,7 @@ describe('Admin LoginPage', () => {
     mockHeaders.headers.mockResolvedValue(new Headers())
     process.env = {
       ...originalEnv,
-      DEPLOYMENT_ENV: undefined,
+      DEPLOYMENT_ENVIRONMENT: undefined,
       VERCEL_ENV: undefined,
       NODE_ENV: 'test',
     }
@@ -138,7 +138,7 @@ describe('Admin LoginPage', () => {
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    process.env.DEPLOYMENT_ENV = 'development'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'development'
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
     vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({ status: 'no_platform_staff' })
 
@@ -279,7 +279,7 @@ describe('Admin LoginPage', () => {
   })
 
   it('redirects to admin when a platform session is active', async () => {
-    process.env.DEPLOYMENT_ENV = 'development'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'development'
 
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
@@ -310,7 +310,7 @@ describe('Admin LoginPage', () => {
   })
 
   it('does not redirect platform sessions outside the findmydoc.eu email domain', async () => {
-    process.env.DEPLOYMENT_ENV = 'development'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'development'
 
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const { findUserBySupabaseId } = await import('@/auth/utilities/userLookup')
@@ -352,7 +352,7 @@ describe('Admin LoginPage', () => {
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     vi.mocked(findUserBySupabaseId).mockResolvedValue(
       makeStaffUser({
         id: 22,
@@ -431,7 +431,7 @@ describe('Admin LoginPage', () => {
     const { redirect } = await import('next/navigation')
     const LoginPage = await getPageModule()
 
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     vi.mocked(findUserBySupabaseId).mockResolvedValue(null)
     vi.mocked(extractSupabaseUserData).mockResolvedValue({
       supabaseUserId: 'user-2',
@@ -530,7 +530,7 @@ describe('Admin LoginPage', () => {
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
 
-    process.env.DEPLOYMENT_ENV = 'preview'
+    process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
     vi.mocked(getLocalPlatformStaffUserState).mockResolvedValue({
       hasPlatformAdmin: true,
       status: 'has_platform_staff',

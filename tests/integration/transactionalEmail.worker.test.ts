@@ -880,7 +880,7 @@ describe('transactional email worker', () => {
   })
 
   it.each(['local', 'test', 'ci'])('uses no external network in %s', async (environment) => {
-    vi.stubEnv('DEPLOYMENT_ENV', environment)
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', environment)
     vi.stubEnv('NODE_ENV', environment === 'test' ? 'test' : 'development')
     vi.stubEnv('CI', environment === 'ci' ? 'true' : 'false')
     const { req, id } = await accept()
@@ -903,7 +903,7 @@ describe('transactional email worker', () => {
   it.each(['preview', 'production'])('fails closed before worker processing in %s', async (environment) => {
     const { req, id } = await accept()
     const original = await row(id)
-    vi.stubEnv('DEPLOYMENT_ENV', environment)
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', environment)
     expect(() =>
       createTransactionalEmailWorker(req, { suppression: clearedSyntheticSuppression, catalog: syntheticEmailCatalog }),
     ).toThrow('environment-unavailable')

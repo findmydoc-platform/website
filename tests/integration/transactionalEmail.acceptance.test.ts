@@ -632,7 +632,7 @@ describe('transactional email command acceptance', () => {
     'uses fake boundaries and makes no external network call in %s',
     async (environment) => {
       vi.stubEnv('VERCEL_ENV', undefined)
-      vi.stubEnv('DEPLOYMENT_ENV', environment)
+      vi.stubEnv('DEPLOYMENT_ENVIRONMENT', environment)
       vi.stubEnv('NODE_ENV', environment === 'test' ? 'test' : 'development')
       vi.stubEnv('CI', environment === 'ci' ? 'true' : 'false')
       const blocked = () => {
@@ -651,14 +651,14 @@ describe('transactional email command acceptance', () => {
   )
 
   it.each([
-    { DEPLOYMENT_ENV: 'preview' },
-    { DEPLOYMENT_ENV: 'production' },
-    { VERCEL_ENV: 'preview', DEPLOYMENT_ENV: 'test', CI: 'true' },
-    { VERCEL_ENV: 'development', DEPLOYMENT_ENV: 'production', CI: 'true' },
-    { DEPLOYMENT_ENV: 'unknown' },
+    { DEPLOYMENT_ENVIRONMENT: 'preview' },
+    { DEPLOYMENT_ENVIRONMENT: 'production' },
+    { VERCEL_ENV: 'preview', DEPLOYMENT_ENVIRONMENT: 'test', CI: 'true' },
+    { VERCEL_ENV: 'development', DEPLOYMENT_ENVIRONMENT: 'production', CI: 'true' },
+    { DEPLOYMENT_ENVIRONMENT: 'unknown' },
     { NODE_ENV: 'production' },
   ])('fails before command or worker initialization without hosted adapters: %j', async (environment) => {
-    for (const key of ['VERCEL_ENV', 'DEPLOYMENT_ENV', 'CI']) vi.stubEnv(key, undefined)
+    for (const key of ['VERCEL_ENV', 'DEPLOYMENT_ENVIRONMENT', 'CI']) vi.stubEnv(key, undefined)
     vi.stubEnv('NODE_ENV', 'development')
     for (const [key, value] of Object.entries(environment)) vi.stubEnv(key, value)
     const start = vi.spyOn(payload.db, 'beginTransaction')

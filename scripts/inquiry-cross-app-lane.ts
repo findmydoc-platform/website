@@ -507,7 +507,7 @@ async function main() {
     DATABASE_URI: databaseUri,
     DATABASE_DIRECT_URI: databaseUri,
     CLINIC_DASHBOARD_URL: `http://127.0.0.1:${Number(process.env.CLINIC_DASHBOARD_CROSS_APP_PORT ?? '3101')}`,
-    DEPLOYMENT_ENV: 'test',
+    DEPLOYMENT_ENVIRONMENT: 'test',
     NEXT_PUBLIC_DEPLOYMENT_ENV: 'test',
     NEXT_PUBLIC_SERVER_URL: websiteOrigin,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: 'cross-app-anon-key',

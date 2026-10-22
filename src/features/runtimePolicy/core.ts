@@ -3,7 +3,7 @@ export type RuntimeClass = 'preview' | 'nonPreview'
 export type RuntimeEnvironment = 'production' | 'preview' | 'development' | 'test' | 'unknown'
 
 export type ServerRuntimeEnvInput = {
-  DEPLOYMENT_ENV?: string
+  DEPLOYMENT_ENVIRONMENT?: string
   NODE_ENV?: string
   VERCEL_ENV?: string
 }
@@ -40,7 +40,7 @@ const toRuntimeClass = (runtimeEnvironment: RuntimeEnvironment): RuntimeClass =>
 }
 
 export const resolveServerRuntimeEnvironment = (env: ServerRuntimeEnvInput = process.env): RuntimeEnvironment => {
-  const runtimeValue = normalizeEnvValue(env.VERCEL_ENV) ?? normalizeEnvValue(env.DEPLOYMENT_ENV)
+  const runtimeValue = normalizeEnvValue(env.VERCEL_ENV) ?? normalizeEnvValue(env.DEPLOYMENT_ENVIRONMENT)
   const runtimeEnvironment = toRuntimeEnvironment(runtimeValue)
   return runtimeEnvironment === 'unknown'
     ? toNodeRuntimeEnvironment(normalizeEnvValue(env.NODE_ENV))

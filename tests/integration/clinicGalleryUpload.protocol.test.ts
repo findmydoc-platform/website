@@ -42,7 +42,7 @@ describe('cold native clinic gallery upload protocol', () => {
   const orphanKeys = new Set<string>()
   const groups: Array<{ id: number; operator: PayloadRequest; staffId: number }> = []
   const staffIds: Array<number | string> = []
-  const storage = resolveS3StorageConfig({ ...process.env, DEPLOYMENT_ENV: 'test' })
+  const storage = resolveS3StorageConfig({ ...process.env, DEPLOYMENT_ENVIRONMENT: 'test' })
   const s3 = new S3Client(storage.clientConfig)
 
   beforeAll(async () => {

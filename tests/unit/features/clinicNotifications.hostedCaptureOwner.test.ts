@@ -100,7 +100,7 @@ function captureRuntime(options: { cold?: boolean; loseOwner?: boolean; revokeOp
 
 describe('registered hosted capture final native hook dispatch', () => {
   beforeEach(() => {
-    vi.stubEnv('DEPLOYMENT_ENV', 'preview')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('VERCEL_GIT_COMMIT_SHA', 'a'.repeat(40))
   })

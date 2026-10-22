@@ -11,7 +11,7 @@ import { createTinyPngFile } from '../fixtures/mediaFile'
 import type { ClinicStaff, Patient, PlatformContentMedia, PlatformStaff } from '@/payload-types'
 import { resolveS3StorageConfig } from '@/plugins/storageConfig'
 
-const storageConfig = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'test' })
+const storageConfig = resolveS3StorageConfig({ DEPLOYMENT_ENVIRONMENT: 'test' })
 
 const storageObjectUrl = (storagePath: string): string =>
   new URL(`${storageConfig.bucket}/${storagePath}`, `${storageConfig.clientConfig.endpoint}/`).toString()

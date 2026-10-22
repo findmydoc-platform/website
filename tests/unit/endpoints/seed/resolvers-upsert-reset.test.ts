@@ -363,7 +363,7 @@ describe('resetCollections', () => {
 
   it('throws for baseline reset in production', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
     await expect(resetCollections(payload, 'baseline')).rejects.toThrow(/seed reset is disabled in this runtime/i)
@@ -375,7 +375,7 @@ describe('resetCollections', () => {
 
   it('throws for demo reset in production', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
     await expect(resetCollections(payload, 'demo')).rejects.toThrow(/demo reset is disabled in production/i)
@@ -387,7 +387,7 @@ describe('resetCollections', () => {
 
   it('returns the post slugs that must be invalidated after reset', async () => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', '')
     vi.stubEnv('NODE_ENV', 'test')
     find.mockImplementation(async ({ collection }: { collection: string }) => ({
       docs:
@@ -426,7 +426,7 @@ describe('resetCollections', () => {
     'clinictreatments',
   ] as const)('deletes %s sequentially with separate native owners', async (mediaCollection) => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', '')
     vi.stubEnv('NODE_ENV', 'test')
     find.mockImplementation(async ({ collection }: { collection: string }) => ({
       docs: collection === mediaCollection ? [{ id: 17 }, { id: 18 }] : [],
@@ -470,7 +470,7 @@ describe('resetCollections', () => {
         : [],
     }))
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', '')
     vi.stubEnv('NODE_ENV', 'test')
 
     const expectedOrder = [
@@ -549,7 +549,7 @@ describe('resetCollections', () => {
 
   it('publishes the reset cache scope before the first destructive mutation', async () => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     vi.stubEnv('NODE_ENV', 'test')
     const events: string[] = []
     deleteDocuments.mockImplementation(async () => {
@@ -570,7 +570,7 @@ describe('resetCollections', () => {
 
   it('preserves every principal and clears only resettable relations without Supabase synchronization', async () => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     vi.stubEnv('NODE_ENV', 'test')
 
     find.mockImplementation(async ({ collection, where }: { collection: string; where?: Record<string, unknown> }) => {
@@ -636,7 +636,7 @@ describe('resetCollections', () => {
 
   it('clears baseline-only patient country relations before deleting countries', async () => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     vi.stubEnv('NODE_ENV', 'test')
 
     find.mockImplementation(async ({ collection, where }: { collection: string; where?: Record<string, unknown> }) => {
@@ -658,7 +658,7 @@ describe('resetCollections', () => {
 
   it('fails preflight before any mutation when a protected relation becomes required', async () => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     vi.stubEnv('NODE_ENV', 'test')
 
     const unsafePayload = {
@@ -686,7 +686,7 @@ describe('resetCollections', () => {
 
   it('rejects an invalid staff clinic reference before files, account changes, or deletion', async () => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     find.mockImplementation(async ({ collection, where }) => ({
       docs: collection === 'clinicStaff' && where && 'clinic' in where ? [{ id: 7, clinic: null }] : [],
     }))
@@ -701,7 +701,7 @@ describe('resetCollections', () => {
 
   it('surfaces Payload lifecycle delete errors instead of continuing', async () => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     vi.stubEnv('NODE_ENV', 'test')
     deleteDocuments.mockResolvedValueOnce({ docs: [], errors: [{ id: 'appeal-1', message: 'blocked' }] })
 
@@ -713,7 +713,7 @@ describe('resetCollections', () => {
 
   it('cleans attachment files after preparation and before account updates or collection deletion', async () => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     const events: string[] = []
     find.mockImplementation(async ({ collection, where }: { collection: string; where?: Record<string, unknown> }) => ({
       docs:
@@ -745,7 +745,7 @@ describe('resetCollections', () => {
 
   it('keeps attachment metadata and account relations after storage failure and retries the same files', async () => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     find.mockImplementation(async ({ collection, where }: { collection: string; where?: Record<string, unknown> }) => ({
       docs:
         collection === 'inquiryAttachments'
@@ -773,7 +773,7 @@ describe('resetCollections', () => {
     'rejects an unreadable other media list before mutations for %s',
     async (kind) => {
       vi.stubEnv('VERCEL_ENV', '')
-      vi.stubEnv('DEPLOYMENT_ENV', 'test')
+      vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
       const original = seedLoader.loadSeedFile
       const spy = vi.spyOn(seedLoader, 'loadSeedFile').mockImplementation(async (source, name) => {
         if (source !== kind && name === 'platformContentMedia') throw new Error('Invalid seed media file')
@@ -796,7 +796,7 @@ describe('resetCollections', () => {
     'preserves baseline media and skips an empty difference for %s',
     async (kind) => {
       vi.stubEnv('VERCEL_ENV', '')
-      vi.stubEnv('DEPLOYMENT_ENV', 'test')
+      vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
       const original = seedLoader.loadSeedFile
       const spy = vi.spyOn(seedLoader, 'loadSeedFile').mockImplementation(async (source, name) => {
         if (name === 'platformContentMedia') return [{ stableId: 'shared' }]
@@ -813,7 +813,7 @@ describe('resetCollections', () => {
 
   it.each(['demo', 'baseline'] as const)('deletes only demo-only media for %s', async (kind) => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', 'test')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'test')
     const original = seedLoader.loadSeedFile
     const spy = vi.spyOn(seedLoader, 'loadSeedFile').mockImplementation(async (source, name) => {
       if (name === 'platformContentMedia')
@@ -845,7 +845,7 @@ describe('resetCollections', () => {
         : [],
     }))
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', '')
     vi.stubEnv('NODE_ENV', 'test')
 
     const expectedOrder = [

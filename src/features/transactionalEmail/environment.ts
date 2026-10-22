@@ -55,9 +55,13 @@ type TransactionalEmailAcceptanceRuntime = {
 }
 
 function classifyEnvironment(env: Record<string, string | undefined>): EmailEnvironment {
-  if (env.VERCEL_ENV?.trim() && env.DEPLOYMENT_ENV?.trim() && env.VERCEL_ENV.trim() !== env.DEPLOYMENT_ENV.trim())
+  if (
+    env.VERCEL_ENV?.trim() &&
+    env.DEPLOYMENT_ENVIRONMENT?.trim() &&
+    env.VERCEL_ENV.trim() !== env.DEPLOYMENT_ENVIRONMENT.trim()
+  )
     throw new TransactionalEmailError('environment-unavailable')
-  const configured = env.VERCEL_ENV?.trim() || env.DEPLOYMENT_ENV?.trim()
+  const configured = env.VERCEL_ENV?.trim() || env.DEPLOYMENT_ENVIRONMENT?.trim()
   if (configured === 'preview' || configured === 'production') {
     if (env.CI === 'true' || env.NODE_ENV === 'test') throw new TransactionalEmailError('environment-unavailable')
     return configured

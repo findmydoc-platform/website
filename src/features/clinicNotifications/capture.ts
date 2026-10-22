@@ -146,7 +146,10 @@ export async function captureClinicNotificationOccurrence(
 
 /** This preparation-only activation interface refuses every hosted environment. */
 export async function activateClinicNotificationsForTest(req: PayloadRequest): Promise<void> {
-  if (process.env.DEPLOYMENT_ENV !== 'test' || (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'development')) {
+  if (
+    process.env.DEPLOYMENT_ENVIRONMENT !== 'test' ||
+    (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'development')
+  ) {
     throw new ClinicNotificationError('CLINIC_ACCESS_DENIED')
   }
   const transactionID = await req.payload.db.beginTransaction({

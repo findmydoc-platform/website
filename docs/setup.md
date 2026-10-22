@@ -76,7 +76,7 @@ pnpm dev:redirect-blocker
 ```
 
 This command sets:
-- `DEPLOYMENT_ENV=preview`
+- `DEPLOYMENT_ENVIRONMENT=preview`
 - `NEXT_PUBLIC_DEPLOYMENT_ENV=preview`
 
 Result:

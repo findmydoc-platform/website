@@ -15,7 +15,7 @@ import { upsertByStableId } from '@/endpoints/seed/utils/upsert'
 import { resolveS3StorageConfig } from '@/plugins/storageConfig'
 import type { PlatformContentMedia, PlatformStaff, UserProfileMedia } from '@/payload-types'
 
-const storageConfig = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'test' })
+const storageConfig = resolveS3StorageConfig({ DEPLOYMENT_ENVIRONMENT: 'test' })
 const slugPrefix = testSlug('seedUploadRecovery.storage.test.ts')
 
 const storageObjectUrl = (storagePath: string): string =>

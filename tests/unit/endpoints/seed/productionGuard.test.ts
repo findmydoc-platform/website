@@ -50,7 +50,7 @@ describe('production seed guard', () => {
 
   it('allows baseline seeding in production', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
     const res = makeRes()
@@ -63,7 +63,7 @@ describe('production seed guard', () => {
 
   it('blocks baseline reset seeding in production', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
     const res = makeRes()
@@ -78,7 +78,7 @@ describe('production seed guard', () => {
     { label: 'demo reset seeding', query: { type: 'demo', reset: '1' } },
   ])('blocks $label in production', async ({ query }) => {
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
     const res = makeRes()
@@ -90,7 +90,7 @@ describe('production seed guard', () => {
 
   it('blocks non-platform users before runtime policy checks', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
     const res = makeRes()
@@ -102,7 +102,7 @@ describe('production seed guard', () => {
 
   it('blocks retrying stale demo seed runs in production', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
     const payload = createMockPayload()
@@ -158,7 +158,7 @@ describe('production seed guard', () => {
 
   it('blocks advancing stale demo seed runs in production', async () => {
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
 
     const payload = createMockPayload()
@@ -211,7 +211,7 @@ describe('production seed guard', () => {
 
   it('queues baseline seeding in development runtime', async () => {
     vi.stubEnv('VERCEL_ENV', '')
-    vi.stubEnv('DEPLOYMENT_ENV', '')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', '')
     vi.stubEnv('NODE_ENV', 'development')
 
     const res = makeRes()

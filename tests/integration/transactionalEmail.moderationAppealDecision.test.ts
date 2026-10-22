@@ -798,7 +798,7 @@ describe('authoritative moderation appeal decision', () => {
     const source = await pendingCase()
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     vi.stubEnv('CI', 'false')
     activationRegistry.records = declaredActivationRecords.filter(
       ({ environment, commandType }) => environment !== 'production' || commandType !== 'moderation.appeal-decided',

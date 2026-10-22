@@ -50,6 +50,11 @@ Keep schema changes safe and repeatable across local development, preview, and p
    Workflow configuration alone does not verify a successful deployment, active domain routing, or observed operation.
 
 5. **Deployment metadata contract**
+   `DEPLOYMENT_ENVIRONMENT` is the single server-side deployment variable used by runtime checks and diagnostics.
+   Preview delivery and the pinned Production reusable workflow supply it during build and as a deployment runtime
+   override. `VERCEL_ENV` remains the independent hosting check. Local profiles use `development`; the public seeding
+   label `NEXT_PUBLIC_DEPLOYMENT_ENV` remains separate. Notification capture still requires its explicit activation.
+
    The deployment boundary validates the target environment, full commit SHA, and production release version before
    calling Vercel. Its controlled Vercel-stub test verifies the build and runtime values actually passed to the CLI;
    it is not a replacement for validating a real Preview deployment.

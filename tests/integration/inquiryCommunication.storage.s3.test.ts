@@ -42,7 +42,7 @@ import {
   createPlatformTestUser,
 } from '../fixtures/testUsers'
 
-const storageConfig = resolveS3StorageConfig({ DEPLOYMENT_ENV: 'test' })
+const storageConfig = resolveS3StorageConfig({ DEPLOYMENT_ENVIRONMENT: 'test' })
 const slugPrefix = testSlug('inquiryCommunication.storage.s3.test.ts')
 
 const storageObjectUrl = (objectKey: string): string =>

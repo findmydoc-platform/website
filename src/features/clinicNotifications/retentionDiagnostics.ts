@@ -40,8 +40,8 @@ async function emitRetentionDiagnostic(
   const fields = {
     event: 'clinic_dashboard.notifications.retention',
     application: 'website',
-    environment: ['production', 'preview', 'test'].includes(process.env.DEPLOYMENT_ENV ?? '')
-      ? process.env.DEPLOYMENT_ENV
+    environment: ['production', 'preview', 'test'].includes(process.env.DEPLOYMENT_ENVIRONMENT ?? '')
+      ? process.env.DEPLOYMENT_ENVIRONMENT
       : 'local',
     ...parsed.data,
   }

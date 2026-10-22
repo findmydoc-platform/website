@@ -61,7 +61,7 @@ describe('Clinic Dashboard deployment environment preflight', () => {
     expect(
       validateClinicDashboardDeploymentEnv({
         CLINIC_DASHBOARD_URL: CLINIC_DASHBOARD_ORIGIN_BY_ENVIRONMENT.production,
-        DEPLOYMENT_ENV: 'preview',
+        DEPLOYMENT_ENVIRONMENT: 'preview',
         VERCEL_ENV: 'production',
       }),
     ).toEqual({ environment: 'production', status: 'validated' })

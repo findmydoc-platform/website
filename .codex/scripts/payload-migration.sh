@@ -16,7 +16,7 @@ fi
 hosted_runtime=false
 if [[ "${VERCEL:-}" == "1" || "${VERCEL_ENV:-}" == "preview" || "${VERCEL_ENV:-}" == "production" ]]; then
   hosted_runtime=true
-elif [[ "${CI:-}" == "true" && ( "${DEPLOYMENT_ENV:-}" == "preview" || "${DEPLOYMENT_ENV:-}" == "production" ) ]]; then
+elif [[ "${CI:-}" == "true" && ( "${DEPLOYMENT_ENVIRONMENT:-}" == "preview" || "${DEPLOYMENT_ENVIRONMENT:-}" == "production" ) ]]; then
   hosted_runtime=true
 fi
 

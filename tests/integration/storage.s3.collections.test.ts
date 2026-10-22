@@ -30,7 +30,7 @@ type StorageMatrixCase = {
   }) => RegExp
 }
 
-const storageConfig = resolveS3StorageConfig({ ...process.env, DEPLOYMENT_ENV: 'test' })
+const storageConfig = resolveS3StorageConfig({ ...process.env, DEPLOYMENT_ENVIRONMENT: 'test' })
 const slugPrefix = testSlug('storage.s3.collections.test.ts')
 
 const storageObjectUrl = (storagePath: string): string =>

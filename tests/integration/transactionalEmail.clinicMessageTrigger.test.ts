@@ -140,7 +140,7 @@ describe('clinic message atomic email trigger', () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('CI', 'false')
     vi.stubEnv('VERCEL_ENV', 'production')
-    vi.stubEnv('DEPLOYMENT_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
     activationRegistry.records = declaredActivationRecords.filter(
       ({ environment, commandType }) =>
         environment !== 'production' || commandType !== 'conversation.external-message-received',
@@ -550,7 +550,7 @@ describe('clinic message atomic email trigger', () => {
       vi.stubEnv('NODE_ENV', 'production')
       vi.stubEnv('CI', 'false')
       vi.stubEnv('VERCEL_ENV', environment)
-      vi.stubEnv('DEPLOYMENT_ENV', environment)
+      vi.stubEnv('DEPLOYMENT_ENVIRONMENT', environment)
       activationRegistry.records = declaredActivationRecords.filter(
         ({ environment, commandType }) =>
           environment !== 'production' || commandType !== 'conversation.external-message-received',

@@ -44,7 +44,8 @@ describe('complete seed reset with PostgreSQL and test storage', () => {
   let payload: Payload
 
   beforeAll(async () => {
-    if (process.env.DEPLOYMENT_ENV !== 'test') throw new Error('Seed reset tests require the isolated test runtime.')
+    if (process.env.DEPLOYMENT_ENVIRONMENT !== 'test')
+      throw new Error('Seed reset tests require the isolated test runtime.')
     const target = new URL(process.env.DATABASE_URI!)
     if (!['localhost', '127.0.0.1'].includes(target.hostname) || !target.pathname.startsWith('/findmydoc-test')) {
       throw new Error('Seed reset tests require a local test database.')

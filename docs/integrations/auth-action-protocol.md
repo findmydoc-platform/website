@@ -66,8 +66,8 @@ All bodies are strict JSON objects. `flow` is either `clinic-invitation` or `cli
 | Operation | Body properties | Successful result |
 | --- | --- | --- |
 | `requestRecovery` | `email`, `clientIP` | HTTP 202, `accepted` |
-| `validateAction` | `actionRef`, `flow` | HTTP 200, `valid` |
-| `confirmAction` | `actionRef`, `flow`, `accessToken` | HTTP 200, `confirmed` |
+| `validateAction` | `actionRef`, `flow`, optional `tokenType` | HTTP 200, `valid` |
+| `confirmAction` | `actionRef`, `flow`, `accessToken`, optional `tokenType`, optional `resumeConfirmedInvitation: true` | HTTP 200, `confirmed` |
 | `completeAction` | `actionRef`, `flow`, `accessToken`, `password` | HTTP 200, `completed` |
 
 Success bodies contain exactly `{ "version": 1, "ok": true, "outcome": result }`. Invalid references,
@@ -83,6 +83,11 @@ result. The protocol never trusts arbitrary forwarded headers, persists the IP o
 
 `validateAction` requires an active, unexpired action and current eligible principal. It makes no AuthAction
 write and consumes no Supabase token. Request-ID bookkeeping is separate private storage.
+When `tokenType` is supplied, validation also requires an exact match to the persisted action's Supabase OTP type.
+This transport hint never changes the signed business flow. Operator-renewed initial clinic invitations use a fresh
+recovery OTP while retaining `clinic-invitation` and the initial-password completion route. `confirmAction` applies
+the same optional transport check, including when resuming an already confirmed invitation. Existing callers can
+omit the hint and retain the original wire contract.
 
 `confirmAction` uses Supabase's server-verified [getUser](https://supabase.com/docs/reference/javascript/auth-getuser)
 result. The current user must have the authoritative Clinic role, the bound UUID and the current principal's

@@ -6,6 +6,24 @@ import { bindAuthActions } from '@/auth/actions/lifecycle'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
+import { createPlatformTestUser } from '../fixtures/testUsers'
+import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
+import { renewExpiredClinicInvitation } from '@/auth/actions/clinicInvitationRequests'
+import { bindProtocolPasswordCompletion } from '@/auth/actions/protocol/passwordCompletion'
+import type { User } from '@supabase/supabase-js'
+import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
+import { openStorageCapability } from '@/features/transactionalEmail/capability'
+
+const provider = vi.hoisted(() => ({ users: new Map<string, User>() }))
+vi.mock('@/auth/utilities/supaBaseServer', () => ({
+  createAdminClient: async () => ({
+    auth: {
+      admin: {
+        getUserById: async (id: string) => ({ data: { user: provider.users.get(id) ?? null }, error: null }),
+      },
+    },
+  }),
+}))
 
 describe('committed clinic invitation reservation', () => {
   let payload: Payload
@@ -92,7 +110,13 @@ describe('committed clinic invitation reservation', () => {
   }
 
   afterEach(async () => {
+    await cleanupTransactionalEmailFixtures(
+      payload,
+      [...created.actions].map((id) => `v1|auth-action|${id}`),
+    )
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+    provider.users.clear()
     now += 365 * 86400000
     const cleanup = await actions()
     for (const id of created.actions) {
@@ -203,5 +227,109 @@ describe('committed clinic invitation reservation', () => {
     } finally {
       hooks.splice(hooks.indexOf(failMarker), 1)
     }
+  })
+
+  it('renews through the authorized operator seam and accepts exactly one managed invitation', async () => {
+    const staff = await initialStaff()
+    const system = await actions()
+    const first = (await system.reserveClinicInvitation({ clinicStaffId: staff.id }))!
+    created.actions.add(first.id)
+    await system.transition({ id: first.id, to: 'active' })
+    await system.transition({ id: first.id, to: 'confirmed' })
+    const original = await payload.findByID({ collection: 'clinicStaff', id: staff.id, depth: 0, overrideAccess: true })
+    now += 2 * 86400000
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    vi.stubEnv('CI', 'true')
+    provider.users.set(staff.supabaseUserId!, {
+      id: staff.supabaseUserId!,
+      email: staff.email,
+      email_confirmed_at: first.createdAt,
+      app_metadata: { user_type: 'clinic', onboarding_key: staff.onboardingKey },
+      user_metadata: {},
+      aud: 'authenticated',
+      created_at: first.createdAt,
+    } as User)
+    const operator = await createPlatformTestUser(payload, { emailPrefix: `${prefix}-renewal-${randomUUID()}` })
+    const req = await createLocalReq({ user: { ...operator, collection: 'platformStaff' } }, payload)
+    const command = { clinicStaffId: staff.id, expiredActionId: first.id, dryRun: true }
+    try {
+      await expect(renewExpiredClinicInvitation(await createLocalReq({}, payload), command)).rejects.toMatchObject({
+        status: 403,
+      })
+      expect(await renewExpiredClinicInvitation(req, command)).toMatchObject({
+        status: 'eligible',
+        authActionId: first.id,
+      })
+      expect((await system.read(first.id))!.state).toBe('confirmed')
+      const concurrent = await Promise.allSettled(
+        [1, 2].map(() => renewExpiredClinicInvitation(req, { ...command, dryRun: false })),
+      )
+      const accepted = concurrent.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []))
+      expect(accepted.length).toBeGreaterThan(0)
+      expect(new Set(accepted.map((result) => result.authActionId)).size).toBe(1)
+      const result = accepted[0]!
+      created.actions.add(result.authActionId)
+      expect(result.status).toBe('accepted')
+      expect(await renewExpiredClinicInvitation(req, { ...command, dryRun: false })).toMatchObject({
+        authActionId: result.authActionId,
+      })
+      expect(await (await actions()).read(first.id)).toMatchObject({ state: 'expired' })
+      expect(await (await actions()).read(result.authActionId)).toMatchObject({
+        state: 'active',
+        actionType: 'clinic-invitation',
+        supabaseTokenType: 'recovery',
+        supabaseSubject: staff.supabaseUserId,
+      })
+      const outbox = await runOwnedTransaction(await createLocalReq({}, payload), async (_, transactionID) => {
+        const capability = openStorageCapability(transactionID)
+        try {
+          const scoped = await createLocalReq(
+            { context: capability.context, req: { transactionID: Promise.resolve(transactionID) } },
+            payload,
+          )
+          return await payload.find({
+            collection: 'transactionalEmailOutbox',
+            req: scoped,
+            overrideAccess: true,
+            depth: 0,
+            where: { operationReference: { equals: `v1|auth-action|${result.authActionId}` } },
+          })
+        } finally {
+          capability.close()
+        }
+      })
+      expect(outbox.totalDocs).toBe(1)
+      expect(outbox.docs[0]!.commandType).toBe('auth.invitation')
+      expect(
+        await payload.findByID({ collection: 'clinicStaff', id: staff.id, depth: 0, overrideAccess: true }),
+      ).toEqual(original)
+    } finally {
+      await payload.delete({ collection: 'platformStaff', id: operator.id, overrideAccess: true })
+    }
+  })
+
+  it('retains a real uncertain password claim and refuses operator renewal after expiry', async () => {
+    const staff = await initialStaff()
+    const system = await actions()
+    const first = (await system.reserveClinicInvitation({ clinicStaffId: staff.id }))!
+    created.actions.add(first.id)
+    await system.transition({ id: first.id, to: 'active' })
+    const confirmed = await system.transition({ id: first.id, to: 'confirmed' })
+    const req = await createLocalReq({}, payload)
+    const passwords = bindProtocolPasswordCompletion(req, 'ci')
+    expect(
+      await passwords.execute({
+        action: confirmed,
+        subject: staff.supabaseUserId!,
+        requestId: randomUUID(),
+        verifyCurrentAuthority: async () => undefined,
+        updatePassword: async () => ({ data: { user: null }, error: { status: 503 } }),
+      }),
+    ).toBe('unavailable')
+    now += 2 * 86400000
+    await expect(
+      (await actions()).renewClinicInvitation({ clinicStaffId: staff.id, expiredActionId: first.id, dryRun: false }),
+    ).rejects.toMatchObject({ code: 'invalid-transition' })
+    expect(await passwords.invitationRenewalBlocked(confirmed)).toBe(true)
   })
 })

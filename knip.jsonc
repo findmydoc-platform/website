@@ -9,10 +9,11 @@
     // These production operations are called by deployment or documented operator commands.
     "scripts/permission-matrix/derive-json.ts!",
     "scripts/lettermint-digest-key-retirement.ts!",
+    "scripts/renew-clinic-invitation.ts!",
     // The integration runner selects this guarded config by filename, not an import.
     "vitest.integration.config.ts",
     // Development globs must not overlap the explicitly classified production operations.
-    "scripts/**/!(derive-json|lettermint-digest-key-retirement).{js,mjs,ts}",
+    "scripts/**/!(derive-json|lettermint-digest-key-retirement|renew-clinic-invitation).{js,mjs,ts}",
     "tests/**/*.{ts,tsx}",
   ],
   // Analyze Payload imports statically. Loading its config executes server and JSX modules.
@@ -27,8 +28,9 @@
     "next-sitemap.config.cjs!",
     "scripts/permission-matrix/derive-json.ts!",
     "scripts/lettermint-digest-key-retirement.ts!",
+    "scripts/renew-clinic-invitation.ts!",
     "tests/**/*.{ts,tsx}",
-    "scripts/**/!(derive-json|lettermint-digest-key-retirement).{js,mjs,ts}",
+    "scripts/**/!(derive-json|lettermint-digest-key-retirement|renew-clinic-invitation).{js,mjs,ts}",
     ".storybook/**/*.{ts,tsx}",
     "!(next|next-sitemap).config.{js,mjs,ts,cjs}",
   ],

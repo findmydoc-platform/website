@@ -56,6 +56,7 @@ function matchesWhere(doc: Record<string, unknown>, where: Record<string, unknow
 // The fake persists Local API documents and calls production hooks. It supplies no lifecycle decisions.
 function storage() {
   const rows = new Map<number, Record<string, unknown>>()
+  const kv = new Map<number, Record<string, unknown>>()
   const principals = new Map<number, Record<string, unknown>>()
   const sources = new Map<string, Record<string, unknown>>()
   let nextID = 1
@@ -87,7 +88,15 @@ function storage() {
   const operationGuard = operation
   const payload = {
     db,
-    create: vi.fn((options) => write('create', options)),
+    create: vi.fn((options) => {
+      if (options.collection === 'payload-kv') {
+        if ([...kv.values()].some((row) => row.key === options.data.key)) throw new Error('Duplicate key')
+        const row = { ...options.data, id: nextID++ }
+        kv.set(row.id, row)
+        return Promise.resolve(row)
+      }
+      return write('create', options)
+    }),
     update: vi.fn(async (options) => {
       if (options.collection === 'clinicStaff') {
         const key = `clinicStaff:${options.id}`
@@ -104,6 +113,7 @@ function storage() {
       return write('update', options)
     }),
     findByID: vi.fn(async (options) => {
+      if (options.collection === 'payload-kv') return kv.get(options.id) ?? null
       if (options.collection !== 'authActions')
         return sources.get(`${options.collection}:${options.id}`) ?? principals.get(options.id) ?? { id: options.id }
       await operation('read', options)
@@ -111,18 +121,27 @@ function storage() {
       return doc ? read(doc, options.req) : null
     }),
     find: vi.fn(async (options) => {
+      if (options.collection === 'payload-kv')
+        return { docs: [...kv.values()].filter((doc) => matchesWhere(doc, options.where ?? {})) }
       await operation('read', options)
       const docs = [...rows.values()].filter((doc) => matchesWhere(doc, options.where ?? {}))
       docs.sort((left, right) =>
-        options.sort === '-createdAt'
-          ? String(right.createdAt).localeCompare(String(left.createdAt))
-          : Number(left.id) - Number(right.id),
+        options.sort === '-id'
+          ? Number(right.id) - Number(left.id)
+          : options.sort === '-createdAt'
+            ? String(right.createdAt).localeCompare(String(left.createdAt))
+            : Number(left.id) - Number(right.id),
       )
       return {
         docs: await Promise.all(docs.slice(0, options.limit ?? docs.length).map((doc) => read(doc, options.req))),
       }
     }),
     delete: vi.fn(async (options) => {
+      if (options.collection === 'payload-kv') {
+        const row = kv.get(options.id)
+        kv.delete(options.id)
+        return row
+      }
       await operation('delete', options)
       for (const hook of AuthActions.hooks!.beforeDelete!)
         await hook({ id: options.id, req: options.req } as Parameters<typeof hook>[0])
@@ -132,7 +151,7 @@ function storage() {
     }),
   } as unknown as Payload
   const req = { payload, context: {}, user: null } as PayloadRequest
-  return { payload, req, rows, db, principals, sources }
+  return { payload, req, rows, db, principals, sources, kv }
 }
 
 describe('AuthAction lifecycle through the system command boundary', () => {
@@ -216,6 +235,24 @@ describe('AuthAction lifecycle through the system command boundary', () => {
     expect([...fixture.sources]).toEqual(before)
   })
 
+  it('explicitly renews an expired confirmed invitation without changing approval or identity', async () => {
+    approvedClinic()
+    const first = (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
+    await actions().transition({ id: first.id, to: 'active' })
+    await actions().transition({ id: first.id, to: 'confirmed' })
+    const original = structuredClone(fixture.sources.get('clinicStaff:61'))
+    now += 2 * day
+    const next = await actions().renewClinicInvitation({ clinicStaffId: 61, expiredActionId: first.id, dryRun: false })
+    expect(next).toMatchObject({
+      state: 'pending',
+      supabaseSubject: clinicSubject,
+      principal: { relationTo: 'clinicStaff', value: 61 },
+    })
+    expect(next.id).not.toBe(first.id)
+    expect(await actions().read(first.id)).toMatchObject({ state: 'expired' })
+    expect(fixture.sources.get('clinicStaff:61')).toEqual(original)
+  })
+
   it('limits authorized invitation replacement, preserves confirmed actions and isolates environments', async () => {
     approvedClinic()
     const first = (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
@@ -240,6 +277,77 @@ describe('AuthAction lifecycle through the system command boundary', () => {
     await actions().transition({ id: third.id, to: 'active' })
     await actions().transition({ id: third.id, to: 'confirmed' })
     await expect(actions().reserveClinicInvitation({ clinicStaffId: 61, resendOf: third.id })).rejects.toMatchObject({
+      code: 'invalid-transition',
+    })
+  })
+
+  it('keeps renewal dry-run write-free and deduplicates repeated or concurrent renewal commands', async () => {
+    approvedClinic()
+    const first = (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
+    await actions().transition({ id: first.id, to: 'active' })
+    await actions().transition({ id: first.id, to: 'confirmed' })
+    now += 2 * day
+    const before = structuredClone([...fixture.rows])
+    await actions().renewClinicInvitation({ clinicStaffId: 61, expiredActionId: first.id, dryRun: true })
+    expect([...fixture.rows]).toEqual(before)
+    expect(fixture.kv.size).toBe(0)
+    const results = await Promise.allSettled(
+      [1, 2].map(() =>
+        actions().renewClinicInvitation({ clinicStaffId: 61, expiredActionId: first.id, dryRun: false }),
+      ),
+    )
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
+    const next = await actions().renewClinicInvitation({ clinicStaffId: 61, expiredActionId: first.id, dryRun: false })
+    expect(fixture.rows.size).toBe(2)
+    expect(next.id).not.toBe(first.id)
+  })
+
+  it.each([
+    ['identity', 'clinicStaff:61', { supabaseUserId: '9edb6591-3115-4f1e-a09e-315951ca3628' }],
+    ['approval', 'clinics:71', { participationStatus: 'pending' }],
+    ['application', 'clinicApplications:81', { status: 'rejected' }],
+    ['assignment', 'clinicStaff:61', { assignmentScope: 'group', group: 91 }],
+    ['completion', 'clinicStaff:61', { accountCompletion: { source: 'initial-password' } }],
+    ['readiness', 'clinicStaff:61', { activationReadiness: { version: 'identity-v1' } }],
+  ])('refuses renewal after current %s authority changes', async (_label, key, changed) => {
+    approvedClinic()
+    const first = (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
+    now += 2 * day
+    fixture.sources.set(String(key), { ...fixture.sources.get(String(key)), ...(changed as object) })
+    await expect(
+      actions().renewClinicInvitation({ clinicStaffId: 61, expiredActionId: first.id, dryRun: false }),
+    ).rejects.toMatchObject({ code: 'invalid-transition' })
+    expect(fixture.rows.size).toBe(1)
+    expect(fixture.kv.size).toBe(0)
+  })
+
+  it('never replaces an unexpired, revoked, foreign-flow or uncertain password action', async () => {
+    approvedClinic()
+    const first = (await actions().reserveClinicInvitation({ clinicStaffId: 61 }))!
+    const command = { clinicStaffId: 61, expiredActionId: first.id, dryRun: false }
+    await expect(actions().renewClinicInvitation(command)).rejects.toMatchObject({ code: 'invalid-transition' })
+    await actions().transition({ id: first.id, to: 'active' })
+    await actions().transition({ id: first.id, to: 'confirmed' })
+    const { bindProtocolPasswordCompletion } = await import('@/auth/actions/protocol/passwordCompletion')
+    await bindProtocolPasswordCompletion(fixture.req, 'test').execute({
+      action: (await actions().read(first.id))!,
+      subject: clinicSubject,
+      requestId: 'uncertain',
+      verifyCurrentAuthority: async () => undefined,
+      updatePassword: async () => ({ data: { user: null }, error: { status: 503 } }),
+    })
+    now += 2 * day
+    await expect(actions().renewClinicInvitation(command)).rejects.toMatchObject({ code: 'invalid-transition' })
+    expect(fixture.kv.size).toBe(1)
+    fixture.kv.clear()
+    await actions().transition({ id: first.id, to: 'revoked' })
+    await expect(actions().renewClinicInvitation(command)).rejects.toMatchObject({ code: 'invalid-transition' })
+    const recovery = await actions().create({
+      actionType: 'clinic-recovery',
+      principal: { relationTo: 'clinicStaff', value: 61 },
+    })
+    now += 2 * day
+    await expect(actions().renewClinicInvitation({ ...command, expiredActionId: recovery.id })).rejects.toMatchObject({
       code: 'invalid-transition',
     })
   })

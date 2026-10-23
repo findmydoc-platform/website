@@ -40,7 +40,7 @@ function sameIdentity(user: User | null, staff: ClinicStaff, action: AuthAction,
   return Boolean(
     user &&
     user.id === action.supabaseSubject &&
-    !user.email_confirmed_at &&
+    (action.supabaseTokenType === 'recovery' || !user.email_confirmed_at) &&
     user.app_metadata?.user_type === 'clinic' &&
     user.app_metadata?.onboarding_key === staff.onboardingKey &&
     user.email &&
@@ -69,7 +69,7 @@ export function createClinicInvitationCatalogEntry(dependencies: Dependencies): 
       action.callbackDestination !== policy.callbackDestination ||
       action.finalDestination !== policy.finalDestination ||
       action.completionRoute !== policy.completionRoute ||
-      action.supabaseTokenType !== policy.supabaseTokenType ||
+      !['invite', 'recovery'].includes(action.supabaseTokenType) ||
       !Number.isFinite(Date.parse(action.createdAt)) ||
       Date.parse(action.createdAt) > now() ||
       Date.parse(action.expiresAt) !== Date.parse(action.createdAt) + policy.lifetime ||
@@ -98,6 +98,7 @@ export function createClinicInvitationCatalogEntry(dependencies: Dependencies): 
       source.email,
       source.action.expiresAt,
       source.action.callbackDestination,
+      source.action.supabaseTokenType,
     ])
     return {
       status: 'eligible',
@@ -124,19 +125,20 @@ export function createClinicInvitationCatalogEntry(dependencies: Dependencies): 
           ),
         )
         const generated = await current.admin.generateLink({
-          type: policy.supabaseTokenType,
+          type: current.action.supabaseTokenType as 'invite' | 'recovery',
           email: current.email,
           options: { redirectTo: callback.toString() },
         })
         if (
           generated.error ||
           !sameIdentity(generated.data.user, current.staff, current.action, now()) ||
-          generated.data.properties?.verification_type !== policy.supabaseTokenType ||
+          generated.data.properties?.verification_type !== current.action.supabaseTokenType ||
           !supabaseEmailTokenHashSchema.safeParse(generated.data.properties?.hashed_token).success
         )
           throw new TransactionalEmailError('source-missing')
         callback.searchParams.set('token_hash', generated.data.properties.hashed_token)
-        callback.searchParams.set('type', policy.supabaseTokenType)
+        callback.searchParams.set('type', 'invite')
+        if (current.action.supabaseTokenType === 'recovery') callback.searchParams.set('token_type', 'recovery')
         return renderClinicStaffInvitation(current.email, callback.toString())
       },
     }

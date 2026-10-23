@@ -32,7 +32,12 @@ export function authActionProtocolResponse(outcome: ProtocolOutcome): Response {
 const recoverySchema = z.object({ email: z.string().max(254), clientIP: z.string().max(64) }).strict()
 const actionSchema = z.object({ actionRef: z.string().max(1024), flow: z.enum(dashboardActionFlows) }).strict()
 const subjectSchema = actionSchema.extend({ accessToken: z.string().min(1).max(8192) }).strict()
-const confirmSchema = subjectSchema.extend({ resumeConfirmedInvitation: z.literal(true).optional() }).strict()
+const confirmSchema = subjectSchema
+  .extend({
+    resumeConfirmedInvitation: z.literal(true).optional(),
+    tokenType: z.enum(['invite', 'recovery']).optional(),
+  })
+  .strict()
 const completeSchema = subjectSchema.extend({ password: z.string().min(1).max(1024) }).strict()
 
 async function boundedBody(request: Request): Promise<string> {
@@ -167,7 +172,11 @@ export function bindAuthActionProtocol(
         return authActionProtocolResponse('accepted')
       }
       const parsed = (
-        operation === 'validateAction' ? actionSchema : operation === 'confirmAction' ? confirmSchema : completeSchema
+        operation === 'validateAction'
+          ? actionSchema.extend({ tokenType: z.enum(['invite', 'recovery']).optional() }).strict()
+          : operation === 'confirmAction'
+            ? confirmSchema
+            : completeSchema
       ).safeParse(body)
       if (!parsed.success) return authActionProtocolResponse('invalid')
       const reference = readActionReference(parsed.data.actionRef, keys)
@@ -175,7 +184,9 @@ export function bindAuthActionProtocol(
       const actionService = actions(reference.flow)
       if (operation === 'validateAction') {
         if (claim.kind === 'replay' && claim.outcome !== 'valid') return authActionProtocolResponse(claim.outcome)
-        await actionService.inspectDashboardAction({ id: reference.actionId, flow: reference.flow })
+        const action = await actionService.inspectDashboardAction({ id: reference.actionId, flow: reference.flow })
+        if ('tokenType' in parsed.data && parsed.data.tokenType !== action.supabaseTokenType)
+          return authActionProtocolResponse('invalid')
         if (claim.kind === 'owned') await claim.finish('valid')
         return authActionProtocolResponse('valid')
       }
@@ -190,6 +201,7 @@ export function bindAuthActionProtocol(
         source.actionType !== reference.flow ||
         source.environment !== keys.environment ||
         source.supabaseSubject !== user.id ||
+        ('tokenType' in parsed.data && parsed.data.tokenType !== source.supabaseTokenType) ||
         !['active', 'confirmed', 'completed'].includes(source.state) ||
         Date.parse(source.expiresAt) <= now()
       )

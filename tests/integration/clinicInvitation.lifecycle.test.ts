@@ -13,6 +13,7 @@ import { bindProtocolPasswordCompletion } from '@/auth/actions/protocol/password
 import type { User } from '@supabase/supabase-js'
 import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
 import { openStorageCapability } from '@/features/transactionalEmail/capability'
+import { openClinicInvitationOperator } from '../../scripts/renew-clinic-invitation'
 
 const provider = vi.hoisted(() => ({ users: new Map<string, User>() }))
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
@@ -304,6 +305,75 @@ describe('committed clinic invitation reservation', () => {
         await payload.findByID({ collection: 'clinicStaff', id: staff.id, depth: 0, overrideAccess: true }),
       ).toEqual(original)
     } finally {
+      await payload.delete({ collection: 'platformStaff', id: operator.id, overrideAccess: true })
+    }
+  })
+
+  it('starts the real operator CLI without managed-content or dry-run KV writes and retains protocol guards', async () => {
+    const staff = await initialStaff()
+    const first = (await (await actions()).reserveClinicInvitation({ clinicStaffId: staff.id }))!
+    created.actions.add(first.id)
+    now += 2 * 86400000
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    vi.stubEnv('CI', 'false')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'ci')
+    const operator = await createPlatformTestUser(payload, { emailPrefix: `${prefix}-startup-${randomUUID()}` })
+    const resolved = await config
+    const originalStartup = resolved.onInit
+    const ordinaryStartup = vi.fn(originalStartup)
+    resolved.onInit = ordinaryStartup
+    const writes: string[] = []
+    const watched = ['pages', 'redirects', 'payload-kv'].map((slug) =>
+      resolved.collections.find((collection) => collection.slug === slug)!,
+    )
+    const kvConfig = watched[2]!
+    const originalKvChange = kvConfig.hooks.beforeChange
+    const originalKvDelete = kvConfig.hooks.beforeDelete
+    kvConfig.hooks.beforeChange = []
+    kvConfig.hooks.beforeDelete = []
+    const guard = ({ operation, collection }: { operation: string; collection: { slug: string } }) => {
+      if (['create', 'update', 'delete'].includes(operation)) {
+        writes.push(collection.slug)
+        if (collection.slug !== 'payload-kv')
+          throw new Error('Managed content must not change during operator startup.')
+      }
+    }
+    for (const collection of watched) collection.hooks.beforeOperation.push(guard as never)
+    let session: Awaited<ReturnType<typeof openClinicInvitationOperator>> | undefined
+    try {
+      session = await openClinicInvitationOperator(operator.id)
+      const dryRun = await renewExpiredClinicInvitation(session.req, {
+        clinicStaffId: staff.id,
+        expiredActionId: first.id,
+        dryRun: true,
+      })
+      expect(dryRun.status).toBe('eligible')
+      expect(ordinaryStartup.mock.calls.length).toBe(0)
+      expect(process.env.CI).toBe('false')
+      expect(writes).toEqual([])
+      await expect(
+        session.req.payload.create({
+          collection: 'payload-kv',
+          overrideAccess: true,
+          data: { key: 'auth-action-password:v1:test:subject:forged', data: { actionId: first.id } },
+        }),
+      ).rejects.toMatchObject({ status: 403 })
+      expect(
+        (
+          await session.req.payload.find({
+            collection: 'payload-kv',
+            overrideAccess: true,
+            where: { key: { equals: 'auth-action-password:v1:test:subject:forged' } },
+          })
+        ).totalDocs,
+      ).toBe(0)
+    } finally {
+      resolved.onInit = originalStartup
+      kvConfig.hooks.beforeChange = originalKvChange
+      kvConfig.hooks.beforeDelete = originalKvDelete
+      for (const collection of watched)
+        collection.hooks.beforeOperation.splice(collection.hooks.beforeOperation.indexOf(guard as never), 1)
+      await session?.close()
       await payload.delete({ collection: 'platformStaff', id: operator.id, overrideAccess: true })
     }
   })

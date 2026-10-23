@@ -3,7 +3,11 @@ import { pathToFileURL } from 'node:url'
 import { createLocalReq, getPayload, type PayloadRequest } from 'payload'
 import { z } from 'zod'
 import { renewExpiredClinicInvitation } from '../src/auth/actions/clinicInvitationRequests'
-import { resolveTransactionalEmailEnvironment } from '../src/features/transactionalEmail/environment'
+import {
+  resolveTransactionalEmailEnvironment,
+  validateTransactionalEmailStartup,
+} from '../src/features/transactionalEmail/environment'
+import { protectAuthActionProtocolStorage } from '../src/auth/actions/protocol/storage'
 
 const optionsSchema = z
   .object({
@@ -20,28 +24,33 @@ type Runtime = {
   write(value: string): void
 }
 
+export async function openClinicInvitationOperator(operatorId: number) {
+  if (process.env.PAYLOAD_DB_PUSH === 'true') throw new Error('Schema push is unavailable for invitation renewal.')
+  const { default: config } = await import('../src/payload.config')
+  validateTransactionalEmailStartup()
+  const payload = await getPayload({ config, key: 'clinic-invitation-operator', disableOnInit: true })
+  try {
+    protectAuthActionProtocolStorage(payload)
+    const operator = await payload.findByID({
+      collection: 'platformStaff',
+      id: operatorId,
+      depth: 0,
+      overrideAccess: true,
+    })
+    return {
+      req: await createLocalReq({ user: { ...operator, collection: 'platformStaff' } }, payload),
+      close: () => payload.destroy(),
+    }
+  } catch (error) {
+    await payload.destroy()
+    throw error
+  }
+}
+
 async function defaultRuntime(): Promise<Runtime> {
   return {
     write: (value) => process.stdout.write(value),
-    async open(operatorId) {
-      const { default: config } = await import('../src/payload.config')
-      const payload = await getPayload({ config })
-      try {
-        const operator = await payload.findByID({
-          collection: 'platformStaff',
-          id: operatorId,
-          depth: 0,
-          overrideAccess: true,
-        })
-        return {
-          req: await createLocalReq({ user: { ...operator, collection: 'platformStaff' } }, payload),
-          close: () => payload.destroy(),
-        }
-      } catch (error) {
-        await payload.destroy()
-        throw error
-      }
-    },
+    open: openClinicInvitationOperator,
   }
 }
 

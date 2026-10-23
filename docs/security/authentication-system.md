@@ -73,7 +73,9 @@ pnpm exec tsx scripts/renew-clinic-invitation.ts --environment preview --staff-i
 ```
 
 Use `production` only under the corresponding Production authorization. Dry-run performs no business or protocol-KV
-writes and sends no mail. Apply preserves the staff ID, Supabase subject, approval source, original invitation timestamp,
+writes and sends no mail. The command skips mutating Website startup, validates managed-email configuration, and installs
+the protected AuthAction KV guards explicitly. It refuses schema-push mode. Apply preserves the staff ID, Supabase subject,
+approval source, original invitation timestamp,
 and assignment. It expires the old action and accepts one new managed invitation. Retrying the same still-live renewal
 reuses that action and the email command's deduplication. A preparation failure retains the replacement for a safe retry;
 it never rolls back a potentially accepted email or clears trust evidence. The ordinary scheduler delivers accepted mail.

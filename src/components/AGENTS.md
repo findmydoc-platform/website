@@ -4,31 +4,15 @@
 
 - Use Atomic Design.
 
-## Architecture Defaults
-
-- Next.js App Router + RSC by default.
-- Use `'use client'` only at interaction leaves.
-
 ## Critical Component Rules
 
-- Keep atoms and molecules presentation-only.
-- Do not place business logic or data fetching inside reusable UI components.
 - Favor parent-controlled inputs (`value/onValueChange`, `checked/onCheckedChange`).
 - Use context only for local compound-component coordination when necessary.
-- Keep molecules router-agnostic; pass navigation callbacks as props.
 - Design component APIs so mobile state is explicit and testable; avoid hidden responsive behavior that cannot be previewed or asserted in isolation.
 - Do not introduce hover-only interactions for essential actions or navigation.
 - Render standard CTAs and button-like actions through `Button` or `UiLink`: use `UiLink` for navigation with `href` and `Button` for actions, submits, and disabled fallbacks. Raw `<button>` is only for specialized controls such as tabs, carousel dots, menu triggers, or headless composite controls, and must have `type="button"`, accessible semantics, and a real interaction.
 - Avoid component layouts that depend on horizontal scrolling unless the component is explicitly a scrollable pattern and provides clear touch affordances.
 - Keep touch targets, spacing, and text wrapping resilient at narrow widths before layering larger-screen enhancements.
-
-## Boundary Rules
-
-- `src/components/**` must stay Payload-free.
-- Do not import `@/payload-types` in atoms/molecules/organisms/templates.
-- Normalize Payload unions (links/media/relations) in `src/blocks/**` or `src/blocks/_shared/**`.
-- If a component needs Payload imports, move mapping to a block adapter and pass normalized props into the UI layer.
-- Reusable templates receive normalized props and callback ports; they do not own Payload or API transport.
 
 ## Storybook Expectations
 

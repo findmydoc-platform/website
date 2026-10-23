@@ -1,10 +1,12 @@
 import type { PayloadRequest } from 'payload'
 import activationRegistry from '@/features/transactionalEmail/activationRegistry.json' with { type: 'json' }
 import { isTransactionalEmailCommandActivationDeclared } from '@/features/transactionalEmail/activationPolicy'
-import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
+import { resolveTransactionalEmailEnvironment, type EmailEnvironment } from '@/features/transactionalEmail/environment'
 import { bindAuthActions } from './lifecycle'
 import type { AuthAction } from '@/payload-types'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
+import { platformClinicTrustAccess } from '@/access/fieldAccess'
+import { APIError } from 'payload'
 
 function activeEnvironment() {
   const environment = resolveTransactionalEmailEnvironment()
@@ -29,7 +31,7 @@ export async function requestInitialClinicInvitation(req: PayloadRequest, clinic
 
 async function acceptClinicInvitationCommand(
   req: PayloadRequest,
-  input: { action: AuthAction; environment: 'preview' | 'production'; now?: () => number },
+  input: { action: AuthAction; environment: EmailEnvironment; now?: () => number },
 ): Promise<boolean> {
   const { action, environment, now } = input
   let acceptedAction = action
@@ -44,6 +46,41 @@ async function acceptClinicInvitationCommand(
     authActionId: acceptedAction.id,
   })
   return !acceptance.deduplicated
+}
+
+/** Explicit privileged renewal; ordinary preparation never clears or bypasses its durable authorization marker. */
+export async function renewExpiredClinicInvitation(
+  req: PayloadRequest,
+  input: { clinicStaffId: number; expiredActionId: number; dryRun: boolean },
+) {
+  if ((await platformClinicTrustAccess({ req })) !== true)
+    throw new APIError('Invitation renewal requires clinic trust authority.', 403)
+  const environment = resolveTransactionalEmailEnvironment()
+  if (environment === 'preview' || environment === 'production') {
+    if (activeEnvironment() !== environment) throw new APIError('Invitation delivery is inactive.', 409)
+  }
+  const action = await bindAuthActions(req, { environment }).renewClinicInvitation(input)
+  if (!input.dryRun && action.state !== 'confirmed') await acceptClinicInvitationCommand(req, { action, environment })
+  req.payload.logger.info(
+    {
+      event: 'auth.clinic_invitation_renewal',
+      operatorId: req.user!.id,
+      clinicStaffId: input.clinicStaffId,
+      expiredActionId: input.expiredActionId,
+      authActionId: action.id,
+      environment,
+      dryRun: input.dryRun,
+    },
+    'Clinic invitation renewal checked.',
+  )
+  return {
+    environment,
+    dryRun: input.dryRun,
+    clinicStaffId: input.clinicStaffId,
+    expiredActionId: input.expiredActionId,
+    authActionId: action.id,
+    status: input.dryRun ? 'eligible' : action.state === 'confirmed' ? 'already-confirmed' : 'accepted',
+  }
 }
 
 /** Reads committed candidates only. Failed preparation leaves approval and its retry marker untouched. */

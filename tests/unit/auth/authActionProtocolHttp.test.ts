@@ -360,6 +360,43 @@ describe('Website auth-action HTTP protocol', () => {
     expect(JSON.stringify([...f.records.values()])).not.toContain('offline-fresh-password-session')
   })
 
+  it('binds a renewed recovery OTP to invitation authority and records initial completion', async () => {
+    const f = fixture()
+    f.action.supabaseTokenType = 'recovery'
+    const accepted = await f.handle(f.request('validateAction', { ...f.body, tokenType: 'recovery' }), 'validateAction')
+    expect(await accepted.json()).toMatchObject({ outcome: 'valid' })
+    const tampered = await f.handle(f.request('validateAction', { ...f.body, tokenType: 'invite' }), 'validateAction')
+    expect(await tampered.json()).toEqual(safeInvalid)
+    expect(
+      await (await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')).json(),
+    ).toMatchObject({ outcome: 'confirmed' })
+    expect(
+      await (
+        await f.handle(
+          f.request('confirmAction', { ...f.authenticatedBody, resumeConfirmedInvitation: true, tokenType: 'invite' }),
+          'confirmAction',
+        )
+      ).json(),
+    ).toEqual(safeInvalid)
+    expect(
+      await (
+        await f.handle(
+          f.request('confirmAction', {
+            ...f.authenticatedBody,
+            resumeConfirmedInvitation: true,
+            tokenType: 'recovery',
+          }),
+          'confirmAction',
+        )
+      ).json(),
+    ).toMatchObject({ outcome: 'confirmed' })
+    expect(await (await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).json()).toMatchObject({
+      outcome: 'completed',
+    })
+    expect(Reflect.get(f.staff, 'accountCompletion')).toMatchObject({ source: 'initial-password', authActionId: '42' })
+    expect(f.updatePassword).toHaveBeenCalledOnce()
+  })
+
   it('resumes initial evidence after fresh password authentication fails without repeating password persistence', async () => {
     const f = fixture()
     await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')

@@ -65,6 +65,26 @@ function fixture() {
 }
 
 describe('clinic invitation command through the production catalog', () => {
+  it('renders a fresh recovery OTP for the confirmed same identity while retaining signed invitation authority', async () => {
+    const { action, user, admin, catalog, keys } = fixture()
+    action.supabaseTokenType = 'recovery'
+    user.email_confirmed_at = new Date(now - 86400000).toISOString()
+    admin.generateLink.mockResolvedValueOnce({
+      data: { user, properties: { hashed_token: 'b'.repeat(56), verification_type: 'recovery' } },
+      error: null,
+    })
+    const decision = await catalog['auth.invitation'].revalidate({ type: 'auth.invitation', authActionId: 43 })
+    if (decision.status !== 'eligible') throw new Error('Expected eligible renewal.')
+    const prepared = await decision.prepare()
+    expect(admin.generateLink).toHaveBeenCalledWith(expect.objectContaining({ type: 'recovery', email }))
+    const link = new URL(prepared.text.match(/https:\/\/dashboard\.example\.test\/[^\s]+/)![0])
+    expect(link.searchParams.get('type')).toBe('invite')
+    expect(link.searchParams.get('token_type')).toBe('recovery')
+    expect(readActionReference(link.searchParams.get('actionRef')!, keys)).toMatchObject({
+      actionId: 43,
+      flow: 'clinic-invitation',
+    })
+  })
   it.each([
     ['another environment', { environment: 'production' }],
     ['expired action', { expiresAt: new Date(now).toISOString() }],

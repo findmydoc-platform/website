@@ -60,6 +60,37 @@ Clinic staff transitions are enforced server-side. Rejected and disabled identit
 and reactivated identities are unbanned, and offboarded identities are deleted from Supabase while the Payload row is
 retained. Synchronization failures remain visible and retryable without granting access.
 
+### Renew an expired initial clinic invitation
+
+An authorized platform administrator or support operator can renew an expired local clinic-application invitation with
+the privileged Website command below. Run it only in an approved operator environment for the named target, with its
+existing Website database and managed-email configuration. Local database credentials are administrative authority;
+the operator ID is additionally resolved against current clinic-trust permissions and recorded in structured audit logs.
+
+```sh
+pnpm exec tsx scripts/renew-clinic-invitation.ts --environment preview --staff-id <staff-id> --expired-action-id <action-id> --operator-id <platform-staff-id> --mode dry-run
+pnpm exec tsx scripts/renew-clinic-invitation.ts --environment preview --staff-id <staff-id> --expired-action-id <action-id> --operator-id <platform-staff-id> --mode apply
+```
+
+Use `production` only under the corresponding Production authorization. Dry-run performs no business or protocol-KV
+writes and sends no mail. The command skips mutating Website startup, validates managed-email configuration, and installs
+the protected AuthAction KV guards explicitly. It refuses schema-push mode. Apply preserves the staff ID, Supabase subject,
+approval source, original invitation timestamp,
+and assignment. It expires the old action and accepts one new managed invitation. Retrying the same still-live renewal
+reuses that action and the email command's deduplication. A preparation failure retains the replacement for a safe retry;
+it never rolls back a potentially accepted email or clears trust evidence. The ordinary scheduler delivers accepted mail.
+
+The replacement uses a fresh Supabase recovery OTP as transport because an already confirmed identity cannot receive
+another Supabase invite. Its signed business flow remains `clinic-invitation`; the recipient must still finish the normal
+initial-password ceremony. Recovery alone grants no completion evidence. The Dashboard validates the requested OTP
+transport against the persisted Website action before consuming it. Ship Website support first, then the matching
+Dashboard support, and do not execute renewal until both are deployed. Existing invitation and recovery links are unchanged.
+
+Renewal refuses changed identities or original application links, revoked approval, completed or activation-ready staff,
+wrong or revoked actions, and unresolved password claims or success evidence. The same protected subject claim excludes
+concurrent renewal and password writers. An interrupted process can leave a claim that requires investigation; do not
+delete it as a workaround. This command excludes group-manager invitations and actions already removed by retention.
+
 Password-reset routing is resolved from current Payload principals. An eligible pending or approved clinic principal
 with a synchronized identity receives a Dashboard callback. Blocked, duplicate, unsynchronized, or cross-principal
 email matches receive the same neutral API response without sending a reset. Patient, platform-staff, and unknown-email

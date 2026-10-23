@@ -15,6 +15,7 @@ import { recoveryCorrelations, recoveryWindowMs, recoveryCooldownMs, recoveryHou
 import { findRecoveryPrincipal, recoveryActionTypes } from './recoveryPrincipal'
 import { isPlatformStaff } from '@/access/isPlatformStaff'
 import { findClinicInvitationPrincipal } from './clinicInvitationPrincipal'
+import { bindProtocolPasswordCompletion } from './protocol/passwordCompletion'
 import { readRecoveryPrincipal } from './recoveryPrincipal'
 import type { DashboardActionFlow } from './contracts'
 import type { AuthAction, ClinicStaff } from '@/payload-types'
@@ -313,7 +314,8 @@ function validatePolicy(doc: Record<string, unknown>, scope: Scope) {
   if (
     doc.environment !== scope.environment ||
     doc.callbackDestination !== policy.callbackDestination ||
-    doc.supabaseTokenType !== policy.supabaseTokenType ||
+    (doc.supabaseTokenType !== policy.supabaseTokenType &&
+      !(actionType === 'clinic-invitation' && doc.supabaseTokenType === 'recovery')) ||
     doc.completionRoute !== policy.completionRoute ||
     doc.finalDestination !== policy.finalDestination ||
     !Number.isFinite(createdAt) ||
@@ -636,6 +638,7 @@ export function bindAuthActions(
     command: CreateInput,
     correlation?: { correlationDigest: string; correlationKeyVersion: string },
     boundSubject?: string,
+    invitationRenewal = false,
   ) {
     await principalExists(internalReq, command.actionType, command.principal)
     const policy = authActionPolicies[command.actionType]
@@ -649,7 +652,7 @@ export function bindAuthActions(
       subjectBoundAt: boundSubject ? new Date(scope.now).toISOString() : null,
       correlationDigest: correlation?.correlationDigest ?? null,
       correlationKeyVersion: correlation?.correlationKeyVersion ?? null,
-      supabaseTokenType: policy.supabaseTokenType,
+      supabaseTokenType: invitationRenewal ? ('recovery' as const) : policy.supabaseTokenType,
       callbackDestination: policy.callbackDestination,
       completionRoute: policy.completionRoute,
       finalDestination: policy.finalDestination,
@@ -737,6 +740,89 @@ export function bindAuthActions(
         }
         return action
       })
+    },
+    async renewClinicInvitation(input: {
+      clinicStaffId: number
+      expiredActionId: number
+      dryRun: boolean
+    }): Promise<AuthAction> {
+      const command = parsed(
+        z.object({ clinicStaffId: idSchema, expiredActionId: idSchema, dryRun: z.boolean() }).strict(),
+        input,
+      )
+      async function inspect(internalReq: PayloadRequest, scope: Scope) {
+        const staff = await findClinicInvitationPrincipal(internalReq, command.clinicStaffId)
+        const prior = await requireAction(internalReq, command.expiredActionId)
+        if (
+          !staff ||
+          staff.activationReadiness?.version ||
+          !staff.invitationAuthorizedAt ||
+          prior.actionType !== 'clinic-invitation' ||
+          prior.environment !== environment ||
+          prior.principal?.relationTo !== 'clinicStaff' ||
+          prior.principal.value !== staff.id ||
+          prior.supabaseSubject !== staff.supabaseUserId ||
+          Date.parse(prior.expiresAt) > scope.now ||
+          !['pending', 'active', 'confirmed', 'expired'].includes(prior.state)
+        )
+          throw new AuthActionError('invalid-transition')
+        // This operator repair is limited to a local application's retained original clinic linkage.
+        if (
+          !/^clinic-application:[1-9]\d*$/.test(staff.onboardingKey ?? '') ||
+          (staff.assignmentScope ?? 'local') !== 'local' ||
+          staff.group != null
+        )
+          throw new AuthActionError('invalid-transition')
+        const latest = await req.payload.find({
+          collection: 'authActions',
+          req: internalReq,
+          overrideAccess: true,
+          depth: 0,
+          pagination: false,
+          limit: 1,
+          sort: '-id',
+          where: {
+            and: [
+              { environment: { equals: environment } },
+              { actionType: { equals: 'clinic-invitation' } },
+              { 'principal.relationTo': { equals: 'clinicStaff' } },
+              { 'principal.value': { equals: staff.id } },
+            ],
+          },
+        })
+        const current = latest.docs[0]
+        if (!current || current.id < prior.id) throw new AuthActionError('invalid-transition')
+        if (
+          current.id !== prior.id &&
+          (current.supabaseSubject !== staff.supabaseUserId ||
+            !['pending', 'active', 'confirmed'].includes(current.state) ||
+            Date.parse(current.expiresAt) <= scope.now)
+        )
+          throw new AuthActionError('invalid-transition')
+        return { prior, current }
+      }
+      const checked = await transaction(inspect)
+      const passwords = bindProtocolPasswordCompletion(req, environment)
+      if (await passwords.invitationRenewalBlocked(checked.prior)) throw new AuthActionError('invalid-transition')
+      if (command.dryRun) return checked.current
+      return passwords.withInvitationRenewal(checked.prior, () =>
+        transaction(async (internalReq, scope) => {
+          const { prior, current } = await inspect(internalReq, scope)
+          if (current.id !== prior.id) return current
+          if (!terminal(prior.state)) await transition(internalReq, scope, { id: prior.id, to: 'expired' })
+          return createPending(
+            internalReq,
+            scope,
+            {
+              actionType: 'clinic-invitation',
+              principal: { relationTo: 'clinicStaff', value: command.clinicStaffId },
+            },
+            undefined,
+            prior.supabaseSubject!,
+            true,
+          )
+        }),
+      )
     },
     liveClinicInvitations(input: { afterId?: number; limit?: number } = {}): Promise<AuthAction[]> {
       const command = parsed(

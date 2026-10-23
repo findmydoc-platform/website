@@ -1,11 +1,5 @@
 # Payload Migration Rules
 
-## Priorities
-
-- `P0`: Production data safety, migration integrity, and deploy compatibility.
-- `P1`: Clear expand/backfill/switch/contract rollout sequencing.
-- `P2`: Concise migration notes and reviewability.
-
 ## Critical Rules
 
 - Create migration files with `pnpm payload migrate:create <name>`; do not create migrations manually from scratch.

@@ -1,11 +1,5 @@
 # Payload Seeds and Endpoint Rules
 
-## Priorities
-
-- `P0`: Data correctness, secure access, and migration integrity.
-- `P1`: Reusable access and hook patterns.
-- `P2`: Documentation and test alignment.
-
 ## Critical Rules
 
 - Keep baseline seeds idempotent and production-safe.

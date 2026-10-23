@@ -1,11 +1,5 @@
 # Payload Admin UI Design
 
-## Priorities
-
-- `P0`: Keep Admin UX stable by using official Payload admin extension points only.
-- `P1`: Keep branding and theme changes conservative and reversible.
-- `P2`: Keep widget visuals consistent with core Payload tokens.
-
 ## Critical Rules
 
 - Do not edit generated files under `src/app/(payload)/admin/**`.

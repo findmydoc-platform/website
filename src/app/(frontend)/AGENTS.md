@@ -1,11 +1,5 @@
 # Frontend App Routes (Next.js + UI)
 
-## Priorities
-
-- `P0`: Correct architecture boundaries and accessibility.
-- `P1`: Reliable, testable UI behavior.
-- `P2`: Visual consistency and maintainable styling.
-
 ## Architecture Defaults
 
 - Next.js App Router + RSC by default.

@@ -1,11 +1,5 @@
 # Admin E2E Rules
 
-## Priorities
-
-- `P0`: Admin specs prove real operator flows with minimal duplicated form logic.
-- `P1`: Smoke stays narrow; longer collection chains live in regression.
-- `P2`: Specs are thin consumers of shared setup, journeys, and helper assertions.
-
 ## Critical Rules
 
 - If a shared admin journey already exists for the behavior under test, use `executeAdminJourney(...)` instead of re-implementing the same selectors in the spec.

@@ -1,11 +1,5 @@
 # E2E Helper Rules
 
-## Priorities
-
-- `P0`: Shared helper changes stay deterministic across all admin journey consumers.
-- `P1`: Journey logic, fixture setup, and session plumbing live in reusable helpers instead of duplicated spec code.
-- `P2`: Validation is explicit about which smoke, regression, or capture consumer was exercised.
-
 ## Critical Rules
 
 - Prefer extending the shared admin journey registry and step helpers over adding new inline admin selectors to spec files.

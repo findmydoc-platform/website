@@ -60,7 +60,6 @@ export async function renewExpiredClinicInvitation(
     if (activeEnvironment() !== environment) throw new APIError('Invitation delivery is inactive.', 409)
   }
   const action = await bindAuthActions(req, { environment }).renewClinicInvitation(input)
-  if (!input.dryRun && action.state !== 'confirmed') await acceptClinicInvitationCommand(req, { action, environment })
   req.payload.logger.info(
     {
       event: 'auth.clinic_invitation_renewal',
@@ -79,7 +78,7 @@ export async function renewExpiredClinicInvitation(
     clinicStaffId: input.clinicStaffId,
     expiredActionId: input.expiredActionId,
     authActionId: action.id,
-    status: input.dryRun ? 'eligible' : action.state === 'confirmed' ? 'already-confirmed' : 'accepted',
+    status: input.dryRun ? 'eligible' : action.state === 'confirmed' ? 'already-confirmed' : 'prepared',
   }
 }
 

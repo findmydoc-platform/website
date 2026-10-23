@@ -64,8 +64,8 @@ retained. Synchronization failures remain visible and retryable without granting
 
 An authorized platform administrator or support operator can renew an expired local clinic-application invitation with
 the privileged Website command below. Run it only in an approved operator environment for the named target, with its
-existing Website database and managed-email configuration. Local database credentials are administrative authority;
-the operator ID is additionally resolved against current clinic-trust permissions and recorded in structured audit logs.
+existing Website database and AuthAction protocol configuration. Local Lettermint secrets are not required.
+Local database credentials are administrative authority; the operator ID is additionally resolved against current clinic-trust permissions and recorded in structured audit logs.
 
 ```sh
 pnpm exec tsx scripts/renew-clinic-invitation.ts --environment preview --staff-id <staff-id> --expired-action-id <action-id> --operator-id <platform-staff-id> --mode dry-run
@@ -73,12 +73,14 @@ pnpm exec tsx scripts/renew-clinic-invitation.ts --environment preview --staff-i
 ```
 
 Use `production` only under the corresponding Production authorization. Dry-run performs no business or protocol-KV
-writes and sends no mail. The command skips mutating Website startup, validates managed-email configuration, and installs
-the protected AuthAction KV guards explicitly. It refuses schema-push mode. Apply preserves the staff ID, Supabase subject,
-approval source, original invitation timestamp,
-and assignment. It expires the old action and accepts one new managed invitation. Retrying the same still-live renewal
-reuses that action and the email command's deduplication. A preparation failure retains the replacement for a safe retry;
-it never rolls back a potentially accepted email or clears trust evidence. The ordinary scheduler delivers accepted mail.
+writes and sends no mail. The command skips mutating Website startup and installs the protected AuthAction KV guards
+explicitly. It refuses schema-push mode. Apply preserves the staff ID, Supabase subject,
+approval source, original invitation timestamp, and assignment. It expires the old action and prepares one new invitation action, returning `prepared` without accepting
+a mail command. Retrying the same still-live renewal reuses that action. The ordinary Production or Preview scheduler
+accepts and delivers the invitation with its existing managed-email credentials and full runtime configuration checks.
+A temporary acceptance failure retains the action for scheduler retry; mail-command deduplication prevents duplicate
+commands. The operator never clears trust evidence or rolls back a potentially accepted email. `prepared` confirms only
+the durable action; verify managed-email acceptance and delivery separately.
 
 The replacement uses a fresh Supabase recovery OTP as transport because an already confirmed identity cannot receive
 another Supabase invite. Its signed business flow remains `clinic-invitation`; the recipient must still finish the normal

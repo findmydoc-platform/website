@@ -24,6 +24,8 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 
 - Payload is the source of truth for CMS-backed data across `src/**`.
 - Presentational UI under `src/components/**` must stay Payload-free and must not import `@/payload-types`.
+- Atoms and molecules are presentation-only. Reusable UI owns no business logic, data fetching, route access, or transport.
+- Keep molecules router-agnostic; pass navigation callbacks as props.
 - Normalize Payload unions such as links, media, and relations in adapter layers before passing props into reusable UI.
 - Shared UI contracts: links use `{ href: string; label?: string | null; newTab?: boolean }`; rich text uses `ReactNode`; media uses `{ src?: string; width?: number; height?: number; alt?: string }`.
 - Across the Server–Client boundary, pass serializable data or Server Actions. Create browser callback ports in the owning client adapter at the interaction leaf; reusable UI remains transport-free.
@@ -65,7 +67,6 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 ### Frontend Baseline
 
 - Prefer RSC by default; use client components only at interaction leaves.
-- Keep UI components Payload-free; map CMS shapes in block adapters.
 - Use Tailwind + shadcn atoms in `src/components/atoms`.
 - New or changed component stories must live beside their documented source component under `src/**`.
 - Shared fixtures, shared assets, global MDX guidance, and explicitly story-only prototypes remain under `src/stories/**`.

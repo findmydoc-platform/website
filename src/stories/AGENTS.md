@@ -16,20 +16,6 @@
 - For interactive mobile patterns, add `play` assertions for at least one full interaction cycle, not only a single open state.
 - Treat stories as supporting evidence for route-level runtime risks; use composed-route runtime verification to confirm those risks.
 
-## Frontend Consistency Rules
-
-- Keep atoms and molecules presentation-only.
-- Do not place business logic or data fetching inside reusable UI components.
-- Keep molecules router-agnostic; pass navigation callbacks as props.
-- Use the `Heading` atom for headings.
-- Do not introduce raw `h1`-`h6` in feature UI code.
-
-## UI and Payload Boundary Rules
-
-- `src/components/**` must stay Payload-free.
-- Do not import `@/payload-types` in atoms/molecules/organisms/templates.
-- Normalize Payload unions in `src/blocks/**` or `src/blocks/_shared/**`.
-
 ## Documentation Location
 
 - Use Autodocs as default (`tags: ['autodocs']`).

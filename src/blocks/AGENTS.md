@@ -1,11 +1,5 @@
 # Block Adapter Rules (findmydoc)
 
-## Priorities
-
-- `P0`: Apply the shared Payload/UI boundary from `src/AGENTS.md`.
-- `P1`: Keep block adapter logic explicit and small.
-- `P2`: Preserve reusable component portability.
-
 ## Critical Rules
 
 - Follow `src/AGENTS.md` for the canonical Payload source-of-truth, normalized UI contracts, and component boundary rules.

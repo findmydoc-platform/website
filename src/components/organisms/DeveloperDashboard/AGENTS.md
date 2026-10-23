@@ -1,11 +1,5 @@
 # Payload Developer Dashboard UI
 
-## Priorities
-
-- `P0`: Keep Admin UX stable by using official Payload admin extension points only.
-- `P1`: Keep branding and theme changes conservative and reversible.
-- `P2`: Keep widget visuals consistent with core Payload tokens.
-
 ## Critical Rules
 
 - Keep custom admin components lightweight and presentational; avoid business logic there.

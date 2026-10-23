@@ -1,11 +1,5 @@
 # Test Rules
 
-## Priorities
-
-- `P0`: Deterministic, behavior-focused tests.
-- `P1`: Coverage for access control, auth, and hooks.
-- `P2`: Readable, maintainable test structure.
-
 ## Critical Rules
 
 - Use Vitest for non-E2E tests; `tests/e2e/**` uses Playwright under its local `AGENTS.md`.

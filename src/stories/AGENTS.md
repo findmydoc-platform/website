@@ -1,11 +1,5 @@
 # Storybook and UI Story Rules
 
-## Priorities
-
-- `P0`: Isolation and deterministic rendering.
-- `P1`: Useful visual and interaction coverage.
-- `P2`: Concise docs via Autodocs-first approach.
-
 ## Critical Story Rules
 
 - Component stories normally live beside their documented source component under `src/**`.

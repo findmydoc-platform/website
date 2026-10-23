@@ -88,7 +88,14 @@ write and consumes no Supabase token. Request-ID bookkeeping is separate private
 result. The current user must have the authoritative Clinic role, the bound UUID and the current principal's
 email. The native lifecycle transaction rechecks immutable policy, environment, expiry and principal
 eligibility before `active` becomes `confirmed`. Reconfirmation preserves the original state and timestamps.
-Dashboard must consume the matching token and retain its verified session before calling this operation.
+Dashboard must consume the matching token and retain its verified session before first confirmation.
+The optional strict `resumeConfirmedInvitation: true` mode accepts only an already `confirmed`, still-valid
+`clinic-invitation`. It repeats the same fresh provider-user and lifecycle checks using `state: confirmed`,
+performs no lifecycle transition, and rejects active, completed, expired or foreign actions. Dashboard may use
+this check when the original invitation is reopened in the same verified session, then repeat it behind CSRF
+confirmation before minting a fresh short-lived browser grant. It never replays the consumed OTP. Recovery is
+excluded; durable password execution and uncertain-result fences remain authoritative. Already expired initial
+invitations need a separate supported renewal process.
 
 `completeAction` requires the same current authority and a confirmed action. The Website performs one ordinary
 authenticated password update, using the user session and public API key. It observes a successful provider

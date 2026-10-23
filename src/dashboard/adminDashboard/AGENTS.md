@@ -17,6 +17,6 @@
 
 ## Validation Expectations
 
-- For runtime-affecting admin UI changes run: `pnpm check`, `pnpm build`, `pnpm format`.
+- For runtime-affecting admin UI changes run: `pnpm check` and `pnpm build`.
 - Verify key admin screens visually (login + dashboard) with Playwright screenshots in ignored artifacts directories.
 - For local verification behind admin login, prefer the shared Playwright session `output/playwright/sessions/admin.local.json` and refresh it with `pnpm playwright:session:record -- --persona admin` if needed.

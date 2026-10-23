@@ -59,8 +59,8 @@ This guide defines shared defaults for `src/**`. Nested `AGENTS.md` files overri
 ### Validation Policy
 
 - Follow the repository-level validation policy in `AGENTS.md`; this section is only a `src/**` routing summary.
-- For `src/**` runtime changes that affect Next.js, Storybook, Payload config, routing, or output tooling, expect `pnpm check`, `pnpm build`, and `pnpm format`.
-- Light-only `src/**` documentation or instruction changes may skip `pnpm check` and `pnpm build`; still run `pnpm format` and any root-required instruction checks.
+- For `src/**` runtime changes that affect Next.js, Storybook, Payload config, routing, or output tooling, expect `pnpm check` and `pnpm build`.
+- Light-only `src/**` documentation or instruction changes may skip `pnpm check` and `pnpm build`; still run any root-required instruction checks.
 
 ### Testing Expectations
 

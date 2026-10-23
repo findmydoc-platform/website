@@ -3,10 +3,7 @@ import { pathToFileURL } from 'node:url'
 import { createLocalReq, getPayload, type PayloadRequest } from 'payload'
 import { z } from 'zod'
 import { renewExpiredClinicInvitation } from '../src/auth/actions/clinicInvitationRequests'
-import {
-  resolveTransactionalEmailEnvironment,
-  validateTransactionalEmailStartup,
-} from '../src/features/transactionalEmail/environment'
+import { resolveTransactionalEmailEnvironment } from '../src/features/transactionalEmail/environment'
 import { protectAuthActionProtocolStorage } from '../src/auth/actions/protocol/storage'
 
 const optionsSchema = z
@@ -27,7 +24,6 @@ type Runtime = {
 export async function openClinicInvitationOperator(operatorId: number) {
   if (process.env.PAYLOAD_DB_PUSH === 'true') throw new Error('Schema push is unavailable for invitation renewal.')
   const { default: config } = await import('../src/payload.config')
-  validateTransactionalEmailStartup()
   const payload = await getPayload({ config, key: 'clinic-invitation-operator', disableOnInit: true })
   try {
     protectAuthActionProtocolStorage(payload)

@@ -3,10 +3,13 @@ import type { PayloadRequest } from 'payload'
 import {
   prepareCommittedClinicInvitations,
   requestInitialClinicInvitation,
+  renewExpiredClinicInvitation,
 } from '@/auth/actions/clinicInvitationRequests'
 
 const mocks = vi.hoisted(() => ({
   environment: vi.fn(),
+  trust: vi.fn(),
+  renew: vi.fn(),
   activation: vi.fn(),
   reserve: vi.fn(),
   transition: vi.fn(),
@@ -21,20 +24,27 @@ vi.mock('@/features/transactionalEmail/environment', () => ({
 vi.mock('@/features/transactionalEmail/activationPolicy', () => ({
   isTransactionalEmailCommandActivationDeclared: mocks.activation,
 }))
+vi.mock('@/access/fieldAccess', () => ({ platformClinicTrustAccess: mocks.trust }))
 vi.mock('@/auth/actions/lifecycle', () => ({ bindAuthActions: mocks.bind }))
 vi.mock('@/features/transactionalEmail/payloadIntegration', () => ({
   bindTransactionalEmail: mocks.bindEmail,
 }))
 
 function request() {
-  return { context: {}, payload: { find: vi.fn().mockResolvedValue({ docs: [] }), logger: { error: vi.fn() } } }
+  return {
+    context: {},
+    payload: { find: vi.fn().mockResolvedValue({ docs: [] }), logger: { error: vi.fn(), info: vi.fn() } },
+  }
 }
 beforeEach(() => {
   vi.resetAllMocks()
+  mocks.trust.mockResolvedValue(true)
+  mocks.renew.mockResolvedValue({ id: 92, state: 'pending' })
   mocks.environment.mockReturnValue('preview')
   mocks.activation.mockReturnValue(true)
   mocks.bind.mockReturnValue({
     reserveClinicInvitation: mocks.reserve,
+    renewClinicInvitation: mocks.renew,
     transition: mocks.transition,
     liveClinicInvitations: mocks.live,
   })
@@ -160,6 +170,28 @@ describe('committed clinic invitation preparation', () => {
     expect(mocks.accept).toHaveBeenCalledWith({ type: 'auth.invitation', authActionId: 91 })
   })
 
+  it('retries a failed live renewal acceptance and keeps subsequent scheduler runs deduplicated', async () => {
+    const req = request()
+    const action = { id: 92, state: 'pending' }
+    mocks.live.mockImplementation(async () => [action])
+    mocks.transition.mockImplementation(async () => {
+      action.state = 'active'
+      return action
+    })
+    mocks.accept
+      .mockRejectedValueOnce(new Error('Temporary acceptance failure'))
+      .mockResolvedValueOnce({ deduplicated: false })
+      .mockResolvedValue({ deduplicated: true })
+    await expect(
+      prepareCommittedClinicInvitations(req as unknown as PayloadRequest, { deadline: 100000, now: () => 0 }),
+    ).rejects.toThrow('Clinic invitation preparation unavailable.')
+    expect(action.state).toBe('active')
+    await prepareCommittedClinicInvitations(req as unknown as PayloadRequest, { deadline: 100000, now: () => 0 })
+    await prepareCommittedClinicInvitations(req as unknown as PayloadRequest, { deadline: 100000, now: () => 0 })
+    expect(mocks.transition).toHaveBeenCalledOnce()
+    expect(mocks.accept.mock.calls).toEqual(Array(3).fill([{ type: 'auth.invitation', authActionId: 92 }]))
+  })
+
   it('does not let deduplicated recovery actions exhaust the new acceptance cap', async () => {
     const req = request()
     req.payload.find.mockResolvedValue({ docs: [] })
@@ -178,5 +210,29 @@ describe('committed clinic invitation preparation', () => {
     expect(mocks.live).toHaveBeenNthCalledWith(1, { afterId: 0, limit: 25 })
     expect(mocks.live).toHaveBeenNthCalledWith(2, { afterId: 25, limit: 25 })
     expect(mocks.accept).toHaveBeenCalledWith({ type: 'auth.invitation', authActionId: 26 })
+  })
+})
+
+describe('operator renewal handoff', () => {
+  it('prepares a durable action without requiring mail acceptance', async () => {
+    const req = { ...request(), user: { collection: 'platformStaff', id: 11 } } as unknown as PayloadRequest
+    const command = { clinicStaffId: 61, expiredActionId: 90, dryRun: false }
+    expect(await renewExpiredClinicInvitation(req, command)).toMatchObject({ status: 'prepared', authActionId: 92 })
+    expect(mocks.bindEmail).not.toHaveBeenCalled()
+    expect(mocks.transition).not.toHaveBeenCalled()
+    mocks.renew.mockResolvedValue({ id: 92, state: 'confirmed' })
+    expect(await renewExpiredClinicInvitation(req, command)).toMatchObject({ status: 'already-confirmed' })
+    expect(await renewExpiredClinicInvitation(req, { ...command, dryRun: true })).toMatchObject({ status: 'eligible' })
+  })
+
+  it('refuses unauthorized or inactive renewal before touching its action', async () => {
+    const req = request() as unknown as PayloadRequest
+    const command = { clinicStaffId: 61, expiredActionId: 90, dryRun: false }
+    mocks.trust.mockResolvedValue(false)
+    await expect(renewExpiredClinicInvitation(req, command)).rejects.toMatchObject({ status: 403 })
+    mocks.trust.mockResolvedValue(true)
+    mocks.activation.mockReturnValue(false)
+    await expect(renewExpiredClinicInvitation(req, command)).rejects.toMatchObject({ status: 409 })
+    expect(mocks.renew).not.toHaveBeenCalled()
   })
 })

@@ -8,6 +8,7 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { createPlatformTestUser } from '../fixtures/testUsers'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
+import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
 import { renewExpiredClinicInvitation } from '@/auth/actions/clinicInvitationRequests'
 import { bindProtocolPasswordCompletion } from '@/auth/actions/protocol/passwordCompletion'
 import type { User } from '@supabase/supabase-js'
@@ -230,7 +231,7 @@ describe('committed clinic invitation reservation', () => {
     }
   })
 
-  it('renews through the authorized operator seam and accepts exactly one managed invitation', async () => {
+  it('prepares one reusable renewal and accepts exactly one command after a transient handoff failure', async () => {
     const staff = await initialStaff()
     const system = await actions()
     const first = (await system.reserveClinicInvitation({ clinicStaffId: staff.id }))!
@@ -270,35 +271,62 @@ describe('committed clinic invitation reservation', () => {
       expect(new Set(accepted.map((result) => result.authActionId)).size).toBe(1)
       const result = accepted[0]!
       created.actions.add(result.authActionId)
-      expect(result.status).toBe('accepted')
+      expect(result.status).toBe('prepared')
       expect(await renewExpiredClinicInvitation(req, { ...command, dryRun: false })).toMatchObject({
         authActionId: result.authActionId,
       })
       expect(await (await actions()).read(first.id)).toMatchObject({ state: 'expired' })
       expect(await (await actions()).read(result.authActionId)).toMatchObject({
-        state: 'active',
+        state: 'pending',
         actionType: 'clinic-invitation',
         supabaseTokenType: 'recovery',
         supabaseSubject: staff.supabaseUserId,
       })
-      const outbox = await runOwnedTransaction(await createLocalReq({}, payload), async (_, transactionID) => {
-        const capability = openStorageCapability(transactionID)
-        try {
-          const scoped = await createLocalReq(
-            { context: capability.context, req: { transactionID: Promise.resolve(transactionID) } },
-            payload,
-          )
-          return await payload.find({
-            collection: 'transactionalEmailOutbox',
-            req: scoped,
-            overrideAccess: true,
-            depth: 0,
-            where: { operationReference: { equals: `v1|auth-action|${result.authActionId}` } },
-          })
-        } finally {
-          capability.close()
-        }
+      const readOutbox = async () =>
+        runOwnedTransaction(await createLocalReq({}, payload), async (_, transactionID) => {
+          const capability = openStorageCapability(transactionID)
+          try {
+            const scoped = await createLocalReq(
+              { context: capability.context, req: { transactionID: Promise.resolve(transactionID) } },
+              payload,
+            )
+            return await payload.find({
+              collection: 'transactionalEmailOutbox',
+              req: scoped,
+              overrideAccess: true,
+              depth: 0,
+              where: { operationReference: { equals: `v1|auth-action|${result.authActionId}` } },
+            })
+          } finally {
+            capability.close()
+          }
+        })
+      expect((await readOutbox()).totalDocs).toBe(0)
+      await (await actions()).transition({ id: result.authActionId, to: 'active' })
+      const hooks = payload.collections.transactionalEmailOutbox.config.hooks
+      const originalHooks = hooks.beforeChange
+      hooks.beforeChange = [
+        ...(originalHooks ?? []),
+        () => {
+          throw new Error('Synthetic handoff failure')
+        },
+      ]
+      const email = bindTransactionalEmail(await createLocalReq({}, payload))
+      const mailCommand = { type: 'auth.invitation' as const, authActionId: result.authActionId }
+      try {
+        await expect(email.accept(mailCommand)).rejects.toBeDefined()
+      } finally {
+        hooks.beforeChange = originalHooks
+      }
+      expect((await readOutbox()).totalDocs).toBe(0)
+      expect(await (await actions()).read(result.authActionId)).toMatchObject({ state: 'active' })
+      expect(await renewExpiredClinicInvitation(req, { ...command, dryRun: false })).toMatchObject({
+        status: 'prepared',
+        authActionId: result.authActionId,
       })
+      expect(await email.accept(mailCommand)).toMatchObject({ deduplicated: false })
+      expect(await email.accept(mailCommand)).toMatchObject({ deduplicated: true })
+      const outbox = await readOutbox()
       expect(outbox.totalDocs).toBe(1)
       expect(outbox.docs[0]!.commandType).toBe('auth.invitation')
       expect(
@@ -309,14 +337,18 @@ describe('committed clinic invitation reservation', () => {
     }
   })
 
-  it('starts the real operator CLI without managed-content or dry-run KV writes and retains protocol guards', async () => {
+  it('starts the real Production operator without mail secrets, content or dry-run KV writes and retains guards', async () => {
+    const environment = 'production'
     const staff = await initialStaff()
     const first = (await (await actions()).reserveClinicInvitation({ clinicStaffId: staff.id }))!
     created.actions.add(first.id)
     now += 2 * 86400000
     vi.spyOn(Date, 'now').mockImplementation(() => now)
     vi.stubEnv('CI', 'false')
-    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'ci')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', environment)
+    vi.stubEnv('VERCEL_ENV', environment)
+    vi.stubEnv('NODE_ENV', 'production')
+    for (const key of Object.keys(process.env)) if (key.startsWith('LETTERMINT_')) vi.stubEnv(key, undefined)
     const operator = await createPlatformTestUser(payload, { emailPrefix: `${prefix}-startup-${randomUUID()}` })
     const resolved = await config
     const originalStartup = resolved.onInit
@@ -342,6 +374,8 @@ describe('committed clinic invitation reservation', () => {
     let session: Awaited<ReturnType<typeof openClinicInvitationOperator>> | undefined
     try {
       session = await openClinicInvitationOperator(operator.id)
+      vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'ci')
+      vi.stubEnv('VERCEL_ENV', undefined)
       const dryRun = await renewExpiredClinicInvitation(session.req, {
         clinicStaffId: staff.id,
         expiredActionId: first.id,

@@ -134,7 +134,7 @@ const findMany = async (
 const REPORT_WINDOW_MS = 15 * 60 * 1_000
 const REPORT_WINDOW_LIMIT = 10
 
-const resolveReporter = async (req: PayloadRequest): Promise<Reporter> => {
+const resolveReporter = async (req: PayloadRequest, targetClinicId?: string): Promise<Reporter> => {
   if (!req.user) throw new InquiryModerationServiceError('unauthorized', 'Authentication is required.')
   if (req.user.collection === 'patients') {
     const patient = await findOne(req, 'patients', { id: { equals: req.user.id } })
@@ -142,7 +142,7 @@ const resolveReporter = async (req: PayloadRequest): Promise<Reporter> => {
     return { id: patient.id, key: `patients:${String(patient.id)}`, kind: 'patient' }
   }
   if (req.user.collection === 'clinicStaff') {
-    const access = await readInquiryClinicAccess(req)
+    const access = await readInquiryClinicAccess(req, targetClinicId)
     if (!access) throw new InquiryModerationServiceError('access-denied', 'The clinic principal is not access-ready.')
     const { clinic, staff } = access
     const clinicId = clinic.id
@@ -873,10 +873,22 @@ const affectedActorForDecision = async (
     return { id: payloadId(affected.id), kind: 'patient' }
   }
   if (affected.kind === 'clinic') {
-    const staff = await findOne(req, 'clinicStaff', {
-      and: [{ id: { equals: payloadId(affected.id) } }, { clinic: { equals: relationId(moderationCase.clinic) } }],
+    const staff = await req.payload.findByID({
+      collection: 'clinicStaff',
+      id: payloadId(affected.id),
+      depth: 0,
+      overrideAccess: true,
+      disableErrors: true,
+      req,
     })
-    if (staff) return { id: staff.id, kind: 'clinic' }
+    const clinicId = relationId(moderationCase.clinic)
+    if (staff && clinicId !== null) {
+      const access = await readInquiryClinicAccess(
+        { ...req, user: { ...staff, collection: 'clinicStaff' }, headers: new Headers() },
+        String(clinicId),
+      )
+      if (access) return { id: staff.id, kind: 'clinic' }
+    }
   }
   throw new InquiryModerationServiceError('invalid-input', 'The affected participant is outside the case scope.')
 }
@@ -1074,7 +1086,10 @@ export const submitInquiryModerationAppeal = async (
   const initialParticipant = await resolveReporter(req)
   const acceptance = selectTransactionalEmailCommandAcceptance('moderation.appeal-received')
   const submit = async (req: PayloadRequest, commands?: TransactionalEmailCommands) => {
-    const participant = await resolveReporter(req)
+    const participant = await resolveReporter(
+      req,
+      initialParticipant.kind === 'clinic' ? String(initialParticipant.clinicId) : undefined,
+    )
     if (participant.key !== initialParticipant.key) {
       throw new InquiryModerationServiceError('access-denied', 'The appeal actor changed.')
     }

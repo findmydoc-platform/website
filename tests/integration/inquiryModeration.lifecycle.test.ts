@@ -1,3 +1,5 @@
+import { changeClinicGroup } from '@/features/clinicGroups/membership'
+import { replaceClinicStaffAssignment } from '@/features/clinicGroups/staffAssignments'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 
@@ -794,6 +796,158 @@ describe('inquiry moderation lifecycle', () => {
         targetType: 'moderation-case',
       }),
     )
+  })
+
+  it('accepts a currently scoped group manager as affected actor and preserves personal appeal ownership', async () => {
+    const created = await createVerifiedPatientInquiry(patientReq, {
+      clinicId: String(clinicId),
+      consent: true,
+      doctorId: String(doctorId),
+      idempotencyKey: `${slugPrefix}-group-affected-create`,
+      message: 'Synthetic group moderation inquiry.',
+      phoneNumber: '+493000000005',
+    })
+    createdInquiryIds.push(created.inquiry.id)
+    const conversation = (
+      await payload.find({
+        collection: 'inquiryConversations',
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+        where: { inquiry: { equals: created.inquiry.id } },
+      })
+    ).docs[0]!
+    const report = await createInquiryModerationReport(patientReq, {
+      category: 'spam-fraud-impersonation',
+      idempotencyKey: `${slugPrefix}-group-affected-report`,
+      inquiryId: created.inquiry.id,
+      targetId: String(conversation.id),
+      targetType: 'conversation',
+    })
+    const group = await payload.create({
+      collection: 'clinicGroups',
+      data: { name: 'Moderation affected group' },
+      req: moderatorReq,
+      overrideAccess: true,
+    })
+    const staffId = Number(clinicReq.user!.id)
+    const groupReq = await createLocalReq(
+      { user: clinicReq.user!, context: { inquiryClinicTargetId: String(clinicId) } },
+      payload,
+    )
+    const command = {
+      affectedActor: { id: String(staffId), kind: 'clinic' as const },
+      caseId: report.reportId,
+      category: 'spam-fraud-impersonation' as const,
+      outcome: 'conversation-restricted' as const,
+      reason: 'Synthetic group participant restriction.',
+    }
+    try {
+      await payload.update({
+        collection: 'clinics',
+        id: clinicId,
+        data: { group: group.id },
+        req: moderatorReq,
+        overrideAccess: true,
+      })
+      await replaceClinicStaffAssignment(moderatorReq, staffId, { scope: 'group', groupId: group.id })
+      await replaceClinicStaffAssignment(moderatorReq, staffId, { scope: 'unassigned' })
+      await expect(decideInquiryModerationCase(moderatorReq, command)).rejects.toMatchObject({ kind: 'invalid-input' })
+      await replaceClinicStaffAssignment(moderatorReq, staffId, { scope: 'group', groupId: group.id })
+      await payload.update({
+        collection: 'clinics',
+        id: clinicId,
+        data: { participationStatus: 'disabled' },
+        overrideAccess: true,
+      })
+      await expect(decideInquiryModerationCase(moderatorReq, command)).rejects.toMatchObject({ kind: 'invalid-input' })
+      await payload.update({
+        collection: 'clinics',
+        id: clinicId,
+        data: { participationStatus: 'approved' },
+        overrideAccess: true,
+      })
+      const incomplete = await createClinicTestUser(payload, {
+        createdStaffIds,
+        emailPrefix: `${slugPrefix}-incomplete-affected`,
+      })
+      await payload.update({
+        collection: 'clinicStaff',
+        id: incomplete.id,
+        data: { clinic: clinicId, status: 'approved', authSync: { status: 'synced' } },
+        context: { skipClinicStaffAuthSync: true },
+        overrideAccess: true,
+      })
+      await expect(
+        decideInquiryModerationCase(moderatorReq, {
+          ...command,
+          affectedActor: { kind: 'clinic', id: String(incomplete.id) },
+        }),
+      ).rejects.toMatchObject({ kind: 'invalid-input' })
+      expect(
+        (await payload.findByID({ collection: 'inquiryModerationCases', id: report.reportId, overrideAccess: true }))
+          .status,
+      ).toBe('open')
+      expect(await decideInquiryModerationCase(moderatorReq, command)).toEqual({ decided: true })
+      const peer = await createClinicTestUser(payload, {
+        createdStaffIds,
+        emailPrefix: `${slugPrefix}-peer-group-affected`,
+      })
+      const peerUser = await asClinicScopedPayloadUser(payload, peer, clinicId)
+      await replaceClinicStaffAssignment(moderatorReq, peer.id, { scope: 'group', groupId: group.id })
+      try {
+        const peerReq = await createLocalReq(
+          { user: peerUser, context: { inquiryClinicTargetId: String(clinicId) } },
+          payload,
+        )
+        await expect(
+          submitInquiryModerationAppeal(peerReq, {
+            caseId: report.reportId,
+            text: 'Same group does not transfer personal appeal rights.',
+          }),
+        ).rejects.toMatchObject({ kind: 'not-found' })
+      } finally {
+        await replaceClinicStaffAssignment(moderatorReq, peer.id, { scope: 'unassigned' })
+      }
+      await changeClinicGroup(moderatorReq, clinicId, { fromGroupId: group.id, toGroupId: null })
+      await expect(
+        submitInquiryModerationAppeal(groupReq, {
+          caseId: report.reportId,
+          text: 'Must not appeal after losing this clinic.',
+        }),
+      ).rejects.toMatchObject({ kind: 'access-denied' })
+      await payload.update({
+        collection: 'clinics',
+        id: clinicId,
+        data: { group: group.id },
+        req: moderatorReq,
+        overrideAccess: true,
+      })
+      expect(
+        await submitInquiryModerationAppeal(groupReq, {
+          caseId: report.reportId,
+          text: 'Synthetic affected group manager appeal.',
+        }),
+      ).toEqual({ submitted: true })
+      expect(
+        await decideInquiryModerationAppeal(moderatorReq, {
+          caseId: report.reportId,
+          outcome: 'overturned',
+          reason: 'Synthetic group appeal restored access.',
+        }),
+      ).toEqual({ decided: true })
+    } finally {
+      await payload.update({
+        collection: 'clinics',
+        id: clinicId,
+        data: { participationStatus: 'approved' },
+        overrideAccess: true,
+      })
+      await replaceClinicStaffAssignment(moderatorReq, staffId, { scope: 'local', clinicId })
+      const clinic = await payload.findByID({ collection: 'clinics', id: clinicId, overrideAccess: true })
+      if (clinic.group) await changeClinicGroup(moderatorReq, clinicId, { fromGroupId: group.id, toGroupId: null })
+      await payload.delete({ collection: 'clinicGroups', id: group.id, req: moderatorReq, overrideAccess: true })
+    }
   })
 
   it('keeps an upheld appeal restricted and terminal', async () => {

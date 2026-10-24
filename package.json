@@ -156,7 +156,7 @@
     "audit-ci": "^7.1.0",
     "copyfiles": "^2.4.1",
     "dependency-cruiser": "^18.5.0",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.3",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.4.0",
     "eslint-config-prettier": "^10.1.8",

@@ -197,7 +197,7 @@
       "unrs-resolver"
     ],
     "overrides": {
-      "@modelcontextprotocol/sdk": "1.31.0",
+      "@modelcontextprotocol/sdk": "1.32.0",
       "@tailwindcss/typography@0.5.20>postcss-selector-parser": "7.1.6",
       "esbuild@<0.28.1": "0.28.1",
       "@payloadcms/plugin-import-export@3.90.2>csv-parse": "7.0.2",

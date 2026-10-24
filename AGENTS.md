@@ -58,13 +58,12 @@ For review outputs:
 - Always read layered `AGENTS.md` instructions first.
 - Prefer descriptive long-form CLI flags over short aliases whenever the CLI provides them.
 - Validation policy is path-based:
-  - `pnpm format` runs for every change because it is fast and deterministic.
   - `pnpm check` is required when code, hooks, runtime configuration, schema, or lint-relevant files change.
   - `pnpm build` runs when build-relevant sources (Next.js/Storybook entry points, Payload config, routing, or tooling that affects the output) change; skip it for pure docs/content edits.
-  - CI-critical only changes (`.github/workflows/**`, `.github/scripts/**`, `scripts/**`) still need `pnpm check` + `pnpm format`.
-  - Light-only docs/instruction changes that do not touch runtime code can omit build/check but must still run `pnpm format`.
-- Before creating any git commit that changes tracked files, run `pnpm format` first, even for docs-only or test-only work.
-- If required `check` or `build` fails, fix first, then rerun `pnpm format`.
+  - CI-critical only changes (`.github/workflows/**`, `.github/scripts/**`, `scripts/**`) still need `pnpm check`.
+  - Light-only docs/instruction changes that do not touch runtime code can omit build/check.
+- The pre-commit hook formats staged files. Do not run `pnpm format` manually; it rewrites the whole repository.
+- If required `check` or `build` fails, fix the cause and rerun the failed check.
 - `pnpm build` requires `PAYLOAD_SECRET` and network access to the Postgres Docker DB.
 - Keep `detect-secrets` and `.secrets.baseline` in sync with the branch before push; include baseline drift in the same change set so CI `Detect secrets` does not fail.
 - AI-slop enforcement mode is `pre-commit + pre-push + deep-quality-lane`; AI-slop itself remains intentionally non-blocking in the main PR CI workflow.
@@ -135,6 +134,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+The Next.js guide requirement in the managed block above applies to changes involving Next.js APIs, routing, rendering, caching, or configuration. Read the matching guide for the installed version under `node_modules/next/dist/docs/`. Independent tools and documentation-only changes do not require that guide reading.
 
 ## Agent skills
 

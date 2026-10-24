@@ -6,12 +6,6 @@ These instructions apply to `.github/**`, including workflows, actions, scripts,
 
 Use [docs/engineering/github-actions-pipeline-cost-optimization.md](../docs/engineering/github-actions-pipeline-cost-optimization.md) as research context for CI cost and feedback-time decisions. Do not copy that report into workflow comments; translate it into small, testable workflow rules.
 
-## Priorities
-
-- `P0`: Keep workflows secure, least-privileged, deterministic, and compatible with branch protection.
-- `P1`: Keep pull request feedback focused on merge-critical signal and avoid unnecessary runner minutes.
-- `P2`: Keep workflow intent readable in GitHub and avoid clever indirection without repeated reuse.
-
 ## Workflow Security
 
 - Start every workflow with the narrowest top-level `permissions` block, usually `contents: read`; add broader job-level permissions only where the exact step needs them.
@@ -47,6 +41,6 @@ Use [docs/engineering/github-actions-pipeline-cost-optimization.md](../docs/engi
 
 ## Validation
 
-- Workflow, GitHub script, or CI-critical changes still require the root validation policy: run `pnpm check` and `pnpm format`.
-- Instruction changes to this file require `pnpm ai:slop-check` and `pnpm format`.
+- Workflow, GitHub script, or CI-critical changes still require the root validation policy: run `pnpm check`.
+- Instruction changes to this file require `pnpm ai:slop-check`.
 - If a workflow change alters permissions, secrets, token scope, third-party actions, or shell execution, recommend the security reviewer before handoff.

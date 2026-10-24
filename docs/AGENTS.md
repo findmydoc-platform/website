@@ -1,11 +1,4 @@
 # Documentation Rules
-
-## Priorities
-
-- `P0`: User-facing correctness and traceable facts.
-- `P1`: Stable, present-tense language integrated into the relevant section.
-- `P2`: Concise wording and easy navigation.
-
 ## Critical Rules
 
 - Document the status quo directly in the relevant section instead of using standalone labels such as `Current status` or `Next step`.

@@ -49,6 +49,29 @@ export function bindProtocolPasswordCompletion(req: PayloadRequest, environment:
   }
   return {
     succeeded,
+    async withInvitationRenewal<Result>(action: AuthAction, work: () => Promise<Result>): Promise<Result> {
+      if (req.transactionID !== undefined || action.actionType !== 'clinic-invitation' || !action.supabaseSubject)
+        throw new Error('Invitation renewal unavailable.')
+      if (await read(`${namespace}success:${action.id}`))
+        throw new Error('Invitation password outcome requires reconciliation.')
+      const lock = await append(`${namespace}subject:${subjectBinding(action.supabaseSubject)}`, {
+        actionId: action.id,
+        operation: 'invitation-renewal',
+      })
+      try {
+        return await work()
+      } finally {
+        // Renewal performs no provider password write. Only this invocation owns this claim.
+        await remove(lock.id)
+      }
+    },
+    async invitationRenewalBlocked(action: AuthAction) {
+      if (!action.supabaseSubject) return true
+      return Boolean(
+        (await read(`${namespace}subject:${subjectBinding(action.supabaseSubject)}`)) ||
+        (await read(`${namespace}success:${action.id}`)),
+      )
+    },
     async execute(input: {
       action: AuthAction
       subject: string

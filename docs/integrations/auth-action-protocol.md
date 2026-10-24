@@ -66,8 +66,8 @@ All bodies are strict JSON objects. `flow` is either `clinic-invitation` or `cli
 | Operation | Body properties | Successful result |
 | --- | --- | --- |
 | `requestRecovery` | `email`, `clientIP` | HTTP 202, `accepted` |
-| `validateAction` | `actionRef`, `flow` | HTTP 200, `valid` |
-| `confirmAction` | `actionRef`, `flow`, `accessToken` | HTTP 200, `confirmed` |
+| `validateAction` | `actionRef`, `flow`, optional `tokenType` | HTTP 200, `valid` |
+| `confirmAction` | `actionRef`, `flow`, `accessToken`, optional `tokenType`, optional `resumeConfirmedInvitation: true` | HTTP 200, `confirmed` |
 | `completeAction` | `actionRef`, `flow`, `accessToken`, `password` | HTTP 200, `completed` |
 
 Success bodies contain exactly `{ "version": 1, "ok": true, "outcome": result }`. Invalid references,
@@ -83,12 +83,24 @@ result. The protocol never trusts arbitrary forwarded headers, persists the IP o
 
 `validateAction` requires an active, unexpired action and current eligible principal. It makes no AuthAction
 write and consumes no Supabase token. Request-ID bookkeeping is separate private storage.
+When `tokenType` is supplied, validation also requires an exact match to the persisted action's Supabase OTP type.
+This transport hint never changes the signed business flow. Operator-renewed initial clinic invitations use a fresh
+recovery OTP while retaining `clinic-invitation` and the initial-password completion route. `confirmAction` applies
+the same optional transport check, including when resuming an already confirmed invitation. Existing callers can
+omit the hint and retain the original wire contract.
 
 `confirmAction` uses Supabase's server-verified [getUser](https://supabase.com/docs/reference/javascript/auth-getuser)
 result. The current user must have the authoritative Clinic role, the bound UUID and the current principal's
 email. The native lifecycle transaction rechecks immutable policy, environment, expiry and principal
 eligibility before `active` becomes `confirmed`. Reconfirmation preserves the original state and timestamps.
-Dashboard must consume the matching token and retain its verified session before calling this operation.
+Dashboard must consume the matching token and retain its verified session before first confirmation.
+The optional strict `resumeConfirmedInvitation: true` mode accepts only an already `confirmed`, still-valid
+`clinic-invitation`. It repeats the same fresh provider-user and lifecycle checks using `state: confirmed`,
+performs no lifecycle transition, and rejects active, completed, expired or foreign actions. Dashboard may use
+this check when the original invitation is reopened in the same verified session, then repeat it behind CSRF
+confirmation before minting a fresh short-lived browser grant. It never replays the consumed OTP. Recovery is
+excluded; durable password execution and uncertain-result fences remain authoritative. Already expired initial
+invitations need a separate supported renewal process.
 
 `completeAction` requires the same current authority and a confirmed action. The Website performs one ordinary
 authenticated password update, using the user session and public API key. It observes a successful provider

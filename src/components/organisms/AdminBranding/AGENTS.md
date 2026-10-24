@@ -1,11 +1,5 @@
 # Payload Admin Branding UI
 
-## Priorities
-
-- `P0`: Keep Admin UX stable by using official Payload admin extension points only.
-- `P1`: Keep branding and theme changes conservative and reversible.
-- `P2`: Keep widget visuals consistent with core Payload tokens.
-
 ## Critical Rules
 
 - Inject branding through `admin.components.graphics` and related documented admin component hooks.
@@ -16,6 +10,6 @@
 
 ## Validation Expectations
 
-- For runtime-affecting admin UI changes run: `pnpm check`, `pnpm build`, `pnpm format`.
+- For runtime-affecting admin UI changes run: `pnpm check` and `pnpm build`.
 - Verify key admin screens visually (login + dashboard) with Playwright screenshots in ignored artifacts directories.
 - For local verification behind admin login, prefer the shared Playwright session `output/playwright/sessions/admin.local.json` and refresh it with `pnpm playwright:session:record -- --persona admin` if needed.

@@ -266,6 +266,89 @@ beforeEach(() => {
 })
 const safeInvalid = { version: 1, ok: false, code: 'INVALID_OR_EXPIRED_ACTION' }
 describe('Website auth-action HTTP protocol', () => {
+  it('resumes a still-valid confirmed invitation without transitioning or updating its password', async () => {
+    const f = fixture()
+    await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')
+    f.setNow(start + 601_000)
+    const before = structuredClone(f.action)
+    const response = await f.handle(
+      f.request(
+        'confirmAction',
+        {
+          ...f.authenticatedBody,
+          resumeConfirmedInvitation: true,
+        },
+        { timestamp: start + 601_000 },
+      ),
+      'confirmAction',
+    )
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ outcome: 'confirmed' })
+    expect(f.action).toEqual(before)
+    expect(f.updatePassword).not.toHaveBeenCalled()
+  })
+
+  it.each(['active', 'completed', 'expired', 'revoked', 'superseded'])(
+    'refuses invitation resume for %s actions without a transition',
+    async (state) => {
+      const f = fixture()
+      f.action.state = state
+      const response = await f.handle(
+        f.request('confirmAction', {
+          ...f.authenticatedBody,
+          resumeConfirmedInvitation: true,
+        }),
+        'confirmAction',
+      )
+      expect(await response.json()).toEqual(safeInvalid)
+      expect(f.action.state).toBe(state)
+      expect(f.updatePassword).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(['elapsed', 'foreign', 'ineligible', 'recovery'])(
+    'rejects confirmed invitation resume when %s',
+    async (reason) => {
+      const f = fixture(reason === 'recovery' ? 'clinic-recovery' : 'clinic-invitation')
+      await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')
+      const now = reason === 'elapsed' ? start + 86400000 : start + 601000
+      f.setNow(now)
+      if (reason === 'foreign') f.user.id = '4525d8e2-0ff0-44cc-9f14-ad8a783a57dd'
+      if (reason === 'ineligible') f.staff.status = 'suspended'
+      const response = await f.handle(
+        f.request(
+          'confirmAction',
+          {
+            ...f.authenticatedBody,
+            resumeConfirmedInvitation: true,
+          },
+          { timestamp: now },
+        ),
+        'confirmAction',
+      )
+      expect(await response.json()).toEqual(safeInvalid)
+      expect(f.updatePassword).not.toHaveBeenCalled()
+    },
+  )
+
+  it('does not reopen an uncertain password writer through invitation resume', async () => {
+    const f = fixture()
+    await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')
+    f.updatePassword.mockRejectedValueOnce(new Error('Uncertain provider write'))
+    expect((await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).status).toBe(503)
+    const resumed = await f.handle(
+      f.request('confirmAction', {
+        ...f.authenticatedBody,
+        resumeConfirmedInvitation: true,
+      }),
+      'confirmAction',
+    )
+    expect(resumed.status).toBe(200)
+    expect((await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).status).toBe(503)
+    expect(f.updatePassword).toHaveBeenCalledTimes(1)
+    expect(f.action.state).toBe('confirmed')
+  })
+
   it('records guarded initial account completion before acknowledging an invitation password', async () => {
     const f = fixture()
     await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')
@@ -275,6 +358,43 @@ describe('Website auth-action HTTP protocol', () => {
     expect(passwordAuthority.getUser).toHaveBeenCalledWith('offline-fresh-password-session')
     expect(passwordAuthority.getClaims).toHaveBeenCalledWith('offline-fresh-password-session')
     expect(JSON.stringify([...f.records.values()])).not.toContain('offline-fresh-password-session')
+  })
+
+  it('binds a renewed recovery OTP to invitation authority and records initial completion', async () => {
+    const f = fixture()
+    f.action.supabaseTokenType = 'recovery'
+    const accepted = await f.handle(f.request('validateAction', { ...f.body, tokenType: 'recovery' }), 'validateAction')
+    expect(await accepted.json()).toMatchObject({ outcome: 'valid' })
+    const tampered = await f.handle(f.request('validateAction', { ...f.body, tokenType: 'invite' }), 'validateAction')
+    expect(await tampered.json()).toEqual(safeInvalid)
+    expect(
+      await (await f.handle(f.request('confirmAction', f.authenticatedBody), 'confirmAction')).json(),
+    ).toMatchObject({ outcome: 'confirmed' })
+    expect(
+      await (
+        await f.handle(
+          f.request('confirmAction', { ...f.authenticatedBody, resumeConfirmedInvitation: true, tokenType: 'invite' }),
+          'confirmAction',
+        )
+      ).json(),
+    ).toEqual(safeInvalid)
+    expect(
+      await (
+        await f.handle(
+          f.request('confirmAction', {
+            ...f.authenticatedBody,
+            resumeConfirmedInvitation: true,
+            tokenType: 'recovery',
+          }),
+          'confirmAction',
+        )
+      ).json(),
+    ).toMatchObject({ outcome: 'confirmed' })
+    expect(await (await f.handle(f.request('completeAction', f.completeBody), 'completeAction')).json()).toMatchObject({
+      outcome: 'completed',
+    })
+    expect(Reflect.get(f.staff, 'accountCompletion')).toMatchObject({ source: 'initial-password', authActionId: '42' })
+    expect(f.updatePassword).toHaveBeenCalledOnce()
   })
 
   it('resumes initial evidence after fresh password authentication fails without repeating password persistence', async () => {

@@ -1,6 +1,8 @@
+import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
+import { isClinicPersonalIdentityReady } from '@/auth/utilities/clinicStaffAssignment'
 import { readInquiryClinicAccess } from '@/features/inquiryAggregate/clinicAccess'
 import { createHash, randomUUID } from 'node:crypto'
-import type { PayloadRequest } from 'payload'
+import type { PayloadRequest, Where } from 'payload'
 
 import type {
   AttachmentDraftCreateInput,
@@ -578,17 +580,43 @@ const buildClinicDescriptor = async (
   if (!clinic || !displayName) {
     throw new InquiryCommunicationServiceError('invalid-state', 'The clinic is unavailable.')
   }
-  const availableStaff = await findOne(req, 'clinicStaff', {
-    and: [
-      { clinic: { equals: clinicId } },
-      { status: { equals: 'approved' } },
-      { 'authSync.status': { equals: 'synced' } },
-    ],
-  })
+  let messagingAvailable = false
+  if (clinic.status === 'approved') {
+    const scopes: Where[] = [{ and: [{ assignmentScope: { equals: 'local' } }, { clinic: { equals: clinicId } }] }]
+    const groupId = relationId(clinic.group)
+    if (groupId !== null)
+      scopes.push({ and: [{ assignmentScope: { equals: 'group' } }, { group: { equals: groupId } }] })
+    // Availability uses current persisted grants, never the viewing actor's session or legacy activation token.
+    const authorityReq = { ...req, user: null, headers: new Headers() }
+    for (let page = 1; ; page++) {
+      const candidates = await req.payload.find({
+        collection: 'clinicStaff',
+        depth: 0,
+        limit: 25,
+        page,
+        sort: 'id',
+        overrideAccess: true,
+        req: authorityReq,
+        where: {
+          and: [{ or: scopes }, { status: { equals: 'approved' } }, { 'authSync.status': { equals: 'synced' } }],
+        },
+      })
+      for (const staff of candidates.docs) {
+        if (
+          isClinicPersonalIdentityReady(staff) &&
+          (await readClinicTargetAccess(req.payload, staff.id, clinicId, authorityReq))
+        ) {
+          messagingAvailable = true
+          break
+        }
+      }
+      if (messagingAvailable || !candidates.hasNextPage) break
+    }
+  }
   return {
     displayName,
     id: String(clinic.id),
-    messagingAvailable: clinic.status === 'approved' && Boolean(availableStaff),
+    messagingAvailable,
   }
 }
 

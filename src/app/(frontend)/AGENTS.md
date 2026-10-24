@@ -1,28 +1,5 @@
 # Frontend App Routes (Next.js + UI)
 
-## Priorities
-
-- `P0`: Correct architecture boundaries and accessibility.
-- `P1`: Reliable, testable UI behavior.
-- `P2`: Visual consistency and maintainable styling.
-
-## Architecture Defaults
-
-- Next.js App Router + RSC by default.
-- Use `'use client'` only at interaction leaves.
-
-## Critical Rules
-
-- Keep reusable atoms and molecules presentation-only.
-- Do not place business logic or data fetching inside reusable UI components.
-- Favor parent-controlled inputs (`value/onValueChange`, `checked/onCheckedChange`).
-- Keep molecules router-agnostic; pass navigation callbacks as props.
-
-## Boundary Reminder
-
-- UI components stay Payload-free.
-- Follow `src/AGENTS.md` for canonical Payload and application API ownership, normalized props, and callback ports.
-
 ## Storybook Expectations
 
 - Keep stories isolated and deterministic.

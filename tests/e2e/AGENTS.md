@@ -1,11 +1,5 @@
 # E2E Test Rules
 
-## Priorities
-
-- `P0`: Deterministic user-facing behavior over implementation detail coverage.
-- `P1`: Stable admin smoke coverage for auth, navigation, and critical CRUD.
-- `P2`: Readable Playwright helpers with minimal hidden magic.
-
 ## Critical Rules
 
 - Use Playwright for `tests/e2e/**`.

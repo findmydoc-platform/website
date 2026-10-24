@@ -693,8 +693,9 @@ Legacy `closed` maps to handling `submitted` plus lifecycle `closed` and receive
 `legacy-closed-migrated` system event. That event uses the system actor, does not affect activity ordering, and does not
 change unread state. Repeating cutover is idempotent.
 
-Clinic offboarding does not rewrite or remove patient history. When a clinic no longer has an approved, synchronized
-staff principal, the patient projection remains readable but reports `messagingAvailable: false` and disables replies.
+Clinic offboarding does not rewrite or remove patient history. Messaging requires an approved, synchronized, activated
+staff principal with current local or group access to the clinic. Group assignment alone does not grant availability.
+Without such a principal, the patient projection remains readable but reports `messagingAvailable: false` and disables replies.
 The record's timestamps, retention basis, restrictions, and policy version remain unchanged.
 
 The focused content hard-delete route accepts only an inquiry, a message or attachment target, and an authorized reason

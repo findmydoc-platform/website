@@ -1,11 +1,5 @@
 # PostHog Integration Rules
 
-## Priorities
-
-- `P0`: Keep PostHog calls safe, typed, and server/client boundary aware.
-- `P1`: Use one public API surface for product code.
-- `P2`: Keep telemetry helpers small and explicit.
-
 ## Critical Rules
 
 - Product code outside `src/posthog/**` must import PostHog only through `@/posthog/api` for server code or `@/posthog/client-api` for client code.

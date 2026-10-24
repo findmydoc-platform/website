@@ -1,11 +1,5 @@
 # Payload Collections and Data Rules
 
-## Priorities
-
-- `P0`: Data correctness, secure access, and migration integrity.
-- `P1`: Reusable access and hook patterns.
-- `P2`: Documentation and test alignment.
-
 ## Critical Rules
 
 - Use Payload config types and keep collection/global config under `src/collections/**`.

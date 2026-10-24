@@ -339,6 +339,122 @@ describe('inquiry communication lifecycle', () => {
     expect(notes.docs).toEqual([])
   })
 
+  it('keeps patient messaging available through a ready group principal and closes it after scoped access loss', async () => {
+    const inquiry = await createInquiry('group-patient-messaging')
+    const group = await payload.create({
+      collection: 'clinicGroups',
+      data: { name: 'Patient messaging group' },
+      req: operator,
+      overrideAccess: false,
+    })
+    const staffId = Number(clinicReqA.user!.id)
+    const secondStaffId = Number(clinicReqB.user!.id)
+    await payload.update({
+      collection: 'clinics',
+      id: clinicId,
+      data: { group: group.id },
+      req: operator,
+      overrideAccess: true,
+    })
+    try {
+      await replaceClinicStaffAssignment(operator, staffId, { scope: 'group', groupId: group.id })
+      await replaceClinicStaffAssignment(operator, secondStaffId, { scope: 'unassigned' })
+      expect((await readPatientInquiryDetail(patientReq, { inquiryId: inquiry.id })).clinic.messagingAvailable).toBe(
+        true,
+      )
+      const sent = await sendPatientInquiryMessage(patientReq, {
+        inquiryId: inquiry.id,
+        expectedRevision: 0,
+        idempotencyKey: `${slugPrefix}-group-patient-message`,
+        text: 'Patient reply to group-managed clinic.',
+      })
+      expect(sent.inquiry.revision).toBe(1)
+      expect(
+        sent.inquiry.timeline.some(
+          (activity) =>
+            activity.kind === 'external-message' && activity.text === 'Patient reply to group-managed clinic.',
+        ),
+      ).toBe(true)
+      const incomplete = await createClinicTestUser(payload, {
+        createdStaffIds,
+        emailPrefix: `${slugPrefix}-incomplete-local`,
+      })
+      await payload.update({
+        collection: 'clinicStaff',
+        id: incomplete.id,
+        data: { clinic: clinicId, status: 'approved', authSync: { status: 'synced' } },
+        context: { skipClinicStaffAuthSync: true },
+        overrideAccess: true,
+      })
+      await payload.update({
+        collection: 'clinicStaff',
+        id: staffId,
+        data: { status: 'disabled' },
+        context: { skipClinicStaffAuthSync: true },
+        overrideAccess: true,
+      })
+      expect((await readPatientInquiryDetail(patientReq, { inquiryId: inquiry.id })).clinic.messagingAvailable).toBe(
+        false,
+      )
+      await payload.update({
+        collection: 'clinicStaff',
+        id: staffId,
+        data: { status: 'approved' },
+        context: { skipClinicStaffAuthSync: true },
+        overrideAccess: true,
+      })
+      await payload.update({
+        collection: 'clinics',
+        id: clinicId,
+        data: { participationStatus: 'disabled' },
+        overrideAccess: true,
+      })
+      expect((await readPatientInquiryDetail(patientReq, { inquiryId: inquiry.id })).clinic.messagingAvailable).toBe(
+        false,
+      )
+      await payload.update({
+        collection: 'clinics',
+        id: clinicId,
+        data: { participationStatus: 'approved' },
+        overrideAccess: true,
+      })
+      expect((await readPatientInquiryDetail(patientReq, { inquiryId: inquiry.id })).clinic.messagingAvailable).toBe(
+        true,
+      )
+      await changeClinicGroup(operator, clinicId, { fromGroupId: group.id, toGroupId: null })
+      expect((await readPatientInquiryDetail(patientReq, { inquiryId: inquiry.id })).clinic.messagingAvailable).toBe(
+        false,
+      )
+      await expect(
+        sendPatientInquiryMessage(patientReq, {
+          inquiryId: inquiry.id,
+          expectedRevision: 1,
+          idempotencyKey: `${slugPrefix}-lost-group-patient-message`,
+          text: 'Must not persist after clinic leaves group.',
+        }),
+      ).rejects.toMatchObject({ kind: 'invalid-state' })
+    } finally {
+      await payload.update({
+        collection: 'clinicStaff',
+        id: staffId,
+        data: { status: 'approved' },
+        context: { skipClinicStaffAuthSync: true },
+        overrideAccess: true,
+      })
+      await payload.update({
+        collection: 'clinics',
+        id: clinicId,
+        data: { participationStatus: 'approved' },
+        overrideAccess: true,
+      })
+      await replaceClinicStaffAssignment(operator, staffId, { scope: 'local', clinicId })
+      await replaceClinicStaffAssignment(operator, secondStaffId, { scope: 'local', clinicId })
+      const clinic = await payload.findByID({ collection: 'clinics', id: clinicId, overrideAccess: true })
+      if (clinic.group) await changeClinicGroup(operator, clinicId, { fromGroupId: group.id, toGroupId: null })
+      await payload.delete({ collection: 'clinicGroups', id: group.id, req: operator, overrideAccess: false })
+    }
+  })
+
   it('checks actual inquiry ownership even when the principal can access both targets', async () => {
     const inquiry = await createInquiry('authorized-target-mismatch')
     const group = await payload.create({

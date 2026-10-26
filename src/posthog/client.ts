@@ -8,95 +8,125 @@ import type {
   PostHogScalarProperty,
 } from './events'
 
-/**
- * Initialize PostHog client for browser-side tracking
- * Handles session replay, error tracking, and web analytics
- */
+// Initialization, the site's consent decision, and SDK readiness have separate lifetimes.
 let isInitialized = false
+let isLoaded = false
+let desiredConsent = false
 let isCapturingEnabled = false
+const readinessListeners = new Set<() => void>()
 
-export function initializePostHog() {
-  // Only initialize in browser environment
-  if (typeof window === 'undefined') {
-    return false
-  }
+function setReadiness(ready: boolean): void {
+  if (isCapturingEnabled === ready) return
+  isCapturingEnabled = ready
+  for (const listener of readinessListeners) listener()
+}
 
-  if (isInitialized) {
-    return true
+export function subscribePostHogReadiness(listener: () => void): () => void {
+  readinessListeners.add(listener)
+  return () => readinessListeners.delete(listener)
+}
+
+export function getPostHogReadiness(): boolean {
+  return isCapturingEnabled
+}
+
+function hasConfirmedConsent(): boolean {
+  return Boolean(
+    isInitialized &&
+    isLoaded &&
+    posthog.config.token === process.env.NEXT_PUBLIC_POSTHOG_KEY &&
+    posthog.has_opted_in_capturing() &&
+    !posthog.has_opted_out_capturing(),
+  )
+}
+
+function applyDesiredConsent(): boolean {
+  if (!isInitialized || !isLoaded) return false
+  if (isCapturingEnabled && desiredConsent) return true
+  try {
+    if (desiredConsent) {
+      posthog.opt_in_capturing({ captureEventName: false })
+      setReadiness(hasConfirmedConsent())
+    } else {
+      posthog.opt_out_capturing()
+      setReadiness(false)
+    }
+  } catch {
+    setReadiness(false)
+    console.warn('PostHog consent could not be confirmed.')
   }
+  return isCapturingEnabled
+}
+
+export function initializePostHog(): boolean {
+  if (typeof window === 'undefined') return false
+  if (isInitialized) return true
 
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
   if (!posthogKey) {
-    console.error('Error: NEXT_PUBLIC_POSTHOG_KEY environment variable is not set.')
-    return false
-  }
-
-  posthog.init(posthogKey, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-    defaults: '2025-05-24', // Latest version with improved features
-
-    // Session Replay Configuration
-    disable_session_recording: false, // Enable session recording (now that we have user identification)
-
-    // Error Tracking Configuration
-    capture_exceptions: true, // Enable automatic error capture
-
-    // Prevents posthog-js from issuing browser-side flag requests; server code owns evaluation.
-    advanced_disable_feature_flags: true,
-
-    // Web Analytics Configuration
-    capture_pageview: true, // Enable automatic pageview tracking
-    capture_pageleave: true, // Track when users leave pages
-
-    // Privacy and Performance
-    mask_all_text: false, // Set to true in production if you want to mask text in replays
-    mask_all_element_attributes: false,
-  })
-
-  isInitialized = true
-  return true
-}
-
-export function enablePostHog() {
-  const initialized = initializePostHog()
-  if (!initialized) {
-    isCapturingEnabled = false
+    console.warn('PostHog initialization is unavailable.')
     return false
   }
 
   try {
-    posthog.opt_in_capturing({ captureEventName: false })
-  } catch (error) {
-    isCapturingEnabled = false
-    console.warn('Failed to opt PostHog into capturing:', error)
+    posthog.init(posthogKey, {
+      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+      defaults: '2025-05-24',
+      opt_out_capturing_by_default: true,
+      disable_session_recording: false,
+      capture_exceptions: true,
+      // Server code owns feature flag evaluation.
+      advanced_disable_feature_flags: true,
+      capture_pageview: true,
+      capture_pageleave: true,
+      mask_all_text: false,
+      mask_all_element_attributes: false,
+      loaded: () => {
+        isLoaded = true
+        applyDesiredConsent()
+      },
+    })
+    isInitialized = posthog.config.token === posthogKey
+    return isInitialized
+  } catch {
+    isLoaded = false
+    setReadiness(false)
+    console.warn('PostHog initialization failed.')
     return false
   }
-
-  isCapturingEnabled = true
-  return true
 }
 
-export function disablePostHog() {
+export function enablePostHog(): boolean {
+  desiredConsent = true
+  if (!initializePostHog()) return false
+  return applyDesiredConsent()
+}
+
+export function disablePostHog(): void {
+  desiredConsent = false
   resetPostHogIdentity()
-  isInitialized = false
 }
 
 export function resetPostHogIdentity(): boolean {
-  isCapturingEnabled = false
+  setReadiness(false)
+  // Do not let the SDK write consent for its uninitialized, empty token.
+  if (!isInitialized || !isLoaded) return true
 
   try {
-    posthog.opt_out_capturing()
-  } catch (error) {
-    console.warn('Failed to opt PostHog out of capturing:', error)
-  }
-
-  try {
+    // reset() clears SDK consent. Reapply the site's decision after identity reset.
     posthog.reset()
-  } catch (error) {
-    console.warn('Failed to reset PostHog after opt-out:', error)
+  } catch {
+    try {
+      posthog.opt_out_capturing()
+    } catch {
+      // The application capture gate remains closed even if SDK storage fails.
+    }
+    console.warn('PostHog identity reset failed.')
+    return false
   }
 
-  return true
+  applyDesiredConsent()
+  return desiredConsent ? isCapturingEnabled : !isCapturingEnabled
 }
 
 export function getPostHogSessionId(): string | undefined {
@@ -135,10 +165,9 @@ function captureBrowserPostHogEvent<Name extends PostHogEventName>(
   }
 
   try {
-    posthog.capture(event, toDefinedScalarProperties(properties))
-    return true
-  } catch (error) {
-    console.warn('Failed to capture PostHog browser event:', error)
+    return Boolean(posthog.capture(event, toDefinedScalarProperties(properties)))
+  } catch {
+    console.warn('PostHog browser event capture failed.')
     return false
   }
 }

@@ -71,6 +71,35 @@ The current repository registers exactly two server-side PostHog guard flags:
 
 These are operational access guards, not product rollout flags. They are evaluated server-side through `evaluatePostHogFlags()` and default to `false` in code when PostHog is unavailable or the secure key is missing. Guard checks use a server-side site actor with `feature_flag_site_host` and `feature_flag_site_path`; browser-side feature-flag evaluation is disabled.
 
+### Browser consent lifecycle
+
+`src/posthog/client.ts` owns the browser SDK instance. Initialization, the site's consent decision, and confirmed
+capture readiness are separate. The SDK initializes with capture disabled by default. Readiness requires its loaded
+callback, the configured project token, and a confirmed SDK opt-in. Missing configuration or SDK/storage errors keep
+application event capture and session correlation closed. Readiness does not wait for remote configuration.
+
+The browser facade exposes `usePostHogAnalyticsReady()` without exposing the SDK. The clinic route adapter passes
+readiness to the presentation analytics port. The displayed clinic profile captures once after readiness, and only a
+successful SDK capture marks that view as tracked. Earlier profiles and clicks are not queued. Withdrawing and restoring
+consent does not replay a profile already captured by the mounted view.
+
+Withdrawal closes application capture immediately, resets identity, and then writes the final SDK opt-out. Reconsent
+reuses the initialized instance. Logout resets identity and reapplies the existing site consent decision. The site cookie
+and consent controls remain the authority for that decision.
+
+The consent tests use the installed `posthog-js` implementation and the real consent controller and clinic composition.
+All network transports are intercepted. The headed Chrome transport test is opt-in because it needs a graphical browser:
+
+```bash
+POSTHOG_BROWSER_TEST=1 pnpm exec vitest run --project unit tests/unit/posthog/client-consent.browser.test.ts
+```
+
+It bundles the browser components in isolation, without starting Next.js or connecting to Payload. The intended assertions inspect actual outgoing event bodies before consent, after consent, after withdrawal, and after
+reconsent. The installed SDK rejects WebDriver-controlled browsers, including headed Chrome, before event transport.
+The browser test reports a skip when that prerequisite blocks capture. This is a test limitation, not successful transport
+evidence. SDK bot filters and browser identity remain unchanged. Live capture in an ordinary browser and PostHog reporting
+reconciliation require a separate acceptance run.
+
 ### User Identification
 
 - Authenticated users are identified through the Supabase auth strategy.

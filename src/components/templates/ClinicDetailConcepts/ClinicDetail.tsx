@@ -114,10 +114,9 @@ export function ClinicDetail({
 
   React.useEffect(() => {
     const trackingKey = `${clinicId}:${data.clinicSlug}`
-    if (trackedProfileViewKeyRef.current === trackingKey) return
+    if (!analytics.isReady || trackedProfileViewKeyRef.current === trackingKey) return
 
-    trackedProfileViewKeyRef.current = trackingKey
-    analytics.onProfileViewed({
+    const accepted = analytics.onProfileViewed({
       clinicId,
       clinicSlug: data.clinicSlug,
       hasDoctors: data.doctors.length > 0,
@@ -125,6 +124,7 @@ export function ClinicDetail({
       pagePath,
       verificationTier: data.trust.verification,
     })
+    if (accepted) trackedProfileViewKeyRef.current = trackingKey
   }, [
     analytics,
     clinicId,

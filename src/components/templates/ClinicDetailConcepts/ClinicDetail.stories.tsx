@@ -18,7 +18,8 @@ const meta = {
   args: {
     analytics: {
       onCtaClicked: fn(),
-      onProfileViewed: fn(),
+      isReady: true,
+      onProfileViewed: fn(() => true),
     },
     data: clinicDetailFixture,
     onSubmitContactRequest: fn(async () => ({ id: 'story-inquiry' })),

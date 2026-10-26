@@ -1,5 +1,7 @@
 'use client'
 
+import { useMemo } from 'react'
+
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import {
   ClinicContactRequestError,
@@ -7,9 +9,9 @@ import {
   type ClinicContactRequestSubmitter,
   type ClinicDetailConceptProps,
 } from '@/features/clinicDetail/contracts'
-import { getConsentedPostHogSessionId, postHogBrowserEvents } from '@/posthog/client-api'
+import { getConsentedPostHogSessionId, postHogBrowserEvents, usePostHogAnalyticsReady } from '@/posthog/client-api'
 
-const clinicDetailAnalytics: ClinicDetailAnalyticsPort = {
+const clinicDetailAnalytics: Omit<ClinicDetailAnalyticsPort, 'isReady'> = {
   onCtaClicked: ({ clinicId, clinicSlug, ctaId, ctaLabel, ctaLocation, doctorId, pagePath, treatmentId }) => {
     postHogBrowserEvents.clinicCtaClicked({
       clinic_id: clinicId,
@@ -24,7 +26,7 @@ const clinicDetailAnalytics: ClinicDetailAnalyticsPort = {
     })
   },
   onProfileViewed: ({ clinicId, clinicSlug, hasDoctors, hasTreatments, pagePath, verificationTier }) => {
-    postHogBrowserEvents.clinicProfileViewed({
+    return postHogBrowserEvents.clinicProfileViewed({
       clinic_id: clinicId,
       clinic_slug: clinicSlug,
       has_doctors: hasDoctors,
@@ -74,7 +76,8 @@ export const submitClinicContactRequest: ClinicContactRequestSubmitter = async (
 export function ClinicDetailClientAdapter(
   props: Omit<ClinicDetailConceptProps, 'analytics' | 'onSubmitContactRequest'>,
 ) {
-  return (
-    <ClinicDetail {...props} analytics={clinicDetailAnalytics} onSubmitContactRequest={submitClinicContactRequest} />
-  )
+  const isReady = usePostHogAnalyticsReady()
+  const analytics = useMemo(() => ({ ...clinicDetailAnalytics, isReady }), [isReady])
+
+  return <ClinicDetail {...props} analytics={analytics} onSubmitContactRequest={submitClinicContactRequest} />
 }

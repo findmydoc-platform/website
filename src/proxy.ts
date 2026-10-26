@@ -40,6 +40,10 @@ import {
   type PostHogFlagKey,
 } from '@/posthog/api'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
+import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
+import { createScopedLogger } from '@/utilities/logging/shared'
+
+const logger = createScopedLogger(fallbackConsoleLogger, { component: 'preview-guard', scope: 'auth.preview_guard' })
 
 const GUARD_FLAG_KEYS = ['preview-guard-enabled'] as const satisfies readonly PostHogFlagKey[]
 const NON_PAGE_PATHS = new Set(['/next/exit-preview', '/next/preview'])
@@ -258,17 +262,26 @@ const handlePreviewApiRequest = async (request: NextRequest): Promise<NextRespon
 
 const evaluateGuardFlagsForRequest = async (request: NextRequest) => {
   const previewDeployment = isPreviewDeployment()
-  if (previewDeployment && request.nextUrl.hostname !== 'preview.findmydoc.eu') {
+  const routedHost = request.headers.get('host')?.trim().toLowerCase() ?? request.nextUrl.hostname
+  if (previewDeployment && routedHost !== 'preview.findmydoc.eu') {
     return { previewGuardFlagEnabled: true }
   }
 
   const flagContext = createPostHogFlagEvaluationContext({ url: request.nextUrl })
+  if (previewDeployment) flagContext.feature_flag_site_host = routedHost
   const actor = resolvePostHogSiteFlagActor(flagContext)
   const flags = await evaluatePostHogFlags(actor, GUARD_FLAG_KEYS, { context: flagContext })
+  const previewEvaluation = previewDeployment ? flags.getEvaluation('preview-guard-enabled') : null
+  if (previewEvaluation?.status === 'unavailable') {
+    logger.warn(
+      { event: 'auth.preview_guard.flag_unavailable', reason: previewEvaluation.reason },
+      'Preview Guard remains active because its flag could not be evaluated.',
+    )
+  }
 
   return {
     previewGuardFlagEnabled: previewDeployment
-      ? flags.getEvaluation('preview-guard-enabled').status !== 'evaluated' || flags.isEnabled('preview-guard-enabled')
+      ? previewEvaluation?.status !== 'evaluated' || previewEvaluation.value !== false
       : flags.isEnabled('preview-guard-enabled'),
   }
 }

@@ -14,6 +14,8 @@
 - `DEPLOYMENT_ENVIRONMENT=preview` provides the same behavior for explicitly configured non-Vercel Preview runtimes.
 - Runtime policy determines whether a deployment is Preview. Only the canonical host `preview.findmydoc.eu` allows the server-side PostHog flag `preview-guard-enabled` to disable the guard for an approved public test window. Generated deployment and branch hosts stay guarded.
 - The canonical Preview host stays guarded when flag evaluation is missing, invalid, unavailable or not configured. Only an explicitly evaluated boolean `false` opens it. Preview remains `noindex` during the public test window.
+- Canonical Preview routing uses the request's `Host` header because Vercel can supply an internal deployment URL to Proxy. It does not trust `x-forwarded-host`. Requests without a `Host` header use the URL hostname.
+- Unavailable canonical Preview flag evaluation writes the operational event `auth.preview_guard.flag_unavailable` with its reason, without credential values or visitor identity.
 - Local development stays open. A PostHog result cannot activate the guard while runtime policy resolves to `development`.
 - The server-side PostHog flag `preview-guard-enabled` can additionally activate the guard in a non-local, non-Preview runtime.
 - Guard flag evaluation uses a server-side site actor, not the visitor-controlled PostHog cookie identity.

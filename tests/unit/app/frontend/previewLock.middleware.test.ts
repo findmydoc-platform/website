@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   evaluatePostHogFlags: vi.fn(),
   getUser: vi.fn(),
   logCrawlerRequest: vi.fn(),
+  logGuardWarning: vi.fn(),
   resolvePostHogSiteFlagActor: vi.fn(),
   resolveHoldingMode: vi.fn(),
 }))
@@ -40,6 +41,10 @@ vi.mock('@/posthog/api', () => ({
 
 vi.mock('@/features/publicDiscovery/crawlerMonitoring', () => ({
   logCrawlerRequest: mocks.logCrawlerRequest,
+}))
+
+vi.mock('@/utilities/logging/consoleLogger', () => ({
+  fallbackConsoleLogger: { warn: mocks.logGuardWarning, level: 'error' },
 }))
 
 vi.mock('@/features/temporaryLandingMode/resolver', () => ({
@@ -146,6 +151,38 @@ describe('preview lock proxy', () => {
     }
   })
 
+  it('uses the routed Host header when Vercel supplies a deployment URL to the proxy', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mockGuardFlags({ 'preview-guard-enabled': false })
+    const response = await proxy(
+      new NextRequest('https://findmydoc-portal-example.vercel.app/clinics/synthetic-reporting', {
+        headers: { host: 'preview.findmydoc.eu' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.resolvePostHogSiteFlagActor).toHaveBeenCalledWith({
+      feature_flag_site_host: 'preview.findmydoc.eu',
+      feature_flag_site_path: '/clinics/synthetic-reporting',
+    })
+  })
+
+  it('does not open a generated host through a canonical URL or forwarded-host marker', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mockGuardFlags({ 'preview-guard-enabled': false })
+    const response = await proxy(
+      new NextRequest('https://preview.findmydoc.eu/clinics/synthetic-reporting', {
+        headers: {
+          host: 'findmydoc-portal-example.vercel.app',
+          'x-forwarded-host': 'preview.findmydoc.eu',
+        },
+      }),
+    )
+
+    expect(response.status).toBe(404)
+    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
+  })
+
   it.each(['missing', 'error', 'invalid', 'not-configured', 'unsupported-runtime'])(
     'keeps canonical Preview pages and APIs guarded when flag evaluation is unavailable: %s',
     async (reason) => {
@@ -163,6 +200,10 @@ describe('preview lock proxy', () => {
       expect(profile.status).toBe(404)
       expect(inquiry.status).toBe(401)
       expect(mocks.createServerClient).not.toHaveBeenCalled()
+      expect(mocks.logGuardWarning).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'auth.preview_guard.flag_unavailable', reason }),
+        expect.any(String),
+      )
     },
   )
 

@@ -257,12 +257,19 @@ const handlePreviewApiRequest = async (request: NextRequest): Promise<NextRespon
 }
 
 const evaluateGuardFlagsForRequest = async (request: NextRequest) => {
+  const previewDeployment = isPreviewDeployment()
+  if (previewDeployment && request.nextUrl.hostname !== 'preview.findmydoc.eu') {
+    return { previewGuardFlagEnabled: true }
+  }
+
   const flagContext = createPostHogFlagEvaluationContext({ url: request.nextUrl })
   const actor = resolvePostHogSiteFlagActor(flagContext)
   const flags = await evaluatePostHogFlags(actor, GUARD_FLAG_KEYS, { context: flagContext })
 
   return {
-    previewGuardFlagEnabled: flags.isEnabled('preview-guard-enabled'),
+    previewGuardFlagEnabled: previewDeployment
+      ? flags.getEvaluation('preview-guard-enabled').status !== 'evaluated' || flags.isEnabled('preview-guard-enabled')
+      : flags.isEnabled('preview-guard-enabled'),
   }
 }
 
@@ -290,7 +297,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       return previewGuardEnabled ? nextWithGuardActiveHeader(request) : nextWithoutGuardHeaders(request)
     }
 
-    return handlePreviewApiRequest(request)
+    const { previewGuardFlagEnabled } = await evaluateGuardFlagsForRequest(request)
+    return previewGuardFlagEnabled ? handlePreviewApiRequest(request) : nextWithoutGuardHeaders(request)
   }
 
   logCrawlerRequest(request)
@@ -301,19 +309,14 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   const previewDeployment = isPreviewDeployment()
-  let previewGuardFlagEnabled = false
-
-  if (!previewDeployment) {
-    const flagState = await evaluateGuardFlagsForRequest(request)
-    previewGuardFlagEnabled = flagState.previewGuardFlagEnabled
-  }
+  const { previewGuardFlagEnabled } = await evaluateGuardFlagsForRequest(request)
   const holdingMode = (await resolveHoldingMode(request.nextUrl)).mode
 
-  const previewGuardEnabled =
-    previewDeployment || (resolveDeploymentEnvironment() !== 'development' && previewGuardFlagEnabled)
+  const previewGuardEnabled = resolveDeploymentEnvironment() !== 'development' && previewGuardFlagEnabled
 
   if (!previewGuardEnabled && holdingMode === 'full') {
-    return nextWithoutGuardHeaders(request, holdingMode)
+    const response = nextWithoutGuardHeaders(request, holdingMode)
+    return previewDeployment ? withSearchRobotsHeader(response) : response
   }
 
   if (previewGuardEnabled && pagePathClassification === 'exempt') {

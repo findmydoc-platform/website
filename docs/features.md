@@ -158,15 +158,16 @@ Preview deployments use runtime policy for auth recovery, search-index protectio
 - Runtime resolves to the boolean preview signal from `VERCEL_ENV` first, then `DEPLOYMENT_ENVIRONMENT`; request hostnames are not preview or production signals
 - `NODE_ENV` is not used as a preview or production deployment signal
 - Non-Vercel preview/production runtimes must set `DEPLOYMENT_ENVIRONMENT` explicitly
-- Every runtime that resolves to Preview activates Preview Guard, independent of hostname and PostHog evaluation
-- This includes Vercel-generated branch, deployment, and alias hosts with `VERCEL_ENV=preview`
+- Every runtime that resolves to Preview activates Preview Guard by default
+- On `preview.findmydoc.eu`, an explicitly evaluated boolean `false` for `preview-guard-enabled` opens an approved public test window. Missing, invalid or unavailable evaluation keeps it guarded. Preview remains `noindex` while open
+- Vercel-generated branch and deployment hosts remain guarded regardless of that flag condition
 - Local development remains open even if PostHog returns `preview-guard-enabled`
 - The PostHog flag can additionally activate Preview Guard in a non-local, non-Preview runtime
 - Guard flag checks use a server-side site actor, not the visitor's PostHog cookie identity
 - Exact login paths, both logout paths (`/logout` and `/admin/logout`), auth callbacks, invitation and password-reset paths, and required static assets remain reachable without a session
 - Known platform pages redirect to `/admin/login`; known patient pages redirect to `/login/patient`
 - Anonymous dynamic CMS paths and obvious scanner paths return `404` without a Payload lookup
-- Preview APIs use a closed anonymous allowlist for login, callback, and password reset; other APIs require a server-validated Supabase session or Bearer token and return JSON `401` or `503` without an HTML redirect
+- Guarded Preview APIs use a closed anonymous allowlist for login, callback, and password reset; other APIs require a server-validated Supabase session or Bearer token and return JSON `401` or `503` without an HTML redirect. During an approved public test window, canonical Preview APIs retain normal endpoint authorization
 - `/api/mcp` and `/api/clinic-dashboard/**` retain their endpoint-owned machine authentication, while Form Bridge forwards request credentials only to validated same-origin Payload calls
 
 Implementation and usage:

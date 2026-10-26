@@ -82,7 +82,7 @@ This command sets:
 Result:
 - Preview-specific runtime policy applies, including search-index blocking and preview admin recovery.
 - Preview Guard login redirects are controlled by the server-side PostHog flag `preview-guard-enabled`.
-- Missing PostHog local flag evaluation keeps the canonical Preview host guarded. Generated Preview hosts remain guarded independently of the flag. Local development stays open; non-Preview runtimes retain the flag's code default of `false`.
+- Missing PostHog local flag evaluation keeps Preview guarded. Preview uses the stable flag site identity `preview.findmydoc.eu` on shared and generated deployment hosts. Local development stays open; non-Preview runtimes retain the flag's code default of `false`.
 
 See also:
 - [Features: Preview Access Policy](./features.md#preview-access-policy)

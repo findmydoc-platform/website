@@ -262,13 +262,8 @@ const handlePreviewApiRequest = async (request: NextRequest): Promise<NextRespon
 
 const evaluateGuardFlagsForRequest = async (request: NextRequest) => {
   const previewDeployment = isPreviewDeployment()
-  const routedHost = request.headers.get('host')?.trim().toLowerCase() ?? request.nextUrl.hostname
-  if (previewDeployment && routedHost !== 'preview.findmydoc.eu') {
-    return { previewGuardFlagEnabled: true }
-  }
-
   const flagContext = createPostHogFlagEvaluationContext({ url: request.nextUrl })
-  if (previewDeployment) flagContext.feature_flag_site_host = routedHost
+  if (previewDeployment) flagContext.feature_flag_site_host = 'preview.findmydoc.eu'
   const actor = resolvePostHogSiteFlagActor(flagContext)
   const flags = await evaluatePostHogFlags(actor, GUARD_FLAG_KEYS, { context: flagContext })
   const previewEvaluation = previewDeployment ? flags.getEvaluation('preview-guard-enabled') : null

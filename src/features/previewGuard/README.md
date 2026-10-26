@@ -12,10 +12,9 @@
 
 - `VERCEL_ENV=preview` activates the guard for every Vercel-generated branch, deployment, and alias host.
 - `DEPLOYMENT_ENVIRONMENT=preview` provides the same behavior for explicitly configured non-Vercel Preview runtimes.
-- Runtime policy determines whether a deployment is Preview. Only the canonical host `preview.findmydoc.eu` allows the server-side PostHog flag `preview-guard-enabled` to disable the guard for an approved public test window. Generated deployment and branch hosts stay guarded.
-- The canonical Preview host stays guarded when flag evaluation is missing, invalid, unavailable or not configured. Only an explicitly evaluated boolean `false` opens it. Preview remains `noindex` during the public test window.
-- Canonical Preview routing uses the request's `Host` header because Vercel can supply an internal deployment URL to Proxy. It does not trust `x-forwarded-host`. Requests without a `Host` header use the URL hostname.
-- Unavailable canonical Preview flag evaluation writes the operational event `auth.preview_guard.flag_unavailable` with its reason, without credential values or visitor identity.
+- Runtime policy determines whether a deployment is Preview. Preview evaluates the existing server-side flag `preview-guard-enabled` with the stable site identity `preview.findmydoc.eu`, including on generated deployment and branch hosts. This lets the existing Preview release condition control an approved public test window independently of request routing or visitor-supplied headers.
+- Preview stays guarded when flag evaluation is missing, invalid, unavailable or not configured. Only an explicitly evaluated boolean `false` opens the deployment. Preview remains `noindex` during the public test window.
+- Unavailable Preview flag evaluation writes the operational event `auth.preview_guard.flag_unavailable` with its reason, without credential values or visitor identity.
 - Local development stays open. A PostHog result cannot activate the guard while runtime policy resolves to `development`.
 - The server-side PostHog flag `preview-guard-enabled` can additionally activate the guard in a non-local, non-Preview runtime.
 - Guard flag evaluation uses a server-side site actor, not the visitor-controlled PostHog cookie identity.
@@ -32,7 +31,7 @@
 - Obvious scanner and invalid reserved paths return `404` before feature-flag evaluation or authentication.
 - Guarded Preview APIs never receive an HTML login redirect. The exact anonymous API allowlist is `/api/auth/login`, `/api/auth/callback`, and `/api/auth/password/reset`.
 - Other guarded Preview APIs require a server-validated Supabase session or Bearer token before endpoint authorization. Invalid credentials return JSON `401`; a recognizable temporary validation failure returns JSON `503`.
-- When the canonical Preview guard is disabled, APIs use their normal endpoint authorization, including guest inquiry submission. Visitor-supplied guard headers are removed before forwarding.
+- When Preview Guard is disabled, APIs use their normal endpoint authorization, including guest inquiry submission. Visitor-supplied guard headers are removed before forwarding.
 - `/api/mcp` and `/api/clinic-dashboard/**` pass directly to their own machine-authentication contracts. Form Bridge forwards only `Cookie` and `Authorization` to same-origin Payload calls after validating the request host.
 - `/register/patient` is not exempt. While Preview Guard is enabled, patient creation is redirected to the staff-only Payload Admin form and the public registration API rejects direct submissions.
 - Preview Guard takes precedence over Temporary Landing Mode when both are active. Temporary Landing Mode keeps its existing behavior when Preview Guard is inactive.

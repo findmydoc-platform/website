@@ -89,6 +89,7 @@ describe('preview lock proxy', () => {
       ...originalEnv,
       DEPLOYMENT_ENVIRONMENT: undefined,
       VERCEL_ENV: undefined,
+      VERCEL: undefined,
       NODE_ENV: 'development',
       NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'public-anon-key',
@@ -151,38 +152,6 @@ describe('preview lock proxy', () => {
     }
   })
 
-  it('uses the routed Host header when Vercel supplies a deployment URL to the proxy', async () => {
-    process.env.VERCEL_ENV = 'preview'
-    mockGuardFlags({ 'preview-guard-enabled': false })
-    const response = await proxy(
-      new NextRequest('https://findmydoc-portal-example.vercel.app/clinics/synthetic-reporting', {
-        headers: { host: 'preview.findmydoc.eu' },
-      }),
-    )
-
-    expect(response.status).toBe(200)
-    expect(mocks.resolvePostHogSiteFlagActor).toHaveBeenCalledWith({
-      feature_flag_site_host: 'preview.findmydoc.eu',
-      feature_flag_site_path: '/clinics/synthetic-reporting',
-    })
-  })
-
-  it('does not open a generated host through a canonical URL or forwarded-host marker', async () => {
-    process.env.VERCEL_ENV = 'preview'
-    mockGuardFlags({ 'preview-guard-enabled': false })
-    const response = await proxy(
-      new NextRequest('https://preview.findmydoc.eu/clinics/synthetic-reporting', {
-        headers: {
-          host: 'findmydoc-portal-example.vercel.app',
-          'x-forwarded-host': 'preview.findmydoc.eu',
-        },
-      }),
-    )
-
-    expect(response.status).toBe(404)
-    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
-  })
-
   it.each(['missing', 'error', 'invalid', 'not-configured', 'unsupported-runtime'])(
     'keeps canonical Preview pages and APIs guarded when flag evaluation is unavailable: %s',
     async (reason) => {
@@ -207,23 +176,7 @@ describe('preview lock proxy', () => {
     },
   )
 
-  it('keeps generated Preview hosts guarded while the canonical host flag is disabled', async () => {
-    process.env.VERCEL_ENV = 'preview'
-    mockGuardFlags({ 'preview-guard-enabled': false })
-
-    const profile = await proxy(
-      new NextRequest('https://findmydoc-portal-example.vercel.app/clinics/synthetic-reporting'),
-    )
-    const inquiry = await proxy(
-      new NextRequest('https://findmydoc-portal-example.vercel.app/api/clinic-contact-requests'),
-    )
-
-    expect(profile.status).toBe(404)
-    expect(inquiry.status).toBe(401)
-    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
-  })
-
-  it('guards generated Vercel Preview hosts without relying on the PostHog flag', async () => {
+  it('guards generated Vercel Preview hosts when flag evaluation is unavailable', async () => {
     process.env.VERCEL_ENV = 'preview'
     const request = new NextRequest('https://findmydoc-portal-git-feature-example.vercel.app/about?foo=bar')
 
@@ -236,7 +189,25 @@ describe('preview lock proxy', () => {
     expect(location).toContain('next=%2Fabout%3Ffoo%3Dbar')
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     expect(mocks.getUser).toHaveBeenCalledOnce()
-    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
+  })
+
+  it('applies the Preview environment flag to generated deployment pages and APIs', async () => {
+    process.env.VERCEL_ENV = 'preview'
+    mockGuardFlags({ 'preview-guard-enabled': false })
+
+    const profile = await proxy(
+      new NextRequest('https://findmydoc-portal-example.vercel.app/clinics/synthetic-reporting'),
+    )
+    const inquiry = await proxy(
+      new NextRequest('https://findmydoc-portal-example.vercel.app/api/clinic-contact-requests'),
+    )
+
+    expect(profile.status).toBe(200)
+    expect(inquiry.status).toBe(200)
+    expect(profile.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+    expect(mocks.resolvePostHogSiteFlagActor).toHaveBeenCalledWith(
+      expect.objectContaining({ feature_flag_site_host: 'preview.findmydoc.eu' }),
+    )
   })
 
   it('passes host and path context into PostHog flag evaluation', async () => {
@@ -1109,7 +1080,6 @@ describe('preview lock proxy', () => {
     expect(clinicDashboardResponse.status).toBe(200)
     expect(clinicDashboardResponse.headers.get('location')).toBeNull()
     expect(config.matcher.join(' ')).toContain('/api/:path*')
-    expect(mocks.evaluatePostHogFlags).not.toHaveBeenCalled()
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 

@@ -87,6 +87,29 @@ Withdrawal closes application capture immediately, resets identity, and then wri
 reuses the initialized instance. Logout resets identity and reapplies the existing site consent decision. The site cookie
 and consent controls remain the authority for that decision.
 
+The consent manager uses `initialConsent` only for the initial HTML snapshot. All banner and launcher actions are
+natively disabled until client initialization reads the current versioned browser cookie. The browser adapter injects
+that read into the controller. Refreshed server props or equivalent category references cannot replace a stored choice.
+A new consent version requires a new choice. The manager verifies each write by reading the cookie back; an absent,
+unreadable, or mismatched cookie leaves analytics disabled. After a failed write, the mounted controller keeps analytics
+disabled until a later choice is successfully persisted, including across server prop refreshes.
+
+Browser DevTools can read the hidden `[data-analytics-diagnostics]` element before and after login, on a clinic profile,
+and before submitting an inquiry:
+
+```js
+JSON.parse(document.querySelector('[data-analytics-diagnostics]').getAttribute('data-analytics-diagnostics'))
+```
+
+The snapshot contains only `cookieValid`, `analyticsAllowed`, `sdkReady`, and `sessionAvailable` booleans plus `reason`.
+`cookieValid` means the current cookie matches the configured consent version. `analyticsAllowed` is the consent decision
+applied by the controller; `sdkReady` is the confirmed application capture gate. `sessionAvailable` reports only whether
+the consent-gated session getter can return a valid ID. It never reads a session before consent. The fixed reasons are
+`consent_uninitialized`, `cookie_invalid`, `consent_required`, `sdk_unavailable`, `sdk_loading`,
+`sdk_consent_unconfirmed`, `session_unavailable`, and `ready`. The snapshot updates after consent reconciliation and SDK
+readiness changes. It contains no cookie contents, session IDs, user details, credentials, raw SDK, or network endpoints,
+and it emits no analytics events. `ready` confirms local readiness; it does not prove successful event transport.
+
 The consent tests use the installed `posthog-js` implementation and the real consent controller and clinic composition.
 All network transports are intercepted. The headed Chrome transport test is opt-in because it needs a graphical browser:
 

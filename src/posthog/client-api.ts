@@ -13,6 +13,8 @@ import {
   type PostHogBrowserEventInterface,
 } from './client'
 
+export { getPostHogBrowserDiagnostics } from './client'
+
 export type { ClinicCtaClickedProperties, ClinicProfileViewedProperties } from './events'
 export type { PostHogBrowserEventInterface } from './client'
 

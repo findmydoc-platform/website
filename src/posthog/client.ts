@@ -140,6 +140,32 @@ export function getPostHogSessionId(): string | undefined {
   }
 }
 
+export function getPostHogBrowserDiagnostics(): {
+  analyticsAllowed: boolean
+  sdkReady: boolean
+  sessionAvailable: boolean
+  reason:
+    'consent_required' | 'sdk_unavailable' | 'sdk_loading' | 'sdk_consent_unconfirmed' | 'session_unavailable' | 'ready'
+} {
+  const sessionAvailable = Boolean(getPostHogSessionId())
+  return {
+    analyticsAllowed: desiredConsent,
+    sdkReady: isCapturingEnabled,
+    sessionAvailable,
+    reason: !desiredConsent
+      ? 'consent_required'
+      : !isInitialized
+        ? 'sdk_unavailable'
+        : !isLoaded
+          ? 'sdk_loading'
+          : !isCapturingEnabled
+            ? 'sdk_consent_unconfirmed'
+            : !sessionAvailable
+              ? 'session_unavailable'
+              : 'ready',
+  }
+}
+
 const toDefinedScalarProperties = <Name extends PostHogEventName>(
   value: PostHogEventPropertiesByName[Name],
 ): Record<string, PostHogScalarProperty> => {

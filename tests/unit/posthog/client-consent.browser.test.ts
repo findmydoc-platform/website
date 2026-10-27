@@ -1,14 +1,15 @@
-import { gunzipSync } from 'node:zlib'
 import path from 'node:path'
 import { chromium } from 'playwright'
 import { build } from 'vite'
 import { describe, expect, it } from 'vitest'
+import { decodeCaptureRequest, isCaptureRequest } from '../../../scripts/testing/posthog-observer'
 
 // Bundle the real browser composition without starting Next.js or connecting to Payload.
 const entry = `
   import React from 'react'
   import sdk from 'posthog-js'
   const captured = []
+  globalThis.syntheticSession = () => sdk.get_session_id()
   sdk.on('eventCaptured', (event) => captured.push(event.event))
   globalThis.consentDiagnostics = () => ({ captured, capturing: sdk.is_capturing(), webdriver: navigator.webdriver, bot: sdk._is_bot(), hasToken: Boolean(sdk.config.token), loaded: sdk.__loaded, optedIn: sdk.has_opted_in_capturing(), optedOut: sdk.has_opted_out_capturing() })
   import { createRoot } from 'react-dom/client'
@@ -23,14 +24,6 @@ const entry = `
     </React.StrictMode>
   )
 `
-
-function businessEventNames(body: Buffer): string[] {
-  const decoded = body[0] === 0x1f && body[1] === 0x8b ? gunzipSync(body).toString() : body.toString()
-  const events = JSON.parse(decoded) as { event: string }[] | { event: string }
-  return (Array.isArray(events) ? events : [events])
-    .map((event) => event.event)
-    .filter((event) => event === 'clinic_profile_viewed' || event === 'clinic_cta_clicked')
-}
 
 describe.skipIf(process.env.POSTHOG_BROWSER_TEST !== '1')('consent-controlled browser transport', () => {
   it('sends one current profile and one later CTA, with no replay after withdrawal', async ({ skip }) => {
@@ -83,7 +76,10 @@ describe.skipIf(process.env.POSTHOG_BROWSER_TEST !== '1')('consent-controlled br
       // Every request is intercepted, including config, recorder scripts, and event transport.
       await context.route('**/*', async (route) => {
         const request = route.request()
-        if (request.url() === 'https://consent.example.test/') {
+        if (
+          new URL(request.url()).origin === 'https://consent.example.test' &&
+          new URL(request.url()).pathname !== '/entry.js'
+        ) {
           await route.fulfill({
             contentType: 'text/html',
             body: '<div id="root"></div><script>globalThis.process={env:{}}</script><script src="/entry.js"></script>',
@@ -92,8 +88,10 @@ describe.skipIf(process.env.POSTHOG_BROWSER_TEST !== '1')('consent-controlled br
           await route.fulfill({ contentType: 'application/javascript', body: bundle.code })
         } else {
           const body = request.postDataBuffer()
-          if (request.method() === 'POST' && body && new URL(request.url()).pathname === '/e/') {
-            events.push(...businessEventNames(body))
+          if (body && isCaptureRequest(request.url(), request.method())) {
+            const evidence = decodeCaptureRequest({ url: request.url(), method: request.method(), body }, 'clinic-1')
+            expect(evidence.decoded).toBe(true)
+            events.push(...evidence.eventNames)
           }
           await route.fulfill({ contentType: 'application/json', body: '{}' })
         }
@@ -112,6 +110,9 @@ describe.skipIf(process.env.POSTHOG_BROWSER_TEST !== '1')('consent-controlled br
       await expect
         .poll(() => events.filter((event) => event === 'clinic_profile_viewed').length, { timeout: 10000 })
         .toBe(1)
+      expect(
+        await page.evaluate("consentDiagnostics().captured.filter(name => name === 'clinic_profile_viewed').length"),
+      ).toBe(1)
       await page.getByRole('button', { name: 'Choose Treatment' }).first().click()
       await expect
         .poll(() => events.filter((event) => event === 'clinic_cta_clicked').length, { timeout: 10000 })
@@ -128,6 +129,19 @@ describe.skipIf(process.env.POSTHOG_BROWSER_TEST !== '1')('consent-controlled br
         .poll(() => events.filter((event) => event === 'clinic_cta_clicked').length, { timeout: 10000 })
         .toBe(2)
       expect(events).toEqual(['clinic_profile_viewed', 'clinic_cta_clicked', 'clinic_cta_clicked'])
+      // Full documents restore the consent cookie; a reload is another intended view.
+      const session = await page.evaluate('syntheticSession()')
+      await page.goto('https://consent.example.test/authenticated-profile')
+      await expect
+        .poll(() => events.filter((name) => name === 'clinic_profile_viewed').length, { timeout: 10000 })
+        .toBe(2)
+      expect(await page.evaluate('syntheticSession()')).toBe(session)
+      expect(await page.getByRole('button', { name: 'Accept all' }).count()).toBe(0)
+      await page.reload()
+      await expect
+        .poll(() => events.filter((name) => name === 'clinic_profile_viewed').length, { timeout: 10000 })
+        .toBe(3)
+      expect(await page.evaluate('syntheticSession()')).toBe(session)
       expect(errors).toEqual([])
     } finally {
       await browser.close()

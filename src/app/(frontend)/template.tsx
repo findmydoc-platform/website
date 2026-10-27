@@ -55,9 +55,10 @@ function resolvePublicAccountMenuState(authData: AuthData | null): PublicAccount
 export default async function FrontendTemplate({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
   const isGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
-  const isPreviewGuardActive =
-    requestHeaders.get(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER) === '1' || isPreviewDeployment(process.env)
   const requestMode = readPublicSiteModeRequestHeader(requestHeaders)
+  const isPreviewGuardActive =
+    requestHeaders.get(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER) === '1' ||
+    (requestMode === null && isPreviewDeployment(process.env))
   const siteOrigin = getServerSideURL()
   const requestHost = requestHeaders.get('host')
   let requestUrl = new URL(siteOrigin)

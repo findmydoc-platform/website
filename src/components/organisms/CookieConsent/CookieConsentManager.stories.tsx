@@ -9,10 +9,19 @@ import { CookieConsentManager } from '@/components/organisms/CookieConsent/Cooki
 import { DEFAULT_COOKIE_CONSENT_CONFIG, type CookieConsentState } from '@/features/cookieConsent'
 import { withViewportStory } from '@/stories/utils/viewportMatrix'
 
-const managerPorts = {
-  onAnalyticsConsentChange: fn(),
-  onPersistConsent: fn(),
-  readConsent: fn(() => null),
+function PersistentConsentManager(props: React.ComponentProps<typeof CookieConsentManager>) {
+  const storedConsent = React.useRef<CookieConsentState | null>(props.initialConsent)
+  const ports = React.useMemo(
+    () => ({
+      onAnalyticsConsentChange: fn(),
+      onPersistConsent: (consent: CookieConsentState) => {
+        storedConsent.current = consent
+      },
+      readConsent: (version: number) => (storedConsent.current?.version === version ? storedConsent.current : null),
+    }),
+    [],
+  )
+  return <CookieConsentManager {...props} {...ports} />
 }
 
 const denseCookieConsentConfig = {
@@ -62,8 +71,11 @@ const meta = {
   args: {
     config: DEFAULT_COOKIE_CONSENT_CONFIG,
     initialConsent: null,
-    ...managerPorts,
+    onAnalyticsConsentChange: fn(),
+    onPersistConsent: fn(),
+    readConsent: fn(() => null),
   },
+  render: (args) => <PersistentConsentManager {...args} />,
   tags: ['autodocs', 'domain:shared', 'layer:organism', 'status:stable', 'used-in:shared'],
   parameters: {
     layout: 'fullscreen',
@@ -217,6 +229,7 @@ export const Dialog: Story = {
 }
 
 export const Manager: Story = {
+  play: ConsentLifecycle.play,
   args: {
     config: DEFAULT_COOKIE_CONSENT_CONFIG,
     initialConsent: null,
@@ -251,10 +264,10 @@ const authCompactBannerBase: Story = {
       },
     },
   },
-  render: () => {
+  render: (args) => {
     return (
       <div className="min-h-screen bg-background pb-28">
-        <CookieConsentManager config={authRouteCookieConsentConfig} initialConsent={null} {...managerPorts} />
+        <PersistentConsentManager {...args} />
       </div>
     )
   },
@@ -268,6 +281,13 @@ const authCompactBannerBase: Story = {
     await userEvent.click(documentBody.getByRole('button', { name: /cancel/i }))
     await expect(documentBody.queryByRole('dialog', { name: /cookie settings/i })).not.toBeInTheDocument()
     await expect(canvas.getByRole('button', { name: /choose settings/i })).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole('button', { name: 'Accept all' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Cookie settings' }))
+    await expect(documentBody.getByRole('checkbox', { name: /analytics cookies/i })).toBeChecked()
+    await userEvent.click(documentBody.getByRole('button', { name: 'Reject all' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Cookie settings' }))
+    await expect(documentBody.getByRole('checkbox', { name: /analytics cookies/i })).not.toBeChecked()
+    await userEvent.click(documentBody.getByRole('button', { name: /cancel/i }))
   },
 }
 
@@ -283,10 +303,10 @@ const authDialogBase: Story = {
       },
     },
   },
-  render: () => {
+  render: (args) => {
     return (
       <div className="min-h-screen bg-background">
-        <CookieConsentManager config={authRouteCookieConsentConfig} initialConsent={null} {...managerPorts} />
+        <PersistentConsentManager {...args} />
       </div>
     )
   },
@@ -297,7 +317,10 @@ const authDialogBase: Story = {
     await expect(documentBody.getByRole('dialog', { name: /cookie settings/i })).toBeInTheDocument()
     await userEvent.click(documentBody.getByRole('checkbox', { name: /analytics cookies/i }))
     await expect(documentBody.getByRole('checkbox', { name: /analytics cookies/i })).toBeChecked()
-    await expect(documentBody.getByRole('button', { name: /save auth settings/i })).toBeInTheDocument()
+    await userEvent.click(documentBody.getByRole('button', { name: /save auth settings/i }))
+    await expect(documentBody.queryByRole('dialog')).not.toBeInTheDocument()
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Cookie settings' }))
+    await expect(documentBody.getByRole('checkbox', { name: /analytics cookies/i })).toBeChecked()
   },
 }
 

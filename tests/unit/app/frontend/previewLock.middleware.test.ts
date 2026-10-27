@@ -136,6 +136,19 @@ describe('preview lock proxy', () => {
     expect(mocks.createServerClient).not.toHaveBeenCalled()
   })
 
+  it.each(['/posts', '/posts/article', '/posts/page/2'])(
+    'marks anonymous Preview Holding content with the effective disabled guard on %s',
+    async (pathname) => {
+      process.env.VERCEL_ENV = 'preview'
+      mockGuardFlags({ 'preview-guard-enabled': false, 'temporary-landing-mode': true })
+      const response = await proxy(new NextRequest(`https://preview.findmydoc.eu${pathname}`))
+      expect(response.status).toBe(200)
+      expect(response.headers.get(`x-middleware-request-${PUBLIC_SITE_MODE_REQUEST_HEADER}`)).toBe('holding')
+      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_ACTIVE_REQUEST_HEADER}`)).toBeNull()
+      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBeNull()
+    },
+  )
+
   it('restores canonical Preview page and API protection when the guard flag is re-enabled', async () => {
     process.env.VERCEL_ENV = 'preview'
     for (const enabled of [false, true, false]) {

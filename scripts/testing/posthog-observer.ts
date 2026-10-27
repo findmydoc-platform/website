@@ -164,8 +164,17 @@ export type DocumentNavigationExpectation = {
   documentUrl: string
   postNavigationProbeUrl: string
 }
-const sourceFingerprint = (packet: Packet) =>
-  JSON.stringify([packet.source.extensionId, packet.source.sessionId, packet.source.tabId, packet.source.targetId])
+const sourceFingerprint = (packet: Packet): string | undefined => {
+  const source = packet.source
+  const hasId = (value: unknown) => typeof value === 'string' && value.trim().length > 0
+  if (
+    !hasId(source.sessionId) &&
+    !hasId(source.targetId) &&
+    !(hasId(source.extensionId) && Number.isInteger(source.tabId) && source.tabId! >= 0)
+  )
+    return undefined
+  return JSON.stringify([source.extensionId, source.sessionId, source.tabId, source.targetId])
+}
 type Transport = { status?: number; finished: boolean; failed: boolean }
 
 /** Passive, origin-scoped observer. Document continuity requires an explicit proved opt-in. */
@@ -231,6 +240,7 @@ export async function createPostHogObserver(
   const documentProven = () =>
     Boolean(
       navigation &&
+      !stopped &&
       !reasons.size &&
       Object.values(transition).every(Boolean) &&
       documentTransport.status === 200 &&
@@ -244,7 +254,7 @@ export async function createPostHogObserver(
     delivered(request) && (!navigation || (documentProven() && newDocumentCaptures.has(key)))
   const timeLeft = () => Math.max(0, Math.min(1000, options.deadline - Date.now()))
   const snapshot = () => ({
-    complete: !reasons.size,
+    complete: !stopped && !reasons.size,
     strictTargetConfigured: hasStrictExpectations(options.expected),
     reasons: [...reasons],
     probeProven,
@@ -278,9 +288,14 @@ export async function createPostHogObserver(
   if (initial.truncated) reasons.add('buffer_truncated')
 
   async function process(packet: Packet) {
+    if (stopped) return
     const params = packet.params ?? {}
     const id = typeof params.requestId === 'string' ? params.requestId : ''
     const source = sourceFingerprint(packet)
+    if (source === undefined) {
+      reasons.add('source_identity_unproven')
+      return
+    }
     const key = `${source}:${id}`
     if (packet.method === 'Inspector.detached') {
       reasons.add('observer_detached')
@@ -362,11 +377,13 @@ export async function createPostHogObserver(
             { requestId: id },
             { target: options.target, timeoutMs: timeLeft() },
           )) as { postData?: string }
+          if (stopped) return
           body = typeof data.postData === 'string' ? data.postData : undefined
         } catch {
           /* Never retain protocol errors, which may include request data. */
         }
       }
+      if (stopped) return
       const sessions = new Set<string>()
       const evidence = inspectCaptureRequest(
         { url: request.url, method: request.method, body },
@@ -439,6 +456,8 @@ export async function createPostHogObserver(
     },
     stop() {
       stopped = true
+      reasons.add('observer_stopped')
+      probeProven = false
       requests.clear()
       matchingSessions.clear()
       newDocumentCaptures.clear()
@@ -455,7 +474,7 @@ export async function createPostHogObserver(
       }
       try {
         let hasMore = true
-        while (hasMore && timeLeft()) {
+        while (!stopped && hasMore && timeLeft()) {
           const page = await cdp.readEvents({
             afterSequence: cursor,
             methods,
@@ -463,8 +482,13 @@ export async function createPostHogObserver(
             limit: 1000,
             timeoutMs: timeLeft(),
           })
+          if (stopped) return snapshot()
           if (page.truncated) reasons.add('buffer_truncated')
-          for (const packet of page.events) if (packet.sequence > cursor) await process(packet)
+          for (const packet of page.events) {
+            if (stopped) return snapshot()
+            if (packet.sequence > cursor) await process(packet)
+          }
+          if (stopped) return snapshot()
           if (page.cursor < cursor || (page.hasMore && page.cursor === cursor)) {
             reasons.add('cursor_discontinuity')
             break

@@ -1,6 +1,6 @@
 import { gzipSync } from 'node:zlib'
 import { describe, expect, it, vi } from 'vitest'
-import { createPostHogObserver, decodeCaptureRequest } from '../../scripts/testing/posthog-observer'
+import { createPostHogObserver, decodeCaptureRequest, type ObserverCDP } from '../../scripts/testing/posthog-observer'
 
 const target = {
   event: 'clinic_profile_viewed',
@@ -40,7 +40,7 @@ const event = (sequence: number, method: string, params: Record<string, unknown>
   sequence,
   method,
   params,
-  source: {},
+  source: { sessionId: 'private-source' },
 })
 
 describe('CDP observation continuity', () => {
@@ -380,6 +380,7 @@ describe('strict inquiry prerequisite evidence', () => {
     expect(observer.matchesDeliveredSession(undefined)).toBe(false)
     expect(JSON.stringify(result)).not.toMatch(/private|synthetic|phc_/)
     observer.stop()
+    expect(observer.snapshot()).toMatchObject({ complete: false, targetSentCount: 0, requests: [] })
     expect(observer.matchesDeliveredSession('private-session')).toBe(false)
   })
 })
@@ -482,7 +483,11 @@ const postNavigationPackets = [
   documentPacket(11, 'Network.responseReceived', { requestId: 'private-post-probe', response: { status: 200 } }),
   documentPacket(12, 'Network.loadingFinished', { requestId: 'private-post-probe' }),
 ]
-const packetPage = (cursor: number, events: typeof preNavigationPackets, truncated = false) => ({
+const packetPage = (
+  cursor: number,
+  events: Awaited<ReturnType<ObserverCDP['readEvents']>>['events'],
+  truncated = false,
+) => ({
   cursor,
   events,
   truncated,
@@ -547,6 +552,10 @@ describe('document continuity refusal boundaries', () => {
     'missing_loader',
     'wrong_top_frame',
     'changed_source',
+    'missing_document_source',
+    'missing_post_probe_source',
+    'missing_capture_source',
+    'missing_initial_source',
     'post_probe_wrong_frame',
     'post_probe_wrong_loader',
     'post_probe_changed_source',
@@ -565,6 +574,7 @@ describe('document continuity refusal boundaries', () => {
   ])('does not release retained capture or session after %s', async (failure) => {
     let documents = structuredClone(navigationPackets)
     let probes = structuredClone(postNavigationPackets)
+    const initialProbes = structuredClone(preNavigationPackets)
     if (failure === 'unexpected_document')
       documents[0]!.params.request = { url: 'https://site.example.test/other', method: 'GET' }
     if (failure === 'redirect') documents[0]!.params.redirectResponse = { status: 302 }
@@ -572,6 +582,10 @@ describe('document continuity refusal boundaries', () => {
     if (failure === 'missing_loader') delete documents[0]!.params.loaderId
     if (failure === 'wrong_top_frame') documents[0]!.params.frameId = 'private-subframe'
     if (failure === 'changed_source') documents[0]!.source.sessionId = 'private-other-source'
+    if (failure === 'missing_document_source') Object.assign(documents[0]!, { source: {} })
+    if (failure === 'missing_post_probe_source') Object.assign(probes[0]!, { source: {} })
+    if (failure === 'missing_capture_source') Object.assign(documents[3]!, { source: {} })
+    if (failure === 'missing_initial_source') Object.assign(initialProbes[0]!, { source: {} })
     if (failure === 'post_probe_wrong_frame') probes[0]!.params.frameId = 'private-subframe'
     if (failure === 'post_probe_wrong_loader') probes[0]!.params.loaderId = navigation.loaderId
     if (failure === 'post_probe_changed_source') probes[0]!.source.sessionId = 'private-other-source'
@@ -598,7 +612,7 @@ describe('document continuity refusal boundaries', () => {
     const readEvents = vi
       .fn()
       .mockResolvedValueOnce(packetPage(0, []))
-      .mockResolvedValueOnce(packetPage(3, failure === 'missing_initial_probe' ? [] : preNavigationPackets))
+      .mockResolvedValueOnce(packetPage(3, failure === 'missing_initial_probe' ? [] : initialProbes))
       .mockResolvedValueOnce(packetPage(9, documents))
       .mockResolvedValueOnce(packetPage(13, probes, failure === 'truncated'))
     const send = vi.fn(async (_method: string) => ({}))
@@ -836,4 +850,94 @@ describe('batch envelope transport boundary', () => {
       ),
     ).toMatchObject({ decoded: false, reason: 'malformed_body', targetCount: 0 })
   })
+})
+
+describe('observer source and stop refusal boundaries', () => {
+  it.each([{}, { extensionId: 'extension' }, { tabId: 7 }, { sessionId: '', targetId: '' }])(
+    'refuses document continuity with an indistinguishable source %j',
+    async (source) => {
+      const packets = [...preNavigationPackets, ...navigationPackets, ...postNavigationPackets].map((packet) => ({
+        ...packet,
+        source,
+      }))
+      const readEvents = vi.fn().mockResolvedValueOnce(packetPage(0, [])).mockResolvedValueOnce(packetPage(12, packets))
+      const observer = await createPostHogObserver(
+        { send: vi.fn(async () => ({})), readEvents },
+        {
+          clinicId: '42',
+          expected: expectedProfile,
+          probeUrl: 'https://site.example.test/favicon.ico',
+          deadline: Date.now() + 10000,
+          documentNavigation: navigation,
+        },
+      )
+      const result = await observer.drain()
+      expect(result).toMatchObject({
+        complete: false,
+        probeProven: false,
+        targetSentCount: 0,
+        documentNavigation: { proven: false },
+      })
+      expect(observer.matchesDeliveredSession('private-session')).toBe(false)
+    },
+  )
+
+  it.each(['events', 'post_data'] as const)(
+    'discards a pending %s read after stop without starting another read',
+    async (boundary) => {
+      let resolvePending!: (value: unknown) => void
+      const pending = new Promise<unknown>((resolve) => {
+        resolvePending = resolve
+      })
+      const capture = documentPacket(1, 'Network.requestWillBeSent', {
+        requestId: 'private-pending',
+        request: { url: 'https://analytics.example.test/e/', method: 'POST', hasPostData: true },
+      })
+      const page = {
+        ...packetPage(3, [
+          capture,
+          documentPacket(2, 'Network.responseReceived', { requestId: 'private-pending', response: { status: 200 } }),
+          documentPacket(3, 'Network.loadingFinished', { requestId: 'private-pending' }),
+        ]),
+        hasMore: true,
+      }
+      const readEvents = vi
+        .fn()
+        .mockResolvedValueOnce(packetPage(0, []))
+        .mockImplementationOnce(() => (boundary === 'events' ? pending : Promise.resolve(page)))
+        .mockResolvedValue(packetPage(3, []))
+      const send = vi.fn(async (method: string) => (method === 'Network.getRequestPostData' ? pending : {}))
+      const observer = await createPostHogObserver(
+        { send, readEvents },
+        {
+          clinicId: '42',
+          expected: expectedProfile,
+          probeUrl: 'https://site.example.test/favicon.ico',
+          deadline: Date.now() + 10000,
+        },
+      )
+      const drain = observer.drain()
+      if (boundary === 'post_data') {
+        await vi.waitFor(() =>
+          expect(send).toHaveBeenCalledWith('Network.getRequestPostData', expect.anything(), expect.anything()),
+        )
+      }
+      observer.stop()
+      resolvePending(boundary === 'events' ? page : { postData: JSON.stringify(correlatedTarget) })
+      const result = await drain
+      expect(result).toMatchObject({
+        complete: false,
+        reasons: ['observer_stopped'],
+        probeProven: false,
+        targetSentCount: 0,
+        requests: [],
+      })
+      expect(observer.snapshot()).toEqual(result)
+      expect(observer.matchesDeliveredSession('private-session')).toBe(false)
+      expect(readEvents).toHaveBeenCalledTimes(2)
+      expect(send).toHaveBeenCalledTimes(boundary === 'events' ? 1 : 2)
+      expect(await observer.drain()).toEqual(result)
+      expect(readEvents).toHaveBeenCalledTimes(2)
+    },
+  )
 })

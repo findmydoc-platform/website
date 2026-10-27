@@ -77,7 +77,16 @@ function inspectCaptureRequest(
       text = /^[\s]*[\[{]/u.test(data) ? data : Buffer.from(data, 'base64').toString('utf8')
     }
     const parsed: unknown = JSON.parse(text)
-    const events = Array.isArray(parsed) ? parsed : [parsed]
+    const envelope =
+      parsed && typeof parsed === 'object' && !Array.isArray(parsed) && 'batch' in parsed ? parsed : undefined
+    if (envelope && ('event' in envelope || !Array.isArray(envelope.batch))) throw new Error('invalid_batch')
+    const events = Array.isArray(parsed)
+      ? parsed
+      : envelope && Array.isArray(envelope.batch)
+        ? envelope.batch
+        : [parsed]
+    const envelopeProjectMatched =
+      !expected || !envelope || !('api_key' in envelope) || envelope.api_key === expected.projectToken
     if (
       !events.length ||
       events.some((event) => !event || typeof event !== 'object' || typeof event.event !== 'string')
@@ -94,7 +103,8 @@ function inspectCaptureRequest(
         clinicMatched: true,
         slugMatched: hasStrictExpectations(expected) && properties.clinic_slug === expected.clinicSlug,
         pathMatched: hasStrictExpectations(expected) && properties.page_path === expected.pagePath,
-        projectMatched: hasStrictExpectations(expected) && properties.token === expected.projectToken,
+        projectMatched:
+          hasStrictExpectations(expected) && properties.token === expected.projectToken && envelopeProjectMatched,
         sessionPresent: typeof session === 'string' && session.length > 0,
         sessionValid: typeof session === 'string' && /^[A-Za-z0-9_-]{1,128}$/u.test(session),
       }

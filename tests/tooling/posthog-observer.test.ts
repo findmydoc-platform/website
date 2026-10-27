@@ -693,3 +693,147 @@ describe('CDP binary body precedence', () => {
     },
   )
 })
+
+describe('observed SDK batch envelopes', () => {
+  it.each([false, true])(
+    'decodes batch envelopes with gzip=%s while preserving event-local project checks',
+    (compressed) => {
+      const json = JSON.stringify({
+        api_key: expectedProfile.projectToken,
+        batch: [{ event: '$pageview', properties: { token: expectedProfile.projectToken } }, correlatedTarget],
+      })
+      const evidence = decodeCaptureRequest(
+        { url: 'https://analytics.example.test/i/v0/e/', method: 'POST', body: compressed ? gzipSync(json) : json },
+        '42',
+        expectedProfile,
+      )
+      expect(evidence).toMatchObject({
+        decoded: true,
+        reason: 'decoded',
+        targetCount: 1,
+        projectMatched: true,
+        eventNames: ['clinic_profile_viewed'],
+      })
+      expect(JSON.stringify(evidence)).not.toMatch(/api_key|private|synthetic|phc_/)
+    },
+  )
+  it('accepts a readable unrelated SDK batch as non-business traffic without inventing a target event', () => {
+    const evidence = decodeCaptureRequest(
+      {
+        url: 'https://analytics.example.test/e/',
+        method: 'POST',
+        body: gzipSync(
+          JSON.stringify({
+            api_key: expectedProfile.projectToken,
+            batch: [{ event: '$pageview', properties: { token: expectedProfile.projectToken } }],
+          }),
+        ),
+      },
+      '42',
+      expectedProfile,
+    )
+    expect(evidence).toMatchObject({ decoded: true, targetCount: 0, eventNames: [] })
+  })
+  it.each([null, [], {}, 'not-an-array', [{}], [{ event: 3 }], [correlatedTarget, null]])(
+    'rejects invalid batch envelopes',
+    (batch) => {
+      expect(
+        decodeCaptureRequest(
+          {
+            url: 'https://analytics.example.test/e/',
+            method: 'POST',
+            body: gzipSync(JSON.stringify({ api_key: expectedProfile.projectToken, batch })),
+          },
+          '42',
+          expectedProfile,
+        ),
+      ).toMatchObject({ decoded: false, reason: 'malformed_body', targetCount: 0 })
+    },
+  )
+  it('does not inherit an envelope project key into an event missing its own token', () => {
+    const properties = { ...correlatedTarget.properties, token: undefined }
+    expect(
+      decodeCaptureRequest(
+        {
+          url: 'https://analytics.example.test/e/',
+          method: 'POST',
+          body: JSON.stringify({ api_key: expectedProfile.projectToken, batch: [{ ...correlatedTarget, properties }] }),
+        },
+        '42',
+        expectedProfile,
+      ),
+    ).toMatchObject({ decoded: true, projectMatched: false, targetCount: 0 })
+  })
+  it('refuses conflicting envelope and event project keys in strict mode', () => {
+    expect(
+      decodeCaptureRequest(
+        {
+          url: 'https://analytics.example.test/e/',
+          method: 'POST',
+          body: JSON.stringify({ api_key: 'phc_other_project', batch: [correlatedTarget] }),
+        },
+        '42',
+        expectedProfile,
+      ),
+    ).toMatchObject({ decoded: true, projectMatched: false, targetCount: 0 })
+  })
+})
+
+describe('batch envelope transport boundary', () => {
+  it('releases the observed gzip envelope only after strict document and probe proof', async () => {
+    const documents = structuredClone(navigationPackets)
+    documents[3]!.params.request = {
+      url: 'https://analytics.example.test/i/v0/e/',
+      method: 'POST',
+      postDataEntries: [
+        {
+          bytes: gzipSync(
+            JSON.stringify({ api_key: expectedProfile.projectToken, batch: [correlatedTarget] }),
+          ).toString('base64'),
+        },
+      ],
+    }
+    const readEvents = vi
+      .fn()
+      .mockResolvedValueOnce(packetPage(0, []))
+      .mockResolvedValueOnce(packetPage(3, preNavigationPackets))
+      .mockResolvedValueOnce(packetPage(9, documents))
+      .mockResolvedValueOnce(packetPage(12, postNavigationPackets))
+    const send = vi.fn(async (_method: string) => ({}))
+    const observer = await createPostHogObserver(
+      { send, readEvents },
+      {
+        clinicId: '42',
+        expected: expectedProfile,
+        probeUrl: 'https://site.example.test/favicon.ico',
+        deadline: Date.now() + 10000,
+        documentNavigation: navigation,
+      },
+    )
+    await observer.drain()
+    expect((await observer.drain()).targetSentCount).toBe(0)
+    const result = await observer.drain()
+    expect(result).toMatchObject({
+      complete: true,
+      targetSentCount: 1,
+      documentNavigation: { proven: true },
+      requests: [{ decoded: true, projectMatched: true, sessionValid: true }],
+    })
+    expect(observer.matchesDeliveredSession('private-session')).toBe(true)
+    expect(JSON.stringify(result)).not.toMatch(/api_key|private|synthetic|phc_/)
+    expect(send).toHaveBeenCalledExactlyOnceWith('Network.enable', {}, expect.anything())
+  })
+  it('rejects an ambiguous envelope with both a top-level event and batch', () => {
+    expect(
+      decodeCaptureRequest(
+        {
+          url: 'https://analytics.example.test/e/',
+          method: 'POST',
+          body: JSON.stringify({ event: 'clinic_profile_viewed', batch: [correlatedTarget] }),
+        },
+        '42',
+        expectedProfile,
+      ),
+    ).toMatchObject({ decoded: false, reason: 'malformed_body', targetCount: 0 })
+  })
+})

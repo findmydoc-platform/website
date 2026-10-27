@@ -643,3 +643,53 @@ describe('document continuity refusal boundaries', () => {
     expect(send).not.toHaveBeenCalled()
   })
 })
+
+describe('CDP binary body precedence', () => {
+  it.each([false, true])(
+    'uses complete raw gzip entries over lossy text while preserving truncated=%s',
+    async (truncated) => {
+      const readEvents = vi
+        .fn()
+        .mockResolvedValueOnce(packetPage(0, []))
+        .mockResolvedValueOnce(
+          packetPage(
+            3,
+            [
+              documentPacket(1, 'Network.requestWillBeSent', {
+                requestId: 'private-binary',
+                request: {
+                  url: 'https://analytics.example.test/e/',
+                  method: 'POST',
+                  postData: '\ufffdlossy gzip text',
+                  postDataEntries: [{ bytes: gzipSync(JSON.stringify(correlatedTarget)).toString('base64') }],
+                },
+              }),
+              documentPacket(2, 'Network.responseReceived', { requestId: 'private-binary', response: { status: 200 } }),
+              documentPacket(3, 'Network.loadingFinished', { requestId: 'private-binary' }),
+            ],
+            truncated,
+          ),
+        )
+      const send = vi.fn(async (_method: string) => ({}))
+      const observer = await createPostHogObserver(
+        { send, readEvents },
+        {
+          clinicId: '42',
+          expected: expectedProfile,
+          probeUrl: 'https://site.example.test/favicon.ico',
+          deadline: Date.now() + 10000,
+        },
+      )
+      const result = await observer.drain()
+      expect(result).toMatchObject({
+        complete: !truncated,
+        targetSentCount: 1,
+        requests: [{ decoded: true, targetCount: 1 }],
+      })
+      expect(observer.matchesDeliveredSession('private-session')).toBe(!truncated)
+      if (truncated) expect(result.reasons).toContain('buffer_truncated')
+      expect(send).toHaveBeenCalledExactlyOnceWith('Network.enable', {}, expect.anything())
+      expect(JSON.stringify(result)).not.toMatch(/lossy|private|synthetic|phc_/)
+    },
+  )
+})

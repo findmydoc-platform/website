@@ -340,7 +340,6 @@ export async function createPostHogObserver(
       if (!request.url || !request.method || !isCaptureRequest(request.url, request.method)) return
       let body: string | Uint8Array | undefined = request.postData
       if (
-        body === undefined &&
         request.postDataEntries?.length &&
         request.postDataEntries.every((entry) => typeof entry.bytes === 'string')
       ) {

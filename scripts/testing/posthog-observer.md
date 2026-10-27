@@ -13,6 +13,11 @@ const observer = await createPostHogObserver(
   },
   {
     clinicId: expectedClinicId,
+    expected: {
+      clinicSlug: expectedClinicSlug,
+      pagePath: expectedProfilePath,
+      projectToken: expectedProjectToken, // In memory only. Never print or persist.
+    },
     probeUrl: expectedSameOriginFaviconUrl,
     deadline: commonDeadlineEpochMilliseconds,
   },
@@ -24,14 +29,16 @@ const preflight = await observer.drain()
 const evidence = await observer.drain()
 // Require evidence.complete && evidence.probeProven && evidence.targetSentCount > 0.
 // Reporting inclusion is a separate prerequisite before any inquiry.
+// Compare the later outgoing inquiry's session in memory, then discard that input.
+const inquirySessionMatches = observer.matchesDeliveredSession(candidateInquirySession)
 observer.stop()
 ```
 
-The initial read omits `afterSequence` to establish NOW. Later reads always pass the saved cursor and drain `hasMore` pages using the same method and target filters. Do not call an extra omitted-cursor read between setup and the action. If the capability needs a target selector, pass its already documented `target` as an observer option. For child sessions, learn selectors only from documented `Target.attachedToTarget` events. The observer does not discover or guess targets.
+The observer enables Network first, then its initial read omits `afterSequence` to establish NOW. Later reads always pass the saved cursor and drain `hasMore` pages using the same method and target filters. Do not call an extra omitted-cursor read between setup and the action. If the capability needs a target selector, pass its already documented `target` as an observer option. For child sessions, learn selectors only from documented `Target.attachedToTarget` events. The observer does not discover or guess targets.
 
 Use a unique favicon URL for each preflight and a real same-origin GET. Its successful response and loading completion prove recording is active; they do not prove analytics. No probe is sent by this module. Keep all traffic inspection in memory. Print or save only `snapshot()` or `drain()` results, never CDP packets, errors, request IDs or bodies.
 
-The output contains closed business event names, exact target-clinic membership counts, HTTP status, CDP timestamps, completion flags and fixed reasons. It returns no clinic, cookie, identity, session or raw property values. `targetSentCount` counts decoded target events only after a 2xx response and loading completion. An SDK acceptance hook, another event's HTTP 200 or readiness alone cannot satisfy it.
+The output contains closed business event names, target membership counts, HTTP status, CDP timestamps, completion flags and fixed reasons. The booleans `clinicMatched`, `slugMatched`, `pathMatched`, `projectMatched`, `sessionPresent` and `sessionValid` expose no property values. Match/session flags describe observed profile candidates for the expected clinic. A batch may contain several candidates; only a single event satisfying every configured dimension contributes to the strict count. It returns no clinic, cookie, identity, session or raw property values. With `expected` configured, `targetSentCount` counts a decoded profile event only when its clinic ID, slug, page path and project token match exactly, its session matches `^[A-Za-z0-9_-]{1,128}$`, and its request has a 2xx response and loading completion. Every `expected` field must be a nonempty string. `strictTargetConfigured` must be true for an inquiry prerequisite. Omitting `expected` preserves the legacy clinic-only parser contract for transport tests; that mode does not establish the full inquiry prerequisite. `matchesDeliveredSession(candidate)` compares internally against sessions from strict matching events with completed 2xx transport. It returns false for incomplete observation, missing strict expectations, invalid input, pending/failed requests or a stopped observer. It returns only a boolean. Never print its candidate. `stop()` also clears these private session values. An SDK acceptance hook, another event's HTTP 200 or readiness alone cannot satisfy it.
 
 `complete` describes continuity of the observer. A request can still be pending or fail, so inspect `targetSentCount` and the request completion flags as well. Truncated buffers are processed but invalidate the attempt. A full document request or detached observer invalidates continuity. Reinstall and prove a new probe after any document replacement before starting another intended action. Live reload is not supported as a continuous-evidence probe by this observer.
 

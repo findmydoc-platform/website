@@ -3,7 +3,24 @@ import { gunzipSync } from 'node:zlib'
 const businessNames = ['clinic_profile_viewed', 'clinic_cta_clicked'] as const
 type BusinessName = (typeof businessNames)[number]
 type DecodeReason = 'decoded' | 'not_capture' | 'body_unavailable' | 'malformed_body'
-export type CaptureEvidence = {
+export type CaptureExpectations = { clinicSlug: string; pagePath: string; projectToken: string }
+function hasStrictExpectations(expected?: CaptureExpectations): expected is CaptureExpectations {
+  return (
+    expected !== undefined &&
+    [expected.clinicSlug, expected.pagePath, expected.projectToken].every(
+      (value) => typeof value === 'string' && value.length > 0,
+    )
+  )
+}
+type ProfileMatch = {
+  clinicMatched: boolean
+  slugMatched: boolean
+  pathMatched: boolean
+  projectMatched: boolean
+  sessionPresent: boolean
+  sessionValid: boolean
+}
+export type CaptureEvidence = ProfileMatch & {
   captureRequest: boolean
   decoded: boolean
   reason: DecodeReason
@@ -23,6 +40,16 @@ export function isCaptureRequest(url: string, method: string): boolean {
 export function decodeCaptureRequest(
   request: { url: string; method: string; body?: string | Uint8Array },
   clinicId: string,
+  expected?: CaptureExpectations,
+): CaptureEvidence {
+  return inspectCaptureRequest(request, clinicId, expected)
+}
+
+function inspectCaptureRequest(
+  request: { url: string; method: string; body?: string | Uint8Array },
+  clinicId: string,
+  expected?: CaptureExpectations,
+  onMatchingSession?: (session: string) => void,
 ): CaptureEvidence {
   const captureRequest = isCaptureRequest(request.url, request.method)
   const result: CaptureEvidence = {
@@ -31,6 +58,12 @@ export function decodeCaptureRequest(
     reason: 'not_capture',
     eventNames: [],
     targetCount: 0,
+    clinicMatched: false,
+    slugMatched: false,
+    pathMatched: false,
+    projectMatched: false,
+    sessionPresent: false,
+    sessionValid: false,
   }
   if (!captureRequest) return result
   if (request.body === undefined) return { ...result, reason: 'body_unavailable' }
@@ -54,9 +87,25 @@ export function decodeCaptureRequest(
     let targetCount = 0
     for (const event of events) {
       if (businessNames.includes(event.event)) eventNames.push(event.event)
-      if (event.event === 'clinic_profile_viewed' && event.properties?.clinic_id === clinicId) targetCount++
+      if (event.event !== 'clinic_profile_viewed' || event.properties?.clinic_id !== clinicId) continue
+      const properties = event.properties
+      const session = properties.$session_id
+      const match: ProfileMatch = {
+        clinicMatched: true,
+        slugMatched: hasStrictExpectations(expected) && properties.clinic_slug === expected.clinicSlug,
+        pathMatched: hasStrictExpectations(expected) && properties.page_path === expected.pagePath,
+        projectMatched: hasStrictExpectations(expected) && properties.token === expected.projectToken,
+        sessionPresent: typeof session === 'string' && session.length > 0,
+        sessionValid: typeof session === 'string' && /^[A-Za-z0-9_-]{1,128}$/u.test(session),
+      }
+      for (const field of Object.keys(match) as (keyof ProfileMatch)[]) result[field] ||= match[field]
+      // The conjunction belongs to one event. Batch members cannot supply each other's evidence.
+      if (expected === undefined || (hasStrictExpectations(expected) && Object.values(match).every(Boolean))) {
+        targetCount++
+        if (expected && match.sessionValid) onMatchingSession?.(session)
+      }
     }
-    return { captureRequest, decoded: true, reason: 'decoded', eventNames, targetCount }
+    return { ...result, captureRequest, decoded: true, reason: 'decoded', eventNames, targetCount }
   } catch {
     return { ...result, reason: 'malformed_body' }
   }
@@ -104,12 +153,21 @@ export async function createPostHogObserver(
   cdp: ObserverCDP,
   options: {
     clinicId: string
+    expected?: CaptureExpectations
     probeUrl: string
     deadline: number
     target?: Target
   },
 ) {
   const requests = new Map<string, RequestEvidence>()
+  const matchingSessions = new Map<string, Set<string>>()
+  const delivered = (request: RequestEvidence) =>
+    request.decoded &&
+    request.finished &&
+    !request.failed &&
+    request.status !== undefined &&
+    request.status >= 200 &&
+    request.status < 300
   const probeRequests = new Map<string, { status?: number; finished: boolean; failed: boolean }>()
   const reasons = new Set<string>()
   let cursor: number
@@ -118,19 +176,11 @@ export async function createPostHogObserver(
   const timeLeft = () => Math.max(0, Math.min(1000, options.deadline - Date.now()))
   const snapshot = () => ({
     complete: !reasons.size,
+    strictTargetConfigured: hasStrictExpectations(options.expected),
     reasons: [...reasons],
     probeProven,
     targetSentCount: [...requests.values()].reduce(
-      (sum, request) =>
-        sum +
-        (request.decoded &&
-        request.finished &&
-        !request.failed &&
-        request.status !== undefined &&
-        request.status >= 200 &&
-        request.status < 300
-          ? request.targetCount
-          : 0),
+      (sum, request) => sum + (delivered(request) ? request.targetCount : 0),
       0,
     ),
     requests: [...requests.values()].map((request) => ({
@@ -189,7 +239,14 @@ export async function createPostHogObserver(
           /* Never retain protocol errors, which may include request data. */
         }
       }
-      const evidence = decodeCaptureRequest({ url: request.url, method: request.method, body }, options.clinicId)
+      const sessions = new Set<string>()
+      const evidence = inspectCaptureRequest(
+        { url: request.url, method: request.method, body },
+        options.clinicId,
+        options.expected,
+        (session) => sessions.add(session),
+      )
+      if (sessions.size) matchingSessions.set(key, sessions)
       if (!evidence.decoded) reasons.add('capture_body_unavailable')
       requests.set(key, {
         ...evidence,
@@ -214,9 +271,24 @@ export async function createPostHogObserver(
   }
   return {
     snapshot,
+    matchesDeliveredSession(candidate: unknown): boolean {
+      if (
+        stopped ||
+        reasons.size ||
+        !hasStrictExpectations(options.expected) ||
+        typeof candidate !== 'string' ||
+        !/^[A-Za-z0-9_-]{1,128}$/u.test(candidate)
+      )
+        return false
+      return [...requests.entries()].some(
+        ([key, request]) =>
+          request.targetCount > 0 && delivered(request) && matchingSessions.get(key)?.has(candidate) === true,
+      )
+    },
     stop() {
       stopped = true
       requests.clear()
+      matchingSessions.clear()
       probeRequests.clear()
     },
     async drain() {

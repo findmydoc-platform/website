@@ -17,14 +17,14 @@ describe('passive PostHog transport evidence', () => {
       },
       '42',
     )
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       captureRequest: true,
       decoded: true,
       reason: 'decoded',
       eventNames: ['clinic_profile_viewed'],
       targetCount: 1,
     })
-    expect(JSON.stringify(result)).not.toMatch(/private|session|email|42/)
+    expect(JSON.stringify(result)).not.toMatch(/private-session|email|42/)
   })
   it('decodes installed SDK gzip and base64 form bodies', () => {
     const json = JSON.stringify([target])
@@ -89,7 +89,7 @@ describe('CDP observation continuity', () => {
       targetSentCount: 1,
       requests: [{ targetCount: 1, status: 200, finished: true, failed: false }],
     })
-    expect(JSON.stringify(result)).not.toMatch(/private|example|session|42/)
+    expect(JSON.stringify(result)).not.toMatch(/private-session|private-id|example|42/)
   })
   it('processes retained truncated events but invalidates proof, including transport failure', async () => {
     const readEvents = vi
@@ -264,5 +264,170 @@ describe('CDP body and cursor limits', () => {
     })
     expect(JSON.stringify(result)).not.toContain('private')
     expect(readEvents).toHaveBeenCalledTimes(2)
+  })
+})
+
+const expectedProfile = {
+  clinicSlug: 'synthetic-clinic',
+  pagePath: '/clinics/synthetic-clinic',
+  projectToken: 'phc_synthetic_project',
+}
+const correlatedTarget = {
+  event: 'clinic_profile_viewed',
+  properties: {
+    ...target.properties,
+    clinic_slug: expectedProfile.clinicSlug,
+    page_path: expectedProfile.pagePath,
+    token: expectedProfile.projectToken,
+  },
+}
+
+describe('strict inquiry prerequisite evidence', () => {
+  it('requires all profile dimensions and a valid session without returning their values', () => {
+    const evidence = decodeCaptureRequest(
+      { url: 'https://analytics.example.test/e/', method: 'POST', body: JSON.stringify(correlatedTarget) },
+      '42',
+      expectedProfile,
+    )
+    expect(evidence).toMatchObject({
+      clinicMatched: true,
+      slugMatched: true,
+      pathMatched: true,
+      projectMatched: true,
+      sessionPresent: true,
+      sessionValid: true,
+      targetCount: 1,
+    })
+    expect(JSON.stringify(evidence)).not.toMatch(/synthetic|private|phc_|42/)
+  })
+  it.each([
+    ['clinic_id', '43', 'clinicMatched'],
+    ['clinic_slug', 'other-clinic', 'slugMatched'],
+    ['page_path', '/clinics/other-clinic', 'pathMatched'],
+    ['token', 'phc_other_project', 'projectMatched'],
+    ['$session_id', undefined, 'sessionPresent'],
+    ['$session_id', 'invalid session!', 'sessionValid'],
+    ['$session_id', '', 'sessionPresent'],
+    ['$session_id', 'a'.repeat(129), 'sessionValid'],
+  ])('refuses a mismatching %s without exposing the mismatch', (field, value, flag) => {
+    const evidence = decodeCaptureRequest(
+      {
+        url: 'https://analytics.example.test/i/v0/e/',
+        method: 'POST',
+        body: JSON.stringify({ ...correlatedTarget, properties: { ...correlatedTarget.properties, [field]: value } }),
+      },
+      '42',
+      expectedProfile,
+    )
+    expect(evidence.targetCount).toBe(0)
+    expect(evidence[flag as keyof typeof evidence]).toBe(false)
+    expect(JSON.stringify(evidence)).not.toMatch(/other-clinic|phc_|invalid session|private/)
+  })
+  it('does not assemble a strict match from different members of a batch', () => {
+    const events = [
+      { ...correlatedTarget, properties: { ...correlatedTarget.properties, token: 'wrong' } },
+      { ...correlatedTarget, properties: { ...correlatedTarget.properties, page_path: '/wrong' } },
+    ]
+    expect(
+      decodeCaptureRequest(
+        { url: 'https://analytics.example.test/e/', method: 'POST', body: JSON.stringify(events) },
+        '42',
+        expectedProfile,
+      ).targetCount,
+    ).toBe(0)
+  })
+  it('compares only fully delivered matching sessions internally, then erases them on stop', async () => {
+    const readEvents = vi
+      .fn()
+      .mockResolvedValueOnce({ cursor: 0, events: [], hasMore: false, truncated: false })
+      .mockResolvedValueOnce({
+        cursor: 2,
+        events: [
+          event(1, 'Network.requestWillBeSent', {
+            requestId: 'private-id',
+            request: {
+              url: 'https://analytics.example.test/e/',
+              method: 'POST',
+              postData: JSON.stringify(correlatedTarget),
+            },
+          }),
+          event(2, 'Network.responseReceived', { requestId: 'private-id', response: { status: 200 } }),
+        ],
+        hasMore: false,
+        truncated: false,
+      })
+      .mockResolvedValueOnce({
+        cursor: 3,
+        events: [event(3, 'Network.loadingFinished', { requestId: 'private-id' })],
+        hasMore: false,
+        truncated: false,
+      })
+    const observer = await createPostHogObserver(
+      { send: vi.fn(async () => ({})), readEvents },
+      {
+        clinicId: '42',
+        expected: expectedProfile,
+        probeUrl: 'https://site.example.test/favicon.ico',
+        deadline: Date.now() + 10000,
+      },
+    )
+    expect(await observer.drain()).toMatchObject({ strictTargetConfigured: true, targetSentCount: 0 })
+    expect(observer.matchesDeliveredSession('private-session')).toBe(false)
+    const result = await observer.drain()
+    expect(result.targetSentCount).toBe(1)
+    expect(observer.matchesDeliveredSession('private-session')).toBe(true)
+    expect(observer.matchesDeliveredSession('different-session')).toBe(false)
+    expect(observer.matchesDeliveredSession(undefined)).toBe(false)
+    expect(JSON.stringify(result)).not.toMatch(/private|synthetic|phc_/)
+    observer.stop()
+    expect(observer.matchesDeliveredSession('private-session')).toBe(false)
+  })
+})
+
+describe('strict configuration and failed delivery', () => {
+  it('refuses an incomplete strict expectation instead of treating missing values as matches', () => {
+    expect(
+      decodeCaptureRequest(
+        { url: 'https://analytics.example.test/e/', method: 'POST', body: JSON.stringify(correlatedTarget) },
+        '42',
+        { ...expectedProfile, projectToken: '' },
+      ),
+    ).toMatchObject({ projectMatched: false, targetCount: 0 })
+  })
+  it.each([
+    ['http_failure', 503, false],
+    ['truncated', 200, true],
+  ] as const)('does not correlate a session after %s', async (_reason, status, truncated) => {
+    const readEvents = vi
+      .fn()
+      .mockResolvedValueOnce({ cursor: 0, events: [], hasMore: false, truncated: false })
+      .mockResolvedValueOnce({
+        cursor: 3,
+        events: [
+          event(1, 'Network.requestWillBeSent', {
+            requestId: 'private-id',
+            request: {
+              url: 'https://analytics.example.test/e/',
+              method: 'POST',
+              postData: JSON.stringify(correlatedTarget),
+            },
+          }),
+          event(2, 'Network.responseReceived', { requestId: 'private-id', response: { status } }),
+          event(3, 'Network.loadingFinished', { requestId: 'private-id' }),
+        ],
+        hasMore: false,
+        truncated,
+      })
+    const observer = await createPostHogObserver(
+      { send: vi.fn(async () => ({})), readEvents },
+      {
+        clinicId: '42',
+        expected: expectedProfile,
+        probeUrl: 'https://site.example.test/favicon.ico',
+        deadline: Date.now() + 10000,
+      },
+    )
+    await observer.drain()
+    expect(observer.matchesDeliveredSession('private-session')).toBe(false)
   })
 })

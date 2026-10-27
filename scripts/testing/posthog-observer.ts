@@ -474,7 +474,7 @@ export async function createPostHogObserver(
       }
       try {
         let hasMore = true
-        while (!stopped && hasMore && timeLeft()) {
+        while (hasMore && timeLeft()) {
           const page = await cdp.readEvents({
             afterSequence: cursor,
             methods,

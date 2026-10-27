@@ -116,7 +116,7 @@ type Packet = {
   method: string
   sequence: number
   params?: Record<string, unknown>
-  source: { sessionId?: string; targetId?: string }
+  source: { sessionId?: string; targetId?: string; extensionId?: string; tabId?: number }
 }
 type Page = { cursor: number; events: Packet[]; hasMore: boolean; truncated: boolean }
 export type ObserverCDP = {
@@ -148,7 +148,17 @@ const methods = [
   'Inspector.detached',
 ]
 
-/** Passive, origin-scoped observer. Reinstall after any full document navigation. */
+export type DocumentNavigationExpectation = {
+  frameId: string
+  loaderId: string
+  documentUrl: string
+  postNavigationProbeUrl: string
+}
+const sourceFingerprint = (packet: Packet) =>
+  JSON.stringify([packet.source.extensionId, packet.source.sessionId, packet.source.tabId, packet.source.targetId])
+type Transport = { status?: number; finished: boolean; failed: boolean }
+
+/** Passive, origin-scoped observer. Document continuity requires an explicit proved opt-in. */
 export async function createPostHogObserver(
   cdp: ObserverCDP,
   options: {
@@ -157,10 +167,12 @@ export async function createPostHogObserver(
     probeUrl: string
     deadline: number
     target?: Target
+    documentNavigation?: DocumentNavigationExpectation
   },
 ) {
   const requests = new Map<string, RequestEvidence>()
   const matchingSessions = new Map<string, Set<string>>()
+  const newDocumentCaptures = new Set<string>()
   const delivered = (request: RequestEvidence) =>
     request.decoded &&
     request.finished &&
@@ -168,19 +180,78 @@ export async function createPostHogObserver(
     request.status !== undefined &&
     request.status >= 200 &&
     request.status < 300
-  const probeRequests = new Map<string, { status?: number; finished: boolean; failed: boolean }>()
+  const probeRequests = new Map<string, Transport & { source: string }>()
   const reasons = new Set<string>()
   let cursor: number
   let stopped = false
   let probeProven = false
+  const navigation = options.documentNavigation
+  let baselineSource: string | undefined
+  let documentKey: string | undefined
+  let postProbeKey: string | undefined
+  let newLoaderId: string | undefined
+  const documentTransport: Transport = { finished: false, failed: false }
+  const postProbeTransport: Transport = { finished: false, failed: false }
+  const transition = {
+    documentSeen: false,
+    newLoader: false,
+    sameTopFrame: false,
+    sameSource: false,
+    postProbeSeen: false,
+    postProbeSameTopFrame: false,
+    postProbeSameLoader: false,
+    postProbeSameSource: false,
+  }
+  if (navigation) {
+    let valid = false
+    try {
+      const origin = new URL(options.probeUrl).origin
+      valid =
+        !options.target &&
+        hasStrictExpectations(options.expected) &&
+        Boolean(navigation.frameId && navigation.loaderId) &&
+        new URL(navigation.documentUrl).origin === origin &&
+        new URL(navigation.postNavigationProbeUrl).origin === origin &&
+        navigation.postNavigationProbeUrl !== options.probeUrl
+    } catch {
+      /* Invalid input never includes its value in an error. */
+    }
+    if (!valid) throw new Error('invalid_document_navigation')
+  }
+  const documentProven = () =>
+    Boolean(
+      navigation &&
+      !reasons.size &&
+      Object.values(transition).every(Boolean) &&
+      documentTransport.status === 200 &&
+      documentTransport.finished &&
+      !documentTransport.failed &&
+      postProbeTransport.status === 200 &&
+      postProbeTransport.finished &&
+      !postProbeTransport.failed,
+    )
+  const eligible = (key: string, request: RequestEvidence) =>
+    delivered(request) && (!navigation || (documentProven() && newDocumentCaptures.has(key)))
   const timeLeft = () => Math.max(0, Math.min(1000, options.deadline - Date.now()))
   const snapshot = () => ({
     complete: !reasons.size,
     strictTargetConfigured: hasStrictExpectations(options.expected),
     reasons: [...reasons],
     probeProven,
-    targetSentCount: [...requests.values()].reduce(
-      (sum, request) => sum + (delivered(request) ? request.targetCount : 0),
+    ...(navigation
+      ? {
+          documentNavigation: {
+            ...transition,
+            documentStatus: documentTransport.status,
+            documentFinished: documentTransport.finished,
+            postProbeStatus: postProbeTransport.status,
+            postProbeFinished: postProbeTransport.finished,
+            proven: documentProven(),
+          },
+        }
+      : {}),
+    targetSentCount: [...requests.entries()].reduce(
+      (sum, [key, request]) => sum + (eligible(key, request) ? request.targetCount : 0),
       0,
     ),
     requests: [...requests.values()].map((request) => ({
@@ -199,13 +270,13 @@ export async function createPostHogObserver(
   async function process(packet: Packet) {
     const params = packet.params ?? {}
     const id = typeof params.requestId === 'string' ? params.requestId : ''
-    const key = `${packet.source.sessionId ?? packet.source.targetId ?? ''}:${id}`
+    const source = sourceFingerprint(packet)
+    const key = `${source}:${id}`
     if (packet.method === 'Inspector.detached') {
       reasons.add('observer_detached')
       return
     }
     if (packet.method === 'Network.requestWillBeSent') {
-      if (params.type === 'Document') reasons.add('document_replaced')
       const request = params.request as
         | {
             url?: string
@@ -215,9 +286,57 @@ export async function createPostHogObserver(
             hasPostData?: boolean
           }
         | undefined
-      if (!request || !id) return
-      if (request.url === options.probeUrl && request.method === 'GET')
-        probeRequests.set(key, { finished: false, failed: false })
+      if (!request || !id) {
+        if (params.type === 'Document') reasons.add(navigation ? 'document_transition_unproven' : 'document_replaced')
+        return
+      }
+      if (params.type === 'Document') {
+        if (!navigation) reasons.add('document_replaced')
+        else {
+          if (transition.documentSeen || params.redirectResponse) reasons.add('unexpected_document')
+          transition.documentSeen = true
+          transition.sameTopFrame = params.frameId === navigation.frameId
+          transition.newLoader =
+            typeof params.loaderId === 'string' && params.loaderId.length > 0 && params.loaderId !== navigation.loaderId
+          transition.sameSource = baselineSource !== undefined && source === baselineSource
+          if (
+            !probeProven ||
+            !transition.sameTopFrame ||
+            !transition.newLoader ||
+            !transition.sameSource ||
+            request.url !== navigation.documentUrl ||
+            request.method !== 'GET'
+          )
+            reasons.add('document_transition_unproven')
+          documentKey = key
+          newLoaderId = typeof params.loaderId === 'string' ? params.loaderId : undefined
+        }
+      }
+      if (navigation && request.url === navigation.postNavigationProbeUrl) {
+        transition.postProbeSeen = true
+        transition.postProbeSameTopFrame = params.frameId === navigation.frameId
+        transition.postProbeSameLoader = Boolean(newLoaderId && params.loaderId === newLoaderId)
+        transition.postProbeSameSource = baselineSource !== undefined && source === baselineSource
+        if (
+          postProbeKey ||
+          !documentKey ||
+          request.method !== 'GET' ||
+          params.redirectResponse ||
+          !transition.postProbeSameTopFrame ||
+          !transition.postProbeSameLoader ||
+          !transition.postProbeSameSource
+        )
+          reasons.add('post_navigation_probe_unproven')
+        postProbeKey = key
+      }
+      if (request.url === options.probeUrl && request.method === 'GET') {
+        if (
+          navigation &&
+          (documentKey || params.frameId !== navigation.frameId || params.loaderId !== navigation.loaderId)
+        )
+          reasons.add('initial_document_unproven')
+        probeRequests.set(key, { finished: false, failed: false, source })
+      }
       if (!request.url || !request.method || !isCaptureRequest(request.url, request.method)) return
       let body: string | Uint8Array | undefined = request.postData
       if (
@@ -247,6 +366,17 @@ export async function createPostHogObserver(
         (session) => sessions.add(session),
       )
       if (sessions.size) matchingSessions.set(key, sessions)
+      if (navigation && evidence.targetCount > 0) {
+        if (
+          documentKey &&
+          transition.newLoader &&
+          params.frameId === navigation.frameId &&
+          params.loaderId === newLoaderId &&
+          source === baselineSource
+        )
+          newDocumentCaptures.add(key)
+        else reasons.add('capture_document_unproven')
+      }
       if (!evidence.decoded) reasons.add('capture_body_unavailable')
       requests.set(key, {
         ...evidence,
@@ -256,18 +386,31 @@ export async function createPostHogObserver(
       })
       return
     }
-    const request = requests.get(key) ?? probeRequests.get(key)
+    const request =
+      requests.get(key) ??
+      probeRequests.get(key) ??
+      (key === documentKey ? documentTransport : key === postProbeKey ? postProbeTransport : undefined)
     if (!request) return
     if (packet.method === 'Network.responseReceived') {
       const response = params.response as { status?: number } | undefined
       if (typeof response?.status === 'number') request.status = response.status
     }
     if (packet.method === 'Network.loadingFinished') request.finished = true
-    if (packet.method === 'Network.loadingFailed') request.failed = true
+    if (packet.method === 'Network.loadingFailed') {
+      request.failed = true
+      if (key === documentKey || key === postProbeKey) reasons.add('document_transport_failed')
+    }
     probeProven = [...probeRequests.values()].some(
       (probe) =>
         probe.finished && !probe.failed && probe.status !== undefined && probe.status >= 200 && probe.status < 300,
     )
+    if (navigation) {
+      const baselineProbe = [...probeRequests.values()].find(
+        (probe) =>
+          probe.finished && !probe.failed && probe.status !== undefined && probe.status >= 200 && probe.status < 300,
+      )
+      if (baselineProbe && baselineSource === undefined) baselineSource = baselineProbe.source
+    }
   }
   return {
     snapshot,
@@ -282,13 +425,18 @@ export async function createPostHogObserver(
         return false
       return [...requests.entries()].some(
         ([key, request]) =>
-          request.targetCount > 0 && delivered(request) && matchingSessions.get(key)?.has(candidate) === true,
+          request.targetCount > 0 && eligible(key, request) && matchingSessions.get(key)?.has(candidate) === true,
       )
     },
     stop() {
       stopped = true
       requests.clear()
       matchingSessions.clear()
+      newDocumentCaptures.clear()
+      baselineSource = undefined
+      documentKey = undefined
+      postProbeKey = undefined
+      newLoaderId = undefined
       probeRequests.clear()
     },
     async drain() {

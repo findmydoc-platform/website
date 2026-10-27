@@ -188,7 +188,7 @@ describe('measurement refusal boundaries', () => {
     vi.useFakeTimers()
     try {
       const readEvents = vi.fn(async () => ({ cursor: 0, events: [], hasMore: false, truncated: false }))
-      const send = vi.fn(async () => ({}))
+      const send = vi.fn(async (_method: string) => ({}))
       const observer = await createPostHogObserver(
         { send, readEvents },
         { clinicId: '42', probeUrl: 'https://site.example.test/favicon.ico', deadline: Date.now() + 100 },
@@ -225,7 +225,7 @@ describe('CDP body and cursor limits', () => {
         hasMore: false,
         truncated: false,
       })
-    const send = vi.fn(async () => ({}))
+    const send = vi.fn(async (_method: string) => ({}))
     const observer = await createPostHogObserver(
       { send, readEvents },
       { clinicId: '42', probeUrl: 'https://site.example.test/favicon.ico', deadline: Date.now() + 10000 },
@@ -429,5 +429,217 @@ describe('strict configuration and failed delivery', () => {
     )
     await observer.drain()
     expect(observer.matchesDeliveredSession('private-session')).toBe(false)
+  })
+})
+
+const navigation = {
+  frameId: 'private-top-frame',
+  loaderId: 'private-old-loader',
+  documentUrl: 'https://site.example.test/clinics/synthetic-clinic',
+  postNavigationProbeUrl: 'https://site.example.test/favicon.ico?after=synthetic',
+}
+const rootSource = { sessionId: 'private-root-source', targetId: 'private-root-target', tabId: 7 }
+const documentPacket = (sequence: number, method: string, params: Record<string, unknown>) => ({
+  ...event(sequence, method, params),
+  source: rootSource,
+})
+const preNavigationPackets = [
+  documentPacket(1, 'Network.requestWillBeSent', {
+    requestId: 'private-pre-probe',
+    frameId: navigation.frameId,
+    loaderId: navigation.loaderId,
+    request: { url: 'https://site.example.test/favicon.ico', method: 'GET' },
+  }),
+  documentPacket(2, 'Network.responseReceived', { requestId: 'private-pre-probe', response: { status: 200 } }),
+  documentPacket(3, 'Network.loadingFinished', { requestId: 'private-pre-probe' }),
+]
+const navigationPackets = [
+  documentPacket(4, 'Network.requestWillBeSent', {
+    requestId: 'private-document',
+    type: 'Document',
+    frameId: navigation.frameId,
+    loaderId: 'private-new-loader',
+    request: { url: navigation.documentUrl, method: 'GET' },
+  }),
+  documentPacket(5, 'Network.responseReceived', { requestId: 'private-document', response: { status: 200 } }),
+  documentPacket(6, 'Network.loadingFinished', { requestId: 'private-document' }),
+  documentPacket(7, 'Network.requestWillBeSent', {
+    requestId: 'private-capture',
+    frameId: navigation.frameId,
+    loaderId: 'private-new-loader',
+    request: { url: 'https://analytics.example.test/e/', method: 'POST', postData: JSON.stringify(correlatedTarget) },
+  }),
+  documentPacket(8, 'Network.responseReceived', { requestId: 'private-capture', response: { status: 200 } }),
+  documentPacket(9, 'Network.loadingFinished', { requestId: 'private-capture' }),
+]
+const postNavigationPackets = [
+  documentPacket(10, 'Network.requestWillBeSent', {
+    requestId: 'private-post-probe',
+    frameId: navigation.frameId,
+    loaderId: 'private-new-loader',
+    request: { url: navigation.postNavigationProbeUrl, method: 'GET' },
+  }),
+  documentPacket(11, 'Network.responseReceived', { requestId: 'private-post-probe', response: { status: 200 } }),
+  documentPacket(12, 'Network.loadingFinished', { requestId: 'private-post-probe' }),
+]
+const packetPage = (cursor: number, events: typeof preNavigationPackets, truncated = false) => ({
+  cursor,
+  events,
+  truncated,
+  hasMore: false,
+})
+
+describe('opt-in same-origin document continuity', () => {
+  it('retains a strict capture until the new document and its separate probe prove continuity without reenabling Network', async () => {
+    const readEvents = vi
+      .fn()
+      .mockResolvedValueOnce(packetPage(0, []))
+      .mockResolvedValueOnce(packetPage(3, preNavigationPackets))
+      .mockResolvedValueOnce(packetPage(9, navigationPackets))
+      .mockResolvedValueOnce(packetPage(12, postNavigationPackets))
+    const send = vi.fn(async (_method: string) => ({}))
+    const observer = await createPostHogObserver(
+      { send, readEvents },
+      {
+        clinicId: '42',
+        expected: expectedProfile,
+        probeUrl: 'https://site.example.test/favicon.ico',
+        deadline: Date.now() + 10000,
+        documentNavigation: navigation,
+      },
+    )
+    expect(await observer.drain()).toMatchObject({ complete: true, probeProven: true, targetSentCount: 0 })
+    expect(await observer.drain()).toMatchObject({
+      complete: true,
+      targetSentCount: 0,
+      documentNavigation: { documentSeen: true, documentStatus: 200, documentFinished: true, proven: false },
+    })
+    expect(observer.matchesDeliveredSession('private-session')).toBe(false)
+    const result = await observer.drain()
+    expect(result).toMatchObject({
+      complete: true,
+      targetSentCount: 1,
+      documentNavigation: {
+        proven: true,
+        postProbeSeen: true,
+        postProbeStatus: 200,
+        postProbeFinished: true,
+        sameTopFrame: true,
+        newLoader: true,
+        sameSource: true,
+        postProbeSameTopFrame: true,
+        postProbeSameLoader: true,
+        postProbeSameSource: true,
+      },
+    })
+    expect(observer.matchesDeliveredSession('private-session')).toBe(true)
+    expect(readEvents.mock.calls.map((call) => call[0].afterSequence)).toEqual([undefined, 0, 3, 9])
+    expect(send).toHaveBeenCalledExactlyOnceWith('Network.enable', {}, expect.anything())
+    expect(JSON.stringify(result)).not.toMatch(/private|example|synthetic|phc_/)
+  })
+})
+
+describe('document continuity refusal boundaries', () => {
+  it.each([
+    'unexpected_document',
+    'redirect',
+    'old_loader',
+    'missing_loader',
+    'wrong_top_frame',
+    'changed_source',
+    'post_probe_wrong_frame',
+    'post_probe_wrong_loader',
+    'post_probe_changed_source',
+    'post_probe_failure',
+    'document_failure',
+    'document_unfinished',
+    'post_probe_unfinished',
+    'detached',
+    'truncated',
+    'body_loss',
+    'capture_wrong_loader',
+    'capture_missing_loader',
+    'capture_changed_source',
+    'second_document',
+    'missing_initial_probe',
+  ])('does not release retained capture or session after %s', async (failure) => {
+    let documents = structuredClone(navigationPackets)
+    let probes = structuredClone(postNavigationPackets)
+    if (failure === 'unexpected_document')
+      documents[0]!.params.request = { url: 'https://site.example.test/other', method: 'GET' }
+    if (failure === 'redirect') documents[0]!.params.redirectResponse = { status: 302 }
+    if (failure === 'old_loader') documents[0]!.params.loaderId = navigation.loaderId
+    if (failure === 'missing_loader') delete documents[0]!.params.loaderId
+    if (failure === 'wrong_top_frame') documents[0]!.params.frameId = 'private-subframe'
+    if (failure === 'changed_source') documents[0]!.source.sessionId = 'private-other-source'
+    if (failure === 'post_probe_wrong_frame') probes[0]!.params.frameId = 'private-subframe'
+    if (failure === 'post_probe_wrong_loader') probes[0]!.params.loaderId = navigation.loaderId
+    if (failure === 'post_probe_changed_source') probes[0]!.source.sessionId = 'private-other-source'
+    if (failure === 'post_probe_failure') probes[1]!.params.response = { status: 503 }
+    if (failure === 'document_failure') documents[1]!.params.response = { status: 302 }
+    if (failure === 'document_unfinished') documents = documents.filter((packet) => packet.sequence !== 6)
+    if (failure === 'post_probe_unfinished') probes = probes.filter((packet) => packet.sequence !== 12)
+    if (failure === 'detached') probes.push(documentPacket(13, 'Inspector.detached', {}))
+    if (failure === 'body_loss')
+      documents[3]!.params.request = { url: 'https://analytics.example.test/e/', method: 'POST', hasPostData: true }
+    if (failure === 'capture_wrong_loader') documents[3]!.params.loaderId = navigation.loaderId
+    if (failure === 'capture_missing_loader') delete documents[3]!.params.loaderId
+    if (failure === 'capture_changed_source') documents[3]!.source.sessionId = 'private-other-source'
+    if (failure === 'second_document')
+      probes.push(
+        documentPacket(13, 'Network.requestWillBeSent', {
+          requestId: 'private-next-document',
+          type: 'Document',
+          frameId: navigation.frameId,
+          loaderId: 'private-third-loader',
+          request: { url: navigation.documentUrl, method: 'GET' },
+        }),
+      )
+    const readEvents = vi
+      .fn()
+      .mockResolvedValueOnce(packetPage(0, []))
+      .mockResolvedValueOnce(packetPage(3, failure === 'missing_initial_probe' ? [] : preNavigationPackets))
+      .mockResolvedValueOnce(packetPage(9, documents))
+      .mockResolvedValueOnce(packetPage(13, probes, failure === 'truncated'))
+    const send = vi.fn(async (_method: string) => ({}))
+    const observer = await createPostHogObserver(
+      { send, readEvents },
+      {
+        clinicId: '42',
+        expected: expectedProfile,
+        probeUrl: 'https://site.example.test/favicon.ico',
+        deadline: Date.now() + 10000,
+        documentNavigation: navigation,
+      },
+    )
+    await observer.drain()
+    await observer.drain()
+    const result = await observer.drain()
+    expect(result).toMatchObject({ targetSentCount: 0, documentNavigation: { proven: false } })
+    expect(observer.matchesDeliveredSession('private-session')).toBe(false)
+    expect(JSON.stringify(result)).not.toMatch(/private|example|synthetic|phc_/)
+    expect(send.mock.calls.filter((call) => call[0] === 'Network.enable')).toHaveLength(1)
+  })
+  it.each([
+    { ...navigation, documentUrl: 'https://other.example.test/clinics/synthetic-clinic' },
+    { ...navigation, postNavigationProbeUrl: 'https://other.example.test/favicon.ico' },
+    { ...navigation, postNavigationProbeUrl: 'https://site.example.test/favicon.ico' },
+    { ...navigation, frameId: '' },
+    { ...navigation, loaderId: '' },
+  ])('rejects an unsupported navigation configuration before enabling Network', async (documentNavigation) => {
+    const send = vi.fn(async (_method: string) => ({}))
+    await expect(
+      createPostHogObserver(
+        { send, readEvents: vi.fn() },
+        {
+          clinicId: '42',
+          expected: expectedProfile,
+          probeUrl: 'https://site.example.test/favicon.ico',
+          deadline: Date.now() + 10000,
+          documentNavigation,
+        },
+      ),
+    ).rejects.toThrow('invalid_document_navigation')
+    expect(send).not.toHaveBeenCalled()
   })
 })

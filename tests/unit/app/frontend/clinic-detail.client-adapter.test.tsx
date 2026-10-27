@@ -24,6 +24,7 @@ vi.mock('@/components/templates/ClinicDetailConcepts', () => ({
 }))
 
 vi.mock('@/posthog/client-api', () => ({
+  usePostHogAnalyticsReady: () => true,
   getConsentedPostHogSessionId: mocks.getConsentedPostHogSessionId,
   postHogBrowserEvents: mocks.postHogBrowserEvents,
 }))

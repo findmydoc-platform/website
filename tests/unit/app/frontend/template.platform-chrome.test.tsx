@@ -122,6 +122,28 @@ describe('platform navigation during Holding mode', () => {
     expect(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Compare clinics' })).toBeInTheDocument()
   })
 
+  it.each(['/posts', '/posts/article', '/posts/page/2'])(
+    'projects Holding navigation on Preview with the proxy guard disabled for %s',
+    async (pathname) => {
+      vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
+      mocks.pathname = pathname
+      mocks.extractSupabaseUserData.mockResolvedValue(null)
+      await renderTemplate()
+      expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Blog' })).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Compare clinics' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /open account menu/i })).not.toBeInTheDocument()
+    },
+  )
+
+  it('keeps the Preview fallback when proxy mode and guard markers are both missing', async () => {
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
+    mocks.headers.mockResolvedValue(new Headers({ host: 'preview.findmydoc.eu' }))
+    mocks.extractSupabaseUserData.mockResolvedValue(null)
+    await renderTemplate()
+    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Compare clinics' })).toBeInTheDocument()
+    expect(mocks.resolveHoldingMode).not.toHaveBeenCalled()
+  })
+
   it('keeps chrome hidden on a locked Preview Guard page even for platform users', async () => {
     mocks.headers.mockResolvedValue(
       new Headers({

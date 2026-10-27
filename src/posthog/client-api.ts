@@ -1,13 +1,19 @@
 'use client'
 
+import { useSyncExternalStore } from 'react'
+
 import {
   disablePostHog,
   enablePostHog,
   getPostHogSessionId,
+  getPostHogReadiness,
+  subscribePostHogReadiness,
   postHogBrowserEvents as postHogBrowserEventInterface,
   resetPostHogIdentity,
   type PostHogBrowserEventInterface,
 } from './client'
+
+export { getPostHogBrowserDiagnostics } from './client'
 
 export type { ClinicCtaClickedProperties, ClinicProfileViewedProperties } from './events'
 export type { PostHogBrowserEventInterface } from './client'
@@ -38,3 +44,9 @@ export function getConsentedPostHogSessionId(): string | undefined {
 }
 
 export const postHogBrowserEvents: PostHogBrowserEventInterface = postHogBrowserEventInterface
+
+const getServerReadiness = () => false
+
+export function usePostHogAnalyticsReady(): boolean {
+  return useSyncExternalStore(subscribePostHogReadiness, getPostHogReadiness, getServerReadiness)
+}

@@ -51,6 +51,14 @@ vi.hoisted(async () => {
   const { createRequire } = await import('node:module')
   createRequire(import.meta.url)('next/dist/server/node-environment-baseline')
 })
+// Keep the real proxy boundary with a deterministic enabled guard. Flag diagnostics have their own tests.
+vi.mock('@/posthog/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/posthog/api')>()),
+  evaluatePostHogFlags: async () => ({
+    getEvaluation: () => ({ status: 'evaluated', value: true }),
+    isEnabled: () => true,
+  }),
+}))
 vi.mock('@/features/transactionalEmail/lettermintRegistry.json', async () => ({
   default: (await import('../fixtures/lettermintWebhook')).webhookConfiguration.registry,
 }))

@@ -8,6 +8,7 @@ import { ClinicDetailClientAdapter } from '@/app/(frontend)/clinics/[slug]/Clini
 import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 
 vi.mock('@/posthog/client-api', () => ({
+  usePostHogAnalyticsReady: () => true,
   getConsentedPostHogSessionId: vi.fn(() => undefined),
   postHogBrowserEvents: {
     clinicCtaClicked: vi.fn(),

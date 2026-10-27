@@ -40,6 +40,10 @@ import {
   type PostHogFlagKey,
 } from '@/posthog/api'
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
+import { fallbackConsoleLogger } from '@/utilities/logging/consoleLogger'
+import { createScopedLogger } from '@/utilities/logging/shared'
+
+const logger = createScopedLogger(fallbackConsoleLogger, { component: 'preview-guard', scope: 'auth.preview_guard' })
 
 const GUARD_FLAG_KEYS = ['preview-guard-enabled'] as const satisfies readonly PostHogFlagKey[]
 const NON_PAGE_PATHS = new Set(['/next/exit-preview', '/next/preview'])
@@ -257,12 +261,23 @@ const handlePreviewApiRequest = async (request: NextRequest): Promise<NextRespon
 }
 
 const evaluateGuardFlagsForRequest = async (request: NextRequest) => {
+  const previewDeployment = isPreviewDeployment()
   const flagContext = createPostHogFlagEvaluationContext({ url: request.nextUrl })
+  if (previewDeployment) flagContext.feature_flag_site_host = 'preview.findmydoc.eu'
   const actor = resolvePostHogSiteFlagActor(flagContext)
   const flags = await evaluatePostHogFlags(actor, GUARD_FLAG_KEYS, { context: flagContext })
+  const previewEvaluation = previewDeployment ? flags.getEvaluation('preview-guard-enabled') : null
+  if (previewEvaluation?.status === 'unavailable') {
+    logger.warn(
+      { event: 'auth.preview_guard.flag_unavailable', reason: previewEvaluation.reason },
+      'Preview Guard remains active because its flag could not be evaluated.',
+    )
+  }
 
   return {
-    previewGuardFlagEnabled: flags.isEnabled('preview-guard-enabled'),
+    previewGuardFlagEnabled: previewDeployment
+      ? previewEvaluation?.status !== 'evaluated' || previewEvaluation.value !== false
+      : flags.isEnabled('preview-guard-enabled'),
   }
 }
 
@@ -290,7 +305,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       return previewGuardEnabled ? nextWithGuardActiveHeader(request) : nextWithoutGuardHeaders(request)
     }
 
-    return handlePreviewApiRequest(request)
+    const { previewGuardFlagEnabled } = await evaluateGuardFlagsForRequest(request)
+    return previewGuardFlagEnabled ? handlePreviewApiRequest(request) : nextWithoutGuardHeaders(request)
   }
 
   logCrawlerRequest(request)
@@ -301,19 +317,14 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   const previewDeployment = isPreviewDeployment()
-  let previewGuardFlagEnabled = false
-
-  if (!previewDeployment) {
-    const flagState = await evaluateGuardFlagsForRequest(request)
-    previewGuardFlagEnabled = flagState.previewGuardFlagEnabled
-  }
+  const { previewGuardFlagEnabled } = await evaluateGuardFlagsForRequest(request)
   const holdingMode = (await resolveHoldingMode(request.nextUrl)).mode
 
-  const previewGuardEnabled =
-    previewDeployment || (resolveDeploymentEnvironment() !== 'development' && previewGuardFlagEnabled)
+  const previewGuardEnabled = resolveDeploymentEnvironment() !== 'development' && previewGuardFlagEnabled
 
   if (!previewGuardEnabled && holdingMode === 'full') {
-    return nextWithoutGuardHeaders(request, holdingMode)
+    const response = nextWithoutGuardHeaders(request, holdingMode)
+    return previewDeployment ? withSearchRobotsHeader(response) : response
   }
 
   if (previewGuardEnabled && pagePathClassification === 'exempt') {

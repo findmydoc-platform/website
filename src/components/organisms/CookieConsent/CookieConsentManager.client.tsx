@@ -13,6 +13,7 @@ export type CookieConsentManagerProps = {
   initialConsent: CookieConsentState | null
   onAnalyticsConsentChange: (enabled: boolean) => void
   onPersistConsent: (consent: CookieConsentState) => void
+  readConsent: (expectedVersion: number) => CookieConsentState | null
 }
 
 const compactBannerRoutes = new Set(['/login/patient', '/register/patient', '/register/clinic', '/admin/login'])
@@ -22,6 +23,7 @@ export function CookieConsentManager({
   initialConsent,
   onAnalyticsConsentChange,
   onPersistConsent,
+  readConsent,
 }: CookieConsentManagerProps) {
   const pathname = usePathname()
   const controller = useCookieConsentController({
@@ -29,6 +31,7 @@ export function CookieConsentManager({
     initialConsent,
     onAnalyticsConsentChange,
     onPersistConsent,
+    readConsent,
   })
   const useCompactBanner = pathname ? compactBannerRoutes.has(pathname) : false
 
@@ -41,6 +44,7 @@ export function CookieConsentManager({
       {controller.isBannerVisible ? (
         <CookieConsentBanner
           compact={useCompactBanner}
+          ready={controller.isReady}
           config={config}
           onAcceptAll={() => controller.persistConsent('accepted', controller.acceptAllCategories)}
           onCustomize={controller.openSettings}
@@ -51,6 +55,7 @@ export function CookieConsentManager({
       {controller.isLauncherVisible ? (
         <CookieConsentLauncher
           compact={useCompactBanner}
+          ready={controller.isReady}
           label={config.reopenLabel}
           onOpenSettings={controller.openSettings}
         />

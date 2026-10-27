@@ -18,7 +18,14 @@ vi.mock('payload', async (importOriginal) => ({
 }))
 
 vi.mock('@payload-config', () => ({ default: {} }))
-vi.mock('@/posthog/api', () => ({ sendPostHogException: vi.fn() }))
+vi.mock('@/posthog/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/posthog/api')>()),
+  sendPostHogException: vi.fn(),
+  evaluatePostHogFlags: vi.fn(async () => ({
+    getEvaluation: (key: string) => ({ status: 'evaluated', value: key === 'preview-guard-enabled' }),
+    isEnabled: (key: string) => key === 'preview-guard-enabled',
+  })),
+}))
 import { proxy } from '@/proxy'
 import { GET, HEAD, POST } from '@/app/api/internal/clinic-notifications/preview-retention/route'
 

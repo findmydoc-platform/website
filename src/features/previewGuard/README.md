@@ -2,7 +2,7 @@
 
 ## Purpose
 
-- Protect every Preview deployment inside the application while Vercel Deployment Protection remains disabled.
+- Protect Preview deployments inside the application while Vercel Deployment Protection remains disabled.
 - Restrict known platform pages and valid dynamic CMS deep links to platform staff sessions.
 - Keep the patient login, recovery, invitation, and implemented patient-owned pages available for Preview QA.
 - Keep patient account creation staff-managed through Payload Admin while the guard is enabled.
@@ -12,7 +12,9 @@
 
 - `VERCEL_ENV=preview` activates the guard for every Vercel-generated branch, deployment, and alias host.
 - `DEPLOYMENT_ENVIRONMENT=preview` provides the same behavior for explicitly configured non-Vercel Preview runtimes.
-- Hostnames do not determine whether a deployment is Preview.
+- Runtime policy determines whether a deployment is Preview. Preview evaluates the existing server-side flag `preview-guard-enabled` with the stable site identity `preview.findmydoc.eu`, including on generated deployment and branch hosts. This lets the existing Preview release condition control an approved public test window independently of request routing or visitor-supplied headers.
+- Preview stays guarded when flag evaluation is missing, invalid, unavailable or not configured. Only an explicitly evaluated boolean `false` opens the deployment. Preview remains `noindex` during the public test window.
+- Unavailable Preview flag evaluation writes the operational event `auth.preview_guard.flag_unavailable` with its reason, without credential values or visitor identity.
 - Local development stays open. A PostHog result cannot activate the guard while runtime policy resolves to `development`.
 - The server-side PostHog flag `preview-guard-enabled` can additionally activate the guard in a non-local, non-Preview runtime.
 - Guard flag evaluation uses a server-side site actor, not the visitor-controlled PostHog cookie identity.
@@ -27,8 +29,9 @@
 - Known platform and Payload Admin pages redirect anonymous requests to `/admin/login` with a safe internal `next` path.
 - Anonymous dynamic CMS paths return `404` without a Payload lookup. A platform session can continue to the application so Payload can resolve a valid deep link.
 - Obvious scanner and invalid reserved paths return `404` before feature-flag evaluation or authentication.
-- Preview APIs never receive an HTML login redirect. The exact anonymous API allowlist is `/api/auth/login`, `/api/auth/callback`, and `/api/auth/password/reset`.
-- Other Preview APIs require a server-validated Supabase session or Bearer token before endpoint authorization. Invalid credentials return JSON `401`; a recognizable temporary validation failure returns JSON `503`.
+- Guarded Preview APIs never receive an HTML login redirect. The exact anonymous API allowlist is `/api/auth/login`, `/api/auth/callback`, and `/api/auth/password/reset`.
+- Other guarded Preview APIs require a server-validated Supabase session or Bearer token before endpoint authorization. Invalid credentials return JSON `401`; a recognizable temporary validation failure returns JSON `503`.
+- When Preview Guard is disabled, APIs use their normal endpoint authorization, including guest inquiry submission. Visitor-supplied guard headers are removed before forwarding.
 - `/api/mcp` and `/api/clinic-dashboard/**` pass directly to their own machine-authentication contracts. Form Bridge forwards only `Cookie` and `Authorization` to same-origin Payload calls after validating the request host.
 - `/register/patient` is not exempt. While Preview Guard is enabled, patient creation is redirected to the staff-only Payload Admin form and the public registration API rejects direct submissions.
 - Preview Guard takes precedence over Temporary Landing Mode when both are active. Temporary Landing Mode keeps its existing behavior when Preview Guard is inactive.
@@ -44,6 +47,8 @@
 - Vercel Firewall filtering remains a separate outer layer. The route classifier is the application fallback, not a replacement for the firewall.
 
 ## Rollback
+
+Restore the existing canonical Preview host condition for `preview-guard-enabled` to 100% after a public test window. Production conditions stay unchanged. Wait for flag-definition propagation and verify anonymous profile denial and guest API denial before declaring the guard restored. Turning the guard off does not disable Temporary Landing Mode or endpoint authorization.
 
 1. Remove completely:
    - Delete `src/features/previewGuard/**`

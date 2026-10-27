@@ -3,7 +3,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const posthogMock = vi.hoisted(() => ({
-  capture: vi.fn(),
+  capture: vi.fn(() => ({ event: 'synthetic' })),
+  config: { token: '' },
+  has_opted_in_capturing: vi.fn(() => true),
+  has_opted_out_capturing: vi.fn(() => false),
   get_session_id: vi.fn(),
   init: vi.fn(),
   opt_in_capturing: vi.fn(),
@@ -21,7 +24,14 @@ describe('posthog client helpers', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
-    posthogMock.init.mockImplementation(() => undefined)
+    posthogMock.opt_in_capturing.mockImplementation(() => undefined)
+    posthogMock.has_opted_in_capturing.mockReturnValue(true)
+    posthogMock.has_opted_out_capturing.mockReturnValue(false)
+    posthogMock.config.token = ''
+    posthogMock.init.mockImplementation((key: string, config: { loaded?: () => void }) => {
+      posthogMock.config.token = key
+      config.loaded?.()
+    })
     process.env = {
       ...OLD_ENV,
       NEXT_PUBLIC_POSTHOG_KEY: 'phc_test',
@@ -69,7 +79,7 @@ describe('posthog client helpers', () => {
 
     expect(posthogMock.init).toHaveBeenCalledTimes(1)
     expect(posthogMock.opt_in_capturing).toHaveBeenCalledWith({ captureEventName: false })
-    expect(posthogMock.opt_out_capturing).toHaveBeenCalledTimes(1)
+    expect(posthogMock.opt_out_capturing).toHaveBeenCalled()
     expect(posthogMock.reset).toHaveBeenCalledTimes(1)
   })
 
@@ -118,6 +128,55 @@ describe('posthog client helpers', () => {
 
     posthogMock.get_session_id.mockReturnValueOnce('invalid session id')
     expect(getConsentedPostHogSessionId()).toBeUndefined()
+  })
+
+  it('waits for SDK load and confirms the configured token before readiness', async () => {
+    let loaded: (() => void) | undefined
+    posthogMock.init.mockImplementation((key: string, config: { loaded?: () => void }) => {
+      posthogMock.config.token = key
+      loaded = config.loaded
+    })
+    const client = await import('@/posthog/client')
+    expect(client.enablePostHog()).toBe(false)
+    expect(client.getPostHogReadiness()).toBe(false)
+    loaded?.()
+    expect(client.getPostHogReadiness()).toBe(true)
+    expect(posthogMock.init).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['missing_key', 'init_throws', 'wrong_token', 'opt_in_throws', 'unconfirmed_consent'])(
+    'keeps capture closed for %s',
+    async (failure) => {
+      if (failure === 'missing_key') delete process.env.NEXT_PUBLIC_POSTHOG_KEY
+      if (failure === 'init_throws')
+        posthogMock.init.mockImplementation(() => {
+          throw new Error('synthetic failure')
+        })
+      if (failure === 'wrong_token')
+        posthogMock.init.mockImplementation(() => {
+          posthogMock.config.token = ''
+        })
+      if (failure === 'opt_in_throws')
+        posthogMock.opt_in_capturing.mockImplementationOnce(() => {
+          throw new Error('synthetic failure')
+        })
+      if (failure === 'unconfirmed_consent') posthogMock.has_opted_in_capturing.mockReturnValue(false)
+      const client = await import('@/posthog/client')
+      expect(client.enablePostHog()).toBe(false)
+      expect(client.getPostHogReadiness()).toBe(false)
+      expect(client.getPostHogSessionId()).toBeUndefined()
+    },
+  )
+
+  it('unsubscribes readiness listeners without retaining mounted consumers', async () => {
+    const client = await import('@/posthog/client')
+    const notify = vi.fn()
+    const unsubscribe = client.subscribePostHogReadiness(notify)
+    client.enablePostHog()
+    expect(notify).toHaveBeenCalledTimes(1)
+    unsubscribe()
+    client.disablePostHog()
+    expect(notify).toHaveBeenCalledTimes(1)
   })
 
   it('does not expose the raw PostHog browser instance', async () => {

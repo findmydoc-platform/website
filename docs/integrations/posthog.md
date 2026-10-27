@@ -71,6 +71,58 @@ The current repository registers exactly two server-side PostHog guard flags:
 
 These are operational access guards, not product rollout flags. They are evaluated server-side through `evaluatePostHogFlags()` and default to `false` in code when PostHog is unavailable or the secure key is missing. Guard checks use a server-side site actor with `feature_flag_site_host` and `feature_flag_site_path`; browser-side feature-flag evaluation is disabled.
 
+### Browser consent lifecycle
+
+`src/posthog/client.ts` owns the browser SDK instance. Initialization, the site's consent decision, and confirmed
+capture readiness are separate. The SDK initializes with capture disabled by default. Readiness requires its loaded
+callback, the configured project token, and a confirmed SDK opt-in. Missing configuration or SDK/storage errors keep
+application event capture and session correlation closed. Readiness does not wait for remote configuration.
+
+The browser facade exposes `usePostHogAnalyticsReady()` without exposing the SDK. The clinic route adapter passes
+readiness to the presentation analytics port. The displayed clinic profile captures once after readiness, and only a
+successful SDK capture marks that view as tracked. Earlier profiles and clicks are not queued. Withdrawing and restoring
+consent does not replay a profile already captured by the mounted view.
+
+Withdrawal closes application capture immediately, resets identity, and then writes the final SDK opt-out. Reconsent
+reuses the initialized instance. Logout resets identity and reapplies the existing site consent decision. The site cookie
+and consent controls remain the authority for that decision.
+
+The consent manager uses `initialConsent` only for the initial HTML snapshot. All banner and launcher actions are
+natively disabled until client initialization reads the current versioned browser cookie. The browser adapter injects
+that read into the controller. Refreshed server props or equivalent category references cannot replace a stored choice.
+A new consent version requires a new choice. The manager verifies each write by reading the cookie back; an absent,
+unreadable, or mismatched cookie leaves analytics disabled. After a failed write, the mounted controller keeps analytics
+disabled until a later choice is successfully persisted, including across server prop refreshes.
+
+Browser DevTools can read the hidden `[data-analytics-diagnostics]` element before and after login, on a clinic profile,
+and before submitting an inquiry:
+
+```js
+JSON.parse(document.querySelector('[data-analytics-diagnostics]').getAttribute('data-analytics-diagnostics'))
+```
+
+The snapshot contains only `cookieValid`, `analyticsAllowed`, `sdkReady`, and `sessionAvailable` booleans plus `reason`.
+`cookieValid` means the current cookie matches the configured consent version. `analyticsAllowed` is the consent decision
+applied by the controller; `sdkReady` is the confirmed application capture gate. `sessionAvailable` reports only whether
+the consent-gated session getter can return a valid ID. It never reads a session before consent. The fixed reasons are
+`consent_uninitialized`, `cookie_invalid`, `consent_required`, `sdk_unavailable`, `sdk_loading`,
+`sdk_consent_unconfirmed`, `session_unavailable`, and `ready`. The snapshot updates after consent reconciliation and SDK
+readiness changes. It contains no cookie contents, session IDs, user details, credentials, raw SDK, or network endpoints,
+and it emits no analytics events. `ready` confirms local readiness; it does not prove successful event transport.
+
+The consent tests use the installed `posthog-js` implementation and the real consent controller and clinic composition.
+All network transports are intercepted. The headed Chrome transport test is opt-in because it needs a graphical browser:
+
+```bash
+POSTHOG_BROWSER_TEST=1 pnpm exec vitest run --project unit tests/unit/posthog/client-consent.browser.test.ts
+```
+
+It bundles the browser components in isolation, without starting Next.js or connecting to Payload. The intended assertions inspect actual outgoing event bodies before consent, after consent, after withdrawal, and after
+reconsent. The installed SDK rejects WebDriver-controlled browsers, including headed Chrome, before event transport.
+The browser test reports a skip when that prerequisite blocks capture. This is a test limitation, not successful transport
+evidence. SDK bot filters and browser identity remain unchanged. Live capture in an ordinary browser and PostHog reporting
+reconciliation require a separate acceptance run.
+
 ### User Identification
 
 - Authenticated users are identified through the Supabase auth strategy.

@@ -168,8 +168,9 @@ export type ClinicDetailCtaClickedEvent = {
 }
 
 export type ClinicDetailAnalyticsPort = {
+  isReady: boolean
   onCtaClicked: (event: ClinicDetailCtaClickedEvent) => void
-  onProfileViewed: (event: ClinicDetailProfileViewedEvent) => void
+  onProfileViewed: (event: ClinicDetailProfileViewedEvent) => boolean
 }
 
 export class ClinicContactRequestError extends Error {

@@ -28,5 +28,17 @@ JSON does not support comments, so we keep the rationale and evidence here for r
   - https://registry.npmjs.org/vite/8.2.2
   - https://github.com/advisories/GHSA-67mh-4wv8-2f99
 
+### systeminformation (`systeminformation` -> `5.33.16`)
+- Reason: `shadcn@4.22.1` reaches `systeminformation@5.33.15` through `@dotenvx/dotenvx`. Version 5.33.16 fixes the Windows command-injection advisory in `services()` without changing the repository's application dependency graph.
+- References:
+  - https://github.com/advisories/GHSA-3f7j-7jwc-fxfj
+  - https://github.com/sebhildebrandt/systeminformation/releases/tag/v5.33.16
+
+### graphql-scalars (`@payloadcms/graphql@3.90.2` -> `2.0.1`)
+- Reason: Payload resolves `graphql-scalars@1.22.2` through an exact dependency. Version 2.0.1 contains the linear-time `PhoneNumber` scalar parser that fixes the high-severity regular-expression denial-of-service advisory. Payload uses the unchanged `DateTimeResolver` and `EmailAddressResolver` exports.
+- References:
+  - https://github.com/advisories/GHSA-x8rm-f576-gq67
+  - https://github.com/graphql-hive/graphql-scalars/releases/tag/v2.0.1
+
 ## Notes
 - If you prefer the rationale next to the override entries, consider keeping this file in `.github/` or adding a PR template that references this page. `package.json` cannot contain comments.

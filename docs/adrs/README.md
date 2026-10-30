@@ -17,6 +17,7 @@ This repository contains the Architecture Decision Records (ADRs) for the projec
    - Problem Description
    - Considerations (alternatives and evaluation criteria)
    - Final Decision with rationale
+   - Consequences (positive and negative effects)
    - Technical Debt (if any)
    - Risks (optional)
    - Deprecated or Superseded sections (if applicable)
@@ -98,3 +99,4 @@ When adding a new ADR:
 - [034 — Bounded Website recovery execution exclusion](./034-adr-website-recovery-execution-exclusion.md)
 - [035 — Notification acknowledgement decision time](./035-adr-notification-acknowledgement-decision-time.md)
 - [036 — Order of clinic access changes and business writes](./036-adr-clinic-authorization-mutation-ordering.md) _(approved on 17.10.2026)_
+- [037 — Focused mutation testing for critical business logic](https://github.com/findmydoc-platform/platform-architecture/blob/cdf782c2d654241529b6bc20ecb5493787d2dbbf/decisions/037-adr-focused-mutation-testing.md) _(Draft platform decision; Website adoption remains open; GitHub access required)_

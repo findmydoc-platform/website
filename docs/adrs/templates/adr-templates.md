@@ -26,6 +26,11 @@ Provide enough information for the reader to understand why certain options were
 
 State the final decision and explain why this option was chosen over others based on the evaluation criteria.
 
+## Consequences
+
+Describe the positive and negative consequences of this decision, including expected benefits, costs, and trade-offs.
+Distinguish expected effects from observed evidence.
+
 ## Technical Debt
 
 Identify any technical debt introduced by this decision and how it will be managed.

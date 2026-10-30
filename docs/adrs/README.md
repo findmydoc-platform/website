@@ -17,6 +17,7 @@ This repository contains the Architecture Decision Records (ADRs) for the projec
    - Problem Description
    - Considerations (alternatives and evaluation criteria)
    - Final Decision with rationale
+   - Consequences (positive and negative effects)
    - Technical Debt (if any)
    - Risks (optional)
    - Deprecated or Superseded sections (if applicable)

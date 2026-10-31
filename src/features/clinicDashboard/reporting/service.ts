@@ -3,6 +3,8 @@ import { revalidateClinicDashboardTargetRequest } from '@/features/clinicDashboa
 import type { PayloadRequest, Where } from 'payload'
 import {
   CLINIC_DASHBOARD_REPORTING_SCHEMA_VERSION,
+  CLINIC_DASHBOARD_REPORTING_V2_SCHEMA_VERSION,
+  type ClinicDashboardReportingV2DTO,
   REPORTING_PERIOD_DAYS,
   type ClinicDashboardReportingDTO,
   type ReportingCountMetric,
@@ -12,6 +14,8 @@ import {
   type ReportingSourceState,
 } from './contracts'
 import { readPostHogClinicDashboardReporting, type PostHogReportingRead, type PostHogReportingValues } from './posthog'
+
+import { readPostHogClinicDashboardReportingV2 } from './posthog-v2'
 
 const ISTANBUL_TIME_ZONE = 'Europe/Istanbul' as const
 const INQUIRY_STATUSES = ['submitted', 'in_review', 'contacted', 'closed'] as const
@@ -479,4 +483,65 @@ export async function resolveClinicDashboardReporting(
 export const parseReportingPeriodDays = (value: string | undefined): ReportingPeriodDays | undefined => {
   const parsed = typeof value === 'string' && /^(?:7|30|90)$/u.test(value) ? Number(value) : Number.NaN
   return REPORTING_PERIOD_DAYS.includes(parsed as ReportingPeriodDays) ? (parsed as ReportingPeriodDays) : undefined
+}
+
+export async function resolveClinicDashboardReportingV2(
+  req: PayloadRequest,
+  targetClinicId: string,
+  periodDays: ReportingPeriodDays,
+  now = new Date(),
+): Promise<
+  | Exclude<ClinicDashboardReportingResult, { status: 'success' }>
+  | { status: 'success'; data: ClinicDashboardReportingV2DTO }
+> {
+  const access = await revalidateClinicDashboardTargetRequest(req, targetClinicId)
+  if (access.status !== 'authorized') return access
+  const clinicId = access.clinicId
+  const windows = createReportingWindows(periodDays, now)
+  try {
+    const clinic = await resolveClinic(req, clinicId)
+    if (!clinic || !(await isTürkiyeClinic(req, clinic))) return { status: 'access-denied' }
+  } catch {
+    return { status: 'unavailable' }
+  }
+  const [inquiries, reviews, analytics] = await Promise.all([
+    resolveInquiryMetrics(req, clinicId, windows).catch(() => undefined),
+    resolveReviews(req, clinicId).catch(() => undefined),
+    readPostHogClinicDashboardReportingV2({ clinicId, comparison: windows.comparison, current: windows.current }),
+  ])
+  return {
+    status: 'success',
+    data: {
+      schemaVersion: CLINIC_DASHBOARD_REPORTING_V2_SCHEMA_VERSION,
+      asOf: windows.asOf,
+      timezone: ISTANBUL_TIME_ZONE,
+      period: windows.current,
+      comparisonPeriod: windows.comparison,
+      metrics: {
+        ...analytics,
+        inquiries: countMetric(
+          'payload',
+          inquiries?.current,
+          inquiries ? 'available' : 'source_unavailable',
+          inquiries?.comparison,
+          inquiries ? 'available' : 'source_unavailable',
+        ) as ClinicDashboardReportingV2DTO['metrics']['inquiries'],
+        reviews: {
+          source: 'payload',
+          count: {
+            source: 'payload',
+            comparison: null,
+            state: reviews ? 'available' : 'source_unavailable',
+            value: reviews?.count ?? null,
+          },
+          average: {
+            source: 'payload',
+            comparison: null,
+            state: !reviews ? 'source_unavailable' : reviews.count === 0 ? 'no_reviews' : 'available',
+            value: reviews && reviews.count > 0 ? reviews.average : null,
+          },
+        },
+      },
+    },
+  }
 }

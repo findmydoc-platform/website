@@ -174,3 +174,14 @@ exposure as a telemetry privacy defect and use it to define and enforce the capt
 pnpm tests tests/unit/posthog/
 pnpm check
 ```
+
+
+## Five-count reporting V2
+
+[ADR 038](../adrs/038-adr-clinic-reporting-five-count-contract.md) owns V2. The server adapter sends one consolidated Query API request with a three-second total budget, no retry, no shared cache and no stale fallback. Profile Views counts repeated events; Unique Visitors and Inquiry starters count distinct existing consent-controlled browser `distinct_id` values within each clinic/window. No patient, inquiry or session identifier replaces browser recognition.
+
+`POSTHOG_PROFILE_VIEWS_CAPTURE_STARTED_AT` governs both profile counts; `POSTHOG_IMPRESSIONS_CAPTURE_STARTED_AT` and `POSTHOG_INQUIRY_STARTERS_CAPTURE_STARTED_AT` govern the respective new events. Values must be verified UTC instants with milliseconds. Retention and capture start must cover each window independently. Missing or invalid start evidence is partial coverage. A first observed event does not establish continuous capture.
+
+The registry defines Growth-owned `clinic_inquiry_started` and `clinic_search_result_viewed`, with required `clinic_id` and no optional custom properties. Capture follows separately in #302/#303. The first event requires an own substantive form edit, including invalid, incomplete or later cleared input; opening, focus, scrolling, prefill or consent alone do not qualify. The second requires actual viewport visibility in the active document, once per result-view instance, without a duration or percentage threshold. Neither may contain field values, contact data, medical selections, search terms or free text.
+
+`tests/unit/features/clinicDashboard/reporting/posthog-v2.test.ts` can execute the exact production-emitted query through `tests/helpers/reportingClickHouse.ts`. Set `REPORTING_CLICKHOUSE_CONTAINER` to an isolated ClickHouse 25.8 test container. Each execution creates and drops a unique synthetic database and returns the calculated rows through the source API boundary. These tests prove aggregation and boundaries, not the PostHog compiler, ingestion or deployment configuration. Default unit runs skip Docker-dependent cases; source failure tests still run.

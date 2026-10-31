@@ -20,7 +20,11 @@ vi.mock('@/features/clinicDashboard/reporting/posthog', async (importOriginal) =
   readPostHogClinicDashboardReporting: mocks.readPostHogClinicDashboardReporting,
 }))
 
-import { createReportingWindows, resolveClinicDashboardReporting } from '@/features/clinicDashboard/reporting/service'
+import {
+  createReportingWindows,
+  resolveClinicDashboardReporting,
+  resolveClinicDashboardReportingV2,
+} from '@/features/clinicDashboard/reporting/service'
 
 const now = new Date('2026-04-10T09:15:30.123Z')
 
@@ -237,6 +241,32 @@ describe('Clinic Dashboard reporting service', () => {
       status: 'authorized',
     })
     mocks.readPostHogClinicDashboardReporting.mockResolvedValue(availablePostHog)
+  })
+
+  it('keeps stored inquiries, reviews and clinic authorization independent of a V2 analytics outage', async () => {
+    const payload = configuredPayload()
+    const result = await resolveClinicDashboardReportingV2(createMockReq(null, payload), '8', 7, now)
+    expect(result.status).toBe('success')
+    if (result.status !== 'success') throw new Error('Expected authorized reporting')
+    expect(result.data.schemaVersion).toBe('clinic-dashboard-reporting-v2')
+    expect(Object.keys(result.data.metrics).sort()).toEqual([
+      'impressions',
+      'inquiries',
+      'inquiryStarters',
+      'profileViews',
+      'reviews',
+      'uniqueVisitors',
+    ])
+    expect(result.data.metrics.uniqueVisitors.current).toEqual({ value: null, state: 'source_unavailable' })
+    expect(result.data.metrics.inquiries.current).toEqual({ value: 1, state: 'available' })
+    expect(result.data.metrics.reviews.average.value).toBe(4.5)
+    expect(findFor(payload, 'patientClinicInquiries')?.where).toEqual({
+      and: expect.arrayContaining([{ clinic: { equals: '8' } }, { status: { not_equals: 'spam' } }]),
+    })
+    mocks.revalidateClinicDashboardTargetRequest.mockResolvedValueOnce({ status: 'access-denied' })
+    expect(await resolveClinicDashboardReportingV2(createMockReq(null, payload), '99', 7, now)).toEqual({
+      status: 'access-denied',
+    })
   })
 
   it.each([

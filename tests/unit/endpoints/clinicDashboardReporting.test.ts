@@ -3,11 +3,15 @@ import { clinicDashboardReportingGetHandler } from '@/endpoints/clinicDashboardR
 import type { ClinicDashboardReportingDTO, ReportingCountMetric } from '@/features/clinicDashboard/reporting/contracts'
 import { createMockPayload, createMockReq } from '../helpers/testHelpers'
 
-const mocks = vi.hoisted(() => ({ resolveClinicDashboardReporting: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  resolveClinicDashboardReporting: vi.fn(),
+  resolveClinicDashboardReportingV2: vi.fn(),
+}))
 
 vi.mock('@/features/clinicDashboard/reporting/service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/clinicDashboard/reporting/service')>()),
   resolveClinicDashboardReporting: mocks.resolveClinicDashboardReporting,
+  resolveClinicDashboardReportingV2: mocks.resolveClinicDashboardReportingV2,
 }))
 
 const metric = <Source extends 'payload' | 'posthog'>(
@@ -86,7 +90,9 @@ const expectPrivateHeaders = (response: Response) => {
   expect(response.headers.get('cache-control')).toBe('private, no-store')
   expect(response.headers.get('pragma')).toBe('no-cache')
   expect(response.headers.get('expires')).toBe('0')
-  expect(response.headers.get('vary')).toBe('Authorization, X-Findmydoc-Clinic-Scope-Contract')
+  expect(response.headers.get('vary')).toBe(
+    'Authorization, X-Findmydoc-Clinic-Scope-Contract, X-Findmydoc-Reporting-Contract',
+  )
 }
 
 describe('Clinic Dashboard reporting endpoint', () => {
@@ -96,6 +102,40 @@ describe('Clinic Dashboard reporting endpoint', () => {
       data: reportingPayload(periodDays as 7 | 30 | 90),
       status: 'success',
     }))
+  })
+
+  it('selects V2 explicitly while the absent content header remains V1', async () => {
+    const req = request('periodDays=7')
+    req.headers.set('X-Findmydoc-Reporting-Contract', 'clinic-dashboard-reporting-v2')
+    const old = reportingPayload(7)
+    const data = {
+      ...old,
+      schemaVersion: 'clinic-dashboard-reporting-v2',
+      metrics: {
+        impressions: metric('posthog', 40, 20),
+        profileViews: old.metrics.profileViews,
+        uniqueVisitors: metric('posthog', 12, 6),
+        inquiryStarters: metric('posthog', 2, 1),
+        inquiries: old.metrics.inquiries,
+        reviews: old.metrics.reviews,
+      },
+    }
+    mocks.resolveClinicDashboardReportingV2.mockResolvedValueOnce({ status: 'success', data })
+    const response = await clinicDashboardReportingGetHandler(req)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(data)
+    expect(mocks.resolveClinicDashboardReportingV2).toHaveBeenCalledWith(req, '8', 7)
+    expect(mocks.resolveClinicDashboardReporting).not.toHaveBeenCalled()
+    expectPrivateHeaders(response)
+  })
+
+  it('rejects an unknown reporting content version independently of clinic scope', async () => {
+    const req = request('periodDays=7')
+    req.headers.set('X-Findmydoc-Reporting-Contract', 'unknown-version')
+    const response = await clinicDashboardReportingGetHandler(req)
+    expect(response.status).toBe(400)
+    expect(mocks.resolveClinicDashboardReporting).not.toHaveBeenCalled()
+    expectPrivateHeaders(response)
   })
 
   it.each(['', 'periodDays=6', 'periodDays=07', 'periodDays=7&periodDays=30', 'periodDays=7&clinicId=other'])(

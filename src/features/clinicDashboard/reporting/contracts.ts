@@ -88,3 +88,18 @@ export type ClinicDashboardReportingDTO = {
     }
   }
 }
+
+export const CLINIC_DASHBOARD_REPORTING_V2_SCHEMA_VERSION = 'clinic-dashboard-reporting-v2' as const
+export const REPORTING_CONTENT_CONTRACT_HEADER = 'X-Findmydoc-Reporting-Contract' as const
+
+export type ClinicDashboardReportingV2DTO = Omit<ClinicDashboardReportingDTO, 'schemaVersion' | 'metrics'> & {
+  schemaVersion: typeof CLINIC_DASHBOARD_REPORTING_V2_SCHEMA_VERSION
+  metrics: {
+    impressions: ReportingCountMetric & { source: 'posthog' }
+    profileViews: ReportingCountMetric & { source: 'posthog' }
+    uniqueVisitors: ReportingCountMetric & { source: 'posthog' }
+    inquiryStarters: ReportingCountMetric & { source: 'posthog' }
+    inquiries: ClinicDashboardReportingDTO['metrics']['inquiries']
+    reviews: ClinicDashboardReportingDTO['metrics']['reviews']
+  }
+}

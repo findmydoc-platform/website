@@ -161,6 +161,30 @@ request-bound projections. A selected clinic path never grants permission and la
 > **Canonical decision:**
 > [ADR 029](https://github.com/findmydoc-platform/website/blob/main/docs/adrs/029-adr-tenant-safe-clinic-dashboard-reporting.md)
 
+The content version is independent of `clinic-scope-v1`. [ADR 038](../adrs/038-adr-clinic-reporting-five-count-contract.md) defines the successor. Send `X-Findmydoc-Reporting-Contract: clinic-dashboard-reporting-v2` to select V2. An absent header or explicit `clinic-dashboard-reporting-v1` retains the unchanged V1 shape during migration; unknown versions return private `400 CLINIC_DASHBOARD_INVALID_CONTRACT`.
+
+V2 uses the same envelope, count states and comparison semantics documented below, with this closed metric catalog:
+
+```ts
+type ClinicDashboardReportingV2 = Omit<ClinicDashboardReportingV1, 'schemaVersion' | 'metrics'> & {
+  schemaVersion: 'clinic-dashboard-reporting-v2'
+  metrics: {
+    impressions: CountMetric<'posthog'>
+    profileViews: CountMetric<'posthog'>
+    uniqueVisitors: CountMetric<'posthog'>
+    inquiryStarters: CountMetric<'posthog'>
+    inquiries: CountMetric<'payload'>
+    reviews: ClinicDashboardReportingV1['metrics']['reviews']
+  }
+}
+```
+
+Profile Views counts repeated `clinic_profile_viewed` events. Unique Visitors counts distinct existing consent-based browser `distinct_id` values among those events, once per clinic and window. Inquiry starters shares that recognition on `clinic_inquiry_started`; Impressions counts `clinic_search_result_viewed`. Patient, inquiry and session identifiers do not substitute for browser recognition. No identities leave the source adapter. Changing browsers/devices or clearing storage can count a visitor again; visitors without analytics consent are outside these measurements.
+
+Each metric and each current/comparison window requires retention plus a verified capture-start instant. Unknown capture starts yield `partial_coverage`, not historical zero. Missing browser recognition makes the corresponding visitor metric partial while event counts remain independent. A source outage yields null/source_unavailable, without retry or a cached fallback; stored inquiries and current reviews remain independent. New capture events are registered but require the separate #302/#303 instrumentation and verified rollout.
+
+Deploy the V1-compatible Website V2 producer checkpoint first, then the Dashboard V2 consumer. Retire V1 only after operational evidence confirms the deployed consumer switch and #304's inventory. Source commits and controlled tests do not prove this deployment sequence occurred.
+
 `GET /api/clinic-dashboard/clinics/:clinicId/reporting` carries the explicit clinic target and retains the
 `clinic-dashboard-reporting-v1` content schema. It requires `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1`.
 The previous unscoped reporting route is removed. Each request validates the personal Bearer identity and authorizes
@@ -182,7 +206,7 @@ additional parameters return:
 ```
 
 Every success and error response has `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
-`Vary: Authorization, X-Findmydoc-Clinic-Scope-Contract`. The route has no tags, revalidation, cache layer, cache policy, or public-cache impact
+`Vary: Authorization, X-Findmydoc-Clinic-Scope-Contract, X-Findmydoc-Reporting-Contract`. The route has no tags, revalidation, cache layer, cache policy, or public-cache impact
 (`no-public-impact`). Authentication failures return `401 CLINIC_DASHBOARD_UNAUTHORIZED` with `Authentication is
 required.`; unavailable reporting access returns `403 CLINIC_DASHBOARD_ACCESS_DENIED` with `Reporting access is not
 available.`; an authorization/source bootstrap failure returns `503

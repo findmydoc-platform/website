@@ -64,6 +64,8 @@ export type RegisterClinicSubmittedProperties = {
 }
 
 export type PostHogEventPropertiesByName = {
+  clinic_inquiry_started: { clinic_id: string }
+  clinic_search_result_viewed: { clinic_id: string }
   clinic_cta_clicked: ClinicCtaClickedProperties
   clinic_onboarding_interest_created: ClinicOnboardingInterestCreatedProperties
   clinic_profile_viewed: ClinicProfileViewedProperties
@@ -86,6 +88,28 @@ export type PostHogEventDefinition = {
 }
 
 export const POSTHOG_EVENT_REGISTRY = {
+  clinic_inquiry_started: {
+    analysis: 'Distinct consent-eligible visitors starting a clinic inquiry per reporting window.',
+    description: 'A visitor made their own substantive inquiry form change.',
+    optionalProperties: [],
+    owner: 'growth',
+    privacyNote: 'Only clinic_id is allowed. No field values, medical selections, contact data or free text.',
+    requiredProperties: ['clinic_id'],
+    targetSystem: 'posthog',
+    trigger:
+      'Consent-eligible own substantive form edit, including invalid, incomplete or later cleared input. Opening, focus, scrolling, automatic or outside-form prefill and consent alone do not qualify.',
+  },
+  clinic_search_result_viewed: {
+    analysis: 'Actual clinic search-result visibility.',
+    description: 'A clinic result became visible in the active viewport.',
+    optionalProperties: [],
+    owner: 'growth',
+    privacyNote: 'Only clinic_id is allowed. No search terms, medical selections or contact data.',
+    requiredProperties: ['clinic_id'],
+    targetSystem: 'posthog',
+    trigger:
+      'Consent-eligible result visible in the active viewport once per result-view instance, without a minimum duration or percentage threshold.',
+  },
   clinic_cta_clicked: {
     analysis: 'Clinic profile CTA engagement and contact intent funnel analysis.',
     allowedPropertyValues: {
@@ -177,6 +201,8 @@ export const CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG = Object.freeze({
     ctaClicked: registeredReportingEvent('clinic_cta_clicked'),
     patientInquiryCreated: registeredReportingEvent('patient_inquiry_created'),
     profileViewed: registeredReportingEvent('clinic_profile_viewed'),
+    inquiryStarted: registeredReportingEvent('clinic_inquiry_started'),
+    searchResultViewed: registeredReportingEvent('clinic_search_result_viewed'),
   }),
 })
 

@@ -100,3 +100,5 @@ When adding a new ADR:
 - [035 — Notification acknowledgement decision time](./035-adr-notification-acknowledgement-decision-time.md)
 - [036 — Order of clinic access changes and business writes](./036-adr-clinic-authorization-mutation-ordering.md) _(approved on 17.10.2026)_
 - [037 — Focused mutation testing for critical business logic](https://github.com/findmydoc-platform/platform-architecture/blob/cdf782c2d654241529b6bc20ecb5493787d2dbbf/decisions/037-adr-focused-mutation-testing.md) _(Draft platform decision; Website adoption remains open; GitHub access required)_
+
+- [038 — Five-count Clinic Dashboard reporting contract](./038-adr-clinic-reporting-five-count-contract.md) _(approved through specification #299)_

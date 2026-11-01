@@ -30,6 +30,59 @@ describe.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
   'inquiry starters through the unchanged production query',
   () => {
     it.each([
+      {
+        period: 'current',
+        timestamp: '2026-10-25T21:00:00.000Z',
+        starters: {
+          current: { state: 'partial_coverage', value: null },
+          comparison: { state: 'available', value: 1, absoluteDelta: null, relativeDeltaPercent: null },
+        },
+      },
+      {
+        period: 'comparison',
+        timestamp: '2026-10-18T21:00:00.000Z',
+        starters: {
+          current: { state: 'available', value: 1 },
+          comparison: { state: 'partial_coverage', value: null, absoluteDelta: null, relativeDeltaPercent: null },
+        },
+      },
+    ])('makes only $period starters partial when an edit has no browser identity', async (fixture) => {
+      configure()
+      vi.stubEnv('POSTHOG_IMPRESSIONS_CAPTURE_STARTED_AT', '2025-01-01T00:00:00.000Z')
+      const current = { from: '2026-10-25T21:00:00.000Z', to: '2026-11-01T12:00:00.000Z' }
+      const comparison = { from: '2026-10-18T21:00:00.000Z', to: '2026-10-25T12:00:00.000Z' }
+      vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
+        Response.json(
+          executeReportingQuery(JSON.parse(String(init.body)).query.query, [
+            ...[current.from, comparison.from].flatMap((timestamp) => [
+              event(timestamp, 'recognized-browser'),
+              event(timestamp, 'recognized-browser', '31', 'profile-session', 'clinic_profile_viewed'),
+              event(timestamp, 'recognized-browser', '31', 'listing-session', 'clinic_search_result_viewed'),
+            ]),
+            event(fixture.timestamp, '', '31', 'valid-session'),
+          ]),
+        ),
+      )
+      const reporting = await readPostHogClinicDashboardReportingV2({ clinicId: '31', current, comparison })
+      expect(reporting.inquiryStarters).toEqual({ source: 'posthog', ...fixture.starters })
+      expect(reporting.uniqueVisitors).toEqual({
+        source: 'posthog',
+        current: { state: 'available', value: 1 },
+        comparison: { state: 'available', value: 1, absoluteDelta: 0, relativeDeltaPercent: 0 },
+      })
+      expect(reporting.profileViews).toEqual({
+        source: 'posthog',
+        current: { state: 'available', value: 1 },
+        comparison: { state: 'available', value: 1, absoluteDelta: 0, relativeDeltaPercent: 0 },
+      })
+      expect(reporting.impressions).toEqual({
+        source: 'posthog',
+        current: { state: 'available', value: 1 },
+        comparison: { state: 'available', value: 1, absoluteDelta: 0, relativeDeltaPercent: 0 },
+      })
+    })
+
+    it.each([
       [7, '2026-03-27T21:00:00.000Z', '2026-04-03T09:15:30.123Z', '2026-04-03T21:00:00.000Z'],
       [30, '2026-02-09T21:00:00.000Z', '2026-03-11T09:15:30.123Z', '2026-03-11T21:00:00.000Z'],
       [90, '2025-10-12T21:00:00.000Z', '2026-01-10T09:15:30.123Z', '2026-01-10T21:00:00.000Z'],

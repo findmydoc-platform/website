@@ -74,6 +74,70 @@ describe('five-count reporting source', () => {
   )
 
   it.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER)).each([
+    {
+      period: 'current',
+      timestamp: current.from,
+      visitors: {
+        current: { state: 'partial_coverage', value: null },
+        comparison: { state: 'available', value: 1, absoluteDelta: null, relativeDeltaPercent: null },
+      },
+      views: {
+        current: { state: 'available', value: 2 },
+        comparison: { state: 'available', value: 1, absoluteDelta: 1, relativeDeltaPercent: 100 },
+      },
+    },
+    {
+      period: 'comparison',
+      timestamp: comparison.from,
+      visitors: {
+        current: { state: 'available', value: 1 },
+        comparison: { state: 'partial_coverage', value: null, absoluteDelta: null, relativeDeltaPercent: null },
+      },
+      views: {
+        current: { state: 'available', value: 1 },
+        comparison: { state: 'available', value: 2, absoluteDelta: -1, relativeDeltaPercent: -50 },
+      },
+    },
+  ])('makes only $period visitors partial when a profile view has no browser identity', async (fixture) => {
+    configure()
+    vi.stubEnv('POSTHOG_IMPRESSIONS_CAPTURE_STARTED_AT', '2026-01-01T00:00:00.000Z')
+    vi.stubEnv('POSTHOG_INQUIRY_STARTERS_CAPTURE_STARTED_AT', '2026-01-01T00:00:00.000Z')
+    vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
+      Response.json(
+        executeReportingQuery(JSON.parse(String(init.body)).query.query, [
+          ...[current.from, comparison.from].flatMap((timestamp) =>
+            ['clinic_profile_viewed', 'clinic_search_result_viewed', 'clinic_inquiry_started'].map((event) => ({
+              timestamp,
+              event,
+              distinct_id: 'recognized-browser',
+              properties: { clinic_id: '31' },
+            })),
+          ),
+          {
+            timestamp: fixture.timestamp,
+            event: 'clinic_profile_viewed',
+            distinct_id: '',
+            properties: { clinic_id: '31', $session_id: 'valid-session', submission_id: 'valid-inquiry' },
+          },
+        ]),
+      ),
+    )
+    const result = await readPostHogClinicDashboardReportingV2({ clinicId: '31', comparison, current })
+    expect(result.uniqueVisitors).toEqual({ source: 'posthog', ...fixture.visitors })
+    expect(result.profileViews).toEqual({ source: 'posthog', ...fixture.views })
+    expect(result.impressions).toEqual({
+      source: 'posthog',
+      current: { state: 'available', value: 1 },
+      comparison: { state: 'available', value: 1, absoluteDelta: 0, relativeDeltaPercent: 0 },
+    })
+    expect(result.inquiryStarters).toEqual({
+      source: 'posthog',
+      current: { state: 'available', value: 1 },
+      comparison: { state: 'available', value: 1, absoluteDelta: 0, relativeDeltaPercent: 0 },
+    })
+  })
+
+  it.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER)).each([
     [7, '2026-03-27T21:00:00.000Z', '2026-04-03T09:15:30.123Z', '2026-04-03T21:00:00.000Z'],
     [30, '2026-02-09T21:00:00.000Z', '2026-03-11T09:15:30.123Z', '2026-03-11T21:00:00.000Z'],
     [90, '2025-10-12T21:00:00.000Z', '2026-01-10T09:15:30.123Z', '2026-01-10T21:00:00.000Z'],

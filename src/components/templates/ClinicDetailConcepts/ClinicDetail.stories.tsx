@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, mocked, userEvent, within } from 'storybook/test'
 
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import {
@@ -468,7 +468,9 @@ export const InquiryStarts: Story = {
     await userEvent.selectOptions(form.getByRole('combobox', { name: 'Doctor' }), 'doctor-2')
     await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(2)
     await userEvent.type(form.getByRole('textbox', { name: 'Message' }), 'Synthetic test content')
+    const callsBeforeClear = mocked(args.analytics.onInquiryStarted).mock.calls.length
     await userEvent.clear(form.getByRole('textbox', { name: 'Message' }))
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(callsBeforeClear + 1)
     await expect(args.analytics.onInquiryStarted).toHaveBeenLastCalledWith({ clinicId: String(args.data.clinicId) })
   },
 }

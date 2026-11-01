@@ -23,16 +23,9 @@ import {
   type PostHogEventPropertiesByName,
   type PostHogScalarProperty,
 } from './events'
-import { readClinicInquirySessionId } from './inquirySessionCorrelation'
 
 export { CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG, POSTHOG_EVENT_REGISTRY }
-export type {
-  ClinicDashboardReportingCtaId,
-  PostHogEventDefinition,
-  PostHogEventName,
-  PostHogScalarProperty,
-} from './events'
-export { readClinicInquirySessionId }
+export type { PostHogEventDefinition, PostHogEventName, PostHogScalarProperty } from './events'
 
 export type PostHogActorType = 'anonymous' | 'patient' | 'clinic' | 'platform'
 
@@ -492,7 +485,6 @@ async function capturePostHogServerEvent<Name extends PostHogEventName>({
 
 export interface PostHogServerEventInterface {
   clinicOnboardingInterestCreated(input: PostHogServerEventInput<'clinic_onboarding_interest_created'>): Promise<void>
-  patientInquiryCreated(input: PostHogServerEventInput<'patient_inquiry_created'>): Promise<void>
   registerClinicSubmitted(input: PostHogServerEventInput<'register_clinic_submitted'>): Promise<void>
 }
 
@@ -502,11 +494,6 @@ export const postHogServerEvents: PostHogServerEventInterface = {
       ...input,
       event: 'clinic_onboarding_interest_created',
     }),
-  patientInquiryCreated: (input) =>
-    capturePostHogServerEvent({
-      ...input,
-      event: 'patient_inquiry_created',
-    }),
   registerClinicSubmitted: (input) =>
     capturePostHogServerEvent({
       ...input,
@@ -515,13 +502,6 @@ export const postHogServerEvents: PostHogServerEventInterface = {
 }
 
 export { postHogServerConsent, type PostHogServerConsentInterface } from './serverConsent'
-
-export const captureStoredPatientInquiryPostHogEvent = async (
-  input: import('./inquiry').StoredPatientInquiryPostHogCaptureInput,
-): Promise<void> => {
-  const { captureStoredPatientInquiryPostHogEvent: capture } = await import('./inquiry')
-  await capture(input)
-}
 
 export async function identifyPostHogActor(actor: PostHogActor): Promise<void> {
   if (!actor.isAuthenticated || identifiedActors.has(actor.distinctId) || !isNodeRuntime()) {

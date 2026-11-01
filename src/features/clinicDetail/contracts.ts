@@ -156,20 +156,9 @@ export type ClinicDetailProfileViewedEvent = {
   verificationTier: ClinicVerificationTier
 }
 
-export type ClinicDetailCtaClickedEvent = {
-  clinicId: string
-  clinicSlug: string
-  ctaId: 'choose_treatment' | 'contact' | 'contact_doctor'
-  ctaLabel: string
-  ctaLocation: 'doctor_card' | 'further_treatments' | 'location_card' | 'map_overlay' | 'treatment_strip'
-  doctorId?: string
-  pagePath: string
-  treatmentId?: string
-}
-
 export type ClinicDetailAnalyticsPort = {
   isReady: boolean
-  onCtaClicked: (event: ClinicDetailCtaClickedEvent) => void
+  onInquiryStarted: (event: { clinicId: string }) => boolean
   onProfileViewed: (event: ClinicDetailProfileViewedEvent) => boolean
 }
 

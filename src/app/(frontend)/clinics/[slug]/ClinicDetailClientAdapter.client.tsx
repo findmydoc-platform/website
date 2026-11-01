@@ -9,22 +9,10 @@ import {
   type ClinicContactRequestSubmitter,
   type ClinicDetailConceptProps,
 } from '@/features/clinicDetail/contracts'
-import { getConsentedPostHogSessionId, postHogBrowserEvents, usePostHogAnalyticsReady } from '@/posthog/client-api'
+import { postHogBrowserEvents, usePostHogAnalyticsReady } from '@/posthog/client-api'
 
 const clinicDetailAnalytics: Omit<ClinicDetailAnalyticsPort, 'isReady'> = {
-  onCtaClicked: ({ clinicId, clinicSlug, ctaId, ctaLabel, ctaLocation, doctorId, pagePath, treatmentId }) => {
-    postHogBrowserEvents.clinicCtaClicked({
-      clinic_id: clinicId,
-      clinic_slug: clinicSlug,
-      cta_id: ctaId,
-      cta_label: ctaLabel,
-      cta_location: ctaLocation,
-      ...(doctorId ? { doctor_id: doctorId } : {}),
-      page_path: pagePath,
-      source_route: 'clinic_detail',
-      ...(treatmentId ? { treatment_id: treatmentId } : {}),
-    })
-  },
+  onInquiryStarted: ({ clinicId }) => postHogBrowserEvents.clinicInquiryStarted({ clinic_id: clinicId }),
   onProfileViewed: ({ clinicId, clinicSlug, hasDoctors, hasTreatments, pagePath, verificationTier }) => {
     return postHogBrowserEvents.clinicProfileViewed({
       clinic_id: clinicId,
@@ -39,11 +27,10 @@ const clinicDetailAnalytics: Omit<ClinicDetailAnalyticsPort, 'isReady'> = {
 }
 
 export const submitClinicContactRequest: ClinicContactRequestSubmitter = async (payload, authenticated) => {
-  const sessionId = getConsentedPostHogSessionId()
   const response = await fetch(authenticated ? '/api/patient/inquiries' : '/api/clinic-contact-requests', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, ...(sessionId ? { session_id: sessionId } : {}) }),
+    body: JSON.stringify(payload),
   })
 
   if (!response.ok) {

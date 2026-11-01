@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { once } from 'node:events'
@@ -69,6 +69,12 @@ const pendingNavigation: string[] = []
 
 describe.skipIf(process.env.POSTHOG_BROWSER_TEST !== '1')('actual listing viewport capture', () => {
   beforeAll(async () => {
+    const consoleState = execFileSync('/usr/sbin/ioreg', ['-n', 'Root', '-d1', '-l'], { encoding: 'utf8' })
+    if (/"CGSSessionScreenIsLocked"=Yes/u.test(consoleState)) {
+      throw new Error(
+        'Native visibility tests require an unlocked macOS desktop. No new capture evidence was produced.',
+      )
+    }
     const result = await build({
       configFile: false,
       logLevel: 'silent',
@@ -139,6 +145,10 @@ describe.skipIf(process.env.POSTHOG_BROWSER_TEST !== '1')('actual listing viewpo
         '--remote-debugging-port=0',
         '--no-first-run',
         '--no-default-browser-check',
+        '--disable-background-networking',
+        '--disable-component-update',
+        '--disable-sync',
+        '--disable-extensions',
         '--disable-blink-features=AutomationControlled',
         '--window-size=1440,700',
         '--no-startup-window',

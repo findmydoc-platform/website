@@ -13,7 +13,6 @@ const postHogMocks = vi.hoisted(() => ({
     userType: 'anonymous',
   },
   clinicOnboardingInterestCreated: vi.fn(),
-  patientInquiryCreated: vi.fn(),
   resolveAnonymousPostHogActor: vi.fn(),
   resolveAnalyticsConsent: vi.fn(),
 }))
@@ -49,10 +48,7 @@ vi.mock('@/posthog/api', () => ({
   },
   postHogServerEvents: {
     clinicOnboardingInterestCreated: postHogMocks.clinicOnboardingInterestCreated,
-    patientInquiryCreated: postHogMocks.patientInquiryCreated,
   },
-  readClinicInquirySessionId: (value: unknown) =>
-    typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/u.test(value) ? value : undefined,
   resolveAnonymousPostHogActor: postHogMocks.resolveAnonymousPostHogActor,
 }))
 
@@ -97,7 +93,6 @@ describe('POST /api/form-bridge/[slug]', () => {
     expect(response.status).toBe(400)
     expect(json.error).toBe('Invalid request payload')
     expect(mockedGetForm).not.toHaveBeenCalled()
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 
@@ -120,7 +115,6 @@ describe('POST /api/form-bridge/[slug]', () => {
 
     expect(response.status).toBe(422)
     expect(json.error).toBe('Validation failed')
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 
@@ -139,7 +133,6 @@ describe('POST /api/form-bridge/[slug]', () => {
       message: 'Form submitted successfully',
       data: { id: 'submission-1' },
     })
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 
@@ -228,7 +221,6 @@ describe('POST /api/form-bridge/[slug]', () => {
 
     expect(response.status).toBe(200)
     expect(postHogMocks.resolveAnonymousPostHogActor).not.toHaveBeenCalled()
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(mockedSubmitFormData).toHaveBeenCalledWith(
       expect.objectContaining({
         values: expect.not.objectContaining({ distinct_id: expect.anything(), session_id: expect.anything() }),
@@ -284,7 +276,6 @@ describe('POST /api/form-bridge/[slug]', () => {
         submission_id: 'submission-2',
       },
     })
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
   })
 
   it('does not track form bridge events when client-provided tracking identifiers are unsafe', async () => {
@@ -307,7 +298,6 @@ describe('POST /api/form-bridge/[slug]', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 
@@ -330,7 +320,6 @@ describe('POST /api/form-bridge/[slug]', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 
@@ -351,7 +340,6 @@ describe('POST /api/form-bridge/[slug]', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 
@@ -372,7 +360,6 @@ describe('POST /api/form-bridge/[slug]', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 
@@ -397,7 +384,6 @@ describe('POST /api/form-bridge/[slug]', () => {
 
     expect(response.status).toBe(200)
     expect(postHogMocks.resolveAnalyticsConsent).not.toHaveBeenCalled()
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 
@@ -424,7 +410,6 @@ describe('POST /api/form-bridge/[slug]', () => {
 
     expect(response.status).toBe(200)
     expect(postHogMocks.resolveAnalyticsConsent).not.toHaveBeenCalled()
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 
@@ -453,7 +438,6 @@ describe('POST /api/form-bridge/[slug]', () => {
 
     expect(response.status).toBe(200)
     expect(postHogMocks.resolveAnonymousPostHogActor).not.toHaveBeenCalled()
-    expect(postHogMocks.patientInquiryCreated).not.toHaveBeenCalled()
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 })

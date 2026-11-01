@@ -57,7 +57,7 @@ afterEach(() => {
 })
 
 describe('browser consent with the installed PostHog SDK', () => {
-  it('captures the current profile once after same-page consent and only later CTA actions', async () => {
+  it('captures the current profile once after consent without capturing retired CTA actions', async () => {
     const { CookieConsentClientAdapter } = await import('@/features/cookieConsent/CookieConsentClientAdapter.client')
     const { ClinicDetailClientAdapter } =
       await import('@/app/(frontend)/clinics/[slug]/ClinicDetailClientAdapter.client')
@@ -79,7 +79,7 @@ describe('browser consent with the installed PostHog SDK', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
     expect(events.filter((name) => name === 'clinic_profile_viewed')).toHaveLength(1)
     fireEvent.click(screen.getAllByRole('button', { name: 'Choose Treatment' })[0]!)
-    expect(events.filter((name) => name === 'clinic_cta_clicked')).toHaveLength(1)
+    expect(events.filter((name) => name === 'clinic_cta_clicked')).toHaveLength(0)
     act(() => {
       api.setPostHogAnalyticsConsent(false)
     })
@@ -88,9 +88,9 @@ describe('browser consent with the installed PostHog SDK', () => {
       api.setPostHogAnalyticsConsent(true)
     })
     expect(events.filter((name) => name === 'clinic_profile_viewed')).toHaveLength(1)
-    expect(events.filter((name) => name === 'clinic_cta_clicked')).toHaveLength(1)
+    expect(events.filter((name) => name === 'clinic_cta_clicked')).toHaveLength(0)
     expect(init).toHaveBeenCalledTimes(1)
-    expect(api.getConsentedPostHogSessionId()).toBeTypeOf('string')
+    expect(sdk.get_session_id()).toBeTypeOf('string')
     view.unmount()
   })
 
@@ -101,7 +101,7 @@ describe('browser consent with the installed PostHog SDK', () => {
     const { DEFAULT_COOKIE_CONSENT_CONFIG } = await import('@/features/cookieConsent')
     const { clinicDetailFixture } = await import('@/stories/fixtures/clinicDetail')
     const { default: sdk } = await import('posthog-js')
-    const api = await import('@/posthog/client-api')
+
     const accepted: string[] = []
     sdk.on('eventCaptured', (event) => accepted.push(event.event))
     const composition = (profileVisible: boolean) => (
@@ -112,14 +112,14 @@ describe('browser consent with the installed PostHog SDK', () => {
     )
     const view = render(composition(false))
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
-    const session = api.getConsentedPostHogSessionId()
+    const session = sdk.get_session_id()
     view.rerender(composition(true))
     view.rerender(composition(true))
     expect(accepted.filter((name) => name === 'clinic_profile_viewed')).toHaveLength(1)
     view.rerender(composition(false))
     view.rerender(composition(true))
     expect(accepted.filter((name) => name === 'clinic_profile_viewed')).toHaveLength(2)
-    expect(api.getConsentedPostHogSessionId()).toBe(session)
+    expect(sdk.get_session_id()).toBe(session)
   })
 
   it('retains consent after the real patient login form requests navigation and refresh', async () => {
@@ -129,7 +129,7 @@ describe('browser consent with the installed PostHog SDK', () => {
       await import('@/app/(frontend)/clinics/[slug]/ClinicDetailClientAdapter.client')
     const { DEFAULT_COOKIE_CONSENT_CONFIG } = await import('@/features/cookieConsent')
     const { clinicDetailFixture } = await import('@/stories/fixtures/clinicDetail')
-    const api = await import('@/posthog/client-api')
+
     const { default: sdk } = await import('posthog-js')
     const accepted: string[] = []
     sdk.on('eventCaptured', (event) => accepted.push(event.event))
@@ -152,7 +152,7 @@ describe('browser consent with the installed PostHog SDK', () => {
       </>,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
-    const session = api.getConsentedPostHogSessionId()
+    const session = sdk.get_session_id()
     fireEvent.change(screen.getByRole('textbox', { name: 'Email' }), { target: { value: 'synthetic@example.test' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Synthetic-test-only' } })
     await act(async () => {
@@ -167,7 +167,7 @@ describe('browser consent with the installed PostHog SDK', () => {
         <ClinicDetailClientAdapter data={clinicDetailFixture} />
       </>,
     )
-    expect(api.getConsentedPostHogSessionId()).toBe(session)
+    expect(sdk.get_session_id()).toBe(session)
     expect(accepted.filter((name) => name === 'clinic_profile_viewed')).toHaveLength(1)
     expect(screen.queryByRole('button', { name: 'Accept all' })).toBeNull()
   })
@@ -185,7 +185,7 @@ describe('browser consent with the installed PostHog SDK', () => {
       if (failure === 'persistence_failed') vi.spyOn(document, 'cookie', 'set').mockImplementation(() => {})
       fireEvent.click(screen.getByRole('button', { name: failure === 'declined' ? 'Reject all' : 'Accept all' }))
       if (failure === 'version_changed') {
-        expect(api.getConsentedPostHogSessionId()).toBeTypeOf('string')
+        expect(sdk.get_session_id()).toBeTypeOf('string')
         view.rerender(
           <CookieConsentClientAdapter
             config={{
@@ -197,7 +197,7 @@ describe('browser consent with the installed PostHog SDK', () => {
         )
       }
       expect(api.postHogBrowserEvents.clinicProfileViewed(profile)).toBe(false)
-      expect(api.getConsentedPostHogSessionId()).toBeUndefined()
+      expect(api.getPostHogBrowserDiagnostics().sessionAvailable).toBe(false)
       expect(accepted.filter((name) => name === 'clinic_profile_viewed')).toEqual([])
     },
   )
@@ -253,13 +253,14 @@ describe('browser consent with the installed PostHog SDK', () => {
   })
 
   it.each([false, true])(
-    'serializes the real SDK session for authenticated=%s only with persisted consent',
+    'submits authenticated=%s without analytics identifiers regardless of consent',
     async (authenticated) => {
       const { CookieConsentClientAdapter } = await import('@/features/cookieConsent/CookieConsentClientAdapter.client')
       const { DEFAULT_COOKIE_CONSENT_CONFIG } = await import('@/features/cookieConsent')
       const { submitClinicContactRequest } =
         await import('@/app/(frontend)/clinics/[slug]/ClinicDetailClientAdapter.client')
-      const api = await import('@/posthog/client-api')
+
+      const { default: sdk } = await import('posthog-js')
       const requests: { endpoint: string; payload: Record<string, unknown> }[] = []
       vi.mocked(fetch).mockImplementation(async (input, init) => {
         requests.push({ endpoint: String(input), payload: JSON.parse(String(init?.body)) })
@@ -276,12 +277,12 @@ describe('browser consent with the installed PostHog SDK', () => {
       await submitClinicContactRequest(request, authenticated)
       expect(requests[0]?.payload).not.toHaveProperty('session_id')
       fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
-      const session = api.getConsentedPostHogSessionId()
+      const session = sdk.get_session_id()
       expect(session).toBeTypeOf('string')
       await submitClinicContactRequest(request, authenticated)
       expect(requests[1]).toEqual({
         endpoint: authenticated ? '/api/patient/inquiries' : '/api/clinic-contact-requests',
-        payload: { ...request, session_id: session },
+        payload: request,
       })
       fireEvent.click(screen.getByRole('button', { name: 'Cookie settings' }))
       fireEvent.click(screen.getByRole('button', { name: 'Reject all' }))
@@ -296,13 +297,13 @@ describe('browser consent with the installed PostHog SDK', () => {
       await import('@/app/(frontend)/clinics/[slug]/ClinicDetailClientAdapter.client')
     const { DEFAULT_COOKIE_CONSENT_CONFIG } = await import('@/features/cookieConsent')
     const { clinicDetailFixture } = await import('@/stories/fixtures/clinicDetail')
-    const api = await import('@/posthog/client-api')
+
     const { default: sdk } = await import('posthog-js')
     const events: string[] = []
     sdk.on('eventCaptured', (event) => events.push(event.event))
     const view = render(<CookieConsentClientAdapter config={DEFAULT_COOKIE_CONSENT_CONFIG} initialConsent={null} />)
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
-    const session = api.getConsentedPostHogSessionId()
+    const session = sdk.get_session_id()
     const inquiryCreation = {
       kind: 'authenticated' as const,
       loginHref: '/login/patient',
@@ -319,7 +320,7 @@ describe('browser consent with the installed PostHog SDK', () => {
     )
     view.rerender(composition())
     view.rerender(composition())
-    expect(api.getConsentedPostHogSessionId()).toBe(session)
+    expect(sdk.get_session_id()).toBe(session)
     expect(events.filter((name) => name === 'clinic_profile_viewed')).toHaveLength(1)
     fireEvent.click(screen.getAllByRole('button', { name: 'Select Dr. Amelia Carter' })[0]!)
     expect(screen.getByRole('combobox', { name: 'Doctor' })).toHaveProperty('value', 'doctor-1')
@@ -339,22 +340,22 @@ describe('browser consent with the installed PostHog SDK', () => {
     expect(requests[0]?.payload).toMatchObject({
       doctorId: 'doctor-1',
       phoneNumber: '+49 30 123456',
-      session_id: session,
     })
     expect(requests[0]?.payload).not.toHaveProperty('email')
-    expect(api.getConsentedPostHogSessionId()).toBe(session)
+    expect(sdk.get_session_id()).toBe(session)
   })
 
   it('restores the current accepted cookie on remount without withdrawing consent or changing the session', async () => {
     const { CookieConsentClientAdapter } = await import('@/features/cookieConsent/CookieConsentClientAdapter.client')
     const { DEFAULT_COOKIE_CONSENT_CONFIG } = await import('@/features/cookieConsent')
-    const api = await import('@/posthog/client-api')
+
+    const { default: sdk } = await import('posthog-js')
     const view = render(<CookieConsentClientAdapter config={DEFAULT_COOKIE_CONSENT_CONFIG} initialConsent={null} />)
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
-    const session = api.getConsentedPostHogSessionId()
+    const session = sdk.get_session_id()
     view.unmount()
     render(<CookieConsentClientAdapter config={DEFAULT_COOKIE_CONSENT_CONFIG} initialConsent={null} />)
-    expect(api.getConsentedPostHogSessionId()).toBe(session)
+    expect(sdk.get_session_id()).toBe(session)
   })
 
   it('restores accepted consent through the real consent controller', async () => {
@@ -385,7 +386,7 @@ describe('browser consent with the installed PostHog SDK', () => {
     })
     expect(api.setPostHogAnalyticsConsent(true)).toBe(false)
     expect(api.postHogBrowserEvents.clinicProfileViewed(profile)).toBe(false)
-    expect(api.getConsentedPostHogSessionId()).toBeUndefined()
+    expect(api.getPostHogBrowserDiagnostics().sessionAvailable).toBe(false)
   })
 
   it('retains a final token-specific opt-out after withdrawal', async () => {

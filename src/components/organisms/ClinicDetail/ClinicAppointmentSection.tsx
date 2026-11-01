@@ -42,7 +42,11 @@ type ClinicAppointmentSectionProps = {
   isSubmitting: boolean
   isSubmitted: boolean
   feedbackRef: React.RefObject<HTMLDivElement | null>
-  onFieldChange: <K extends keyof ContactFormFields>(field: K, value: ContactFormFields[K]) => void
+  onFieldChange: <K extends keyof ContactFormFields>(
+    field: K,
+    value: ContactFormFields[K],
+    isUserEdit?: boolean,
+  ) => void
   onDoctorChange: (doctorId: string) => void
   onTreatmentChange: (treatmentId: string) => void
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
@@ -137,7 +141,13 @@ export function ClinicAppointmentSection({
       event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
     ) => {
       formValidation.handleFieldChange(event)
-      onFieldChange(field, event.target.value)
+      const nativeEvent = event.nativeEvent
+      const isUserEdit =
+        event.target instanceof HTMLSelectElement ||
+        (nativeEvent instanceof InputEvent &&
+          Boolean(nativeEvent.inputType) &&
+          nativeEvent.inputType !== 'insertReplacementText')
+      onFieldChange(field, event.target.value, isUserEdit)
     },
     [formValidation, onFieldChange],
   )

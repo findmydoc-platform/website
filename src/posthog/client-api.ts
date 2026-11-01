@@ -5,7 +5,6 @@ import { useSyncExternalStore } from 'react'
 import {
   disablePostHog,
   enablePostHog,
-  getPostHogSessionId,
   getPostHogReadiness,
   subscribePostHogReadiness,
   postHogBrowserEvents as postHogBrowserEventInterface,
@@ -15,7 +14,7 @@ import {
 
 export { getPostHogBrowserDiagnostics } from './client'
 
-export type { ClinicCtaClickedProperties, ClinicProfileViewedProperties } from './events'
+export type { ClinicProfileViewedProperties } from './events'
 export type { PostHogBrowserEventInterface } from './client'
 
 export function enablePostHogAnalyticsCapture(): boolean {
@@ -37,10 +36,6 @@ export function setPostHogAnalyticsConsent(enabled: boolean): boolean {
 
 export function resetPostHogBrowserIdentity(): boolean {
   return resetPostHogIdentity()
-}
-
-export function getConsentedPostHogSessionId(): string | undefined {
-  return getPostHogSessionId()
 }
 
 export const postHogBrowserEvents: PostHogBrowserEventInterface = postHogBrowserEventInterface

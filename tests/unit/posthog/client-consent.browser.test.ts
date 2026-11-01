@@ -116,19 +116,19 @@ describe.skipIf(process.env.POSTHOG_BROWSER_TEST !== '1')('consent-controlled br
       await page.getByRole('button', { name: 'Choose Treatment' }).first().click()
       await expect
         .poll(() => events.filter((event) => event === 'clinic_cta_clicked').length, { timeout: 10000 })
-        .toBe(1)
+        .toBe(0)
       await page.getByRole('button', { name: 'Cookie settings', exact: true }).click()
       await page.getByRole('button', { name: 'Reject all' }).click()
       await page.getByRole('button', { name: 'Choose Treatment' }).first().click()
       await page.getByRole('button', { name: 'Cookie settings', exact: true }).click()
       await page.getByRole('checkbox', { name: /Analytics/ }).check()
       await page.getByRole('button', { name: /Save/ }).click()
-      // A new CTA after reconsent proves transport is active without replaying the earlier view or click.
+      // Retired CTA actions remain untracked after reconsent. The next document proves profile transport.
       await page.getByRole('button', { name: 'Choose Treatment' }).first().click()
       await expect
         .poll(() => events.filter((event) => event === 'clinic_cta_clicked').length, { timeout: 10000 })
-        .toBe(2)
-      expect(events).toEqual(['clinic_profile_viewed', 'clinic_cta_clicked', 'clinic_cta_clicked'])
+        .toBe(0)
+      expect(events).toEqual(['clinic_profile_viewed'])
       // Full documents restore the consent cookie; a reload is another intended view.
       const session = await page.evaluate('syntheticSession()')
       await page.goto('https://consent.example.test/authenticated-profile')

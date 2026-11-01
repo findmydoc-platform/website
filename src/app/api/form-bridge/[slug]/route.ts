@@ -3,7 +3,6 @@ import { getServerLogger } from '@/utilities/logging/serverLogger'
 import { createScopedLogger, getRequestLogContext, toLoggedError } from '@/utilities/logging/shared'
 import { FormSubmissionError, submitFormData } from '@/utilities/submitForm'
 import { postHogServerConsent, postHogServerEvents, resolveAnonymousPostHogActor } from '@/posthog/api'
-import { readClinicInquirySessionId } from '@/posthog/api'
 import { NextRequest, NextResponse } from 'next/server'
 
 type FormBridgePayload = Record<string, unknown>
@@ -131,13 +130,6 @@ const captureFormBridgePostHogEvent = async ({
 }: CaptureFormBridgeEventInput): Promise<void> => {
   const formContext = readFormBridgeEventContext(values)
   const submissionId = readSubmissionId(result)
-
-  if (formContext === 'clinic_profile_inquiry') {
-    // Generic Payload forms never create patientClinicInquiries. Validate and discard
-    // the optional transport value; only the durable inquiry routes may emit this event.
-    readClinicInquirySessionId(values.session_id)
-    return
-  }
 
   if (formContext === 'clinic_partner_landing') {
     const context = FORM_BRIDGE_EVENT_CONTEXTS.clinic_partner_landing

@@ -1,16 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { clinicDashboardReportingGetHandler } from '@/endpoints/clinicDashboardReporting'
-import type { ClinicDashboardReportingDTO, ReportingCountMetric } from '@/features/clinicDashboard/reporting/contracts'
+import type {
+  ClinicDashboardReportingV2DTO,
+  ReportingCountMetric,
+} from '@/features/clinicDashboard/reporting/contracts'
 import { createMockPayload, createMockReq } from '../helpers/testHelpers'
 
 const mocks = vi.hoisted(() => ({
-  resolveClinicDashboardReporting: vi.fn(),
   resolveClinicDashboardReportingV2: vi.fn(),
 }))
 
 vi.mock('@/features/clinicDashboard/reporting/service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/clinicDashboard/reporting/service')>()),
-  resolveClinicDashboardReporting: mocks.resolveClinicDashboardReporting,
   resolveClinicDashboardReportingV2: mocks.resolveClinicDashboardReportingV2,
 }))
 
@@ -29,48 +30,23 @@ const metric = <Source extends 'payload' | 'posthog'>(
   source,
 })
 
-const reportingPayload = (days: 7 | 30 | 90): ClinicDashboardReportingDTO => ({
+const reportingPayload = (days: 7 | 30 | 90): ClinicDashboardReportingV2DTO => ({
   asOf: '2026-04-10T09:15:30.123Z',
   comparisonPeriod: { days, from: '2026-03-27T21:00:00.000Z', to: '2026-04-03T09:15:30.123Z' },
   metrics: {
-    ctaInteractions: {
-      byCtaId: {
-        choose_treatment: metric('posthog', 3, 2),
-        contact: metric('posthog', 4, 3),
-        contact_doctor: metric('posthog', 5, 4),
-      },
-      source: 'posthog',
-      total: metric('posthog', 12, 9),
-    },
+    impressions: metric('posthog', 40, 20),
+    uniqueVisitors: metric('posthog', 12, 6),
+    inquiryStarters: metric('posthog', 2, 1),
     inquiries: metric('payload', 1, 0),
-    profileCompleteness: {
-      comparison: null,
-      completedAreas: 6,
-      percent: 100,
-      source: 'payload',
-      state: 'available',
-      totalAreas: 6,
-    },
     profileViews: metric('posthog', 20, 10),
     reviews: {
       average: { comparison: null, source: 'payload', state: 'available', value: 4.5 },
       count: { comparison: null, source: 'payload', state: 'available', value: 2 },
       source: 'payload',
     },
-    sessionConversion: {
-      comparison: {
-        denominatorSessions: 2,
-        numeratorSessions: 1,
-        percentagePointDelta: 0,
-        ratePercent: 50,
-        state: 'available',
-      },
-      current: { denominatorSessions: 4, numeratorSessions: 2, ratePercent: 50, state: 'available' },
-      source: 'posthog',
-    },
   },
   period: { days, from: '2026-04-03T21:00:00.000Z', to: '2026-04-10T09:15:30.123Z' },
-  schemaVersion: 'clinic-dashboard-reporting-v1',
+  schemaVersion: 'clinic-dashboard-reporting-v2',
   timezone: 'Europe/Istanbul',
 })
 
@@ -80,6 +56,7 @@ const request = (query: string) => {
     headers: new Headers({
       Authorization: 'Bearer clinic-token',
       'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
+      'X-Findmydoc-Reporting-Contract': 'clinic-dashboard-reporting-v2',
     }),
     routeParams: { clinicId: '8' },
     searchParams: new URLSearchParams(query),
@@ -98,43 +75,31 @@ const expectPrivateHeaders = (response: Response) => {
 describe('Clinic Dashboard reporting endpoint', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.resolveClinicDashboardReporting.mockImplementation(async (_, _clinicId, periodDays) => ({
+    mocks.resolveClinicDashboardReportingV2.mockImplementation(async (_, _clinicId, periodDays) => ({
       data: reportingPayload(periodDays as 7 | 30 | 90),
       status: 'success',
     }))
   })
 
-  it('selects V2 explicitly while the absent content header remains V1', async () => {
-    const req = request('periodDays=7')
-    req.headers.set('X-Findmydoc-Reporting-Contract', 'clinic-dashboard-reporting-v2')
-    const old = reportingPayload(7)
-    const data = {
-      ...old,
-      schemaVersion: 'clinic-dashboard-reporting-v2',
-      metrics: {
-        impressions: metric('posthog', 40, 20),
-        profileViews: old.metrics.profileViews,
-        uniqueVisitors: metric('posthog', 12, 6),
-        inquiryStarters: metric('posthog', 2, 1),
-        inquiries: old.metrics.inquiries,
-        reviews: old.metrics.reviews,
-      },
-    }
-    mocks.resolveClinicDashboardReportingV2.mockResolvedValueOnce({ status: 'success', data })
-    const response = await clinicDashboardReportingGetHandler(req)
-    expect(response.status).toBe(200)
-    expect(await response.json()).toEqual(data)
-    expect(mocks.resolveClinicDashboardReportingV2).toHaveBeenCalledWith(req, '8', 7)
-    expect(mocks.resolveClinicDashboardReporting).not.toHaveBeenCalled()
-    expectPrivateHeaders(response)
-  })
+  it.each([undefined, 'clinic-dashboard-reporting-v1'])(
+    'requires the migrated V2 consumer after cleanup (%s)',
+    async (version) => {
+      const req = request('periodDays=7')
+      if (version) req.headers.set('X-Findmydoc-Reporting-Contract', version)
+      else req.headers.delete('X-Findmydoc-Reporting-Contract')
+      const response = await clinicDashboardReportingGetHandler(req)
+      expect(response.status).toBe(400)
+      expect(await response.json()).toEqual({ error: { code: 'CLINIC_DASHBOARD_INVALID_CONTRACT' } })
+      expectPrivateHeaders(response)
+    },
+  )
 
   it('rejects an unknown reporting content version independently of clinic scope', async () => {
     const req = request('periodDays=7')
     req.headers.set('X-Findmydoc-Reporting-Contract', 'unknown-version')
     const response = await clinicDashboardReportingGetHandler(req)
     expect(response.status).toBe(400)
-    expect(mocks.resolveClinicDashboardReporting).not.toHaveBeenCalled()
+    expect(mocks.resolveClinicDashboardReportingV2).not.toHaveBeenCalled()
     expectPrivateHeaders(response)
   })
 
@@ -150,7 +115,7 @@ describe('Clinic Dashboard reporting endpoint', () => {
           message: 'Reporting period must be 7, 30, or 90 days.',
         },
       })
-      expect(mocks.resolveClinicDashboardReporting).not.toHaveBeenCalled()
+      expect(mocks.resolveClinicDashboardReportingV2).not.toHaveBeenCalled()
       expectPrivateHeaders(response)
     },
   )
@@ -161,7 +126,7 @@ describe('Clinic Dashboard reporting endpoint', () => {
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual(reportingPayload(periodDays as 7 | 30 | 90))
-    expect(mocks.resolveClinicDashboardReporting).toHaveBeenCalledWith(req, '8', periodDays)
+    expect(mocks.resolveClinicDashboardReportingV2).toHaveBeenCalledWith(req, '8', periodDays)
     expectPrivateHeaders(response)
   })
 
@@ -172,7 +137,7 @@ describe('Clinic Dashboard reporting endpoint', () => {
       req.routeParams = clinicId === undefined ? {} : { clinicId }
       const response = await clinicDashboardReportingGetHandler(req)
       expect(response.status).toBe(400)
-      expect(mocks.resolveClinicDashboardReporting).not.toHaveBeenCalled()
+      expect(mocks.resolveClinicDashboardReportingV2).not.toHaveBeenCalled()
       expectPrivateHeaders(response)
     },
   )
@@ -183,7 +148,7 @@ describe('Clinic Dashboard reporting endpoint', () => {
     const response = await clinicDashboardReportingGetHandler(req)
     expect(response.status).toBe(400)
     expect(await response.json()).toEqual({ error: { code: 'CLINIC_DASHBOARD_INVALID_CONTRACT' } })
-    expect(mocks.resolveClinicDashboardReporting).not.toHaveBeenCalled()
+    expect(mocks.resolveClinicDashboardReportingV2).not.toHaveBeenCalled()
     expectPrivateHeaders(response)
   })
 
@@ -192,7 +157,7 @@ describe('Clinic Dashboard reporting endpoint', () => {
     ['access-denied', 403, 'CLINIC_DASHBOARD_ACCESS_DENIED', 'Reporting access is not available.'],
     ['unavailable', 503, 'CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE', 'Reporting is temporarily unavailable.'],
   ] as const)('returns the private %s error contract', async (status, httpStatus, code, message) => {
-    mocks.resolveClinicDashboardReporting.mockResolvedValueOnce({ status })
+    mocks.resolveClinicDashboardReportingV2.mockResolvedValueOnce({ status })
 
     const response = await clinicDashboardReportingGetHandler(request('periodDays=7'))
 
@@ -202,7 +167,7 @@ describe('Clinic Dashboard reporting endpoint', () => {
   })
 
   it('contains an unexpected reporting-service rejection in the normative private 503 envelope', async () => {
-    mocks.resolveClinicDashboardReporting.mockRejectedValueOnce(new Error('private upstream failure'))
+    mocks.resolveClinicDashboardReportingV2.mockRejectedValueOnce(new Error('private upstream failure'))
 
     const response = await clinicDashboardReportingGetHandler(request('periodDays=7'))
 

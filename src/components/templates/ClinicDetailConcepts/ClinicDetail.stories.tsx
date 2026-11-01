@@ -17,7 +17,6 @@ const meta = {
   component: ClinicDetail,
   args: {
     analytics: {
-      onCtaClicked: fn(),
       isReady: true,
       onProfileViewed: fn(() => true),
     },

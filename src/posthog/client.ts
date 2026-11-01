@@ -1,7 +1,6 @@
 import posthog from 'posthog-js'
 
 import type {
-  ClinicCtaClickedProperties,
   ClinicProfileViewedProperties,
   PostHogEventName,
   PostHogEventPropertiesByName,
@@ -202,12 +201,10 @@ export type ClinicInquiryStartedProperties = PostHogEventPropertiesByName['clini
 
 export interface PostHogBrowserEventInterface {
   clinicInquiryStarted(properties: ClinicInquiryStartedProperties): boolean
-  clinicCtaClicked(properties: ClinicCtaClickedProperties): boolean
   clinicProfileViewed(properties: ClinicProfileViewedProperties): boolean
 }
 
 export const postHogBrowserEvents: PostHogBrowserEventInterface = {
   clinicInquiryStarted: (properties) => captureBrowserPostHogEvent('clinic_inquiry_started', properties),
-  clinicCtaClicked: (properties) => captureBrowserPostHogEvent('clinic_cta_clicked', properties),
   clinicProfileViewed: (properties) => captureBrowserPostHogEvent('clinic_profile_viewed', properties),
 }

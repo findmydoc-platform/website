@@ -118,18 +118,6 @@ describe('posthog client helpers', () => {
     })
   })
 
-  it('exposes only a bounded session identifier after analytics consent', async () => {
-    const { getConsentedPostHogSessionId, enablePostHogAnalyticsCapture } = await import('@/posthog/client-api')
-    posthogMock.get_session_id.mockReturnValueOnce('session_42')
-
-    expect(getConsentedPostHogSessionId()).toBeUndefined()
-    expect(enablePostHogAnalyticsCapture()).toBe(true)
-    expect(getConsentedPostHogSessionId()).toBe('session_42')
-
-    posthogMock.get_session_id.mockReturnValueOnce('invalid session id')
-    expect(getConsentedPostHogSessionId()).toBeUndefined()
-  })
-
   it('waits for SDK load and confirms the configured token before readiness', async () => {
     let loaded: (() => void) | undefined
     posthogMock.init.mockImplementation((key: string, config: { loaded?: () => void }) => {

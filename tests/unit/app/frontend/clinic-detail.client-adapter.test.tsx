@@ -12,11 +12,9 @@ import { ClinicContactRequestError } from '@/features/clinicDetail/contracts'
 
 const mocks = vi.hoisted(() => ({
   clinicDetailComponent: vi.fn((_props: unknown) => null),
-  getConsentedPostHogSessionId: vi.fn(),
   postHogBrowserEvents: {
-    clinicCtaClicked: vi.fn(),
-    clinicInquiryStarted: vi.fn(() => true),
     clinicProfileViewed: vi.fn(),
+    clinicInquiryStarted: vi.fn(() => true),
   },
 }))
 
@@ -26,7 +24,6 @@ vi.mock('@/components/templates/ClinicDetailConcepts', () => ({
 
 vi.mock('@/posthog/client-api', () => ({
   usePostHogAnalyticsReady: () => true,
-  getConsentedPostHogSessionId: mocks.getConsentedPostHogSessionId,
   postHogBrowserEvents: mocks.postHogBrowserEvents,
 }))
 
@@ -57,7 +54,6 @@ describe('ClinicDetailClientAdapter', () => {
     const componentProps = mocks.clinicDetailComponent.mock.calls.at(0)?.[0] as
       | {
           analytics?: {
-            onCtaClicked: (event: Record<string, unknown>) => void
             onProfileViewed: (event: Record<string, unknown>) => void
           }
         }
@@ -71,16 +67,6 @@ describe('ClinicDetailClientAdapter', () => {
       pagePath: '/clinics/test-clinic',
       verificationTier: 'silver',
     })
-    componentProps?.analytics?.onCtaClicked({
-      clinicId: '42',
-      clinicSlug: 'test-clinic',
-      ctaId: 'contact_doctor',
-      ctaLabel: 'Contact Doctor',
-      ctaLocation: 'doctor_card',
-      doctorId: '7',
-      pagePath: '/clinics/test-clinic',
-    })
-
     expect(mocks.postHogBrowserEvents.clinicProfileViewed).toHaveBeenCalledWith({
       clinic_id: '42',
       clinic_slug: 'test-clinic',
@@ -89,16 +75,6 @@ describe('ClinicDetailClientAdapter', () => {
       page_path: '/clinics/test-clinic',
       source_route: 'clinic_detail',
       verification_tier: 'silver',
-    })
-    expect(mocks.postHogBrowserEvents.clinicCtaClicked).toHaveBeenCalledWith({
-      clinic_id: '42',
-      clinic_slug: 'test-clinic',
-      cta_id: 'contact_doctor',
-      cta_label: 'Contact Doctor',
-      cta_location: 'doctor_card',
-      doctor_id: '7',
-      page_path: '/clinics/test-clinic',
-      source_route: 'clinic_detail',
     })
   })
 
@@ -131,19 +107,6 @@ describe('ClinicDetailClientAdapter', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestPayload),
-    })
-  })
-
-  it('sends the bounded session correlation only when consent made it available', async () => {
-    mocks.getConsentedPostHogSessionId.mockReturnValueOnce('session_42')
-    global.fetch = vi.fn(async () => new Response(JSON.stringify({ id: 42 }), { status: 200 }))
-
-    await submitClinicContactRequest(requestPayload, false)
-
-    expect(global.fetch).toHaveBeenCalledWith('/api/clinic-contact-requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...requestPayload, session_id: 'session_42' }),
     })
   })
 

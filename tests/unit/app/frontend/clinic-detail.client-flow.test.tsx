@@ -9,11 +9,9 @@ import { clinicDetailFixture } from '@/stories/fixtures/clinicDetail'
 
 vi.mock('@/posthog/client-api', () => ({
   usePostHogAnalyticsReady: () => true,
-  getConsentedPostHogSessionId: vi.fn(() => undefined),
   postHogBrowserEvents: {
-    clinicCtaClicked: vi.fn(),
-    clinicInquiryStarted: vi.fn(() => true),
     clinicProfileViewed: vi.fn(),
+    clinicInquiryStarted: vi.fn(() => true),
   },
 }))
 

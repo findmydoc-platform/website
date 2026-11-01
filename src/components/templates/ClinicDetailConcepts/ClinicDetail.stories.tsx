@@ -17,10 +17,9 @@ const meta = {
   component: ClinicDetail,
   args: {
     analytics: {
-      onCtaClicked: fn(),
-      onInquiryStarted: fn(() => true),
       isReady: true,
       onProfileViewed: fn(() => true),
+      onInquiryStarted: fn(() => true),
     },
     data: clinicDetailFixture,
     onSubmitContactRequest: fn(async () => ({ id: 'story-inquiry' })),
@@ -463,11 +462,11 @@ export const InquiryStarts: Story = {
     await userEvent.click(form.getByRole('checkbox'))
     form.getByRole('textbox', { name: 'Email' }).focus()
     await expect(args.analytics.onInquiryStarted).not.toHaveBeenCalled()
-    await userEvent.keyboard('invalid')
+    await userEvent.keyboard('x')
     await expect(args.analytics.onInquiryStarted).toHaveBeenCalledWith({ clinicId: String(args.data.clinicId) })
-    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(7)
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(1)
     await userEvent.selectOptions(form.getByRole('combobox', { name: 'Doctor' }), 'doctor-2')
-    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(8)
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(2)
     await userEvent.type(form.getByRole('textbox', { name: 'Message' }), 'Synthetic test content')
     await userEvent.clear(form.getByRole('textbox', { name: 'Message' }))
     await expect(args.analytics.onInquiryStarted).toHaveBeenLastCalledWith({ clinicId: String(args.data.clinicId) })
@@ -496,10 +495,10 @@ export const InquiryStartsAuthenticatedMissingPhone: Story = {
     await userEvent.click(form.getByRole('checkbox'))
     await expect(args.analytics.onInquiryStarted).not.toHaveBeenCalled()
     form.getByRole('textbox', { name: 'Phone Number' }).focus()
-    await userEvent.keyboard('+49')
+    await userEvent.keyboard('1')
     await expect(args.analytics.onInquiryStarted).toHaveBeenCalledWith({ clinicId: String(args.data.clinicId) })
     await userEvent.selectOptions(form.getByRole('combobox', { name: 'Doctor' }), 'doctor-2')
-    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(4)
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(2)
   },
 }
 export const InquiryStartsAuthenticatedPrefilled: Story = {

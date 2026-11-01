@@ -17,7 +17,7 @@ import { RelatedDoctorSection, type RelatedDoctorItem } from '@/components/organ
 import { TreatmentsStrip, type TreatmentsStripItem } from '@/components/organisms/TreatmentsStrip'
 import { useCookieConsentToolAllowed } from '@/features/cookieConsent/useCookieConsentToolAllowed'
 import { FavoriteClinicButton } from '@/features/favorites/FavoriteClinicButton'
-import type { ClinicDetailConceptProps, ClinicDetailCtaClickedEvent } from '@/features/clinicDetail/contracts'
+import type { ClinicDetailConceptProps } from '@/features/clinicDetail/contracts'
 import { buildOpenStreetMapHref, formatEur, sortTreatmentsByPrice } from '@/features/clinicDetail/presentation'
 import type { PatientInquiryCreationContext } from '@/features/patientInquiries/creationContext'
 import { DISCLAIMER_COPY } from '@/utilities/legal/disclaimers'
@@ -165,58 +165,6 @@ export function ClinicDetail({
     interaction.handleTreatmentSelectionChange(treatmentId)
   }
 
-  const captureClinicCtaClick = React.useCallback(
-    (
-      properties: Pick<ClinicDetailCtaClickedEvent, 'ctaId' | 'ctaLabel' | 'ctaLocation' | 'doctorId' | 'treatmentId'>,
-    ) => {
-      analytics.onCtaClicked({
-        clinicId,
-        clinicSlug: data.clinicSlug,
-        pagePath,
-        ...properties,
-      })
-    },
-    [analytics, clinicId, data.clinicSlug, pagePath],
-  )
-
-  const handleCuratedTreatmentClick = React.useCallback(
-    (treatmentId: string) => {
-      captureClinicCtaClick({
-        ctaId: 'choose_treatment',
-        ctaLabel: 'Choose Treatment',
-        ctaLocation: 'treatment_strip',
-        treatmentId,
-      })
-      chooseTreatmentAndScroll(treatmentId)
-    },
-    [captureClinicCtaClick, chooseTreatmentAndScroll],
-  )
-
-  const handleFurtherTreatmentClick = React.useCallback(
-    (treatmentId: string) => {
-      captureClinicCtaClick({
-        ctaId: 'choose_treatment',
-        ctaLabel: 'Choose Treatment',
-        ctaLocation: 'further_treatments',
-        treatmentId,
-      })
-      chooseTreatmentAndScroll(treatmentId)
-    },
-    [captureClinicCtaClick, chooseTreatmentAndScroll],
-  )
-
-  const handleLocationContactClick = React.useCallback(
-    (origin: 'location_card' | 'map_overlay') => {
-      captureClinicCtaClick({
-        ctaId: 'contact',
-        ctaLabel: 'Contact',
-        ctaLocation: origin,
-      })
-      scrollToContactForm()
-    },
-    [captureClinicCtaClick, scrollToContactForm],
-  )
-
   const curatedTreatmentItems = React.useMemo<TreatmentsStripItem[]>(
     () =>
       curatedTreatments.map((treatment, index) => {
@@ -231,11 +179,11 @@ export function ClinicDetail({
           comparisonLink: treatment.comparisonLink,
           cta: {
             label: 'Choose Treatment',
-            onClick: () => handleCuratedTreatmentClick(treatment.id),
+            onClick: () => chooseTreatmentAndScroll(treatment.id),
           },
         }
       }),
-    [curatedTreatments, handleCuratedTreatmentClick],
+    [curatedTreatments, chooseTreatmentAndScroll],
   )
 
   const relatedDoctors = React.useMemo<RelatedDoctorItem[]>(() => {
@@ -265,19 +213,13 @@ export function ClinicDetail({
             href: `#${CONTACT_FORM_ID}`,
             label: 'Contact Doctor',
             onClick: () => {
-              captureClinicCtaClick({
-                ctaId: 'contact_doctor',
-                ctaLabel: 'Contact Doctor',
-                ctaLocation: 'doctor_card',
-                doctorId: doctor.id,
-              })
               handleContactDoctor(doctor.id)
             },
           },
         },
       },
     }))
-  }, [captureClinicCtaClick, data.doctors, handleContactDoctor])
+  }, [data.doctors, handleContactDoctor])
 
   return (
     <main className={cn('overflow-x-clip bg-site-canvas text-foreground', className)}>
@@ -329,7 +271,7 @@ export function ClinicDetail({
             location={data.location}
             mapHref={openStreetMapHref}
             isOpenStreetMapAllowed={isOpenStreetMapAllowed}
-            onContactClick={handleLocationContactClick}
+            onContactClick={scrollToContactForm}
           />
         </Container>
       ) : null}
@@ -349,7 +291,7 @@ export function ClinicDetail({
           treatments={furtherTreatments}
           visibleCount={interaction.visibleFurtherTreatmentCount}
           onShowMore={interaction.showMoreFurtherTreatments}
-          onChooseTreatment={handleFurtherTreatmentClick}
+          onChooseTreatment={chooseTreatmentAndScroll}
         />
       </Container>
 

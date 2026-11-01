@@ -4,11 +4,6 @@ export type PostHogSourceRoute = 'clinic_detail' | 'clinic_partners' | 'clinic_r
 
 export type PostHogClinicVerificationTier = 'unverified' | 'bronze' | 'silver' | 'gold'
 
-export type ClinicCtaId = 'choose_treatment' | 'contact' | 'contact_doctor'
-
-export type ClinicCtaLocation =
-  'doctor_card' | 'further_treatments' | 'location_card' | 'map_overlay' | 'treatment_strip'
-
 export type RegisterClinicSubmissionStatus = 'created' | 'deduped'
 
 export type ClinicProfileViewedProperties = {
@@ -19,34 +14,6 @@ export type ClinicProfileViewedProperties = {
   page_path: string
   source_route: Extract<PostHogSourceRoute, 'clinic_detail'>
   verification_tier?: PostHogClinicVerificationTier
-}
-
-export type ClinicCtaClickedProperties = {
-  clinic_id: string
-  clinic_slug: string
-  cta_id: ClinicCtaId
-  cta_label: string
-  cta_location: ClinicCtaLocation
-  doctor_id?: string
-  page_path: string
-  source_route: Extract<PostHogSourceRoute, 'clinic_detail'>
-  treatment_id?: string
-}
-
-export type PatientInquiryCreatedProperties = {
-  $session_id?: string
-  clinic_id: string
-  clinic_slug: string
-  doctor_id?: string
-  form_slug: string
-  has_doctor?: boolean
-  has_message?: boolean
-  has_preferred_date?: boolean
-  has_preferred_time?: boolean
-  has_treatment?: boolean
-  source_route: Extract<PostHogSourceRoute, 'clinic_detail'>
-  submission_id?: string
-  treatment_id?: string
 }
 
 export type ClinicOnboardingInterestCreatedProperties = {
@@ -66,10 +33,8 @@ export type RegisterClinicSubmittedProperties = {
 export type PostHogEventPropertiesByName = {
   clinic_inquiry_started: { clinic_id: string }
   clinic_search_result_viewed: { clinic_id: string }
-  clinic_cta_clicked: ClinicCtaClickedProperties
   clinic_onboarding_interest_created: ClinicOnboardingInterestCreatedProperties
   clinic_profile_viewed: ClinicProfileViewedProperties
-  patient_inquiry_created: PatientInquiryCreatedProperties
   register_clinic_submitted: RegisterClinicSubmittedProperties
 }
 
@@ -110,27 +75,6 @@ export const POSTHOG_EVENT_REGISTRY = {
     trigger:
       'Consent-eligible result visible in the active viewport once per result-view instance, without a minimum duration or percentage threshold.',
   },
-  clinic_cta_clicked: {
-    analysis: 'Clinic profile CTA engagement and contact intent funnel analysis.',
-    allowedPropertyValues: {
-      cta_id: ['choose_treatment', 'contact', 'contact_doctor'] as const satisfies readonly ClinicCtaId[],
-    },
-    description: 'A visitor clicked a tracked clinic profile call to action.',
-    optionalProperties: ['doctor_id', 'treatment_id'],
-    owner: 'growth',
-    privacyNote: 'No contact details, medical free text, or raw message content are allowed.',
-    requiredProperties: [
-      'clinic_id',
-      'clinic_slug',
-      'cta_id',
-      'cta_label',
-      'cta_location',
-      'page_path',
-      'source_route',
-    ],
-    targetSystem: 'posthog',
-    trigger: 'Captured in the browser after a consent-eligible clinic profile CTA click.',
-  },
   clinic_onboarding_interest_created: {
     analysis: 'Clinic partner landing conversion analysis.',
     description: 'A clinic partner contact request was accepted by the form bridge.',
@@ -150,27 +94,6 @@ export const POSTHOG_EVENT_REGISTRY = {
     requiredProperties: ['clinic_id', 'clinic_slug', 'page_path', 'source_route'],
     targetSystem: 'posthog',
     trigger: 'Captured in the browser after a consent-eligible public clinic profile view.',
-  },
-  patient_inquiry_created: {
-    analysis: 'Clinic profile inquiry conversion analysis.',
-    description: 'A patient contact request was durably stored.',
-    optionalProperties: [
-      '$session_id',
-      'doctor_id',
-      'has_doctor',
-      'has_message',
-      'has_preferred_date',
-      'has_preferred_time',
-      'has_treatment',
-      'submission_id',
-      'treatment_id',
-    ],
-    owner: 'growth',
-    privacyNote:
-      'No patient name, email, phone number, appointment date/time, medical free text, or raw message content are allowed.',
-    requiredProperties: ['clinic_id', 'clinic_slug', 'form_slug', 'source_route'],
-    targetSystem: 'posthog',
-    trigger: 'Captured on the server only after the corresponding patient inquiry is durably stored.',
   },
   register_clinic_submitted: {
     analysis: 'Clinic registration submission and duplicate-submission analysis.',
@@ -193,17 +116,10 @@ const registeredReportingEvent = <Name extends PostHogEventName>(name: Name): Na
   return name
 }
 
-const clinicCtaIds = POSTHOG_EVENT_REGISTRY.clinic_cta_clicked.allowedPropertyValues.cta_id
-
 export const CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG = Object.freeze({
-  ctaIds: Object.freeze([...clinicCtaIds]),
   events: Object.freeze({
-    ctaClicked: registeredReportingEvent('clinic_cta_clicked'),
-    patientInquiryCreated: registeredReportingEvent('patient_inquiry_created'),
     profileViewed: registeredReportingEvent('clinic_profile_viewed'),
     inquiryStarted: registeredReportingEvent('clinic_inquiry_started'),
     searchResultViewed: registeredReportingEvent('clinic_search_result_viewed'),
   }),
 })
-
-export type ClinicDashboardReportingCtaId = (typeof CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.ctaIds)[number]

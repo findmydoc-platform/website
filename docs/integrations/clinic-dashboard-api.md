@@ -156,102 +156,37 @@ Success and error responses use `Cache-Control: private, no-store`, `Pragma: no-
 `Vary: Authorization, X-Findmydoc-Clinic-Dashboard-Contract, X-Findmydoc-Clinic-Scope-Contract`. Bootstrap grants are
 request-bound projections. A selected clinic path never grants permission and later requests read current access again.
 
-## Clinic Dashboard Reporting Contract
+## Clinic Dashboard reporting contract
 
-> **Canonical decision:**
-> [ADR 029](https://github.com/findmydoc-platform/website/blob/main/docs/adrs/029-adr-tenant-safe-clinic-dashboard-reporting.md)
+[ADR 038](../adrs/038-adr-clinic-reporting-five-count-contract.md) defines the active five-count contract.
+`GET /api/clinic-dashboard/clinics/:clinicId/reporting` requires both
+`X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1` and
+`X-Findmydoc-Reporting-Contract: clinic-dashboard-reporting-v2`.
+Missing, V1 or unknown reporting versions return private `400 CLINIC_DASHBOARD_INVALID_CONTRACT`.
+The [cleanup inventory and release boundary](./clinic-reporting-cleanup.md) records the staged release dependency.
+This source checkpoint must follow observed migration of deployed consumers. Local tests do not prove that migration.
 
-The content version is independent of `clinic-scope-v1`. [ADR 038](../adrs/038-adr-clinic-reporting-five-count-contract.md) defines the successor. Send `X-Findmydoc-Reporting-Contract: clinic-dashboard-reporting-v2` to select V2. An absent header or explicit `clinic-dashboard-reporting-v1` retains the unchanged V1 shape during migration; unknown versions return private `400 CLINIC_DASHBOARD_INVALID_CONTRACT`.
+Every request validates the personal Bearer identity and authorizes its positive integer clinic target against current
+local or group assignment and participation. The selected path grants no permission. Every source read uses that
+clinic alone. The request cannot choose role, source, timezone, cache policy or analytics identity.
+The sole query parameter is exactly one `periodDays` value of `7`, `30` or `90`.
+Missing, repeated, malformed or additional parameters return `400 CLINIC_DASHBOARD_REPORTING_INVALID_INPUT`
+with `Reporting period must be 7, 30, or 90 days.`.
 
-V2 uses the same envelope, count states and comparison semantics documented below, with this closed metric catalog:
+Every success and error response uses `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
+`Vary: Authorization, X-Findmydoc-Clinic-Scope-Contract, X-Findmydoc-Reporting-Contract`.
+The route remains private-live with `no-public-impact`. It adds no cache, tags or revalidation.
+Authentication failures return `401 CLINIC_DASHBOARD_UNAUTHORIZED` with `Authentication is required.`.
+Unavailable access returns `403 CLINIC_DASHBOARD_ACCESS_DENIED` with `Reporting access is not available.`.
+Authorization/source bootstrap failures return `503 CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE`
+with `Reporting is temporarily unavailable.`.
 
-```ts
-type ClinicDashboardReportingV2 = Omit<ClinicDashboardReportingV1, 'schemaVersion' | 'metrics'> & {
-  schemaVersion: 'clinic-dashboard-reporting-v2'
-  metrics: {
-    impressions: CountMetric<'posthog'>
-    profileViews: CountMetric<'posthog'>
-    uniqueVisitors: CountMetric<'posthog'>
-    inquiryStarters: CountMetric<'posthog'>
-    inquiries: CountMetric<'payload'>
-    reviews: ClinicDashboardReportingV1['metrics']['reviews']
-  }
-}
-```
-
-Profile Views counts repeated `clinic_profile_viewed` events. Unique Visitors counts distinct existing consent-based browser `distinct_id` values among those events, once per clinic and window. Inquiry starters shares that recognition on `clinic_inquiry_started`; Impressions counts `clinic_search_result_viewed`. Patient, inquiry and session identifiers do not substitute for browser recognition. No identities leave the source adapter. Changing browsers/devices or clearing storage can count a visitor again; visitors without analytics consent are outside these measurements.
-
-Each metric and each current/comparison window requires retention plus a verified capture-start instant. Unknown capture starts yield `partial_coverage`, not historical zero. Missing browser recognition makes the corresponding visitor metric partial while event counts remain independent. A source outage yields null/source_unavailable, without retry or a cached fallback; stored inquiries and current reviews remain independent. New capture events are registered but require the separate #302/#303 instrumentation and verified rollout.
-
-Deploy the V1-compatible Website V2 producer checkpoint first, then the Dashboard V2 consumer. Retire V1 only after operational evidence confirms the deployed consumer switch and #304's inventory. Source commits and controlled tests do not prove this deployment sequence occurred.
-
-`GET /api/clinic-dashboard/clinics/:clinicId/reporting` carries the explicit clinic target and retains the
-`clinic-dashboard-reporting-v1` content schema. It requires `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1`.
-The previous unscoped reporting route is removed. Each request validates the personal Bearer identity and authorizes
-the positive integer path target against current local or group assignment and clinic participation. The source
-clinic record must match that authorized target. Every Payload and PostHog metric read uses that clinic alone.
-The request cannot choose role, source, timezone, cache policy or analytic identity. Existing Türkiye availability,
-partial-source behavior and export availability remain unchanged; no group aggregation or new export is added.
-
-The sole query parameter is exactly one `periodDays` value: `7`, `30`, or `90`. Missing, repeated, malformed, or
-additional parameters return:
-
-```json
-{
-  "error": {
-    "code": "CLINIC_DASHBOARD_REPORTING_INVALID_INPUT",
-    "message": "Reporting period must be 7, 30, or 90 days."
-  }
-}
-```
-
-Every success and error response has `Cache-Control: private, no-store`, `Pragma: no-cache`, `Expires: 0`, and
-`Vary: Authorization, X-Findmydoc-Clinic-Scope-Contract, X-Findmydoc-Reporting-Contract`. The route has no tags, revalidation, cache layer, cache policy, or public-cache impact
-(`no-public-impact`). Authentication failures return `401 CLINIC_DASHBOARD_UNAUTHORIZED` with `Authentication is
-required.`; unavailable reporting access returns `403 CLINIC_DASHBOARD_ACCESS_DENIED` with `Reporting access is not
-available.`; an authorization/source bootstrap failure returns `503
-CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE` with `Reporting is temporarily unavailable.`.
-
-The response is always complete and uses `Europe/Istanbul` calendar boundaries. `asOf` equals `period.to`; all
-instants are UTC ISO-8601 values with exactly three fractional digits. A comparison period is the immediately
-preceding local calendar block with the same number of days and the equivalent local clock boundary.
+The complete response uses Istanbul calendar boundaries. `asOf` equals `period.to`; UTC ISO-8601 instants include
+exactly three fractional digits. The comparison is the preceding local calendar block with the same number of days
+and equivalent local clock boundary.
 
 ```ts
-type ClinicDashboardReportingV1 = {
-  schemaVersion: 'clinic-dashboard-reporting-v1'
-  asOf: string
-  timezone: 'Europe/Istanbul'
-  period: { days: 7 | 30 | 90; from: string; to: string }
-  comparisonPeriod: { days: 7 | 30 | 90; from: string; to: string }
-  metrics: {
-    profileViews: CountMetric<'posthog'>
-    ctaInteractions: {
-      source: 'posthog'
-      total: CountMetric<'posthog'>
-      byCtaId: {
-        choose_treatment: CountMetric<'posthog'>
-        contact: CountMetric<'posthog'>
-        contact_doctor: CountMetric<'posthog'>
-      }
-    }
-    inquiries: CountMetric<'payload'>
-    sessionConversion: SessionConversionMetric
-    reviews: {
-      source: 'payload'
-      count: ReviewCountSnapshot
-      average: ReviewAverageSnapshot
-    }
-    profileCompleteness: {
-      source: 'payload'
-      completedAreas: number | null
-      totalAreas: 6
-      percent: number | null
-      state: 'available' | 'source_unavailable' | 'partial_coverage'
-      comparison: null
-    }
-  }
-}
-
+type SourceState = 'available' | 'source_unavailable' | 'partial_coverage'
 type CountMetric<Source extends 'payload' | 'posthog'> = {
   source: Source
   current: { value: number | null; state: SourceState }
@@ -262,51 +197,48 @@ type CountMetric<Source extends 'payload' | 'posthog'> = {
     relativeDeltaPercent: number | null
   }
 }
-
-type SessionConversionMetric = {
-  source: 'posthog'
-  current: SessionConversionWindow
-  comparison: SessionConversionWindow & { percentagePointDelta: number | null }
+type ClinicDashboardReportingV2 = {
+  schemaVersion: 'clinic-dashboard-reporting-v2'
+  asOf: string
+  timezone: 'Europe/Istanbul'
+  period: { days: 7 | 30 | 90; from: string; to: string }
+  comparisonPeriod: { days: 7 | 30 | 90; from: string; to: string }
+  metrics: {
+    impressions: CountMetric<'posthog'>
+    profileViews: CountMetric<'posthog'>
+    uniqueVisitors: CountMetric<'posthog'>
+    inquiryStarters: CountMetric<'posthog'>
+    inquiries: CountMetric<'payload'>
+    reviews: {
+      source: 'payload'
+      count: { source: 'payload'; value: number | null; state: SourceState; comparison: null }
+      average: { source: 'payload'; value: number | null; state: SourceState | 'no_reviews'; comparison: null }
+    }
+  }
 }
-
-type SessionConversionWindow = {
-  ratePercent: number | null
-  numeratorSessions: number | null
-  denominatorSessions: number | null
-  state: SourceState | 'zero_denominator'
-}
-
-type ReviewCountSnapshot = {
-  source: 'payload'
-  value: number | null
-  state: SourceState
-  comparison: null
-}
-
-type ReviewAverageSnapshot = {
-  source: 'payload'
-  value: number | null
-  state: SourceState | 'no_reviews'
-  comparison: null
-}
-
-type SourceState = 'available' | 'source_unavailable' | 'partial_coverage'
 ```
 
-`null` denotes an unavailable or inapplicable numeric value; it is never silently replaced with `0`. Deltas are only
-present when both values are available, and relative deltas are `null` when the comparison value is zero. A review
-average is `null` with `no_reviews` when the available review count is zero. Session conversion remains unknown when
-the correlated funnel cannot be established; a `zero_denominator` is only a known zero-profile-session condition.
+Profile Views counts every matching `clinic_profile_viewed` event. Unique Visitors counts distinct nonempty existing
+consent-controlled browser `distinct_id` values among those events, per clinic/window. Inquiry starters uses the same
+recognition on `clinic_inquiry_started`; Impressions counts `clinic_search_result_viewed`. Browser/device changes and
+cleared storage can count a visitor again. Visitors without analytics consent are outside this population. No individual
+identities leave the adapter. Patient, inquiry and session identifiers do not substitute for browser recognition.
 
-Payload owns inquiry counts, review snapshots, and all six profile-completeness areas. PostHog owns profile views,
-CTA interactions, and the ordered session funnel. The server executes one aggregate PostHog query per load with a
-three-second timeout and no retry. Individual source failure or incomplete coverage remains metric-level state in a
-`200` response after authorization, so a source failure cannot erase available metrics from the other source.
+Retention and verified capture start must cover each metric and each window. Unknown capture starts yield
+`partial_coverage`, never historical zero. Missing recognition makes the affected visitor count partial while event counts
+remain independent. `available` with no matching events is `0`; other states carry `null`. Comparisons require two
+available values. Relative change with a zero comparison is `null`. Review averages use `no_reviews` when the available
+current count is zero. Reviews are current snapshots without period comparisons.
 
-The only browser-to-server funnel correlation input is an optional bounded `session_id` on a clinic inquiry request,
-and only after analytics consent. It is validated and discarded by bridges and inquiry routes; it is not persisted,
-logged, or returned. A server event is emitted only after a new inquiry is durably stored, and its `clinic_id` comes
-from that stored inquiry. Browser analytics values are measurement data, never clinic authorization.
+Payload counts stored nonspam inquiries by creation time for `submitted`, `in_review`, `contacted` and `closed`.
+Inquiry persistence, idempotency, audit, notifications and authentication do not depend on analytics. Submission carries
+no browser analytics identifier; strict guest and authenticated schemas reject the retired `session_id` field.
+Published profile progress, tasks and preview belong to the separate profile capability.
+
+One consolidated PostHog query covers both windows within a three-second total budget, without retries, shared cache
+or stale fallback. Metric-source failures remain null states in an authorized `200` response. Payload inquiry counts and
+review snapshots remain available during an analytics outage. Source tests do not prove deployed PostHog ingestion,
+configuration or coverage.
 
 ## Clinic Profile Draft Contract
 

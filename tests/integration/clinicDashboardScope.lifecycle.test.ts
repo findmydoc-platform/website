@@ -22,9 +22,6 @@ vi.mock('@/auth/utilities/jwtValidation', async (original) => ({
   ...(await original<typeof import('@/auth/utilities/jwtValidation')>()),
   validateSupabaseBearerToken: mocks.validate,
 }))
-vi.mock('@/features/clinicDashboard/reporting/posthog', () => ({
-  readPostHogClinicDashboardReporting: vi.fn().mockRejectedValue(new Error('analytics unavailable')),
-}))
 
 describe('clinic-scope-v1 source authorization', () => {
   let payload: Payload
@@ -36,6 +33,7 @@ describe('clinic-scope-v1 source authorization', () => {
   const prefix = testSlug('clinicDashboardScope.lifecycle.test.ts')
 
   beforeAll(async () => {
+    vi.stubEnv('POSTHOG_QUERY_API_KEY', '')
     payload = await getPayload({ config })
     await ensureBaseline(payload)
     const platform = await createPlatformTestUser(payload, { emailPrefix: prefix })
@@ -43,6 +41,7 @@ describe('clinic-scope-v1 source authorization', () => {
   })
 
   afterAll(async () => {
+    vi.unstubAllEnvs()
     await cleanupTrackedUsers(payload, { staffIds })
     for (const id of doctorIds) await payload.delete({ collection: 'doctors', id, overrideAccess: true })
     for (const id of clinicIds) await payload.delete({ collection: 'clinics', id, overrideAccess: true })
@@ -119,6 +118,7 @@ describe('clinic-scope-v1 source authorization', () => {
             headers: new Headers({
               Authorization: 'Bearer synthetic-personal-token',
               'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
+              'X-Findmydoc-Reporting-Contract': 'clinic-dashboard-reporting-v2',
             }),
             routeParams: clinicId ? { clinicId: String(clinicId) } : {},
             searchParams: new URLSearchParams('periodDays=7'),
@@ -136,7 +136,7 @@ describe('clinic-scope-v1 source authorization', () => {
     expect((await bootstrap()).clinics.map(({ id }: { id: string }) => id)).toEqual([String(first.id)])
     const localReporting = await reporting(first.id)
     expect(localReporting.status).toBe(200)
-    expect(await localReporting.json()).toMatchObject({ metrics: { profileCompleteness: { completedAreas: 2 } } })
+    expect(await localReporting.json()).toMatchObject({ metrics: { inquiries: { current: { value: 0 } } } })
     expect((await reporting(second.id)).status).toBe(403)
     await replaceClinicStaffAssignment(operator, staff.id, { scope: 'group', groupId: network.id })
     await expect(revalidateClinicDashboardRequest(await request(), 'legacy')).resolves.toEqual({
@@ -153,10 +153,9 @@ describe('clinic-scope-v1 source authorization', () => {
     const selected = await reporting(second.id)
     expect(selected.status).toBe(200)
     expect(await selected.json()).toMatchObject({
-      schemaVersion: 'clinic-dashboard-reporting-v1',
+      schemaVersion: 'clinic-dashboard-reporting-v2',
       metrics: {
         inquiries: { current: { value: 0 } },
-        profileCompleteness: { completedAreas: 3 },
         profileViews: { current: { state: 'source_unavailable', value: null } },
       },
     })

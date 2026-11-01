@@ -204,6 +204,10 @@ describe.skipIf(process.env.POSTHOG_BROWSER_TEST !== '1')('actual listing viewpo
           throw new Error(`${error.message}; browser errors: ${errors.join('; ')}`)
         })
       await run(page, transported)
+      const acceptedCount = await page.evaluate('impressions().length')
+      await expect
+        .poll(() => transported.filter((event) => event === 'clinic_search_result_viewed').length, { timeout: 10000 })
+        .toBe(acceptedCount)
       expect(errors).toEqual([])
     } finally {
       await browser.close()
@@ -398,6 +402,28 @@ describe.skipIf(process.env.POSTHOG_BROWSER_TEST !== '1')('actual listing viewpo
       expect(statuses).toEqual([200, 200])
       expect(await page.evaluate('impressions().length')).toBe(before)
       expect(pendingNavigation).toEqual([])
+    })
+  })
+
+  it('uses the visible viewport after native browser zoom instead of the larger layout viewport', async () => {
+    await inBrowser(async (page) => {
+      const cdp = await page.context().newCDPSession(page)
+      await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 2 })
+      await expect
+        .poll(() => page.evaluate(() => visualViewport!.height < document.documentElement.clientHeight))
+        .toBe(true)
+      const last = page.locator('article').nth(3)
+      await last.evaluate((element) =>
+        scrollTo(0, scrollY + element.getBoundingClientRect().top - visualViewport!.height - 10),
+      )
+      expect(
+        await last.evaluate((element) => element.getBoundingClientRect().top < document.documentElement.clientHeight),
+      ).toBe(true)
+      await page.evaluate('allowAnalytics(true)')
+      await expect.poll(() => page.evaluate('browserState().sdkReady')).toBe(true)
+      expect(await page.evaluate("impressions().filter(row => row.clinic_id === '104').length")).toBe(0)
+      await page.evaluate('scrollBy(0, 20)')
+      await expect.poll(() => page.evaluate("impressions().filter(row => row.clinic_id === '104').length")).toBe(1)
     })
   })
 })

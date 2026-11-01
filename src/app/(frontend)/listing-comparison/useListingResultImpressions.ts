@@ -14,12 +14,17 @@ export function useListingResultImpressions(resultViewSignature: string) {
 
   const captureVisibleResults = useCallback(() => {
     if (!isReady || document.visibilityState !== 'visible' || !document.hasFocus()) return
+    const viewport = window.visualViewport
+    const viewportLeft = viewport?.offsetLeft ?? 0
+    const viewportTop = viewport?.offsetTop ?? 0
+    const viewportRight = viewportLeft + (viewport?.width ?? document.documentElement.clientWidth)
+    const viewportBottom = viewportTop + (viewport?.height ?? document.documentElement.clientHeight)
     for (const [clinicId, element] of view.elements) {
       if (view.accepted.has(clinicId) || !element.isConnected) continue
       const rect = element.getBoundingClientRect()
       const styles = getComputedStyle(element)
-      const visibleWidth = Math.min(rect.right, document.documentElement.clientWidth) - Math.max(rect.left, 0)
-      const visibleHeight = Math.min(rect.bottom, document.documentElement.clientHeight) - Math.max(rect.top, 0)
+      const visibleWidth = Math.min(rect.right, viewportRight) - Math.max(rect.left, viewportLeft)
+      const visibleHeight = Math.min(rect.bottom, viewportBottom) - Math.max(rect.top, viewportTop)
       if (visibleWidth <= 0 || visibleHeight <= 0 || styles.visibility !== 'visible' || styles.opacity === '0') continue
       if (postHogBrowserEvents.clinicSearchResultViewed({ clinic_id: clinicId })) view.accepted.add(clinicId)
     }
@@ -49,6 +54,8 @@ export function useListingResultImpressions(resultViewSignature: string) {
     window.addEventListener('scroll', captureVisibleResults, { capture: true, passive: true })
     window.addEventListener('resize', captureVisibleResults)
     window.addEventListener('focus', captureVisibleResults)
+    window.visualViewport?.addEventListener('scroll', captureVisibleResults)
+    window.visualViewport?.addEventListener('resize', captureVisibleResults)
     document.addEventListener('visibilitychange', captureVisibleResults)
     captureVisibleResults()
     return () => {
@@ -57,6 +64,8 @@ export function useListingResultImpressions(resultViewSignature: string) {
       window.removeEventListener('scroll', captureVisibleResults, true)
       window.removeEventListener('resize', captureVisibleResults)
       window.removeEventListener('focus', captureVisibleResults)
+      window.visualViewport?.removeEventListener('scroll', captureVisibleResults)
+      window.visualViewport?.removeEventListener('resize', captureVisibleResults)
       document.removeEventListener('visibilitychange', captureVisibleResults)
     }
   }, [captureVisibleResults, view])

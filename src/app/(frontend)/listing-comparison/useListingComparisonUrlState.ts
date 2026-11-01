@@ -32,6 +32,7 @@ type UseListingComparisonUrlStateResult = {
   filterDraft: ListingComparisonFilterDraft
   setFilterDraft: React.Dispatch<React.SetStateAction<ListingComparisonFilterDraft>>
   filterResetSignature: string
+  resultViewSignature: string
   buildPageHref: (targetPage: number) => string
   clearSpecialtySelection: () => void
 }
@@ -199,6 +200,7 @@ export function useListingComparisonUrlState({
     filterDraft,
     setFilterDraft,
     filterResetSignature,
+    resultViewSignature: queryStateSignature,
     buildPageHref,
     clearSpecialtySelection,
   }

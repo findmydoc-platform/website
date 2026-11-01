@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { BadgeCheck, FileText, Hospital, MapPin } from 'lucide-react'
 
 import type { ListingCardData } from '@/components/organisms/Listing'
@@ -20,6 +20,7 @@ import { SORT_OPTIONS } from '@/utilities/listingComparison/sort'
 import { normalizePriceBounds, type PriceBounds } from '@/utilities/listingComparison/priceRange'
 import { ListingComparisonFilters } from './ListingComparisonFilters.client'
 import { useListingComparisonUrlState } from './useListingComparisonUrlState'
+import { useListingResultImpressions } from './useListingResultImpressions'
 
 type ListingComparisonTrustStatInput =
   | {
@@ -130,6 +131,7 @@ export function ListingComparisonPageClient({
   specialtyContext,
 }: ListingComparisonPageClientProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const currentPath = React.useMemo(() => {
     const query = searchParams.toString()
@@ -149,12 +151,14 @@ export function ListingComparisonPageClient({
     setSortSelection,
     setFilterDraft,
     filterResetSignature,
+    resultViewSignature,
     buildPageHref,
     clearSpecialtySelection,
   } = useListingComparisonUrlState({
     queryState,
     priceBounds: normalizedPriceBounds,
   })
+  const onResultElement = useListingResultImpressions(resultViewSignature)
 
   const specialtyChipLabel = React.useMemo(() => {
     if (specialtyContext.selected.length === 0) return null
@@ -193,6 +197,7 @@ export function ListingComparisonPageClient({
       }
       totalResultsCount={pagination.totalResults}
       results={results}
+      onResultElement={onResultElement}
       renderResultCornerAction={(data) => {
         const clinicId = Number(data.id)
         if (!Number.isFinite(clinicId)) return null
@@ -236,7 +241,12 @@ export function ListingComparisonPageClient({
       }
       resultsFooter={
         pagination.totalPages > 1 ? (
-          <Pagination page={pagination.page} totalPages={pagination.totalPages} getPathForPage={buildPageHref} />
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            getPathForPage={buildPageHref}
+            onNavigate={(href) => router.push(href, { scroll: false })}
+          />
         ) : null
       }
       trust={

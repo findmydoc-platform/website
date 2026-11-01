@@ -1,6 +1,12 @@
 import { gunzipSync } from 'node:zlib'
 
-const businessNames = ['clinic_profile_viewed', 'clinic_cta_clicked'] as const
+// Legacy CTA names remain observable so cleanup tests can detect retired capture.
+const businessNames = [
+  'clinic_profile_viewed',
+  'clinic_cta_clicked',
+  'clinic_search_result_viewed',
+  'clinic_inquiry_started',
+] as const
 type BusinessName = (typeof businessNames)[number]
 type DecodeReason = 'decoded' | 'not_capture' | 'body_unavailable' | 'malformed_body'
 export type CaptureExpectations = { clinicSlug: string; pagePath: string; projectToken: string }
@@ -26,6 +32,8 @@ export type CaptureEvidence = ProfileMatch & {
   reason: DecodeReason
   eventNames: BusinessName[]
   targetCount: number
+  reportingContextOnly: boolean | null
+  reportingBrowserIdentityPresent: boolean | null
 }
 
 export function isCaptureRequest(url: string, method: string): boolean {
@@ -58,6 +66,8 @@ function inspectCaptureRequest(
     reason: 'not_capture',
     eventNames: [],
     targetCount: 0,
+    reportingContextOnly: null,
+    reportingBrowserIdentityPresent: null,
     clinicMatched: false,
     slugMatched: false,
     pathMatched: false,
@@ -96,6 +106,31 @@ function inspectCaptureRequest(
     let targetCount = 0
     for (const event of events) {
       if (businessNames.includes(event.event)) eventNames.push(event.event)
+      if (event.event === 'clinic_search_result_viewed' || event.event === 'clinic_inquiry_started') {
+        const allowedKeys = [
+          'clinic_id',
+          'token',
+          'distinct_id',
+          '$device_id',
+          '$session_id',
+          '$window_id',
+          '$lib',
+          '$lib_version',
+          '$process_person_profile',
+        ]
+        const properties = event.properties
+        const contextOnly = Boolean(
+          properties &&
+          typeof properties.clinic_id === 'string' &&
+          Object.keys(properties).every((key) => allowedKeys.includes(key)) &&
+          !event.$set &&
+          !event.$set_once &&
+          !event.$unset,
+        )
+        const identityPresent = typeof properties?.distinct_id === 'string' && properties.distinct_id.length > 0
+        result.reportingContextOnly = (result.reportingContextOnly ?? true) && contextOnly
+        result.reportingBrowserIdentityPresent = (result.reportingBrowserIdentityPresent ?? true) && identityPresent
+      }
       if (event.event !== 'clinic_profile_viewed' || event.properties?.clinic_id !== clinicId) continue
       const properties = event.properties
       const session = properties.$session_id

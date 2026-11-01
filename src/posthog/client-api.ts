@@ -16,7 +16,7 @@ import {
 export { getPostHogBrowserDiagnostics } from './client'
 
 export type { ClinicCtaClickedProperties, ClinicProfileViewedProperties } from './events'
-export type { PostHogBrowserEventInterface } from './client'
+export type { ClinicInquiryStartedProperties, PostHogBrowserEventInterface } from './client'
 
 export function enablePostHogAnalyticsCapture(): boolean {
   return enablePostHog()

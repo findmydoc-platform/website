@@ -135,6 +135,36 @@ export function ClinicDetail({
     pagePath,
   ])
 
+  const captureInquiryEdit = () => {
+    if (!analytics.isReady) return
+    // Analytics must never prevent a field edit or an operational submission.
+    try {
+      analytics.onInquiryStarted({ clinicId })
+    } catch {
+      // The form remains usable when its analytics adapter fails.
+    }
+  }
+
+  const handleFormFieldChange = <K extends keyof ContactFormFields>(
+    field: K,
+    value: ContactFormFields[K],
+    isUserEdit = true,
+  ) => {
+    if (isUserEdit && field !== 'consentAccepted' && interaction.contactFormFields[field] !== value)
+      captureInquiryEdit()
+    interaction.handleContactFieldChange(field, value)
+  }
+
+  const handleFormDoctorChange = (doctorId: string) => {
+    if (interaction.selectedDoctorId !== doctorId) captureInquiryEdit()
+    interaction.handleDoctorSelectionChange(doctorId)
+  }
+
+  const handleFormTreatmentChange = (treatmentId: string) => {
+    if (interaction.selectedTreatmentId !== treatmentId) captureInquiryEdit()
+    interaction.handleTreatmentSelectionChange(treatmentId)
+  }
+
   const captureClinicCtaClick = React.useCallback(
     (
       properties: Pick<ClinicDetailCtaClickedEvent, 'ctaId' | 'ctaLabel' | 'ctaLocation' | 'doctorId' | 'treatmentId'>,
@@ -358,9 +388,9 @@ export function ClinicDetail({
           selectionError={interaction.contactFormSelectionError}
           isSubmitting={interaction.isSubmittingContact}
           isSubmitted={interaction.hasSubmittedContact}
-          onFieldChange={interaction.handleContactFieldChange}
-          onDoctorChange={interaction.handleDoctorSelectionChange}
-          onTreatmentChange={interaction.handleTreatmentSelectionChange}
+          onFieldChange={handleFormFieldChange}
+          onDoctorChange={handleFormDoctorChange}
+          onTreatmentChange={handleFormTreatmentChange}
           onSubmit={interaction.handleContactSubmit}
         />
       </Container>

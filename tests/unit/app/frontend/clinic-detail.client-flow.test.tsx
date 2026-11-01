@@ -12,6 +12,7 @@ vi.mock('@/posthog/client-api', () => ({
   getConsentedPostHogSessionId: vi.fn(() => undefined),
   postHogBrowserEvents: {
     clinicCtaClicked: vi.fn(),
+    clinicInquiryStarted: vi.fn(() => true),
     clinicProfileViewed: vi.fn(),
   },
 }))

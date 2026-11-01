@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   getConsentedPostHogSessionId: vi.fn(),
   postHogBrowserEvents: {
     clinicCtaClicked: vi.fn(),
+    clinicInquiryStarted: vi.fn(() => true),
     clinicProfileViewed: vi.fn(),
   },
 }))

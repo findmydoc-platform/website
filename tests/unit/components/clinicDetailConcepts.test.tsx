@@ -152,7 +152,7 @@ const baseData = {
 describe('ClinicDetail concept', () => {
   it('captures the displayed profile only after readiness accepts it', () => {
     const onProfileViewed = vi.fn(() => true)
-    const analytics = { isReady: false, onCtaClicked: vi.fn(), onProfileViewed }
+    const analytics = { isReady: false, onCtaClicked: vi.fn(), onInquiryStarted: vi.fn(() => true), onProfileViewed }
     const view = render(<ClinicDetail analytics={analytics} data={baseData} onSubmitContactRequest={vi.fn()} />)
     expect(onProfileViewed).not.toHaveBeenCalled()
     view.rerender(
@@ -163,7 +163,7 @@ describe('ClinicDetail concept', () => {
 
   it('does not mark a rejected capture as tracked or replay accepted views on reconsent', () => {
     const onProfileViewed = vi.fn<() => boolean>().mockReturnValueOnce(false).mockReturnValue(true)
-    const analytics = { isReady: true, onCtaClicked: vi.fn(), onProfileViewed }
+    const analytics = { isReady: true, onCtaClicked: vi.fn(), onInquiryStarted: vi.fn(() => true), onProfileViewed }
     const view = render(
       <React.StrictMode>
         <ClinicDetail analytics={analytics} data={baseData} onSubmitContactRequest={vi.fn()} />
@@ -186,6 +186,7 @@ describe('ClinicDetail concept', () => {
   it('renders the clinic disclaimer in the hero-to-review flow', async () => {
     const analytics = {
       onCtaClicked: vi.fn(),
+      onInquiryStarted: vi.fn(() => true),
       isReady: true,
       onProfileViewed: vi.fn(() => true),
     }

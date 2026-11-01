@@ -12,6 +12,7 @@ import {
 import { getConsentedPostHogSessionId, postHogBrowserEvents, usePostHogAnalyticsReady } from '@/posthog/client-api'
 
 const clinicDetailAnalytics: Omit<ClinicDetailAnalyticsPort, 'isReady'> = {
+  onInquiryStarted: ({ clinicId }) => postHogBrowserEvents.clinicInquiryStarted({ clinic_id: clinicId }),
   onCtaClicked: ({ clinicId, clinicSlug, ctaId, ctaLabel, ctaLocation, doctorId, pagePath, treatmentId }) => {
     postHogBrowserEvents.clinicCtaClicked({
       clinic_id: clinicId,

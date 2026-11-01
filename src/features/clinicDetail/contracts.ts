@@ -169,6 +169,7 @@ export type ClinicDetailCtaClickedEvent = {
 
 export type ClinicDetailAnalyticsPort = {
   isReady: boolean
+  onInquiryStarted: (event: { clinicId: string }) => boolean
   onCtaClicked: (event: ClinicDetailCtaClickedEvent) => void
   onProfileViewed: (event: ClinicDetailProfileViewedEvent) => boolean
 }

@@ -98,6 +98,19 @@ Official capability references inspected through the connection were
 [event retention](https://posthog.com/docs/data/events-retention) and
 [the event model](https://posthog.com/docs/data/events). Definition deletion is not raw-event deletion.
 
+The official data-storage guide was checked again on 1 November 2026. Its manual deletion targets persons and their
+associated events. The guide also states that retention cannot be shortened to delete data. The
+[Events API reference](https://posthog.com/docs/api/events) documents no delete operation. None of these is a supported
+event-only cleanup mechanism for this scope.
+
+The companion [Dashboard evidence and completion record](https://github.com/findmydoc-platform/clinic-dashboard/blob/feature/299-clinic-reporting/docs/testing/clinic-reporting-evidence.md)
+maps all #305 acceptance criteria to the three agreed test boundaries and records the remaining rollout, source and
+deletion prerequisites. The cross-repository link requires publication of the companion integration branch. Before any
+separate deletion approval, record a supported mechanism, intended project, immutable event predicate, fixed cutoff,
+fresh affected counts and retained consumers. After approved execution, retain the completion reference and compare
+the same bounded query before/after, then verify retained profile/new events and independent Payload functions.
+No deletion or after-proof exists; #305, parent specification #299 and gap #298 remain open.
+
 ## Coordinated release boundary
 
 The immutable V1-compatible Website producer checkpoint is

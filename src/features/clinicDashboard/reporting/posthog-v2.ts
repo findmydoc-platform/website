@@ -83,7 +83,7 @@ export async function readPostHogClinicDashboardReportingV2(input: Input): Promi
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 3_000)
   try {
-    const response = await fetch(`https://eu.i.posthog.com/api/projects/${encodeURIComponent(project)}/query/`, {
+    const response = await fetch(`https://eu.posthog.com/api/projects/${encodeURIComponent(project)}/query/`, {
       method: 'POST',
       cache: 'no-store',
       signal: controller.signal,

@@ -148,6 +148,10 @@ describe('five-count reporting source', () => {
     expect(result.uniqueVisitors.current).toEqual({ value: null, state: 'source_unavailable' })
     expect(result.profileViews.current).toEqual({ value: null, state: 'source_unavailable' })
     expect(fetcher).toHaveBeenCalledTimes(1)
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://eu.posthog.com/api/projects/synthetic-project/query/',
+      expect.objectContaining({ method: 'POST', cache: 'no-store' }),
+    )
   })
 
   it('bounds an unresponsive source to three seconds without retry', async () => {

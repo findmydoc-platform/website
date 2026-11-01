@@ -1,6 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockPayload, createMockReq } from '../../../helpers/testHelpers'
 
+import type { ReportingCaptureStarts } from '@/features/clinicDashboard/reporting/config'
+
+const { captureStartsByProject } = vi.hoisted(() => ({
+  captureStartsByProject: {} as Record<string, ReportingCaptureStarts>,
+}))
+vi.mock('@/features/clinicDashboard/reporting/config', () => ({
+  REPORTING_CAPTURE_STARTS_BY_PROJECT: captureStartsByProject,
+}))
+beforeEach(() => {
+  for (const project of Object.keys(captureStartsByProject)) delete captureStartsByProject[project]
+  captureStartsByProject['synthetic-project'] = {
+    clinic_profile_viewed: null,
+    clinic_search_result_viewed: null,
+    clinic_inquiry_started: null,
+  }
+})
+
 const mocks = vi.hoisted(() => ({ revalidateClinicDashboardTargetRequest: vi.fn() }))
 vi.mock('@/features/clinicDashboard/authorization', () => ({
   revalidateClinicDashboardTargetRequest: mocks.revalidateClinicDashboardTargetRequest,
@@ -52,12 +69,11 @@ describe('Clinic Dashboard five-count reporting service', () => {
     vi.stubEnv('POSTHOG_QUERY_API_KEY', 'synthetic-key')
     vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', 'synthetic-project')
     vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '365')
-    for (const setting of [
-      'POSTHOG_PROFILE_VIEWS_CAPTURE_STARTED_AT',
-      'POSTHOG_IMPRESSIONS_CAPTURE_STARTED_AT',
-      'POSTHOG_INQUIRY_STARTERS_CAPTURE_STARTED_AT',
-    ])
-      vi.stubEnv(setting, '2025-01-01T00:00:00.000Z')
+    Object.assign(captureStartsByProject['synthetic-project']!, {
+      clinic_profile_viewed: '2025-01-01T00:00:00.000Z',
+      clinic_search_result_viewed: '2025-01-01T00:00:00.000Z',
+      clinic_inquiry_started: '2025-01-01T00:00:00.000Z',
+    })
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => analyticsResponse()),

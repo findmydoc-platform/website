@@ -1,6 +1,23 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readPostHogClinicDashboardReportingV2 } from '@/features/clinicDashboard/reporting/posthog-v2'
 import { executeReportingQuery } from '../../../../helpers/reportingClickHouse'
+
+import type { ReportingCaptureStarts } from '@/features/clinicDashboard/reporting/config'
+
+const { captureStartsByProject } = vi.hoisted(() => ({
+  captureStartsByProject: {} as Record<string, ReportingCaptureStarts>,
+}))
+vi.mock('@/features/clinicDashboard/reporting/config', () => ({
+  REPORTING_CAPTURE_STARTS_BY_PROJECT: captureStartsByProject,
+}))
+beforeEach(() => {
+  for (const project of Object.keys(captureStartsByProject)) delete captureStartsByProject[project]
+  captureStartsByProject['synthetic-project'] = {
+    clinic_profile_viewed: null,
+    clinic_search_result_viewed: null,
+    clinic_inquiry_started: null,
+  }
+})
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -11,7 +28,7 @@ const configure = () => {
   vi.stubEnv('POSTHOG_QUERY_API_KEY', 'synthetic-query-key')
   vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', 'synthetic-project')
   vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '365')
-  vi.stubEnv('POSTHOG_IMPRESSIONS_CAPTURE_STARTED_AT', '2025-01-01T00:00:00.000Z')
+  captureStartsByProject['synthetic-project']!.clinic_search_result_viewed = '2025-01-01T00:00:00.000Z'
 }
 
 describe.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
@@ -76,11 +93,11 @@ describe.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
       vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
         Response.json(executeReportingQuery(JSON.parse(String(init.body)).query.query, [])),
       )
-      vi.stubEnv('POSTHOG_IMPRESSIONS_CAPTURE_STARTED_AT', '')
+      captureStartsByProject['synthetic-project']!.clinic_search_result_viewed = null
       const unknown = await readPostHogClinicDashboardReportingV2(input)
       expect(unknown.impressions.current).toEqual({ state: 'partial_coverage', value: null })
       expect(unknown.impressions.comparison.state).toBe('partial_coverage')
-      vi.stubEnv('POSTHOG_IMPRESSIONS_CAPTURE_STARTED_AT', input.current.from)
+      captureStartsByProject['synthetic-project']!.clinic_search_result_viewed = input.current.from
       const recent = await readPostHogClinicDashboardReportingV2(input)
       expect(recent.impressions.current).toEqual({ state: 'available', value: 0 })
       expect(recent.impressions.comparison).toEqual({
@@ -89,12 +106,12 @@ describe.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
         absoluteDelta: null,
         relativeDeltaPercent: null,
       })
-      vi.stubEnv('POSTHOG_IMPRESSIONS_CAPTURE_STARTED_AT', '2026-10-25T21:00:00.001Z')
+      captureStartsByProject['synthetic-project']!.clinic_search_result_viewed = '2026-10-25T21:00:00.001Z'
       expect((await readPostHogClinicDashboardReportingV2(input)).impressions.current).toEqual({
         state: 'partial_coverage',
         value: null,
       })
-      vi.stubEnv('POSTHOG_IMPRESSIONS_CAPTURE_STARTED_AT', '2025-01-01T00:00:00.000Z')
+      captureStartsByProject['synthetic-project']!.clinic_search_result_viewed = '2025-01-01T00:00:00.000Z'
       vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '8')
       const retained = await readPostHogClinicDashboardReportingV2(input)
       expect(retained.impressions.current).toEqual({ state: 'available', value: 0 })

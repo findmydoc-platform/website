@@ -1,6 +1,23 @@
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { readPostHogClinicDashboardReportingV2 } from '@/features/clinicDashboard/reporting/posthog-v2'
 import { executeReportingQuery } from '../../../../helpers/reportingClickHouse'
+
+import type { ReportingCaptureStarts } from '@/features/clinicDashboard/reporting/config'
+
+const { captureStartsByProject } = vi.hoisted(() => ({
+  captureStartsByProject: {} as Record<string, ReportingCaptureStarts>,
+}))
+vi.mock('@/features/clinicDashboard/reporting/config', () => ({
+  REPORTING_CAPTURE_STARTS_BY_PROJECT: captureStartsByProject,
+}))
+beforeEach(() => {
+  for (const project of Object.keys(captureStartsByProject)) delete captureStartsByProject[project]
+  captureStartsByProject['synthetic-project'] = {
+    clinic_profile_viewed: null,
+    clinic_search_result_viewed: null,
+    clinic_inquiry_started: null,
+  }
+})
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -13,12 +30,11 @@ it.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
     vi.stubEnv('POSTHOG_QUERY_API_KEY', 'synthetic-query-key')
     vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', 'synthetic-project')
     vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '365')
-    for (const setting of [
-      'POSTHOG_PROFILE_VIEWS_CAPTURE_STARTED_AT',
-      'POSTHOG_IMPRESSIONS_CAPTURE_STARTED_AT',
-      'POSTHOG_INQUIRY_STARTERS_CAPTURE_STARTED_AT',
-    ])
-      vi.stubEnv(setting, '2026-01-01T00:00:00.000Z')
+    Object.assign(captureStartsByProject['synthetic-project']!, {
+      clinic_profile_viewed: '2026-01-01T00:00:00.000Z',
+      clinic_search_result_viewed: '2026-01-01T00:00:00.000Z',
+      clinic_inquiry_started: '2026-01-01T00:00:00.000Z',
+    })
     const current = { from: '2026-10-25T21:00:00.000Z', to: '2026-11-01T12:00:00.000Z' }
     const comparison = { from: '2026-10-18T21:00:00.000Z', to: '2026-10-25T12:00:00.000Z' }
     const row = (event: string, timestamp = current.from) => ({

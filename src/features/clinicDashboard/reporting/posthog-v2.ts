@@ -1,6 +1,7 @@
 import { CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG } from '@/posthog/api'
 import type { ClinicDashboardReportingV2DTO, ReportingSourceState, ReportingPeriodDays } from './contracts'
 import { countMetric } from './countMetric'
+import { REPORTING_CAPTURE_STARTS_BY_PROJECT } from './config'
 
 type AnalyticsMetric = 'impressions' | 'profileViews' | 'uniqueVisitors' | 'inquiryStarters'
 type AnalyticsCounts = Pick<ClinicDashboardReportingV2DTO['metrics'], AnalyticsMetric>
@@ -33,18 +34,26 @@ const queryFor = ({ clinicId, comparison, current }: Input): string => {
   )`
 }
 
-const captureStart = (metric: AnalyticsMetric): number => {
-  const setting =
+const captureStart = (project: string, metric: AnalyticsMetric): number => {
+  const events = CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.events
+  const event =
     metric === 'impressions'
-      ? process.env.POSTHOG_IMPRESSIONS_CAPTURE_STARTED_AT
+      ? events.searchResultViewed
       : metric === 'inquiryStarters'
-        ? process.env.POSTHOG_INQUIRY_STARTERS_CAPTURE_STARTED_AT
-        : process.env.POSTHOG_PROFILE_VIEWS_CAPTURE_STARTED_AT
+        ? events.inquiryStarted
+        : events.profileViewed
+  const setting = REPORTING_CAPTURE_STARTS_BY_PROJECT[project]?.[event]
   return setting && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(setting) ? Date.parse(setting) : Number.NaN
 }
 
-const coverage = (metric: AnalyticsMetric, window: Window, asOf: string, retention: number): ReportingSourceState =>
-  captureStart(metric) <= Date.parse(window.from) &&
+const coverage = (
+  project: string,
+  metric: AnalyticsMetric,
+  window: Window,
+  asOf: string,
+  retention: number,
+): ReportingSourceState =>
+  captureStart(project, metric) <= Date.parse(window.from) &&
   Date.parse(window.from) >= Date.parse(asOf) - retention * 86_400_000
     ? 'available'
     : 'partial_coverage'
@@ -105,7 +114,7 @@ export async function readPostHogClinicDashboardReportingV2(input: Input): Promi
     return Object.fromEntries(
       metrics.map((metric) => {
         const state = (window: 'current' | 'comparison'): ReportingSourceState => {
-          const covered = coverage(metric, input[window], input.current.to, retention)
+          const covered = coverage(project, metric, input[window], input.current.to, retention)
           const missing =
             metric === 'uniqueVisitors'
               ? get(`${window}_missingVisitors`)

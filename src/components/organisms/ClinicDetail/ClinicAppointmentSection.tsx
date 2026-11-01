@@ -57,6 +57,17 @@ const inputClassName =
 const textAreaClassName =
   'min-h-32 w-full rounded-[24px] border border-primary/45 bg-background px-4 py-3 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
 
+const isAutofilled = (element: Element): boolean => {
+  for (const selector of [':autofill', ':-webkit-autofill']) {
+    try {
+      if (element.matches(selector)) return true
+    } catch {
+      // An engine can support only one of the standard and prefixed selectors.
+    }
+  }
+  return false
+}
+
 export function ClinicAppointmentSection({
   sectionId,
   sectionRef,
@@ -146,7 +157,11 @@ export function ClinicAppointmentSection({
         event.target instanceof HTMLSelectElement ||
         (nativeEvent instanceof InputEvent &&
           Boolean(nativeEvent.inputType) &&
-          nativeEvent.inputType !== 'insertReplacementText')
+          !isAutofilled(event.target) &&
+          (nativeEvent.inputType !== 'insertReplacementText' ||
+            // Accepted spelling/writing suggestions replace text in the active field.
+            // Native autofill can use the same inputType, with no replacement data.
+            (event.target === document.activeElement && nativeEvent.data !== null)))
       onFieldChange(field, event.target.value, isUserEdit)
     },
     [formValidation, onFieldChange],

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createLocalReq, getPayload } from 'payload'
 import type { z } from 'zod'
 
-import { guestInquiryCreateInputSchema } from '@/features/inquiryCommunication/contracts'
+import { guestInquiryCreateRequestSchema } from '@/features/inquiryCommunication/httpCreateInput'
 import { InquiryCommunicationServiceError, submitGuestClinicInquiry } from '@/features/inquiryCommunication/service'
 import { hasSupabaseAuthenticationAttempt } from '@/features/patientInquiries/creationContext'
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     )
   }
   const body = await request.json().catch(() => undefined)
-  const parsed = guestInquiryCreateInputSchema.safeParse(body)
+  const parsed = guestInquiryCreateRequestSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: firstValidationMessage(parsed.error) }, { status: 400 })
   }

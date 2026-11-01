@@ -4,11 +4,9 @@ import {
   CLINIC_DASHBOARD_REPORTING_V2_SCHEMA_VERSION,
   type ClinicDashboardReportingV2DTO,
   REPORTING_PERIOD_DAYS,
-  type ReportingCountMetric,
-  type ReportingMetricValue,
   type ReportingPeriodDays,
-  type ReportingSourceState,
 } from './contracts'
+import { countMetric } from './countMetric'
 
 import { readPostHogClinicDashboardReportingV2 } from './posthog-v2'
 
@@ -124,34 +122,6 @@ export const createReportingWindows = (periodDays: ReportingPeriodDays, now = ne
     asOf: to,
     comparison: { days: periodDays, from: comparisonFrom.toISOString(), to: comparisonTo.toISOString() },
     current: { days: periodDays, from: currentFrom.toISOString(), to },
-  }
-}
-
-const unavailableValue = (state: ReportingSourceState): ReportingMetricValue => ({ state, value: null })
-
-const countMetric = (
-  source: ReportingCountMetric['source'],
-  current: number | undefined,
-  currentState: ReportingSourceState,
-  comparison: number | undefined,
-  comparisonState: ReportingSourceState,
-): ReportingCountMetric => {
-  const currentValue = currentState === 'available' && typeof current === 'number' ? current : null
-  const comparisonValue = comparisonState === 'available' && typeof comparison === 'number' ? comparison : null
-  const absoluteDelta = currentValue !== null && comparisonValue !== null ? currentValue - comparisonValue : null
-  const relativeDeltaPercent =
-    absoluteDelta !== null && comparisonValue !== null && comparisonValue !== 0
-      ? (absoluteDelta / comparisonValue) * 100
-      : null
-  return {
-    comparison: {
-      ...unavailableValue(comparisonState),
-      value: comparisonValue,
-      absoluteDelta,
-      relativeDeltaPercent,
-    },
-    current: { ...unavailableValue(currentState), value: currentValue },
-    source,
   }
 }
 

@@ -1,5 +1,6 @@
 import { CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG } from '@/posthog/api'
 import type { ClinicDashboardReportingV2DTO, ReportingSourceState, ReportingPeriodDays } from './contracts'
+import { countMetric } from './countMetric'
 
 type AnalyticsMetric = 'impressions' | 'profileViews' | 'uniqueVisitors' | 'inquiryStarters'
 type AnalyticsCounts = Pick<ClinicDashboardReportingV2DTO['metrics'], AnalyticsMetric>
@@ -48,31 +49,9 @@ const coverage = (metric: AnalyticsMetric, window: Window, asOf: string, retenti
     ? 'available'
     : 'partial_coverage'
 
-const count = (
-  current: number | null,
-  currentState: ReportingSourceState,
-  previous: number | null,
-  previousState: ReportingSourceState,
-): AnalyticsCounts[AnalyticsMetric] => {
-  const value = currentState === 'available' ? current : null
-  const comparison = previousState === 'available' ? previous : null
-  const delta = value !== null && comparison !== null ? value - comparison : null
-  return {
-    source: 'posthog',
-    current: { value, state: currentState },
-    comparison: {
-      value: comparison,
-      state: previousState,
-      absoluteDelta: delta,
-      relativeDeltaPercent:
-        delta !== null && comparison !== null && comparison !== 0 ? (delta / comparison) * 100 : null,
-    },
-  }
-}
-
 const unavailable = (): AnalyticsCounts =>
   Object.fromEntries(
-    metrics.map((metric) => [metric, count(null, 'source_unavailable', null, 'source_unavailable')]),
+    metrics.map((metric) => [metric, countMetric('posthog', null, 'source_unavailable', null, 'source_unavailable')]),
   ) as AnalyticsCounts
 
 export async function readPostHogClinicDashboardReportingV2(input: Input): Promise<AnalyticsCounts> {
@@ -137,7 +116,13 @@ export async function readPostHogClinicDashboardReportingV2(input: Input): Promi
         }
         return [
           metric,
-          count(get(`current_${metric}`), state('current'), get(`comparison_${metric}`), state('comparison')),
+          countMetric(
+            'posthog',
+            get(`current_${metric}`),
+            state('current'),
+            get(`comparison_${metric}`),
+            state('comparison'),
+          ),
         ]
       }),
     ) as AnalyticsCounts

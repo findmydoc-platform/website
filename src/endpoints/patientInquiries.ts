@@ -9,9 +9,9 @@ import {
   inquiryDetailInputSchema,
   inquiryReadPositionInputSchema,
   patientInquiryQueueInputSchema,
-  verifiedInquiryCreateInputSchema,
   type InquiryCommunicationErrorCode,
 } from '@/features/inquiryCommunication/contracts'
+import { verifiedInquiryCreateRequestSchema } from '@/features/inquiryCommunication/httpCreateInput'
 import {
   cleanupDiscardedAttachment,
   createVerifiedPatientInquiry,
@@ -238,7 +238,7 @@ export const patientInquiriesGetHandler: PayloadHandler = async (req) => {
 export const patientInquiryCreatePostHandler: PayloadHandler = async (req) => {
   const authorization = authorizePatient(req)
   if (!authorization.ok) return authorization.response
-  const request = await readBody(req, verifiedInquiryCreateInputSchema)
+  const request = await readBody(req, verifiedInquiryCreateRequestSchema)
   if (request instanceof Response) return request
   return execute(
     req,

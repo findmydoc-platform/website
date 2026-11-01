@@ -62,24 +62,27 @@ describe('POST /api/clinic-contact-requests', () => {
     mocks.submitGuestInquiry.mockResolvedValue({ deduped: false, id: '42', status: 'submitted' })
   })
 
-  it('parses the public request and delegates one normalized guest command', async () => {
-    const request = makeRequest(validBody)
+  it.each([undefined, 'retired-session'])(
+    'accepts an existing guest tab with legacy session %s and delegates only inquiry data',
+    async (session) => {
+      const request = makeRequest({ ...validBody, ...(session ? { session_id: session } : {}) })
 
-    const response = await POST(request)
+      const response = await POST(request)
 
-    expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({ success: true, id: '42', status: 'submitted' })
-    expect(mocks.createLocalReq).toHaveBeenCalledWith(
-      expect.objectContaining({ req: expect.objectContaining({ headers: request.headers }) }),
-      payload,
-    )
-    expect(mocks.submitGuestInquiry).toHaveBeenCalledWith(localReq, {
-      ...validBody,
-      email: 'jane.patient@example.com',
-      fullName: 'Jane Patient',
-    })
-    expect(mocks.createVerifiedInquiry).not.toHaveBeenCalled()
-  })
+      expect(response.status).toBe(200)
+      await expect(response.json()).resolves.toEqual({ success: true, id: '42', status: 'submitted' })
+      expect(mocks.createLocalReq).toHaveBeenCalledWith(
+        expect.objectContaining({ req: expect.objectContaining({ headers: request.headers }) }),
+        payload,
+      )
+      expect(mocks.submitGuestInquiry).toHaveBeenCalledWith(localReq, {
+        ...validBody,
+        email: 'jane.patient@example.com',
+        fullName: 'Jane Patient',
+      })
+      expect(mocks.createVerifiedInquiry).not.toHaveBeenCalled()
+    },
+  )
 
   it.each([
     ['bearer token', { Authorization: 'Bearer expired-patient-token' }],
@@ -119,8 +122,12 @@ describe('POST /api/clinic-contact-requests', () => {
     ],
     ['blank message', { ...validBody, message: '  \n ' }, 'Message is required.'],
     ['oversized message', { ...validBody, message: 'x'.repeat(3_001) }, 'Invalid request payload.'],
-    ['retired analytics session', { ...validBody, session_id: 'session_42' }, 'Invalid request payload.'],
-    ['unknown field', { ...validBody, actorId: 'patient-1' }, 'Invalid request payload.'],
+    [
+      'unknown field',
+      { ...validBody, session_id: 'retired-session', actorId: 'patient-1' },
+      'Invalid request payload.',
+    ],
+    ['other analytics field', { ...validBody, $session_id: 'retired-session' }, 'Invalid request payload.'],
   ])('rejects %s before constructing a domain request', async (_case, body, error) => {
     const response = await POST(makeRequest(body))
 

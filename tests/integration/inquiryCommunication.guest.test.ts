@@ -87,7 +87,7 @@ describe('guest inquiry HTTP persistence', () => {
       preferredContactWindow: 'morning',
       treatmentTimeline: 'within_two_weeks',
     }
-    const firstResponse = await submitGuestClinicInquiry(makeGuestRequest(body))
+    const firstResponse = await submitGuestClinicInquiry(makeGuestRequest({ ...body, session_id: 'retired-session' }))
     const first = (await firstResponse.json()) as {
       deduped?: boolean
       id?: string
@@ -120,6 +120,8 @@ describe('guest inquiry HTTP persistence', () => {
       },
     })
     expect(inquiries.docs).toHaveLength(1)
+    expect(inquiries.docs[0]).not.toHaveProperty('session_id')
+    expect(JSON.stringify(inquiries.docs)).not.toContain('retired-session')
     expect(inquiries.docs[0]).toMatchObject({
       activitySequence: 1,
       clinic: clinicId,

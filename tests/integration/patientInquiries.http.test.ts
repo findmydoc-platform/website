@@ -367,7 +367,7 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     }
 
     const response = await requestPatientEndpoint('/api/patient/inquiries', creationPatientToken, {
-      body,
+      body: { ...body, session_id: 'retired-session' },
       method: 'POST',
     })
 
@@ -377,12 +377,21 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
     expect(result).toMatchObject({ inquiry: { id: expect.any(String) }, replayed: false })
     createdInquiryIds.push(result.inquiry.id)
 
+    const replay = await requestPatientEndpoint('/api/patient/inquiries', creationPatientToken, {
+      body,
+      method: 'POST',
+    })
+    expect(replay.status).toBe(200)
+    await expect(replay.json()).resolves.toMatchObject({ inquiry: { id: result.inquiry.id }, replayed: true })
+
     const stored = await payload.findByID({
       collection: 'patientClinicInquiries',
       id: result.inquiry.id,
       depth: 0,
       overrideAccess: true,
     })
+    expect(stored).not.toHaveProperty('session_id')
+    expect(JSON.stringify(stored)).not.toContain('retired-session')
     expect(stored).toMatchObject({
       consent: {
         accepted: true,
@@ -474,7 +483,7 @@ describe('patient inquiry registered Payload HTTP boundary', () => {
       { fullName: 'Browser Controlled' },
     ]) {
       const response = await requestPatientEndpoint('/api/patient/inquiries', creationPatientToken, {
-        body: { ...baseBody, ...injectedIdentity },
+        body: { ...baseBody, session_id: 'retired-session', ...injectedIdentity },
         method: 'POST',
       })
       expect(response.status).toBe(400)

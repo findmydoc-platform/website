@@ -205,40 +205,44 @@ describe('patient inquiry endpoints', () => {
     expect(mocks.createInquiry).not.toHaveBeenCalled()
   })
 
-  it('creates an account-bound inquiry without analytics correlation', async () => {
-    const input = {
-      clinicId: '42',
-      consent: true,
-      doctorId: '601',
-      idempotencyKey: 'patient-create-key-1',
-      message: 'Synthetic account-bound inquiry.',
-      phoneNumber: '+49 30 123456',
-      treatmentTimeline: 'within_two_weeks',
-    }
-    const req = request({ body: input })
+  it.each([undefined, 'retired-session'])(
+    'accepts an account-bound inquiry from a tab with legacy session %s without analytics correlation',
+    async (session) => {
+      const input = {
+        clinicId: '42',
+        consent: true,
+        doctorId: '601',
+        idempotencyKey: 'patient-create-key-1',
+        message: 'Synthetic account-bound inquiry.',
+        phoneNumber: '+49 30 123456',
+        treatmentTimeline: 'within_two_weeks',
+      }
+      const req = request({ body: { ...input, ...(session ? { session_id: session } : {}) } })
 
-    const response = await patientInquiryCreatePostHandler(req)
+      const response = await patientInquiryCreatePostHandler(req)
 
-    expect(response.status).toBe(201)
-    expect(mocks.createInquiry).toHaveBeenCalledWith(req, input)
-    await expect(response.json()).resolves.toEqual({ inquiry, replayed: false })
-    expectPrivateLive(response)
+      expect(response.status).toBe(201)
+      expect(mocks.createInquiry).toHaveBeenCalledWith(req, input)
+      await expect(response.json()).resolves.toEqual({ inquiry, replayed: false })
+      expectPrivateLive(response)
 
-    for (const injectedIdentity of [
-      { session_id: 'retired-session' },
-      { actorId: 'patient-2' },
-      { patientId: 'patient-2' },
-      { email: 'attacker@example.com' },
-      { fullName: 'Browser Controlled' },
-    ]) {
-      const rejected = await patientInquiryCreatePostHandler(request({ body: { ...input, ...injectedIdentity } }))
-      expect(await json(rejected)).toEqual({
-        status: 400,
-        body: { error: { code: 'INQUIRY_INVALID_INPUT' } },
-      })
-    }
-    expect(mocks.createInquiry).toHaveBeenCalledOnce()
-  })
+      for (const injectedIdentity of [
+        { actorId: 'patient-2' },
+        { patientId: 'patient-2' },
+        { email: 'attacker@example.com' },
+        { fullName: 'Browser Controlled' },
+      ]) {
+        const rejected = await patientInquiryCreatePostHandler(
+          request({ body: { ...input, session_id: 'retired-session', ...injectedIdentity } }),
+        )
+        expect(await json(rejected)).toEqual({
+          status: 400,
+          body: { error: { code: 'INQUIRY_INVALID_INPUT' } },
+        })
+      }
+      expect(mocks.createInquiry).toHaveBeenCalledOnce()
+    },
+  )
 
   it('preserves the successful response for an idempotent replay', async () => {
     mocks.createInquiry.mockResolvedValueOnce({ inquiry, replayed: true })
@@ -251,6 +255,7 @@ describe('patient inquiry endpoints', () => {
           doctorId: '601',
           idempotencyKey: 'patient-create-key-replay',
           message: 'Synthetic account-bound inquiry.',
+          session_id: 'retired-session',
           phoneNumber: '+49 30 123456',
           treatmentTimeline: 'within_two_weeks',
         },

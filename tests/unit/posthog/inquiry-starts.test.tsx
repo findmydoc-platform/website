@@ -150,7 +150,9 @@ describe('inquiry starts through the rendered clinic form and installed SDK', ()
   it('does not treat native replacement autofill as an own edit', async () => {
     const { form, starts } = await mountInquiry()
     fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
-    fireEvent.input(form.getByRole('textbox', { name: 'Email' }), {
+    const email = form.getByRole('textbox', { name: 'Email' })
+    act(() => email.focus())
+    fireEvent.input(email, {
       target: { value: 'autofilled@example.test' },
       inputType: 'insertReplacementText',
     })
@@ -162,6 +164,53 @@ describe('inquiry starts through the rendered clinic form and installed SDK', ()
     })
     expect(starts).toHaveLength(1)
   })
+
+  it.each([undefined, '+49 30 123456'])(
+    'counts an accepted correction in the focused form after automatic prefill with phone %s',
+    async (phone) => {
+      const { form, starts } = await mountInquiry(phone)
+      fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
+      const message = form.getByRole('textbox', { name: 'Message' })
+      fireEvent.input(message, { target: { value: 'Please corect this' } })
+      act(() => message.focus())
+      expect(starts).toHaveLength(0)
+      // W3C Input Events defines replacement text for accepted spelling/writing suggestions.
+      fireEvent(
+        message,
+        new InputEvent('beforeinput', {
+          bubbles: true,
+          cancelable: true,
+          data: 'correct',
+          inputType: 'insertReplacementText',
+        }),
+      )
+      fireEvent.input(message, {
+        target: { value: 'Please correct this' },
+        data: 'correct',
+        inputType: 'insertReplacementText',
+      })
+      expect(starts).toHaveLength(1)
+      expect(JSON.stringify(starts)).not.toContain('correct')
+    },
+  )
+
+  it.each([':autofill', ':-webkit-autofill'])(
+    'excludes browser-marked %s even when a focused replacement includes text',
+    async (autofillSelector) => {
+      const { form, starts } = await mountInquiry()
+      fireEvent.click(screen.getByRole('button', { name: 'Accept all' }))
+      const email = form.getByRole('textbox', { name: 'Email' })
+      act(() => email.focus())
+      // jsdom has no native autofill; substitute only the browser's observable marker.
+      vi.spyOn(email, 'matches').mockImplementation((selector) => selector === autofillSelector)
+      fireEvent.input(email, {
+        target: { value: 'autofilled@example.test' },
+        data: 'autofilled@example.test',
+        inputType: 'insertReplacementText',
+      })
+      expect(starts).toHaveLength(0)
+    },
+  )
 
   it('does not replay edits after consent and keeps later-period edits on the mounted browser', async () => {
     const { form, starts, sdk } = await mountInquiry()

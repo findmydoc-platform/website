@@ -158,13 +158,11 @@ request-bound projections. A selected clinic path never grants permission and la
 
 ## Clinic Dashboard reporting contract
 
-[ADR 038](../adrs/038-adr-clinic-reporting-five-count-contract.md) defines the active five-count contract.
+[ADR 029](../adrs/029-adr-tenant-safe-clinic-dashboard-reporting.md) defines the active five-count contract.
 `GET /api/clinic-dashboard/clinics/:clinicId/reporting` requires both
 `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1` and
 `X-Findmydoc-Reporting-Contract: clinic-dashboard-reporting-v2`.
 Missing, V1 or unknown reporting versions return private `400 CLINIC_DASHBOARD_INVALID_CONTRACT`.
-The [cleanup inventory and release boundary](./clinic-reporting-cleanup.md) records the staged release dependency.
-This source checkpoint must follow observed migration of deployed consumers. Local tests do not prove that migration.
 
 Every request validates the personal Bearer identity and authorizes its positive integer clinic target against current
 local or group assignment and participation. The selected path grants no permission. Every source read uses that
@@ -232,7 +230,8 @@ current count is zero. Reviews are current snapshots without period comparisons.
 
 Payload counts stored nonspam inquiries by creation time for `submitted`, `in_review`, `contacted` and `closed`.
 Inquiry persistence, idempotency, audit, notifications and authentication do not depend on analytics. Submission carries
-no browser analytics identifier; strict guest and authenticated schemas reject the retired `session_id` field.
+no browser analytics identifier. Both create HTTP boundaries discard the legacy `session_id` field before strict
+domain validation; unrelated extra fields remain invalid. Neither commands nor persistence receive that identifier.
 Published profile progress, tasks and preview belong to the separate profile capability.
 
 One consolidated PostHog query covers both windows within a three-second total budget, without retries, shared cache

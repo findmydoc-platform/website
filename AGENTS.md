@@ -13,6 +13,11 @@
 
 - Stable command guardrails live in `.codex/rules/`; Codex hooks are intentionally not part of the v1 repo-local Codex setup.
 
+## Documentation scope
+
+- Document supported behavior and durable technical decisions in the repository. Keep task plans, investigation reports, execution chronology and cleanup evidence in the relevant issue or pull request; commit such documentation only when the user explicitly requests an exception.
+- This rule does not remove Git history, product audit data, reusable tooling or durable regression tests.
+
 ## Engineering Method Anchors
 
 Use these public methods only for the stated concern. Repository-specific rules in this instruction hierarchy remain authoritative.

@@ -282,6 +282,177 @@ const correlatedTarget = {
   },
 }
 
+describe('strict five-count reporting evidence', () => {
+  it('counts each delivered reporting event separately without changing the profile prerequisite', async () => {
+    const properties = { clinic_id: '42', token: expectedProfile.projectToken, distinct_id: 'private-browser' }
+    const readEvents = vi
+      .fn()
+      .mockResolvedValueOnce({ cursor: 0, events: [], hasMore: false, truncated: false })
+      .mockResolvedValueOnce({
+        cursor: 3,
+        events: [
+          event(1, 'Network.requestWillBeSent', {
+            requestId: 'private-id',
+            request: {
+              url: 'https://analytics.example.test/e/',
+              method: 'POST',
+              postData: JSON.stringify([
+                correlatedTarget,
+                { event: 'clinic_search_result_viewed', properties },
+                { event: 'clinic_search_result_viewed', properties },
+                { event: 'clinic_inquiry_started', properties },
+              ]),
+            },
+          }),
+          event(2, 'Network.responseReceived', { requestId: 'private-id', response: { status: 202 } }),
+          event(3, 'Network.loadingFinished', { requestId: 'private-id' }),
+        ],
+        hasMore: false,
+        truncated: false,
+      })
+    const observer = await createPostHogObserver(
+      { send: vi.fn(async () => ({})), readEvents },
+      {
+        clinicId: '42',
+        expected: expectedProfile,
+        probeUrl: 'https://site.example.test/favicon.ico',
+        deadline: Date.now() + 10000,
+      },
+    )
+    const result = await observer.drain()
+    expect(result).toMatchObject({
+      strictTargetConfigured: true,
+      targetSentCount: 1,
+      reportingSentCounts: { clinic_search_result_viewed: 2, clinic_inquiry_started: 1 },
+      requests: [
+        {
+          targetCount: 1,
+          reportingTargetCounts: { clinic_search_result_viewed: 2, clinic_inquiry_started: 1 },
+          reportingContextOnly: true,
+          reportingBrowserIdentityPresent: true,
+        },
+      ],
+    })
+    expect(JSON.stringify(result)).not.toMatch(/private|synthetic|phc_|42/)
+  })
+  describe.each(['clinic_search_result_viewed', 'clinic_inquiry_started'] as const)('%s', (name) => {
+    const properties = {
+      clinic_id: '42',
+      token: expectedProfile.projectToken,
+      distinct_id: 'private-browser',
+      $session_id: 'private-session',
+    }
+    it.each([
+      ['another clinic', { ...properties, clinic_id: '43' }],
+      ['numeric clinic', { ...properties, clinic_id: 42 }],
+      ['missing clinic', { ...properties, clinic_id: undefined }],
+      ['another project', { ...properties, token: 'phc_other_project' }],
+      ['missing event-local project', { ...properties, token: undefined }],
+      ['form content', { ...properties, message: 'private-message' }],
+    ])('refuses %s without exporting properties', (_reason, candidateProperties) => {
+      const result = decodeCaptureRequest(
+        {
+          url: 'https://analytics.example.test/e/',
+          method: 'POST',
+          body: JSON.stringify({
+            api_key: expectedProfile.projectToken,
+            batch: [{ event: name, properties: candidateProperties }],
+          }),
+        },
+        '42',
+        expectedProfile,
+      )
+      expect(result).toMatchObject({
+        targetCount: 0,
+        reportingTargetCounts: { clinic_search_result_viewed: 0, clinic_inquiry_started: 0 },
+      })
+      expect(JSON.stringify(result)).not.toMatch(/private|phc_|42|43/)
+    })
+    it.each([
+      ['another envelope project', { api_key: 'phc_other_project', batch: [{ event: name, properties }] }],
+      ['profile mutation', { event: name, properties, $set: { email: 'private@example.test' } }],
+      [
+        'split batch matches',
+        [
+          { event: name, properties: { ...properties, token: 'phc_other_project' } },
+          { event: name, properties: { ...properties, clinic_id: '43' } },
+        ],
+      ],
+    ])('refuses %s', (_reason, body) => {
+      expect(
+        decodeCaptureRequest(
+          { url: 'https://analytics.example.test/e/', method: 'POST', body: JSON.stringify(body) },
+          '42',
+          expectedProfile,
+        ).reportingTargetCounts,
+      ).toEqual({ clinic_search_result_viewed: 0, clinic_inquiry_started: 0 })
+    })
+    it.each([undefined, { ...expectedProfile, projectToken: '' }])(
+      'requires a complete strict configuration: %j',
+      (expected) => {
+        expect(
+          decodeCaptureRequest(
+            {
+              url: 'https://analytics.example.test/e/',
+              method: 'POST',
+              body: JSON.stringify({ event: name, properties }),
+            },
+            '42',
+            expected,
+          ).reportingTargetCounts,
+        ).toEqual({ clinic_search_result_viewed: 0, clinic_inquiry_started: 0 })
+      },
+    )
+  })
+  it.each([
+    ['missing response', undefined, true, false],
+    ['failed response', 503, true, false],
+    ['redirect response', 302, true, false],
+    ['unfinished response', 200, false, false],
+    ['failed transport', 200, true, true],
+  ] as const)('does not count reporting delivery after %s', async (_reason, status, finished, failed) => {
+    const properties = { clinic_id: '42', token: expectedProfile.projectToken, distinct_id: 'private-browser' }
+    const packets = [
+      event(1, 'Network.requestWillBeSent', {
+        requestId: 'private-id',
+        request: {
+          url: 'https://analytics.example.test/e/',
+          method: 'POST',
+          postData: JSON.stringify([
+            { event: 'clinic_search_result_viewed', properties },
+            { event: 'clinic_inquiry_started', properties },
+          ]),
+        },
+      }),
+    ]
+    if (status !== undefined)
+      packets.push(event(2, 'Network.responseReceived', { requestId: 'private-id', response: { status } }))
+    if (finished) packets.push(event(3, 'Network.loadingFinished', { requestId: 'private-id' }))
+    if (failed) packets.push(event(4, 'Network.loadingFailed', { requestId: 'private-id' }))
+    const readEvents = vi.fn().mockResolvedValueOnce(packetPage(0, [])).mockResolvedValueOnce(packetPage(4, packets))
+    const observer = await createPostHogObserver(
+      { send: vi.fn(async () => ({})), readEvents },
+      {
+        clinicId: '42',
+        expected: expectedProfile,
+        probeUrl: 'https://site.example.test/favicon.ico',
+        deadline: Date.now() + 10000,
+      },
+    )
+    expect(await observer.drain()).toMatchObject({
+      targetSentCount: 0,
+      reportingSentCounts: { clinic_search_result_viewed: 0, clinic_inquiry_started: 0 },
+      requests: [
+        {
+          targetCount: 0,
+          reportingTargetCounts: { clinic_search_result_viewed: 1, clinic_inquiry_started: 1 },
+        },
+      ],
+    })
+    expect(observer.matchesDeliveredSession('private-session')).toBe(false)
+  })
+})
+
 describe('strict inquiry prerequisite evidence', () => {
   it('requires all profile dimensions and a valid session without returning their values', () => {
     const evidence = decodeCaptureRequest(
@@ -495,6 +666,107 @@ const packetPage = (
 })
 
 describe('opt-in same-origin document continuity', () => {
+  it('does not let a reporting event from the old document change the delivered profile prerequisite', async () => {
+    const packets = [
+      ...preNavigationPackets,
+      ...navigationPackets,
+      ...postNavigationPackets,
+      documentPacket(13, 'Network.requestWillBeSent', {
+        requestId: 'private-old-capture',
+        frameId: navigation.frameId,
+        loaderId: navigation.loaderId,
+        request: {
+          url: 'https://analytics.example.test/e/',
+          method: 'POST',
+          postData: JSON.stringify({
+            event: 'clinic_search_result_viewed',
+            properties: { clinic_id: '42', token: expectedProfile.projectToken },
+          }),
+        },
+      }),
+      documentPacket(14, 'Network.responseReceived', { requestId: 'private-old-capture', response: { status: 200 } }),
+      documentPacket(15, 'Network.loadingFinished', { requestId: 'private-old-capture' }),
+    ]
+    const readEvents = vi.fn().mockResolvedValueOnce(packetPage(0, [])).mockResolvedValueOnce(packetPage(15, packets))
+    const observer = await createPostHogObserver(
+      { send: vi.fn(async () => ({})), readEvents },
+      {
+        clinicId: '42',
+        expected: expectedProfile,
+        probeUrl: 'https://site.example.test/favicon.ico',
+        deadline: Date.now() + 10000,
+        documentNavigation: navigation,
+      },
+    )
+    expect(await observer.drain()).toMatchObject({
+      complete: true,
+      targetSentCount: 1,
+      reportingSentCounts: { clinic_search_result_viewed: 0, clinic_inquiry_started: 0 },
+    })
+    expect(observer.matchesDeliveredSession('private-session')).toBe(true)
+  })
+  it.each(['clinic_search_result_viewed', 'clinic_inquiry_started'] as const)(
+    'proves %s delivery independently of profile events after navigation',
+    async (name) => {
+      const documents = navigationPackets.map((packet) =>
+        packet.sequence === 7
+          ? {
+              ...packet,
+              params: {
+                ...packet.params,
+                request: {
+                  url: 'https://analytics.example.test/e/',
+                  method: 'POST',
+                  postData: JSON.stringify({
+                    event: name,
+                    properties: {
+                      clinic_id: '42',
+                      token: expectedProfile.projectToken,
+                      distinct_id: 'private-browser',
+                      $session_id: 'private-session',
+                    },
+                  }),
+                },
+              },
+            }
+          : packet,
+      )
+      const readEvents = vi
+        .fn()
+        .mockResolvedValueOnce(packetPage(0, []))
+        .mockResolvedValueOnce(packetPage(9, [...preNavigationPackets, ...documents]))
+        .mockResolvedValueOnce(packetPage(12, postNavigationPackets))
+      const observer = await createPostHogObserver(
+        { send: vi.fn(async () => ({})), readEvents },
+        {
+          clinicId: '42',
+          expected: expectedProfile,
+          probeUrl: 'https://site.example.test/favicon.ico',
+          deadline: Date.now() + 10000,
+          documentNavigation: navigation,
+        },
+      )
+      expect(await observer.drain()).toMatchObject({
+        targetSentCount: 0,
+        reportingSentCounts: { clinic_search_result_viewed: 0, clinic_inquiry_started: 0 },
+      })
+      const result = await observer.drain()
+      expect(result).toMatchObject({ complete: true, targetSentCount: 0, documentNavigation: { proven: true } })
+      expect(result.reportingSentCounts).toEqual(
+        name === 'clinic_search_result_viewed'
+          ? { clinic_search_result_viewed: 1, clinic_inquiry_started: 0 }
+          : { clinic_search_result_viewed: 0, clinic_inquiry_started: 1 },
+      )
+      expect(observer.matchesDeliveredSession('private-session')).toBe(false)
+      observer.stop()
+      expect(observer.snapshot()).toMatchObject({
+        complete: false,
+        targetSentCount: 0,
+        reportingSentCounts: { clinic_search_result_viewed: 0, clinic_inquiry_started: 0 },
+        requests: [],
+      })
+    },
+  )
   it('retains a strict capture until the new document and its separate probe prove continuity without reenabling Network', async () => {
     const readEvents = vi
       .fn()

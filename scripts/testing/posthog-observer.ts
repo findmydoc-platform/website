@@ -26,12 +26,14 @@ type ProfileMatch = {
   sessionPresent: boolean
   sessionValid: boolean
 }
+type ReportingCounts = { clinic_search_result_viewed: number; clinic_inquiry_started: number }
 export type CaptureEvidence = ProfileMatch & {
   captureRequest: boolean
   decoded: boolean
   reason: DecodeReason
   eventNames: BusinessName[]
   targetCount: number
+  reportingTargetCounts: ReportingCounts
   reportingContextOnly: boolean | null
   reportingBrowserIdentityPresent: boolean | null
 }
@@ -66,6 +68,7 @@ function inspectCaptureRequest(
     reason: 'not_capture',
     eventNames: [],
     targetCount: 0,
+    reportingTargetCounts: { clinic_search_result_viewed: 0, clinic_inquiry_started: 0 },
     reportingContextOnly: null,
     reportingBrowserIdentityPresent: null,
     clinicMatched: false,
@@ -130,6 +133,16 @@ function inspectCaptureRequest(
         const identityPresent = typeof properties?.distinct_id === 'string' && properties.distinct_id.length > 0
         result.reportingContextOnly = (result.reportingContextOnly ?? true) && contextOnly
         result.reportingBrowserIdentityPresent = (result.reportingBrowserIdentityPresent ?? true) && identityPresent
+        if (
+          hasStrictExpectations(expected) &&
+          properties?.clinic_id === clinicId &&
+          properties.token === expected.projectToken &&
+          envelopeProjectMatched &&
+          contextOnly
+        ) {
+          const name: keyof ReportingCounts = event.event
+          result.reportingTargetCounts[name]++
+        }
       }
       if (event.event !== 'clinic_profile_viewed' || event.properties?.clinic_id !== clinicId) continue
       const properties = event.properties
@@ -309,6 +322,16 @@ export async function createPostHogObserver(
       (sum, [key, request]) => sum + (eligible(key, request) ? request.targetCount : 0),
       0,
     ),
+    reportingSentCounts: [...requests.entries()].reduce(
+      (counts, [key, request]) => {
+        if (eligible(key, request)) {
+          counts.clinic_search_result_viewed += request.reportingTargetCounts.clinic_search_result_viewed
+          counts.clinic_inquiry_started += request.reportingTargetCounts.clinic_inquiry_started
+        }
+        return counts
+      },
+      { clinic_search_result_viewed: 0, clinic_inquiry_started: 0 },
+    ),
     requests: [...requests.values()].map((request) => ({
       ...request,
       ...(request.failed ? { reason: 'transport_failed' as const } : {}),
@@ -427,7 +450,10 @@ export async function createPostHogObserver(
         (session) => sessions.add(session),
       )
       if (sessions.size) matchingSessions.set(key, sessions)
-      if (navigation && evidence.targetCount > 0) {
+      if (
+        navigation &&
+        (evidence.targetCount > 0 || Object.values(evidence.reportingTargetCounts).some((count) => count > 0))
+      ) {
         if (
           documentKey &&
           transition.newLoader &&
@@ -436,7 +462,7 @@ export async function createPostHogObserver(
           source === baselineSource
         )
           newDocumentCaptures.add(key)
-        else reasons.add('capture_document_unproven')
+        else if (evidence.targetCount > 0) reasons.add('capture_document_unproven')
       }
       if (!evidence.decoded) reasons.add('capture_body_unavailable')
       requests.set(key, {

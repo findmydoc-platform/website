@@ -214,10 +214,16 @@ describe.skipIf(process.env.POSTHOG_BROWSER_TEST !== '1')('actual listing viewpo
           throw new Error(`${error.message}; browser errors: ${errors.join('; ')}`)
         })
       await run(page, transported)
-      const acceptedCount = await page.evaluate('impressions().length')
+      // Visibility callbacks can still accept events while the SDK transport queue drains.
       await expect
-        .poll(() => transported.filter((event) => event === 'clinic_search_result_viewed').length, { timeout: 10000 })
-        .toBe(acceptedCount)
+        .poll(
+          async () => {
+            const acceptedCount = await page.evaluate<number>('impressions().length')
+            return transported.filter((event) => event === 'clinic_search_result_viewed').length - acceptedCount
+          },
+          { timeout: 10000 },
+        )
+        .toBe(0)
       expect(errors).toEqual([])
     } finally {
       await browser.close()

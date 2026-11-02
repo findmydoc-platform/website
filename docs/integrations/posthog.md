@@ -24,9 +24,9 @@ POSTHOG_QUERY_RETENTION_DAYS=180
 > **Note:** The project targets the EU host (`https://eu.i.posthog.com`); keep that consistent in documentation and deployments.
 > **Security:** `POSTHOG_FEATURE_FLAGS_SECURE_API_KEY` is a server-side secret for local feature flag evaluation. Store it in Vercel environment variables or a secrets manager, not in PayloadCMS.
 > **Reporting Query API:** `POSTHOG_QUERY_API_KEY` is a separate server-only personal API key with Query Read access.
-> `clinic-dashboard-reporting-v1` sends one aggregate HogQL query per load to [PostHog's documented Query API](https://posthog.com/docs/api/queries),
+> `clinic-dashboard-reporting-v2` sends one aggregate HogQL query per load to [PostHog's documented Query API](https://posthog.com/docs/api/queries),
 > requests `refresh: force_blocking`, times out after three seconds, and never retries. Configure retention for at
-> least 180 days so a 90-day report and its preceding comparison period have complete coverage. Do not expose this key
+> least 180 days for a 90-day report and its comparison; verified capture start is also required for coverage. Do not expose this key
 > to the browser or use browser credentials.
 
 ## Architecture
@@ -53,9 +53,9 @@ Business event names and payload contracts are registered in `src/posthog/events
 
 | Event                                | Trigger                                                          | Required payload                                                                               | Optional payload                                                                                                                       | Privacy note                                                                                     | Analysis                                                          |
 |--------------------------------------|------------------------------------------------------------------|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| `clinic_inquiry_started` | Own substantive inquiry form edit after consent | `clinic_id` | None | No field values, medical selections, contact content or free text. | Distinct inquiry starters per clinic/window. |
+| `clinic_search_result_viewed` | Clinic result visible in the active viewport, once per result-view instance | `clinic_id` | None | No search terms, medical selections or contact content. | Actual search-result visibility. |
 | `clinic_profile_viewed`              | Consent-eligible public clinic profile view in the browser       | `clinic_id`, `clinic_slug`, `page_path`, `source_route`                                        | `has_doctors`, `has_treatments`, `verification_tier`                                                                                   | Clinic metadata only. No visitor contact details or medical data.                                | Clinic profile reach and entry-volume analysis.                   |
-| `clinic_cta_clicked`                 | Consent-eligible tracked clinic profile CTA click in the browser | `clinic_id`, `clinic_slug`, `cta_id`, `cta_label`, `cta_location`, `page_path`, `source_route` | `doctor_id`, `treatment_id`                                                                                                            | No contact details, medical free text, or raw message content.                                   | Clinic profile CTA engagement and contact-intent funnels.         |
-| `patient_inquiry_created`            | New clinic inquiry durably stored on the server                  | `clinic_id`, `clinic_slug`, `form_slug`, `source_route`                                        | `$session_id`, `doctor_id`, `has_doctor`, `has_message`, `has_preferred_date`, `has_preferred_time`, `has_treatment`, `submission_id`, `treatment_id` | No patient name, email, phone, appointment date/time, medical free text, or raw message content. `$session_id` is consent-gated, bounded, and never stored or logged. | Clinic profile inquiry conversion analysis.                       |
 | `clinic_onboarding_interest_created` | Clinic partner contact form accepted by the form bridge          | `form_slug`, `page_path`, `source_route`                                                       | `has_message`, `submission_id`                                                                                                         | No contact details or submitted message content.                                                 | Clinic partner landing conversion analysis.                       |
 | `register_clinic_submitted`          | Clinic registration application created or deduplicated          | `source_route`, `submission_status`                                                            | `country`, `has_additional_notes`, `has_contact_phone`                                                                                 | No clinic contact person, email, phone, street address, or additional notes content.             | Clinic registration submission and duplicate-submission analysis. |
 
@@ -76,11 +76,11 @@ These are operational access guards, not product rollout flags. They are evaluat
 `src/posthog/client.ts` owns the browser SDK instance. Initialization, the site's consent decision, and confirmed
 capture readiness are separate. The SDK initializes with capture disabled by default. Readiness requires its loaded
 callback, the configured project token, and a confirmed SDK opt-in. Missing configuration or SDK/storage errors keep
-application event capture and session correlation closed. Readiness does not wait for remote configuration.
+application event capture closed. Readiness does not wait for remote configuration.
 
 The browser facade exposes `usePostHogAnalyticsReady()` without exposing the SDK. The clinic route adapter passes
 readiness to the presentation analytics port. The displayed clinic profile captures once after readiness, and only a
-successful SDK capture marks that view as tracked. Earlier profiles and clicks are not queued. Withdrawing and restoring
+successful SDK capture marks that view as tracked. Earlier profiles are not queued. Withdrawing and restoring
 consent does not replay a profile already captured by the mounted view.
 
 Withdrawal closes application capture immediately, resets identity, and then writes the final SDK opt-out. Reconsent
@@ -95,7 +95,7 @@ unreadable, or mismatched cookie leaves analytics disabled. After a failed write
 disabled until a later choice is successfully persisted, including across server prop refreshes.
 
 Browser DevTools can read the hidden `[data-analytics-diagnostics]` element before and after login, on a clinic profile,
-and before submitting an inquiry:
+and on other consent-controlled pages:
 
 ```js
 JSON.parse(document.querySelector('[data-analytics-diagnostics]').getAttribute('data-analytics-diagnostics'))
@@ -174,3 +174,27 @@ exposure as a telemetry privacy defect and use it to define and enforce the capt
 pnpm tests tests/unit/posthog/
 pnpm check
 ```
+
+
+## Five-count reporting V2
+
+[ADR 029](../adrs/029-adr-tenant-safe-clinic-dashboard-reporting.md) owns V2. The server adapter sends one consolidated Query API request with a three-second total budget, no retry, no shared cache and no stale fallback. Profile Views counts repeated events; Unique Visitors and Inquiry starters count distinct existing consent-controlled browser `distinct_id` values within each clinic/window. No patient, inquiry or session identifier replaces browser recognition.
+
+Verified UTC capture starts are maintained per query project and event in the reporting module's
+[`config.ts`](../../src/features/clinicDashboard/reporting/config.ts). Profile Views and Unique Visitors share the
+profile-view start. Unknown projects or missing starts have partial coverage. Retention and capture start must cover
+each window independently; first observed activity does not establish continuous capture.
+
+The registry defines Growth-owned `clinic_inquiry_started` and `clinic_search_result_viewed`, with required `clinic_id` and no optional custom properties. The clinic form and listing client adapters capture through the typed browser facade. The first event requires an own substantive form edit, including invalid, incomplete or later cleared input; opening, focus, scrolling, prefill or consent alone do not qualify. The second requires actual viewport visibility in the active document, once per result-view instance, without a duration or percentage threshold. Neither may contain field values, contact data, medical selections, search terms or free text.
+
+The listing client adapter observes the rendered card articles. Positive width and height inside the visual viewport, a visible document and native browser focus are required. Browser zoom does not expand visibility to the larger layout viewport. Zero-area edge contact does not count. The accepted-clinic set belongs to the committed result query, not the pending URL. Scroll, observer, focus, visibility and consent updates recheck current geometry; rejected SDK captures do not enter the accepted set. A new committed search or results page starts a new set, while ordinary rerenders and scroll or tab returns preserve it. Unopened responses and server rendering do not capture.
+
+For both new events, the SDK `before_send` hook projects the final payload after SDK enrichment. Its only custom property is `clinic_id`. Allowed SDK properties are `token`, `distinct_id`, `$device_id`, `$session_id`, `$window_id`, `$lib`, `$lib_version` and `$process_person_profile`; top-level `event`, `uuid` and `timestamp` are retained. URL/referrer metadata, superproperties and `$set`, `$set_once` or `$unset` person updates are removed. Browser recognition and technical session transport remain inside PostHog and never enter reporting DTOs. Other event types retain their existing behavior.
+
+`tests/unit/posthog/listing-impressions.browser.test.ts` bundles the real listing adapter, template, card, frontend CSS and installed SDK. Its opt-in native Chrome process uses an isolated temporary profile and Playwright's documented CDP `noDefaults` option, which omits forced focus emulation. It observes real tab visibility, focus, native minimization, positive pixel area, consent, committed navigation and intercepted SDK transport. The test browser disables Chrome's automation marker; production SDK bot filtering is unchanged. Run it alone on an unlocked macOS desktop with `POSTHOG_BROWSER_TEST=1` and the normal unit-test command. A locked desktop fails the prerequisite explicitly and produces no new capture evidence. The unopened-page test fetches controlled page responses at the navigation boundary. It does not verify a real Next/Payload server response or RSC prefetch, live ingestion or rollout.
+
+`tests/unit/features/clinicDashboard/reporting/posthog-v2.test.ts` can execute the exact production-emitted query through `tests/helpers/reportingClickHouse.ts`. Set `REPORTING_CLICKHOUSE_CONTAINER` to an isolated ClickHouse 25.8 test container. Each execution creates and drops a unique synthetic database and returns the calculated rows through the source API boundary. These tests prove aggregation and boundaries, not the PostHog compiler, ingestion or deployment configuration. Default unit runs skip Docker-dependent cases; source failure tests still run.
+
+The reporting query consumes profile-view, inquiry-start and visible-result events. Independent profile, inquiry and
+SDK features retain their own sources. Operational capture verification and external event cleanup are tracked in
+[Dashboard #305](https://github.com/findmydoc-platform/clinic-dashboard/issues/305).

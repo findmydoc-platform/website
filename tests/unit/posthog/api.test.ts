@@ -363,12 +363,8 @@ describe('PostHog API facade', () => {
         Object.hasOwn(POSTHOG_EVENT_REGISTRY, eventName),
       ),
     ).toBe(true)
-    expect(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.ctaIds).toEqual(
-      POSTHOG_EVENT_REGISTRY.clinic_cta_clicked.allowedPropertyValues.cta_id,
-    )
     expect(Object.isFrozen(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG)).toBe(true)
     expect(Object.isFrozen(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.events)).toBe(true)
-    expect(Object.isFrozen(CLINIC_DASHBOARD_REPORTING_QUERY_CATALOG.ctaIds)).toBe(true)
   })
 
   it('captures server events through the typed event interface with the already evaluated flag snapshot', async () => {
@@ -381,21 +377,20 @@ describe('PostHog API facade', () => {
       await import('@/posthog/api')
     const actor = await resolvePostHogActor({ authData })
     const flags = await evaluatePostHogFlags(actor, ['temporary-landing-mode'])
-    const patientInquiryEvent = Object.entries(POSTHOG_EVENT_REGISTRY).find(([, definition]) =>
-      definition.description.includes('patient contact request'),
+    const onboardingEvent = Object.entries(POSTHOG_EVENT_REGISTRY).find(([, definition]) =>
+      definition.description.includes('clinic partner contact request'),
     )?.[0]
 
-    await postHogServerEvents.patientInquiryCreated({
+    await postHogServerEvents.clinicOnboardingInterestCreated({
       actor,
       analyticsConsent: { isAllowed: true },
       flush: true,
       flagKeys: ['temporary-landing-mode'],
       flags,
       properties: {
-        clinic_id: '42',
-        clinic_slug: 'berlin-health-clinic',
         form_slug: 'public-contact',
-        source_route: 'clinic_detail',
+        page_path: '/partners/clinics',
+        source_route: 'clinic_partners',
       },
     })
 
@@ -406,14 +401,13 @@ describe('PostHog API facade', () => {
     })
     expect(fakeClient.capture).toHaveBeenCalledWith({
       distinctId: 'user-123',
-      event: patientInquiryEvent,
+      event: onboardingEvent,
       flags: capturedFlags,
       groups: undefined,
       properties: {
-        clinic_id: '42',
-        clinic_slug: 'berlin-health-clinic',
         form_slug: 'public-contact',
-        source_route: 'clinic_detail',
+        page_path: '/partners/clinics',
+        source_route: 'clinic_partners',
       },
     })
     expect(fakeClient.flush).toHaveBeenCalledTimes(1)
@@ -423,15 +417,14 @@ describe('PostHog API facade', () => {
     const { postHogServerEvents, resolvePostHogActor } = await import('@/posthog/api')
     const actor = await resolvePostHogActor({ authData })
 
-    await postHogServerEvents.patientInquiryCreated({
+    await postHogServerEvents.clinicOnboardingInterestCreated({
       actor,
       analyticsConsent: { isAllowed: false },
       flush: true,
       properties: {
-        clinic_id: '42',
-        clinic_slug: 'berlin-health-clinic',
         form_slug: 'public-contact',
-        source_route: 'clinic_detail',
+        page_path: '/partners/clinics',
+        source_route: 'clinic_partners',
       },
     })
 

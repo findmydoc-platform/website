@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, mocked, userEvent, within } from 'storybook/test'
 
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
 import {
@@ -17,9 +17,9 @@ const meta = {
   component: ClinicDetail,
   args: {
     analytics: {
-      onCtaClicked: fn(),
       isReady: true,
       onProfileViewed: fn(() => true),
+      onInquiryStarted: fn(() => true),
     },
     data: clinicDetailFixture,
     onSubmitContactRequest: fn(async () => ({ id: 'story-inquiry' })),
@@ -451,3 +451,79 @@ export const ReviewsPartiallyLoaded1280: Story = withViewportStory(
   'public1280',
   'Reviews partially loaded / 1280',
 )
+
+export const InquiryStarts: Story = {
+  render: (args) => <ClinicDetail {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const form = within(canvas.getByRole('form', { name: 'Clinic appointment request' }))
+    await userEvent.click(canvas.getAllByRole('button', { name: 'Choose Treatment' })[0]!)
+    await userEvent.click(canvas.getAllByRole('button', { name: 'Select Dr. Amelia Carter' })[0]!)
+    await userEvent.click(form.getByRole('checkbox'))
+    form.getByRole('textbox', { name: 'Email' }).focus()
+    await expect(args.analytics.onInquiryStarted).not.toHaveBeenCalled()
+    await userEvent.keyboard('x')
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledWith({ clinicId: String(args.data.clinicId) })
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(1)
+    await userEvent.selectOptions(form.getByRole('combobox', { name: 'Doctor' }), 'doctor-2')
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(2)
+    await userEvent.type(form.getByRole('textbox', { name: 'Message' }), 'Synthetic test content')
+    const callsBeforeClear = mocked(args.analytics.onInquiryStarted).mock.calls.length
+    await userEvent.clear(form.getByRole('textbox', { name: 'Message' }))
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(callsBeforeClear + 1)
+    await expect(args.analytics.onInquiryStarted).toHaveBeenLastCalledWith({ clinicId: String(args.data.clinicId) })
+  },
+}
+
+export const InquiryStartsAuthenticatedMissingPhone: Story = {
+  args: {
+    inquiryCreation: {
+      kind: 'authenticated',
+      loginHref: '/login/patient',
+      account: {
+        firstName: 'Synthetic',
+        lastName: 'Patient',
+        email: 'synthetic@example.test',
+        phoneNumber: '',
+      },
+    },
+  },
+  render: (args) => <ClinicDetail {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const form = within(canvas.getByRole('form', { name: 'Clinic appointment request' }))
+    await expect(args.analytics.onInquiryStarted).not.toHaveBeenCalled()
+    await userEvent.click(canvas.getAllByRole('button', { name: 'Choose Treatment' })[0]!)
+    await userEvent.click(form.getByRole('checkbox'))
+    await expect(args.analytics.onInquiryStarted).not.toHaveBeenCalled()
+    form.getByRole('textbox', { name: 'Phone Number' }).focus()
+    await userEvent.keyboard('1')
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledWith({ clinicId: String(args.data.clinicId) })
+    await userEvent.selectOptions(form.getByRole('combobox', { name: 'Doctor' }), 'doctor-2')
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledTimes(2)
+  },
+}
+export const InquiryStartsAuthenticatedPrefilled: Story = {
+  args: {
+    inquiryCreation: {
+      kind: 'authenticated',
+      loginHref: '/login/patient',
+      account: {
+        firstName: 'Synthetic',
+        lastName: 'Patient',
+        email: 'synthetic@example.test',
+        phoneNumber: '+49 30 123456',
+      },
+    },
+  },
+  render: (args) => <ClinicDetail {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const form = within(canvas.getByRole('form', { name: 'Clinic appointment request' }))
+    await expect(form.queryByRole('textbox', { name: 'Email' })).not.toBeInTheDocument()
+    await expect(args.analytics.onInquiryStarted).not.toHaveBeenCalled()
+    form.getByRole('textbox', { name: 'Message' }).focus()
+    await userEvent.keyboard('a')
+    await expect(args.analytics.onInquiryStarted).toHaveBeenCalledWith({ clinicId: String(args.data.clinicId) })
+  },
+}

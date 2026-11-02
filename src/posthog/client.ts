@@ -1,7 +1,6 @@
 import posthog from 'posthog-js'
 
 import type {
-  ClinicCtaClickedProperties,
   ClinicProfileViewedProperties,
   PostHogEventName,
   PostHogEventPropertiesByName,
@@ -81,6 +80,34 @@ export function initializePostHog(): boolean {
       capture_pageleave: true,
       mask_all_text: false,
       mask_all_element_attributes: false,
+      // These reporting events need clinic context and technical browser identity
+      // only. SDK URL/referrer, superproperties and person updates can contain
+      // search selections, so project the final SDK payload before transport.
+      before_send: (capture) => {
+        if (capture.event !== 'clinic_search_result_viewed' && capture.event !== 'clinic_inquiry_started')
+          return capture
+        const allowedProperties = [
+          'clinic_id',
+          'token',
+          'distinct_id',
+          '$device_id',
+          '$session_id',
+          '$window_id',
+          '$lib',
+          '$lib_version',
+          '$process_person_profile',
+        ]
+        return {
+          event: capture.event,
+          uuid: capture.uuid,
+          timestamp: capture.timestamp,
+          properties: Object.fromEntries(
+            allowedProperties
+              .filter((key) => capture.properties[key] !== undefined)
+              .map((key) => [key, capture.properties[key]]),
+          ),
+        }
+      },
       loaded: () => {
         isLoaded = true
         applyDesiredConsent()
@@ -198,12 +225,17 @@ function captureBrowserPostHogEvent<Name extends PostHogEventName>(
   }
 }
 
+export type ClinicInquiryStartedProperties = PostHogEventPropertiesByName['clinic_inquiry_started']
+
 export interface PostHogBrowserEventInterface {
-  clinicCtaClicked(properties: ClinicCtaClickedProperties): boolean
+  clinicSearchResultViewed(properties: PostHogEventPropertiesByName['clinic_search_result_viewed']): boolean
+  clinicInquiryStarted(properties: ClinicInquiryStartedProperties): boolean
   clinicProfileViewed(properties: ClinicProfileViewedProperties): boolean
 }
 
 export const postHogBrowserEvents: PostHogBrowserEventInterface = {
-  clinicCtaClicked: (properties) => captureBrowserPostHogEvent('clinic_cta_clicked', properties),
+  clinicSearchResultViewed: (properties) =>
+    captureBrowserPostHogEvent('clinic_search_result_viewed', { clinic_id: properties.clinic_id }),
+  clinicInquiryStarted: (properties) => captureBrowserPostHogEvent('clinic_inquiry_started', properties),
   clinicProfileViewed: (properties) => captureBrowserPostHogEvent('clinic_profile_viewed', properties),
 }

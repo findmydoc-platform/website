@@ -5,7 +5,6 @@ const mocks = vi.hoisted(() => ({
   createVerifiedInquiry: vi.fn(),
   createLocalReq: vi.fn(),
   getPayload: vi.fn(),
-  captureStoredPatientInquiryPostHogEvent: vi.fn(),
   submitGuestInquiry: vi.fn(),
 }))
 
@@ -20,12 +19,6 @@ vi.mock('@/features/inquiryCommunication/service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/inquiryCommunication/service')>()),
   createVerifiedPatientInquiry: mocks.createVerifiedInquiry,
   submitGuestClinicInquiry: mocks.submitGuestInquiry,
-}))
-
-vi.mock('@/posthog/api', () => ({
-  captureStoredPatientInquiryPostHogEvent: mocks.captureStoredPatientInquiryPostHogEvent,
-  readClinicInquirySessionId: (value: unknown) =>
-    typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/u.test(value) ? value : undefined,
 }))
 
 import { InquiryCommunicationServiceError } from '@/features/inquiryCommunication/service'
@@ -69,43 +62,27 @@ describe('POST /api/clinic-contact-requests', () => {
     mocks.submitGuestInquiry.mockResolvedValue({ deduped: false, id: '42', status: 'submitted' })
   })
 
-  it('parses the public request and delegates one normalized guest command', async () => {
-    const request = makeRequest(validBody)
+  it.each([undefined, 'retired-session'])(
+    'accepts an existing guest tab with legacy session %s and delegates only inquiry data',
+    async (session) => {
+      const request = makeRequest({ ...validBody, ...(session ? { session_id: session } : {}) })
 
-    const response = await POST(request)
+      const response = await POST(request)
 
-    expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({ success: true, id: '42', status: 'submitted' })
-    expect(mocks.createLocalReq).toHaveBeenCalledWith(
-      expect.objectContaining({ req: expect.objectContaining({ headers: request.headers }) }),
-      payload,
-    )
-    expect(mocks.submitGuestInquiry).toHaveBeenCalledWith(localReq, {
-      ...validBody,
-      email: 'jane.patient@example.com',
-      fullName: 'Jane Patient',
-    })
-    expect(mocks.createVerifiedInquiry).not.toHaveBeenCalled()
-  })
-
-  it('keeps a valid session correlation out of the stored inquiry and forwards it only after creation', async () => {
-    const response = await POST(makeRequest({ ...validBody, session_id: 'session_42', distinct_id: 'not-allowed' }))
-
-    expect(response.status).toBe(400)
-    expect(mocks.submitGuestInquiry).not.toHaveBeenCalled()
-
-    const accepted = await POST(makeRequest({ ...validBody, session_id: 'session_42' }))
-    expect(accepted.status).toBe(200)
-    expect(mocks.submitGuestInquiry).toHaveBeenLastCalledWith(
-      localReq,
-      expect.not.objectContaining({ session_id: expect.anything() }),
-    )
-    expect(mocks.captureStoredPatientInquiryPostHogEvent).toHaveBeenCalledWith({
-      inquiryId: '42',
-      req: localReq,
-      sessionId: 'session_42',
-    })
-  })
+      expect(response.status).toBe(200)
+      await expect(response.json()).resolves.toEqual({ success: true, id: '42', status: 'submitted' })
+      expect(mocks.createLocalReq).toHaveBeenCalledWith(
+        expect.objectContaining({ req: expect.objectContaining({ headers: request.headers }) }),
+        payload,
+      )
+      expect(mocks.submitGuestInquiry).toHaveBeenCalledWith(localReq, {
+        ...validBody,
+        email: 'jane.patient@example.com',
+        fullName: 'Jane Patient',
+      })
+      expect(mocks.createVerifiedInquiry).not.toHaveBeenCalled()
+    },
+  )
 
   it.each([
     ['bearer token', { Authorization: 'Bearer expired-patient-token' }],
@@ -145,7 +122,12 @@ describe('POST /api/clinic-contact-requests', () => {
     ],
     ['blank message', { ...validBody, message: '  \n ' }, 'Message is required.'],
     ['oversized message', { ...validBody, message: 'x'.repeat(3_001) }, 'Invalid request payload.'],
-    ['unknown field', { ...validBody, actorId: 'patient-1' }, 'Invalid request payload.'],
+    [
+      'unknown field',
+      { ...validBody, session_id: 'retired-session', actorId: 'patient-1' },
+      'Invalid request payload.',
+    ],
+    ['other analytics field', { ...validBody, $session_id: 'retired-session' }, 'Invalid request payload.'],
   ])('rejects %s before constructing a domain request', async (_case, body, error) => {
     const response = await POST(makeRequest(body))
 

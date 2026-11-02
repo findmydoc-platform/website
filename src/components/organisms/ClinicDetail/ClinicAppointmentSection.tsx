@@ -42,7 +42,11 @@ type ClinicAppointmentSectionProps = {
   isSubmitting: boolean
   isSubmitted: boolean
   feedbackRef: React.RefObject<HTMLDivElement | null>
-  onFieldChange: <K extends keyof ContactFormFields>(field: K, value: ContactFormFields[K]) => void
+  onFieldChange: <K extends keyof ContactFormFields>(
+    field: K,
+    value: ContactFormFields[K],
+    isUserEdit?: boolean,
+  ) => void
   onDoctorChange: (doctorId: string) => void
   onTreatmentChange: (treatmentId: string) => void
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
@@ -52,6 +56,17 @@ const inputClassName =
   'h-14 w-full rounded-[28px] border border-primary/45 bg-background px-4 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 read-only:cursor-not-allowed read-only:border-border read-only:bg-muted read-only:text-secondary/75 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
 const textAreaClassName =
   'min-h-32 w-full rounded-[24px] border border-primary/45 bg-background px-4 py-3 text-sm text-secondary outline-hidden transition-colors placeholder:text-secondary/45 focus:border-primary focus:ring-2 focus:ring-primary/20 aria-invalid:border-destructive/70 aria-invalid:focus:ring-destructive/15'
+
+const isAutofilled = (element: Element): boolean => {
+  for (const selector of [':autofill', ':-webkit-autofill']) {
+    try {
+      if (element.matches(selector)) return true
+    } catch {
+      // An engine can support only one of the standard and prefixed selectors.
+    }
+  }
+  return false
+}
 
 export function ClinicAppointmentSection({
   sectionId,
@@ -137,7 +152,17 @@ export function ClinicAppointmentSection({
       event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
     ) => {
       formValidation.handleFieldChange(event)
-      onFieldChange(field, event.target.value)
+      const nativeEvent = event.nativeEvent
+      const isUserEdit =
+        event.target instanceof HTMLSelectElement ||
+        (nativeEvent instanceof InputEvent &&
+          Boolean(nativeEvent.inputType) &&
+          !isAutofilled(event.target) &&
+          (nativeEvent.inputType !== 'insertReplacementText' ||
+            // Accepted spelling/writing suggestions replace text in the active field.
+            // Native autofill can use the same inputType, with no replacement data.
+            (event.target === document.activeElement && nativeEvent.data !== null)))
+      onFieldChange(field, event.target.value, isUserEdit)
     },
     [formValidation, onFieldChange],
   )

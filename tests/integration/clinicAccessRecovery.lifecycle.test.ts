@@ -23,9 +23,6 @@ vi.mock('@/auth/utilities/jwtValidation', async (original) => ({
   ...(await original<typeof import('@/auth/utilities/jwtValidation')>()),
   validateSupabaseBearerToken: identity.validate,
 }))
-vi.mock('@/features/clinicDashboard/reporting/posthog', () => ({
-  readPostHogClinicDashboardReporting: vi.fn().mockRejectedValue(new Error('Synthetic analytics outage')),
-}))
 
 describe('current source evidence for active clinic access recovery', () => {
   let payload: Payload
@@ -42,6 +39,7 @@ describe('current source evidence for active clinic access recovery', () => {
   const prefix = testSlug('clinicAccessRecovery.lifecycle.test.ts')
 
   beforeAll(async () => {
+    vi.stubEnv('POSTHOG_QUERY_API_KEY', '')
     payload = await getPayload({ config })
     await ensureBaseline(payload)
     operator = await createLocalReq(
@@ -94,6 +92,7 @@ describe('current source evidence for active clinic access recovery', () => {
   }, 60_000)
 
   afterAll(async () => {
+    vi.unstubAllEnvs()
     try {
       await cleanupTrackedUsers(payload, { staffIds })
       for (const id of doctorIds) await payload.delete({ collection: 'doctors', id, overrideAccess: true })
@@ -118,6 +117,7 @@ describe('current source evidence for active clinic access recovery', () => {
           headers: new Headers({
             Authorization: `Bearer ${randomUUID()}`,
             'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
+            'X-Findmydoc-Reporting-Contract': 'clinic-dashboard-reporting-v2',
           }),
           routeParams: clinicId ? { clinicId: String(clinicId) } : {},
           searchParams: new URLSearchParams('periodDays=7'),

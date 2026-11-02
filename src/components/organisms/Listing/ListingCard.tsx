@@ -53,13 +53,16 @@ export function ListingCard({
   data,
   className,
   cornerAction,
+  articleRef,
 }: {
   data: ListingCardData
   className?: string
   cornerAction?: React.ReactNode
+  articleRef?: React.Ref<HTMLElement>
 }) {
   return (
     <article
+      ref={articleRef}
       className={cn(
         'relative w-full overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-xs md:flex md:items-stretch md:gap-6 md:p-6',
         className,

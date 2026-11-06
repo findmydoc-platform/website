@@ -8,17 +8,20 @@ import { createVerifiedPatientInquiry } from '@/features/inquiryCommunication/se
 import {
   createInquiryModerationReport,
   decideInquiryModerationCase,
+  InquiryModerationServiceError,
   submitInquiryModerationAppeal,
 } from '@/features/inquiryModeration/service'
 import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
 import { openStorageCapability } from '@/features/transactionalEmail/capability'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
+import activationRegistry from '@/features/transactionalEmail/activationRegistry.json'
 import type { DeliveryAdapter } from '@/features/transactionalEmail/delivery'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
+import { loseConfirmationAfterRollbackOnce } from '../fixtures/rollbackConfirmationFailure'
 import {
   asClinicScopedPayloadUser,
   asPayloadPatientUser,
@@ -43,6 +46,7 @@ describe('authoritative moderation appeal receipt', () => {
   const staffIds: Array<number | string> = []
   const references: string[] = []
   const prefix = testSlug('transactionalEmail.moderationAppeal.test.ts')
+  const declaredActivationRecords = activationRegistry.records
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -95,6 +99,7 @@ describe('authoritative moderation appeal receipt', () => {
   })
 
   afterEach(() => {
+    activationRegistry.records = declaredActivationRecords
     expect(globalThis.fetch).not.toHaveBeenCalled()
     expect(http.request).not.toHaveBeenCalled()
     expect(https.request).not.toHaveBeenCalled()
@@ -346,6 +351,46 @@ describe('authoritative moderation appeal receipt', () => {
     expect(before.operations).toHaveLength(1)
   })
 
+  it('preserves the affected-participant error when rollback confirmation fails', async () => {
+    const source = await decidedCase()
+    const rollbackFailure = loseConfirmationAfterRollbackOnce(payload.db)
+
+    const submission = submitInquiryModerationAppeal(otherClinicReq, {
+      caseId: source.caseId,
+      text: 'Foreign appeal',
+    })
+    await expect(submission).rejects.toBeInstanceOf(InquiryModerationServiceError)
+    await expect(submission).rejects.toMatchObject({
+      kind: 'not-found',
+      message: 'The moderation case does not exist.',
+    })
+    expect(rollbackFailure).toHaveBeenCalledOnce()
+  })
+
+  it('submits an appeal without email acceptance while that command is inactive', async () => {
+    const source = await decidedCase()
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    activationRegistry.records = declaredActivationRecords.filter(
+      (record) => record.commandType !== 'moderation.appeal-received',
+    )
+    const originalContext = { ...source.actorReq.context, inquiryModerationCommand: 'previous', retained: true }
+    source.actorReq.context = { ...originalContext }
+
+    await expect(
+      submitInquiryModerationAppeal(source.actorReq, { caseId: source.caseId, text: 'ForbiddenAppealText' }),
+    ).resolves.toEqual({ submitted: true })
+
+    const observed = await state(source.caseId)
+    expect(observed.moderationCase.status).toBe('appealed')
+    expect(observed.domainEvents.filter((event) => event.eventType === 'appeal-submitted')).toHaveLength(1)
+    expect(observed.operations).toEqual([])
+    expect(observed.audit).toEqual([])
+    expect(source.actorReq.context).toMatchObject({ inquiryModerationCommand: 'previous', retained: true })
+    expect(source.actorReq.transactionID).toBeUndefined()
+  })
+
   it('converges concurrent affected submissions on one appeal and one logical operation', async () => {
     const source = await decidedCase()
     const concurrentReq = await createLocalReq({}, payload)
@@ -376,7 +421,11 @@ describe('authoritative moderation appeal receipt', () => {
       }
       if (boundary === 'commit') {
         const commit = vi.spyOn(payload.db, 'commitTransaction').mockImplementationOnce(fail)
-        await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+        await expect(submit()).rejects.toMatchObject({
+          name: 'InquiryModerationServiceError',
+          kind: 'unavailable',
+          message: 'The appeal could not be committed.',
+        })
         commit.mockRestore()
       } else {
         await withBeforeHook(
@@ -387,7 +436,11 @@ describe('authoritative moderation appeal receipt', () => {
               : 'transactionalEmailEvents',
           fail,
           async () => {
-            await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+            await expect(submit()).rejects.toMatchObject({
+              name: 'InquiryModerationServiceError',
+              kind: 'unavailable',
+              message: 'The appeal could not be committed.',
+            })
           },
         )
       }
@@ -425,7 +478,11 @@ describe('authoritative moderation appeal receipt', () => {
           if (failures === 3)
             await expect(
               submitInquiryModerationAppeal(source.actorReq, { caseId: source.caseId, text: 'ForbiddenAppealText' }),
-            ).rejects.toMatchObject({ kind: 'conflict' })
+            ).rejects.toMatchObject({
+              name: 'InquiryModerationServiceError',
+              kind: 'conflict',
+              message: 'The appeal could not be committed.',
+            })
           else {
             const receipt = await appeal(source)
             expect(receipt.stored.operations).toHaveLength(1)

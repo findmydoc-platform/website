@@ -80,19 +80,19 @@ describe('Preview-owned notification scheduler request', () => {
     {
       access: 'the first invocation identity',
       oidcToken: 'synthetic-current-oidc-first',
-      bypassSecret: 'synthetic-revocable-preview-bypass',
+      bypassSecret: 'synthetic-revocable-preview-bypass', // pragma: allowlist secret
       deploymentHeaders: { 'x-vercel-trusted-oidc-idp-token': 'synthetic-current-oidc-first' },
     },
     {
       access: 'the next invocation identity',
       oidcToken: 'synthetic-current-oidc-second',
-      bypassSecret: 'synthetic-revocable-preview-bypass',
+      bypassSecret: 'synthetic-revocable-preview-bypass', // pragma: allowlist secret
       deploymentHeaders: { 'x-vercel-trusted-oidc-idp-token': 'synthetic-current-oidc-second' },
     },
     {
       access: 'the separately revocable fallback when invocation identity is unavailable',
       oidcToken: '',
-      bypassSecret: 'synthetic-revocable-preview-bypass',
+      bypassSecret: 'synthetic-revocable-preview-bypass', // pragma: allowlist secret
       deploymentHeaders: { 'x-vercel-protection-bypass': 'synthetic-revocable-preview-bypass' },
     },
     {

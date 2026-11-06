@@ -21,6 +21,7 @@ import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
+import { loseConfirmationAfterRollbackOnce } from '../fixtures/rollbackConfirmationFailure'
 import {
   replaceClinicTestUserAssignment,
   asClinicScopedPayloadUser,
@@ -349,13 +350,7 @@ describe('authoritative moderation appeal decision', () => {
     const source = await pendingCase()
     await decide(source)
     const before = await snapshot(source)
-    const rollback = payload.db.rollbackTransaction.bind(payload.db)
-    const rollbackFailure = vi
-      .spyOn(payload.db, 'rollbackTransaction')
-      .mockImplementationOnce(async (transactionID) => {
-        await rollback(transactionID)
-        throw new Error('Synthetic lost rollback confirmation')
-      })
+    const rollbackFailure = loseConfirmationAfterRollbackOnce(payload.db)
 
     const decision = decideInquiryModerationAppeal(moderatorReq, decisionInput(source))
 

@@ -32,6 +32,7 @@ import { openStorageCapability } from '@/features/transactionalEmail/capability'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { cleanupTransactionalEmailFixtures } from '../fixtures/cleanupTransactionalEmailFixtures'
+import { loseConfirmationAfterRollbackOnce } from '../fixtures/rollbackConfirmationFailure'
 import { testSlug } from '../fixtures/testSlug'
 import {
   replaceClinicTestUserAssignment,
@@ -547,13 +548,7 @@ describe('authoritative initial moderation decision mail', () => {
   it('preserves the decision validation error when rollback confirmation fails', async () => {
     const source = await report()
     const before = await committedState(source.inquiryId)
-    const rollback = payload.db.rollbackTransaction.bind(payload.db)
-    const rollbackFailure = vi
-      .spyOn(payload.db, 'rollbackTransaction')
-      .mockImplementationOnce(async (transactionID) => {
-        await rollback(transactionID)
-        throw new Error('Synthetic lost rollback confirmation')
-      })
+    const rollbackFailure = loseConfirmationAfterRollbackOnce(payload.db)
 
     const decision = decideInquiryModerationCase(moderatorReq, {
       caseId: source.caseId,

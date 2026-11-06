@@ -118,10 +118,21 @@ describe('Clinic Dashboard gallery endpoints', () => {
     vi.stubGlobal('fetch', fetcher)
     const req = request()
     req.routeParams = { clinicId: '42', mediaId: '9' }
+    req.headers.set('x-vercel-oidc-token', 'website-current-invocation')
+    req.headers.set('x-vercel-trusted-oidc-idp-token', 'foreign-caller-identity')
     const response = await clinicDashboardGalleryImageGetHandler(req)
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
     expect(mocks.image).toHaveBeenCalledWith(req, '42', '9', 'original')
+    expect(fetcher).toHaveBeenCalledWith('https://preview.findmydoc.eu/api/clinicMedia/file/reception.png', {
+      cache: 'no-store',
+      redirect: 'error',
+      signal: expect.any(AbortSignal),
+      headers: {
+        Authorization: 'Bearer token',
+        'x-vercel-trusted-oidc-idp-token': 'website-current-invocation',
+      },
+    })
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([1, 2]))
     const foreign = request()
     foreign.routeParams = { clinicId: '43', mediaId: '9' }

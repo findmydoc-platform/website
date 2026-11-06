@@ -136,7 +136,7 @@ describe('POST /api/form-bridge/[slug]', () => {
     expect(postHogMocks.clinicOnboardingInterestCreated).not.toHaveBeenCalled()
   })
 
-  it('passes only same-origin request authentication to internal Payload calls', async () => {
+  it('prepares current invocation access and same-origin application authentication for internal calls', async () => {
     vi.stubEnv('VERCEL_URL', 'generated-preview.vercel.app')
     mockedGetForm.mockResolvedValueOnce({ id: 'form-123' } as unknown as Awaited<ReturnType<typeof getForm>>)
     mockedSubmitFormData.mockResolvedValueOnce({ id: 'submission-auth' })
@@ -149,6 +149,8 @@ describe('POST /api/form-bridge/[slug]', () => {
           Authorization: 'Bearer verified-token',
           Cookie: 'sb-project-auth-token=verified-session',
           'X-Do-Not-Forward': 'private-context',
+          'x-vercel-oidc-token': 'website-current-invocation',
+          'x-vercel-trusted-oidc-idp-token': 'foreign-caller-identity',
         },
         'https://generated-preview.vercel.app/api/form-bridge/contact',
       ),
@@ -160,6 +162,7 @@ describe('POST /api/form-bridge/[slug]', () => {
       headers: {
         authorization: 'Bearer verified-token',
         cookie: 'sb-project-auth-token=verified-session',
+        'x-vercel-trusted-oidc-idp-token': 'website-current-invocation',
       },
     }
     expect(response.status).toBe(200)

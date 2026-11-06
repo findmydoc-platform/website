@@ -164,10 +164,15 @@ const doctorImageHandler: PayloadHandler = async (req) => {
     const source = new URL(media.url, getServerSideURL())
     if (source.origin !== new URL(getServerSideURL()).origin || !source.pathname.startsWith('/api/doctorMedia/file/'))
       throw new Error('Invalid doctor image source.')
+    // Use this Website invocation's identity after validating the stored destination.
+    const deploymentToken = req.headers.get('x-vercel-oidc-token')
     const upstream = await fetch(source, {
       cache: 'no-store',
       redirect: 'error',
-      headers: { Authorization: req.headers.get('authorization') ?? '' },
+      headers: {
+        Authorization: req.headers.get('authorization') ?? '',
+        ...(deploymentToken ? { 'x-vercel-trusted-oidc-idp-token': deploymentToken } : {}),
+      },
       signal: AbortSignal.timeout(8_000),
     })
     if (!upstream.ok)

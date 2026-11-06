@@ -18,7 +18,7 @@ import {
   isNonProductionDeployment,
 } from '@/features/previewGuard'
 import { projectHoldingFooterGroups, projectHoldingHeaderNavItems } from '@/features/temporaryLandingMode/navigation'
-import { readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
+import { readHoldingViewRequestHeader, readPublicSiteModeRequestHeader } from '@/features/temporaryLandingMode'
 import { resolveHoldingMode } from '@/features/temporaryLandingMode/resolver'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -55,6 +55,7 @@ function resolvePublicAccountMenuState(authData: AuthData | null): PublicAccount
 export default async function FrontendTemplate({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers()
   const isGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
+  const holdingView = readHoldingViewRequestHeader(requestHeaders)
   const requestMode = readPublicSiteModeRequestHeader(requestHeaders)
   const isPreviewGuardActive =
     requestHeaders.get(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER) === '1' ||
@@ -70,7 +71,7 @@ export default async function FrontendTemplate({ children }: { children: React.R
     }
   }
   const resolvedMode = requestMode ?? (isPreviewGuardActive ? null : (await resolveHoldingMode(requestUrl)).mode)
-  const showSiteChrome = !isGuardLocked
+  const showSiteChrome = !isGuardLocked && holdingView !== 'standalone'
   const authData = showSiteChrome ? await extractSupabaseUserData({ headers: requestHeaders }) : null
   const isHoldingPublicView = resolvedMode === 'holding' && !isPreviewGuardActive && authData?.userType !== 'platform'
   const showPreviewBadge = isNonProductionDeployment(process.env)

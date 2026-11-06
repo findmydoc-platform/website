@@ -4,7 +4,7 @@ import '@testing-library/jest-dom'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { PUBLIC_SITE_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import { HOLDING_VIEW_REQUEST_HEADER, PUBLIC_SITE_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER, PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 
 const mocks = vi.hoisted(() => ({
@@ -74,15 +74,25 @@ describe('platform navigation during Holding mode', () => {
     expect(screen.getByRole('heading', { name: 'Page content' })).toBeInTheDocument()
   })
 
-  it.each([null, 'patient', 'clinic'])('keeps the Holding home for a visitor with user type %s', async (userType) => {
-    mocks.extractSupabaseUserData.mockResolvedValue(userType ? { userType } : null)
+  it.each([null, 'patient', 'clinic'])(
+    'keeps the standalone Holding contact page for a visitor with user type %s',
+    async (userType) => {
+      mocks.pathname = '/contact'
+      mocks.headers.mockResolvedValue(
+        new Headers({
+          [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'holding',
+          [HOLDING_VIEW_REQUEST_HEADER]: 'standalone',
+        }),
+      )
+      mocks.extractSupabaseUserData.mockResolvedValue(userType ? { userType } : null)
 
-    await renderTemplate()
+      await renderTemplate()
 
-    expect(screen.queryByRole('banner')).not.toBeInTheDocument()
-    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Page content' })).toBeInTheDocument()
-  })
+      expect(screen.queryByRole('banner')).not.toBeInTheDocument()
+      expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Page content' })).toBeInTheDocument()
+    },
+  )
 
   it.each([null, 'patient', 'clinic'])('keeps only permitted blog navigation for user type %s', async (userType) => {
     mocks.pathname = '/posts'

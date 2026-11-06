@@ -24,9 +24,17 @@ export default {
     }
 
     try {
+      /** @type {Record<string, string>} */
+      const headers = { Authorization: `Bearer ${secret}` }
+      const oidcToken = request.headers.get('x-vercel-oidc-token')
+      if (oidcToken) headers['x-vercel-trusted-oidc-idp-token'] = oidcToken
+      else if (process.env.PREVIEW_DEPLOYMENT_PROTECTION_BYPASS_SECRET) {
+        headers['x-vercel-protection-bypass'] = process.env.PREVIEW_DEPLOYMENT_PROTECTION_BYPASS_SECRET
+      }
+
       const response = await fetch(previewWorker, {
         method: 'GET',
-        headers: { Authorization: `Bearer ${secret}` },
+        headers,
         redirect: 'error',
         cache: 'no-store',
         signal: AbortSignal.timeout(250_000),

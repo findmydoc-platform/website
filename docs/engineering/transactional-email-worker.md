@@ -40,6 +40,31 @@ redirects, any other target, and any logical environment other than Preview. One
 that application; it cannot affect Production scheduling or invoke the Production worker. The relay has a 250-second
 request timeout and a 300-second function limit. It does not retry within a tick.
 
+### Deployment access
+
+The email relay and [notification relay](../architecture/clinic-notification-retention.md) authenticate the invocation
+and validate their runtime and fixed target before attaching deployment
+access. They read `x-vercel-oidc-token` from the current Function `Request` and send it as
+`x-vercel-trusted-oidc-idp-token`, alongside the existing endpoint bearer credential. They do not cache or persist this
+token or use the build-time `VERCEL_OIDC_TOKEN`. The dependency-free functions use the
+[documented Function request header](https://vercel.com/docs/oidc#in-vercel-functions).
+
+The caller project needs OIDC Federation enabled. On the target `findmydoc-portal` project, configure
+[Trusted Sources](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/trusted-sources)
+explicitly from `findmydoc-preview-email-scheduler` Production to Website Preview. The default
+matching-environment rule does not cover this direction. Verify the effective rule and protected relay access before
+relying on it.
+
+If the current invocation has no OIDC token, the optional `PREVIEW_DEPLOYMENT_PROTECTION_BYPASS_SECRET` supplies
+`x-vercel-protection-bypass`. It must be a separately managed, independently revocable
+[automation bypass secret](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation)
+created on the target Website project specifically for this scheduler and stored in the scheduler's Production scope.
+Vercel bypass secrets grant access to all deployments of their project; these relays send it only to their fixed
+Preview endpoints. Do not reuse another tool's secret or the scheduler project's own `VERCEL_AUTOMATION_BYPASS_SECRET`.
+Without either optional credential, the existing endpoint-authenticated request still runs. Target deployment
+protection decides whether to admit it. An upstream failure never triggers a retry with a different credential.
+Deploy this transport preparation before enabling native protection.
+
 ### Deployment and credential ownership
 
 | Component | Vercel project and scope | Schedule | Runtime configuration |

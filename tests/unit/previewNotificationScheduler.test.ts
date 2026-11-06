@@ -5,7 +5,10 @@ const secret = 'synthetic-preview-scheduler-secret-only'
 const endpoint = 'https://scheduler.example.test/api/notifications'
 const previewWorker = 'https://preview.findmydoc.eu/api/internal/clinic-notifications/preview-retention'
 const productionWorker = 'https://findmydoc.eu/api/internal/clinic-notifications/preview-retention'
-const request = (suffix = '') => new Request(`${endpoint}${suffix}`, { headers: { authorization: `Bearer ${secret}` } })
+const request = (suffix = '', oidcToken = 'synthetic-invocation-oidc') =>
+  new Request(`${endpoint}${suffix}`, {
+    headers: { authorization: `Bearer ${secret}`, ...(oidcToken ? { 'x-vercel-oidc-token': oidcToken } : {}) },
+  })
 
 describe('Preview-owned notification scheduler request', () => {
   const fetch = vi.fn()
@@ -16,6 +19,8 @@ describe('Preview-owned notification scheduler request', () => {
     vi.stubEnv('VERCEL_ENV', 'production')
     vi.stubEnv('SCHEDULER_ENVIRONMENT', 'preview')
     vi.stubEnv('PREVIEW_NOTIFICATION_RETENTION_URL', previewWorker)
+    vi.stubEnv('PREVIEW_DEPLOYMENT_PROTECTION_BYPASS_SECRET', 'synthetic-revocable-preview-bypass')
+    vi.stubEnv('VERCEL_OIDC_TOKEN', 'synthetic-build-oidc-must-not-be-relayed')
     vi.stubGlobal('fetch', fetch)
     fetch.mockResolvedValue(new Response(null, { status: 200 }))
   })
@@ -71,19 +76,48 @@ describe('Preview-owned notification scheduler request', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('invokes only the Preview worker once with its own credential and no redirect following', async () => {
-    const response = await scheduler.fetch(request(`?target=${encodeURIComponent(productionWorker)}`))
-    expect(response.status).toBe(200)
-    expect(response.headers.get('cache-control')).toBe('no-store')
-    expect(fetch).toHaveBeenCalledExactlyOnceWith(previewWorker, {
-      method: 'GET',
-      headers: { Authorization: 'Bearer synthetic-notification-relay-secret-only' },
-      redirect: 'error',
-      cache: 'no-store',
-      signal: expect.any(AbortSignal),
-    })
-    expect(await response.json()).toEqual({ ok: true })
-  })
+  it.each([
+    {
+      access: 'the first invocation identity',
+      oidcToken: 'synthetic-current-oidc-first',
+      bypassSecret: 'synthetic-revocable-preview-bypass',
+      deploymentHeaders: { 'x-vercel-trusted-oidc-idp-token': 'synthetic-current-oidc-first' },
+    },
+    {
+      access: 'the next invocation identity',
+      oidcToken: 'synthetic-current-oidc-second',
+      bypassSecret: 'synthetic-revocable-preview-bypass',
+      deploymentHeaders: { 'x-vercel-trusted-oidc-idp-token': 'synthetic-current-oidc-second' },
+    },
+    {
+      access: 'the separately revocable fallback when invocation identity is unavailable',
+      oidcToken: '',
+      bypassSecret: 'synthetic-revocable-preview-bypass',
+      deploymentHeaders: { 'x-vercel-protection-bypass': 'synthetic-revocable-preview-bypass' },
+    },
+    {
+      access: 'existing transport when optional deployment access is unavailable',
+      oidcToken: '',
+      bypassSecret: '',
+      deploymentHeaders: {},
+    },
+  ])(
+    'invokes only the Preview worker using $access with endpoint auth and no redirects',
+    async ({ oidcToken, bypassSecret, deploymentHeaders }) => {
+      vi.stubEnv('PREVIEW_DEPLOYMENT_PROTECTION_BYPASS_SECRET', bypassSecret)
+      const response = await scheduler.fetch(request(`?target=${encodeURIComponent(productionWorker)}`, oidcToken))
+      expect(response.status).toBe(200)
+      expect(response.headers.get('cache-control')).toBe('no-store')
+      expect(fetch).toHaveBeenCalledExactlyOnceWith(previewWorker, {
+        method: 'GET',
+        headers: { Authorization: 'Bearer synthetic-notification-relay-secret-only', ...deploymentHeaders },
+        redirect: 'error',
+        cache: 'no-store',
+        signal: expect.any(AbortSignal),
+      })
+      expect(await response.json()).toEqual({ ok: true })
+    },
+  )
 
   it.each([301, 302, 401, 403, 500, 503])(
     'reports upstream status %s without retry or response disclosure',

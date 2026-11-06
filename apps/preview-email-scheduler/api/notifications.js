@@ -43,9 +43,17 @@ export default {
     if (!relaySecret || relaySecret.length < 32) return failed('configuration_unavailable')
 
     try {
+      /** @type {Record<string, string>} */
+      const headers = { Authorization: `Bearer ${relaySecret}` }
+      const oidcToken = request.headers.get('x-vercel-oidc-token')
+      if (oidcToken) headers['x-vercel-trusted-oidc-idp-token'] = oidcToken
+      else if (process.env.PREVIEW_DEPLOYMENT_PROTECTION_BYPASS_SECRET) {
+        headers['x-vercel-protection-bypass'] = process.env.PREVIEW_DEPLOYMENT_PROTECTION_BYPASS_SECRET
+      }
+
       const response = await fetch(previewRetention, {
         method: 'GET',
-        headers: { Authorization: `Bearer ${relaySecret}` },
+        headers,
         redirect: 'error',
         cache: 'no-store',
         signal: AbortSignal.timeout(240_000),

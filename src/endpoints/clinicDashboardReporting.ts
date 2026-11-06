@@ -1,12 +1,12 @@
 import type { PayloadHandler, PayloadRequest } from 'payload'
 import {
   parseReportingPeriodDays,
-  resolveClinicDashboardReportingV2,
+  resolveClinicDashboardReportingV3,
 } from '@/features/clinicDashboard/reporting/service'
 import { CLINIC_SCOPE_CONTRACT_HEADER, hasClinicScopeContract } from '@/features/clinicDashboard/contractNegotiation'
 
 import {
-  CLINIC_DASHBOARD_REPORTING_V2_SCHEMA_VERSION,
+  CLINIC_DASHBOARD_REPORTING_V3_SCHEMA_VERSION,
   REPORTING_CONTENT_CONTRACT_HEADER,
 } from '@/features/clinicDashboard/reporting/contracts'
 
@@ -45,7 +45,7 @@ export const clinicDashboardReportingGetHandler: PayloadHandler = async (req) =>
     )
   }
   const contentVersion = req.headers.get(REPORTING_CONTENT_CONTRACT_HEADER)
-  if (contentVersion !== CLINIC_DASHBOARD_REPORTING_V2_SCHEMA_VERSION) {
+  if (contentVersion !== CLINIC_DASHBOARD_REPORTING_V3_SCHEMA_VERSION) {
     return Response.json(
       { error: { code: 'CLINIC_DASHBOARD_INVALID_CONTRACT' } },
       { status: 400, headers: REPORTING_PRIVATE_HEADERS },
@@ -60,9 +60,9 @@ export const clinicDashboardReportingGetHandler: PayloadHandler = async (req) =>
     return errorResponse('CLINIC_DASHBOARD_REPORTING_INVALID_INPUT', 'Reporting period must be 7, 30, or 90 days.', 400)
   }
 
-  let result: Awaited<ReturnType<typeof resolveClinicDashboardReportingV2>>
+  let result: Awaited<ReturnType<typeof resolveClinicDashboardReportingV3>>
   try {
-    result = await resolveClinicDashboardReportingV2(req, clinicId, periodDays)
+    result = await resolveClinicDashboardReportingV3(req, clinicId, periodDays)
   } catch {
     return errorResponse('CLINIC_DASHBOARD_TEMPORARILY_UNAVAILABLE', 'Reporting is temporarily unavailable.', 503)
   }

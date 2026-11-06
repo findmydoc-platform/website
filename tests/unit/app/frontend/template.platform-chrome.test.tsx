@@ -74,21 +74,25 @@ describe('platform navigation during Holding mode', () => {
     expect(screen.getByRole('heading', { name: 'Page content' })).toBeInTheDocument()
   })
 
-  it.each([null, 'patient', 'clinic'])('keeps the Holding home for a visitor with user type %s', async (userType) => {
-    mocks.headers.mockResolvedValue(
-      new Headers({
-        [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'holding',
-        [HOLDING_VIEW_REQUEST_HEADER]: 'standalone',
-      }),
-    )
-    mocks.extractSupabaseUserData.mockResolvedValue(userType ? { userType } : null)
+  it.each([null, 'patient', 'clinic'])(
+    'keeps the standalone Holding contact page for a visitor with user type %s',
+    async (userType) => {
+      mocks.pathname = '/contact'
+      mocks.headers.mockResolvedValue(
+        new Headers({
+          [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'holding',
+          [HOLDING_VIEW_REQUEST_HEADER]: 'standalone',
+        }),
+      )
+      mocks.extractSupabaseUserData.mockResolvedValue(userType ? { userType } : null)
 
-    await renderTemplate()
+      await renderTemplate()
 
-    expect(screen.queryByRole('banner')).not.toBeInTheDocument()
-    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Page content' })).toBeInTheDocument()
-  })
+      expect(screen.queryByRole('banner')).not.toBeInTheDocument()
+      expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Page content' })).toBeInTheDocument()
+    },
+  )
 
   it.each([null, 'patient', 'clinic'])('keeps only permitted blog navigation for user type %s', async (userType) => {
     mocks.pathname = '/posts'

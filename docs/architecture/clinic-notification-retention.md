@@ -10,6 +10,8 @@ Production Website schedules `/api/internal/clinic-notifications/retention` ever
 
 The existing `apps/preview-email-scheduler` project has a separate `/api/notifications` function and five-minute cron. Its own `CRON_SECRET` authenticates the scheduler invocation. `SCHEDULER_ENVIRONMENT=preview`, `PREVIEW_NOTIFICATION_RETENTION_URL=https://preview.findmydoc.eu/api/internal/clinic-notifications/preview-retention`, and its Preview-only `PREVIEW_NOTIFICATION_RETENTION_SECRET` authorize one fixed, nonredirecting request. Neither notification route invokes the email worker, and the notification relay is independent of `/api/tick`.
 
+The relay also uses the [scheduler deployment-access policy](../engineering/transactional-email-worker.md#deployment-access). It prefers the current invocation OIDC identity, with a separately revocable automation bypass only when that identity is unavailable. Target-side Trusted Sources must explicitly allow scheduler Production to Website Preview. This access supplements `PREVIEW_NOTIFICATION_RETENTION_SECRET` and preserves endpoint authentication, the five-minute schedule, the 240-second request timeout, and existing failure handling.
+
 These configurations prepare scheduling. No hosted scheduler, credential, capture activation, or diagnostic setting is qualified by a local test. Preview and Production operational acceptance remains separate under Clinic Dashboard #210 and #211. Provision only environment-scoped secret names and scopes; never place values in repository artifacts.
 
 ## Storage and cleanup

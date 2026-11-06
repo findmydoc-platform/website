@@ -8,7 +8,11 @@ import {
   PREVIEW_GUARD_PATIENT_REGISTRATION_API_PATH,
 } from '@/features/previewGuard'
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
-import { PUBLIC_SITE_MODE_REQUEST_HEADER, TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import {
+  HOLDING_VIEW_REQUEST_HEADER,
+  PUBLIC_SITE_MODE_REQUEST_HEADER,
+  TEMPORARY_LANDING_MODE_REQUEST_HEADER,
+} from '@/features/temporaryLandingMode'
 
 const mocks = vi.hoisted(() => ({
   createServerClient: vi.fn(),
@@ -608,7 +612,7 @@ describe('preview lock proxy', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
-    expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+    expect(response.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('standalone')
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
 
@@ -635,7 +639,7 @@ describe('preview lock proxy', () => {
       expect(response.headers.get('location')).toBeNull()
       expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBeNull()
       expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
-      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBeNull()
+      expect(response.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('public')
     }
 
     for (const path of blockedPaths) {
@@ -688,7 +692,7 @@ describe('preview lock proxy', () => {
     for (const request of requests) {
       const response = await proxy(request)
       expect(response.status).toBe(200)
-      expect(response.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+      expect(response.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('standalone')
       expect(response.headers.get(`x-middleware-request-${TEMPORARY_LANDING_MODE_REQUEST_HEADER}`)).toBe('1')
       expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     }
@@ -724,9 +728,9 @@ describe('preview lock proxy', () => {
     expect(imprintResponse.status).toBe(200)
     expect(contactResponse.status).toBe(200)
 
-    expect(privacyResponse.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
-    expect(imprintResponse.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
-    expect(contactResponse.headers.get(`x-middleware-request-${PREVIEW_GUARD_LOCK_REQUEST_HEADER}`)).toBe('1')
+    expect(privacyResponse.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('standalone')
+    expect(imprintResponse.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('standalone')
+    expect(contactResponse.headers.get(`x-middleware-request-${HOLDING_VIEW_REQUEST_HEADER}`)).toBe('standalone')
 
     expect(privacyResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
     expect(imprintResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)

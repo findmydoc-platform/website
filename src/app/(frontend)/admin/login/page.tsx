@@ -17,7 +17,7 @@ import {
   PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
   sanitizePreviewGuardNextPath,
 } from '@/features/previewGuard'
-import { TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import { readHoldingViewRequestHeader, TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,7 +57,10 @@ export default async function LoginPage({
     : undefined
   const postLoginRedirectPath = sanitizePreviewGuardNextPath(resolvedSearchParams?.next)
   const showPreviewBadge = isNonProductionDeployment(process.env)
-  const showPreviewLogo = isPreviewGuardLocked || messageKey === PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY
+  const showPreviewLogo =
+    isPreviewGuardLocked ||
+    readHoldingViewRequestHeader(requestHeaders) === 'standalone' ||
+    messageKey === PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY
 
   let statusMessage: string | undefined = statusFromQuery?.text ?? fallbackPreviewStatus?.text
   let statusVariant: 'success' | 'info' | 'warning' | undefined =

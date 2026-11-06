@@ -4,6 +4,8 @@ import { type NextRequest, NextResponse } from 'next/server'
 
 import {
   extractTokenFromHeader,
+  isPatientUser,
+  isPlatformUser,
   isTemporarySupabaseAuthError,
   validateSupabaseUser,
 } from '@/auth/utilities/supabaseAuthPolicy'
@@ -11,8 +13,6 @@ import {
   buildPreviewGuardLoginRedirect,
   buildPreviewGuardPatientLoginRedirect,
   classifyPreviewGuardPagePath,
-  isAllowedPreviewPatient,
-  isAllowedPreviewUser,
   isPreviewDeployment,
   isPreviewGuardAnonymousApiPath,
   isPreviewGuardEndpointAuthApiPath,
@@ -24,6 +24,7 @@ import {
   resolveDeploymentEnvironment,
 } from '@/features/previewGuard'
 import {
+  HOLDING_VIEW_REQUEST_HEADER,
   isTemporaryLandingModeExemptPath,
   isTemporaryLandingIndexablePath,
   isTemporaryLandingPublicExemptPath,
@@ -103,13 +104,13 @@ const shouldBypassProxy = (pathname: string): boolean => {
 const hasSupabaseSessionCookie = (request: NextRequest): boolean =>
   request.cookies.getAll().some(({ name }) => name.startsWith('sb-') && name.includes('-auth-token'))
 
-type PreviewUserLookup = {
+type RequestUserLookup = {
   error: unknown
   unavailable: boolean
   user: User | null
 }
 
-const lookupPreviewUser = async (request: NextRequest, accessToken?: string): Promise<PreviewUserLookup> => {
+const lookupRequestUser = async (request: NextRequest, accessToken?: string): Promise<RequestUserLookup> => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -143,7 +144,7 @@ const lookupPreviewUser = async (request: NextRequest, accessToken?: string): Pr
   }
 }
 
-const getPreviewUser = async (request: NextRequest): Promise<User | null> => (await lookupPreviewUser(request)).user
+const getRequestUser = async (request: NextRequest): Promise<User | null> => (await lookupRequestUser(request)).user
 
 const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<string, string | null>): NextResponse => {
   const requestHeaders = new Headers(request.headers)
@@ -151,6 +152,7 @@ const nextWithRequestHeaders = (request: NextRequest, headersToSet: Record<strin
   requestHeaders.delete(PREVIEW_GUARD_LOCK_REQUEST_HEADER)
   requestHeaders.delete(PUBLIC_SITE_MODE_REQUEST_HEADER)
   requestHeaders.delete(TEMPORARY_LANDING_MODE_REQUEST_HEADER)
+  requestHeaders.delete(HOLDING_VIEW_REQUEST_HEADER)
   Object.entries(headersToSet).forEach(([key, value]) => {
     if (value === null) {
       requestHeaders.delete(key)
@@ -186,7 +188,7 @@ const nextWithGuardLockHeader = (request: NextRequest, publicMode?: PublicSiteMo
 const nextWithTemporaryLandingHeaders = (request: NextRequest, publicMode: PublicSiteMode = 'holding'): NextResponse =>
   nextWithRequestHeaders(request, {
     [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
-    [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
+    [HOLDING_VIEW_REQUEST_HEADER]: 'standalone',
     [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
     [TEMPORARY_LANDING_MODE_REQUEST_HEADER]: publicMode === 'holding' ? '1' : null,
   })
@@ -196,6 +198,7 @@ const nextWithTemporaryLandingPublicHeaders = (
   publicMode: PublicSiteMode = 'holding',
 ): NextResponse =>
   nextWithRequestHeaders(request, {
+    [HOLDING_VIEW_REQUEST_HEADER]: 'public',
     [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: null,
     [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: null,
     [PUBLIC_SITE_MODE_REQUEST_HEADER]: publicMode,
@@ -232,8 +235,8 @@ const handlePreviewApiRequest = async (request: NextRequest): Promise<NextRespon
       return nextWithGuardActiveHeader(request)
     }
 
-    const { unavailable, user } = await lookupPreviewUser(request, accessToken)
-    if (unavailable || !validateSupabaseUser(user) || !isAllowedPreviewUser(user)) {
+    const { unavailable, user } = await lookupRequestUser(request, accessToken)
+    if (unavailable || !validateSupabaseUser(user) || !isPlatformUser(user)) {
       return nextWithGuardActiveHeader(request)
     }
 
@@ -253,7 +256,7 @@ const handlePreviewApiRequest = async (request: NextRequest): Promise<NextRespon
     return previewApiError('Unauthorized', 401)
   }
 
-  const { unavailable, user } = await lookupPreviewUser(request, accessToken)
+  const { unavailable, user } = await lookupRequestUser(request, accessToken)
   if (unavailable) return previewApiError('Authentication service unavailable', 503)
   if (!validateSupabaseUser(user)) return previewApiError('Unauthorized', 401)
 
@@ -335,18 +338,18 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return withSearchRobotsHeader(new NextResponse(null, { status: 404 }))
   }
 
-  const user = await getPreviewUser(request)
-  const isPlatformUser = isAllowedPreviewUser(user)
-  const isPatientUser = isAllowedPreviewPatient(user)
+  const user = await getRequestUser(request)
+  const platformUser = isPlatformUser(user)
+  const patientUser = isPatientUser(user)
   const isPatientPath = pagePathClassification === 'patient'
 
   if (previewGuardEnabled) {
-    if (isPlatformUser) {
+    if (platformUser) {
       return withSearchRobotsHeader(nextWithGuardActiveHeader(request, holdingMode))
     }
 
     if (isPatientPath) {
-      if (isPatientUser) {
+      if (patientUser) {
         return withSearchRobotsHeader(nextWithGuardActiveHeader(request, holdingMode))
       }
 
@@ -364,7 +367,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return withSearchRobotsHeader(NextResponse.redirect(new URL(redirectTarget, request.url)))
   }
 
-  if (holdingMode === 'holding' && !isPlatformUser) {
+  if (holdingMode === 'holding' && !platformUser) {
     if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {
       if (isTemporaryLandingIndexablePath(pathname)) {
         return nextWithTemporaryLandingPublicHeaders(request, holdingMode)

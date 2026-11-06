@@ -1,4 +1,4 @@
-import type { User } from '@supabase/supabase-js'
+import { isPatientUser, isPlatformUser } from '@/auth/utilities/supabaseAuthPolicy'
 import { buildPatientLoginHref } from '@/features/favorites/redirects'
 import { isPreviewRuntime, resolveServerRuntimeEnvironment } from '@/features/runtimePolicy'
 import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
@@ -69,7 +69,6 @@ const PREVIEW_GUARD_SCANNER_API_PATHS = new Set(['/api/exec'])
 export type PreviewGuardPagePathClassification = 'dynamic-content' | 'exempt' | 'not-found' | 'patient' | 'platform'
 
 type DeploymentEnvInput = Pick<NodeJS.ProcessEnv, 'DEPLOYMENT_ENVIRONMENT' | 'NODE_ENV' | 'VERCEL_ENV'>
-type UserTypeCarrier = Pick<User, 'app_metadata'> | null
 
 const normalizePathname = (pathname: string): string => {
   if (!pathname) return '/'
@@ -179,15 +178,9 @@ export const isPreviewGuardEndpointAuthApiPath = (pathname: string): boolean => 
   )
 }
 
-export const isAllowedPreviewUser = (user: UserTypeCarrier): boolean => {
-  const userType = user?.app_metadata?.user_type
-  return typeof userType === 'string' && userType.trim().toLowerCase() === 'platform'
-}
+export const isAllowedPreviewUser = isPlatformUser
 
-export const isAllowedPreviewPatient = (user: UserTypeCarrier): boolean => {
-  const userType = user?.app_metadata?.user_type
-  return typeof userType === 'string' && userType.trim().toLowerCase() === 'patient'
-}
+export const isAllowedPreviewPatient = isPatientUser
 
 export const buildPreviewGuardLoginRedirect = (url: URL): string => {
   const nextPath = `${url.pathname}${url.search || ''}` || '/'

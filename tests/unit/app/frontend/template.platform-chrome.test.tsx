@@ -4,7 +4,7 @@ import '@testing-library/jest-dom'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { PUBLIC_SITE_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import { HOLDING_VIEW_REQUEST_HEADER, PUBLIC_SITE_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER, PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 
 const mocks = vi.hoisted(() => ({
@@ -75,6 +75,12 @@ describe('platform navigation during Holding mode', () => {
   })
 
   it.each([null, 'patient', 'clinic'])('keeps the Holding home for a visitor with user type %s', async (userType) => {
+    mocks.headers.mockResolvedValue(
+      new Headers({
+        [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'holding',
+        [HOLDING_VIEW_REQUEST_HEADER]: 'standalone',
+      }),
+    )
     mocks.extractSupabaseUserData.mockResolvedValue(userType ? { userType } : null)
 
     await renderTemplate()

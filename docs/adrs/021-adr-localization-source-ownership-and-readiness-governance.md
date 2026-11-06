@@ -7,7 +7,7 @@
 | Author  | Sebastian Schuetze |
 | Version | 1.0                |
 | Date    | 20.06.2026         |
-| Status  | draft              |
+| Status  | accepted           |
 
 ## Background
 

@@ -7,7 +7,7 @@
 | Author  | Sebastian Schuetze |
 | Version | 1.0                |
 | Date    | 20.06.2026         |
-| Status  | accepted           |
+| Status  | superseded         |
 
 ## Background
 
@@ -110,4 +110,4 @@ The later `.eu` migration to `.de` and `.com` requires a separate execution plan
 
 ## Superseded by (Optional)
 
-Not superseded.
+The aggregate readiness condition for public routes and SEO signals is superseded by [ADR 038 — Native Payload locale publication without aggregate readiness gates](./038-adr-native-payload-locale-publication.md). The URL, domain, canonical, redirect, preview, and translation-unavailable response decisions remain in force, with native locale publication replacing the aggregate readiness condition.

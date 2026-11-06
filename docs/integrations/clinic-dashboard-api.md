@@ -158,7 +158,7 @@ request-bound projections. A selected clinic path never grants permission and la
 
 ## Clinic Dashboard reporting contract
 
-[ADR 039](../adrs/039-adr-four-count-clinic-dashboard-reporting.md) defines the active four-count contract.
+[ADR 040](../adrs/040-adr-four-count-clinic-dashboard-reporting.md) defines the active four-count contract.
 `GET /api/clinic-dashboard/clinics/:clinicId/reporting` requires both
 `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1` and
 `X-Findmydoc-Reporting-Contract: clinic-dashboard-reporting-v3`.

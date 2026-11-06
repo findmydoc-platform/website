@@ -180,7 +180,7 @@ pnpm check
 
 ## Four-count reporting V3
 
-[ADR 039](../adrs/039-adr-four-count-clinic-dashboard-reporting.md) owns V3. The server adapter sends one consolidated Query API request with a three-second total budget, no retry, no shared cache and no stale fallback. Profile Views counts repeated events; Unique Visitors counts distinct existing consent-controlled browser `distinct_id` values within each clinic/window. No patient, inquiry or session identifier replaces browser recognition.
+[ADR 040](../adrs/040-adr-four-count-clinic-dashboard-reporting.md) owns V3. The server adapter sends one consolidated Query API request with a three-second total budget, no retry, no shared cache and no stale fallback. Profile Views counts repeated events; Unique Visitors counts distinct existing consent-controlled browser `distinct_id` values within each clinic/window. No patient, inquiry or session identifier replaces browser recognition.
 
 Verified UTC capture starts are maintained per query project and event in the reporting module's
 [`config.ts`](../../src/features/clinicDashboard/reporting/config.ts). Profile Views and Unique Visitors share the

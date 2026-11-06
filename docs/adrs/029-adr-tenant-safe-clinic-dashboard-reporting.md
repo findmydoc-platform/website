@@ -59,5 +59,5 @@ ADR 026 supplies the BFF boundary, ADR 023 the private-live classification and A
 
 ## Superseded by
 
-[ADR 039: Four-count Clinic Dashboard reporting](./039-adr-four-count-clinic-dashboard-reporting.md) supersedes this
+[ADR 040: Four-count Clinic Dashboard reporting](./040-adr-four-count-clinic-dashboard-reporting.md) supersedes this
 record on 6 November 2026. The original V2 decision is preserved above.

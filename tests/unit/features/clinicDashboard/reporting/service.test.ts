@@ -14,7 +14,6 @@ beforeEach(() => {
   captureStartsByProject['synthetic-project'] = {
     clinic_profile_viewed: null,
     clinic_search_result_viewed: null,
-    clinic_inquiry_started: null,
   }
 })
 
@@ -22,7 +21,7 @@ const mocks = vi.hoisted(() => ({ revalidateClinicDashboardTargetRequest: vi.fn(
 vi.mock('@/features/clinicDashboard/authorization', () => ({
   revalidateClinicDashboardTargetRequest: mocks.revalidateClinicDashboardTargetRequest,
 }))
-import { createReportingWindows, resolveClinicDashboardReportingV2 } from '@/features/clinicDashboard/reporting/service'
+import { createReportingWindows, resolveClinicDashboardReportingV3 } from '@/features/clinicDashboard/reporting/service'
 
 const now = new Date('2026-04-10T09:15:30.123Z')
 const configuredPayload = (inquiries = [{ createdAt: '2026-04-08T10:00:00.000Z' }], inquiryUnavailable = false) => {
@@ -45,24 +44,20 @@ const analyticsResponse = () =>
       'current_profileViews',
       'current_uniqueVisitors',
       'current_impressions',
-      'current_inquiryStarters',
       'current_missingVisitors',
-      'current_missingStarters',
       'comparison_profileViews',
       'comparison_uniqueVisitors',
       'comparison_impressions',
-      'comparison_inquiryStarters',
       'comparison_missingVisitors',
-      'comparison_missingStarters',
     ],
-    results: [[20, 12, 40, 2, 0, 0, 10, 6, 20, 1, 0, 0]],
+    results: [[20, 12, 40, 0, 10, 6, 20, 0]],
   })
 const read = (payload = configuredPayload()) =>
-  resolveClinicDashboardReportingV2(createMockReq(null, payload), '8', 7, now)
+  resolveClinicDashboardReportingV3(createMockReq(null, payload), '8', 7, now)
 const findFor = (payload: ReturnType<typeof createMockPayload>, collection: string) =>
   payload.find.mock.calls.find(([args]) => (args as { collection?: string }).collection === collection)?.[0]
 
-describe('Clinic Dashboard five-count reporting service', () => {
+describe('Clinic Dashboard four-count reporting service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.revalidateClinicDashboardTargetRequest.mockResolvedValue({ clinicId: '8', status: 'authorized' })
@@ -72,7 +67,6 @@ describe('Clinic Dashboard five-count reporting service', () => {
     Object.assign(captureStartsByProject['synthetic-project']!, {
       clinic_profile_viewed: '2025-01-01T00:00:00.000Z',
       clinic_search_result_viewed: '2025-01-01T00:00:00.000Z',
-      clinic_inquiry_started: '2025-01-01T00:00:00.000Z',
     })
     vi.stubGlobal(
       'fetch',
@@ -84,16 +78,15 @@ describe('Clinic Dashboard five-count reporting service', () => {
     vi.unstubAllGlobals()
   })
 
-  it('returns the closed V2 counts and independently scoped Payload facts', async () => {
+  it('returns the closed V3 counts and independently scoped Payload facts', async () => {
     const payload = configuredPayload()
     const result = await read(payload)
     expect(result.status).toBe('success')
     if (result.status !== 'success') throw new Error('Expected authorized reporting')
-    expect(result.data.schemaVersion).toBe('clinic-dashboard-reporting-v2')
+    expect(result.data.schemaVersion).toBe('clinic-dashboard-reporting-v3')
     expect(Object.keys(result.data.metrics).sort()).toEqual([
       'impressions',
       'inquiries',
-      'inquiryStarters',
       'profileViews',
       'reviews',
       'uniqueVisitors',

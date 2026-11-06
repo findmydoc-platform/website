@@ -8,7 +8,7 @@
 | Decision maker | Sebastian Schuetze |
 | Version | 1.0 |
 | Date | 01.11.2026 |
-| Status | Approved |
+| Status | Superseded |
 
 ## Context
 
@@ -56,3 +56,8 @@ partial metrics when a source or its history cannot establish a complete result.
 The [API contract](../integrations/clinic-dashboard-api.md#clinic-dashboard-reporting-contract) defines the wire format.
 [PostHog integration](../integrations/posthog.md#five-count-reporting-v2) defines event behavior and source configuration.
 ADR 026 supplies the BFF boundary, ADR 023 the private-live classification and ADR 019 event governance.
+
+## Superseded by
+
+[ADR 039: Four-count Clinic Dashboard reporting](./039-adr-four-count-clinic-dashboard-reporting.md) supersedes this
+record on 6 November 2026. The original V2 decision is preserved above.

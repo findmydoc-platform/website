@@ -1,7 +1,6 @@
 export type ReportingCaptureStarts = {
   clinic_profile_viewed: string | null
   clinic_search_result_viewed: string | null
-  clinic_inquiry_started: string | null
 }
 
 // Key entries by POSTHOG_QUERY_PROJECT_ID and use verified UTC instants with milliseconds.

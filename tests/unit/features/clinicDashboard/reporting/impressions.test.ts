@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readPostHogClinicDashboardReportingV2 } from '@/features/clinicDashboard/reporting/posthog-v2'
+import { readPostHogClinicDashboardReportingV3 } from '@/features/clinicDashboard/reporting/posthog-v3'
 import { executeReportingQuery } from '../../../../helpers/reportingClickHouse'
 
 import type { ReportingCaptureStarts } from '@/features/clinicDashboard/reporting/config'
@@ -15,7 +15,6 @@ beforeEach(() => {
   captureStartsByProject['synthetic-project'] = {
     clinic_profile_viewed: null,
     clinic_search_result_viewed: null,
-    clinic_inquiry_started: null,
   }
 })
 
@@ -69,7 +68,7 @@ describe.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
           )
         })
         vi.stubGlobal('fetch', source)
-        const result = await readPostHogClinicDashboardReportingV2({
+        const result = await readPostHogClinicDashboardReportingV3({
           clinicId: '31',
           current: { from, to, days },
           comparison: { from: previousFrom, to: previousTo, days },
@@ -94,11 +93,11 @@ describe.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
         Response.json(executeReportingQuery(JSON.parse(String(init.body)).query.query, [])),
       )
       captureStartsByProject['synthetic-project']!.clinic_search_result_viewed = null
-      const unknown = await readPostHogClinicDashboardReportingV2(input)
+      const unknown = await readPostHogClinicDashboardReportingV3(input)
       expect(unknown.impressions.current).toEqual({ state: 'partial_coverage', value: null })
       expect(unknown.impressions.comparison.state).toBe('partial_coverage')
       captureStartsByProject['synthetic-project']!.clinic_search_result_viewed = input.current.from
-      const recent = await readPostHogClinicDashboardReportingV2(input)
+      const recent = await readPostHogClinicDashboardReportingV3(input)
       expect(recent.impressions.current).toEqual({ state: 'available', value: 0 })
       expect(recent.impressions.comparison).toEqual({
         state: 'partial_coverage',
@@ -107,13 +106,13 @@ describe.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
         relativeDeltaPercent: null,
       })
       captureStartsByProject['synthetic-project']!.clinic_search_result_viewed = '2026-10-25T21:00:00.001Z'
-      expect((await readPostHogClinicDashboardReportingV2(input)).impressions.current).toEqual({
+      expect((await readPostHogClinicDashboardReportingV3(input)).impressions.current).toEqual({
         state: 'partial_coverage',
         value: null,
       })
       captureStartsByProject['synthetic-project']!.clinic_search_result_viewed = '2025-01-01T00:00:00.000Z'
       vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '8')
-      const retained = await readPostHogClinicDashboardReportingV2(input)
+      const retained = await readPostHogClinicDashboardReportingV3(input)
       expect(retained.impressions.current).toEqual({ state: 'available', value: 0 })
       expect(retained.impressions.comparison.state).toBe('partial_coverage')
     })

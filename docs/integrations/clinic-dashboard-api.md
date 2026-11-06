@@ -158,11 +158,11 @@ request-bound projections. A selected clinic path never grants permission and la
 
 ## Clinic Dashboard reporting contract
 
-[ADR 029](../adrs/029-adr-tenant-safe-clinic-dashboard-reporting.md) defines the active five-count contract.
+[ADR 039](../adrs/039-adr-four-count-clinic-dashboard-reporting.md) defines the active four-count contract.
 `GET /api/clinic-dashboard/clinics/:clinicId/reporting` requires both
 `X-Findmydoc-Clinic-Scope-Contract: clinic-scope-v1` and
-`X-Findmydoc-Reporting-Contract: clinic-dashboard-reporting-v2`.
-Missing, V1 or unknown reporting versions return private `400 CLINIC_DASHBOARD_INVALID_CONTRACT`.
+`X-Findmydoc-Reporting-Contract: clinic-dashboard-reporting-v3`.
+Missing, V1, V2 or unknown reporting versions return private `400 CLINIC_DASHBOARD_INVALID_CONTRACT`.
 
 Every request validates the personal Bearer identity and authorizes its positive integer clinic target against current
 local or group assignment and participation. The selected path grants no permission. Every source read uses that
@@ -195,8 +195,8 @@ type CountMetric<Source extends 'payload' | 'posthog'> = {
     relativeDeltaPercent: number | null
   }
 }
-type ClinicDashboardReportingV2 = {
-  schemaVersion: 'clinic-dashboard-reporting-v2'
+type ClinicDashboardReportingV3 = {
+  schemaVersion: 'clinic-dashboard-reporting-v3'
   asOf: string
   timezone: 'Europe/Istanbul'
   period: { days: 7 | 30 | 90; from: string; to: string }
@@ -205,7 +205,6 @@ type ClinicDashboardReportingV2 = {
     impressions: CountMetric<'posthog'>
     profileViews: CountMetric<'posthog'>
     uniqueVisitors: CountMetric<'posthog'>
-    inquiryStarters: CountMetric<'posthog'>
     inquiries: CountMetric<'payload'>
     reviews: {
       source: 'payload'
@@ -217,8 +216,7 @@ type ClinicDashboardReportingV2 = {
 ```
 
 Profile Views counts every matching `clinic_profile_viewed` event. Unique Visitors counts distinct nonempty existing
-consent-controlled browser `distinct_id` values among those events, per clinic/window. Inquiry starters uses the same
-recognition on `clinic_inquiry_started`; Impressions counts `clinic_search_result_viewed`. Browser/device changes and
+consent-controlled browser `distinct_id` values among those events, per clinic/window. Impressions counts `clinic_search_result_viewed`. Browser/device changes and
 cleared storage can count a visitor again. Visitors without analytics consent are outside this population. No individual
 identities leave the adapter. Patient, inquiry and session identifiers do not substitute for browser recognition.
 
@@ -238,6 +236,11 @@ One consolidated PostHog query covers both windows within a three-second total b
 or stale fallback. Metric-source failures remain null states in an authorized `200` response. Payload inquiry counts and
 review snapshots remain available during an analytics outage. Source tests do not prove deployed PostHog ingestion,
 configuration or coverage.
+
+The V3 cutover replaces V2 directly in both applications. A mismatched deployment pair fails closed; no legacy
+response is synthesized. Deploy Website before Dashboard and roll back both to a matching pair if needed.
+The form-side `clinic_inquiry_started` capture remains consent-controlled and is not queried by clinic reporting.
+
 
 ## Clinic Profile Draft Contract
 

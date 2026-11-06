@@ -91,7 +91,7 @@ When adding a new ADR:
 - [026 — Standalone Clinic Dashboard BFF architecture](https://github.com/findmydoc-platform/platform-architecture/blob/main/decisions/026-adr-standalone-clinic-dashboard-bff-architecture.md) _(migrated to the shared platform catalog; [former path](./026-adr-standalone-clinic-dashboard-bff-architecture.md) redirects; GitHub access required)_
 - [027 — Database runtime connection modes](./027-adr-database-runtime-connection-modes.md)
 - [028 — Lettermint for transactional email](./028-adr-lettermint-for-transactional-email.md) _(superseded by ADR 031)_
-- [029 — Tenant-safe Clinic Dashboard reporting contract](./029-adr-tenant-safe-clinic-dashboard-reporting.md)
+- [029 — Tenant-safe Clinic Dashboard reporting contract](./029-adr-tenant-safe-clinic-dashboard-reporting.md) _(superseded by ADR 039)_
 - [030 — Bound transactional email webhook processing](./030-adr-bound-transactional-email-webhook-processing.md)
 - [031 — Transactional email technical activation gates](./031-adr-transactional-email-technical-activation-gates.md)
 - [032 — Supabase native-mail suppression](./032-adr-supabase-native-mail-suppression.md) _(narrow exception to ADR 028's hook rejection; ADR 031 remains in force)_
@@ -101,3 +101,4 @@ When adding a new ADR:
 - [036 — Order of clinic access changes and business writes](./036-adr-clinic-authorization-mutation-ordering.md) _(approved on 17.10.2026)_
 - [037 — Focused mutation testing for critical business logic](https://github.com/findmydoc-platform/platform-architecture/blob/cdf782c2d654241529b6bc20ecb5493787d2dbbf/decisions/037-adr-focused-mutation-testing.md) _(Draft platform decision; Website adoption remains open; GitHub access required)_
 - [038 — Native Payload locale publication without aggregate readiness gates](./038-adr-native-payload-locale-publication.md)
+- [039 — Four-count Clinic Dashboard reporting V3](./039-adr-four-count-clinic-dashboard-reporting.md)

@@ -117,7 +117,7 @@ describe('current source evidence for active clinic access recovery', () => {
           headers: new Headers({
             Authorization: `Bearer ${randomUUID()}`,
             'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
-            'X-Findmydoc-Reporting-Contract': 'clinic-dashboard-reporting-v2',
+            'X-Findmydoc-Reporting-Contract': 'clinic-dashboard-reporting-v3',
           }),
           routeParams: clinicId ? { clinicId: String(clinicId) } : {},
           searchParams: new URLSearchParams('periodDays=7'),

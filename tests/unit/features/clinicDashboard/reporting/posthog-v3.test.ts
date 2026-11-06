@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readPostHogClinicDashboardReportingV2 } from '@/features/clinicDashboard/reporting/posthog-v2'
+import { readPostHogClinicDashboardReportingV3 } from '@/features/clinicDashboard/reporting/posthog-v3'
 import { executeReportingQuery } from '../../../../helpers/reportingClickHouse'
 
 import type { ReportingCaptureStarts } from '@/features/clinicDashboard/reporting/config'
@@ -15,7 +15,6 @@ beforeEach(() => {
   captureStartsByProject['synthetic-project'] = {
     clinic_profile_viewed: null,
     clinic_search_result_viewed: null,
-    clinic_inquiry_started: null,
   }
 })
 
@@ -35,7 +34,7 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-describe('five-count reporting source', () => {
+describe('four-count reporting source', () => {
   it.runIf(Boolean(process.env.REPORTING_CLICKHOUSE_CONTAINER))(
     'counts three views as one browser across sessions through the emitted production query',
     async () => {
@@ -76,7 +75,7 @@ describe('five-count reporting source', () => {
         ])
         return Response.json(result)
       })
-      const result = await readPostHogClinicDashboardReportingV2({ clinicId: '31', comparison, current })
+      const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
       expect(result.profileViews).toMatchObject({
         current: { value: 3, state: 'available' },
         comparison: { value: 1, state: 'available', absoluteDelta: 2 },
@@ -86,7 +85,6 @@ describe('five-count reporting source', () => {
         comparison: { value: 1, state: 'available', absoluteDelta: 0 },
       })
       expect(result.impressions.current).toEqual({ value: null, state: 'partial_coverage' })
-      expect(result.inquiryStarters.current).toEqual({ value: null, state: 'partial_coverage' })
     },
   )
 
@@ -118,12 +116,11 @@ describe('five-count reporting source', () => {
   ])('makes only $period visitors partial when a profile view has no browser identity', async (fixture) => {
     configure()
     captureStartsByProject['synthetic-project']!.clinic_search_result_viewed = '2026-01-01T00:00:00.000Z'
-    captureStartsByProject['synthetic-project']!.clinic_inquiry_started = '2026-01-01T00:00:00.000Z'
     vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
       Response.json(
         executeReportingQuery(JSON.parse(String(init.body)).query.query, [
           ...[current.from, comparison.from].flatMap((timestamp) =>
-            ['clinic_profile_viewed', 'clinic_search_result_viewed', 'clinic_inquiry_started'].map((event) => ({
+            ['clinic_profile_viewed', 'clinic_search_result_viewed'].map((event) => ({
               timestamp,
               event,
               distinct_id: 'recognized-browser',
@@ -139,15 +136,10 @@ describe('five-count reporting source', () => {
         ]),
       ),
     )
-    const result = await readPostHogClinicDashboardReportingV2({ clinicId: '31', comparison, current })
+    const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
     expect(result.uniqueVisitors).toEqual({ source: 'posthog', ...fixture.visitors })
     expect(result.profileViews).toEqual({ source: 'posthog', ...fixture.views })
     expect(result.impressions).toEqual({
-      source: 'posthog',
-      current: { state: 'available', value: 1 },
-      comparison: { state: 'available', value: 1, absoluteDelta: 0, relativeDeltaPercent: 0 },
-    })
-    expect(result.inquiryStarters).toEqual({
       source: 'posthog',
       current: { state: 'available', value: 1 },
       comparison: { state: 'available', value: 1, absoluteDelta: 0, relativeDeltaPercent: 0 },
@@ -186,7 +178,7 @@ describe('five-count reporting source', () => {
           ]),
         ),
       )
-      const result = await readPostHogClinicDashboardReportingV2({
+      const result = await readPostHogClinicDashboardReportingV3({
         clinicId: '31',
         current: { from, to, days },
         comparison: { from: previousFrom, to: previousTo, days },
@@ -204,7 +196,7 @@ describe('five-count reporting source', () => {
       vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
         Response.json(executeReportingQuery(JSON.parse(String(init.body)).query.query, [])),
       )
-      const result = await readPostHogClinicDashboardReportingV2({ clinicId: '31', comparison, current })
+      const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
       expect(result.uniqueVisitors.current).toEqual({ value: 0, state: 'available' })
       expect(result.uniqueVisitors.comparison).toEqual({
         value: null,
@@ -215,7 +207,7 @@ describe('five-count reporting source', () => {
       expect(result.impressions.current).toEqual({ value: null, state: 'partial_coverage' })
       captureStartsByProject['synthetic-project']!.clinic_profile_viewed = '2025-01-01T00:00:00.000Z'
       vi.stubEnv('POSTHOG_QUERY_RETENTION_DAYS', '8')
-      const retained = await readPostHogClinicDashboardReportingV2({ clinicId: '31', comparison, current })
+      const retained = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
       expect(retained.profileViews.current).toEqual({ value: 0, state: 'available' })
       expect(retained.profileViews.comparison.state).toBe('partial_coverage')
     },
@@ -228,16 +220,15 @@ describe('five-count reporting source', () => {
       captureStartsByProject['second-project'] = {
         clinic_profile_viewed: current.from,
         clinic_search_result_viewed: null,
-        clinic_inquiry_started: '2025-01-01T00:00:00.000Z',
       }
       const source = vi.fn(async (_url: unknown, init: RequestInit) =>
         Response.json(executeReportingQuery(JSON.parse(String(init.body)).query.query, [])),
       )
       vi.stubGlobal('fetch', source)
-      const first = await readPostHogClinicDashboardReportingV2({ clinicId: '31', comparison, current })
+      const first = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
       expect(first.profileViews.comparison).toMatchObject({ state: 'available', value: 0 })
       vi.stubEnv('POSTHOG_QUERY_PROJECT_ID', 'second-project')
-      const second = await readPostHogClinicDashboardReportingV2({ clinicId: '31', comparison, current })
+      const second = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
       expect(second.profileViews.current).toEqual({ state: 'available', value: 0 })
       expect(second.uniqueVisitors.current).toEqual({ state: 'available', value: 0 })
       expect(second.profileViews.comparison).toEqual({
@@ -249,13 +240,6 @@ describe('five-count reporting source', () => {
       expect(second.uniqueVisitors.comparison).toEqual(second.profileViews.comparison)
       expect(second.impressions.current).toEqual({ state: 'partial_coverage', value: null })
       expect(second.impressions.comparison.state).toBe('partial_coverage')
-      expect(second.inquiryStarters.current).toEqual({ state: 'available', value: 0 })
-      expect(second.inquiryStarters.comparison).toEqual({
-        state: 'available',
-        value: 0,
-        absoluteDelta: 0,
-        relativeDeltaPercent: null,
-      })
       expect(source).toHaveBeenLastCalledWith(
         'https://eu.posthog.com/api/projects/second-project/query/',
         expect.anything(),
@@ -271,7 +255,7 @@ describe('five-count reporting source', () => {
       vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
         Response.json(executeReportingQuery(JSON.parse(String(init.body)).query.query, [])),
       )
-      const result = await readPostHogClinicDashboardReportingV2({ clinicId: '31', comparison, current })
+      const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
       for (const metric of Object.values(result)) {
         expect(metric.current).toEqual({ state: 'partial_coverage', value: null })
         expect(metric.comparison).toEqual({
@@ -294,7 +278,7 @@ describe('five-count reporting source', () => {
       vi.stubGlobal('fetch', async (_url: unknown, init: RequestInit) =>
         Response.json(executeReportingQuery(JSON.parse(String(init.body)).query.query, [])),
       )
-      const result = await readPostHogClinicDashboardReportingV2({ clinicId: '31', comparison, current })
+      const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
       expect(result.profileViews.current).toEqual({ state: 'partial_coverage', value: null })
       expect(result.uniqueVisitors.comparison).toEqual({
         state: 'partial_coverage',
@@ -309,7 +293,7 @@ describe('five-count reporting source', () => {
     configure()
     const fetcher = vi.fn().mockRejectedValue(new Error('synthetic outage'))
     vi.stubGlobal('fetch', fetcher)
-    const result = await readPostHogClinicDashboardReportingV2({ clinicId: '31', comparison, current })
+    const result = await readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
     expect(result.uniqueVisitors.current).toEqual({ value: null, state: 'source_unavailable' })
     expect(result.profileViews.current).toEqual({ value: null, state: 'source_unavailable' })
     expect(fetcher).toHaveBeenCalledTimes(1)
@@ -329,7 +313,7 @@ describe('five-count reporting source', () => {
         ),
     )
     vi.stubGlobal('fetch', fetcher)
-    const result = readPostHogClinicDashboardReportingV2({ clinicId: '31', comparison, current })
+    const result = readPostHogClinicDashboardReportingV3({ clinicId: '31', comparison, current })
     await vi.advanceTimersByTimeAsync(3_000)
     expect((await result).uniqueVisitors.current).toEqual({ state: 'source_unavailable', value: null })
     expect(fetcher).toHaveBeenCalledTimes(1)

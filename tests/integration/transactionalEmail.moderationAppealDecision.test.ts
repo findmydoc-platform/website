@@ -9,6 +9,7 @@ import {
   decideInquiryModerationCase,
   submitInquiryModerationAppeal,
   decideInquiryModerationAppeal,
+  InquiryModerationServiceError,
 } from '@/features/inquiryModeration/service'
 import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
 import { openStorageCapability } from '@/features/transactionalEmail/capability'
@@ -344,6 +345,30 @@ describe('authoritative moderation appeal decision', () => {
     reason: 'ForbiddenAppealDecisionReason',
   })
 
+  it('preserves the final decision replay error when rollback confirmation fails', async () => {
+    const source = await pendingCase()
+    await decide(source)
+    const before = await snapshot(source)
+    const rollback = payload.db.rollbackTransaction.bind(payload.db)
+    const rollbackFailure = vi
+      .spyOn(payload.db, 'rollbackTransaction')
+      .mockImplementationOnce(async (transactionID) => {
+        await rollback(transactionID)
+        throw new Error('Synthetic lost rollback confirmation')
+      })
+
+    const decision = decideInquiryModerationAppeal(moderatorReq, decisionInput(source))
+
+    await expect(decision).rejects.toBeInstanceOf(InquiryModerationServiceError)
+    await expect(decision).rejects.toMatchObject({
+      kind: 'invalid-state',
+      message: 'The appeal is not pending.',
+    })
+    expect(rollbackFailure).toHaveBeenCalledOnce()
+    rollbackFailure.mockRestore()
+    expect(await snapshot(source)).toEqual(before)
+  })
+
   it.each(['event', 'operation', 'first-event', 'second-recipient', 'commit'] as const)(
     'rolls back the full final decision and fanout on unexpected %s failure',
     async (boundary) => {
@@ -356,7 +381,11 @@ describe('authoritative moderation appeal decision', () => {
       if (boundary === 'commit') {
         const fault = vi.spyOn(payload.db, 'commitTransaction').mockImplementationOnce(fail)
         try {
-          await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+          await expect(submit()).rejects.toMatchObject({
+            name: 'InquiryModerationServiceError',
+            kind: 'unavailable',
+            message: 'The appeal decision could not be committed.',
+          })
         } finally {
           fault.mockRestore()
         }
@@ -373,7 +402,11 @@ describe('authoritative moderation appeal decision', () => {
             return data
           },
           async () => {
-            await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+            await expect(submit()).rejects.toMatchObject({
+              name: 'InquiryModerationServiceError',
+              kind: 'unavailable',
+              message: 'The appeal decision could not be committed.',
+            })
           },
         )
       }
@@ -409,7 +442,9 @@ describe('authoritative moderation appeal decision', () => {
         async () => {
           if (failures === 3)
             await expect(decideInquiryModerationAppeal(moderatorReq, decisionInput(source))).rejects.toMatchObject({
+              name: 'InquiryModerationServiceError',
               kind: 'conflict',
+              message: 'The appeal decision could not be committed.',
             })
           else {
             const result = await decide(source, 'overturned')

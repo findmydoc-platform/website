@@ -20,6 +20,7 @@ import {
   decideInquiryModerationCase,
   submitInquiryModerationAppeal,
   decideInquiryModerationAppeal,
+  InquiryModerationServiceError,
 } from '@/features/inquiryModeration/service'
 import { anonymizeInquiryPackage } from '@/features/inquiryRetention/service'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
@@ -543,6 +544,34 @@ describe('authoritative initial moderation decision mail', () => {
     expect(outbox[0]!.id).not.toBe(receipt.id)
   })
 
+  it('preserves the decision validation error when rollback confirmation fails', async () => {
+    const source = await report()
+    const before = await committedState(source.inquiryId)
+    const rollback = payload.db.rollbackTransaction.bind(payload.db)
+    const rollbackFailure = vi
+      .spyOn(payload.db, 'rollbackTransaction')
+      .mockImplementationOnce(async (transactionID) => {
+        await rollback(transactionID)
+        throw new Error('Synthetic lost rollback confirmation')
+      })
+
+    const decision = decideInquiryModerationCase(moderatorReq, {
+      caseId: source.caseId,
+      category: 'other',
+      outcome: 'content-restricted',
+      reason: 'ForbiddenInternalReason',
+    })
+
+    await expect(decision).rejects.toBeInstanceOf(InquiryModerationServiceError)
+    await expect(decision).rejects.toMatchObject({
+      kind: 'invalid-input',
+      message: 'A conversation cannot use a content-only restriction.',
+    })
+    expect(rollbackFailure).toHaveBeenCalledOnce()
+    rollbackFailure.mockRestore()
+    expect(await committedState(source.inquiryId)).toEqual(before)
+  })
+
   it.each(['operation', 'first-event', 'commit'] as const)(
     'rolls the full decision callback back on unexpected %s failure',
     async (boundary) => {
@@ -562,7 +591,11 @@ describe('authoritative initial moderation decision mail', () => {
       if (boundary === 'commit') {
         const fault = vi.spyOn(payload.db, 'commitTransaction').mockImplementationOnce(fail)
         try {
-          await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+          await expect(submit()).rejects.toMatchObject({
+            name: 'InquiryModerationServiceError',
+            kind: 'unavailable',
+            message: 'The moderation decision could not be committed.',
+          })
         } finally {
           fault.mockRestore()
         }
@@ -571,7 +604,11 @@ describe('authoritative initial moderation decision mail', () => {
           boundary === 'operation' ? 'transactionalEmailOutbox' : 'transactionalEmailEvents',
           fail,
           async () => {
-            await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+            await expect(submit()).rejects.toMatchObject({
+              name: 'InquiryModerationServiceError',
+              kind: 'unavailable',
+              message: 'The moderation decision could not be committed.',
+            })
           },
         )
       expect(await committedState(source.inquiryId)).toEqual(before)
@@ -610,7 +647,12 @@ describe('authoritative initial moderation decision mail', () => {
                 outcome: 'no-action',
                 reason: 'ForbiddenInternalReason',
               })
-            if (failures === 3) await expect(submit()).rejects.toMatchObject({ kind: 'conflict' })
+            if (failures === 3)
+              await expect(submit()).rejects.toMatchObject({
+                name: 'InquiryModerationServiceError',
+                kind: 'conflict',
+                message: 'The moderation decision could not be committed.',
+              })
             else {
               await expect(submit()).resolves.toEqual({ decided: true })
               const event = await decisionEvent(source.caseId)

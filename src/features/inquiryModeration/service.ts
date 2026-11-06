@@ -1051,29 +1051,20 @@ export const decideInquiryModerationCase = async (
   await observeNotificationSourceCommand(req, capture, async () => {
     if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => decide(req))
     else {
-      let domainError: InquiryModerationServiceError | undefined
-      try {
-        await acceptance.run(req, async (transactionReq, commands) => {
-          domainError = undefined
-          transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+      await runActiveEmailCommand(
+        req,
+        acceptance,
+        async (transactionReq, commands) => {
           try {
             return await decide(transactionReq, commands)
           } catch (error) {
-            if (error instanceof InquiryModerationServiceError) domainError = error
             if (error instanceof ClinicNotificationCaptureConflict)
               throw new TransactionalEmailError('transaction-conflict')
             throw error
           }
-        })
-      } catch (error) {
-        if (domainError) throw domainError
-        if (error instanceof TransactionalEmailError)
-          throw new InquiryModerationServiceError(
-            error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
-            'The moderation decision could not be committed.',
-          )
-        throw error
-      }
+        },
+        'The moderation decision could not be committed.',
+      )
     }
   })
   return { decided: true }
@@ -1269,29 +1260,20 @@ export const decideInquiryModerationAppeal = async (
   await observeNotificationSourceCommand(req, capture, async () => {
     if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => decide(req))
     else {
-      let domainError: InquiryModerationServiceError | undefined
-      try {
-        await acceptance.run(req, async (transactionReq, commands) => {
-          domainError = undefined
-          transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+      await runActiveEmailCommand(
+        req,
+        acceptance,
+        async (transactionReq, commands) => {
           try {
             await decide(transactionReq, commands)
           } catch (error) {
-            if (error instanceof InquiryModerationServiceError) domainError = error
             if (error instanceof ClinicNotificationCaptureConflict)
               throw new TransactionalEmailError('transaction-conflict')
             throw error
           }
-        })
-      } catch (error) {
-        if (domainError) throw domainError
-        if (error instanceof TransactionalEmailError)
-          throw new InquiryModerationServiceError(
-            error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
-            'The appeal decision could not be committed.',
-          )
-        throw error
-      }
+        },
+        'The appeal decision could not be committed.',
+      )
     }
   })
   return { decided: true }

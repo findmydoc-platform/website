@@ -361,6 +361,37 @@ const runCommandTransaction = async <Result>(
   }
 }
 
+type ActiveEmailAcceptance = Extract<ReturnType<typeof selectTransactionalEmailCommandAcceptance>, { kind: 'active' }>
+
+const runActiveEmailCommand = async <Result>(
+  req: PayloadRequest,
+  acceptance: ActiveEmailAcceptance,
+  work: (transactionReq: PayloadRequest, commands: TransactionalEmailCommands) => Promise<Result>,
+  commitFailureMessage: string,
+): Promise<Result> => {
+  let domainError: InquiryModerationServiceError | undefined
+  try {
+    return await acceptance.run(req, async (transactionReq, commands) => {
+      domainError = undefined
+      transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
+      try {
+        return await work(transactionReq, commands)
+      } catch (error) {
+        if (error instanceof InquiryModerationServiceError) domainError = error
+        throw error
+      }
+    })
+  } catch (error) {
+    if (domainError) throw domainError
+    if (error instanceof TransactionalEmailError)
+      throw new InquiryModerationServiceError(
+        error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
+        commitFailureMessage,
+      )
+    throw error
+  }
+}
+
 export const createInquiryModerationReport = async (
   req: PayloadRequest,
   rawInput: InquiryModerationReportInput,
@@ -470,30 +501,17 @@ export const createInquiryModerationReport = async (
     return { received: true, reportId: String(moderationCase.id) }
   }
   if (acceptance.kind === 'inactive') return runCommandTransaction(req, () => submit(req), lockKey)
-  let domainError: InquiryModerationServiceError | undefined
-  try {
-    return await acceptance.run(req, async (transactionReq, commands) => {
-      domainError = undefined
-      transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
-      try {
-        const releaseLock = await acquireInquiryCommandLock(transactionReq, lockKey)
-        const receipt = await submit(transactionReq, commands)
-        await releaseLock()
-        return receipt
-      } catch (error) {
-        if (error instanceof InquiryModerationServiceError) domainError = error
-        throw error
-      }
-    })
-  } catch (error) {
-    if (domainError) throw domainError
-    if (error instanceof TransactionalEmailError)
-      throw new InquiryModerationServiceError(
-        error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
-        'The report could not be committed.',
-      )
-    throw error
-  }
+  return runActiveEmailCommand(
+    req,
+    acceptance,
+    async (transactionReq, commands) => {
+      const releaseLock = await acquireInquiryCommandLock(transactionReq, lockKey)
+      const receipt = await submit(transactionReq, commands)
+      await releaseLock()
+      return receipt
+    },
+    'The report could not be committed.',
+  )
 }
 
 type Moderator = { id: RelationId; key: string }
@@ -1142,29 +1160,16 @@ export const submitInquiryModerationAppeal = async (
   const lockKey = `moderation-appeal:${input.caseId}`
   if (acceptance.kind === 'inactive') await runCommandTransaction(req, () => submit(req), lockKey)
   else {
-    let domainError: InquiryModerationServiceError | undefined
-    try {
-      await acceptance.run(req, async (transactionReq, commands) => {
-        domainError = undefined
-        transactionReq.context = { ...transactionReq.context, inquiryModerationCommand: true }
-        try {
-          const releaseLock = await acquireInquiryCommandLock(transactionReq, lockKey)
-          await submit(transactionReq, commands)
-          await releaseLock()
-        } catch (error) {
-          if (error instanceof InquiryModerationServiceError) domainError = error
-          throw error
-        }
-      })
-    } catch (error) {
-      if (domainError) throw domainError
-      if (error instanceof TransactionalEmailError)
-        throw new InquiryModerationServiceError(
-          error.code === 'transaction-conflict' ? 'conflict' : 'unavailable',
-          'The appeal could not be committed.',
-        )
-      throw error
-    }
+    await runActiveEmailCommand(
+      req,
+      acceptance,
+      async (transactionReq, commands) => {
+        const releaseLock = await acquireInquiryCommandLock(transactionReq, lockKey)
+        await submit(transactionReq, commands)
+        await releaseLock()
+      },
+      'The appeal could not be committed.',
+    )
   }
   return { submitted: true }
 }

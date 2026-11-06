@@ -11,8 +11,9 @@ import {
 } from 'payload'
 import config from '@payload-config'
 import { createVerifiedPatientInquiry, updateClinicInquiryState } from '@/features/inquiryCommunication/service'
-import { createInquiryModerationReport } from '@/features/inquiryModeration/service'
+import { createInquiryModerationReport, InquiryModerationServiceError } from '@/features/inquiryModeration/service'
 import { bindTransactionalEmail } from '@/features/transactionalEmail/payloadIntegration'
+import activationRegistry from '@/features/transactionalEmail/activationRegistry.json'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import type { DeliveryAdapter, DeliveryLog } from '@/features/transactionalEmail/delivery'
 import { runOwnedTransaction } from '@/features/transactionalEmail/transactions'
@@ -46,6 +47,7 @@ describe('authoritative moderation report receipt', () => {
   const staffIds: Array<number | string> = []
   const references: string[] = []
   const prefix = testSlug('transactionalEmail.moderationReport.test.ts')
+  const declaredActivationRecords = activationRegistry.records
 
   beforeAll(async () => {
     payload = await getPayload({ config })
@@ -90,6 +92,7 @@ describe('authoritative moderation report receipt', () => {
   })
 
   afterEach(() => {
+    activationRegistry.records = declaredActivationRecords
     expect(globalThis.fetch).not.toHaveBeenCalled()
     expect(http.request).not.toHaveBeenCalled()
     expect(https.request).not.toHaveBeenCalled()
@@ -354,6 +357,49 @@ describe('authoritative moderation report receipt', () => {
         expect(JSON.stringify(audit)).not.toContain(forbidden)
   })
 
+  it('preserves the report target error when rollback confirmation fails', async () => {
+    const input = await reportInputFor()
+    const rollback = payload.db.rollbackTransaction.bind(payload.db)
+    const rollbackFailure = vi
+      .spyOn(payload.db, 'rollbackTransaction')
+      .mockImplementationOnce(async (transactionID) => {
+        await rollback(transactionID)
+        throw new Error('Synthetic lost rollback confirmation')
+      })
+
+    const submission = createInquiryModerationReport(patientReq, { ...input, targetId: '2147483647' })
+    await expect(submission).rejects.toBeInstanceOf(InquiryModerationServiceError)
+    await expect(submission).rejects.toMatchObject({
+      kind: 'not-found',
+      message: 'The report target does not exist.',
+    })
+    expect(rollbackFailure).toHaveBeenCalledOnce()
+  })
+
+  it('receives a report without email acceptance while that command is inactive', async () => {
+    const input = await reportInputFor()
+    const before = await committedState(input.inquiryId)
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    activationRegistry.records = declaredActivationRecords.filter(
+      (record) => record.commandType !== 'moderation.report-received',
+    )
+    const originalContext = { ...patientReq.context, inquiryModerationCommand: 'previous', retained: true }
+    patientReq.context = { ...originalContext }
+
+    const receipt = await createInquiryModerationReport(patientReq, input)
+
+    expect(receipt).toEqual({ received: true, reportId: expect.any(String) })
+    const observed = await committedState(input.inquiryId)
+    expect(observed.cases.map((moderationCase) => String(moderationCase.id))).toEqual([receipt.reportId])
+    expect(observed.audits.map((event) => event.eventType)).toEqual(['report-received'])
+    expect(observed.operations).toEqual(before.operations)
+    expect(observed.events).toEqual(before.events)
+    expect(patientReq.context).toMatchObject({ inquiryModerationCommand: 'previous', retained: true })
+    expect(patientReq.transactionID).toBeUndefined()
+  })
+
   it.each(['catalog', 'operation', 'first-event', 'commit'] as const)(
     'rolls the report, audit and mail back when %s fails unexpectedly',
     async (boundary) => {
@@ -365,7 +411,11 @@ describe('authoritative moderation report receipt', () => {
       const submit = () => createInquiryModerationReport(patientReq, input)
       if (boundary === 'commit') {
         const commitFailure = vi.spyOn(payload.db, 'commitTransaction').mockImplementationOnce(fail)
-        await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+        await expect(submit()).rejects.toMatchObject({
+          name: 'InquiryModerationServiceError',
+          kind: 'unavailable',
+          message: 'The report could not be committed.',
+        })
         commitFailure.mockRestore()
       } else if (boundary === 'catalog') {
         const find = payload.find.bind(payload)
@@ -374,14 +424,22 @@ describe('authoritative moderation report receipt', () => {
             throw new Error('Synthetic source read failure')
           return find(options)
         })
-        await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+        await expect(submit()).rejects.toMatchObject({
+          name: 'InquiryModerationServiceError',
+          kind: 'unavailable',
+          message: 'The report could not be committed.',
+        })
         vi.mocked(payload.find).mockRestore()
       } else {
         await withBeforeHook(
           boundary === 'operation' ? 'transactionalEmailOutbox' : 'transactionalEmailEvents',
           fail,
           async () => {
-            await expect(submit()).rejects.toMatchObject({ kind: 'unavailable' })
+            await expect(submit()).rejects.toMatchObject({
+              name: 'InquiryModerationServiceError',
+              kind: 'unavailable',
+              message: 'The report could not be committed.',
+            })
           },
         )
       }
@@ -415,7 +473,11 @@ describe('authoritative moderation report receipt', () => {
           },
           async () => {
             if (failures === 3)
-              await expect(createInquiryModerationReport(patientReq, input)).rejects.toMatchObject({ kind: 'conflict' })
+              await expect(createInquiryModerationReport(patientReq, input)).rejects.toMatchObject({
+                name: 'InquiryModerationServiceError',
+                kind: 'conflict',
+                message: 'The report could not be committed.',
+              })
             else {
               const receipt = await createInquiryModerationReport(patientReq, input)
               const observed = await committedState(input.inquiryId)

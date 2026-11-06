@@ -83,8 +83,8 @@ When adding a new ADR:
 - [018 — Native Payload CMS localization strategy](./018-adr-native-payload-localization-strategy.md)
 - [019 — PostHog event taxonomy and usage governance](./019-adr-posthog-event-taxonomy-and-usage-governance.md)
 - [020 — Database migration quality gate](./020-adr-database-migration-quality-gate.md)
-- [021 — Localization source, ownership, and readiness governance](./021-adr-localization-source-ownership-and-readiness-governance.md)
-- [022 — Public localization routing, SEO, and domain strategy](./022-adr-public-localization-routing-seo-and-domain-strategy.md)
+- [021 — Localization source, ownership, and readiness governance](./021-adr-localization-source-ownership-and-readiness-governance.md) _(publication-readiness rules superseded by ADR 038; canonical UI Copy format specified by ADR 039; other decisions remain in force)_
+- [022 — Public localization routing, SEO, and domain strategy](./022-adr-public-localization-routing-seo-and-domain-strategy.md) _(aggregate readiness condition superseded by ADR 038; other decisions remain in force)_
 - [023 — Public website cache and revalidation strategy](./023-adr-public-website-cache-and-revalidation-strategy.md)
 - [024 — Production build webpack fallback](./024-adr-production-build-webpack-fallback.md)
 - [025 — Direct staff authentication collections](./025-adr-direct-staff-auth-collections.md)
@@ -100,3 +100,5 @@ When adding a new ADR:
 - [035 — Notification acknowledgement decision time](./035-adr-notification-acknowledgement-decision-time.md)
 - [036 — Order of clinic access changes and business writes](./036-adr-clinic-authorization-mutation-ordering.md) _(approved on 17.10.2026)_
 - [037 — Focused mutation testing for critical business logic](https://github.com/findmydoc-platform/platform-architecture/blob/cdf782c2d654241529b6bc20ecb5493787d2dbbf/decisions/037-adr-focused-mutation-testing.md) _(Draft platform decision; Website adoption remains open; GitHub access required)_
+- [038 — Native Payload locale publication without aggregate readiness gates](./038-adr-native-payload-locale-publication.md)
+- [039 — Canonical ARB catalogs for Product UI Copy](./039-adr-canonical-arb-ui-copy-catalogs.md)

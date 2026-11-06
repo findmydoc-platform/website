@@ -46,7 +46,7 @@ const request = (clinics = [clinic(9, 'Zeta'), clinic(8, 'Alpha'), clinic(7, 'Al
     headers: new Headers({
       Authorization: 'Bearer personal-token',
       'X-Findmydoc-Clinic-Scope-Contract': 'clinic-scope-v1',
-      'X-Findmydoc-Reporting-Contract': 'clinic-dashboard-reporting-v2',
+      'X-Findmydoc-Reporting-Contract': 'clinic-dashboard-reporting-v3',
     }),
   })
 }
@@ -171,7 +171,7 @@ describe('clinic-scope-v1 person bootstrap', () => {
     const response = await clinicDashboardReportingGetHandler(req)
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject({
-      schemaVersion: 'clinic-dashboard-reporting-v2',
+      schemaVersion: 'clinic-dashboard-reporting-v3',
       metrics: { inquiries: { current: { value: 0 } } },
     })
   })

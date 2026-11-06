@@ -450,6 +450,14 @@ normalizes orientation and strips metadata before generating its registered imag
 absolute protected image-operation URLs. The optional `size=thumbnail` selects a stored registered size; neither
 the URL nor its encrypted Dashboard token grants access. Public media URLs keep their existing behavior.
 
+Doctor and Gallery image operations validate the stored Website origin and media path before adding deployment
+access to their internal file request. They use the current Website Function's `x-vercel-oidc-token` as
+`x-vercel-trusted-oidc-idp-token`, retain the application bearer and existing timeout, and reject redirects.
+The incoming caller's trusted-source identity is not forwarded. OIDC Federation and the Website's effective
+Trusted Sources policy must allow the Website runtime to call its own protected destination. These transport
+headers do not replace clinic, doctor, or media authorization. Cache impact is `no-public-impact`; private
+image responses remain uncached and existing public revalidation owners are unchanged.
+
 The Website instance installs the bounded native upload owner from [ADR 036](../adrs/036-adr-clinic-authorization-mutation-ordering.md#bounded-native-media-initialization-retry).
 Direct root `payload.create` uploads and this custom multipart handler retain native transaction ownership. At most
 three total native attempts are permitted only for an attested PostgreSQL `23505` from the exact cold authorization

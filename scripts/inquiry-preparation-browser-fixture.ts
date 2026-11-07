@@ -9,7 +9,9 @@ try {
   let result: unknown
   if (command === 'create') {
     const city = (await payload.find({ collection: 'cities', limit: 1, overrideAccess: true })).docs[0]!
-    const fixture = await createClinicFixture(payload, city.id, { slugPrefix: 'preparation-browser' })
+    const fixture = await createClinicFixture(payload, city.id, {
+      slugPrefix: `preparation-browser${id ? `-${id}` : ''}`,
+    })
     await payload.update({
       collection: 'clinics',
       id: fixture.clinic.id,

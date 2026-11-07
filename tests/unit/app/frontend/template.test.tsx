@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PUBLIC_SITE_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
-import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER } from '@/features/previewGuard'
 
 const mocks = vi.hoisted(() => ({
   headersMock: vi.fn(),
@@ -111,22 +110,5 @@ describe('frontend route template', () => {
     expect(mocks.resolveHoldingModeMock).toHaveBeenCalledWith(new URL('http://findmydoc.eu'))
     expect(templateChildren[0].props.children.props.rightActions).toBeNull()
     expect(footer.props.holdingMode).toBe(true)
-  })
-
-  it('keeps normal chrome when Preview Guard takes precedence over Holding mode', async () => {
-    mocks.headersMock.mockResolvedValue(
-      new Headers({
-        [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'holding',
-        [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1',
-      }),
-    )
-
-    const templateModule = await import('@/app/(frontend)/template')
-    const result = await templateModule.default({ children: 'guarded route content' })
-    const templateChildren = result.props.children[0].props.children
-    const footer = result.props.children[2].props.children.props.children
-
-    expect(templateChildren[0].props.children.props.rightActions).not.toBeNull()
-    expect(footer.props.holdingMode).toBe(false)
   })
 })

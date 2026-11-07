@@ -2,7 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { APIError, type CollectionBeforeOperationHook, type PayloadRequest } from 'payload'
 import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
 
-export const PREPARATION_COOKIE = 'findmydoc_inquiry_preparations'
+const PREPARATION_COOKIE = 'findmydoc_inquiry_preparations'
 export const PREPARATION_LIFETIME = 7 * 24 * 60 * 60 * 1000
 // Payload's singleton collection hooks and Next route bundles must share the same request capability.
 const brokerKey = Symbol.for('findmydoc.inquiry-preparations.storage.v1')

@@ -5,7 +5,6 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { HOLDING_VIEW_REQUEST_HEADER, PUBLIC_SITE_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
-import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER, PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 
 const mocks = vi.hoisted(() => ({
   headers: vi.fn(),
@@ -117,23 +116,8 @@ describe('platform navigation during Holding mode', () => {
     expect(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Compare clinics' })).toBeInTheDocument()
   })
 
-  it('keeps full visitor navigation when Preview Guard takes precedence', async () => {
-    mocks.headers.mockResolvedValue(
-      new Headers({
-        [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'holding',
-        [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1',
-      }),
-    )
-    mocks.extractSupabaseUserData.mockResolvedValue(null)
-
-    await renderTemplate()
-
-    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Compare clinics' })).toBeInTheDocument()
-    expect(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Compare clinics' })).toBeInTheDocument()
-  })
-
   it.each(['/posts', '/posts/article', '/posts/page/2'])(
-    'projects Holding navigation on Preview with the proxy guard disabled for %s',
+    'projects Holding navigation on Preview for %s',
     async (pathname) => {
       vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
       mocks.pathname = pathname
@@ -144,31 +128,6 @@ describe('platform navigation during Holding mode', () => {
       expect(screen.queryByRole('button', { name: /open account menu/i })).not.toBeInTheDocument()
     },
   )
-
-  it('keeps the Preview fallback when proxy mode and guard markers are both missing', async () => {
-    vi.stubEnv('DEPLOYMENT_ENVIRONMENT', 'preview')
-    mocks.headers.mockResolvedValue(new Headers({ host: 'preview.findmydoc.eu' }))
-    mocks.extractSupabaseUserData.mockResolvedValue(null)
-    await renderTemplate()
-    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Compare clinics' })).toBeInTheDocument()
-    expect(mocks.resolveHoldingMode).not.toHaveBeenCalled()
-  })
-
-  it('keeps chrome hidden on a locked Preview Guard page even for platform users', async () => {
-    mocks.headers.mockResolvedValue(
-      new Headers({
-        [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'holding',
-        [PREVIEW_GUARD_ACTIVE_REQUEST_HEADER]: '1',
-        [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1',
-      }),
-    )
-
-    await renderTemplate()
-
-    expect(screen.queryByRole('banner')).not.toBeInTheDocument()
-    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
-    expect(mocks.extractSupabaseUserData).not.toHaveBeenCalled()
-  })
 
   it('uses one validated session for the patient account menu in full mode', async () => {
     mocks.headers.mockResolvedValue(new Headers({ [PUBLIC_SITE_MODE_REQUEST_HEADER]: 'full' }))

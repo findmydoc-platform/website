@@ -78,7 +78,7 @@ the directory. No global Supabase identity list is cached or exposed.
 
 ## Patient verification delivery
 
-`POST /api/auth/register/patient` validates the existing email, password and names and preserves Preview Guard.
+`POST /api/auth/register/patient` validates the existing email, password and names.
 It accepts no resend authority, recipient, action URL, template or provider setting. `requestPatientVerification`
 prepares the identity without native mail, activates the same action and accepts only its `auth.email-verification`
 command. Names become Supabase user metadata only when creating a new identity. Reconciliation does not replace
@@ -145,7 +145,7 @@ The existing `/register/patient` page includes an email-only resend form. Its sa
 address, including unknown identities, confirmed accounts, throttling and unavailable infrastructure. Auth performs
 direct subject lookup for bound actions or bounded reconciliation for unbound actions, and authorizes the current correlation's replacement through the existing
 five-minute cooldown and five-per-day reservation boundary. It never creates a Supabase identity or changes a
-password. An unbound pending reservation can resume identity binding. Preview Guard suppresses the operation.
+password. An unbound pending reservation can resume identity binding.
 The recovery link targets the resend heading directly. The controlled form clears its input after acceptance and stores no address in a URL or cookie. Delivery continues through the
 existing catalog, Outbox and pinned template. Preview and Production sending remain fail-closed.
 

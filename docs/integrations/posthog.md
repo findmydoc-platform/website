@@ -62,14 +62,13 @@ Business event names and payload contracts are registered in `src/posthog/events
 Server-side business event capture is gated by PostHog analytics consent. Operational submissions still complete when
 analytics consent is absent; only PostHog event capture is skipped.
 
-### Operational Guard Flags
+### Holding mode flag
 
-The current repository registers exactly two server-side PostHog guard flags:
-
-- `temporary-landing-mode`: controls the temporary public holding page.
-- `preview-guard-enabled`: controls preview access protection.
-
-These are operational access guards, not product rollout flags. They are evaluated server-side through `evaluatePostHogFlags()` and default to `false` in code when PostHog is unavailable or the secure key is missing. Guard checks use a server-side site actor with `feature_flag_site_host` and `feature_flag_site_path`; browser-side feature-flag evaluation is disabled.
+The repository registers the server-side PostHog flag `temporary-landing-mode` for public Holding mode.
+It is evaluated through `evaluatePostHogFlags()` with a stable host actor and the `feature_flag_site_host`
+person property. An evaluated boolean selects Holding or Full. Unavailable or invalid evaluation uses
+`PUBLIC_SITE_FALLBACK_MODE`; missing or invalid fallback configuration selects Holding. Browser-side
+feature-flag evaluation is disabled.
 
 ### Browser consent lifecycle
 

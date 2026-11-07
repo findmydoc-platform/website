@@ -3,6 +3,8 @@ import { UiLink } from '@/components/molecules/Link'
 import type { PreparationReceipt } from '@/features/inquiryPreparations/contracts'
 import { Fragment, type ReactNode } from 'react'
 
+const actionLinkClassName = 'inline-flex min-h-11 items-center text-foreground underline'
+
 export type InquiryPreparationNoticesProps = {
   items: PreparationReceipt[]
   loading: string[]
@@ -90,7 +92,11 @@ export function InquiryPreparationNotices({
                   </p>
                 ) : null}
                 {completed && item.inquiryId ? (
-                  <UiLink appearance="inline" href={`/patient/inquiries/${encodeURIComponent(item.inquiryId)}`}>
+                  <UiLink
+                    appearance="inline"
+                    className={actionLinkClassName}
+                    href={`/patient/inquiries/${encodeURIComponent(item.inquiryId)}`}
+                  >
                     View inquiry
                   </UiLink>
                 ) : unresolved ? (
@@ -107,7 +113,7 @@ export function InquiryPreparationNotices({
                 ) : item.status === 'sign-in-required' ? (
                   <UiLink
                     appearance="inline"
-                    className="inline-flex min-h-11 items-center text-foreground underline"
+                    className={actionLinkClassName}
                     href="/login/patient?next=/patient/inquiries"
                   >
                     Sign in to send your inquiry

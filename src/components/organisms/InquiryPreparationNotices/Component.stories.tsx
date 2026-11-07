@@ -2,6 +2,20 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { InquiryPreparationNotices } from './Component'
 
+async function expectReadableAction(link: HTMLElement) {
+  const rgb = getComputedStyle(link).color.match(/\d+/g)!.slice(0, 3).map(Number)
+  const luminance = (channels: number[]) =>
+    channels
+      .map((channel) => channel / 255)
+      .map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4))
+      .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index]!, 0)
+  const foreground = luminance(rgb),
+    background = luminance([248, 249, 250])
+  await expect(
+    (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05),
+  ).toBeGreaterThanOrEqual(4.5)
+}
+
 const meta = {
   title: 'Domain/Inquiry/Organisms/InquiryPreparationNotices',
   component: InquiryPreparationNotices,
@@ -28,6 +42,7 @@ export const Retry: Story = {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('listitem')).toHaveTextContent('Not sent')
     await expect(canvas.queryByRole('alert')).not.toBeInTheDocument()
+    await expectReadableAction(canvas.getByRole('button', { name: 'Try again' }))
     await userEvent.click(canvas.getByRole('button', { name: 'Try again' }))
     await expect(args.onRetry).toHaveBeenCalledWith('synthetic-preparation')
   },
@@ -53,17 +68,7 @@ export const PasswordSignInRequired: Story = {
       '/login/patient?next=/patient/inquiries',
     )
     await expect(canvas.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
-    const rgb = getComputedStyle(canvas.getByRole('link')).color.match(/\d+/g)!.slice(0, 3).map(Number)
-    const luminance = (channels: number[]) =>
-      channels
-        .map((channel) => channel / 255)
-        .map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4))
-        .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index]!, 0)
-    const foreground = luminance(rgb),
-      background = luminance([248, 249, 250])
-    await expect(
-      (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05),
-    ).toBeGreaterThanOrEqual(4.5)
+    await expectReadableAction(canvas.getByRole('link'))
   },
 }
 
@@ -114,6 +119,7 @@ export const UnknownOutcome: Story = {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('status')).toHaveTextContent('Delivery not confirmed')
     await expect(canvas.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
+    await expectReadableAction(canvas.getByRole('button', { name: 'Check status' }))
     await userEvent.click(canvas.getByRole('button', { name: 'Check status' }))
     await expect(args.onCheckStatus).toHaveBeenCalledWith('synthetic-preparation')
   },
@@ -138,5 +144,6 @@ export const Submitted: Story = {
       '/patient/inquiries/synthetic-inquiry',
     )
     await expect(canvas.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
+    await expectReadableAction(canvas.getByRole('link'))
   },
 }

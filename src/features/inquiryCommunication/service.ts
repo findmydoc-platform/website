@@ -3361,7 +3361,13 @@ const preparationReceipt = async (req: PayloadRequest, record: StoredRecord): Pr
     reference: text(record.reference),
     authorizedAt: text(record.authorizedAt),
     expiresAt: text(record.expiresAt),
-    status: submitted ? 'submitted' : record.firstAttemptAt ? 'try-again' : 'saved-not-sent',
+    status: submitted
+      ? 'submitted'
+      : record.patient && !record.passwordEstablishedAt
+        ? 'sign-in-required'
+        : record.firstAttemptAt
+          ? 'try-again'
+          : 'saved-not-sent',
     ...(submitted ? { inquiryId: String(submitted) } : {}),
     ...(clinic ? { clinicName: text(clinic.name) } : {}),
     ...(record.firstAttemptAt ? { firstAttemptAt: text(record.firstAttemptAt) } : {}),
@@ -3452,6 +3458,85 @@ export async function readInquiryPreparations(req: PayloadRequest, binding: stri
   return { preparations, nextCursor: records.length > 25 ? Number(items.at(-1)!.id) : null }
 }
 
+/** Only a newly established server action can retain an unbound origin context, without password authority. */
+export async function bindInquiryPreparationAccountAction(
+  req: PayloadRequest,
+  input: { binding: string; actionId: number; subject: string; email: string; actionCreatedAt: string },
+) {
+  return withPreparationStorage(req, () =>
+    runRetryableCommand(req, async () => {
+      let cursor = 0
+      while (true) {
+        const records = await findMany(
+          req,
+          'inquiryPreparations',
+          {
+            and: [
+              preparationWhere(input.binding),
+              { id: { greater_than: cursor } },
+              { email: { equals: input.email } },
+              { subject: { exists: false } },
+              { authorizedAt: { less_than_equal: input.actionCreatedAt } },
+              { expiresAt: { greater_than: new Date().toISOString() } },
+            ],
+          },
+          { limit: 100, sort: 'id' },
+        )
+        for (const record of records) {
+          await req.payload.update({
+            collection: 'inquiryPreparations',
+            id: record.id as number,
+            overrideAccess: true,
+            req,
+            data: { authAction: input.actionId, subject: input.subject },
+          } as never)
+          cursor = Number(record.id)
+        }
+        if (records.length < 100) return
+      }
+    }),
+  )
+}
+
+/** Only a successful password sign-in may bind an originating preparation to the current patient. */
+export async function bindInquiryPreparationPasswordSignIn(
+  req: PayloadRequest,
+  input: { binding: string; subject: string; patientId: number | string; email: string },
+) {
+  return withPreparationStorage(req, () =>
+    runRetryableCommand(req, async () => {
+      let cursor = 0
+      while (true) {
+        const records = await findMany(
+          req,
+          'inquiryPreparations',
+          {
+            and: [
+              preparationWhere(input.binding),
+              { id: { greater_than: cursor } },
+              { email: { equals: input.email } },
+              { or: [{ subject: { exists: false } }, { subject: { equals: input.subject } }] },
+              { expiresAt: { greater_than: new Date().toISOString() } },
+            ],
+          },
+          { limit: 100, sort: 'id' },
+        )
+        for (const record of records) {
+          await req.payload.update({
+            collection: 'inquiryPreparations',
+            id: record.id as number,
+            overrideAccess: true,
+            req,
+            data: { subject: input.subject, patient: input.patientId, passwordEstablishedAt: new Date().toISOString() },
+          } as never)
+          cursor = Number(record.id)
+        }
+        if (records.length < 100) return
+      }
+    }),
+  )
+}
+
 /** Called only by successful password-bearing identity creation, never by email reconciliation. */
 export async function bindInquiryPreparationRegistration(
   req: PayloadRequest,
@@ -3499,7 +3584,6 @@ export async function completeInquiryPreparationAccount(
             { environment: { equals: preparationEnvironment() } },
             { authAction: { equals: input.actionId } },
             { subject: { equals: input.subject } },
-            { passwordEstablishedAt: { exists: true } },
             { expiresAt: { greater_than: new Date().toISOString() } },
           ],
         },

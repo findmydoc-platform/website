@@ -377,10 +377,10 @@ describe('authorized inquiry preparation HTTP boundary', () => {
       expect(activated.status).toBe(200)
       expect(
         activated.headers.getSetCookie().some((value) => value.startsWith('findmydoc_inquiry_preparations=')),
-      ).toBe(false)
+      ).toBe(true)
       expect(
         await (await request('/api/patient/inquiry-preparations', undefined, cookie, 'synthetic-patient')).json(),
-      ).toMatchObject({ preparations: [] })
+      ).toMatchObject({ preparations: [{ reference: saved.reference, status: 'sign-in-required' }] })
       expect(
         (
           await request(

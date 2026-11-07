@@ -1,0 +1,383 @@
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { NextRequest } from 'next/server'
+import type { User } from '@supabase/supabase-js'
+import { createLocalReq, getPayload, handleEndpoints, type Payload } from 'payload'
+import { createHash, createHmac, randomUUID } from 'node:crypto'
+import config from '@payload-config'
+import { POST as login } from '@/app/api/auth/login/route'
+import { POST as register } from '@/app/api/auth/register/patient/route'
+import { GET as openConfirmation, POST as confirm } from '@/app/auth/callback/route'
+import { readPatientVerificationContext } from '@/auth/actions/patientVerificationContext'
+import { requestPasswordRecovery } from '@/auth/actions/passwordRecoveryRequests'
+import { dashboardRecoveryContext } from '@/auth/actions/recoveryContext'
+import { readWebsiteRecoveryContext } from '@/auth/actions/websiteRecoveryContext'
+import { POST as completePassword } from '@/app/auth/password/complete/route'
+import { createClinicFixture } from '../fixtures/createClinicFixture'
+import { ensureBaseline } from '../fixtures/ensureBaseline'
+import { testSlug } from '../fixtures/testSlug'
+
+const provider = vi.hoisted(() => ({ user: null as User | null, session: false, password: 'SyntheticPatient123' })) // pragma: allowlist secret
+vi.mock('@/auth/utilities/supaBaseServer', () => ({
+  createClient: async () => ({
+    auth: {
+      getUser: async (token?: string) => ({
+        data: { user: token === 'existing-patient' || provider.session ? provider.user : null },
+        error: null,
+      }),
+      signInWithPassword: async (input: { password: string }) => {
+        if (input.password !== provider.password)
+          return { data: { user: null, session: null }, error: { message: 'Invalid login credentials' } }
+        provider.session = true
+        return { data: { user: provider.user, session: { access_token: 'existing-patient' } }, error: null }
+      },
+      signOut: async () => {
+        provider.session = false
+        return { error: null }
+      },
+      getSession: async () => ({ data: { session: { access_token: 'existing-patient' } }, error: null }),
+      updateUser: async (input: { password: string }) => {
+        provider.password = input.password
+        return { data: { user: provider.user }, error: null }
+      },
+    },
+  }),
+  createAdminClient: async () => ({
+    auth: {
+      admin: {
+        createUser: async () => ({ data: { user: null }, error: { status: 422 } }),
+        listUsers: async () => ({ data: { users: [provider.user] }, error: null }),
+        getUserById: async () => ({ data: { user: provider.user }, error: null }),
+        updateUserById: async (_id: string, input: { app_metadata: Record<string, unknown> }) => {
+          provider.user = { ...provider.user!, app_metadata: { ...provider.user!.app_metadata, ...input.app_metadata } }
+          return { data: { user: provider.user }, error: null }
+        },
+      },
+    },
+  }),
+  createVerificationClient: () => ({
+    auth: {
+      verifyOtp: async () => {
+        provider.user = { ...provider.user!, email_confirmed_at: new Date().toISOString() }
+        return { data: { user: provider.user, session: { access_token: 'existing-patient' } }, error: null }
+      },
+    },
+    commitSession: async () => {
+      provider.session = true
+    },
+  }),
+  signOutRecoverySession: async () => {
+    provider.session = false
+    return { error: null }
+  },
+  clearLocalAuthSession: async () => {},
+}))
+
+const origin = 'https://existing-preparation.test'
+const request = (path: string, body?: unknown, cookie?: string, token?: string) =>
+  handleEndpoints({
+    config,
+    request: new Request(new URL(path, origin), {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        Origin: origin,
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(cookie ? { Cookie: cookie } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    }),
+  })
+const signIn = (cookie?: string, password = 'SyntheticPatient123', extra: Record<string, unknown> = {}) =>
+  login(
+    new NextRequest(`${origin}/api/auth/login`, {
+      method: 'POST',
+      headers: { Origin: origin, 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
+      body: JSON.stringify({ email: provider.user!.email, password, allowedUserTypes: ['patient'], ...extra }),
+    }),
+  )
+
+describe('existing account inquiry continuation HTTP boundary', () => {
+  let payload: Payload
+  let clinicId: number
+  let doctorId: number | string
+  beforeAll(async () => {
+    vi.stubEnv(
+      'AUTH_VERIFICATION_CORRELATION_KEYS_JSON',
+      JSON.stringify({
+        environment: 'test',
+        keys: [{ version: 'existing-v1', secret: 'synthetic-existing-verification-key' }],
+      }),
+    ) // pragma: allowlist secret
+    vi.stubEnv(
+      'AUTH_RECOVERY_CORRELATION_KEYS_JSON',
+      JSON.stringify({
+        environment: 'test',
+        keys: [{ version: 'existing-v1', secret: 'synthetic-existing-recovery-key-long-enough' }],
+      }),
+    ) // pragma: allowlist secret
+    payload = await getPayload({ config })
+    await ensureBaseline(payload)
+    const city = (await payload.find({ collection: 'cities', limit: 1, overrideAccess: true })).docs[0]!
+    const fixture = await createClinicFixture(payload, city.id, { slugPrefix: testSlug('existing-preparation') })
+    clinicId = fixture.clinic.id
+    doctorId = fixture.doctor.id
+    await payload.update({ collection: 'clinics', id: clinicId, data: { status: 'approved' }, overrideAccess: true })
+    provider.user = {
+      id: crypto.randomUUID(),
+      email: 'existing-preparation@example.test',
+      email_confirmed_at: new Date().toISOString(),
+      app_metadata: { user_type: 'patient' },
+      user_metadata: { first_name: 'Current', last_name: 'Account' },
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+    }
+  })
+  afterAll(async () => {
+    await payload?.destroy()
+  })
+
+  async function prepare(attempt: string) {
+    provider.session = false
+    const response = await request('/api/patient/inquiry-preparations', {
+      clinicId: String(clinicId),
+      doctorId: String(doctorId),
+      idempotencyKey: attempt,
+      firstName: 'Entered',
+      lastName: 'Details',
+      email: provider.user!.email,
+      phoneNumber: '+493000000097',
+      message: 'Synthetic existing-account inquiry.',
+      consent: true,
+      accountAuthorization: true,
+    })
+    expect(response.status).toBe(201)
+    return { receipt: await response.json(), cookie: response.headers.get('set-cookie')!.split(';')[0]! }
+  }
+
+  it('uses password sign-in to send only the originating preparation once with current account details', async () => {
+    const own = await prepare('existing-origin')
+    const unrelated = await prepare('same-email-unrelated-origin')
+    const signedIn = await signIn(own.cookie)
+    expect(signedIn.status).toBe(200)
+    expect(await signedIn.json()).toMatchObject({ success: true, redirectUrl: '/patient/inquiries' })
+    const submitted = await request(
+      '/api/patient/inquiry-preparations/submit',
+      { reference: own.receipt.reference },
+      own.cookie,
+      'existing-patient',
+    )
+    expect(submitted.status).toBe(200)
+    const result = await submitted.json()
+    expect(result).toMatchObject({ status: 'submitted', expiresAt: own.receipt.expiresAt })
+    const replay = await request(
+      '/api/patient/inquiry-preparations/submit',
+      { reference: own.receipt.reference },
+      own.cookie,
+      'existing-patient',
+    )
+    expect(await replay.json()).toMatchObject({ status: 'submitted', inquiryId: result.inquiryId })
+    expect(
+      (
+        await request(
+          '/api/patient/inquiry-preparations/submit',
+          { reference: unrelated.receipt.reference },
+          unrelated.cookie,
+          'existing-patient',
+        )
+      ).status,
+    ).toBe(403)
+    const listed = await request('/api/patient/inquiries', undefined, own.cookie, 'existing-patient')
+    expect(listed.status).toBe(200)
+    expect(await listed.json()).toMatchObject({ items: [expect.objectContaining({ id: result.inquiryId })] })
+  })
+
+  it('continues a fresh verification action on another device without treating email confirmation as password proof', async () => {
+    provider.user = {
+      ...provider.user!,
+      id: crypto.randomUUID(),
+      email: 'existing-unconfirmed@example.test',
+      email_confirmed_at: undefined,
+    }
+    const own = await prepare('existing-unconfirmed-origin')
+    const unrelated = await prepare('unrelated-before-existing-action')
+    const registered = await register(
+      new Request(`${origin}/api/auth/register/patient`, {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: own.cookie },
+        body: JSON.stringify({
+          email: provider.user.email,
+          password: 'NeverReplaceExistingPassword',
+          firstName: 'Entered',
+          lastName: 'Details',
+        }), // pragma: allowlist secret
+      }),
+    )
+    expect(registered.status).toBe(200)
+    expect(
+      (
+        await register(
+          new Request(`${origin}/api/auth/register/patient`, {
+            method: 'POST',
+            headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: unrelated.cookie },
+            body: JSON.stringify({
+              email: provider.user.email,
+              password: 'NeverReplaceExistingPassword',
+              firstName: 'Unrelated',
+              lastName: 'Origin',
+            }), // pragma: allowlist secret
+          }),
+        )
+      ).status,
+    ).toBe(200)
+    const opened = await openConfirmation(
+      new NextRequest(`${origin}/auth/callback?authActionId=1&type=magiclink&token_hash=${'c'.repeat(56)}`),
+    )
+    const pending = opened.cookies.get('findmydoc_patient_verification')!
+    const context = readPatientVerificationContext(pending.value, 'test', [
+      { version: 'existing-v1', secret: 'synthetic-existing-verification-key' },
+    ])! // pragma: allowlist secret
+    const activated = await confirm(
+      new NextRequest(`${origin}/auth/callback`, {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: `${pending.name}=${pending.value}` },
+        body: JSON.stringify({ csrf: context.csrf }),
+      }),
+    )
+    expect(activated.status).toBe(200)
+    const restored = activated.headers
+      .getSetCookie()
+      .find((value) => value.startsWith('findmydoc_inquiry_preparations='))
+      ?.split(';')[0]
+    expect(restored).toBeTruthy()
+    expect(
+      await (
+        await request('/api/patient/inquiry-preparations', undefined, unrelated.cookie, 'existing-patient')
+      ).json(),
+    ).toMatchObject({ preparations: [] })
+    expect(
+      await (await request('/api/patient/inquiry-preparations', undefined, restored, 'existing-patient')).json(),
+    ).toMatchObject({ preparations: [{ status: 'sign-in-required', expiresAt: own.receipt.expiresAt }] })
+    expect(
+      (
+        await request(
+          '/api/patient/inquiry-preparations/submit',
+          { reference: own.receipt.reference },
+          restored,
+          'existing-patient',
+        )
+      ).status,
+    ).toBe(403)
+    expect((await signIn(restored, 'NeverReplaceExistingPassword')).status).toBe(401)
+    expect((await signIn(restored)).status).toBe(200)
+    const submitted = await request(
+      '/api/patient/inquiry-preparations/submit',
+      { reference: own.receipt.reference },
+      restored,
+      'existing-patient',
+    )
+    expect(submitted.status).toBe(200)
+    expect(await submitted.json()).toMatchObject({ status: 'submitted', expiresAt: own.receipt.expiresAt })
+  })
+
+  it('restores a fresh recovery context on another device, then requires password sign-in without repeating recovery after handoff failure', async () => {
+    provider.user = { ...provider.user!, id: randomUUID(), email: 'existing-recovery@example.test' }
+    const own = await prepare('existing-recovery-origin')
+    await payload.create({
+      collection: 'patients',
+      data: {
+        supabaseUserId: provider.user.id,
+        email: provider.user.email!,
+        firstName: 'Recovery',
+        lastName: 'Patient',
+      },
+      context: { skipSupabaseUserCreation: true },
+      overrideAccess: true,
+    })
+    const key = { version: 'existing-v1', secret: 'synthetic-existing-recovery-key-long-enough' } // pragma: allowlist secret
+    const timestamp = new Date().toISOString()
+    const requestId = randomUUID()
+    const body = JSON.stringify({ email: provider.user.email, clientIP: '198.51.100.9' })
+    const signature = createHmac('sha256', key.secret)
+      .update(
+        JSON.stringify([
+          'auth-recovery-request-v1',
+          'test',
+          'POST',
+          'requestRecovery',
+          timestamp,
+          requestId,
+          createHash('sha256').update(body).digest('hex'),
+        ]),
+      )
+      .digest('hex')
+    const context = dashboardRecoveryContext(
+      { method: 'POST', operation: 'requestRecovery', timestamp, requestId, body, keyVersion: key.version, signature },
+      { environment: 'test', keys: [key] },
+    )
+    const req = await createLocalReq({}, payload)
+    req.headers = new Headers({ Cookie: own.cookie })
+    // Local Website recovery admission intentionally stays disabled; use its existing signed admission command.
+    await requestPasswordRecovery(req, { email: provider.user.email!, context })
+    const opened = await openConfirmation(
+      new NextRequest(
+        `${origin}/auth/callback?authActionId=2&type=recovery&next=/auth/password/reset/complete&token_hash=${'d'.repeat(56)}`,
+      ),
+    )
+    const pending = opened.cookies.get('findmydoc_website_recovery')!
+    const grant = readWebsiteRecoveryContext(pending.value, 'test', [key])!
+    const confirmed = await confirm(
+      new NextRequest(`${origin}/auth/callback?flow=recovery`, {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: `${pending.name}=${pending.value}` },
+        body: JSON.stringify({ csrf: grant.csrf }),
+      }),
+    )
+    expect(confirmed.status).toBe(200)
+    const completion = confirmed.cookies.get('findmydoc_website_recovery')!
+    const finish = await completePassword(
+      new NextRequest(`${origin}/auth/password/complete`, {
+        method: 'POST',
+        headers: {
+          Origin: origin,
+          'Content-Type': 'application/json',
+          Cookie: `${completion.name}=${completion.value}`,
+        },
+        body: JSON.stringify({
+          csrf: grant.csrf,
+          password: 'RecoveredPatient123',
+          confirmPassword: 'RecoveredPatient123',
+        }),
+      }),
+    ) // pragma: allowlist secret
+    expect(finish.status).toBe(200)
+    expect(await finish.json()).toEqual({ redirectTo: '/login/patient?status=recovery-complete' })
+    const restored = finish.headers
+      .getSetCookie()
+      .find((value) => value.startsWith('findmydoc_inquiry_preparations='))
+      ?.split(';')[0]
+    expect(restored).toBeTruthy()
+    expect((await signIn(restored)).status).toBe(401)
+    expect((await signIn(restored, 'RecoveredPatient123')).status).toBe(200)
+    await payload.update({ collection: 'clinics', id: clinicId, data: { status: 'pending' }, overrideAccess: true })
+    expect(
+      (
+        await request(
+          '/api/patient/inquiry-preparations/submit',
+          { reference: own.receipt.reference },
+          restored,
+          'existing-patient',
+        )
+      ).status,
+    ).toBeGreaterThanOrEqual(400)
+    await payload.update({ collection: 'clinics', id: clinicId, data: { status: 'approved' }, overrideAccess: true })
+    const submitted = await request(
+      '/api/patient/inquiry-preparations/submit',
+      { reference: own.receipt.reference, retry: true },
+      restored,
+      'existing-patient',
+    )
+    expect(submitted.status).toBe(200)
+    expect(await submitted.json()).toMatchObject({ status: 'submitted', expiresAt: own.receipt.expiresAt })
+    expect((await signIn(restored, 'RecoveredPatient123')).status).toBe(200)
+  })
+})

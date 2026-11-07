@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { NextRequest, NextResponse } from 'next/server'
 import { applyPrivateAuthHeaders } from '@/auth/utilities/tokenHashCallback'
 import { supabaseEmailTokenHashSchema } from '@/auth/utilities/supabaseEmailTokenHash'
+import { preparationCookie } from '@/features/inquiryPreparations/context'
 import { InvalidWebsiteRecovery, RecoveryPasswordRejected, websiteRecoveryAuthority } from './websiteRecoveryCompletion'
 import {
   WEBSITE_RECOVERY_COOKIE,
@@ -101,9 +102,11 @@ async function recoveryPost(request: NextRequest, complete: boolean) {
         ? await authority.complete(context, parsed.data.password ?? '', save)
         : await authority.confirm(context, save)
     const success = applyPrivateAuthHeaders(NextResponse.json({ redirectTo }))
+    const preparationBinding = complete ? await authority.restorePreparation(context) : null
     const grant = response.cookies.get(WEBSITE_RECOVERY_COOKIE)
     if (complete) clearWebsiteRecoveryContext(success)
     else if (grant) success.cookies.set(grant)
+    if (preparationBinding) success.headers.append('Set-Cookie', preparationCookie(preparationBinding))
     return success
   } catch (error) {
     if (error instanceof InvalidWebsiteRecovery) {

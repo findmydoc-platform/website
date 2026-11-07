@@ -32,3 +32,25 @@ export const Retry: Story = {
   },
 }
 export const Sending: Story = { args: { loading: ['synthetic-preparation'] } }
+
+export const PasswordSignInRequired: Story = {
+  args: {
+    items: [
+      {
+        reference: 'synthetic-password-proof',
+        authorizedAt: '2026-11-07T12:00:00.000Z',
+        expiresAt: '2026-11-14T12:00:00.000Z',
+        status: 'sign-in-required',
+        clinicName: 'Synthetic clinic',
+      },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('link', { name: 'Sign in to send your inquiry' })).toHaveAttribute(
+      'href',
+      '/login/patient?next=/patient/inquiries',
+    )
+    await expect(canvas.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
+  },
+}

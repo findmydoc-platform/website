@@ -520,7 +520,15 @@ describe('authorized inquiry preparation HTTP boundary', () => {
       )
       // Hosted mail and recovery are inactive in this local environment; preparation deletion still runs.
       expect(scheduled.status).toBe(503)
-      expect(await runInquiryPreparationCleanup(Date.now() + 5000)).toBe(0)
+      // Other files may contribute expired preparations. Each scheduler invocation stays bounded to 100.
+      let remaining = true
+      for (let batch = 0; batch < 10 && remaining; batch++) {
+        const deleted = await runInquiryPreparationCleanup(Date.now() + 5000)
+        expect(deleted).toBeGreaterThanOrEqual(0)
+        expect(deleted).toBeLessThanOrEqual(100)
+        remaining = deleted > 0
+      }
+      expect(remaining).toBe(false)
       expect((await payload.count({ collection: 'patientClinicInquiries', overrideAccess: true })).totalDocs).toBe(
         inquiryCount,
       )

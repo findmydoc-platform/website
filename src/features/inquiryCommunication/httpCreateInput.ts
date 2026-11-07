@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { guestInquiryCreateInputSchema, verifiedInquiryCreateInputSchema } from './contracts'
+import { verifiedInquiryCreateInputSchema } from './contracts'
 
 const discardLegacySession = (body: unknown): unknown => {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) return body
@@ -8,5 +8,4 @@ const discardLegacySession = (body: unknown): unknown => {
   return Object.fromEntries(Object.entries(body).filter(([key]) => key !== 'session_id'))
 }
 
-export const guestInquiryCreateRequestSchema = z.preprocess(discardLegacySession, guestInquiryCreateInputSchema)
 export const verifiedInquiryCreateRequestSchema = z.preprocess(discardLegacySession, verifiedInquiryCreateInputSchema)

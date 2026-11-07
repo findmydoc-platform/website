@@ -21,7 +21,7 @@ import { testSlug } from '../fixtures/testSlug'
 const provider = vi.hoisted(() => ({
   user: null as User | null,
   session: false,
-  password: 'SyntheticPatient123',
+  password: 'SyntheticPatient123', // pragma: allowlist secret
   callback: '',
 })) // pragma: allowlist secret
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
@@ -119,14 +119,14 @@ describe('existing account inquiry continuation HTTP boundary', () => {
       'AUTH_VERIFICATION_CORRELATION_KEYS_JSON',
       JSON.stringify({
         environment: 'test',
-        keys: [{ version: 'integration-v1', secret: 'synthetic-inquiry-verification-key-for-tests' }],
+        keys: [{ version: 'integration-v1', secret: 'synthetic-inquiry-verification-key-for-tests' }], // pragma: allowlist secret
       }),
     ) // pragma: allowlist secret
     vi.stubEnv(
       'AUTH_RECOVERY_CORRELATION_KEYS_JSON',
       JSON.stringify({
         environment: 'test',
-        keys: [{ version: 'existing-v1', secret: 'synthetic-existing-recovery-key-long-enough' }],
+        keys: [{ version: 'existing-v1', secret: 'synthetic-existing-recovery-key-long-enough' }], // pragma: allowlist secret
       }),
     ) // pragma: allowlist secret
     payload = await getPayload({ config })
@@ -170,20 +170,24 @@ describe('existing account inquiry continuation HTTP boundary', () => {
     expect(callback.searchParams.get('type')).toBe(type)
     return openConfirmation(new NextRequest(`${origin}${callback.pathname}${callback.search}`))
   }
-  async function prepare(attempt: string) {
+  async function prepare(attempt: string, cookie?: string) {
     provider.session = false
-    const response = await request('/api/patient/inquiry-preparations', {
-      clinicId: String(clinicId),
-      doctorId: String(doctorId),
-      idempotencyKey: attempt,
-      firstName: 'Entered',
-      lastName: 'Details',
-      email: provider.user!.email,
-      phoneNumber: '+493000000097',
-      message: 'Synthetic existing-account inquiry.',
-      consent: true,
-      accountAuthorization: true,
-    })
+    const response = await request(
+      '/api/patient/inquiry-preparations',
+      {
+        clinicId: String(clinicId),
+        doctorId: String(doctorId),
+        idempotencyKey: attempt,
+        firstName: 'Entered',
+        lastName: 'Details',
+        email: provider.user!.email,
+        phoneNumber: '+493000000097',
+        message: 'Synthetic existing-account inquiry.',
+        consent: true,
+        accountAuthorization: true,
+      },
+      cookie,
+    )
     expect(response.status).toBe(201)
     return { receipt: await response.json(), cookie: response.headers.get('set-cookie')!.split(';')[0]! }
   }
@@ -588,5 +592,80 @@ describe('existing account inquiry continuation HTTP boundary', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('keeps two password-login authorizations independent when one handoff fails and is deliberately retried', async () => {
+    provider.user = {
+      id: randomUUID(),
+      email: 'existing-multiple@example.test',
+      email_confirmed_at: new Date().toISOString(),
+      app_metadata: { user_type: 'patient' },
+      user_metadata: {},
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+    }
+    provider.password = 'SyntheticPatient123' // pragma: allowlist secret
+    const first = await prepare('existing-multiple-first')
+    const second = await prepare('existing-multiple-second', first.cookie)
+    expect((await signIn(first.cookie)).status).toBe(200)
+    const firstResponse = await request(
+      '/api/patient/inquiry-preparations/submit',
+      { reference: first.receipt.reference },
+      first.cookie,
+      'existing-patient',
+    )
+    expect(firstResponse.status).toBe(200)
+    const submittedFirst = await firstResponse.json()
+    await payload.update({ collection: 'clinics', id: clinicId, data: { status: 'pending' }, overrideAccess: true })
+    expect(
+      (
+        await request(
+          '/api/patient/inquiry-preparations/submit',
+          { reference: second.receipt.reference },
+          first.cookie,
+          'existing-patient',
+        )
+      ).status,
+    ).toBeGreaterThanOrEqual(400)
+    await payload.update({ collection: 'clinics', id: clinicId, data: { status: 'approved' }, overrideAccess: true })
+    expect(
+      await (await request('/api/patient/inquiry-preparations', undefined, first.cookie, 'existing-patient')).json(),
+    ).toMatchObject({
+      preparations: [
+        { reference: first.receipt.reference, status: 'submitted', inquiryId: submittedFirst.inquiryId },
+        { reference: second.receipt.reference, status: 'try-again', expiresAt: second.receipt.expiresAt },
+      ],
+    })
+    expect(
+      await (
+        await request(
+          '/api/patient/inquiry-preparations/submit',
+          { reference: second.receipt.reference },
+          first.cookie,
+          'existing-patient',
+        )
+      ).json(),
+    ).toMatchObject({ status: 'try-again' })
+    expect((await request('/api/patient/inquiries', undefined, first.cookie, 'existing-patient')).status).toBe(200)
+    const retry = await request(
+      '/api/patient/inquiry-preparations/submit',
+      { reference: second.receipt.reference, retry: true },
+      first.cookie,
+      'existing-patient',
+    )
+    expect(retry.status).toBe(200)
+    expect(await retry.json()).toMatchObject({ status: 'submitted', expiresAt: second.receipt.expiresAt })
+    expect(
+      await (
+        await request(
+          '/api/patient/inquiry-preparations/submit',
+          { reference: first.receipt.reference, retry: true },
+          first.cookie,
+          'existing-patient',
+        )
+      ).json(),
+    ).toMatchObject({ status: 'submitted', inquiryId: submittedFirst.inquiryId })
+    const list = await (await request('/api/patient/inquiries', undefined, first.cookie, 'existing-patient')).json()
+    expect(list.items).toHaveLength(2)
   })
 })

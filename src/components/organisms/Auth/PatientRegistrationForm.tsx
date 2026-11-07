@@ -27,7 +27,7 @@ export function PatientRegistrationForm({
       title="Create Patient Account"
       description={
         preparationExpiresAt
-          ? `Your inquiry is saved but not sent. Set your password and confirm your email. It expires on ${new Date(preparationExpiresAt).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC.`
+          ? `Your inquiry is saved but not sent. Create an account, or use your existing account through sign-in or verification below. It expires on ${new Date(preparationExpiresAt).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC.`
           : 'Join findmydoc to search for clinics and treatments'
       }
       initialValues={initialValues}

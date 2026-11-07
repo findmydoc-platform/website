@@ -84,3 +84,32 @@ export const IndependentFailures: Story = {
     await expect(args.onRetry).toHaveBeenCalledWith('clinic-c')
   },
 }
+
+export const UnknownOutcome: Story = {
+  args: { unknown: ['synthetic-preparation'], onCheckStatus: fn() },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('status')).toHaveTextContent('submission result is not yet known')
+    await expect(canvas.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
+    await userEvent.click(canvas.getByRole('button', { name: 'Check status' }))
+    await expect(args.onCheckStatus).toHaveBeenCalledWith('synthetic-preparation')
+  },
+}
+export const Submitted: Story = {
+  args: {
+    items: [
+      {
+        reference: 'synthetic-completed',
+        authorizedAt: '2026-11-07T12:00:00.000Z',
+        expiresAt: '2026-11-14T12:00:00.000Z',
+        status: 'submitted',
+        clinicName: 'Synthetic clinic',
+      },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('status')).toHaveTextContent('Your inquiry to Synthetic clinic has been sent.')
+    await expect(canvas.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
+  },
+}

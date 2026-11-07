@@ -144,7 +144,7 @@ test.describe('clinic detail map dialog', () => {
     await page.getByLabel('First Name').fill(slugPrefix)
     await page.getByLabel('Last Name').fill('Patient')
     await page.getByLabel('Phone Number').fill('+49 30 123456')
-    await page.getByLabel('Email').fill(email)
+    await page.getByRole('textbox', { name: 'Email', exact: true }).fill(email)
     await page.getByLabel('How Soon Are You Considering Treatment?').selectOption('within_two_weeks')
     await page.getByLabel('When Should We Contact You?').selectOption('morning')
     await page.getByLabel('Message').fill('Please contact me about this clinic.')
@@ -165,7 +165,7 @@ test.describe('clinic detail map dialog', () => {
     await expect.poll(() => readInquiry(slugPrefix, email).count).toBe(0)
     expect(readInquiry(slugPrefix, email).totalClinicCount).toBe(0)
 
-    await page.getByLabel('Email').fill(secondEmail)
+    await page.getByRole('textbox', { name: 'Email', exact: true }).fill(secondEmail)
     await expect(page.getByRole('button', { name: 'Save inquiry and create account' })).toBeEnabled()
     await page.getByRole('checkbox', { name: /authorize creation/i }).check()
     await page.getByRole('button', { name: 'Save inquiry and create account' }).click()

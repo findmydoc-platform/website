@@ -60,7 +60,7 @@ test('prepares, registers, confirms on another device and deliberately retries t
     await setCookieConsent(otherDevice)
     const other = await otherDevice.newPage()
     const otherIssues = createBrowserIssueCollector(other, {
-      ignoredConsoleErrors: [/Failed to load resource.*40[034]/],
+      ignoredConsoleErrors: [/Failed to load resource.*40[034]/, /net::ERR_FAILED/],
     })
     await other.goto(link!)
     await expect(other.getByRole('heading', { name: 'Verify your email' })).toBeVisible()
@@ -85,8 +85,39 @@ test('prepares, registers, confirms on another device and deliberately retries t
       'Your account is ready, but the inquiry was not sent.',
     )
     await fixtureCommand('approved', clinic.id)
+    let readsUnavailable = true
+    await other.route('**/api/patient/inquiry-preparations', async (route) => {
+      if (readsUnavailable) await route.abort('failed')
+      else await route.continue()
+    })
+    await other.route(
+      '**/api/patient/inquiry-preparations/submit',
+      async (route) => {
+        // The real server commits, but the browser never receives its acknowledgement.
+        const response = await route.fetch()
+        expect(response.status()).toBe(200)
+        await route.abort('failed')
+      },
+      { times: 1 },
+    )
     await other.getByRole('button', { name: 'Try again', exact: true }).focus()
     await other.keyboard.press('Enter')
+    const notices = other.getByRole('region', { name: 'Unsent inquiries' })
+    await expect(notices).toContainText('submission result is not yet known')
+    await expect(notices).not.toContainText('saved but not sent')
+    await expect(other.getByRole('button', { name: 'Try again', exact: true })).toHaveCount(0)
+    expect(((await fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs).toBe(1)
+    for (const width of [320, 375, 640, 768, 1024]) {
+      await other.setViewportSize({ width, height: width < 640 ? 640 : 900 })
+      expect(await other.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+      await other.screenshot({ path: `${artifacts}/unknown-outcome-${width}.png`, fullPage: true })
+    }
+    readsUnavailable = false
+    await other.getByRole('button', { name: 'Check status', exact: true }).focus()
+    await other.keyboard.press('Enter')
+    await expect(
+      other.getByRole('status').filter({ hasText: `Your inquiry to ${clinic.name} has been sent.` }),
+    ).toBeVisible()
     await expect(other.getByRole('region', { name: 'Unsent inquiries' })).toHaveCount(0)
     await expect(other.getByText(clinic.name, { exact: true }).first()).toBeVisible()
     await other.screenshot({ path: `${artifacts}/submitted-desktop.png`, fullPage: true })

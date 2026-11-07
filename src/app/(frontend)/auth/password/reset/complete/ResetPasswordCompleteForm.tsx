@@ -14,11 +14,12 @@ import { resetPostHogBrowserIdentity } from '@/posthog/client-api'
 import { RecoveryRequestLink, RecoverySafeError, type RecoveryState } from '../../../confirm/RecoveryConfirmationForm'
 
 type PasswordInput = { password?: string; confirmPassword?: string }
-export type RecoveryPasswordResult = 'completed' | 'retry' | 'invalid' | 'password-rejected'
+export type RecoveryPasswordResult = 'completed' | 'retry' | 'invalid' | 'password-rejected' | 'inquiry-continuation'
 export function ResetPasswordCompleteForm({
   csrf,
   resume = false,
-}: Readonly<{ csrf: string | null; resume?: boolean }>) {
+  inquiryContinuationPending = false,
+}: Readonly<{ csrf: string | null; resume?: boolean; inquiryContinuationPending?: boolean }>) {
   async function complete(input: PasswordInput): Promise<RecoveryPasswordResult> {
     try {
       const response = await fetch('/auth/password/complete', {
@@ -35,6 +36,11 @@ export function ResetPasswordCompleteForm({
           body?.redirectTo === '/admin/login?status=recovery-complete')
       ) {
         resetPostHogBrowserIdentity()
+        if (body.inquiryContinuationPending) {
+          // Discard the signed-out document's in-memory session before continuing the separate inquiry work.
+          window.location.assign('/auth/password/reset/complete?inquiry=continue')
+          return 'inquiry-continuation'
+        }
         writeAuthFlash(createPasswordResetCompleteFlash())
         // A full navigation discards this document's in-memory Supabase session after server cookie cleanup.
         window.location.assign(body.redirectTo)
@@ -45,7 +51,14 @@ export function ResetPasswordCompleteForm({
       return 'retry'
     }
   }
-  return <RecoveryPasswordView available={Boolean(csrf)} resume={resume} onComplete={complete} />
+  return (
+    <RecoveryPasswordView
+      available={Boolean(csrf)}
+      resume={resume}
+      initialState={inquiryContinuationPending ? 'inquiry-continuation' : 'idle'}
+      onComplete={complete}
+    />
+  )
 }
 export function RecoveryPasswordView({
   available,
@@ -56,9 +69,11 @@ export function RecoveryPasswordView({
   available: boolean
   resume?: boolean
   onComplete: (input: PasswordInput) => Promise<RecoveryPasswordResult>
-  initialState?: RecoveryState
+  initialState?: RecoveryState | 'inquiry-continuation'
 }>) {
-  const [state, setState] = useState<RecoveryState>(available ? initialState : 'invalid')
+  const [state, setState] = useState<RecoveryState | 'inquiry-continuation'>(available ? initialState : 'invalid')
+  const [accountCompleted, setAccountCompleted] = useState(initialState === 'inquiry-continuation')
+  const continuing = resume || accountCompleted
   const [passwordRejected, setPasswordRejected] = useState(false)
   const validation = usePublicFormValidation({
     messages: {
@@ -74,7 +89,7 @@ export function RecoveryPasswordView({
     const fields = new FormData(form)
     const password = String(fields.get('password') ?? '')
     const confirmPassword = String(fields.get('confirmPassword') ?? '')
-    if (!resume && (password.length < 8 || password !== confirmPassword)) {
+    if (!continuing && (password.length < 8 || password !== confirmPassword)) {
       const field = password.length < 8 ? 'password' : 'confirmPassword'
       validation.setCustomFieldError(
         field,
@@ -85,12 +100,13 @@ export function RecoveryPasswordView({
       return
     }
     setState('pending')
-    const result = await onComplete(resume ? {} : { password, confirmPassword })
+    const result = await onComplete(continuing ? {} : { password, confirmPassword })
     if (result === 'password-rejected') {
       setPasswordRejected(true)
       setState('idle')
       form.querySelector<HTMLInputElement>('#password')?.focus()
     } else {
+      if (result === 'inquiry-continuation') setAccountCompleted(true)
       setState(result)
       if (result === 'invalid' || result === 'completed') form.reset()
     }
@@ -100,12 +116,18 @@ export function RecoveryPasswordView({
     <Card className="w-full max-w-md">
       <CardHeader>
         <Heading as="h1" size="h4" align="center">
-          {resume ? 'Finish password recovery' : 'Choose a new password'}
+          {accountCompleted
+            ? 'Password recovery complete'
+            : resume
+              ? 'Finish password recovery'
+              : 'Choose a new password'}
         </Heading>
         <CardDescription className="text-center text-foreground">
-          {resume
-            ? 'Your password has been saved. Finish signing out your sessions.'
-            : 'Set a new password to finish recovering your account.'}
+          {accountCompleted
+            ? 'Continue your saved inquiries before signing in.'
+            : resume
+              ? 'Your password has been saved. Finish signing out your sessions.'
+              : 'Set a new password to finish recovering your account.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -140,7 +162,13 @@ export function RecoveryPasswordView({
                 Password recovery complete. Opening sign in...
               </Alert>
             )}
-            {!resume && (
+            {state === 'inquiry-continuation' && (
+              <Alert variant="success" role="status">
+                Your password has been changed and your sessions are signed out. Saved inquiries could not be connected
+                yet. Continue here to resume them.
+              </Alert>
+            )}
+            {!continuing && (
               <>
                 <Field data-invalid={validation.getFieldError('password') ? true : undefined}>
                   <Label htmlFor="password">New password</Label>
@@ -184,11 +212,13 @@ export function RecoveryPasswordView({
                 ? 'Finishing...'
                 : state === 'completed'
                   ? 'Opening sign in...'
-                  : state === 'retry'
-                    ? 'Try again'
-                    : resume
-                      ? 'Finish recovery'
-                      : 'Update password'}
+                  : state === 'inquiry-continuation'
+                    ? 'Continue saved inquiries'
+                    : state === 'retry'
+                      ? 'Try again'
+                      : resume
+                        ? 'Finish recovery'
+                        : 'Update password'}
             </Button>
           </form>
         )}

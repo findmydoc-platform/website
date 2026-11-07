@@ -23,6 +23,7 @@ const provider = vi.hoisted(() => ({
   session: false,
   password: 'SyntheticPatient123', // pragma: allowlist secret
   callback: '',
+  passwordWrites: 0,
 })) // pragma: allowlist secret
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createClient: async () => ({
@@ -43,6 +44,7 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
       },
       getSession: async () => ({ data: { session: { access_token: 'existing-patient' } }, error: null }),
       updateUser: async (input: { password: string }) => {
+        provider.passwordWrites++
         provider.password = input.password
         return { data: { user: provider.user }, error: null }
       },
@@ -434,23 +436,53 @@ describe('existing account inquiry continuation HTTP boundary', () => {
     )
     expect(confirmed.status).toBe(200)
     const completion = confirmed.cookies.get('findmydoc_website_recovery')!
-    const finish = await completePassword(
-      new NextRequest(`${origin}/auth/password/complete`, {
-        method: 'POST',
-        headers: {
-          Origin: origin,
-          'Content-Type': 'application/json',
-          Cookie: `${completion.name}=${completion.value}`,
-        },
-        body: JSON.stringify({
-          csrf: grant.csrf,
-          password: 'RecoveredPatient123',
-          confirmPassword: 'RecoveredPatient123',
+    provider.passwordWrites = 0
+    const hooks = payload.collections.inquiryPreparations.config.hooks
+    const original = hooks.beforeChange
+    hooks.beforeChange = [
+      ...(original ?? []),
+      ({ data }) => {
+        if (data.patient) throw new Error('Synthetic preparation binding unavailable')
+      },
+    ]
+    let finish: Awaited<ReturnType<typeof completePassword>>
+    try {
+      finish = await completePassword(
+        new NextRequest(`${origin}/auth/password/complete`, {
+          method: 'POST',
+          headers: {
+            Origin: origin,
+            'Content-Type': 'application/json',
+            Cookie: `${completion.name}=${completion.value}`,
+          },
+          body: JSON.stringify({
+            csrf: grant.csrf,
+            password: 'RecoveredPatient123',
+            confirmPassword: 'RecoveredPatient123',
+          }),
         }),
-      }),
-    ) // pragma: allowlist secret
-    expect(finish.status).toBe(200)
-    expect(await finish.json()).toEqual({ redirectTo: '/login/patient?status=recovery-complete' })
+      ) // pragma: allowlist secret
+      expect(finish.status).toBe(200)
+      expect(await finish.json()).toEqual({
+        redirectTo: '/login/patient?status=recovery-complete',
+        inquiryContinuationPending: true,
+      })
+      const retained = finish.cookies.get('findmydoc_website_recovery')!
+      expect(readWebsiteRecoveryContext(retained.value, 'test', [key])).toMatchObject({ stage: 'signed-out' })
+      hooks.beforeChange = original
+      finish = await completePassword(
+        new NextRequest(`${origin}/auth/password/complete`, {
+          method: 'POST',
+          headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: `${retained.name}=${retained.value}` },
+          body: JSON.stringify({ csrf: grant.csrf }),
+        }),
+      )
+      expect(finish.status).toBe(200)
+      expect(await finish.json()).toEqual({ redirectTo: '/login/patient?status=recovery-complete' })
+      expect(provider.passwordWrites).toBe(1)
+    } finally {
+      hooks.beforeChange = original
+    }
     const restored = finish.headers
       .getSetCookie()
       .find((value) => value.startsWith('findmydoc_inquiry_preparations='))

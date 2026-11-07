@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
 import { resolveVerificationKeys } from '@/auth/actions/verificationConfiguration'
 import { PATIENT_VERIFICATION_COOKIE, readPatientVerificationContext } from '@/auth/actions/patientVerificationContext'
+import { patientVerificationAuthority } from '@/auth/actions/patientVerificationCompletion'
 import { PatientVerificationForm } from './PatientVerificationForm'
 import { PublicAuthRouteShell } from '@/app/(frontend)/_components/PublicAuthRouteShell'
 import { resolveRecoveryKeys } from '@/auth/actions/recoveryConfiguration'
@@ -44,6 +45,7 @@ export default async function ConfirmTokenHashPage({
   }
   if (type === 'patient-verification') {
     let csrf: string | null = null
+    let inquiryContinuationPending = false
     try {
       const environment = resolveTransactionalEmailEnvironment()
       const keys = resolveVerificationKeys(environment)
@@ -53,12 +55,16 @@ export default async function ConfirmTokenHashPage({
         keys,
       )
       csrf = context?.csrf ?? null
+      if (context?.stage === 'confirmed') {
+        const authority = await patientVerificationAuthority()
+        inquiryContinuationPending = (await authority.load(context.actionId, context)).action.state === 'completed'
+      }
     } catch {
       /* Unavailable configuration shares the safe invalid-link state. */
     }
     return (
       <PublicAuthRouteShell>
-        <PatientVerificationForm csrf={csrf} />
+        <PatientVerificationForm csrf={csrf} inquiryContinuationPending={inquiryContinuationPending} />
       </PublicAuthRouteShell>
     )
   }

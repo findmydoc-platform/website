@@ -33,7 +33,7 @@ export function registerInquiryPreparationRuntime({
   const providerRequests: string[] = []
   let auth: Server
   let next: ChildProcess
-  const clinics: Array<{ id: number; slug: string; name: string }> = []
+  const clinics: Array<{ id: number; slug: string; name: string; doctorId: number | string }> = []
   let userToken = ''
   const tokenHash = 'b'.repeat(56)
   const sanitizedLog = () =>
@@ -221,6 +221,10 @@ export function registerInquiryPreparationRuntime({
     fixtureCommand,
     confirmationLinks,
     providerRequests,
+    resetIdentities() {
+      users.clear()
+      userToken = ''
+    },
     existingUser(email: string, verified = true) {
       users.clear()
       userToken = ''

@@ -13,9 +13,15 @@ import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { GET as scheduledCleanup } from '@/app/api/internal/transactional-email/worker/route'
 import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
-import { runInquiryPreparationCleanup } from '@/features/inquiryPreparations/cleanup'
+import { withPreparationStorage } from '@/features/inquiryPreparations/context'
 
-const provider = vi.hoisted(() => ({ user: null as User | null, session: false, create: true, callback: '' }))
+const provider = vi.hoisted(() => ({
+  user: null as User | null,
+  session: false,
+  create: true,
+  callback: '',
+  verifications: 0,
+}))
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createClient: async () => ({
     auth: {
@@ -55,6 +61,7 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createVerificationClient: () => ({
     auth: {
       verifyOtp: async () => {
+        provider.verifications++
         provider.user = { ...provider.user!, email_confirmed_at: new Date().toISOString() }
         return {
           data: {
@@ -223,14 +230,41 @@ describe('authorized inquiry preparation HTTP boundary', () => {
     const pending = opened.cookies.get('findmydoc_patient_verification')!
     const context = readPatientVerificationContext(pending.value, 'test', [key])!
     expect(context).toBeTruthy()
-    const activated = await confirm(
-      new NextRequest(`${origin}/auth/callback`, {
-        method: 'POST',
-        headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: `${pending.name}=${pending.value}` },
-        body: JSON.stringify({ csrf: context.csrf }),
-      }),
-    )
-    expect(activated.status).toBe(200)
+    provider.verifications = 0
+    const hooks = payload.collections.inquiryPreparations.config.hooks
+    const original = hooks.beforeChange
+    hooks.beforeChange = [
+      ...(original ?? []),
+      ({ data }) => {
+        if (data.patient) throw new Error('Synthetic preparation binding unavailable')
+      },
+    ]
+    let activated: Awaited<ReturnType<typeof confirm>>
+    try {
+      activated = await confirm(
+        new NextRequest(`${origin}/auth/callback`, {
+          method: 'POST',
+          headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: `${pending.name}=${pending.value}` },
+          body: JSON.stringify({ csrf: context.csrf }),
+        }),
+      )
+      expect(activated.status).toBe(200)
+      expect(await activated.json()).toEqual({ redirectTo: '/patient/inquiries', inquiryContinuationPending: true })
+      const retained = activated.cookies.get('findmydoc_patient_verification')!
+      expect(readPatientVerificationContext(retained.value, 'test', [key])).toMatchObject({ stage: 'confirmed' })
+      hooks.beforeChange = original
+      activated = await confirm(
+        new NextRequest(`${origin}/auth/callback`, {
+          method: 'POST',
+          headers: { Origin: origin, 'Content-Type': 'application/json', Cookie: `${retained.name}=${retained.value}` },
+          body: JSON.stringify({ csrf: context.csrf }),
+        }),
+      )
+      expect(activated.status).toBe(200)
+      expect(provider.verifications).toBe(1)
+    } finally {
+      hooks.beforeChange = original
+    }
     const crossDeviceCookie = activated.headers
       .getSetCookie()
       .find((value) => value.startsWith('findmydoc_inquiry_preparations='))!
@@ -520,22 +554,43 @@ describe('authorized inquiry preparation HTTP boundary', () => {
     vi.setSystemTime(new Date(saved.expiresAt))
     try {
       vi.stubEnv('CRON_SECRET', 'synthetic-preparation-cleanup-secret-for-tests-only') // pragma: allowlist secret
-      const scheduled = await scheduledCleanup(
-        new Request(`${origin}/api/internal/transactional-email/worker`, {
-          headers: { Authorization: 'Bearer synthetic-preparation-cleanup-secret-for-tests-only' },
-        }),
-      )
-      // Hosted mail and recovery are inactive in this local environment; preparation deletion still runs.
-      expect(scheduled.status).toBe(503)
-      // Other files may contribute expired preparations. Each scheduler invocation stays bounded to 100.
-      let remaining = true
-      for (let batch = 0; batch < 10 && remaining; batch++) {
-        const deleted = await runInquiryPreparationCleanup(Date.now() + 5000)
-        expect(deleted).toBeGreaterThanOrEqual(0)
-        expect(deleted).toBeLessThanOrEqual(100)
-        remaining = deleted > 0
+      const req = await createLocalReq({}, payload)
+      const expiredCount = async () =>
+        withPreparationStorage(req, () =>
+          payload.count({
+            collection: 'inquiryPreparations',
+            req,
+            overrideAccess: true,
+            where: { expiresAt: { less_than_equal: new Date().toISOString() } },
+          }),
+        )
+      const before = (await expiredCount()).totalDocs
+      expect(before).toBeGreaterThan(0)
+      // Only the authenticated scheduler may remove these records. A filtered public read cannot prove deletion.
+      for (let batch = 0; batch < 10 && (await expiredCount()).totalDocs > 0; batch++) {
+        const count = (await expiredCount()).totalDocs
+        const scheduled = await scheduledCleanup(
+          new Request(`${origin}/api/internal/transactional-email/worker`, {
+            headers: { Authorization: 'Bearer synthetic-preparation-cleanup-secret-for-tests-only' },
+          }),
+        )
+        // Hosted mail and recovery are inactive; preparation cleanup must still run.
+        expect(scheduled.status).toBe(503)
+        const removed = count - (await expiredCount()).totalDocs
+        expect(removed).toBeGreaterThan(0)
+        expect(removed).toBeLessThanOrEqual(100)
       }
-      expect(remaining).toBe(false)
+      expect((await expiredCount()).totalDocs).toBe(0)
+      expect(
+        await withPreparationStorage(req, () =>
+          payload.count({
+            collection: 'inquiryPreparations',
+            req,
+            overrideAccess: true,
+            where: { reference: { equals: saved.reference } },
+          }),
+        ),
+      ).toMatchObject({ totalDocs: 0 })
       expect((await payload.count({ collection: 'patientClinicInquiries', overrideAccess: true })).totalDocs).toBe(
         inquiryCount,
       )

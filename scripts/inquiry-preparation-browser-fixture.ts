@@ -18,7 +18,12 @@ try {
       data: { status: 'approved' },
       overrideAccess: true,
     })
-    result = { id: fixture.clinic.id, slug: fixture.clinic.slug, name: fixture.clinic.name }
+    result = {
+      id: fixture.clinic.id,
+      slug: fixture.clinic.slug,
+      name: fixture.clinic.name,
+      doctorId: fixture.doctor.id,
+    }
   } else if (command === 'worker') {
     const worker = createTransactionalEmailWorker(await createLocalReq({}, payload), {
       suppression: async () => 'cleared',

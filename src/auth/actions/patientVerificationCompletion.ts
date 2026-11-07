@@ -97,6 +97,7 @@ export async function patientVerificationAuthority() {
       context: PatientVerificationContext,
       saveConfirmation: (context: PatientVerificationContext) => void,
       savePreparation?: (binding: string) => void,
+      preparationUnavailable?: () => void,
     ) {
       const source = await load(context.actionId, context)
       const expected = source.user
@@ -150,12 +151,17 @@ export async function patientVerificationAuthority() {
       await actions.bindPrincipal({ id: action.id, principal: { relationTo: 'patients', value: patient.id } })
       await actions.transition({ id: action.id, to: 'completed' })
       // Account completion is durable before any inquiry handoff is attempted.
-      const binding = await completeInquiryPreparationAccount(req, {
-        actionId: action.id,
-        subject: user.id,
-        patientId: patient.id,
-      })
-      if (binding) savePreparation?.(binding)
+      try {
+        const binding = await completeInquiryPreparationAccount(req, {
+          actionId: action.id,
+          subject: user.id,
+          patientId: patient.id,
+        })
+        if (binding) savePreparation?.(binding)
+      } catch {
+        // Auth has completed. Retain its confirmed context for a separate inquiry continuation.
+        preparationUnavailable?.()
+      }
       return policy.completionRoute
     },
   }

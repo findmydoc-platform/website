@@ -125,15 +125,25 @@ export async function POST(request: NextRequest) {
       return applyPrivateAuthHeaders(NextResponse.json({ code: 'REQUEST_REJECTED' }, { status: 403 }))
     }
     let preparationBinding: string | undefined
+    let inquiryContinuationPending = false
     const redirectTo = await authority.confirm(
       context,
       (receipt) => setPatientVerificationContext(response, receipt, authority.keys),
       (binding) => {
         preparationBinding = binding
       },
+      () => {
+        inquiryContinuationPending = true
+      },
     )
-    const success = applyPrivateAuthHeaders(NextResponse.json({ redirectTo }))
-    clearPatientVerificationContext(success)
+    const success = applyPrivateAuthHeaders(
+      NextResponse.json({ redirectTo, ...(inquiryContinuationPending ? { inquiryContinuationPending: true } : {}) }),
+    )
+    if (inquiryContinuationPending) {
+      const receipt = response.cookies.get(PATIENT_VERIFICATION_COOKIE)
+      if (receipt) success.cookies.set(receipt)
+      else setPatientVerificationContext(success, context, authority.keys)
+    } else clearPatientVerificationContext(success)
     if (preparationBinding) success.headers.append('Set-Cookie', preparationCookie(preparationBinding))
     return success
   } catch (error) {

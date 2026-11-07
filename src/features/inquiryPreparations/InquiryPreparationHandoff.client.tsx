@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { InquiryPreparationNotices } from '@/components/organisms/InquiryPreparationNotices/Component'
 import type { PreparationReceipt } from './contracts'
 
@@ -19,92 +19,145 @@ async function readPreparations(): Promise<PreparationReceipt[]> {
   return items
 }
 
-async function submit(reference: string, retry: boolean): Promise<PreparationReceipt> {
-  const response = await fetch('/api/patient/inquiry-preparations/submit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reference, retry }),
-  })
-  if (!response.ok)
-    throw new Error('Your account is ready, but this inquiry was not sent. Try again before it expires.')
-  return response.json() as Promise<PreparationReceipt>
+async function reconcile(reference: string): Promise<PreparationReceipt | null> {
+  try {
+    return (await readPreparations()).find((item) => item.reference === reference) ?? null
+  } catch {
+    return null
+  }
 }
 
-/** The account return owns the first POST. GET and subsequent remounts cannot retry an earlier attempt. */
-export function InquiryPreparationHandoff() {
-  const [items, setItems] = useState<PreparationReceipt[]>([])
-  const [loading, setLoading] = useState<string[]>([])
-  const [error, setError] = useState<string>()
+async function submit(reference: string, retry: boolean): Promise<PreparationReceipt | null> {
+  try {
+    const response = await fetch('/api/patient/inquiry-preparations/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reference, retry }),
+    })
+    if (!response.ok) throw new Error('Submission outcome needs reconciliation.')
+    const result = (await response.json()) as PreparationReceipt
+    if (
+      result?.reference !== reference ||
+      !['saved-not-sent', 'sign-in-required', 'try-again', 'submitted'].includes(result.status) ||
+      (result.status === 'submitted' && !result.inquiryId)
+    )
+      throw new Error('Submission outcome needs reconciliation.')
+    return result
+  } catch {
+    // A transport error cannot distinguish a rollback from a committed inquiry with a lost acknowledgement.
+    return reconcile(reference)
+  }
+}
+
+/** The account return owns the first POST. Reads and subsequent remounts never retry an earlier attempt. */
+export function InquiryPreparationHandoff({
+  initialItems,
+  initialError,
+}: {
+  initialItems: PreparationReceipt[]
+  initialError?: string
+}) {
+  const [items, setItems] = useState(initialItems)
+  const [loading, setLoading] = useState<string[]>(() =>
+    initialError
+      ? []
+      : initialItems
+          .filter((item) => item.status === 'saved-not-sent' && !item.firstAttemptAt)
+          .map((item) => item.reference),
+  )
+  const [unknown, setUnknown] = useState<string[]>([])
+  const [error, setError] = useState(initialError)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const applyResult = useCallback((reference: string, result: PreparationReceipt | null) => {
+    setUnknown((current) =>
+      result
+        ? current.filter((item) => item !== reference)
+        : [...current.filter((item) => item !== reference), reference],
+    )
+    if (!result) return
+    setItems((current) =>
+      current.map((entry) =>
+        entry.reference === reference
+          ? {
+              ...entry,
+              ...result,
+              clinicName: result.clinicName || entry.clinicName,
+            }
+          : entry,
+      ),
+    )
+    if (result.status === 'submitted') window.dispatchEvent(new Event('patient-inquiries-updated'))
+  }, [])
+  const send = useCallback(
+    async (reference: string, retry: boolean) => {
+      setErrors((current) => ({ ...current, [reference]: '' }))
+      setLoading((current) => [...current, reference])
+      const result = await submit(reference, retry)
+      applyResult(reference, result)
+      if (retry && result && result.status !== 'submitted')
+        setErrors((current) => ({
+          ...current,
+          [reference]: 'Your account is ready, but the inquiry was not sent. Try again before it expires.',
+        }))
+      setLoading((current) => current.filter((item) => item !== reference))
+    },
+    [applyResult],
+  )
   useEffect(() => {
+    if (initialError) return
     let disposed = false
     void readPreparations()
       .then(async (prepared) => {
         if (disposed) return
-        setItems(prepared.filter((item) => item.status !== 'submitted'))
+        // Keep this handoff's completed slots, without resurfacing old receipts on a later visit.
+        const visible = prepared.filter(
+          (item) => item.status !== 'submitted' || initialItems.some((initial) => initial.reference === item.reference),
+        )
         setLoading(
-          prepared
+          visible
             .filter((item) => item.status === 'saved-not-sent' && !item.firstAttemptAt)
             .map((item) => item.reference),
         )
-        for (const item of prepared) {
+        setItems(
+          visible.map((item) => ({
+            ...item,
+            clinicName:
+              item.clinicName || initialItems.find((initial) => initial.reference === item.reference)?.clinicName,
+          })),
+        )
+        for (const item of visible) {
           if (disposed) return
-          if (item.status === 'submitted' || item.status === 'sign-in-required') continue
-          let result = item
-          if (!item.firstAttemptAt) {
-            try {
-              result = await submit(item.reference, false)
-            } catch {
-              result = { ...item, status: 'try-again' }
-            }
-          }
-          if (!disposed) {
-            setItems((current) =>
-              current.flatMap((entry) =>
-                entry.reference !== item.reference ? [entry] : result.status === 'submitted' ? [] : [result],
-              ),
-            )
-            setLoading((current) => current.filter((reference) => reference !== item.reference))
-            if (result.status === 'submitted') window.dispatchEvent(new Event('patient-inquiries-updated'))
-          }
+          if (item.status === 'saved-not-sent' && !item.firstAttemptAt) await send(item.reference, false)
         }
       })
-      .catch((error: unknown) => {
-        if (!disposed) setError(error instanceof Error ? error.message : 'Prepared inquiries could not be loaded.')
+      .catch((failure: unknown) => {
+        if (!disposed) {
+          setError(failure instanceof Error ? failure.message : 'Prepared inquiries could not be loaded.')
+          setLoading([])
+        }
       })
     return () => {
       disposed = true
     }
-  }, [])
+  }, [initialItems, initialError, send])
 
-  const retry = async (reference: string) => {
-    setErrors((current) => ({ ...current, [reference]: '' }))
+  async function checkStatus(reference: string) {
     setLoading((current) => [...current, reference])
-    try {
-      const result = await submit(reference, true)
-      setItems((current) =>
-        current.flatMap((item) =>
-          item.reference !== reference ? [item] : result.status === 'submitted' ? [] : [result],
-        ),
-      )
-      window.dispatchEvent(new Event('patient-inquiries-updated'))
-    } catch {
-      setErrors((current) => ({
-        ...current,
-        [reference]: 'Your account is ready, but the inquiry was not sent. Try again before it expires.',
-      }))
-    } finally {
-      setLoading((current) => current.filter((item) => item !== reference))
-    }
+    applyResult(reference, await reconcile(reference))
+    setLoading((current) => current.filter((item) => item !== reference))
   }
   return (
     <InquiryPreparationNotices
       items={items}
       loading={loading}
+      unknown={unknown}
       error={error}
       errors={errors}
       onRetry={(reference) => {
-        void retry(reference)
+        void send(reference, true)
+      }}
+      onCheckStatus={(reference) => {
+        void checkStatus(reference)
       }}
     />
   )

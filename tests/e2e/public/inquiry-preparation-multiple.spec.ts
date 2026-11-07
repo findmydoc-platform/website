@@ -3,7 +3,7 @@ import { setCookieConsent } from '../helpers/cookieConsent'
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
 import { registerInquiryPreparationRuntime } from '../helpers/inquiryPreparationRuntime'
 import { resolvePlaywrightBaseURL } from '../../../scripts/test-env.mjs'
-type Clinic = { id: number; slug: string; name: string }
+type Clinic = { id: number; slug: string; name: string; doctorId: number | string }
 
 const origin = resolvePlaywrightBaseURL()
 const artifacts = 'output/playwright/inquiry-preparation-multiple'
@@ -84,7 +84,8 @@ test('keeps multiple clinic outcomes separate and retries only the selected fail
     await fixtureCommand('approved', clinicB.id)
     await noticeB.getByRole('button', { name: 'Try again', exact: true }).focus()
     await other.keyboard.press('Enter')
-    await expect(noticeB).toHaveCount(0)
+    await expect(noticeB).toContainText(`Your inquiry to ${clinicB.name} has been sent.`)
+    await expect(noticeB.getByRole('button')).toHaveCount(0)
     await expect(noticeC.getByRole('button', { name: 'Try again', exact: true })).toBeVisible()
     await expect(other.getByText(clinicB.name, { exact: true }).first()).toBeVisible()
     await other.reload()

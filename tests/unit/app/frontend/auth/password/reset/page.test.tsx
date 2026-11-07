@@ -1,7 +1,8 @@
 import React from 'react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ResetPasswordRequestForm } from '@/app/(frontend)/auth/password/reset/ResetPasswordRequestForm'
+vi.mock('next/headers', () => ({ headers: async () => new Headers() }))
 ;(globalThis as unknown as { React: typeof React }).React = React
 
 type ResetPasswordRequestFormElement = React.ReactElement<{

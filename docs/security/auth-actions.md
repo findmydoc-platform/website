@@ -61,6 +61,13 @@ until a confirmed outcome or the original expiry, without a timeout-based retry 
 completion evidence remain unknown. After a lost response, an earlier settled receipt cannot settle a newer
 POST: its correlation UUID must match, or an existing successful submission must be confirmed. The technical
 attempt correlation is distinct from the stable server-generated inquiry submission key and grants no authority.
+Before a browser POST, the handoff retains only its preparation reference, correlation UUID and original expiry
+in namespaced tab session storage. Reloads reconcile that marker before allowing any first attempt or manual retry.
+Server HTML and hydration initially keep unresolved cards conservative, so an older settled receipt cannot briefly
+expose a retry. A failed storage write prevents the POST. Terminal receipts remove their marker, and reads prune
+expired markers without extending the server deadline. Clearing tab storage or moving to a different tab/device
+cannot prove a browser request that has not reached server admission; the server's attempt facts become the
+shared authority only after admission commits.
 An individual Try again action uses the original server-generated request
 key and reconciles a prior committed result. Account completion is independent of inquiry submission failure.
 

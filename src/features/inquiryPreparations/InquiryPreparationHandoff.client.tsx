@@ -4,6 +4,55 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { InquiryPreparationNotices } from '@/components/organisms/InquiryPreparationNotices/Component'
 import type { PreparationReceipt } from './contracts'
 
+const ATTEMPT_STORAGE_PREFIX = 'patient-inquiries:submission-attempt:'
+
+function readPendingAttempts(): Record<string, string> {
+  const attempts: Record<string, string> = {}
+  for (let index = window.sessionStorage.length - 1; index >= 0; index--) {
+    const key = window.sessionStorage.key(index)
+    if (!key?.startsWith(ATTEMPT_STORAGE_PREFIX)) continue
+    const raw = window.sessionStorage.getItem(key)
+    let stored: { attemptKey?: unknown; expiresAt?: unknown } | null = null
+    try {
+      stored = JSON.parse(raw || 'null') as {
+        attemptKey?: unknown
+        expiresAt?: unknown
+      } | null
+    } catch {
+      // An invalid presentation marker cannot authorize a request.
+    }
+    if (
+      typeof stored?.attemptKey === 'string' &&
+      typeof stored.expiresAt === 'string' &&
+      Date.parse(stored.expiresAt) > Date.now()
+    ) {
+      attempts[key.slice(ATTEMPT_STORAGE_PREFIX.length)] = stored.attemptKey
+    } else {
+      window.sessionStorage.removeItem(key)
+    }
+  }
+  return attempts
+}
+
+function rememberAttempt(reference: string, attemptKey: string, expiresAt: string) {
+  window.sessionStorage.setItem(ATTEMPT_STORAGE_PREFIX + reference, JSON.stringify({ attemptKey, expiresAt }))
+}
+
+function forgetAttempt(reference: string) {
+  try {
+    window.sessionStorage.removeItem(ATTEMPT_STORAGE_PREFIX + reference)
+  } catch {
+    // A retained marker can only require another authoritative status read.
+  }
+}
+
+function settlesAttempt(result: PreparationReceipt, attemptKey?: string) {
+  return (
+    result.status === 'submitted' ||
+    (result.status === 'try-again' && (!attemptKey || result.attemptKey === attemptKey))
+  )
+}
+
 async function readPreparations(): Promise<PreparationReceipt[]> {
   const items: PreparationReceipt[] = []
   let cursor: number | null = null
@@ -22,11 +71,7 @@ async function readPreparations(): Promise<PreparationReceipt[]> {
 async function reconcile(reference: string, attemptKey?: string): Promise<PreparationReceipt | null> {
   try {
     const result = (await readPreparations()).find((item) => item.reference === reference)
-    return result &&
-      (result.status === 'submitted' ||
-        (result.status === 'try-again' && (!attemptKey || result.attemptKey === attemptKey)))
-      ? result
-      : null
+    return result && settlesAttempt(result, attemptKey) ? result : null
   } catch {
     return null
   }
@@ -58,21 +103,14 @@ export function InquiryPreparationHandoff({
   initialError?: string
 }) {
   const [items, setItems] = useState(initialItems)
-  const [loading, setLoading] = useState<string[]>(() =>
-    initialError
-      ? []
-      : initialItems
-          .filter((item) => item.status === 'saved-not-sent' && !item.firstAttemptAt)
-          .map((item) => item.reference),
-  )
-  const pendingAttempts = useRef<Record<string, string>>(
-    Object.fromEntries(
-      initialItems
-        .filter((item) => item.status === 'outcome-unknown' && item.attemptKey)
-        .map((item) => [item.reference, item.attemptKey!]),
-    ),
-  )
-  const [unknown, setUnknown] = useState<string[]>([])
+  // SSR and hydration stay conservative until the tab's earlier POST markers have been read.
+  const initialUnresolved = initialItems
+    .filter((item) => !['submitted', 'sign-in-required'].includes(item.status))
+    .map((item) => item.reference)
+  const [loading, setLoading] = useState<string[]>(initialError ? [] : initialUnresolved)
+  const pendingAttempts = useRef<Record<string, string>>({})
+  const storageReady = useRef(false)
+  const [unknown, setUnknown] = useState<string[]>(initialUnresolved)
   const [error, setError] = useState(initialError)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const applyResult = useCallback((reference: string, result: PreparationReceipt | null) => {
@@ -82,6 +120,10 @@ export function InquiryPreparationHandoff({
         : [...current.filter((item) => item !== reference), reference],
     )
     if (!result) return
+    if (result.status !== 'outcome-unknown') {
+      delete pendingAttempts.current[reference]
+      forgetAttempt(reference)
+    }
     setItems((current) =>
       current.map((entry) =>
         entry.reference === reference
@@ -96,16 +138,27 @@ export function InquiryPreparationHandoff({
     if (result.status === 'submitted') window.dispatchEvent(new Event('patient-inquiries-updated'))
   }, [])
   const send = useCallback(
-    async (reference: string, retry: boolean) => {
+    async (reference: string, retry: boolean, expiresAt: string) => {
       setErrors((current) => ({ ...current, [reference]: '' }))
       setLoading((current) => [...current, reference])
       const attemptKey = crypto.randomUUID()
+      try {
+        // Retain correlation before any request can escape this tab, including pre-admission failures.
+        rememberAttempt(reference, attemptKey, expiresAt)
+      } catch {
+        applyResult(reference, null)
+        setError('Your browser could not retain the submission status. Allow session storage before trying again.')
+        setLoading((current) => current.filter((item) => item !== reference))
+        return
+      }
       pendingAttempts.current[reference] = attemptKey
       let result: PreparationReceipt | null
       try {
         result = await submit(reference, retry, attemptKey)
-        if (result.status === 'outcome-unknown' && result.attemptKey)
+        if (result.status === 'outcome-unknown' && result.attemptKey) {
           pendingAttempts.current[reference] = result.attemptKey
+          rememberAttempt(reference, result.attemptKey, expiresAt)
+        }
       } catch {
         applyResult(reference, null)
         result = await reconcile(reference, attemptKey)
@@ -123,13 +176,32 @@ export function InquiryPreparationHandoff({
   useEffect(() => {
     if (initialError) return
     let disposed = false
+    try {
+      pendingAttempts.current = readPendingAttempts()
+      storageReady.current = true
+    } catch {
+      setError('Your browser could not retain the submission status. Allow session storage before trying again.')
+      setLoading([])
+      return
+    }
     void readPreparations()
       .then(async (prepared) => {
         if (disposed) return
         // Keep this handoff's completed slots, without resurfacing old receipts on a later visit.
-        const visible = prepared.filter(
+        const reconciled = prepared.map((item) => {
+          const attemptKey = pendingAttempts.current[item.reference]
+          if (settlesAttempt(item, attemptKey)) {
+            delete pendingAttempts.current[item.reference]
+            forgetAttempt(item.reference)
+          } else if (attemptKey) {
+            return { ...item, status: 'outcome-unknown' as const }
+          }
+          return item
+        })
+        const visible = reconciled.filter(
           (item) => item.status !== 'submitted' || initialItems.some((initial) => initial.reference === item.reference),
         )
+        setUnknown(visible.filter((item) => item.status === 'outcome-unknown').map((item) => item.reference))
         setLoading(
           visible
             .filter((item) => item.status === 'saved-not-sent' && !item.firstAttemptAt)
@@ -144,7 +216,8 @@ export function InquiryPreparationHandoff({
         )
         for (const item of visible) {
           if (disposed) return
-          if (item.status === 'saved-not-sent' && !item.firstAttemptAt) await send(item.reference, false)
+          if (item.status === 'saved-not-sent' && !item.firstAttemptAt)
+            await send(item.reference, false, item.expiresAt)
         }
       })
       .catch((failure: unknown) => {
@@ -160,6 +233,16 @@ export function InquiryPreparationHandoff({
 
   async function checkStatus(reference: string) {
     setLoading((current) => [...current, reference])
+    if (!storageReady.current) {
+      try {
+        pendingAttempts.current = readPendingAttempts()
+        storageReady.current = true
+        setError(undefined)
+      } catch {
+        setLoading((current) => current.filter((item) => item !== reference))
+        return
+      }
+    }
     applyResult(reference, await reconcile(reference, pendingAttempts.current[reference]))
     setLoading((current) => current.filter((item) => item !== reference))
   }
@@ -171,7 +254,8 @@ export function InquiryPreparationHandoff({
       error={error}
       errors={errors}
       onRetry={(reference) => {
-        void send(reference, true)
+        const item = items.find((entry) => entry.reference === reference)
+        if (item) void send(reference, true, item.expiresAt)
       }}
       onCheckStatus={(reference) => {
         void checkStatus(reference)

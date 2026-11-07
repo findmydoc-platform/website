@@ -36,6 +36,7 @@ export function InquiryPreparationNotices({
         const completed = item.status === 'submitted'
         const unresolved = item.status === 'outcome-unknown' || unknown.includes(item.reference)
         const busy = loading.includes(item.reference)
+        const unknownMessage = `The submission result is not yet known for your inquiry to ${item.clinicName || 'the clinic'}. Check its stored status before trying to send again.`
         return (
           <Alert
             key={item.reference}
@@ -50,18 +51,23 @@ export function InquiryPreparationNotices({
               aria-hidden={completed || undefined}
               inert={completed || undefined}
             >
-              <p>
-                {unresolved ? (
-                  `The submission result is not yet known for your inquiry to ${item.clinicName || 'the clinic'}. Check its stored status before trying to send again.`
-                ) : (
-                  <>
-                    Your inquiry to {item.clinicName || 'the clinic'} is saved but not sent.{' '}
-                    {item.status === 'sign-in-required'
-                      ? 'Sign in with your password to continue.'
-                      : 'Your patient account is ready.'}
-                  </>
-                )}
-              </p>
+              <div className="grid">
+                <p className="col-start-1 row-start-1">
+                  {unresolved ? (
+                    unknownMessage
+                  ) : (
+                    <>
+                      Your inquiry to {item.clinicName || 'the clinic'} is saved but not sent.{' '}
+                      {item.status === 'sign-in-required'
+                        ? 'Sign in with your password to continue.'
+                        : 'Your patient account is ready.'}
+                    </>
+                  )}
+                </p>
+                <p className="invisible col-start-1 row-start-1" aria-hidden="true">
+                  {unknownMessage}
+                </p>
+              </div>
               {errors?.[item.reference] && !unresolved ? <p role="alert">{errors[item.reference]}</p> : null}
               <p>
                 Expires on {new Date(item.expiresAt).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC. Its seven-day

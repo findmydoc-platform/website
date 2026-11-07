@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import React from 'react'
+import { locks } from 'node:worker_threads'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -43,6 +44,7 @@ beforeEach(() => {
   )
   vi.spyOn(XMLHttpRequest.prototype, 'send').mockImplementation(() => {})
   Object.defineProperty(navigator, 'sendBeacon', { configurable: true, value: vi.fn(() => true) })
+  Object.defineProperty(navigator, 'locks', { configurable: true, value: locks })
 })
 
 afterEach(() => {
@@ -51,6 +53,7 @@ afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   Reflect.deleteProperty(document, 'cookie')
+  Reflect.deleteProperty(navigator, 'locks')
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
   vi.doUnmock('posthog-js')

@@ -20,6 +20,8 @@ export const InquiryPreparations: CollectionConfig = {
     { name: 'authorizedAt', type: 'date', required: true },
     { name: 'expiresAt', type: 'date', required: true, index: true },
     { name: 'firstAttemptAt', type: 'date' },
+    { name: 'lastAttemptKey', type: 'text' },
+    { name: 'lastAttemptSettledAt', type: 'date' },
     { name: 'passwordEstablishedAt', type: 'date' },
     { name: 'subject', type: 'text', index: true },
     { name: 'patient', type: 'relationship', relationTo: 'patients', maxDepth: 0 },

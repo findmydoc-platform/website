@@ -35,6 +35,7 @@ export function registerInquiryPreparationRuntime({
   let next: ChildProcess
   const clinics: Array<{ id: number; slug: string; name: string; doctorId: number | string }> = []
   let userToken = ''
+  let identityPause: { entered: () => void; released: Promise<void> } | undefined
   const tokenHash = 'b'.repeat(56)
   const sanitizedLog = () =>
     new Transform({
@@ -170,6 +171,12 @@ export function registerInquiryPreparationRuntime({
             user,
           }
         } else if (request.method === 'GET' && url.pathname === '/auth/v1/user') {
+          const pause = identityPause
+          identityPause = undefined
+          if (pause) {
+            pause.entered()
+            await pause.released
+          }
           result = [...users.values()].find(
             (item) =>
               request.headers.authorization === `Bearer ${tokenFor(item)}` ||
@@ -221,6 +228,18 @@ export function registerInquiryPreparationRuntime({
     fixtureCommand,
     confirmationLinks,
     providerRequests,
+    pauseNextIdentityRead() {
+      let entered!: () => void
+      let release!: () => void
+      const reached = new Promise<void>((resolve) => {
+        entered = resolve
+      })
+      const released = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      identityPause = { entered, released }
+      return { reached, release }
+    },
     resetIdentities() {
       users.clear()
       userToken = ''

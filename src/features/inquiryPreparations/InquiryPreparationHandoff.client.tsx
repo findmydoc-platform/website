@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { InquiryPreparationNotices } from '@/components/organisms/InquiryPreparationNotices/Component'
 import type { PreparationReceipt } from './contracts'
 
@@ -19,34 +19,34 @@ async function readPreparations(): Promise<PreparationReceipt[]> {
   return items
 }
 
-async function reconcile(reference: string): Promise<PreparationReceipt | null> {
+async function reconcile(reference: string, attemptKey?: string): Promise<PreparationReceipt | null> {
   try {
-    return (await readPreparations()).find((item) => item.reference === reference) ?? null
+    const result = (await readPreparations()).find((item) => item.reference === reference)
+    return result &&
+      (result.status === 'submitted' ||
+        (result.status === 'try-again' && (!attemptKey || result.attemptKey === attemptKey)))
+      ? result
+      : null
   } catch {
     return null
   }
 }
 
-async function submit(reference: string, retry: boolean): Promise<PreparationReceipt | null> {
-  try {
-    const response = await fetch('/api/patient/inquiry-preparations/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reference, retry }),
-    })
-    if (!response.ok) throw new Error('Submission outcome needs reconciliation.')
-    const result = (await response.json()) as PreparationReceipt
-    if (
-      result?.reference !== reference ||
-      !['saved-not-sent', 'sign-in-required', 'try-again', 'submitted'].includes(result.status) ||
-      (result.status === 'submitted' && !result.inquiryId)
-    )
-      throw new Error('Submission outcome needs reconciliation.')
-    return result
-  } catch {
-    // A transport error cannot distinguish a rollback from a committed inquiry with a lost acknowledgement.
-    return reconcile(reference)
-  }
+async function submit(reference: string, retry: boolean, attemptKey: string): Promise<PreparationReceipt> {
+  const response = await fetch('/api/patient/inquiry-preparations/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reference, retry, attemptKey }),
+  })
+  if (!response.ok) throw new Error('Submission outcome needs reconciliation.')
+  const result = (await response.json()) as PreparationReceipt
+  if (
+    result?.reference !== reference ||
+    !['saved-not-sent', 'sign-in-required', 'try-again', 'outcome-unknown', 'submitted'].includes(result.status) ||
+    (result.status === 'submitted' && !result.inquiryId)
+  )
+    throw new Error('Submission outcome needs reconciliation.')
+  return result
 }
 
 /** The account return owns the first POST. Reads and subsequent remounts never retry an earlier attempt. */
@@ -65,12 +65,19 @@ export function InquiryPreparationHandoff({
           .filter((item) => item.status === 'saved-not-sent' && !item.firstAttemptAt)
           .map((item) => item.reference),
   )
+  const pendingAttempts = useRef<Record<string, string>>(
+    Object.fromEntries(
+      initialItems
+        .filter((item) => item.status === 'outcome-unknown' && item.attemptKey)
+        .map((item) => [item.reference, item.attemptKey!]),
+    ),
+  )
   const [unknown, setUnknown] = useState<string[]>([])
   const [error, setError] = useState(initialError)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const applyResult = useCallback((reference: string, result: PreparationReceipt | null) => {
     setUnknown((current) =>
-      result
+      result && result.status !== 'outcome-unknown'
         ? current.filter((item) => item !== reference)
         : [...current.filter((item) => item !== reference), reference],
     )
@@ -92,9 +99,19 @@ export function InquiryPreparationHandoff({
     async (reference: string, retry: boolean) => {
       setErrors((current) => ({ ...current, [reference]: '' }))
       setLoading((current) => [...current, reference])
-      const result = await submit(reference, retry)
+      const attemptKey = crypto.randomUUID()
+      pendingAttempts.current[reference] = attemptKey
+      let result: PreparationReceipt | null
+      try {
+        result = await submit(reference, retry, attemptKey)
+        if (result.status === 'outcome-unknown' && result.attemptKey)
+          pendingAttempts.current[reference] = result.attemptKey
+      } catch {
+        applyResult(reference, null)
+        result = await reconcile(reference, attemptKey)
+      }
       applyResult(reference, result)
-      if (retry && result && result.status !== 'submitted')
+      if (retry && result?.status === 'try-again')
         setErrors((current) => ({
           ...current,
           [reference]: 'Your account is ready, but the inquiry was not sent. Try again before it expires.',
@@ -143,7 +160,7 @@ export function InquiryPreparationHandoff({
 
   async function checkStatus(reference: string) {
     setLoading((current) => [...current, reference])
-    applyResult(reference, await reconcile(reference))
+    applyResult(reference, await reconcile(reference, pendingAttempts.current[reference]))
     setLoading((current) => current.filter((item) => item !== reference))
   }
   return (

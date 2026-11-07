@@ -52,7 +52,16 @@ AuthAction, it restores the protected preparation context on the confirming devi
 adapter reads without side effects, then issues the first same-origin submission POST. The command rechecks
 current verified patient access and uses the existing inquiry creation core, transaction and command locks.
 It records `firstAttemptAt` in a separate committed transaction before attempting creation. Refreshes cannot
-automatically retry a failed attempt. An individual Try again action uses the original server-generated request
+automatically retry a failed attempt. Admission also records the validated per-POST correlation UUID as `lastAttemptKey` and clears
+`lastAttemptSettledAt`. Until the matching attempt has an affirmative completion fact, reads return an unknown
+outcome and neither the UI nor another POST can retry it. Creation rechecks the current key under the existing
+command lock. Success settles atomically with its receipt; after a failed transaction, the owner can settle only
+after a fresh serialized read of that same attempt. Interrupted processes without settlement evidence stay unknown
+until a confirmed outcome or the original expiry, without a timeout-based retry grant. Legacy attempts without
+completion evidence remain unknown. After a lost response, an earlier settled receipt cannot settle a newer
+POST: its correlation UUID must match, or an existing successful submission must be confirmed. The technical
+attempt correlation is distinct from the stable server-generated inquiry submission key and grants no authority.
+An individual Try again action uses the original server-generated request
 key and reconciles a prior committed result. Account completion is independent of inquiry submission failure.
 
 Successful submission removes duplicate prepared content in the inquiry transaction and retains only a protected

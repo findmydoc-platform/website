@@ -34,7 +34,7 @@ export function InquiryPreparationNotices({
       ) : null}
       {items.map((item) => {
         const completed = item.status === 'submitted'
-        const unresolved = unknown.includes(item.reference)
+        const unresolved = item.status === 'outcome-unknown' || unknown.includes(item.reference)
         const busy = loading.includes(item.reference)
         return (
           <Alert

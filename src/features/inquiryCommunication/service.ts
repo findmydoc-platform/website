@@ -3388,11 +3388,14 @@ const preparationReceipt = async (req: PayloadRequest, record: StoredRecord): Pr
       : record.patient && !record.passwordEstablishedAt
         ? 'sign-in-required'
         : record.firstAttemptAt
-          ? 'try-again'
+          ? record.lastAttemptKey && record.lastAttemptSettledAt
+            ? 'try-again'
+            : 'outcome-unknown'
           : 'saved-not-sent',
     ...(submitted ? { inquiryId: String(submitted) } : {}),
     ...(clinic ? { clinicName: text(clinic.name) } : {}),
     ...(record.firstAttemptAt ? { firstAttemptAt: text(record.firstAttemptAt) } : {}),
+    ...(record.lastAttemptKey ? { attemptKey: text(record.lastAttemptKey) } : {}),
   }
 }
 
@@ -3710,7 +3713,7 @@ const authorizedPreparation = async (req: PayloadRequest, binding: string, refer
 export async function submitInquiryPreparation(
   req: PayloadRequest,
   binding: string,
-  input: { reference: string; retry: boolean },
+  input: { reference: string; retry: boolean; attemptKey?: string },
 ): Promise<PreparationReceipt> {
   patientId(req)
   // Current provider eligibility is checked before entering retryable database work.
@@ -3747,14 +3750,23 @@ export async function submitInquiryPreparation(
             } as never)
             return null
           }
-          if (record.submittedInquiry || (record.firstAttemptAt && !input.retry)) return { record, submit: false }
+          if (
+            record.submittedInquiry ||
+            (input.attemptKey && record.lastAttemptKey === input.attemptKey) ||
+            (record.firstAttemptAt && (!input.retry || !record.lastAttemptKey || !record.lastAttemptSettledAt))
+          )
+            return { record, submit: false }
           const updated = asRecord(
             await req.payload.update({
               collection: 'inquiryPreparations',
               id: record.id as number,
               overrideAccess: true,
               req,
-              data: { firstAttemptAt: record.firstAttemptAt || new Date().toISOString() },
+              data: {
+                firstAttemptAt: record.firstAttemptAt || new Date().toISOString(),
+                lastAttemptKey: input.attemptKey ?? randomUUID(),
+                lastAttemptSettledAt: null,
+              },
             } as never),
           )
           return { record: updated, submit: true }
@@ -3766,59 +3778,96 @@ export async function submitInquiryPreparation(
     )
     if (!admission) throw new InquiryCommunicationServiceError('not-found', 'The preparation has expired.')
     if (!admission.submit) return preparationReceipt(req, admission.record)
-    return runRetryableCommand(
-      req,
-      async () => {
-        const release = await acquireInquiryCommandLock(req, `preparation:${input.reference}`)
-        const result = await (async () => {
-          const record = await authorizedPreparation(req, binding, input.reference)
-          if (record.submittedInquiry) return preparationReceipt(req, record)
-          if (Date.parse(text(record.expiresAt)) <= Date.now())
-            throw new InquiryCommunicationServiceError('not-found', 'The preparation has expired.')
-          const inquiry = await createPatientInquiryInCommand(
-            req,
-            {
-              clinicId: String(relationId(record.clinic)),
-              doctorId: relationId(record.doctor) ? String(relationId(record.doctor)) : undefined,
-              treatmentId: relationId(record.treatment) ? String(relationId(record.treatment)) : undefined,
-              idempotencyKey: text(record.submissionKey),
-              consent: true,
-              message: text(record.message),
-              phoneNumber: text(record.phoneNumber),
-              preferredContactWindow: text(record.preferredContactWindow) || undefined,
-              treatmentTimeline: text(record.treatmentTimeline) || undefined,
-            },
-            { acceptedAt: text(record.authorizedAt), text: text(record.consentText) },
-          )
-          const receipt = asRecord(
-            await req.payload.update({
-              collection: 'inquiryPreparations',
-              id: record.id as number,
-              overrideAccess: true,
+    try {
+      return await runRetryableCommand(
+        req,
+        async () => {
+          const release = await acquireInquiryCommandLock(req, `preparation:${input.reference}`)
+          const result = await (async () => {
+            const record = await authorizedPreparation(req, binding, input.reference)
+            if (
+              record.submittedInquiry ||
+              record.lastAttemptKey !== admission.record.lastAttemptKey ||
+              record.lastAttemptSettledAt
+            )
+              return preparationReceipt(req, record)
+            if (Date.parse(text(record.expiresAt)) <= Date.now())
+              throw new InquiryCommunicationServiceError('not-found', 'The preparation has expired.')
+            const inquiry = await createPatientInquiryInCommand(
               req,
-              data: {
-                submittedInquiry: inquiry.id,
-                clinic: null,
-                doctor: null,
-                treatment: null,
-                firstName: null,
-                lastName: null,
-                email: null,
-                phoneNumber: null,
-                message: null,
-                preferredContactWindow: null,
-                treatmentTimeline: null,
-                consentText: null,
+              {
+                clinicId: String(relationId(record.clinic)),
+                doctorId: relationId(record.doctor) ? String(relationId(record.doctor)) : undefined,
+                treatmentId: relationId(record.treatment) ? String(relationId(record.treatment)) : undefined,
+                idempotencyKey: text(record.submissionKey),
+                consent: true,
+                message: text(record.message),
+                phoneNumber: text(record.phoneNumber),
+                preferredContactWindow: text(record.preferredContactWindow) || undefined,
+                treatmentTimeline: text(record.treatmentTimeline) || undefined,
               },
-            } as never),
-          )
-          return preparationReceipt(req, receipt)
-        })()
-        await release()
-        return result
-      },
-      true,
-    )
+              { acceptedAt: text(record.authorizedAt), text: text(record.consentText) },
+            )
+            const receipt = asRecord(
+              await req.payload.update({
+                collection: 'inquiryPreparations',
+                id: record.id as number,
+                overrideAccess: true,
+                req,
+                data: {
+                  submittedInquiry: inquiry.id,
+                  lastAttemptSettledAt: new Date().toISOString(),
+                  clinic: null,
+                  doctor: null,
+                  treatment: null,
+                  firstName: null,
+                  lastName: null,
+                  email: null,
+                  phoneNumber: null,
+                  message: null,
+                  preferredContactWindow: null,
+                  treatmentTimeline: null,
+                  consentText: null,
+                },
+              } as never),
+            )
+            return preparationReceipt(req, receipt)
+          })()
+          await release()
+          return result
+        },
+        true,
+      )
+    } catch (error) {
+      // The exception alone is not settlement evidence. Re-read after acquiring the same command lock.
+      try {
+        await runRetryableCommand(
+          req,
+          async () => {
+            const release = await acquireInquiryCommandLock(req, `preparation:${input.reference}`)
+            const current = await authorizedPreparation(req, binding, input.reference)
+            if (
+              !current.submittedInquiry &&
+              current.lastAttemptKey === admission.record.lastAttemptKey &&
+              !current.lastAttemptSettledAt
+            ) {
+              await req.payload.update({
+                collection: 'inquiryPreparations',
+                overrideAccess: true,
+                req,
+                id: current.id as number,
+                data: { lastAttemptSettledAt: new Date().toISOString() },
+              } as never)
+            }
+            await release()
+          },
+          true,
+        )
+      } catch {
+        // A lost or unavailable settlement remains unknown; neither time nor a caught exception grants retry.
+      }
+      throw error
+    }
   })
 }
 

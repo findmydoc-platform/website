@@ -86,7 +86,18 @@ export const IndependentFailures: Story = {
 }
 
 export const UnknownOutcome: Story = {
-  args: { unknown: ['synthetic-preparation'], onCheckStatus: fn() },
+  args: {
+    items: [
+      {
+        reference: 'synthetic-preparation',
+        authorizedAt: '2026-11-07T12:00:00.000Z',
+        expiresAt: '2026-11-14T12:00:00.000Z',
+        status: 'outcome-unknown',
+        clinicName: 'Synthetic clinic',
+      },
+    ],
+    onCheckStatus: fn(),
+  },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('status')).toHaveTextContent('submission result is not yet known')

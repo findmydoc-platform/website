@@ -70,7 +70,11 @@ export const preparationSubmitHandler: PayloadHandler = async (req) => {
   const binding = readPreparationBinding(req.headers)
   if (!binding) return new Response(null, { status: 403, headers })
   const parsed = z
-    .object({ reference: z.string().uuid(), retry: z.boolean().default(false) })
+    .object({
+      reference: z.string().uuid(),
+      retry: z.boolean().default(false),
+      attemptKey: z.string().uuid().optional(),
+    })
     .strict()
     .safeParse(await req.json!().catch(() => null))
   if (!parsed.success) return new Response(null, { status: 400, headers })

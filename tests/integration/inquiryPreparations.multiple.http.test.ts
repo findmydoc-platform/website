@@ -1,3 +1,6 @@
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { InquiryPreparationNotices } from '@/components/organisms/InquiryPreparationNotices/Component'
 import { activateClinicNotificationsForTest } from '@/features/clinicNotifications/service'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
@@ -198,6 +201,157 @@ describe('multiple individually authorized inquiry HTTP journey', () => {
     } while (cursor)
     return items
   }
+
+  it('keeps a committed admission with a lost response unknown until the original POST settles', async () => {
+    provider.session = false
+    const email = 'unsettled-admission@example.test'
+    const saved = await prepare('unsettled-admission', email)
+    await registerPatient(email, saved.cookie)
+    const cookie = await activate()
+    let admissionTransaction: number | string | undefined
+    let announceAdmission!: () => void
+    let releaseAdmission!: () => void
+    const admitted = new Promise<void>((resolve) => {
+      announceAdmission = resolve
+    })
+    const released = new Promise<void>((resolve) => {
+      releaseAdmission = resolve
+    })
+    const hooks = payload.collections.inquiryPreparations.config.hooks
+    const previousHooks = hooks.beforeChange
+    hooks.beforeChange = [
+      ...(previousHooks ?? []),
+      async ({ data, req }) => {
+        if (data.firstAttemptAt && !admissionTransaction) admissionTransaction = await req.transactionID
+      },
+    ]
+    const commit = payload.db.commitTransaction.bind(payload.db)
+    payload.db.commitTransaction = async (transaction) => {
+      await commit(transaction)
+      if (transaction === admissionTransaction) {
+        announceAdmission()
+        await released
+      }
+    }
+    // The request owner is still running after its admission actually committed. Its caller loses the response.
+    const original = request(
+      '/api/patient/inquiry-preparations/submit',
+      { reference: saved.receipt.reference },
+      cookie,
+      'synthetic-patient',
+    )
+    try {
+      await admitted
+      const receipt = (await readAll(cookie)).find((item) => item.reference === saved.receipt.reference)!
+      expect(receipt).toMatchObject({ status: 'outcome-unknown', firstAttemptAt: expect.any(String) })
+      const markup = renderToStaticMarkup(
+        createElement(InquiryPreparationNotices, { items: [receipt], loading: [], onRetry: () => {} }),
+      )
+      expect(markup).toContain('submission result is not yet known')
+      expect(markup).not.toContain('saved but not sent')
+      expect(markup).not.toContain('was not sent')
+      expect(markup).not.toContain('Try again')
+      const retry = await request(
+        '/api/patient/inquiry-preparations/submit',
+        { reference: saved.receipt.reference, retry: true },
+        cookie,
+        'synthetic-patient',
+      )
+      expect(await retry.json()).toMatchObject({ status: 'outcome-unknown' })
+      expect(
+        (
+          await payload.count({
+            collection: 'patientClinicInquiries',
+            where: { clinic: { equals: clinicId } },
+            overrideAccess: true,
+          })
+        ).totalDocs,
+      ).toBe(0)
+    } finally {
+      releaseAdmission()
+      await original
+      payload.db.commitTransaction = commit
+      hooks.beforeChange = previousHooks
+    }
+    const settled = (await readAll(cookie)).find((item) => item.reference === saved.receipt.reference)!
+    expect(settled).toMatchObject({ status: 'submitted', inquiryId: expect.any(String) })
+    const replay = await request(
+      '/api/patient/inquiry-preparations/submit',
+      { reference: saved.receipt.reference, retry: true },
+      cookie,
+      'synthetic-patient',
+    )
+    expect(await replay.json()).toMatchObject({ status: 'submitted', inquiryId: settled.inquiryId })
+    expect(
+      (
+        await payload.count({
+          collection: 'patientClinicInquiries',
+          where: { clinic: { equals: clinicId } },
+          overrideAccess: true,
+        })
+      ).totalDocs,
+    ).toBe(1)
+  })
+
+  it('keeps an unrecorded settlement unknown and does not admit a retry after the owner cannot persist completion', async () => {
+    provider.session = false
+    const email = 'missing-settlement@example.test'
+    const saved = await prepare('missing-settlement', email)
+    await registerPatient(email, saved.cookie)
+    const cookie = await activate()
+    const before = (
+      await payload.count({
+        collection: 'patientClinicInquiries',
+        where: { clinic: { equals: clinicId } },
+        overrideAccess: true,
+      })
+    ).totalDocs
+    await payload.update({ collection: 'clinics', id: clinicId, overrideAccess: true, data: { status: 'pending' } })
+    const hooks = payload.collections.inquiryPreparations.config.hooks
+    const previous = hooks.beforeChange
+    hooks.beforeChange = [
+      ...(previous ?? []),
+      ({ data }) => {
+        if (data.lastAttemptSettledAt && !data.submittedInquiry) throw new Error('Synthetic settlement unavailable')
+      },
+    ]
+    try {
+      const failed = await request(
+        '/api/patient/inquiry-preparations/submit',
+        { reference: saved.receipt.reference },
+        cookie,
+        'synthetic-patient',
+      )
+      expect(failed.status).toBeGreaterThanOrEqual(400)
+      const receipt = (await readAll(cookie)).find((item) => item.reference === saved.receipt.reference)!
+      expect(receipt).toMatchObject({
+        status: 'outcome-unknown',
+        expiresAt: saved.receipt.expiresAt,
+        attemptKey: expect.any(String),
+      })
+      hooks.beforeChange = previous
+      await payload.update({ collection: 'clinics', id: clinicId, overrideAccess: true, data: { status: 'approved' } })
+      const retry = await request(
+        '/api/patient/inquiry-preparations/submit',
+        { reference: saved.receipt.reference, retry: true },
+        cookie,
+        'synthetic-patient',
+      )
+      expect(await retry.json()).toMatchObject({ status: 'outcome-unknown', attemptKey: receipt.attemptKey })
+      expect(
+        (
+          await payload.count({
+            collection: 'patientClinicInquiries',
+            where: { clinic: { equals: clinicId } },
+            overrideAccess: true,
+          })
+        ).totalDocs,
+      ).toBe(before)
+    } finally {
+      hooks.beforeChange = previous
+      await payload.update({ collection: 'clinics', id: clinicId, overrideAccess: true, data: { status: 'approved' } })
+    }
+  })
 
   it.each([false, true])(
     'retains every authorized inquiry beyond the first page, replacement link %s',

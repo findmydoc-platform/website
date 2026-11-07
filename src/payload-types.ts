@@ -3246,6 +3246,8 @@ export interface InquiryPreparation {
   authorizedAt: string;
   expiresAt: string;
   firstAttemptAt?: string | null;
+  lastAttemptKey?: string | null;
+  lastAttemptSettledAt?: string | null;
   passwordEstablishedAt?: string | null;
   subject?: string | null;
   patient?: (number | null) | Patient;
@@ -5685,6 +5687,8 @@ export interface InquiryPreparationsSelect<T extends boolean = true> {
   authorizedAt?: T;
   expiresAt?: T;
   firstAttemptAt?: T;
+  lastAttemptKey?: T;
+  lastAttemptSettledAt?: T;
   passwordEstablishedAt?: T;
   subject?: T;
   patient?: T;

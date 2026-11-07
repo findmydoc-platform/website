@@ -23,9 +23,10 @@ async function requestVerification(email: string) {
 
 export function PatientVerificationResendForm({
   onRequest = requestVerification,
-}: Readonly<{ onRequest?: (email: string) => Promise<void> }>) {
+  initialEmail = '',
+}: Readonly<{ onRequest?: (email: string) => Promise<void>; initialEmail?: string }>) {
   const [state, setState] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(initialEmail)
   const validation = usePublicFormValidation({
     messages: {
       email: {

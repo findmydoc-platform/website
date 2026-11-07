@@ -12,9 +12,13 @@ export const metadata: Metadata = {
   ...createSiteMetadata({ title: 'Complete password recovery', path: '/auth/password/reset/complete' }),
   robots: { index: false, follow: false },
 }
-export default async function CompleteResetPage() {
+export default async function CompleteResetPage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ inquiry?: string }> }>) {
+  const { inquiry } = await searchParams
   let csrf: string | null = null
   let resume = false
+  let inquiryContinuationPending = false
   try {
     const environment = resolveTransactionalEmailEnvironment()
     const context = readWebsiteRecoveryContext(
@@ -25,13 +29,15 @@ export default async function CompleteResetPage() {
     if (context && context.stage !== 'pending') {
       csrf = context.csrf
       resume = context.stage !== 'confirmed'
+      inquiryContinuationPending =
+        inquiry === 'continue' && context.flow === 'patient-recovery' && context.stage === 'signed-out'
     }
   } catch {
     /* Missing authority shares the safe invalid-link state. */
   }
   return (
     <PublicAuthRouteShell>
-      <ResetPasswordCompleteForm csrf={csrf} resume={resume} />
+      <ResetPasswordCompleteForm csrf={csrf} resume={resume} inquiryContinuationPending={inquiryContinuationPending} />
     </PublicAuthRouteShell>
   )
 }

@@ -22,6 +22,68 @@ Patient verification separates identity creation from patient provisioning. The 
 
 After confirmation, `bindPrincipal` attaches the provisioned patient only when its current `supabaseUserId` matches the bound subject. Completion requires that patient to remain available with the same subject. Removing the relationship cannot reopen the pre-provisioning path because `principalBoundAt` remains set. Repeating the same subject binding is idempotent and preserves its timestamp; a different subject cannot replace it. The existing principal-first lifecycle remains supported for actions created with a principal and no separate subject binding. Clinic and recovery flows always require their existing authoritative principal.
 
+## Prepared inquiry handoff
+
+Anonymous clinic requests require separate consent to create an account and submit that inquiry after account
+completion. The inquiry owner stores the immutable content in private `inquiryPreparations` records for seven days
+from authorization. These records are absent from clinic work lists, conversations and new-inquiry notifications.
+Collection REST, GraphQL, Admin browsing and ordinary Local API access are denied, including privileged calls
+without the inquiry owner's request capability. The collection uses the existing `private-live` cache policy.
+
+The originating browser holds a signed, environment-bound HttpOnly same-site group cookie. Registration reuses
+the entered first name, last name and email. A successful server-side password-bearing identity creation supplies
+password evidence. For an existing unconfirmed identity, only an action newly reserved by that server operation can
+retain the originating preparation context without password evidence. Reusing an older email-matched action cannot
+attach another origin. The reservation reports creation only after its transaction commits. A reconciled identity,
+matching email or browser-selected identity cannot supply password evidence or claim another origin's preparation.
+Eligible resend can replace an already proved group's action relationship without changing the inquiry deadline.
+
+Successful password sign-in binds only still-valid preparations in the proved originating context whose email
+matches the authenticated provider identity and whose subject is absent or already the same. Current patient
+provisioning remains owned by the existing authentication flow. The normal inquiry creation command uses current
+account names and email, preserves a saved account phone number, and saves the preparation phone only when the
+account has none. Confirmation without password evidence restores the context and shows a password sign-in action;
+it cannot submit. Recovery retains the context through its existing fresh action, password completion and global
+sign-out. Its fixed login destination remains unchanged, and a subsequent successful password sign-in authorizes
+handoff. Preparation storage failures cannot undo a completed sign-in or repeat a successful password operation.
+
+After the existing confirmation handler verifies the subject and completes patient provisioning and the
+AuthAction, it restores the protected preparation context on the confirming device. The normal My inquiries
+adapter reads without side effects, then issues the first same-origin submission POST. The command rechecks
+current verified patient access and uses the existing inquiry creation core, transaction and command locks.
+It records `firstAttemptAt` in a separate committed transaction before attempting creation. Refreshes cannot
+automatically retry a failed attempt. Admission also records the validated per-POST correlation UUID as `lastAttemptKey` and clears
+`lastAttemptSettledAt`. Until the matching attempt has an affirmative completion fact, reads return an unknown
+outcome and neither the UI nor another POST can retry it. Creation rechecks the current key under the existing
+command lock. Success settles atomically with its receipt; after a failed transaction, the owner can settle only
+after a fresh serialized read of that same attempt. Interrupted processes without settlement evidence stay unknown
+until a confirmed outcome or the original expiry, without a timeout-based retry grant. Legacy attempts without
+completion evidence remain unknown. After a lost response, an earlier settled receipt cannot settle a newer
+POST: its correlation UUID must match, or an existing successful submission must be confirmed. The technical
+attempt correlation is distinct from the stable server-generated inquiry submission key and grants no authority.
+Before a browser POST, the handoff retains only its preparation reference, correlation UUID and original expiry
+in namespaced tab session storage. Reloads reconcile that marker before allowing any first attempt or manual retry.
+Server HTML and hydration initially keep unresolved cards conservative, so an older settled receipt cannot briefly
+expose a retry. A failed storage write prevents the POST. Terminal receipts remove their marker, and reads prune
+expired markers without extending the server deadline. Clearing tab storage or moving to a different tab/device
+cannot prove a browser request that has not reached server admission; the server's attempt facts become the
+shared authority only after admission commits.
+An individual Try again action uses the original server-generated request
+key and reconciles a prior committed result. Account completion is independent of inquiry submission failure.
+
+Successful submission removes duplicate prepared content in the inquiry transaction and retains only a protected
+receipt until the original expiry. The authenticated one-minute scheduler deletes expired preparations and receipts
+in indexed batches of at most 100, with a five-second budget, independently of mail activation. Cleanup never
+submits an inquiry and does not delete patient accounts, historical guest inquiries or submitted conversations.
+
+Each preparation has its own authorization, destination, submission key, fixed expiry and outcome. Registration
+binding, confirmation and action replacement visit every matching item in ID pages of at most 100, bounded by
+the highest matching ID at command start. A new preparation before confirmation can reuse the server-bound
+account context of a live, unsent preparation only within the same proved origin group and normalized email.
+It retains its own content and deadline, and cannot gain password evidence absent from that context.
+My inquiries keeps successful submissions in its normal list and shows each unsent clinic separately above it.
+Retrying one failed item does not repeat another item's successful submission.
+
 ## Pending patient verification correlation
 
 `reservePatientVerification` validates and normalizes the email using the Auth domain's existing normalization rules. It preserves plus tags and dots. HMAC-SHA-256 covers the JSON array `["auth-action-correlation-v1", environment, "patient-verification", normalizedEmail]`. Only the lowercase hexadecimal digest and non-secret key version are persisted as private `correlationDigest` and `correlationKeyVersion`. The input email and password are never written to an AuthAction or logged by the preparation service.

@@ -2,6 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ResetPasswordRequestForm, type ResetPasswordReason } from './ResetPasswordRequestForm'
 import { createSiteMetadata } from '@/utilities/generateMeta'
+import { headers } from 'next/headers'
+import { createLocalReq, getPayload } from 'payload'
+import config from '@payload-config'
+import { readPreparationBinding } from '@/features/inquiryPreparations/context'
+import { readInquiryPreparationRegistration } from '@/features/inquiryCommunication/service'
 
 export const metadata: Metadata = createSiteMetadata({
   title: 'Reset password',
@@ -14,6 +19,7 @@ const signInOptionLinkClassName =
 type ResetPasswordPageProps = {
   searchParams?: Promise<{
     reason?: string | string[]
+    inquiry?: string
   }>
 }
 
@@ -26,13 +32,28 @@ function resolvePasswordResetReason(reason: string | string[] | undefined): Rese
 export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps = {}) {
   const params = await searchParams
   const reason = resolvePasswordResetReason(params?.reason)
+  const binding = readPreparationBinding(await headers())
+  const preparation = binding
+    ? await readInquiryPreparationRegistration(
+        await createLocalReq({}, await getPayload({ config })),
+        binding,
+        params?.inquiry,
+      )
+    : null
 
   return (
     <main className="min-h-svh bg-site-canvas py-6 sm:py-12">
       <div className="mx-auto max-w-4xl px-4">
         <div className="mb-2 sm:mb-6">
           <nav aria-label="Sign in options" className="-mx-3 flex flex-wrap gap-1">
-            <Link href="/login/patient" className={signInOptionLinkClassName}>
+            <Link
+              href={
+                preparation && params?.inquiry
+                  ? `/login/patient?inquiry=${encodeURIComponent(params.inquiry)}&next=/patient/inquiries`
+                  : '/login/patient'
+              }
+              className={signInOptionLinkClassName}
+            >
               Patient sign in
             </Link>
             <Link href="/admin/login" className={signInOptionLinkClassName}>
@@ -40,7 +61,11 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
             </Link>
           </nav>
         </div>
-        <ResetPasswordRequestForm reason={reason} />
+        <ResetPasswordRequestForm
+          reason={reason}
+          initialEmail={preparation?.email}
+          preparationExpiresAt={preparation?.expiresAt}
+        />
       </div>
     </main>
   )

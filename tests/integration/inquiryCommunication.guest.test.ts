@@ -1,43 +1,49 @@
 import { NextRequest } from 'next/server'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { getPayload, type Payload } from 'payload'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { getPayload, handleEndpoints, type Payload } from 'payload'
 
 import config from '@payload-config'
-import { POST as submitGuestClinicInquiry } from '@/app/api/clinic-contact-requests/route'
-import { communicationReviewDueAt } from '@/features/inquiryRetention/policy'
+import { POST as prepareClinicInquiry } from '@/app/api/clinic-contact-requests/route'
+import type { PreparationReceipt } from '@/features/inquiryPreparations/contracts'
 import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 
-const makeGuestRequest = (body: unknown) =>
-  new NextRequest('http://localhost/api/clinic-contact-requests', {
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json' },
-    method: 'POST',
-  })
+vi.mock('@/auth/utilities/supaBaseServer', () => ({
+  createClient: async () => ({
+    auth: { getUser: async () => ({ data: { user: null }, error: null }) },
+  }),
+}))
 
-const makeExpiredSessionRequest = (body: unknown) =>
-  new NextRequest('http://localhost/api/clinic-contact-requests', {
+const origin = 'https://clinic-contact.test'
+const makeGuestRequest = (body: unknown, cookie?: string) =>
+  new NextRequest(`${origin}/api/clinic-contact-requests`, {
     body: JSON.stringify(body),
     headers: {
       'Content-Type': 'application/json',
-      Cookie: 'sb-synthetic-auth-token=expired-session',
+      Origin: origin,
+      ...(cookie ? { Cookie: cookie } : {}),
     },
     method: 'POST',
   })
 
-describe('guest inquiry HTTP persistence', () => {
+const readPreparations = (cookie: string) =>
+  handleEndpoints({
+    config,
+    request: new Request(`${origin}/api/patient/inquiry-preparations`, { headers: { Cookie: cookie } }),
+  })
+
+describe('anonymous clinic contact HTTP preparation', () => {
   let payload: Payload
   let clinicId: number
   let doctorId: number | string
-  const createdInquiryIds: Array<number | string> = []
   const slugPrefix = testSlug('inquiryCommunication.guest.test.ts')
 
   beforeAll(async () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
     const city = (await payload.find({ collection: 'cities', depth: 0, limit: 1, overrideAccess: true })).docs[0]
-    if (!city) throw new Error('Expected a baseline city for the guest inquiry test.')
+    if (!city) throw new Error('Expected a baseline city for the anonymous clinic contact test.')
 
     const fixture = await createClinicFixture(payload, city.id, { slugPrefix })
     clinicId = fixture.clinic.id
@@ -52,184 +58,119 @@ describe('guest inquiry HTTP persistence', () => {
   }, 60_000)
 
   afterAll(async () => {
-    for (const collection of ['inquiryAuditEvents', 'inquiryReadPositions', 'inquiryConversations'] as const) {
-      await payload.delete({
-        collection: collection as never,
-        overrideAccess: true,
-        trash: true,
-        where: { inquiry: { in: createdInquiryIds } },
-      })
-    }
-    for (const id of createdInquiryIds) {
-      await payload.delete({ collection: 'patientClinicInquiries', id, overrideAccess: true, trash: true })
-    }
-    await payload.delete({
-      collection: 'doctors',
-      overrideAccess: true,
-      trash: true,
-      where: { clinic: { equals: clinicId } },
-    })
-    await payload.delete({ collection: 'clinics', id: clinicId, overrideAccess: true, trash: true })
+    await payload?.destroy()
   })
 
-  it('initializes and deduplicates a guest POST with one content-free system audit event', async () => {
-    const privateGuestContent = {
-      email: `${slugPrefix}-guest@example.com`,
-      fullName: 'Synthetic Guest Patient',
-      message: 'Synthetic guest request that must not enter the audit event.',
-      phoneNumber: '+493000000012',
-    }
-    const body = {
-      clinicId,
-      consent: true,
-      doctorId,
-      ...privateGuestContent,
-      preferredContactWindow: 'morning',
-      treatmentTimeline: 'within_two_weeks',
-    }
-    const firstResponse = await submitGuestClinicInquiry(makeGuestRequest({ ...body, session_id: 'retired-session' }))
-    const first = (await firstResponse.json()) as {
-      deduped?: boolean
-      id?: string
-      status?: string
-      success?: boolean
-    }
-    if (first.id) createdInquiryIds.push(first.id)
+  const authorizedBody = (attempt: string) => ({
+    clinicId: String(clinicId),
+    doctorId: String(doctorId),
+    idempotencyKey: `${slugPrefix}-${attempt}`,
+    consent: true,
+    accountAuthorization: true,
+    email: `${slugPrefix}-${attempt}@example.com`,
+    firstName: 'Synthetic',
+    lastName: 'Patient',
+    message: 'Synthetic private request that must not reach the clinic before account completion.',
+    phoneNumber: '+493000000012',
+    preferredContactWindow: 'morning',
+    treatmentTimeline: 'within_two_weeks',
+  })
 
-    expect(firstResponse.status).toBe(200)
-    expect(first).toEqual({ success: true, id: expect.any(String), status: 'submitted' })
+  async function prepare(attempt: string) {
+    const body = authorizedBody(attempt)
+    const response = await prepareClinicInquiry(makeGuestRequest(body))
+    expect(response.status).toBe(201)
+    const receipt = (await response.json()) as PreparationReceipt
+    const cookie = response.headers.get('set-cookie')!.split(';')[0]!
+    return { body, cookie, receipt, response }
+  }
 
-    const replayResponse = await submitGuestClinicInquiry(makeGuestRequest(body))
-    expect(replayResponse.status).toBe(200)
-    await expect(replayResponse.json()).resolves.toEqual({
-      deduped: true,
-      id: first.id,
-      status: 'submitted',
-      success: true,
+  it('persists one private authorization per attempt and replays its unsent receipt without clinic work', async () => {
+    const { body, cookie, receipt, response } = await prepare('authorized')
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(response.headers.get('set-cookie')).toContain('HttpOnly')
+    expect(receipt).toEqual({
+      authorizedAt: expect.any(String),
+      clinicName: expect.any(String),
+      expiresAt: expect.any(String),
+      reference: expect.any(String),
+      status: 'saved-not-sent',
     })
+    expect(Date.parse(receipt.expiresAt) - Date.parse(receipt.authorizedAt)).toBe(604800000)
 
-    const inquiries = await payload.find({
-      collection: 'patientClinicInquiries',
-      depth: 0,
-      limit: 10,
-      overrideAccess: true,
-      pagination: false,
-      showHiddenFields: true,
-      where: {
-        and: [{ clinic: { equals: clinicId } }, { email: { equals: privateGuestContent.email } }],
-      },
-    })
-    expect(inquiries.docs).toHaveLength(1)
-    expect(inquiries.docs[0]).not.toHaveProperty('session_id')
-    expect(JSON.stringify(inquiries.docs)).not.toContain('retired-session')
-    expect(inquiries.docs[0]).toMatchObject({
-      activitySequence: 1,
-      clinic: clinicId,
-      clinicNotificationSequence: 1,
-      clinicUnreadEpoch: 0,
-      clinicUnreadFloor: 0,
-      consent: { accepted: true, acceptedAt: expect.any(String), text: expect.any(String) },
-      externalSequence: 0,
-      handlingStatus: 'submitted',
-      lastActivityAt: expect.any(String),
-      lifecycle: 'open',
-      patient: null,
-      revision: 0,
-      retentionPolicyVersion: '2026-08-24',
-      retentionReviewBasisAt: expect.any(String),
-      retentionReviewDueAt: expect.any(String),
-      status: 'submitted',
-    })
-    expect(inquiries.docs[0]?.retentionReviewDueAt).toBe(
-      communicationReviewDueAt(String(inquiries.docs[0]?.retentionReviewBasisAt), 12),
+    const replayResponse = await prepareClinicInquiry(makeGuestRequest(body, cookie))
+    expect(replayResponse.status).toBe(201)
+    await expect(replayResponse.json()).resolves.toEqual(receipt)
+
+    const nextAttempt = await prepareClinicInquiry(
+      makeGuestRequest({ ...body, idempotencyKey: `${slugPrefix}-another-authorization` }, cookie),
     )
-
-    const audit = await payload.find({
-      collection: 'inquiryAuditEvents' as never,
-      depth: 0,
-      limit: 10,
-      overrideAccess: true,
-      pagination: false,
-      showHiddenFields: true,
-      where: { inquiry: { equals: first.id } },
-    } as never)
-    expect(audit.docs).toHaveLength(1)
-    expect(audit.docs[0]).toMatchObject({
-      actorId: 'system',
-      actorKind: 'system',
-      clinicNotificationSequence: 1,
-      eventType: 'inquiry-created',
-      sequence: 1,
-      targetId: first.id,
-      targetType: 'inquiry',
+    expect(nextAttempt.status).toBe(201)
+    const nextReceipt = (await nextAttempt.json()) as PreparationReceipt
+    expect(nextReceipt.reference).not.toBe(receipt.reference)
+    const resumed = await readPreparations(cookie)
+    expect(resumed.status).toBe(200)
+    await expect(resumed.json()).resolves.toEqual({
+      nextCursor: null,
+      preparations: [receipt, nextReceipt].map(({ authorizedAt, expiresAt, reference }) => ({
+        authorizedAt,
+        expiresAt,
+        reference,
+        status: 'saved-not-sent',
+      })),
     })
-    const serializedAudit = JSON.stringify(audit.docs[0])
-    for (const content of Object.values(privateGuestContent)) expect(serializedAudit).not.toContain(content)
 
-    for (const collection of ['inquiryConversations', 'inquiryReadPositions'] as const) {
-      const result = await payload.find({
-        collection: collection as never,
-        depth: 0,
-        limit: 10,
+    for (const collection of ['patientClinicInquiries', 'clinicNotificationOccurrences'] as const) {
+      const result = await payload.count({
+        collection,
         overrideAccess: true,
-        pagination: false,
-        where: { inquiry: { equals: first.id } },
-      } as never)
-      expect(result.docs).toHaveLength(0)
+        where: { clinic: { equals: clinicId } },
+      })
+      expect(result.totalDocs).toBe(0)
     }
+  })
+
+  it('requires account authorization for each new attempt', async () => {
+    const { body, cookie, receipt } = await prepare('requires-authorization')
+    const response = await prepareClinicInquiry(
+      makeGuestRequest(
+        { ...body, idempotencyKey: `${slugPrefix}-not-authorized`, accountAuthorization: false },
+        cookie,
+      ),
+    )
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error: 'The prepared inquiry could not be processed.' })
+    const resumed = await readPreparations(cookie)
+    await expect(resumed.json()).resolves.toMatchObject({ preparations: [{ reference: receipt.reference }] })
   })
 
   it.each([
-    ['doctor', { doctorId: 2_147_483_647 }, 'Doctor is not available for this clinic.'],
-    ['treatment', { treatmentId: 2_147_483_647 }, 'Treatment is not available for this clinic.'],
-  ] as const)('preserves the specific unavailable-%s field error', async (kind, target, message) => {
-    const email = `${slugPrefix}-unavailable-${kind}@example.com`
-    const response = await submitGuestClinicInquiry(
-      makeGuestRequest({
-        clinicId,
-        consent: true,
-        email,
-        fullName: `Synthetic Unavailable ${kind}`,
-        message: `Synthetic unavailable ${kind} selection.`,
-        phoneNumber: '+493000000013',
-        treatmentTimeline: 'within_two_weeks',
-        ...target,
-      }),
+    ['doctor', { doctorId: '2147483647' }],
+    ['treatment', { treatmentId: '2147483647' }],
+  ] as const)('rejects an unavailable %s without adding a preparation', async (kind, target) => {
+    const { body, cookie, receipt } = await prepare(`unavailable-${kind}`)
+    const response = await prepareClinicInquiry(
+      makeGuestRequest({ ...body, idempotencyKey: `${slugPrefix}-unavailable-${kind}-rejected`, ...target }, cookie),
     )
 
     expect(response.status).toBe(400)
-    await expect(response.json()).resolves.toEqual({ error: message })
-    const persisted = await payload.count({
-      collection: 'patientClinicInquiries',
-      overrideAccess: true,
-      where: { email: { equals: email } },
-    })
-    expect(persisted.totalDocs).toBe(0)
+    await expect(response.json()).resolves.toEqual({ error: 'The prepared inquiry could not be processed.' })
+    const resumed = await readPreparations(cookie)
+    await expect(resumed.json()).resolves.toMatchObject({ preparations: [{ reference: receipt.reference }] })
   })
 
-  it('rejects an expired session before guest persistence', async () => {
-    const email = `${slugPrefix}-expired-session@example.com`
-    const response = await submitGuestClinicInquiry(
-      makeExpiredSessionRequest({
-        clinicId,
-        consent: true,
-        doctorId,
-        email,
-        fullName: 'Expired Session Patient',
-        message: 'This request must not fall back to guest persistence.',
-        phoneNumber: '+493000000014',
-      }),
+  it('rejects an expired session before creating a preparation', async () => {
+    const { body, cookie, receipt } = await prepare('expired-session')
+    const response = await prepareClinicInquiry(
+      makeGuestRequest(
+        { ...body, idempotencyKey: `${slugPrefix}-expired-session-rejected` },
+        `${cookie}; sb-synthetic-auth-token=expired-session`,
+      ),
     )
 
     expect(response.status).toBe(401)
-    await expect(response.json()).resolves.toEqual({
-      error: 'Your session has ended. Sign in again before sending this request.',
-    })
-    const persisted = await payload.count({
-      collection: 'patientClinicInquiries',
-      overrideAccess: true,
-      where: { email: { equals: email } },
-    })
-    expect(persisted.totalDocs).toBe(0)
+    expect(await response.text()).toBe('')
+    const resumed = await readPreparations(cookie)
+    await expect(resumed.json()).resolves.toMatchObject({ preparations: [{ reference: receipt.reference }] })
   })
 })

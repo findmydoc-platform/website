@@ -16,7 +16,9 @@ export async function POST(request: Request) {
   if (!parsed.success) return response({ error: 'Enter a valid email address.' }, 400)
   try {
     const payload = await getPayload({ config: configPromise })
-    await resendPatientVerification(await createLocalReq({}, payload), parsed.data)
+    const req = await createLocalReq({}, payload)
+    req.headers = request.headers
+    await resendPatientVerification(req, parsed.data)
   } catch {
     // Account eligibility, throttling and infrastructure failures share one neutral public response.
   }

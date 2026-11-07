@@ -45,6 +45,7 @@ type UseClinicDetailInteractionStateResult = {
   isPhoneLocked: boolean
   requiresReauthentication: boolean
   submittedInquiryHref: string | null
+  preparationRegistrationHref: string | null
   relatedActiveIndex: number | undefined
   setActiveCuratedIndex: React.Dispatch<React.SetStateAction<number>>
   scrollToContactForm: () => void
@@ -99,6 +100,7 @@ export function useClinicDetailInteractionState({
     inquiryCreation.kind === 'reauthentication-required',
   )
   const [submittedInquiryHref, setSubmittedInquiryHref] = React.useState<string | null>(null)
+  const [preparationRegistrationHref, setPreparationRegistrationHref] = React.useState<string | null>(null)
 
   const ourDoctorsRef = React.useRef<HTMLElement | null>(null)
   const contactFormRef = React.useRef<HTMLElement | null>(null)
@@ -121,6 +123,7 @@ export function useClinicDetailInteractionState({
     setIsPhoneLocked(inquiryCreation.kind === 'authenticated' && Boolean(inquiryCreation.account.phoneNumber))
     setRequiresReauthentication(inquiryCreation.kind === 'reauthentication-required')
     setSubmittedInquiryHref(null)
+    setPreparationRegistrationHref(null)
     contactSubmitLockedRef.current = false
     contactIdempotencyKeyRef.current = null
   }, [clinicSlug, furtherTreatmentPageSize, initialContactFormFields, inquiryCreation])
@@ -287,7 +290,9 @@ export function useClinicDetailInteractionState({
                 : { phoneNumber: contactFormFields.phoneNumber }
               : {
                   email: contactFormFields.email,
-                  fullName: `${contactFormFields.firstName} ${contactFormFields.lastName}`.trim(),
+                  firstName: contactFormFields.firstName,
+                  lastName: contactFormFields.lastName,
+                  accountAuthorization: contactFormFields.accountAuthorization === true,
                   phoneNumber: contactFormFields.phoneNumber,
                 }),
             idempotencyKey,
@@ -300,7 +305,14 @@ export function useClinicDetailInteractionState({
         )
 
         setContactFormMessageTone('success')
-        setContactFormMessage('Your clinic request has been sent successfully.')
+        setContactFormMessage(
+          result.preparation
+            ? `Your inquiry is saved but not sent. Create your account and confirm your email to send it. It expires on ${new Date(result.preparation.expiresAt).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC, seven days after authorization.`
+            : 'Your clinic request has been sent successfully.',
+        )
+        setPreparationRegistrationHref(
+          result.preparation ? `/register/patient?inquiry=${encodeURIComponent(result.preparation.reference)}` : null,
+        )
         setHasSubmittedContact(true)
         setIsPhoneLocked(authenticated)
         setSubmittedInquiryHref(authenticated ? `/patient/inquiries/${encodeURIComponent(result.id)}` : null)
@@ -390,6 +402,7 @@ export function useClinicDetailInteractionState({
     isPhoneLocked,
     requiresReauthentication,
     submittedInquiryHref,
+    preparationRegistrationHref,
     relatedActiveIndex,
     setActiveCuratedIndex,
     scrollToContactForm,

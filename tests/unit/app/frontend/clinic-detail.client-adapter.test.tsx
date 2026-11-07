@@ -79,7 +79,11 @@ describe('ClinicDetailClientAdapter', () => {
   })
 
   it.each([
-    [false, '/api/clinic-contact-requests', { id: 42 }],
+    [
+      false,
+      '/api/patient/inquiry-preparations',
+      { status: 'saved-not-sent', reference: '42', expiresAt: '2026-11-14T12:00:00.000Z' },
+    ],
     [true, '/api/patient/inquiries', { inquiry: { id: 43 } }],
   ])('submits through the route-owned endpoint for authenticated=%s', async (authenticated, endpoint, responseBody) => {
     const fetchMock = vi.fn(
@@ -102,6 +106,7 @@ describe('ClinicDetailClientAdapter', () => {
 
     await expect(submitContactRequest(requestPayload, authenticated)).resolves.toEqual({
       id: authenticated ? '43' : '42',
+      ...(!authenticated ? { preparation: { reference: '42', expiresAt: '2026-11-14T12:00:00.000Z' } } : {}),
     })
     expect(fetchMock).toHaveBeenCalledWith(endpoint, {
       method: 'POST',
@@ -156,7 +161,7 @@ describe('ClinicDetailClientAdapter', () => {
     const result = submitClinicContactRequest(requestPayload, false)
 
     await expect(result).rejects.toMatchObject({
-      message: 'Could not confirm your clinic request.',
+      message: 'Could not confirm your saved inquiry.',
       requiresReauthentication: false,
     } satisfies Partial<ClinicContactRequestError>)
   })

@@ -34,6 +34,16 @@ import {
 } from '@/utilities/cachePolicy'
 
 describe('cache policy contract', () => {
+  it('classifies inquiry preparations as private operational data without public tags or paths', () => {
+    const owners = CACHE_POLICY_CATALOG.filter(
+      (entry: CachePolicyCatalogEntry) =>
+        entry.kind === 'collection' && entry.collections?.includes('inquiryPreparations'),
+    )
+    expect(owners).toMatchObject([
+      { cacheClass: 'private-live', boundary: 'private', tagFamilies: [], pathFamilies: ['none'] },
+    ])
+  })
+
   it('exposes the accepted ADR 023 cache classes and tag families', () => {
     expect(CACHE_CLASSES).toEqual([
       'critical-public',

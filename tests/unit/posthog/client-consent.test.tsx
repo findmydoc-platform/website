@@ -264,7 +264,14 @@ describe('browser consent with the installed PostHog SDK', () => {
       const requests: { endpoint: string; payload: Record<string, unknown> }[] = []
       vi.mocked(fetch).mockImplementation(async (input, init) => {
         requests.push({ endpoint: String(input), payload: JSON.parse(String(init?.body)) })
-        return new Response(JSON.stringify({ id: 'synthetic-inquiry' }), { status: 200 })
+        return new Response(
+          JSON.stringify(
+            authenticated
+              ? { id: 'synthetic-inquiry' }
+              : { status: 'saved-not-sent', reference: 'synthetic-inquiry', expiresAt: '2026-11-14T12:00:00.000Z' },
+          ),
+          { status: 200 },
+        )
       })
       const request = {
         clinicId: '42',
@@ -281,7 +288,7 @@ describe('browser consent with the installed PostHog SDK', () => {
       expect(session).toBeTypeOf('string')
       await submitClinicContactRequest(request, authenticated)
       expect(requests[1]).toEqual({
-        endpoint: authenticated ? '/api/patient/inquiries' : '/api/clinic-contact-requests',
+        endpoint: authenticated ? '/api/patient/inquiries' : '/api/patient/inquiry-preparations',
         payload: request,
       })
       fireEvent.click(screen.getByRole('button', { name: 'Cookie settings' }))

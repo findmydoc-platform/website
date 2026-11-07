@@ -1,3 +1,4 @@
+import { InquiryPreparationHandoff } from '@/features/inquiryPreparations/InquiryPreparationHandoff.client'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
@@ -24,5 +25,10 @@ export default async function PatientInquiriesIndexPage() {
 
   if (!authContext.patient) redirect(buildPatientLoginHref('/patient/inquiries'))
 
-  return <PatientInquiriesController loginHref={buildPatientLoginHref('/patient/inquiries')} mode="index" />
+  return (
+    <>
+      <InquiryPreparationHandoff />
+      <PatientInquiriesController loginHref={buildPatientLoginHref('/patient/inquiries')} mode="index" />
+    </>
+  )
 }

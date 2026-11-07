@@ -6,12 +6,16 @@ import { RegistrationForm, type RegistrationSubmitHandler } from '@/components/o
 import { submitPatientRegistration } from '@/auth/utilities/registrationSubmissions'
 
 type PatientRegistrationFormProps = {
+  initialValues?: Record<string, string>
+  preparationExpiresAt?: string
   containerClassName?: string
   onSubmit?: RegistrationSubmitHandler
 }
 
 export function PatientRegistrationForm({
   containerClassName,
+  initialValues,
+  preparationExpiresAt,
   onSubmit = submitPatientRegistration,
 }: PatientRegistrationFormProps) {
   const router = useRouter()
@@ -19,7 +23,12 @@ export function PatientRegistrationForm({
   return (
     <RegistrationForm
       title="Create Patient Account"
-      description="Join findmydoc to search for clinics and treatments"
+      description={
+        preparationExpiresAt
+          ? `Your inquiry is saved but not sent. Set your password and confirm your email. It expires on ${new Date(preparationExpiresAt).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC.`
+          : 'Join findmydoc to search for clinics and treatments'
+      }
+      initialValues={initialValues}
       submitButtonText="Create Patient Account"
       fields={[
         {

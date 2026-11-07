@@ -101,6 +101,7 @@ export interface Config {
     inquiryLegalHolds: InquiryLegalHold;
     inquiryDeletionProofs: InquiryDeletionProof;
     inquiryCommandLocks: InquiryCommandLock;
+    inquiryPreparations: InquiryPreparation;
     clinicNotificationOccurrences: ClinicNotificationOccurrence;
     clinicNotificationReadReceipts: ClinicNotificationReadReceipt;
     clinicNotificationControls: ClinicNotificationControl;
@@ -188,6 +189,7 @@ export interface Config {
     inquiryLegalHolds: InquiryLegalHoldsSelect<false> | InquiryLegalHoldsSelect<true>;
     inquiryDeletionProofs: InquiryDeletionProofsSelect<false> | InquiryDeletionProofsSelect<true>;
     inquiryCommandLocks: InquiryCommandLocksSelect<false> | InquiryCommandLocksSelect<true>;
+    inquiryPreparations: InquiryPreparationsSelect<false> | InquiryPreparationsSelect<true>;
     clinicNotificationOccurrences: ClinicNotificationOccurrencesSelect<false> | ClinicNotificationOccurrencesSelect<true>;
     clinicNotificationReadReceipts: ClinicNotificationReadReceiptsSelect<false> | ClinicNotificationReadReceiptsSelect<true>;
     clinicNotificationControls: ClinicNotificationControlsSelect<false> | ClinicNotificationControlsSelect<true>;
@@ -1427,7 +1429,7 @@ export interface ClinicStaff {
    */
   assignmentScope?: ('local' | 'group' | 'unassigned') | null;
   /**
-   * Group for group scope. Clear the clinic when selecting a group.
+   * Required for group scope. Clear the clinic when selecting a group.
    */
   group?: (number | null) | ClinicGroup;
   personalGroupInvitation?: {
@@ -3229,6 +3231,81 @@ export interface InquiryCommandLock {
   key: string;
 }
 /**
+ * Private authorized inquiries awaiting account completion.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryPreparations".
+ */
+export interface InquiryPreparation {
+  id: number;
+  environment: 'local' | 'test' | 'ci' | 'preview' | 'production';
+  reference: string;
+  submissionKey: string;
+  originAttemptKey: string;
+  groupBinding: string;
+  authorizedAt: string;
+  expiresAt: string;
+  firstAttemptAt?: string | null;
+  passwordEstablishedAt?: string | null;
+  subject?: string | null;
+  patient?: (number | null) | Patient;
+  authAction?: (number | null) | AuthAction;
+  submittedInquiry?: (number | null) | PatientClinicInquiry;
+  clinic?: (number | null) | Clinic;
+  doctor?: (number | null) | Doctor;
+  treatment?: (number | null) | Treatment;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+  message?: string | null;
+  preferredContactWindow?: string | null;
+  treatmentTimeline?: string | null;
+  consentText?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Read-only authentication lifecycle diagnostics without credentials or recipient content.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authActions".
+ */
+export interface AuthAction {
+  id: number;
+  actionType:
+    'patient-verification' | 'clinic-invitation' | 'patient-recovery' | 'clinic-recovery' | 'platform-recovery';
+  environment: 'local' | 'test' | 'ci' | 'preview' | 'production';
+  state: 'pending' | 'active' | 'confirmed' | 'completed' | 'superseded' | 'expired' | 'revoked';
+  expiresAt: string;
+  terminalAt?: string | null;
+  outcomeCode?: ('ineligible' | 'source-unavailable' | 'recipient-changed' | 'superseded') | null;
+  supabaseTokenType: 'magiclink' | 'invite' | 'recovery';
+  principal?:
+    | ({
+        relationTo: 'patients';
+        value: number | Patient;
+      } | null)
+    | ({
+        relationTo: 'clinicStaff';
+        value: number | ClinicStaff;
+      } | null)
+    | ({
+        relationTo: 'platformStaff';
+        value: number | PlatformStaff;
+      } | null);
+  principalBoundAt?: string | null;
+  supabaseSubject?: string | null;
+  subjectBoundAt?: string | null;
+  correlationDigest?: string | null;
+  correlationKeyVersion?: string | null;
+  callbackDestination: 'website-auth-callback' | 'clinic-dashboard-auth-callback';
+  completionRoute: '/patient/inquiries' | '/auth/invite/complete' | '/auth/password/reset/complete';
+  finalDestination: 'patient-inquiries' | 'clinic-dashboard' | 'platform-administration';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Immutable clinic events with independent ninety-day retention
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3580,46 +3657,6 @@ export interface ReviewAppeal {
         relationTo: 'clinicStaff';
         value: number | ClinicStaff;
       } | null);
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Read-only authentication lifecycle diagnostics without credentials or recipient content.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "authActions".
- */
-export interface AuthAction {
-  id: number;
-  actionType:
-    'patient-verification' | 'clinic-invitation' | 'patient-recovery' | 'clinic-recovery' | 'platform-recovery';
-  environment: 'local' | 'test' | 'ci' | 'preview' | 'production';
-  state: 'pending' | 'active' | 'confirmed' | 'completed' | 'superseded' | 'expired' | 'revoked';
-  expiresAt: string;
-  terminalAt?: string | null;
-  outcomeCode?: ('ineligible' | 'source-unavailable' | 'recipient-changed' | 'superseded') | null;
-  supabaseTokenType: 'magiclink' | 'invite' | 'recovery';
-  principal?:
-    | ({
-        relationTo: 'patients';
-        value: number | Patient;
-      } | null)
-    | ({
-        relationTo: 'clinicStaff';
-        value: number | ClinicStaff;
-      } | null)
-    | ({
-        relationTo: 'platformStaff';
-        value: number | PlatformStaff;
-      } | null);
-  principalBoundAt?: string | null;
-  supabaseSubject?: string | null;
-  subjectBoundAt?: string | null;
-  correlationDigest?: string | null;
-  correlationKeyVersion?: string | null;
-  callbackDestination: 'website-auth-callback' | 'clinic-dashboard-auth-callback';
-  completionRoute: '/patient/inquiries' | '/auth/invite/complete' | '/auth/password/reset/complete';
-  finalDestination: 'patient-inquiries' | 'clinic-dashboard' | 'platform-administration';
   updatedAt: string;
   createdAt: string;
 }
@@ -5634,6 +5671,38 @@ export interface InquiryDeletionProofsSelect<T extends boolean = true> {
  */
 export interface InquiryCommandLocksSelect<T extends boolean = true> {
   key?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inquiryPreparations_select".
+ */
+export interface InquiryPreparationsSelect<T extends boolean = true> {
+  environment?: T;
+  reference?: T;
+  submissionKey?: T;
+  originAttemptKey?: T;
+  groupBinding?: T;
+  authorizedAt?: T;
+  expiresAt?: T;
+  firstAttemptAt?: T;
+  passwordEstablishedAt?: T;
+  subject?: T;
+  patient?: T;
+  authAction?: T;
+  submittedInquiry?: T;
+  clinic?: T;
+  doctor?: T;
+  treatment?: T;
+  firstName?: T;
+  lastName?: T;
+  email?: T;
+  phoneNumber?: T;
+  message?: T;
+  preferredContactWindow?: T;
+  treatmentTimeline?: T;
+  consentText?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -7672,6 +7741,7 @@ export interface TaskCreateCollectionExport {
       | 'inquiryLegalHolds'
       | 'inquiryDeletionProofs'
       | 'inquiryCommandLocks'
+      | 'inquiryPreparations'
       | 'clinicNotificationOccurrences'
       | 'clinicNotificationReadReceipts'
       | 'clinicNotificationControls'

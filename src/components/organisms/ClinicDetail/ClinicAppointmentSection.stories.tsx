@@ -119,6 +119,7 @@ function ClinicAppointmentSectionStoryHarness(args: Partial<ClinicAppointmentSec
           isPhoneLocked={resolvedArgs.isPhoneLocked}
           requiresReauthentication={resolvedArgs.requiresReauthentication}
           submittedInquiryHref={resolvedArgs.submittedInquiryHref}
+          preparationRegistrationHref={resolvedArgs.preparationRegistrationHref}
           selectedDoctorId={selectedDoctorId}
           selectedTreatmentId={selectedTreatmentId}
           doctors={resolvedArgs.doctors}
@@ -198,8 +199,9 @@ export const InteractiveSubmit: Story = {
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Doctor' }), doctors[0]?.id ?? '')
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Treatment' }), treatments[1]?.id ?? '')
     await userEvent.click(canvas.getByRole('checkbox', { name: /process my contact details/i }))
+    await userEvent.click(canvas.getByRole('checkbox', { name: /authorize creation/i }))
 
-    await userEvent.click(canvas.getByRole('button', { name: 'Submit Contact Request' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Save inquiry and create account' }))
     await expect(canvas.getByRole('status')).toHaveTextContent('Clinic request submitted for storybook preview.')
   },
 }
@@ -276,7 +278,7 @@ export const SubmittingState: Story = {
   render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const button = canvas.getByRole('button', { name: 'Sending Request...' })
+    const button = canvas.getByRole('button', { name: 'Saving request...' })
 
     await expect(button).toBeDisabled()
   },
@@ -288,16 +290,17 @@ export const SubmittedState: Story = {
     selectedDoctorId: doctors[0]?.id ?? '',
     selectedTreatmentId: treatments[1]?.id ?? '',
     isSubmitted: true,
-    message: 'Your clinic request has been sent successfully.',
+    message: 'Your inquiry is saved but not sent. Create your account and confirm your email within seven days.',
+    preparationRegistrationHref: '/register/patient?inquiry=story-preparation',
     messageTone: 'success',
   },
   render: (args) => <ClinicAppointmentSectionStoryHarness {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const button = canvas.getByRole('button', { name: 'Request sent' })
+    const button = canvas.getByRole('button', { name: 'Inquiry saved, not sent' })
 
     await expect(button).toBeDisabled()
-    await expect(canvas.getByRole('status')).toHaveTextContent('Your clinic request has been sent successfully.')
+    await expect(canvas.getByRole('status')).toHaveTextContent('Your inquiry is saved but not sent.')
   },
 }
 
@@ -306,7 +309,7 @@ export const ValidationAndSubmit: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await userEvent.click(canvas.getByRole('button', { name: 'Submit Contact Request' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Save inquiry and create account' }))
 
     await waitFor(() => {
       expect(canvas.getByText('Enter your first name.')).toBeInTheDocument()
@@ -321,8 +324,9 @@ export const ValidationAndSubmit: Story = {
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Doctor' }), doctors[0]?.id ?? '')
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Treatment' }), treatments[1]?.id ?? '')
     await userEvent.click(canvas.getByRole('checkbox', { name: /process my contact details/i }))
+    await userEvent.click(canvas.getByRole('checkbox', { name: /authorize creation/i }))
 
-    await userEvent.click(canvas.getByRole('button', { name: 'Submit Contact Request' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Save inquiry and create account' }))
     await expect(canvas.getByRole('status')).toHaveTextContent('Clinic request submitted for storybook preview.')
   },
 }

@@ -27,7 +27,7 @@ const clinicDetailAnalytics: Omit<ClinicDetailAnalyticsPort, 'isReady'> = {
 }
 
 export const submitClinicContactRequest: ClinicContactRequestSubmitter = async (payload, authenticated) => {
-  const response = await fetch(authenticated ? '/api/patient/inquiries' : '/api/clinic-contact-requests', {
+  const response = await fetch(authenticated ? '/api/patient/inquiries' : '/api/patient/inquiry-preparations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -50,8 +50,17 @@ export const submitClinicContactRequest: ClinicContactRequestSubmitter = async (
 
   const responseBody = (await response.json().catch(() => ({}))) as {
     id?: unknown
+    reference?: string
+    expiresAt?: string
+    status?: string
     inquiry?: { id?: unknown }
   }
+  if (!authenticated && responseBody.status === 'saved-not-sent' && responseBody.reference && responseBody.expiresAt)
+    return {
+      id: responseBody.reference,
+      preparation: { reference: responseBody.reference, expiresAt: responseBody.expiresAt },
+    }
+  if (!authenticated) throw new ClinicContactRequestError('Could not confirm your saved inquiry.', false)
   const id = responseBody.inquiry?.id ?? responseBody.id
   if (typeof id !== 'string' && typeof id !== 'number') {
     throw new ClinicContactRequestError('Could not confirm your clinic request.', false)

@@ -48,7 +48,12 @@ async function reconcile(admin: Admin, email: string): Promise<User> {
 /** Internal preparation only. The trusted Auth caller authorizes resends before entering this boundary. */
 export function bindPendingPatientVerification(
   req: PayloadRequest,
-  options: Parameters<typeof bindAuthActions>[1] & { admin: Admin },
+  options: Parameters<typeof bindAuthActions>[1] & {
+    admin: Admin
+    onPasswordEstablished?: (
+      action: Awaited<ReturnType<ReturnType<typeof bindAuthActions>['bindSubject']>>,
+    ) => Promise<void>
+  },
 ) {
   const actions = bindAuthActions(req, options)
   return Object.freeze({
@@ -77,6 +82,7 @@ export function bindPendingPatientVerification(
       const action = await actions.reservePatientVerification({ email, ...(resendOf == null ? {} : { resendOf }) })
       if (action.supabaseSubject) return action
       let user: User | null = null
+      let passwordEstablished = false
       // External identity effects must never run inside an automatically retried database transaction.
       try {
         const result = await options.admin.createUser({
@@ -89,7 +95,10 @@ export function bindPendingPatientVerification(
             ...(parsed.data.lastName ? { last_name: parsed.data.lastName } : {}),
           },
         })
-        if (!result.error && result.data.user && eligible(result.data.user, email)) user = result.data.user
+        if (!result.error && result.data.user && eligible(result.data.user, email)) {
+          user = result.data.user
+          passwordEstablished = true
+        }
       } catch {
         // A missing response does not prove that creation failed. Reconcile without replacing a password.
       }
@@ -101,7 +110,9 @@ export function bindPendingPatientVerification(
         }
       }
       if (!user) unavailable()
-      return actions.bindSubject({ id: action.id, supabaseSubject: user.id })
+      const bound = await actions.bindSubject({ id: action.id, supabaseSubject: user.id })
+      if (passwordEstablished) await options.onPasswordEstablished?.(bound)
+      return bound
     },
   })
 }

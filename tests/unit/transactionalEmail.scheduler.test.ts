@@ -82,19 +82,6 @@ describe('hosted transactional email scheduler request', () => {
     expect(runHosted).not.toHaveBeenCalled()
   })
 
-  it.each(['preview', 'production'])(
-    'runs the %s worker once for its own authorization header',
-    async (environment) => {
-      vi.stubEnv('VERCEL_ENV', environment)
-      vi.stubEnv('CRON_SECRET', secret)
-      runHosted.mockResolvedValue({ claimed: 0 })
-      const response = await GET(new Request(endpoint, { headers: { authorization: `Bearer ${secret}` } }))
-      expect(response.status).toBe(200)
-      expect(runRetention).toHaveBeenCalledTimes(1)
-      expect(runHosted).toHaveBeenCalledTimes(1)
-    },
-  )
-
   it.each([
     ['preview', 'synthetic-preview-secret-for-tests-only', 'synthetic-production-secret-for-tests-only'],
     ['production', 'synthetic-production-secret-for-tests-only', 'synthetic-preview-secret-for-tests-only'],

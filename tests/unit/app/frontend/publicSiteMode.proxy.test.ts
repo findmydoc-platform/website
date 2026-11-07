@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server'
 import { NextRequest } from 'next/server'
+import nextConfig from '../../../../next.config.js'
 
 import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/searchIndexing'
 import {
@@ -46,6 +47,7 @@ describe('public site mode proxy', () => {
       NODE_ENV: 'development',
       NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'public-anon-key',
+      PUBLIC_STATIC_ASSET_PATHS: nextConfig.env?.PUBLIC_STATIC_ASSET_PATHS,
     }
 
     vi.clearAllMocks()
@@ -161,6 +163,25 @@ describe('public site mode proxy', () => {
     expect(response.headers.get('location')).toBeNull()
     expect(response.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
   })
+
+  it.each(['/campaign.png', '/clinics/example.png', '/images/campaign.png', '/stories/campaign.mp4'])(
+    'keeps extension-like content on %s governed by the public site mode',
+    async (pathname) => {
+      const request = new NextRequest(`https://findmydoc.eu${pathname}`)
+      mockHoldingMode('holding')
+
+      const holdingResponse = await proxy(request)
+
+      expect(holdingResponse.status).toBe(404)
+      expect(holdingResponse.headers.get(SEARCH_ROBOTS_HEADER)).toBe(SEARCH_ROBOTS_HEADER_VALUE)
+
+      mockHoldingMode('full')
+      const fullResponse = await proxy(request)
+
+      expect(fullResponse.status).toBe(200)
+      expect(fullResponse.headers.get(`x-middleware-request-${PUBLIC_SITE_MODE_REQUEST_HEADER}`)).toBe('full')
+    },
+  )
 
   it('keeps only exact public blog route shapes reachable in temporary landing mode', async () => {
     mockHoldingMode('holding')
@@ -301,7 +322,7 @@ describe('public site mode proxy', () => {
 
   it('serves static public assets without resolving Holding mode', async () => {
     process.env.DEPLOYMENT_ENVIRONMENT = 'preview'
-    mockHoldingMode()
+    mockHoldingMode('holding')
 
     const faviconResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/favicon.ico'))
     const imageResponse = await proxy(new NextRequest('https://preview.findmydoc.eu/images/holding-page/E105NVPR.jpg'))

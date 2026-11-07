@@ -18,8 +18,6 @@ import { SEARCH_ROBOTS_HEADER, SEARCH_ROBOTS_HEADER_VALUE } from '@/features/sea
 import { logCrawlerRequest } from '@/features/publicDiscovery/crawlerMonitoring'
 
 const NON_PAGE_PATHS = new Set(['/next/exit-preview', '/next/preview'])
-const isStaticAssetPath = (pathname: string): boolean =>
-  /\.(?:avif|css|gif|ico|jpe?g|js|mp4|png|svg|webm|webp|woff2?)$/i.test(pathname)
 
 const isPathFamily = (pathname: string, prefix: string): boolean =>
   pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -29,7 +27,9 @@ const shouldBypassProxy = (pathname: string): boolean => {
 
   if (isPathFamily(pathname, '/_next')) return true
   if (NON_PAGE_PATHS.has(normalizedPath)) return true
-  if (isStaticAssetPath(pathname)) return true
+  // Next replaces this inventory with the actual public asset URLs during compilation.
+  const publicStaticAssetPaths: string[] = JSON.parse(process.env.PUBLIC_STATIC_ASSET_PATHS ?? '[]')
+  if (publicStaticAssetPaths.includes(pathname)) return true
   return false
 }
 

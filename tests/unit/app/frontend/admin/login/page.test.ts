@@ -1,6 +1,6 @@
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY } from '@/features/previewGuard'
+import { HOLDING_VIEW_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 import type { PlatformStaff } from '@/payload-types'
 
 type StaffUserOverrides = Partial<PlatformStaff>
@@ -474,7 +474,7 @@ describe('Admin LoginPage', () => {
     expect(rootElement.props).toMatchObject({ redirectPath: '/admin', userTypes: 'platform' })
   })
 
-  it('shows preview-required message from search params', async () => {
+  it('passes a safe internal next path to the login form', async () => {
     const { getLocalPlatformStaffUserState } = await import('@/auth/utilities/firstAdminCheck')
     const { extractSupabaseUserData } = await import('@/auth/utilities/jwtValidation')
     const LoginPage = await getPageModule()
@@ -487,19 +487,12 @@ describe('Admin LoginPage', () => {
 
     const result = await LoginPage({
       searchParams: Promise.resolve({
-        message: PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
         next: '/posts/example',
       }),
     })
 
     const pageElement = result as LoginPageElement
     const rootElement = getLoginRootElement(pageElement)
-    const rootChildren = React.Children.toArray(rootElement.props.children) as React.ReactElement<{
-      message?: string
-    }>[]
-    const statusElement = rootChildren[1]
-
-    expect(statusElement?.props.message).toBe('This is a preview deployment. Please sign in to continue.')
     expect(rootElement.props.redirectPath).toBe('/posts/example')
   })
 
@@ -537,11 +530,8 @@ describe('Admin LoginPage', () => {
     })
     vi.mocked(extractSupabaseUserData).mockResolvedValue(null)
 
-    const result = await LoginPage({
-      searchParams: Promise.resolve({
-        message: PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
-      }),
-    })
+    mockHeaders.headers.mockResolvedValue(new Headers({ [HOLDING_VIEW_REQUEST_HEADER]: 'standalone' }))
+    const result = await LoginPage()
     const pageElement = result as LoginPageElement
     const pageChildren = React.Children.toArray(pageElement.props.children)
     const logoElement = pageChildren.find(isLogoElement)

@@ -109,10 +109,6 @@ The tables below omit modules and exports retired since that report.
 | `src/posthog/api.ts` | `POSTHOG_EVENT_REGISTRY` | `tests/unit/posthog/client.test.ts` |
 | `src/posthog/api.ts` | `POSTHOG_FLAG_REGISTRY` | `tests/unit/posthog/api.test.ts` |
 | `src/posthog/api.ts` | `resetPostHogClientForTests` | `tests/unit/posthog/api.test.ts` |
-| `src/features/previewGuard/index.ts` | `PREVIEW_GUARD_LOGIN_PATH` | `tests/unit/features/previewGuard/index.test.ts` |
-| `src/features/previewGuard/index.ts` | `PREVIEW_GUARD_FALLBACK_REDIRECT` | `tests/unit/features/previewGuard/index.test.ts` |
-| `src/features/previewGuard/index.ts` | `isPreviewGuardExemptPath` | `tests/unit/features/previewGuard/index.test.ts` |
-| `src/features/previewGuard/index.ts` | `isPreviewGuardPatientPath` | `tests/unit/features/previewGuard/index.test.ts` |
 | `src/features/publicDiscovery/crawlerMonitoring.ts` | `classifyCrawlerUserAgent` | `tests/unit/features/publicDiscovery/crawlerMonitoring.test.ts` |
 | `src/features/publicDiscovery/crawlerMonitoring.ts` | `buildCrawlerRequestLogContext` | `tests/unit/features/publicDiscovery/crawlerMonitoring.test.ts` |
 | `src/components/templates/PreviewDataNotice/Component.tsx` | `PREVIEW_DATA_NOTICE_COPY` | `src/stories/templates/Header.stories.tsx` |

@@ -1,5 +1,5 @@
 import { activateClinicNotificationsForTest } from '@/features/clinicNotifications/service'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import type { User } from '@supabase/supabase-js'
 import { POST as resend } from '@/app/api/auth/register/patient/resend/route'
@@ -91,8 +91,15 @@ describe('authorized inquiry preparation HTTP boundary', () => {
   let payload: Payload
   let clinicId: number
   let doctorId: number | string
-  beforeAll(async () => {
+  beforeEach(() => {
+    // Verification and recovery fixtures use test-scoped keys and the local fake mail runtime.
+    vi.stubEnv('CI', 'false')
     vi.stubEnv('AUTH_VERIFICATION_CORRELATION_KEYS_JSON', JSON.stringify({ environment: 'test', keys: [key] }))
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+  beforeAll(async () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
     await activateClinicNotificationsForTest(await createLocalReq({}, payload))

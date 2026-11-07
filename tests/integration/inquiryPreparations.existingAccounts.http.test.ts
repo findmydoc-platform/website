@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import type { User } from '@supabase/supabase-js'
 import { createLocalReq, getPayload, handleEndpoints, type Payload } from 'payload'
@@ -114,7 +114,9 @@ describe('existing account inquiry continuation HTTP boundary', () => {
   let payload: Payload
   let clinicId: number
   let doctorId: number | string
-  beforeAll(async () => {
+  beforeEach(() => {
+    // Verification and recovery fixtures use test-scoped keys and the local fake mail runtime.
+    vi.stubEnv('CI', 'false')
     vi.stubEnv(
       'AUTH_VERIFICATION_CORRELATION_KEYS_JSON',
       JSON.stringify({
@@ -129,6 +131,11 @@ describe('existing account inquiry continuation HTTP boundary', () => {
         keys: [{ version: 'existing-v1', secret: 'synthetic-existing-recovery-key-long-enough' }], // pragma: allowlist secret
       }),
     ) // pragma: allowlist secret
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+  beforeAll(async () => {
     payload = await getPayload({ config })
     await ensureBaseline(payload)
     const city = (await payload.find({ collection: 'cities', limit: 1, overrideAccess: true })).docs[0]!

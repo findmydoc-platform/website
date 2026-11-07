@@ -1,3 +1,4 @@
+import { preparationCookie } from '@/features/inquiryPreparations/context'
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { openWebsiteRecovery, confirmWebsiteRecovery } from '@/auth/actions/websiteRecoveryHttp'
@@ -123,11 +124,17 @@ export async function POST(request: NextRequest) {
     ) {
       return applyPrivateAuthHeaders(NextResponse.json({ code: 'REQUEST_REJECTED' }, { status: 403 }))
     }
-    const redirectTo = await authority.confirm(context, (receipt) =>
-      setPatientVerificationContext(response, receipt, authority.keys),
+    let preparationBinding: string | undefined
+    const redirectTo = await authority.confirm(
+      context,
+      (receipt) => setPatientVerificationContext(response, receipt, authority.keys),
+      (binding) => {
+        preparationBinding = binding
+      },
     )
     const success = applyPrivateAuthHeaders(NextResponse.json({ redirectTo }))
     clearPatientVerificationContext(success)
+    if (preparationBinding) success.headers.append('Set-Cookie', preparationCookie(preparationBinding))
     return success
   } catch (error) {
     if (error instanceof InvalidPatientVerification) {

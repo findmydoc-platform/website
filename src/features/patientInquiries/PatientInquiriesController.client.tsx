@@ -216,10 +216,12 @@ export function PatientInquiriesController({
       if (document.visibilityState === 'visible') refreshVisibleData()
     }
     window.addEventListener('focus', refreshVisibleData)
+    window.addEventListener('patient-inquiries-updated', refreshVisibleData)
     document.addEventListener('visibilitychange', handleVisibility)
     return () => {
       window.clearInterval(interval)
       window.removeEventListener('focus', refreshVisibleData)
+      window.removeEventListener('patient-inquiries-updated', refreshVisibleData)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
   }, [loadDetail, loadQueue, pollIntervalMs, state.sessionEnded])

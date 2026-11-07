@@ -22,6 +22,33 @@ Patient verification separates identity creation from patient provisioning. The 
 
 After confirmation, `bindPrincipal` attaches the provisioned patient only when its current `supabaseUserId` matches the bound subject. Completion requires that patient to remain available with the same subject. Removing the relationship cannot reopen the pre-provisioning path because `principalBoundAt` remains set. Repeating the same subject binding is idempotent and preserves its timestamp; a different subject cannot replace it. The existing principal-first lifecycle remains supported for actions created with a principal and no separate subject binding. Clinic and recovery flows always require their existing authoritative principal.
 
+## Prepared inquiry handoff
+
+Anonymous clinic requests require separate consent to create an account and submit that inquiry after account
+completion. The inquiry owner stores the immutable content in private `inquiryPreparations` records for seven days
+from authorization. These records are absent from clinic work lists, conversations and new-inquiry notifications.
+Collection REST, GraphQL, Admin browsing and ordinary Local API access are denied, including privileged calls
+without the inquiry owner's request capability. The collection uses the existing `private-live` cache policy.
+
+The originating browser holds a signed, environment-bound HttpOnly same-site group cookie. Registration reuses
+the entered first name, last name and email. Only a successful server-side password-bearing identity creation
+binds that group's matching preparation to the real AuthAction and Supabase subject. A reconciled identity,
+matching email or browser-selected identity cannot supply password evidence or claim another origin's preparation.
+Resend can replace an already proved group's action relationship without changing the inquiry deadline.
+
+After the existing confirmation handler verifies the subject and completes patient provisioning and the
+AuthAction, it restores the protected preparation context on the confirming device. The normal My inquiries
+adapter reads without side effects, then issues the first same-origin submission POST. The command rechecks
+current verified patient access and uses the existing inquiry creation core, transaction and command locks.
+It records `firstAttemptAt` in a separate committed transaction before attempting creation. Refreshes cannot
+automatically retry a failed attempt. An individual Try again action uses the original server-generated request
+key and reconciles a prior committed result. Account completion is independent of inquiry submission failure.
+
+Successful submission removes duplicate prepared content in the inquiry transaction and retains only a protected
+receipt until the original expiry. The authenticated one-minute scheduler deletes expired preparations and receipts
+in indexed batches of at most 100, with a five-second budget, independently of mail activation. Cleanup never
+submits an inquiry and does not delete patient accounts, historical guest inquiries or submitted conversations.
+
 ## Pending patient verification correlation
 
 `reservePatientVerification` validates and normalizes the email using the Auth domain's existing normalization rules. It preserves plus tags and dots. HMAC-SHA-256 covers the JSON array `["auth-action-correlation-v1", environment, "patient-verification", normalizedEmail]`. Only the lowercase hexadecimal digest and non-secret key version are persisted as private `correlationDigest` and `correlationKeyVersion`. The input email and password are never written to an AuthAction or logged by the preparation service.

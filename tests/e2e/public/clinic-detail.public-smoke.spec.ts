@@ -37,11 +37,6 @@ function readInquiry(prefix: string, email: string): InquiryLookup {
   return JSON.parse(lastLine) as InquiryLookup
 }
 
-function expectValidIsoDate(value: string | undefined) {
-  expect(value).toEqual(expect.any(String))
-  expect(Number.isNaN(Date.parse(value ?? ''))).toBe(false)
-}
-
 test.describe('clinic detail map dialog', () => {
   test.describe.configure({ mode: 'serial' })
 
@@ -126,7 +121,10 @@ test.describe('clinic detail map dialog', () => {
     await expectNoBrowserIssues(issues)
   })
 
-  test('submits the clinic contact form and persists an inquiry @smoke', async ({ page, context }) => {
+  test('saves authorized clinic inquiries without delivering them before account completion @smoke', async ({
+    page,
+    context,
+  }) => {
     const issues = createBrowserIssueCollector(page, {
       ignoredConsoleErrors: [
         /Failed to load resource: the server responded with a status of 404 .*openstreetmap\.org\//,
@@ -152,50 +150,30 @@ test.describe('clinic detail map dialog', () => {
     await page.getByLabel('Message').fill('Please contact me about this clinic.')
     await page.getByLabel(/I agree that findmydoc may process/i).check()
 
-    await page.getByRole('button', { name: 'Submit Contact Request' }).click()
+    await page.getByRole('checkbox', { name: /authorize creation/i }).check()
+    await page.getByRole('button', { name: 'Save inquiry and create account' }).click()
 
-    await expect(page.getByRole('status')).toHaveText('Your clinic request has been sent successfully.')
-    await expect(page.getByRole('button', { name: 'Request sent' })).toBeDisabled()
+    await expect(page.getByRole('status')).toContainText('Your inquiry is saved but not sent.')
+    await expect(page.getByRole('button', { name: 'Inquiry saved, not sent' })).toBeDisabled()
 
-    const firstInquiry = readInquiry(slugPrefix, email)
-    expect(firstInquiry).toMatchObject({
-      found: true,
-      status: 'submitted',
-      email,
-      count: 1,
-      totalClinicCount: 1,
-    })
-    expect(firstInquiry.clinic).toBeTruthy()
-    expect(String(firstInquiry.doctor)).toBe(selectedDoctorId)
-    expect(firstInquiry.treatment).toBeNull()
-    expectValidIsoDate(firstInquiry.createdAt)
+    expect(readInquiry(slugPrefix, email)).toMatchObject({ found: false, count: 0, totalClinicCount: 0 })
 
     await page.locator('form[aria-label="Clinic appointment request"]').evaluate((form: HTMLFormElement) => {
       form.requestSubmit()
     })
 
-    await expect.poll(() => readInquiry(slugPrefix, email).count).toBe(1)
-    expect(readInquiry(slugPrefix, email).totalClinicCount).toBe(1)
+    await expect.poll(() => readInquiry(slugPrefix, email).count).toBe(0)
+    expect(readInquiry(slugPrefix, email).totalClinicCount).toBe(0)
 
     await page.getByLabel('Email').fill(secondEmail)
-    await expect(page.getByRole('button', { name: 'Submit Contact Request' })).toBeEnabled()
-    await page.getByRole('button', { name: 'Submit Contact Request' }).click()
+    await expect(page.getByRole('button', { name: 'Save inquiry and create account' })).toBeEnabled()
+    await page.getByRole('checkbox', { name: /authorize creation/i }).check()
+    await page.getByRole('button', { name: 'Save inquiry and create account' }).click()
 
-    await expect(page.getByRole('status')).toHaveText('Your clinic request has been sent successfully.')
-    await expect(page.getByRole('button', { name: 'Request sent' })).toBeDisabled()
+    await expect(page.getByRole('status')).toContainText('Your inquiry is saved but not sent.')
+    await expect(page.getByRole('button', { name: 'Inquiry saved, not sent' })).toBeDisabled()
 
-    const secondInquiry = readInquiry(slugPrefix, secondEmail)
-    expect(secondInquiry).toMatchObject({
-      found: true,
-      status: 'submitted',
-      email: secondEmail,
-      count: 1,
-      totalClinicCount: 2,
-    })
-    expect(secondInquiry.clinic).toBe(firstInquiry.clinic)
-    expect(String(secondInquiry.doctor)).toBe(selectedDoctorId)
-    expect(secondInquiry.treatment).toBeNull()
-    expectValidIsoDate(secondInquiry.createdAt)
+    expect(readInquiry(slugPrefix, secondEmail)).toMatchObject({ found: false, count: 0, totalClinicCount: 0 })
 
     await expectNoBrowserIssues(issues)
   })

@@ -1,3 +1,7 @@
+import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
+import { createClient } from '@/auth/utilities/supaBaseServer'
+import { PREPARATION_LIFETIME, withPreparationStorage } from '@/features/inquiryPreparations/context'
+import { preparationInputSchema, type PreparationReceipt } from '@/features/inquiryPreparations/contracts'
 import { readClinicTargetAccess } from '@/auth/utilities/clinicPrincipalAccess'
 import { isClinicPersonalIdentityReady } from '@/auth/utilities/clinicStaffAssignment'
 import { readInquiryClinicAccess } from '@/features/inquiryAggregate/clinicAccess'
@@ -3007,6 +3011,148 @@ export const readPatientInquiryDetailResult = async (
   }
 }
 
+const createPatientInquiryInCommand = async (
+  req: PayloadRequest,
+  input: VerifiedInquiryCreateInput,
+  consent?: { acceptedAt: string; text: string },
+): Promise<StoredRecord> => {
+  const ownerId = patientId(req)
+  const ownerActorKey = actorKey(req)
+  const now = new Date().toISOString()
+  const policy = await resolveActiveInquiryRetentionPolicy(req, new Date(now))
+  await prepareClinicNotificationCapture(req)
+  const replay = await findCreationReplay(req, ownerId, input)
+  if (replay) return replay
+  await validateInquiryTarget(req, input)
+
+  const patient = await readPatient(req, ownerId)
+  const firstName = text(patient.firstName).trim()
+  const lastName = text(patient.lastName).trim()
+  const email = text(patient.email).trim().toLowerCase()
+  if (!firstName || !lastName || !email) {
+    throw new InquiryCommunicationServiceError('invalid-state', 'The patient account identity is incomplete.')
+  }
+
+  let phoneNumber = text(patient.phoneNumber).trim()
+  if (!phoneNumber) {
+    if (!input.phoneNumber) {
+      throw new InquiryCommunicationServiceError('invalid-input', 'A patient account phone number is required.')
+    }
+    const updatedPatient = asRecord(
+      await req.payload.update({
+        collection: 'patients',
+        data: { phoneNumber: input.phoneNumber },
+        depth: 0,
+        id: ownerId,
+        overrideAccess: true,
+        req,
+      } as never),
+    )
+    phoneNumber = text(updatedPatient.phoneNumber).trim()
+  }
+
+  const created = asRecord(
+    await req.payload.create({
+      collection: 'patientClinicInquiries',
+      context: { inquiryCommunicationCommand: true },
+      data: {
+        activitySequence: 1,
+        clinic: payloadId(input.clinicId),
+        clinicNotificationSequence: 1,
+        clinicUnreadEpoch: 0,
+        clinicUnreadFloor: 0,
+        consent: {
+          accepted: true,
+          acceptedAt: consent?.acceptedAt ?? now,
+          text: consent?.text ?? INQUIRY_SUBMISSION_CONSENT_TEXT,
+        },
+        creationActorKey: ownerActorKey,
+        creationIdempotencyKey: input.idempotencyKey,
+        creationRequestHash: requestHash(input),
+        doctor: input.doctorId ? payloadId(input.doctorId) : null,
+        email,
+        externalSequence: 0,
+        fullName: `${firstName} ${lastName}`,
+        handlingStatus: 'submitted',
+        lastActivityAt: now,
+        lifecycle: 'open',
+        message: input.message,
+        patient: ownerId,
+        phoneNumber,
+        preferredContactWindow: input.preferredContactWindow ?? null,
+        retentionPolicyVersion: policy.version,
+        retentionReviewBasisAt: now,
+        retentionReviewDueAt: communicationReviewDueAt(now, policy.communicationReviewMonths),
+        retentionState: 'available',
+        revision: 0,
+        status: 'submitted',
+        treatment: input.treatmentId ? payloadId(input.treatmentId) : null,
+        treatmentTimeline: input.treatmentTimeline ?? null,
+      },
+      depth: 0,
+      overrideAccess: true,
+      req,
+    } as never),
+  )
+
+  await req.payload.create({
+    collection: 'inquiryConversations' as never,
+    data: {
+      actorKey: ownerActorKey,
+      clinic: payloadId(input.clinicId),
+      inquiry: created.id,
+      patient: ownerId,
+    },
+    depth: 0,
+    overrideAccess: true,
+    req,
+  } as never)
+  await req.payload.create({
+    collection: 'inquiryReadPositions' as never,
+    data: {
+      clinic: payloadId(input.clinicId),
+      forcedUnread: false,
+      forcedUnreadEpoch: 0,
+      inquiry: created.id,
+      lastReadSequence: 0,
+      readerKey: ownerActorKey,
+      readerKind: 'patient',
+      readerPatient: ownerId,
+    },
+    depth: 0,
+    overrideAccess: true,
+    req,
+  } as never)
+  const originalAudit = await req.payload.create({
+    collection: 'inquiryAuditEvents' as never,
+    data: {
+      actorId: String(ownerId),
+      actorKind: 'patient',
+      clinic: payloadId(input.clinicId),
+      clinicNotificationSequence: 1,
+      eventType: 'inquiry-created',
+      inquiry: created.id,
+      sequence: 1,
+      targetId: String(created.id),
+      targetType: 'inquiry',
+    },
+    depth: 0,
+    overrideAccess: true,
+    req,
+  } as never)
+  await captureClinicNotificationOccurrence(req, {
+    clinicId: payloadId(input.clinicId),
+    occurredAt: text(asRecord(originalAudit).createdAt),
+    member: {
+      schemaVersion: 1,
+      eventType: 'inquiry_created',
+      sourceRecord: { kind: 'inquiry', id: String(created.id) },
+      sourceOccurrence: { kind: 'inquiry_audit', id: String(originalAudit.id) },
+    },
+  })
+  return created
+}
+
 export const createVerifiedPatientInquiry = async (
   req: PayloadRequest,
   rawInput: VerifiedInquiryCreateInput,
@@ -3015,147 +3161,12 @@ export const createVerifiedPatientInquiry = async (
   if (!parsed.success) throw new InquiryCommunicationServiceError('invalid-input', 'The inquiry input is invalid.')
   const input = parsed.data
   const ownerId = patientId(req)
-  const ownerActorKey = actorKey(req)
-
   const existing = await findCreationReplay(req, ownerId, input)
   if (existing) return { inquiry: await buildPatientDetail(req, existing), replayed: true }
 
-  const now = new Date().toISOString()
-  const policy = await resolveActiveInquiryRetentionPolicy(req, new Date(now))
-
   try {
     const inquiry = await runRetryableCommand(req, async () => {
-      await prepareClinicNotificationCapture(req)
-      const replay = await findCreationReplay(req, ownerId, input)
-      if (replay) return replay
-      await validateInquiryTarget(req, input)
-
-      const patient = await readPatient(req, ownerId)
-      const firstName = text(patient.firstName).trim()
-      const lastName = text(patient.lastName).trim()
-      const email = text(patient.email).trim().toLowerCase()
-      if (!firstName || !lastName || !email) {
-        throw new InquiryCommunicationServiceError('invalid-state', 'The patient account identity is incomplete.')
-      }
-
-      let phoneNumber = text(patient.phoneNumber).trim()
-      if (!phoneNumber) {
-        if (!input.phoneNumber) {
-          throw new InquiryCommunicationServiceError('invalid-input', 'A patient account phone number is required.')
-        }
-        const updatedPatient = asRecord(
-          await req.payload.update({
-            collection: 'patients',
-            data: { phoneNumber: input.phoneNumber },
-            depth: 0,
-            id: ownerId,
-            overrideAccess: true,
-            req,
-          } as never),
-        )
-        phoneNumber = text(updatedPatient.phoneNumber).trim()
-      }
-
-      const created = asRecord(
-        await req.payload.create({
-          collection: 'patientClinicInquiries',
-          context: { inquiryCommunicationCommand: true },
-          data: {
-            activitySequence: 1,
-            clinic: payloadId(input.clinicId),
-            clinicNotificationSequence: 1,
-            clinicUnreadEpoch: 0,
-            clinicUnreadFloor: 0,
-            consent: {
-              accepted: true,
-              acceptedAt: now,
-              text: INQUIRY_SUBMISSION_CONSENT_TEXT,
-            },
-            creationActorKey: ownerActorKey,
-            creationIdempotencyKey: input.idempotencyKey,
-            creationRequestHash: requestHash(input),
-            doctor: input.doctorId ? payloadId(input.doctorId) : null,
-            email,
-            externalSequence: 0,
-            fullName: `${firstName} ${lastName}`,
-            handlingStatus: 'submitted',
-            lastActivityAt: now,
-            lifecycle: 'open',
-            message: input.message,
-            patient: ownerId,
-            phoneNumber,
-            preferredContactWindow: input.preferredContactWindow ?? null,
-            retentionPolicyVersion: policy.version,
-            retentionReviewBasisAt: now,
-            retentionReviewDueAt: communicationReviewDueAt(now, policy.communicationReviewMonths),
-            retentionState: 'available',
-            revision: 0,
-            status: 'submitted',
-            treatment: input.treatmentId ? payloadId(input.treatmentId) : null,
-            treatmentTimeline: input.treatmentTimeline ?? null,
-          },
-          depth: 0,
-          overrideAccess: true,
-          req,
-        } as never),
-      )
-
-      await req.payload.create({
-        collection: 'inquiryConversations' as never,
-        data: {
-          actorKey: ownerActorKey,
-          clinic: payloadId(input.clinicId),
-          inquiry: created.id,
-          patient: ownerId,
-        },
-        depth: 0,
-        overrideAccess: true,
-        req,
-      } as never)
-      await req.payload.create({
-        collection: 'inquiryReadPositions' as never,
-        data: {
-          clinic: payloadId(input.clinicId),
-          forcedUnread: false,
-          forcedUnreadEpoch: 0,
-          inquiry: created.id,
-          lastReadSequence: 0,
-          readerKey: ownerActorKey,
-          readerKind: 'patient',
-          readerPatient: ownerId,
-        },
-        depth: 0,
-        overrideAccess: true,
-        req,
-      } as never)
-      const originalAudit = await req.payload.create({
-        collection: 'inquiryAuditEvents' as never,
-        data: {
-          actorId: String(ownerId),
-          actorKind: 'patient',
-          clinic: payloadId(input.clinicId),
-          clinicNotificationSequence: 1,
-          eventType: 'inquiry-created',
-          inquiry: created.id,
-          sequence: 1,
-          targetId: String(created.id),
-          targetType: 'inquiry',
-        },
-        depth: 0,
-        overrideAccess: true,
-        req,
-      } as never)
-      await captureClinicNotificationOccurrence(req, {
-        clinicId: payloadId(input.clinicId),
-        occurredAt: text(asRecord(originalAudit).createdAt),
-        member: {
-          schemaVersion: 1,
-          eventType: 'inquiry_created',
-          sourceRecord: { kind: 'inquiry', id: String(created.id) },
-          sourceOccurrence: { kind: 'inquiry_audit', id: String(originalAudit.id) },
-        },
-      })
-      return created
+      return createPatientInquiryInCommand(req, input)
     })
 
     return { inquiry: await buildPatientDetail(req, inquiry), replayed: false }
@@ -3204,7 +3215,11 @@ const findGuestInquiryReplay = async (
   return Number.isFinite(createdAt) && nowMs - createdAt <= GUEST_INQUIRY_DUPLICATE_WINDOW_MS ? candidate : null
 }
 
-const runRetryableCommand = async <Result>(req: PayloadRequest, command: () => Promise<Result>): Promise<Result> => {
+const runRetryableCommand = async <Result>(
+  req: PayloadRequest,
+  command: () => Promise<Result>,
+  retryPreparationLockConflict = false,
+): Promise<Result> => {
   let lastError: unknown
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
@@ -3213,9 +3228,10 @@ const runRetryableCommand = async <Result>(req: PayloadRequest, command: () => P
       lastError = error
       if (
         !(
-          error instanceof InquiryCommunicationServiceError &&
-          error.kind === 'conflict' &&
-          error.message === 'The inquiry changed concurrently.'
+          (error instanceof InquiryCommunicationServiceError &&
+            error.kind === 'conflict' &&
+            error.message === 'The inquiry changed concurrently.') ||
+          (retryPreparationLockConflict && duplicateConstraint(error))
         ) ||
         attempt === 2
       ) {
@@ -3328,4 +3344,410 @@ export async function readClinicInquiryNotificationProjection(
       ? text(inquiry.fullName).trim()
       : ''
   return { visible: true, ...(displayName ? { displayName } : {}) }
+}
+
+const preparationEnvironment = () => resolveTransactionalEmailEnvironment()
+const preparationWhere = (binding: string): Where => ({
+  and: [{ environment: { equals: preparationEnvironment() } }, { groupBinding: { equals: binding } }],
+})
+const preparationRecords = (req: PayloadRequest, where: Where, options: { limit?: number; sort?: string } = {}) =>
+  withPreparationStorage(req, () => findMany(req, 'inquiryPreparations', where, options))
+
+const preparationReceipt = async (req: PayloadRequest, record: StoredRecord): Promise<PreparationReceipt> => {
+  const submitted = relationId(record.submittedInquiry)
+  const clinicId = relationId(record.clinic)
+  const clinic = clinicId ? await findOne(req, 'clinics', { id: { equals: clinicId } }) : null
+  return {
+    reference: text(record.reference),
+    authorizedAt: text(record.authorizedAt),
+    expiresAt: text(record.expiresAt),
+    status: submitted ? 'submitted' : record.firstAttemptAt ? 'try-again' : 'saved-not-sent',
+    ...(submitted ? { inquiryId: String(submitted) } : {}),
+    ...(clinic ? { clinicName: text(clinic.name) } : {}),
+    ...(record.firstAttemptAt ? { firstAttemptAt: text(record.firstAttemptAt) } : {}),
+  }
+}
+
+/** Authorize immutable private content. This command creates no clinic work or notification. */
+export async function preparePatientInquiry(
+  req: PayloadRequest,
+  binding: string,
+  rawInput: unknown,
+): Promise<PreparationReceipt> {
+  const parsed = preparationInputSchema.safeParse(rawInput)
+  if (!parsed.success) throw new InquiryCommunicationServiceError('invalid-input', 'The inquiry input is invalid.')
+  const input = parsed.data
+  const originAttemptKey = requestHash([preparationEnvironment(), binding, input.idempotencyKey])
+  return withPreparationStorage(req, () =>
+    runRetryableCommand(req, async () => {
+      const replay = await findOne(req, 'inquiryPreparations', { originAttemptKey: { equals: originAttemptKey } })
+      if (replay) return preparationReceipt(req, replay)
+      await validateInquiryTarget(req, input)
+      const authorizedAt = new Date().toISOString()
+      const record = asRecord(
+        await req.payload.create({
+          collection: 'inquiryPreparations',
+          overrideAccess: true,
+          depth: 0,
+          req,
+          data: {
+            environment: preparationEnvironment(),
+            reference: randomUUID(),
+            submissionKey: randomUUID(),
+            originAttemptKey,
+            groupBinding: binding,
+            authorizedAt,
+            expiresAt: new Date(Date.parse(authorizedAt) + PREPARATION_LIFETIME).toISOString(),
+            clinic: payloadId(input.clinicId),
+            doctor: input.doctorId ? payloadId(input.doctorId) : null,
+            treatment: input.treatmentId ? payloadId(input.treatmentId) : null,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email,
+            phoneNumber: input.phoneNumber,
+            message: input.message,
+            preferredContactWindow: input.preferredContactWindow,
+            treatmentTimeline: input.treatmentTimeline,
+            consentText: INQUIRY_SUBMISSION_CONSENT_TEXT,
+          },
+        } as never),
+      )
+      return preparationReceipt(req, record)
+    }),
+  )
+}
+
+/** Reads never attempt delivery. Anonymous callers receive only an unsent receipt and deadline. */
+export async function readInquiryPreparations(req: PayloadRequest, binding: string, cursor?: number) {
+  const records = await preparationRecords(
+    req,
+    {
+      and: [
+        preparationWhere(binding),
+        { expiresAt: { greater_than: new Date().toISOString() } },
+        ...(cursor ? [{ id: { greater_than: cursor } }] : []),
+      ],
+    },
+    { limit: 26, sort: 'id' },
+  )
+  const items = records.slice(0, 25)
+  const authorized = req.user?.collection === 'patients'
+  const preparations: PreparationReceipt[] = []
+  for (const item of items) {
+    if (authorized) {
+      if (
+        String(relationId(item.patient)) !== String(req.user!.id) ||
+        item.subject !== (req.user && 'supabaseUserId' in req.user ? req.user.supabaseUserId : null)
+      )
+        continue
+      preparations.push(await preparationReceipt(req, item))
+    } else if (!item.submittedInquiry)
+      preparations.push({
+        reference: text(item.reference),
+        authorizedAt: text(item.authorizedAt),
+        expiresAt: text(item.expiresAt),
+        status: 'saved-not-sent',
+      })
+  }
+  return { preparations, nextCursor: records.length > 25 ? Number(items.at(-1)!.id) : null }
+}
+
+/** Called only by successful password-bearing identity creation, never by email reconciliation. */
+export async function bindInquiryPreparationRegistration(
+  req: PayloadRequest,
+  input: { binding: string; actionId: number; subject: string; email: string },
+) {
+  return withPreparationStorage(req, () =>
+    runRetryableCommand(req, async () => {
+      const records = await findMany(
+        req,
+        'inquiryPreparations',
+        {
+          and: [
+            preparationWhere(input.binding),
+            { email: { equals: input.email } },
+            { expiresAt: { greater_than: new Date().toISOString() } },
+            { subject: { exists: false } },
+          ],
+        },
+        { limit: 100 },
+      )
+      for (const record of records)
+        await req.payload.update({
+          collection: 'inquiryPreparations',
+          id: record.id as number,
+          overrideAccess: true,
+          req,
+          data: { authAction: input.actionId, subject: input.subject, passwordEstablishedAt: new Date().toISOString() },
+        } as never)
+    }),
+  )
+}
+
+/** Confirmation establishes the cross-device context only through the verified action and subject. */
+export async function completeInquiryPreparationAccount(
+  req: PayloadRequest,
+  input: { actionId: number; subject: string; patientId: number | string },
+): Promise<string | null> {
+  return withPreparationStorage(req, () =>
+    runRetryableCommand(req, async () => {
+      const records = await findMany(
+        req,
+        'inquiryPreparations',
+        {
+          and: [
+            { environment: { equals: preparationEnvironment() } },
+            { authAction: { equals: input.actionId } },
+            { subject: { equals: input.subject } },
+            { passwordEstablishedAt: { exists: true } },
+            { expiresAt: { greater_than: new Date().toISOString() } },
+          ],
+        },
+        { limit: 100 },
+      )
+      for (const record of records)
+        await req.payload.update({
+          collection: 'inquiryPreparations',
+          id: record.id as number,
+          overrideAccess: true,
+          req,
+          data: { patient: input.patientId },
+        } as never)
+      return records[0] ? text(records[0].groupBinding) : null
+    }),
+  )
+}
+
+/** Registration prefills stay inside the proved origin context and never include inquiry content. */
+export async function readInquiryPreparationRegistration(req: PayloadRequest, binding: string, reference: string) {
+  const [record] = await preparationRecords(
+    req,
+    {
+      and: [
+        preparationWhere(binding),
+        { reference: { equals: reference } },
+        { expiresAt: { greater_than: new Date().toISOString() } },
+        { submittedInquiry: { exists: false } },
+      ],
+    },
+    { limit: 1 },
+  )
+  return record
+    ? {
+        firstName: text(record.firstName),
+        lastName: text(record.lastName),
+        email: text(record.email),
+        expiresAt: text(record.expiresAt),
+      }
+    : null
+}
+
+/** Resend may move only an existing origin-proved binding, preserving password evidence and expiry. */
+export async function replaceInquiryPreparationAction(
+  req: PayloadRequest,
+  input: { binding: string; actionId: number; subject: string },
+) {
+  return withPreparationStorage(req, () =>
+    runRetryableCommand(req, async () => {
+      const records = await findMany(
+        req,
+        'inquiryPreparations',
+        {
+          and: [
+            preparationWhere(input.binding),
+            { subject: { equals: input.subject } },
+            { authAction: { exists: true } },
+            { expiresAt: { greater_than: new Date().toISOString() } },
+          ],
+        },
+        { limit: 100 },
+      )
+      for (const record of records)
+        await req.payload.update({
+          collection: 'inquiryPreparations',
+          id: record.id as number,
+          overrideAccess: true,
+          req,
+          data: { authAction: input.actionId },
+        } as never)
+    }),
+  )
+}
+
+const authorizedPreparation = async (req: PayloadRequest, binding: string, reference: string) => {
+  const owner = patientId(req)
+  const record = await findOne(req, 'inquiryPreparations', {
+    and: [preparationWhere(binding), { reference: { equals: reference } }],
+  })
+  if (
+    !record ||
+    String(relationId(record.patient)) !== String(owner) ||
+    record.subject !== (req.user && 'supabaseUserId' in req.user ? req.user.supabaseUserId : null) ||
+    !record.passwordEstablishedAt
+  )
+    throw new InquiryCommunicationServiceError('access-denied', 'The preparation is not authorized for this patient.')
+  return record
+}
+
+export async function submitInquiryPreparation(
+  req: PayloadRequest,
+  binding: string,
+  input: { reference: string; retry: boolean },
+): Promise<PreparationReceipt> {
+  patientId(req)
+  // Current provider eligibility is checked before entering retryable database work.
+  const provider = await createClient()
+  const authorization = req.headers.get('authorization')
+  const verified = await provider.auth.getUser(
+    authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined,
+  )
+  const identity = verified.data.user
+  if (
+    verified.error ||
+    !identity?.email_confirmed_at ||
+    identity.app_metadata?.user_type !== 'patient' ||
+    (identity.banned_until && Date.parse(identity.banned_until) > Date.now()) ||
+    !req.user ||
+    !('supabaseUserId' in req.user) ||
+    identity.id !== req.user.supabaseUserId
+  )
+    throw new InquiryCommunicationServiceError('access-denied', 'Verified patient access is required.')
+  return withPreparationStorage(req, async () => {
+    // Persist the first attempt separately: an inquiry rollback must never enable automatic retry.
+    const admission = await runRetryableCommand(
+      req,
+      async () => {
+        const release = await acquireInquiryCommandLock(req, `preparation:${input.reference}`)
+        const result = await (async () => {
+          const record = await authorizedPreparation(req, binding, input.reference)
+          if (Date.parse(text(record.expiresAt)) <= Date.now()) {
+            await req.payload.delete({
+              collection: 'inquiryPreparations',
+              id: record.id as number,
+              overrideAccess: true,
+              req,
+            } as never)
+            return null
+          }
+          if (record.submittedInquiry || (record.firstAttemptAt && !input.retry)) return { record, submit: false }
+          const updated = asRecord(
+            await req.payload.update({
+              collection: 'inquiryPreparations',
+              id: record.id as number,
+              overrideAccess: true,
+              req,
+              data: { firstAttemptAt: record.firstAttemptAt || new Date().toISOString() },
+            } as never),
+          )
+          return { record: updated, submit: true }
+        })()
+        await release()
+        return result
+      },
+      true,
+    )
+    if (!admission) throw new InquiryCommunicationServiceError('not-found', 'The preparation has expired.')
+    if (!admission.submit) return preparationReceipt(req, admission.record)
+    return runRetryableCommand(
+      req,
+      async () => {
+        const release = await acquireInquiryCommandLock(req, `preparation:${input.reference}`)
+        const result = await (async () => {
+          const record = await authorizedPreparation(req, binding, input.reference)
+          if (record.submittedInquiry) return preparationReceipt(req, record)
+          if (Date.parse(text(record.expiresAt)) <= Date.now())
+            throw new InquiryCommunicationServiceError('not-found', 'The preparation has expired.')
+          const inquiry = await createPatientInquiryInCommand(
+            req,
+            {
+              clinicId: String(relationId(record.clinic)),
+              doctorId: relationId(record.doctor) ? String(relationId(record.doctor)) : undefined,
+              treatmentId: relationId(record.treatment) ? String(relationId(record.treatment)) : undefined,
+              idempotencyKey: text(record.submissionKey),
+              consent: true,
+              message: text(record.message),
+              phoneNumber: text(record.phoneNumber),
+              preferredContactWindow: text(record.preferredContactWindow) || undefined,
+              treatmentTimeline: text(record.treatmentTimeline) || undefined,
+            },
+            { acceptedAt: text(record.authorizedAt), text: text(record.consentText) },
+          )
+          const receipt = asRecord(
+            await req.payload.update({
+              collection: 'inquiryPreparations',
+              id: record.id as number,
+              overrideAccess: true,
+              req,
+              data: {
+                submittedInquiry: inquiry.id,
+                clinic: null,
+                doctor: null,
+                treatment: null,
+                firstName: null,
+                lastName: null,
+                email: null,
+                phoneNumber: null,
+                message: null,
+                preferredContactWindow: null,
+                treatmentTimeline: null,
+                consentText: null,
+              },
+            } as never),
+          )
+          return preparationReceipt(req, receipt)
+        })()
+        await release()
+        return result
+      },
+      true,
+    )
+  })
+}
+
+/** Bounded deletion only. The scheduler never submits an inquiry. */
+export async function sweepExpiredInquiryPreparations(
+  req: PayloadRequest,
+  deadline = Date.now() + 5000,
+): Promise<number> {
+  return withPreparationStorage(req, async () => {
+    const records = await findMany(
+      req,
+      'inquiryPreparations',
+      {
+        and: [
+          { environment: { equals: preparationEnvironment() } },
+          { expiresAt: { less_than_equal: new Date().toISOString() } },
+        ],
+      },
+      { limit: 100, sort: 'expiresAt' },
+    )
+    let deleted = 0
+    for (const record of records) {
+      if (Date.now() >= deadline) break
+      const removed = await runRetryableCommand(
+        req,
+        async () => {
+          const release = await acquireInquiryCommandLock(req, `preparation:${text(record.reference)}`)
+          const removed = await (async () => {
+            const current = await findOne(req, 'inquiryPreparations', { id: { equals: record.id } })
+            if (current && Date.parse(text(current.expiresAt)) <= Date.now()) {
+              await req.payload.delete({
+                collection: 'inquiryPreparations',
+                id: current.id as number,
+                overrideAccess: true,
+                req,
+              } as never)
+              return true
+            }
+            return false
+          })()
+          await release()
+          return removed
+        },
+        true,
+      )
+      if (removed) deleted += 1
+    }
+    return deleted
+  })
 }

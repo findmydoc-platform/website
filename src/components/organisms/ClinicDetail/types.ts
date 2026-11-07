@@ -7,6 +7,7 @@ export type ContactFormFields = {
   preferredContactWindow: string
   note: string
   consentAccepted: boolean
+  accountAuthorization?: boolean
 }
 
 export type ContactFormSelectionError = 'doctor' | 'selection' | 'treatment' | null

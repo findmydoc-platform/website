@@ -1,3 +1,8 @@
+import {
+  bindInquiryPreparationRegistration,
+  replaceInquiryPreparationAction,
+} from '@/features/inquiryCommunication/service'
+import { readPreparationBinding } from '@/features/inquiryPreparations/context'
 import { APIError, createLocalReq, type PayloadRequest } from 'payload'
 import { createAdminClient } from '@/auth/utilities/supaBaseServer'
 import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEmail/environment'
@@ -20,9 +25,24 @@ export async function requestPatientVerification(req: PayloadRequest, input: Inp
   const verificationKeys = resolveVerificationKeys(environment)
   const sourceReq = await createLocalReq({}, req.payload)
   const admin = (await createAdminClient()).auth.admin
-  const action = await bindPendingPatientVerification(sourceReq, { environment, verificationKeys, admin }).prepare(
-    input,
-  )
+  const binding = readPreparationBinding(req.headers)
+  const action = await bindPendingPatientVerification(sourceReq, {
+    environment,
+    verificationKeys,
+    admin,
+    ...(binding
+      ? {
+          onPasswordEstablished: async (created) => {
+            await bindInquiryPreparationRegistration(sourceReq, {
+              binding,
+              actionId: created.id,
+              subject: created.supabaseSubject!,
+              email: input.email.trim().toLowerCase(),
+            })
+          },
+        }
+      : {}),
+  }).prepare(input)
   const actions = bindAuthActions(sourceReq, { environment, verificationKeys })
   if (action.state === 'pending') await actions.transition({ id: action.id, to: 'active' })
   // Identity creation and catalog reads run outside the automatically retried mail-storage transaction.
@@ -43,6 +63,9 @@ export async function resendPatientVerification(req: PayloadRequest, input: { em
     verificationKeys,
     admin,
   }).prepareResend(input)
+  const binding = readPreparationBinding(req.headers)
+  if (binding && action.supabaseSubject)
+    await replaceInquiryPreparationAction(sourceReq, { binding, actionId: action.id, subject: action.supabaseSubject })
   await bindAuthActions(sourceReq, { environment, verificationKeys }).transition({ id: action.id, to: 'active' })
   await bindTransactionalEmail(sourceReq).accept({ type: 'auth.email-verification', authActionId: action.id })
 }

@@ -7,19 +7,13 @@ import {
   PublicAuthRouteShell,
 } from '@/app/(frontend)/_components/PublicAuthRouteShell'
 import { PatientRegistrationForm } from '@/components/organisms/Auth/PatientRegistrationForm'
-import { PREVIEW_GUARD_ACTIVE_REQUEST_HEADER } from '@/features/previewGuard'
 import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
 import { PatientVerificationResendForm } from './PatientVerificationResendForm'
 
 export default async function PatientRegistrationPage({
   searchParams = Promise.resolve({}),
 }: { searchParams?: Promise<{ inquiry?: string }> } = {}) {
   const requestHeaders = await headers()
-
-  if (requestHeaders.get(PREVIEW_GUARD_ACTIVE_REQUEST_HEADER) === '1') {
-    redirect('/admin/collections/patients/create')
-  }
 
   const { inquiry } = await searchParams
   const binding = readPreparationBinding(requestHeaders)

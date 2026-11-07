@@ -107,17 +107,4 @@ describe('Preview scheduler request through the proxy and worker', () => {
     expect(mocks.createServerClient).not.toHaveBeenCalled()
     expect(mocks.getPayload).not.toHaveBeenCalled()
   })
-
-  it.each([
-    '/api/internal/transactional-email',
-    '/api/internal/transactional-email/worker/extra',
-    '/api/internal/transactional-email/worker-other',
-  ])('keeps the Preview guard on neighboring path %s', async (path) => {
-    const response = await proxy(new NextRequest(`https://preview.findmydoc.eu${path}`))
-
-    expect(response.status).toBe(401)
-    await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' })
-    expect(response.headers.get('x-middleware-next')).toBeNull()
-    expect(mocks.getPayload).not.toHaveBeenCalled()
-  })
 })

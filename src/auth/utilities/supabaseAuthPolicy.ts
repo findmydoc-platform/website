@@ -9,11 +9,6 @@ export const isPlatformUser = (user: UserTypeCarrier): boolean => {
   return typeof userType === 'string' && userType.trim().toLowerCase() === 'platform'
 }
 
-export const isPatientUser = (user: UserTypeCarrier): boolean => {
-  const userType = user?.app_metadata?.user_type
-  return typeof userType === 'string' && userType.trim().toLowerCase() === 'patient'
-}
-
 export type SupabaseAuthErrorLike = {
   code?: string
   message?: string

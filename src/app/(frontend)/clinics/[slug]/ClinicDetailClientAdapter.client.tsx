@@ -27,11 +27,19 @@ const clinicDetailAnalytics: Omit<ClinicDetailAnalyticsPort, 'isReady'> = {
 }
 
 export const submitClinicContactRequest: ClinicContactRequestSubmitter = async (payload, authenticated) => {
-  const response = await fetch(authenticated ? '/api/patient/inquiries' : '/api/patient/inquiry-preparations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
+  if (!authenticated && !navigator.locks)
+    throw new ClinicContactRequestError(
+      'This browser cannot save your inquiry safely. Please use an updated browser.',
+      false,
+    )
+  const send = () =>
+    fetch(authenticated ? '/api/patient/inquiries' : '/api/patient/inquiry-preparations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  // Let the first response establish its HttpOnly group before another tab saves.
+  const response = await (authenticated ? send() : navigator.locks.request('findmydoc-inquiry-preparations', send))
 
   if (!response.ok) {
     const errorPayload = await response.json().catch(() => ({}))

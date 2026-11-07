@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import React from 'react'
+import { locks } from 'node:worker_threads'
 import { render } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type {
   ClinicContactRequestPayload,
@@ -33,6 +34,9 @@ import {
 } from '@/app/(frontend)/clinics/[slug]/ClinicDetailClientAdapter.client'
 
 const originalFetch = global.fetch
+
+beforeAll(() => Object.defineProperty(navigator, 'locks', { configurable: true, value: locks }))
+afterAll(() => Reflect.deleteProperty(navigator, 'locks'))
 
 const requestPayload: ClinicContactRequestPayload = {
   clinicId: '42',

@@ -81,6 +81,9 @@ binding, confirmation and action replacement visit every matching item in ID pag
 the highest matching ID at command start. A new preparation before confirmation can reuse the server-bound
 account context of a live, unsent preparation only within the same proved origin group and normalized email.
 It retains its own content and deadline, and cannot gain password evidence absent from that context.
+The existing clinic browser adapter serializes anonymous preparation requests across tabs with Web Locks until
+the response establishes the HttpOnly group cookie. Without that browser API, it stops before sending a request
+and retains the form inputs with an updated-browser message. Authenticated direct submissions do not take this lock.
 My inquiries displays preparation status directly in the inquiry list. Uncertain results receive up to three
 read-only status attempts, with one- and two-second delays. Checking uses a neutral status; an unresolved result
 then shows a small per-clinic hint and Check status action. The existing visible-page polling and focus refresh

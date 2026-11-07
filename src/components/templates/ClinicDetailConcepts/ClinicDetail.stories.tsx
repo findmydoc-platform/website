@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, mocked, userEvent, within } from 'storybook/test'
 
 import { ClinicDetail } from '@/components/templates/ClinicDetailConcepts'
+import type { ClinicContactRequestSubmitter } from '@/features/clinicDetail/contracts'
 import {
   clinicDetailFixture,
   clinicDetailLongResponseFixture,
@@ -22,7 +23,14 @@ const meta = {
       onInquiryStarted: fn(() => true),
     },
     data: clinicDetailFixture,
-    onSubmitContactRequest: fn(async () => ({ id: 'story-inquiry' })),
+    onSubmitContactRequest: fn<ClinicContactRequestSubmitter>(async (_payload, authenticated) =>
+      authenticated
+        ? { id: 'story-inquiry' }
+        : {
+            id: 'story-preparation',
+            preparation: { reference: 'story-preparation', expiresAt: '2026-11-14T12:00:00.000Z' },
+          },
+    ),
   },
   parameters: {
     layout: 'fullscreen',
@@ -138,12 +146,6 @@ export const Main_InitialReviewSummary: Story = {
 }
 
 export const Behavior_GuestContactSubmission: Story = {
-  args: {
-    onSubmitContactRequest: fn(async () => ({
-      id: 'story-preparation',
-      preparation: { reference: 'story-preparation', expiresAt: '2026-11-14T12:00:00.000Z' },
-    })),
-  },
   render: (args) => <ClinicDetail {...args} />,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)

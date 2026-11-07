@@ -18,7 +18,7 @@ export type PreparationReceipt = {
   reference: string
   authorizedAt: string
   expiresAt: string
-  status: 'saved-not-sent' | 'try-again' | 'submitted'
+  status: 'saved-not-sent' | 'sign-in-required' | 'try-again' | 'submitted'
   clinicName?: string
   inquiryId?: string
   firstAttemptAt?: string

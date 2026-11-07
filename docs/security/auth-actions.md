@@ -60,6 +60,14 @@ receipt until the original expiry. The authenticated one-minute scheduler delete
 in indexed batches of at most 100, with a five-second budget, independently of mail activation. Cleanup never
 submits an inquiry and does not delete patient accounts, historical guest inquiries or submitted conversations.
 
+Each preparation has its own authorization, destination, submission key, fixed expiry and outcome. Registration
+binding, confirmation and action replacement visit every matching item in ID pages of at most 100, bounded by
+the highest matching ID at command start. A new preparation before confirmation can reuse the server-bound
+account context of a live, unsent preparation only within the same proved origin group and normalized email.
+It retains its own content and deadline, and cannot gain password evidence absent from that context.
+My inquiries keeps successful submissions in its normal list and shows each unsent clinic separately above it.
+Retrying one failed item does not repeat another item's successful submission.
+
 ## Pending patient verification correlation
 
 `reservePatientVerification` validates and normalizes the email using the Auth domain's existing normalization rules. It preserves plus tags and dots. HMAC-SHA-256 covers the JSON array `["auth-action-correlation-v1", environment, "patient-verification", normalizedEmail]`. Only the lowercase hexadecimal digest and non-secret key version are persisted as private `correlationDigest` and `correlationKeyVersion`. The input email and password are never written to an AuthAction or logged by the preparation service.

@@ -35,13 +35,21 @@ export function InquiryPreparationHandoff() {
   const [items, setItems] = useState<PreparationReceipt[]>([])
   const [loading, setLoading] = useState<string[]>([])
   const [error, setError] = useState<string>()
+  const [errors, setErrors] = useState<Record<string, string>>({})
   useEffect(() => {
     let disposed = false
     void readPreparations()
       .then(async (prepared) => {
-        const results: PreparationReceipt[] = []
+        if (disposed) return
+        setItems(prepared.filter((item) => item.status !== 'submitted'))
+        setLoading(
+          prepared
+            .filter((item) => item.status === 'saved-not-sent' && !item.firstAttemptAt)
+            .map((item) => item.reference),
+        )
         for (const item of prepared) {
-          if (item.status === 'submitted') continue
+          if (disposed) return
+          if (item.status === 'submitted' || item.status === 'sign-in-required') continue
           let result = item
           if (!item.firstAttemptAt && item.status !== 'sign-in-required') {
             try {
@@ -50,10 +58,16 @@ export function InquiryPreparationHandoff() {
               result = { ...item, status: 'try-again' }
             }
           }
-          if (result.status !== 'submitted') results.push(result)
+          if (!disposed) {
+            setItems((current) =>
+              current.flatMap((entry) =>
+                entry.reference !== item.reference ? [entry] : result.status === 'submitted' ? [] : [result],
+              ),
+            )
+            setLoading((current) => current.filter((reference) => reference !== item.reference))
+            if (result.status === 'submitted') window.dispatchEvent(new Event('patient-inquiries-updated'))
+          }
         }
-        if (!disposed) setItems(results)
-        window.dispatchEvent(new Event('patient-inquiries-updated'))
       })
       .catch((error: unknown) => {
         if (!disposed) setError(error instanceof Error ? error.message : 'Prepared inquiries could not be loaded.')
@@ -64,7 +78,7 @@ export function InquiryPreparationHandoff() {
   }, [])
 
   const retry = async (reference: string) => {
-    setError(undefined)
+    setErrors((current) => ({ ...current, [reference]: '' }))
     setLoading((current) => [...current, reference])
     try {
       const result = await submit(reference, true)
@@ -75,7 +89,10 @@ export function InquiryPreparationHandoff() {
       )
       window.dispatchEvent(new Event('patient-inquiries-updated'))
     } catch {
-      setError('Your account is ready, but the inquiry was not sent. Try again before it expires.')
+      setErrors((current) => ({
+        ...current,
+        [reference]: 'Your account is ready, but the inquiry was not sent. Try again before it expires.',
+      }))
     } finally {
       setLoading((current) => current.filter((item) => item !== reference))
     }
@@ -85,6 +102,7 @@ export function InquiryPreparationHandoff() {
       items={items}
       loading={loading}
       error={error}
+      errors={errors}
       onRetry={(reference) => {
         void retry(reference)
       }}

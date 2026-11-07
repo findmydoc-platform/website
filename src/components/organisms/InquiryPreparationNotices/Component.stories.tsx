@@ -54,3 +54,33 @@ export const PasswordSignInRequired: Story = {
     await expect(canvas.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
   },
 }
+
+export const IndependentFailures: Story = {
+  args: {
+    items: [
+      {
+        reference: 'clinic-b',
+        authorizedAt: '2026-11-07T12:00:00.000Z',
+        expiresAt: '2026-11-14T12:00:00.000Z',
+        status: 'try-again',
+        clinicName: 'Synthetic clinic B with a long destination name for narrow screens',
+      },
+      {
+        reference: 'clinic-c',
+        authorizedAt: '2026-11-08T12:00:00.000Z',
+        expiresAt: '2026-11-15T12:00:00.000Z',
+        status: 'try-again',
+        clinicName: 'Synthetic clinic C',
+      },
+    ],
+    errors: { 'clinic-b': 'This inquiry was not sent. Try again before it expires.' },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    const notices = canvas.getAllByRole('status')
+    await expect(within(notices[0]!).getByRole('alert')).toHaveTextContent('This inquiry was not sent.')
+    await expect(within(notices[1]!).queryByRole('alert')).not.toBeInTheDocument()
+    await userEvent.click(within(notices[1]!).getByRole('button', { name: 'Try again' }))
+    await expect(args.onRetry).toHaveBeenCalledWith('clinic-c')
+  },
+}

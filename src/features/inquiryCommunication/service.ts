@@ -3353,6 +3353,28 @@ const preparationWhere = (binding: string): Where => ({
 const preparationRecords = (req: PayloadRequest, where: Where, options: { limit?: number; sort?: string } = {}) =>
   withPreparationStorage(req, () => findMany(req, 'inquiryPreparations', where, options))
 
+/** Visit a finite snapshot in bounded ID pages, even when each write changes the selection. */
+const visitInquiryPreparations = async (
+  req: PayloadRequest,
+  where: Where,
+  visit: (record: StoredRecord) => Promise<void>,
+) => {
+  const [last] = await findMany(req, 'inquiryPreparations', where, { limit: 1, sort: '-id' })
+  if (!last) return
+  let cursor = 0
+  while (cursor < Number(last.id)) {
+    const records = await findMany(
+      req,
+      'inquiryPreparations',
+      { and: [where, { id: { greater_than: cursor, less_than_equal: Number(last.id) } }] },
+      { limit: 100, sort: 'id' },
+    )
+    if (!records.length) break
+    for (const record of records) await visit(record)
+    cursor = Number(records.at(-1)!.id)
+  }
+}
+
 const preparationReceipt = async (req: PayloadRequest, record: StoredRecord): Promise<PreparationReceipt> => {
   const submitted = relationId(record.submittedInquiry)
   const clinicId = relationId(record.clinic)
@@ -3390,6 +3412,21 @@ export async function preparePatientInquiry(
       if (replay) return preparationReceipt(req, replay)
       await validateInquiryTarget(req, input)
       const authorizedAt = new Date().toISOString()
+      const [accountContext] = await findMany(
+        req,
+        'inquiryPreparations',
+        {
+          and: [
+            preparationWhere(binding),
+            { email: { equals: input.email } },
+            { expiresAt: { greater_than: authorizedAt } },
+            { submittedInquiry: { exists: false } },
+            { authAction: { exists: true } },
+            { subject: { exists: true } },
+          ],
+        },
+        { limit: 1, sort: '-id' },
+      )
       const record = asRecord(
         await req.payload.create({
           collection: 'inquiryPreparations',
@@ -3402,6 +3439,16 @@ export async function preparePatientInquiry(
             submissionKey: randomUUID(),
             originAttemptKey,
             groupBinding: binding,
+            ...(accountContext
+              ? {
+                  authAction: relationId(accountContext.authAction),
+                  subject: text(accountContext.subject),
+                  ...(accountContext.passwordEstablishedAt
+                    ? { passwordEstablishedAt: text(accountContext.passwordEstablishedAt) }
+                    : {}),
+                  ...(relationId(accountContext.patient) ? { patient: relationId(accountContext.patient) } : {}),
+                }
+              : {}),
             authorizedAt,
             expiresAt: new Date(Date.parse(authorizedAt) + PREPARATION_LIFETIME).toISOString(),
             clinic: payloadId(input.clinicId),
@@ -3544,9 +3591,8 @@ export async function bindInquiryPreparationRegistration(
 ) {
   return withPreparationStorage(req, () =>
     runRetryableCommand(req, async () => {
-      const records = await findMany(
+      await visitInquiryPreparations(
         req,
-        'inquiryPreparations',
         {
           and: [
             preparationWhere(input.binding),
@@ -3555,16 +3601,20 @@ export async function bindInquiryPreparationRegistration(
             { subject: { exists: false } },
           ],
         },
-        { limit: 100 },
+        async (record) => {
+          await req.payload.update({
+            collection: 'inquiryPreparations',
+            id: record.id as number,
+            overrideAccess: true,
+            req,
+            data: {
+              authAction: input.actionId,
+              subject: input.subject,
+              passwordEstablishedAt: new Date().toISOString(),
+            },
+          } as never)
+        },
       )
-      for (const record of records)
-        await req.payload.update({
-          collection: 'inquiryPreparations',
-          id: record.id as number,
-          overrideAccess: true,
-          req,
-          data: { authAction: input.actionId, subject: input.subject, passwordEstablishedAt: new Date().toISOString() },
-        } as never)
     }),
   )
 }
@@ -3576,9 +3626,9 @@ export async function completeInquiryPreparationAccount(
 ): Promise<string | null> {
   return withPreparationStorage(req, () =>
     runRetryableCommand(req, async () => {
-      const records = await findMany(
+      let binding: string | null = null
+      await visitInquiryPreparations(
         req,
-        'inquiryPreparations',
         {
           and: [
             { environment: { equals: preparationEnvironment() } },
@@ -3587,17 +3637,18 @@ export async function completeInquiryPreparationAccount(
             { expiresAt: { greater_than: new Date().toISOString() } },
           ],
         },
-        { limit: 100 },
+        async (record) => {
+          binding ??= text(record.groupBinding)
+          await req.payload.update({
+            collection: 'inquiryPreparations',
+            id: record.id as number,
+            overrideAccess: true,
+            req,
+            data: { patient: input.patientId },
+          } as never)
+        },
       )
-      for (const record of records)
-        await req.payload.update({
-          collection: 'inquiryPreparations',
-          id: record.id as number,
-          overrideAccess: true,
-          req,
-          data: { patient: input.patientId },
-        } as never)
-      return records[0] ? text(records[0].groupBinding) : null
+      return binding
     }),
   )
 }
@@ -3633,9 +3684,8 @@ export async function replaceInquiryPreparationAction(
 ) {
   return withPreparationStorage(req, () =>
     runRetryableCommand(req, async () => {
-      const records = await findMany(
+      await visitInquiryPreparations(
         req,
-        'inquiryPreparations',
         {
           and: [
             preparationWhere(input.binding),
@@ -3644,16 +3694,16 @@ export async function replaceInquiryPreparationAction(
             { expiresAt: { greater_than: new Date().toISOString() } },
           ],
         },
-        { limit: 100 },
+        async (record) => {
+          await req.payload.update({
+            collection: 'inquiryPreparations',
+            id: record.id as number,
+            overrideAccess: true,
+            req,
+            data: { authAction: input.actionId },
+          } as never)
+        },
       )
-      for (const record of records)
-        await req.payload.update({
-          collection: 'inquiryPreparations',
-          id: record.id as number,
-          overrideAccess: true,
-          req,
-          data: { authAction: input.actionId },
-        } as never)
     }),
   )
 }

@@ -11,27 +11,11 @@ import { findUserBySupabaseId } from '@/auth/utilities/userLookup'
 import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { isFindmydocPlatformEmail } from '@/auth/utilities/platformStaffEmailPolicy'
 import { createScopedLogger, getRequestLogContext, hashLogValue } from '@/utilities/logging/shared'
-import {
-  isNonProductionDeployment,
-  PREVIEW_GUARD_LOCK_REQUEST_HEADER,
-  PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY,
-  sanitizePreviewGuardNextPath,
-} from '@/features/previewGuard'
-import { readHoldingViewRequestHeader, TEMPORARY_LANDING_MODE_REQUEST_HEADER } from '@/features/temporaryLandingMode'
+import { isNonProductionRuntime } from '@/features/runtimePolicy'
+import { readHoldingViewRequestHeader } from '@/features/temporaryLandingMode'
+import { sanitizeInternalRedirectPath } from '@/utilities/routing/sanitizeInternalRedirectPath'
 
 export const dynamic = 'force-dynamic'
-
-const loginStatusMessages: Record<string, { text: string; variant?: 'success' | 'info' | 'warning' }> = {
-  [PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY]: {
-    text: 'This is a preview deployment. Please sign in to continue.',
-    variant: 'info',
-  },
-}
-
-const previewPlatformOnlyStatus = {
-  text: 'This preview deployment is restricted to platform staff accounts.',
-  variant: 'warning' as const,
-}
 
 export default async function LoginPage({
   searchParams: searchParamsPromise,
@@ -47,24 +31,16 @@ export default async function LoginPage({
     ...getRequestLogContext({ headers: requestHeaders }),
   })
   const authData = await extractSupabaseUserData({ headers: requestHeaders })
-  const messageKey = resolvedSearchParams?.message
-  const statusFromQuery = messageKey ? loginStatusMessages[messageKey] : undefined
-  const isPreviewGuardLocked = requestHeaders.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1'
-  const isTemporaryLandingLocked = requestHeaders.get(TEMPORARY_LANDING_MODE_REQUEST_HEADER) === '1'
-  const isGuardEnabled = isPreviewGuardLocked && !isTemporaryLandingLocked
-  const fallbackPreviewStatus = isGuardEnabled
-    ? loginStatusMessages[PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY]
-    : undefined
-  const postLoginRedirectPath = sanitizePreviewGuardNextPath(resolvedSearchParams?.next)
-  const showPreviewBadge = isNonProductionDeployment(process.env)
-  const showPreviewLogo =
-    isPreviewGuardLocked ||
-    readHoldingViewRequestHeader(requestHeaders) === 'standalone' ||
-    messageKey === PREVIEW_GUARD_LOGIN_REQUIRED_MESSAGE_KEY
+  const postLoginRedirectPath = sanitizeInternalRedirectPath({
+    nextPath: resolvedSearchParams?.next,
+    fallbackPath: '/admin',
+    blockedPaths: ['/admin/login'],
+  })
+  const showPreviewBadge = isNonProductionRuntime(process.env)
+  const showPreviewLogo = readHoldingViewRequestHeader(requestHeaders) === 'standalone'
 
-  let statusMessage: string | undefined = statusFromQuery?.text ?? fallbackPreviewStatus?.text
-  let statusVariant: 'success' | 'info' | 'warning' | undefined =
-    statusFromQuery?.variant ?? fallbackPreviewStatus?.variant
+  let statusMessage: string | undefined
+  let statusVariant: 'success' | 'info' | 'warning' | undefined
 
   if (authData?.userType === 'platform') {
     if (!isFindmydocPlatformEmail(authData.userEmail)) {
@@ -83,13 +59,10 @@ export default async function LoginPage({
 
       if (user) {
         redirect('/admin')
-      } else if (!isGuardEnabled) {
+      } else {
         statusMessage =
           'Your Supabase session is active, but no admin account could be found in the CMS. Please contact support.'
         statusVariant = 'warning'
-      } else {
-        statusMessage = previewPlatformOnlyStatus.text
-        statusVariant = previewPlatformOnlyStatus.variant
       }
     }
   } else {

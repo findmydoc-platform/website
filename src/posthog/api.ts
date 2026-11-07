@@ -46,10 +46,6 @@ export type PostHogFlagDefinition = {
 }
 
 export const POSTHOG_FLAG_REGISTRY = {
-  'preview-guard-enabled': {
-    defaultValue: false,
-    description: 'Controls preview deployment access guard behavior in server-side proxy code.',
-  },
   'temporary-landing-mode': {
     defaultValue: false,
     description: 'Controls temporary public landing-mode rendering in server-side code.',
@@ -72,15 +68,10 @@ export type PostHogFlagEvaluation =
 
 export type PostHogFlagEvaluationContext = {
   feature_flag_site_host: string
-  feature_flag_site_path?: string
 }
 
 export type PostHogServerAnalyticsConsent = {
   isAllowed: boolean
-}
-
-type CreatePostHogFlagEvaluationContextInput = {
-  url: Pick<URL, 'hostname' | 'pathname'>
 }
 
 type CreatePostHogHoldingEvaluationContextInput = {
@@ -138,31 +129,11 @@ const silentPostHogFlagEvaluationHost: ConstructorParameters<typeof FeatureFlagE
 
 const isNodeRuntime = (): boolean => process.env.NEXT_RUNTIME !== 'edge'
 
-const normalizeFeatureFlagSitePath = (pathname: string): string => {
-  if (!pathname) return '/'
-  if (pathname === '/') return pathname
-
-  const prefixed = pathname.startsWith('/') ? pathname : `/${pathname}`
-  return prefixed.endsWith('/') ? prefixed.slice(0, -1) : prefixed
-}
-
-export const createPostHogFlagEvaluationContext = ({
-  url,
-}: CreatePostHogFlagEvaluationContextInput): PostHogFlagEvaluationContext => ({
-  feature_flag_site_host: url.hostname.trim().toLowerCase(),
-  feature_flag_site_path: normalizeFeatureFlagSitePath(url.pathname),
-})
-
 export const createPostHogHoldingEvaluationContext = ({
   url,
 }: CreatePostHogHoldingEvaluationContextInput): PostHogFlagEvaluationContext => ({
   feature_flag_site_host: url.hostname.trim().toLowerCase(),
 })
-
-export const resolvePostHogSiteFlagActor = (context: PostHogFlagEvaluationContext): PostHogActor =>
-  toAnonymousPostHogActor({
-    fallbackAnonymousId: `site:${context.feature_flag_site_host}:${context.feature_flag_site_path}`,
-  })
 
 export const resolvePostHogHoldingFlagActor = (context: PostHogFlagEvaluationContext): PostHogActor =>
   toAnonymousPostHogActor({

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 import { HOLDING_VIEW_REQUEST_HEADER } from '@/features/temporaryLandingMode'
 import {
   SEARCH_ROBOTS_HEADER,
@@ -35,19 +34,19 @@ describe('searchIndexing feature', () => {
     ).toBe(false)
   })
 
-  it.each([
-    ['a Preview Guard lock', { [PREVIEW_GUARD_LOCK_REQUEST_HEADER]: '1' }],
-    ['a standalone Holding view', { [HOLDING_VIEW_REQUEST_HEADER]: 'standalone' }],
-  ] as const)('blocks indexing when the request carries %s', (_view, requestHeaders) => {
-    expect(
-      shouldBlockSearchIndexingForRequest({
-        env: {
-          DEPLOYMENT_ENVIRONMENT: undefined,
-          NODE_ENV: 'production',
-          VERCEL_ENV: 'production',
-        },
-        headers: new Headers(requestHeaders),
-      }),
-    ).toBe(true)
-  })
+  it.each([['a standalone Holding view', { [HOLDING_VIEW_REQUEST_HEADER]: 'standalone' }]] as const)(
+    'blocks indexing when the request carries %s',
+    (_view, requestHeaders) => {
+      expect(
+        shouldBlockSearchIndexingForRequest({
+          env: {
+            DEPLOYMENT_ENVIRONMENT: undefined,
+            NODE_ENV: 'production',
+            VERCEL_ENV: 'production',
+          },
+          headers: new Headers(requestHeaders),
+        }),
+      ).toBe(true)
+    },
+  )
 })

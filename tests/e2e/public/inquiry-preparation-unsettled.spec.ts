@@ -241,65 +241,149 @@ test('does not send when the browser cannot retain reload correlation', async ({
   await context.close()
 })
 
-test('quietly resolves a lost response with automatic status reads and one submission', async ({ browser }) => {
-  runtime.resetIdentities()
-  const clinic = runtime.clinics[0]!
-  const before = ((await runtime.fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs
-  const context = await browser.newContext({ baseURL: origin, viewport: { width: 375, height: 640 } })
-  await setCookieConsent(context)
-  const email = 'automatic-status@example.test'
-  expect(
-    (
-      await context.request.post('/api/patient/inquiry-preparations', {
-        headers: { Origin: origin },
-        data: {
-          clinicId: String(clinic.id),
-          doctorId: String(clinic.doctorId),
-          idempotencyKey: 'automatic-status',
-          firstName: 'Automatic',
-          lastName: 'Patient',
-          email,
-          phoneNumber: '+493000000080',
-          message: 'Synthetic automatic status inquiry.',
-          consent: true,
-          accountAuthorization: true,
-        },
-      })
-    ).status(),
-  ).toBe(201)
-  expect(
-    (
-      await context.request.post('/api/auth/register/patient', {
-        headers: { Origin: origin },
-        data: { email, password: 'SyntheticPatient123', firstName: 'Automatic', lastName: 'Patient' }, // pragma: allowlist secret
-      })
-    ).status(),
-  ).toBe(200)
-  await runtime.fixtureCommand('worker')
-  const page = await context.newPage()
-  let lostResponse = false
-  let statusReads = 0
-  let submissions = 0
-  await page.route('**/api/patient/inquiry-preparations', async (route) => {
-    if (lostResponse && ++statusReads <= 2) await route.abort('failed')
-    else await route.continue()
+for (const acknowledgement of ['lost', 'unknown'] as const) {
+  test(`quietly resolves a ${acknowledgement} response with automatic status reads and one submission`, async ({
+    browser,
+  }) => {
+    runtime.resetIdentities()
+    const clinic = runtime.clinics[0]!
+    const before = ((await runtime.fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs
+    const context = await browser.newContext({ baseURL: origin, viewport: { width: 375, height: 640 } })
+    await setCookieConsent(context)
+    const email = `automatic-status-${acknowledgement}@example.test`
+    expect(
+      (
+        await context.request.post('/api/patient/inquiry-preparations', {
+          headers: { Origin: origin },
+          data: {
+            clinicId: String(clinic.id),
+            doctorId: String(clinic.doctorId),
+            idempotencyKey: 'automatic-status',
+            firstName: 'Automatic',
+            lastName: 'Patient',
+            email,
+            phoneNumber: '+493000000080',
+            message: 'Synthetic automatic status inquiry.',
+            consent: true,
+            accountAuthorization: true,
+          },
+        })
+      ).status(),
+    ).toBe(201)
+    expect(
+      (
+        await context.request.post('/api/auth/register/patient', {
+          headers: { Origin: origin },
+          data: { email, password: 'SyntheticPatient123', firstName: 'Automatic', lastName: 'Patient' }, // pragma: allowlist secret
+        })
+      ).status(),
+    ).toBe(200)
+    await runtime.fixtureCommand('worker')
+    const page = await context.newPage()
+    let lostResponse = false
+    let statusReads = 0
+    let submissions = 0
+    await page.route('**/api/patient/inquiry-preparations', async (route) => {
+      if (lostResponse && ++statusReads <= 2) await route.abort('failed')
+      else await route.continue()
+    })
+    await page.route('**/api/patient/inquiry-preparations/submit', async (route) => {
+      submissions++
+      const result = await route.fetch()
+      expect(result.status()).toBe(200)
+      lostResponse = true
+      if (acknowledgement === 'lost') await route.abort('failed')
+      else {
+        // Keep the real backend commit, but present an older valid unknown receipt at the browser transport.
+        const receipt = (await result.json()) as PreparationReceipt
+        await route.fulfill({ response: result, json: { ...receipt, status: 'outcome-unknown', inquiryId: undefined } })
+      }
+    })
+    await page.goto(runtime.confirmationLinks.get(email)!)
+    await page.getByRole('button', { name: 'Confirm email', exact: true }).click()
+    const list = page.getByRole('region', { name: 'Patient inquiry list' })
+    await expect.poll(() => statusReads, { timeout: 10_000 }).toBe(3)
+    await expect(list.getByRole('link').filter({ hasText: clinic.name }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Check status', exact: true })).toHaveCount(0)
+    await expect(page.getByText('Delivery not confirmed', { exact: true })).toHaveCount(0)
+    expect(submissions).toBe(1)
+    expect(((await runtime.fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs).toBe(before + 1)
+    await page.screenshot({ path: `${artifacts}/automatic-recovery-375.png`, fullPage: true })
+    await context.close()
   })
-  await page.route('**/api/patient/inquiry-preparations/submit', async (route) => {
-    submissions++
-    const result = await route.fetch()
-    expect(result.status()).toBe(200)
-    lostResponse = true
-    await route.abort('failed')
+}
+
+for (const scenario of ['first-read-success', 'recovered-read'] as const) {
+  test(`announces and clears status when another device completes before ${scenario}`, async ({ browser }) => {
+    runtime.resetIdentities()
+    const clinic = runtime.clinics[0]!
+    const before = ((await runtime.fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs
+    const context = await browser.newContext({ baseURL: origin, viewport: { width: 375, height: 640 } })
+    await setCookieConsent(context)
+    const email = `status-${scenario}@example.test`
+    const response = await context.request.post('/api/patient/inquiry-preparations', {
+      headers: { Origin: origin },
+      data: {
+        clinicId: String(clinic.id),
+        doctorId: String(clinic.doctorId),
+        idempotencyKey: scenario,
+        firstName: 'Status',
+        lastName: 'Patient',
+        email,
+        phoneNumber: '+493000000080',
+        message: 'Synthetic cross-device status inquiry.',
+        consent: true,
+        accountAuthorization: true,
+      },
+    })
+    expect(response.status()).toBe(201)
+    const receipt = (await response.json()) as PreparationReceipt
+    expect(
+      (
+        await context.request.post('/api/auth/register/patient', {
+          headers: { Origin: origin },
+          data: { email, password: 'SyntheticPatient123', firstName: 'Status', lastName: 'Patient' }, // pragma: allowlist secret
+        })
+      ).status(),
+    ).toBe(200)
+    await runtime.fixtureCommand('worker')
+    const page = await context.newPage()
+    let browserPosts = 0
+    let completed = false
+    let readsBlocked = scenario === 'recovered-read'
+    const completeElsewhere = async () => {
+      const submitted = await context.request.post('/api/patient/inquiry-preparations/submit', {
+        headers: { Origin: origin },
+        data: { reference: receipt.reference, retry: false, attemptKey: '7a02dc62-aeda-4fac-903e-b513f0604291' },
+      })
+      expect(submitted.status()).toBe(200)
+      expect((await submitted.json()).status).toBe('submitted')
+      completed = true
+    }
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/patient/inquiry-preparations/submit')
+        browserPosts++
+    })
+    await page.route('**/api/patient/inquiry-preparations', async (route) => {
+      if (readsBlocked) return route.abort('failed')
+      if (scenario === 'first-read-success' && !completed) await completeElsewhere()
+      await route.continue()
+    })
+    await page.goto(runtime.confirmationLinks.get(email)!)
+    await page.getByRole('button', { name: 'Confirm email', exact: true }).click()
+    const submissions = page.getByRole('region', { name: 'Inquiry submissions' })
+    if (scenario === 'recovered-read') {
+      await expect(submissions.getByRole('alert')).toBeVisible()
+      readsBlocked = false
+      await completeElsewhere()
+      await page.getByRole('button', { name: 'Check status', exact: true }).click()
+    }
+    await expect(
+      page.getByRole('status').filter({ hasText: `Your inquiry to ${clinic.name} has been sent.` }),
+    ).toHaveText(`Your inquiry to ${clinic.name} has been sent.`, { timeout: 5_000 })
+    await expect(submissions.getByRole('alert')).toHaveCount(0, { timeout: 5_000 })
+    expect(browserPosts).toBe(0)
+    expect(((await runtime.fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs).toBe(before + 1)
+    await context.close()
   })
-  await page.goto(runtime.confirmationLinks.get(email)!)
-  await page.getByRole('button', { name: 'Confirm email', exact: true }).click()
-  const list = page.getByRole('region', { name: 'Patient inquiry list' })
-  await expect(list.getByRole('link').filter({ hasText: clinic.name }).first()).toBeVisible()
-  await expect.poll(() => statusReads, { timeout: 10_000 }).toBe(3)
-  await expect(page.getByRole('button', { name: 'Check status', exact: true })).toHaveCount(0)
-  await expect(page.getByText('Delivery not confirmed', { exact: true })).toHaveCount(0)
-  expect(submissions).toBe(1)
-  expect(((await runtime.fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs).toBe(before + 1)
-  await page.screenshot({ path: `${artifacts}/automatic-recovery-375.png`, fullPage: true })
-  await context.close()
-})
+}

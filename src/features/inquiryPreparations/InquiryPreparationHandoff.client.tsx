@@ -144,6 +144,7 @@ export function useInquiryPreparationHandoff({
         : [...current.filter((item) => item !== reference), reference],
     )
     if (!result) return
+    setError(undefined)
     if (result.status !== 'outcome-unknown') {
       delete pendingAttempts.current[reference]
       forgetAttempt(reference)
@@ -188,6 +189,8 @@ export function useInquiryPreparationHandoff({
           pendingAttempts.current[reference] = result.attemptKey
           rememberAttempt(reference, result.attemptKey, expiresAt)
         }
+        if (result.status === 'outcome-unknown')
+          result = await reconcile(reference, pendingAttempts.current[reference], statusReads.current?.signal)
       } catch {
         applyResult(reference, null)
         result = await reconcile(reference, attemptKey, statusReads.current?.signal)
@@ -250,7 +253,8 @@ export function useInquiryPreparationHandoff({
         )
         for (const item of visible) {
           if (disposed) return
-          if (item.status === 'saved-not-sent' && !item.firstAttemptAt)
+          if (item.status === 'submitted') applyResult(item.reference, item)
+          else if (item.status === 'saved-not-sent' && !item.firstAttemptAt)
             await send(item.reference, false, item.expiresAt)
           else if (item.status === 'outcome-unknown') {
             const attemptKey = pendingAttempts.current[item.reference] ?? item.attemptKey
@@ -296,6 +300,7 @@ export function useInquiryPreparationHandoff({
     refreshing.current = true
     try {
       const prepared = await readPreparations(statusReads.current?.signal)
+      setError(undefined)
       for (const item of pending) {
         const result = prepared.find((entry) => entry.reference === item.reference)
         if (result && settlesAttempt(result, pendingAttempts.current[item.reference] ?? item.attemptKey))

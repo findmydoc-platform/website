@@ -271,7 +271,7 @@ export function PatientInquiryQueue({
         </div>
       ) : null}
 
-      {status === 'ready' && items.length > 0 ? (
+      {status === 'ready' && (items.length > 0 || Boolean(data?.nextCursor)) ? (
         <div className="lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-xs">
           {groups.map(([label, group]) =>
             group.length > 0 ? (

@@ -78,3 +78,32 @@ export const ConfirmedDelivery: Story = {
     await expect(canvas.getByRole('status')).toHaveTextContent('Your inquiry has been sent.')
   },
 }
+
+export const CompletedFirstPageWithOlderInquiries: Story = {
+  args: {
+    data: {
+      ...patientInquiryQueue,
+      items: Array.from({ length: 25 }, (_, index) => ({ ...patientInquiryQueue.items[0]!, id: `recent-${index}` })),
+      counts: { all: 26, open: 26, closed: 0 },
+      nextCursor: 'older',
+    },
+    preparations: {
+      items: Array.from({ length: 25 }, (_, index) => ({
+        reference: `prepared-${index}`,
+        authorizedAt: '2026-11-07T12:00:00Z',
+        expiresAt: '2026-11-14T12:00:00Z',
+        status: 'submitted' as const,
+        inquiryId: `recent-${index}`,
+        clinicName: patientInquiryQueue.items[0]!.clinic.displayName,
+      })),
+      loading: [],
+      onRetry: fn(),
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getAllByRole('listitem')).toHaveLength(25)
+    await userEvent.click(canvas.getByRole('button', { name: 'Load more inquiries' }))
+    await expect(args.onLoadMore).toHaveBeenCalledOnce()
+  },
+}

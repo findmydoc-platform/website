@@ -53,6 +53,17 @@ export const PasswordSignInRequired: Story = {
       '/login/patient?next=/patient/inquiries',
     )
     await expect(canvas.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
+    const rgb = getComputedStyle(canvas.getByRole('link')).color.match(/\d+/g)!.slice(0, 3).map(Number)
+    const luminance = (channels: number[]) =>
+      channels
+        .map((channel) => channel / 255)
+        .map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4))
+        .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index]!, 0)
+    const foreground = luminance(rgb),
+      background = luminance([248, 249, 250])
+    await expect(
+      (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05),
+    ).toBeGreaterThanOrEqual(4.5)
   },
 }
 

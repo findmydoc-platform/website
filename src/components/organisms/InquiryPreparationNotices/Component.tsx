@@ -105,7 +105,11 @@ export function InquiryPreparationNotices({
                     {busy ? 'Checking…' : 'Check status'}
                   </Button>
                 ) : item.status === 'sign-in-required' ? (
-                  <UiLink appearance="inline" href="/login/patient?next=/patient/inquiries">
+                  <UiLink
+                    appearance="inline"
+                    className="inline-flex min-h-11 items-center text-foreground underline"
+                    href="/login/patient?next=/patient/inquiries"
+                  >
                     Sign in to send your inquiry
                   </UiLink>
                 ) : (

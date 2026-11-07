@@ -8,6 +8,8 @@ import type {
   InquiryReportTarget,
 } from '@/components/molecules/InquiryModerationDialog/Component'
 import { PatientInquiriesPage } from '@/components/templates/PatientInquiriesPage/Component'
+import { useInquiryPreparationHandoff } from '@/features/inquiryPreparations/InquiryPreparationHandoff.client'
+import type { PreparationReceipt } from '@/features/inquiryPreparations/contracts'
 import type { InquiryDetailDTO, PatientInquiryQueueInput } from '@/features/inquiryCommunication/contracts'
 
 import { PatientInquiriesApiError, createPatientInquiriesBrowserApi, type PatientInquiriesApi } from './browserGateway'
@@ -26,6 +28,8 @@ type PatientInquiriesControllerProps = {
   loginHref: string
   mode: 'detail' | 'index'
   pollIntervalMs?: number
+  initialPreparations?: PreparationReceipt[]
+  preparationError?: string
 }
 
 const isSessionError = (error: unknown): error is PatientInquiriesApiError =>
@@ -77,7 +81,13 @@ export function PatientInquiriesController({
   loginHref,
   mode,
   pollIntervalMs = 15_000,
+  initialPreparations,
+  preparationError,
 }: PatientInquiriesControllerProps) {
+  const { refresh: refreshPreparations, ...preparations } = useInquiryPreparationHandoff({
+    initialItems: initialPreparations,
+    initialError: preparationError,
+  })
   const api = React.useMemo(() => providedApi ?? createPatientInquiriesBrowserApi(), [providedApi])
   const [state, dispatch] = React.useReducer(
     patientInquiriesReducer,
@@ -205,9 +215,10 @@ export function PatientInquiriesController({
 
   React.useEffect(() => {
     if (state.sessionEnded) return
-    const refreshVisibleData = () => {
+    const refreshVisibleData = (event?: Event) => {
       if (document.visibilityState !== 'visible' || navigator.onLine === false) return
       void loadQueue()
+      if (event?.type !== 'patient-inquiries-updated') void refreshPreparations()
       const inquiryId = stateRef.current.selectedInquiryId
       if (inquiryId) void loadDetail(inquiryId)
     }
@@ -224,7 +235,7 @@ export function PatientInquiriesController({
       window.removeEventListener('patient-inquiries-updated', refreshVisibleData)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [loadDetail, loadQueue, pollIntervalMs, state.sessionEnded])
+  }, [loadDetail, loadQueue, pollIntervalMs, state.sessionEnded, refreshPreparations])
 
   const detailView = React.useMemo<PatientInquiryDetailView | undefined>(() => {
     if (!state.detail.data) return undefined
@@ -452,6 +463,7 @@ export function PatientInquiriesController({
       loginHref={loginHref}
       mode={resolvedMode}
       state={state}
+      preparations={initialPreparations ? preparations : undefined}
     />
   )
 }

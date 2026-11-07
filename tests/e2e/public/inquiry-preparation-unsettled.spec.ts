@@ -128,8 +128,8 @@ for (const retry of [true, false]) {
       expect(requestedAttemptKey).toEqual(expect.any(String))
       expect(requestedAttemptKey).not.toBe(previousAttemptKey)
       expect(originalCompleted).toBe(false)
-      const notices = page.getByRole('region', { name: 'Unsent inquiries' })
-      await expect(notices).toContainText('submission result is not yet known')
+      const notices = page.getByRole('region', { name: 'Inquiry submissions' })
+      await expect(notices).toContainText('Delivery not confirmed')
       await expect(page.getByRole('button', { name: 'Check status', exact: true })).toBeEnabled()
       await expect(notices).not.toContainText('saved but not sent')
       await expect(notices).not.toContainText('was not sent')
@@ -137,13 +137,13 @@ for (const retry of [true, false]) {
       await page.addInitScript(() => {
         Object.assign(window, { inquiryReloadExposedUnsafeState: false })
         new MutationObserver(() => {
-          const text = document.querySelector<HTMLElement>('[aria-label="Unsent inquiries"]')?.innerText || ''
-          if (/saved but not sent|was not sent|Try again/.test(text))
+          const text = document.querySelector<HTMLElement>('[aria-label="Inquiry submissions"]')?.innerText || ''
+          if (/saved but not sent|was not sent|Not sent|Try again/.test(text))
             Reflect.set(window, 'inquiryReloadExposedUnsafeState', true)
         }).observe(document, { childList: true, subtree: true, characterData: true })
       })
       await page.reload()
-      await expect(notices).toContainText('submission result is not yet known')
+      await expect(notices).toContainText('Delivery not confirmed')
       await expect(notices).not.toContainText('saved but not sent')
       await expect(page.getByRole('button', { name: 'Try again', exact: true })).toHaveCount(0)
       expect(originalCompleted).toBe(false)
@@ -153,7 +153,7 @@ for (const retry of [true, false]) {
       await page.getByRole('button', { name: 'Check status', exact: true }).focus()
       await page.keyboard.press('Enter')
       await expect(page.getByRole('button', { name: 'Check status', exact: true })).toBeEnabled()
-      await expect(notices).toContainText('submission result is not yet known')
+      await expect(notices).toContainText('Delivery not confirmed')
       await expect(page.getByRole('button', { name: 'Try again', exact: true })).toHaveCount(0)
       expect(((await runtime.fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs).toBe(0)
       expect(posts).toBe(1)
@@ -225,18 +225,81 @@ test('does not send when the browser cannot retain reload correlation', async ({
   await page.goto(runtime.confirmationLinks.get(email)!)
   await page.getByRole('button', { name: 'Confirm email', exact: true }).click()
   await expect(page).toHaveURL(/\/patient\/inquiries$/)
-  await expect(page.getByRole('region', { name: 'Unsent inquiries' }).getByRole('alert')).toContainText(
+  await expect(page.getByRole('region', { name: 'Inquiry submissions' }).getByRole('alert')).toContainText(
     'browser could not retain the submission status',
   )
   await expect(page.getByRole('button', { name: 'Try again', exact: true })).toHaveCount(0)
   expect(posts).toBe(0)
   await page.reload()
-  await expect(page.getByRole('region', { name: 'Unsent inquiries' }).getByRole('alert')).toContainText(
+  await expect(page.getByRole('region', { name: 'Inquiry submissions' }).getByRole('alert')).toContainText(
     'browser could not retain the submission status',
   )
   expect(posts).toBe(0)
   await page.screenshot({ path: `${artifacts}/storage-unavailable-375.png`, fullPage: true })
   expect(((await runtime.fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs).toBe(0)
   await expectNoBrowserIssues(issues)
+  await context.close()
+})
+
+test('quietly resolves a lost response with automatic status reads and one submission', async ({ browser }) => {
+  runtime.resetIdentities()
+  const clinic = runtime.clinics[0]!
+  const before = ((await runtime.fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs
+  const context = await browser.newContext({ baseURL: origin, viewport: { width: 375, height: 640 } })
+  await setCookieConsent(context)
+  const email = 'automatic-status@example.test'
+  expect(
+    (
+      await context.request.post('/api/patient/inquiry-preparations', {
+        headers: { Origin: origin },
+        data: {
+          clinicId: String(clinic.id),
+          doctorId: String(clinic.doctorId),
+          idempotencyKey: 'automatic-status',
+          firstName: 'Automatic',
+          lastName: 'Patient',
+          email,
+          phoneNumber: '+493000000080',
+          message: 'Synthetic automatic status inquiry.',
+          consent: true,
+          accountAuthorization: true,
+        },
+      })
+    ).status(),
+  ).toBe(201)
+  expect(
+    (
+      await context.request.post('/api/auth/register/patient', {
+        headers: { Origin: origin },
+        data: { email, password: 'SyntheticPatient123', firstName: 'Automatic', lastName: 'Patient' }, // pragma: allowlist secret
+      })
+    ).status(),
+  ).toBe(200)
+  await runtime.fixtureCommand('worker')
+  const page = await context.newPage()
+  let lostResponse = false
+  let statusReads = 0
+  let submissions = 0
+  await page.route('**/api/patient/inquiry-preparations', async (route) => {
+    if (lostResponse && ++statusReads <= 2) await route.abort('failed')
+    else await route.continue()
+  })
+  await page.route('**/api/patient/inquiry-preparations/submit', async (route) => {
+    submissions++
+    const result = await route.fetch()
+    expect(result.status()).toBe(200)
+    lostResponse = true
+    await route.abort('failed')
+  })
+  await page.goto(runtime.confirmationLinks.get(email)!)
+  await page.getByRole('button', { name: 'Confirm email', exact: true }).click()
+  const list = page.getByRole('region', { name: 'Patient inquiry list' })
+  await expect(list.getByRole('link').filter({ hasText: clinic.name }).first()).toBeVisible()
+  await expect.poll(() => statusReads, { timeout: 10_000 }).toBe(3)
+  await expect(page.getByRole('button', { name: 'Check status', exact: true })).toHaveCount(0)
+  await expect(page.getByText('Delivery not confirmed', { exact: true })).toHaveCount(0)
+  expect(submissions).toBe(1)
+  expect(((await runtime.fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs).toBe(before + 1)
+  await page.screenshot({ path: `${artifacts}/automatic-recovery-375.png`, fullPage: true })
   await context.close()
 })

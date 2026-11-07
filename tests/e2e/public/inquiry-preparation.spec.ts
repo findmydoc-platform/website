@@ -66,7 +66,7 @@ test('prepares, registers, confirms on another device and deliberately retries t
     await expect(other.getByRole('heading', { name: 'Verify your email' })).toBeVisible()
     await other.getByRole('button', { name: 'Confirm email', exact: true }).click()
     await expect(other).toHaveURL(/\/patient\/inquiries$/)
-    await expect(other.getByRole('region', { name: 'Unsent inquiries' })).toContainText('saved but not sent')
+    await expect(other.getByRole('region', { name: 'Inquiry submissions' })).toContainText('Not sent')
     for (const width of [320, 375, 640, 768, 1024]) {
       await other.setViewportSize({ width, height: width < 640 ? 812 : 900 })
       await expect(other.getByRole('button', { name: 'Try again', exact: true })).toBeVisible()
@@ -81,8 +81,8 @@ test('prepares, registers, confirms on another device and deliberately retries t
     await other.reload()
     await expect(other.getByRole('button', { name: 'Try again', exact: true })).toBeVisible()
     await other.getByRole('button', { name: 'Try again', exact: true }).click()
-    await expect(other.getByRole('region', { name: 'Unsent inquiries' }).getByRole('alert')).toContainText(
-      'Your account is ready, but the inquiry was not sent.',
+    await expect(other.getByRole('region', { name: 'Inquiry submissions' }).getByRole('alert')).toContainText(
+      'Please try sending this inquiry again before it expires.',
     )
     await fixtureCommand('approved', clinic.id)
     let readsUnavailable = true
@@ -102,8 +102,8 @@ test('prepares, registers, confirms on another device and deliberately retries t
     )
     await other.getByRole('button', { name: 'Try again', exact: true }).focus()
     await other.keyboard.press('Enter')
-    const notices = other.getByRole('region', { name: 'Unsent inquiries' })
-    await expect(notices).toContainText('submission result is not yet known')
+    const notices = other.getByRole('region', { name: 'Inquiry submissions' })
+    await expect(notices).toContainText('Delivery not confirmed')
     await expect(notices).not.toContainText('saved but not sent')
     await expect(other.getByRole('button', { name: 'Try again', exact: true })).toHaveCount(0)
     expect(((await fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs).toBe(1)
@@ -118,7 +118,7 @@ test('prepares, registers, confirms on another device and deliberately retries t
     await expect(
       other.getByRole('status').filter({ hasText: `Your inquiry to ${clinic.name} has been sent.` }),
     ).toBeVisible()
-    await expect(other.getByRole('region', { name: 'Unsent inquiries' })).toHaveCount(0)
+    await expect(other.getByRole('button', { name: 'Check status', exact: true })).toHaveCount(0)
     await expect(other.getByText(clinic.name, { exact: true }).first()).toBeVisible()
     await other.screenshot({ path: `${artifacts}/submitted-desktop.png`, fullPage: true })
     await other.reload()

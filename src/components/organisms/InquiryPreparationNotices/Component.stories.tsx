@@ -26,7 +26,8 @@ type Story = StoryObj<typeof meta>
 export const Retry: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('status')).toHaveTextContent('saved but not sent')
+    await expect(canvas.getByRole('listitem')).toHaveTextContent('Not sent')
+    await expect(canvas.queryByRole('alert')).not.toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: 'Try again' }))
     await expect(args.onRetry).toHaveBeenCalledWith('synthetic-preparation')
   },
@@ -77,7 +78,7 @@ export const IndependentFailures: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    const notices = canvas.getAllByRole('status')
+    const notices = canvas.getAllByRole('listitem')
     await expect(within(notices[0]!).getByRole('alert')).toHaveTextContent('This inquiry was not sent.')
     await expect(within(notices[1]!).queryByRole('alert')).not.toBeInTheDocument()
     await userEvent.click(within(notices[1]!).getByRole('button', { name: 'Try again' }))
@@ -100,7 +101,7 @@ export const UnknownOutcome: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('status')).toHaveTextContent('submission result is not yet known')
+    await expect(canvas.getByRole('status')).toHaveTextContent('Delivery not confirmed')
     await expect(canvas.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: 'Check status' }))
     await expect(args.onCheckStatus).toHaveBeenCalledWith('synthetic-preparation')
@@ -114,13 +115,17 @@ export const Submitted: Story = {
         authorizedAt: '2026-11-07T12:00:00.000Z',
         expiresAt: '2026-11-14T12:00:00.000Z',
         status: 'submitted',
+        inquiryId: 'synthetic-inquiry',
         clinicName: 'Synthetic clinic',
       },
     ],
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('status')).toHaveTextContent('Your inquiry to Synthetic clinic has been sent.')
+    await expect(canvas.getByRole('link', { name: 'View inquiry' })).toHaveAttribute(
+      'href',
+      '/patient/inquiries/synthetic-inquiry',
+    )
     await expect(canvas.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
   },
 }

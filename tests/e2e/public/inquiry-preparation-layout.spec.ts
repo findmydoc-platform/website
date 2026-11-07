@@ -69,7 +69,7 @@ test('keeps the inquiry return stable for single and multiple outcomes on mobile
                 recentInput: shift.hadRecentInput,
                 sources: shift.sources.map(({ node }) =>
                   node instanceof Element
-                    ? `${node.tagName}:${node.getAttribute('aria-label') ?? node.textContent?.trim().slice(0, 90) ?? ''}`
+                    ? `${node.closest('[aria-label="Patient inquiry list"]') ? 'inquiry:' : ''}${node.tagName}:${node.getAttribute('aria-label') ?? node.textContent?.trim().slice(0, 90) ?? ''}`
                     : '',
                 ),
               })
@@ -119,7 +119,9 @@ test('keeps the inquiry return stable for single and multiple outcomes on mobile
           return maximum
         }
         const inquiryShifts = shifts.filter((entry) =>
-          entry.sources.some((source) => source.includes('Patient accountMy inquiries')),
+          entry.sources.some(
+            (source) => source.startsWith('inquiry:') || source.includes('Patient accountMy inquiries'),
+          ),
         )
         const measured = {
           width,

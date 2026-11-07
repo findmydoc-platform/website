@@ -63,7 +63,7 @@ POST: its correlation UUID must match, or an existing successful submission must
 attempt correlation is distinct from the stable server-generated inquiry submission key and grants no authority.
 Before a browser POST, the handoff retains only its preparation reference, correlation UUID and original expiry
 in namespaced tab session storage. Reloads reconcile that marker before allowing any first attempt or manual retry.
-Server HTML and hydration initially keep unresolved cards conservative, so an older settled receipt cannot briefly
+Server HTML and hydration initially keep unresolved list entries conservative, so an older settled receipt cannot briefly
 expose a retry. A failed storage write prevents the POST. Terminal receipts remove their marker, and reads prune
 expired markers without extending the server deadline. Clearing tab storage or moving to a different tab/device
 cannot prove a browser request that has not reached server admission; the server's attempt facts become the
@@ -81,8 +81,12 @@ binding, confirmation and action replacement visit every matching item in ID pag
 the highest matching ID at command start. A new preparation before confirmation can reuse the server-bound
 account context of a live, unsent preparation only within the same proved origin group and normalized email.
 It retains its own content and deadline, and cannot gain password evidence absent from that context.
-My inquiries keeps successful submissions in its normal list and shows each unsent clinic separately above it.
-Retrying one failed item does not repeat another item's successful submission.
+My inquiries displays preparation status directly in the inquiry list. Uncertain results receive up to three
+read-only status attempts, with one- and two-second delays. Checking uses a neutral status; an unresolved result
+then shows a small per-clinic hint and Check status action. The existing visible-page polling and focus refresh
+also recheck unresolved results without another submission POST. Confirmed submissions use the normal inquiry
+row in the same position, with a persistent screen-reader success announcement. No top-page status banner or
+toast is required. Retrying one known failed item does not repeat another item's successful submission.
 
 ## Pending patient verification correlation
 

@@ -247,7 +247,7 @@ describe('multiple individually authorized inquiry HTTP journey', () => {
       const markup = renderToStaticMarkup(
         createElement(InquiryPreparationNotices, { items: [receipt], loading: [], onRetry: () => {} }),
       )
-      expect(markup).toContain('submission result is not yet known')
+      expect(markup).toContain('Delivery not confirmed')
       expect(markup).not.toContain('saved but not sent')
       expect(markup).not.toContain('was not sent')
       expect(markup).not.toContain('Try again')

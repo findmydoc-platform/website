@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { createServer, type Server } from 'node:http'
-import { mkdirSync, createWriteStream } from 'node:fs'
+import { mkdirSync, createWriteStream, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { Transform } from 'node:stream'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -76,6 +76,7 @@ export function registerInquiryPreparationRuntime({
   test.beforeAll(async () => {
     test.setTimeout(180_000)
     mkdirSync(artifacts, { recursive: true })
+    writeFileSync(`${artifacts}/fixture-runtime.log`, '')
     loadLocalAndTestEnv()
     for (const key of Object.keys(process.env)) if (key.startsWith('LETTERMINT_')) delete process.env[key]
     Object.assign(process.env, {

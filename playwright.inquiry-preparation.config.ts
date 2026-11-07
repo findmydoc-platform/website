@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test'
+import { resolvePlaywrightBaseURL } from './scripts/test-env.mjs'
 
 export default defineConfig({
   testMatch: 'tests/e2e/public/inquiry-preparation.spec.ts',
@@ -7,5 +8,9 @@ export default defineConfig({
   expect: { timeout: 30_000 },
   outputDir: 'output/playwright/inquiry-preparation/artifacts',
   reporter: [['list']],
-  use: { baseURL: 'http://localhost:3000', screenshot: 'only-on-failure', trace: 'retain-on-failure' },
+  use: {
+    baseURL: resolvePlaywrightBaseURL({ E2E_PORT: '3000', ...process.env }),
+    screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
+  },
 })

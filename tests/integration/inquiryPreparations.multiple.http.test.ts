@@ -309,7 +309,14 @@ describe('multiple individually authorized inquiry HTTP journey', () => {
       send(second.receipt),
       send(independent.receipt),
     ])
-    expect(outcomes.map((response) => response.status < 400)).toEqual([true, true, false, true])
+    expect(outcomes[2]!.status).toBeGreaterThanOrEqual(400)
+    for (const index of [0, 1, 3]) expect([200, 503]).toContain(outcomes[index]!.status)
+    // Exhausted command conflicts fail closed. Only an explicit retry may complete that item.
+    for (const item of await readAll(cookie)) {
+      if (item.reference !== second.receipt.reference && item.status !== 'submitted') {
+        expect((await send(item, true)).status).toBe(200)
+      }
+    }
     const receipts = await readAll(cookie)
     expect(receipts.map((item) => item.status)).toEqual(['submitted', 'try-again', 'submitted'])
     expect(receipts.map((item) => item.expiresAt)).toEqual([
@@ -353,6 +360,30 @@ describe('multiple individually authorized inquiry HTTP journey', () => {
       )
       expect(detail.inquiry.clinic.id).toBe(String(item === second ? fixtureB.clinic.id : clinicId))
       expect(detail.inquiry.binding.conversationId).toEqual(expect.any(String))
+      expect(
+        (
+          await payload.count({
+            collection: 'inquiryConversations',
+            overrideAccess: true,
+            where: { inquiry: { equals: receipt.inquiryId } },
+          })
+        ).totalDocs,
+      ).toBe(1)
+      expect(
+        (
+          await payload.count({
+            collection: 'clinicNotificationOccurrences',
+            overrideAccess: true,
+            where: {
+              and: [
+                { eventType: { equals: 'inquiry_created' } },
+                { sourceRecordKind: { equals: 'inquiry' } },
+                { sourceRecordId: { equals: receipt.inquiryId } },
+              ],
+            },
+          })
+        ).totalDocs,
+      ).toBe(1)
     }
     expect(await runInquiryPreparationCleanup(Date.now() + 5000)).toBe(1)
     expect(await runInquiryPreparationCleanup(Date.now() + 5000)).toBe(0)

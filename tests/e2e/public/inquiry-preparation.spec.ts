@@ -2,8 +2,9 @@ import { expect, test } from '@playwright/test'
 import { setCookieConsent } from '../helpers/cookieConsent'
 import { createBrowserIssueCollector, expectNoBrowserIssues } from '../helpers/browserIssues'
 import { registerInquiryPreparationRuntime } from '../helpers/inquiryPreparationRuntime'
+import { resolvePlaywrightBaseURL } from '../../../scripts/test-env.mjs'
 
-const origin = 'http://localhost:3000'
+const origin = resolvePlaywrightBaseURL({ E2E_PORT: '3000', ...process.env })
 const artifacts = 'output/playwright/inquiry-preparation'
 const runtime = registerInquiryPreparationRuntime({ origin, artifacts, clinicCount: 1 })
 const { fixtureCommand, confirmationLinks, providerRequests } = runtime

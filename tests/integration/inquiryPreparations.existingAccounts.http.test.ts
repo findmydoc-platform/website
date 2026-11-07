@@ -206,6 +206,23 @@ describe('existing account inquiry continuation HTTP boundary', () => {
         )
       ).status,
     ).toBe(403)
+    const owner = provider.user!
+    provider.user = { ...owner, id: randomUUID(), email: 'wrong-account@example.test' }
+    expect((await signIn(own.cookie)).status).toBe(200)
+    expect(
+      await (await request('/api/patient/inquiry-preparations', undefined, own.cookie, 'existing-patient')).json(),
+    ).toMatchObject({ preparations: [] })
+    expect(
+      (
+        await request(
+          '/api/patient/inquiry-preparations/submit',
+          { reference: own.receipt.reference },
+          own.cookie,
+          'existing-patient',
+        )
+      ).status,
+    ).toBe(403)
+    provider.user = owner
     const signedIn = await signIn(own.cookie)
     expect(signedIn.status).toBe(200)
     expect(await signedIn.json()).toMatchObject({ success: true, redirectUrl: '/patient/inquiries' })
@@ -218,6 +235,16 @@ describe('existing account inquiry continuation HTTP boundary', () => {
     expect(submitted.status).toBe(200)
     const result = await submitted.json()
     expect(result).toMatchObject({ status: 'submitted', expiresAt: own.receipt.expiresAt })
+    expect(
+      (
+        await request(
+          '/api/patient/inquiry-preparations/submit',
+          { reference: unrelated.receipt.reference, patientId: String(owner.id), authActionId: 1, subject: owner.id },
+          unrelated.cookie,
+          'existing-patient',
+        )
+      ).status,
+    ).toBe(400)
     const snapshot = await payload.findByID({
       collection: 'patientClinicInquiries',
       id: result.inquiryId,

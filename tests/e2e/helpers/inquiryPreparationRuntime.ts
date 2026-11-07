@@ -107,7 +107,28 @@ export function registerInquiryPreparationRuntime({
         for await (const chunk of request) chunks.push(Buffer.from(chunk))
         const body = chunks.length ? (JSON.parse(Buffer.concat(chunks).toString()) as Record<string, unknown>) : {}
         let result: unknown
-        if (request.method === 'POST' && url.pathname === '/auth/v1/admin/users') {
+        if (request.method === 'POST' && url.pathname === '/auth/v1/token') {
+          const user = [...users.values()].find((item) => item.email === body.email)
+          if (!user?.email_confirmed_at || body.password !== 'SyntheticPatient123') {
+            // pragma: allowlist secret
+            response.writeHead(400, { 'Content-Type': 'application/json' })
+            response.end(JSON.stringify({ msg: 'Invalid login credentials' }))
+            return
+          }
+          userToken = tokenFor(user)
+          result = {
+            access_token: userToken,
+            refresh_token: 'synthetic-browser-refresh',
+            token_type: 'bearer',
+            expires_in: 3600,
+            user,
+          }
+        } else if (request.method === 'POST' && url.pathname === '/auth/v1/admin/users') {
+          if ([...users.values()].some((item) => item.email === body.email)) {
+            response.writeHead(422, { 'Content-Type': 'application/json' })
+            response.end(JSON.stringify({ msg: 'User already registered' }))
+            return
+          }
           const user: SyntheticUser = {
             id: randomUUID(),
             email: String(body.email),
@@ -195,5 +216,24 @@ export function registerInquiryPreparationRuntime({
     await teardownTestDatabase()
   })
 
-  return { clinics, fixtureCommand, confirmationLinks, providerRequests }
+  return {
+    clinics,
+    fixtureCommand,
+    confirmationLinks,
+    providerRequests,
+    existingUser(email: string, verified = true) {
+      users.clear()
+      userToken = ''
+      const user: SyntheticUser = {
+        id: randomUUID(),
+        email,
+        app_metadata: { user_type: 'patient' },
+        user_metadata: { first_name: 'Current', last_name: 'Patient' },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+        ...(verified ? { email_confirmed_at: new Date().toISOString() } : {}),
+      }
+      users.set(user.id, user)
+    },
+  }
 }

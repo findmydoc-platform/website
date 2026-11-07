@@ -51,7 +51,7 @@ export function InquiryPreparationHandoff() {
           if (disposed) return
           if (item.status === 'submitted' || item.status === 'sign-in-required') continue
           let result = item
-          if (!item.firstAttemptAt && item.status !== 'sign-in-required') {
+          if (!item.firstAttemptAt) {
             try {
               result = await submit(item.reference, false)
             } catch {

@@ -3512,24 +3512,18 @@ export async function bindInquiryPreparationAccountAction(
 ) {
   return withPreparationStorage(req, () =>
     runRetryableCommand(req, async () => {
-      let cursor = 0
-      while (true) {
-        const records = await findMany(
-          req,
-          'inquiryPreparations',
-          {
-            and: [
-              preparationWhere(input.binding),
-              { id: { greater_than: cursor } },
-              { email: { equals: input.email } },
-              { subject: { exists: false } },
-              { authorizedAt: { less_than_equal: input.actionCreatedAt } },
-              { expiresAt: { greater_than: new Date().toISOString() } },
-            ],
-          },
-          { limit: 100, sort: 'id' },
-        )
-        for (const record of records) {
+      await visitInquiryPreparations(
+        req,
+        {
+          and: [
+            preparationWhere(input.binding),
+            { email: { equals: input.email } },
+            { subject: { exists: false } },
+            { authorizedAt: { less_than_equal: input.actionCreatedAt } },
+            { expiresAt: { greater_than: new Date().toISOString() } },
+          ],
+        },
+        async (record) => {
           await req.payload.update({
             collection: 'inquiryPreparations',
             id: record.id as number,
@@ -3537,10 +3531,8 @@ export async function bindInquiryPreparationAccountAction(
             req,
             data: { authAction: input.actionId, subject: input.subject },
           } as never)
-          cursor = Number(record.id)
-        }
-        if (records.length < 100) return
-      }
+        },
+      )
     }),
   )
 }
@@ -3552,23 +3544,17 @@ export async function bindInquiryPreparationPasswordSignIn(
 ) {
   return withPreparationStorage(req, () =>
     runRetryableCommand(req, async () => {
-      let cursor = 0
-      while (true) {
-        const records = await findMany(
-          req,
-          'inquiryPreparations',
-          {
-            and: [
-              preparationWhere(input.binding),
-              { id: { greater_than: cursor } },
-              { email: { equals: input.email } },
-              { or: [{ subject: { exists: false } }, { subject: { equals: input.subject } }] },
-              { expiresAt: { greater_than: new Date().toISOString() } },
-            ],
-          },
-          { limit: 100, sort: 'id' },
-        )
-        for (const record of records) {
+      await visitInquiryPreparations(
+        req,
+        {
+          and: [
+            preparationWhere(input.binding),
+            { email: { equals: input.email } },
+            { or: [{ subject: { exists: false } }, { subject: { equals: input.subject } }] },
+            { expiresAt: { greater_than: new Date().toISOString() } },
+          ],
+        },
+        async (record) => {
           await req.payload.update({
             collection: 'inquiryPreparations',
             id: record.id as number,
@@ -3576,10 +3562,8 @@ export async function bindInquiryPreparationPasswordSignIn(
             req,
             data: { subject: input.subject, patient: input.patientId, passwordEstablishedAt: new Date().toISOString() },
           } as never)
-          cursor = Number(record.id)
-        }
-        if (records.length < 100) return
-      }
+        },
+      )
     }),
   )
 }

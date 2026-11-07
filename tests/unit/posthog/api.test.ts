@@ -104,25 +104,6 @@ describe('PostHog API facade', () => {
     })
   })
 
-  it('resolves site flag actors without client-controlled cookie identity', async () => {
-    const { resolvePostHogSiteFlagActor } = await import('@/posthog/api')
-
-    const actor = resolvePostHogSiteFlagActor({
-      feature_flag_site_host: 'findmydoc.eu',
-      feature_flag_site_path: '/posts/example',
-    })
-
-    expect(actor).toEqual({
-      distinctId: 'site:findmydoc.eu:/posts/example',
-      isAuthenticated: false,
-      personProperties: {
-        is_authenticated: 'false',
-        user_type: 'anonymous',
-      },
-      userType: 'anonymous',
-    })
-  })
-
   it('exposes raw evaluation provenance without changing the default flag contract', async () => {
     const { evaluatePostHogFlags } = await import('@/posthog/api')
     const actor = {
@@ -167,39 +148,20 @@ describe('PostHog API facade', () => {
     expect(resolvePostHogHoldingFlagActor(context).distinctId).toBe('holding:findmydoc.eu')
   })
 
-  it('normalizes site flag context paths before PostHog targeting', async () => {
-    const { createPostHogFlagEvaluationContext } = await import('@/posthog/api')
-
-    expect(createPostHogFlagEvaluationContext({ url: new URL('https://FindMyDoc.eu/admin/') })).toEqual({
-      feature_flag_site_host: 'findmydoc.eu',
-      feature_flag_site_path: '/admin',
-    })
-  })
-
   it('uses code defaults when local evaluation is not configured', async () => {
     delete process.env.POSTHOG_FEATURE_FLAGS_SECURE_API_KEY
 
     const { evaluatePostHogFlags, resolvePostHogActor } = await import('@/posthog/api')
     const actor = await resolvePostHogActor({ authData })
-    const flags = await evaluatePostHogFlags(actor, ['temporary-landing-mode', 'preview-guard-enabled'])
+    const flags = await evaluatePostHogFlags(actor, ['temporary-landing-mode'])
 
     expect(flags.isEnabled('temporary-landing-mode')).toBe(false)
-    expect(flags.isEnabled('preview-guard-enabled')).toBe(false)
     expect(flags.getEvaluation('temporary-landing-mode')).toEqual({
       status: 'unavailable',
       reason: 'not-configured',
     })
     expect(fakeClient.evaluateFlags).not.toHaveBeenCalled()
     expect(fakeClient.getAllFlagsAndPayloads).not.toHaveBeenCalled()
-  })
-
-  it('registers preview guard with a safe default', async () => {
-    const { POSTHOG_FLAG_REGISTRY } = await import('@/posthog/api')
-
-    expect(POSTHOG_FLAG_REGISTRY['preview-guard-enabled']).toEqual({
-      defaultValue: false,
-      description: 'Controls preview deployment access guard behavior in server-side proxy code.',
-    })
   })
 
   it('evaluates requested flags locally and exposes a stable snapshot', async () => {
@@ -236,23 +198,21 @@ describe('PostHog API facade', () => {
     const { evaluatePostHogFlags, resolvePostHogActor } = await import('@/posthog/api')
     const actor = await resolvePostHogActor({ authData })
 
-    await evaluatePostHogFlags(actor, ['temporary-landing-mode', 'preview-guard-enabled'], {
+    await evaluatePostHogFlags(actor, ['temporary-landing-mode'], {
       context: {
         feature_flag_site_host: 'preview.findmydoc.eu',
-        feature_flag_site_path: '/posts/example',
       },
     })
 
     expect(fakeClient.getAllFlagsAndPayloads).toHaveBeenCalledWith('user-123', {
       disableGeoip: true,
-      flagKeys: ['temporary-landing-mode', 'preview-guard-enabled'],
+      flagKeys: ['temporary-landing-mode'],
       groupProperties: undefined,
       groups: undefined,
       onlyEvaluateLocally: true,
       personProperties: {
         email: 'clinic@example.com',
         feature_flag_site_host: 'preview.findmydoc.eu',
-        feature_flag_site_path: '/posts/example',
         first_name: 'Ada',
         is_authenticated: 'true',
         last_name: 'Lovelace',
@@ -261,7 +221,7 @@ describe('PostHog API facade', () => {
     })
   })
 
-  it('separates in-flight flag evaluations by request context', async () => {
+  it('separates in-flight flag evaluations by host context', async () => {
     const pendingResolutions: Array<
       (value: { featureFlagPayloads: Record<string, unknown>; featureFlags: Record<string, unknown> }) => void
     > = []
@@ -277,13 +237,11 @@ describe('PostHog API facade', () => {
     const firstEvaluation = evaluatePostHogFlags(actor, ['temporary-landing-mode'], {
       context: {
         feature_flag_site_host: 'findmydoc.eu',
-        feature_flag_site_path: '/posts/example',
       },
     })
     const secondEvaluation = evaluatePostHogFlags(actor, ['temporary-landing-mode'], {
       context: {
-        feature_flag_site_host: 'findmydoc.eu',
-        feature_flag_site_path: '/posts/other',
+        feature_flag_site_host: 'preview.findmydoc.eu',
       },
     })
 

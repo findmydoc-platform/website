@@ -131,7 +131,7 @@ Architecture reference:
 PostHog controls the host-wide public Holding mode through the server-side feature flag `temporary-landing-mode`.
 
 - Flag default in code: `false`
-- Holding evaluation uses a stable host identity and the PostHog person property `feature_flag_site_host`; it does not vary by request path or visitor identity. Preview Guard retains its separate path-aware evaluation context.
+- Holding evaluation uses a stable host identity and the PostHog person property `feature_flag_site_host`; it does not vary by request path or visitor identity.
 - An evaluated boolean `true` selects Holding and an evaluated boolean `false` selects full operation. Missing output, a non-boolean output, missing PostHog configuration, and evaluation errors use `PUBLIC_SITE_FALLBACK_MODE`.
 - Shared header and footer chrome render in the frontend route template so client and browser-history navigations use the effective mode attached to each request. The root layout keeps document structure and persistent providers.
 - `PUBLIC_SITE_FALLBACK_MODE` accepts `holding` or `full`. Missing or invalid configuration safely selects Holding and writes a sanitized operational warning. `.env.example` explicitly sets local development to `full`; prepare the current Production deployment with `holding` before rollout.
@@ -145,33 +145,21 @@ PostHog controls the host-wide public Holding mode through the server-side featu
 - Other frontend and discovery routes return `404` (no login redirect)
 - Platform sessions (`app_metadata.user_type === "platform"`) keep normal access
 
-Priority behavior:
-- Preview Guard takes precedence when both controls are active. Its closed anonymous allowlist remains unchanged.
-- Temporary Landing Mode keeps the behavior above when Preview Guard is inactive.
-- The local temporary-landing E2E lane uses the production guard policy only against `localhost`; PostHog enables Temporary Landing Mode there and keeps Preview Guard disabled.
-- While Preview Guard is enabled, patient creation is staff-managed through Payload Admin. Patient login, reset, invitation completion, favorites, inquiries, and inquiry details remain available for patient-side QA.
+The local temporary-landing E2E lane uses the Production runtime policy against `localhost`, with Temporary Landing Mode enabled.
 
 ## Preview Access Policy
 
-Preview deployments use runtime policy for auth recovery, search-index protection, and the application access guard.
+Preview access is protected by Vercel Authentication with Standard Protection.
+
+Preview deployments use runtime policy for auth recovery and search-index protection.
 
 - Runtime resolves to the boolean preview signal from `VERCEL_ENV` first, then `DEPLOYMENT_ENVIRONMENT`; request hostnames are not preview or production signals
 - `NODE_ENV` is not used as a preview or production deployment signal
 - Non-Vercel preview/production runtimes must set `DEPLOYMENT_ENVIRONMENT` explicitly
-- Every runtime that resolves to Preview activates Preview Guard by default
-- Preview evaluates `preview-guard-enabled` using the stable site identity `preview.findmydoc.eu` for both the shared alias and generated deployment hosts. An explicitly evaluated boolean `false` opens an approved public test window. Missing, invalid or unavailable evaluation keeps it guarded. Preview remains `noindex` while open
-- Local development remains open even if PostHog returns `preview-guard-enabled`
-- The PostHog flag can additionally activate Preview Guard in a non-local, non-Preview runtime
-- Guard flag checks use a server-side site actor, not the visitor's PostHog cookie identity
-- Exact login paths, both logout paths (`/logout` and `/admin/logout`), auth callbacks, invitation and password-reset paths, and required static assets remain reachable without a session
-- Known platform pages redirect to `/admin/login`; known patient pages redirect to `/login/patient`
-- Anonymous dynamic CMS paths and obvious scanner paths return `404` without a Payload lookup
-- Guarded Preview APIs use a closed anonymous allowlist for login, callback, and password reset; other APIs require a server-validated Supabase session or Bearer token and return JSON `401` or `503` without an HTML redirect. During an approved public test window, Preview APIs retain normal endpoint authorization
 - `/api/mcp` and `/api/clinic-dashboard/**` retain their endpoint-owned machine authentication, while Form Bridge forwards request credentials only to validated same-origin Payload calls
 
 Implementation and usage:
 - [Setup: Run Local Dev in Preview Runtime](./setup.md#run-local-dev-in-preview-runtime)
-- [Preview Guard Technical Notes](../src/features/previewGuard/README.md)
 - [Preview Admin Recovery Decision Flow](../src/auth/README.md#runtime-admin-recovery)
 
 ## Live Preview

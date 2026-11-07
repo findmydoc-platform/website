@@ -1,4 +1,3 @@
-import { PREVIEW_GUARD_LOCK_REQUEST_HEADER } from '@/features/previewGuard'
 import { isPreviewRuntime } from '@/features/runtimePolicy'
 import { readHoldingViewRequestHeader } from '@/features/temporaryLandingMode'
 
@@ -22,11 +21,7 @@ export const shouldBlockSearchIndexingForRequest = ({
   env?: SearchIndexingEnvInput
   headers: Headers
 }): boolean => {
-  return (
-    readHoldingViewRequestHeader(headers) === 'standalone' ||
-    headers.get(PREVIEW_GUARD_LOCK_REQUEST_HEADER) === '1' ||
-    shouldBlockSearchIndexing(env)
-  )
+  return readHoldingViewRequestHeader(headers) === 'standalone' || shouldBlockSearchIndexing(env)
 }
 
 export * from './listingComparison'

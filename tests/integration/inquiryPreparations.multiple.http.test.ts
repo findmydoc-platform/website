@@ -310,8 +310,8 @@ describe('multiple individually authorized inquiry HTTP journey', () => {
       send(independent.receipt),
     ])
     expect(outcomes[2]!.status).toBeGreaterThanOrEqual(400)
-    for (const index of [0, 1, 3]) expect([200, 503]).toContain(outcomes[index]!.status)
-    // Exhausted command conflicts fail closed. Only an explicit retry may complete that item.
+    for (const index of [0, 1, 3]) expect([200, 409, 503]).toContain(outcomes[index]!.status)
+    // Exhausted serialization conflicts return 409; other unavailable outcomes return 503. Reconcile before retry.
     for (const item of await readAll(cookie)) {
       if (item.reference !== second.receipt.reference && item.status !== 'submitted') {
         expect((await send(item, true)).status).toBe(200)

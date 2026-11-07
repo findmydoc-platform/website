@@ -21,7 +21,8 @@ type SyntheticUser = {
 const users = new Map<string, SyntheticUser>()
 const confirmationLinks = new Map<string, string>()
 const providerRequests: string[] = []
-const origin = 'http://localhost:3000'
+const appPort = process.env.INQUIRY_BROWSER_PORT ?? '3000'
+const origin = `http://localhost:${appPort}`
 const artifacts = 'output/playwright/inquiry-existing-account'
 let auth: Server
 let next: ChildProcess
@@ -175,7 +176,7 @@ test.beforeAll(async () => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = `http://localhost:${address.port}`
   mkdirSync(artifacts, { recursive: true })
   const log = createWriteStream(`${artifacts}/runtime.log`)
-  next = spawn('pnpm', ['dev', '--hostname', 'localhost', '--port', '3000'], {
+  next = spawn('pnpm', ['dev', '--hostname', 'localhost', '--port', appPort], {
     cwd: process.cwd(),
     env: { ...process.env, NODE_ENV: 'development' },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -246,6 +247,11 @@ test('existing patient keeps inquiry details through sign-in and recovery naviga
   await expect(page).toHaveURL(/\/auth\/password\/reset/)
   await expect(page.getByLabel('Email', { exact: true })).toHaveValue('existing-browser@example.test')
   await expect(page.getByRole('status')).toContainText('saved but not sent')
+  for (const width of [320, 375, 640, 768, 1024]) {
+    await page.setViewportSize({ width, height: 900 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    await page.screenshot({ path: `${artifacts}/recovery-${width}.png`, fullPage: true })
+  }
   await page.getByRole('link', { name: 'Patient sign in' }).click()
   await expect(page).toHaveURL(/\/login\/patient/)
   await expect(page.getByLabel('Email', { exact: true })).toHaveValue('existing-browser@example.test')
@@ -254,6 +260,13 @@ test('existing patient keeps inquiry details through sign-in and recovery naviga
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     await page.screenshot({ path: `${artifacts}/login-${width}.png`, fullPage: true })
   }
+  await page.setViewportSize({ width: 375, height: 400 })
+  await page.getByLabel('Password', { exact: true }).fill('WrongSyntheticPassword')
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page.getByText('Invalid login credentials', { exact: true })).toBeVisible()
+  await page.getByLabel('Password', { exact: true }).focus()
+  await page.screenshot({ path: `${artifacts}/login-short-height.png`, fullPage: true })
+  await page.setViewportSize({ width: 375, height: 812 })
   await fixtureCommand('pending', clinic.id)
   await page.getByLabel('Password', { exact: true }).fill('SyntheticPatient123')
   await page.getByRole('button', { name: 'Sign in', exact: true }).focus()
@@ -267,6 +280,7 @@ test('existing patient keeps inquiry details through sign-in and recovery naviga
   await page.keyboard.press('Enter')
   await expect(page.getByRole('region', { name: 'Unsent inquiries' })).toHaveCount(0)
   await expect(page.getByText(clinic.name, { exact: true }).first()).toBeVisible()
+  await page.setViewportSize({ width: 1024, height: 900 })
   await page.screenshot({ path: `${artifacts}/submitted-desktop.png`, fullPage: true })
   await page.reload()
   expect(((await fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs).toBe(1)
@@ -279,6 +293,7 @@ test('existing unverified patient confirms on another device and proves their un
   browser,
 }) => {
   existingUser('unverified-browser@example.test', false)
+  const before = ((await fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs
   await setCookieConsent(context)
   await prepare(page, 'unverified-browser@example.test')
   await page.getByLabel('Password', { exact: true }).fill('IgnoredRegistrationPassword')
@@ -298,7 +313,11 @@ test('existing unverified patient confirms on another device and proves their un
     await expect(other).toHaveURL(/\/patient\/inquiries$/)
     await expect(other.getByRole('link', { name: 'Sign in to send your inquiry' })).toBeVisible()
     await expect(other.getByRole('button', { name: 'Try again' })).toHaveCount(0)
-    await other.screenshot({ path: `${artifacts}/password-proof-mobile.png`, fullPage: true })
+    for (const width of [320, 375, 640, 768, 1024]) {
+      await other.setViewportSize({ width, height: 900 })
+      expect(await other.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+      await other.screenshot({ path: `${artifacts}/password-proof-${width}.png`, fullPage: true })
+    }
     await other.getByRole('link', { name: 'Sign in to send your inquiry' }).click()
     await expect(other).toHaveURL(/\/login\/patient/)
     await other.getByLabel('Password', { exact: true }).fill('SyntheticPatient123')
@@ -306,7 +325,7 @@ test('existing unverified patient confirms on another device and proves their un
     await expect(other).toHaveURL(/\/patient\/inquiries$/)
     await expect(other.getByRole('region', { name: 'Unsent inquiries' })).toHaveCount(0)
     await expect(other.getByText(clinic.name, { exact: true }).first()).toBeVisible()
-    expect(((await fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs).toBe(2)
+    expect(((await fixtureCommand('count', clinic.id)) as { totalDocs: number }).totalDocs).toBe(before + 1)
     await expectNoBrowserIssues(issues)
   } finally {
     await otherDevice.close()

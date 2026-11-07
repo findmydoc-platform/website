@@ -43,7 +43,11 @@ export function InquiryPreparationNotices({
             deadline does not change when you try again.
           </p>
           {item.status === 'sign-in-required' ? (
-            <UiLink appearance="outline" className="min-h-11" href="/login/patient?next=/patient/inquiries">
+            <UiLink
+              appearance="outline"
+              className="min-h-11 text-foreground underline"
+              href="/login/patient?next=/patient/inquiries"
+            >
               Sign in to send your inquiry
             </UiLink>
           ) : (

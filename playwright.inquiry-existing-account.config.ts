@@ -7,5 +7,9 @@ export default defineConfig({
   expect: { timeout: 30_000 },
   outputDir: 'output/playwright/inquiry-existing-account/artifacts',
   reporter: [['list']],
-  use: { baseURL: 'http://localhost:3000', screenshot: 'only-on-failure', trace: 'retain-on-failure' },
+  use: {
+    baseURL: `http://localhost:${process.env.INQUIRY_BROWSER_PORT ?? '3000'}`,
+    screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
+  },
 })

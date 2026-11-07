@@ -3603,13 +3603,13 @@ export async function completeInquiryPreparationAccount(
 }
 
 /** Registration prefills stay inside the proved origin context and never include inquiry content. */
-export async function readInquiryPreparationRegistration(req: PayloadRequest, binding: string, reference: string) {
+export async function readInquiryPreparationRegistration(req: PayloadRequest, binding: string, reference?: string) {
   const [record] = await preparationRecords(
     req,
     {
       and: [
         preparationWhere(binding),
-        { reference: { equals: reference } },
+        ...(reference ? [{ reference: { equals: reference } }] : []),
         { expiresAt: { greater_than: new Date().toISOString() } },
         { submittedInquiry: { exists: false } },
       ],

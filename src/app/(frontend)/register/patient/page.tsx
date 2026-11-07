@@ -37,8 +37,13 @@ export default async function PatientRegistrationPage({
               : undefined
           }
           preparationExpiresAt={preparation?.expiresAt}
+          loginHref={
+            preparation && inquiry
+              ? `/login/patient?inquiry=${encodeURIComponent(inquiry)}&next=/patient/inquiries`
+              : undefined
+          }
         />
-        <PatientVerificationResendForm />
+        <PatientVerificationResendForm initialEmail={preparation?.email} />
       </div>
     </PublicAuthRouteShell>
   )

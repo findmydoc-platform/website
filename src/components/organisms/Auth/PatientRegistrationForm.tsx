@@ -10,6 +10,7 @@ type PatientRegistrationFormProps = {
   preparationExpiresAt?: string
   containerClassName?: string
   onSubmit?: RegistrationSubmitHandler
+  loginHref?: string
 }
 
 export function PatientRegistrationForm({
@@ -17,6 +18,7 @@ export function PatientRegistrationForm({
   initialValues,
   preparationExpiresAt,
   onSubmit = submitPatientRegistration,
+  loginHref = '/login/patient',
 }: PatientRegistrationFormProps) {
   const router = useRouter()
 
@@ -75,7 +77,7 @@ export function PatientRegistrationForm({
         },
       ]}
       links={{
-        login: { href: '/login/patient', text: 'Sign in here' },
+        login: { href: loginHref, text: 'Sign in here' },
         home: { href: '/', text: '← Back to home' },
       }}
       containerClassName={containerClassName}

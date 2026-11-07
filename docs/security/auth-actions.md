@@ -31,10 +31,21 @@ Collection REST, GraphQL, Admin browsing and ordinary Local API access are denie
 without the inquiry owner's request capability. The collection uses the existing `private-live` cache policy.
 
 The originating browser holds a signed, environment-bound HttpOnly same-site group cookie. Registration reuses
-the entered first name, last name and email. Only a successful server-side password-bearing identity creation
-binds that group's matching preparation to the real AuthAction and Supabase subject. A reconciled identity,
+the entered first name, last name and email. A successful server-side password-bearing identity creation supplies
+password evidence. For an existing unconfirmed identity, only an action newly reserved by that server operation can
+retain the originating preparation context without password evidence. Reusing an older email-matched action cannot
+attach another origin. The reservation reports creation only after its transaction commits. A reconciled identity,
 matching email or browser-selected identity cannot supply password evidence or claim another origin's preparation.
-Resend can replace an already proved group's action relationship without changing the inquiry deadline.
+Eligible resend can replace an already proved group's action relationship without changing the inquiry deadline.
+
+Successful password sign-in binds only still-valid preparations in the proved originating context whose email
+matches the authenticated provider identity and whose subject is absent or already the same. Current patient
+provisioning remains owned by the existing authentication flow. The normal inquiry creation command uses current
+account names and email, preserves a saved account phone number, and saves the preparation phone only when the
+account has none. Confirmation without password evidence restores the context and shows a password sign-in action;
+it cannot submit. Recovery retains the context through its existing fresh action, password completion and global
+sign-out. Its fixed login destination remains unchanged, and a subsequent successful password sign-in authorizes
+handoff. Preparation storage failures cannot undo a completed sign-in or repeat a successful password operation.
 
 After the existing confirmation handler verifies the subject and completes patient provisioning and the
 AuthAction, it restores the protected preparation context on the confirming device. The normal My inquiries

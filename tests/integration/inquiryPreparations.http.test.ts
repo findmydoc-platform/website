@@ -12,9 +12,10 @@ import { createClinicFixture } from '../fixtures/createClinicFixture'
 import { ensureBaseline } from '../fixtures/ensureBaseline'
 import { testSlug } from '../fixtures/testSlug'
 import { GET as scheduledCleanup } from '@/app/api/internal/transactional-email/worker/route'
+import { createTransactionalEmailWorker } from '@/features/transactionalEmail/worker'
 import { runInquiryPreparationCleanup } from '@/features/inquiryPreparations/cleanup'
 
-const provider = vi.hoisted(() => ({ user: null as User | null, session: false, create: true }))
+const provider = vi.hoisted(() => ({ user: null as User | null, session: false, create: true, callback: '' }))
 vi.mock('@/auth/utilities/supaBaseServer', () => ({
   createClient: async () => ({
     auth: {
@@ -38,6 +39,13 @@ vi.mock('@/auth/utilities/supaBaseServer', () => ({
             created_at: new Date().toISOString(),
           }
           return { data: { user: provider.user }, error: null }
+        },
+        generateLink: async (input: { type: string; options: { redirectTo: string } }) => {
+          provider.callback = input.options.redirectTo
+          return {
+            data: { user: provider.user, properties: { verification_type: input.type, hashed_token: 'a'.repeat(56) } },
+            error: null,
+          }
         },
         getUserById: async () => ({ data: { user: provider.user }, error: null }),
         listUsers: async () => ({ data: { users: provider.user ? [provider.user] : [] }, error: null }),
@@ -97,6 +105,18 @@ describe('authorized inquiry preparation HTTP boundary', () => {
   afterAll(async () => {
     await payload?.destroy()
   })
+  async function openVerificationMail(token: string) {
+    provider.callback = ''
+    const worker = createTransactionalEmailWorker(await createLocalReq({}, payload), {
+      suppression: async () => 'cleared',
+    })
+    for (const candidate of await worker.candidatesForBatch(0)) await worker.run(String(candidate))
+    expect(provider.callback).toBeTruthy()
+    const callback = new URL(provider.callback)
+    callback.searchParams.set('type', 'magiclink')
+    callback.searchParams.set('token_hash', token.repeat(56))
+    return openConfirmation(new NextRequest(`${origin}${callback.pathname}${callback.search}`))
+  }
   it('saves an authorized inquiry privately without delivering it to the clinic', async () => {
     const response = await request('/api/patient/inquiry-preparations', {
       clinicId: String(clinicId),
@@ -192,9 +212,7 @@ describe('authorized inquiry preparation HTTP boundary', () => {
       ).status,
     ).toBe(200) // pragma: allowlist secret
     // The real mail outbox exposes no content before confirmation; action diagnostics remain private.
-    const opened = await openConfirmation(
-      new NextRequest(`${origin}/auth/callback?authActionId=1&type=magiclink&token_hash=${'a'.repeat(56)}`),
-    )
+    const opened = await openVerificationMail('a')
     const pending = opened.cookies.get('findmydoc_patient_verification')!
     const context = readPatientVerificationContext(pending.value, 'test', [key])!
     expect(context).toBeTruthy()
@@ -362,9 +380,7 @@ describe('authorized inquiry preparation HTTP boundary', () => {
           )
         ).status,
       ).toBe(200) // pragma: allowlist secret
-      const opened = await openConfirmation(
-        new NextRequest(`${origin}/auth/callback?authActionId=2&type=magiclink&token_hash=${'c'.repeat(56)}`),
-      )
+      const opened = await openVerificationMail('c')
       const pending = opened.cookies.get('findmydoc_patient_verification')!
       const context = readPatientVerificationContext(pending.value, 'test', [key])!
       const activated = await confirm(
@@ -442,9 +458,7 @@ describe('authorized inquiry preparation HTTP boundary', () => {
           )
         ).status,
       ).toBe(200)
-      const opened = await openConfirmation(
-        new NextRequest(`${origin}/auth/callback?authActionId=4&type=magiclink&token_hash=${'d'.repeat(56)}`),
-      )
+      const opened = await openVerificationMail('d')
       const pending = opened.cookies.get('findmydoc_patient_verification')!
       const context = readPatientVerificationContext(pending.value, 'test', [key])!
       const activated = await confirm(

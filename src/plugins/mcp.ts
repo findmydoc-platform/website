@@ -14,10 +14,11 @@ import { clinicGallerySaveInputSchema } from '@/features/clinicDashboard/gallery
 import { clinicProfileMediaImageMimeTypes, standardMediaImageMimeTypes } from '@/collections/common/mediaCollection'
 import { MEDIA_UPLOAD_MAX_BYTES } from '@/config/mediaUploadPolicy'
 import { relationId } from '@/collections/clinics/profileGallery'
-import type { Clinic, ClinicMedia, DoctorMedia } from '@/payload-types'
+import type { ClinicMedia, DoctorMedia } from '@/payload-types'
 
 type McpCollectionConfig = {
   description: string
+  createOptionalFields?: string[]
   enabled: {
     find: boolean
     create: boolean
@@ -92,6 +93,8 @@ const mcpCollections = mcpReadCollectionSlugs.reduce<Record<string, McpCollectio
   const writable = mcpWriteCollections.has(slug)
   acc[slug] = {
     description: mcpCollectionDescriptions[slug],
+    // The plugin patch lets Payload generate these required fields during creation.
+    ...(slug === 'clinics' || slug === 'doctors' ? { createOptionalFields: ['slug'] } : {}),
     enabled: {
       find: true,
       create: writable,
@@ -149,32 +152,6 @@ const publishClinicGalleryImage = {
     }
     const snapshot = await appendPlatformClinicGalleryMedia(req, args.mediaId)
     return { content: [{ type: 'text' as const, text: JSON.stringify(snapshot) }] }
-  },
-}
-
-const createClinicProfile = {
-  name: 'createClinicProfile',
-  description: 'Create a clinic profile. The slug is generated from the name when omitted.',
-  parameters: { data: z.record(z.string(), z.unknown()) },
-  handler: async (args: Record<string, unknown>, req: import('payload').PayloadRequest) => {
-    const data = z.record(z.string(), z.unknown()).parse(args.data)
-    if (Object.hasOwn(data, 'deletedAt')) throw new APIError('Deletion state cannot be set during creation.', 400)
-    if (data.coordinates && typeof data.coordinates === 'object' && !Array.isArray(data.coordinates)) {
-      const coordinates = z
-        .object({ longitude: z.number().finite(), latitude: z.number().finite() })
-        .strict()
-        .parse(data.coordinates)
-      data.coordinates = [coordinates.longitude, coordinates.latitude]
-    }
-    await requireCurrentPlatformStaff(req)
-    const clinic = await req.payload.create({
-      collection: 'clinics',
-      data: data as unknown as Clinic,
-      overrideAccess: false,
-      req,
-      user: req.user,
-    })
-    return { content: [{ type: 'text' as const, text: JSON.stringify({ id: clinic.id }) }] }
   },
 }
 
@@ -309,7 +286,6 @@ export const createMcpPlugin = (): Plugin =>
     userCollection: mcpUserCollection,
     mcp: {
       tools: [
-        createClinicProfile,
         createTrashTool('clinics', 'trashClinic', 'Clinic'),
         createTrashTool('doctors', 'trashDoctor', 'Doctor'),
         createDeleteLinkTool('clinictreatments', 'deleteClinicTreatment', 'Clinic treatment'),

@@ -105,7 +105,7 @@ import * as migration_20261017_091316_clinic_staff_group_assignment from './2026
 import * as migration_20261017_101649_personal_group_invitation from './20261017_101649_personal_group_invitation'
 import * as migration_20261107_091935_inquiry_preparations from './20261107_091935_inquiry_preparations'
 import * as migration_20261107_123538_settle_inquiry_attempts from './20261107_123538_settle_inquiry_attempts'
-import * as migration_20261108_224448_clinic_profile_mcp_permissions from './20261108_224448_clinic_profile_mcp_permissions'
+import * as migration_20261108_230722_clinic_profile_mcp_permissions from './20261108_230722_clinic_profile_mcp_permissions'
 
 export const migrations = [
   {
@@ -644,8 +644,8 @@ export const migrations = [
     name: '20261107_123538_settle_inquiry_attempts',
   },
   {
-    up: migration_20261108_224448_clinic_profile_mcp_permissions.up,
-    down: migration_20261108_224448_clinic_profile_mcp_permissions.down,
-    name: '20261108_224448_clinic_profile_mcp_permissions',
+    up: migration_20261108_230722_clinic_profile_mcp_permissions.up,
+    down: migration_20261108_230722_clinic_profile_mcp_permissions.down,
+    name: '20261108_230722_clinic_profile_mcp_permissions',
   },
 ]

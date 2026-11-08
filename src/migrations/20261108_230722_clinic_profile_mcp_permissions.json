@@ -27380,13 +27380,6 @@
           "notNull": false,
           "default": false
         },
-        "payload_mcp_tool_create_clinic_profile": {
-          "name": "payload_mcp_tool_create_clinic_profile",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
         "payload_mcp_tool_trash_clinic": {
           "name": "payload_mcp_tool_trash_clinic",
           "type": "boolean",
@@ -34319,6 +34312,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "85daf3f5-cea9-4e03-a173-b59e57449ea7",
+  "id": "2ad8016b-c525-4771-9170-4347aa8cbf8b",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

@@ -88,7 +88,6 @@ describe('MCP key management and client access', () => {
             trashClinic: true,
             trashDoctor: true,
             deleteDoctorSpecialty: true,
-            createClinicProfile: true,
             deleteClinicTreatment: true,
             deleteDoctorTreatment: true,
           },
@@ -129,20 +128,20 @@ describe('MCP key management and client access', () => {
     }
 
     const name = `${prefix}-coordinates`
-    const generatedName = `${prefix} automatic slug`
-    const generatedText = await call('createClinicProfile', {
-      data: { name: generatedName, coordinates: { longitude: 28.9784, latitude: 41.0082 } },
-    })
-    const generated = await payload.find({
+    expect(await call('createClinics', {})).toContain('name')
+    const directName = `${prefix} direct automatic slug`
+    expect(
+      await call('createClinics', { name: directName, coordinates: { longitude: 28.9784, latitude: 41.0082 } }),
+    ).toContain('Resource created successfully')
+    const direct = await payload.find({
       collection: 'clinics',
-      where: { name: { equals: generatedName } },
+      where: { name: { equals: directName } },
       overrideAccess: true,
     })
-    expect(generated.docs).toHaveLength(1)
-    clinicIds.push(generated.docs[0]!.id)
-    expect(generated.docs[0]!.slug).toBeTruthy()
-    expect(generated.docs[0]!.coordinates).toEqual([28.9784, 41.0082])
-    expect(generatedText).toContain(String(generated.docs[0]!.id))
+    expect(direct.docs).toHaveLength(1)
+    clinicIds.push(direct.docs[0]!.id)
+    expect(direct.docs[0]!.slug).toBeTruthy()
+    expect(direct.docs[0]!.coordinates).toEqual([28.9784, 41.0082])
     const createdText = await call('createClinics', {
       name,
       slug: name,
@@ -180,8 +179,7 @@ describe('MCP key management and client access', () => {
     })
     keyIds.push(readOnly.id)
     const deniedName = `${prefix}-denied`
-    expect(await call('createClinicProfile', { data: { name: deniedName } }, readOnlyKey)).not.toContain('"id"')
-    const deniedText = await call('createClinics', { name: deniedName, slug: deniedName }, readOnlyKey)
+    const deniedText = await call('createClinics', { name: deniedName }, readOnlyKey)
     expect(deniedText).not.toContain('Resource created successfully')
     const denied = await payload.find({
       collection: 'clinics',
@@ -208,13 +206,11 @@ describe('MCP key management and client access', () => {
         enableAPIKey: true,
         apiKey: editorToken,
         clinics: { create: true },
-        ...{ 'payload-mcp-tool': { createClinicProfile: true } },
       },
     })
     keyIds.push(editorKey.id)
     const editorName = `${prefix}-editor-denied`
-    const editorResult = await call('createClinics', { name: editorName, slug: editorName }, editorToken)
-    expect(await call('createClinicProfile', { data: { name: editorName } }, editorToken)).not.toContain('"id"')
+    const editorResult = await call('createClinics', { name: editorName }, editorToken)
     expect(editorResult).not.toContain('Resource created successfully')
     const editorDocs = await payload.find({
       collection: 'clinics',
@@ -223,9 +219,9 @@ describe('MCP key management and client access', () => {
     })
     expect(editorDocs.docs).toHaveLength(0)
 
-    const doctorSlug = `${prefix}-doctor`
+    const doctorFirstName = `${prefix}-doctor`
     const doctorCreated = await call('createDoctors', {
-      firstName: 'Test',
+      firstName: doctorFirstName,
       lastName: 'Doctor',
       fullName: 'Test Doctor',
       active: false,
@@ -233,16 +229,16 @@ describe('MCP key management and client access', () => {
       clinic: created.docs[0]!.id,
       qualifications: ['Test'],
       languages: ['english'],
-      slug: doctorSlug,
     })
     expect(doctorCreated).toContain('Resource created successfully')
     const doctorResult = await payload.find({
       collection: 'doctors',
-      where: { slug: { equals: doctorSlug } },
+      where: { firstName: { equals: doctorFirstName } },
       overrideAccess: true,
     })
     expect(doctorResult.docs).toHaveLength(1)
     const doctor = doctorResult.docs[0]!
+    expect(doctor.slug).toBeTruthy()
     doctorIds.push(doctor.id)
     const specialty = await payload.create({
       collection: 'medical-specialties',

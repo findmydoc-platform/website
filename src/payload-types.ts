@@ -4014,10 +4014,6 @@ export interface PayloadMcpApiKey {
   };
   'payload-mcp-tool'?: {
     /**
-     * Create a clinic profile. The slug is generated from the name when omitted.
-     */
-    createClinicProfile?: boolean | null;
-    /**
      * Move one Clinic to the trash using the current staff member’s access rights.
      */
     trashClinic?: boolean | null;
@@ -6652,7 +6648,6 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
   'payload-mcp-tool'?:
     | T
     | {
-        createClinicProfile?: T;
         trashClinic?: T;
         trashDoctor?: T;
         deleteClinicTreatment?: T;

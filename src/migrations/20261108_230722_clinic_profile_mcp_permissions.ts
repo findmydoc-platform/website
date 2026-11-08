@@ -14,7 +14,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "payload_mcp_api_keys" ADD COLUMN "doctortreatments_update" boolean DEFAULT false;
   ALTER TABLE "payload_mcp_api_keys" ADD COLUMN "doctorspecialties_create" boolean DEFAULT false;
   ALTER TABLE "payload_mcp_api_keys" ADD COLUMN "doctorspecialties_update" boolean DEFAULT false;
-  ALTER TABLE "payload_mcp_api_keys" ADD COLUMN "payload_mcp_tool_create_clinic_profile" boolean DEFAULT false;
   ALTER TABLE "payload_mcp_api_keys" ADD COLUMN "payload_mcp_tool_trash_clinic" boolean DEFAULT false;
   ALTER TABLE "payload_mcp_api_keys" ADD COLUMN "payload_mcp_tool_trash_doctor" boolean DEFAULT false;
   ALTER TABLE "payload_mcp_api_keys" ADD COLUMN "payload_mcp_tool_delete_clinic_treatment" boolean DEFAULT false;
@@ -44,7 +43,6 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   ALTER TABLE "payload_mcp_api_keys" DROP COLUMN "doctortreatments_update";
   ALTER TABLE "payload_mcp_api_keys" DROP COLUMN "doctorspecialties_create";
   ALTER TABLE "payload_mcp_api_keys" DROP COLUMN "doctorspecialties_update";
-  ALTER TABLE "payload_mcp_api_keys" DROP COLUMN "payload_mcp_tool_create_clinic_profile";
   ALTER TABLE "payload_mcp_api_keys" DROP COLUMN "payload_mcp_tool_trash_clinic";
   ALTER TABLE "payload_mcp_api_keys" DROP COLUMN "payload_mcp_tool_trash_doctor";
   ALTER TABLE "payload_mcp_api_keys" DROP COLUMN "payload_mcp_tool_delete_clinic_treatment";

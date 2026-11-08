@@ -92,7 +92,6 @@ describe('MCP principal authorization', () => {
                 expect.objectContaining({ name: 'updateDoctorImage', defaultValue: false }),
                 expect.objectContaining({ name: 'deleteDoctorImage', defaultValue: false }),
                 expect.objectContaining({ name: 'deleteClinicImage', defaultValue: false }),
-                expect.objectContaining({ name: 'createClinicProfile', defaultValue: false }),
               ]),
             }),
           ]),

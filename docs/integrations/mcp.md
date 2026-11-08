@@ -38,10 +38,14 @@ or Content Manager users. Key creation binds the owner to the administrator crea
 ## Clinic profiles and media
 
 Enable each collection operation and custom tool needed by the key. Custom tools are disabled by default and still use
-the key owner's current platform role and Payload access rules. `createClinicProfile` accepts a `data` object and can
-generate the clinic slug when it is omitted. `trashClinic` and `trashDoctor` move one profile to the trash. The
+the key owner's current platform role and Payload access rules. `createClinics` and `createDoctors` generate the slug
+when it is omitted. `trashClinic` and `trashDoctor` move one profile to the trash. The
 `deleteClinicTreatment`, `deleteDoctorTreatment`, and `deleteDoctorSpecialty` tools delete individual relationship
 records without deleting the shared catalog entries.
+
+The local Payload MCP patch makes only the configured generated slug fields optional in the tool schema. Payload still
+validates every field and applies its access rules during creation. Remove the patch when the plugin supports this
+behavior upstream.
 
 Clinic gallery images can be uploaded with `uploadClinicGalleryImage`, then added with `publishClinicGalleryImage`.
 Use `readClinicGallery` to obtain the current revision and ordered items. `saveClinicGallery` accepts that revision

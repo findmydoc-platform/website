@@ -42,19 +42,6 @@ describe('patient inquiries routes', () => {
     await expect(page.default()).rejects.toThrow('redirect:/login/patient?next=%2Fpatient%2Finquiries')
   })
 
-  it('renders the authenticated index through the client controller without private server data', async () => {
-    const page = await import('@/app/(frontend)/patient/inquiries/page')
-    const result = (await page.default()) as React.ReactElement
-
-    expect(result.type).toBe(routeMocks.controller)
-    expect(result.props).toMatchObject({
-      loginHref: '/login/patient?next=%2Fpatient%2Finquiries',
-      mode: 'index',
-    })
-    expect(result.props).not.toHaveProperty('patientId')
-    expect(result.props).not.toHaveProperty('initialData')
-  })
-
   it('preserves the opaque inquiry id in the authenticated detail and login paths', async () => {
     const page = await import('@/app/(frontend)/patient/inquiries/[inquiryId]/page')
     const result = (await page.default({

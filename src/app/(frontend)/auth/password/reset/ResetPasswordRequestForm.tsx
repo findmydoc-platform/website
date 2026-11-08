@@ -42,9 +42,13 @@ async function submitRequest(data: ParsedData) {
 export function ResetPasswordRequestForm({
   reason,
   onRequest = submitRequest,
+  initialEmail,
+  preparationExpiresAt,
 }: {
   reason?: ResetPasswordReason | null
   onRequest?: (data: ParsedData) => Promise<void>
+  initialEmail?: string
+  preparationExpiresAt?: string
 }) {
   const [formState, setFormState] = useState<FormState>({ status: 'idle', error: null })
   const formValidation = usePublicFormValidation({
@@ -115,6 +119,12 @@ export function ResetPasswordRequestForm({
                 That link is no longer valid. Request a new password reset link.
               </Alert>
             ) : null}
+            {preparationExpiresAt ? (
+              <Alert variant="info" role="status">
+                Your inquiry is saved but not sent. Complete password recovery, then sign in to continue. It expires on{' '}
+                {new Date(preparationExpiresAt).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC.
+              </Alert>
+            ) : null}
             {formState.error && <Alert variant="error">{formState.error}</Alert>}
             {isSuccess && (
               <Alert variant="success" role="status">
@@ -128,6 +138,7 @@ export function ResetPasswordRequestForm({
                 name="email"
                 type="email"
                 autoComplete="email"
+                defaultValue={initialEmail}
                 required
                 disabled={isSubmitting || isSuccess}
                 onChange={formValidation.handleFieldChange}

@@ -44,9 +44,18 @@ type PatientInquiriesPageProps = {
   mode: 'detail' | 'index'
   now?: Date
   state: PatientInquiriesState
+  preparations?: PatientInquiryQueueProps['preparations']
 }
 
-export function PatientInquiriesPage({ actions, detailView, loginHref, mode, now, state }: PatientInquiriesPageProps) {
+export function PatientInquiriesPage({
+  actions,
+  detailView,
+  loginHref,
+  mode,
+  now,
+  state,
+  preparations,
+}: PatientInquiriesPageProps) {
   const accessibleFeatureColors = '[--destructive:#b91c1c] [--muted-foreground:#666666] [--success:196_70%_28%]'
   const sessionHeadingRef = React.useRef<HTMLHeadingElement>(null)
 
@@ -111,6 +120,7 @@ export function PatientInquiriesPage({ actions, detailView, loginHref, mode, now
               refreshError={state.queue.refreshError}
               selectedInquiryId={state.selectedInquiryId}
               status={state.queue.status}
+              preparations={preparations}
             />
           </div>
 

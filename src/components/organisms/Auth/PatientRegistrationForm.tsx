@@ -6,20 +6,31 @@ import { RegistrationForm, type RegistrationSubmitHandler } from '@/components/o
 import { submitPatientRegistration } from '@/auth/utilities/registrationSubmissions'
 
 type PatientRegistrationFormProps = {
+  initialValues?: Record<string, string>
+  preparationExpiresAt?: string
   containerClassName?: string
   onSubmit?: RegistrationSubmitHandler
+  loginHref?: string
 }
 
 export function PatientRegistrationForm({
   containerClassName,
+  initialValues,
+  preparationExpiresAt,
   onSubmit = submitPatientRegistration,
+  loginHref = '/login/patient',
 }: PatientRegistrationFormProps) {
   const router = useRouter()
 
   return (
     <RegistrationForm
       title="Create Patient Account"
-      description="Join findmydoc to search for clinics and treatments"
+      description={
+        preparationExpiresAt
+          ? `Your inquiry is saved but not sent. Create an account, or use your existing account through sign-in or verification below. It expires on ${new Date(preparationExpiresAt).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC.`
+          : 'Join findmydoc to search for clinics and treatments'
+      }
+      initialValues={initialValues}
       submitButtonText="Create Patient Account"
       fields={[
         {
@@ -66,7 +77,7 @@ export function PatientRegistrationForm({
         },
       ]}
       links={{
-        login: { href: '/login/patient', text: 'Sign in here' },
+        login: { href: loginHref, text: 'Sign in here' },
         home: { href: '/', text: '← Back to home' },
       }}
       containerClassName={containerClassName}

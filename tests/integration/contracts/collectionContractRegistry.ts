@@ -89,6 +89,10 @@ export const collectionContractRegistry = {
     baseline: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
     deep: ['tests/integration/inquiryCommunication.lifecycle.test.ts'],
   },
+  inquiryPreparations: {
+    baseline: ['tests/integration/inquiryPreparations.http.test.ts'],
+    deep: ['tests/integration/inquiryPreparations.http.test.ts'],
+  },
   inquiryCommandLocks: {
     baseline: ['tests/integration/inquiryRetention.lifecycle.test.ts'],
     deep: [
@@ -309,6 +313,7 @@ export const deepContractDomains = {
     'inquiryLegalHolds',
     'inquiryDeletionProofs',
     'inquiryCommandLocks',
+    'inquiryPreparations',
     'clinicNotificationOccurrences',
     'clinicNotificationReadReceipts',
     'clinicNotificationControls',

@@ -1,6 +1,7 @@
 import React from 'react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 ;(globalThis as unknown as { React: typeof React }).React = React
+vi.mock('next/headers', () => ({ headers: async () => new Headers() }))
 
 describe('Patient LoginPage', () => {
   const originalEnv = process.env

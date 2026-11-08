@@ -29,3 +29,13 @@ export const InvalidLink: Story = { args: { state: 'invalid' } }
 export const Confirming: Story = { args: { state: 'pending' } }
 export const Retry: Story = { args: { state: 'retry' } }
 export const Completed: Story = { args: { state: 'completed' } }
+
+export const InquiryContinuation: Story = {
+  args: { state: 'inquiry-continuation' },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('status')).toHaveTextContent('Your email is verified. Your account is ready.')
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue saved inquiries' }))
+    await expect(args.onConfirm).toHaveBeenCalledOnce()
+  },
+}

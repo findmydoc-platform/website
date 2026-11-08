@@ -5,6 +5,7 @@ import { normalizeEmail } from '@/auth/utilities/emailNormalization'
 import { requestPatientVerification } from '@/auth/actions/patientVerificationRequests'
 import configPromise from '@/payload.config'
 import { hashLogValue } from '@/utilities/logging/shared'
+import { readPreparationBinding } from '@/features/inquiryPreparations/context'
 
 const bodySchema = z
   .object({
@@ -16,11 +17,14 @@ const bodySchema = z
   .strict()
 
 export async function POST(request: Request) {
+  if (readPreparationBinding(request.headers) && request.headers.get('origin') !== new URL(request.url).origin)
+    return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
   const parsed = bodySchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
   const payload = await getPayload({ config: configPromise })
   try {
     const req = await createLocalReq({}, payload)
+    req.headers = request.headers
     await requestPatientVerification(req, parsed.data)
     return NextResponse.json({ success: true })
   } catch (error) {

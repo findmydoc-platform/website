@@ -10,6 +10,11 @@ import { resolveTransactionalEmailEnvironment } from '@/features/transactionalEm
 import { bindPayloadCommandCatalog } from '@/features/transactionalEmail/payloadCatalog'
 import { bindAuthActions } from './lifecycle'
 import { resolveRecoveryKeys } from './recoveryConfiguration'
+import { readPreparationBinding } from '@/features/inquiryPreparations/context'
+import {
+  bindInquiryPreparationAccountAction,
+  replaceInquiryPreparationAction,
+} from '@/features/inquiryCommunication/service'
 import type { RecoveryContext } from './recoveryContext'
 
 async function acceptRecovery(
@@ -52,7 +57,24 @@ export async function requestPasswordRecovery(
     context: input.context,
     ...(input.actionType ? { actionType: input.actionType } : {}),
   })
-  if (action) await acceptRecovery(sourceReq, action, environment)
+  if (action) {
+    const binding = readPreparationBinding(req.headers)
+    if (binding && action.actionType === 'patient-recovery' && action.supabaseSubject) {
+      await replaceInquiryPreparationAction(sourceReq, {
+        binding,
+        actionId: action.id,
+        subject: action.supabaseSubject,
+      })
+      await bindInquiryPreparationAccountAction(sourceReq, {
+        binding,
+        actionId: action.id,
+        subject: action.supabaseSubject,
+        email,
+        actionCreatedAt: action.createdAt,
+      })
+    }
+    await acceptRecovery(sourceReq, action, environment)
+  }
 }
 
 /** Newest-first paging prevents older receipts from starving new interruptions. Each await shares one deadline. */

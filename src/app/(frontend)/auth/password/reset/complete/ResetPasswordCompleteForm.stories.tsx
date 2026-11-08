@@ -36,3 +36,16 @@ export const Retry: Story = {
 }
 export const Resume: Story = { args: { resume: true } }
 export const Completed: Story = { args: { initialState: 'completed' } }
+
+export const InquiryContinuation: Story = {
+  args: { initialState: 'inquiry-continuation' },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('status')).toHaveTextContent(
+      'Your password has been changed and your sessions are signed out.',
+    )
+    await expect(canvas.queryByLabelText('New password')).not.toBeInTheDocument()
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue saved inquiries' }))
+    await expect(args.onComplete).toHaveBeenCalledWith({})
+  },
+}

@@ -1022,6 +1022,27 @@ export const permissionMatrix: PermissionMatrix = {
       },
       notes: 'Minimal content-free proof and terminal restore barrier for authorized deletion operations',
     },
+    inquiryPreparations: {
+      slug: 'inquiryPreparations',
+      displayName: 'InquiryPreparations',
+      operations: {
+        create: { type: 'conditional', details: 'authorized inquiry preparation commands only' },
+        read: { type: 'conditional', details: 'origin-proved receipts or authorized patient commands only' },
+        update: { type: 'conditional', details: 'trusted account binding and inquiry handoff commands only' },
+        delete: { type: 'conditional', details: 'expired preparation cleanup commands only' },
+        admin: { type: 'conditional', details: 'hidden from generic admin access' },
+      },
+      meta: {
+        conditional: {
+          create: { kind: 'always-false' },
+          read: { kind: 'always-false' },
+          update: { kind: 'always-false' },
+          delete: { kind: 'always-false' },
+          admin: { kind: 'always-false' },
+        },
+      },
+      notes: 'Private inquiry preparations. Only the owning inquiry command can access retained content.',
+    },
     inquiryCommandLocks: {
       slug: 'inquiryCommandLocks',
       displayName: 'InquiryCommandLocks',

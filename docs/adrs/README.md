@@ -83,7 +83,7 @@ When adding a new ADR:
 - [018 — Native Payload CMS localization strategy](./018-adr-native-payload-localization-strategy.md)
 - [019 — PostHog event taxonomy and usage governance](./019-adr-posthog-event-taxonomy-and-usage-governance.md)
 - [020 — Database migration quality gate](./020-adr-database-migration-quality-gate.md)
-- [021 — Localization source, ownership, and readiness governance](./021-adr-localization-source-ownership-and-readiness-governance.md) _(publication-readiness rules superseded by ADR 038; canonical UI Copy format specified by ADR 040; other decisions remain in force)_
+- [021 — Localization source, ownership, and readiness governance](./021-adr-localization-source-ownership-and-readiness-governance.md) _(publication-readiness rules superseded by ADR 038; canonical UI Copy format specified by ADR 039; other decisions remain in force)_
 - [022 — Public localization routing, SEO, and domain strategy](./022-adr-public-localization-routing-seo-and-domain-strategy.md) _(aggregate readiness condition superseded by ADR 038; other decisions remain in force)_
 - [023 — Public website cache and revalidation strategy](./023-adr-public-website-cache-and-revalidation-strategy.md)
 - [024 — Production build webpack fallback](./024-adr-production-build-webpack-fallback.md)
@@ -103,3 +103,4 @@ When adding a new ADR:
 - [038 — Native Payload locale publication without aggregate readiness gates](./038-adr-native-payload-locale-publication.md)
 - [039 — Canonical ARB catalogs for Product UI Copy](./039-adr-canonical-arb-ui-copy-catalogs.md)
 - [040 — Four-count Clinic Dashboard reporting V3](./040-adr-four-count-clinic-dashboard-reporting.md)
+- [041 — Shared UI Copy source, delivery, and fallback](./041-adr-shared-ui-copy-source-and-fallback.md)

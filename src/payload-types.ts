@@ -3839,10 +3839,38 @@ export interface PayloadMcpApiKey {
      * Allow clients to find clinics.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create clinics.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update clinics.
+     */
+    update?: boolean | null;
   };
   doctors?: {
     /**
      * Allow clients to find doctors.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create doctors.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update doctors.
+     */
+    update?: boolean | null;
+  };
+  clinicMedia?: {
+    /**
+     * Allow clients to find clinicMedia.
+     */
+    find?: boolean | null;
+  };
+  doctorMedia?: {
+    /**
+     * Allow clients to find doctorMedia.
      */
     find?: boolean | null;
   };
@@ -3941,24 +3969,106 @@ export interface PayloadMcpApiKey {
      * Allow clients to find clinictreatments.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create clinictreatments.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update clinictreatments.
+     */
+    update?: boolean | null;
   };
   doctortreatments?: {
     /**
      * Allow clients to find doctortreatments.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create doctortreatments.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update doctortreatments.
+     */
+    update?: boolean | null;
   };
   doctorspecialties?: {
     /**
      * Allow clients to find doctorspecialties.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create doctorspecialties.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update doctorspecialties.
+     */
+    update?: boolean | null;
   };
   reviews?: {
     /**
      * Allow clients to find reviews.
      */
     find?: boolean | null;
+  };
+  'payload-mcp-tool'?: {
+    /**
+     * Create a clinic profile. The slug is generated from the name when omitted.
+     */
+    createClinicProfile?: boolean | null;
+    /**
+     * Move one Clinic to the trash using the current staff member’s access rights.
+     */
+    trashClinic?: boolean | null;
+    /**
+     * Move one Doctor to the trash using the current staff member’s access rights.
+     */
+    trashDoctor?: boolean | null;
+    /**
+     * Delete one Clinic treatment link using the current staff member’s access rights.
+     */
+    deleteClinicTreatment?: boolean | null;
+    /**
+     * Delete one Doctor treatment link using the current staff member’s access rights.
+     */
+    deleteDoctorTreatment?: boolean | null;
+    /**
+     * Delete one Doctor specialty link using the current staff member’s access rights.
+     */
+    deleteDoctorSpecialty?: boolean | null;
+    /**
+     * Add one owned clinic image to its clinic profile gallery.
+     */
+    publishClinicGalleryImage?: boolean | null;
+    /**
+     * Upload a clinic-owned draft image for its profile gallery.
+     */
+    uploadClinicGalleryImage?: boolean | null;
+    /**
+     * Upload an image owned by one doctor.
+     */
+    uploadDoctorImage?: boolean | null;
+    /**
+     * Update the alternative text of a doctor-owned image.
+     */
+    updateDoctorImage?: boolean | null;
+    /**
+     * Permanently delete one unreferenced image using the current staff member’s access rights.
+     */
+    deleteClinicImage?: boolean | null;
+    /**
+     * Permanently delete one unreferenced image using the current staff member’s access rights.
+     */
+    deleteDoctorImage?: boolean | null;
+    /**
+     * Read the current ordered gallery and revision for a clinic.
+     */
+    readClinicGallery?: boolean | null;
+    /**
+     * Save the ordered clinic gallery using its current revision.
+     */
+    saveClinicGallery?: boolean | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -6446,8 +6556,22 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   doctors?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  clinicMedia?:
+    | T
+    | {
+        find?: T;
+      };
+  doctorMedia?:
     | T
     | {
         find?: T;
@@ -6503,21 +6627,45 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   doctortreatments?:
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   doctorspecialties?:
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   reviews?:
     | T
     | {
         find?: T;
+      };
+  'payload-mcp-tool'?:
+    | T
+    | {
+        createClinicProfile?: T;
+        trashClinic?: T;
+        trashDoctor?: T;
+        deleteClinicTreatment?: T;
+        deleteDoctorTreatment?: T;
+        deleteDoctorSpecialty?: T;
+        publishClinicGalleryImage?: T;
+        uploadClinicGalleryImage?: T;
+        uploadDoctorImage?: T;
+        updateDoctorImage?: T;
+        deleteClinicImage?: T;
+        deleteDoctorImage?: T;
+        readClinicGallery?: T;
+        saveClinicGallery?: T;
       };
   updatedAt?: T;
   createdAt?: T;

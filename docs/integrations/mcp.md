@@ -35,6 +35,22 @@ or Content Manager users. Key creation binds the owner to the administrator crea
    - Treat it like a password. Store it in a password manager.
    - You typically can’t recover the plaintext value later.
 
+## Clinic profiles and media
+
+Enable each collection operation and custom tool needed by the key. Custom tools are disabled by default and still use
+the key owner's current platform role and Payload access rules. `createClinicProfile` accepts a `data` object and can
+generate the clinic slug when it is omitted. `trashClinic` and `trashDoctor` move one profile to the trash. The
+`deleteClinicTreatment`, `deleteDoctorTreatment`, and `deleteDoctorSpecialty` tools delete individual relationship
+records without deleting the shared catalog entries.
+
+Clinic gallery images can be uploaded with `uploadClinicGalleryImage`, then added with `publishClinicGalleryImage`.
+Use `readClinicGallery` to obtain the current revision and ordered items. `saveClinicGallery` accepts that revision
+and the complete desired item list; a stale revision is rejected. Removing an item from the list returns it to draft.
+Image status remains system-managed. `uploadDoctorImage` uploads an image for its doctor, and `updateDoctorImage`
+changes its alternative text. The `clinicMedia` and `doctorMedia` find permissions expose media metadata.
+`deleteClinicImage` and `deleteDoctorImage` permanently delete individual images only after references are removed.
+Uploads accept base64-encoded image bytes and the configured media size and type limits apply.
+
 ## Configure VS Code (Copilot Chat MCP)
 
 VS Code supports HTTP MCP servers via `.vscode/mcp.json`.

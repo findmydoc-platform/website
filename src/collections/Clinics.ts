@@ -37,6 +37,7 @@ import {
 } from '@/access/fieldAccess'
 import { stableIdBeforeChangeHook, stableIdField } from './common/stableIdField'
 import { revalidateClinicChange, revalidateClinicDelete } from '@/hooks/revalidateClinicSurfaces'
+import { guardMcpTrash } from '@/access/mcpTrashAccess'
 import { beforeChangeImmutableField } from '@/hooks/immutability'
 import { normalizeOpeningHours, openingHoursField } from './clinics/openingHours'
 import {
@@ -164,7 +165,11 @@ export const Clinics: CollectionConfig<'clinics'> = {
     delete: isPlatformStaff, // Only Platform can delete clinics
   },
   hooks: {
-    beforeOperation: [guardInitialClinicMembershipInput, guardNotificationAuthorizationChange],
+    beforeOperation: [
+      guardMcpTrash<'clinics'>(),
+      guardInitialClinicMembershipInput,
+      guardNotificationAuthorizationChange,
+    ],
     beforeDelete: [guardNotificationAuthorizationSession],
     afterOperation: [
       async ({ result, req, operation }) => {

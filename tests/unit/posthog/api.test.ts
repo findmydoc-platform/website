@@ -36,6 +36,10 @@ vi.mock('posthog-node', async (importOriginal) => ({
   ...posthogNodeMocks,
 }))
 
+vi.mock('@/posthog/serverConsent', () => ({
+  postHogServerConsent: { resolveAnalyticsConsent: vi.fn(async () => ({ isAllowed: true })) },
+}))
+
 vi.mock('@/auth/utilities/jwtValidation', () => ({
   extractSupabaseUserData: vi.fn(),
 }))
@@ -80,6 +84,18 @@ describe('PostHog API facade', () => {
     resetPostHogServerForTests()
     resetPostHogClientForTests()
     process.env = oldEnv
+  })
+
+  it('uses an eligible browser identifier for request targeting while keeping the host actor', async () => {
+    const { createPostHogHoldingEvaluationContext, resolvePostHogHoldingRequestContext } = await import('@/posthog/api')
+    const context = createPostHogHoldingEvaluationContext({ url: new URL('https://findmydoc.eu') })
+    const cookie = encodeURIComponent(JSON.stringify({ distinct_id: 'selected-browser' }))
+    const result = await resolvePostHogHoldingRequestContext({
+      context,
+      headers: new Headers({ cookie: `ph_phc_test_posthog=${cookie}` }),
+    })
+    expect(result.actor.distinctId).toBe('holding:findmydoc.eu')
+    expect(result.context.feature_flag_browser_id).toBe('selected-browser')
   })
 
   it('resolves authenticated actors with stable person and group properties', async () => {
@@ -144,7 +160,7 @@ describe('PostHog API facade', () => {
     const { createPostHogHoldingEvaluationContext, resolvePostHogHoldingFlagActor } = await import('@/posthog/api')
     const context = createPostHogHoldingEvaluationContext({ url: new URL('https://FindMyDoc.eu/posts/example?x=1') })
 
-    expect(context).toEqual({ feature_flag_site_host: 'findmydoc.eu' })
+    expect(context).toEqual({ feature_flag_site_host: 'findmydoc.eu', feature_flag_browser_id: '' })
     expect(resolvePostHogHoldingFlagActor(context).distinctId).toBe('holding:findmydoc.eu')
   })
 

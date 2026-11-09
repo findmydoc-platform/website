@@ -9,6 +9,7 @@ import {
   isTemporaryLandingModeExemptPath,
   isTemporaryLandingIndexablePath,
   isTemporaryLandingPublicExemptPath,
+  isTemporaryLandingPublicDiscoveryPath,
   isTemporaryLandingRootPath,
   TEMPORARY_LANDING_MODE_REQUEST_HEADER,
   PUBLIC_SITE_MODE_REQUEST_HEADER,
@@ -117,11 +118,18 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   logCrawlerRequest(request)
 
   const previewDeployment = isPreviewRuntime()
-  const holdingMode = (await resolveHoldingMode(request.nextUrl)).mode
+  const discovery =
+    isTemporaryLandingPublicDiscoveryPath(pathname) || pathname === '/llms.txt' || pathname.endsWith('-sitemap.xml')
+  const holdingMode = (await resolveHoldingMode(request.nextUrl, process.env, discovery ? undefined : request.headers))
+    .mode
+  const privateResponse = (response: NextResponse): NextResponse => {
+    if (!discovery) response.headers.set('Cache-Control', 'private, no-store')
+    return response
+  }
 
   if (holdingMode === 'full') {
     const response = nextWithPublicMode(request, holdingMode)
-    return previewDeployment ? withSearchRobotsHeader(response) : response
+    return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
   }
 
   const platformUser = isPlatformUser(await getHoldingRequestUser(request))
@@ -130,20 +138,20 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {
       if (isTemporaryLandingIndexablePath(pathname)) {
         const response = nextWithTemporaryLandingPublicHeaders(request, holdingMode)
-        return previewDeployment ? withSearchRobotsHeader(response) : response
+        return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
       }
 
-      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode))
+      return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }
 
     if (isTemporaryLandingModeExemptPath(pathname)) {
-      return withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode))
+      return privateResponse(withSearchRobotsHeader(nextWithTemporaryLandingHeaders(request, holdingMode)))
     }
 
-    return withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 }))
+    return privateResponse(withSearchRobotsHeader(new NextResponse('Not Found', { status: 404 })))
   }
 
-  return withSearchRobotsHeader(nextWithPublicMode(request, holdingMode))
+  return privateResponse(withSearchRobotsHeader(nextWithPublicMode(request, holdingMode)))
 }
 
 export const config = {

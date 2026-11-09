@@ -66,9 +66,26 @@ analytics consent is absent; only PostHog event capture is skipped.
 
 The repository registers the server-side PostHog flag `temporary-landing-mode` for public Holding mode.
 It is evaluated through `evaluatePostHogFlags()` with a stable host actor and the `feature_flag_site_host`
-person property. An evaluated boolean selects Holding or Full. Unavailable or invalid evaluation uses
+person property. With valid analytics consent, request evaluation also supplies the existing browser distinct ID as `feature_flag_browser_id`; otherwise it supplies an empty string. An evaluated boolean selects Holding or Full. Unavailable or invalid evaluation uses
 `PUBLIC_SITE_FALLBACK_MODE`; missing or invalid fallback configuration selects Holding. Browser-side
 feature-flag evaluation is disabled.
+
+To release a browser on a Holding host, first obtain its distinct ID from its own browser after allowing analytics.
+In DevTools, inspect the `ph_phc_*_posthog` cookie and copy `distinct_id` from its decoded JSON. The first
+request before the SDK creates this cookie still uses the host decision. Do not share the cookie or its other contents.
+
+Edit the existing `temporary-landing-mode` boolean flag in PostHog. In each Holding condition for the relevant host,
+add the person property `feature_flag_browser_id` with operator **is not** and the selected ID or list of IDs. Keep
+the host condition and its existing rollout percentage. This excludes selected browsers from that Holding condition,
+so they receive false (Full), while other browsers and requests without an ID still match the host condition. Conditions
+are ORed: another matching Holding condition can override the exclusion, so update each applicable condition. Local
+evaluation requires properties supplied by the application; remote person profiles and unsupported rules cannot be
+assumed available. Keep the host actor and avoid changing rollout percentages, which would change existing assignments.
+
+Verify the selected browser after a new request, and check a separate browser without the ID on the same host. Verify
+that withdrawing consent restores the host mode. Remove an ID from every applicable exclusion to revoke its release.
+Definition changes normally take several minutes to propagate; an outage can extend use of older definitions. Existing
+open pages do not update automatically. A flag is not an authorization mechanism.
 
 ### Browser consent lifecycle
 

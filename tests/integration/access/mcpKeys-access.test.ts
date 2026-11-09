@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload } from 'payload'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 import config from '@payload-config'
 import {
@@ -11,6 +12,7 @@ import {
 } from '../../fixtures/testUsers'
 import { testSlug } from '../../fixtures/testSlug'
 import { buildRichText } from '../../fixtures/richText'
+import { ensureBaseline } from '../../fixtures/ensureBaseline'
 import type { Treatment } from '@/payload-types'
 
 describe('MCP key management and client access', () => {
@@ -31,6 +33,7 @@ describe('MCP key management and client access', () => {
 
   beforeAll(async () => {
     payload = await getPayload({ config })
+    await ensureBaseline(payload)
     const first = await createPlatformTestUser(payload, { emailPrefix: `${prefix}-admin`, createdStaffIds: staffIds })
     admin = asPayloadStaffUser(
       await payload.update({
@@ -47,7 +50,7 @@ describe('MCP key management and client access', () => {
         createdStaffIds: staffIds,
       }),
     )
-  })
+  }, 60000)
 
   afterAll(async () => {
     for (const id of clinicIds) {
@@ -161,6 +164,57 @@ describe('MCP key management and client access', () => {
     expect(direct.docs[0]!.slug).toBeTruthy()
     expect(direct.docs[0]!.group).toEqual(group.id)
     expect(direct.docs[0]!.coordinates).toEqual([28.9784, 41.0082])
+
+    const city = (await payload.find({ collection: 'cities', depth: 0, limit: 1, overrideAccess: true })).docs[0]!
+    const country = typeof city.country === 'object' ? city.country.id : city.country
+    const clinicSlug = direct.docs[0]!.slug!
+    expect(
+      await call('updateClinics', {
+        id: direct.docs[0]!.id,
+        address: { city: city.id, country, street: 'Test street', houseNumber: '1', zipCode: '34000' },
+        internalPrimaryContact: {
+          firstName: 'Test',
+          lastName: 'Contact',
+          email: 'test@example.com',
+          role: 'Clinic Management',
+        },
+        supportedLanguages: ['english'],
+      }),
+    ).toContain('Document updated successfully')
+
+    const expectInvalidation = () => {
+      expect(vi.mocked(revalidatePath)).toHaveBeenCalledWith(`/clinics/${clinicSlug}`)
+      expect(vi.mocked(revalidateTag)).toHaveBeenCalledWith('collection:clinics', { expire: 0 })
+    }
+    const publicClinicCount = async () =>
+      (
+        await payload.find({
+          collection: 'clinics',
+          where: { id: { equals: direct.docs[0]!.id } },
+          overrideAccess: false,
+        })
+      ).totalDocs
+
+    expect(await publicClinicCount()).toBe(0)
+    vi.clearAllMocks()
+    expect(await call('updateClinics', { id: direct.docs[0]!.id, status: 'approved' })).toContain(
+      'Document updated successfully',
+    )
+    expect(await publicClinicCount()).toBe(1)
+    expectInvalidation()
+    vi.clearAllMocks()
+    expect(await call('updateClinics', { id: direct.docs[0]!.id, status: 'draft' })).toContain(
+      'Document updated successfully',
+    )
+    expect(await publicClinicCount()).toBe(0)
+    expectInvalidation()
+    expect(await call('updateClinics', { id: direct.docs[0]!.id, status: 'approved' })).toContain(
+      'Document updated successfully',
+    )
+    vi.clearAllMocks()
+    expect(await call('trashClinic', { id: direct.docs[0]!.id })).toContain('moved to trash')
+    expect(await publicClinicCount()).toBe(0)
+    expectInvalidation()
     const createdText = await call('createClinics', {
       name,
       slug: name,

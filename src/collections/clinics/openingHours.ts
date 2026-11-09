@@ -51,7 +51,8 @@ export const normalizeOpeningHours = (value: unknown): unknown => {
           const day = value[dayName]
           if (!day || !isRecord(day)) return [dayName, day]
 
-          const isClosed = day.isClosed
+          const hasTimes = normalizeTime(day.opensAt) !== null || normalizeTime(day.closesAt) !== null
+          const isClosed = day.isClosed == null && hasTimes ? false : day.isClosed
 
           return [
             dayName,

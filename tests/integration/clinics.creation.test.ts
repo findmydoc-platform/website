@@ -234,6 +234,25 @@ describe('Clinic Creation Integration Tests', () => {
     })
   })
 
+  it.each([null, undefined])('saves an open day when the untouched closed checkbox is %s', async (isClosed) => {
+    const openingHours = buildOpeningHours()
+    openingHours.monday = { isClosed, opensAt: '08:00', closesAt: '17:30' }
+    const clinic = await payload.create({
+      collection: 'clinics',
+      data: {
+        name: `${slugPrefix}-unchecked-opening-hours`,
+        openingHours,
+        slug: `${slugPrefix}-unchecked-opening-hours`,
+        status: 'draft',
+      },
+      overrideAccess: true,
+      depth: 0,
+    })
+
+    const saved = await payload.findByID({ collection: 'clinics', id: clinic.id, overrideAccess: true, depth: 0 })
+    expect(saved.openingHours?.monday).toMatchObject({ isClosed: false, opensAt: '08:00', closesAt: '17:30' })
+  })
+
   it.each([
     {
       label: 'a partial week',

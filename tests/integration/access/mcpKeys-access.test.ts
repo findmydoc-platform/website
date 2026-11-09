@@ -23,6 +23,7 @@ describe('MCP key management and client access', () => {
   const keyIds: number[] = []
   const clinicIds: Array<number | string> = []
   const groupIds: Array<number | string> = []
+  const accreditationIds: Array<number | string> = []
   const doctorIds: Array<number | string> = []
   const specialtyIds: Array<number | string> = []
   const doctorSpecialtyIds: Array<number | string> = []
@@ -66,6 +67,7 @@ describe('MCP key management and client access', () => {
     for (const id of clinicIds) await payload.delete({ collection: 'clinics', id, overrideAccess: true, trash: true })
     for (const id of groupIds)
       await payload.delete({ collection: 'clinicGroups', id, overrideAccess: false, user: support })
+    for (const id of accreditationIds) await payload.delete({ collection: 'accreditation', id, overrideAccess: true })
     for (const id of treatmentIds)
       await payload.delete({ collection: 'treatments', id, overrideAccess: true, trash: true })
     for (const id of specialtyIds)
@@ -168,19 +170,67 @@ describe('MCP key management and client access', () => {
     const city = (await payload.find({ collection: 'cities', depth: 0, limit: 1, overrideAccess: true })).docs[0]!
     const country = typeof city.country === 'object' ? city.country.id : city.country
     const clinicSlug = direct.docs[0]!.slug!
+    const tag = (await payload.find({ collection: 'tags', depth: 0, limit: 1, overrideAccess: true })).docs[0]!
+    const accreditation = await payload.create({
+      collection: 'accreditation',
+      data: {
+        name: `${prefix} accreditation`,
+        abbreviation: 'TEST',
+        country: 'Test',
+        description: buildRichText('Test'),
+      },
+      overrideAccess: true,
+    })
+    accreditationIds.push(accreditation.id)
+    const openingHours = {
+      monday: { isClosed: false, opensAt: '09:00', closesAt: '17:00' },
+      tuesday: { isClosed: true },
+      wednesday: { isClosed: true },
+      thursday: { isClosed: true },
+      friday: { isClosed: true },
+      saturday: { isClosed: true },
+      sunday: { isClosed: true },
+    }
     expect(
       await call('updateClinics', {
         id: direct.docs[0]!.id,
+        description: buildRichText('Synthetic MCP profile description'),
         address: { city: city.id, country, street: 'Test street', houseNumber: '1', zipCode: '34000' },
+        contact: { phoneNumber: '+90 555 1234567', email: 'public@example.com', website: 'https://example.com' },
         internalPrimaryContact: {
           firstName: 'Test',
           lastName: 'Contact',
           email: 'test@example.com',
           role: 'Clinic Management',
         },
-        supportedLanguages: ['english'],
+        supportedLanguages: ['english', 'turkish'],
+        openingHours,
+        tags: [tag.id],
+        accreditations: [accreditation.id],
+        verification: 'bronze',
+        participationStatus: 'approved',
       }),
     ).toContain('Document updated successfully')
+    const profileText = await call('findClinics', { id: direct.docs[0]!.id })
+    const profile = JSON.parse(profileText.slice(profileText.indexOf('{')))
+    expect(profile).toMatchObject({
+      description: buildRichText('Synthetic MCP profile description'),
+      address: { city: city.id, country, street: 'Test street', houseNumber: '1', zipCode: '34000' },
+      contact: { email: 'public@example.com', website: 'https://example.com' },
+      internalPrimaryContact: { firstName: 'Test', role: 'Clinic Management' },
+      supportedLanguages: ['english', 'turkish'],
+      openingHours: { monday: openingHours.monday, tuesday: { isClosed: true } },
+      tags: [tag.id],
+      accreditations: [accreditation.id],
+      verification: 'bronze',
+      participationStatus: 'approved',
+      status: 'draft',
+    })
+    expect(await call('updateClinics', { id: direct.docs[0]!.id, tags: [], accreditations: [] })).toContain(
+      'Document updated successfully',
+    )
+    const clearedText = await call('findClinics', { id: direct.docs[0]!.id })
+    expect(JSON.parse(clearedText.slice(clearedText.indexOf('{')))).toMatchObject({ tags: [], accreditations: [] })
 
     const expectInvalidation = () => {
       expect(vi.mocked(revalidatePath)).toHaveBeenCalledWith(`/clinics/${clinicSlug}`)
@@ -279,7 +329,7 @@ describe('MCP key management and client access', () => {
         label: `${prefix}-editor`,
         enableAPIKey: true,
         apiKey: editorToken,
-        clinics: { create: true },
+        clinics: { create: true, update: true },
         clinicGroups: { find: true },
       },
     })
@@ -294,6 +344,22 @@ describe('MCP key management and client access', () => {
       overrideAccess: true,
     })
     expect(editorDocs.docs).toHaveLength(0)
+    await call(
+      'updateClinics',
+      { id: created.docs[0]!.id, status: 'approved', verification: 'gold', participationStatus: 'approved' },
+      editorToken,
+    )
+    const afterEditorAttempt = await payload.findByID({
+      collection: 'clinics',
+      id: created.docs[0]!.id,
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(afterEditorAttempt).toMatchObject({
+      status: 'draft',
+      verification: 'unverified',
+      participationStatus: 'pending',
+    })
 
     const doctorFirstName = `${prefix}-doctor`
     const doctorCreated = await call('createDoctors', {

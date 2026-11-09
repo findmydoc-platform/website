@@ -43,6 +43,9 @@ when it is omitted. `trashClinic` and `trashDoctor` move one profile to the tras
 `deleteClinicTreatment`, `deleteDoctorTreatment`, and `deleteDoctorSpecialty` tools delete individual relationship
 records without deleting the shared catalog entries.
 
+Admin and Support can use the separately granted `findClinicGroups` permission to find a group before assigning it
+when creating a clinic. The existing group access rules also apply to MCP.
+
 The local Payload MCP patch makes only the configured generated slug fields optional in the tool schema. Payload still
 validates every field and applies its access rules during creation. Remove the patch when the plugin supports this
 behavior upstream.

@@ -20,6 +20,7 @@ describe('MCP key management and client access', () => {
   const staffIds: Array<number | string> = []
   const keyIds: number[] = []
   const clinicIds: Array<number | string> = []
+  const groupIds: Array<number | string> = []
   const doctorIds: Array<number | string> = []
   const specialtyIds: Array<number | string> = []
   const doctorSpecialtyIds: Array<number | string> = []
@@ -60,6 +61,8 @@ describe('MCP key management and client access', () => {
       await payload.delete({ collection: 'doctortreatments', id, overrideAccess: true })
     for (const id of doctorIds) await payload.delete({ collection: 'doctors', id, overrideAccess: true, trash: true })
     for (const id of clinicIds) await payload.delete({ collection: 'clinics', id, overrideAccess: true, trash: true })
+    for (const id of groupIds)
+      await payload.delete({ collection: 'clinicGroups', id, overrideAccess: false, user: support })
     for (const id of treatmentIds)
       await payload.delete({ collection: 'treatments', id, overrideAccess: true, trash: true })
     for (const id of specialtyIds)
@@ -79,6 +82,7 @@ describe('MCP key management and client access', () => {
         enableAPIKey: true,
         apiKey,
         clinics: { find: true, create: true, update: true },
+        clinicGroups: { find: true },
         doctors: { create: true, update: true },
         doctorspecialties: { create: true, update: true },
         clinictreatments: { create: true, update: true },
@@ -129,18 +133,33 @@ describe('MCP key management and client access', () => {
 
     const name = `${prefix}-coordinates`
     expect(await call('createClinics', {})).toContain('name')
+    const group = await payload.create({
+      collection: 'clinicGroups',
+      data: { name: `${prefix} test group` },
+      overrideAccess: false,
+      user: admin,
+    })
+    groupIds.push(group.id)
+    expect(await call('findClinicGroups', { id: group.id })).toContain(group.name)
+
     const directName = `${prefix} direct automatic slug`
     expect(
-      await call('createClinics', { name: directName, coordinates: { longitude: 28.9784, latitude: 41.0082 } }),
+      await call('createClinics', {
+        name: directName,
+        group: group.id,
+        coordinates: { longitude: 28.9784, latitude: 41.0082 },
+      }),
     ).toContain('Resource created successfully')
     const direct = await payload.find({
       collection: 'clinics',
+      depth: 0,
       where: { name: { equals: directName } },
       overrideAccess: true,
     })
     expect(direct.docs).toHaveLength(1)
     clinicIds.push(direct.docs[0]!.id)
     expect(direct.docs[0]!.slug).toBeTruthy()
+    expect(direct.docs[0]!.group).toEqual(group.id)
     expect(direct.docs[0]!.coordinates).toEqual([28.9784, 41.0082])
     const createdText = await call('createClinics', {
       name,
@@ -178,6 +197,7 @@ describe('MCP key management and client access', () => {
       },
     })
     keyIds.push(readOnly.id)
+    expect(await call('findClinicGroups', { id: group.id }, readOnlyKey)).not.toContain(group.name)
     const deniedName = `${prefix}-denied`
     const deniedText = await call('createClinics', { name: deniedName }, readOnlyKey)
     expect(deniedText).not.toContain('Resource created successfully')
@@ -206,10 +226,12 @@ describe('MCP key management and client access', () => {
         enableAPIKey: true,
         apiKey: editorToken,
         clinics: { create: true },
+        clinicGroups: { find: true },
       },
     })
     keyIds.push(editorKey.id)
     const editorName = `${prefix}-editor-denied`
+    expect(await call('findClinicGroups', { id: group.id }, editorToken)).not.toContain(group.name)
     const editorResult = await call('createClinics', { name: editorName }, editorToken)
     expect(editorResult).not.toContain('Resource created successfully')
     const editorDocs = await payload.find({

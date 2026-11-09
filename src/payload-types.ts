@@ -3848,6 +3848,12 @@ export interface PayloadMcpApiKey {
      */
     update?: boolean | null;
   };
+  clinicGroups?: {
+    /**
+     * Allow clients to find clinicGroups.
+     */
+    find?: boolean | null;
+  };
   doctors?: {
     /**
      * Allow clients to find doctors.
@@ -6554,6 +6560,11 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
         create?: T;
         update?: T;
+      };
+  clinicGroups?:
+    | T
+    | {
+        find?: T;
       };
   doctors?:
     | T

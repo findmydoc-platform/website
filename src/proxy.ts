@@ -39,15 +39,15 @@ const getHoldingRequestUser = async (request: NextRequest): Promise<User | null>
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseAnonKey) return null
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll() {
-        // Holding only reads the server-validated session for its platform staff exception.
-      },
-    },
-  })
   try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll() {
+          // Holding only reads the server-validated session for its platform staff exception.
+        },
+      },
+    })
     const {
       data: { user },
       error,
@@ -120,8 +120,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const previewDeployment = isPreviewRuntime()
   const discovery =
     isTemporaryLandingPublicDiscoveryPath(pathname) || pathname === '/llms.txt' || pathname.endsWith('-sitemap.xml')
-  const holdingMode = (await resolveHoldingMode(request.nextUrl, process.env, discovery ? undefined : request.headers))
-    .mode
+  let verifiedUser: Promise<User | null> | undefined
+  const getVerifiedUser = () => (verifiedUser ??= getHoldingRequestUser(request))
+  const holdingMode = (
+    await resolveHoldingMode(request.nextUrl, process.env, discovery ? undefined : request.headers, getVerifiedUser)
+  ).mode
   const privateResponse = (response: NextResponse): NextResponse => {
     if (!discovery) response.headers.set('Cache-Control', 'private, no-store')
     return response
@@ -132,7 +135,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return privateResponse(previewDeployment ? withSearchRobotsHeader(response) : response)
   }
 
-  const platformUser = isPlatformUser(await getHoldingRequestUser(request))
+  const platformUser = isPlatformUser(await getVerifiedUser())
 
   if (holdingMode === 'holding' && !platformUser) {
     if (isTemporaryLandingRootPath(pathname) || isTemporaryLandingPublicExemptPath(pathname)) {

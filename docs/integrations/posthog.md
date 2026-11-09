@@ -66,7 +66,7 @@ analytics consent is absent; only PostHog event capture is skipped.
 
 The repository registers the server-side PostHog flag `temporary-landing-mode` for public Holding mode.
 It is evaluated through `evaluatePostHogFlags()` with a stable host actor and the `feature_flag_site_host`
-person property. With valid analytics consent, request evaluation also supplies the existing browser distinct ID as `feature_flag_browser_id`; otherwise it supplies an empty string. An evaluated boolean selects Holding or Full. Unavailable or invalid evaluation uses
+person property. With valid analytics consent, request evaluation also supplies the existing browser distinct ID as `feature_flag_browser_id`, the verified Supabase user ID as `feature_flag_user_id`, and the verified `app_metadata.user_type` as `feature_flag_user_type`. Missing or ineligible attributes are empty strings. The user types are `patient`, `clinic`, and `platform`; client-controlled user metadata is not used. An evaluated boolean selects Holding or Full. Unavailable or invalid evaluation uses
 `PUBLIC_SITE_FALLBACK_MODE`; missing or invalid fallback configuration selects Holding. Browser-side
 feature-flag evaluation is disabled.
 
@@ -82,8 +82,10 @@ are ORed: another matching Holding condition can override the exclusion, so upda
 evaluation requires properties supplied by the application; remote person profiles and unsupported rules cannot be
 assumed available. Keep the host actor and avoid changing rollout percentages, which would change existing assignments.
 
+To release signed-in users, add `feature_flag_user_id` **is not** with the selected verified Supabase user IDs to each applicable Holding condition. To release a user category, add `feature_flag_user_type` **is not** with the selected types. Add these properties to the same condition as the browser exclusion: all properties in that condition must match, so any selected browser, user ID, or user type receives Full. Other matching Holding conditions still take precedence. User selection requires analytics consent and successful server-side authentication. It works without a browser identifier; an eligible browser remains released after sign-in or an authentication outage. Signing out ends user selection, and the existing logout identity reset replaces the browser identifier.
+
 Verify the selected browser after a new request, and check a separate browser without the ID on the same host. Verify
-that withdrawing consent restores the host mode. Remove an ID from every applicable exclusion to revoke its release.
+that withdrawing consent restores the host mode. Check a selected signed-in user and an unmatched user, then sign out and check again. Remove an ID or type from every applicable exclusion to revoke its release.
 Definition changes normally take several minutes to propagate; an outage can extend use of older definitions. Existing
 open pages do not update automatically. A flag is not an authorization mechanism.
 

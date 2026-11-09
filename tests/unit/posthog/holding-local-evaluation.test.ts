@@ -3,6 +3,34 @@ import { PostHog } from 'posthog-node'
 import { NextRequest } from 'next/server'
 
 const state = vi.hoisted(() => ({ client: null as import('posthog-node').PostHog | null }))
+vi.mock('@supabase/ssr', () => ({
+  createServerClient: (
+    _url: string,
+    _key: string,
+    options: { cookies: { getAll: () => { name: string; value: string }[] } },
+  ) => {
+    if (options.cookies.getAll().some((cookie) => cookie.name === 'test-session' && cookie.value === 'client-outage')) {
+      throw new Error('authentication client unavailable')
+    }
+    return {
+      auth: {
+        getUser: async () => {
+          const session = options.cookies.getAll().find((cookie) => cookie.name === 'test-session')?.value
+          if (session === 'outage') throw new Error('authentication unavailable')
+          const user =
+            session === 'selected-user'
+              ? { id: 'selected-user', app_metadata: { user_type: 'patient' } }
+              : session === 'clinic-user'
+                ? { id: 'clinic-user', app_metadata: { user_type: 'clinic' } }
+                : session === 'other-user'
+                  ? { id: 'other-user', app_metadata: { user_type: 'patient' }, user_metadata: { user_type: 'clinic' } }
+                  : null
+          return { data: { user }, error: null }
+        },
+      },
+    }
+  },
+}))
 vi.mock('@/posthog/server', () => ({
   getPostHogFeatureFlagServer: () => state.client,
   isPostHogLocalEvaluationConfigured: () => true,
@@ -59,6 +87,8 @@ describe('Holding local PostHog rules', () => {
                         operator: 'is_not',
                         type: 'person',
                       },
+                      { key: 'feature_flag_user_id', value: ['selected-user'], operator: 'is_not', type: 'person' },
+                      { key: 'feature_flag_user_type', value: ['clinic'], operator: 'is_not', type: 'person' },
                     ],
                     rollout_percentage: 100,
                   },
@@ -109,5 +139,27 @@ describe('Holding local PostHog rules', () => {
       'private, no-store',
       'private, no-store',
     ])
+
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co')
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'test-key')
+    const signedIn = (session: string, id?: string, consent = true) => {
+      const request = browser(id, consent)
+      request.cookies.set('test-session', session)
+      return request
+    }
+    const responses = await Promise.all([
+      proxy(signedIn('selected-user')),
+      proxy(signedIn('clinic-user')),
+      proxy(signedIn('outage', 'selected-browser')),
+      proxy(signedIn('outage')),
+      proxy(signedIn('client-outage')),
+      proxy(signedIn('selected-user', undefined, false)),
+      proxy(signedIn('other-user', 'selected-browser')),
+      proxy(signedIn('other-user')),
+      proxy(browser()),
+      proxy(browser('new-browser')),
+    ])
+    expect(responses.map((response) => response.status)).toEqual([200, 200, 200, 404, 404, 404, 200, 404, 404, 404])
+    vi.unstubAllEnvs()
   })
 })

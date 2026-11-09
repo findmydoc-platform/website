@@ -160,7 +160,12 @@ describe('PostHog API facade', () => {
     const { createPostHogHoldingEvaluationContext, resolvePostHogHoldingFlagActor } = await import('@/posthog/api')
     const context = createPostHogHoldingEvaluationContext({ url: new URL('https://FindMyDoc.eu/posts/example?x=1') })
 
-    expect(context).toEqual({ feature_flag_site_host: 'findmydoc.eu', feature_flag_browser_id: '' })
+    expect(context).toEqual({
+      feature_flag_site_host: 'findmydoc.eu',
+      feature_flag_browser_id: '',
+      feature_flag_user_id: '',
+      feature_flag_user_type: '',
+    })
     expect(resolvePostHogHoldingFlagActor(context).distinctId).toBe('holding:findmydoc.eu')
   })
 

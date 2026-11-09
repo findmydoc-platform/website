@@ -278,6 +278,30 @@ const collectResettablePlatformContentMediaStableIds = async (): Promise<string[
     .sort()
 }
 
+const clearDoctorProfileImages = async (payload: Payload, req: Partial<PayloadRequest>): Promise<void> => {
+  const doctors = await payload.find({
+    collection: 'doctors',
+    where: { profileImage: { exists: true } },
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+    trash: true,
+    req,
+  })
+  for (const doctor of doctors.docs) {
+    await payload.update({
+      collection: 'doctors',
+      id: doctor.id,
+      data: { profileImage: null },
+      depth: 0,
+      overrideAccess: true,
+      trash: true,
+      context: req.context,
+      req: { ...req, transactionID: undefined },
+    })
+  }
+}
+
 const buildResetWhere = (collection: CollectionSlug, platformContentMediaStableIds: string[]): Where => {
   if (collection !== 'platformContentMedia') {
     return allDocumentsWhere
@@ -397,6 +421,7 @@ export async function resetCollections(
 
   await resetInquiryAttachmentFiles(payload, req)
   await clearProtectedUserRelations(payload, plannedUserUpdates, req)
+  await clearDoctorProfileImages(payload, req)
 
   for (const collection of resetOrder) {
     if (collection === 'platformContentMedia' && platformContentMediaStableIds.length === 0) continue

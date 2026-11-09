@@ -20,6 +20,7 @@ describe('Platform clinic gallery', () => {
   let secondMediaId: number
   let uploadedMediaId: number | undefined
   let doctorId: number | undefined
+  let otherDoctorId: number | undefined
   let doctorMediaId: number | undefined
   const keyIds: number[] = []
   const staffIds: Array<number | string> = []
@@ -65,8 +66,19 @@ describe('Platform clinic gallery', () => {
       await payload.delete({ collection: 'clinicMedia', id: secondMediaId, overrideAccess: true, trash: true })
     if (uploadedMediaId)
       await payload.delete({ collection: 'clinicMedia', id: uploadedMediaId, overrideAccess: true, trash: true })
+    if (otherDoctorId)
+      await payload.update({
+        collection: 'doctors',
+        id: otherDoctorId,
+        data: { profileImage: null },
+        overrideAccess: true,
+      })
+    if (doctorId)
+      await payload.update({ collection: 'doctors', id: doctorId, data: { profileImage: null }, overrideAccess: true })
     if (doctorMediaId)
       await payload.delete({ collection: 'doctorMedia', id: doctorMediaId, overrideAccess: true, trash: true })
+    if (otherDoctorId)
+      await payload.delete({ collection: 'doctors', id: otherDoctorId, overrideAccess: true, trash: true })
     if (doctorId) await payload.delete({ collection: 'doctors', id: doctorId, overrideAccess: true, trash: true })
     for (const id of keyIds) await payload.delete({ collection: 'payload-mcp-api-keys', id, overrideAccess: true })
     if (clinicId) await payload.delete({ collection: 'clinics', id: clinicId, overrideAccess: true })
@@ -123,6 +135,7 @@ describe('Platform clinic gallery', () => {
           },
           clinicMedia: { find: true },
           doctorMedia: { find: true },
+          doctors: { find: true, update: true },
         },
       },
     })
@@ -274,19 +287,40 @@ describe('Platform clinic gallery', () => {
     expect(await call(token, 'updateDoctorImage', { id: doctorMediaId, alt: 'Updated doctor image' })).toContain(
       'Updated doctor image',
     )
-    const attachedDoctor = await payload.update({
+    const otherDoctor = await payload.create({
       collection: 'doctors',
-      id: doctorId,
-      data: { profileImage: doctorMediaId },
       overrideAccess: true,
+      data: {
+        firstName: 'Other',
+        lastName: 'Doctor',
+        fullName: 'Other Doctor',
+        active: false,
+        gender: 'female',
+        clinic: clinicId,
+        qualifications: ['Test'],
+        languages: ['english'],
+        slug: `gallery-other-doctor-${suffix}`,
+      },
     })
-    expect(attachedDoctor.profileImage).toBeTruthy()
+    otherDoctorId = otherDoctor.id
+    expect(await call(token, 'updateDoctors', { id: otherDoctorId, profileImage: doctorMediaId })).not.toContain(
+      'Document updated successfully',
+    )
+    const unchangedDoctor = await payload.findByID({ collection: 'doctors', id: otherDoctorId, overrideAccess: true })
+    expect(unchangedDoctor.profileImage).toBeFalsy()
+    expect(await call(token, 'updateDoctors', { id: doctorId, profileImage: doctorMediaId })).toContain(
+      'Document updated successfully',
+    )
+    const doctorText = await call(token, 'findDoctors', { id: doctorId })
+    expect(JSON.parse(doctorText.slice(doctorText.indexOf('{')))).toMatchObject({ profileImage: doctorMediaId })
     expect(await call(token, 'deleteDoctorImage', { id: doctorMediaId })).not.toContain('deleted')
     expect(await call(token, 'deleteClinicImage', { id: mediaId })).not.toContain('deleted')
     expect(await call(ungrantedToken, 'deleteClinicImage', { id: secondMediaId })).not.toContain('deleted')
     expect(await call(token, 'deleteClinicImage', { id: secondMediaId })).toContain('deleted')
     secondMediaId = 0
-    await payload.update({ collection: 'doctors', id: doctorId, data: { profileImage: null }, overrideAccess: true })
+    expect(await call(token, 'updateDoctors', { id: doctorId, profileImage: null })).toContain(
+      'Document updated successfully',
+    )
     expect(await call(token, 'deleteDoctorImage', { id: doctorMediaId })).toContain('deleted')
     doctorMediaId = undefined
     expect(await payload.findByID({ collection: 'doctors', id: doctorId, overrideAccess: true })).toBeTruthy()
